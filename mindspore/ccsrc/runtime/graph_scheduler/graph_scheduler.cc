@@ -511,6 +511,28 @@ void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
     }
   }
 }
+
+void RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  // Set device tensor of non weight parameter to null, because it's stored in graph parameter store.
+  // Avoid not free memory if both hold it.
+  for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
+    const auto &graph = graph_compiler_info.graphs_[i];
+    MS_EXCEPTION_IF_NULL(graph);
+    const std::vector<AnfNodePtr> &input_nodes = graph->input_nodes();
+    for (size_t j = 0; j < input_nodes.size(); j++) {
+      const auto &input_node = input_nodes[j];
+      size_t output_num = AnfAlgo::GetOutputTensorNum(input_node);
+      for (size_t index = 0; index < output_num; ++index) {
+        if (AnfAlgo::OutputAddrExist(input_node, index) && !IsPersistentDeviceTensor(input_node)) {
+          AnfAlgo::SetOutputAddr(nullptr, index, input_node.get());
+        }
+      }
+    }
+  }
+}
 }  // namespace
 
 GraphScheduler &GraphScheduler::GetInstance() noexcept {
@@ -878,6 +900,8 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
       break;
     }
   }
+
+  RemoveNodeAddr(graph_compiler_info);
 
   actor_set->all_actors_ = SchedulerHelper::CollectActors(actor_set.get());
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphTransform, start_time_0,
@@ -1842,6 +1866,11 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
         auto cur_device_type = cur_device_tensor->GetDeviceType();
         if (front_node_position_temp_map.count(front_node_with_index) > 0 &&
             !cur_graph_parameter_store->CheckDeviceTensorHeter(real_outer_idx, real_inner_idx, cur_device_type)) {
+          continue;
+        }
+
+        // The device tensor is not hold by runtime.
+        if (cur_device_tensor->GetPtr() != nullptr) {
           continue;
         }
 

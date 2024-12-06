@@ -85,6 +85,64 @@ bool IsOnlyDependShape(const CNodePtr &kernel, size_t input_index) {
   }
   return false;
 }
+
+void SetParamFirstUsedKernelActors(size_t graph_input_index, size_t actor_input_index, KernelActorPtr *kernel_actor,
+                                   std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+
+  if (graph_input_index >= (*param_first_used_kernel_actors).size()) {
+    MS_LOG(EXCEPTION) << "Index " << graph_input_index << " is out of range size "
+                      << (*param_first_used_kernel_actors).size();
+  }
+  if ((*param_first_used_kernel_actors)[graph_input_index].first == nullptr) {
+    (*param_first_used_kernel_actors)[graph_input_index].first = *kernel_actor;
+    (*param_first_used_kernel_actors)[graph_input_index].second = actor_input_index;
+  }
+}
+
+void ParamFirstUsedKernelActorsToMap(
+  const std::vector<std::pair<KernelActorPtr, size_t>> &param_first_used_kernel_actors,
+  mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> *kernel_actor_to_graph_parameters_map) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  for (size_t i = 0; i < param_first_used_kernel_actors.size(); ++i) {
+    auto &kernel_actor = param_first_used_kernel_actors[i].first;
+    auto actor_input_idx = param_first_used_kernel_actors[i].second;
+    if (kernel_actor == nullptr) {
+      continue;
+    }
+    const auto &iter = (*kernel_actor_to_graph_parameters_map).find(kernel_actor);
+    if (iter == (*kernel_actor_to_graph_parameters_map).end()) {
+      (*kernel_actor_to_graph_parameters_map)[kernel_actor].emplace_back(actor_input_idx, i);
+    } else {
+      auto &param_map_list = iter->second;
+      param_map_list.push_back({actor_input_idx, i});
+    }
+  }
+}
+
+void RecordInputParamsWithoutUser(const KernelGraphPtr &graph,
+                                  const HashMap<size_t, ParameterInfo> &parameter_indexs_map,
+                                  const std::vector<size_t> &input_params_use_cnt,
+                                  std::set<std::pair<size_t, ParameterInfo>> *input_params_no_user) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(input_params_no_user);
+  const auto &input_nodes = graph->input_nodes();
+  size_t input_num = input_nodes.size();
+  for (size_t i = 0; i < input_num; ++i) {
+    if (input_params_use_cnt.at(i) == 0) {
+      const auto &parameter_index_iter = parameter_indexs_map.find(i);
+      if (parameter_index_iter != parameter_indexs_map.end()) {
+        input_params_no_user->emplace(i, parameter_index_iter->second);
+      }
+    }
+  }
+}
 }  // namespace
 void SuperKernelActor::Init() {
   MS_EXCEPTION_IF_NULL(graph_);
@@ -601,6 +659,19 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
   }
 }
 
+void SuperKernelActor::FreeInputParamWithoutUser(OpContext<DeviceTensor> *const context) {
+  if (enable_input_optimize_) {
+    for (const auto &iter : input_params_no_user_) {
+      auto device_tensor = FetchParameter(iter.second, context, device_contexts_[0], GetAID());
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      if (device_tensor->original_ref_count() != SIZE_MAX) {
+        // No user for this input in graph.
+        MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
+      }
+    }
+  }
+}
+
 bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) {
   size_t kernel_num = kernel_actors_.size();
   for (size_t i = 0; i < kernel_num; i++) {
@@ -722,6 +793,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
 
   // 1. Fetch input data for this kernel graph and correct current ref count for input device address.
   FetchInputDeviceTensor(context);
+  FreeInputParamWithoutUser(context);
 
   // 2. Allocate somas memory for graph
   if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
@@ -1218,44 +1290,6 @@ void SuperKernelActor::LinkKernelActors() {
   }
 }
 
-void SetParamFirstUsedKernelActors(size_t graph_input_index, size_t actor_input_index, KernelActorPtr *kernel_actor,
-                                   std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors) {
-  if (!EnableInputOptimize()) {
-    return;
-  }
-
-  if (graph_input_index >= (*param_first_used_kernel_actors).size()) {
-    MS_LOG(EXCEPTION) << "Index " << graph_input_index << " is out of range size "
-                      << (*param_first_used_kernel_actors).size();
-  }
-  if ((*param_first_used_kernel_actors)[graph_input_index].first == nullptr) {
-    (*param_first_used_kernel_actors)[graph_input_index].first = *kernel_actor;
-    (*param_first_used_kernel_actors)[graph_input_index].second = actor_input_index;
-  }
-}
-
-void ParamFirstUsedKernelActorsToMap(
-  const std::vector<std::pair<KernelActorPtr, size_t>> &param_first_used_kernel_actors,
-  mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> *kernel_actor_to_graph_parameters_map) {
-  if (!EnableInputOptimize()) {
-    return;
-  }
-  for (size_t i = 0; i < param_first_used_kernel_actors.size(); ++i) {
-    auto &kernel_actor = param_first_used_kernel_actors[i].first;
-    auto actor_input_idx = param_first_used_kernel_actors[i].second;
-    if (kernel_actor == nullptr) {
-      continue;
-    }
-    const auto &iter = (*kernel_actor_to_graph_parameters_map).find(kernel_actor);
-    if (iter == (*kernel_actor_to_graph_parameters_map).end()) {
-      (*kernel_actor_to_graph_parameters_map)[kernel_actor].emplace_back(actor_input_idx, i);
-    } else {
-      auto &param_map_list = iter->second;
-      param_map_list.push_back({actor_input_idx, i});
-    }
-  }
-}
-
 void SuperKernelActor::AnalyseNodesDependence(
   const HashMap<size_t, AnfNodePtr> &device_tensor_store_keys_map,
   const HashMap<size_t, ParameterInfo> &parameter_indexs_map,
@@ -1337,6 +1371,7 @@ void SuperKernelActor::AnalyseNodesDependence(
     }
   }
   ParamFirstUsedKernelActorsToMap(*param_first_used_kernel_actors, &kernel_actor_to_graph_parameters_map_);
+  RecordInputParamsWithoutUser(graph_, parameter_indexs_map, input_params_use_cnt_, &input_params_no_user_);
 }
 
 void SuperKernelActor::LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_kernel,
