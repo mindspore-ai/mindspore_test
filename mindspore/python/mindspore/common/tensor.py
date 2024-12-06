@@ -1537,30 +1537,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('broadcast_to')(self, shape)
 
-    def expand_as(self, x):
-        """
-        Expand the dimension of target tensor to the dimension of input tensor.
-
-        Args:
-            x (Tensor): The input tensor. The shape of the input tensor must obey
-                the broadcasting rule.
-
-        Returns:
-            Tensor, has the same dimension as input tensor.
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> from mindspore import dtype as mstype
-            >>> x = Tensor([1, 2, 3], dtype=mstype.float32)
-            >>> y = Tensor(np.ones((2, 3)), dtype=mstype.float32)
-            >>> output = x.expand_as(y)
-            >>> print(output)
-            [[1. 2. 3.]
-            [1. 2. 3.]]
-        """
-        return tensor_operator_registry.get('broadcast_to')(self, x.shape)
-
     def real(self):
         r"""
         For details, please refer to :func:`mindspore.ops.real`.

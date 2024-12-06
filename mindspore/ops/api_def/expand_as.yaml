@@ -1,0 +1,14 @@
+expand_as:
+  - op_yaml: expand_as_op.yaml
+    py_method: tensor_expand_as
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/expand_as_method.yaml
+    py_method: deprecated_tensor_expand_as
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

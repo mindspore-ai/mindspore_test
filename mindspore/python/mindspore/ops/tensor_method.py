@@ -70,7 +70,7 @@ from mindspore.ops.function.math_func import atan2
 # 16 bool
 
 # 17 broadcast_to
-
+from mindspore.ops.auto_generate import broadcast_to
 # 18 byte
 
 # 19 ceil
@@ -552,6 +552,13 @@ def tensor_exp(input):
 # 32 expand
 
 # 33 expand_as
+def tensor_expand_as(input, other):
+    return broadcast_to(input, other.shape)
+
+
+def deprecated_tensor_expand_as(input, x):
+    return broadcast_to(input, x.shape)
+
 
 # 34 flatten
 def deprecated_tensor_flatten(input, order='C', *, start_dim=0, end_dim=-1):
