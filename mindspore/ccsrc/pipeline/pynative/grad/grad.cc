@@ -951,6 +951,7 @@ void GradExecutor::ClearPreTopCell(const TopCellInfoPtr &new_top_cell, bool is_n
 
 void GradExecutor::CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info) {
   const auto &already_top_cell_id = top_cell()->already_run_cell_id();
+  const auto &obj_id_with_order = top_cell()->obj_id_with_grad_order();
   bool is_new_cell_id = false;
   // Get new cell id for common grad, even for dynamic shapes; the first step will come in too.
   if (top_cell_->need_compile_graph()) {
@@ -961,7 +962,7 @@ void GradExecutor::CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info
     // find when call GetTopCell
     auto it = std::find_if(
       already_run_top_cell_.begin(), already_run_top_cell_.end(),
-      [&already_top_cell_id](const auto &item) { return item.first.find(already_top_cell_id) != std::string::npos; });
+      [&obj_id_with_order](const auto &item) { return item.second->obj_id_with_grad_order() == obj_id_with_order; });
     if (it != already_run_top_cell_.end()) {
       already_run_top_cell_.erase(it);
     }
@@ -1117,7 +1118,7 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
   GetTopCellWithInputArgsRespectTo(grad, obj, args);
   MS_EXCEPTION_IF_NULL(top_cell_);
   MS_LOG(DEBUG) << "Run top cell " << top_cell_;
-
+  MS_LOG(DEBUG) << "Check size" << SizeofContainer();
   // Inputs args info must be update to current even no need compile graph again
   top_input_args_info_ = top_cell_->input_args_info();
   MS_EXCEPTION_IF_NULL(top_input_args_info_);
@@ -2306,6 +2307,17 @@ void GradExecutor::ClearBpropTask() const {
     GilReleaseWithCheck gil_release;
     bprop_queue->Clear();
   }
+}
+
+std::string GradExecutor::SizeofContainer() const {
+  std::ostringstream buf;
+  buf << "input_args_info_stack_ size: " << input_args_info_stack_.size();
+  buf << " top_cell_stack_ size: " << top_cell_stack_.size();
+  buf << " already_run_top_cell_ size: " << already_run_top_cell_.size();
+  buf << " pipeline_top_cell_map_ size: " << pipeline_top_cell_map_.size();
+  buf << " dynamic_inputs_cells_ size: " << dynamic_inputs_cells_.size();
+  buf << " need_gc_top_cell_list_ size: " << need_gc_top_cell_list_.size();
+  return buf.str();
 }
 
 void GradExecutor::WaitBpropTask() const {
