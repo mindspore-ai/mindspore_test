@@ -38,7 +38,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
         self.class_to_method_template = template.Template("{\"${class_name}\", \"${method_name}\"}")
         self.functional_map_template = template.Template("{\"${func_api_name}\", {${class_to_method_str}}},")
         self.k_prim_op_template = template.Template("prim::kPrim${camel_op_name}")
-        self.tensor_method_kwonlyargs_map_template = template.Template("{\"${op_name}\", {${kw_only_args_list}}},")
+        self.tensor_method_kwonlyargs_map_template = template.Template(
+            "{\"${camel_op_name}\", {${kw_only_args_list}}},")
         self.deprecated_method_decl_template = template.Template(
             "auto ${dep_op_name} = std::make_shared<prim::DeprecatedTensorMethod>(\"${dep_op_name}\", \"${op_name}\");")
         self.functional_method_map_template = template.Template("{\"${op_name}\", {${sort_func_method_list_str}}},")
@@ -327,12 +328,11 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                                                     sort_func_method_list_str=mint_func_list))
         return mint_func_decl_list
 
-    def _get_and_append_single_op_kw_only_args_list(self, func_api_name, func_protos, single_op_kw_only_args_list):
+    def _get_and_append_single_op_kw_only_args_list(self, func_protos, single_op_kw_only_args_list):
         """
         Extracts keyword-only arguments from a list of function prototypes and appends them to a list.
 
         Args:
-            func_api_name (str): The name of the function API.
             func_protos (list): A list of function prototypes.
             single_op_kw_only_args_list (list): The list to append the keyword-only arguments to.
 
@@ -340,11 +340,12 @@ class FunctionalMapCppGenerator(BaseGenerator):
             None
         """
         for func_proto in func_protos:
+            camel_op_name = pyboost_utils.get_op_name(func_proto.op_proto.op_name, func_proto.op_proto.op_class.name)
             kw_only_args = func_proto.kw_only_args
             if kw_only_args:
                 kw_only_args_list = ", ".join(f"\"{kw_arg}\"" for kw_arg in kw_only_args)
                 single_op_kw_only_args_list.append(
-                    self.tensor_method_kwonlyargs_map_template.replace(op_name=func_api_name,
+                    self.tensor_method_kwonlyargs_map_template.replace(camel_op_name=camel_op_name,
                                                                        kw_only_args_list=kw_only_args_list)
                 )
 
@@ -359,9 +360,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
             list: A list of formatted strings representing the keyword-only arguments.
         """
         tensor_method_kw_only_args_list = []
-        for func_api_name, func_protos in tensor_method_protos_data.items():
-            self._get_and_append_single_op_kw_only_args_list(func_api_name,
-                                                             func_protos,
+        for _, func_protos in tensor_method_protos_data.items():
+            self._get_and_append_single_op_kw_only_args_list(func_protos,
                                                              tensor_method_kw_only_args_list)
         return tensor_method_kw_only_args_list
 
@@ -377,14 +377,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
             list: A list of formatted strings representing the keyword-only arguments.
         """
         mint_kw_only_args_list = []
-        for func_api_name, func_protos in mint_func_protos_data.items():
-            self._get_and_append_single_op_kw_only_args_list(func_api_name,
-                                                             func_protos,
+        for _, func_protos in mint_func_protos_data.items():
+            self._get_and_append_single_op_kw_only_args_list(func_protos,
                                                              mint_kw_only_args_list)
-
-            if mint_kw_only_args_list and func_api_name in alias_func_mapping:
-                for alias_func_name in alias_func_mapping[func_api_name]:
-                    self._get_and_append_single_op_kw_only_args_list(alias_func_name,
-                                                                     func_protos,
-                                                                     mint_kw_only_args_list)
         return mint_kw_only_args_list
