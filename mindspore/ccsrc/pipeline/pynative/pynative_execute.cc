@@ -211,6 +211,7 @@ void PyNativeExecutor::Init() {
 }
 
 void PyNativeExecutor::Sync() const {
+  GilReleaseWithCheck release_gil;
   forward_executor()->Sync();
   runtime::ProfilerAnalyzer::GetInstance().EndStep();
   runtime::ProfilerAnalyzer::GetInstance().StartStep();
