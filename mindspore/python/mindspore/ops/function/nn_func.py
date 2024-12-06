@@ -8839,8 +8839,7 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
         ``Ascend``
 
     Examples:
-        >>> from mindspore.ops.function.nn_func import prompt_flash_attention
-        >>> from mindspore import Tensor
+        >>> from mindspore import Tensor, ops
         >>> import numpy as np
         >>> B = 1
         >>> N = 16
@@ -8849,7 +8848,7 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
         >>> query = Tensor(np.ones((B, N, S, D), dtype=np.float16))
         >>> key = Tensor(np.ones((B, N, S, D), dtype=np.float16))
         >>> value = Tensor(np.ones((B, N, S, D), dtype=np.float16))
-        >>> out = prompt_flash_attention(query, key, value, None, None, None, None, None, None, None, None,
+        >>> out = ops.prompt_flash_attention(query, key, value, None, None, None, None, None, None, None, None,
                                              None, N, input_layout='BNSD')
         >>> print(out.shape)
         (1, 16, 256, 16)

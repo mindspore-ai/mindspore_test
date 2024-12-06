@@ -1,7 +1,7 @@
-mindspore.nn.SyncBatchNorm
-===========================
+mindspore.mint.nn.SyncBatchNorm
+=================================
 
-.. py:class:: mindspore.nn.SyncBatchNorm(num_features, eps=1e-5, momentum=0.1, affine=True, track_running_stats=True, process_groups=None, dtype=None)
+.. py:class:: mindspore.mint.nn.SyncBatchNorm(num_features, eps=1e-5, momentum=0.1, affine=True, track_running_stats=True, process_groups=None, dtype=None)
 
     在N维输入上进行跨设备同步批归一化（Batch Normalization，BN）。
 
