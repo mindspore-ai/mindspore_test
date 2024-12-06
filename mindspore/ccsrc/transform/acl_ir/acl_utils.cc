@@ -231,7 +231,21 @@ void AclAttrMaker::SetAttr(const string &attr_name, const std::vector<::ge::Data
   }
 }
 
-AclRunner::~AclRunner() { Reset(); }
+AclRunner::~AclRunner() {
+  (void)std::for_each(acl_param_.input_desc.begin(), acl_param_.input_desc.end(),
+                      [&](const aclTensorDesc *desc) { CALL_ASCEND_API(aclDestroyTensorDesc, desc); });
+  (void)std::for_each(acl_param_.input_buffer.begin(), acl_param_.input_buffer.end(),
+                      [&](const aclDataBuffer *dataBuffer) { CALL_ASCEND_API(aclDestroyDataBuffer, dataBuffer); });
+  (void)std::for_each(acl_param_.output_desc.begin(), acl_param_.output_desc.end(),
+                      [&](const aclTensorDesc *desc) { CALL_ASCEND_API(aclDestroyTensorDesc, desc); });
+  (void)std::for_each(acl_param_.output_buffer.begin(), acl_param_.output_buffer.end(),
+                      [&](const aclDataBuffer *dataBuffer) { CALL_ASCEND_API(aclDestroyDataBuffer, dataBuffer); });
+
+  acl_param_.input_desc.clear();
+  acl_param_.input_buffer.clear();
+  acl_param_.output_desc.clear();
+  acl_param_.output_buffer.clear();
+}
 
 void AclRunner::Reset() {
   (void)std::for_each(acl_param_.output_desc.begin(), acl_param_.output_desc.end(),
