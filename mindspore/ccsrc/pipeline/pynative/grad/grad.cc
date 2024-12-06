@@ -1725,10 +1725,12 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   (void)first_grad_fg->transforms().erase(kGrad);
   op_run_info->op_grad_info->out_value = out_value;
   op_run_info->op_grad_info->out_abs = first_grad_fg->output()->abstract();
+  jit()->set_eliminate_forward(false);
   auto resource = std::make_shared<pipeline::Resource>();
   auto opt = opt::Optimizer::MakeEmptyOptimizer(resource);
   opt->set_is_first_order_j(false);
   auto grad_graph = ad::Grad(first_grad_fg, opt);
+  jit()->set_eliminate_forward(true && common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1");
   MS_EXCEPTION_IF_NULL(grad_graph);
   MS_LOG(INFO) << "Finish using adgrad generate second order graph of graph: " << first_grad_fg->ToString();
   auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, use_dynamic_shape_process);
