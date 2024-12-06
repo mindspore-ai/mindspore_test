@@ -22,6 +22,7 @@
 #include "utils/ms_utils.h"
 #include "ir/tensor.h"
 #include "transform/acl_ir/acl_helper.h"
+#include "transform/acl_ir/op_api_exec.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
 
@@ -65,5 +66,12 @@ std::string AclnnKernelMod::GetCommName(const std::string &group) {
   return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
 }
 
+AclnnKernelMod::~AclnnKernelMod() {
+  auto release_executor_func = transform::OpApiDefaultResource::GetInstance().release_executor_func();
+  if (release_executor_func != nullptr) {
+    (void)std::for_each(hash_cache_.begin(), hash_cache_.end(),
+                        [&](CacheTuple &item) { release_executor_func(std::get<kIndex1>(item)); });
+  }
+}
 }  // namespace kernel
 }  // namespace mindspore
