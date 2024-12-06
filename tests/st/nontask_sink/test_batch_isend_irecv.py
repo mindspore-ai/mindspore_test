@@ -75,4 +75,5 @@ def test_hccl_batchisendirecv_func_8p():
 
     p2p_op_list = [send_op, recv_op]
     output = net(p2p_op_list)
+    ms.hal.synchronize()
     assert np.allclose(output[1].asnumpy(), expect_output)
