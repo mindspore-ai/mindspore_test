@@ -183,6 +183,7 @@ void SeqpipeScheduler::GetBorderNode() {
       if (node.border->HasPrimalAttr(SEQ_CHUNK)) {
         node.seq_chunk = GetValue<int64_t>(node.border->GetPrimalAttr(SEQ_CHUNK));
       }
+      node.border->AddAttr(SEQ_CHUNK, MakeValue<int64_t>(node.seq_chunk));
     }
   };
   set_seq_chunk(fwd_begin_);
@@ -222,8 +223,12 @@ void SeqpipeScheduler::SpecialControl(const std::pair<BorderStruct, BorderStruct
 }
 
 void SeqpipeScheduler::ExtractDataStruct() {
-  seq_chunk_size_ = int64_t(fwd_cell_.size() / micro_size_ / chunk_num_);
-  fp_block_size_ = fwd_cell_.size();
+  auto max_seq = std::max_element(fwd_cell_.begin(), fwd_cell_.end(),
+                                  [](const auto &a, const auto &b) { return a.seq_chunk < b.seq_chunk; });
+  if (max_seq != fwd_cell_.end()) {
+    seq_chunk_size_ = max_seq->seq_chunk + 1;
+  }
+  fp_block_size_ = seq_chunk_size_ * micro_size_ * chunk_num_;
   sorted_fwd_begin_ = BorderMap(fwd_begin_);
   sorted_fwd_end_ = BorderMap(fwd_end_);
   sorted_fwd_cell_ = BorderMap(fwd_cell_);
