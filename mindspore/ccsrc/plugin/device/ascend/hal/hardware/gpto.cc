@@ -35,11 +35,13 @@
 #include "op_def/math_ops.h"
 #include "op_def/conv_pool_op_name.h"
 #include "op_def/ascend_op_name.h"
+#include "op_def/other_op_name.h"
 #include "utils/anf_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/misc.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
+#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
@@ -57,7 +59,7 @@ std::pair<bool, std::string> GetDebugConfig() {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto enable_save_graphs =
-    (context_ptr->CanDump(kIntroductory)) || (common::GetEnv("MS_ENABLE_GPTO_VERIFICATION") != "");
+    (context_ptr->CanDump(kIntroductory)) || (common::GetEnv("MS_ENABLE_GPTO_VERIFICATION") == "1");
   auto save_graphs_path = context_ptr->GetSaveGraphsPath();
   if (save_graphs_path.empty()) {
     save_graphs_path = ".";
@@ -65,16 +67,16 @@ std::pair<bool, std::string> GetDebugConfig() {
   return std::make_pair(enable_save_graphs, save_graphs_path);
 }
 
-std::vector<std::pair<CNodePtr, CNodePtr>> ScheduleToEvents(const SchedulingOutput &schedule) {
-  std::vector<std::pair<CNodePtr, CNodePtr>> events;  // to return
-  // Distinguish types and sort
+size_t ScheduleToEvents(const SchedulingOutput &schedule) {
+  size_t count = 0;
+
   std::set<Interval, SortByStart> tasks_start;
-  std::set<Interval, SortByEnd> tasks_end;
+  std::set<Interval, SortByEndMin> tasks_end;
   for (const auto &task_time : schedule.task_times) {
     tasks_start.insert(task_time);
     tasks_end.insert(task_time);
   }
-  // Main loop
+
   for (auto it = tasks_start.begin(); it != tasks_start.end(); ++it) {
     tasks_end.erase(*it);
     // Dismiss overlapping tasks: save min end value of non-overlapping task to the right
@@ -93,12 +95,44 @@ std::vector<std::pair<CNodePtr, CNodePtr>> ScheduleToEvents(const SchedulingOutp
     // Add events to immediate right neighborhood
     for (; it1->start < min_end_value && it1 != tasks_start.end(); ++it1) {
       if (it->task->gpto_type() != it1->task->gpto_type()) {
-        events.emplace_back(it->task->cnode(), it1->task->cnode());
+        it1->task->recv_events().insert(it->task);
+        MS_LOG(DEBUG) << "GPTO scheduling event from " << it->task->id() << " to " << it1->task->id();
+        count++;
       }
     }
   }
-  MS_LOG(INFO) << "Generated " << events.size() << " events";
-  return events;
+  MS_LOG(INFO) << "Generated " << count << " events to impose GPTO schedule";
+  return count;
+}
+
+size_t MemorySafetyEvents(const SchedulingOutput &schedule) {
+  size_t count = 0;
+
+  std::set<Interval, SortByEndMax> tasks_end;
+  for (const auto &task_time : schedule.task_times) {
+    tasks_end.insert(task_time);
+  }
+
+  for (auto it = tasks_end.begin(); it != tasks_end.end(); ++it) {
+    if (it->task->gpto_type() == 0) {
+      continue;
+    }
+    for (auto it1 = std::next(it); it1 != tasks_end.end(); ++it1) {
+      if (Overlap(it->start, it->end, it1->start, it1->end)) {
+        continue;
+      }
+      if (it1->task->gpto_type() == 0) {
+        if (it->task->recv_events().find(it1->task) == it->task->recv_events().end()) {
+          it->task->recv_events().insert(it1->task);
+          count++;
+          MS_LOG(DEBUG) << "Memory safety event from " << it1->task->id() << " to " << it->task->id();
+        }
+        break;
+      }
+    }
+  }
+  MS_LOG(INFO) << "Generated " << count << " events to ensure dynamic memory safety";
+  return count;
 }
 
 // Sorting for tasks
@@ -317,17 +351,22 @@ bool SortByCostMValue(const GptoTaskPtr &task1, const GptoTaskPtr &task2) {
 }
 
 // Get PEs description
-std::map<GptoTaskType, int32_t> GetPEs() {
+std::map<GptoTaskType, int32_t> GetPEs([[maybe_unused]] std::map<std::string, size_t> *group_to_id) {
   std::map<GptoTaskType, int32_t> new_pem;
-  if (gpto_mode == kSingle) {
-    new_pem[kComp] = 1;
+  if (gpto_mode == kComp) {
+    new_pem[kVec] = 1;
   } else if (gpto_mode == kCompComm) {
-    new_pem[kComp] = 1;
+    new_pem[kVec] = 1;
     new_pem[kComm] = 1;
-  } else if (gpto_mode == kMulti) {
-    new_pem[kComp] = 1;
-    new_pem[kComm] = 1;
+  } else if (gpto_mode == kCompCubeComm) {
+    new_pem[kVec] = 1;
     new_pem[kCube] = 1;
+    new_pem[kComm] = 1;
+  } else if (gpto_mode == kCompCommGroup) {
+    new_pem[kVec] = 1;
+    for (auto &group : *group_to_id) {
+      new_pem[group.second] = 1;
+    }
   }
   return new_pem;
 }
@@ -432,7 +471,7 @@ void ComputePredComm(const std::vector<GptoTaskPtr> &tasks) {
   for (auto &task : tasks) {
     task->set_pred_comm(0);
     for (auto &predecessor : task->parents()) {
-      if (predecessor.lock()->gpto_type() == kComm) {
+      if (predecessor.lock()->gpto_type() >= kComm) {
         task->set_pred_comm(task->pred_comm() + 1);
       }
     }
@@ -476,6 +515,11 @@ Time LowerBoundBottomLevel(const std::vector<GptoTaskPtr> &tasks) {
     max_bottom_level = std::max(max_bottom_level, task->bottom_level());
   }
   return max_bottom_level;
+}
+
+Time TotalTime(const std::vector<GptoTaskPtr> &tasks) {
+  return std::accumulate(tasks.begin(), tasks.end(), static_cast<Time>(0),
+                         [](Time acc, const auto &task) { return acc + task->cost(); });
 }
 
 Time LowerBoundPEs(const std::vector<GptoTaskPtr> &tasks,
@@ -555,9 +599,29 @@ constexpr std::string_view TASK_SORT_NAMES[] = {"SortByCostMax",
 
 constexpr std::string_view PE_NAME_SORT[] = {"SortByLoad", "SortByValidStart"};
 
-SchedulingOutput MemAwareScheduler(const SchedulingInput &input) {
+bool SkipAlgorithm(size_t task_sort, size_t pes_sort) {
+  if (common::GetEnv("MS_ENABLE_GPTO_ALGO") != "" &&
+      common::GetEnv("MS_ENABLE_GPTO_ALGO") != TASK_SORT_NAMES[task_sort]) {
+    return true;
+  }
+
+  if (gpto_mode == kComp &&
+      (TASK_SORT_NAMES[task_sort] == "SortByPredComm" || TASK_SORT_NAMES[task_sort] == "SortByPredCommDepth")) {
+    return true;
+  }
+  if (gpto_mode != kCompCubeComm && TASK_SORT_NAMES[task_sort] == "SortByPredCube") {
+    return true;
+  }
+  if (pes_sort == static_cast<size_t>(PEsSort::kSortByValidStart)) {  // same solution if 1 PE per type
+    return true;
+  }
+  return false;
+}
+
+SchedulingOutput MemAwareScheduler(const SchedulingInput &input,
+                                   [[maybe_unused]] std::map<std::string, size_t> *group_to_id) {
   const std::vector<GptoTaskPtr> *tasks = &(input.tasks);
-  auto type_to_num_cores_map = GetPEs();
+  auto type_to_num_cores_map = GetPEs(group_to_id);
   SchedulingOutput output{{}, SIZE_MAX, MEMORY_LIMIT};
   output.task_times.reserve(input.tasks.size());
 
@@ -575,10 +639,10 @@ SchedulingOutput MemAwareScheduler(const SchedulingInput &input) {
   // Preprocessing: values computation for necessary sorting
   ComputeBottomLevelAndWeightedLength(*tasks);
   // ComputeDepthAndTopLevel(*tasks); // already called earlier, necessary for nested conditional blocks
-  if (gpto_mode == kCompComm) {
+  if (gpto_mode == kCompComm || gpto_mode == kCompCubeComm || gpto_mode == kCompCommGroup) {
     ComputePredComm(*tasks);
   }
-  if (gpto_mode == kMulti) {
+  if (gpto_mode == kCompCubeComm) {
     ComputePredCube(*tasks);
   }
   ComputePostOrder(*tasks);
@@ -595,22 +659,9 @@ SchedulingOutput MemAwareScheduler(const SchedulingInput &input) {
   MS_LOG(INFO) << "Start looping multiple scheduling functions";
   for (size_t task_sort = 0; task_sort < static_cast<size_t>(kNumTaskSort); ++task_sort) {
     for (size_t pes_sort = 0; pes_sort < static_cast<size_t>(PEsSort::kNumPEsSort); ++pes_sort) {
-      if (common::GetEnv("MS_ENABLE_GPTO_ALGO") != "") {  // force specific algorithm
-        if (common::GetEnv("MS_ENABLE_GPTO_ALGO") != TASK_SORT_NAMES[task_sort]) {
-          continue;
-        }
-      }
-      if (gpto_mode != kCompComm &&
-          (TASK_SORT_NAMES[task_sort] == "SortByPredComm" || TASK_SORT_NAMES[task_sort] == "SortByPredCommDepth")) {
+      if (SkipAlgorithm(task_sort, pes_sort)) {
         continue;
       }
-      if (gpto_mode != kMulti && TASK_SORT_NAMES[task_sort] == "SortByPredCube") {
-        continue;
-      }
-      if (pes_sort == static_cast<size_t>(PEsSort::kSortByValidStart)) {  // same solution if 1 PE per type
-        continue;
-      }
-
       MS_LOG(INFO) << TASK_SORT_NAMES[task_sort] << " and " << PE_NAME_SORT[pes_sort];
       SchedulingOutput solution = MemAwareSchedulerCore(*tasks, type_to_num_cores_map, TASK_SORT[task_sort],
                                                         (pes_sort == static_cast<size_t>(PEsSort::kSortByLoad)));
@@ -667,12 +718,17 @@ void PrintBestSolutionStats(const SchedulingOutput &output, const std::vector<Gp
                             const std::map<GptoTaskType, int32_t> &type_to_num_cores_map,
                             const std::string &best_solution,
                             const std::pair<std::string, Memory> &best_memory_solution) {
+  const size_t kPrecision = 5;
   MS_LOG(INFO) << "Memory-aware scheduler with memory limit " << MEMORY_LIMIT;
   MS_LOG(INFO) << "Best solution is: " << best_solution;
   MS_LOG(INFO) << "Makespan of best solution is " << output.makespan;
   MS_LOG(INFO) << "Bottom level lower bound is " << LowerBoundBottomLevel(tasks);
   MS_LOG(INFO) << "Max type lower bound is " << LowerBoundPEs(tasks, type_to_num_cores_map);
-  const size_t kPrecision = 5;
+  const Time total_time = TotalTime(tasks);
+  MS_LOG(INFO) << "Speedup upper bound is " << std::setprecision(kPrecision)
+               << 1.0 * total_time /
+                    std::max(LowerBoundBottomLevel(tasks), LowerBoundPEs(tasks, type_to_num_cores_map));
+  MS_LOG(INFO) << "Speedup of best solution is " << std::setprecision(kPrecision) << 1.0 * total_time / output.makespan;
   const size_t kHundred = 100;
   MS_LOG(INFO) << "Solution relative error is " << std::setprecision(kPrecision)
                << ((output.makespan /
@@ -1306,39 +1362,38 @@ std::tuple<GptoTaskPtr, Time, PeId> ScheduleTaskLoad(
         } else {  // (*can_start)[selected_id] > idle_it->second (not allowed to place here)
           continue;
         }
-        if (idle_it->second - start_time >= selected_task->cost()) {  // task time fits in idle window
-          if (MemoryViolated(selected_task, start_time, &cur_mem_peak, &last_switch_subgraph, &exists_subgraph)) {
-            continue;
+        if (idle_it->second - start_time < selected_task->cost() ||
+            MemoryViolated(selected_task, start_time, &cur_mem_peak, &last_switch_subgraph, &exists_subgraph)) {
+          continue;
+        }
+        // Place task in idle window here
+        // Save info to return: start task at time idle_it->first
+        PeId selected_pe = (*pe_it).id;
+        Time selected_time = start_time;
+        // Update idle list
+        if (!case_flag) {
+          if (idle_it->second - idle_it->first ==
+              selected_task->cost()) {  // whole idle interval is filled in, erase it
+            mut_pe.idle.erase(idle_it);
+          } else {  // idle_it->second - idle_it->first > selected_task->cost()
+            idle_it->first += selected_task->cost();
           }
-          // Place task in idle window here
-          // Save info to return: start task at time idle_it->first
-          PeId selected_pe = (*pe_it).id;
-          Time selected_time = start_time;
-          // Update idle list
-          if (!case_flag) {
-            if (idle_it->second - idle_it->first ==
-                selected_task->cost()) {  // whole idle interval is filled in, erase it
-              mut_pe.idle.erase(idle_it);
-            } else {  // idle_it->second - idle_it->first > selected_task->cost()
-              idle_it->first += selected_task->cost();
-            }
-          } else {  // case_flag = true, idle interval is broken into two
-                    // sub-blocks [idle_it->first, can_start] and
-                    // (maybe empty) [can_start + cost, idle_it->second]
-            Time upper = idle_it->second;
-            idle_it->second = (*can_start)[selected_id];
-            if (upper - (*can_start)[selected_id] - selected_task->cost() > 0) {
-              std::pair<Time, Time> new_idle = std::make_pair((*can_start)[selected_id] + selected_task->cost(), upper);
-              mut_pe.idle.emplace(std::next(idle_it), new_idle);
-            }
+        } else {  // case_flag = true, idle interval is broken into two
+                  // sub-blocks [idle_it->first, can_start] and
+                  // (maybe empty) [can_start + cost, idle_it->second]
+          Time upper = idle_it->second;
+          idle_it->second = (*can_start)[selected_id];
+          if (upper - (*can_start)[selected_id] - selected_task->cost() > 0) {
+            std::pair<Time, Time> new_idle = std::make_pair((*can_start)[selected_id] + selected_task->cost(), upper);
+            mut_pe.idle.emplace(std::next(idle_it), new_idle);
           }
-          // Update load, PEs, and memory peaks
-          auto updated_PE = PEs.extract(pe_it);
-          updated_PE.value().load += selected_task->cost();
-          PEs.insert(std::move(updated_PE));
-          return std::make_tuple(selected_task, selected_time, selected_pe);
-        }  // end-if task fits in idle window
-      }    // end-for idle windows
+        }
+        // Update load, PEs, and memory peaks
+        auto updated_PE = PEs.extract(pe_it);
+        updated_PE.value().load += selected_task->cost();
+        PEs.insert(std::move(updated_PE));
+        return std::make_tuple(selected_task, selected_time, selected_pe);
+      }  // end-for idle windows
     }
   }
   return std::make_tuple(nullptr, 0, 0);
@@ -1624,11 +1679,11 @@ bool VerifyMemory(const std::vector<GptoTaskPtr> &tasks, std::map<Time, Memory> 
 
 void LogSchedulingOutput(const SchedulingInput &scheduling_input, const SchedulingOutput &output,
                          const std::unordered_map<CNodePtr, GptoTaskPtr> &cnode_to_task,
-                         const std::vector<std::pair<CNodePtr, CNodePtr>> &events, const KernelGraphPtr &kernel_graph,
-                         const std::set<GptoTensorPtr, GptoTensorIdSort> &tensors, const Memory memory_lower_bound,
+                         const KernelGraphPtr &kernel_graph, const std::set<GptoTensorPtr, GptoTensorIdSort> &tensors,
+                         const Memory memory_lower_bound, [[maybe_unused]] std::map<std::string, size_t> *group_to_id,
                          const std::string &path) {
   auto lower_makespan =
-    std::max(LowerBoundBottomLevel(scheduling_input.tasks), LowerBoundPEs(scheduling_input.tasks, GetPEs()));
+    std::max(LowerBoundBottomLevel(scheduling_input.tasks), LowerBoundPEs(scheduling_input.tasks, GetPEs(group_to_id)));
   const size_t graph_id = kernel_graph->graph_id();
   std::stringstream ss;
   std::ostringstream oss;
@@ -1645,12 +1700,12 @@ void LogSchedulingOutput(const SchedulingInput &scheduling_input, const Scheduli
         << ", pe=" << std::to_string(interval.pid) << ", subgraph=" << std::to_string(interval.task->subgraph_id())
         << ", subgraph_parent=" << std::to_string(interval.task->subgraph_id_parent()) << "\n";
   }
-  // Print events (scheduling dependencies)
-  for (const auto &event : events) {
-    const auto &source = event.first;
-    const auto &dst = event.second;
-    oss << "EVENT " << std::to_string(cnode_to_task.at(source)->id()) << " "
-        << std::to_string(cnode_to_task.at(dst)->id()) << "\n";
+  // Print events
+  for (const auto &interval : intervals) {
+    const auto &dst_id = interval.task->id();
+    for (const auto &source : interval.task->recv_events()) {
+      oss << "EVENT " << std::to_string(source.lock()->id()) << " " << std::to_string(dst_id) << "\n";
+    }
   }
 
   // Print makespan and memory bounds
@@ -1784,15 +1839,39 @@ bool IsCubeKernel(const CNodePtr &node) {
   return kCubeKernelSet.find(op_name) != kCubeKernelSet.end();
 }
 
-GptoTaskType GetType(const CNodePtr cnode) {
-  if (gpto_mode == kSingle) {
-    return kComp;
-  } else if (common::AnfAlgo::IsCommunicationOp(cnode)) {
-    return kComm;
+GptoTaskType GetType(mindspore::device::DeviceResManager *device_res_manager, const CNodePtr cnode,
+                     [[maybe_unused]] std::map<std::string, size_t> *group_to_id) {
+  if (gpto_mode == kComp) {
+    return kVec;
   } else if (gpto_mode == kCompComm) {
-    return kComp;
-  } else {  // gpto_mode == kMulti && cnode is not KComm
-    return IsCubeKernel(cnode) ? kCube : kComp;
+    return common::AnfAlgo::IsCommunicationOp(cnode) ? kComm : kVec;
+  } else if (gpto_mode == kCompCubeComm) {
+    if (common::AnfAlgo::IsCommunicationOp(cnode)) {
+      return kComm;
+    } else {
+      return IsCubeKernel(cnode) ? kCube : kVec;
+    }
+  } else {  // kCompCommGroup
+    if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
+      return kVec;
+    } else {
+      const auto prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(prim);
+      const auto group_value = prim->GetAttr(kAttrGroup);
+      if (group_value == nullptr) {
+        MS_LOG(EXCEPTION) << "Group value is nullptr, node: " << cnode->fullname_with_scope();
+      }
+      if (group_value->isa<StringImm>()) {
+        const auto &group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+        size_t comm_group = device_res_manager->GetCommunicationStreamIDByGroup(group_name);
+        if (group_to_id->find(group_name) == group_to_id->end()) {
+          (*group_to_id)[group_name] = comm_group;
+        }
+        return comm_group;
+      } else {
+        return kVec;
+      }
+    }
   }
 }
 
@@ -1867,6 +1946,7 @@ void ExtractOutputWorkspaceTensors(const SchedulingInput &scheduling_input, cons
       tensor_count++;
     }
   }
+  MAX_TENSOR_ID = tensor_count - 1;
 }
 
 void CleanWorkspace(CNodePtr pre_node, const GptoTaskPtr &pre_task, const GptoTaskPtr &task) {
@@ -1979,7 +2059,6 @@ void ExtractRealTensors(const SchedulingInput &scheduling_input,
   ExtractOutputWorkspaceTensors(scheduling_input, tasks);
 
   // Looping over tasks to obtain input tensors after all outputs have been saved
-  PARAMETER_SIZE = 0;
   static std::unordered_set<void *> parameter_set;
   for (auto &task : tasks) {
     const auto &kernel = task->cnode();
@@ -2146,17 +2225,20 @@ size_t CalculateCommCost(const CNodePtr &cnode) {
   return cost;
 }
 
-void LogBaseline(const SchedulingInput &input, std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_gpto_map_ptr,
-                 const KernelGraphPtr &kernel_graph, const std::string &path) {
+std::pair<Time, Memory> LogBaseline(std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_gpto_map_ptr,
+                                    const KernelGraphPtr &kernel_graph, const std::string &path, bool print_log_file) {
   MS_EXCEPTION_IF_NULL(cnode_to_task_gpto_map_ptr);
 
   const size_t graph_id = kernel_graph->graph_id();
-  std::stringstream ss;
   std::ostringstream oss;
   std::string filename;
-  ss << kernel_graph;
-  filename = path + std::string("/") + std::string("gpto_baseline_") + std::to_string(graph_id) + std::string("_") +
-             ss.str() + std::string(".log");
+
+  if (print_log_file) {
+    std::stringstream ss;
+    ss << kernel_graph;
+    filename = path + std::string("/") + std::string("gpto_baseline_") + std::to_string(graph_id) + std::string("_") +
+               ss.str() + std::string(".log");
+  }
 
   std::unordered_map<GptoTaskId, Time> taskid_to_end_value;
   std::unordered_map<GptoTaskId, Time> taskid_to_start_value;
@@ -2202,13 +2284,78 @@ void LogBaseline(const SchedulingInput &input, std::unordered_map<CNodePtr, Gpto
     if (current_task_end > makespan) {
       makespan = taskid_to_end_value[current_task->id()];
     }
-    oss << "TASK id=" << std::to_string(current_task->id()) << ", name=" << current_task->name()
-        << ", type=" << std::to_string(current_task->gpto_type())
-        << ", start=" << std::to_string(taskid_to_start_value[current_task->id()])
-        << ", end=" << std::to_string(current_task_end) << "\n";
+
+    if (print_log_file) {
+      oss << "TASK id=" << std::to_string(current_task->id()) << ", name=" << current_task->name()
+          << ", type=" << std::to_string(current_task->gpto_type()) << ", cost=" << std::to_string(current_task->cost())
+          << ", start=" << std::to_string(taskid_to_start_value[current_task->id()])
+          << ", end=" << std::to_string(current_task_end) << "\n";
+    }
   }
   MS_LOG(INFO) << "Makespan estimate of baseline is " + std::to_string(makespan);
-  (void)Common::SaveStringToFile(filename, oss.str());
+
+  if (print_log_file) {
+    (void)Common::SaveStringToFile(filename, oss.str());
+  }
+
+  Memory memory =
+    MemoryEstimateBaseline(execution_order, cnode_to_task_gpto_map_ptr, &taskid_to_start_value, &taskid_to_end_value);
+  return std::make_pair(makespan, memory);
+}
+
+Memory MemoryEstimateBaseline(const std::vector<CNodePtr> &execution_order,
+                              std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_gpto_map_ptr,
+                              std::unordered_map<GptoTaskId, Time> *taskid_to_start_value_ptr,
+                              std::unordered_map<GptoTaskId, Time> *taskid_to_end_value_ptr) {
+  std::map<Time, Memory> mem_peak;
+  Memory graph_output_mem = 0;
+  for (size_t i = 0; i < execution_order.size(); i++) {
+    const auto &cnode = execution_order[i];
+    GptoTaskPtr task = (*cnode_to_task_gpto_map_ptr)[cnode];
+    mem_peak[(*taskid_to_start_value_ptr)[task->id()]] = 0;
+    mem_peak[(*taskid_to_end_value_ptr)[task->id()]] = 0;
+  }
+
+  for (size_t i = 0; i < execution_order.size(); i++) {
+    const auto &cnode = execution_order[i];
+    const GptoTaskPtr task = (*cnode_to_task_gpto_map_ptr)[cnode];
+    std::vector<GptoTensorPtr> tensors;
+    tensors.reserve(task->out_tensors().size() + task->workspace_tensors().size());
+    std::copy(task->out_tensors().begin(), task->out_tensors().end(), std::back_inserter(tensors));
+    std::copy(task->workspace_tensors().begin(), task->workspace_tensors().end(), std::back_inserter(tensors));
+    for (auto &tensor : tensors) {
+      const auto &start = (*taskid_to_start_value_ptr)[task->id()];
+      Time end = 0;
+      if (tensor->consumers().size() > 0) {
+        for (auto &consumer : tensor->consumers()) {
+          end = std::max(end, (*taskid_to_end_value_ptr)[consumer.lock()->id()]);
+        }
+      } else {
+        end = (*taskid_to_end_value_ptr)[task->id()];
+      }
+      if (tensor->type() == kGraphOutput) {
+        graph_output_mem += tensor->weight();
+      }
+      for (auto &time_mem : mem_peak) {
+        if ((start <= time_mem.first && time_mem.first < end && tensor->type() != kGraphOutput) ||
+            (start <= time_mem.first && tensor->type() == kGraphOutput)) {
+          mem_peak[time_mem.first] += tensor->weight();
+        }
+      }
+    }
+  }
+  mem_peak.rbegin()->second -= graph_output_mem;
+  if (mem_peak.rbegin()->second > 0) {
+    MS_LOG(WARNING) << "Memory peak " << mem_peak.rbegin()->second << " at makespan time " << mem_peak.rbegin()->first;
+  }
+
+  Memory memory = std::max_element(mem_peak.begin(), mem_peak.end(),
+                                   [](const std::pair<Time, Memory> &a, const std::pair<Time, Memory> &b) -> bool {
+                                     return a.second < b.second;
+                                   })
+                    ->second;
+  MS_LOG(INFO) << "Memory estimate of baseline is " << memory;
+  return memory;
 }
 
 void InitializeTaskInlineCondition(const CNodePtr &cnode, GptoTaskPtr *task,
@@ -2315,12 +2462,35 @@ void UpdateTasksInlineCondition(std::unordered_map<CNodePtr, GptoTaskPtr> *cnode
   }
 }
 
-SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &kernel_graph,
-                                       std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr) {
+std::unordered_map<std::string, Time> GetProfCost() {
+  std::unordered_map<std::string, Time> profiling_map;
+  std::ifstream file;
+  file.open(common::GetEnv("MS_ENABLE_GPTO_PROFILING_AS_COST"));
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream s(line);
+    std::string field;
+    std::vector<std::string> fields;
+    while (getline(s, field, ',')) {
+      fields.push_back(field);
+    }
+    if (fields[kIndex0] == "name") {
+      continue;
+    }
+    profiling_map[fields[kIndex0]] = stoi(fields[kIndex1]);
+  }
+  return profiling_map;
+}
+
+SchedulingInput ExtractSchedulingInput(mindspore::device::DeviceResManager *device_res_manager,
+                                       const KernelGraphPtr &kernel_graph,
+                                       std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr,
+                                       [[maybe_unused]] std::map<std::string, size_t> *group_to_id) {
   MS_EXCEPTION_IF_NULL(cnode_to_task_map_ptr);
   SchedulingInput scheduling_input;  // to fill in and return
   std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> switch_attribute_ids;
   std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> gather_attribute_ids;
+  GptoTaskPtr getnext_task;
 
   // Create a task per node
   MS_LOG(INFO) << "Start Extract GPTO Tasks";
@@ -2329,21 +2499,7 @@ SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &kernel_graph,
 
   std::unordered_map<std::string, Time> profiling_map;
   if (common::GetEnv("MS_ENABLE_GPTO_PROFILING_AS_COST") != "") {
-    std::ifstream file;
-    file.open(common::GetEnv("MS_ENABLE_GPTO_PROFILING_AS_COST"));
-    std::string line;
-    while (std::getline(file, line)) {
-      std::istringstream s(line);
-      std::string field;
-      std::vector<std::string> fields;
-      while (getline(s, field, ',')) {
-        fields.push_back(field);
-      }
-      if (fields[kIndex0] == "short_name") {
-        continue;
-      }
-      profiling_map[fields[kIndex1]] = stoi(fields[kIndex2]);
-    }
+    profiling_map = GetProfCost();
   }
 
   for (size_t i = 0; i < real_kernels.size(); ++i) {
@@ -2356,13 +2512,24 @@ SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &kernel_graph,
       return scheduling_input;
     }
 
-    GptoTaskPtr task = std::make_shared<GptoTask>(i, GetRealType(cnode), GetType(cnode), cnode->fullname_with_scope());
+    GptoTaskPtr task = std::make_shared<GptoTask>(
+      i, GetRealType(cnode), GetType(device_res_manager, cnode, group_to_id), cnode->fullname_with_scope());
     task->set_cnode(cnode);
     Time cost = 0;
 
-    if (common::GetEnv("MS_ENABLE_GPTO_PROFILING_AS_COST") != "") {
+    if (cnode->UniqueName().find("GetNext") != std::string::npos) {
+      getnext_task = task;
+    }
+
+    if (common::GetEnv("MS_ENABLE_GPTO_NO_COST") == "1") {
+      cost = 1;
+    } else if (common::GetEnv("MS_ENABLE_GPTO_PROFILING_AS_COST") != "") {
       std::string node_name(cnode->UniqueName().substr(0, cnode->UniqueName().rfind("_")));
-      cost = profiling_map[node_name];
+      if (profiling_map.find(node_name) != profiling_map.end()) {
+        cost = profiling_map[node_name];
+      } else {
+        MS_LOG(WARNING) << "Node " << node_name << " not found in profiling file";
+      }
     } else if (task->real_type() == kComp) {  // comp node of type Vector
       cost = CalculateVectorCost(cnode);
     } else if (task->real_type() == kCube) {  // comp node of type Cube
@@ -2378,11 +2545,19 @@ SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &kernel_graph,
     // End Step 1 ConditionSwitch/Gather for inline
 
     MS_LOG(DEBUG) << "Task " << task->id() << " with name " << cnode->UniqueName() << " and CNodePtr " << cnode
-                  << " with cost " << task->cost() << " and type " << GetType(cnode);
+                  << " with cost " << task->cost() << " and type " << task->gpto_type();
     scheduling_input.tasks.push_back(task);
     (*cnode_to_task_map_ptr)[cnode] = task;
   }
-  MS_LOG(INFO) << "End Extract GPTO Tasks";
+
+  if (gpto_mode == kCompCommGroup) {
+    for (auto &group : *group_to_id) {
+      MS_LOG(INFO) << "Get group id " << group.second << " with name " << group.first;
+    }
+    MS_LOG(INFO) << "End Extract GPTO Tasks with " << group_to_id->size() << " comm groups";
+  } else {
+    MS_LOG(INFO) << "End Extract GPTO Tasks";
+  }
 
   MS_LOG(INFO) << "Start Extract GPTO Edges";
   InsertEdges(kernel_graph, cnode_to_task_map_ptr);
@@ -2427,7 +2602,25 @@ SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &kernel_graph,
   MS_LOG(INFO) << "End Update Inline";
   // End Step 3 ConditionSwitch/Gather for inline
 
+  MakeRootGetNext(getnext_task, cnode_to_task_map_ptr);
+
   return scheduling_input;
+}
+
+void MakeRootGetNext(const GptoTaskPtr &getnext_task,
+                     std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr) {
+  if (getnext_task == nullptr) {
+    return;
+  }
+
+  for (const auto &key_val : *cnode_to_task_map_ptr) {
+    auto &task = key_val.second;
+    if (task->parents().size() != 0 || task == getnext_task) {
+      continue;
+    }
+    task->AddParent(getnext_task);
+    getnext_task->AddChild(task);
+  }
 }
 
 // Calculate the lower bound for a single task
@@ -2525,7 +2718,145 @@ void GraphOutputProcess(const KernelGraphPtr &graph, std::unordered_map<CNodePtr
   MS_LOG(INFO) << "Found " << count << " graph output tensors for GPTO";
 }
 
-void RefNodeProcess(const KernelGraphPtr &graph, std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr) {
+namespace {  // somas-like functionality for merging ref node (assuming unions of pairs of tensors originally)
+size_t find_father(std::vector<size_t> *father, size_t x) {
+  MS_EXCEPTION_IF_NULL(father);
+  if (x >= father->size()) {
+    MS_LOG(EXCEPTION) << "Index " << x << " out of range " << father->size();
+  }
+  if (x == (*father)[x]) {
+    return x;
+  }
+  (*father)[x] = find_father(father, (*father)[x]);
+  return (*father)[x];
+}
+
+std::vector<std::vector<GptoTensorPtr>> GetRegularUnionTensorsList(
+  size_t max_tensor, const std::vector<std::pair<GptoTensorPtr, GptoTensorPtr>> &union_tensors) {
+  std::vector<size_t> father;
+  std::map<size_t, GptoTensorPtr> id_to_tensor;
+  for (size_t i = 0; i < max_tensor; i++) {
+    father.push_back(i);
+  }
+  for (auto union_pair : union_tensors) {
+    const size_t &tid0 = union_pair.first->id();
+    const size_t &tid1 = union_pair.second->id();
+    father[find_father(&father, tid1)] = find_father(&father, tid0);
+    id_to_tensor[tid0] = union_pair.first;
+    id_to_tensor[tid1] = union_pair.second;
+  }
+
+  std::map<size_t, size_t> kv;
+  std::vector<std::vector<GptoTensorPtr>> ret_union_list;
+  std::vector<std::set<size_t>> union_tensor_sets;
+  for (const auto &union_pair : union_tensors) {
+    std::vector<size_t> tids = {union_pair.first->id(), union_pair.second->id()};
+    for (const auto &tid : tids) {
+      size_t fa = find_father(&father, tid);
+      if (kv.find(fa) == kv.end()) {
+        ret_union_list.emplace_back();
+        union_tensor_sets.emplace_back();
+        kv.emplace(fa, ret_union_list.size() - 1);
+      }
+      auto &union_tensor_set = union_tensor_sets[kv.at(fa)];
+      if (union_tensor_set.find(tid) == union_tensor_set.end()) {
+        ret_union_list[kv.at(fa)].push_back(id_to_tensor[tid]);
+        union_tensor_set.insert(tid);
+      }
+    }
+  }
+  return ret_union_list;
+}
+}  // namespace
+
+std::map<GptoTensorPtr, GptoTensorPtr> GetRefTensorsInContiguousList(
+  const std::vector<std::vector<GptoTensorPtr>> &ref_node_vector) {
+  std::map<GptoTensorPtr, GptoTensorPtr> ref_tensors_in_contiguous_map;  // key: refnode input, value: refnode output
+  constexpr auto kRefNodeTensorNum = 2;
+  for (auto ref_list : ref_node_vector) {
+    auto contiguous_in_ref_list = std::count_if(ref_list.begin(), ref_list.end(), [](GptoTensorPtr t) {
+      MS_EXCEPTION_IF_NULL(t);
+      return t->contiguous();
+    });
+    if (ref_list.size() > kRefNodeTensorNum && contiguous_in_ref_list > 0) {
+      MS_LOG(WARNING) << "Ref node of size greater than two with at least one contiguous tensor in";
+    }
+    if (ref_list.size() == kRefNodeTensorNum && contiguous_in_ref_list == 1) {
+      MS_EXCEPTION_IF_NULL(ref_list[0]);
+      MS_EXCEPTION_IF_NULL(ref_list[1]);
+      MS_LOG(WARNING) << "Ref node of size two with only one contiguous tensor" << ref_list[0]->id() << ":"
+                      << ref_list[0]->contiguous() << ", " << ref_list[1]->id() << ":" << ref_list[1]->contiguous();
+    }
+    if (ref_list.size() == kRefNodeTensorNum && static_cast<size_t>(contiguous_in_ref_list) == kRefNodeTensorNum) {
+      ref_tensors_in_contiguous_map[ref_list[0]] = ref_list[1];
+    }
+  }
+  return ref_tensors_in_contiguous_map;
+}
+
+std::map<size_t, size_t> GetContiguousRefIndexMap(
+  const std::vector<std::vector<GptoTensorPtr>> &ref_node_vector,
+  const std::vector<std::vector<GptoTensorPtr>> &contiguous_tensors_list) {
+  std::map<size_t, size_t> contiguous_list_with_ref_index_map;
+  std::map<GptoTensorPtr, GptoTensorPtr> ref_tensors_in_contiguous_map = GetRefTensorsInContiguousList(ref_node_vector);
+  for (const auto &ref_pair : ref_tensors_in_contiguous_map) {
+    const auto &ref_first = ref_pair.first;
+    const auto &ref_second = ref_pair.second;
+    bool found_first = false;
+    bool found_second = false;
+    size_t index_first = 0;
+    size_t index_second = 0;
+    size_t index_in_list_first = 0;
+    size_t index_in_list_second = 0;
+    for (size_t index = 0; index < contiguous_tensors_list.size() && (!found_first || !found_second); index++) {
+      if (!found_first) {
+        auto iterator_first =
+          std::find(contiguous_tensors_list[index].begin(), contiguous_tensors_list[index].end(), ref_first);
+        if (iterator_first != contiguous_tensors_list[index].end()) {
+          index_first = index;
+          index_in_list_first = static_cast<size_t>(iterator_first - contiguous_tensors_list[index].begin());
+          found_first = true;
+        }
+      }
+      if (!found_second) {
+        auto iterator_second =
+          std::find(contiguous_tensors_list[index].begin(), contiguous_tensors_list[index].end(), ref_second);
+        if (iterator_second != contiguous_tensors_list[index].end()) {
+          index_second = index;
+          index_in_list_second = static_cast<size_t>(iterator_second - contiguous_tensors_list[index].begin());
+          found_second = true;
+        }
+      }
+    }
+    if (!found_first && !found_second) {
+      continue;
+    }
+    if (!found_first) {
+      MS_LOG(WARNING) << "Contiguous ref tensor " << ref_first->id() << " not found in any contiguous list";
+    }
+    if (!found_second) {
+      MS_LOG(WARNING) << "Contiguous ref tensor " << ref_second->id() << " not found in any contiguous list";
+    }
+    if (contiguous_list_with_ref_index_map.find(index_first) == contiguous_list_with_ref_index_map.end() ||
+        contiguous_list_with_ref_index_map[index_first] == index_second) {
+      contiguous_list_with_ref_index_map[index_first] = index_second;
+      // Checking for error cases
+      if (index_in_list_first != index_in_list_second) {
+        MS_LOG(WARNING) << "Inconsistency in contiguous ref: tensor " << ref_first->id() << " in position "
+                        << index_in_list_first << " of contiguous list " << index_first << " and tensor "
+                        << ref_second->id() << " in position " << index_in_list_second << " of contiguous list "
+                        << index_second;
+      }
+    } else {
+      MS_LOG(WARNING) << "Contiguous list " << index_first << " associated (ref node) with two other contiguous lists: "
+                      << contiguous_list_with_ref_index_map[index_first] << " and " << index_second;
+    }
+  }
+  return contiguous_list_with_ref_index_map;
+}
+
+std::vector<std::pair<GptoTensorPtr, GptoTensorPtr>> RefNodeProcess(
+  const KernelGraphPtr &graph, std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr) {
   MS_EXCEPTION_IF_NULL(cnode_to_task_map_ptr);
   auto &cnode_to_task_map = *cnode_to_task_map_ptr;
   const auto &kernel_cnodes = graph->execution_order();
@@ -2589,38 +2920,135 @@ void RefNodeProcess(const KernelGraphPtr &graph, std::unordered_map<CNodePtr, Gp
       }
     }
   }
-
-  // Loop to update ref node tensor sizes and update graph logic
-  for (auto &in_out : in_out_vector) {
-    auto input_tensor = in_out.first;
-    auto output_tensor = in_out.second;
-
-    if (input_tensor->original_weight() == 0 || output_tensor->original_weight() == 0) {
-      input_tensor->set_weight(0);
-      output_tensor->set_weight(0);
-    } else if (input_tensor->weight() < output_tensor->weight()) {
-      if (output_tensor->source().lock()->gpto_type() != kComm) {
-        input_tensor->set_weight(output_tensor->weight());
-      }
-      output_tensor->set_weight(0);
-    }
-
-    for (auto &out_consumer : output_tensor->consumers()) {
-      input_tensor->consumers().insert(out_consumer);
-      auto it =
-        std::find(out_consumer.lock()->in_tensors().begin(), out_consumer.lock()->in_tensors().end(), output_tensor);
-      if (it != out_consumer.lock()->in_tensors().end()) {
-        out_consumer.lock()->in_tensors().erase(it);
-      }
-      out_consumer.lock()->in_tensors().insert(input_tensor);
-      input_tensor->source().lock()->AddChild(out_consumer.lock());
-      out_consumer.lock()->AddParent(input_tensor->source().lock());
-    }
-    auto it = std::find(output_tensor->source().lock()->out_tensors().begin(),
-                        output_tensor->source().lock()->out_tensors().end(), output_tensor);
-    output_tensor->source().lock()->out_tensors().erase(it);
-  }
   MS_LOG(INFO) << "RefNode tensor total size: input " << total_input_size << " output " << total_output_size;
+  return in_out_vector;
+}
+
+std::vector<std::vector<GptoTensorPtr>> CommunicationNodeProcess(
+  std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr) {
+  MS_EXCEPTION_IF_NULL(cnode_to_task_map_ptr);
+  const auto &cnode_to_task_map = *cnode_to_task_map_ptr;
+
+  std::vector<std::vector<GptoTensorPtr>> contiguous_tensors_list;
+  Memory comm_input_total_size = 0;
+  Memory comm_output_total_size = 0;
+  for (const auto &cnode_task : cnode_to_task_map) {
+    const auto &task = cnode_task.second;
+    MS_EXCEPTION_IF_NULL(task);
+    if (task->gpto_type() < kComm || task->name().find(kMatMulAllReduceOpName) != std::string::npos) {
+      continue;
+    }
+
+    // Contiguous input
+    if (task->in_tensors().size() > 1 && (*(task->in_tensors().begin()) != nullptr) &&
+        (!(*(task->in_tensors().begin()))->contiguous())) {
+      std::vector<GptoTensorPtr> inputs;
+      for (const auto &in_tensor : task->in_tensors()) {
+        MS_EXCEPTION_IF_NULL(in_tensor);
+        if (in_tensor->weight() > 0) {
+          MS_EXCEPTION(ValueError) << "The size of communication in_tensor is zero, tensor id: " +
+                                        std::to_string(in_tensor->id());
+        }
+        comm_input_total_size += in_tensor->weight();
+        in_tensor->set_contiguous(true);
+        inputs.push_back(in_tensor);
+      }
+      contiguous_tensors_list.push_back(inputs);
+    }
+
+    // Contiguous output
+    if (task->out_tensors().size() > 1 && (task->out_tensors()[0] != nullptr) &&
+        (!task->out_tensors()[0]->contiguous())) {
+      std::vector<GptoTensorPtr> outputs;
+      for (const auto &out_tensor : task->out_tensors()) {
+        MS_EXCEPTION_IF_NULL(out_tensor);
+        if (out_tensor->weight() > 0) {
+          MS_EXCEPTION(ValueError) << "The size of communication out_tensor is zero, tensor id: " +
+                                        std::to_string(out_tensor->id());
+        }
+        comm_output_total_size += out_tensor->weight();
+        out_tensor->set_contiguous(true);
+        outputs.push_back(out_tensor);
+      }
+      if (outputs.size() != (std::set<GptoTensorPtr>(outputs.begin(), outputs.end())).size()) {
+        MS_LOG(EXCEPTION) << task->name() << " has duplicate output tensors, please double check task output tensors";
+      }
+      contiguous_tensors_list.push_back(outputs);
+    }
+
+    // Check for duplication of tensors in lists
+    std::set<GptoTensorPtr> all_contiguous_tensors_set;
+    size_t all_contiguous_tensors_num = 0;
+    for (auto &tensors : contiguous_tensors_list) {
+      all_contiguous_tensors_num += tensors.size();
+      all_contiguous_tensors_set.insert(tensors.begin(), tensors.end());
+    }
+    if (all_contiguous_tensors_num != all_contiguous_tensors_set.size()) {
+      MS_LOG(EXCEPTION) << "Please check communication tasks, some tensors are in multiple contiguous lists";
+    }
+  }
+
+  MS_LOG(INFO) << "Contiguous tensor total size: input " << comm_input_total_size << " output "
+               << comm_output_total_size;
+  return contiguous_tensors_list;
+}
+
+void UpdateRefNodeGpto(const KernelGraphPtr &graph, std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr) {
+  // Retrieve necessary ref node and contiguous info
+  auto in_out_vector = RefNodeProcess(graph, cnode_to_task_map_ptr);
+  std::vector<std::vector<GptoTensorPtr>> ref_node_vector =
+    GetRegularUnionTensorsList(MAX_TENSOR_ID + 1, in_out_vector);
+  auto contiguous_tensors_list = CommunicationNodeProcess(cnode_to_task_map_ptr);
+  auto contiguous_ref_index_map = GetContiguousRefIndexMap(ref_node_vector, contiguous_tensors_list);
+
+  // Loop to update ref node tensor sizes and gpto graph logic
+  for (auto &union_list : ref_node_vector) {
+    if (std::any_of(union_list.begin(), union_list.end(), [](const GptoTensorPtr &t) { return t->weight() == 0; })) {
+      for (auto &tensor : union_list) {
+        tensor->set_weight(0);
+      }
+    } else {  // update head tensor weight
+      const auto &tensor_head = union_list[0];
+      for (size_t i = 1; i < union_list.size(); ++i) {
+        const auto &tensor_ref = union_list[i];
+        if (!tensor_ref->contiguous()) {
+          if (tensor_head->weight() < tensor_ref->weight()) {
+            tensor_head->set_weight(tensor_ref->weight());
+          }
+          tensor_ref->set_weight(0);
+        }
+        for (auto &consumer : tensor_ref->consumers()) {
+          tensor_head->consumers().insert(consumer);
+          consumer.lock()->in_tensors().insert(tensor_head);
+          tensor_head->source().lock()->AddChild(consumer.lock());
+          consumer.lock()->AddParent(tensor_head->source().lock());
+        }
+      }
+    }
+  }
+
+  // Loop to update ref node for contiguous
+  for (auto ref_list_pair : contiguous_ref_index_map) {
+    const auto &head_list = contiguous_tensors_list.at(ref_list_pair.first);
+    const auto &ref_list = contiguous_tensors_list.at(ref_list_pair.second);
+    if (head_list.size() != ref_list.size()) {
+      MS_LOG(WARNING) << "Different head list " << ref_list_pair.first << " size " << head_list.size()
+                      << " and ref list " << ref_list_pair.second << " size " << ref_list.size();
+    }
+    for (size_t i = 0; i < head_list.size(); i++) {
+      const auto &tensor_head = head_list[i];
+      const auto &tensor_ref = ref_list[i];
+      MS_EXCEPTION_IF_NULL(tensor_head);
+      MS_EXCEPTION_IF_NULL(tensor_ref);
+      tensor_ref->set_weight(0);
+      for (auto &consumer : tensor_ref->consumers()) {
+        tensor_head->consumers().insert(consumer);
+        consumer.lock()->in_tensors().insert(tensor_head);
+        tensor_head->source().lock()->AddChild(consumer.lock());
+        consumer.lock()->AddParent(tensor_head->source().lock());
+      }
+    }
+  }
 }
 
 void ExtractTensors(const std::vector<GptoTaskPtr> &tasks, std::set<GptoTensorPtr, GptoTensorIdSort> *tensors) {
@@ -2632,82 +3060,87 @@ void ExtractTensors(const std::vector<GptoTaskPtr> &tasks, std::set<GptoTensorPt
     tensors->insert(ws_tensors.begin(), ws_tensors.end());
   }
 }
-void UpdateExecutionOrder(const KernelGraphPtr &kernel_graph, const SchedulingOutput &scheduling_output) {
+
+void MockExecutionOrder(const SchedulingOutput &scheduling_output,
+                        std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> *mock_exec_order,
+                        size_t num_events) {
   std::vector<Interval> task_times = scheduling_output.task_times;
-  std::sort(task_times.begin(), task_times.end(),
-            [](Interval x, Interval y) { return x.start < y.start || (x.start == y.start && x.end < y.end); });
-  std::vector<CNodePtr> new_order;
-  new_order.push_back(task_times[0].task->cnode());
-  constexpr size_t kNumber2 = 2;
-  for (size_t j = 1; j < task_times.size();) {
-    if (j == task_times.size() - 1) {
-      new_order.push_back(task_times[j].task->cnode());
-      j = j + 1;
-    } else if (task_times[j].start < task_times[j + 1].start) {
-      new_order.push_back(task_times[j].task->cnode());
-      j = j + 1;
-    } else {
-      bool task_same_end = false;
-      int32_t k = static_cast<int32_t>(j - 1);
-      for (; k >= 0; k--) {
-        if (task_times[k].end == task_times[j].start) {
-          task_same_end = true;
-          break;
-        }
-      }
-      if (task_same_end) {
-        if (task_times[k].task->gpto_type() == task_times[j].task->gpto_type()) {
-          new_order.push_back(task_times[j + 1].task->cnode());
-          new_order.push_back(task_times[j].task->cnode());
-        } else {
-          new_order.push_back(task_times[j].task->cnode());
-          new_order.push_back(task_times[j + 1].task->cnode());
-        }
-      } else {
-        new_order.push_back(task_times[j].task->cnode());
-        new_order.push_back(task_times[j + 1].task->cnode());
-      }
-      j = j + kNumber2;
+  std::sort(task_times.begin(), task_times.end(), [](Interval x, Interval y) {
+    return x.start < y.start || (x.start == y.start && x.task->gpto_type() > y.task->gpto_type());
+  });
+  mock_exec_order->resize(task_times.size() + 2 * num_events);
+  size_t mock_idx = mock_exec_order->capacity() - 1;
+  size_t event_id = 0;
+  for (std::vector<Interval>::reverse_iterator rit = task_times.rbegin(); rit != task_times.rend(); ++rit) {
+    (*mock_exec_order)[mock_idx--] = std::make_pair(rit->task->cnode(), std::make_tuple('n', 0, 0, 0));
+    size_t local_event_count = 0;
+    for (auto task : rit->task->recv_events()) {
+      (*mock_exec_order)[mock_idx - rit->task->recv_events().size() * 2 + 1 + local_event_count] =
+        std::make_pair(nullptr, std::make_tuple('s', task.lock()->gpto_type(), rit->task->gpto_type(), event_id));
+      (*mock_exec_order)[mock_idx - local_event_count] =
+        std::make_pair(nullptr, std::make_tuple('r', task.lock()->gpto_type(), rit->task->gpto_type(), event_id));
+      event_id++;
+      local_event_count++;
     }
+    mock_idx -= rit->task->recv_events().size() * 2;
   }
-  kernel_graph->set_execution_order(new_order);
 }
 
-void GPTO(const KernelGraphPtr &kernel_graph, std::vector<std::pair<CNodePtr, CNodePtr>> *events) {
-  MS_EXCEPTION_IF_NULL(events);
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-
-  if (kernel_graph->is_from_single_op()) {
-    MS_LOG(INFO) << "GPTO is not used when pynative forward.";
-    return;
-  }
-
-  if (kernel_graph->is_dynamic_shape()) {
-    MS_LOG(INFO) << "GPTO can't parse graph with dynamic shape now.";
-    return;
-  }
+void SetGPTOMode() {
+  gpto_mode = kCompComm;  // default mode
 
   if (common::GetEnv("MS_ENABLE_GPTO_MODE") != "") {
     gpto_mode = static_cast<GPTO_MODE>(stoll(common::GetEnv("MS_ENABLE_GPTO_MODE")));
-  }
-
-  const float memory_safety = 0.975;
-  if (common::GetEnv("MS_ENABLE_GPTO_MEMORY_LIMIT") != "") {
-    MEMORY_LIMIT = static_cast<Memory>(stoll(common::GetEnv("MS_ENABLE_GPTO_MEMORY_LIMIT")) * kGBToByte);
+    if (gpto_mode >= kNumModes) {
+      MS_LOG(WARNING) << "Wrong mode input, exiting GPTO...";
+      return;
+    }
+  } else if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
+    gpto_mode = kComp;
+  } else if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+    gpto_mode = kCompComm;
   } else {
-    MEMORY_LIMIT = static_cast<Memory>(runtime::RuntimeConf::GetInstance()->mem_max_size() * kGBToByte * memory_safety);
+    gpto_mode = kCompCommGroup;
+  }
+  MS_LOG(INFO) << "Gpto mode value: " << gpto_mode;
+}
+
+void UpdateExecutionOrder(const KernelGraphPtr &kernel_graph, const SchedulingOutput &scheduling_output) {
+  std::vector<Interval> task_times = scheduling_output.task_times;
+  std::sort(task_times.begin(), task_times.end(), [](const Interval &x, const Interval &y) {
+    return x.start < y.start || (x.start == y.start && x.task->gpto_type() > y.task->gpto_type());
+  });
+  std::vector<CNodePtr> new_exec_order;
+  new_exec_order.reserve(task_times.size());
+  for (size_t j = 0; j < task_times.size(); j++) {
+    new_exec_order.push_back(task_times[j].task->cnode());
+  }
+  kernel_graph->set_execution_order(new_exec_order);
+}
+
+void GPTO(mindspore::device::DeviceResManager *device_res_manager, const KernelGraphPtr &kernel_graph,
+          std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> *mock_exec_order) {
+  if (kernel_graph->is_from_single_op() || kernel_graph->is_dynamic_shape()) {
+    MS_LOG(INFO) << "GPTO is not used when pynative forward or can't parse graph with dynamic shape now.";
+    return;
   }
 
-  MS_LOG(INFO) << "Memory Limit value: " << MEMORY_LIMIT;
+  std::pair<Time, Memory> baseline;
+
+  SetGPTOMode();
+
   MS_LOG(INFO) << "Start Scheduling Subgraph " << kernel_graph << " with id " << kernel_graph->graph_id()
                << " and Execution order size " << kernel_graph->execution_order().size();
 
   std::unordered_map<CNodePtr, GptoTaskPtr> cnode_to_task;
-
+  std::map<std::string, size_t> group_to_id;
   MS_LOG(INFO) << "Start ExtractSchedulingInput";
-  SchedulingInput scheduling_input = ExtractSchedulingInput(kernel_graph, &cnode_to_task);
+  PARAMETER_SIZE = 0;
+  SchedulingInput scheduling_input =
+    ExtractSchedulingInput(device_res_manager, kernel_graph, &cnode_to_task, &group_to_id);
+  MS_LOG(INFO) << "Parameter size: " << PARAMETER_SIZE;
   MS_LOG(INFO) << "End ExtractSchedulingInput";
+
   if (scheduling_input.tasks.size() == 0) {
     MS_LOG(WARNING) << "Scheduling input doesn't have any tasks: skipping";
     return;
@@ -2719,9 +3152,9 @@ void GPTO(const KernelGraphPtr &kernel_graph, std::vector<std::pair<CNodePtr, CN
                                        //  estimated in source's memory impact and never "deallocated"
   MS_LOG(INFO) << "End Graph Output Process";
 
-  MS_LOG(INFO) << "Start Ref Node Process";
-  RefNodeProcess(kernel_graph, &cnode_to_task);
-  MS_LOG(INFO) << "End Ref Node Process";
+  MS_LOG(INFO) << "Start Update Ref Node for Gpto";
+  UpdateRefNodeGpto(kernel_graph, &cnode_to_task);
+  MS_LOG(INFO) << "End Update Ref Node for Gpto";
 
   Memory memory_lower_bound = 0;
   std::set<GptoTensorPtr, GptoTensorIdSort> tensors;
@@ -2741,12 +3174,37 @@ void GPTO(const KernelGraphPtr &kernel_graph, std::vector<std::pair<CNodePtr, CN
 
     // Baseline log
     MS_LOG(INFO) << "Start Baseline Greedy Scheduling";
-    LogBaseline(scheduling_input, &cnode_to_task, kernel_graph, can_debug.second);
+    baseline = LogBaseline(&cnode_to_task, kernel_graph, can_debug.second, true);
     MS_LOG(INFO) << "End Baseline Greedy Scheduling";
+
+    const size_t kPrecision = 5;
+    MS_LOG(INFO) << "Speedup of baseline solution is " << std::setprecision(kPrecision)
+                 << 1.0 * TotalTime(scheduling_input.tasks) / baseline.first;
   }
 
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (context->CellReuseLevel() == CellReuseLevel::kNoInline) {
+    if (can_debug.first) {
+      MEMORY_LIMIT = baseline.second;
+    } else {
+      MEMORY_LIMIT = LogBaseline(&cnode_to_task, kernel_graph, can_debug.second, false).second;
+    }
+    const float memory_relax_no_inline = 1.02;
+    MEMORY_LIMIT = static_cast<Memory>(memory_relax_no_inline * MEMORY_LIMIT + PARAMETER_SIZE);
+  } else {
+    if (common::GetEnv("MS_ENABLE_GPTO_MEMORY_LIMIT") != "") {
+      MEMORY_LIMIT = static_cast<Memory>(stof(common::GetEnv("MS_ENABLE_GPTO_MEMORY_LIMIT")) * kGBToByte);
+    } else {
+      const float memory_safety = 0.98;
+      MEMORY_LIMIT =
+        static_cast<Memory>(context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY) * kGBToByte * memory_safety);
+    }
+  }
+  MS_LOG(INFO) << "Memory Limit value: " << MEMORY_LIMIT;
+
   MS_LOG(INFO) << "Start GPTO Process";
-  auto scheduling_output = MemAwareScheduler(scheduling_input);
+  auto scheduling_output = MemAwareScheduler(scheduling_input, &group_to_id);
   MS_LOG(INFO) << "End GPTO Process";
 
   if (scheduling_output.makespan == SIZE_MAX) {
@@ -2754,22 +3212,33 @@ void GPTO(const KernelGraphPtr &kernel_graph, std::vector<std::pair<CNodePtr, CN
     return;
   }
 
-  // Update execution order based on computed schedule
-  UpdateExecutionOrder(kernel_graph, scheduling_output);
-  // Get dependencies (events) corresponding to computed schedule
-  std::vector<std::pair<CNodePtr, CNodePtr>> dependencies = ScheduleToEvents(scheduling_output);
-  std::copy(dependencies.begin(), dependencies.end(), back_inserter(*events));
+  if (common::GetEnv("MS_ENABLE_OFFLINE_GPTO") != "1") {
+    // If online mode, generate appropriate events to impose schedule, memory safety, and execution order
+    if (common::GetEnv("MS_ENABLE_GPTO_NO_COST") == "1") {
+      // Update execution order and trigger default data dependency events
+      UpdateExecutionOrder(kernel_graph, scheduling_output);
+    } else {
+      // Explicitly generate events and generate mock execution order including them
+      size_t num_schedule_events = ScheduleToEvents(scheduling_output);
+      size_t num_memory_events = 0;
+      if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() == kOptimizeO0) {
+        num_memory_events = MemorySafetyEvents(scheduling_output);
+      }
+      MockExecutionOrder(scheduling_output, mock_exec_order, num_schedule_events + num_memory_events);
+    }
+  }
 
   if (can_debug.first) {
-    // New graph execution order
-    MS_LOG(INFO) << "Start GPTO PrintGraphExecuteOrder";
-    kernel_graph->PrintGraphExecuteOrder();
-    MS_LOG(INFO) << "End GPTO PrintGraphExecuteOrder";
+    if (common::GetEnv("MS_ENABLE_OFFLINE_GPTO") != "1") {
+      MS_LOG(INFO) << "Start GPTO PrintGraphExecuteOrder";
+      kernel_graph->PrintGraphExecuteOrder();
+      MS_LOG(INFO) << "End GPTO PrintGraphExecuteOrder";
+    }
 
     // GPTO log
     MS_LOG(INFO) << "Start printing output log file";
-    LogSchedulingOutput(scheduling_input, scheduling_output, cnode_to_task, dependencies, kernel_graph, tensors,
-                        memory_lower_bound, can_debug.second);
+    LogSchedulingOutput(scheduling_input, scheduling_output, cnode_to_task, kernel_graph, tensors, memory_lower_bound,
+                        &group_to_id, can_debug.second);
     MS_LOG(INFO) << "End printing output log file";
   }
 }

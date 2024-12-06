@@ -19,6 +19,7 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include <tuple>
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 namespace mindspore {
