@@ -1,0 +1,16 @@
+#deprecated any
+any:
+  args:
+    x:
+      dtype: tensor
+    dim:
+      dtype: tuple[int]
+      type_cast: int, list[int], tensor
+      default: None
+    keepdim:
+      dtype: bool
+      default: False
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
