@@ -376,19 +376,19 @@ _func_map = {
     constexpr_key: FUNC_KEY_CONSTEXPR,
     primexpr_key: FUNC_KEY_PRIMEXPR,
     meta_func_graph_key: FUNC_KEY_META_FUNCG_RAPH,
-    id(GraphCell.__call__): FUNC_KEY_GRAPH_CELL,
+    function_id(GraphCell.__call__): FUNC_KEY_GRAPH_CELL,
     id(psjit_code): FUNC_KEY_PSJIT_CODE,
-    id(_get_cache_prim): FUNC_KEY_GET_CACHE_PRIM,
-    id(Registry.get): FUNC_KEY_REGISTRY_GET,
+    function_id(_get_cache_prim): FUNC_KEY_GET_CACHE_PRIM,
+    function_id(Registry.get): FUNC_KEY_REGISTRY_GET,
 
     # tensor side-effect
     primitive_assign_key: FUNC_KEY_PRIMITIVE_ASSIGN,
-    id(F.assign): FUNC_KEY_PRIMITIVE_ASSIGN,
-    id(Tensor.assign_value): FUNC_KEY_TENSOR_ASSIGN_VALUE,
-    id(Tensor.__setitem__): FUNC_KEY_TENSOR_SETITEM,
+    function_id(F.assign): FUNC_KEY_PRIMITIVE_ASSIGN,
+    function_id(Tensor.assign_value): FUNC_KEY_TENSOR_ASSIGN_VALUE,
+    function_id(Tensor.__setitem__): FUNC_KEY_TENSOR_SETITEM,
 
     # Tensor method
-    id(Tensor.astype): FUNC_KEY_TENSOR_ASTYPE,
+    function_id(Tensor.astype): FUNC_KEY_TENSOR_ASTYPE,
 
     # types.BuiltinFunctionType
     function_id(isinstance): FUNC_KEY_BUILTIN_FUNC,
