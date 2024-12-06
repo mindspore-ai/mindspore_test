@@ -90,7 +90,7 @@ const AnfNodePtr AddCastRmsNormCastQuantFusion::Process(const FuncGraphPtr &grap
   auto rounding_mode = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[rounding_mode_]));
   auto dst_type = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[dst_type_]));
 
-  auto prim = std::make_shared<Primitive>("AddCastRmsNormCastQuantV2");
+  auto prim = std::make_shared<Primitive>("AddRmsNormQuantV2");
   prim->set_attr("sqrt_mode", sqrt_mode);
   prim->set_attr("rounding_mode", rounding_mode);
   prim->set_attr("dst_type", dst_type);
