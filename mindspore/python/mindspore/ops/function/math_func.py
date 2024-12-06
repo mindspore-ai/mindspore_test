@@ -5387,15 +5387,15 @@ def addmv_ext(input, mat, vec, *, beta=1, alpha=1):
         vec (Tensor): The second tensor needs to be multiplied.
 
     Keyword Args:
-        beta (Union[float, int], optional): Coefficient of `input`, Default: ``1``.
-        alpha (Union[float, int], optional): Coefficient of :math:`mat @ vec` , Default: ``1``.
+        beta (Union[float, int], optional): Coefficient of `input`. Default: ``1``.
+        alpha (Union[float, int], optional): Coefficient of :math:`mat @ vec` . Default: ``1``.
 
     Returns:
         Tensor, with a shape of :math:`(N,)` , and its dtype is the same as `input`.
 
     Raises:
-        TypeError: If dtype of `input`, `mat`, `vec` is not tensor.
-        TypeError: If dtype of `mat`, `vec` are not the same.
+        TypeError: If dtype of `input`, `mat` or `vec` is not tensor.
+        TypeError: If dtypes of `mat` and `vec` are not the same.
         ValueError: If `mat` is not a 2-D tensor.
         ValueError: If `vec` is not a 1-D tensor.
 
