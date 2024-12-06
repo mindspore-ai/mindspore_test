@@ -40,7 +40,7 @@ mindspore.Tensor.remainder
         - 如果shape表示为(D1,D2…Dn)，那么D1 \ * D2……\ * DN <= 1000000，n <= 8。
 
     .. note::
-        第一个输入`self`为dtype是Number的Tensor。
+        第一个输入 `self` 为dtype是Number的Tensor。
 
     参数：
         - **divisor** (Union[Tensor, numbers.Number, bool]) - 当第一个输入是一个Tensor时，第二个输入可以是Number、bool或者dtype是Number的Tensor。

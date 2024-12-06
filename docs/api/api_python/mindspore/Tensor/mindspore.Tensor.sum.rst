@@ -15,7 +15,7 @@ mindspore.Tensor.sum
     关键字参数：
         - **dtype** (:class:`mindspore.dtype`，可选) - 返回Tensor所期望的数据类型。默认值： ``None`` 。
 
-    返回值：
+    返回：
         Tensor。返回输入Tensor中指定dim维度的元素总和。
 
     异常：

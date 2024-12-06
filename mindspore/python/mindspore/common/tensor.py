@@ -3295,10 +3295,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             This is an experimental API that is subject to change or deletion.
 
         Args:
-            from_ (int, optional): the lower bound of the generated random number. It can be a scalar value
-                or a tensor of any dimension with only a single element. Default: 0.
-            to (int, optional): the upper bound of the generated random number. By default it's the upper limit of
-                the input data type. It can be a scalar value or a tensor of any dimension with only a single element.
+            from\_ (Union[number.Number, Tensor], optional): the lower bound of the generated random number.
+                It can be a scalar value or a tensor of any dimension with only a single element. Default: 0.
+            to (Union[number.Number, Tensor], optional): the upper bound of the generated random number.
+                By default it's the upper limit of the input data type.
+                It can be a scalar value or a tensor of any dimension with only a single element.
                 Default: ``None``.
 
         Keyword Args:

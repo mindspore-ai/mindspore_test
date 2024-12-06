@@ -801,7 +801,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
         The tensors must have the same shape and format in all processes of the collection.
 
     Args:
-        output(Tensor): the output tensor has the same dtype as `input_x` with a shape of math:`(N/rank\_size, *)`
+        output(Tensor): the output tensor has the same dtype as `input_x` with a shape of :math:`(N/rank\_size, *)`
         input(Tensor): The input tensor to be reduced and scattered, suppose it has a shape :math:`(N, *)`, where `*`
             means any number of additional dimensions. N must be divisible by rank_size.
             rank_size refers to the number of cards in the communication group.
