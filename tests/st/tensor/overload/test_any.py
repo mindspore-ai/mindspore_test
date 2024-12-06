@@ -25,6 +25,11 @@ class Net(nn.Cell):
         return x.any(axis, keep_dims)
 
 
+class Net2(nn.Cell):
+    def construct(self, x, dim=None, keepdim=False):
+        return x.any(dim=dim, keepdim=keepdim)
+
+
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
@@ -36,17 +41,28 @@ def test_tensor_any(mode):
     Description: Verify the result of any
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
+    net2 = Net2()
+
     x = Tensor(np.array([[True, False], [False, False]]))
     output = net(x, keep_dims=True)
+    output_2 = net2(x, keepdim=True)
     assert np.allclose(output.asnumpy(), np.array([True]))
     assert np.allclose(output.shape, (1, 1))
+    assert np.allclose(output_2.asnumpy(), np.array([True]))
+    assert np.allclose(output_2.shape, (1, 1))
 
     output2 = net(x, axis=0)
+    output2_2 = net2(x, dim=0)
     assert np.allclose(output2.asnumpy(), np.array([True, False]))
     assert np.allclose(output2.shape, (2,))
+    assert np.allclose(output2_2.asnumpy(), np.array([True, False]))
+    assert np.allclose(output2_2.shape, (2,))
 
     output3 = net(x, axis=1)
+    output3_2 = net2(x, dim=1)
     assert np.allclose(output3.asnumpy(), np.array([True, False]))
     assert np.allclose(output3.shape, (2,))
+    assert np.allclose(output3_2.asnumpy(), np.array([True, False]))
+    assert np.allclose(output3_2.shape, (2,))
