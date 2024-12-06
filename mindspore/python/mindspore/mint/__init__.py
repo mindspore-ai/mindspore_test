@@ -1072,7 +1072,7 @@ def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
             ronly_size *= r_shape[i]
 
     # Compute the einsum bmm operators pipeline.
-    # The whole operators pipline is transpose(in) -> reshape(in) -> bmm(in) -> reshape(out) -> transpose(out).
+    # The whole operators pipeline is transpose(in) -> reshape(in) -> bmm(in) -> reshape(out) -> transpose(out).
     l_reshape_shape = (batch_size, lonly_size, sum_size)
     r_reshape_shape = (batch_size, sum_size, ronly_size)
 

@@ -6,7 +6,7 @@
 "mindspore/model_zoo/"                                                                                  "import-self"
 "mindspore/tests/"                                                                                      "missing-docstring"
 "mindspore/tests/"                                                                                      "import-self"
-"mindspore/tests/st/ops"                                                                                "unexpected-keyword-arg" 
+"mindspore/tests/st/ops"                                                                                "unexpected-keyword-arg"
 "mindspore/"                                                                                            "consider-using-in"
 
 # Mindspore
@@ -264,6 +264,7 @@
 "mindspore/tests/st/ops/dynamic_shape/"                                                                 "too-many-locals"
 "mindspore/tests/st/ops/test_ops_concat.py"                                                             "not-callable"
 "mindspore/tests/st/ops/test_ops_matmul_ext.py"                                                         "not-callable"
+"mindspore/tests/st/ops/test_mint_avg_pool1d.py"                                                        "not-callable"
 "mindspore/tests/ut/python/graph_syntax/test_invalid_attribute.py"                                      "misplaced-bare-raise"
 "mindspore/tests/st/dump/dump_test_utils.py"                                                            "too-many-nested-blocks"
 "mindspore/tests/ut/python/parallel/test_dynamic_shape_graph_utils.py"                                  "too-many-function-args"

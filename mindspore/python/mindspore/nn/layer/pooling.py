@@ -26,11 +26,13 @@ import mindspore.context as context
 from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
 from mindspore._c_expression import MSContext
+from mindspore.ops.auto_generate import avg_pool1d_ext
+
 
 __all__ = ['AvgPool3d', 'MaxPool3d', 'AvgPool2d', 'MaxPool2d', 'AvgPool1d', 'MaxPool1d', 'FractionalMaxPool2d',
            'FractionalMaxPool3d', 'AdaptiveAvgPool1d', 'AdaptiveMaxPool1d', 'AdaptiveMaxPool2d', 'AdaptiveMaxPool3d',
            'AdaptiveAvgPool2d', 'AdaptiveAvgPool3d', 'MaxUnpool1d', 'MaxUnpool2d', 'MaxUnpool3d', 'LPPool1d',
-           'LPPool2d', 'AvgPool2dExt', 'MaxPool2dExt']
+           'LPPool2d', 'AvgPool2dExt', 'MaxPool2dExt', 'AvgPool1dExt']
 
 
 class _PoolNd(Cell):
@@ -1014,6 +1016,45 @@ class AvgPool3d(_PoolNd):
         if expand_batch:
             out = out.squeeze(0)
         return out
+
+
+class AvgPool1dExt(Cell):
+    r"""
+    Applies a 1D average pooling over an input Tensor which can be regarded as
+    a composition of 2D input planes.
+
+    For details, please refer to :func:`mindspore.mint.nn.functional.avg_pool1d`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, nn
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor(np.arange(1 * 3 * 3 * 4).reshape(3, 3, 4), mstype.float32)
+        >>> m =  nn.AvgPool1dExt(x, kernel_size=2, stride=1)
+        >>> output = m(x)
+        >>> print(output)
+        [[[ 2.5   3.5   4.5]
+           [ 6.5   7.5   8.5]]
+          [[14.5  15.5  16.5]
+           [18.5  19.5  20.5]]
+          [[26.5  27.5  28.5]
+           [30.5  31.5  32.5]]]
+    """
+    def __init__(self, kernel_size, stride=None, padding=0, ceil_mode=False,
+                 count_include_pad=True):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.ceil_mode = ceil_mode
+        self.count_include_pad = count_include_pad
+
+    def construct(self, input):
+        return avg_pool1d_ext(input, self.kernel_size, self.stride, self.padding,
+                              self.ceil_mode, self.count_include_pad)
 
 
 class AvgPool2dExt(Cell):
