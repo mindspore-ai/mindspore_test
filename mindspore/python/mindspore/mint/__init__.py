@@ -392,6 +392,12 @@ from mindspore.ops.function.math_func import addmm_ext as addmm
 # 505
 from mindspore.ops.function.math_func import addmv_ext as addmv
 
+# 510
+from mindspore.ops.function.math_func import amax_ext as amax
+
+# 511
+from mindspore.ops.function.math_func import amin_ext as amin
+
 # 526
 from mindspore.ops.auto_generate import dot
 
@@ -2335,6 +2341,12 @@ __all__ = [
 
     # 505
     'addmv',
+
+    # 510
+    'amax',
+
+    # 511
+    'amin',
 
     # 520
     'bincount',
