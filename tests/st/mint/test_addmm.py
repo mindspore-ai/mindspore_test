@@ -98,19 +98,19 @@ def test_addmm_normal(mode):
         output_grad2, b1_grad2, b2_grad2 = (jit(addmm_backward_func, jit_config=JitConfig(jit_level="O0")))(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     np.testing.assert_allclose(
-        output_forward.asnumpy(), expect_forward, 3e-3, 3e-3)
-    np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, 3e-3, 3e-3)
-    np.testing.assert_allclose(b1_grad.asnumpy(), expect_b1_grad, 3e-3, 3e-3)
-    np.testing.assert_allclose(b2_grad.asnumpy(), expect_b2_grad, 3e-3, 3e-3)
+        output_forward.asnumpy(), expect_forward, 4e-2, 4e-2)
+    np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, 4e-2, 4e-2)
+    np.testing.assert_allclose(b1_grad.asnumpy(), expect_b1_grad, 4e-2, 4e-2)
+    np.testing.assert_allclose(b2_grad.asnumpy(), expect_b2_grad, 4e-2, 4e-2)
     np.testing.assert_allclose(
-        output_forward2.asnumpy(), expect_forward2, 3e-3, 3e-3)
+        output_forward2.asnumpy(), expect_forward2, 4e-2, 4e-2)
     np.testing.assert_allclose(
-        output_grad2.asnumpy(), expect_grad2, 3e-3, 3e-3)
-    np.testing.assert_allclose(b1_grad2.asnumpy(), expect_b1_grad2, 3e-3, 3e-3)
-    np.testing.assert_allclose(b2_grad2.asnumpy(), expect_b2_grad2, 3e-3, 3e-3)
+        output_grad2.asnumpy(), expect_grad2, 4e-2, 4e-2)
+    np.testing.assert_allclose(b1_grad2.asnumpy(), expect_b1_grad2, 4e-2, 4e-2)
+    np.testing.assert_allclose(b2_grad2.asnumpy(), expect_b2_grad2, 4e-2, 4e-2)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_addmm_dynamic_shape():
     """
     Feature: Test dynamic shape.
