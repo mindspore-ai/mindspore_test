@@ -21,6 +21,7 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "utils/ms_utils.h"
 #include "availability/silent_check/silent_check.h"
 
@@ -46,7 +47,7 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
 
   auto comm_handle = op->comm_handle();
   auto device_context = op->device_context();
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  static auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
 
   // Need to bind context if the comm_op is the first op launched in this thread.
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);

@@ -6,7 +6,7 @@ mindspore.runtime
 流
 ---------
 
-.. msplatformautosummary::
+.. mscnautosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
@@ -22,7 +22,7 @@ mindspore.runtime
 事件
 ---------
 
-.. msplatformautosummary::
+.. mscnautosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
@@ -32,7 +32,7 @@ mindspore.runtime
 内存
 ------------
 
-.. msplatformautosummary::
+.. mscnautosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
@@ -47,6 +47,7 @@ mindspore.runtime
     mindspore.runtime.reset_max_memory_allocated
     mindspore.runtime.reset_peak_memory_stats
     mindspore.runtime.empty_cache
+    mindspore.runtime.set_memory
 
 执行
 ------------

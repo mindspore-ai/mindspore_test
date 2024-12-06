@@ -6,6 +6,9 @@ mindspore.hal.get_device_properties
     返回指定卡号设备的设备属性信息。
 
     .. note::
+        - 接口即将废弃。
+
+    .. note::
         - 若用户不指定 `device_target` ，将此参数设置为当前已经设置的后端类型。
         - 对于CPU后端，固定返回1。
         - 对于Ascend后端，必须等待后端初始化完成后，调用此接口才有信息返回，否则属性信息中的 `total_memory` 以及 `free_memory` 都为0。

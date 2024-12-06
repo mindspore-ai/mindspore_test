@@ -24,7 +24,7 @@ from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 __all__ = ['set_device', 'set_deterministic']
 
 @args_type_check(device_target=str, device_id=int)
-def set_device(device_target, device_id=None):
+def set_device(device_target, device_id=0):
     """
     Set device target and device id for running environment.
 
@@ -34,6 +34,7 @@ def set_device(device_target, device_id=None):
     Args:
         device_target (str): The target device to run, only support "Ascend", "GPU", and "CPU".
         device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1], Default: ``0`` .
+            "device_num_per_host" refers to the total number of devices on the host.
 
     Examples:
         >>> import mindspore as ms
@@ -65,10 +66,16 @@ def set_device(device_target, device_id=None):
 @args_type_check(deterministic=bool)
 def set_deterministic(deterministic):
     """
-    Whether to enable op run in deterministic mode.
+    Enables or disables deterministic computing.
+
+    When deterministic computing is enabled, the same output is generated if an operator is executed
+    for multiple times with the same hardware and input.This often slows down operator execution.
+
+    The framework not enabled deterministic computation by default.
 
     Args:
-        deterministic (bool): Whether to enable op run in deterministic mode, Default:  ``false``.
+        deterministic (bool): Whether to enable deterministic computing.
+
     Examples:
         >>> import mindspore as ms
         >>> ms.set_deterministic(True)

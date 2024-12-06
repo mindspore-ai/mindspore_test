@@ -22,6 +22,7 @@
 #include "kernel/common/pyboost/op_runner.h"
 #include "kernel/common/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
@@ -54,7 +55,7 @@ tensor::BaseTensorPtr NonZeroGPUCustomize(const std::shared_ptr<OpRunner> &op, c
     PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
 
   PyBoostUtils::LaunchKernel(op->primitive(), device_context, input_address_info, output_address_info, op->stream_id());
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync && !device_context->device_res_manager_->SyncAllStreams()) {
     MS_LOG(EXCEPTION) << "SyncStream failed for op NonZero";
   }

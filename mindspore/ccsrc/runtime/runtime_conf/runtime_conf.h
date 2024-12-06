@@ -26,9 +26,11 @@
 
 namespace mindspore {
 namespace runtime {
+
 const char kMemoryConf[] = "MemoryConf";
 const char kDispatchThreadsNumConf[] = "DispatchThreadsNumConf";
 const char kOpThreadsNumConf[] = "OpThreadsNumConf";
+const char kLaunchBlocking[] = "launch_blocking";
 
 class BACKEND_EXPORT RuntimeConf {
  public:
@@ -38,11 +40,17 @@ class BACKEND_EXPORT RuntimeConf {
   RuntimeConf &operator=(const RuntimeConf &) = delete;
   static std::shared_ptr<RuntimeConf> GetInstance();
 
-  void set_launch_blocking() { launch_blocking_ = true; }
+  void set_launch_blocking() {
+    conf_status_[kLaunchBlocking] = true;
+    launch_blocking_ = true;
+  }
   bool launch_blocking() {
     auto ms_context = MsContext::GetInstance();
-    return launch_blocking_ || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+    static bool sync_stream = common::IsEnableRuntimeConfig(common::kRuntimeSynchronize);
+    MS_EXCEPTION_IF_NULL(ms_context);
+    return launch_blocking_ || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) || sync_stream;
   }
+  bool IsSetLaunchBlocking() { return conf_status_.count(kLaunchBlocking); }
 
   void set_dispatch_threads_num(uint32_t threads_num) {
     dispatch_threads_num_ = threads_num;
@@ -94,7 +102,6 @@ class BACKEND_EXPORT RuntimeConf {
   float mem_block_increase_size_;
   float mem_max_size_;
   int mem_optimize_level_;
-
   std::map<std::string, bool> conf_status_;
 };
 }  // namespace runtime

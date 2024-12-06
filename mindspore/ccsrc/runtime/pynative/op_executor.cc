@@ -18,6 +18,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/pynative/lazy_fusion_kernel.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 
 namespace mindspore::runtime {
@@ -80,7 +81,7 @@ void OpExecutor::DispatchLaunchTask(std::function<void()> &&func) {
 bool OpExecutor::NeedSync() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  return context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||
+  return runtime::RuntimeConf::GetInstance()->launch_blocking() ||
          (context->get_param<int>(MS_CTX_EXECUTION_MODE) == mindspore::kGraphMode && !async_for_graph_);
 }
 

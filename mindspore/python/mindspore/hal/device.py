@@ -123,6 +123,9 @@ def is_initialized(device_target):
     Returns whether specified backend is initialized.
 
     Note:
+        - The api will be deprecated.
+
+    Note:
         MindSpore's backends "CPU", "GPU" and "Ascend" will be initialized in the following scenarios:
 
         - For distributed job, backend will be initialized after `mindspore.communication.init` method is called.
@@ -162,6 +165,12 @@ def is_available(device_target):
     Returns whether specified backend is available.
     All dependent libraries should be successfully loaded if this backend is available.
 
+    Note:
+        - The api will be deprecated.
+        - CPU hardware, please use the interface :func:`mindspore.device_context.cpu.is_available`.
+        - GPU hardware, please use the interface :func:`mindspore.device_context.gpu.is_available`.
+        - Ascend hardware, please use the interface :func:`mindspore.device_context.ascend.is_available`.
+
     Args:
         device_target (str): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
 
@@ -195,6 +204,13 @@ def device_count(device_target=None):
     Returns device count of specified backend.
 
     Note:
+        - The api will be deprecated.
+        - CPU hardware, please use the interface :func:`mindspore.device_context.cpu.device_count`.
+        - GPU hardware, please use the interface :func:`mindspore.device_context.gpu.device_count`.
+        - Ascend hardware, please use the interface :func:`mindspore.device_context.ascend.device_count`.
+
+
+    Note:
         If `device_target` is not specified, get the device count of the current backend set by context.
         For CPU backend, this method always returns 1.
 
@@ -220,6 +236,9 @@ def device_count(device_target=None):
 def get_device_capability(device_id, device_target=None):
     """
     Get specified device's capability.
+
+    Note:
+        - The api will be deprecated.
 
     Note:
         If `device_target` is not specified, get the device capability of the current backend set by context.
@@ -252,6 +271,9 @@ def get_device_capability(device_id, device_target=None):
 def get_device_properties(device_id, device_target=None):
     """
     Get specified device's properties.
+
+    Note:
+        - The api will be deprecated.
 
     Note:
         If `device_target` is not specified, get the device properties of the current backend set by context.
@@ -309,6 +331,9 @@ def get_device_name(device_id, device_target=None):
     Get specified device's name.
 
     Note:
+        - The api will be deprecated.
+
+    Note:
         If `device_target` is not specified, get the device name of the current backend set by context.
         This method always returns "CPU" for CPU backend.
 
@@ -334,6 +359,9 @@ def get_device_name(device_id, device_target=None):
 def get_arch_list(device_target=None):
     """
     Get the architecture list this MindSpore was compiled for.
+
+    Note:
+        - The api will be deprecated.
 
     Note:
         If `device_target` is not specified, get the device name of the current backend set by context.
