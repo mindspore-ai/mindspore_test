@@ -309,12 +309,37 @@ def is_pyboost_enable(operator_data):
 
 def format_func_api_name(func_api_name):
     """
-    Generates formatted string for function names, e.g., add_ext -> AddExt.
+    Converts a snake_case string to PascalCase format with the first letter capitalized.
+    Additionally, it preserves the trailing underscore. In special cases, such as double
+    underscore names (e.g., __add__), it converts them into PascalCase.
+
+    Args:
+        func_api_name (str): The input snake_case string.
+
+    Returns:
+        str: The converted PascalCase string.
     """
-    if '_' in func_api_name:
-        formatted_func_api_name = ''.join([name.capitalize() for name in func_api_name.split('_')])
-    else:
-        formatted_func_api_name = func_api_name.capitalize()
+    # Check if the string ends with '_'
+    is_one_underscore = func_api_name.endswith('_')
+
+    # Check if it is a double-underscore name (special method names)
+    is_double_underscore = func_api_name.startswith('__') and func_api_name.endswith('__')
+
+    # If it is a double-underscore name, remove the leading and trailing underscores
+    if is_double_underscore:
+        func_api_name = func_api_name[2:-2]
+
+    # If the original name ends with '_' but is not a double-underscore name, remove the trailing '_'
+    if is_one_underscore and not is_double_underscore:
+        func_api_name = func_api_name[:-1]
+
+    # Convert snake_case to PascalCase
+    formatted_func_api_name = ''.join(x.capitalize() for x in func_api_name.split('_'))
+
+    # If the original name ends with '_' but is not a double-underscore name, append the trailing underscore
+    if is_one_underscore and not is_double_underscore:
+        formatted_func_api_name += '_'
+
     return formatted_func_api_name
 
 
