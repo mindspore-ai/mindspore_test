@@ -44,7 +44,8 @@ from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, fast_gelu, silu, elu, sigmoid, relu6, \
     softmax_impl, swiglu, logsigmoid_op
 from mindspore.ops.auto_generate import relu_op, inplace_relu_op
-from mindspore.ops.auto_generate import group_norm_op, rms_norm, layer_norm_ext_op, batch_norm_ext_op, mse_loss_ext
+from mindspore.ops.auto_generate import group_norm_op, rms_norm, add_rms_norm, layer_norm_ext_op, batch_norm_ext_op,\
+    mse_loss_ext
 from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op, add_layernorm_v2_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
                                          replication_pad_1d_op, replication_pad_2d_op, replication_pad_3d_op,
@@ -9172,5 +9173,6 @@ __all__ = [
     'add_layer_norm',
     'group_norm',
     'rms_norm',
+    'add_rms_norm',
 ]
 __all__.sort()

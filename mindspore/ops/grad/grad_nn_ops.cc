@@ -3645,6 +3645,25 @@ REG_BPROP_BUILDER("RmsNorm").FreeUselessValues_IO({i2}, {i0}).SetBody((BODYFUNC(
   return {dx, dgamma, ib->OutZeros(eps)};
 }));
 
+REG_BPROP_BUILDER("AddRmsNorm").FreeUselessValues_IO({i0, i1, i3}, {i0}).SetBody((BODYFUNC(ib) {
+  auto x1 = ib->GetInput(kIndex0);
+  auto x2 = ib->GetInput(kIndex1);
+  auto gamma = ib->GetInput(kIndex2);
+  auto eps = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+  auto rstd = ib->TupleGetItem(out, kIndex1);
+  auto x_sum = ib->TupleGetItem(out, kIndex2);
+  auto dy = ib->TupleGetItem(dout, kIndex0);
+
+  auto grad = ib->RmsNormGrad(dy, x_sum, rstd, gamma);
+  auto dx1 = x1->need_compute_grad_out() ? ib->TupleGetItem(grad, kIndex0) : ib->OutZeros(x1);
+  auto dx2 = x2->need_compute_grad_out() ? ib->TupleGetItem(grad, kIndex0) : ib->OutZeros(x2);
+  auto dgamma_raw = ib->TupleGetItem(grad, kIndex1);
+  auto dgamma = gamma->need_compute_grad_out() ? ib->Cast(dgamma_raw, ib->GetDtype(gamma)) : ib->OutZeros(gamma);
+  return {dx1, dx2, dgamma, ib->OutZeros(eps)};
+}));
+
 REG_BPROP_BUILDER("AvgPool2D").FreeUselessValues_O({}).SetBody((BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto kernel_size = ib->GetInput(kIndex1);
