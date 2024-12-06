@@ -315,6 +315,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"gather", std::string("gather")},                                  // P.Gather()
        {"scatter", std::string("scatter")},                                // P.TensorScatterElements()
        {"scatter_add", std::string("tensor_scatter_add")},                 // P.TensorScatterAdd()
+       {"scatter_add_", std::string("inplace_scatter_add")},               // F.inplace_scatter_add()
        {"scatter_mul", std::string("tensor_scatter_mul")},                 // tensor_scatter_mul()
        {"scatter_sub", std::string("tensor_scatter_sub")},                 // P.TensorScatterSub()
        {"scatter_min", std::string("tensor_scatter_min")},                 // P.TensorScatterMin()
