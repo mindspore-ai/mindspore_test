@@ -22,7 +22,7 @@ mindspore.Tensor.not_equal
         - **other** (Union[Tensor, number.Number, bool]) - `other` 可以是number.Number或bool，也可以是数据类型为number.Number或bool的Tensor。
 
     返回：
-        Tensor，输出shape与输入相同，数据类型为bool。
+        Tensor的shape与广播后的shape相同，数据类型为bool。
 
     异常：
         - **TypeError** - `other` 不是以下之一：Tensor、数值型、bool。
