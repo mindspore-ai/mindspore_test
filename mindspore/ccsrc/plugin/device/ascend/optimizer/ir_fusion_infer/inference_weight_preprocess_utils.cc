@@ -90,6 +90,10 @@ std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node
     assist_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, shape);
     tensor_type = std::make_shared<TensorType>(kFloat32);
     ConvertDataType<float16, float>(assist_tensor->data_c(), ori_data, shape[0], need_rank_offset, global_rank_id);
+  } else if (w_type_id == kNumberTypeBFloat16) {
+    assist_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, shape);
+    tensor_type = std::make_shared<TensorType>(kFloat32);
+    ConvertDataType<bfloat16, float>(assist_tensor->data_c(), ori_data, shape[0], need_rank_offset, global_rank_id);
   } else {
     MS_LOG(EXCEPTION) << "type_id " << TypeIdToString(w_type_id) << " is unexpected, only support int8 or float16.";
   }
