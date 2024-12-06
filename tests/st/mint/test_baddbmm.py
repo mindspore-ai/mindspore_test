@@ -22,9 +22,9 @@ from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, shape1, shape2):
-    x = generate_numpy_ndarray_by_randn(shape, np.float32, 'x')
-    batch1 = generate_numpy_ndarray_by_randn(shape1, np.float32, 'batch1')
-    batch2 = generate_numpy_ndarray_by_randn(shape2, np.float32, 'batch2')
+    x = generate_numpy_ndarray_by_randn(shape, np.float32, 'x', seed=0)
+    batch1 = generate_numpy_ndarray_by_randn(shape1, np.float32, 'batch1', seed=0)
+    batch2 = generate_numpy_ndarray_by_randn(shape2, np.float32, 'batch2', seed=0)
     return x, batch1, batch2
 
 
