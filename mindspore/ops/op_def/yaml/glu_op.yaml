@@ -1,0 +1,18 @@
+#operator GLU
+glu: 
+  args:
+    x:
+      dtype: tensor
+    axis:
+      dtype: int
+      default: -1
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+  function:
+    disable: True
+  class:
+    name: GLU

@@ -17,12 +17,12 @@
 #include "kernel/cpu/glu_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/infer/glu.h"
+#include <vector>
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 
 namespace mindspore::kernel {
 namespace {
-constexpr const size_t kGLUInputsNum = 1;
+constexpr const size_t kGLUInputsNum = 2;
 constexpr const size_t kGLUOutputsNum = 1;
 constexpr const int64_t kParallelDataNum = 16 * 1024;
 const int64_t kEvenNum = 2;
@@ -117,18 +117,27 @@ bool GLUCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &in
 
 const std::vector<std::pair<KernelAttr, GLUCpuKernelMod::KernelRunFunc>> &GLUCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, GLUCpuKernelMod::KernelRunFunc>> func_list = {
-    {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat16)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat16),
      &GLUCpuKernelMod::LaunchKernel<float16>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat32),
      &GLUCpuKernelMod::LaunchKernel<float>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat64),
      &GLUCpuKernelMod::LaunchKernel<double>},
   };
   return func_list;
 }
 
 bool GLUCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  split_dim_ = GetValue<int64_t>(primitive_->GetAttr(ops::kAxis));
+  split_dim_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   value_shape_vec_ = inputs.at(kIndex0)->GetShapeVector();
   int64_t dim_value = SizeToLong(value_shape_vec_.size());
   for (auto &k : value_shape_vec_) {

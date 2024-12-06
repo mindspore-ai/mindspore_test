@@ -1,0 +1,17 @@
+#operator GluGrad
+glu_grad: 
+  args:
+    grads:
+      dtype: tensor
+    x:
+      dtype: tensor
+    axis:
+      dtype: int
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+  function:
+    disable: True
