@@ -60,7 +60,7 @@ DeviceMemPtr EnhancedDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
 #endif
 
   // Adapt for dry run.
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool alloc, total mem: " << TotalMemStatistics()
                     << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                     << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -117,7 +117,7 @@ bool EnhancedDynamicMemPool::DoFreeTensorMem(const DeviceMemPtr &device_addr) {
 #endif
 
     // Adapt for dry run.
-    if (common::IsNeedProfileMemory()) {
+    if (IsNeedProfilieMemoryLog()) {
       MS_LOG(WARNING) << "Need Profile Memory, Memory pool free, total mem: " << TotalMemStatistics()
                       << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                       << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -140,6 +140,9 @@ void EnhancedDynamicMemPool::FreePartTensorMems(const std::vector<DeviceMemPtr> 
   LockGuard lock(lock_);
   const auto keep_mem_bufs = AbstractDynamicMemPool::DoFreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
   if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    for (const auto &free_addr : free_addrs) {
+      tracker::CALL_MEMORY_TRACKER(FreeMemBlock, free_addr, TotalUsedMemStatistics(), TotalMemStatistics());
+    }
     for (const auto &mem_buf : keep_mem_bufs) {
       tracker::CALL_MEMORY_TRACKER(AllocMemBlock, mem_buf->addr_, mem_buf->size_, GetMemoryPoolType(),
                                    ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(),

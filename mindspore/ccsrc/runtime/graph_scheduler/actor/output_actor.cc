@@ -512,6 +512,9 @@ void OutputActor::UpdateOutputDeviceAddress() {
       device_tensor->Swap(tensor_device_address.get());
       tensor_device_address->set_user_data(device_tensor->user_data());
     }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
+      device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
   }
 
   output_node_to_tensor_device_address_.clear();

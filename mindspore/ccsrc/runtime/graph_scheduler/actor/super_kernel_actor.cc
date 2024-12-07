@@ -141,7 +141,7 @@ void SuperKernelActor::Init() {
         MS_LOG(INFO) << "Output node:" << output_node->DebugString() << " has a default ptr, maybe a mem leak.";
         device_address->set_ptr(nullptr);
       }
-      if (common::IsNeedProfileMemory()) {
+      if (common::IsDryRun()) {
         device_address_to_node_[device_address.get()] = {device_address->GetSize(), output_node->fullname_with_scope()};
       }
       memory_alloc_list_.emplace_back(device_address.get());
@@ -205,7 +205,7 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const con
       }
       input_device_tensors_[index] = input_data->data_;
 
-      if (common::IsNeedProfileMemory()) {
+      if (IsNeedProfilieMemoryLog()) {
         auto output_address = reinterpret_cast<std::uintptr_t>(input_device_tensors_[index]);
         MS_LOG(WARNING) << "Need Profile Memory, Memory use, actor name: " << GetAID().Name()
                         << ", kernel graph: " << graph_->ToString() << ", device address class ptr: " << output_address
@@ -259,7 +259,7 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
   }
   MS_LOG(INFO) << "Super kernel actor(" << GetAID().Name()
                << ") launches graph: " << std::to_string(graph_->graph_id());
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, launch actor name: " << GetAID().Name()
                     << ", kernel graph: " << graph_->ToString();
   }
@@ -281,7 +281,7 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
       if (device_tensor->IsNotNeedAlloc()) {
         continue;
       }
-      if (common::IsNeedProfileMemory()) {
+      if (IsNeedProfilieMemoryLog()) {
         auto &info = device_address_to_node_[device_tensor];
         auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor);
         MS_LOG(WARNING) << "Need Profile Memory, Memory need allocated, actor name: " << GetAID().Name()
@@ -295,7 +295,7 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
   } else {
     OnMemoryAllocFinish(context);
   }
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, end launch, actor name: " << GetAID().Name()
                     << ", kernel graph: " << graph_->ToString();
   }
@@ -767,7 +767,7 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const contex
         std::string error_info = "Launch graph failed, graph id: " + std::to_string(graph_->graph_id());
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
       }
-    } else if (common::IsNeedProfileMemory()) {
+    } else if (IsNeedProfilieMemoryLog()) {
       auto memory_size = device_contexts_[0]->graph_executor_->GetGraphFeatureMemory(graph_);
       MS_LOG(WARNING) << "Need Profile Memory, graph: " << graph_->ToString() << ", feature memory: " << memory_size;
       MS_LOG(WARNING) << "Need Profile Memory, max used static memory: "
@@ -957,7 +957,7 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context)
                                                   "Invalid device context for super kernel actor:" + GetAID().Name());
   }
   if (memory_free_lists_.size() > 0 && memory_free_lists_.back().size() > 0) {
-    if (common::IsNeedProfileMemory()) {
+    if (IsNeedProfilieMemoryLog()) {
       for (auto data : memory_free_lists_.back()) {
         auto output_address = reinterpret_cast<std::uintptr_t>(data);
         MS_LOG(WARNING) << "Need Profile Memory, Memory need Decrease DynamicRefCount, actor name: " << GetAID().Name()

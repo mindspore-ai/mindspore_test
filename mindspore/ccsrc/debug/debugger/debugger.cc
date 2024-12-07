@@ -42,6 +42,7 @@
 #include "debug/debugger/debugger_utils.h"
 #include "debug/debug_services.h"
 #include "runtime/device/ms_device_shape_transfer.h"
+#include "proto/debug_graph.pb.h"
 
 using debugger::GraphProto;
 using debugger::ModelProto;

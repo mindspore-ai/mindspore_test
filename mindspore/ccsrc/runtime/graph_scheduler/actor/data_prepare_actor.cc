@@ -144,7 +144,10 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, *device_context, node->fullname_with_scope(),
                                                   device_tensor->GetSize());
     }
-    if (common::IsNeedProfileMemory()) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsOutput, "SyncTensorData", device_tensor->device_name(), device_tensor->GetPtr(),
+      device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+    if (IsNeedProfilieMemoryLog()) {
       auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor.get());
       MS_LOG(WARNING) << "Need Profile Memory, alloc type: SyncTensorData, device address class ptr: " << output_address
                       << ", node: " << node->fullname_with_scope() << ", graph: " << graph_str
@@ -973,7 +976,10 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
   }
-  if (common::IsNeedProfileMemory()) {
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+    MarkTensorAsOutput, "PrepareDataForControlValueNode", device_tensor->device_name(), device_tensor->GetPtr(),
+    device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+  if (IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForControlValueNode, device address class ptr: "
                     << output_address << ", node: " << node->fullname_with_scope() << ", graph: " << graph_str
@@ -1025,7 +1031,10 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
   }
-  if (common::IsNeedProfileMemory()) {
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+    MarkTensorAsOutput, "PrepareDataForStringValue", device_tensor->device_name(), device_tensor->GetPtr(),
+    device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+  if (IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForValueNode, device address class ptr: "
                     << output_address << ", device address size: " << device_tensor->GetSize()
@@ -1090,7 +1099,10 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
   }
-  if (common::IsNeedProfileMemory()) {
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+    MarkTensorAsOutput, "PrepareDataForSequenceAndScalarValue", device_tensor->device_name(), device_tensor->GetPtr(),
+    device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+  if (IsNeedProfilieMemoryLog()) {
     auto output_address = reinterpret_cast<uintptr_t>(device_tensor.get());
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: PrepareDataForValueNode, device address class ptr: "
                     << output_address << ", device address size: " << device_tensor->GetSize()
@@ -1167,7 +1179,13 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
                                                   backend_node->fullname_with_scope(),
                                                   another_device_tensor->GetSize());
     }
-    if (common::IsNeedProfileMemory() && need_alloc_memory) {
+    if (need_alloc_memory) {
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+        MarkTensorAsOutput, "CopyDataFromDeviceTensorStore", another_device_tensor->device_name(),
+        another_device_tensor->GetPtr(), another_device_tensor->type_id(), another_device_tensor->GetShapeVector(),
+        another_device_tensor->GetTensorStorageInfo());
+    }
+    if (IsNeedProfilieMemoryLog() && need_alloc_memory) {
       auto output_address = reinterpret_cast<uintptr_t>(another_device_tensor.get());
       MS_LOG(WARNING) << "Need Profile Memory, alloc type: CopyDataFromDeviceTensorStore, device address class ptr: "
                       << output_address << ", device address size: " << another_device_tensor->GetSize()

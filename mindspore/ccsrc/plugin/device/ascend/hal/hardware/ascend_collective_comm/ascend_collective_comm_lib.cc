@@ -15,6 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "include/common/utils/utils.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -279,6 +280,9 @@ bool AscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_
 }
 
 HcclComm AscendCollectiveCommLib::HcclCommunicator(const std::string &group_name) {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    return nullptr;
+  }
   if (!common::UseHostCollective() || hccl::HcclAdapter::GetInstance().UseHcclCM()) {
     return hccl::HcclAdapter::GetInstance().get_hccl_comm();
   }

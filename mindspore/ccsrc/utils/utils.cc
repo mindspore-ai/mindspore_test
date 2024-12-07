@@ -15,6 +15,7 @@
  */
 
 #include "include/common/utils/utils.h"
+#include "utils/ms_utils.h"
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
 #else
@@ -323,6 +324,11 @@ bool IsDisableGeKernel() {
   static bool use_ascend910 = context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice &&
                               context->ascend_soc_version() == kAscendVersion910;
   return config_disable_ge_kernel || use_hccl_rank_table || use_ascend910;
+}
+
+bool IsNeedProfilieMemoryLog() {
+  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsDryRun();
+  return is_need_profile_memory_log;
 }
 
 bool IsMemoryPoolRecycle() {

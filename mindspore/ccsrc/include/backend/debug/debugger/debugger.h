@@ -28,7 +28,6 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/device_address.h"
 #include "include/backend/visible.h"
-#include "proto/debug_graph.pb.h"
 #include "runtime/hardware/device_context.h"
 
 namespace debugger {
