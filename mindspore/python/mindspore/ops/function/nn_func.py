@@ -4312,13 +4312,14 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
-            in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
+        input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` , `N = batch size` ,
+            or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
             `input` is expected to be log-probabilities.
             Data type only supports float32 or float16 or bfloat16(only supported by
             Atlas A2 training series products).
-        target (Tensor): :math:`(N)` or :math:`(N, d_1, d_2, ..., d_K)` for
-            high-dimensional loss, data type must be int32, int64, uint8.
+        target (Tensor): :math:`()` or :math:`(N)` ,
+          where the value range is :math:`[0, C-1]`, or :math:`(N, d_1, d_2, ..., d_K)` for
+          high-dimensional loss, data type must be int32 or int64 or uint8.
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, the shape is :math:`(C,)`.
             The data type must be float16 or float32 or bfloat16(only supported by Atlas A2 training series products).

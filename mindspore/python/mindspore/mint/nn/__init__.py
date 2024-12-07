@@ -328,11 +328,12 @@ class NLLLoss(Cell):
             - ``'sum'``: the output elements will be summed.
 
     Inputs:
-        - **input** (Tensor) - :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
-          in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)`.
+        - **input** (Tensor) - :math:`(N)` or :math:`(N, C)` where `C = number of classes` , `N = batch size` ,
+          or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
           `input` is expected to be log-probabilities, data type must be float16 or float32 or bfloat16(only supported
           by Atlas A2 training series products).
-        - **target** (Tensor) - :math:`(N)` or :math:`(N, d_1, d_2, ..., d_K)` for
+        - **target** (Tensor) - :math:`()` or :math:`(N)` ,
+          where the value range is :math:`[0, C-1]`, or :math:`(N, d_1, d_2, ..., d_K)` for
           high-dimensional loss, data type must be int32 or int64 or uint8.
 
     Outputs:
