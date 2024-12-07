@@ -1,0 +1,7 @@
+gcd:
+  op_yaml: gcd_op.yaml
+  py_method: tensor_gcd
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

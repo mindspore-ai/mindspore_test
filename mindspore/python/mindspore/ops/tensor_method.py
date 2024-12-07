@@ -335,6 +335,7 @@ from mindspore.ops.function.array_func import where as where_func
 # 145 element_size
 
 # 146 gcd
+from mindspore.ops.auto_generate import gcd
 
 # 147 isinf
 
@@ -1040,6 +1041,9 @@ def deprecated_tensor_where(input, condition, y):
 # 145 element_size
 
 # 146 gcd
+def tensor_gcd(input, other):
+    return gcd(input, other)
+
 
 # 147 isinf
 
