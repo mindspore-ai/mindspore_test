@@ -225,7 +225,7 @@ from mindspore.ops.auto_generate import rsqrt
 # 91 scatter
 
 # 92 scatter_add
-
+from mindspore.ops.function.array_func import tensor_scatter_add
 # 93 select
 from mindspore.ops.auto_generate import select, select_ext
 # 94 sigmoid
@@ -818,6 +818,13 @@ def tensor_rsqrt(input):
 # 91 scatter
 
 # 92 scatter_add
+def tensor_scatter_add_empty(input, dim, index, src):
+    raise ValueError("should not come here for scatter_add method.")
+
+
+def deprecated_tensor_scatter_add(input, indices, updates):
+    return tensor_scatter_add(input, indices, updates)
+
 
 # 93 select
 def tensor_select_ext(input, dim, index):
