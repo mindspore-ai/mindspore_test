@@ -20,6 +20,7 @@ from mindspore.mint import equal
 
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -65,23 +66,6 @@ def test_ops_equal_normal(context_mode):
     equal_backward_func(ms.Tensor(x), ms.Tensor(other))
 
 
-# @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-#           level_mark='level1', card_mark='onecard', essential_mark='unessential')
-# @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-# @test_utils.run_test_with_On
-# def test_ops_equal_vmap(context_mode):
-#     """
-#     Feature: pyboost function.
-#     Description: test function equal vmap feature.
-#     Expectation: expect correct result.
-#     """
-#     ms.context.set_context(mode=context_mode)
-#     x, other = generate_random_input((2, 3, 4, 5), np.float32)
-#     output = equal_vmap_func(ms.Tensor(x), ms.Tensor(other))
-#     expect = generate_expect_forward_output(x, other)
-#     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
-
-
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
           level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_equal_forward_dynamic_shape():
@@ -91,10 +75,10 @@ def test_ops_equal_forward_dynamic_shape():
     Expectation: expect correct result.
     """
     x, y = generate_random_input((3, 4, 5, 6), np.float16)
-    x = Tensor(x, dtype=ms.float16)
-    y = Tensor(y, dtype=ms.float16)
+    x = ms.Tensor(x, dtype=ms.float16)
+    y = ms.Tensor(y, dtype=ms.float16)
     x2, y2 = generate_random_input((3, 4), np.float16)
-    x2 = Tensor(x2, dtype=ms.float16)
-    y2 = Tensor(y2, dtype=ms.float16)
+    x2 = ms.Tensor(x2, dtype=ms.float16)
+    y2 = ms.Tensor(y2, dtype=ms.float16)
     TEST_OP(equal_forward_func, [[x, y], [x2, y2]], '',
             disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
