@@ -19,6 +19,7 @@
 
 #include <utility>
 #include <tuple>
+#include "runtime/pynative/lazy_fusion_kernel.h"
 #include "kernel/ascend/pyboost/auto_generate/abs.h"
 #include "kernel/ascend/pyboost/auto_generate/add.h"
 #include "kernel/ascend/pyboost/auto_generate/cast.h"
@@ -64,6 +65,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+void LazyFusionAscendInit();
+
 class CastAscendDvm : public CastAscend {
  public:
   CastAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)

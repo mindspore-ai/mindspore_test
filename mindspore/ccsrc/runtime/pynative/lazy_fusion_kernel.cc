@@ -27,4 +27,20 @@ LazyFusionManager::~LazyFusionManager() {
     pool_.pop();
   }
 }
+
+void LazyFusionManager::Init() {
+  auto build_iter = build_funcs_.find(kAscendDevice);
+  if (build_iter != build_funcs_.end()) {
+    MS_LOG(INFO) << "Set build_func";
+    build_func_ = build_iter->second;
+    MS_EXCEPTION_IF_NULL(build_func_);
+  }
+  auto init_iter = init_funcs_.find(kAscendDevice);
+  if (init_iter != init_funcs_.end()) {
+    init_func_ = init_iter->second;
+    MS_LOG(INFO) << "Set init_func";
+    MS_EXCEPTION_IF_NULL(init_func_);
+    init_func_();
+  }
+}
 }  // namespace mindspore

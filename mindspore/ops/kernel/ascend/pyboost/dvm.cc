@@ -1005,47 +1005,61 @@ tensor::BaseTensorPtr MatMulAscendDvm::Call(const BaseTensorPtr &input_tensor, c
   return outputs_.front();
 }
 
-MS_REG_PYBOOST_DVM_OP(Cast);
-MS_REG_PYBOOST_DVM_OP(Abs);
-MS_REG_PYBOOST_DVM_OP(Neg);
-MS_REG_PYBOOST_DVM_OP(Exp);
-MS_REG_PYBOOST_DVM_OP(Sqrt);
-MS_REG_PYBOOST_DVM_OP(Reciprocal);
-MS_REG_PYBOOST_DVM_OP(IsFinite);
-MS_REG_PYBOOST_DVM_OP(Round);
-MS_REG_PYBOOST_DVM_OP(Ceil);
-MS_REG_PYBOOST_DVM_OP(Floor);
-MS_REG_PYBOOST_DVM_OP(Trunc);
-MS_REG_PYBOOST_DVM_OP(Equal);
-MS_REG_PYBOOST_DVM_OP(NotEqual);
-MS_REG_PYBOOST_DVM_OP(Greater);
-MS_REG_PYBOOST_DVM_OP(GreaterEqual);
-MS_REG_PYBOOST_DVM_OP(Less);
-MS_REG_PYBOOST_DVM_OP(LessEqual);
-MS_REG_PYBOOST_DVM_OP(Add);
-MS_REG_PYBOOST_DVM_OP(Mul);
-MS_REG_PYBOOST_DVM_OP(Sub);
-MS_REG_PYBOOST_DVM_OP(Div);
-MS_REG_PYBOOST_DVM_OP(Pow);
-MS_REG_PYBOOST_DVM_OP(Maximum);
-MS_REG_PYBOOST_DVM_OP(Minimum);
-MS_REG_PYBOOST_DVM_OP(LogicalNot);
-MS_REG_PYBOOST_DVM_OP(LogicalAnd);
-MS_REG_PYBOOST_DVM_OP(LogicalOr);
-MS_REG_PYBOOST_DVM_OP(Sigmoid);
-MS_REG_PYBOOST_DVM_OP(SigmoidGrad);
-MS_REG_PYBOOST_DVM_OP(SiLU);
-MS_REG_PYBOOST_DVM_OP(SiLUGrad);
-MS_REG_PYBOOST_DVM_OP(GeLU);
-MS_REG_PYBOOST_DVM_OP(GeLUGrad);
-MS_REG_PYBOOST_DVM_OP(SumExt);
-MS_REG_PYBOOST_DVM_OP(AddExt);
-MS_REG_PYBOOST_DVM_OP(Tile);
-MS_REG_PYBOOST_DVM_OP(LinalgVectorNorm);
-MS_REG_PYBOOST_DVM_OP(AdamW);
-MS_REG_PYBOOST_DVM_OP(InplaceCopy);
-MS_REG_PYBOOST_DVM_OP(Dense);
-MS_REG_PYBOOST_DVM_OP(MatMul);
+#define MS_REPLACE_DVM_OP(clazz)                                                                     \
+  if (std::find(disable_ops.begin(), disable_ops.end(), #clazz) == disable_ops.end()) {              \
+    OpFactory<clazz>::Get().op_creator()[kAscendDevice] = []() {                                     \
+      return std::make_shared<clazz##AscendDvm>(prim::kPrim##clazz,                                  \
+                                                runtime::OpRunner::GetDeviceContext(kAscendDevice)); \
+    };                                                                                               \
+  }
+
+void LazyFusionAscendInit() {
+  const auto &disable_ops = LazyFusionFlags::GetInstance().disable_ops;
+  MS_REPLACE_DVM_OP(Add);
+  MS_REPLACE_DVM_OP(Cast);
+  MS_REPLACE_DVM_OP(Abs);
+  MS_REPLACE_DVM_OP(Neg);
+  MS_REPLACE_DVM_OP(Exp);
+  MS_REPLACE_DVM_OP(Sqrt);
+  MS_REPLACE_DVM_OP(Reciprocal);
+  MS_REPLACE_DVM_OP(IsFinite);
+  MS_REPLACE_DVM_OP(Round);
+  MS_REPLACE_DVM_OP(Ceil);
+  MS_REPLACE_DVM_OP(Floor);
+  MS_REPLACE_DVM_OP(Trunc);
+  MS_REPLACE_DVM_OP(Equal);
+  MS_REPLACE_DVM_OP(NotEqual);
+  MS_REPLACE_DVM_OP(Greater);
+  MS_REPLACE_DVM_OP(GreaterEqual);
+  MS_REPLACE_DVM_OP(Less);
+  MS_REPLACE_DVM_OP(LessEqual);
+  MS_REPLACE_DVM_OP(Add);
+  MS_REPLACE_DVM_OP(Mul);
+  MS_REPLACE_DVM_OP(Sub);
+  MS_REPLACE_DVM_OP(Div);
+  MS_REPLACE_DVM_OP(Pow);
+  MS_REPLACE_DVM_OP(Maximum);
+  MS_REPLACE_DVM_OP(Minimum);
+  MS_REPLACE_DVM_OP(LogicalNot);
+  MS_REPLACE_DVM_OP(LogicalAnd);
+  MS_REPLACE_DVM_OP(LogicalOr);
+  MS_REPLACE_DVM_OP(Sigmoid);
+  MS_REPLACE_DVM_OP(SigmoidGrad);
+  MS_REPLACE_DVM_OP(SiLU);
+  MS_REPLACE_DVM_OP(SiLUGrad);
+  MS_REPLACE_DVM_OP(GeLU);
+  MS_REPLACE_DVM_OP(GeLUGrad);
+  MS_REPLACE_DVM_OP(SumExt);
+  MS_REPLACE_DVM_OP(AddExt);
+  MS_REPLACE_DVM_OP(Tile);
+  MS_REPLACE_DVM_OP(LinalgVectorNorm);
+  MS_REPLACE_DVM_OP(AdamW);
+  MS_REPLACE_DVM_OP(InplaceCopy);
+  MS_REPLACE_DVM_OP(Dense);
+  MS_REPLACE_DVM_OP(MatMul);
+}
+
+MS_REGISTER_LAZY_FUSION_INIT(kAscendDevice, LazyFusionAscendInit);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

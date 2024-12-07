@@ -14,24 +14,7 @@
 # ============================================================================
 
 import os
-import numpy as np
-import mindspore.context as context
-from mindspore import mint
-from mindspore import Tensor
-from mindspore.nn import Cell
 from tests.mark_utils import arg_mark
-
-
-class Net(Cell):
-    def __init__(self, alpha, axis):
-        super(Net, self).__init__()
-        self.alpha = alpha
-        self.axis = axis
-
-    def construct(self, x0, x1):
-        y0 = mint.add(x0, x1, alpha=self.alpha)
-        y1 = mint.sum(y0, self.axis)
-        return y1
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -41,18 +24,8 @@ def test_fuse():
     Description: pynative mode
     Expectation: the result match with the expected result
     """
-    os.environ["MS_DEV_ENABLE_DVM"] = "1"
-    context.set_context(mode=context.PYNATIVE_MODE)
-    np.random.seed(1)
-    x0 = np.random.normal(0, 1, (32, 128)).astype(np.float32)
-    x1 = np.abs(np.random.normal(0, 1, (32, 128)).astype(np.float32))
-    alpha = 2.3
-    axis = (0,)
-    expect = np.sum(x0 + x1 * alpha, axis)
-    x0_ms = Tensor(x0)
-    x1_ms = Tensor(x1)
-    net = Net(alpha, axis)
-    output = net(x0_ms, x1_ms)
-    output = output.asnumpy()
-    np.testing.assert_allclose(expect, output, 1e-4, 1e-4)
-    os.environ.pop("MS_DEV_ENABLE_DVM")
+    os.environ["MS_DEV_LAZY_FUSION_FLAGS"] = "--opt_level=1"
+    cur_path = os.path.split(os.path.realpath(__file__))[0]
+    ret = os.system("pytest -s {}/dvm_pynative.py::test_fuse".format(cur_path))
+    os.environ.pop("MS_DEV_LAZY_FUSION_FLAGS")
+    assert ret == 0

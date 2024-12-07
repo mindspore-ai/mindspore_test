@@ -28,18 +28,6 @@ OpFactory<T> &OpFactory<T>::Get() {
 
 template <typename T>
 std::shared_ptr<T> OpFactory<T>::Create(const string &device, uint32_t stream_id) {
-  // TODO: check enable dvm
-  static bool enable_dvm = common::GetEnv("MS_DEV_ENABLE_DVM") == "1" &&
-                           !MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) &&
-                           MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) != "ON";
-  if (enable_dvm) {
-    auto it = op_creator_.find("AscendDvm");
-    if (it != op_creator_.end()) {
-      auto op = it->second();
-      op->set_stream_id(stream_id);
-      return op;
-    }
-  }
   auto iter = op_creator_.find(device);
   if (iter == op_creator_.end()) {
     MS_LOG(EXCEPTION) << "Not found op " << typeid(T).name() << " on device " << device;
