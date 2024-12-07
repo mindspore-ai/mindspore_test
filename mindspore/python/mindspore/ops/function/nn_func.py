@@ -4680,9 +4680,9 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
             - CPU/GPU: float16, float32, float64.
         target (Tensor): Ground truth data, tensor of shape :math:`(N, *)`.
 
-            - Ascend: has the same shape as the `input`, `target` and `input`
+            - CPU/Ascend: has the same shape as the `input`, `target` and `input`
               comply with the implicit type conversion rules to make the data types consistent.
-            - CPU/GPU: has the same shape and dtype as the `input`.
+            - GPU: has the same shape and dtype as the `input`.
 
         beta (number, optional): A parameter used to control the point where the function will change between
             L1 to L2 loss. Default: ``1.0`` .

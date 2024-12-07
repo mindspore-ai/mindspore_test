@@ -669,9 +669,9 @@ class SmoothL1Loss(LossBase):
           - CPU/GPU: float16, float32, float64.
         - **labels** (Tensor) - Ground truth data.
 
-          - Ascend: has the same shape as the `logits`,
+          - CPU/Ascend: has the same shape as the `logits`,
             `logits` and `labels` comply with the implicit type conversion rules to make the data types consistent.
-          - CPU/GPU: has the same shape and dtype as the `logits`.
+          - GPU: has the same shape and dtype as the `logits`.
     Outputs:
         Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `logits`.
         Otherwise the shape of output tensor is :math:`()`.
