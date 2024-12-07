@@ -946,6 +946,12 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
 
     if (is_need_infer) {
       if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
+        static auto simu = !common::GetEnv(kSimulationLevel).empty();
+        if (simu) {
+          MS_LOG(EXCEPTION) << "For " << kernel_mod->kernel_name()
+                            << ", the output shape depends on the actual execution, and it will affect the accuracy of "
+                               "memory in dryrun mode.";
+        }
         kernel_mod->UpdateOutputShapeAndSize(input_kernel_tensors, output_kernel_tensors);
         UpdateOutputShape(output_edges);
       }

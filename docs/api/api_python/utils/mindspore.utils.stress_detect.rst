@@ -5,12 +5,12 @@
 
     返回：
         int，返回值代表错误类型，0表示正常；非0表示硬件故障。
-    
+
     支持平台：
         ``Ascend``
-    
+
     **样例**：
-    
+
         >>> from mindspore.utils import stress_detect
         >>> ret = stress_detect()
         >>> print(ret)
