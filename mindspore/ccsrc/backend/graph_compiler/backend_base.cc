@@ -19,6 +19,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <regex>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #endif
@@ -64,6 +65,8 @@
 #include "runtime/runtime_conf/runtime_conf.h"
 #include "runtime/runtime_conf/thread_bind_core.h"
 
+#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/backend/distributed/collective/collect_hccl_init_info.h"
 namespace mindspore {
 namespace compile {
 constexpr char kMainThread[] = "main";
@@ -129,6 +132,113 @@ void PushTupleTensor(const VectorRef &args, const std::vector<AnfNodePtr> &param
   auto tensor_input = flatten_value[index];
   MS_EXCEPTION_IF_NULL(tensor_input);
   input_tensors->push_back(tensor_input);
+}
+std::map<std::string, std::vector<CNodePtr>> CollectCommOps(const FuncGraphPtr &root_graph) {
+  std::map<std::string, std::vector<CNodePtr>> comm_ops_group;
+  const auto &sub_graphs = root_graph->manager()->func_graphs_used_total(root_graph);
+  FuncGraphSet all_graphs = sub_graphs;
+  all_graphs.insert(root_graph);
+  for (const auto &func_graph : all_graphs) {
+    auto nodes = func_graph->nodes();
+    for (auto node : nodes) {
+      if (!node->isa<CNode>()) {
+        continue;
+      }
+      auto cnode = node->cast<CNodePtr>();
+      if (common::AnfAlgo::IsCommunicationOp(cnode) && common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
+        auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+        if (comm_ops_group.find(group_name) == comm_ops_group.end()) {
+          comm_ops_group[group_name] = {cnode};
+        } else {
+          comm_ops_group[group_name].emplace_back(cnode);
+        }
+      }
+    }
+  }
+  return comm_ops_group;
+}
+int GetHcclBuffsizeFromEnv(const std::string &env_name) {
+  std::string hccl_buffer_size_env = common::GetEnv(env_name);
+  int hccl_buffer_size = 200;
+  if (!hccl_buffer_size_env.empty()) {
+    MS_LOG(WARNING) << "The value of " << env_name << " is: " << hccl_buffer_size_env;
+    try {
+      hccl_buffer_size = stoi(hccl_buffer_size_env);
+    } catch (const std::exception &e) {
+      MS_LOG(EXCEPTION) << "Invalid argument: " << e.what() << " when parse " << hccl_buffer_size_env;
+    }
+    if (hccl_buffer_size < 0) {
+      MS_LOG(EXCEPTION) << "the value of `HCCL_BUFFSIZE` must be greater than zero.";
+    }
+  }
+  return hccl_buffer_size;
+}
+void InitCommGroup(const FuncGraphPtr &root_graph) {
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    return;
+  }
+  auto comm_ops_group = CollectCommOps(root_graph);
+  int32_t default_size = GetHcclBuffsizeFromEnv("HCCL_BUFFSIZE");
+  int32_t p2p_size = GetHcclBuffsizeFromEnv("MS_DEV_P2P_HCCL_BUFFSIZE");
+  int32_t all2all_size = GetHcclBuffsizeFromEnv("MS_DEV_ALL2ALL_HCCL_BUFFSIZE");
+  auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
+  auto init_order = instance->GetInitOrder();
+  for (auto group_name : init_order) {
+    size_t init_hccl_buffsize = default_size;
+    if (comm_ops_group[group_name].size() == 0) {
+      MS_LOG(WARNING) << "There are no communication ops in the group: " << group_name
+                      << ", and the hccl_buffsize is set to 10M.";
+      init_hccl_buffsize = 10;
+    } else {
+      std::string env_name = "HCCL_BUFFSIZE";
+      bool is_dynamic = false;
+      bool is_p2p = true;
+      size_t max_comm_size = 0;
+      for (auto comm_node : comm_ops_group[group_name]) {
+        if (common::AnfAlgo::IsDynamicShape(comm_node)) {
+          is_dynamic = true;
+          max_comm_size = 0;
+          MS_LOG(WARNING) << "There are dynamic shape operators in group " << group_name
+                          << ", and you cannot obtain the max communication size";
+        } else {
+          for (size_t idx = 0; idx < common::AnfAlgo::GetInputNum(comm_node); ++idx) {
+            size_t type_size =
+              GetTypeByte(TypeIdToType(common::AnfAlgo::GetPrevNodeOutputInferDataType(comm_node, idx)));
+            ShapeVector inp_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(comm_node, idx);
+            size_t cure_size = type_size * SizeOf(inp_shape);
+            max_comm_size = max_comm_size > cure_size ? max_comm_size : cure_size;
+          }
+          for (size_t idx = 0; idx < AnfAlgo::GetOutputElementNum(comm_node); ++idx) {
+            size_t type_size = GetTypeByte(TypeIdToType(common::AnfAlgo::GetOutputInferDataType(comm_node, idx)));
+            ShapeVector out_shape = common::AnfAlgo::GetOutputInferShape(comm_node, idx);
+            size_t cure_size = type_size * SizeOf(out_shape);
+            max_comm_size = max_comm_size > cure_size ? max_comm_size : cure_size;
+          }
+        }
+        auto node_name = AnfUtils::GetCNodeName(comm_node);
+        if (p2p_size < 0 || (node_name != "Send" && node_name != "Receive")) {
+          is_p2p = false;
+        }
+        std::regex all2all("all2all", std::regex_constants::icase);
+        if (all2all_size > 0 && std::regex_search(node_name, all2all)) {
+          init_hccl_buffsize = all2all_size;
+          env_name = "MS_DEV_ALL2ALL_HCCL_BUFFSIZE";
+        }
+      }
+      if (!is_dynamic) {
+        size_t max_size_mb = static_cast<size_t>(static_cast<float>(max_comm_size) / 1024 / 1024) + 1;
+        MS_LOG(WARNING) << "In group: " << group_name << ", the max communication size is " << max_size_mb << " MB.";
+      }
+      if (is_p2p) {
+        init_hccl_buffsize = p2p_size;
+        env_name = "MS_DEV_P2P_HCCL_BUFFSIZE";
+      }
+      MS_LOG(WARNING) << "For group: " << group_name << ", the hccl_buffsize is inited by " << env_name
+                      << ", and the value is " << init_hccl_buffsize << " MB.";
+    }
+    distributed::collective::CollectiveManager::instance()->InitCommunicationGroup(group_name, init_hccl_buffsize);
+  }
+  MS_LOG(WARNING) << "The total memory occupied by HCCL is: " << instance->GetHcclMemSize() << " MB.";
 }
 }  // namespace
 
@@ -891,6 +1001,9 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
 
   auto root_graph = WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
+  PROF_START(InitCommGroup);
+  InitCommGroup(root_graph);
+  PROF_END(InitCommGroup);
   bool pynative_with_jit_call_graph = func_graph->has_flag(kFlagPyNativeWithJitCallGraph);
   if (!pynative_with_jit_call_graph) {
     UnifyMindIR(root_graph);

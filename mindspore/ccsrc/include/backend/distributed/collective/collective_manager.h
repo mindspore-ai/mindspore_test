@@ -61,7 +61,7 @@ class BACKEND_EXPORT CollectiveManager {
 
   // Create communication group.
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks);
-
+  bool InitCommunicationGroup(const std::string &group_name, const int32_t hccl_buffsize = -1);
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
 
