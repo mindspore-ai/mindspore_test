@@ -24,6 +24,7 @@
 #include <memory>
 #include "utils/ms_context.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
+#include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "distributed/persistent/storage/json_utils.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
 #include "availability/silent_check/silent_check.h"
@@ -376,9 +377,9 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   }
   MS_EXCEPTION_IF_NULL(group);
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
-  bool ret = false;
-  void *root_info;
+  void *root_info = nullptr;
   if (rank_table_file_path.empty() || cluster::ClusterContext::instance()->enable_cross_cluster()) {
+    bool ret = false;
     size_t root_info_size = 0;
     PROF_START(GenerateRootInfo);
     root_info = group->GenerateRootInfo(&root_info_size);
@@ -405,8 +406,50 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     }
     PROF_END(BroadcastUniqueID);
   }
+  auto instance = CollectHcclInitInfo::GetInstance();
+  instance->SetRootInfo(group_name, root_info);
+  auto global_group_name = device_comm_lib_instance_->global_group_name();
+  if (group_name == global_group_name ||
+      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    return InitCommunicationGroup(group_name);
+  }
+  // world group is already inited, so do not emplace_back global_group_name.
+  instance->SetInitOrder(group_name);
+  PROF_END(distributed_create_group);
+  return true;
+}
 
+bool CollectiveManager::InitCommunicationGroup(const std::string &group_name, int32_t hccl_buffsize) {
+  auto instance = CollectHcclInitInfo::GetInstance();
+  uint32_t buffsize = 0;
+  if (hccl_buffsize > 0) {
+    buffsize = hccl_buffsize;
+  } else {
+    static std::string hccl_buffer_size_env = common::GetEnv("HCCL_BUFFSIZE");
+    if (!hccl_buffer_size_env.empty()) {
+      MS_LOG(INFO) << "The hccl buff size is: " << hccl_buffer_size_env;
+      int default_size = 0;
+      try {
+        default_size = stoi(hccl_buffer_size_env);
+      } catch (const std::exception &e) {
+        MS_LOG(EXCEPTION) << "Invalid argument: " << e.what() << " when parse " << hccl_buffer_size_env;
+      }
+      if (default_size < 0) {
+        MS_LOG(EXCEPTION) << "the value of `HCCL_BUFFSIZE` must be greater than zero.";
+      }
+      buffsize = default_size;
+    }
+  }
+  instance->SetBuffsize(group_name, buffsize);
   // Step 5: Initialize communication group on the device side.
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    MS_LOG(WARNING) << "This is simulation mode with level " << common::GetEnv(kSimulationLevel)
+                    << ". Skip init communication group.";
+    return true;
+  }
+  void *root_info = instance->GetRootInfo(group_name);
+  CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
+  MS_EXCEPTION_IF_NULL(group);
   std::function<bool()> init_device_comm_group_func = [&, this]() {
     MS_EXCEPTION_IF_NULL(device_ctx_);
     device_ctx_->Initialize();
@@ -418,14 +461,12 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   int64_t comm_init_timout = GetCommunicatorInitTimeout();
   PROF_START(InitDeviceCommunicator);
   // Initialize communication group on the device side in thread with timeout limit.
-  ret = ExecuteFuncInThread(init_device_comm_group_func, comm_init_timout, "init_device_comm_group_func",
-                            "to initialize communicator for group " + group_name);
+  bool ret = ExecuteFuncInThread(init_device_comm_group_func, comm_init_timout, "init_device_comm_group_func",
+                                 "to initialize communicator for group " + group_name);
   PROF_END(InitDeviceCommunicator);
   if (!ret) {
     MS_LOG(ERROR) << "Failed to create comm group on device side for " << group_name;
   }
-
-  PROF_END(distributed_create_group);
   MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
   return ret;
 }

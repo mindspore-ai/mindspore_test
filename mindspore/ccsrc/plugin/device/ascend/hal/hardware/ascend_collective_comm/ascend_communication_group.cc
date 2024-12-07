@@ -23,6 +23,7 @@
 #include "transform/symbol/acl_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
+#include "include/backend/distributed/collective/collect_hccl_init_info.h"
 
 namespace mindspore {
 namespace device {
@@ -69,7 +70,7 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   if (!rank_table_file_path.empty() && !distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
     ret = InitializeByRankTable(rank_table_file_path, group_size, group_rank);
   } else {
-    ret = InitializeByRootInfo(root_info, group_size, group_rank);
+    ret = InitializeByRootInfoConfig(root_info, group_size, group_rank);
   }
   if (!ret) {
     return false;
@@ -108,24 +109,29 @@ bool AscendCommunicationGroup::Finalize() {
   return true;
 }
 
-bool AscendCommunicationGroup::InitializeByRootInfo(void *root_info, uint32_t group_size, uint32_t group_rank) {
-  MS_LOG(INFO) << "Start to initialize communicator by HcclCommInitRootInfo for " << name_;
+bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank) {
+  auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
+  uint32_t buffsize = instance->GetBuffsize(name_);
+  config_.hcclBufferSize = buffsize;
+  MS_LOG(WARNING) << "Start to initialize communicator by InitializeByRootInfoConfig for " << name_
+                  << ", hcclBufferSize is " << config_.hcclBufferSize << " MB.";
   unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
-  if (HcclCommInitRootInfo(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank), &comm_) !=
-      static_cast<int32_t>(HCCL_SUCCESS)) {
+  HcclCommConfigInit(&config_);
+  if (HcclCommInitRootInfoConfig(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank),
+                                 &config_, &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
     const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
-    MS_LOG(ERROR) << "HcclCommInitRootInfo failed. " + error_message;
+    MS_LOG(ERROR) << "InitializeByRootInfoConfig failed. " + error_message;
     return false;
   }
-  MS_LOG(INFO) << "End to initialize communicator by HcclCommInitRootInfo for " << name_;
+  MS_LOG(WARNING) << "End to initialize communicator by InitializeByRootInfoConfig for " << name_;
   return true;
 }
 
 bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uint32_t group_size, uint32_t group_rank) {
+  HcclCommConfigInit(&config_);
   if (name_ == kHCCLGlobalGroupName) {
     // Initialize global communicator by 'HcclCommInitClusterInfoConfig'.
     MS_LOG(INFO) << "Start to initialize communicator by HcclCommInitClusterInfoConfig for " << name_;
-    HcclCommConfigInit(&config_);
     if (hccl::HcclAdapter::GetInstance().HcclCommInitClusterInfoConfig(static_cast<const char *>(rank_table.c_str()),
                                                                        static_cast<uint32_t>(global_rank_), &config_,
                                                                        &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
@@ -138,7 +144,6 @@ bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uin
     // split sub communicator from global communicator by 'HcclCreateSubCommConfig'.
     MS_LOG(INFO) << "Start to initialize communicator by HcclCreateSubCommConfig for " << name_;
     MS_EXCEPTION_IF_NULL(global_comm_);
-    HcclCommConfigInit(&config_);
     std::hash<std::string> to_hash;
     size_t sub_comm_id = to_hash(name_);
     if (hccl::HcclAdapter::GetInstance().HcclCreateSubCommConfig(

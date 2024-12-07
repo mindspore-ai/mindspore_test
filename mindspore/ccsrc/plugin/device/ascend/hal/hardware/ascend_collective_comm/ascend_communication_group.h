@@ -42,7 +42,7 @@ class AscendCommunicationGroup : public CommunicationGroup {
   bool Finalize() override;
 
   // Initialize HCCL communicator by root info, using API HcclCommInitRootInfo.
-  bool InitializeByRootInfo(void *root_info, uint32_t group_size, uint32_t group_rank);
+  bool InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank);
 
   // Initialize HCCL communicator by rank table if the rank table is configured. Note that HCCL initialization APIs
   // for global_comm (HcclCommInitClusterInfoConfig) and sub_comm (HcclCreateSubCommConfig) are different when using
@@ -56,7 +56,6 @@ class AscendCommunicationGroup : public CommunicationGroup {
 
   // Set global communicator for sub communicator.
   void SetGlobalComm(HcclComm global_comm) { global_comm_ = global_comm; }
-
   // Return communicator name maintained by HCCL. This is different from the group set by user.
   std::string inner_comm_name() const;
 
