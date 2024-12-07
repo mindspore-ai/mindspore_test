@@ -463,9 +463,6 @@ constexpr auto kCustomTypeCustom = "Custom";
 
 // primal attr key name
 constexpr auto kPrimalAttrForwardNodeName = "forward_node_name";
-constexpr auto kPrimalAttrMicro = "micro";
-constexpr auto kPrimalAttrChunk = "chunk";
-constexpr auto kPrimalAttrPipelineParam = "pipeline_param";
 constexpr auto kPrimalAttrBackwardMicroEnd = "backward_micro_end";
 constexpr auto kPrimalAttrForwardEnd = "forward_end";
 constexpr auto kPrimalAttrSegmentMax = "segment_max";
