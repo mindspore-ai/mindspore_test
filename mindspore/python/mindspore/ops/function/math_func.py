@@ -53,7 +53,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
-                                         frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op,
+                                         frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
                                          addbmm_op, addmm_op)
 
 
@@ -5591,54 +5591,6 @@ def lcm(input, other):
         [14 24 36]
     """
     return lcm_(input, other)
-
-
-def cdist(x1, x2, p=2.0):
-    """
-    Computes p-norm distance between each pair of row vectors of two input Tensors.
-
-    Note:
-        On Ascend, the supported dtypes are float16 and float32.
-        On CPU, the supported dtypes are float16 and float32.
-        On GPU, the supported dtypes are float32 and float64.
-
-    Args:
-        x1 (Tensor): Input tensor of shape :math:`(B, P, M)`.
-          Letter :math:`B` represents 0 or positive int number.
-          When :math:`B` is equal to 0, it means this dimension can be ignored,
-          i.e. shape of the tensor is :math:`(P, M)`.
-        x2 (Tensor): Input tensor of shape :math:`(B, R, M)`, has the same dtype as `x1`.
-        p (float, optional): P value for the p-norm distance to calculate between each
-          vector pair, P ∈ [0,∞]. Default: ``2.0`` .
-
-    Returns:
-        Tensor, p-norm distance, has the same dtype as `x1`, its shape is :math:`(B, P, R)`.
-
-    Raises:
-        TypeError: If `x1` or `x2` is not Tensor.
-        TypeError: If dtype of `x1` or `x2` is not listed in the "Note" above.
-        TypeError: If `p` is not float32.
-        ValueError: If `p` is negative.
-        ValueError: If dimension of `x1` is not the same as `x2`.
-        ValueError: If dimension of `x1` or `x2` is neither 2 nor 3.
-        ValueError: If the batch shape of `x1` is not the same as the shape of `x2`.
-        ValueError: If the number of columns of `x1` is not the same as that of `x2`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
-        >>> y = Tensor(np.array([[[3.0, 3.0], [3.0, 3.0]]]).astype(np.float32))
-        >>> output = ops.cdist(x, y, 2.0)
-        >>> print(output)
-        [[[2.8284273 2.8284273]
-          [1.4142137 1.4142137]]]
-    """
-    cdist_ = _get_cache_prim(P.Cdist)(p)
-    return cdist_(x1, x2)
 
 
 def lerp(input, end, weight):

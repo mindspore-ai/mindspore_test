@@ -97,8 +97,6 @@ GVAR_DEF(PrimitivePtr, kPrimRint, std::make_shared<Primitive>("Rint"));
 GVAR_DEF(PrimitivePtr, kPrimLogGrad, std::make_shared<Primitive>(kLogGradOpName));
 GVAR_DEF(PrimitivePtr, kPrimNonMaxSuppression, std::make_shared<Primitive>("NonMaxSuppression"));
 GVAR_DEF(PrimitivePtr, kPrimMatrixSolveLs, std::make_shared<Primitive>(kMatrixSolveLsOpName));
-GVAR_DEF(PrimitivePtr, kPrimCdist, std::make_shared<Primitive>(kCdistOpName));
-GVAR_DEF(PrimitivePtr, kPrimCdistGrad, std::make_shared<Primitive>(kCdistGradOpName));
 GVAR_DEF(PrimitivePtr, kPrimWhere, std::make_shared<Primitive>("Where"));
 GVAR_DEF(PrimitivePtr, kPrimMatrixInverse, std::make_shared<Primitive>(kMatrixInverseOpName));
 GVAR_DEF(PrimitivePtr, kPrimMatrixPower, std::make_shared<Primitive>(kMatrixPowerOpName));

@@ -19,13 +19,13 @@ import pytest
 import mindspore.nn as nn
 import mindspore.context as context
 from mindspore import Tensor
-from mindspore.ops.operations import _grad_ops as P
+from mindspore.ops import auto_generate as gen
 
 
 class CdistGradNet(nn.Cell):
     def __init__(self, p=2.0):
         super(CdistGradNet, self).__init__()
-        self.cdistgrad = P.CdistGrad(p=p)
+        self.cdistgrad = gen.CdistGrad(p=p)
 
     def construct(self, grad, x1, x2, y):
         return self.cdistgrad(grad, x1, x2, y)

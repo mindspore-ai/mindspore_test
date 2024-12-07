@@ -1921,16 +1921,16 @@ DEF_PURE_SHAPE_CALC(g_cdist)
 REG_BPROP_BUILDER("Cdist").SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
   auto input_y = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto p = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
   auto res = ib->ShapeCalc(g_cdist, {dout})[0];
   auto dout_transpose = ib->Transpose(dout, res);
   auto out_transpose = ib->Transpose(out, res);
-  auto dx = input_x->need_compute_grad_out()
-              ? ib->Emit("CdistGrad", {dout, input_x, input_y, out}, {{"p", ib->GetAttr("p")}})
-              : ib->OutZeros(input_x);
+  auto dx =
+    input_x->need_compute_grad_out() ? ib->Emit("CdistGrad", {dout, input_x, input_y, out, p}) : ib->OutZeros(input_x);
   auto dy = input_y->need_compute_grad_out()
-              ? ib->Emit("CdistGrad", {dout_transpose, input_y, input_x, out_transpose}, {{"p", ib->GetAttr("p")}})
+              ? ib->Emit("CdistGrad", {dout_transpose, input_y, input_x, out_transpose, p})
               : ib->OutZeros(input_y);
   return {dx, dy};
 });
