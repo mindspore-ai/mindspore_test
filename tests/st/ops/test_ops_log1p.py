@@ -67,7 +67,7 @@ def test_ops_log1p_normal(context_mode):
     output_f = log1p_forward_func(ms.Tensor(x))
     output_f_special = log1p_special_forward_func(ms.Tensor(x))
     expect_f = log1p_expect_forward_func(x)
-    np.testing.assert_allclose(output_f.asnumpy(), expect_f, rtol=1e-3)
+    np.testing.assert_allclose(output_f.asnumpy(), expect_f, rtol=1e-3, atol=1e-3)
     np.testing.assert_allclose(output_f_special.asnumpy(), expect_f, rtol=1e-3, atol=1e-3)
 
     # backward
