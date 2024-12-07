@@ -22,6 +22,7 @@
 #include "kernel/common/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/ms_utils.h"
+#include "availability/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace kernel {
@@ -37,6 +38,11 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
 
   const auto &group_str = GetValue<std::string>(group);
   const auto &hccl_comm = device::ascend::AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_str);
+  auto checker = silentcheck::SilentCheckerBase::GetInstance();
+  if (checker != nullptr) {
+    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Run device task " << op_name << " with group " << group_str;
+    checker->DoSilentCheck(op_name, group_str, input_tensor);
+  }
 
   auto comm_handle = op->comm_handle();
   auto device_context = op->device_context();

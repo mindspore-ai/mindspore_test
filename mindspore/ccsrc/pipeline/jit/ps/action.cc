@@ -77,6 +77,7 @@
 #endif
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "include/common/profiler.h"
+#include "availability/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -2020,7 +2021,9 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     if (!pipeline::IsPhaseExport(phase)) {
       (void)actions.emplace_back(std::make_pair(kDistributedSplit, DistributedSplitAction));
     }
-    if (IsNpuAsdEnable()) {
+    auto checker = silentcheck::SilentCheckerBase::GetInstance();
+    if (checker != nullptr && checker->IsNpuAsdEnable() &&
+        MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
       (void)actions.emplace_back(std::make_pair(kSilentCheckV2, SilentCheckAction));
     }
     if (ps::PSContext::instance()->is_worker()) {

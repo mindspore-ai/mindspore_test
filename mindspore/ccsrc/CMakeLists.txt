@@ -64,6 +64,7 @@ set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID
 add_library(mindspore STATIC ${SUB_OBJECTS_SRC})
 
 set(COMMON_SUB_COMP
+        availability
         utils
         common
         common/debug

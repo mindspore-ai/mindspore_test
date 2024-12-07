@@ -26,10 +26,15 @@
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "distributed/persistent/storage/json_utils.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
+#include "availability/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace distributed {
 namespace collective {
+namespace {
+// pipeline parallel group name prefix
+const char kPipelineGroupNamePrefix[] = "pp-";
+}  // namespace
 using recovery::RecoveryContext;
 
 CollectiveManager::CollectiveManager()
@@ -351,6 +356,15 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     device_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
     "Failed to create device communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnDeviceSide);
+
+  // save pipeline parallel local rank for silent check
+  auto checker = silentcheck::SilentCheckerBase::GetInstance();
+  if (checker != nullptr && group_name.find(kPipelineGroupNamePrefix) == 0) {
+    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Pipeline parallel group_name: " << group_name
+                                    << ", group_ranks: " << group_ranks << ", local_group_rank: " << local_group_rank
+                                    << ", local_group_size: " << local_group_size;
+    checker->SetPipelineStage(local_group_rank);
+  }
 
   // Step 3: Generate device information of the root node.
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
