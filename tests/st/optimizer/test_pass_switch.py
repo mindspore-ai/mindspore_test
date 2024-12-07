@@ -20,6 +20,9 @@ import pytest
 import mindspore as ms
 from mindspore import nn, Tensor, context
 from mindspore import ops
+import uuid
+from pathlib import Path
+import shutil
 
 
 class Add_RmsNorm(nn.Cell):
@@ -75,16 +78,25 @@ def test_pass_switch_by_add_rms_norm():
     Expectation: run pass.
     """
 
+    def _check_ir(path, pattern, expect_exist):
+        res = list(path.rglob(pattern))
+        shutil.rmtree(path.name)
+        if res and not expect_exist:
+            raise RuntimeError("IR should be %s!" % ("existed" if expect_exist else "not existed"))
+
     ori_env = None
     if os.environ.get("MS_DISABLE_INTERNAL_KERNELS_LIST"):
         ori_env = os.environ["MS_DISABLE_INTERNAL_KERNELS_LIST"]
 
     os.environ["MS_DISABLE_INTERNAL_KERNELS_LIST"] = "AddRmsNorm"
-    with pytest.raises(RuntimeError, match=r"^Ascend operator selection failed.*AddRmsNorm.*"):
-        _test_add_rmsnorm_fusion()
+    irs_path = Path(f"pass_switch_{uuid.uuid4().hex}")
+    ms.set_context(save_graphs=3, save_graphs_path=irs_path.name)
+    _test_add_rmsnorm_fusion()
+    _check_ir(irs_path, "*add_rms_norm_fusion*.ir", True)
 
     ms.set_context(graph_kernel_flags="--disable_pass=add_rms_norm_fusion")
     _test_add_rmsnorm_fusion()
+    _check_ir(irs_path, "*add_rms_norm_fusion*.ir", False)
 
     if ori_env is None:
         os.environ.pop("MS_DISABLE_INTERNAL_KERNELS_LIST")
