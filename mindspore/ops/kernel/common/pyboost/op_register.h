@@ -46,6 +46,7 @@ class BACKEND_EXPORT OpFactory {
   std::shared_ptr<T> Create(const std::string &device, uint32_t stream_id);
 
   bool IsRegistered(const std::string &device) const { return op_creator_.find(device) != op_creator_.end(); }
+  std::map<std::string, OpCreator> &op_creator() { return op_creator_; }
 
  private:
   OpFactory() = default;
@@ -66,12 +67,6 @@ class OpRegister {
   static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");                        \
   static const OpRegister<clazz> g_##clazz##DEVICE##_##_PyBoost_reg(#DEVICE, []() {                           \
     return std::make_shared<clazz##DEVICE>(prim::kPrim##clazz, runtime::OpRunner::GetDeviceContext(#DEVICE)); \
-  });
-
-#define MS_REG_PYBOOST_DVM_OP(clazz)                                                                              \
-  static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");                            \
-  static const OpRegister<clazz> g_##clazz##AscendDvm_##_PyBoost_reg("AscendDvm", []() {                          \
-    return std::make_shared<clazz##AscendDvm>(prim::kPrim##clazz, runtime::OpRunner::GetDeviceContext("Ascend")); \
   });
 
 #define CREATE_PYBOOST_OP(NAME, DEVICE)                                                  \

@@ -17,11 +17,15 @@
 #ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_LAZY_FUSION_KERNEL_H_
 #define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_LAZY_FUSION_KERNEL_H_
 
+#include <map>
 #include <queue>
 #include <mutex>
+#include <string>
+#include <utility>
 #include <functional>
 #include "include/backend/visible.h"
 #include "runtime/hardware/device_context.h"
+#include "runtime/pynative/lazy_fusion_flags.h"
 
 namespace mindspore {
 class BACKEND_EXPORT LazyFusionKernel {
@@ -45,16 +49,21 @@ class BACKEND_EXPORT LazyFusionKernel {
   size_t id_{0};
 };
 
+using LazyFusionBuildFunc = std::function<LazyFusionKernel *()>;
+using LazyFusionInitFunc = std::function<void()>;
+
 class BACKEND_EXPORT LazyFusionManager {
  public:
-  using BuildFunc = std::function<LazyFusionKernel *()>;
   LazyFusionManager() = default;
   ~LazyFusionManager();
 
-  void Register(const BuildFunc &builder) { build_func_ = builder; }
+  void Register(const std::string &device_name, const LazyFusionBuildFunc &func) { build_funcs_[device_name] = func; }
+  void RegisterInit(const std::string &device_name, const LazyFusionInitFunc &func) { init_funcs_[device_name] = func; }
+
+  void Init();
 
   LazyFusionKernel *Get(const device::DeviceContext *context, size_t stream) {
-    if (current_) {
+    if (current_ != nullptr) {
       if (current_->stream_id() == stream) {
         return current_;
       }
@@ -91,7 +100,10 @@ class BACKEND_EXPORT LazyFusionManager {
     return build_func_();
   }
 
-  BuildFunc build_func_;
+  std::map<std::string, LazyFusionBuildFunc> build_funcs_;
+  std::map<std::string, LazyFusionInitFunc> init_funcs_;
+  LazyFusionBuildFunc build_func_{nullptr};
+  LazyFusionInitFunc init_func_{nullptr};
   std::queue<LazyFusionKernel *> pool_;
   std::mutex mutex_;
   LazyFusionKernel *current_{nullptr};
@@ -102,16 +114,36 @@ extern BACKEND_EXPORT LazyFusionManager g_lazy_fusion_manager;
 
 // before run/push current task, should generate dvm device task first
 static inline void FlushLazyFusion() { g_lazy_fusion_manager.Flush(); }
+static inline void LazyFusionInit() {
+  if (LazyFusionFlags::GetInstance().opt_level < OptLevel_1 ||
+      MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||
+      MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON") {
+    return;
+  }
+  g_lazy_fusion_manager.Init();
+}
 
 template <typename T>
 class LazyFusionRegister {
  public:
-  LazyFusionRegister() {
-    g_lazy_fusion_manager.Register([]() -> T * { return new T(); });
+  explicit LazyFusionRegister(const std::string &device_name) {
+    g_lazy_fusion_manager.Register(device_name, []() -> T * { return new T(); });
   }
   ~LazyFusionRegister() = default;
 };
 
-#define MS_REGISTER_LAZY_FUSION_KERNEL(CLASS_NAME) static const LazyFusionRegister<CLASS_NAME> g_lazy_fusion_reg;
+#define MS_REGISTER_LAZY_FUSION_KERNEL(DEVICE, CLASS_NAME) \
+  static const LazyFusionRegister<CLASS_NAME> g_lazy_fusion_##DEVICE##_build_reg(DEVICE)
+
+class LazyFusionInitRegister {
+ public:
+  LazyFusionInitRegister(const std::string &device_name, LazyFusionInitFunc &&func) {
+    g_lazy_fusion_manager.RegisterInit(device_name, std::move(func));
+  }
+  ~LazyFusionInitRegister() = default;
+};
+
+#define MS_REGISTER_LAZY_FUSION_INIT(DEVICE, FUNC) \
+  static const LazyFusionInitRegister g_lazy_fusion_##DEVICE##_int_reg(DEVICE, FUNC)
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_LAZY_FUSION_KERNEL_H_

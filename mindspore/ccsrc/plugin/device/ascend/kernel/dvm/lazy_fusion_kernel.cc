@@ -17,6 +17,7 @@
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "runtime/pipeline/pipeline.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -39,6 +40,28 @@ dvm::ShapeRef *LazyFusionKernelAscend::GetShapeRef(const ShapeVector &shape) {
   auto &item = cached_shape_.emplace_back(shape, nullptr);
   item.second = std::make_shared<dvm::ShapeRef>(item.first);
   return item.second.get();
+}
+
+void LazyFusionKernelAscend::DumpToFile() {
+  const std::string dump_dir = "./lazy_fusion_dump";
+  auto dir_path = FileUtils::CreateNotExistDirs(dump_dir);
+  if (!dir_path.has_value()) {
+    MS_LOG(INFO) << "Failed to create directory: " << dump_dir;
+    return;
+  }
+  std::string file_name = "lazy_fusion_" + std::to_string(getpid()) + ".txt";
+  std::string file_path = dir_path.value() + "/" + file_name;
+  ChangeFileMode(file_path, S_IWUSR);
+  std::ofstream of(file_path, std::ios::app);
+  if (!of.is_open()) {
+    MS_LOG(INFO) << "Open dump file '" << file_path << "' failed!";
+    ChangeFileMode(file_path, S_IRUSR);
+    return;
+  }
+  of << dump_buf_.str() << "\n";
+  of.close();
+  ChangeFileMode(file_path, S_IRUSR);
+  dump_buf_.str("");
 }
 
 dvm::NDObject *LazyFusionKernelAscend::Input(const BaseTensorPtr &x, bool enable_cast,
@@ -85,6 +108,31 @@ bool LazyFusionKernelAscend::HasTensor(const BaseTensorPtr &x) const {
     return false;
   }
   return ops_map_.find(device_addr.get()) != ops_map_.end();
+}
+
+void LazyFusionKernelAscend::Launch() {
+  MS_LOG(INFO) << "Run launch task dvm kernel start, kernel id is " << id();
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
+                                     "FlushEager", false);
+  device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
+  auto stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
+  if (profiler::Profiler::GetInstance(kAscendDevice)->GetEnableFlag()) {
+    kernel_.EagerMsProfLaunch(stream_ptr);
+  } else {
+    kernel_.EagerLaunch(stream_ptr);
+  }
+  if (LazyFusionFlags::GetInstance().synchronize && !device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
+    MS_LOG(EXCEPTION) << "SyncStream failed for dvm kernel";
+  }
+  if (!cross_stream_addrs_.empty()) {
+    auto &ms = device::MultiStreamController::GetInstance();
+    ms->Refresh(device_context_);
+    auto task_id_on_stream = ms->LaunchTaskIdOnStream(device_context_, stream_id_);
+    ms->RecordEvent(device_context_, task_id_on_stream, stream_id_, cross_stream_addrs_);
+    cross_stream_addrs_.clear();
+  }
+  Clear();
+  MS_LOG(INFO) << "Run launch task dvm kernel end, kernel id is " << id();
 }
 
 void LazyFusionKernelAscend::Flush() {
@@ -151,36 +199,22 @@ void LazyFusionKernelAscend::Flush() {
       {
         runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostDeviceTask, "CodeGen", false);
-        kernel_.EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
+        if (LazyFusionFlags::GetInstance().dump_as_text) {
+          dump_buf_ << "[lazy_fusion before split] "
+                    << "kernel id : " << id() << "\n";
+          dump_buf_ << kernel_.Dump() << "\n";
+          kernel_.EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
+          dump_buf_ << "[lazy_fusion after split] "
+                    << "kernel id : " << id() << "\n";
+          dump_buf_ << kernel_.Dump() << "\n";
+          dump_buf_ << kernel_.Das() << "\n";
+          DumpToFile();
+        } else {
+          kernel_.EagerCodeGen(reloc_entry_.data(), reloc_entry_.size());
+        }
       }
       // Launch
-      auto stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
-      runtime::OpExecutor::DispatchLaunchTask([this, stream_ptr]() {
-        runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
-                                           runtime::ProfilerEvent::kPyNativeLaunchTask, "FlushEager", false);
-        MS_LOG(INFO) << "Run launch task dvm kernel start, kernel id is " << id();
-        device_context_->device_res_manager_->BindDeviceToCurrentThread(false);
-        if (profiler::Profiler::GetInstance(kAscendDevice)->GetEnableFlag()) {
-          kernel_.EagerMsProfLaunch(stream_ptr);
-        } else {
-          kernel_.EagerLaunch(stream_ptr);
-        }
-        MS_LOG(INFO) << "Dump: \n" << kernel_.Dump();
-        MS_LOG(INFO) << "Dsa: \n" << kernel_.Das();
-        static bool sync = common::GetEnv("MS_DEV_DVM_SYNC") == "1";
-        if (sync && !device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
-          MS_LOG(EXCEPTION) << "SyncStream failed for dvm kernel";
-        }
-        if (!cross_stream_addrs_.empty()) {
-          auto &ms = device::MultiStreamController::GetInstance();
-          ms->Refresh(device_context_);
-          auto task_id_on_stream = ms->LaunchTaskIdOnStream(device_context_, stream_id_);
-          ms->RecordEvent(device_context_, task_id_on_stream, stream_id_, cross_stream_addrs_);
-          cross_stream_addrs_.clear();
-        }
-        Clear();
-        MS_LOG(INFO) << "Run launch task dvm kernel end, kernel id is " << id();
-      });
+      runtime::OpExecutor::DispatchLaunchTask([this]() { Launch(); });
     }
     MS_LOG(INFO) << "Run device task dvm kernel end, kernel id is " << id();
   });
@@ -188,6 +222,6 @@ void LazyFusionKernelAscend::Flush() {
   runtime::OpExecutor::GetInstance().PushOpRunTask(task);
 }
 
-MS_REGISTER_LAZY_FUSION_KERNEL(LazyFusionKernelAscend);
+MS_REGISTER_LAZY_FUSION_KERNEL(kAscendDevice, LazyFusionKernelAscend);
 }  // namespace kernel
 }  // namespace mindspore

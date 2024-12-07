@@ -58,6 +58,7 @@ class LazyFusionKernelAscend : public LazyFusionKernel {
   }
 
   dvm::ShapeRef *GetShapeRef(const ShapeVector &shape);
+  void DumpToFile();
 
   dvm::DType TransType(TypeId type) {
     switch (type) {
@@ -89,6 +90,8 @@ class LazyFusionKernelAscend : public LazyFusionKernel {
   dvm::Kernel kernel_;
 
  private:
+  void Launch();
+
   void Clear() {
     for (size_t i = 0; i < input_used_; i++) {
       inputs_[i]->tensor.reset();
@@ -126,6 +129,7 @@ class LazyFusionKernelAscend : public LazyFusionKernel {
   std::vector<std::pair<uint32_t, void *>> cross_stream_addrs_;
   std::vector<std::pair<ShapeVector, ShapeRefPtr>> cached_shape_;
   size_t input_used_{0};
+  std::stringstream dump_buf_;
 };
 }  // namespace kernel
 }  // namespace mindspore

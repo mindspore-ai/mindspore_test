@@ -30,6 +30,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/pynative/op_runner.h"
+#include "runtime/pynative/lazy_fusion_kernel.h"
 #include "include/common/profiler.h"
 #include "ir/cell.h"
 #include "include/common/utils/stub_tensor.h"
@@ -215,6 +216,7 @@ void PyNativeExecutor::Init() {
   forward_executor_->set_grad_executor(grad_executor_);
   forward_executor_->RefreshForwardCallback();
   runtime::ProfilerAnalyzer::GetInstance().SetThreadIdToName(std::this_thread::get_id(), "Python");
+  LazyFusionInit();
 }
 
 void PyNativeExecutor::Sync() const {
