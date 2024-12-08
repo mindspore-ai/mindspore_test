@@ -1062,6 +1062,52 @@ def adaptive_avg_pool3d(input, output_size):
     return adaptive_avg_pool3d_ext(input, output_size)
 
 
+def adaptive_max_pool1d(input, output_size, return_indices=False):
+    r"""
+    Performs 1D adaptive max pooling on a multi-plane input signal.
+    That is, for any input size, the size of the specified output is L.
+    The number of output features is equal to the number of input features.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of adaptive_max_pool1d, which is a 2D or 3D tensor,
+            with float16, float32 or float64 data type.
+        output_size (int): The target output feature size. `output_size` is an integer.
+        return_indices (bool, optional): Whether to return the index of the maximum value. Default: ``False`` .
+
+    Returns:
+        Union(Tensor, tuple(Tensor, Tensor))).
+
+        - If `return_indices` is False, output is a Tensor, with shape :math:`(N, C, L_{out})`. It has the same data
+          type as `x`.
+        - If `return_indices` is True, output is a Tuple of 2 Tensors, representing the result and where the max
+          values are generated.
+
+    Raises:
+        TypeError: If `input` is not a tensor.
+        TypeError: If dtype of `input` is not float16, float32 or float64.
+        TypeError: If `output_size` is not int.
+        TypeError: If `return_indices` is not a bool.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor([[2,3],[3,4]],dtype=mindspore.float16)
+        >>> output = mint.nn.functional.adaptive_max_pool1d(input, 3)
+        >>> print(output)
+        [[2.  3.  3. ]
+         [3.  4.  4. ]]
+    """
+    if return_indices:
+        return ops.auto_generate.gen_ops_prim.adaptive_max_pool1d_op(input, output_size)
+    return ops.auto_generate.gen_ops_prim.adaptive_max_pool1d_op(input, output_size)[0]
+
+
 __all__ = [
     'conv_transpose2d',
     'max_pool2d',
@@ -1294,7 +1340,7 @@ __all__ = [
     'logsigmoid',
 
     # 257
-
+    'adaptive_max_pool1d',
     # 258
     'mse_loss',
     # 259

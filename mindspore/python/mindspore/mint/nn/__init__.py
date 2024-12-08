@@ -285,6 +285,8 @@ from mindspore.mint.nn.layer.normalization import BatchNorm2d
 # 676
 from mindspore.mint.nn.layer.normalization import BatchNorm3d
 
+from mindspore.mint.nn.layer.pooling import AdaptiveMaxPool1d
+
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
 
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
@@ -1296,7 +1298,7 @@ __all__ = [
     # 93
 
     # 94
-
+    'AdaptiveMaxPool1d',
     # 95
 
     # 96

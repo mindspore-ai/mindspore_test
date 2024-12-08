@@ -56,25 +56,36 @@ void SetTensorStorageInfo(T kernel_tensor, ShapeVector shape) {
   kernel_tensor->set_tensor_storage_info(tensor_storage_info);
 }
 
-void AdaptiveAvgPool1DAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                               const std::vector<KernelTensor *> &outputs) {
+void AdaptivePool1DAscend::SetParaForPool2D(const std::vector<KernelTensor *> &inputs,
+                                            const std::vector<KernelTensor *> &outputs) {
   auto in_shape = inputs[kIndex0]->GetShapeVector();
-  auto output_size_value_opt = inputs[kIndex1]->GetOptionalValueWithCheck<int64_t>();
-  auto output_size = output_size_value_opt.value();
+  auto output_size = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
   auto expand_shape = in_shape;
   expand_shape.insert(expand_shape.end() - 1, 1);
   input_kernel_tensor_ = inputs[kIndex0]->CloneKernelTensor();
   SetTensorStorageInfo<std::shared_ptr<KernelTensor>>(input_kernel_tensor_, expand_shape);
 
   auto out_shape = outputs[kIndex0]->GetShapeVector();
-  auto out_shape_ori = out_shape;
+  out_shape_ori = out_shape;
   ShapeVector expand_out_shape = out_shape;
   expand_out_shape.insert(expand_out_shape.end() - 1, 1);
-  SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], expand_out_shape);
+  for (auto &output : outputs) {
+    SetTensorStorageInfo<KernelTensor *>(output, expand_out_shape);
+  }
+  output_size_for_2d_ = std::vector<int64_t>{1, output_size[0]};
+}
 
-  output_size_for_2d_ = {1, output_size};
+void AdaptivePool1DAscend::RestoreOutputShape(const std::vector<KernelTensor *> &outputs) {
+  for (auto &output : outputs) {
+    SetTensorStorageInfo<KernelTensor *>(output, out_shape_ori);
+  }
+}
+
+void AdaptiveAvgPool1DAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                               const std::vector<KernelTensor *> &outputs) {
+  SetParaForPool2D(inputs, outputs);
   GetWorkspaceForResize(input_kernel_tensor_.get(), output_size_for_2d_, outputs[kIndex0]);
-  SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], out_shape_ori);
+  RestoreOutputShape(outputs);
 }
 
 bool AdaptiveAvgPool1DAscend::Launch(const std::vector<KernelTensor *> &inputs,

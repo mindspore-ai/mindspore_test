@@ -3597,7 +3597,7 @@ REG_BPROP_BUILDER("AdaptiveAvgPool2D").SetUnusedInputs({i0, i1}).SetBody(BODYFUN
   return {dx};
 });
 
-DEF_PURE_SHAPE_CALC(g_adaptive_avg_pool1d_squeeze)
+DEF_PURE_SHAPE_CALC(g_adaptive_pool1d_squeeze)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     auto x_shape = inputs.at(0);
     auto output_size = inputs.at(1);
@@ -3629,7 +3629,7 @@ REG_BPROP_BUILDER("AdaptiveAvgPool1D").SetUnusedInputs({i1, i2}).SetBody(BODYFUN
   auto dout_expand_dim = ib->ExpandDims(dout, -2);
   auto x_expand_dim = ib->ExpandDims(x, -2);
   auto dx = ib->Emit("AdaptiveAvgPool2DGradExt", {dout_expand_dim, x_expand_dim});
-  auto res_shape = ib->ShapeCalc(g_adaptive_avg_pool1d_squeeze, {dx, output_size}, {1});
+  auto res_shape = ib->ShapeCalc(g_adaptive_pool1d_squeeze, {dx, output_size}, {1});
   auto dx_squeeze = ib->Reshape(dx, res_shape[0]);
   return {dx_squeeze, ib->OutZeros(output_size)};
 });
@@ -3640,6 +3640,23 @@ REG_BPROP_BUILDER("AdaptiveAvgPool2DExt").SetUnusedInputs({i1, i2}).SetBody(BODY
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("AdaptiveAvgPool2DGradExt", {dout, x});
   return {dx, ib->OutZeros(output_size)};
+});
+
+REG_BPROP_BUILDER("AdaptiveMaxPool1D").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto output_size = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex3);
+  auto out_index = ib->TupleGetItem(out, kIndex1);
+  auto dy = ib->TupleGetItem(dout, kIndex0);
+
+  auto dy_expand_dim = ib->ExpandDims(dy, -2);
+  auto x_expand_dim = ib->ExpandDims(x, -2);
+  auto out_index_expand_dim = ib->ExpandDims(out_index, -2);
+  auto dx = ib->Emit("AdaptiveMaxPool2DGrad", {dy_expand_dim, x_expand_dim, out_index_expand_dim});
+  auto res_shape = ib->ShapeCalc(g_adaptive_pool1d_squeeze, {dx, output_size}, {1});
+  auto dx_squeeze = ib->Reshape(dx, res_shape[0]);
+  return {dx_squeeze, ib->OutZeros(output_size)};
 });
 
 REG_BPROP_BUILDER("FractionalMaxPool").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {

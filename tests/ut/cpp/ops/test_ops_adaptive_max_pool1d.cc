@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,25 @@ std::vector<GeneralInferParam> prepare_params() {
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 5}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, ValuePtrList{CreateScalar<int64_t>(4)}}})
-    .FeedExpectedOutput({{2, 3, 4}}, {kNumberTypeFloat32});
+    .FeedExpectedOutput({{2, 3, 4}, {2, 3, 4}}, {kNumberTypeFloat32, kNumberTypeInt64});
   
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, ValuePtrList{CreateScalar<int64_t>(4)}}})
-    .FeedExpectedOutput({{2, 4}}, {kNumberTypeFloat32});
+    .FeedExpectedOutput({{2, 4}, {2, 4}}, {kNumberTypeFloat32, kNumberTypeInt64});
 
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, ValuePtrList{CreateScalar<int64_t>(4)}}})
-    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
+    .FeedExpectedOutput({{-2}, {-2}}, {kNumberTypeFloat32, kNumberTypeInt64});
 
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, ValuePtrList{CreateScalar<int64_t>(4)}}})
-    .FeedExpectedOutput({{2, 4}}, {kNumberTypeFloat32});
+    .FeedExpectedOutput({{2, 4}, {2, 4}}, {kNumberTypeFloat32, kNumberTypeInt64});
   return generator.Generate();
 }
 }  // namespace
 
-INSTANTIATE_TEST_CASE_P(AdaptiveAvgPool1D, GeneralInferTest, testing::ValuesIn(prepare_params()));
+INSTANTIATE_TEST_CASE_P(AdaptiveMaxPool1D, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops
