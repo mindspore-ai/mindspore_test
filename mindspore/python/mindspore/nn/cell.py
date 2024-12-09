@@ -143,6 +143,8 @@ class Cell(Cell_):
 
         # call gc to release GE session resources used by non-used cell objects
         if os.getenv('GC_COLLECT_IN_CELL') == '1':
+            logger.warning("The convenient environment 'GC_COLLECT_IN_CELL' is deprecated from version 2.5 "
+                           "and will be removed in a future version.")
             gc.collect()
 
         if flags:
