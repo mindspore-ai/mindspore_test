@@ -37,9 +37,14 @@ std::shared_ptr<RuntimeExecutor> RuntimeExecutor::GetInstance() {
   return instance_;
 }
 
-void RuntimeExecutor::BindThreadCpu(const std::map<int, std::vector<int>> &bind_cpu_policy, bool custom_plicy_flag) {
+void RuntimeExecutor::BindCore(const std::vector<int> &module_bind_core_policy) {
   conf_status_[kThreadBindCore] = true;
-  ThreadBindCore::GetInstance().enable_thread_bind_core(bind_cpu_policy, custom_plicy_flag);
+  ThreadBindCore::GetInstance().enable_thread_bind_core(module_bind_core_policy);
+}
+
+void RuntimeExecutor::BindCoreWithPolicy(const BindCorePolicy &module_bind_core_policy) {
+  conf_status_[kThreadBindCore] = true;
+  ThreadBindCore::GetInstance().enable_thread_bind_core_with_policy(module_bind_core_policy);
 }
 
 void RegRuntimeExecutor(py::module *m) {
@@ -47,7 +52,11 @@ void RegRuntimeExecutor(py::module *m) {
     .def_static("get_instance", &RuntimeExecutor::GetInstance, "Get RuntimeExecutor instance.")
     .def("is_thread_bind_core_configured", &RuntimeExecutor::IsThreadBindCoreConfigured,
          "Check whether thread_bind_core configured.")
-    .def("thread_bind_cpu", &RuntimeExecutor::BindThreadCpu, "Bind thread to specific cpus");
+    .def("set_thread_bind_core_configured", &RuntimeExecutor::SetThreadBindCoreConfigured,
+         "Set thread_bind_core configured.")
+    .def("thread_bind_core", &RuntimeExecutor::BindCore, "Bind thread to specific cpus")
+    .def("thread_bind_core_with_policy", &RuntimeExecutor::BindCoreWithPolicy,
+         "Bind thread to specific cpus with policy generated");
 }
 }  // namespace runtime
 }  // namespace mindspore

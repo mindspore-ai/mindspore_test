@@ -42,7 +42,6 @@ constexpr char kRunTimeThread[] = "runtime";
 constexpr char kDataThread[] = "minddata";
 static const std::vector<std::string> kPynativeThreadName = {"frontend_queue", "backend_queue", "launch_queue",
                                                              "bprop_queue"};
-// static const std::vector<std::string> kRuntimeThreadName = {"runtime_scheduler_actor", "runtime_launch_actor"};
 }  // namespace
 
 int get_device_id() {
@@ -65,55 +64,53 @@ int get_device_id() {
   return device_id;
 }
 
-void ThreadBindCore::enable_thread_bind_core(std::map<int, std::vector<int>> process_bind_core_policy,
-                                             bool custom_policy_flag) {
-  if (enable_thread_bind_core_) {
+void ThreadBindCore::enable_thread_bind_core(const std::vector<int> &available_cpu_list) {
+  if (is_enable_thread_bind_core_) {
     MS_LOG(WARNING)
       << "Thead bind core has already been enabled and will be implemented based on the first binding policy.";
     return;
   }
-  bool is_ascend = (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
-  if (!custom_policy_flag && !is_ascend) {
-    cpu_bind_core_policy_ = process_bind_core_policy;
-  } else {
-    for (const auto &[process, cpu_list] : process_bind_core_policy) {
-      std::map<std::string, std::vector<int>> thread_to_cpu_map;
-      thread_to_cpu_map[kMainThread] = {cpu_list[0]};
-      thread_to_cpu_map[kRunTimeThread] = std::vector<int>(cpu_list.begin() + 1, cpu_list.begin() + 6);
-      thread_to_cpu_map[kPynativeThread] = std::vector<int>(cpu_list.begin() + 1, cpu_list.begin() + 5);
-      thread_to_cpu_map[kDataThread] = std::vector<int>(cpu_list.begin() + 6, cpu_list.end());
-
-      process_bind_core_policy_[process] = thread_to_cpu_map;
-    }
-  }
-  custom_policy_flag_ = custom_policy_flag;
-  enable_thread_bind_core_ = true;
+  cpu_bind_core_policy_ = available_cpu_list;
+  is_enable_with_policy = false;
+  is_enable_thread_bind_core_ = true;
 }
 
-bool ThreadBindCore::get_thread_bind_core_policy(int device_id) {
-  bool is_ascend = (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
+void ThreadBindCore::enable_thread_bind_core_with_policy(const BindCorePolicy &bind_core_policy) {
+  if (is_enable_thread_bind_core_) {
+    MS_LOG(WARNING)
+      << "Thead bind core has already been enabled and will be implemented based on the first binding policy.";
+    return;
+  }
+  process_bind_core_policy_ = bind_core_policy;
+  is_enable_with_policy = true;
+  is_enable_thread_bind_core_ = true;
+}
+
+bool ThreadBindCore::parse_thread_bind_core_policy(const std::string &thread_name, int device_id) {
+  auto it = thread_bind_core_policy_.find(thread_name);
+  if (it != thread_bind_core_policy_.end()) {
+    return true;
+  }
   uint32_t local_rank_size = distributed::collective::CollectiveManager::instance()->local_rank_size();
   // When automatically enable bind core, device_target CPU and GPU won't bind core based on device to numa affinity.
-  if (!custom_policy_flag_ && !is_ascend) {
-    int core_per_process = cpu_bind_core_policy_[-1].size() / local_rank_size;
+  if (!is_enable_with_policy) {
+    int core_per_process = cpu_bind_core_policy_.size() / local_rank_size;
     if (core_per_process < 7) {
       MS_LOG(WARNING)
         << "CPU can be assigned to each process is less than 7, thread bind core function is not enabled.";
       return false;
     }
     int group_start_core_id = device_id * core_per_process;
-    std::vector<int> process_bind_core_policy =
-      std::vector<int>(cpu_bind_core_policy_[-1].begin() + group_start_core_id,
-                       cpu_bind_core_policy_[-1].begin() + group_start_core_id + core_per_process);
+    std::vector<int> available_core =
+      std::vector<int>(cpu_bind_core_policy_.begin() + group_start_core_id,
+                       cpu_bind_core_policy_.begin() + group_start_core_id + core_per_process);
 
-    thread_bind_core_policy_[kMainThread] = {process_bind_core_policy[0]};
-    thread_bind_core_policy_[kRunTimeThread] =
-      std::vector<int>(process_bind_core_policy.begin() + 1, process_bind_core_policy.begin() + 6);
-    thread_bind_core_policy_[kDataThread] =
-      std::vector<int>(process_bind_core_policy.begin() + 6, process_bind_core_policy.end());
+    thread_bind_core_policy_[kMainThread] = {available_core[0]};
+    thread_bind_core_policy_[kRunTimeThread] = std::vector<int>(available_core.begin() + 1, available_core.begin() + 6);
+    thread_bind_core_policy_[kDataThread] = std::vector<int>(available_core.begin() + 6, available_core.end());
     for (size_t i = 0; i < kPynativeThreadName.size(); i++) {
       thread_bind_core_policy_[kPynativeThreadName[i]] = {
-        std::vector<int>(process_bind_core_policy.begin() + 1, process_bind_core_policy.begin() + 5)[i]};
+        std::vector<int>(available_core.begin() + 1, available_core.begin() + 5)[i]};
     }
   } else {
     if (process_bind_core_policy_.find(device_id) == process_bind_core_policy_.end()) {
@@ -133,24 +130,23 @@ bool ThreadBindCore::get_thread_bind_core_policy(int device_id) {
 
 void ThreadBindCore::bind_thread_core(const std::string &thread_name) {
 #if defined(BIND_CORE)
-  if (!enable_thread_bind_core_) {
+  if (!is_enable_thread_bind_core_) {
     return;
   }
-  MS_LOG(INFO) << "Enable bind core for thread: " << thread_name;
   auto status_it = thread_bind_core_status_.find(thread_name);
   if (status_it != thread_bind_core_status_.end() && status_it->second) {
-    MS_LOG(INFO) << "This thead: " << thread_name << "has already bond core.";
+    MS_LOG(INFO) << "This thead: " << thread_name << " has already bond core.";
     return;
   }
 
   int device_id = get_device_id();
-  bool res = get_thread_bind_core_policy(device_id);
+  bool res = parse_thread_bind_core_policy(thread_name, device_id);
   if (!res) {
     return;
   }
 
   auto it = thread_bind_core_policy_.find(thread_name);
-  auto thread_bind_cpu_vec = it->second;
+  auto &thread_bind_cpu_vec = it->second;
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
 
@@ -158,21 +154,21 @@ void ThreadBindCore::bind_thread_core(const std::string &thread_name) {
     // auto bind_cpu_id = group_start_cpu_id + cpu_id;
     CPU_SET(static_cast<size_t>(cpu_id), &cpuset);
   }
-  MS_LOG(INFO) << "Enable bind core for thread: " << thread_name << " to core list: " << thread_bind_cpu_vec;
 
   pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
   thread_bind_core_status_[thread_name] = true;
+  MS_LOG(INFO) << "Enable bind core for thread: " << thread_name << " to core list: " << thread_bind_cpu_vec;
 #endif  // BIND_CORE
 }
 
 bool ThreadBindCore::unbind_thread_core(const std::string &thread_name) { return true; }
 
 std::vector<int> ThreadBindCore::get_thread_bind_core_list(const std::string &thread_name) {
-  if (!enable_thread_bind_core_) {
+  if (!is_enable_thread_bind_core_) {
     return {};
   }
   int device_id = get_device_id();
-  bool res = get_thread_bind_core_policy(device_id);
+  bool res = parse_thread_bind_core_policy(thread_name, device_id);
   if (!res) {
     return {};
   }

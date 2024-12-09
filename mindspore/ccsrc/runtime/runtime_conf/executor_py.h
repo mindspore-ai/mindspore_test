@@ -37,7 +37,11 @@ class BACKEND_EXPORT RuntimeExecutor {
 
   bool IsThreadBindCoreConfigured() { return conf_status_.count(kThreadBindCore); }
 
-  void BindThreadCpu(const std::map<int, std::vector<int>> &bind_cpu_policy, bool custom_plicy_flag);
+  void SetThreadBindCoreConfigured() { conf_status_[kThreadBindCore] = true; }
+
+  void BindCore(const std::vector<int> &available_cpu_list);
+
+  void BindCoreWithPolicy(const BindCorePolicy &bind_core_policy);
 
  private:
   static std::shared_ptr<RuntimeExecutor> instance_;
