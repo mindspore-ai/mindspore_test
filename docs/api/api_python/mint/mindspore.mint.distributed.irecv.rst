@@ -6,8 +6,7 @@ mindspore.mint.distributed.irecv
     异步接收张量到指定线程。
 
     .. note::
-        - Send 和 Receive 算子需组合使用，且有同一个 `tag`。
-        - 当前支持PyNative模式，不支持Graph模式。
+        当前支持PyNative模式，不支持Graph模式。
 
     参数：
         - **tensor** (Tensor) - 接收发送方数据存入Tensor。Tensor的shape为 :math:`(x_1, x_2, ..., x_R)` 。
