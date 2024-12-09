@@ -25,7 +25,7 @@ addmv:
 
         Raises:
             TypeError: If dtype of `input`, `mat` or `vec` is not tensor.
-            TypeError: If dtype of `mat` and `vec` are not the same.
+            TypeError: If dtypes of `mat` and `vec` are not the same.
             ValueError: If `mat` is not a 2-D tensor.
             ValueError: If `vec` is not a 1-D tensor.
 
