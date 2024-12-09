@@ -8,6 +8,7 @@ conv_transpose2d:
         .. warning::
             - This is an experimental API that is subject to change or deletion.
             - In the scenario where inputs are non-contiguous, `output_padding` must be less than `stride` .
+            - For Atlas training products, when the dtype of input is float32, the `groups` only supports 1.
 
         Args:
             input (Tensor): input tensor of shape :math:`(minibatch, in\_channels, iH, iW)` or :math:`(in\_channels, iH, iW)` .
@@ -19,7 +20,8 @@ conv_transpose2d:
                 be added to both sides of each dimension in the input. Can be a single number or a tuple :math:`(padH, padW)` .
                 Default: ``0`` .
             output_padding (Union[int, tuple(int), list[int]], optional): additional size added to one side of each dimension in the
-                output shape. Can be a single number or a tuple :math:`(out\_padH, out\_padW)` . Default: ``0`` .
+                output shape. Can be a single number or a tuple :math:`(out\_padH, out\_padW)` . The value of `output_padding` must
+                be less than `stride` or `dilation` . Default: ``0`` .
             groups (int, optional): split input into groups, :math:`in\_channels` should be divisible by the
                 number of groups. Default: ``1`` .
             dilation (Union[int, tuple(int), list[int]], optional): the spacing between kernel elements. Can be a single number or

@@ -600,6 +600,7 @@ class ConvTranspose2d(_ConvTranspose):
     .. warning::
         - This is an experimental API that is subject to change or deletion.
         - In the scenario where inputs are non-contiguous, `output_padding` must be less than `stride` .
+        - For Atlas training products, when the dtype of input is float32, the `groups` only supports 1.
 
     Args:
         in_channels (int): Number of channels in the input image.
@@ -608,8 +609,9 @@ class ConvTranspose2d(_ConvTranspose):
         stride (Union[int, tuple(int)], optional): Stride of the convolution. Default: ``1`` .
         padding (Union[int, tuple(int)], optional): :math:`dilation * (kernel\_size - 1) - padding` zero-padding
             will be added to both sides of each dimension in the input. Default: ``0`` .
-        output_padding (Union[int, tuple(int)], optional): Additional size added to one side
-            of each dimension in the output shape. Default: ``0`` .
+        output_padding (Union[int, tuple(int)], optional): Additional size added to one side of each dimension
+            in the output shape. The value of `output_padding` must be less than `stride` or `dilation` .
+            Default: ``0`` .
         groups (int, optional): Number of blocked connections from input channels to output channels. Default: ``1``
         bias (bool, optional): If ``True``, adds a learnable bias to the output. Default: ``True`` .
         dilation (Union[int, tuple(int)], optional): Spacing between kernel elements. Default: ``1`` .
