@@ -288,9 +288,13 @@ void ClusterContext::PostProcess() {
     (void)common::SetEnv(kEnvWorkerIp, client_ip_in_cluster.c_str());
 
     // 3. Set port range of this node.
-    port_range_.first =
-      kStartPort + (kNodePortRangeNum / kMaxDeviceNumPerNode) * (cgn->rank_id() % kMaxDeviceNumPerNode);
-    port_range_.second = port_range_.first + (kNodePortRangeNum / kMaxDeviceNumPerNode) - 1;
+    NodeRolePortAssignment port_assignment =
+      (cgn->role() == kEnvRoleOfWorker) ? kWorkerPortAssignment : kServerPortAssignment;
+    uint32_t start_port = port_assignment.start_port;
+    uint32_t port_range = port_assignment.port_range;
+    uint32_t max_node_num = port_assignment.max_node_num;
+    port_range_.first = start_port + (port_range / max_node_num) * (cgn->rank_id() % max_node_num);
+    port_range_.second = port_range_.first + (port_range / max_node_num) - 1;
   }
 }
 }  // namespace cluster
