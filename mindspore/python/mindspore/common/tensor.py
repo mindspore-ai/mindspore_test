@@ -2242,12 +2242,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("copy_")(self, src)
 
-    def scatter_add(self, indices, updates):
-        """
-        For details, please refer to :func:`mindspore.ops.scatter_add`.
-        """
-        return tensor_operator_registry.get("tensor_scatter_add")(self, indices, updates)
-
     def scatter_add_(self, dim, index, src):
         """
         Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`.
