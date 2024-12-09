@@ -302,7 +302,7 @@ deprecated_tensor_method_map = {
     # 141 indices
 
     # 142 view_as
-
+    "view_as": "deprecated_tensor_view_as",
     # 143 values
 
     # 144 index_copy

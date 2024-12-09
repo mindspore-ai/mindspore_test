@@ -1429,35 +1429,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             shape = shape[0]
         return tensor_operator_registry.get('reshape')(self, shape)
 
-    def view_as(self, other):
-        r"""
-        View self Tensor as the same shape as `other` .
-
-        Args:
-            other(Tensor): The returned Tensor has the same shape as `other`.
-
-        Returns:
-            Tensor, has the same shape as `other`.
-
-        Raises:
-            TypeError: If `other` is not a Tensor.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> from mindspore import Tensor
-            >>> from mindspore import dtype as mstype
-            >>> a = Tensor([[1, 2, 3], [2, 3, 4]], mstype.float32)
-            >>> b = Tensor([1, 1, 1, 1, 1, 1], mstype.float32)
-            >>> output = a.view_as(b)
-            >>> print(output)
-            [1. 2. 3. 2. 3. 4.]
-        """
-        if not isinstance(other, (Tensor, Tensor_)):
-            raise TypeError(f"For view_as, the input other must be a Tensor, but got {type(other)}")
-        return self.view(other.shape)
-
     def t(self):
         r"""
         For details, please refer to :func:`mindspore.ops.t`.
@@ -4463,7 +4434,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> x._offload()
         """
         return Tensor_._offload(self)
-
 
     def normal_(self, mean=0, std=1, *, generator=None):
         r"""
