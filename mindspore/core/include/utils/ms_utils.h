@@ -244,12 +244,22 @@ inline bool IsNeedMemoryStatistic() {
   return !need_statistic.empty() && need_statistic != "0";
 }
 
+inline bool SimulateCompile() {
+  static const auto kSimulationLevel = "MS_SIMULATION_LEVEL";
+  static const auto kSimulationLevelCompileGraph = "0";
+  static const auto kSimulationLevelCompileKernel = "1";
+  static const auto kSimulationLevelCompileWithDeivce = "2";
+  static const auto simulation_level = common::GetEnv(kSimulationLevel);
+  static const auto simu_compile =
+    (simulation_level == kSimulationLevelCompileGraph || simulation_level == kSimulationLevelCompileKernel ||
+     simulation_level == kSimulationLevelCompileWithDeivce);
+  return simu_compile;
+}
+
 inline bool IsDryRun() {
   static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
-  static const char kSimulationLevel[] = "MS_SIMULATION_LEVEL";
   static const auto launch_skipped = GetEnv(kLaunchSkippedEnv);
-  static const auto simulation_level = common::GetEnv(kSimulationLevel);
-  static const bool skip_launch = (launch_skipped == "all" || launch_skipped == "ALL" || !simulation_level.empty());
+  static const bool skip_launch = (launch_skipped == "all" || launch_skipped == "ALL" || SimulateCompile());
   return skip_launch;
 }
 }  // namespace common
