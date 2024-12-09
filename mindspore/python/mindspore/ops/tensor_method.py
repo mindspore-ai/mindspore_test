@@ -118,7 +118,7 @@ from mindspore.ops.function.array_func import gather_ext
 # 39 greater
 from mindspore.ops.function.math_func import greater
 # 40 greater_equal
-
+from mindspore.ops.function.math_func import greater_equal
 # 41 gt
 
 # 42 half
@@ -287,7 +287,6 @@ from mindspore.ops.function.array_func import tril
 # 122 where
 from mindspore.ops.function.array_func import where as where_func
 
-
 # 123 div_
 
 # 124 fill_
@@ -372,6 +371,7 @@ from mindspore.ops.auto_generate import isneginf_ext
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import new_ones
 from mindspore.ops.function.array_func import new_zeros
+
 
 ########################################functions########################################
 
@@ -590,6 +590,9 @@ def tensor_greater(input, other):
 
 
 # 40 greater_equal
+def tensor_greater_equal(input, other):
+    return greater_equal(input, other)
+
 
 # 41 gt
 
@@ -1052,6 +1055,7 @@ def tensor_not_equal(input, other):
 def tensor_triu(input, diagonal=0):
     return F.triu(input, diagonal)
 
+
 # 150 __eq__
 
 # 151 scatter_
@@ -1080,11 +1084,13 @@ def fmod_tensor(input, other):
 def fmod_scalar(input, other):
     return
 
+
 # 153
 
 # 154
 def tensor_isneginf(input):
     return isneginf_ext(input)
+
 
 # 155
 
