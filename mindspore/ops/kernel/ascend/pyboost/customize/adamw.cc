@@ -28,7 +28,6 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   const BaseTensorPtr &max_v, const BaseTensorPtr &grad, const BaseTensorPtr &step, const FP32ImmPtr &lr,
   const FP32ImmPtr &beta1, const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &epsilon,
   const BoolImmPtr &amsgrad, const BoolImmPtr &maximize) {
-  OpRunner::InferOpOutput(op, var, m, v, max_v, grad, step, lr, beta1, beta2, decay, epsilon, amsgrad, maximize);
   const auto lr_imm = GetValue<float>(lr);
   const auto beta1_imm = GetValue<float>(beta1);
   const auto beta2_imm = GetValue<float>(beta2);
@@ -36,13 +35,13 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   const auto epsilon_imm = GetValue<float>(epsilon);
   const auto amsgrad_imm = GetValue<bool>(amsgrad);
   const auto maximize_imm = GetValue<bool>(maximize);
+  op->set_outputs({var, m, v});
 
   if (amsgrad_imm) {
     PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), var, m, v, max_v, grad, step);
   } else {
     PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), var, m, v, grad, step);
   }
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   PyBoostUtils::DispatchRun(
     std::make_shared<runtime::PyBoostDeviceTask>([op, var, m, v, max_v, grad, step, lr_imm, beta1_imm, beta2_imm,
@@ -52,12 +51,10 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
       MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
       if (amsgrad_imm) {
         PyBoostUtils::MallocOpInputs(device_context, var, m, v, max_v, grad, step);
-        PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
         LAUNCH_ACLNN(aclnnApplyAdamWV2, device_context, op->stream_id(), var, m, v, max_v, grad, step, lr_imm,
                      beta1_imm, beta2_imm, decay_imm, epsilon_imm, amsgrad_imm, maximize_imm);
       } else {
         PyBoostUtils::MallocOpInputs(device_context, var, m, v, grad, step);
-        PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
         LAUNCH_ACLNN(aclnnApplyAdamWV2, device_context, op->stream_id(), var, m, v, nullptr, grad, step, lr_imm,
                      beta1_imm, beta2_imm, decay_imm, epsilon_imm, amsgrad_imm, maximize_imm);
       }
