@@ -93,14 +93,15 @@ class _ComputeGraphNode(_Node):
         if not self.is_simulation:
             os.environ["MS_ROLE"] = "MS_WORKER"
         tail_worker_process = None
-        if self.join and self.tail_worker_log != "-1" and (str(self.node_id) not in self.tail_worker_log):
+        is_tail_worker_log = self.enable_tail_worker_log()
+        if self.join and not is_tail_worker_log:
             logger.warning(f"The '--tail_worker_log' is:{self.tail_worker_log}, which is beyond the maximum of "
                            "local_worker_num. So worker logs will not be output to console. Reset "
                            "'--tail_worker_log', if you want to output worker logs to console.")
         with open(self.output_file, "w") as file_handle:
             worker_process = subprocess.Popen(self.args_list, preexec_fn=os.setsid, stdout=file_handle,
                                               stderr=subprocess.STDOUT)
-            if self.join and (self.tail_worker_log == "-1" or str(self.node_id) in self.tail_worker_log):
+            if self.join and is_tail_worker_log:
                 tail_worker_process = self.output_to_console()
             return worker_process, tail_worker_process
 
@@ -109,6 +110,14 @@ class _ComputeGraphNode(_Node):
         Output worker log file to console.
         """
         return subprocess.Popen(['tail', '-f', self.output_file])
+
+    def enable_tail_worker_log(self):
+        tail_worker_log_list = []
+        if self.tail_worker_log != "-1":
+            tail_worker_log_list.extend([int(num) for num in self.tail_worker_log.split(',')])
+        if self.tail_worker_log != "-1" and self.node_id not in tail_worker_log_list:
+            return False
+        return True
 
 
 class _ProcessManager:
@@ -361,16 +370,16 @@ class _ProcessManager:
             raise ValueError(f"Total worker number is {self.worker_num}, "
                              f"but got exceeded local worker number: {self.local_worker_num}.")
         if self.local_worker_num == self.worker_num:
-            return index, os.path.join(self.log_dir, formatted_log_name  + "_" + str(index) + ".log")
+            return index, os.path.join(self.log_dir, formatted_log_name + "_" + str(index) + ".log")
 
         if self.node_rank >= 0:
             # We assume that each node has same process number.
             node_id = self.node_rank * self.local_worker_num + index
-            log_name = os.path.join(self.log_dir, formatted_log_name  + "_" + str(node_id) + ".log")
+            log_name = os.path.join(self.log_dir, formatted_log_name + "_" + str(node_id) + ".log")
         else:
             # If node_rank is default value -1, let MindSpore assign rank id.
             node_id = None
-            log_name = os.path.join(self.log_dir, formatted_log_name  + "_" + str(index) + ".log")
+            log_name = os.path.join(self.log_dir, formatted_log_name + "_" + str(index) + ".log")
         return node_id, log_name
 
 
