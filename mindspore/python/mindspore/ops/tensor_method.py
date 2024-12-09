@@ -424,6 +424,12 @@ def tensor_any(x, axis=None, keep_dims=False):
     return any(x, axis, keep_dims)
 
 
+def deprecated_tensor_any(x, dim=None, keepdim=False):
+    if dim is None:
+        dim = ()
+    return any(x, dim, keepdim)
+
+
 # 9 arctan2
 def tensor_arctan2(input, other):
     return arctan2(input, other)
