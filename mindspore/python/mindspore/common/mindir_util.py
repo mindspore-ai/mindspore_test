@@ -26,6 +26,9 @@ def load_mindir(file_name):
     """
     load protobuf file.
 
+    Note:
+        The interface is deprecated from version 2.5 and will be removed in a future version.
+
     Args:
         file_name (str): File name.
 
@@ -42,7 +45,8 @@ def load_mindir(file_name):
         >>> import mindspore as ms
         >>> md = ms.load_mindir("test.mindir")
     """
-
+    logger.warning("The interface 'mindspore.load_mindir' is deprecated from version 2.5 "
+                   "and will be removed in a future version.")
     Validator.check_file_name_by_regular(file_name)
     file_name = os.path.realpath(file_name)
     model = mindir_model()
@@ -65,6 +69,9 @@ def save_mindir(model, file_name):
     """
     save protobuf file.
 
+    Note:
+        The interface is deprecated from version 2.5 and will be removed in a future version.
+
     Args:
         model (ModelProto): mindir model
         file_name (str): File name.
@@ -84,7 +91,8 @@ def save_mindir(model, file_name):
         >>> md_new = ms.load_mindir("test_new.mindir")
         >>> md_new.user_info
     """
-
+    logger.warning("The interface 'mindspore.save_mindir' is deprecated from version 2.5 "
+                   "and will be removed in a future version.")
     Validator.check_file_name_by_regular(file_name)
     file_name = os.path.realpath(file_name)
     if not file_name.endswith('.mindir'):

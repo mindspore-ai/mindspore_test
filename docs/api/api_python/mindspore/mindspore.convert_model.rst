@@ -5,8 +5,8 @@ mindspore.convert_model
 
     将MindIR模型转化为其他格式的模型文件。当前版本仅支持转化成ONNX模型。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
+    .. note::
+        这个接口在2.5版本废弃，并且会在未来版本移除。
 
     参数：
         - **mindir_file** (str) - MindIR模型文件名称。
