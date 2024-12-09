@@ -235,13 +235,16 @@ class TensorDump(Primitive):
     """
     Save the Tensor as an npy file in numpy format.
 
+    .. warning::
+        - The parameter input_output will no longer support the value 'all'.
+
     .. note::
         In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
         can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
 
     Args:
         input_output (str, optional): Used to control Tensordump behavior.
-            Available value is one of ['in', 'out', 'all']. Default value is ``out``.
+            Available value is one of ['in', 'out']. Default value is ``out``.
 
             In case of OpA --> RedistributionOps --> OpB,
             The dump data of OpA's output is not equal to OpB's input (Due to the redistribution operators).
@@ -251,20 +254,17 @@ class TensorDump(Primitive):
             Different requirements of saving dump data can be achieved by configuring parameter input_output:
 
             - If the input_output is 'out', the dump data contains only OpA's output slice.
-            - If the input_output is 'all', the dump data contains both OpA's output slice and OpB's input slice.
             - If the input_output is 'in', the dump data contains only OpB's input slice.
 
-            For input_output is 'all' or 'in', the input slice npy file format is:
-            fileName_cNodeID_dumpMode_rankID_dtype_id.npy.
+            For input_output is 'in', the input slice npy file format is:
+            fileName_dumpMode_dtype_id.npy.
 
-            For input_output is 'out' or 'all' the output slice npy file format is:
+            For input_output is 'out', the output slice npy file format is:
             fileName_dtype_id.npy.
 
             - fileName: Value of the parameter file
               (if parameter file_name is a user-specified path, the value of fileName is the last level of the path).
-            - cNodeID: The node ID of the Tensordump node in the step_parallel_end.ir file.
             - dumpMode: Value of the parameter input_output.
-            - rankID: Logical device id.
             - dtype: The original data type. Data of type bfloat16 stored in the .npy file will be converted to float32.
             - id: An auto increment ID.
 
