@@ -30,7 +30,7 @@ class Net(nn.Cell):
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_tensor_any(mode):
+def test_tensor_all(mode):
     """
     Feature: tensor.all
     Description: Verify the result of all

@@ -4212,12 +4212,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('sinh')(self)
 
-    def argsort(self, axis=-1, descending=False):
-        """
-        For details, please refer to :func:`mindspore.ops.argsort`.
-        """
-        return tensor_operator_registry.get('argsort')(self, axis, descending)
-
     def imag(self):
         r"""
         For details, please refer to :func:`mindspore.ops.imag`.

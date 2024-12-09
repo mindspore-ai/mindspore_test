@@ -1,0 +1,14 @@
+argsort:
+  - op_yaml: argsort_op.yaml
+    py_method: tensor_argsort
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/argsort_method.yaml
+    py_method: deprecated_tensor_argsort
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
