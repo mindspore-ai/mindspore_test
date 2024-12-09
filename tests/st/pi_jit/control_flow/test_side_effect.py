@@ -1027,3 +1027,29 @@ def test_side_effect_eliminate_2():
     result = func()
     assert (excepted == result).all()
     assert_executed_by_graph_mode(func)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_merge():
+    """
+    Feature: Side-effect merge
+    Description: Validate side effect merge. Result must be correct
+    Expectation: No exception
+    """
+    def func(x):
+        x[:1]=1
+        x[2:]=2
+        return x
+
+    data = numpy.random.rand(4, 4)
+    x1=Tensor(data)
+    x2=Tensor(data)
+
+    func(x1)
+    jit(func, mode="PIJit")(x2)
+    assert (x1 == x2).all()
+
+    assert_no_graph_break(func)
+    jcr = get_code_extra(func)
+    opnames = [i.opname for i in dis.get_instructions(jcr['code']['compiled_code_'])]
+    assert opnames.count('STORE_SUBSCR') == 1

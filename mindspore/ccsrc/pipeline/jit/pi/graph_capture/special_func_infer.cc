@@ -1406,6 +1406,12 @@ bool IsReferencedVariable(ValueNode *target) {
   if (!IsNewVariable(target)) {
     return true;
   }
+  MS_EXCEPTION_IF_NULL(target->GetGraph());
+  const auto &replace_map = target->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
+  if (replace_map.find(target) != replace_map.end()) {
+    // object is a temporary node of side effect result. Maybe escaped
+    return true;
+  }
   // NOTE: it's temporary solution before object reference graph completed
   return CheckReferenced(target->GetGraph(), target);
 }
