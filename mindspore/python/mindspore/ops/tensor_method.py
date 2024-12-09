@@ -60,7 +60,7 @@ from mindspore.ops.function.array_func import argmax
 # 11 argmin
 from mindspore.ops.function.math_func import argmin
 # 12 argsort
-
+from mindspore.ops.function.array_func import argsort
 # 13 atan2
 from mindspore.ops.function.math_func import atan2
 # 14 bfloat16
@@ -454,6 +454,13 @@ def deprecated_tensor_argmin(input, axis=None, keepdims=False):
 
 
 # 12 argsort
+def tensor_argsort(input, dim=-1, descending=False):
+    return argsort(input, dim, descending)
+
+
+def deprecated_tensor_argsort(input, axis=-1, descending=False):
+    return argsort(input, axis, descending)
+
 
 # 13 atan2
 def tensor_atan2(input, other):
