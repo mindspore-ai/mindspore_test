@@ -543,7 +543,7 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
     param.is_any_ = param.type_ == OP_DTYPE::DT_ANY;
     py::object obj;
     if (arg_pos < nargs) {
-      obj = (args)[arg_pos];
+      obj = (args)[arg_pos++];
     } else if (kwargs) {
       is_kwd = true;
       py::str key_object(param.name_);
@@ -552,7 +552,7 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
         nkwargs--;
       }
     }
-    bool check_arg_as_intlist = !is_kwd && (arg_pos++ == 0) && as_intlist;
+    bool check_arg_as_intlist = !is_kwd && (arg_pos == kIndex1) && as_intlist;
     if (!obj) {
       if (!param.optional_) {
         return false;
@@ -622,7 +622,7 @@ ops::OP_DTYPE GetOpDtype(const std::string &type_str) {
   return it->second;
 }
 
-FunctionParameter::FunctionParameter(const std::string &fmt) : optional_(false), allow_none_(false), is_any_(false) {
+FunctionParameter::FunctionParameter(const std::string &fmt) {
   auto space = fmt.find(' ');
   if (space == std::string::npos) {
     MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << fmt;
@@ -724,7 +724,7 @@ static inline std::vector<int64_t> parse_list_int(const std::string &s) {
     return std::vector<int64_t>{std::stol(s)};
   }
   auto args = std::vector<int64_t>();
-  std::istringstream ss(s.substr(1, s.length() - 2));
+  std::istringstream ss(s.substr(1, s.length() - kIndex2));
   std::string tok;
   while (std::getline(ss, tok, ',')) {
     args.emplace_back(std::stol(tok));
@@ -831,12 +831,12 @@ py::object parse_number(const std::string &str) {
   if (cast_int.has_value()) {
     return cast_int.value();
   }
-  return py::float_(atof(str.c_str()));
+  return py::float_(stof(str));
 }
 
 std::string remove_quotes(const std::string &str) {
-  if (str.size() >= 2 && str.front() == '\'' && str.back() == '\'') {
-    return str.substr(1, str.size() - 2);
+  if (str.size() >= kIndex2 && str.front() == '\'' && str.back() == '\'') {
+    return str.substr(1, str.size() - kIndex2);
   }
   return str;
 }
@@ -844,10 +844,10 @@ std::string remove_quotes(const std::string &str) {
 void FunctionParameter::set_default_obj(const std::string &str) {
   switch (type_) {
     case ops::OP_DTYPE::DT_INT:
-      default_obj = py::int_(atol(str.c_str()));
+      default_obj = py::int_(stol(str));
       break;
     case ops::OP_DTYPE::DT_FLOAT:
-      default_obj = py::float_(atof(str.c_str()));
+      default_obj = py::float_(stof(str));
       break;
     case ops::OP_DTYPE::DT_BOOL:
       default_obj = py::bool_((str == "True" || str == "true"));

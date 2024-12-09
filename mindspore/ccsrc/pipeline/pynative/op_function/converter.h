@@ -63,13 +63,13 @@ struct FunctionParameter {
   void set_default_obj(const std::string &str);
   const py::object &get_default_value() { return default_obj; }
 
-  ops::OP_DTYPE type_;  // type of parameter
+  ops::OP_DTYPE type_{ops::OP_DTYPE::DT_END};
   std::vector<ops::OP_DTYPE> cast_types_;
   py::object default_obj;
-  bool optional_;  // if has default value
-  bool allow_none_;
-  std::string name_;  // parameter name
-  bool is_any_;
+  bool optional_{false};
+  bool allow_none_{false};
+  std::string name_;
+  bool is_any_{false};
 };
 
 // single overload
