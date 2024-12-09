@@ -1,0 +1,14 @@
+__eq__:
+  - op_yaml: equal_op.yaml
+    py_method: tensor_eq
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/eq_method.yaml
+    py_method: deprecated_tensor_eq
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

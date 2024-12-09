@@ -1,0 +1,10 @@
+#deprecated eq
+eq:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: any
+  returns:
+    output:
+      dtype: tensor
