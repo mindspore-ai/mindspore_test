@@ -179,6 +179,17 @@ class CmpNetFWHook(nn.Cell):
         return x
 
 
+class InplaceNet(nn.Cell):
+    def __init__(self):
+        super(InplaceNet, self).__init__()
+        self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
+
+    def construct(self, x):
+        x = self.conv(x)
+        x.add_(1.0)
+        return x
+
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -435,3 +446,24 @@ def test_pynative_backward_with_dict_input():
     net.register_backward_hook(backward_hook_fn7)
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x, tmp=input_y)
     assert len(grad) == 3
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_inplace_net_backward_hook():
+    """
+    Feature: PyNative hook function.
+    Description: Test PyNative backward hook function for inplace operator.
+    Expectation: The calculation result is correct.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    input_x = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32))
+    grad_op = GradOperation(get_all=True, get_by_list=False, sens_param=False)
+    net = InplaceNet()
+    handle = net.conv.register_backward_hook(backward_hook_fn4)
+    grad = grad_op(net)(input_x)
+    handle.remove()
+    assert len(grad) == 1
+    assert np.allclose(grad[0].asnumpy(), np.ones([2, 2, 2, 2]).astype(np.float32) * 10, 0.000001)
