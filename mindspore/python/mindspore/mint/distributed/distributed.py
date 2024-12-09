@@ -354,14 +354,13 @@ def new_group(ranks=None,
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-        >>> import mindspore as ms
         >>> from mindspore import set_context
-        >>> from mindspore.mint.distributed import init_process_group, get_backend
+        >>> from mindspore.mint.distributed import init_process_group, new_group
         >>> set_context(device_target="Ascend")
         >>> init_process_group()
         >>> group = new_group()
         >>> print("group is: ", group)
-        group is: hccl
+        group is: hccl_world_group
     """
     if ranks is not None:
         if not isinstance(ranks, list):
@@ -406,7 +405,6 @@ def get_backend(group=None):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-        >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_backend
         >>> set_context(device_target="Ascend")
@@ -454,18 +452,19 @@ def get_global_rank(group, group_rank):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-            This example should be run with 4 devices.
+            This example should be run with 8 devices.
 
-        >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_global_rank, new_group, get_rank
         >>> set_context(device_target="Ascend")
+        >>> # Launch 8 processes.
         >>> init_process_group()
         >>> rank_ids = [0,4]
         >>> if get_rank() in rank_ids:
         ...     group = new_group(rank_ids)
         ...     world_rank_id = get_global_rank(group, 1)
         ...     print("world_rank_id is: ", world_rank_id)
+        #rank 0 and 4:
         world_rank_id is: 4
     """
     if not isinstance(group_rank, int):
@@ -518,16 +517,19 @@ def get_group_rank(group, global_rank):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-        >>> import mindspore as ms
+            This example should be run with 8 devices.
+
         >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, new_group, get_group_rank, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(device_target="Ascend")
+        >>> # Launch 8 processes.
         >>> init_process_group()
         >>> rank_ids = [0,4]
         >>> if get_rank() in rank_ids:
         ...     group = new_group(rank_ids)
-        ...     group_rank_id = get_group_rank(4, group)
+        ...     group_rank_id = get_group_rank(group, 4)
         ...     print("group_rank_id is: ", group_rank_id)
+        #rank 0 and 4:
         group_rank_id is: 1
     """
     if not isinstance(global_rank, int):
@@ -578,9 +580,9 @@ def get_process_group_ranks(group=None):
 
             This example should be run with 4 devices.
 
-        >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_process_group_ranks
+        >>> # Launch 4 processes.
         >>> set_context(device_target="Ascend")
         >>> init_process_group()
         >>> output = get_process_group_ranks()
@@ -756,7 +758,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
         >>> from mindspore.mint.distributed import all_gather_into_tensor
         >>> from mindspore import Tensor
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_context(device_target="Ascend")
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> out_tensor = Tensor(np.zeros([4, 8]).astype(np.float32))
@@ -842,7 +844,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
         >>> from mindspore.mint.distributed import reduce_scatter_tensor
         >>> import numpy as np
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_context(device_target="Ascend")
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([8, 8]).astype(np.float32))
         >>> output_tensor = Tensor(np.ones([4, 8]).astype(np.float32))
@@ -931,15 +933,16 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=None, async_op=False):
         >>> from mindspore.mint.distributed import init_process_group, reduce
         >>> from mindspore import Tensor
         >>> import numpy as np
-        >>> # Launch 4 processes.
+        >>> # Launch 2 processes.
         >>> init_process_group()
         >>> dest_rank=1
         >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = reduce(input_tensor)
+        >>> output = reduce(input_tensor, dest_rank)
         >>> print(input_tensor)
-        Process with rank 1: [[4. 4. 4. 4. 4. 4. 4. 4.]
-                             [4. 4. 4. 4. 4. 4. 4. 4.]],
-        Other proesses: [0.].
+        Process with rank 0: [[1. 1. 1. 1. 1. 1. 1. 1.]
+                             [1. 1. 1. 1. 1. 1. 1. 1.]],
+        Process with rank 1: [[2. 2. 2. 2. 2. 2. 2. 2.]
+                             [2. 2. 2. 2. 2. 2. 2. 2.]],
     """
 
     if not isinstance(tensor, (Tensor, Tensor_)):
@@ -1000,6 +1003,7 @@ class P2POp:
         >>> import mindspore
         >>> from mindspore.mint.distributed import P2POp, isend, irecv
         >>> from mindspore import Tensor
+        >>> # Launch 2 processes.
         >>> send_tensor = Tensor(1.)
         >>> send_op = P2POp('isend', send_tensor, 1)
         >>> send_op = P2POp(isend, send_tensor, 1)
@@ -1085,7 +1089,7 @@ def batch_isend_irecv(p2p_op_list):
         >>> import numpy as np
         >>> import mindspore
         >>> from mindspore.mint.distributed import init_process_group, get_rank, get_world_size
-        >>> from mindspore.mint.distributed import import batch_isend_irecv, P2POp
+        >>> from mindspore.mint.distributed import batch_isend_irecv, P2POp
         >>> from mindspore import Tensor
         >>>
         >>> init_process_group()
@@ -1479,8 +1483,7 @@ def send(tensor, dst=0, group=None, tag=0):
     Send tensors to the specified dest_rank.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to send.
@@ -1547,8 +1550,7 @@ def recv(tensor, src=0, group=None, tag=0):
     Receive tensors from src.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to fill with received data.
@@ -1592,7 +1594,7 @@ def recv(tensor, src=0, group=None, tag=0):
         [[ 0.  1.]
          [ 2.  3.]]
         >>> init_process_group()
-        >>> x = ms.Tensor(np.zeros([2, 2]))
+        >>> x = Tensor(np.zeros([2, 8]).astype(np.float32))
         # Process 1 receive tensor from Process 0.
         >>> out = recv(x, src=0)
         >>> print(out)
@@ -1622,8 +1624,7 @@ def isend(tensor, dst=0, group=None, tag=0):
     Send tensors to the specified dest_rank asynchronously.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to send.
@@ -1694,8 +1695,7 @@ def irecv(tensor, src=0, group=None, tag=0):
     Receive tensors from src asynchronously.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to fill with received data.
@@ -1740,7 +1740,7 @@ def irecv(tensor, src=0, group=None, tag=0):
         [[ 0.  1.]
          [ 2.  3.]]
         >>> init_process_group()
-        >>> x = ms.Tensor(np.zeros([2, 2]))
+        >>> x = Tensor(np.zeros([2, 8]).astype(np.float32))
         # Process 1 receive tensor from Process 0.
         >>> handle = irecv(x, src=0)
         >>> handle.wait()
@@ -2253,22 +2253,22 @@ def scatter(tensor, scatter_list, src=0, group=None, async_op=False):
 
             This example should be run with 2 devices.
 
-        >>> import mindspore as ms
+        >>> from mindspore import Tensor
         >>> from mindspore.mint.distributed import init_process_group, scatter
         >>> import numpy as np
         >>> # Launch 2 processes.
         >>>
         >>> init_process_group()
-        >>> inputs = [Tensor(np.arange(4).reshape([2.0, 2])), Tensor(np.arange(4).reshape([2, 2.0]))]
+        >>> inputs = [Tensor(np.ones([2, 2]).astype(np.float32)), Tensor(np.ones([2, 2]).astype(np.float32))]
         >>> output = Tensor(np.zeros([2, 2]).astype(np.float32))
         >>> scatter(output, inputs, src=0)
         >>> print(output)
         # rank_0
-        [[0. 1.]
-         [2. 3.]]
+        [[1. 1.]
+         [1. 1.]]
         # rank_1
-        [[0. 1.]
-         [2. 3.]]
+        [[1. 1.]
+         [1. 1.]]
     """
     _check_all_tensors(scatter_list)
     _check_all_tensor_same_dtype_and_shape(scatter_list)
