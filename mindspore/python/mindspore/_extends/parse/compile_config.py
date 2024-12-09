@@ -267,8 +267,6 @@ Value Range:
 """
 STRICT_CHECK_PARENT_CONTEXT = ''
 
-<<<<<<< HEAD
-=======
 """
 Name: CELL_PARAMETER_HOOK
 Function: Whether to enable cell parameter hook.

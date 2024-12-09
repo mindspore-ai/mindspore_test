@@ -512,8 +512,10 @@ FuncGraphPtr BpropGenerator::GenerateForwardGraph(const FuncGraphPtr &jit_forwar
   fprop_forward_outputs.insert(fprop_forward_outputs.end(), replace_nodes_.begin(), replace_nodes_.end());
   auto merge_node = primal_fg->NewCNode(std::move(fprop_forward_outputs));
   primal_fg->set_output(merge_node);
+  auto forward_fg = BasicClone(primal_fg);
+  primal_fg->set_output(original_output_node);
   MS_LOG(INFO) << "Finish appending reused nodes to forward graph output.";
-  return OptimizeForwardGraph(primal_fg, true);
+  return OptimizeForwardGraph(forward_fg, true);
 }
 
 void BpropGenerator::set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs, bool do_dout_plant) {
