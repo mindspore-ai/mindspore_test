@@ -6,8 +6,7 @@ mindspore.mint.distributed.isend
     异步发送张量到指定线程。
 
     .. note::
-        - Send 和 Receive 算子需组合使用，且有同一个 `tag`。
-        - 当前支持PyNative模式，不支持Graph模式。
+        当前支持PyNative模式，不支持Graph模式。
 
     参数：
         - **tensor** (Tensor) - 输入发送Tensor。
