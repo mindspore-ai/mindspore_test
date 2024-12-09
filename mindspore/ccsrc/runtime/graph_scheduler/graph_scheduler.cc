@@ -93,7 +93,6 @@ using distributed::recovery::RecoveryContext;
 namespace {
 constexpr char kNumaEnableEnv[] = "MS_ENABLE_NUMA";
 constexpr char kNumaEnableEnv2[] = "DATASET_ENABLE_NUMA";
-constexpr char kMainThread[] = "main";
 constexpr char kRuntimeThread[] = "runtime";
 
 // For the transform state synchronization.
@@ -998,9 +997,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   SignalGuard sg(IntHandler);
 #endif
-
-  auto &bind_core_manager = ThreadBindCore::GetInstance();
-  bind_core_manager.bind_thread_core(kMainThread);
 
   CheckUceBeforeGraphRun(actor_set);
 
@@ -3659,6 +3655,10 @@ void GraphScheduler::BindNumaNode() {
   }
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+  if (!numa_cpus_.empty()) {
+    MS_LOG(WARNING) << "Have already been bound numa node to " << numa_cpus_ << ", will not bind again.";
+    return;
+  }
   uint32_t rank_id = CollectiveManager::instance()->local_rank_id();
   MS_LOG(INFO) << "Bind numa node for rank " << rank_id;
   if (numa_handle_ == nullptr) {

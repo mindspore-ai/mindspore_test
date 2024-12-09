@@ -60,9 +60,11 @@
 #include "include/common/debug/common.h"
 #include "include/common/utils/stub_tensor.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "runtime/runtime_conf/thread_bind_core.h"
 
 namespace mindspore {
 namespace compile {
+constexpr char kMainThread[] = "main";
 bool Backend::GetCond(const BaseRef &c, bool *value) {
   mindspore::ScopedLongRunning long_running;
   return BaseRefToBool(c, value);
@@ -1608,6 +1610,10 @@ void MindRTBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_
 void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &args, VectorRef *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      actor_info, true);
+
+  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
+  bind_core_manager.bind_thread_core(kMainThread);
+
   MS_EXCEPTION_IF_NULL(root_graph_);
   if (IsGraphOutputValueNodeOrParameter(root_graph_->output(), args, outputs)) {
     return;

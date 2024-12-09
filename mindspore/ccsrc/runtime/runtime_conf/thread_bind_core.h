@@ -35,20 +35,20 @@ class ThreadBindCore {
     static ThreadBindCore instance;
     return instance;
   }
-  void enable_thread_bind_core(std::map<int, std::vector<int>> bind_core_policy, bool custom_plicy_flag);
+  void enable_thread_bind_core(const std::vector<int> &available_cpu_list);
+  void enable_thread_bind_core_with_policy(const BindCorePolicy &bind_core_policy);
+  bool parse_thread_bind_core_policy(const std::string &thread_name, int device_id);
   void bind_thread_core(const std::string &thread_name);
-  std::vector<int> get_thread_core_list(const std::string &thread_name);
-  bool unbind_thread_core(const std::string &thread_name);
-  bool get_thread_bind_core_policy(int device_id);
   std::vector<int> get_thread_bind_core_list(const std::string &thread_name);
+  bool unbind_thread_core(const std::string &thread_name);
 
  private:
   BindCorePolicy process_bind_core_policy_;
-  std::map<int, std::vector<int>> cpu_bind_core_policy_;
+  std::vector<int> cpu_bind_core_policy_;
   std::map<std::string, std::vector<int>> thread_bind_core_policy_;
   std::map<std::string, bool> thread_bind_core_status_;
-  bool enable_thread_bind_core_{false};
-  bool custom_policy_flag_{false};
+  bool is_enable_thread_bind_core_{false};
+  bool is_enable_with_policy{false};
   ThreadBindCore() = default;
   ~ThreadBindCore() = default;
 };
