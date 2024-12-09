@@ -43,7 +43,13 @@ TypePtr CastFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
   } else {
     auto dst_type = primitive->GetAttr(kDstType);
     MS_EXCEPTION_IF_NULL(dst_type);
-    return dst_type->cast<TypePtr>();
+    auto input_scalar = dst_type->cast<Int64ImmPtr>();
+    if (input_scalar == nullptr) {
+      return dst_type->cast<TypePtr>();
+    }
+    MS_EXCEPTION_IF_NULL(input_scalar);
+    auto type = TypeIdToType(static_cast<TypeId>(input_scalar->value()));
+    return std::make_shared<TensorType>(type);
   }
 }
 TypePtrList CastFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
