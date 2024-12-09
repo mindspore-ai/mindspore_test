@@ -182,11 +182,11 @@ Sampling Operator
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
-    
+
     mindspore.ops.ComputeAccidentalHits
     mindspore.ops.LogUniformCandidateSampler
     mindspore.ops.UniformCandidateSampler
-    
+
 Image Processing
 ^^^^^^^^^^^^^^^^
 
@@ -194,7 +194,7 @@ Image Processing
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst
-    
+
     mindspore.ops.BoundingBoxDecode
     mindspore.ops.BoundingBoxEncode
     mindspore.ops.CheckValid
@@ -566,7 +566,7 @@ Type Conversion
     mindspore.ops.ScalarCast
     mindspore.ops.ScalarToTensor
     mindspore.ops.TupleToArray
-    
+
 Parameter Operation Operator
 ----------------------------
 
@@ -608,7 +608,7 @@ Distributed training involves communication operations for data transfer. For mo
 Note that the APIs in the following list need to preset communication environment variables. For Ascend/GPU/CPU devices,
 it is recommended to use the msrun startup method without any third-party or configuration file dependencies.
 Please see the `msrun start up \
-<https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_ for more details.
+<https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_ for more details.
 
 .. msplatwarnautosummary::
     :toctree: ops
