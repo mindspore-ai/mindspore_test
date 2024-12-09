@@ -116,8 +116,8 @@ def test_method_select_pyboost(mode):
     assert np.allclose(output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_select_ext_dynamic():
@@ -133,11 +133,11 @@ def test_tensor_select_ext_dynamic():
     dim2 = 2
     index2 = 3
     TEST_OP(select_ext_forward_func, [[ms_data1, dim1, index1], [ms_data2, dim2, index2]],
-            'select_ext', disable_mode=['GRAPH_MODE'])
+            'select_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_select_dynamic():

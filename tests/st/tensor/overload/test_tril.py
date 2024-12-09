@@ -73,6 +73,10 @@ def test_method_tril(mode):
                               [10, 11, 0, 0],
                               [14, 15, 16, 0]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
+    x = ms.Tensor([[-1.8297, -0.8474, 1.0292], [-1.2167, 0.5574, -0.6753], [-0.6702, 0.2276, 1.2421]])
+    output = net(x)
+    expect_output = np.array([[-1.8297, 0., 0.], [-1.2167, 0.5574, 0.], [-0.6702, 0.2276, 1.2421]], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expect_output)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -91,4 +95,7 @@ def test_tensor_tril_dynamic():
     diagonal2 = 2
     TEST_OP(tril_forward_func,
             [[ms_data1, diagonal1], [ms_data2, diagonal2]], 'tril',
-            disable_mode=['GRAPH_MODE'], disable_yaml_check=True)
+            disable_yaml_check=True, disable_nontensor_dynamic_type='STATIC_LEN', disable_resize=True)
+    TEST_OP(tril_forward_func,
+            [[ms_data1, diagonal1], [ms_data2, diagonal2]], 'tril_ext',
+            disable_nontensor_dynamic_type='STATIC_LEN', disable_resize=True)

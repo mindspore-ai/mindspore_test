@@ -58,7 +58,7 @@ def test_method_isfinite(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_isfinite_dynamic():
@@ -69,4 +69,4 @@ def test_tensor_isfinite_dynamic():
     """
     ms_data1 = ms.Tensor(generate_random_input((2, 3, 4, 5), np.float32))
     ms_data2 = ms.Tensor(generate_random_input((6, 2, 5), np.float32))
-    TEST_OP(isfinite_forward_func, [[ms_data1], [ms_data2]], 'isfinite', disable_mode=['GRAPH_MODE'])
+    TEST_OP(isfinite_forward_func, [[ms_data1], [ms_data2]], 'isfinite')
