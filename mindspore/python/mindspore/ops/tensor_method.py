@@ -326,7 +326,7 @@ from mindspore.ops.function.array_func import where as where_func
 # 141 indices
 
 # 142 view_as
-
+from mindspore.ops.auto_generate import view_as
 # 143 values
 
 # 144 index_copy
@@ -1132,6 +1132,14 @@ def deprecated_tensor_mm(input, mat2):
 # 141 indices
 
 # 142 view_as
+def tensor_view_as(input, other):
+    shape = other.shape
+    return reshape(input, shape)
+
+
+def deprecated_tensor_view_as(input, other):
+    return view_as(input, other)
+
 
 # 143 values
 
