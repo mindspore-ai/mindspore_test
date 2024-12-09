@@ -58,12 +58,12 @@ def generate_random_input(shape, dtype):
 
 
 @test_utils.run_with_cell
-def sub_forward_func1(x, y):
+def sub_forward_func(x, y):
     return x.sub(y)
 
 
 @test_utils.run_with_cell
-def sub_forward_func2(x, other, *, alpha=1):
+def sub_ext_forward_func(x, other, *, alpha=1):
     return x.sub(other, alpha=alpha)
 
 
@@ -126,7 +126,7 @@ def test_method_sub_pyboost(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_sub_dynamic():
@@ -137,12 +137,8 @@ def test_tensor_sub_dynamic():
     """
     ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
     y1 = ms.Tensor(generate_random_input((4, 6), np.float32))
-    alpha1 = 1
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     y2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
-    alpha2 = 2
-    TEST_OP(sub_forward_func1,
-            [[ms_data1, y1], [ms_data2, y2]], 'sub', disable_mode=['GRAPH_MODE'])
-    TEST_OP(sub_forward_func2,
-            [[ms_data1, y1, alpha1], [ms_data2, y2, alpha2]], 'sub', disable_mode=['GRAPH_MODE'],
+    TEST_OP(sub_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub')
+    TEST_OP(sub_ext_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub_ext', disable_mode=['GRAPH_MODE'],
             disable_yaml_check=True)

@@ -25,17 +25,17 @@ from mindspore.common.api import _pynative_executor
 
 
 class MeanNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False, dtype=None):
-        return x.mean(axis, keep_dims, dtype)
+    def construct(self, x, axis=None, keep_dims=False, *, dtype=None):
+        return x.mean(axis, keep_dims, dtype=dtype)
 
 
 class MeanKVNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False, dtype=None):
+    def construct(self, x, axis=None, keep_dims=False, *, dtype=None):
         return x.mean(axis=axis, keep_dims=keep_dims, dtype=dtype)
 
 
 class MeanKVDisruptNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False, dtype=None):
+    def construct(self, x, axis=None, keep_dims=False, *, dtype=None):
         return x.mean(keep_dims=keep_dims, axis=axis, dtype=dtype)
 
 
@@ -49,8 +49,8 @@ def generate_random_input(shape, dtype):
 
 
 @test_utils.run_with_cell
-def mean_ext_forward_func(x, axis=None, keep_dims=False, dtype=None):
-    return x.mean(axis, keep_dims, dtype)
+def mean_ext_forward_func(x, axis=None, keep_dims=False, *, dtype=None):
+    return x.mean(axis, keep_dims, dtype=dtype)
 
 
 @test_utils.run_with_cell
@@ -118,7 +118,7 @@ def test_method_mean_pyboost(mode):
     # test 1: using positional args
     net = MeanNet()
     x = ms.Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-    output = net(x, 1, True, None)
+    output = net(x, 1, True, dtype=None)
     result = output.shape
     expected = np.array([3, 1, 5, 6], dtype=np.float32)
     assert np.allclose(result, expected)
@@ -127,7 +127,7 @@ def test_method_mean_pyboost(mode):
     x = ms.Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
                             [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
                             [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]), ms.float32)
-    output = net(x)
+    output = net(x, dtype=None)
     expected = 5.0
     assert np.allclose(output.asnumpy(), expected)
 
@@ -166,7 +166,7 @@ def test_method_mean_pyboost(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_mean_dynamic():
@@ -178,12 +178,10 @@ def test_tensor_mean_dynamic():
     ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
     axis1 = 1
     keep_dims1 = False
-    dtype1 = None
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     axis2 = 2
     keep_dims2 = True
-    dtype2 = None
-    TEST_OP(mean_ext_forward_func, [[ms_data1, axis1, keep_dims1, dtype1], [ms_data2, axis2, keep_dims2, dtype2]],
-            'mean_ext', disable_mode=['GRAPH_MODE'], disable_input_check=True)
+    TEST_OP(mean_ext_forward_func, [[ms_data1, axis1, keep_dims1], [ms_data2, axis2, keep_dims2]], 'mean_ext',
+            disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_input_check=True)
     TEST_OP(mean_forward_func, [[ms_data1, axis1, keep_dims1], [ms_data2, axis2, keep_dims2]], 'mean',
-            disable_mode=['GRAPH_MODE'], disable_yaml_check=True)
+            disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_grad=True)

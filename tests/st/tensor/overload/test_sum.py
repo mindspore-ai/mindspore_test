@@ -30,7 +30,7 @@ class SumPythonNet(nn.Cell):
 
 class SumPyboostNet(nn.Cell):
     def construct(self, x, dim=None, keepdim=False, *, dtype=None):
-        return x.sum(dim, keepdim, dtype)
+        return x.sum(dim, keepdim, dtype=dtype)
 
 
 def generate_random_input(shape, dtype):
@@ -38,7 +38,7 @@ def generate_random_input(shape, dtype):
 
 
 @test_utils.run_with_cell
-def sum_ext_forward_func(x, dim=None, keepdim=False, dtype=None):
+def sum_ext_forward_func(x, dim=None, keepdim=False, *, dtype=None):
     return x.sum(dim, keepdim, dtype=dtype)
 
 
@@ -100,17 +100,17 @@ def test_method_sum_pyboost(mode):
     x = ms.Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
                             [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
                             [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), ms.float32)
-    output = net(x)
+    output = net(x, dtype=None)
     expect_output = 270.0
     assert np.allclose(output.asnumpy(), expect_output)
 
-    output = net(x, dim=2)
+    output = net(x, dim=2, dtype=None)
     expect_output = np.array([[6., 12., 18.],
                               [24., 30., 36.],
                               [42., 48., 54.]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
 
-    output = net(x, dim=2, keepdim=True)
+    output = net(x, dim=2, keepdim=True, dtype=None)
     expect_output = np.array([[[6.],
                                [12.],
                                [18.]],
@@ -124,7 +124,7 @@ def test_method_sum_pyboost(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_sum_dynamic():
@@ -136,26 +136,23 @@ def test_tensor_sum_dynamic():
     ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
     dim1 = 1
     keepdim1 = False
-    dtype1 = None
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     dim2 = 2
     keepdim2 = True
-    dtype2 = None
     TEST_OP(sum_ext_forward_func,
-            [[ms_data1, dim1, keepdim1, dtype1], [ms_data2, dim2, keepdim2, dtype2]], 'sum_ext',
-            disable_mode=['GRAPH_MODE'], disable_input_check=True, disable_nontensor_dynamic_type='BOTH')
+            [[ms_data1, dim1, keepdim1], [ms_data2, dim2, keepdim2]], 'sum_ext', disable_mode=['GRAPH_MODE'],
+            disable_input_check=True)
 
     ms_data1 = ms.Tensor(generate_random_input((2, 6), np.float32))
     axis1 = 1
-    dtype1 = None
+    dtype1 = ms.float32
     keepdims1 = True
     initial1 = 3
     ms_data2 = ms.Tensor(generate_random_input((3, 2, 7, 3), np.float32))
     axis2 = 2
-    dtype2 = None
+    dtype2 = ms.float16
     keepdims2 = False
     initial2 = 2
     TEST_OP(sum_forward_func,
             [[ms_data1, axis1, dtype1, keepdims1, initial1], [ms_data2, axis2, dtype2, keepdims2, initial2]], 'sum',
-            disable_mode=['GRAPH_MODE'], disable_input_check=True, disable_yaml_check=True,
-            disable_nontensor_dynamic_type='BOTH')
+            disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_resize=True)

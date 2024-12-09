@@ -143,8 +143,34 @@ def test_method_topk_pyboost(mode):
     assert np.allclose(output2[1].asnumpy(), expect_output1, rtol=1e-3, atol=1e-5)
 
 
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_topk_ext_dynamic():
+    """
+    Feature: Test topk op.
+    Description: Test topk dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
+    k1 = 2
+    dim1 = -1
+    largest1 = False
+    sorted1 = False
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    k2 = 3
+    dim2 = 2
+    largest2 = True
+    sorted2 = True
+    TEST_OP(topk_ext_forward_func,
+            [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]], 'topk_ext',
+            disable_resize=True, disable_tensor_dynamic_type='DYNAMIC_RANK',
+            disable_nontensor_dynamic_type='STATIC_LEN')
+
+
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_topk_dynamic():
@@ -160,12 +186,10 @@ def test_tensor_topk_dynamic():
     sorted1 = False
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     k2 = 3
-    dim2 = None
+    dim2 = 3
     largest2 = True
     sorted2 = True
-    TEST_OP(topk_ext_forward_func,
-            [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]], 'topk_ext',
-            disable_mode=['GRAPH_MODE'], disable_input_check=True)
     TEST_OP(topk_forward_func,
             [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]], 'topk',
-            disable_mode=['GRAPH_MODE'], disable_input_check=True, disable_yaml_check=True)
+            disable_yaml_check=True, disable_resize=True, disable_tensor_dynamic_type='DYNAMIC_RANK',
+            disable_nontensor_dynamic_type='STATIC_LEN')

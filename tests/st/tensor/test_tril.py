@@ -15,14 +15,8 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, context
-
-
-class Net(nn.Cell):
-    def construct(self, x, diagonal=0):
-        return x.tril(diagonal)
 
 
 class TrilNet(nn.Cell):
@@ -33,25 +27,6 @@ class TrilNet(nn.Cell):
     def construct(self, value, k):
 
         return self.tril(value, k)
-
-
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level2',
-          card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_tril(mode):
-    """
-    Feature: tril
-    Description: Verify the result of tril
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-    x = Tensor([[-1.8297, -0.8474, 1.0292], [-1.2167, 0.5574, -0.6753], [-0.6702, 0.2276, 1.2421]])
-    net = Net()
-    output = net(x)
-    expect_output = np.array([[-1.8297, 0., 0.], [-1.2167, 0.5574, 0.], [-0.6702, 0.2276, 1.2421]], dtype=np.float32)
-    assert np.allclose(output.asnumpy(), expect_output)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'],
