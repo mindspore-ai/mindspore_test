@@ -1108,9 +1108,9 @@ def batch_isend_irecv(p2p_op_list):
         >>> output = batch_isend_irecv(p2p_op_list)
         >>> print(recv_tensor)
         rank 0:
-        (Tensor(shape=[], dtype=Float32, value= 0), Tensor(shape=[], dtype=Float32, value= 2))
+        2.0
         rank 1:
-        (Tensor(shape=[], dtype=Float32, value= 0), Tensor(shape=[], dtype=Float32, value= 1))
+        1.0
     """
     tensors = []
     op_types = []
@@ -1379,7 +1379,6 @@ def broadcast(tensor, src, group=None, async_op=False):
             This example should be run with 2 devices.
 
         >>> import mindspore as ms
-        >>> from mindspore import Tensor
         >>> from mindspore.mint.distributed import init_process_group, broadcast
         >>> import numpy as np
         >>> # Launch 2 processes.
@@ -1512,8 +1511,6 @@ def send(tensor, dst=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import send
         >>> from mindspore import Tensor
@@ -1521,7 +1518,9 @@ def send(tensor, dst=0, group=None, tag=0):
         >>>
         >>> init_process_group()
         >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> send(input_, 0)
+        # Launch 2 processes.
+        Process 0 send the array to Process 1
+        >>> send(input_, 1)
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For send, the input tensor must be tensor")
@@ -1582,8 +1581,6 @@ def recv(tensor, src=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import recv
         >>> from mindspore import Tensor
@@ -1591,15 +1588,15 @@ def recv(tensor, src=0, group=None, tag=0):
         >>>
         # Launch 2 processes.
         Process 0 send the following array to Process 1
-        [[ 0.  1.]
-         [ 2.  3.]]
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
         >>> init_process_group()
         >>> x = Tensor(np.zeros([2, 8]).astype(np.float32))
         # Process 1 receive tensor from Process 0.
         >>> out = recv(x, src=0)
-        >>> print(out)
-        [[ 0.  1.]
-         [ 2.  3.]]
+        >>> print(x)
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For recv, the input tensor must be tensor")
@@ -1656,8 +1653,6 @@ def isend(tensor, dst=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import isend
         >>> from mindspore import Tensor
@@ -1665,7 +1660,9 @@ def isend(tensor, dst=0, group=None, tag=0):
         >>>
         >>> init_process_group()
         >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> handle = isend(input_, 0)
+        # Launch 2 processes.
+        Process 0 send the array to Process 1
+        >>> handle = isend(input_, 1)
         >>> handle.wait()
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
@@ -1728,8 +1725,6 @@ def irecv(tensor, src=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import irecv
         >>> from mindspore import Tensor
@@ -1737,16 +1732,16 @@ def irecv(tensor, src=0, group=None, tag=0):
         >>>
         # Launch 2 processes.
         Process 0 send the following array to Process 1
-        [[ 0.  1.]
-         [ 2.  3.]]
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
         >>> init_process_group()
         >>> x = Tensor(np.zeros([2, 8]).astype(np.float32))
         # Process 1 receive tensor from Process 0.
         >>> handle = irecv(x, src=0)
         >>> handle.wait()
         >>> print(x)
-        [[ 0.  1.]
-         [ 2.  3.]]
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For irecv, the input tensor must be tensor")
@@ -1804,12 +1799,10 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
 
             This example should be run with 2 devices.
 
-        >>> import numpy as np
-        >>> import mindspore
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_rank
         >>> from mindspore.mint.distributed import all_to_all
         >>> from mindspore import Tensor
-        >>> from mindspore.ops import zeros
         >>>
         >>> init_process_group()
         >>> this_rank = get_rank()
@@ -1973,9 +1966,9 @@ def all_to_all_single(output,
         >>>     result = all_to_all_single(output, tensor, [2, 1], [2, 1])
         >>>     print(output)
         >>> if this_rank == 1:
-        >>>     output = Tensor(np.zeros([3, 3]).astype(np.float32))
+        >>>     output = Tensor(np.zeros([2, 3]).astype(np.float32))
         >>>     tensor = Tensor([[9, 10., 11], [12, 13, 14]])
-        >>>     result = all_to_all_single(output, tensor)
+        >>>     result = all_to_all_single(output, tensor, [1, 1], [1, 1])
         >>>     print(output)
         rank 0:
         [[ 0.  1.  2.]
@@ -2076,12 +2069,10 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> from mindspore import ops
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import all_gather
         >>> from mindspore import Tensor
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> out_tensors = [Tensor(np.zeros([2, 8]).astype(np.float32)), Tensor(np.zeros([2, 8]).astype(np.float32))]
@@ -2161,13 +2152,11 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
 
             This example should be run with 2 devices.
 
-        >>> import mindspore as ms
         >>> from mindspore import Tensor
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import reduce_scatter
         >>> import numpy as np
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> init_process_group()
         >>> input_tensors = [Tensor(np.ones([4, 8]).astype(np.float32)), Tensor(np.ones([4, 8]).astype(np.float32))]
         >>> output_tensor = Tensor(np.zeros([4, 8]).astype(np.float32))
