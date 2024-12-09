@@ -315,7 +315,7 @@ bool HcclAdapter::FinalizeHccl() {
 
 HcclResult HcclAdapter::HcclBroadcast(void *buf, uint64_t count, HcclDataType dataType, uint32_t root,
                                       aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -324,7 +324,7 @@ HcclResult HcclAdapter::HcclBroadcast(void *buf, uint64_t count, HcclDataType da
 
 HcclResult HcclAdapter::HcclAllReduce(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                       const HcclReduceOp op, const aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -333,7 +333,7 @@ HcclResult HcclAdapter::HcclAllReduce(void *send_buf, void *recv_buf, uint64_t c
 
 HcclResult HcclAdapter::HcclReduce(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                    HcclReduceOp op, uint32_t root, const aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -347,7 +347,7 @@ HcclResult HcclAdapter::HcclScatter(void *send_buf, void *recv_buf, uint64_t cou
 
 HcclResult HcclAdapter::HcclReduceScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                           const HcclReduceOp op, const aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -356,7 +356,7 @@ HcclResult HcclAdapter::HcclReduceScatter(void *send_buf, void *recv_buf, uint64
 
 HcclResult HcclAdapter::HcclAllGather(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                       const aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -365,7 +365,7 @@ HcclResult HcclAdapter::HcclAllGather(void *send_buf, void *recv_buf, uint64_t c
 
 HcclResult HcclAdapter::HcclSend(void *send_buf, uint64_t count, HcclDataType dataType, uint32_t destRank,
                                  const aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -374,7 +374,7 @@ HcclResult HcclAdapter::HcclSend(void *send_buf, uint64_t count, HcclDataType da
 
 HcclResult HcclAdapter::HcclRecv(void *recv_buf, uint64_t count, HcclDataType dataType, uint32_t srcRank,
                                  const aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -382,7 +382,7 @@ HcclResult HcclAdapter::HcclRecv(void *recv_buf, uint64_t count, HcclDataType da
 }
 
 HcclResult HcclAdapter::HcclBarrier(const aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -391,7 +391,7 @@ HcclResult HcclAdapter::HcclBarrier(const aclrtStream stream, HcclComm hccl_comm
 
 HcclResult HcclAdapter::HcclBatchISendIRecv(HcclSendRecvItem *sendRecvInfo, uint32_t itemNum, HcclComm comm,
                                             aclrtStream stream) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -399,7 +399,7 @@ HcclResult HcclAdapter::HcclBatchISendIRecv(HcclSendRecvItem *sendRecvInfo, uint
 }
 
 HcclResult HcclAdapter::HcclCommResume(HcclComm comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -665,7 +665,7 @@ bool HcclAdapter::UseHcclCM() const {
 
 HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params,
                                       HcclDataType dataType, aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
@@ -678,7 +678,7 @@ HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::Hccl
 
 HcclResult HcclAdapter::HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclAllToAllParams params,
                                      HcclDataType dataType, aclrtStream stream, HcclComm hccl_comm) const {
-  static bool dry_run = !common::GetEnv(kSimulationLevel).empty();
+  static bool dry_run = common::SimulateCompile();
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
