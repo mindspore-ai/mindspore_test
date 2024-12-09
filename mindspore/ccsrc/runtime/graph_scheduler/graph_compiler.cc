@@ -722,7 +722,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   session_->SetInputNodeUsage(kernel_graph, manager);
   MS_EXCEPTION_IF_NULL(context_ptr);
   if (context_ptr->backend_policy() == "ge" && device_context->GetDeviceType() == device::DeviceType::kAscend &&
-      !IsEnableRefMode()) {
+      kernel_graph->is_graph_run_mode() && !IsEnableRefMode()) {
     MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
     device_context->GetKernelExecutor(false)->OptimizeGraph(kernel_graph);
     if (!device_context->graph_executor_->CompileGraph(kernel_graph, {})) {
