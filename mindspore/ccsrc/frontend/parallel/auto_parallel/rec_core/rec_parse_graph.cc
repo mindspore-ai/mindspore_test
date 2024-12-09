@@ -272,6 +272,10 @@ Graph::NodeType MakeNewOperator(const std::vector<std::shared_ptr<OperatorInfo>>
       }
       Dimensions sub_out_stra = out_stra_var.at(0);
       std::vector<int64_t> nchw(sub_out_stra);
+      if (sub_out_stra.size() > SIZE_FOUR) {
+        MS_LOG(EXCEPTION) << "Operator: " << NewOp.name << "'s output strategy has more than 4 dimensions, "
+                          << "which is not supported by recursive_programming";
+      }
       for (size_t i = 0; i < SIZE_FOUR - sub_out_stra.size(); i++) {
         nchw.insert(nchw.begin(), 1);
       }
@@ -288,6 +292,10 @@ Graph::NodeType MakeNewOperator(const std::vector<std::shared_ptr<OperatorInfo>>
       for (size_t i = 0; i < in_stra_var.size(); i++) {
         Dimensions sub_in_stra = in_stra_var.at(i);
         std::vector<int64_t> nchw(sub_in_stra);
+        if (sub_in_stra.size() > SIZE_FOUR) {
+          MS_LOG(EXCEPTION) << "Operator: " << NewOp.name << "'s input strategy has more than 4 dimensions, "
+                            << "which is not supported by recursive_programming";
+        }
         for (size_t j = 0; j < SIZE_FOUR - sub_in_stra.size(); j++) {
           nchw.insert(nchw.begin(), 1);
         }
