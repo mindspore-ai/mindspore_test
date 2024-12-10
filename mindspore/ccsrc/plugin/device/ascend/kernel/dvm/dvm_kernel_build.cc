@@ -352,7 +352,8 @@ class OpBuilder {
     }
     auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
     auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
-    auto op = kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b);
+    auto op = kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b,
+                              nullptr);
     EmitOp(node, op);
   }
 
