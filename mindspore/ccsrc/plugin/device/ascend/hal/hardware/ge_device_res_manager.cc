@@ -49,6 +49,7 @@
 #include "runtime/device/move_to.h"
 #include "acl/acl_rt.h"
 #include "runtime/device/tensor_array.h"
+#include "include/backend/distributed/cluster/cluster_context.h"
 
 namespace mindspore {
 namespace device {
@@ -458,6 +459,12 @@ bool GeDeviceResManager::LoadCollectiveCommLib() {
   // If this is simulation, load dummy collective communication library.
   if (!common::GetEnv(kSimulationLevel).empty()) {
     collective_comm_lib_ = &DummyAscendCollectiveCommLib::GetInstance();
+    return true;
+  }
+  if (distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
+    collective_comm_lib_ = &CcoolCollectiveCommLib::GetInstance();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+    MS_LOG(INFO) << "Loading CCOOL collective library successfully.";
     return true;
   }
   // Load Multi ascend collective communication lib using dynamic library.

@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <fstream>
 #include "nlohmann/json.hpp"
+#include "utils/ms_context.h"
 #include "utils/ms_exception.h"
 #include "proto/topology.pb.h"
 #include "include/backend/distributed/ps/ps_context.h"
@@ -48,6 +49,7 @@ constexpr char kDeviceId[] = "device_id";
 
 // The keys for parsed information of rank table file.
 constexpr char kRankTableServerList[] = "server_list";
+constexpr char kRankTableClusterList[] = "cluster_list";
 constexpr char kRankTableDevice[] = "device";
 constexpr char kRankTablePodIp[] = "pod_ip";
 constexpr char kRankTableRankId[] = "rank_id";

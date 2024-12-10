@@ -103,6 +103,8 @@ class BACKEND_EXPORT CollectiveManager {
   bool initialized() const { return inited_.load(); }
   std::unordered_map<std::string, std::vector<uint32_t>> get_group_map() { return group_map_; }
 
+  CollectiveCommunicationLib *device_comm_lib() { return device_comm_lib_instance_; }
+
   // Initialize and finalize Dummy communication lib.
   bool InitializeDummyCommLib();
   bool FinalizeDummyCommLib();

@@ -67,6 +67,7 @@ class HcclKernel : public KernelMod {
   std::vector<std::string> hccl_format_list_;
   uint64_t hccl_count_;
   HcclReduceOp op_type_;
+  device::CollectiveOpReduceType collective_reduce_type_;
   uint32_t root_id_;
   uint32_t src_rank_;
   uint32_t dest_rank_;

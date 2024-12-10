@@ -373,7 +373,7 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
   bool ret = false;
   void *root_info;
-  if (rank_table_file_path.empty()) {
+  if (rank_table_file_path.empty() || cluster::ClusterContext::instance()->enable_cross_cluster()) {
     size_t root_info_size = 0;
     PROF_START(GenerateRootInfo);
     root_info = group->GenerateRootInfo(&root_info_size);
@@ -600,6 +600,10 @@ bool CollectiveManager::InitDeviceCommLib() {
   MS_LOG(INFO) << "Start initializing communication library on device side...";
   RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->Initialize(global_rank_id_, global_rank_size_, device_id),
                            "Failed to initialize communication library on device side.");
+  if (cluster::ClusterContext::instance()->enable_cross_cluster()) {
+    MS_LOG(WARNING) << "Set helper for CCOOL collective communication.";
+    device_comm_lib_instance_->SetHelperCommLib(host_comm_lib_instance_);
+  }
   MS_LOG(INFO) << "Communication library on device side is successfully initialized.";
   return true;
 }

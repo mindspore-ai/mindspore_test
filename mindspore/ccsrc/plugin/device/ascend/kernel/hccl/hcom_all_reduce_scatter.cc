@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore {
@@ -57,25 +57,17 @@ bool HcomAllReduceScatterKernel::Launch(const std::vector<KernelTensor *> &input
     if (lccl_result != Lcal::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL ReduceScatter failed.";
     }
+    return true;
   } else {
-    auto hccl_result =
-      hccl::HcclAdapter::GetInstance().HcclReduceScatter(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
-                                                         hccl_data_type_list_[0], op_type_, stream_ptr, comm_);
-    if (hccl_result != HCCL_SUCCESS) {
-      MS_LOG(ERROR) << "HcclReduceScatter failed, ret:" << hccl_result;
-      return false;
-    }
+    auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+    return comm_lib->ReduceScatter(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
+                                   inputs[0]->dtype_id(), collective_reduce_type_, group_, stream_ptr);
   }
 #else
-  auto hccl_result =
-    hccl::HcclAdapter::GetInstance().HcclReduceScatter(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
-                                                       hccl_data_type_list_[0], op_type_, stream_ptr, comm_);
-  if (hccl_result != HCCL_SUCCESS) {
-    MS_LOG(ERROR) << "HcclReduceScatter failed, ret:" << hccl_result;
-    return false;
-  }
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  return comm_lib->ReduceScatter(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_, inputs[0]->dtype_id(),
+                                 collective_reduce_type_, group_, stream_ptr);
 #endif
-  return true;
 }
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,6 +27,7 @@
 #include "hccl/base.h"
 #include "include/common/utils/contract.h"
 #include "hccl/hccl_types.h"
+#include "runtime/collective/collective_communication_lib.h"
 #include "utils/shape_utils.h"
 #include "kernel/kernel.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -68,6 +69,14 @@ static std::unordered_map<std::string, HcclReduceOp> kConstOpHcomReduceOpTypeMap
   {"sum", HCCL_REDUCE_SUM},
 };
 
+/* Correspondence between reduce str and enum in collective op  */
+static const std::unordered_map<std::string, device::CollectiveOpReduceType> kConstOpCollectiveOpReduceTypeMap = {
+  {"min", device::CollectiveOpReduceType::Reduce_Min},
+  {"max", device::CollectiveOpReduceType::Reduce_Max},
+  {"prod", device::CollectiveOpReduceType::Reduce_Prod},
+  {"sum", device::CollectiveOpReduceType::Reduce_Sum},
+};
+
 class HcomUtil {
  public:
   static ::HcclDataType ConvertHcclType(TypeId type_id);
@@ -82,8 +91,10 @@ class HcomUtil {
   static std::pair<uint64_t, ::HcclDataType> GetHcclCountAndTypeFromTensor(
     const PrimitivePtr &primitive, const tensor::BaseTensorPtr &tensor,
     const std::optional<int64_t> rank_size_opt = std::nullopt);
+  static device::CollectiveOpReduceType GetCollectiveOpReduceType(const std::string &reduce_op);
   static HcclReduceOp GetHcomReduceOpType(const std::string &reduce_op);
-  static bool GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp *op_type);
+  static bool GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp *op_type,
+                                   device::CollectiveOpReduceType *collective_reduce_type);
   static void GetHcomGroup(NotNull<const AnfNodePtr &> anf_node, NotNull<std::string *> group);
   static bool GetHcomReceiveType(const AnfNodePtr &anf_node, TypeId *receive_type);
   static void AdjustShapeByDataType(TypeId type_id, ShapeVector *shape);
