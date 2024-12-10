@@ -68,6 +68,12 @@ class OpRegister {
     return std::make_shared<clazz##DEVICE>(prim::kPrim##clazz, runtime::OpRunner::GetDeviceContext(#DEVICE)); \
   });
 
+#define MS_REG_PYBOOST_DVM_OP(clazz)                                                                              \
+  static_assert(std::is_base_of<OpRunner, clazz>::value, " must be base of OpRunner");                            \
+  static const OpRegister<clazz> g_##clazz##AscendDvm_##_PyBoost_reg("AscendDvm", []() {                          \
+    return std::make_shared<clazz##AscendDvm>(prim::kPrim##clazz, runtime::OpRunner::GetDeviceContext("Ascend")); \
+  });
+
 #define CREATE_PYBOOST_OP(NAME, DEVICE)                                                  \
   mindspore::kernel::pyboost::OpFactory<mindspore::kernel::pyboost::NAME>::Get().Create( \
     DEVICE, kernel::pyboost::PyBoostUtils::cur_stream_id());
