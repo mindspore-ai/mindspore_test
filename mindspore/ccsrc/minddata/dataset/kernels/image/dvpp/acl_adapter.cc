@@ -26,11 +26,7 @@
 namespace mindspore {
 namespace dataset {
 namespace {
-#if defined(BUILD_LITE)
-constexpr auto kAclPluginRelatedPath = "./libdvpp_utils.so";
-#else
 constexpr auto kAclPluginRelatedPath = "./lib/plugin/ascend/libdvpp_utils.so";
-#endif
 }  // namespace
 AclAdapter &AclAdapter::GetInstance() {
   static AclAdapter instance{};
@@ -104,7 +100,7 @@ void AclAdapter::InitPlugin() {
   aclrt_malloc_host_fun_obj_ = DlsymFuncObj(aclrtMallocHost, plugin_handle_);
   aclrt_free_host_fun_obj_ = DlsymFuncObj(aclrtFreeHost, plugin_handle_);
   aclrt_memcpy_fun_obj_ = DlsymFuncObj(aclrtMemcpy, plugin_handle_);
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // Ascend910B
   dvpp_affine_fun_obj_ = DlsymFuncObj(DvppAffine, plugin_handle_);
   dvpp_auto_contrast_fun_obj_ = DlsymFuncObj(DvppAutoContrast, plugin_handle_);
@@ -185,7 +181,7 @@ void AclAdapter::FinalizePlugin() {
   aclrt_malloc_host_fun_obj_ = nullptr;
   aclrt_free_host_fun_obj_ = nullptr;
   aclrt_memcpy_fun_obj_ = nullptr;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // Ascend910B
   dvpp_affine_fun_obj_ = nullptr;
   dvpp_auto_contrast_fun_obj_ = nullptr;
@@ -506,7 +502,7 @@ int AclAdapter::FreeHost(void *host_ptr) const {
   return aclrt_free_host_fun_obj_(host_ptr);
 }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 // Ascend910B
 APP_ERROR AclAdapter::DvppAdjustBrightness(const std::shared_ptr<DeviceTensorAscend910B> &input,
                                            std::shared_ptr<DeviceTensorAscend910B> *output, float factor) {
