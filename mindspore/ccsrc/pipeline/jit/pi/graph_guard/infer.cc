@@ -37,6 +37,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace parse {
@@ -114,9 +115,9 @@ static py::object CreateMetaTensor(const ShapeVector &shape, const mindspore::Ty
   /**
    * NOTE: here create a lazy initialized tensor, avoid allocate data
    */
-  auto tensor = std::make_shared<mindspore::tensor::Tensor>(dtype->type_id(), shape);
+  auto tensorpy = std::make_shared<mindspore::tensor::TensorPy>(dtype->type_id(), shape);
   py::object pytensor = py::reinterpret_borrow<py::object>(GetMsTensorType());
-  return pytensor(py::cast(tensor));
+  return pytensor(py::cast(tensorpy));
 }
 
 static py::object CreateMetaTensor(const mindspore::abstract::ShapePtr &shape, const mindspore::TypePtr &type) {
@@ -294,7 +295,7 @@ static bool HasTensor(py::object obj) {
   if (scope.ReEnterOrError()) {
     return false;
   }
-  if (py::isinstance<mindspore::tensor::MetaTensor>(obj)) {
+  if (tensor::IsTensorPy(obj)) {
     return true;
   } else if (py::isinstance<py::list>(obj)) {
     auto list_obj = py::cast<py::list>(obj);
@@ -405,12 +406,12 @@ static AbstractBasePtrList ChangeAbstractArgList(PrimitivePtr prim, std::vector<
   if (std::find(prim_cast_ops.begin(), prim_cast_ops.end(), prim->name()) != prim_cast_ops.end() &&
       args.size() == ArgsSizeTwo) {
     auto tensor_type = py::reinterpret_borrow<py::object>(GetMsTensorType());
-    if (py::isinstance<mindspore::tensor::Tensor>(args[0]) && CheckScalar(args[1])) {
+    if (tensor::IsTensorPy(args[0]) && CheckScalar(args[1])) {
       py::object dtype = py::reinterpret_borrow<py::object>(args[0]).attr("dtype");
       py::object arg1 = py::reinterpret_borrow<py::object>(args[1]);
       handle = tensor_type(arg1, dtype);
       args[1] = handle.ptr();
-    } else if (CheckScalar(args[0]) && py::isinstance<mindspore::tensor::Tensor>(args[1])) {
+    } else if (CheckScalar(args[0]) && tensor::IsTensorPy(args[1])) {
       py::object dtype = py::reinterpret_borrow<py::object>(args[1]).attr("dtype");
       py::object arg0 = py::reinterpret_borrow<py::object>(args[0]);
       handle = tensor_type(arg0, dtype);
@@ -607,7 +608,8 @@ static ShapeVector GetShapeForStubTensor(PyObject *stubtensor) {
     Py_DECREF(stub);
   } else {
     auto ptr = PyObject_GetAttrString(stubtensor, "tensor");
-    auto tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(ptr);
+    auto tensor_ptr = tensor::ConvertToTensor(ptr);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     shape = tensor_ptr->shape();
     Py_DECREF(ptr);
   }
@@ -629,7 +631,8 @@ static TypePtr GetDTypeForStubTensor(PyObject *stubtensor) {
     Py_DECREF(stub);
   } else {
     auto ptr = PyObject_GetAttrString(stubtensor, "tensor");
-    auto tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(ptr);
+    auto tensor_ptr = tensor::ConvertToTensor(ptr);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     dtype = tensor_ptr->Dtype();
     Py_DECREF(ptr);
   }
@@ -643,7 +646,8 @@ static PyObject *InferShape(PyObject *, const std::vector<PyObject *> &args) {
     shape = GetShapeForStubTensor(arg);
   } else {
     auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = pyObj.cast<mindspore::tensor::MetaTensorPtr>();
+    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     shape = tensor_ptr->shape();
   }
   PyObject *tuple = PyTuple_New(shape.size());
@@ -662,7 +666,8 @@ static PyObject *InferDType(PyObject *, const std::vector<PyObject *> &args) {
     dtype = GetDTypeForStubTensor(arg);
   } else {
     auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = pyObj.cast<mindspore::tensor::MetaTensorPtr>();
+    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     dtype = tensor_ptr->Dtype();
   }
   PyObject *type = nullptr;
@@ -682,7 +687,8 @@ static PyObject *InferRank(PyObject *, const std::vector<PyObject *> &args) {
     shape = GetShapeForStubTensor(arg);
   } else {
     auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = pyObj.cast<mindspore::tensor::MetaTensorPtr>();
+    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     shape = tensor_ptr->shape();
   }
   return PyLong_FromSize_t(shape.size());
@@ -695,7 +701,8 @@ static PyObject *InferSize(PyObject *, const std::vector<PyObject *> &args) {
     shape = GetShapeForStubTensor(arg);
   } else {
     auto pyObj = py::cast<py::object>(arg);
-    auto tensor_ptr = pyObj.cast<mindspore::tensor::MetaTensorPtr>();
+    auto tensor_ptr = tensor::ConvertToTensor(pyObj);
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
     shape = tensor_ptr->shape();
   }
   size_t elements = 1;
@@ -816,7 +823,8 @@ bool IsStubTensorType<true>(PyTypeObject *tp) {
 }
 template <>
 bool IsTensorType<true>(PyTypeObject *tp) {
-  return IsPybindType<mindspore::tensor::MetaTensor, true>(tp);
+  return IsPybindType<mindspore::tensor::MetaTensor, true>(tp) || IsPybindType<mindspore::tensor::TensorPy, true>(tp) ||
+         IsPybindType<mindspore::tensor::Tensor, true>(tp);
 }
 template <>
 bool IsCellType<true>(PyTypeObject *tp) {
@@ -841,10 +849,11 @@ bool IsCellListType<false>(PyTypeObject *tp) {
 }
 
 bool CheckTensorDataInitialized(const py::object &py_tensor) {
-  if (py::isinstance<mindspore::tensor::Tensor>(py_tensor)) {
-    auto tensor = py_tensor.cast<mindspore::tensor::TensorPtr>();
+  if (tensor::IsTensorPy(py_tensor)) {
+    auto tensor = tensor::ConvertToTensor(py_tensor);
     return tensor->data().const_data() != nullptr;
   }
+
   return false;
 }
 

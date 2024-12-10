@@ -34,6 +34,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -1522,8 +1523,8 @@ py::object TensorInferBinary(const AbstractBasePtr &left, const AbstractBasePtr 
   MS_EXCEPTION_IF_NULL(shape_ptr);
   auto shape = shape_ptr->cast<mindspore::abstract::ShapePtr>()->shape();
   auto dtype = dtype_ptr->type_id();
-  auto tensor = std::make_shared<mindspore::tensor::Tensor>(dtype, shape);
-  return py::cast(tensor);
+  auto tensorpy = std::make_shared<mindspore::tensor::TensorPy>(dtype, shape);
+  return py::cast(tensorpy);
 }
 
 py::object AbstractTensor::Binary(int op, const py::object &l_tensor, const py::object &r_tensor) {

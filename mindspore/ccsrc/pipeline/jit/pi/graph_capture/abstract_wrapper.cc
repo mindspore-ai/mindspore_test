@@ -25,6 +25,7 @@
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/external.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 constexpr auto kAdapterFlag = "adapter_flag";
@@ -34,7 +35,7 @@ using PyTensorConverter = std::function<py::object(const py::object &)>;
 
 namespace {
 py::object ConvertCppTensorToPyTensor(const py::object &cpp_tensor) {
-  if (cpp_tensor.ptr() == nullptr || !py::isinstance<tensor::Tensor>(cpp_tensor)) {
+  if (cpp_tensor.ptr() == nullptr || !tensor::IsTensorPy(cpp_tensor)) {
     return py::object();
   }
   bool is_adapter_tensor =
@@ -49,10 +50,10 @@ py::object ConvertCppTensorToPyTensor(const py::object &cpp_tensor) {
 }
 
 py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {
-  if (cpp_tensor.ptr() == nullptr || !py::isinstance<tensor::Tensor>(cpp_tensor)) {
+  if (cpp_tensor.ptr() == nullptr || !tensor::IsTensorPy(cpp_tensor)) {
     return py::object();
   }
-  auto tensor = py::cast<tensor::TensorPtr>(cpp_tensor);
+  auto tensor = tensor::ConvertToTensor(cpp_tensor);
   if (tensor->is_parameter()) {
     return cpp_tensor;
   }
@@ -107,7 +108,7 @@ py::object ConvertToPythonTensor(const py::object &obj) {
   if (py::hasattr(obj, ms_class_attr) && py::cast<bool>(py::getattr(obj, ms_class_attr))) {
     return obj;
   }
-  if (py::isinstance<tensor::Tensor>(obj)) {
+  if (tensor::IsTensorPy(obj)) {
     return ConvertToPyTensorOrParameter(obj);
   }
   if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {

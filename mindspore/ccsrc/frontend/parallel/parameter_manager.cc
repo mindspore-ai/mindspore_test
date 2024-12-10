@@ -52,6 +52,7 @@
 #include "frontend/parallel/parallel_node_check.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace parallel {
@@ -509,7 +510,7 @@ void SliceTensorObj(const ParameterPtr &parameter, const TensorLayoutPtr &tensor
   auto new_tensor_py =
     python_adapter::CallPyFn(SLICE_PARAMETER_FN_PATH, SLICE_TENSOR_FN_NAME, tensor_py, layout, rank_id);
   MS_LOG(INFO) << "Success Call Python _slice_parameter Fn to slice python parameter obj";
-  auto new_tensor = new_tensor_py.cast<tensor::TensorPtr>();
+  auto new_tensor = tensor::ConvertToTensor(new_tensor_py);
   MS_LOG(INFO) << "new p_tensor:" << new_tensor->name() << new_tensor->Size() << new_tensor->shape();
   parameter->set_default_param(new_tensor);
 }

@@ -24,7 +24,7 @@
 #include "include/common/utils/scoped_long_running.h"
 #include "pybind_api/ir/tensor_py.h"
 
-using mindspore::tensor::TensorPy;
+using mindspore::tensor::TensorPybind;
 namespace mindspore::session {
 namespace {
 bool TensorInVector(const VectorRef *outputs) {

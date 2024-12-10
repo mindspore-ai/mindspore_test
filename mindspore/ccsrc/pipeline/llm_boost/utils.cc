@@ -20,11 +20,12 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/device_address.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pipeline {
 tensor::TensorPtr SetFormat(const py::object &py_tensor, const std::string &format_name) {
-  auto tensor = IsStubTensor(py_tensor) ? ConvertStubTensor(py_tensor) : py_tensor.cast<tensor::TensorPtr>();
+  auto tensor = IsStubTensor(py_tensor) ? ConvertStubTensor(py_tensor) : tensor::ConvertToTensor(py_tensor);
   if (format_name != kOpFormat_ND && format_name != kOpFormat_FRAC_NZ) {
     MS_LOG(ERROR) << "The format " << format_name
                   << " is not supported. The format only supports 'ND' and 'FRACTAL_NZ'";

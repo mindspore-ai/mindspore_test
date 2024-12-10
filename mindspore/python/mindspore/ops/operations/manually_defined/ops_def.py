@@ -28,7 +28,7 @@ from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.common import Tensor, CSRTensor, COOTensor
 from mindspore.common._stub_tensor import _convert_stub
 from mindspore._c_expression import typing
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import pyboost_cast, pyboost_tile, pyboost_zeros, pyboost_ones, pyboost_type_as
 from mindspore.common import dtype as mstype
 from mindspore.common._utils import is_shape_unknown

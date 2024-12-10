@@ -38,6 +38,7 @@
 #include "frontend/parallel/strategy.h"
 #include "include/common/visible.h"
 #include "include/fork_utils.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 // namespace to support pipeline structures definition
@@ -164,7 +165,7 @@ class GraphExecutorPy : public ExecutorPy {
                    char *key = nullptr);
   py::bytes GetRandomStatus(const std::string &phase) const;
   void UpdataParamNodeDefaultInput(const std::string &phase,
-                                   const std::unordered_map<std::string, tensor::TensorPtr> &params_value);
+                                   const std::unordered_map<std::string, tensor::TensorPyPtr> &params_value);
   void PyExePath(const py::object &py_exe_path) const;
   void KernelBuildServerDir(const py::object &kernel_build_server_dir) const;
   py::dict GetParameterLayout(const std::string &phase);
@@ -271,8 +272,8 @@ py::bytes PyDecrypt(const std::string &encrypt_data_path, char *key, size_t key_
 py::bytes PyDecryptData(char *model_data, size_t data_size, char *key, size_t key_len, const std::string &dec_mode);
 bool PyIsCipherFile(const std::string &file_path);
 void FinalizeCluster();
-void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
-               const bool &type);
+void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &device,
+               const tensor::TensorPyPtr &block_mapping, const bool &type);
 bool IsPhaseExport(const std::string &phase);
 py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
 void SetLoopCount(const ResourcePtr &resource);

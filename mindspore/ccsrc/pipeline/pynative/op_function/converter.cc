@@ -19,6 +19,7 @@
 #include "frontend/operator/composite/functional_overload.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/pynative/pynative_utils.h"
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 
 namespace mindspore {
@@ -671,12 +672,15 @@ bool IsTensor(const py::object &obj, bool is_optional) {
   if (py::isinstance<py::none>(obj) && is_optional) {
     return true;
   }
-  if (py::isinstance<mindspore::tensor::Tensor>(obj)) {
+
+  if (mindspore::tensor::IsTensorPy(obj)) {
     return true;
   }
+
   if (IsStubTensor(obj)) {
     return true;
   }
+
   return false;
 }
 

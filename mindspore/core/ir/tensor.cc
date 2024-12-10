@@ -417,19 +417,27 @@ bool Tensor::IsFlattened(const TensorPtrList &tensors) {
   });
 }
 
+const TensorPtr Tensor::GetFlattenedTensor(const TensorPtr &tensor) {
+  // Get sub-data.
+  auto sub_data = std::dynamic_pointer_cast<TensorSubData>(tensor->data_ptr());
+  if (sub_data == nullptr) {
+    MS_LOG(WARNING) << "Tensors are not flattened.";
+    return nullptr;
+  }
+  // Get owner tensor from sub-data.
+  auto owner_tensor = std::dynamic_pointer_cast<Tensor>(sub_data->GetOwner());
+  MS_EXCEPTION_IF_NULL(owner_tensor);
+  return owner_tensor;
+}
+
 TensorPtrList Tensor::GetFlattenedTensors(const TensorPtrList &tensors) {
   // Use std::map to keep order by type id.
   std::map<TypeId, OrderedSet<TensorPtr>> chunk_map;
   for (auto &tensor : tensors) {
-    // Get sub-data.
-    auto sub_data = std::dynamic_pointer_cast<TensorSubData>(tensor->data_ptr());
-    if (sub_data == nullptr) {
-      MS_LOG(WARNING) << "Tensors are not flattened.";
+    auto owner_tensor = GetFlattenedTensor(tensor);
+    if (owner_tensor == nullptr) {
       return {};
     }
-    // Get owner tensor from sub-data.
-    auto owner_tensor = std::dynamic_pointer_cast<Tensor>(sub_data->GetOwner());
-    MS_EXCEPTION_IF_NULL(owner_tensor);
     // Add as chunk tensor by its data type.
     auto chunk_dtype = normalize_type(tensor->data_type());
     chunk_map[chunk_dtype].add(owner_tensor);

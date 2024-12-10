@@ -24,7 +24,9 @@
 #include "pybind11/numpy.h"
 
 #include "ir/tensor.h"
+#include "include/common/utils/tensor_py.h"
 #include "include/common/np_dtype/np_dtypes.h"
+#include "include/common/visible.h"
 
 namespace py = pybind11;
 namespace pybind11 {
@@ -106,8 +108,9 @@ namespace mindspore {
 //
 // A sub namespace in ME to support tensor related definition.
 namespace tensor {
+
 // Tensor python wrapper and adapter class.
-class TensorPy {
+class TensorPybind {
  public:
   // brief Create Tensor from a numpy array object.
   //
@@ -184,19 +187,59 @@ class TensorPy {
 class CSRTensorPy {
  public:
   static py::tuple GetPyTupleShape(const CSRTensor &csr_tensor);
+  static TensorPyPtr GetIndices(const CSRTensorPtr &csr_tensor);
+  static TensorPyPtr GetValues(const CSRTensorPtr &csr_tensor);
 };
 
 // COOTensor python wrapper and adapter class.
 class COOTensorPy {
  public:
   static py::tuple GetPyTupleShape(const COOTensor &coo_tensor);
+  static TensorPyPtr GetIndices(const COOTensorPtr &coo_tensor);
+  static TensorPyPtr GetValues(const COOTensorPtr &coo_tensor);
 };
 
 // RowTensor python wrapper and adapter class.
 class RowTensorPy {
  public:
   static py::tuple GetPyTupleShape(const RowTensor &row_tensor);
+  static TensorPyPtr GetIndices(const RowTensorPtr &row_tensor);
+  static TensorPyPtr GetValues(const RowTensorPtr &row_tensor);
 };
+
+class TensorPyImpl {
+ public:
+  static TensorPtr InitTensor(const py::dict &input);
+  static py::object GetInitializerFromPython(const py::dict &input);
+  static bool GetConstArgFromPython(const py::dict &input);
+  static std::string GetDeviceFromPython(const py::dict &input);
+  static py::object GetSymbolicShapeFromPython(const py::dict &input);
+  static const TypePtr GetDtypeFromPython(const py::dict &input);
+  static const ShapeVector GetShapeFromPython(const py::dict &input);
+  static const TensorPyPtr InitTensorPy(const py::dict &input);
+
+  static TensorPyPtr MakeTensorOfNumpy(const py::array &input);
+  static TensorPyPtr MakePersistentDataTensorOfNumpy(const py::array &input, const py::int_ slice_num);
+  static TensorPyPtr ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims, const TypePtr &type_ptr);
+  static void SetOffload(const TensorPyPtr &tensorpy);
+  static py::bytes GetBytes(const TensorPyPtr &tensorpy);
+  static py::array SyncAsNumpy(const TensorPyPtr &tensorpy);
+  static void FlushFromCache(const TensorPyPtr &tensorpy);
+  static py::array AsNumpyOfSlice(const TensorPyPtr &tensorpy, const int32_t param_key, int slice_index);
+  static TensorPtr MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking = True);
+  static void SetDeviceAddress(const TensorPyPtr &tensorpy, uintptr_t addr, const ShapeVector &shape,
+                               const TypePtr type_ptr);
+  static void SetUserData(const TensorPyPtr &tensorpy, const py::str &key, const py::object &value);
+  static const py::object GetUserData(const TensorPyPtr &tensorpy, const py::str &key);
+  static py::object Item(const TensorPyPtr &tensorpy);
+  static uint64_t RegisterTensorBackwardHook(const TensorPyPtr &tensorpy, const py::function &hook);
+  static void RemoveTensorBackwardHook(uint64_t handle_id);
+  static py::list GetHooks(const TensorPyPtr &tensorpy);
+  static uintptr_t DataPtr(const TensorPyPtr &tensorpy);
+
+  static py::object GetPythonTensor();
+};
+
 }  // namespace tensor
 }  // namespace mindspore
 

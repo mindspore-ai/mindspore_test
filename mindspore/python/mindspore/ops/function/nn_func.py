@@ -29,7 +29,7 @@ import mindspore.common.dtype as mstype
 from mindspore.ops.function.math_func import logsumexp, div
 from mindspore.ops.function.random_func import _get_seed, _set_prim_op_user_data
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
 from mindspore.ops.composite.multitype_ops._constexpr_utils import raise_value_error

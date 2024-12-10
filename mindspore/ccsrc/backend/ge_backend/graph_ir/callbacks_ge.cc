@@ -20,6 +20,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/python_adapter.h"
 #include "utils/shape_utils.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace callbacks {
@@ -164,9 +165,10 @@ uint32_t SummarySaveCallback(uint32_t graph_id, const std::map<std::string, ge::
     if (tensor_ptr == nullptr) {
       MS_LOG(EXCEPTION) << "ConvertGeTensor return tensor is null";
     }
+    auto tensor_py = std::make_shared<tensor::TensorPy>(tensor_ptr);
     py::dict summary_value_dict;
     summary_value_dict["name"] = tag_name;
-    summary_value_dict["data"] = tensor_ptr;
+    summary_value_dict["data"] = tensor_py;
     summary_list.append(summary_value_dict);
   }
 

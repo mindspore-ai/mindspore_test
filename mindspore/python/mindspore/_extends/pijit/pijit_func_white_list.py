@@ -29,7 +29,7 @@ from mindspore.common.api import jit
 from mindspore.common.tensor import Tensor
 from mindspore.common._register_for_tensor import Registry
 from mindspore._c_expression import MetaFuncGraph_, function_id
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._extends.parse.resources import convert_object_map
 from mindspore import _checkparam as validator
 from mindspore import Parameter, ParameterTuple

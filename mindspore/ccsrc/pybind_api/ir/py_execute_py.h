@@ -290,8 +290,8 @@ class PyExecuteInitializer {
       }
       MS_LOG(DEBUG) << "Python output type: " << py::str(output.get_type()) << ", output: " << output;
       primitive->set_attr(kAttrPyExecuteOutput, std::make_shared<parse::PyObjectWrapper>(output, "graph python obj"));
-      if (py::isinstance<tensor::Tensor>(output) || IsStubTensor(output)) {
-        const auto &tensor = IsStubTensor(output) ? ConvertStubTensor(output) : output.cast<tensor::TensorPtr>();
+      if (tensor::IsTensorPy(output) || IsStubTensor(output)) {
+        const auto &tensor = IsStubTensor(output) ? ConvertStubTensor(output) : tensor::ConvertToTensor(output);
         const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
         return tensor->ToAbstract();
       } else if (py::isinstance<py::bool_>(output)) {

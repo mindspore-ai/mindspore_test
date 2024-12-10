@@ -16,7 +16,7 @@
 from mindspore.ops.primitive import Primitive, PrimitiveWithCheck, prim_attr_register
 import mindspore._checkparam as validator
 from mindspore.common import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 
 class ListAppend(Primitive):

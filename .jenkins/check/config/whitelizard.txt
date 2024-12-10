@@ -331,7 +331,7 @@ mindspore/mindspore/ops/kernel/gpu/math/cumprod_gpu_kernel.cc:mindspore::kernel:
 mindspore/mindspore/ops/kernel/cpu/cumprod_cpu_kernel.cc:mindspore::kernel::CumProdCpuKernelMod::GetFuncList
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel.cc:mindspore::kernel::PoolingCpuKernelMod::InitPoolingFields
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel_nnacl.cc:mindspore::kernel::PoolingCpuKernelNnaclMod::Resize
-mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::TensorPy::Item
+mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::TensorPybind::Item
 
 # AICPU migration
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/bias_add_grad.cc:aicpu::BiasAddGradCpuKernel::BiasAddGradCompute

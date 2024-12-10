@@ -8,7 +8,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
 from mindspore.communication import GlobalComm
 from mindspore.ops import ReduceOp
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.communication._comm_helper import _get_size_helper, HCCL_WORLD_COMM_GROUP
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.communication.comm_func import all_gather_into_tensor as all_gather_into_tensor_dy

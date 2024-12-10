@@ -32,7 +32,7 @@
 
 namespace mindspore {
 namespace device {
-using mindspore::tensor::TensorPy;
+using mindspore::tensor::TensorPybind;
 using device::DeviceAddressPtr;
 using device::cpu::CPUDeviceAddress;
 using device::ascend::AscendDeviceAddress;

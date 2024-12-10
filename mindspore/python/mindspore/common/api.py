@@ -39,9 +39,9 @@ from mindspore.common.sparse_tensor import CSRTensor as PythonCSRTensor
 from mindspore.common.sparse_tensor import COOTensor as PythonCOOTensor
 from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
-from mindspore._c_expression import GraphExecutor_, JitExecutor_, Tensor, CSRTensor, RowTensor, COOTensor, \
+from mindspore._c_expression import GraphExecutor_, JitExecutor_, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
-    _ms_memory_recycle, _bind_device_ctx, StubNode
+    _ms_memory_recycle, _bind_device_ctx, StubNode, TensorPy as Tensor
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_pynative_parallel, \
     _is_in_auto_parallel_mode, _is_parallel_mode
@@ -144,7 +144,7 @@ def _convert_python_data(data):
     if _ms_adapter_tensor_as_parameter_output(data) and hasattr(data, "tensor"):
         return data.tensor
     if isinstance(data, Tensor) and not isinstance(data, PythonTensor):
-        return PythonTensor(data, internal=True)
+        return PythonTensor(data)
     if isinstance(data, CSRTensor) and not isinstance(data, PythonCSRTensor):
         return PythonCSRTensor(csr_tensor=data)
     if isinstance(data, COOTensor) and not isinstance(data, PythonCOOTensor):

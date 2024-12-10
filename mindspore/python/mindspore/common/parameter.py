@@ -36,7 +36,7 @@ from mindspore.common.initializer import initializer
 from mindspore.common.tensor import Tensor
 from mindspore import _checkparam as Validator
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.parallel._tensor import _get_slice_index
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_role_sched, _clone_hash_table, \
@@ -317,14 +317,14 @@ class Parameter(Tensor_):
                 self.param_info.use_persistent_storage = True
                 self.param_info.origin_shape = default_input.shape
                 self.slice_num = slice_num_of_persistent_data
-                Tensor_.__init__(self, default_input.dtype, tuple(data_shape))
+                Tensor_.__init__(self, dtype=default_input.dtype, shape=tuple(data_shape))
             else:
-                Tensor_.__init__(self, default_input.dtype, default_input.shape)
+                Tensor_.__init__(self, dtype=default_input.dtype, shape=default_input.shape)
 
         elif isinstance(default_input, int):
-            Tensor_.__init__(self, mstype.int64, ())
+            Tensor_.__init__(self, dtype=mstype.int64, shape=())
         elif isinstance(default_input, float):
-            Tensor_.__init__(self, mstype.float32, ())
+            Tensor_.__init__(self, dtype=mstype.float32, shape=())
         elif isinstance(default_input, (np.ndarray, list)):
             Tensor_.__init__(self, default_input)
         else:

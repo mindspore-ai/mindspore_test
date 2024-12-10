@@ -122,6 +122,7 @@
 #include "pybind_api/ir/py_execute_py.h"   // Only include one-time in the whole project.
 #include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
 #include "include/common/utils/compile_cache_context.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition
@@ -220,8 +221,8 @@ bool CheckArgValid(const py::handle &arg) {
     return std::all_of(dict_arg.begin(), dict_arg.end(), [](const auto &pair) { return CheckArgValid(pair.second); });
   }
 
-  if (py::isinstance<Tensor>(arg) || IsStubTensor(arg)) {
-    auto tensor = IsStubTensor(arg) ? ConvertStubTensor(arg) : py::cast<TensorPtr>(arg);
+  if (tensor::IsTensorPy(arg) || IsStubTensor(arg)) {
+    auto tensor = IsStubTensor(arg) ? ConvertStubTensor(arg) : tensor::ConvertToTensor(arg);
     if (tensor->data_type() == kNumberTypeBool) {
       MS_LOG(INFO) << "It is not recommended to use a tensor of bool data type as network input, which may cause "
                    << "operator compilation failure. For more details, please refer to the FAQ at "
@@ -231,7 +232,7 @@ bool CheckArgValid(const py::handle &arg) {
 
   return IsStubTensor(arg) || py::isinstance<py::int_>(arg) || py::isinstance<py::float_>(arg) ||
          py::isinstance<py::none>(arg) || py::isinstance<Number>(arg) || py::isinstance<py::str>(arg) ||
-         py::isinstance<Tensor>(arg) || py::isinstance<CSRTensor>(arg) || py::isinstance<COOTensor>(arg);
+         tensor::IsTensorPy(arg) || py::isinstance<CSRTensor>(arg) || py::isinstance<COOTensor>(arg);
 }
 
 std::string GetCompileExceptionInfo() {
@@ -278,8 +279,8 @@ kernel::PyExecuteOutputUserDataPtr GetUserDataFromAddress(const py::object &res)
     return nullptr;
   }
 
-  if (py::isinstance<tensor::Tensor>(res) || IsStubTensor(res)) {
-    auto res_tensor = IsStubTensor(res) ? ConvertStubTensor(res) : res.cast<tensor::TensorPtr>();
+  if (tensor::IsTensorPy(res) || IsStubTensor(res)) {
+    auto res_tensor = IsStubTensor(res) ? ConvertStubTensor(res) : tensor::ConvertToTensor(res);
     MS_EXCEPTION_IF_NULL(res_tensor);
     if (res_tensor->device_address() != nullptr) {
       auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(res_tensor->device_address());
@@ -723,8 +724,8 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
   for (auto arg_obj : inputs) {
     std::shared_ptr<Tensor> m_tensor = nullptr;
     bool is_tensor = false;
-    if (py::isinstance<Tensor>(arg_obj)) {
-      m_tensor = arg_obj.cast<std::shared_ptr<Tensor>>();
+    if (tensor::IsTensorPy(arg_obj)) {
+      m_tensor = tensor::ConvertToTensor(arg_obj);
       is_tensor = true;
     } else if (IsStubTensor(arg_obj)) {
       m_tensor = ConvertStubTensor(arg_obj);
@@ -737,7 +738,7 @@ py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple 
 
     if (m_tensor != nullptr) {
       MS_LOG(DEBUG) << "Verify Tensor";
-      auto sig = input_signature[count].cast<std::shared_ptr<MetaTensor>>();
+      auto sig = tensor::ConvertToTensor(input_signature[count]);
       ShapeVector sig_shape = sig->shape();
       TypePtr sig_type = sig->Dtype();
 
@@ -1309,8 +1310,8 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
 }
 
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs) {
-  if (py::isinstance<Tensor>(arg)) {
-    auto tensor = arg.cast<std::shared_ptr<Tensor>>();
+  if (tensor::IsTensorPy(arg)) {
+    auto tensor = tensor::ConvertToTensor(arg);
     if (tensor->has_user_data("backward_hook") && !abs->has_user_data("backward_hook")) {
       MS_LOG(DEBUG) << "set hooks for arg: " << py::str(arg) << ", abs(" << abs.get() << "): " << abs << ".";
       auto hook_map = tensor->user_data<std::map<uint64_t, py::function>>("backward_hook");
@@ -1405,7 +1406,8 @@ void GraphExecutorPy::ConvertSymbolicShape(const py::tuple &args, AbstractBasePt
       has_dyn_shape = true;
     }
     constexpr char symbolic_shape_attr[] = "symbolic_shape";
-    if (!py::hasattr(args[i], symbolic_shape_attr)) {
+    if (!py::hasattr(args[i], symbolic_shape_attr) ||
+        !py::isinstance<py::list>(py::getattr(args[i], symbolic_shape_attr))) {
       if (is_parallel && digital_shape->isa<abstract::TensorShape>()) {
         info_list.resize(digital_shape->GetShapeVector().size());
       }
@@ -2009,9 +2011,9 @@ void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::Mind
       // convert int64_t to tensor with shape([1])
       tensor = std::make_shared<Tensor>(kNumberTypeInt32, std::vector<int64_t>({1}));
       *(static_cast<float *>(tensor->data_c())) = py::cast<float>(item.second.attr("data"));
-    } else if (py::isinstance<Tensor>(item.second.attr("data"))) {
+    } else if (tensor::IsTensorPy(item.second.attr("data"))) {
       // cast tensor
-      tensor = py::cast<std::shared_ptr<Tensor>>(item.second.attr("data"));
+      tensor = tensor::ConvertToTensor(item.second.attr("data"));
     } else if (IsStubTensor(item.second.attr("data"))) {
       // cast stub_tensor
       tensor = ConvertStubTensor(item.second.attr("data"));
@@ -2025,7 +2027,7 @@ void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::Mind
 }
 
 void GraphExecutorPy::UpdataParamNodeDefaultInput(
-  const std::string &phase, const std::unordered_map<std::string, tensor::TensorPtr> &params_value) {
+  const std::string &phase, const std::unordered_map<std::string, tensor::TensorPyPtr> &params_value) {
   FuncGraphPtr func_graph = info_[phase]->resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(DEBUG) << "UpdataParamNodeDefaultInput for func graph(" << func_graph->ToString() << ") phase(" << phase
@@ -2037,7 +2039,8 @@ void GraphExecutorPy::UpdataParamNodeDefaultInput(
     MS_EXCEPTION_IF_NULL(param_cast);
     auto iter = params_value.find(param_cast->name());
     if (iter != params_value.end()) {
-      param_cast->set_default_param(iter->second);
+      auto value_ptr = iter->second->GetTensor();
+      param_cast->set_default_param(value_ptr);
     }
   }
 }
@@ -2799,9 +2802,9 @@ void FinalizeCluster() {
 #endif
 }
 
-void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
-               const bool &is_device_to_host) {
-  auto block_mapping_shape = block_mapping->shape();
+void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &device,
+               const tensor::TensorPyPtr &block_mapping, const bool &is_device_to_host) {
+  auto block_mapping_shape = block_mapping->GetShape();
   const size_t num_two = 2;
   if (block_mapping_shape.size() != num_two) {
     MS_LOG_EXCEPTION << "The shape size of Cache input mapping tensor should be 2, but got: "
@@ -2812,19 +2815,19 @@ void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, c
                      << block_mapping_shape[0];
   }
 
-  auto in_shape = device->shape();
-  auto type_byte = GetTypeByte(TypeIdToType(host->data_type()));
+  auto in_shape = device->GetShape();
+  auto type_byte = GetTypeByte(TypeIdToType(host->GetDataType()));
   size_t block_size_in_bytes = LongToSize(
     std::accumulate(in_shape.begin() + kIndex1, in_shape.end(), SizeToLong(type_byte), std::multiplies<int64_t>()));
 
-  uint8_t *host_ptr = reinterpret_cast<uint8_t *>(host->data_c());
+  uint8_t *host_ptr = reinterpret_cast<uint8_t *>(host->GetTensorDataObject());
   MS_EXCEPTION_IF_NULL(host_ptr);
-  auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device->device_address());
+  auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device->GetDeviceAddress());
   MS_EXCEPTION_IF_NULL(device_addr);
   uint8_t *device_ptr = reinterpret_cast<uint8_t *>(const_cast<void *>(device_addr->GetPtr()));
   MS_EXCEPTION_IF_NULL(device_ptr);
 
-  auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->data_c());
+  auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->GetTensorDataObject());
   for (size_t i = 0; i < LongToSize(block_mapping_shape[0]); i++) {
     int64_t src_block_num = block_mapping_data[num_two * i];
     int64_t dst_block_num = block_mapping_data[num_two * i + kIndex1];

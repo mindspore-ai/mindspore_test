@@ -89,10 +89,30 @@ def test_dict4():
             output = tuple_x + tuple_x
             return output
 
+    def is_equal(me, oth):
+        if len(me) != len(oth):
+            return False
+        for i, e in enumerate(me):
+            o = oth[i]
+            if not isinstance(e, type(o)):
+                return False
+            if isinstance(e, Tensor):
+                data_e = e.asnumpy()
+                data_o = o.asnumpy()
+                if np.not_equal(data_e, data_o).any():
+                    return False
+                continue
+            if isinstance(e, tuple):
+                is_equal(e, o)
+                continue
+            if e != o:
+                return False
+        return True
+
     x = (1, Tensor([1, 2, 3]), (Tensor([1, 2, 3]), 1))
     net = Net()
     out_me = net(x)
-    assert out_me == x + x
+    assert is_equal(out_me, x + x)
 
 
 def test_dict_with_multitype_keys_1():

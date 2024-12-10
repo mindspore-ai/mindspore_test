@@ -22,7 +22,7 @@ from mindspore.ops import functional as F
 import mindspore.nn as nn
 import mindspore.common.dtype as mstype
 from mindspore import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore import Parameter
 from mindspore import jit
 

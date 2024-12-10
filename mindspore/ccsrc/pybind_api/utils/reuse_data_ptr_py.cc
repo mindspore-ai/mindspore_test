@@ -15,7 +15,7 @@
  */
 #include "ir/tensor.h"
 #include "utils/ms_context.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "include/common/utils/tensor_py.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/format.h"

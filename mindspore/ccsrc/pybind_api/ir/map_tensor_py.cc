@@ -28,7 +28,7 @@
 #include "utils/log_adapter.h"
 
 namespace mindspore {
-using tensor::TensorPy;
+using tensor::TensorPybind;
 
 static ValuePtr ConvertMapTensorDefaultValue(const py::object &default_value_obj, const TypePtr &value_dtype) {
   static const mindspore::HashSet<std::string> support_init_names = {"zeros", "ones", "normal"};
@@ -63,9 +63,9 @@ void MapTensorPy::UpdateFromNumpy(const MapTensorPtr &map_tensor,
   constexpr size_t key_index = 0;
   constexpr size_t value_index = 1;
   constexpr size_t status_index = 2;
-  data.key_tensor = TensorPy::MakeTensorOfNumpy(std::get<key_index>(numpy_data));
-  data.value_tensor = TensorPy::MakeTensorOfNumpy(std::get<value_index>(numpy_data));
-  data.status_tensor = TensorPy::MakeTensorOfNumpy(std::get<status_index>(numpy_data));
+  data.key_tensor = TensorPybind::MakeTensorOfNumpy(std::get<key_index>(numpy_data));
+  data.value_tensor = TensorPybind::MakeTensorOfNumpy(std::get<value_index>(numpy_data));
+  data.status_tensor = TensorPybind::MakeTensorOfNumpy(std::get<status_index>(numpy_data));
   map_tensor->Update(data);
 }
 
@@ -73,15 +73,15 @@ std::tuple<py::array, py::array, py::array> MapTensorPy::ExportAsNumpy(const Map
                                                                        bool incremental) {
   MS_EXCEPTION_IF_NULL(map_tensor);
   auto data = map_tensor->Export(incremental);
-  return std::make_tuple(TensorPy::AsNumpy(*data.key_tensor), TensorPy::AsNumpy(*data.value_tensor),
-                         TensorPy::AsNumpy(*data.status_tensor));
+  return std::make_tuple(TensorPybind::AsNumpy(*data.key_tensor), TensorPybind::AsNumpy(*data.value_tensor),
+                         TensorPybind::AsNumpy(*data.status_tensor));
 }
 
 std::tuple<py::bytes, py::bytes, py::bytes> MapTensorPy::ExportBytes(const MapTensorPtr &map_tensor, bool incremental) {
   MS_EXCEPTION_IF_NULL(map_tensor);
   auto data = map_tensor->Export(incremental);
-  return std::make_tuple(TensorPy::GetBytes(*data.key_tensor), TensorPy::GetBytes(*data.value_tensor),
-                         TensorPy::GetBytes(*data.status_tensor));
+  return std::make_tuple(TensorPybind::GetBytes(*data.key_tensor), TensorPybind::GetBytes(*data.value_tensor),
+                         TensorPybind::GetBytes(*data.status_tensor));
 }
 
 std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportSliceAsNumpy(const MapTensorPtr &map_tensor,
@@ -89,8 +89,8 @@ std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportSliceAsNump
   MS_EXCEPTION_IF_NULL(map_tensor);
   bool last_slice = false;
   auto data = map_tensor->ExportSlice(incremental, &last_slice);
-  return std::make_tuple(TensorPy::AsNumpy(*data.key_tensor), TensorPy::AsNumpy(*data.value_tensor),
-                         TensorPy::AsNumpy(*data.status_tensor), last_slice);
+  return std::make_tuple(TensorPybind::AsNumpy(*data.key_tensor), TensorPybind::AsNumpy(*data.value_tensor),
+                         TensorPybind::AsNumpy(*data.status_tensor), last_slice);
 }
 
 std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportPersistentSliceAsNumpy(
@@ -102,9 +102,9 @@ std::tuple<py::array, py::array, py::array, bool> MapTensorPy::ExportPersistentS
   auto slice_data = storage->ExportSlice(incremental, &last_slice);
   map_tensor->TransExportDataToTensor(slice_data);
 
-  return std::make_tuple(TensorPy::AsNumpy(*(map_tensor->key_tensor())),
-                         TensorPy::AsNumpy(*(map_tensor->value_tensor())),
-                         TensorPy::AsNumpy(*(map_tensor->status_tensor())), last_slice);
+  return std::make_tuple(TensorPybind::AsNumpy(*(map_tensor->key_tensor())),
+                         TensorPybind::AsNumpy(*(map_tensor->value_tensor())),
+                         TensorPybind::AsNumpy(*(map_tensor->status_tensor())), last_slice);
 }
 
 static tensor::TensorPtr PyMapTensorGetKeys(const MapTensorPtr &map_tensor) {
@@ -146,6 +146,20 @@ void RegMapTensor(const py::module *m) {
            auto key_tensor_ptr = std::make_shared<tensor::Tensor>(key_tensor);
            auto value_tensor_ptr = std::make_shared<tensor::Tensor>(value_tensor);
            auto status_tensor_ptr = std::make_shared<Tensor>(kNumberTypeInt, key_tensor.shape());
+           auto value_dtype = value_tensor_ptr->Dtype();
+           ValuePtr default_value = ConvertMapTensorDefaultValue(default_value_obj, value_dtype);
+           ValuePtr permit_filter_value = ConvertMapTensorFilterValue(permit_filter_obj);
+           ValuePtr evict_filter_value = ConvertMapTensorFilterValue(evict_filter_obj);
+           return std::make_shared<MapTensor>(key_tensor_ptr, value_tensor_ptr, status_tensor_ptr, default_value,
+                                              permit_filter_value, evict_filter_value);
+         }),
+         py::arg("key_tensor"), py::arg("value_tensor"), py::arg("default_value"), py::arg("permit_filter_value"),
+         py::arg("evict_filter_value"))
+    .def(py::init([](const TensorPy &key_tensor, const TensorPy &value_tensor, const py::object &default_value_obj,
+                     const py::object &permit_filter_obj, const py::object &evict_filter_obj) {
+           auto key_tensor_ptr = std::make_shared<tensor::Tensor>(*(key_tensor.GetTensor().get()));
+           auto value_tensor_ptr = std::make_shared<tensor::Tensor>(*(value_tensor.GetTensor().get()));
+           auto status_tensor_ptr = std::make_shared<Tensor>(kNumberTypeInt, key_tensor.GetShape());
            auto value_dtype = value_tensor_ptr->Dtype();
            ValuePtr default_value = ConvertMapTensorDefaultValue(default_value_obj, value_dtype);
            ValuePtr permit_filter_value = ConvertMapTensorFilterValue(permit_filter_obj);

@@ -83,6 +83,7 @@ void RegCSRTensor(const py::module *m);
 void RegCOOTensor(const py::module *m);
 void RegRowTensor(const py::module *m);
 void RegMapTensor(const py::module *m);
+void RegTensorPy(const py::module *m);
 }  // namespace tensor
 
 namespace profiler {

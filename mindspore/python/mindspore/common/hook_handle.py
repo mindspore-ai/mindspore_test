@@ -15,7 +15,7 @@
 """The removable handle for cell hook function."""
 from __future__ import absolute_import
 import weakref
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 
 class _TensorHookHandle:

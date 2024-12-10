@@ -16,7 +16,7 @@
 from __future__ import absolute_import
 
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore import log as logger
 
 _check_elements_set = set()
@@ -222,7 +222,7 @@ def mutable(input_data, dynamic_len=False):
                      We will add set_const_arg=False statement automatically.")
         ret.set_const_arg(False)
     elif isinstance(input_data, Tensor_):
-        ret = Tensor(input_data, internal=True)
+        ret = Tensor(input_data)
         logger.info("For 'mutable', the Tensor_ in 'input_data' must not be constant. \
                      We will add set_const_arg=False statement automatically.")
         ret.set_const_arg(False)

@@ -27,7 +27,7 @@ from mindspore.communication.management import get_group_size, get_rank
 from mindspore.communication._comm_helper import _is_initialized
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.common.seed import get_seed
-from mindspore._c_expression import GraphExecutor_
+from mindspore._c_expression import GraphExecutor_, TensorPy as Tensor_
 from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shape_by_layout
 
 SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom", "Index"]
@@ -618,7 +618,7 @@ def _grads_divided_by_device_num_if_recomputation(grads):
                 f"({context.ParallelMode.SEMI_AUTO_PARALLEL}, {context.ParallelMode.AUTO_PARALLEL}) and "
                 f"full_batch is Ture, the gradients will be automatically divided by device_num({device_num}).")
 
-    if not isinstance(grads, (tuple, Tensor)):
+    if not isinstance(grads, (tuple, Tensor, Tensor_)):
         raise ValueError(f"The type of grads must be either Tuple[Tensor] or Tensor, but got {type(grads)}.")
 
     if isinstance(grads, tuple):

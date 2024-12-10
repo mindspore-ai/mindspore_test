@@ -180,6 +180,7 @@ void RegModule(py::module *m) {
   mindspore::tensor::RegCOOTensor(m);
   mindspore::tensor::RegRowTensor(m);
   mindspore::tensor::RegMapTensor(m);
+  mindspore::tensor::RegTensorPy(m);
   RegValues(m);
   mindspore::initializer::RegRandomNormal(m);
   RegMsContext(m);

@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 from mindspore import log as logger
 from mindspore._c_expression import security, HookType
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import _tensordump_process_file
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype

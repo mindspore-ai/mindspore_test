@@ -25,6 +25,7 @@
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -999,11 +1000,11 @@ class MetaTensorData : public ItemData {
       } else {
         PyObject *tensorattr = GetAttrTensorStr();
         obj = PyObject_GetAttr(obj, tensorattr);
-        tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(obj);
+        tensor_ptr = tensor::ConvertToTensor(obj);
         Py_DECREF(obj);
       }
-    } else if (py::isinstance<mindspore::tensor::Tensor>(obj)) {
-      tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(obj);
+    } else if (tensor::IsTensorPy(obj)) {
+      tensor_ptr = tensor::ConvertToTensor(obj);
     } else if (py::isinstance<mindspore::tensor::MapTensor>(obj)) {
       tensor_ptr = py::cast<mindspore::tensor::MapTensorPtr>(obj);
     } else {
@@ -1039,8 +1040,8 @@ class MetaTensorData : public ItemData {
     return false;
   }
 
-  mindspore::tensor::TensorPtr MakeTensor() {
-    return std::make_shared<mindspore::tensor::Tensor>(data_type_->type_id(), shape_);
+  mindspore::tensor::TensorPyPtr MakeTensor() {
+    return std::make_shared<mindspore::tensor::TensorPy>(data_type_->type_id(), shape_);
   }
 
   bool IsDynamicShape() const {
@@ -1138,6 +1139,13 @@ class TensorData : public MetaTensorData {
     StoreTensor(tensor_ptr);
   }
 
+  TensorData(mindspore::tensor::TensorPyPtr tensorpy, bool needSpecialize, int recurseDepth)
+      : MetaTensorData(needSpecialize, recurseDepth) {
+    tp_ = ItemType::Tensor;
+    tensor::TensorPtr tensor = tensorpy->GetTensor();
+    StoreTensor(tensor);
+  }
+
   TensorData(PyObject *obj, bool needSpecialize, int recurseDepth) : MetaTensorData(needSpecialize, recurseDepth) {
     is_stubtensor_ = false;
     tp_ = ItemType::Tensor;
@@ -1150,19 +1158,19 @@ class TensorData : public MetaTensorData {
       }
       if (specialized_) {
         auto pyObj = python_adapter::CallPyObjMethod(py::cast<py::object>(obj), kPyMethodStubSync);
-        tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(pyObj.ptr());
+        tensor_ptr = tensor::ConvertToTensor(pyObj);
       } else {
         if (stub != Py_None) {
           is_stubtensor_ = true;
         } else {
           PyObject *tensorattr = GetAttrTensorStr();
           obj = PyObject_GetAttr(obj, tensorattr);
-          tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(obj);
+          tensor_ptr = tensor::ConvertToTensor(obj);
           Py_DECREF(obj);
         }
       }
-    } else if (py::isinstance<mindspore::tensor::Tensor>(obj)) {
-      tensor_ptr = py::cast<mindspore::tensor::TensorPtr>(obj);
+    } else if (tensor::IsTensorPy(obj)) {
+      tensor_ptr = tensor::ConvertToTensor(obj);
     } else if (py::isinstance<mindspore::tensor::MapTensor>(obj)) {
       tensor_ptr = py::cast<mindspore::tensor::MapTensorPtr>(obj);
     } else {
@@ -1296,14 +1304,14 @@ class TensorData : public MetaTensorData {
     }
   }
 
-  bool init_flag_;
-  bool is_forward_output_;
-  std::unique_ptr<uint8_t[]> data_ptr_;
-  size_t data_len_;
+  bool init_flag_{false};
+  bool is_forward_output_{false};
+  std::unique_ptr<uint8_t[]> data_ptr_{nullptr};
+  size_t data_len_{0};
   std::string id_;
-  bool graph_output_;
-  mindspore::abstract::BaseShapePtr base_shape_ptr_;
-  mindspore::TypePtr cast_dtype_;
+  bool graph_output_{false};
+  mindspore::abstract::BaseShapePtr base_shape_ptr_{nullptr};
+  mindspore::TypePtr cast_dtype_{nullptr};
   mindspore::TensorCompressionType compression_type_;
   std::vector<QuantizationParamPtr> quant_params_;
   std::string tensor_name_;
@@ -1773,10 +1781,12 @@ template <typename T>
 ItemDataPtr CreateMutablePyData(PyObject *obj, bool need_specialize, int recurse_depth) {
   return std::make_shared<T>(obj, false, recurse_depth);
 }
-static bool CheckMetaTensorObject(PyObject *obj) {
-  return py::isinstance<mindspore::tensor::MetaTensor>(obj) || IsStubTensor(py::cast<py::object>(obj));
+static bool CheckMetaTensorObject(PyObject *obj) { return py::isinstance<mindspore::tensor::MetaTensor>(obj); }
+
+static bool CheckTensorObject(PyObject *obj) {
+  return tensor::IsTensorPy(py::cast<py::object>(obj)) || IsStubTensor(py::cast<py::object>(obj));
 }
-static bool CheckTensorObject(PyObject *obj) { return py::isinstance<mindspore::tensor::Tensor>(obj); }
+
 static bool CheckDictKeyValueItemObject(PyObject *obj) {
   return !!PyDict_Check(obj) || !!PyDictKeys_Check(obj) || !!PyDictValues_Check(obj) || !!PyDictItems_Check(obj);
 }
@@ -1802,8 +1812,8 @@ static const std::vector<std::pair<CheckPyObjectFunc, CreatePyObjectFunc>> kFunc
   {[](PyObject *obj) -> bool { return py::isinstance<mindspore::tensor::MapTensor>(obj); },
    CreatePyData<MapTensorData>},
   {[](PyObject *obj) -> bool { return py::isinstance<mindspore::ParamInfo>(obj); }, CreatePyData<ParamInfoData>},
-  {[](PyObject *obj) -> bool { return CheckMetaTensorObject(obj); }, CreatePyData<MetaTensorData>},
   {[](PyObject *obj) -> bool { return CheckTensorObject(obj); }, CreatePyData<TensorData>},
+  {[](PyObject *obj) -> bool { return CheckMetaTensorObject(obj); }, CreatePyData<MetaTensorData>},
   {[](PyObject *obj) -> bool { return py::isinstance<mindspore::tensor::TensorData>(obj); },
    CreatePyData<TensorDataData>},
   {[](PyObject *obj) -> bool { return py::isinstance<mindspore::PrimitivePyAdapter>(obj); },
@@ -2374,10 +2384,9 @@ GuardItemPtr GuardEqual(TracePtr obj, bool needSpecialize, int recurseDepth) {
 GuardItemPtr GuardType(TracePtr obj) { return std::make_shared<TypeGuard>(obj); }
 
 GuardItemPtr GuardId(TracePtr obj) {
-  auto py_obj = obj->GetObject();
   auto pyObj = py::cast<py::object>(obj->GetObject());
-  bool is_param = py::hasattr(pyObj, "__parameter__") && py::isinstance<tensor::MetaTensor>(pyObj);
-  if (!is_param && (IsStubTensor(pyObj) || py::isinstance<mindspore::tensor::Tensor>(py_obj))) {
+  bool is_param = py::hasattr(pyObj, "__parameter__") && tensor::IsTensorPy(pyObj);
+  if (!is_param && (IsStubTensor(pyObj) || tensor::IsTensorPy(pyObj))) {
     return GuardEqual(obj, false, INT_MAX);
   } else {
     return std::make_shared<IdGuard>(obj);

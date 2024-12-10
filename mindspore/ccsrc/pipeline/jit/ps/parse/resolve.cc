@@ -43,6 +43,7 @@
 #include "include/common/fallback.h"
 #include "include/common/debug/anf_dump_utils.h"
 #include "utils/log_adapter.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace parse {
@@ -151,6 +152,9 @@ ValuePtr GetParameterValue(const py::object &param_obj) {
     MS_EXCEPTION_IF_NULL(param_info);
     map_tensor->set_param_info(param_info);
     return map_tensor;
+  }
+  if (tensor::IsTensorPy(param_obj)) {
+    return tensor::ConvertToTensor(param_obj);
   }
   return py::cast<tensor::MetaTensorPtr>(param_obj);
 }
@@ -285,7 +289,7 @@ AnfNodePtr TransformFuncValueNode(const FuncGraphManagerPtr &manager, const Func
 }
 
 bool IsParameterObject(const py::object &obj) {
-  return py::hasattr(obj, "__parameter__") && py::isinstance<tensor::MetaTensor>(obj);
+  return py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj);
 }
 
 bool ContainsParameter(const py::object &obj) {
