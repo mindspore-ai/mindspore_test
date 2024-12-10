@@ -109,6 +109,9 @@ Status BatchOp::operator()() {
         }
       }
     }
+    // There should be no leftover samples when using batch sampler
+    CHECK_FAIL_RETURN_UNEXPECTED(cur_batch_size != -1 || table->empty(),
+                                 "Batch size cannot be -1 without using batch sampler.");
     // Reminder logic, execute only when there is a remainder (table is non empty) and don't drop
     if (!drop_ && !table->empty()) {
       RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->EmplaceBack(
