@@ -859,7 +859,9 @@ void ProcessNodeToSegments(const std::string &cur_flag, const std::string &flag,
 
 std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph, bool *multi_target) {
   MS_EXCEPTION_IF_NULL(graph);
-  MS_LOG(INFO) << "GraphPartion Info: " << graph->ToString();
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  MS_LOG(INFO) << "GraphPartion Info: " << graph->ToString() << " inline mode:" << context->CellReuseLevel();
   auto nodes = TopoSort(graph->get_return());
   MS_LOG(DEBUG) << "Split all nodes size:" << nodes.size();
   bool contain_multi_target = ContainMultiTarget(nodes);
@@ -902,6 +904,7 @@ std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph
     (void)has_cut.insert(node);
     ProcessCloseFollowing(graph, node, &close_following);
     if (IsCut(node)) {
+      MS_LOG(DEBUG) << "Cut node:" << node->DebugString();
       std::vector<AnfNodePtr> need_in_segement;
       for (auto &seg_node : segment_nodes) {
         auto iter = close_following.find(seg_node);
