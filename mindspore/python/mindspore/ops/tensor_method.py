@@ -150,7 +150,7 @@ from mindspore.ops.function.math_func import le
 # 55 log
 
 # 56 log2
-
+from mindspore.ops.function.math_func import log2
 # 57 logical_and
 from mindspore.ops.function.math_func import logical_and
 # 58 logical_not
@@ -672,6 +672,9 @@ def tensor_log(input):
 
 
 # 56 log2
+def tensor_log2(input):
+    return log2(input)
+
 
 # 57 logical_and
 def tensor_logical_and(input, other):

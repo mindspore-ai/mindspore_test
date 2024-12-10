@@ -1,0 +1,14 @@
+log2:
+  - op_yaml: log2_op.yaml
+    py_method: tensor_log2 # callback to python function "def tensor_log2"
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/log2_method.yaml
+    py_method: tensor_log2 # callback to python function "def tensor_log2"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

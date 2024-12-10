@@ -1,0 +1,8 @@
+#deprecated log2
+log2:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
