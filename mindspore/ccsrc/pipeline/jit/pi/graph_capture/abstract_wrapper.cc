@@ -372,13 +372,41 @@ bool AbstractWrapper::IsConstant() const {
 
 size_t AbstractWrapper::size() const {
   MS_EXCEPTION_IF_NULL(abstract_);
-  if (!abstract_->isa<abstract::AbstractSequence>() && !abstract_->isa<abstract::AbstractDictionary>()) {
+  if (IsConstant()) {
+    const auto &object = ConvertToPyObject(abstract_);
+    if (object.ptr() == nullptr) {
+      MS_LOG(EXCEPTION) << "Failed to get python object when trying to get size for constant abstract "
+                        << abstract_->ToString();
+    }
+    MS_LOG(INFO) << "Try to get size for object: " << py::str(object);
+    return py::len(object);
+  }
+  if (!abstract_->isa<abstract::AbstractTensor>() && !abstract_->isa<abstract::AbstractSequence>() &&
+      !abstract_->isa<abstract::AbstractDictionary>()) {
     MS_LOG(EXCEPTION) << "Can not get size for current wrapper: " << ToString();
+  }
+  if (abstract_->isa<abstract::AbstractTensor>()) {
+    const auto &shape = abstract_->BuildShape()->GetShapeVector();
+    auto first_shape = shape[0];
+    if (first_shape < 0) {
+      MS_LOG(EXCEPTION) << "Can not get size for dynamic shape/rank abstract " << abstract_->ToString();
+    }
+    return first_shape;
   }
   if (abstract_->isa<abstract::AbstractSequence>()) {
     return abstract_->cast<abstract::AbstractSequencePtr>()->size();
   }
   return abstract_->cast<abstract::AbstractDictionaryPtr>()->size();
+}
+
+int AbstractWrapper::TryToGetSize() const {
+  int ret = -1;
+  try {
+    ret = size();
+  } catch (const std::exception &e) {
+    MS_LOG(INFO) << "Failed to get size for wrapper: " << ToString() << " The exception:\n" << e.what();
+  }
+  return ret;
 }
 
 bool AbstractWrapper::IsDict() const {
