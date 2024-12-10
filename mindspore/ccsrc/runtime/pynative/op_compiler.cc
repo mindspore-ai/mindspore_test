@@ -369,7 +369,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
   }
 
   if (get_graph_info_func_) {
-    MS_LOG(INFO) << "Call reg get graph info func.";
+    MS_LOG(DEBUG) << "Call reg get graph info func.";
     graph_info = get_graph_info_func_(op_info, op_prim, graph_info);
   }
   // Special process for avgpoolgrad op, because that ge input 0 needs shape rather than tensor.
