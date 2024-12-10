@@ -46,7 +46,8 @@ class ProfilerParameters:
         "pcie": (bool, False),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
-        "schedule": ("Schedule", None),
+        "mstx": (bool, False),
+        "schedule": (Schedule, None),
         "on_trace_ready": (Optional[Callable[..., Any]], None)
     }
 
@@ -54,7 +55,6 @@ class ProfilerParameters:
     VALUE_INDEX = 1
 
     def __init__(self, **kwargs):
-        self.PARAMS["schedule"] = (Schedule, Schedule(wait=0, active=1))
         self.is_set_schedule: bool = False
         self._set_schedule(**kwargs)
         self._check_deprecated_params(**kwargs)
@@ -105,6 +105,7 @@ class ProfilerParameters:
             "profiler_level": self.profiler_level.value,
             "aicore_metrics": self.aicore_metrics.value,
             "with_stack": self.with_stack,
+            "mstx": self.mstx,
             "cpu_trace": ProfilerActivity.CPU in self.activities,
             "npu_trace": ProfilerActivity.NPU in self.activities,
         }
@@ -122,7 +123,9 @@ class ProfilerParameters:
                 if key == "on_trace_ready":
                     if not callable(value):
                         setattr(self, key, default_value)
-                    continue
+                elif key == "schedule":
+                    if not isinstance(value, Schedule):
+                        setattr(self, key, Schedule(wait=0, active=1))
                 # 检查可迭代类型
                 elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
                     if not (isinstance(value, expected_type) and
@@ -181,6 +184,22 @@ class ProfilerParameters:
         if hasattr(self, "schedule") and self.is_set_schedule and self.__dict__.get('data_process', False):
             self.data_process = False
             warnings.warn("When 'schedule' is set, 'data_process' will be set to False.")
+
+        if not self.__dict__.get('mstx') and self.__dict__.get('profiler_level') == ProfilerLevel.LevelNone:
+            self.profiler_level = ProfilerLevel.Level0
+            warnings.warn("when 'mstx' is disabled, 'profiler_level' cannot be set to 'ProfilerLevel.LevelNone', "
+                          "reset to 'ProfilerLevel.Level0'.")
+
+        if self.__dict__.get('profiler_level') == ProfilerLevel.Level0 and \
+            self.__dict__.get('aicore_metrics') != AicoreMetrics.AiCoreNone:
+            self.aicore_metrics = AicoreMetrics.AiCoreNone
+            warnings.warn("when 'profiler_level' is set to 'ProfilerLevel.Level0', "
+                          "'aicore_metrics' cannot be set to other value except 'AicoreMetrics.AiCoreNone', "
+                          "reset to 'AicoreMetrics.AiCoreNone'.")
+
+        if self.__dict__.get('profiler_level') != ProfilerLevel.Level0 and \
+            self.__dict__.get('aicore_metrics') == AicoreMetrics.AiCoreNone:
+            self.aicore_metrics = AicoreMetrics.PipeUtilization
 
     def __getattr__(self, name):
         """

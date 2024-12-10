@@ -23,7 +23,7 @@ from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_con
 from mindspore.profiler.common.constant import OpSummaryHeaders
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.constant import TimelineLayerName
-from mindspore.profiler.common.constant import ProfilerStepNameConstant, JitLevel
+from mindspore.profiler.common.constant import ProfilerStepNameConstant, JitLevel, ProfilerLevel
 
 
 class AscendKernelDetailsViewer(BaseViewer):
@@ -32,6 +32,17 @@ class AscendKernelDetailsViewer(BaseViewer):
     """
     KERNEL_DETAILS_FILE_NAME = "kernel_details.csv"
     EXCLUDE_HEADERS = [OpSummaryHeaders.DEVICE_ID.value]
+    LEVEL0_EXCLUDE_HEADERS = [
+        OpSummaryHeaders.MIX_BLOCK_DIM.value,
+        OpSummaryHeaders.HF32_ELIGIBLE.value,
+        OpSummaryHeaders.INPUT_SHAPES.value,
+        OpSummaryHeaders.INPUT_DATA_TYPES.value,
+        OpSummaryHeaders.INPUT_FORMATS.value,
+        OpSummaryHeaders.OUTPUT_SHAPES.value,
+        OpSummaryHeaders.OUTPUT_DATA_TYPES.value,
+        OpSummaryHeaders.OUTPUT_FORMATS.value,
+        OpSummaryHeaders.CONTEXT_ID.value,
+    ]
     RENAME_HEADERS = {
         OpSummaryHeaders.OP_NAME.value: "Name",
         OpSummaryHeaders.OP_TYPE.value: "Type",
@@ -49,6 +60,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         )
         self._is_set_schedule = kwargs.get("is_set_schedule")
         self._jit_level = kwargs.get("jit_level")
+        self._profiler_level = kwargs.get("profiler_level")
         self.op_summary_headers = None
         self.op_summary = None
         self.trace_container = None
@@ -101,6 +113,14 @@ class AscendKernelDetailsViewer(BaseViewer):
             for header in self.op_summary_headers
             if header not in self.EXCLUDE_HEADERS
         ]
+
+        if self._profiler_level == ProfilerLevel.Level0.value:
+            self.op_summary_headers = [
+                header
+                for header in self.op_summary_headers
+                if header not in self.LEVEL0_EXCLUDE_HEADERS
+            ]
+
         if not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL:
             self.op_summary_headers.remove(OpSummaryHeaders.STEP_ID.value)
         # rename headers

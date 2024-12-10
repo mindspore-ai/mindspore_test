@@ -49,6 +49,7 @@ from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
     MindDataPipelineRawViewer,
     MindDataPiplineSummaryViewer,
 )
+from mindspore.profiler.common.util import print_msg_with_pid
 
 
 @PROFILERS.register_module(DeviceTarget.NPU.value)
@@ -234,6 +235,8 @@ class NPUProfilerAnalysis:
         """
         Run tasks for online analysis
         """
+        ascend_ms_dir = kwargs.get("ascend_ms_dir", "")
+        print_msg_with_pid(f"Start parsing profiling data: {ascend_ms_dir}")
         task_mgr = cls._construct_task_mgr(**kwargs)
         task_mgr.run({})
         logger.info(json.dumps(task_mgr.cost_time, indent=4))
