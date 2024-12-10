@@ -92,6 +92,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"pijit_constexpr", &GraphJitConfig::AddJitConstexpr},
   {"relax_guard_func", &GraphJitConfig::AddJitRelaxGuard},
   {"jit_level", &GraphJitConfig::AddJitLevel},
+  {"recapture_loop_body", &GraphJitConfig::SetBool<GraphJitConfig::kReCaptureLoopBody>},
 };
 
 GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
@@ -128,6 +129,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
 
   bool_conf[kEnableEliminateUnusedOperation - kBoolConf] = false;
   bool_conf[kFeatureBreakAtInlinedFunction - kBoolConf] = true;
+  bool_conf[kReCaptureLoopBody - kBoolConf] = false;
 
   int_conf[kMaxInlineDepth - kIntConf] = 8;
   int_conf[kMaxTraceDepth - kIntConf] = kDefaultMaxTraceDepth;
