@@ -3910,12 +3910,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('igammac')(self, other)
 
-    def isinf(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.isinf`.
-        """
-        return tensor_operator_registry.get('isinf')(self)
-
     def isnan(self):
         r"""
         For details, please refer to :func:`mindspore.ops.ne`.
