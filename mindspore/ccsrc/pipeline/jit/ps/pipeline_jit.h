@@ -34,7 +34,7 @@ class JitExecutorPy : public ExecutorPy {
     return executor_;
   }
 
-  ~JitExecutorPy() = default;
+  ~JitExecutorPy() override = default;
 
   static void ClearRes();
   void CleanCompileRes(const ResourcePtr &resource) override;

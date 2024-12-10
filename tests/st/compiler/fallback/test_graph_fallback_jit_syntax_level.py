@@ -153,3 +153,34 @@ def test_custom_class_in_function():
         os.unsetenv('MS_DEV_JIT_SYNTAX_LEVEL')
     else:
         os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = reserved_env
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_custom_class_in_function_with_deprecated_jit():
+    """
+    Feature: JIT Fallback
+    Description: Test jit_syntax_level for function decorated by deprecated @jit.
+    Expectation: No exception.
+    """
+    import mindspore._deprecated.jit as jit
+
+    class InnerNet:
+        def __init__(self):
+            self.number = 2
+
+        def func(self, x):
+            return self.number * x.asnumpy()
+
+    cls = InnerNet()
+
+    def func(x):
+        return cls.func(x)
+
+    x = ms.Tensor(2)
+    with pytest.raises(AttributeError):
+        func1 = jit(fn=func, jit_config=jit_config_strict)
+        func1(x)
+
+    func2 = jit(fn=func, jit_config=jit_config_lax)
+    x = ms.Tensor(2)
+    assert func2(x) == 4

@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -70,9 +70,9 @@ def test_relu6_std(mode):
         output_grad = relu6_backward_func(x)
         inplace_x = inplace_relu6_forward_func(ms.Tensor(x_np, dtype=ms.float32))
     else:
-        output = (jit(relu6_forward_func, jit_config=JitConfig(jit_level="O0")))(x)
-        output_grad = (jit(relu6_backward_func, jit_config=JitConfig(jit_level="O0")))(x)
-        inplace_x = (jit(inplace_relu6_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(relu6_forward_func, jit_level="O0"))(x)
+        output_grad = (jit(relu6_backward_func, jit_level="O0"))(x)
+        inplace_x = (jit(inplace_relu6_forward_func, jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.float32))
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, atol=1e-5)
@@ -113,9 +113,9 @@ def test_relu6_bfloat16(mode):
         output_grad = relu6_backward_func(x)
         inplace_x = inplace_relu6_forward_func(ms.Tensor(x_np, dtype=ms.bfloat16))
     else:
-        output = (jit(relu6_forward_func, jit_config=JitConfig(jit_level="O0")))(x)
-        output_grad = (jit(relu6_backward_func, jit_config=JitConfig(jit_level="O0")))(x)
-        inplace_x = (jit(inplace_relu6_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(relu6_forward_func, jit_level="O0"))(x)
+        output_grad = (jit(relu6_backward_func, jit_level="O0"))(x)
+        inplace_x = (jit(inplace_relu6_forward_func, jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.bfloat16))
     np.allclose(output.float().asnumpy(), expect, 4e-3, 4e-3, equal_nan=True)
     np.allclose(output_grad.float().asnumpy(), expect_grad, 4e-3, 4e-3, equal_nan=True)

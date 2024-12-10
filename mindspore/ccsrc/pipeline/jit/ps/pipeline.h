@@ -64,6 +64,8 @@ class Pipeline {
 
 class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
  public:
+  ExecutorPy() = default;
+  virtual ~ExecutorPy() = default;
   bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase);
   py::object Run(const py::tuple &args, const py::object &phase);
   void set_enable_tuple_broaden(bool enable_tuple_broaden) { enable_tuple_broaden_ = enable_tuple_broaden; }
@@ -94,11 +96,12 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
   py::bytes GetObfuscateFuncGraphProto(const std::string &phase, const bool &incremental, const float obf_ratio,
                                        const int branch_control_input);
   virtual bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
-                            const std::string &phase, bool trace_flag = false) = 0;
+                            const std::string &phase, bool trace_flag) = 0;
   bool executor_running() const { return executor_running_; }
   const std::string &obj_desc() const { return obj_desc_; }
   int32_t max_call_depth() const { return max_call_depth_; }
   void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
+  void ClearInfo();
 
  protected:
   virtual bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
@@ -116,7 +119,6 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
 #ifdef WITH_BACKEND
   void GeFirstInitParams();
 #endif
-  void ClearInfo();
 
   std::map<std::string, ExecutorInfoPtr> info_;
   std::string phase_;
@@ -151,10 +153,10 @@ class GraphExecutorPy : public ExecutorPy {
     return executor_;
   }
 
-  ~GraphExecutorPy();
+  ~GraphExecutorPy() override;
 
   bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs, const std::string &phase,
-                    bool trace_flag = false) override;
+                    bool trace_flag) override;
 
   void ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
                    abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments);
