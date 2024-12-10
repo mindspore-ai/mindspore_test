@@ -230,6 +230,7 @@ class ME_EXPORT GradExecutor {
                                     const std::pair<AnfNodePtr, std::vector<int64_t>> &out) const;
   void ResetMetaGradInfoForNewTopCell(const InputArgsInfoPtr &input_args_info) const;
   void ClearBpropTask() const;
+  std::string SizeofContainer() const;
 
   bool init_{false};
   bool grad_flag_{false};
