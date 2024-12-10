@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 #include <string>
 
 #include "utils/ms_context.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore {
@@ -56,23 +56,17 @@ bool HcomAllBroadCastKernel::Launch(const std::vector<KernelTensor *> &inputs, c
     if (lccl_result != Lcal::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL Broadcast failed.";
     }
+    return true;
   } else {
-    auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBroadcast(
-      inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], root_id_, stream_ptr, comm_);
-    if (hccl_result != HCCL_SUCCESS) {
-      MS_LOG(ERROR) << "HcomBroadcastOp : hcom_broadcast failed, return: " << hccl_result;
-      return false;
-    }
+    auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+    return comm_lib->Broadcast(inputs[0]->device_ptr(), inputs[0]->device_ptr(), hccl_count_, inputs[0]->dtype_id(),
+                               root_id_, group_, stream_ptr);
   }
 #else
-  auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBroadcast(
-    inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], root_id_, stream_ptr, comm_);
-  if (hccl_result != HCCL_SUCCESS) {
-    MS_LOG(ERROR) << "HcomBroadcastOp : hcom_broadcast failed, return: " << hccl_result;
-    return false;
-  }
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  return comm_lib->Broadcast(inputs[0]->device_ptr(), inputs[0]->device_ptr(), hccl_count_, inputs[0]->dtype_id(),
+                             root_id_, group_, stream_ptr);
 #endif
-  return true;
 }
 }  // namespace kernel
 }  // namespace mindspore

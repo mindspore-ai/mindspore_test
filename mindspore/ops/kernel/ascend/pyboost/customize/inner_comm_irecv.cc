@@ -22,6 +22,7 @@
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "kernel/ascend/pyboost/customize/comm_common.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -37,16 +38,19 @@ void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const In
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
     const auto &output_tensor = op->output(0);
-    auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), output_tensor);
+    auto hccl_count = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), output_tensor).first;
     auto src_imm = GetValue<int64_t>(src);
 
     auto output_data_ptr = GetDevicePtrFromTensor(op->primitive()->name(), output_tensor);
-    auto launch_func = [output_data_ptr, hccl_count, hccl_data_type, src_imm](const HcclComm &hccl_comm,
-                                                                              void *comm_stream_ptr) {
-      auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(output_data_ptr, hccl_count, hccl_data_type, src_imm,
-                                                                   comm_stream_ptr, hccl_comm);
-      if (hccl_result != HCCL_SUCCESS) {
-        MS_LOG(EXCEPTION) << "HcomRecv failed, ret:" << hccl_result;
+    auto output_dtype = output_tensor->data_type();
+    std::string group_name = GetValue<std::string>(group);
+    auto launch_func = [output_data_ptr, hccl_count, output_dtype, src_imm, group_name](const HcclComm &,
+                                                                                        void *comm_stream_ptr) {
+      auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+      auto comm_result =
+        comm_lib->Recv(output_data_ptr, hccl_count, output_dtype, src_imm, group_name, comm_stream_ptr);
+      if (!comm_result) {
+        MS_LOG(EXCEPTION) << "InnerCommIrecv failed, ret:" << comm_result;
       }
     };
 

@@ -19,14 +19,13 @@
 #include <string>
 #include <utility>
 
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "include/backend/distributed/rpc/tcp/tcp_client.h"
 #include "distributed/cluster/actor_route_table_proxy.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/common/utils/parallel_context.h"
 #include "proto/topology.pb.h"
-#include "runtime/graph_scheduler/actor/rpc/rpc_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -178,13 +177,8 @@ bool HcomSendKernel::Launch(const std::vector<KernelTensor *> &inputs, const std
   }
   MS_EXCEPTION_IF_NULL(inputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto hccl_result = hccl::HcclAdapter::GetInstance().HcclSend(inputs[0]->device_ptr(), hccl_count_,
-                                                               hccl_data_type_list_[0], dest_rank_, stream_ptr, comm_);
-  if (hccl_result != HCCL_SUCCESS) {
-    MS_LOG(ERROR) << "HcomSend failed, ret:" << hccl_result;
-    return false;
-  }
-  return true;
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  return comm_lib->Send(inputs[0]->device_ptr(), hccl_count_, inputs[0]->dtype_id(), dest_rank_, group_, stream_ptr);
 }
 }  // namespace kernel
 }  // namespace mindspore
