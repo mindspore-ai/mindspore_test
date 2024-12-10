@@ -87,7 +87,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         pyboost_func_pybind_def = ''
         pyboost_func_include_headers_str = ''
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or not op_proto.op_dispatch:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_pyboost_func_name = op_parser.get_pyboost_func_name()
@@ -152,7 +152,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         """
         function_class_register = ''
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or not op_proto.op_dispatch:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
             class_name, op_name = op_proto.op_class.name, op_proto.op_name
             function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,

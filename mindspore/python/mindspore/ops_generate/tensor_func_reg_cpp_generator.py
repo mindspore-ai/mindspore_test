@@ -77,7 +77,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'return ToPython(TensorPyboostMethodRegister::'
-            'GetOp(tensor::TensorPyboostMethod::k${class_name})(arg_list));\n'
+            'GetOp(tensor::TensorPyboostMethod::k${class_name}Reg)(arg_list));\n'
         )
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
@@ -160,16 +160,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                               with a `name` attribute.
 
         Returns:
-            list: A list of formatted strings, where each string is of the form 'k<name>,\n', where <name>
+            str: A list of formatted strings, where each string is of the form 'k<name>,\n', where <name>
                   is the class name from the `op_class` attribute.
 
         """
-        tensor_method_list = []
+        tensor_method_list = ""
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None or not op_proto.op_dispatch:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
             class_name = op_proto.op_class.name
-            tensor_method_list.append(f"k{class_name},\n")
+            tensor_method_list += f"k{class_name}Reg,\n"
         return tensor_method_list
 
     def _generate_func_name_for_stub_tensor(self, work_path, tensor_cpp_methods_list):
