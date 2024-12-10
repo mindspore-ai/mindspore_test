@@ -57,8 +57,19 @@ def set_simulation():
     """
     This interface is used to enable the dryrun function. The dryrun function is mainly used to simulate the actual
     operation of the large model. After it is enabled, the memory usage, compilation information, etc. can be simulated
-    without occupying device card. In the pynative mode, once it is enabled, if values are fetched from the device to
+    without occupying device card. In the PyNative mode, once it is enabled, if values are fetched from the device to
     the host, the Python call stack log will be printed to inform users that these values are inaccurate.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore.utils import dryrun
+        >>> import numpy as np
+        >>> dryrun.set_simulation()
+        >>> print(os.environ.get('MS_SIMULATION_LEVEL'))
+        1
     """
     os.environ["MS_SIMULATION_LEVEL"] = "1"
     obj = TraceBack()
@@ -74,15 +85,19 @@ def set_simulation():
 
 def mock(mock_val, *args):
     """
-    If `if xxx: ` in the network need to use the actual execution values which cannot be obtained through dryrun mode,
-    this interface can be used to return static simulated values.
+    In the network, if some `if` branch need to use the actual execution values and the virtual execution cannot obtain
+    them, this interface can be used to return simulated values. During actual execution, the correct results can be
+    obtained and the execution values can be returned.
 
-    Inputs:
-        - **mock_val** (Union[value, Tensor]): The value you want to return.
-        - **args**:
-    Outputs:
-        If set_simulation, the mock_val will be returned; otherwise, the actual execution value
-        of args will be returned.
+    Args:
+        mock_val (Union[Value, Tensor]): The value you want to return.
+        args (Union[Value, function]): The content you want to mock, it can be values, function and so on.
+
+    Returns:
+        If dryrun is enabled, mock_val will be returned; otherwise, the actual execution value of args will be returned.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore as ms
@@ -93,7 +108,7 @@ def mock(mock_val, *args):
         >>> if dryrun.mock(True, a[0, 0] > 0.5):
         ...     print("return mock_val: True.")
         return mock_val: True
-
+        >>>
         >>> import mindspore as ms
         >>> from mindspore.utils import dryrun
         >>> import numpy as np
@@ -101,7 +116,7 @@ def mock(mock_val, *args):
         >>> if dryrun.mock(False, a[0, 0] > 0.5):
         ...     print("return real execution: True.")
         return real execution: True.
-
+        >>>
         >>> import mindspore as ms
         >>> from mindspore.utils import dryrun
         >>> import numpy as np
