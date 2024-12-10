@@ -19,8 +19,8 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-OpGlobalStatus &OpGlobalStatus::Get() {
-  static OpGlobalStatus instance;
+OpRunStatus &OpRunStatus::Get() {
+  static OpRunStatus instance;
   return instance;
 }
 }  // namespace pyboost

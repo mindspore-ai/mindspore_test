@@ -27,7 +27,7 @@ py::object ME_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list 
             static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
             auto [${cast_args}] = PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, same_type_table, ${call_args});
 
-            kernel::pyboost::OpGlobalStatus::Get().set_run_info(
+            kernel::pyboost::OpRunStatus::Get().set_run_info(
                 kernel::pyboost::OpStatus(op_run_info->async_status.disable_mix_precision,
                                           op_run_info->async_status.is_jit_compiling,
                                           op_run_info->async_status.custom_bprop_cell_count,
@@ -35,7 +35,7 @@ py::object ME_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list 
             kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
 
             auto outputs = kernel::pyboost::${operator_name}(${cast_args});
-            auto op = kernel::pyboost::OpGlobalStatus::Get().GetLastOp();
+            auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
 
             // Tensor/tuple<Tensor> to ValuePtr
             auto real_out = PyNativeAlgo::PyBoost::${is_multi}OutputToValue(outputs);

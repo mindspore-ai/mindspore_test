@@ -13,7 +13,7 @@ void DoGrad${class_name}Inner(${grad_args_with_type}, const ValuePtr &output_val
 void DoGrad${class_name}(${grad_args_with_type}) {
   static bool is_inplace_op = kernel::pyboost::GetOpTypeFromOpdef(ops::${op_def_name}) == OperatorType::kInplaceOp;
   static bool has_derivative = ${has_derivative};
-  bool require_grad = kernel::pyboost::OpGlobalStatus::Get().RequireGrad();
+  bool require_grad = kernel::pyboost::OpRunStatus::Get().RequireGrad();
 
   auto output_value = PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(
     require_grad,
