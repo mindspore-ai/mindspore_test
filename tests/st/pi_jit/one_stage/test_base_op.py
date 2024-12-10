@@ -1419,3 +1419,31 @@ def test_function_decorated_with_PSJIT_run_ast_6():
     ret = foo(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
     assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_for_variable_tensor():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return x + y
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y):
+        m, n = inner(x, y)
+        return m, n
+
+    a = Tensor([1, 1])
+    b = Tensor([2, 3])
+    ret = foo(a, b)
+    assert len(ret) == 2
+    assert np.all(ret[0].asnumpy() == np.array([3]))
+    assert np.all(ret[1].asnumpy() == np.array([4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0

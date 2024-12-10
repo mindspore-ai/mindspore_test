@@ -378,7 +378,7 @@ static void GenUnpackValue(const std::function<void(int, int)> &gen_item, int cn
 Py_ssize_t GetIterableSize(const ValueNode *iterable) {
   if (iterable->has_abstract_wrapper()) {
     MS_LOG(DEBUG) << "Get iterable size from abstract wrapper.";
-    return iterable->abstract_wrapper()->size();
+    return iterable->abstract_wrapper()->TryToGetSize();
   }
 
   MS_LOG(DEBUG) << "Get iterable size from python object.";

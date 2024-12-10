@@ -51,8 +51,13 @@ class AbstractWrapper {
   std::string ToString() const;
   AbstractBasePtr abstract() const { return abstract_; }
   bool IsConstant() const;
-  size_t size() const;
   bool IsDict() const;
+
+  // Throw exception when abstract in wrapper has no size.
+  size_t size() const;
+
+  // return -1 when abstract in wrapper has no size.
+  int TryToGetSize() const;
 
   std::vector<py::object> GetDictKeysObject() const;
 
