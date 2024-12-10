@@ -76,6 +76,10 @@ constexpr size_t DROPOUT_DO_MASK_CNODE_INPUT_SIZE = 4;
 constexpr size_t DROPOUT_GEN_MASK_CNODE_INPUT_SIZE = 3;
 constexpr size_t DROPOUT_GEN_MASK_INDEX = 2;
 constexpr size_t DROPOUT_DO_MASK_KEEP_PROB_INDEX = 3;
+constexpr size_t DROPOUT_EXT_INPUTS_SIZE = 3;
+constexpr size_t DROPOUT_EXT_CNODE_SIZE = 5;
+constexpr size_t DROPOUT_EXT_SEED_INDEX = 3;
+constexpr size_t GENERATOR_SIZE = 4;
 constexpr size_t DSD_MATMUL_INPUTS_SIZE = 3;
 constexpr size_t DSD_MATMUL_OUTPUTS_SIZE = 1;
 constexpr size_t DSD_MATMUL_STRATEGY_W_SIZE = 7;
@@ -390,6 +394,7 @@ constexpr char FIAS_INDEX[] = "FIAS_INDEX";
 constexpr char KEEP_ALIVE[] = "keep_alive";
 constexpr char INPUTS_TENSOR_MAP[] = "inputs_tensor_map";
 constexpr char OUTPUTS_TENSOR_MAP[] = "outputs_tensor_map";
+constexpr char MANUAL_SEED[] = "manual_seed";
 
 // Operator
 constexpr char VIRTUAL_DIV[] = "_VirtualDiv";
@@ -728,6 +733,7 @@ constexpr char SOLVE_TRIANGULAR[] = "SolveTriangular";
 constexpr char TRACEV2[] = "TraceV2";
 constexpr char LSTSQV2[] = "LstsqV2";
 constexpr char CUSTOM[] = "Custom";
+constexpr char GENERATOR[] = "Generator";
 
 // pipeline
 constexpr size_t PIPELINE_FUSTION_OFFSET = 100;

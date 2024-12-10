@@ -530,7 +530,7 @@ class OperatorInfo {
   void DivisorsReplaceShapes();  // in dynamic shape, using divisors replace to shapes before CheckStrategy and so on
   void ResumeShapes();           // in dynamic shape, resume shapes after CheckStrategy and so on
   void DynamicShapeCheckStrategyLog();
-  void SetRepeatedCalcDevMatrix();
+  virtual void SetRepeatedCalcDevMatrix();
   void ResetTensorMapIfRepeatedCalc();
   void ResetTupleTensorMapIfRepeatedCalc(NewTensorMaps *tensor_map_new);
   void ChangeMakeTupleConstant(const CNodePtr &cnode, size_t make_tuple_index);

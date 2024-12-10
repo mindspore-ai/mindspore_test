@@ -880,6 +880,12 @@ static void CreateEdgeAccrossMakeList(const CNodePtr &cnode, const PrimitivePtr 
   }
 }
 
+namespace {
+bool HasOperatorInfo(const CNodePtr &cnode) {
+  return IsAutoParallelCareNode(cnode) || IsValueNode<FuncGraph>(cnode->input(0)) || IsSomePrimitive(cnode, GENERATOR);
+}
+}  // namespace
+
 static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const std::vector<AnfNodePtr> &all_nodes) {
   auto &inputs = cnode->inputs();
   ValueNodePtr prim_anf_node = inputs[0]->cast<ValueNodePtr>();
@@ -926,7 +932,7 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
         if (is_cross) {
           break;
         }
-        if (!IsAutoParallelCareNode(prev_cnode) && !IsValueNode<FuncGraph>(prev_cnode->input(0))) {
+        if (!HasOperatorInfo(prev_cnode)) {
           MS_LOG_WITH_NODE(EXCEPTION, prev_node) << "Did not create OperatorInfo for : " << prev_prim->name();
         }
         is_before_tuple_get_item = true;
