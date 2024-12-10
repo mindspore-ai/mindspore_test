@@ -28,7 +28,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-inline const std::string &GetDeviceTarget() { return OpGlobalStatus::Get().device_target(); }
+inline const std::string &GetDeviceTarget() { return OpRunStatus::Get().device_target(); }
 
 using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
 }

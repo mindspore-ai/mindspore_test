@@ -40,9 +40,9 @@ struct BACKEND_EXPORT OpStatus {
   std::string device_target{};
 };
 
-class BACKEND_EXPORT OpGlobalStatus {
+class BACKEND_EXPORT OpRunStatus {
  public:
-  static OpGlobalStatus &Get();
+  static OpRunStatus &Get();
 
   const OpStatus &op_status() { return status_; }
   void set_run_info(OpStatus &&run_info) { status_ = run_info; }
@@ -58,9 +58,9 @@ class BACKEND_EXPORT OpGlobalStatus {
   OpPtr &&GetLastOp() { return std::move(last_op_); }
 
  private:
-  OpGlobalStatus() = default;
-  ~OpGlobalStatus() = default;
-  DISABLE_COPY_AND_ASSIGN(OpGlobalStatus);
+  OpRunStatus() = default;
+  ~OpRunStatus() = default;
+  DISABLE_COPY_AND_ASSIGN(OpRunStatus);
 
   OpStatus status_{};
   bool require_grad_{false};
@@ -70,10 +70,10 @@ class BACKEND_EXPORT OpGlobalStatus {
 class BACKEND_EXPORT RequireGradGuard {
  public:
   explicit RequireGradGuard(bool require_grad) {
-    origin_require_grad_ = OpGlobalStatus::Get().RequireGrad();
-    OpGlobalStatus::Get().SetRequireGrad(require_grad);
+    origin_require_grad_ = OpRunStatus::Get().RequireGrad();
+    OpRunStatus::Get().SetRequireGrad(require_grad);
   }
-  ~RequireGradGuard() { OpGlobalStatus::Get().ResetRequireGrad(origin_require_grad_); }
+  ~RequireGradGuard() { OpRunStatus::Get().ResetRequireGrad(origin_require_grad_); }
 
  private:
   bool origin_require_grad_{false};

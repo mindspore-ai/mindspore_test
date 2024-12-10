@@ -25,7 +25,7 @@
 namespace mindspore::pynative {
 namespace {
 inline AsyncStatus GetAsyncStatus() {
-  const auto &op_status = kernel::pyboost::OpGlobalStatus::Get().op_status();
+  const auto &op_status = kernel::pyboost::OpRunStatus::Get().op_status();
   AsyncStatus status = {
     op_status.disable_mix_precision,
     op_status.is_jit_compiling,
@@ -35,8 +35,8 @@ inline AsyncStatus GetAsyncStatus() {
 }
 
 inline bool NeedAutoGrad() {
-  MS_LOG(DEBUG) << "require grad " << kernel::pyboost::OpGlobalStatus::Get().RequireGrad();
-  return kernel::pyboost::OpGlobalStatus::Get().RequireGrad();
+  MS_LOG(DEBUG) << "require grad " << kernel::pyboost::OpRunStatus::Get().RequireGrad();
+  return kernel::pyboost::OpRunStatus::Get().RequireGrad();
 }
 }
 
