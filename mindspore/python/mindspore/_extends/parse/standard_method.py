@@ -21,12 +21,13 @@ from mindspore import Tensor, CSRTensor, COOTensor
 from mindspore import dtype as mstype
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.common import mutable
+from mindspore.common.generator import default_generator
 import mindspore.common._monad as monad
 from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _reverse, \
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
-from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op
+from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op
 from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
 
 from ... import _checkparam as validator
@@ -72,6 +73,7 @@ itemsize_map = {mstype.bool_: 1, mstype.int8: 1, mstype.uint8: 1,
 nan_tensor = Tensor(float('nan'), dtype=mstype.float32)
 
 _map = composite.HyperMap()
+generator_step_ = Tensor(12, mstype.int64)
 
 
 def hypermap_dynamic_tuple(func, *inputs):
@@ -3376,6 +3378,23 @@ def lerp(start, end, weight):
 def norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     """Returns the matrix norm or vector norm of a given tensor."""
     return F.norm(A, ord, dim, keepdim, dtype=dtype)
+
+
+def normal_(input, mean=0, std=1, *, generator=None):
+    """
+    Update the `input` tensor in place by generating random numbers sampled from the normal
+    distribution which constructed by the parameters `mean` and `std`.
+
+    For details, please refer to :func:`mindspore.Tensor.normal_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return inplace_normal_op(input, mean, std, seed, offset)
 
 
 def renorm(input_x, p, dim, maxnorm):
