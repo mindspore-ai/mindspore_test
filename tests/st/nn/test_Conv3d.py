@@ -53,7 +53,7 @@ def test_conv3d_para_customed_dtype(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @test_utils.run_test_with_On

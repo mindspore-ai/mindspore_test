@@ -48,7 +48,7 @@ def run_net(datatype, input_tensors, output_tensors):
     assert output1.dtype == inp1.dtype
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_square_sum_all_dynamic_shape():
     """
@@ -73,7 +73,7 @@ def test_square_sum_all_dynamic_shape():
     assert out_y.asnumpy().shape == expect_out_y_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
 @pytest.mark.parametrize('input_tensors, output_tensors',
@@ -89,7 +89,7 @@ def test_cpu(dtype, input_tensors, output_tensors):
     run_net(dtype, input_tensors, output_tensors)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_cpu_exception_dtype_diff():
     """
@@ -106,7 +106,7 @@ def test_cpu_exception_dtype_diff():
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_cpu_exception_dtype_not_support():
     """
@@ -123,7 +123,7 @@ def test_cpu_exception_dtype_not_support():
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_cpu_exception_shape_diff():
     """
@@ -140,7 +140,7 @@ def test_cpu_exception_shape_diff():
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_cpu_float16():
     """

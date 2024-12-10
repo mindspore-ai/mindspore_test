@@ -36,7 +36,7 @@ class Slice(nn.Cell):
         return self.slice(x, (0, 1, 0), (2, 1, 3))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_slice():
     x = Tensor(
@@ -58,7 +58,7 @@ class Slice2(nn.Cell):
         return self.slice(x, (1, 0, 0), (1, 2, 3))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_slice2():
     x = Tensor(np.arange(3 * 2 * 3).reshape(3, 2, 3), mstype.float32)
@@ -133,7 +133,7 @@ class Slice5(nn.Cell):
         return self.slice(x, self.begin, self.size)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_slice5():
     inputx = np.arange(3 * 5 * 4).reshape(3, 5, 4).astype(np.float32)
@@ -178,7 +178,7 @@ class StridedSlice(nn.Cell):
         return self.stride_slice(x, self.begin, self.end, self.stride)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_strided_slice_bool_type():
     input_x = Tensor([[[False, False, True], [False, True, False]], [[False, True, False], [True, False, False]],
@@ -192,7 +192,7 @@ def test_strided_slice_bool_type():
     assert (output.asnumpy() == expected_output).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_slice_functional():
     """

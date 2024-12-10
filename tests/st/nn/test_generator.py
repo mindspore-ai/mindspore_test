@@ -44,7 +44,7 @@ def assert_state_same(seed1, offset1, seed2, offset2):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -64,7 +64,7 @@ def test_offset_inc(mode):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

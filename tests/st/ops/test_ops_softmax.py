@@ -53,7 +53,7 @@ def tensor_softmax_forward_func(x, axis=-1):
     return x.softmax(axis)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_softmax_static_shape(mode):

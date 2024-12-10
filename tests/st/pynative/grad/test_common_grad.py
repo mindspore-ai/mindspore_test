@@ -133,7 +133,7 @@ def test_network_with_dict_output():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_jit_network_with_dict_output():
@@ -254,7 +254,7 @@ def test_jit_network_with_list_inplace():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_synchronize():

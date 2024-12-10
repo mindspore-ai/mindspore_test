@@ -19,7 +19,7 @@ import numpy as np
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_simple_stream():
     """
@@ -36,7 +36,7 @@ def test_hal_simple_stream():
     s1.synchronize()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_set_stream():
     """
@@ -97,7 +97,7 @@ def test_hal_wait_stream():
     assert np.allclose(ops.mm(b, b).numpy(), c.numpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_wait_event():
     """
@@ -125,7 +125,7 @@ def test_hal_wait_event():
     assert np.allclose(ops.mm(b, b).asnumpy(), c.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_synchronize():
     """
@@ -148,7 +148,7 @@ def test_hal_synchronize():
     ms.hal.synchronize()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_jit_stream():
     """
@@ -177,7 +177,7 @@ def test_hal_jit_stream():
     assert np.allclose(d.asnumpy(), ops.mm((a + 2), b).asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_grad_stream():
     """
@@ -199,7 +199,7 @@ def test_hal_grad_stream():
     assert np.allclose(grad_fn(a).asnumpy(), grad_a.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_get_stream():
     """

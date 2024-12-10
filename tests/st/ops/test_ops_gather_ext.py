@@ -93,7 +93,7 @@ def gather_ext_backward_func(x, dim, indices):
     return ms.grad(call_gather)(x, dim, indices)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 @pytest.mark.parametrize('input_dtype', [np.float32])

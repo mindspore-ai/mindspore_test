@@ -158,7 +158,7 @@ def compare_func(x, p, output, mask=None):
             assert np.ceil(reduce(lambda a, b: a * b, x.shape) / 128) * 16 == mask.shape[0]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_nn_DropoutExt_normal(mode):
     """

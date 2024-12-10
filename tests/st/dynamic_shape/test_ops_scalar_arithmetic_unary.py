@@ -30,7 +30,7 @@ def teardown_module():
     context.set_context(grad_for_scalar=False)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_scalar_bool_mutable(mode):
@@ -61,7 +61,7 @@ def test_scalar_bool_mutable(mode):
         assert np.allclose(mutable_grad_output, expect_grad_out)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_scalar_uadd_mutable(mode):
@@ -94,7 +94,7 @@ def test_scalar_uadd_mutable(mode):
         assert np.allclose(mutable_grad_output, expect_grad_out)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_scalar_usub_mutable(mode):
@@ -127,7 +127,7 @@ def test_scalar_usub_mutable(mode):
         assert np.allclose(mutable_grad_output, expect_grad_out)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_scalar_log_mutable(mode):

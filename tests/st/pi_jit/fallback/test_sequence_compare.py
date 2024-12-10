@@ -17,7 +17,7 @@ from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_sequence_compare_with_operation():
     """
     Feature: Enable sequence operations with nested or irregular inputs.

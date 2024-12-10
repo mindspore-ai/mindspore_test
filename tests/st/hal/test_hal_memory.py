@@ -29,7 +29,7 @@ class Net(nn.Cell):
         return self.ops(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_memory_stats():
     """
@@ -47,7 +47,7 @@ def test_hal_memory_stats():
     assert isinstance(res, dict)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_memory_reserved():
     """
@@ -65,7 +65,7 @@ def test_hal_memory_reserved():
     assert isinstance(res, int)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_memory_allocated():
     """
@@ -82,7 +82,7 @@ def test_hal_memory_allocated():
     assert not res is None
     assert isinstance(res, int)
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_max_memory_reserved():
     """
@@ -100,7 +100,7 @@ def test_hal_max_memory_reserved():
     assert isinstance(res, int)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_max_memory_allocated():
     """
@@ -118,7 +118,7 @@ def test_hal_max_memory_allocated():
     assert isinstance(res, int)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_memory_summary():
     """
@@ -154,7 +154,7 @@ def test_hal_reset_peak_memory_stats():
     assert (res["max_reserved_memory"] == 0 and res["max_allocated_memory"] == 0)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_reset_max_memory_reserved():
     """

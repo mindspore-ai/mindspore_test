@@ -338,7 +338,7 @@ class CreateDynTensorWithInputDtype(nn.Cell):
         return output1 + output2
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_dynamic_shape_dtype_tensor():
     """

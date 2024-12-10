@@ -115,7 +115,7 @@ def test_contiguous_dim4_with_slice():
     assert np.allclose(output.asnumpy(), slice_res.asnumpy())
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_ops_contiguous():

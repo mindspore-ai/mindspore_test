@@ -124,7 +124,7 @@ class ControlGraphSupportNotEqual(Cell):
         return out, out2, out3
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_ctrl_if_while_graph_support_not_equal_true():
     """
@@ -147,7 +147,7 @@ def test_ctrl_if_while_graph_support_not_equal_true():
     allclose_nparray(out3, out_me[2].asnumpy(), 0.0001, 0.0001)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_ctrl_if_while_graph_support_not_equal_false():
     """

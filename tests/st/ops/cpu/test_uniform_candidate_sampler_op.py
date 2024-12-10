@@ -74,7 +74,7 @@ def uniform_candidate_sampler_hit(x, num_true, num_sampled, unique, range_max, s
     return out1, out2, out3
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_unique_1_true():
     """
@@ -93,7 +93,7 @@ def test_uniform_candidate_sampler_unique_1_true():
     np.testing.assert_array_equal(ms3, expected_3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_not_unique_1_true():
     """
@@ -112,7 +112,7 @@ def test_uniform_candidate_sampler_not_unique_1_true():
     np.testing.assert_array_equal(ms3, expected_3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_unique_2_true():
     """
@@ -132,7 +132,7 @@ def test_uniform_candidate_sampler_unique_2_true():
     np.testing.assert_array_equal(ms3, expected_3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_not_unique_2_true():
     """
@@ -153,7 +153,7 @@ def test_uniform_candidate_sampler_not_unique_2_true():
     np.testing.assert_array_equal(ms3, expected_3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_large():
     """
@@ -176,7 +176,7 @@ def test_uniform_candidate_sampler_large():
     np.testing.assert_array_equal(ms3, expected_3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_large_random():
     """
@@ -195,7 +195,7 @@ def test_uniform_candidate_sampler_large_random():
     np.testing.assert_array_equal(ms3, expected_3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_large_random_int64_input():
     """
@@ -214,7 +214,7 @@ def test_uniform_candidate_sampler_large_random_int64_input():
     np.testing.assert_array_equal(ms3, expected_3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_unique_1_true_hit():
     """
@@ -229,7 +229,7 @@ def test_uniform_candidate_sampler_unique_1_true_hit():
     np.testing.assert_array_equal(ms1.asnumpy(), expected_1.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_uniform_candidate_sampler_unique_1_true_no_hit():
     """

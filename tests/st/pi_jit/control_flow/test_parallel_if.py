@@ -9,7 +9,7 @@ def skip_if_python_version_too_high():
     if sys.version_info >= (3, 11):  
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_if_raise_raise():
     """
     Feature: Parallel if transformation

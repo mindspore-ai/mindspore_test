@@ -231,7 +231,7 @@ def test_bool_tensor_index_set_item_x_2x3_index_bool2_int1_value_list_1(mode):
     assert np.allclose(x_ms.asnumpy(), x_np)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 # reason="Scaternd not support bool in ascend acl"
 def test_bool_tensor_input_set_item_x_3_index_bool3_bool_value():

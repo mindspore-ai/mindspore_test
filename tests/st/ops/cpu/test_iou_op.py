@@ -32,7 +32,7 @@ class NetIOU(nn.Cell):
         return self.encode(anchor, groundtruth)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float64])
 def test_iou_cpu(data_type):
@@ -63,7 +63,7 @@ def test_iou_cpu(data_type):
     assert np.all(abs(diff) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_iou_cpu_dynamic_shape():
     """

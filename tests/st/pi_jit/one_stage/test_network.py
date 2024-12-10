@@ -53,7 +53,7 @@ class BaseLeNet5(nn.Cell):
             self.fc3 = nn.Dense(84, num_class, weight_init=Normal(0.02))
 
     @jit(mode="PIJit", jit_config=cfg)
-    def forward(self, x):  # 重命名为'forward'使其更具描述性
+    def forward(self, x):
         x = self.conv1(x)
         x = self.relu(x)
         x = self.max_pool2d(x)
@@ -134,7 +134,7 @@ def ms_func_lenet(x):
     return x
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [method_lenet])
 @pytest.mark.parametrize('ms_func', [ms_method_lenet])
 @pytest.mark.parametrize('x', [Tensor(np.ones((32, 1, 32, 32)).astype(np.float32) * 0.01)])
@@ -153,7 +153,7 @@ def test_method_lenet(func, ms_func, x):
     match_array(res.asnumpy(), ms_res.asnumpy(), error=6, err_msg=str(ms_res))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [func_lenet])
 @pytest.mark.parametrize('ms_func', [ms_func_lenet])
 @pytest.mark.parametrize('x', [Tensor(np.ones((32, 1, 32, 32)).astype(np.float32) * 0.01)])

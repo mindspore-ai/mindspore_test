@@ -35,7 +35,7 @@ class Net(nn.Cell):
         return self.bias_add_grad(dout)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float16, np.float32, np.float64])
 def test_bias_add_grad2d(data_type):
@@ -51,7 +51,7 @@ def test_bias_add_grad2d(data_type):
     assert np.all(output.asnumpy() == expect_output), "bias_add_grad execute failed, please check current code commit"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type",
                          [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64])
@@ -68,7 +68,7 @@ def test_bias_add_grad4d(data_type):
     assert np.all(output.asnumpy() == expect_output), "bias_add_grad execute failed, please check current code commit"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.complex64, np.complex128])
 def test_bias_add_grad5d(data_type):
@@ -84,7 +84,7 @@ def test_bias_add_grad5d(data_type):
     assert np.all(output.asnumpy() == expect_output), "bias_add_grad execute failed, please check current code commit"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_bias_add_grad4d_dyn_inputs():
     """

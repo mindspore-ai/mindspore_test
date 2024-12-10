@@ -52,7 +52,7 @@ def dyn_case():
         assert out[i].asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_argminwithvalue_dyn():
     """
@@ -150,7 +150,7 @@ def test_argminwithvalue_fp16():
     assert np.all(np.abs(output1.asnumpy() - expect1) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_argminwithvalue_tensor():
     prop = 100 if np.random.random() > 0.5 else -100

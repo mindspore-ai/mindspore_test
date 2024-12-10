@@ -106,7 +106,7 @@ def test_coalesce_fp16():
     assert np.array_equal(y_shape, expect_shape)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_coalesce_fp64():
     """
     Feature: Coalesce function.

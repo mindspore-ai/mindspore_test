@@ -136,7 +136,7 @@ def test_matmul_tensor_api_modes(mode):
     np.testing.assert_array_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_matmul_tensor_core(mode):
     """
@@ -164,7 +164,7 @@ def test_matmul_tensor_core(mode):
     assert np.abs(out_ms_fp32 - out_ms_tf32).mean() < 0.005
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_matmul_dtypes():
     """
     Feature: Test matmul dtypes.
@@ -199,7 +199,7 @@ def test_matmul_dtypes():
         del os.environ['MS_DISABLE_KERNEL_BACKOFF']
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_matmul_fp16():
     """
     Feature: Test matmul fp16 results.

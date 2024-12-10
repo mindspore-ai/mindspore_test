@@ -71,7 +71,7 @@ class LeNet5(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark="level0", card_mark="onecard",
+@arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark="level1", card_mark="onecard",
           essential_mark="essential")
 def test_graph_summary_ops():
     """
@@ -168,7 +168,7 @@ def test_kernel_by_kernel_summary_ops():
     assert not np.allclose(0, x_fc3)
 
 
-@arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark="level0", card_mark="onecard",
+@arg_mark(plat_marks=["platform_ascend", "platform_gpu"], level_mark="level1", card_mark="onecard",
           essential_mark="essential")
 def test_dynamic_shape_summary_ops():
     """

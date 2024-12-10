@@ -95,7 +95,7 @@ class Net4Inputs(nn.Cell):
         return self.addn((x, y, m, n))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_four_tensors_add():
     """
@@ -117,7 +117,7 @@ def test_four_tensors_add():
         assert np.array_equal(output.asnumpy(), expect_result)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_addn_support_type():
     """

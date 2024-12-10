@@ -34,7 +34,7 @@ def test_bool_tensor_api():
     assert dtype_op(output) == ms.bool_
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_bool_tensor_api_modes():
     """

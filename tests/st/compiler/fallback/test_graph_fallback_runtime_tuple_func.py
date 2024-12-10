@@ -59,7 +59,7 @@ def test_sequence_in_with_irregular_sequence_2():
     assert not foo()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sequence_in_with_irregular_sequence_3():
     """
@@ -553,7 +553,7 @@ def test_sequence_index_with_operation_2():
     assert ret == 1
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sequence_index_with_operation_3():
     """
@@ -819,7 +819,7 @@ def test_sequence_ops_with_grad_2():
     assert grad == Tensor([0])
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sequence_ops_with_grad_3():
     """

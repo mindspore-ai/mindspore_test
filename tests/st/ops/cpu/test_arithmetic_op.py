@@ -73,7 +73,7 @@ class FloorModNet(nn.Cell):
         return self.floor_mod(x, y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sub():
     """
@@ -97,7 +97,7 @@ def test_sub():
     assert np.all(output.asnumpy() == expect_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_div():
     """
@@ -210,7 +210,7 @@ def test_div():
     assert output8.shape == expect8.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_floor_div():
     """
@@ -290,7 +290,7 @@ def test_floor_div():
     assert output5.shape == expect5.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_floor_div_cpu_dynamic_shape():
     """
@@ -310,7 +310,7 @@ def test_floor_div_cpu_dynamic_shape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_mod():
     """
@@ -408,7 +408,7 @@ def test_mod():
     assert output6.shape == expect6.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_mod_cpu_dynamic_shape():
     """
@@ -428,7 +428,7 @@ def test_mod_cpu_dynamic_shape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_floor_mod():
     """
@@ -526,7 +526,7 @@ def test_floor_mod():
     assert output6.shape == expect6.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_floor_mod_cpu_dynamic_shape():
     """
@@ -546,7 +546,7 @@ def test_floor_mod_cpu_dynamic_shape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_dynamic_sub(dtype):

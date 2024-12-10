@@ -200,7 +200,7 @@ def test_cumsum_backward_dynamic_rank(context_mode):
 
 
 @pytest.mark.skip(reason="Probabilistic failure on CI.")
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("dtype", [np.int8, np.int32, np.uint8,
