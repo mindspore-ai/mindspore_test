@@ -144,7 +144,7 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     return jit_passes;
   }
 
-#ifndef WITH_BACKEND
+#ifdef ENABLE_TEST
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->backend_policy() != "ge") {
@@ -154,7 +154,7 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
 
     // Execute the graph.
     (void)jit_passes.emplace_back(kExecute, ExecuteAction);
-#ifndef WITH_BACKEND
+#ifdef ENABLE_TEST
   }
 #endif
 
@@ -367,7 +367,7 @@ py::object JitExecutorPy::RunInner(const py::tuple &args, const py::object &phas
       return *ret_val;
     }
   }
-#ifndef WITH_BACKEND
+#ifdef ENABLE_TEST
   if (ms_context->backend_policy() == "ge") {
     // Virtual output constructed for test cases.
     if (!args.empty()) {

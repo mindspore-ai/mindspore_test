@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -72,9 +72,9 @@ def test_hardtanh_std(mode):
         output_grad = hardtanh_backward_func(x, min_val, max_val)
         inplace_x = inplace_hardtanh_forward_func(ms.Tensor(x_np, dtype=ms.float32), min_val, max_val)
     else:
-        output = (jit(hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(x, min_val, max_val)
-        output_grad = (jit(hardtanh_backward_func, jit_config=JitConfig(jit_level="O0")))(x, min_val, max_val)
-        inplace_x = (jit(inplace_hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(hardtanh_forward_func, jit_level="O0"))(x, min_val, max_val)
+        output_grad = (jit(hardtanh_backward_func, jit_level="O0"))(x, min_val, max_val)
+        inplace_x = (jit(inplace_hardtanh_forward_func, jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.float32), min_val, max_val)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, atol=1e-5)
@@ -123,9 +123,9 @@ def test_hardtanh_bfloat16(mode):
         output_grad = hardtanh_backward_func(x, min_val, max_val)
         inplace_x = inplace_hardtanh_forward_func(ms.Tensor(x_np, dtype=ms.bfloat16), min_val, max_val)
     else:
-        output = (jit(hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(x, min_val, max_val)
-        output_grad = (jit(hardtanh_backward_func, jit_config=JitConfig(jit_level="O0")))(x, min_val, max_val)
-        inplace_x = (jit(inplace_hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(hardtanh_forward_func, jit_level="O0"))(x, min_val, max_val)
+        output_grad = (jit(hardtanh_backward_func, jit_level="O0"))(x, min_val, max_val)
+        inplace_x = (jit(inplace_hardtanh_forward_func, jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.bfloat16), min_val, max_val)
     np.allclose(output.float().asnumpy(), expect, 4e-3, 4e-3, equal_nan=True)
     np.allclose(output_grad.float().asnumpy(), expect_grad, 4e-3, 4e-3, equal_nan=True)

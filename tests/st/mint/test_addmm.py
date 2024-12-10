@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -157,13 +157,13 @@ def test_addmm_normal(mode):
         output_grad2, b1_grad2, b2_grad2 = addmm_backward_func(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     else:
-        output_forward = (jit(addmm_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward = (jit(addmm_forward_func, jit_level="O0"))(
             ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
-        output_forward2 = (jit(addmm_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward2 = (jit(addmm_forward_func, jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
-        output_grad, b1_grad, b2_grad = (jit(addmm_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_grad, b1_grad, b2_grad = (jit(addmm_backward_func, jit_level="O0"))(
             ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
-        output_grad2, b1_grad2, b2_grad2 = (jit(addmm_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_grad2, b1_grad2, b2_grad2 = (jit(addmm_backward_func, jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     np.testing.assert_allclose(
         output_forward.asnumpy(), expect_forward, 4e-2, 4e-2)
