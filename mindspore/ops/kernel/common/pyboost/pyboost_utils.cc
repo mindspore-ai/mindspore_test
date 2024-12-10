@@ -413,7 +413,7 @@ void PyBoostUtils::LaunchKernel(const PrimitivePtr &primitive, const DeviceConte
       });
   }
   if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
-    static auto simu = !common::GetEnv(kSimulationLevel).empty();
+    static auto simu = common::SimulateCompile();
     if (simu) {
       MS_LOG(EXCEPTION) << "For " << kernel_mod->kernel_name()
                         << ", the output shape depends on the actual execution, and it will affect the accuracy of "

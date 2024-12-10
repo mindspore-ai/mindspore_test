@@ -641,7 +641,7 @@ void LaunchKernels(const KernelGraphPtr &graph, const device::DeviceContext *dev
     auto kernel_mod = AnfAlgo::GetKernelMod(node);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
     auto stream = device_context->device_res_manager_->GetStream(stream_id);
-    static auto no_simu = common::GetEnv(kSimulationLevel).empty();
+    static auto no_simu = !common::SimulateCompile();
     TrackerACLMemory(inputs, outputs);
     if (no_simu && !device_context->GetKernelExecutor(false)->LaunchKernel(node, inputs, workspaces, outputs,
                                                                            kernel_mod, stream)) {
@@ -831,7 +831,7 @@ void OpRunner::LaunchKernelTask(const runtime::KernelTaskType &task_type, Device
                                 const device::DeviceAddressPtrList &output_addr_list, size_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(DEBUG) << "Start, task_type:" << task_type;
-  static auto no_simu = common::GetEnv(kSimulationLevel).empty();
+  static auto no_simu = !common::SimulateCompile();
   if (no_simu && !device_context->GetKernelExecutor(false)->ExecuteKernelTask(task_type, input_addr_list,
                                                                               output_addr_list, stream_id)) {
     MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << task_type;
@@ -936,7 +936,7 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     MS_EXCEPTION_IF_NULL(kernel_mod);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
     auto stream = device_context->device_res_manager_->GetStream(stream_id);
-    static auto no_simu = common::GetEnv(kSimulationLevel).empty();
+    static auto no_simu = !common::SimulateCompile();
     TrackerACLMemory(input_kernel_tensors, output_kernel_tensors);
     if (no_simu &&
         !device_context->GetKernelExecutor(true)->LaunchKernel(kernel, input_kernel_tensors, workspace_kernel_tensors,
@@ -946,7 +946,7 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
 
     if (is_need_infer) {
       if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
-        static auto simu = !common::GetEnv(kSimulationLevel).empty();
+        static auto simu = common::SimulateCompile();
         if (simu) {
           MS_LOG(EXCEPTION) << "For " << kernel_mod->kernel_name()
                             << ", the output shape depends on the actual execution, and it will affect the accuracy of "
