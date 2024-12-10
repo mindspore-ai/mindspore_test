@@ -61,7 +61,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "tensor": "Tensor",
                                 "type": "mstype",
                                 "None": "None"}
+        # Generic Input Name
         self.input_args_name = {"input", "x", "input_x"}
+        # This map is used to specify the operator input name. {op name: input name}
+        self.input_name_map = {"DeprecatedExpandAs": "input"}
 
     def generate(self, work_path, tensor_method_protos_data, mint_func_protos_data, alias_func_mapping):
         """
@@ -141,6 +144,14 @@ class FunctionalMapCppGenerator(BaseGenerator):
         sig_str += '}\n},'
         return sig_str
 
+    def _is_input_arg(self, arg_name, op_name):
+        res = False
+        if op_name in self.input_name_map and arg_name == self.input_name_map[op_name]:
+            res = True
+        elif op_name not in self.input_name_map and arg_name in self.input_args_name:
+            res = True
+        return res
+
     def _generate_single_signature_str(self, func_api_name, tensor_proto, is_tensor_method) -> str:
         """
         Generates a single function signature string for the given operation prototype.
@@ -153,13 +164,14 @@ class FunctionalMapCppGenerator(BaseGenerator):
             str: Generated function signature string.
         """
         op_proto = tensor_proto.op_proto
+        op_name = tensor_proto.op_proto.op_class.name
         args_str = f'"Tensor.{func_api_name}(' if is_tensor_method else f'"{func_api_name}('
         first_arg = True
         kw_args_init_flag = False
         arg_valid_types = []
         for _, arg in enumerate(op_proto.op_args):
             arg_name = arg.arg_name
-            if is_tensor_method and arg_name in self.input_args_name:
+            if is_tensor_method and self._is_input_arg(arg_name, op_name):
                 continue
             arg_handler = arg.arg_handler
             if arg_handler != '':

@@ -119,7 +119,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                 "to_dilations": "tuple[int]|list[int]|int",
                                 "to_output_padding": "int|tuple[int]|list[int]",
                                 "to_rates": "int|tuple[int]|list[int]"}
+        # Generic Input Name
         self.input_args_name = {"input", "x", "input_x"}
+        # This map is used to specify the operator input name. {op name: input name}
+        self.input_name_map = {"DeprecatedExpandAs": "input"}
 
     def generate(self, work_path, op_protos, func_protos_data, alias_func_mapping):
         """
@@ -251,10 +254,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             signature_str = self._generate_single_signature_str(func_proto.op_proto, func_proto.kw_only_args)
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
-            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
-            if len(self_index) != 1:
-                raise ValueError(
-                    f'There must be only one field named \'input\'. But got {len(self_index)} in {func_name}')
+            self_index = self._get_input_tensor_index(func_proto)
             ut_body = self.TENSOR_FUNC_UT_BODY.replace(py_method=func_proto.py_method)
             tensor_func_single_call_body = self.TENSOR_FUNC_CALL_BODY.replace(
                 class_name=class_name,
@@ -308,10 +308,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_proto = tensor_proto.op_proto
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
-            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
-            if len(self_index) != 1:
-                raise ValueError(
-                    f'There must be only one field named \'input\'. But got {len(self_index)} in {func_api_name}')
+            self_index = self._get_input_tensor_index(tensor_proto)
         formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(class_name=formatted_class_name,
                                                                              func_name=func_api_name,
@@ -342,6 +339,14 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             sig_str += self._generate_single_signature_str(op_proto, tensor_proto.kw_only_args)
         return sig_str
 
+    def _is_input_arg(self, arg_name, op_name):
+        res = False
+        if op_name in self.input_name_map and arg_name == self.input_name_map[op_name]:
+            res = True
+        elif op_name not in self.input_name_map and arg_name in self.input_args_name:
+            res = True
+        return res
+
     def _generate_single_signature_str(self, op_proto: OpProto, kw_only_args) -> str:
         """
         Generates a single function signature string for the given operation prototype.
@@ -352,11 +357,13 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         Returns:
             str: Generated function signature string.
         """
-        args_str = f'"{op_proto.op_class.name}('
+        op_name = op_proto.op_class.name
+        args_str = f'"{op_name}('
         first_arg = True
         kw_args_init_flag = False
         for _, arg in enumerate(op_proto.op_args):
-            if arg.arg_name in self.input_args_name:
+            arg_name = arg.arg_name
+            if self._is_input_arg(arg_name, op_name):
                 continue
             single_arg = ''
             if not first_arg:
@@ -373,7 +380,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 for cast_type in arg.type_cast:
                     arg_dtype += '|'
                     arg_dtype += cast_type
-            arg_name = arg.arg_name
             single_arg += f"{arg_dtype} {arg_name}"
             if arg.as_init_arg:
                 arg_default = str(arg.default)
@@ -385,6 +391,27 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             args_str += single_arg
             first_arg = False
         return args_str + ')"'
+
+    def _get_input_tensor_index(self, func_proto):
+        """
+        Get index of input.
+
+        Args:
+            func_proto (TensorFuncProto): Function prototype to generate dispatch strings for.
+
+        Returns:
+            int: Index of input.
+        """
+        op_name = func_proto.op_proto.op_class.name
+        op_args = func_proto.op_proto.op_args
+        if op_name in self.input_name_map:
+            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name == self.input_name_map[op_name]]
+        else:
+            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
+        if len(self_index) != 1:
+            raise ValueError(
+                f'There must be only one field named \'input\'. But got {len(self_index)} in {op_name}')
+        return self_index
 
     def _get_dispatch_cases(self, func_protos):
         """
