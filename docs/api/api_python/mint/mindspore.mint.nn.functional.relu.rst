@@ -15,9 +15,6 @@ mindspore.mint.nn.functional.relu
     .. image:: ../images/ReLU.png
         :align: center
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入Tensor。
         - **inplace** (bool, 可选) - 是否采用原地更新模式，默认值为 ``False``。

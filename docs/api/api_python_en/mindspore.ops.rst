@@ -809,7 +809,7 @@ MC2 Functions
 .. warning::
     These are experimental APIs that are subject to change or deletion.
 
-.. mscnplatwarnautosummary::
+.. msplatwarnautosummary::
     :toctree: ops
     :nosignatures:
     :template: classtemplate.rst

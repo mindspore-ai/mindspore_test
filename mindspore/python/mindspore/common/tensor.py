@@ -3189,7 +3189,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def random_(self, from_=0, to=None, *, generator=None):
         r"""
         Fill the tensor with numbers sampled from a discrete uniform distribution over an
-        interval :math:`[from_, to-1]`.
+        interval :math:`[from\_, to-1]`.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
