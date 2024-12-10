@@ -308,6 +308,7 @@ from mindspore.ops.function.array_func import where as where_func
 # 132 absolute
 
 # 133 bincount
+from mindspore.ops.function.math_func import bincount
 
 # 134 diff
 
@@ -1042,6 +1043,8 @@ def deprecated_tensor_where(input, condition, y):
 # 132 absolute
 
 # 133 bincount
+def tensor_bincount(input, weights=None, minlength=0):
+    return bincount(input, weights, minlength)
 
 # 134 diff
 

@@ -953,12 +953,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         self.assign_value_cpp(value)
         return self
 
-    def bincount(self, weights=None, minlength=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.bincount`.
-        """
-        return tensor_operator_registry.get('bincount')(self, weights, minlength)
-
     def itemset(self, *args):
         r"""
         Insert scalar into a tensor (scalar is cast to tensor's dtype, if possible).

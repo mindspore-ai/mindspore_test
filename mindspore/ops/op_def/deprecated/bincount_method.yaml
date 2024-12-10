@@ -1,0 +1,15 @@
+#deprecated operator bincount
+bincount:
+  args:
+    input:
+      dtype: tensor
+    weights:
+      dtype: tensor
+      default: None
+    minlength:
+      dtype: int
+      type_cast: tensor
+      default: 0
+  returns:
+    output:
+      dtype: tensor
