@@ -2818,8 +2818,8 @@ def col2im(*inputs):
 
 def narrow(input, axis, start, length):
     """
-    Returns a narrowed tensor from input tensor.
-    The dimension axis is input from start to start + length.
+    Obtains a tensor of a specified length at a
+    specified start position along a specified axis.
     """
     return F.narrow(input, axis, start, length)
 
