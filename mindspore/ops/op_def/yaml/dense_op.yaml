@@ -12,7 +12,7 @@ dense:
     output:
       dtype: tensor
   # enable this when addmm bprop expander is ready.
-  # derivative: False
+  # bprop_expander: False
   dispatch:
     enable: True
     Ascend: DenseAscend

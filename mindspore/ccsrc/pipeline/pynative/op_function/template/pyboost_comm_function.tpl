@@ -48,9 +48,6 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
             (void)op->Call(${cast_args});
             ${optional_to_value}
 
-            // Data sync in mix mode(Graph and PyNative)
-            PyNativeAlgo::PyBoost::DataSyncForGraph(op, {${grad_args}});
-
             // Create output value
             PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(op_run_info->op_grad_info, op);
             // Create output value

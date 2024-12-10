@@ -82,7 +82,7 @@ class AutoGradImplGenerator(BaseGenerator):
         view_arg_str = self._get_view_str(op_proto.op_view, input_args_str)
         grad_args_with_type_str = self.do_grad_op_args_with_type.replace(input_args_with_type=input_args_with_type_str)
         op_def_name_str = "g" + op_proto.op_class.name
-        has_derivative = "true" if op_proto.has_derivative else "false"
+        bprop_expander = "true" if op_proto.bprop_expander else "false"
         return self.DO_GRAD_FUNCTION_BODY_TEMPLATE.replace(class_name=op_proto.op_class.name,
                                                            grad_args_with_type=grad_args_with_type_str,
                                                            grad_input_args=input_args_str,
@@ -90,7 +90,7 @@ class AutoGradImplGenerator(BaseGenerator):
                                                            is_multi=multi_output_str,
                                                            view_arg=view_arg_str,
                                                            op_def_name=op_def_name_str,
-                                                           has_derivative=has_derivative)
+                                                           bprop_expander=bprop_expander)
 
     def _get_input_args(self, op_proto, has_type, with_optional):
         """

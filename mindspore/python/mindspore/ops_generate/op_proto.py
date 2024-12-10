@@ -143,7 +143,7 @@ class OpProto:
                  op_graph_view=False,
                  op_labels=None,
                  op_deprecated=None,
-                 has_derivative=True):
+                 bprop_expander=True):
         self.op_name = op_name
         self.op_args = op_args
         self.op_function = op_function
@@ -155,7 +155,7 @@ class OpProto:
         self.op_graph_view = op_graph_view
         self.op_labels = op_labels
         self.op_deprecated = op_deprecated
-        self.has_derivative = has_derivative
+        self.bprop_expander = bprop_expander
 
     @staticmethod
     def load_from_yaml(op_name, op_data):
@@ -197,11 +197,11 @@ class OpProto:
         op_labels = op_data.get('labels', None)
         # get op deprecated
         op_deprecated = op_data.get('deprecated', None)
-        has_derivative = op_data.get('derivative', True)
+        bprop_expander = op_data.get('bprop_expander', True)
         op_proto = OpProto(op_name=op_name, op_args=op_args, op_returns=op_returns, op_function=op_function,
                            op_class=op_class, op_dispatch=op_dispatch, op_args_signature=op_args_signature,
                            op_view=op_view, op_graph_view=op_graph_view, op_labels=op_labels,
-                           op_deprecated=op_deprecated, has_derivative=has_derivative)
+                           op_deprecated=op_deprecated, bprop_expander=bprop_expander)
         return op_proto
 
 
