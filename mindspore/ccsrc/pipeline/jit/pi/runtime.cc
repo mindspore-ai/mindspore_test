@@ -377,6 +377,26 @@ static void MarkBreak(Graph *g) {
 }
 
 static void GraphCapture(JitCompileResults *jcr);
+
+static bool TryLoopBodyReCapture(JitCompileResults *jcr, const GraphBuilderPtr &g) {
+  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kReCaptureLoopBody)) {
+    MS_LOG(INFO) << "TryLoopBodyReCapture for " << g->GetGraph()->GetCodeName();
+    LoopBodyReCaptureCodeGenerator loopBodyCg(g->GetGraph());
+    if (!loopBodyCg.Prepare()) {
+      MS_LOG(WARNING) << "LoopBodyReCapture CodeGen Prepare Failed";
+      return false;
+    }
+    auto new_code = loopBodyCg.Build();
+    if (new_code.ptr() != nullptr) {
+      jcr->code()->SetPythonCode(new_code);
+      jcr->set_stat(JitCompileResults::GRAPH_CALLABLE);
+      return true;
+    }
+    MS_LOG(WARNING) << "LoopBodyReCapture CodeGen Build Failed";
+  }
+  return false;
+}
+
 static auto HandleBreakAtLoop(JitCompileResults *jcr, const GraphBuilderPtr &g) {
   // one stage need adapter
   if (g->GetGraph()->IsBreakAtLoopAfterUnrolling()) {
@@ -444,6 +464,9 @@ static void GraphCapture(JitCompileResults *jcr) {
   if (HandleUnsupportedSyntax(jcr, g)) {
     return;
   }
+  if (g->GetGraph()->IsBreakAtLoop() && TryLoopBodyReCapture(jcr, g)) {
+    return;
+  }
   if (g->GetGraph()->ShouldNeverCompile()) {
     if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
       GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
@@ -503,9 +526,16 @@ void AddGuardForParam(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool det
 #if IS_PYTHON_3_11_PLUS
   MS_LOG(ERROR) << "not implement in python3.11";
 #else
-  auto lh = [&guard, &detach](PyObject *value, int fast_index) {
+  auto jcr = GetJitCompileResults(wrapper.GetCode().ptr());
+  auto lh = [&guard, &detach, &jcr](PyObject *value, int fast_index) {
     RootTracePtr ptr = std::make_shared<RootTrace>(value, mindspore::pijit::TraceType::Param, fast_index);
-    guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
+    // The GDeduce Guard by default generates an EqualGuard for Scalar types; for the loop encapsulation scenario,
+    // change it to a TypeGuard.
+    if (fast_index == 0 && jcr->is_for_loop_body_wrapper() && CheckScalar(value)) {
+      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GType, false);
+    } else {
+      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
+    }
     if (detach) {
       ptr->Detach();
     }

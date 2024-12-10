@@ -157,7 +157,23 @@ class CodeGenerator {
    * \return instruction list
    */
   static std::vector<std::unique_ptr<Instr>> CopyInstr(const std::vector<std::unique_ptr<Instr>> &list, size_t start,
-                                                       size_t end = -1, bool erase_invalid_jump = false);
+                                                       size_t end = -1, bool erase_invalid_jump = false,
+                                                       bool is_loop_body = false);
+
+  /**
+   * Function to copy and replace instructions in a specified bytecode range.
+   * This function copies the instructions from the original list and replaces the instructions
+   * in the range between start_bci and end_bci with the provided replacement instructions.
+   * (Only for Loop Encapsulation)
+   * @param list The original list of instructions.
+   * @param start_bci The starting bytecode index where replacement begins.
+   * @param end_bci The ending bytecode index where replacement ends.
+   * @param replacement The list of instructions that will replace the original instructions in the specified range.
+   * @return A new vector containing the modified instructions with the specified replacements applied.
+   */
+  static std::vector<std::unique_ptr<Instr>> CopyAndReplaceInstr(
+    const std::vector<std::unique_ptr<Instr>> &list, size_t start_bci, size_t end_bci,
+    const std::vector<std::unique_ptr<Instr>> &replacement);
 
   /**
    * Erase unused instr
@@ -180,6 +196,38 @@ class CodeGenerator {
   std::unordered_map<ValueNode *, int> nodes_alive_;
   std::unordered_map<ValueNode *, int> locals_map_;
   bool missing_value_to_undefine_;
+};
+
+class LoopBodyReCaptureCodeGenerator {
+ public:
+  explicit LoopBodyReCaptureCodeGenerator(Graph *graph) : graph_(graph), co_(graph->GetCodeObj()) {}
+  bool Prepare();
+  py::object Build();
+
+ protected:
+  std::vector<std::string> GetClosureNames() const;
+
+  std::string makeLoopBodyFuncName(int loopBodyStartBci, int loopBodyEndBci) const {
+    const std::string &co_name = PyUnicode_AsUTF8(co_->co_name);
+    auto name =
+      co_name + ".wrapped_loop_body_func." + std::to_string(loopBodyStartBci) + "." + std::to_string(loopBodyEndBci);
+    return name;
+  }
+
+  std::string makeFuncName(int loopBodyStartBci, int loopBodyEndBci) const {
+    const std::string &co_name = PyUnicode_AsUTF8(co_->co_name);
+    auto name =
+      co_name + ".loop_body_recaptured." + std::to_string(loopBodyStartBci) + "." + std::to_string(loopBodyEndBci);
+    return name;
+  }
+
+  py::object MakeLoopBodyCode(int loopBodyStartBci, int loopBodyEndBci, const std::vector<int> &inputLocals,
+                              const std::vector<int> &outputLocals, bool ifForLoop) const;
+  Graph *graph_;
+  PyCodeObject *co_;
+  bool is_for_loop_ = false;
+  int loopBodyStartBci_;
+  int loopBodyEndBci_;
 };
 
 class CodeBreakGenerator;

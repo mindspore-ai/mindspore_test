@@ -63,6 +63,7 @@ class GraphJitConfig {
     kPIJitContextMode,
     kExpandGraphInput,
     kExpandGraphOutput,
+    kReCaptureLoopBody,
     /* ------------------------------ */
     kIntConf,
     kSymbolic,

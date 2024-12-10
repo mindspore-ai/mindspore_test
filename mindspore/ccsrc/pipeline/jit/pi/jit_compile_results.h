@@ -115,6 +115,10 @@ class JitCompileResults {
   void set_code(const OptCodePtr &p) { cache_.set_code(p); }
   void set_tbs(const std::shared_ptr<Traceback> &t) { tbs_ = t; }
   void set_conf(const std::shared_ptr<GraphJitConfig> &c) { conf_ = c; }
+  void set_is_for_loop_body_wrapper(bool is_for_loop_body_wrapper) {
+    is_for_loop_body_wrapper_ = is_for_loop_body_wrapper;
+  }
+  bool is_for_loop_body_wrapper() { return is_for_loop_body_wrapper_; }
 
   int IncCodeCount() { return compile_count_++; }
   void ClearCache() { cache_.Clear(); }
@@ -135,6 +139,7 @@ class JitCompileResults {
   std::shared_ptr<GraphJitConfig> conf_;
   int compile_count_;
   int break_count_;
+  bool is_for_loop_body_wrapper_ = false;
 };
 
 inline JitCompileResults *GetJitCompileResults(PyCodeObject *code) {
