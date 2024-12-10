@@ -1793,7 +1793,7 @@ def set_context(**kwargs):
             When both exist simultaneously, the global jit config will not overwrite the local network's jit config.
 
             - jit_level (str): Used to control the compilation optimization level. Default: ``""`` , The framework
-              automatically selects the execution method based on product, Altas training product is O2, and all other
+              automatically selects the execution method based on product, Atlas training product is O2, and all other
               products are O0. In addition, The option of the dynamic shape must be O0 or O1, O2 is not supported.
               The value range is as follows:
 

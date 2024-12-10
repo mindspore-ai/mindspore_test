@@ -632,7 +632,7 @@ When converting Ascend backend models, the [input_shape](https://www.mindspore.c
 
 #### Runtime
 
-- [Stable] Supports multi-level compilation of the staic graph by setting [mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/en/r2.3.0/api_python/mindspore/mindspore.set_context.html). The default value is empty, the framework automatically selects the optimization level according to the product category, O2 for Altas training products and O0 for the rest of the products.
+- [Stable] Supports multi-level compilation of the staic graph by setting [mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/en/r2.3.0/api_python/mindspore/mindspore.set_context.html). The default value is empty, the framework automatically selects the optimization level according to the product category, O2 for Atlas training products and O0 for the rest of the products.
 - [Stable] Staic graph supports multi-stream concurrent execution of communication calculations in O0/O1.
 - [STABLE] Add memory management API [mindspore.hal.memory](https://www.mindspore.cn/docs/en/r2.3.0/api_python/mindspore.hal.html#memory).
 - [Beta] The memory pool supports virtual memory defragmentation, and virtual memory is enabled by default under graph O0/O1.

@@ -631,7 +631,7 @@ ccsszz;dairenjie;DeshiChen;fuhouyu;gaoshuanglong;gaoyong10;GuoZhibin;halo;huoxin
 
 #### Runtime
 
-- [STABLE] 支持静态图多级编译，配置为[mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/zh-CN/r2.3.0/api_python/mindspore/mindspore.set_context.html)，默认值为空，框架根据产品类别自动选择优化级别，Altas训练产品为O2，其余产品均为O0。
+- [STABLE] 支持静态图多级编译，配置为[mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/zh-CN/r2.3.0/api_python/mindspore/mindspore.set_context.html)，默认值为空，框架根据产品类别自动选择优化级别，Atlas训练产品为O2，其余产品均为O0。
 - [STABLE] 静态图O0/O1下支持通信计算多流并发执行。
 - [STABLE] 新增[内存管理接口](https://www.mindspore.cn/docs/zh-CN/r2.3.0/api_python/mindspore.hal.html#内存管理)。
 - [BETA] 内存池支持虚拟内存碎片整理，在静态图O0/O1下默认使能虚拟内存。
