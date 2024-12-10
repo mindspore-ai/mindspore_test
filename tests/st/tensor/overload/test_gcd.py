@@ -33,7 +33,7 @@ class Net(nn.Cell):
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_eq(mode):
+def test_gcd(mode):
     """
     Feature: tensor.gcd
     Description: Verify the result of tensor.gcd
