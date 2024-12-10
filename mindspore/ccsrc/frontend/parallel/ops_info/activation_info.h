@@ -408,6 +408,32 @@ class DropoutInfo : public ActivationOther {
   }
 };
 
+class DropoutExtInfo : public DropoutInfo {
+ public:
+  DropoutExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : DropoutInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~DropoutExtInfo() override = default;
+  std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
+
+ protected:
+  Status CheckStrategy(const StrategyPtr &strategy) override;
+  Status GetAttrs() override;
+  Status InferDevMatrixShape() override;
+  void SetRepeatedCalcDevMatrix() override;
+  Status InferTensorMap() override;
+  Status InferTensorInfo() override;
+  void ReplaceNodeInputOrAttrs() override;
+
+ private:
+  static int64_t SEED_NUM;
+  Shape mask_dev_matrix_shape_;  // dev matrix for `mask`
+  bool IsUnsplittableStrategy(const Dimensions &strategy) const;
+  CNodePtr GetGeneratorCNode(const CNodePtr &cnode) const;
+  bool HaveManualSeed(const CNodePtr &generator_cnode) const;
+  ParameterPtr GetSeedParameter(const CNodePtr &generator_cnode) const;
+};
+
 class HShrinkInfo : public ActivationOther {
  public:
   HShrinkInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,

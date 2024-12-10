@@ -800,6 +800,12 @@ static std::pair<AnfNodePtr, int64_t> FindParallelCareNode(const AnfNodePtr &nod
     if (node_prim_name == UPDATESTATE && node_pair.second > 0) {
       continue;
     }
+    // Generator is in PARALLEL_BLACK_LIST_, return to skip find the posterior node
+    if (node_prim_name == GENERATOR) {
+      MS_LOG(DEBUG) << "FindParallelCareNode meets Generator, parameter may be 'seed' or 'offset', CNode info: "
+                    << cnode->DebugString();
+      return std::make_pair(nullptr, 0);
+    }
     if (IsParallelCareNode(cnode) && cnode->has_user_data<OperatorInfo>()) {
       return node_pair;
     }
