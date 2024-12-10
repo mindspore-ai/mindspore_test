@@ -1,0 +1,5 @@
+__eq__:
+  description: |
+    __eq__(other) -> Tensor
+
+    For details, please refer to :func:`Tensor.eq`.
