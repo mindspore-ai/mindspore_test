@@ -1241,3 +1241,60 @@ def test_cnode_execute_twice():
     assert out1 == 5
     out2 = net(x2, y2)
     assert out2 == 10
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_output_input_device_address():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x, y):
+            return self.assignadd(x, y)
+
+    x1 = ms.Tensor(2)
+    y1 = ms.Tensor(3)
+    y2 = ms.Tensor(6)
+    net = Net()
+    context.set_context(device_target="Ascend")
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x2 = net(x1, y1)
+    context.set_context(mode=context.GRAPH_MODE)
+    out = net(x2, y2)
+    assert out == 11
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_output_input_device_address_for_control_flow():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x, y):
+            z = self.assignadd(x, y)
+            if z < 10:
+                return z + 1
+            return z + 2
+
+    x1 = ms.Tensor(2)
+    y1 = ms.Tensor(3)
+    y2 = ms.Tensor(6)
+    net = Net()
+    context.set_context(device_target="Ascend")
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x2 = net(x1, y1)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    out = net(x2, y2)
+    assert out == 14

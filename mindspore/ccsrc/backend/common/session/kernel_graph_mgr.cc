@@ -1969,7 +1969,8 @@ void KernelGraphMgr::CreateCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
         (void)cnode_inputs->emplace_back(new_value_node);
         continue;
       }
-      MS_LOG_WITH_NODE(EXCEPTION, anf) << "Unexpected input[" << anf->DebugString() << "]";
+      MS_LOG_WITH_NODE(EXCEPTION, anf) << "Unexpected input[" << anf->DebugString()
+                                       << "] for cnode:" << cnode->DebugString();
     }
   }
 }
