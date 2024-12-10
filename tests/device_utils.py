@@ -4,7 +4,6 @@ import mindspore as ms
 def set_device():
     devcie_target = os.getenv("DEVICE_TARGET")
     device_id = os.getenv("DEVICE_ID")
-    ms.set_device(devcie_target, int(device_id))
     if device_id is None:
         ms.set_device(devcie_target)
     else:

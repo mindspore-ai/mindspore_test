@@ -23,6 +23,7 @@ from mindspore import context, ops
 from mindspore.context import ParallelMode
 import mindspore as ms
 from mindspore.common.api import _pynative_executor
+from tests.device_utils import set_device
 import time
 
 
@@ -35,7 +36,7 @@ class AllReduceNet(nn.Cell):
         self.mul = P.Mul()
         self.all_reduce = P.AllReduce()
         self.add = P.Add()
-        self.s1 = ms.hal.Stream()
+        self.s1 = ms.runtime.Stream()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, pad_mode='pad')
         self.relu1 = ops.ReLU()
         self.conv2 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, pad_mode='pad')
@@ -69,6 +70,7 @@ class AllReduceNet(nn.Cell):
         return out
 
 def msrun_train_allreduce_8p(enable_multi_stream):
+    set_device()
     context.set_context(mode=context.PYNATIVE_MODE)
     D.init()
     context.reset_auto_parallel_context()
