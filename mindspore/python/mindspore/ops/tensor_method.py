@@ -130,7 +130,7 @@ from mindspore.ops.function.array_func import index_select
 # 45 int
 
 # 46 inverse
-
+from mindspore.ops.function.math_func import inverse
 # 47 is_contiguous
 
 # 48 isclose
@@ -287,7 +287,6 @@ from mindspore.ops.function.array_func import tril
 # 122 where
 from mindspore.ops.function.array_func import where as where_func
 
-
 # 123 div_
 
 # 124 fill_
@@ -373,6 +372,7 @@ from mindspore.ops.auto_generate import isneginf_ext
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import new_ones
 from mindspore.ops.function.array_func import new_zeros
+
 
 ########################################functions########################################
 
@@ -610,6 +610,13 @@ def deprecated_tensor_index_select(input, axis, index):
 # 45 int
 
 # 46 inverse
+def tensor_inverse(input):
+    return inverse(input)
+
+
+def deprecated_tensor_inverse(input):
+    return inverse(input)
+
 
 # 47 is_contiguous
 
@@ -1056,6 +1063,7 @@ def tensor_not_equal(input, other):
 def tensor_triu(input, diagonal=0):
     return F.triu(input, diagonal)
 
+
 # 150 __eq__
 
 # 151 scatter_
@@ -1084,11 +1092,13 @@ def fmod_tensor(input, other):
 def fmod_scalar(input, other):
     return
 
+
 # 153
 
 # 154
 def tensor_isneginf(input):
     return isneginf_ext(input)
+
 
 # 155
 
