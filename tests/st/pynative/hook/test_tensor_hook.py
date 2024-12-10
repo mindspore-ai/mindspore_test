@@ -48,7 +48,7 @@ def net(x, y):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_tensor_backward_hook_with_op_output():
@@ -97,7 +97,7 @@ def hook_test_input(x):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_tensor_backward_hook_with_net_input():

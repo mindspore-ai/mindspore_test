@@ -34,7 +34,7 @@ def test_half_tensor_api():
     assert dtype_op(output) == ms.float16
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_half_tensor_api_modes():
     """

@@ -51,7 +51,7 @@ class SvdNet(nn.Cell):
         return self.svd(a)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_svd_dynamic_shape():
     """
@@ -73,7 +73,7 @@ def test_svd_dynamic_shape():
     assert v.asnumpy().shape == expect_v_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_svd_net1():
     """
@@ -89,7 +89,7 @@ def test_svd_net1():
     assert np.allclose(n_s, s.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_svd_net2():
     """
@@ -106,7 +106,7 @@ def test_svd_net2():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_svd_net3():
     """
@@ -121,7 +121,7 @@ def test_svd_net3():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_svd_net4():
     """
@@ -136,7 +136,7 @@ def test_svd_net4():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_svd_net5():
     """
@@ -154,7 +154,7 @@ def test_svd_net5():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_svd_net6():
     """

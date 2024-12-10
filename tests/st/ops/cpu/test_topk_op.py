@@ -114,7 +114,7 @@ def test_top_k_functional():
     assert np.allclose(ms_output[0].asnumpy(), np_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_top_k_tensor():
     """

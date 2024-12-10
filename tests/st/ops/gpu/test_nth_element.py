@@ -51,7 +51,7 @@ def test_nth_element_1d():
         assert (y.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_nth_element_2d():
     """
     Feature: test nth_element to find the t-th item in 2D input

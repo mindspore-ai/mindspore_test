@@ -952,7 +952,7 @@ def test_scatter_func_updates_vmap():
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_scatter_func_indices_out_of_range():
     """
     Feature: test scatter_func invalid indices.

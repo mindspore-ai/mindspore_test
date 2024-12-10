@@ -40,7 +40,7 @@ cfg = {
 }
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_make_tuple():
     """
     Feature: One stage basic operation.
@@ -64,7 +64,7 @@ def test_make_tuple():
     assert ret[2] == Tensor([3])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_make_list():
     """
     Feature: One stage basic operation.
@@ -202,7 +202,7 @@ def test_empty_dict_input():
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tuple_slice():
     """
     Feature: One stage basic operation.
@@ -226,7 +226,7 @@ def test_tuple_slice():
     assert ret[1] == Tensor([2])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_list_slice():
     """
     Feature: One stage basic operation.
@@ -250,7 +250,7 @@ def test_list_slice():
     assert ret[1] == Tensor([2])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_list_slice_with_default_parameter():
     """
     Feature: One stage basic operation.
@@ -299,7 +299,7 @@ def test_list_slice_with_default_parameter_2():
     assert ret[2] == Tensor([3])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_list_slice_with_default_parameter_3():
     """
     Feature: One stage basic operation.
@@ -324,7 +324,7 @@ def test_list_slice_with_default_parameter_3():
     assert ret[2] == Tensor([3])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_make_dict():
     """
     Feature: One stage basic operation.
@@ -345,7 +345,7 @@ def test_make_dict():
     assert ret == Tensor([1])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_make_dict_2():
     """
     Feature: One stage basic operation.
@@ -367,7 +367,7 @@ def test_make_dict_2():
     assert ret == Tensor([1])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_make_dict_3():
     """
     Feature: One stage basic operation.
@@ -388,7 +388,7 @@ def test_make_dict_3():
     assert ret == Tensor([2])
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tuple_input():
     """
     Feature: One stage basic operation.
@@ -410,7 +410,7 @@ def test_tuple_input():
     assert np.allclose(ret.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_list_input():
     """
     Feature: One stage basic operation.

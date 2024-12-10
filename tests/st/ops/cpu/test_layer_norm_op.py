@@ -72,7 +72,7 @@ def test_layernorm0():
     assert np.allclose(var_ms.asnumpy(), var_np, atol=1e-4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_layernorm1():
     begin_norm_axis = 1
@@ -135,7 +135,7 @@ def test_layernorm3d_2():
     assert np.allclose(var_ms.asnumpy(), var_np, rtol=1e-6, atol=1e-4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_layernorm2d_2():
     begin_norm_axis = -1
@@ -155,7 +155,7 @@ def test_layernorm2d_2():
     assert np.allclose(var_ms.asnumpy(), var_np, rtol=1e-6, atol=1e-4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_layernorm2d_3():
     begin_norm_axis = -1
@@ -175,7 +175,7 @@ def test_layernorm2d_3():
     assert np.allclose(var_ms.asnumpy(), var_np, rtol=1e-6, atol=1e-4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_layernorm2d_4():
     begin_norm_axis = 2
@@ -336,7 +336,7 @@ def test_layernorm_vmap3():
     assert np.allclose(var_ms.asnumpy(), var_np, rtol=1e-6, atol=1e-4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_layernorm_dynamic_shape():
     """

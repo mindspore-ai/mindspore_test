@@ -59,7 +59,7 @@ def test_batch_to_space_nd_graph():
     batch_to_space_nd_test_case(np.float32)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_batch_to_space_nd_pynative():
     """
     Feature: test BatchToSpaceND function interface.

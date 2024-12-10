@@ -43,7 +43,7 @@ class DenseGrad(nn.Cell):
         return self.grad(self.network, self.params)(*inputs)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_1d_forward():
     """
@@ -83,7 +83,7 @@ def test_1d_forward():
     assert np.abs(out_ms - out_np).mean() < error
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_3d_forward():
     """
@@ -123,7 +123,7 @@ def test_3d_forward():
     assert np.abs(out_ms - out_np).mean() < error
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_1d_backward():
     """
@@ -241,7 +241,7 @@ def test_3d_backward():
     assert np.abs(db_ms - db_np).mean() < error
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_1d_complex64_backward():
     """
@@ -277,7 +277,7 @@ def test_1d_complex64_backward():
     assert np.abs(db_ms - db_np).mean() < error
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_2d_complex128_backward():
     """

@@ -316,7 +316,7 @@ def test_generate_tensor_using_variable_numpy_array():
     assert (out == Tensor([0, 1])).all()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_numpy_prod_with_variable_axis():
     """

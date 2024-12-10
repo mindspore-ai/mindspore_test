@@ -25,7 +25,7 @@ def skip_if_python_version_too_high():
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_initial_tensor_body_ref():
     """
     Feature: While specialize.

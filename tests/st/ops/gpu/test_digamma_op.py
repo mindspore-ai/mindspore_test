@@ -68,7 +68,7 @@ def test_digamma_graph_true_float16():
     digamma(dtype="float16", input_x=input_x, loss=1.0e-3)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_digamma_graph_true_float32():
     """
     Feature: ALL To ALL

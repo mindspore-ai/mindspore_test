@@ -29,7 +29,7 @@ def skip_if_python_version_too_high():
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @pytest.mark.skip(reason="pynative mode has an incorrect result")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_vmap_with_tuple_input():
     """
     Feature: vmap

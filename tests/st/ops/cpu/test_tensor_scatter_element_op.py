@@ -69,7 +69,7 @@ class TestTensorScatterElements(nn.Cell):
         return self.scatter_elements(self.input_x, self.indices, self.updates)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64, np.int32])
 @pytest.mark.parametrize('index_dtype', [np.int32, np.int64])

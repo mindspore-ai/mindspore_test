@@ -26,7 +26,7 @@ def skip_if_python_version_too_high():
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_1():
     """
     Feature: PIJit
@@ -55,7 +55,7 @@ def test_while_after_for_in_if_1():
     assert res == 11
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_2():
     """
     Feature: PIJit
@@ -89,7 +89,7 @@ def test_while_after_for_in_if_2():
 
 
 @pytest.mark.skip(reason="tmp skip, fix later")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_3():
     """
     Feature: PIJit
@@ -116,7 +116,7 @@ def test_while_after_for_in_if_3():
     assert (res.asnumpy() == [-3, -4]).all()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_4():
     """
     Feature: PIJit

@@ -893,7 +893,7 @@ def test_3d_backward():
     assert np.abs(db_ms - db_np).mean() < error
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_1d_complex64_backward():
     """
     Feature: Test dense 1d complex64 backward.
@@ -928,7 +928,7 @@ def test_1d_complex64_backward():
     assert np.abs(db_ms - db_np).mean() < error
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_2d_complex128_backward():
     """
     Feature: Test dense 2d complex128 backward.
@@ -963,7 +963,7 @@ def test_2d_complex128_backward():
     assert np.abs(db_ms - db_np).mean() < error
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_2d_dtypes_forward():
     """
     Feature: Test dense 2d dtypes forward.
@@ -986,7 +986,7 @@ def test_2d_dtypes_forward():
         assert np.abs(out_ms - out_np).mean() < error
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_0d_bias():
     """
     Feature: Test dense 0d bias.

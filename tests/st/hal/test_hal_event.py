@@ -92,7 +92,7 @@ def test_hal_event_wait():
     assert np.allclose(ops.matmul(b, b).asnumpy(), c.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_event_sync():
     """

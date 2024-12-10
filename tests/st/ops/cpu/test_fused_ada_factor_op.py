@@ -91,7 +91,7 @@ def test_adafactor_with_global_norm():
     assert np.all(diff < 1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adafactor_dynamic_shape():
     '''
@@ -109,7 +109,7 @@ def test_adafactor_dynamic_shape():
     assert np.all(diff < 1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adafactor_with_global_norm_dynamic_shape():
     '''

@@ -368,7 +368,7 @@ class NetBitwise(nn.Cell):
         return out_and, out_or, out_xor
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode_cpu', mode_list)
 def test_bitwise_bool(mode_cpu):
