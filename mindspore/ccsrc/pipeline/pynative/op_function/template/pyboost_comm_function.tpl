@@ -21,59 +21,60 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
 
     comm_handle_py->comm_handle()->CreateEvent();
     comm_handle = comm_handle_py->comm_handle();
+    {
+      GilReleaseWithCheck release_gil;
+      op_run_info->stub_output = node.second;
+      op_run_info->source_type = converter.source_type();
+      DispatchOp(
+        std::make_shared<FrontendTask>(
+          [${op_args}, comm_handle](const FrontendOpRunInfoPtr &op_run_info) {
+            MS_LOG(DEBUG) << "Run frontend task ${func_name} start";
+            auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
+            kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
 
-    GilReleaseWithCheck release_gil;
-    op_run_info->stub_output = node.second;
-    op_run_info->source_type = converter.source_type();
-    DispatchOp(
-      std::make_shared<FrontendTask>(
-        [${op_args}, comm_handle](const FrontendOpRunInfoPtr &op_run_info) {
-          MS_LOG(DEBUG) << "Run frontend task ${func_name} start";
-          auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-          kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
+            // stub tensor to tensor.
+            ${convert_stub}
 
-          // stub tensor to tensor.
-          ${convert_stub}
+            // Create op
+            auto op = CREATE_PYBOOST_OP(${op_name}, op_run_info->base_op_run_info.device_target);
+            op->set_comm_handle(comm_handle);
+            const auto &op_prim = op->primitive();
 
-          // Create op
-          auto op = CREATE_PYBOOST_OP(${op_name}, op_run_info->base_op_run_info.device_target);
-          op->set_comm_handle(comm_handle);
-          const auto &op_prim = op->primitive();
+            // Do mixed precision and implicit cast
+            static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
+            auto [${cast_args}] = PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, same_type_table, ${call_args});
 
-          // Do mixed precision and implicit cast
-          static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
-          auto [${cast_args}] = PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, same_type_table, ${call_args});
+            // Run op
+            (void)op->Call(${cast_args});
+            ${optional_to_value}
 
-          // Run op
-          (void)op->Call(${cast_args});
-          ${optional_to_value}
+            // Data sync in mix mode(Graph and PyNative)
+            PyNativeAlgo::PyBoost::DataSyncForGraph(op, {${grad_args}});
 
-          // Data sync in mix mode(Graph and PyNative)
-          PyNativeAlgo::PyBoost::DataSyncForGraph(op, {${grad_args}});
+            // Create output value
+            PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(op_run_info, op,
+                                                              op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index() : 0${view_arg});
 
-          // Create output value
-          PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(op_run_info, op,
-                                                            op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index() : 0${view_arg});
+            // Set output value to python
+            PyNativeAlgo::PyBoost::UpdateStubOutput(op_run_info, op->output_abs(), op);
 
-          // Set output value to python
-          PyNativeAlgo::PyBoost::UpdateStubOutput(op_run_info, op->output_abs(), op);
+            // Do auto grad
+            if (op_run_info->requires_grad) {
+              // Refresh op prim, otherwish the size of inputs will be incorrect.
+              op_run_info->op_grad_info->op_prim = op_prim;
+              op_run_info->op_grad_info->input_value = {${grad_args}};
+              op_run_info->op_grad_info->out_value = op_run_info->real_out;
+              PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
+            }
+            kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
 
-          // Do auto grad
-          if (op_run_info->requires_grad) {
-            // Refresh op prim, otherwish the size of inputs will be incorrect.
-            op_run_info->op_grad_info->op_prim = op_prim;
-            op_run_info->op_grad_info->input_value = {${grad_args}};
-            op_run_info->op_grad_info->out_value = op_run_info->real_out;
-            PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
-          }
-          kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
-
-          MS_LOG(DEBUG) << "Run frontend task ${func_name} end";
-        },
-        op_run_info
-      )
-    );
-    MS_LOG(DEBUG) << "Run ${func_name} end";
+            MS_LOG(DEBUG) << "Run frontend task ${func_name} end";
+          },
+          op_run_info
+        )
+      );
+      MS_LOG(DEBUG) << "Run ${func_name} end";
+    }
     return output_obj;
   #else
     return PyNativeAlgo::PyBoost::RunPyFunction(prim, args);

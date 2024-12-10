@@ -113,10 +113,12 @@ py::object PyNativeExecutor::RunOpStub(const py::args &args) const {
   // 3. create top stub node
   auto node = stub::MakeTopNode(top_type);
   // The task in the AsyncQueue may need to acquire gil.
-  GilReleaseWithCheck release_gil;
-  // 4. set abstract and value in asynchronous thread after infer and run
-  op_run_info->stub_output = node.second;
-  forward_executor()->DispatchFrontendTask(op_run_info);
+  {
+    GilReleaseWithCheck release_gil;
+    // 4. set abstract and value in asynchronous thread after infer and run
+    op_run_info->stub_output = node.second;
+    forward_executor()->DispatchFrontendTask(op_run_info);
+  }
   // 5. return stub node
   return node.first;
 }
@@ -136,8 +138,11 @@ py::object PyNativeExecutor::RunSliceOpStub(const std::vector<ValuePtr> &input_v
   }
   auto top_type = kTensorType;
   auto node = stub::MakeTopNode(top_type);
-  GilReleaseWithCheck release_gil;
-  forward_executor()->DispatchSilceOpFrontendTask(input_values, slice_op_infos, requires_grad, node.second, stream_id);
+  {
+    GilReleaseWithCheck release_gil;
+    forward_executor()->DispatchSilceOpFrontendTask(input_values, slice_op_infos, requires_grad, node.second,
+                                                    stream_id);
+  }
   return node.first;
 }
 
