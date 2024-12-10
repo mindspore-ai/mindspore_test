@@ -20,7 +20,7 @@ mindspore.ops.matmul_reduce_scatter
         - **world_size** (int) - 通信组的 rank 总数，要求与实际运行的卡数一致，支持 ``2`` 、 ``4`` 、 ``8`` 。
 
     关键字参数：
-        - **reduce_op** (str, 可选) reduce 操作类型。默认为 ``'sum'`` ，当前仅支持 ``'sum'`` 。
+        - **reduce_op** (str, 可选) - reduce 操作类型。默认为 ``'sum'`` ，当前仅支持 ``'sum'`` 。
         - **bias** (Tensor, 可选) - 默认为 ``None`` ，当前仅支持 ``None`` 。
         - **comm_turn** (int, 可选) - 表示 rank 间通信切分粒度。默认为 ``0`` ，当前仅支持 ``0`` 。
         - **trans_input** (bool, 可选) - 表示 ``input`` 是否转置。默认为 ``False`` ，当前仅支持 ``False`` 。

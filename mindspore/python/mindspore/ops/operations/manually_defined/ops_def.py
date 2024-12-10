@@ -1026,9 +1026,9 @@ class Tile(Primitive):
 
 def tile(input, dims):
     r"""
-    Creates a new tensor by replicating `input` `dims` times. The i'th dimension of
+    Creates a new tensor by repeating `input` `dims` times. The i'th dimension of
     output tensor has `input.shape[i] * dims[i]` elements, and the values of `input`
-    are replicated `dims[i]` times along the i'th dimension.
+    are repeated `dims[i]` times along the i'th dimension.
 
     Note:
         On Ascend, the number of `dims` should not exceed 8, and currently does not support scenarios
