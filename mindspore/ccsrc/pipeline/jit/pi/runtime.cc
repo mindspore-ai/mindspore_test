@@ -821,14 +821,18 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
                                   c->code());
       if (enable_dynamicshape) {
         backup = c->code()->GetGuard()->ApplyDynamicShape(frame.frame());
+#if !IS_PYTHON_3_11_PLUS
         PyFrame_FastToLocals(frame.frame());
+#endif
       }
     }
     GraphCapture(c);
     if (c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
       if (enable_dynamicshape) {
         c->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
+#if !IS_PYTHON_3_11_PLUS
         PyFrame_FastToLocals(frame.frame());
+#endif
       }
       AddGuardForGlobals(frame, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
     }
