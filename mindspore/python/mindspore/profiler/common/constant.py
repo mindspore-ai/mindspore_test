@@ -78,12 +78,14 @@ class OpSummaryHeaders(Enum):
     TASK_WAIT_TIME = "Task Wait Time(us)"
     BLOCK_DIM = "Block Dim"
     MIX_BLOCK_DIM = "Mix Block Dim"
+    HF32_ELIGIBLE = "HF32 Eligible"
     INPUT_SHAPES = "Input Shapes"
     INPUT_DATA_TYPES = "Input Data Types"
     INPUT_FORMATS = "Input Formats"
     OUTPUT_SHAPES = "Output Shapes"
     OUTPUT_DATA_TYPES = "Output Data Types"
     OUTPUT_FORMATS = "Output Formats"
+    CONTEXT_ID = "Context ID"
 
 
 class EventConstant:

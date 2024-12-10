@@ -105,15 +105,14 @@ class ProcessBar:
             now: The current timestamp.
         """
         elapsed = now - self.start_time
-        if self.current > 0 and self.total > 0:
+        if self.total > 0:
             progress = min(1, self.current / self.total)
-            eta = (self.total - self.current) * (elapsed / self.current)
             block = int(round(self.bar_length * progress))
 
             text = (
                 f"\r{self.desc}: [{block * '#' + (self.bar_length - block) * ' '}] "
                 f"{self.current}/{self.total} {self.cur_item_name} "
-                f"Elapsed: {int(elapsed)}s ETA: {int(eta)}s"
+                f"Elapsed: {int(elapsed)}s"
             )
             # 添加额外的空格和回车来清除可能的残留字符
             text = text + ' ' * self.BLANK_SPACE_NUM + '\r'
@@ -133,15 +132,26 @@ class ProcessBar:
         if self.iterable is None:
             raise ValueError("Must provide an iterable")
         try:
-            for item in self.iterable:
+            iterator = iter(self.iterable)
+            try:
+                first_item = next(iterator)
+            except StopIteration:
+                return
+
+            # 初始化进度条打印
+            self.update(item_name=first_item.__class__.__name__)
+            self._print_progress(time.time())
+            yield first_item
+
+            # 继续迭代剩余元素
+            for item in iterator:
                 yield item
                 self.update(item_name=item.__class__.__name__)
-            # 在迭代结束后，确保最后一次更新被显示
+
+            # 在迭代结束后确保最后一次更新被显示
             self._print_progress(time.time())
         finally:
-            # 停止刷新线程并等待其结束
             self._stop_refresh = True
             if self._refresh_thread:
                 self._refresh_thread.join()
-            # 确保最后打印一个换行
             sys.stdout.write("\n")
