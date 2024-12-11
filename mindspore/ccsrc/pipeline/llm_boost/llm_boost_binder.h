@@ -36,11 +36,15 @@ class ME_EXPORT LlmBoostBinder {
   std::vector<tensor::TensorPtr> Forward(const py::list &py_inputs, const std::string &param);
   int64_t SetKVCache(const py::list &py_kcache, const py::list &py_vcache);
   int64_t SetWeight(const py::list &py_weights);
+  int64_t AddFlags(const bool &is_first_iteration);
+  int64_t SetWeightMap(const pybind11::dict &dict);
+  int64_t InitModel(const pybind11::dict &dict);
 
  private:
   std::shared_ptr<kernel::BoostBaseModel> impl_;
   std::shared_ptr<kernel::BoostBaseBuilder> builder_;
   std::string model_name_;
+  std::string backend_;
 };
 }  // namespace pipeline
 }  // namespace mindspore

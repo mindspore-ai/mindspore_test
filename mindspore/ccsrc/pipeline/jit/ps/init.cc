@@ -16,6 +16,8 @@
 
 #include <pybind11/operators.h>
 #include <stack>
+#include <memory>
+#include <string>
 #include "kernel/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/operator/composite/composite.h"
@@ -135,9 +137,13 @@ void RegLlmBoostBinder(const py::module *m) {
   (void)py::class_<pipeline::LlmBoostBinder, std::shared_ptr<pipeline::LlmBoostBinder>>(*m, "LlmBoostBinder")
     .def(py::init<const std::string &, const std::string &>())
     .def("init", &pipeline::LlmBoostBinder::Init, "init")
-    .def("forward", &pipeline::LlmBoostBinder::Forward, "forward")
+    .def("forward", &pipeline::LlmBoostBinder::Forward, py::arg("inputs"), py::arg("params") = py::str(""), "forward")
     .def("set_kvcache", &pipeline::LlmBoostBinder::SetKVCache, "set_kvcache")
-    .def("set_weights", &pipeline::LlmBoostBinder::SetWeight, "set_weights");
+    .def("set_weights", &pipeline::LlmBoostBinder::SetWeight, "set_weights")
+    .def("set_weights_map", &pipeline::LlmBoostBinder::SetWeightMap, "set_weights_map")
+    .def("init_model", &pipeline::LlmBoostBinder::InitModel, "init_model")
+    .def("add_flags", &pipeline::LlmBoostBinder::AddFlags, py::arg("is_first_iteration") = py::bool_(false),
+         "add_flags");
 }
 
 void RegLlmBoostUtils(py::module *m) { m->def("_set_format", &pipeline::SetFormat, "set_format"); }
