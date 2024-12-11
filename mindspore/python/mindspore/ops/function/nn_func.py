@@ -8926,7 +8926,7 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
           considered as the KV right padding scene.
         - It needs to be enabled together with the atten_mask parameter and ensure that the meaning of atten_mask is
           correct, that is, it can correctly hide invalid data. Otherwise, it will introduce accuracy issues.
-        - `kv_padding_size` does not support page attention scenarios
+        - `kv_padding_size` does not support page attention scenarios.
 
     Args:
         query (Tensor): The query tensor with data type of float16 or bfloat16.
@@ -8961,7 +8961,7 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
             :math:`(B, max\_block\_num\_per\_seq)`,
             where :math:`max\_block\_num\_per\_seq = ceil(\frac{max(actual\_seq\_length)}{block\_size} )`.
             Default: ``None``.
-        num_heads (int, optional): The number of heads.
+        num_heads (int, optional): The number of heads.  Default: ``1``.
         input_layout (str, optional): The data layout of the input qkv, support 'BSH' and 'BNSD'. Default ``'BSH'``.
         scale_value (double, optional): The scale value indicating the scale coefficient, which is used as
             the scalar of Muls in the calculation. Default: ``1.0``.
