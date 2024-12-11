@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_STR_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_STR_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV2D_EXT_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV2D_EXT_H_
 
 #include <memory>
 #include <vector>
@@ -24,14 +24,13 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ConvolutionStrFuncImpl : public OpFuncImpl {
+class OPS_API Conv2DExtFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   bool GeneralInferRegistered() const override { return true; };
-  ShapeArray DynamicRankInfer(const InferInfoPtrList &input_infos) const;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_STR_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV2D_EXT_H_
