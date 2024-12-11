@@ -18,7 +18,7 @@ from decimal import Decimal
 from collections import defaultdict
 
 from mindspore import log as logger
-from mindspore.profiler.common.constant import EventConstant, TimelineLayerName
+from mindspore.profiler.common.constant import EventConstant, TimelineLayerName, ProfilerLevel
 from mindspore.profiler.analysis.parser.timeline_event.base_event import BaseEvent
 from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool import TimelineEventPool
 from mindspore.profiler.analysis.parser.timeline_event.flow_event import FlowStartEvent, FlowEndEvent
@@ -35,8 +35,9 @@ from mindspore.profiler.analysis.parser.timeline_creator.scope_layer_timeline_cr
 class AscendTimelineAssembler(BaseTimelineAssembler):
     """Assembler for Ascend device timeline."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
+        self._profiler_level = kwargs.get("profiler_level")
         self._init_creators()
 
     def _init_creators(self):
@@ -102,8 +103,12 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
             fwk_to_mstx_flows = self._create_fwk_to_mstx_flow(mstx_pool, fwk_pool)
             self.trace_view_container.add_trace_events(fwk_to_mstx_flows)
 
+        if self._profiler_level == ProfilerLevel.LevelNone.value:
+            return
+
         hardware_pool = self.trace_view_container.get_pool_by_name(TimelineLayerName.ASCEND_HARDWARE.value)
-        if not hardware_pool:
+        cann_pool = self.trace_view_container.get_pool_by_name(TimelineLayerName.CANN.value)
+        if not hardware_pool or not cann_pool:
             return
 
         # Collect kernel launch events

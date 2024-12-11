@@ -113,6 +113,13 @@ class TestAscendTimelineAssembler(unittest.TestCase):
         self.msprof_cann_data = self._create_msprof_event("node@launch", 100, 100, 1500)
         self.msprof_hardware_data = self._create_msprof_event(
             "Default/network-TrainOneStepCell/Mul", 200, 200, 3000)
+        self.msprof_cann_meta_data = {
+            "name": EventConstant.PROCESS_NAME,
+            "ph": EventConstant.META_EVENT,
+            "pid": 100,
+            "tid": 0,
+            "args": {"name": TimelineLayerName.CANN.value}
+        }
         self.msprof_meta_data = {
             "name": EventConstant.PROCESS_NAME,
             "ph": EventConstant.META_EVENT,
@@ -125,7 +132,7 @@ class TestAscendTimelineAssembler(unittest.TestCase):
         self.flow_end_event = self._create_flow_event(
             "flow_end", EventConstant.END_FLOW, 200, 200, "flow1", 3000)
 
-        return [self.msprof_cann_data, self.msprof_hardware_data, self.msprof_meta_data,
+        return [self.msprof_cann_data, self.msprof_hardware_data, self.msprof_meta_data, self.msprof_cann_meta_data,
                 self.flow_start_event, self.flow_end_event]
 
     def _create_msprof_tx_data(self):
@@ -234,8 +241,8 @@ class TestAscendTimelineAssembler(unittest.TestCase):
             self.assertEqual(len(hardware_events), 1)
             self.assertEqual(hardware_events[0].name, "Default/network-TrainOneStepCell/Mul")
 
-            # 6 cpu op events and 5 msprof events and 6 fwk events and 8 scope layer events and 2 flow events
-            self.assertEqual(len(container.get_trace_view()), 27)
+            # 6 cpu op events and 6 msprof events and 6 fwk events and 8 scope layer events and 2 flow events
+            self.assertEqual(len(container.get_trace_view()), 28)
 
     def test_assemble_events_should_create_events_when_input_valid_data_in_graph_model(self):
         """Should create events for all operation types when input data is valid in graph model."""
@@ -250,8 +257,8 @@ class TestAscendTimelineAssembler(unittest.TestCase):
             self.assembler.assemble(data)
 
             container = self.assembler.trace_view_container
-            # Verify trace view: 6 cpu op events and 5 msprof events and 6 fwk events and 8 scope layer events
-            self.assertEqual(len(container.get_trace_view()), 25)
+            # Verify trace view: 6 cpu op events and 6 msprof events and 6 fwk events and 8 scope layer events
+            self.assertEqual(len(container.get_trace_view()), 26)
 
     def test_assemble_events_should_create_events_when_input_valid_data_in_pynative_model(self):
         """Should create events for all operation types when input data is valid in pynative model."""
@@ -266,8 +273,8 @@ class TestAscendTimelineAssembler(unittest.TestCase):
             self.assembler.assemble(data)
 
             container = self.assembler.trace_view_container
-            # 6 cpu op events and 5 msprof events and 7 fwk events and 7 scope layer events and 4 flow events
-            self.assertEqual(len(container.get_trace_view()), 29)
+            # 6 cpu op events and 6 msprof events and 7 fwk events and 7 scope layer events and 4 flow events
+            self.assertEqual(len(container.get_trace_view()), 30)
 
     def test_assemble_events_should_create_events_when_input_valid_data_in_mstx_with_level_none(self):
         """Should create events for all operation types when input data is valid in mstx with level none."""

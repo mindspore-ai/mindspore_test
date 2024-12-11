@@ -268,7 +268,7 @@ class NPUProfilerAnalysis:
 
         if ProfilerActivity.NPU.value in activities:
             cann_flow_parsers.append(
-                FrameworkCannRelationParser()
+                FrameworkCannRelationParser(**kwargs)
                 .register_post_hook(AscendTimelineViewer(**kwargs).save)
                 .register_post_hook(AscendKernelDetailsViewer(**kwargs).save)
                 .register_post_hook(AscendStepTraceTimeViewer(**kwargs).save)

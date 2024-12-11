@@ -24,7 +24,7 @@ import numpy as np
 from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
-from mindspore.profiler.common.constant import TimelineLayerName, OverlapAnalysisTidName
+from mindspore.profiler.common.constant import TimelineLayerName, OverlapAnalysisTidName, ProfilerLevel
 from mindspore.profiler.analysis.parser.timeline_event.msprof_event import (
     MsprofCompleteEvent,
 )
@@ -77,6 +77,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
         self._save_path = os.path.join(
             kwargs.get("ascend_profiler_output_path"), self.STEP_TRACE_TIME_FILE_NAME
         )
+        self._profiler_level = kwargs.get("profiler_level")
         self.step_trace_time_data = {}
         self.trace_container: TraceViewContainer = None
         self.hccl_pool: TimelineEventPool = None
@@ -100,6 +101,8 @@ class AscendStepTraceTimeViewer(BaseViewer):
         """
         Save step trace time data to csv file
         """
+        if self._profiler_level == ProfilerLevel.LevelNone.value:
+            return
         try:
             self._check_input_data(data)
             self._convert_events_to_numpy()

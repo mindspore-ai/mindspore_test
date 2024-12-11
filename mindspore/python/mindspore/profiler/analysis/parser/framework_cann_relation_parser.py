@@ -24,10 +24,10 @@ from mindspore.profiler.analysis.parser.timeline_assembly_factory.ascend_timelin
 class FrameworkCannRelationParser(BaseParser):
     """FrameworkCannRelationParser"""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """Initialize the AscendTraceAnalyser."""
         super().__init__()
-        self.assembler = AscendTimelineAssembler()
+        self.assembler = AscendTimelineAssembler(**kwargs)
 
     def _parse(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse the relation of framework and cann data."""
