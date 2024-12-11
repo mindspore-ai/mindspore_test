@@ -31,9 +31,9 @@
 
 namespace mindspore {
 namespace trace {
-void Capture(const py::args &args, const py::object &res);
-void Capture(const py::list &args, const py::object &res, const std::string &class_name);
-void CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
+void Capture(const py::args &args, py::object *res);
+void Capture(const py::list &args, py::object *res, std::string class_name);
+py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
 bool IsTracing();
 class TraceRecorder {
  public:
@@ -52,6 +52,8 @@ class TraceRecorder {
   void BeginGraph(const py::object &func_name, const py::object &phase, const py::list &file_names,
                   const py::list &linenos, const py::args &args);
   void EndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args);
+  void NewFuncGraphNode(const py::object &phase, const py::object &prim_res, const py::list &file_names,
+                        const py::list &linenos, const py::args &inputs);
   void NewNode(const py::object &prim_obj, const py::object &prim_res, const py::list &file_names,
                const py::list &linenos, const py::object &do_signature, const py::args &inputs);
   py::object RunGraph(const py::object &phase, const py::tuple &args);

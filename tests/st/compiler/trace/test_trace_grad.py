@@ -541,3 +541,131 @@ def test_trace_7():
     print(f'res1: {res1}, res2: {res2}, res3: {res3}, res4: {res4}')
     assert np.allclose(res1.asnumpy(), res2.asnumpy())
     assert np.allclose(res3.asnumpy(), res4.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="No support")
+def test_trace_8():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function with pyboost ops
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor([5.0, 6.0])
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y):
+            a = ms.Tensor([7.0, 8.0])
+            z = x + a
+            z = z.argmax()
+            z = z - self.x
+            z = z.tanh()
+            z = -z
+            z = z @ y
+            return z * y
+
+    class JitNet(ms.nn.Cell):
+        def __init__(self):
+            super(JitNet, self).__init__()
+            self.x = ms.Tensor([5.0, 6.0])
+
+        @jit
+        def construct(self, x, y):
+            a = ms.Tensor([7.0, 8.0])
+            z = x + a
+            z = z.argmax()
+            z = z - self.x
+            z = z.tanh()
+            z = -z
+            z = z @ y
+            return z * y
+
+    class GradNet(ms.nn.Cell):
+        def __init__(self, net):
+            super(GradNet, self).__init__()
+            self.net = net
+
+        def construct(self, x, y):
+            z1 = x * y
+            z2 = x + y
+            z3 = self.net(z1, z2)
+            return z3 * z3
+
+    trace_net = TraceNet()
+    jit_net = JitNet()
+    trace_grad_net = GradNet(trace_net)
+    jit_grad_net = GradNet(jit_net)
+    res1 = trace_net(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    res2 = jit_net(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    res3 = grad(trace_grad_net)(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    res4 = grad(jit_grad_net)(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    print(f'res1: {res1}, res2: {res2}, res3: {res3}, res4: {res4}')
+    assert np.allclose(res1.asnumpy(), res2.asnumpy())
+    assert np.allclose(res3.asnumpy(), res4.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="No support")
+def test_trace_9():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function with pyboost ops
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor([5.0, 6.0])
+
+        def construct(self, x, y):
+            a = ms.Tensor([7.0, 8.0])
+            z = x + a
+            z = z.argmax()
+            z = z - self.x
+            z = z.tanh()
+            z = -z
+            z = z @ y
+            return z * y
+
+    class JitNet(ms.nn.Cell):
+        def __init__(self):
+            super(JitNet, self).__init__()
+            self.x = ms.Tensor([5.0, 6.0])
+
+        @jit
+        def construct(self, x, y):
+            a = ms.Tensor([7.0, 8.0])
+            z = x + a
+            z = z.argmax()
+            z = z - self.x
+            z = z.tanh()
+            z = -z
+            z = z @ y
+            return z * y
+
+    class GradNet(ms.nn.Cell):
+        def __init__(self, net):
+            super(GradNet, self).__init__()
+            self.net = net
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y):
+            z1 = x * y
+            z2 = x + y
+            z3 = self.net(z1, z2)
+            return z3 * z3
+
+    trace_net = TraceNet()
+    jit_net = JitNet()
+    trace_grad_net = GradNet(trace_net)
+    jit_grad_net = GradNet(jit_net)
+    res1 = trace_net(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    res2 = jit_net(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    res3 = grad(trace_grad_net)(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    res4 = grad(jit_grad_net)(ms.Tensor([1.0, 2.0]), ms.Tensor([3.0, 4.0]))
+    print(f'res1: {res1}, res2: {res2}, res3: {res3}, res4: {res4}')
+    assert np.allclose(res1.asnumpy(), res2.asnumpy())
+    assert np.allclose(res3.asnumpy(), res4.asnumpy())

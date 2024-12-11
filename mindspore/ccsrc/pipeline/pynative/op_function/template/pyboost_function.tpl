@@ -67,7 +67,7 @@ py::object ME_EXPORT ${func_name}(const py::args &args) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                      prim->name(), false, true);
   auto res = ${func_name}_Base(prim, args[1]);
-  trace::Capture(args, res);
+  trace::Capture(args, &res);
   return res;
 }
 
@@ -80,7 +80,7 @@ class ME_EXPORT ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
      runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                         "${class_name}", false, true);
      auto res = ${func_name}_Base(prim::kPrim${class_name}, args);
-     trace::Capture(args, res, "${class_name}");
+     trace::Capture(args, &res, "${class_name}");
      return res;
    }
 };
