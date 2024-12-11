@@ -116,6 +116,7 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
 #ifdef WITH_BACKEND
   void GeFirstInitParams();
 #endif
+  void ClearInfo();
 
   std::map<std::string, ExecutorInfoPtr> info_;
   std::string phase_;
@@ -187,7 +188,6 @@ class GraphExecutorPy : public ExecutorPy {
   void ParentBeforeFork();
   void ParentAfterFork();
   void ChildAfterFork();
-  void ClearInfo();
   void set_process_id();
 
   void CleanCompileRes(const ResourcePtr &resource) override;

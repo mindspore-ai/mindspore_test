@@ -1038,7 +1038,7 @@ void GraphExecutorPy::ClearRes() {
   executor_ = nullptr;
 }
 
-void GraphExecutorPy::ClearInfo() {
+void ExecutorPy::ClearInfo() {
   MS_LOG(INFO) << "Clean graph resource!";
   for (auto &item : info_) {
     if (item.second && item.second->resource) {
@@ -2719,6 +2719,7 @@ void ClearResPart1() {
   pipeline::GetAttrMap().clear();
 #ifdef WITH_BACKEND
   pipeline::GraphExecutorPy::GetInstance()->ClearInfo();
+  pipeline::JitExecutorPy::GetInstance()->ClearInfo();
 #endif
   pipeline::GraphExecutorPy::ClearRes();
   pipeline::JitExecutorPy::ClearRes();
