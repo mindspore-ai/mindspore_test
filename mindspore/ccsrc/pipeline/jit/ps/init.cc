@@ -175,6 +175,7 @@ void RegModule(py::module *m) {
   RegCleanTdtChannel(m);
   RegTFT(m);
   RegTensorDoc(m);
+  RegReuseDataPtr(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegCommHandle(m);
