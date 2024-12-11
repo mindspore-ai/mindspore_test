@@ -1,0 +1,7 @@
+allclose:
+  op_yaml: deprecated/allclose_method.yaml
+  py_method: tensor_allclose
+  Ascend: py_method
+  CPU: py_method
+  GPU: py_method
+  interface: tensor

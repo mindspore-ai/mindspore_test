@@ -245,7 +245,7 @@ from mindspore.ops.auto_generate import square
 # 101 squeeze
 
 # 102 std
-
+from mindspore.ops.function.math_func import std_ext as std
 # 103 sub
 from mindspore.ops.auto_generate import sub, sub_ext
 # 104 sum
@@ -373,7 +373,6 @@ from mindspore.ops.auto_generate import isneginf_ext
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import new_ones
 from mindspore.ops.function.array_func import new_zeros
-
 # 204 erfc
 from mindspore.ops.auto_generate import erfc
 
@@ -385,6 +384,13 @@ from mindspore.ops.auto_generate import hardshrink
 
 # 244 log1p
 from mindspore.ops.auto_generate import log1p
+
+# 501
+from mindspore.ops.auto_generate import addbmm_op
+from mindspore.ops.function.math_func import addbmm
+# 502
+from mindspore.ops.auto_generate import addmm_op
+from mindspore.ops.function.math_func import addmm
 
 ########################################functions########################################
 unique_dim_ = UniqueDim()
@@ -431,6 +437,9 @@ def deprecated_tensor_all(x, dim=None, keepdim=False):
 
 
 # 7 allclose
+def tensor_allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
+    return isclose(input, other, rtol, atol, equal_nan).all().item()
+
 
 # 8 any
 def tensor_any(x, axis=None, keep_dims=False):
@@ -968,6 +977,17 @@ def tensor_square(input):
 # 101 squeeze
 
 # 102 std
+def tensor_std(input, dim=None, *, correction=1, keepdim=False):
+    return std(input, dim, correction=correction, keepdim=keepdim)
+
+
+def deprecated_tensor_std(self, axis=None, ddof=0, keepdims=False):
+    """
+    For details, please refer to :func:`mindspore.ops.std`.
+    """
+    x_var = self.var(axis, ddof, keepdims)
+    return F.tensor_pow(x_var, 0.5)
+
 
 # 103 sub
 def tensor_sub_ext(input, other, *, alpha=1):
@@ -1299,6 +1319,32 @@ def tensor_isneginf(input):
 # 161
 
 # 162
+
+
+# 501
+def tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
+    return addbmm_op(input, batch1, batch2, beta=beta, alpha=alpha)
+
+
+def deprecated_tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
+    r"""
+    For details, please refer to :func:`mindspore.ops.addbmm`.
+    """
+    return addbmm(input, batch1, batch2, beta=beta, alpha=alpha)
+
+
+# 502
+def tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
+    return addmm_op(input, mat1, mat2, beta=beta, alpha=alpha)
+
+
+def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
+    r"""
+    For details, please refer to :func:`mindspore.ops.addmm`.
+    """
+    return addmm(input, mat1, mat2, beta=beta, alpha=alpha)
+
+
 def tensor_clone(input):
     return clone(input)
 
