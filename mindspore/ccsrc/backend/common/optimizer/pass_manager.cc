@@ -19,6 +19,7 @@
 #include "utils/ms_context.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "backend/common/optimizer/cache_manager.h"
+#include "backend/common/graph_kernel/graph_kernel_flags.h"
 
 namespace mindspore {
 namespace opt {
@@ -29,6 +30,40 @@ void PassManager::AddPass(const PassPtr &pass) {
   if (pass != nullptr) {
     passes_.push_back(pass);
   }
+}
+
+void PassManager::AddFusionPass(const PassPtr &pass, bool condition) {
+  MS_EXCEPTION_IF_NULL(pass);
+  auto pass_name = pass->name();
+  auto pass_in_list = [this, &pass_name](const std::vector<std::string> &pass_list) -> std::pair<bool, size_t> {
+    if (pass_list.empty()) {
+      return std::make_pair(false, 0);
+    }
+
+    // the config format should be "pass_name or stage_name.pass_name"
+    auto stage_pass_name = this->name_ + "." + pass_name;
+    for (size_t i = 0; i < pass_list.size(); ++i) {
+      if (pass_list[i] == stage_pass_name || pass_list[i] == pass_name) {
+        return std::make_pair(true, i);
+      }
+    }
+    return std::make_pair(false, pass_list.size());
+  };
+
+  if (condition == true) {
+    // if it meets the condition to enable, check whether it's in the disabled list.
+    auto [match, idx] = pass_in_list(graphkernel::GraphKernelFlags::GetInstance().disable_pass);
+    condition = !match;
+    graphkernel::GraphKernelPassChecker::GetInstance().SetDisablePassActive(idx, true);
+  } else {
+    // if it doesn't meet the condition to enable, check whether it's in the enabled list.
+    auto [match, idx] = pass_in_list(graphkernel::GraphKernelFlags::GetInstance().enable_pass);
+    condition = match;
+    graphkernel::GraphKernelPassChecker::GetInstance().SetEnablePassActive(idx, true);
+  }
+
+  passes_.push_back(pass);
+  fusion_passes_switch_[pass] = condition;
 }
 
 bool PassManager::RunPass(const FuncGraphPtr &func_graph, size_t pass_id, const PassPtr &pass) const {
@@ -42,7 +77,12 @@ bool PassManager::RunPass(const FuncGraphPtr &func_graph, size_t pass_id, const 
 }
 
 std::string PassManager::GetPassFullname(size_t pass_id, const PassPtr &pass) const {
-  return std::string("hwopt_") + name() + "_" + std::to_string(pass_id) + "_" + pass->name();
+  auto header_name = std::string("hwopt_");
+  auto kv = fusion_passes_switch_.find(pass);
+  if (kv != fusion_passes_switch_.end()) {
+    header_name += "fusion_";
+  }
+  return header_name + name() + "_" + std::to_string(pass_id) + "_" + pass->name();
 }
 
 void PassManager::DumpPassIR(const FuncGraphPtr &func_graph, const std::string &pass_fullname) const {
@@ -68,11 +108,24 @@ bool PassManager::Run(const FuncGraphPtr &func_graph, const std::vector<PassPtr>
   size_t num = 0;
   for (const auto &pass : passes) {
     if (pass != nullptr) {
+      auto pass_name = GetPassFullname(num, pass);
       pass->SetCacheManager(cache_manager_);
-      changed = RunPass(func_graph, num, pass) || changed;
+      bool enable = true;
+      auto kv = fusion_passes_switch_.find(pass);
+      if (kv != fusion_passes_switch_.end()) {
+        if (kv->second) {
+          MS_LOG(INFO) << "graph kernel pass " << pass_name << " is enabled.";
+        } else {
+          MS_LOG(INFO) << "graph kernel pass " << pass_name << " is disabled.";
+          enable = false;
+        }
+      }
+      if (enable) {
+        changed = RunPass(func_graph, num, pass) || changed;
 #ifdef ENABLE_DUMP_IR
-      DumpPassIR(func_graph, GetPassFullname(num, pass));
+        DumpPassIR(func_graph, pass_name);
 #endif
+      }
       num++;
     }
   }
