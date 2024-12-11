@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""LlmBoost Register"""
+"""
+Provide llm boost for inference, such as LlamaBoost.
+"""
 from __future__ import absolute_import
 
-from mindspore.experimental.llm_boost.atb import LlamaBoost, QwenBoost
-from mindspore.experimental.llm_boost.ascend_native import *
-from mindspore.experimental.llm_boost.register import LlmBoostRegister
+from mindspore.experimental.llm_boost.ascend_native.llama_boost_ascend_native import LlamaBoostAscendNative
 
-__all__ = ["LlmBoostRegister"]
+__all__ = ['LlamaBoostAscendNative']
