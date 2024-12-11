@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops, nn, mutable
 from mindspore.ops import fft2
 from tests.mark_utils import arg_mark
+from tests.st.ops.ops_dryrun_cases import ops_dryrun_check_ndarray_result
 
 
 class FFT2Net(nn.Cell):
@@ -54,7 +55,7 @@ def generate_expect_backward_output(x, s, dim):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='dryrun', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_fft2_normal(mode):
     """
@@ -69,14 +70,14 @@ def test_ops_fft2_normal(mode):
     net = FFT2Net()
     output = net(ms.Tensor(x), s, dim)
     expect = generate_expect_forward_output(x, s, dim)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
+    ops_dryrun_check_ndarray_result(output.asnumpy(), expect, rtol=1e-3, atol=1e-5, dtype_cmp=False)
 
     dout = generate_random_input((2, 3, 4, 5), np.complex64)
     grad_net = FFT2GradNet(net, ms.Tensor(dout))
     grad_net.set_train()
     grad = grad_net(ms.Tensor(x), s, dim)
     expect = generate_expect_backward_output(dout, s, dim)
-    np.testing.assert_allclose(grad.asnumpy(), expect, rtol=1e-3, atol=1e-5)
+    ops_dryrun_check_ndarray_result(grad.asnumpy(), expect, rtol=1e-3, atol=1e-5, dtype_cmp=False)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
