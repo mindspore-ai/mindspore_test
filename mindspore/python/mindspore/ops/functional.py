@@ -20,7 +20,7 @@ from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
-from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_
+from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_
 from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
@@ -268,6 +268,7 @@ setattr(tensor_operator_registry, 'standard_normal', P.StandardNormal)
 setattr(tensor_operator_registry, 'sigmoid', sigmoid)
 setattr(tensor_operator_registry, 'median', Median)
 setattr(tensor_operator_registry, 'tanh', tanh)
+setattr(tensor_operator_registry, 'tanh_', tanh_)
 setattr(tensor_operator_registry, 'exp', exp)
 setattr(tensor_operator_registry, 'addbmm', addbmm)
 setattr(tensor_operator_registry, 'addmm', addmm)

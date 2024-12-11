@@ -358,7 +358,8 @@ deprecated_tensor_method_map = {
 
     # 161
     "fmod": "deprecated_tensor_fmod",
-    # 162
+    # 162 log10
+    "log10": "tensor_log10",
 
     # 501
     "addbmm": "deprecated_tensor_addbmm",

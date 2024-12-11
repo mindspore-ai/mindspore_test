@@ -1,0 +1,18 @@
+#operator inplace_tanh
+inplace_tanh:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  function:
+    name: tanh_
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True
+    Ascend: InplaceTanhAscend

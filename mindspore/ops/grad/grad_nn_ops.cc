@@ -2711,6 +2711,22 @@ REG_BPROP_BUILDER("Tanh").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("InplaceTanh").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto x_dtype_id = ib->GetDtypeId(x);
+  NodePtr dx;
+  if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
+    dout = ib->Conj(dout);
+    dx = ib->TanhGrad(out, dout);
+    dx = ib->Conj(dx);
+  } else {
+    dx = ib->TanhGrad(out, dout);
+  }
+  return {dx};
+});
+
 REG_BPROP_BUILDER("TanhGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto y = ib->GetInput(kIndex0);
   auto grad = ib->GetInput(kIndex1);
