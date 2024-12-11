@@ -68,6 +68,14 @@ class ME_EXPORT GradExecutor {
                      std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4),
                      std::forward<decltype(PH5)>(PH5));
     };
+  std::function<void(const py::object &, const py::object &, const py::args &)> CallCustomBpropFunc =
+    [this](auto &&PH1, auto &&PH2, auto &&PH3) {
+      CallCustomBprop(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2),
+                      std::forward<decltype(PH3)>(PH3));
+    };
+  std::function<py::object(const py::args &)> GradJit = [this](auto &&PH1) {
+    return jit()->GradJit(std::forward<decltype(PH1)>(PH1));
+  };
   inline TopCellInfoPtr top_cell() const {
     MS_EXCEPTION_IF_NULL(top_cell_);
     return top_cell_;
