@@ -3624,13 +3624,18 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
   OperatorAttrs attrs;
   OperatorArgs args = std::make_pair(attrs, params);
   Operator op = std::make_pair(VIRTUAL_OUTPUT, args);
+  bool full_batch = ParallelContext::GetInstance()->full_batch();
+  int64_t dev_num = 1;
+  if (!full_batch && ParallelContext::GetInstance()->dataset_strategy().empty()) {
+    dev_num = g_device_manager->stage_device_num();
+  }
   if (IsPrimitiveCNode(out_node, prim::kPrimMakeTuple)) {
     auto tuple = out_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(tuple);
     for (size_t i = 1; i < tuple->size(); ++i) {
       auto cur_input = tuple->input(i);
       Shapes shape_outputs = GetNodeShape(cur_input);
-      if (shape_outputs[0].empty()) {
+      if (shape_outputs[0].empty() || shape_outputs[0][0] % dev_num != 0) {
         continue;
       }
       InsertNode(op, tuple, i, cur_input, tuple->func_graph(), VIRTUAL_OUTPUT);
@@ -3642,7 +3647,7 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
     }
   } else {
     Shapes shape_outputs = GetNodeShape(out_node);
-    if (shape_outputs[0].empty() || out_node->isa<Parameter>()) {
+    if (shape_outputs[0].empty() || shape_outputs[0][0] % dev_num != 0 || out_node->isa<Parameter>()) {
       return;
     }
     auto node_input = CreateInput(op, out_node, VIRTUAL_OUTPUT);
