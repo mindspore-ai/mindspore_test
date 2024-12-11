@@ -375,6 +375,9 @@ deprecated_tensor_method_map = {
     "addmm": "deprecated_tensor_addmm",
     # 790 addmv
     "addmv": "deprecated_tensor_addmv",
+    # 846
+    "count_nonzero": "deprecated_tensor_count_nonzero",
     # 1028
     "var": "deprecated_tensor_var",
+
 }

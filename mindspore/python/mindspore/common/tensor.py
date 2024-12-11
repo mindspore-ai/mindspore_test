@@ -3575,12 +3575,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('conj')(self)
 
-    def count_nonzero(self, axis=(), keep_dims=False, dtype=mstype.int32):
-        r"""
-        For details, please refer to :func:`mindspore.ops.count_nonzero`.
-        """
-        return tensor_operator_registry.get('count_nonzero')(self, axis, keep_dims, dtype)
-
     def cross(self, other, dim=None):
         r"""
         For details, please refer to :func:`mindspore.ops.cross`.
