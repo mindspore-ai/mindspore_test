@@ -15,7 +15,7 @@
  */
 #include "mindspore/ops/infer/symbol_ops_impl/reduce.h"
 #include <memory>
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace symshape {

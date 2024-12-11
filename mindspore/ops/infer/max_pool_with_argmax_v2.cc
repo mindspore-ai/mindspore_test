@@ -17,14 +17,13 @@
 #include "infer/max_pool_with_argmax_v2.h"
 #include <algorithm>
 #include <set>
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "mindapi/ir/type.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/ms_context.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

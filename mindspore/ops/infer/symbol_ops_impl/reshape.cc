@@ -20,7 +20,7 @@
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_mul.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_div.h"
 #include "mindspore/core/include/utils/ordered_set.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace symshape {

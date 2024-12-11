@@ -19,14 +19,13 @@
 #include <vector>
 
 #include "abstract/ops/op_infer.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/scalar_bitwise_and.h"
 #include "infer/scalar_bitwise_or.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

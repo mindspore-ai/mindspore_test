@@ -32,7 +32,7 @@
 #include "abstract/param_validator.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "ops/base_operator.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

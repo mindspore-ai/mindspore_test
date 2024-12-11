@@ -640,41 +640,7 @@ bool ExpandBpropInGraphMode(const BpropHandle *handle, const PrimitivePtr &prim,
 }
 
 #ifdef _MSC_VER
-void RegGradArrayOps();
-void RegGradClipOps();
-void RegGradCommOps();
-void RegGradDebugOps();
-void RegGradImageOps();
-void RegGradImplementationsOps();
-void RegGradInnerOps();
-void RegGradLinalgOps();
-void RegGradMathOps();
-void RegGradNnOps();
-void RegGradOtherOps();
-void RegGradQuantOps();
-void RegGradScipyOps();
-void RegGradSparseOps();
-void RegGradSequenceOps();
-void RegGradScalarOps();
-
-WinBpropRegister::WinBpropRegister() {
-  RegGradArrayOps();
-  RegGradClipOps();
-  RegGradCommOps();
-  RegGradDebugOps();
-  RegGradImageOps();
-  RegGradImplementationsOps();
-  RegGradInnerOps();
-  RegGradLinalgOps();
-  RegGradMathOps();
-  RegGradNnOps();
-  RegGradOtherOps();
-  RegGradQuantOps();
-  RegGradScipyOps();
-  RegGradSparseOps();
-  RegGradSequenceOps();
-  RegGradScalarOps();
-}
+WinBpropRegister::WinBpropRegister() {}
 #endif
 }  // namespace bprop
 }  // namespace expander

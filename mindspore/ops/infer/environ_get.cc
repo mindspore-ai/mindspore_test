@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/base_operator.h"
 #include "utils/symbolic.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

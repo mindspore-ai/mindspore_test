@@ -19,10 +19,8 @@
 #include <memory>
 #include <functional>
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/convert_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

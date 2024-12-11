@@ -15,7 +15,7 @@
  */
 #include "symbolic_shape/operation_builder.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_mul.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace symshape {

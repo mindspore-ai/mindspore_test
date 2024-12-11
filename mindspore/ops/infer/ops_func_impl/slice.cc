@@ -22,7 +22,7 @@
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/ops_func_impl/slice.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"

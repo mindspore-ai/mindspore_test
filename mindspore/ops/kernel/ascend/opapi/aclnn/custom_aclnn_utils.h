@@ -22,9 +22,9 @@
 #include <map>
 #include "ops/base_operator.h"
 #include "transform/acl_ir/acl_convert.h"
-#include "mindspore/ops/kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
 #include "mindspore/core/include/ir/base_tensor.h"
-#include "mindspore/ops/kernel/ascend/pyboost/customize/custom_kernel.h"
+#include "kernel/ascend/pyboost/customize/custom_kernel.h"
 namespace mindspore {
 namespace kernel {
 using CustomPyboostKernelMod = pyboost::CustomAclnnPyboostKernelModBase;

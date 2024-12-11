@@ -21,7 +21,7 @@
 #include <set>
 #include <memory>
 #include "ops/ops_func_impl/op_func_impl.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
 class LogSumExpFuncImpl : public OpFuncImpl {

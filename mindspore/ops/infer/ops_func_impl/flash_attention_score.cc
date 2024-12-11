@@ -27,7 +27,7 @@
 #include "mindspore/ops/op_def/op_enum.h"
 #include "mindapi/helper.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

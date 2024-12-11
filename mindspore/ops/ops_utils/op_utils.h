@@ -33,7 +33,7 @@
 #include "mindapi/base/shared_ptr.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"

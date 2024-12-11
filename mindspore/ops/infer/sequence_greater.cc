@@ -24,7 +24,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/tuple_greater.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

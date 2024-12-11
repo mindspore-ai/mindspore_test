@@ -17,7 +17,7 @@
 #include "infer/resize_v2.h"
 #include <set>
 #include <vector>
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

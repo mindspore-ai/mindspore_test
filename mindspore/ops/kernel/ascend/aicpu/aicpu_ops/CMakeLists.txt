@@ -10,6 +10,8 @@ endif()
 set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/hcc/bin/aarch64-target-linux-gnu-gcc)
 set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PATH}/hcc/bin/aarch64-target-linux-gnu-g++)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 if(EXISTS ${CMAKE_C_COMPILER} AND EXISTS ${CMAKE_CXX_COMPILER})
     find_program(CCACHE_EXECUTABLE ccache)
     if(CCACHE_EXECUTABLE)
