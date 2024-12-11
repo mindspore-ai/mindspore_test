@@ -1454,8 +1454,7 @@ REG_BPROP_BUILDER("Exp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Expm1").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
+REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
   TypeId exp_type = ib->GetDtypeId(out);
@@ -1929,7 +1928,7 @@ REG_BPROP_BUILDER("FloorMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {BinopGradCommon(ib, x, y, bc_dx, bc_dy)};
 });
 
-REG_BPROP_BUILDER("RemainderTensorScalar").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("RemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   return {dout, ib->OutZeros(other)};

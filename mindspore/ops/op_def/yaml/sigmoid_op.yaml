@@ -1,4 +1,4 @@
-#sigmoid operator
+#operator sigmoid
 sigmoid:
     args:
         input:
