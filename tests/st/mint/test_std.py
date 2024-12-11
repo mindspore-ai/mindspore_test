@@ -36,6 +36,49 @@ def std_backward(x, dim=None, correction=1, keepdim=False):
     return ops.grad(std_forward, (0, 1, 2, 3))(x, dim, correction, keepdim)
 
 
+@test_utils.run_with_cell
+def std_forward_tensor(x, dim=None, correction=1, keepdim=False):
+    out = x.std(dim, correction=correction, keepdim=keepdim)
+    return out
+
+
+@test_utils.run_with_cell
+def std_backward_tensor(x, dim=None, correction=1, keepdim=False):
+    return ops.grad(std_forward_tensor, (0, 1, 2, 3))(x, dim, correction, keepdim)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_mint_std_tensor(mode):
+    """
+    Feature: mint.std
+    Description: Verify the result of std tensor on Ascend
+    Expectation: success
+    """
+    ms.set_context(mode=mode)
+    x = Tensor([[[-4, -6, -5, 8],
+                 [3, 2, -7, 0],
+                 [7, -4, -3, 8]],
+                [[-7, -7, -4, -5],
+                 [-6, -7, 6, -2],
+                 [-2, -7, 8, -8.]]])
+    expect_output = [[[2.12132025e+00, 7.07106769e-01, 7.07106769e-01, 9.19238853e+00],
+                      [6.36396122e+00, 6.36396122e+00, 9.19238853e+00, 1.41421354e+00],
+                      [6.36396122e+00, 2.12132025e+00, 7.77817440e+00, 1.13137083e+01]]]
+
+    # std backward
+    if mode == ms.PYNATIVE_MODE:
+        output = std_forward_tensor(x, dim=0, correction=1, keepdim=True)
+        input_grad = std_backward_tensor(x, dim=0, correction=1, keepdim=True)
+    elif mode == ms.GRAPH_MODE:
+        output = (jit(std_forward_tensor, jit_config=JitConfig(jit_level="O0")))(
+            x, dim=0, correction=1, keepdim=True)
+        input_grad = (jit(std_backward_tensor, jit_config=JitConfig(jit_level="O0")))(
+            x, dim=0, correction=1, keepdim=True)
+    assert input_grad.asnumpy().dtype == np.float32
+    assert np.allclose(output.asnumpy(), expect_output)
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mint_std_norlmal(mode):

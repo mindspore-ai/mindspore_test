@@ -1,0 +1,16 @@
+addmm:
+  - op_yaml: addmm_op.yaml
+    py_method: tensor_addmm
+    kwonlyargs: beta, alpha
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/addmm_method.yaml
+    py_method: deprecated_tensor_addmm
+    kwonlyargs: beta, alpha
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

@@ -1,0 +1,18 @@
+#operator addmm
+addmm:
+  args:
+    input:
+      dtype: tensor
+    mat1:
+      dtype: tensor
+    mat2:
+      dtype: tensor
+    beta:
+      dtype: number
+      default: 1
+    alpha:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor
