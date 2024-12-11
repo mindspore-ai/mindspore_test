@@ -826,7 +826,7 @@ REG_FALLBACK_BUILDER("Index").SetBody(BODYFUNC(ib) {
       }
       for (int64_t j = 0; j < rank; j++) {
         auto srcIdx = new_indices.size() - 1 + j;
-        if (shape[j] != input_shape[srcIdx]) {
+        if (!IsDynamic(shape) && !IsDynamic(input_shape) && shape[j] != input_shape[srcIdx]) {
           MS_EXCEPTION(ValueError) << "For 'Index', the shape of the mask " << shape << " at index " << j
                                    << " does not match the shape of the indexed tensor " << input_shape << " at index "
                                    << srcIdx;
@@ -863,13 +863,6 @@ REG_FALLBACK_BUILDER("InplaceIndexPut").SetBody(BODYFUNC(ib) {
   auto values_tensor = ib->GetInput(kIndex2);
   auto accumulate = ib->GetInput(kIndex3);
 
-  auto input_shape = input_tensor->shape();
-  auto input_shape_nums = input_shape.size();
-  if (input_shape_nums == 0) {
-    MS_EXCEPTION(ValueError) << "For `InplaceIndexPut` op, too many indices for tensor of dimension "
-                             << input_shape_nums;
-  }
-
   auto indices_abs = indices->abstract();
   MS_EXCEPTION_IF_NULL(indices_abs);
   auto indices_shape = indices_abs->GetShape();
@@ -882,15 +875,25 @@ REG_FALLBACK_BUILDER("InplaceIndexPut").SetBody(BODYFUNC(ib) {
   if (indices_shapes.empty()) {
     MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', 'indices' shape can be empty.";
   }
-  auto value_shape = values_tensor->shape();
-  auto input_numel = std::accumulate(input_shape.begin(), input_shape.end(), kIndex1, std::multiplies<int64_t>());
-  auto values_numel = std::accumulate(value_shape.begin(), value_shape.end(), kIndex1, std::multiplies<int64_t>());
   auto indices_nums = indices_shapes.size();
-  if (input_numel == 0 || values_numel == 0 || indices_nums == 0) {
-    return {input_tensor};
+  auto input_shape = ib->GetShape(input_tensor);
+  auto value_shape = ib->GetShape(values_tensor);
+  if (!IsDynamic(input_shape)) {
+    if (!IsDynamic(value_shape)) {
+      auto input_numel = std::accumulate(input_shape.begin(), input_shape.end(), kIndex1, std::multiplies<int64_t>());
+      auto values_numel = std::accumulate(value_shape.begin(), value_shape.end(), kIndex1, std::multiplies<int64_t>());
+      if (input_numel == 0 || values_numel == 0 || indices_nums == 0) {
+        return {input_tensor};
+      }
+    }
+    auto input_shape_nums = input_shape.size();
+    if (input_shape_nums == 0) {
+      MS_EXCEPTION(ValueError) << "For `InplaceIndexPut` op, too many indices for tensor of dimension "
+                               << input_shape_nums;
+    }
   }
-  if (!IsDynamicRank(input_shape) && indices_nums > input_shape_nums) {
-    MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', too many indices for tensor of dimension " << input_shape_nums
+  if (!IsDynamicRank(input_shape) && indices_nums > input_shape.size()) {
+    MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', too many indices for tensor of dimension " << input_shape.size()
                              << " (got " << indices_nums << ")";
   }
   // Expand indices, then insert input and value
@@ -915,7 +918,7 @@ REG_FALLBACK_BUILDER("InplaceIndexPut").SetBody(BODYFUNC(ib) {
       }
       for (int64_t j = 0; j < rank; j++) {
         auto srcIdx = new_indices.size() - 1 + j;
-        if (shape[j] != input_shape[srcIdx]) {
+        if (!IsDynamic(shape) && !IsDynamic(input_shape) && shape[j] != input_shape[srcIdx]) {
           MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', the shape of the mask " << shape << " at index " << j
                                    << " does not match the shape of the indexed tensor " << input_shape << " at index "
                                    << srcIdx;

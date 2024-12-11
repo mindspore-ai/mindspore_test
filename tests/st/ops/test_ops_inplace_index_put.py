@@ -164,11 +164,11 @@ def test_inplace_index_put_dynamic_shape():
                np.array([1, 2, 1]).astype(np.int32)]
     values = np.array([3]).astype(np.float32)
     accumulate = False
-    x2 = generate_random_input((2, 8), np.float32)
-    indices2 = [np.array([[0, 1]]).astype(np.int64), np.array([[2, 3]]).astype(np.int64)]
+    x2 = generate_random_input((2, 3), np.float32)
+    indices2 = [np.array([[1, 1, 1], [1, 0, 1]]).astype(np.bool_)]
     values2 = np.array([[2, 3]]).astype(np.float32)
     accumulate2 = True
     TEST_OP(inplace_index_put_forward_func, [
         [ms.Tensor(x), mutable([ms.Tensor(i) for i in indices]), ms.Tensor(values), accumulate],
         [ms.Tensor(x2), mutable([ms.Tensor(i) for i in indices2]), ms.Tensor(values2), accumulate2]],
-            'inplace_index_put', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            'inplace_index_put', disable_mode=['GRAPH_MODE'], disable_resize=True)

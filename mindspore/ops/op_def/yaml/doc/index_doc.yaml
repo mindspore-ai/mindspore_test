@@ -9,6 +9,9 @@ index:
             input (Tensor): The input Tensor.
             indices (tuple[Tensor], list[Tensor]): the indices of type is bool, uint8, int32 or int64, used to index into the `input`.
                 The size of indices should <= the rank of `input` and the tensors in indices should be broadcastable.
+                When the tensor types are bool and uint8, shape will match the input dimensions in turn. For example: the first tensor of `indices` is of type bool, 
+                Shape(x, y), `input` Shape(a, b, c), and (x, y) needs to match (a, b).
+
 
         Returns:
             Tensor, has the same dtype as input Tensor.
