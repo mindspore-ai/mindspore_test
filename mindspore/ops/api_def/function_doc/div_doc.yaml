@@ -16,10 +16,10 @@ div:
           consistent.
 
     Args:
-        input (Union[Tensor, Number, bool]): The first input is a number or
+        input (Union[Tensor, Number, bool]): The first input is a Number or
             a bool or a tensor whose data type is number or bool.
-        other (Union[Tensor, Number, bool]): The second input is a number or
-            a bool when the first input is a tensor or a tensor whose data type is number or bool.
+        other (Union[Tensor, Number, bool]): The second input is a Number or
+            a bool when the first input is a tensor or a tensor whose data type is Number or bool.
 
     Keyword Args:
         rounding_mode (str, optional): Type of rounding applied to the result. Default: ``None`` .

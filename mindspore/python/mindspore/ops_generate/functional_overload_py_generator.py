@@ -43,7 +43,7 @@ class FunctionalOverloadPyGenerator(BaseGenerator):
         self.import_mint_template = Template("from mindspore._c_expression import _${cpp_func_name}_instance\n")
         self.mint_def_template = Template(
             'def ${mint_func_name}(*args, **kwargs):\n'
-            '    """\n${docstr}\n    """\n'
+            '    r"""\n${docstr}\n    """\n'
             '    return _${cpp_func_name}_instance(*args, **kwargs)\n\n\n'
         )
 
