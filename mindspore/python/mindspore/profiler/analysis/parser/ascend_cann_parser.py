@@ -22,6 +22,7 @@ import numpy as np
 from mindspore import log as logger
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.constant import ProfilerLevel
 from mindspore.profiler.common.ascend_msprof_exporter import AscendMsprofExporter
 
 
@@ -38,6 +39,7 @@ class AscendMsprofParser(BaseParser):
         self._msprof_profile_output_path = self._kwargs.get(
             "msprof_profile_output_path"
         )
+        self._profiler_level = kwargs.get("profiler_level")
         self.op_summary = None
         self.op_summary_headers = None
         self.msprof_timeline = []
@@ -71,6 +73,8 @@ class AscendMsprofParser(BaseParser):
         Raises:
             RuntimeError: If no op summary files are found or read file failed.
         """
+        if self._profiler_level == ProfilerLevel.LevelNone.value:
+            return
         file_path_list = glob.glob(
             os.path.join(
                 self._msprof_profile_output_path, self._OP_SUMMARY_FILE_PATTERN

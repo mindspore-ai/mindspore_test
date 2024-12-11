@@ -58,7 +58,8 @@ std::map<std::string, aclprofAicoreMetrics> kAicMetrics{{"ArithmeticUtilization"
                                                         {"L2Cache", ACL_AICORE_L2_CACHE},
                                                         {"None", ACL_AICORE_NONE}};
 
-std::map<std::string, uint64_t> profLevelMap{{"Level0", Level0}, {"Level1", Level1}, {"Level2", Level2}};
+std::map<std::string, uint64_t> profLevelMap{
+  {"LevelNone", LevelNone}, {"Level0", Level0}, {"Level1", Level1}, {"Level2", Level2}};
 
 std::shared_ptr<AscendProfiler> AscendProfiler::GetInstance() {
   auto instance = Profiler::GetInstance(kAscendDevice);
@@ -150,12 +151,9 @@ aclprofAicoreMetrics AscendProfiler::GetAicMetrics() const {
 }
 
 uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
-  uint64_t mask = ACL_AICORE_NONE;
-
-  if (profLevelMap.find(config_.profilerLevel) != profLevelMap.end()) {
-    mask = profLevelMap[config_.profilerLevel];
-    MS_LOG(INFO) << "profiler_level is " << config_.profilerLevel << ", mask is " << mask;
-  }
+  auto level_iter = profLevelMap.find(config_.profilerLevel);
+  uint64_t mask = (level_iter == profLevelMap.end()) ? Level0 : profLevelMap[config_.profilerLevel];
+  MS_LOG(INFO) << "profiler_level is " << config_.profilerLevel << ", mask is " << mask;
 
   if (aicMetrics != ACL_AICORE_NONE) {
     mask |= ACL_PROF_AICORE_METRICS;
