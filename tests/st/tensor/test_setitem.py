@@ -655,7 +655,7 @@ def test_setitem_refactor_grad1(mode):
     """
     ms.set_context(mode=mode)
 
-    k = 2
+    k = 31
     for i in range(k):
         x_np = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
 
