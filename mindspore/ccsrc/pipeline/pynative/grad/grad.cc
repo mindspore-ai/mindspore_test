@@ -307,7 +307,8 @@ class BpropCallback final : public expander::bprop::PynativeCallback {
   ValuePtrList *GetInputs() const override { return &op_grad_info->input_value; }
   ValuePtr *GetOutput() const override { return &op_grad_info->out_value; }
   bool IsConstantInput(size_t index) const override {
-    return PyNativeAlgo::Common::IsConstant(op_grad_info->input_value_grad_type[index]);
+    runtime::Pipeline::Get().WaitBprop();
+    return !PyNativeAlgo::AutoGrad::NeedGrad({*GetInput(index)});
   }
   void FreeDeviceAddress(ValuePtr *value) const override {
     if (value == this->GetOutput()) {
