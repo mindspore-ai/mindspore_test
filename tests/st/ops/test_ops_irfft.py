@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops, nn, mutable
 from mindspore.ops import irfft
 from tests.mark_utils import arg_mark
+from tests.st.ops.ops_dryrun_cases import ops_dryrun_check_ndarray_result
 
 
 class IRFFTNet(nn.Cell):
@@ -60,7 +61,7 @@ def generate_expect_backward_output_2_4(x, n, dim):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='dryrun', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_irfft_normal(mode):
     """
@@ -75,7 +76,7 @@ def test_ops_irfft_normal(mode):
     net = IRFFTNet()
     output = net(ms.Tensor(x), n, dim)
     expect = generate_expect_forward_output(x, n, dim)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
+    ops_dryrun_check_ndarray_result(output.asnumpy(), expect, rtol=1e-3, atol=1e-5, dtype_cmp=False)
 
     x = generate_random_input((2, 3), np.float32)
     dout = np.ones((2, 3)).astype(np.float32)
@@ -83,7 +84,7 @@ def test_ops_irfft_normal(mode):
     grad_net.set_train()
     grad = grad_net(ms.Tensor(x), n, dim)
     expect = generate_expect_backward_output_2_3(dout, n, dim)
-    np.testing.assert_allclose(grad.asnumpy(), expect, rtol=1e-3, atol=1e-5)
+    ops_dryrun_check_ndarray_result(grad.asnumpy(), expect, rtol=1e-3, atol=1e-5, dtype_cmp=False)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

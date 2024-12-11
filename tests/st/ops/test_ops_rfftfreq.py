@@ -18,6 +18,7 @@ from mindspore import ops, jit, JitConfig
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.ops_dryrun_cases import ops_dryrun_check_ndarray_result
 
 
 @test_utils.run_with_cell
@@ -32,7 +33,7 @@ def generate_expect_forward_output(n, d=1.0):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='dryrun', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_ops_rfftfreq_forward(mode):
     """
@@ -49,7 +50,7 @@ def test_ops_rfftfreq_forward(mode):
     else:
         output = (jit(rfftfreq_forward_func, jit_config=JitConfig(jit_level="O2")))(n, d)
     expect = generate_expect_forward_output(n, d)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
+    ops_dryrun_check_ndarray_result(output.asnumpy(), expect, rtol=1e-3, atol=1e-5, dtype_cmp=False)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

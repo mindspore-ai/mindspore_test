@@ -21,6 +21,7 @@ from mindspore import nn
 from mindspore import Tensor
 from mindspore import dtype as mstype
 from tests.mark_utils import arg_mark
+from tests.st.ops.ops_dryrun_cases import ops_dryrun_check_results
 
 
 class Net(nn.Cell):
@@ -32,7 +33,7 @@ class Net(nn.Cell):
         return self.histogram(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='dryrun', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_histogram_normal(mode):
     """
@@ -40,6 +41,9 @@ def test_histogram_normal(mode):
     Description: Verify the result of Histogram
     Expectation: success
     """
+    def dryrun_check(output, expect):
+        np.testing.assert_equal(output.shape, expect.shape)
+
     context.set_context(mode=mode)
     bins, min_val, max_val = 4, 0.0, 3.0
     net = Net(bins, min_val, max_val)
@@ -51,6 +55,6 @@ def test_histogram_normal(mode):
     output3 = net(x3)
     expected_output = np.array([0, 2, 1, 0])
     expected_output2 = np.array([0., 2., 1., 0.])
-    assert np.array_equal(output.asnumpy(), expected_output)
-    assert np.array_equal(output2.asnumpy(), expected_output2)
-    assert np.array_equal(output3.asnumpy(), expected_output2)
+    ops_dryrun_check_results(dryrun_check, np.array_equal, output.asnumpy(), expected_output)
+    ops_dryrun_check_results(dryrun_check, np.array_equal, output2.asnumpy(), expected_output2)
+    ops_dryrun_check_results(dryrun_check, np.array_equal, output3.asnumpy(), expected_output2)

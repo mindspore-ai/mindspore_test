@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 import mindspore.context as context
 from mindspore import Tensor
 from mindspore import ops
 import tests.st.utils.test_utils as test_utils
+from tests.mark_utils import arg_mark
+from tests.st.ops.ops_dryrun_cases import ops_dryrun_check_ndarray_result
 
 
 @test_utils.run_with_cell
@@ -26,7 +27,7 @@ def forward_func(x):
     return ops.matrix_band_part(x, 2, 1)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='dryrun', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_matrixbandpart_float32(context_mode):
     """
@@ -46,4 +47,4 @@ def test_matrixbandpart_float32(context_mode):
           [1., 1., 1., 0.],
           [1., 1., 1., 1.],
           [0., 1., 1., 1.]]], np.float32)
-    np.testing.assert_allclose(output.asnumpy(), expected, rtol=1e-3)
+    ops_dryrun_check_ndarray_result(output.asnumpy(), expected, rtol=1e-3)
