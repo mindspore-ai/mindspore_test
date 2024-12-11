@@ -110,24 +110,25 @@ DebugInfoPtr GenerateDebugInfos(const py::list &file_names, const py::list &line
 }
 }  // namespace
 
-void Capture(const py::args &args, const py::object &res) {
+void Capture(const py::args &args, py::object *res) {
   if (!IsTracing()) {
     return;
   }
-  CaptureRun(py::args(py::tuple(args[1])), res, args[0]);
+  *res = CaptureRun(py::args(py::tuple(args[1])), *res, args[0]);
 }
 
-void Capture(const py::list &args, const py::object &res, const std::string &class_name) {
+void Capture(const py::list &args, py::object *res, std::string class_name) {
   if (!IsTracing()) {
     return;
   }
   const py::object &prim_py = python_adapter::CallPyFn("mindspore.ops", class_name);
-  CaptureRun(py::args(py::tuple(args)), res, prim_py);
+  *res = CaptureRun(py::args(py::tuple(args)), *res, prim_py);
 }
 
-void CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py) {
+py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py) {
   auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
-  python_adapter::CallPyObjMethod(jit_context, "run_op", prim_py, res, args);
+  std::string method = "run_op";
+  return jit_context.attr(method.c_str())(prim_py, res, *args);
 }
 
 bool IsTracing() { return trace::TraceRecorder::GetInstance()->BuildingTraceGraph(); }
@@ -273,7 +274,42 @@ AnfNodePtr TraceRecorder::ConvertParameterObj(const py::object &input_obj) {
   MS_LOG(DEBUG) << "Created a new weight parameter for " << top_func_graph->ToString() << ", param: " << param_name;
   return top_func_graph->AddFvParameter(param_name, value);
 }
-
+void TraceRecorder::NewFuncGraphNode(const py::object &phase, const py::object &prim_res, const py::list &file_names,
+                                     const py::list &linenos, const py::args &inputs) {
+  auto graph_executor = pipeline::GetExecutor();
+  MS_EXCEPTION_IF_NULL(graph_executor);
+  FuncGraphPtr jit_fg = graph_executor->GetFuncGraph(py::cast<std::string>(phase));
+  const auto debug_info = GenerateDebugInfos(file_names, linenos);
+  AnfNodePtrList node_inputs;
+  AbstractBasePtrList abs_inputs;
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    AnfNodePtr node;
+    auto input_obj = inputs[i];
+    bool is_parameter = py::hasattr(input_obj, "__parameter__") && py::isinstance<tensor::MetaTensor>(input_obj);
+    // When the input of a cnode is a weight, add it to the top graph.
+    if (is_parameter) {
+      node = ConvertParameterObj(input_obj);
+    } else {
+      node = GetNode(inputs[i], debug_info);
+      MS_EXCEPTION_IF_NULL(node);
+    }
+    (void)node_inputs.emplace_back(node);
+    if (node->abstract() != nullptr) {
+      (void)abs_inputs.emplace_back(node->abstract());
+    } else {
+      (void)abs_inputs.emplace_back(GetAbstract(input_obj));
+    }
+    MS_LOG(DEBUG) << "Add input, " << node->DebugString();
+  }
+  AnfNodePtr cnode;
+  (void)node_inputs.insert(node_inputs.cbegin(), NewValueNode(jit_fg));
+  cnode = graph_stack_.top()->NewCNodeInOrder(node_inputs);
+  if (cnode->debug_info() != nullptr) {
+    cnode->debug_info()->set_trace_info(MakeTraceInfo<TraceOpt>(debug_info));
+  }
+  MS_LOG(DEBUG) << "New cnode: " << cnode->DebugString();
+  SetNode(prim_res, cnode, debug_info);
+}
 void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_res, const py::list &file_names,
                             const py::list &linenos, const py::object &do_signature, const py::args &inputs) {
   MS_LOG(DEBUG) << "NewNode, prim_obj: " << py::str(prim_obj) << ", prim_res: [" << py::str(prim_res.get_type()) << "] "
@@ -594,7 +630,8 @@ void RegTraceRecorderPy(const py::module *m) {
     .def("end_graph", &TraceRecorder::EndGraph, "Finish graph building.")
     .def("run_graph", &TraceRecorder::RunGraph, "Run the built graph.")
     .def("new_node", &TraceRecorder::NewNode, "Append a new CNode into current graph.")
-    .def("sync_tensor_node", &TraceRecorder::SyncTensorNode, "Sync node from a tensor to another.");
+    .def("sync_tensor_node", &TraceRecorder::SyncTensorNode, "Sync node from a tensor to another.")
+    .def("new_fg_node", &TraceRecorder::NewFuncGraphNode, "Append a new CNode of func graph into current graph.");
 }
 }  // namespace trace
 }  // namespace mindspore

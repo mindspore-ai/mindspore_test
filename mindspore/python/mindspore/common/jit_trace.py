@@ -43,6 +43,16 @@ class TraceJitContext(JitContext):
         tr.get_instance().new_node(prim, prim_res, file_names, linenos, False, *args)
         return prim_res
 
+    def run_graph(self, phase, prim_res, *args):
+        logger.debug(f'phase: {phase}, args: {args}, prim_res: {prim_res}')
+        if isinstance(prim_res, TensorNode):
+            prim_res = prim_res.get_value()
+        prim_res = _sync_stub_tensor(prim_res)
+        args = tuple(_sync_stub_tensor(arg) for arg in args)
+        file_names, linenos = _get_caller_lines()
+        tr.get_instance().new_fg_node(phase, prim_res, file_names, linenos, *args)
+        return prim_res
+
 
 _compile_only = False
 _trace_jit_context = TraceJitContext()

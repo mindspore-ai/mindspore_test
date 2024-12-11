@@ -56,6 +56,7 @@ from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, upd
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
 from mindspore.common._pijit_context import PIJitCaptureContext
 from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
+from mindspore.common.jit_context import jit_context
 from mindspore.common.jit_trace import _jit_trace
 
 # Store ms_function class compiled pipeline cache.
@@ -640,10 +641,14 @@ class _JitExecutor:
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
-        if context.get_context("mode") == context.PYNATIVE_MODE:
+        if context.get_context("mode") == context.PYNATIVE_MODE and not jit_context():
             output = _pynative_executor.grad_jit(*new_inputs)
         else:
             output = self._graph_executor(tuple(new_inputs), phase)
+            if jit_context():
+                if is_stub_tensor(output):
+                    output = output.stub_sync()
+                return jit_context().run_graph(phase, output, *tuple(new_inputs))
 
         return output
 
