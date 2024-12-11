@@ -271,6 +271,28 @@ void OptGuard::UpdateGuardList(GuardItemPtr item) {
   }
 }
 
+static std::string GuardCheckFailInfo(const GuardItemPtr &item, const py::handle &object) {
+  std::stringstream s;
+  auto print_tensor = [&s](const py::handle &tensor) {
+    constexpr int limit_print_size = 256;
+    if (tensor.attr("_size").cast<int>() <= limit_print_size) {
+      s << py::str(tensor);
+    } else {
+      s << Py_TYPE(tensor.ptr())->tp_name << "(shape=" << py::str(tensor.attr("shape").ptr())
+        << ", dtype=" << py::str(tensor.attr("dtype").ptr()) << ")";
+    }
+  };
+  s << "Guard check fail: " << item->ToString() << " v.s. (" << object.ptr() << "): ";
+  if (object.ptr() == nullptr) {
+    s << "<nullptr>";
+  } else if (IsTensorPyObject(object.ptr())) {
+    print_tensor(object);
+  } else {
+    s << py::str(object);
+  }
+  return s.str();
+}
+
 bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache,
                      std::map<size_t, bool> *success, std::map<size_t, bool> *fail, bool perf) {
   // filter failure case
@@ -306,14 +328,12 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
       if (fail != nullptr) {
         fail->operator[](item->Info().Id()) = false;
       }
+      MS_LOG(DEBUG) << "Guard check fail:" << item->ToString();
       if (print) {
         auto trace = item->GetTrace();
         auto obj = GetObjectFromTrace(frame, trace);
-        GRAPH_JIT_LOG_F("Guard check fail: %s v.s. %p %s\n", item->ToString().c_str(), obj,
-                        std::string(py::str(py::cast<py::object>(obj))).c_str());
+        GRAPH_JIT_LOG_F("%s\n", GuardCheckFailInfo(item, obj).c_str());
         Py_XDECREF(obj);
-      } else if (IS_OUTPUT_ON(mindspore::kDebug)) {
-        MS_LOG(DEBUG) << "Guard check fail:" << item->ToString();
       }
       return false;
     } else if (success != nullptr) {

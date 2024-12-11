@@ -235,11 +235,12 @@ static bool PrepareTraceParam(ValueNode *node, TraceVector *tv, int depth, int m
                               bool strict, bool print) {
   const std::vector<ValueNode *> &inputs = node->getInputs();
   for (auto it : inputs) {
+    if (it->GetTrace() != nullptr) {
+      tv->push_back(it->GetTrace());
+      continue;
+    }
     auto t = GetTrace(it, strict, print, depth + 1, max_depth);
     if (t == nullptr) {
-      if (it->GetTrace() != nullptr) {
-        tv->push_back(it->GetTrace());
-      }
       return false;
     } else if (t->GetTraceType() == TraceType::Unsupported) {
       *has_unsupported = true;
@@ -547,8 +548,9 @@ bool Graph::GuardSequenceNodeLength(ValueNode *sequence_node, Py_ssize_t sequenc
   PyObject *builtin_len = PyDict_GetItemString(PyEval_GetBuiltins(), "len");
   MS_EXCEPTION_IF_NULL(builtin_len);
   TracePtr len_func = CreateOpTrace(builtin_len, LOAD_CONST, -1, {}, "", "", strict);
-  TracePtr len_trace = CreateOpTrace(py::int_(sequence_size).ptr(), CALL_FUNCTION, 1, {len_func, tr}, "", "", strict);
-  guard->GuardOn(len_trace, GuardLevel::GEqual, false);
+  TracePtr len_trace =
+    CreateOpTrace(py::int_(sequence_size).ptr(), CALL_FUNCTION, 1, {len_func, tr}, "", "len", strict);
+  guard->GuardOn(len_trace, GuardLevel::GEqual, true);
 
   sequence_node->MakeConstantInfo()->set_len(sequence_size);
   return true;
@@ -575,40 +577,27 @@ bool Graph::GuardType(ValueNode *node) {
   return ret;
 }
 
-static bool SkipGuardInlinedFunc(ValueNode *func_node) {
+static bool SkipGuardInlinedFunc(CallNode *node) {
+  ValueNode *func_node = node->input(0);
   if (func_node->IsConstantValue()) {
     return true;
   }
-  AObject::Type value_type = func_node->GetVobj()->GetType();
-  if (func_node->GetOpcode() == LOAD_ATTR) {
-    AObject *src_info = func_node->input(0)->GetVobj();
-    if (src_info->GetType() == AObject::kTypeTensor && value_type == AObject::kTypeBoundMethod) {
-      // function from Tensor
-      return true;
-    }
+  // Now only guard specialized function and cell
+  if (func_node->GetVobj()->GetType()) {
+    return false;
   }
-  return false;
+  return node->GetInlineReason() != InlineReason::kInlineFuncSpecialize;
 }
 
 bool Graph::GuardInlinedFunc(CallNode *call_node) {
-  if (SkipGuardInlinedFunc(call_node->input(0))) {
+  MS_LOG(INFO) << "guard inlined function (sub-graph) " << call_node->input(0)->ToString();
+  if (SkipGuardInlinedFunc(call_node)) {
+    MS_LOG(INFO) << "skip guard function (sub-graph) " << call_node->input(0)->ToString();
     return true;
   }
   TracePtr tr = this->TraceValueNode(call_node->input(0));
   if (tr == nullptr) {
-    if (this->GuardValueNodeClosure(call_node->input(0))) {
-      AObject *callable_info = call_node->input(0)->GetVobj();
-      AObject::Type func_type = callable_info->GetType();
-      if (func_type == AObject::kTypeBoundMethod) {
-      } else if (func_type == AObject::kTypeCell || func_type == AObject::kTypeAnyValue) {
-        call_node->input(0)->MakeConstantInfo()->set_type(callable_info->GetTypeObject());
-      } else if (func_type == AObject::kTypeFunction) {
-        call_node->input(0)->SetConstantValue(true);
-      } else {
-        return false;
-      }
-      return true;
-    }
+    // unknown source function. Maybe dynamic call-site, do nothing
     return false;
   }
   const auto &guard = this->GetGuard()->GetGuard();
@@ -621,7 +610,10 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
     PyObject *func = PyMethod_GET_FUNCTION(callable);
     tr = CreateOpTrace(func, LOAD_ATTR, 0, {tr}, "", "__func__", strict);
     guard->GuardOn(tr, GuardLevel::GId);
-  } else if (func_type == AObject::kTypeCell || func_type == AObject::kTypeAnyValue) {
+  } else if (func_type == AObject::kTypeCell) {
+    MS_LOG(DEBUG) << "guard inlined cell " << py::str(callable_info->GetPyObject().ptr());
+    guard->GuardOn(tr, GuardLevel::GDeduce, false);
+  } else if (func_type == AObject::kTypeAnyValue) {
     guard->GuardOn(tr, GuardLevel::GType, false);
     call_node->input(0)->MakeConstantInfo()->set_type(callable_info->GetTypeObject());
   } else if (func_type == AObject::kTypeFunction) {

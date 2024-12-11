@@ -2362,8 +2362,8 @@ GuardItemPtr GuardType(TracePtr obj) { return std::make_shared<TypeGuard>(obj); 
 
 GuardItemPtr GuardId(TracePtr obj) {
   auto pyObj = py::cast<py::object>(obj->GetObject());
-  bool is_param = py::hasattr(pyObj, "__parameter__") && tensor::IsTensorPy(pyObj);
-  if (!is_param && (IsStubTensor(pyObj) || tensor::IsTensorPy(pyObj))) {
+  bool is_param = IsParameterObject(py_obj);
+  if (!is_param && (IsStubTensor(pyObj) || tensor::IsTensorPy(py_obj))) {
     return GuardEqual(obj, false, INT_MAX);
   } else {
     return std::make_shared<IdGuard>(obj);
