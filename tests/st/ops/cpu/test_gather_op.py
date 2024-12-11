@@ -36,7 +36,7 @@ class NetGatherV2_axis0(nn.Cell):
         return self.gatherv2(params, indices, 0)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_gatherv2_axis0():
     x = Tensor(np.arange(3 * 2 * 2).reshape(3, 2, 2), mstype.float32)
@@ -63,7 +63,7 @@ class NetGatherV2_axis1(nn.Cell):
         return self.gatherv2(params, indices, 1)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_gatherv2_axis1():
     x = Tensor(np.arange(2 * 3 * 2).reshape(2, 3, 2), mstype.float32)
@@ -90,7 +90,7 @@ class NetGatherV2_axisN1(nn.Cell):
         return self.gatherv2(params, indices, -1)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_gatherv2_axisN1():
     x = Tensor(np.arange(2 * 2 * 3).reshape(2, 2, 3), mstype.float32)
@@ -280,7 +280,7 @@ def test_gather_vmap_nested():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint64, np.uint16, np.int64, np.complex64, np.complex128])
 def test_gather_tensor(data_type):
@@ -311,7 +311,7 @@ def test_gather_tensor(data_type):
     np.allclose(out.asnumpy(), y_expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint64, np.uint16, np.int64, np.complex64, np.complex128])
 def test_gather_tensor_out_of_bound(data_type):
@@ -331,7 +331,7 @@ def test_gather_tensor_out_of_bound(data_type):
     assert "For 'Gather', the 'input_indices' should be in the range" in str(info.value)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint64, np.uint16, np.int64, np.complex64, np.complex128])
 def test_gather_tensor_8d(data_type):

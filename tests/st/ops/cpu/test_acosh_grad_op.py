@@ -34,7 +34,7 @@ class NetAcoshGrad(nn.Cell):
         return self.acoshGrad(x, dy)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_acosh_grad():
     out = np.array([5, 4, 3]).astype('float32')

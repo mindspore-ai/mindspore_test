@@ -97,7 +97,7 @@ def test_gatherd_grad_int32():
     print(output_grad.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_gatherd_grad_checkresult():
     x = np.array([[[-146.76097, 119.84371], [91.22607, -166.12923]],
@@ -116,7 +116,7 @@ def test_gatherd_grad_checkresult():
     assert np.all(np.abs(output.asnumpy() - expect) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_gatherd_grad_dynamic_shape():
     """

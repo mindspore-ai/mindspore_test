@@ -121,7 +121,7 @@ def compare_to_numpy(method, input_matrix, target, input_lengths, target_lengths
     assert np.allclose(loss.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("batch", [1, 10])
 @pytest.mark.parametrize("data_type", [np.float64])
@@ -243,7 +243,7 @@ def test_ctc_loss_v2_un_padded_grad():
     np.allclose(grad.asnumpy(), expected_grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("batch", [1, 10])
 @pytest.mark.parametrize("data_type", [np.float32])

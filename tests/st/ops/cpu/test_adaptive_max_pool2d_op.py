@@ -37,7 +37,7 @@ class NetP(nn.Cell):
         return self.adaptive_max_pool2d(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_net_normal():
     """
@@ -52,7 +52,7 @@ def test_adaptivemaxpool2d_cpu_net_normal():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_net_h_none():
     """
@@ -67,7 +67,7 @@ def test_adaptivemaxpool2d_cpu_net_h_none():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_net_hxh():
     """
@@ -92,7 +92,7 @@ class NetWithIndices(nn.Cell):
         return self.adaptive_max_pool2d(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_net_with_indices():
     """
@@ -107,7 +107,7 @@ def test_adaptivemaxpool2d_cpu_net_with_indices():
     assert output[1].asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_net_f():
     """
@@ -131,7 +131,7 @@ class Netnn(nn.Cell):
         return self.adaptive_max_pool2d(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_net_nn():
     """
@@ -146,7 +146,7 @@ def test_adaptivemaxpool2d_cpu_net_nn():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_dynamic_shape():
     """
@@ -164,7 +164,7 @@ def test_adaptivemaxpool2d_cpu_dynamic_shape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_adaptivemaxpool2d_cpu_vmap():
     """

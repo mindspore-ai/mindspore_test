@@ -164,7 +164,7 @@ def test_maskedfill_tensor_value():
     maskedfill_value(Tensor(0.5))
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_func_masked_fill_with_8d_broadcast_input():
     """
     Feature: Test func masked_fill.

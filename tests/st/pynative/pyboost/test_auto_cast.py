@@ -20,7 +20,7 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_implicit_cast_float16_float32():
@@ -41,7 +41,7 @@ def test_implicit_cast_float16_float32():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_auto_lifting_cast_float16_float32():

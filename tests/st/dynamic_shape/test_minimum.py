@@ -185,7 +185,7 @@ def test_minimum_op_dynamic_rank(context_mode):
 
 # 反向动态shape有公共问题，待解决后再放开用例
 @pytest.mark.skip
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_minimum_op_dynamic_backward_shape(context_mode):
@@ -216,7 +216,7 @@ def test_minimum_op_dynamic_backward_shape(context_mode):
 
 # 反向动态shape有公共问题，待解决后再放开用例
 @pytest.mark.skip
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_minimum_op_dynamic_backward_rank(context_mode):

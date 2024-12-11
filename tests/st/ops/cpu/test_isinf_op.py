@@ -40,7 +40,7 @@ x2 = Tensor(np.array([np.log(0), 1, np.log(0), 3]), mstype.float32)
 x3 = Tensor(np.array([[np.log(0), 2], [np.log(0), np.log(0)]]), mstype.float32)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_nan():
     ms_isinf = NetIsInf()

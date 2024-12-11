@@ -35,7 +35,7 @@ class Net(Cell):
         return self.norm(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_l2normalize_float32():
     x = np.arange(20 * 20 * 20 * 20).astype(np.float32).reshape(20, 20, 20, 20)
@@ -50,7 +50,7 @@ def test_l2normalize_float32():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_l2normalize_float16():
     x = np.arange(96).astype(np.float16).reshape(2, 3, 4, 4)
@@ -65,7 +65,7 @@ def test_l2normalize_float16():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_l2normalize_axis():
     axis = -2
@@ -81,7 +81,7 @@ def test_l2normalize_axis():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_l2normalize_epsilon():
     axis = -1
@@ -98,7 +98,7 @@ def test_l2normalize_epsilon():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_l2normalize_dynamic_shape_float32():
     """

@@ -433,7 +433,7 @@ def ms_parser_key_value_not_tensor():
                 err_msg=str("ms_parser_key_value_not_tensor match failed"))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [sum_args])
 @pytest.mark.parametrize('ms_func', [ms_sum_args])
 @pytest.mark.parametrize('a', [1])
@@ -449,7 +449,7 @@ def test_arg1(func, ms_func, a):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [sum_args])
 @pytest.mark.parametrize('ms_func', [ms_sum_args])
 @pytest.mark.parametrize('a', [1])

@@ -43,7 +43,7 @@ def test_tensor_slice_1():
 
 
 @pytest.mark.skip(reason="this case depending on other property")
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_slice_2():
     """
@@ -62,7 +62,7 @@ def test_tensor_slice_2():
     assert out.shape == (0, 2)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_slice_in_tuple():
     """

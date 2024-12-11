@@ -423,7 +423,7 @@ def train_summary_record(test_writer, steps):
     return out_me_dict
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @security_off_wrap
 def test_summary():

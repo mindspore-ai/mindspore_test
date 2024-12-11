@@ -196,7 +196,7 @@ def test_grad_return_ids_pos01_pynative(func):
     match_array(jit_grad2, pijit_grad2)
 
 @pytest.mark.skip
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_weight_w])
 def test_grad_return_ids_weight_w_pynative(func):
     """
@@ -221,7 +221,7 @@ def test_grad_return_ids_weight_w_pynative(func):
     match_array(jit_grad2, pijit_grad2)
 
 @pytest.mark.skip
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_weight_wb])
 def test_grad_return_ids_weight_wb_pynative(func):
     """
@@ -246,7 +246,7 @@ def test_grad_return_ids_weight_wb_pynative(func):
     match_array(jit_grad2, pijit_grad2)
 
 @pytest.mark.skip
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_pos_weight])
 def test_grad_return_ids_pos_weight_pynative(func):
     """

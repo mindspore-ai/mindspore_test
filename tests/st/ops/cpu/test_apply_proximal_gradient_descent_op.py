@@ -43,7 +43,7 @@ def run_net(var, alpha, l1, l2, delta, expect):
     np.testing.assert_almost_equal(output.asnumpy(), expect, decimal=3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_apply_proximal_gradient_descent_float32():
     """

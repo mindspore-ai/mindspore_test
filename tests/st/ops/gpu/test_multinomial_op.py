@@ -38,7 +38,7 @@ class Net(nn.Cell):
         return C.multinomial(x, self.sample, self.replacement, self.seed)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_multinomial_exception1():
     """
     Feature: test Multinomial exception case.
@@ -53,7 +53,7 @@ def test_multinomial_exception1():
         assert True
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_multinomial__exception2():
     """
     Feature: test Multinomial exception case.

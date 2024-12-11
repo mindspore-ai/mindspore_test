@@ -51,7 +51,7 @@ class LeNet(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @test_utils.run_test_with_On
 def test_lenet():

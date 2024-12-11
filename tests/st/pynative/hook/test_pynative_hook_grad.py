@@ -414,7 +414,7 @@ def test_pynative_hook_diff_hook_ascend():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_hook_diff_hook_gpu():
@@ -635,7 +635,7 @@ def hook_wrapper():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_hookbackward_should_two_zero():

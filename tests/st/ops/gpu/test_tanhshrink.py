@@ -42,7 +42,7 @@ def test_tanhshrink_normal():
     assert np.array_equal(output, expected_output)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tanhshrink_negative():
     """
     Feature: Tanhshrink
