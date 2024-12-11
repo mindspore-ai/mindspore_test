@@ -46,7 +46,8 @@ namespace mindspore {
 namespace parse {
 extern bool ConvertData(const py::object &obj, mindspore::ValuePtr *data, bool use_signature,
                         const mindspore::TypePtr &dtype, bool forbid_reuse);
-}
+extern bool IsParameterObject(const py::object &);
+}  // namespace parse
 
 namespace abstract {
 extern mindspore::abstract::AbstractBasePtr ToAbstract(const mindspore::ValuePtr &value,
@@ -822,6 +823,10 @@ bool IsMSDTypeType<true>(PyTypeObject *tp) {
 template <>
 bool IsCellListType<false>(PyTypeObject *tp) {
   return CheckType("mindspore.nn", "CellList", false, tp);
+}
+
+bool IsParameterObject(const py::handle &handle) {
+  return parse::IsParameterObject(py::reinterpret_borrow<py::object>(handle));
 }
 
 bool CheckTensorDataInitialized(const py::object &py_tensor) {

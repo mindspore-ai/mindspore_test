@@ -354,6 +354,7 @@ class MindGraphBuilder : public GraphBuilder {
 
   LocationPtr GetLocation(CallNode *call_node) const;
   AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
+  void GuardAttribute(ValueNode *attr_node);
 
  protected:
   bool DoGetItem(const Instr &instr) override;

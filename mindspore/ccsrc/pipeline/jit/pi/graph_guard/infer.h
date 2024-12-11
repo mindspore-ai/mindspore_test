@@ -81,6 +81,7 @@ template <bool sub>
 bool IsMetaFuncGraphType(PyTypeObject *tp);
 template <bool sub>
 bool IsMSDTypeType(PyTypeObject *tp);
+bool IsParameterObject(const py::handle &handle);
 
 bool FindTensorName(const std::string &name);
 

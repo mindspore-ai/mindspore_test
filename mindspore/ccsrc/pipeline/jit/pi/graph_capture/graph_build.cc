@@ -2757,7 +2757,7 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
       HandleCustomBProp(sub_graph, callable_obj);
     }
   }
-  if (call_node->input(0)->GetOpcode() == MAKE_FUNCTION) {
+  if (call_node->input(0)->GetOpcode() != MAKE_FUNCTION) {
     graph_->GuardInlinedFunc(call_node);
   }
   return reason;
@@ -5607,6 +5607,51 @@ static bool IsMutableAttribute(ValueNode *node) {
   return false;
 }
 
+void MindGraphBuilder::GuardAttribute(ValueNode *attr_node) {
+  static constexpr auto const_type = {
+    AObject::kTypeInt,   AObject::kTypeFloat, AObject::kTypeBool, AObject::kTypeMSDType,
+    AObject::kTypeTuple, AObject::kTypeList,  AObject::kTypeDict,
+  };
+  const auto IsPrimWithAttr = [](const py::handle &) { /*delay this guard */ return false; };
+
+  py::object attr_object = attr_node->GetVobj() ? attr_node->GetVobj()->GetPyObject() : py::object();
+  if (attr_object.ptr() == nullptr) {
+    return;
+  }
+  const auto &src_info = attr_node->input(0)->GetVobj();
+  py::object src_object = src_info->GetPyObject();
+  AObject::Type src_type = src_info->GetType();
+  AObject::Type attr_type = attr_node->GetVobj()->GetType();
+  const auto &name = attr_node->GetName();
+  bool is_const_attr_type = const_type.end() != std::find(const_type.begin(), const_type.end(), attr_type);
+
+  // the source type is constant, or has a guard and do following ...
+
+  if (src_type == AObject::kTypeModule /* assume the attribute of module(or global variable) is not change */) {
+    MS_LOG(INFO) << "skip guard the interface '" << name << "' of " << py::str(src_object.ptr());
+    // How to fast check Module attribute(or global varialbe) changed ?
+  } else if (attr_type == AObject::kTypeFunction || attr_type == AObject::kTypeCFunction ||
+             attr_type == AObject::kTypeBoundMethod || attr_type == AObject::kTypeCell ||
+             PyInstanceMethod_Check(attr_object.ptr())) {
+    MS_LOG(INFO) << "delay guard the function type of '" << AObject::ToString(src_object.ptr(), false) << "'";
+  } else if (src_type == AObject::kTypeTensor /* tensor attribute always constant. */
+             || CheckConstPyObject(src_object.ptr()) /* constant python object not need check */) {
+    MS_LOG(INFO) << "skip guard the attribute '" << name << "' of the builtin " << Py_TYPE(src_object.ptr())->tp_name;
+  } else if (attr_type == AObject::kTypeTensor && IsParameterObject(attr_object)) {
+    // The mindspore.Parameter must be guard id. FuncGraph reuse the object
+    graph_->GuardValueNode(attr_node, GuardLevel::GId);
+  } else if (is_const_attr_type || (attr_type == AObject::kTypePrimitive && IsPrimWithAttr(attr_object))) {
+    // For primitive, check the attribute that transform to partial arguments
+    graph_->GuardValueNode(attr_node, GuardLevel::GEqual);
+  } else {
+    // Anyway, guard the type of attribute
+    graph_->GuardType(attr_node);
+  }
+  if (is_const_attr_type) {  // shouldn't set false
+    attr_node->SetConstantValue(true);
+  }
+}
+
 ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
   if (IsNamedtupleGetElem(target_node, instr.name())) {
     return HandleNamedtupleGetElem(instr, target_node);
@@ -5615,6 +5660,9 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
   MS_EXCEPTION_IF_NULL(attr_node);
   ValueNode *graph_attr_node = nullptr;
   auto attr_obj = attr_node->GetVobj()->GetPyObject();
+
+  // handle attribute of dynamic shape tensor
+  // Not implement for tensor.size, tensor.ndim ...
   if (instr.name() == "shape") {
     auto ret_wrapper = HandleGetShapeOfDynamicLengthTensor(target_node->abstract_wrapper());
     if (ret_wrapper != nullptr) {
@@ -5645,23 +5693,9 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
   if (abstract_wrapper != nullptr) {
     graph_attr_node->set_abstract_wrapper(abstract_wrapper);
   }
-  if (attr_obj.ptr() != nullptr && py::hasattr(attr_obj, "__parameter__") && tensor::IsTensorPy(attr_obj)) {
-    graph_->GuardValueNode(graph_attr_node, GuardLevel::GId);
-    return graph_attr_node;
-  }
-  // Add Guard for getattr node. For scalar/list/tuple/primitive, need to guard value. Otherwise, guard type and shape.
-  AObject::Type attr_type = graph_attr_node->GetVobj() ? graph_attr_node->GetVobj()->GetType() : AObject::kTypeAnyValue;
-  static const std::vector<AObject::Type> const_type = {AObject::kTypeInt,      AObject::kTypeFloat, AObject::kTypeBool,
-                                                        AObject::kTypeTuple,    AObject::kTypeList,  AObject::kTypeDict,
-                                                        AObject::kTypePrimitive};
   // Need to check whether the guard is failed in the future.
-  if (std::any_of(const_type.begin(), const_type.end(),
-                  [attr_type](const AObject::Type type) { return attr_type == type; })) {
-    graph_->GuardValueNode(graph_attr_node, GuardLevel::GEqual);
-  } else if (attr_type != AObject::kTypeFunction && attr_type != AObject::kTypeBoundMethod &&
-             attr_type != AObject::kTypeCFunction) {
-    graph_->GuardValueNode(graph_attr_node, GuardLevel::GDeduce);
-  }
+  // Add Guard for getattr node. For scalar/list/tuple/primitive, need to guard value. Otherwise, guard type and shape.
+  GuardAttribute(graph_attr_node);
   return graph_attr_node;
 }
 
