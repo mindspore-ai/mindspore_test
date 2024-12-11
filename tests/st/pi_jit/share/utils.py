@@ -1,4 +1,5 @@
 import numpy as onp
+import types
 from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore import ops
@@ -127,7 +128,17 @@ def assert_executed_by_graph_mode(func, *, call_count: int = None):
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
-    assert len(jcr['code']['phase_']) > 0
+    if 'phase_' in jcr['code']:
+        assert len(jcr['code']['phase_']) > 0
+    else:
+        checked = False
+        for item in jcr['code']['compiled_code_'].co_consts:
+            if isinstance(item, types.CodeType):
+                j = get_code_extra(item)
+                assert len(j['code']['phase_']) > 0
+                checked = True
+                break
+        assert checked
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
 

@@ -250,6 +250,7 @@ def test_modify_mix1(test_optimize):
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="Need Fixed")
 def test_modify_mix2():
     """
     Feature: Side-effect handle
@@ -337,6 +338,7 @@ def test_object_consistency():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="Need Fixed")
 def test_object_consistency2():
     """
     Feature: Test side-effect

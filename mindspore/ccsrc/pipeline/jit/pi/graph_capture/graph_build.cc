@@ -4335,66 +4335,116 @@ LocationPtr MindGraphBuilder::GetLocation(CallNode *call_node) const {
   return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));
 }
 
-void MindGraphBuilder::FGAddTopInputs() {
-  auto add_input = [this](ValueNode *cur) {
-    if (cur == &ValueNode::kUnboundLocal) {
-      return; /* LOAD_DEREF */
-    }
-    auto cur_object = cur->GetVobj()->GetPyObject();
-    if (FGBuilder()->IsParameterSequence(cur_object)) {
-      MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
-      graph_->GuardValueNode(cur, GuardLevel::GDeduce);
-      return;
-    }
-    auto ret = FGBuilder()->AddTopGraphArgInput(cur_object);
-    if (ret == nullptr) {
-      MS_LOG(INFO) << "erased arguments";
-      graph_->GuardValueNode(cur, GuardLevel::GDeduce);
-      return;
-    }
-    cur->set_abstract_wrapper(ret);
-    root()->GetGraph()->PrepareParameter(cur);
-  };
-  auto add_var_input = [this](ValueNode *cur, bool is_var_keywords) {
-    if (cur == &ValueNode::kUnboundLocal) {
-      return; /* LOAD_DEREF */
-    }
-    auto cur_object = cur->GetVobj()->GetPyObject();
-    auto ret = is_var_keywords ? FGBuilder()->AddTopGraphKwargsInputs(cur_object)
-                               : FGBuilder()->AddTopGraphVargsInputs(cur_object);
-    if (ret == nullptr) {
-      return;
-    }
-    cur->set_abstract_wrapper(ret);
-    root()->GetGraph()->PrepareParameter(cur);
-  };
+void MindGraphBuilder::AddInput(ValueNode *node) {
+  auto obj = node->GetVobj()->GetPyObject();
+  if (FGBuilder()->IsParameterSequence(obj)) {
+    MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
+    graph_->GuardValueNode(node, GuardLevel::GDeduce);
+    return;
+  }
+  auto ret = FGBuilder()->AddTopGraphArgInput(obj);
+  if (ret == nullptr) {
+    MS_LOG(INFO) << "erased arguments";
+    graph_->GuardValueNode(node, GuardLevel::GDeduce);
+    return;
+  }
+  node->set_abstract_wrapper(ret);
+  root()->GetGraph()->PrepareParameter(node);
+}
 
+bool IsSelfRef(const py::handle &obj) {
+  ReprRecursionScope scope(obj.ptr());
+  if (scope.ReEnterOrError()) {
+    return true;
+  }
+  if (py::isinstance<py::dict>(obj)) {
+    auto dict = py::cast<py::dict>(obj);
+    return std::any_of(dict.begin(), dict.end(),
+                       [](const auto &item) { return IsSelfRef(item.first) || IsSelfRef(item.second); });
+  }
+  if (py::isinstance<py::tuple>(obj) || py::isinstance<py::list>(obj)) {
+    return std::any_of(obj.begin(), obj.end(), [](const auto &item) { return IsSelfRef(item); });
+  }
+  return false;
+}
+
+void MindGraphBuilder::ExpandContainerParameters(ValueNode *node) {
+  auto expand_list_tuple = [this](ValueNode *node, const py::object &obj) {
+    int index = 0;
+    std::for_each(obj.begin(), obj.end(), [this, &index, node](const auto &item) {
+      auto index_node = NewValueNode(AObject::Convert(py::int_(index)), {LOAD_CONST, -1}, {});
+      auto item_node = NewValueNode(AObject::Convert(item.ptr()), {BINARY_SUBSCR, 0}, {node, index_node});
+      ExpandContainerParameters(item_node);
+      index++;
+    });
+  };
+  auto expand_dict = [this](ValueNode *node, const py::object &obj) {
+    auto dict = py::cast<py::dict>(obj);
+    std::for_each(dict.begin(), dict.end(), [this, node](const auto &item) {
+      // handle key, key will be placed on the top of stack
+      (void)DoLoadConst({LOAD_CONST, -1, py::cast<py::object>(item.first)});
+      auto value = NewValueNode(AObject::Convert(item.second.ptr()), {BINARY_SUBSCR, 0}, {node, seek(0)});
+      ExpandContainerParameters(value);
+    });
+  };
+  MS_EXCEPTION_IF_NULL(node);
+  auto vobj = node->GetVobj();
+  MS_EXCEPTION_IF_NULL(vobj);
+  auto obj = vobj->GetPyObject();
+  auto is_dict = py::isinstance<py::dict>(obj);
+  auto is_tuple = py::isinstance<py::tuple>(obj);
+  auto is_list = py::isinstance<py::list>(obj);
+  if ((!is_list && !is_tuple && !is_dict) || IsSelfRef(obj)) {
+    AddInput(node);
+    push(node);
+  } else if (is_dict) {
+    expand_dict(node, obj);
+    DoBuildOp({BUILD_MAP, SizeToInt(py::len(obj))});
+  } else {
+    expand_list_tuple(node, obj);
+    DoBuildOp({(is_tuple ? BUILD_TUPLE : BUILD_LIST), SizeToInt(py::len(obj))});
+  }
+}
+
+bool IsGradOperation(const ValueNode *node) {
+  if (node == nullptr) {
+    return false;
+  }
+  auto vobj = node->GetVobj();
+  if (vobj == nullptr) {
+    return false;
+  }
+  auto type = vobj->GetTypeObject();
+  return type != nullptr && IsGradOperationType<true>(type);
+}
+
+void MindGraphBuilder::FGAddTopInputs() {
   bool has_vargs;
   bool has_kwargs;
   int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
   const auto &locals = frame_.GetLocals();
   MS_EXCEPTION_IF_CHECK_FAIL(args_count <= SizeToInt(locals.size()), "Locals size check failed");
-  args_count = args_count - has_vargs - has_kwargs;
 
-  for (const auto &node : frame_.GetClosures()) {
-    auto cur = node->GetValue();
-    if (cur != nullptr) {
-      add_input(cur); /* LOAD_DEREF */
+  const auto &closure = frame_.GetClosures();
+  for (size_t index = 0; index < closure.size(); ++index) {
+    auto value = closure[index]->GetValue();
+    if (value == nullptr || value == &ValueNode::kUnboundLocal) {
+      continue;
     }
+    ExpandContainerParameters(value); /* LOAD_DEREF */
+    closure[index]->SetValue(pop());
   }
-  int cur_index = 0;
-  for (cur_index = 0; cur_index < args_count; ++cur_index) {
-    auto cur = locals[cur_index];
-    add_input(cur);
-  }
-  if (has_vargs) {
-    auto cur = locals[cur_index];
-    add_var_input(cur, false);
-    cur_index++;
-  }
-  if (has_kwargs) {
-    auto cur = locals[cur_index];
-    add_var_input(cur, true);
+  auto is_grad_op = args_count > 0 ? IsGradOperation(locals[0]) : false;
+  for (int index = 0; index < args_count; ++index) {
+    if (locals[index] == nullptr || locals[index] == &ValueNode::kUnboundLocal) {
+      continue;
+    }
+    if (is_grad_op) {
+      AddInput(locals[index]);
+    } else {
+      ExpandContainerParameters(locals[index]);
+      locals[index]->set_abstract_wrapper(pop()->abstract_wrapper());
+    }
   }
 }
 

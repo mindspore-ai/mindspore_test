@@ -375,6 +375,8 @@ class MindGraphBuilder : public GraphBuilder {
   bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) override;
   ValueNode *HandleCallClass(CallNode *call_node) override;
   std::vector<ValueNode *> side_effect_outputs() { return side_effect_outputs_; }
+  void AddInput(ValueNode *node);
+  void ExpandContainerParameters(ValueNode *node);
 
  private:
   void FGAddTopInputs();

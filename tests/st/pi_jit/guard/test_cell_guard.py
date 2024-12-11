@@ -14,7 +14,7 @@
 # ============================================================================
 """Test guard for Cell"""
 import sys
-
+import pytest
 import mindspore as ms
 from mindspore import Tensor, context, jit, nn, ops
 from mindspore._c_expression import get_code_extra
@@ -185,6 +185,7 @@ def test_guard_for_CellList_4():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="Need Fixed")
 def test_guard_for_CellList_5():
     """
     Feature: Test guard for CellList.

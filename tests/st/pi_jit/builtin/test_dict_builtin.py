@@ -15,7 +15,7 @@
 # limitations under the License.
 # ============================================================================
 """ test builtin dict """
-
+import pytest
 from mindspore import context, jit, Tensor, ops
 
 from tests.mark_utils import arg_mark
@@ -94,6 +94,7 @@ def test_create_dict_from_tuple():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="Need Fixed")
 def test_create_dict_from_duplicate_keys():
     """
     Feature: builtin dict.

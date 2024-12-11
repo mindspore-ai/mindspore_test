@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from mindspore.nn import Cell
 from mindspore import Tensor

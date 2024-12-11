@@ -15,6 +15,7 @@
 """Test basic operation with one stage"""
 import os
 import pytest
+import types
 import numpy as np
 import mindspore
 import mindspore.nn as nn
@@ -29,8 +30,6 @@ from mindspore._c_expression import get_code_extra
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 from mindspore._c_expression import Tensor as CppTensor
 
-
-
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
@@ -40,6 +39,22 @@ cfg = {
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
+def assert_executed_by_graph_mode(func):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
+    if 'phase_' in jcr['code']:
+        assert len(jcr['code']['phase_']) > 0
+    else:
+        checked = False
+        for item in jcr['code']['compiled_code_'].co_consts:
+            if isinstance(item, types.CodeType):
+                j = get_code_extra(item)
+                assert len(j['code']['phase_']) > 0
+                checked = True
+                break
+        assert checked
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_make_tuple():
@@ -1073,11 +1088,7 @@ def test_unpack_sequence_with_variable():
     assert len(ret) == 2
     assert np.all(ret[0].asnumpy() == np.array([4, 5, 6]))
     assert ret[1] == 3
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1102,11 +1113,7 @@ def test_unpack_sequence_with_variable_2():
     assert len(ret) == 2
     assert ret[0] == 4
     assert ret[1] == 3
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1131,11 +1138,7 @@ def test_unpack_sequence_with_variable_3():
     assert len(ret) == 3
     assert ret[0] == "1"
     assert ret[1] == "2"
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1158,11 +1161,7 @@ def test_empty_container_input():
     assert len(ret) == 2
     assert ret[0] == 2
     assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1185,12 +1184,7 @@ def test_empty_container_input_2():
     assert len(ret) == 2
     assert ret[0] == 2
     assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
-
+    assert_executed_by_graph_mode(foo)
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_empty_container_input_3():
@@ -1212,11 +1206,7 @@ def test_empty_container_input_3():
     assert len(ret) == 2
     assert ret[0] == 2
     assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1240,11 +1230,7 @@ def test_subgraph_with_primitive_output():
     a = Tensor([1, 2, 3])
     ret = foo(a)
     assert np.all(ret.asnumpy() == np.array([2, 4, 6]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @pytest.mark.skip(reason="Subgraph with only load const add output failed, fix later")
@@ -1268,11 +1254,7 @@ def test_subgraph_with_primitive_output_2():
     a = Tensor([1, 2, 3])
     ret = foo(a)
     assert np.all(ret.asnumpy() == np.array([2, 4, 6]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1297,11 +1279,7 @@ def test_function_decorated_with_PSJIT_run_ast():
     b = Tensor([1, 2, 3])
     ret = foo(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1328,11 +1306,7 @@ def test_function_decorated_with_PSJIT_run_ast_2():
     b = Tensor([1, 2, 3])
     ret = foo(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1359,11 +1333,7 @@ def test_function_decorated_with_PSJIT_run_ast_3():
     b = Tensor([1, 2, 3])
     ret = foo(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1390,11 +1360,7 @@ def test_function_decorated_with_PSJIT_run_ast_4():
     b = Tensor([1, 2, 3])
     ret = foo(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1423,11 +1389,7 @@ def test_function_decorated_with_PSJIT_run_ast_5():
     b = Tensor([1, 2, 3])
     ret = foo(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1456,8 +1418,4 @@ def test_function_decorated_with_PSJIT_run_ast_6():
     b = Tensor([1, 2, 3])
     ret = foo(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
-    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    assert len(jcr['code']['phase_']) > 0
+    assert_executed_by_graph_mode(foo)
