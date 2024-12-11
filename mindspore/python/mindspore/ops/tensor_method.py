@@ -539,6 +539,12 @@ def tensor_eq(input, other):
     return eq(input, other)
 
 
+def deprecated_tensor_eq(input, other):
+    if not isinstance(other, (int, float, Tensor)):
+        return False
+    return eq(input, other)
+
+
 # 30 erf
 def tensor_erf(input):
     return erf(input)

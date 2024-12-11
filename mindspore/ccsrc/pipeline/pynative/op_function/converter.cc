@@ -513,6 +513,10 @@ bool check_args_as_intlist(const py::object &obj, bool as_intlist) {
 }
 
 bool FunctionSignature::CheckParamValid(const py::object &obj, const FunctionParameter &param) {
+  if (param.is_any_) {
+    // only when py_method dispatch to skip type check
+    return true;
+  }
   if (py::isinstance<py::none>(obj)) {
     if (!param.allow_none_) {
       return false;
@@ -536,6 +540,7 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
   }
   for (auto &param : params_) {
     bool is_kwd = false;
+    param.is_any_ = param.type_ == OP_DTYPE::DT_ANY;
     py::object obj;
     if (arg_pos < nargs) {
       obj = (args)[arg_pos];
@@ -617,7 +622,7 @@ ops::OP_DTYPE GetOpDtype(const std::string &type_str) {
   return it->second;
 }
 
-FunctionParameter::FunctionParameter(const std::string &fmt) : optional_(false), allow_none_(false) {
+FunctionParameter::FunctionParameter(const std::string &fmt) : optional_(false), allow_none_(false), is_any_(false) {
   auto space = fmt.find(' ');
   if (space == std::string::npos) {
     MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << fmt;

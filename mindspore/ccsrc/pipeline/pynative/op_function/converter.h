@@ -69,6 +69,7 @@ struct FunctionParameter {
   bool optional_;  // if has default value
   bool allow_none_;
   std::string name_;  // parameter name
+  bool is_any_;
 };
 
 // single overload
