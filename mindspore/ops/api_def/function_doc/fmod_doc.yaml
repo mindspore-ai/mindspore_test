@@ -1,4 +1,4 @@
-remainder:
+fmod:
   description: |
     fmod(input, other) -> Tensor
     
