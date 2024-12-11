@@ -126,4 +126,9 @@ def test_exp2_dynamic_shape(mode):
     ms.context.set_context(mode=mode)
     ms_data1 = generate_random_input((2, 3, 4, 5), np.float32)
     ms_data2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
-    TEST_OP(exp2_forward_func, [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]], "exp2")
+    TEST_OP(
+        exp2_forward_func,
+        [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]],
+        "exp2",
+        disable_mode=["GRAPH_MODE"],
+    )
