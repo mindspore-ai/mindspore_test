@@ -172,6 +172,7 @@ def test_pynative_lenet_ms_func():
     Expectation: The calculation result is correct.
     """
     context.set_context(mode=context.PYNATIVE_MODE)
+    np.random.seed(1)
 
     epoch_size = 20
     batch_size = 32
