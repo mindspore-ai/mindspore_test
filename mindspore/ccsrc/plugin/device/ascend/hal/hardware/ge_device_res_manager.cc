@@ -107,8 +107,6 @@ void GeDeviceResManager::Initialize() {
   }
   mem_manager_ = runtime_instance_->GetMemoryManager();
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_pool_ = mem_manager_->GetMemoryPool();
-  MS_EXCEPTION_IF_NULL(mem_pool_);
   if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     swap_manager_ = std::make_shared<SwapManager>(kDefaultStreamIndex, &AscendMemoryPool::GetInstance(),
                                                   &AscendPinMemPool::GetInstance());
@@ -125,10 +123,7 @@ void GeDeviceResManager::SetCPUMemManager() {
   }
   runtime_instance_ = nullptr;
   mem_manager_ = std::make_shared<cpu::CPUMemoryManager>();
-  mem_manager_->Initialize();
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_pool_ = mem_manager_->GetMemoryPool();
-  MS_EXCEPTION_IF_NULL(mem_pool_);
   is_use_cpu_memory_ = true;
 }
 
@@ -145,7 +140,7 @@ bool GeDeviceResManager::IsEnableVmm() const { return AscendVmmAdapter::GetInsta
 
 bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
-  MS_EXCEPTION_IF_NULL(mem_pool_);
+  MS_EXCEPTION_IF_NULL(mem_manager_);
 
   if (IsEnableRefMode() && (address->GetDeviceType() != device_context_->GetDeviceType())) {
     MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:"
@@ -195,12 +190,8 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
 
     device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
   } else {
-    size_t align_size = address->GetSize();
-    if (!is_use_cpu_memory_) {
-      align_size = device::MemoryManager::GetCommonAlignSize(address->GetSize());
-    }
-    device_ptr =
-      mem_pool_->AllocTensorMem(align_size, address->from_persistent_mem(), address->need_recycle(), stream_id);
+    device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
+                                                    address->need_recycle(), stream_id);
   }
 
   if (!device_ptr) {
@@ -218,15 +209,11 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
 void *GeDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(runtime_instance_);
   runtime_instance_->SetContext();
-  MS_EXCEPTION_IF_NULL(mem_pool_);
+  MS_EXCEPTION_IF_NULL(mem_manager_);
   if (swap_manager_ != nullptr) {
     return swap_manager_->AllocDeviceMemory(size, stream_id);
   }
-  size_t align_size = size;
-  if (!is_use_cpu_memory_) {
-    align_size = device::MemoryManager::GetCommonAlignSize(size);
-  }
-  return mem_pool_->AllocTensorMem(align_size, false, false, stream_id);
+  return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
 }
 
 void *GeDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
@@ -239,8 +226,8 @@ void *GeDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) 
 }
 
 size_t GeDeviceResManager::GetMaxUsedMemorySize() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->GetMaxUsedMemSize();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetMaxUsedMemorySize();
 }
 
 void GeDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
@@ -275,76 +262,80 @@ void GeDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
 
 void GeDeviceResManager::FreeMemory(void *ptr) const {
   MS_EXCEPTION_IF_NULL(ptr);
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  mem_pool_->FreeTensorMem(ptr);
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  mem_manager_->FreeMemFromMemPool(ptr);
 }
 
 void GeDeviceResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                                          const std::vector<size_t> &keep_addr_sizes) const {
-  mem_pool_->FreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
+  AscendMemoryPool::GetInstance().FreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
 }
 
 void GeDeviceResManager::DefragMemory() { AscendMemoryPool::GetInstance().DefragMemory(); }
 
 // Relevant function to manage memory statistics
 size_t GeDeviceResManager::GetTotalMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->TotalMemStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetTotalMemStatistics();
 }
 
 size_t GeDeviceResManager::GetTotalUsedMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->TotalUsedMemStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetTotalUsedMemStatistics();
 }
 
 size_t GeDeviceResManager::GetTotalIdleMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->TotalIdleMemStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetTotalIdleMemStatistics();
 }
 
 size_t GeDeviceResManager::GetTotalEagerFreeMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->TotalEagerFreeMemStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetTotalEagerFreeMemStatistics();
 }
 
 size_t GeDeviceResManager::GetUsedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->MaxMemAllocatedStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetUsedMemPeakStatistics();
 }
 
 size_t GeDeviceResManager::GetReservedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->MaxMemReservedStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetReservedMemPeakStatistics();
 }
 
 std::unordered_map<std::string, std::size_t> GeDeviceResManager::GetBlockCountsStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->BlockCountsStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetBlockCountsStatistics();
 }
 
 std::unordered_map<std::string, std::size_t> GeDeviceResManager::GetBlockUnitSizeStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->BlockUnitSizeStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetBlockUnitSizeStatistics();
 }
 
 DeviceMemInfo GeDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->CommonMemBlocksInfoStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetCommonMemBlocksInfoStatistics();
 }
 
 DeviceMemInfo GeDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  return mem_pool_->PersistentMemBlocksInfoStatistics();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  return mem_manager_->GetPersistentMemBlocksInfoStatistics();
 }
 
 void GeDeviceResManager::ResetMaxMemoryReserved() {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  mem_pool_->ResetMaxMemReserved();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  auto memory_pool = mem_manager_->GetMemoryPool();
+  MS_EXCEPTION_IF_NULL(memory_pool);
+  memory_pool->ResetMaxMemReserved();
 }
 
 void GeDeviceResManager::ResetMaxMemoryAllocated() {
-  MS_EXCEPTION_IF_NULL(mem_pool_);
-  mem_pool_->ResetMaxMemAllocated();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  auto memory_pool = mem_manager_->GetMemoryPool();
+  MS_EXCEPTION_IF_NULL(memory_pool);
+  memory_pool->ResetMaxMemAllocated();
 }
 
 void GeDeviceResManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
@@ -359,7 +350,7 @@ std::vector<void *> GeDeviceResManager::AllocateContinuousMemory(const std::vect
                                                                  uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(runtime_instance_);
   runtime_instance_->SetContext();
-  MS_EXCEPTION_IF_NULL(mem_pool_);
+  MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> aligned_size_list;
   for (auto size : size_list) {
     auto align_size = device::MemoryManager::GetCommonAlignSize(size);
@@ -368,7 +359,7 @@ std::vector<void *> GeDeviceResManager::AllocateContinuousMemory(const std::vect
   if (swap_manager_ != nullptr) {
     return swap_manager_->AllocDeviceContinuousMem(aligned_size_list, stream_id);
   }
-  return mem_pool_->AllocContinuousTensorMem(aligned_size_list, stream_id);
+  return mem_manager_->MallocContinuousMemFromMemPool(aligned_size_list, stream_id);
 }
 
 DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
