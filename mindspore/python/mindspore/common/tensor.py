@@ -1703,12 +1703,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('i0')(self)
 
-    def isclose(self, x2, rtol=1e-05, atol=1e-08, equal_nan=False):
-        """
-        For details, please refer to :func:`mindspore.ops.isclose`.
-        """
-        return tensor_operator_registry.get('isclose')(self, x2, rtol, atol, equal_nan)
-
     def isposinf(self):
         r"""
         For details, please refer to :func:`mindspore.ops.isposinf`.
