@@ -22,6 +22,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <iostream>
 
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"

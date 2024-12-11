@@ -63,23 +63,61 @@ def dispatch_threads_num(threads_num):
 @args_type_check(enable_affinity=bool, affinity_cpu_list=dict)
 def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
     """
-    Enable binding cpu core to specific thread according to devices' NUMA affinity.
+    Enable thread-level core binding to assign specific CPU cores to MindSpore's main modules (main thread, pynative,
+    runtime, minddata), to prevent unstable performance caused by MindSpore's threads seizing CPU.
 
     Note:
-        - If `affinity_cpu_list` is not specified, the cpu range binding to each device will be assigned automatically.
+        - Provides two binding modes: 1. Automatically generates binding policies based on available CPUs, NUMA nodes,
+          and device resources in the environment to bind cores at thread level. 2. Thread-level bonding based on
+          customized bonding policies passed in by `affinity_cpu_list`.
+
+        - The automated bind-core policy generation scenario invokes system commands to obtain CPU, NUMA node, and
+          device resources on the environment, and some commands cannot be executed successfully due to environment
+          differences; the automated bind-core policy generated will vary according to the resources available on the
+          environment:
+
+          1. `cat /sys/fs/cgroup/cpuset/cpuset.cpus`, to obtain the available CPU resources on the environment; if the
+             execution of this command fails, the bind-core function will not take effect.
+          2. `npu-smi info -m`, get the available NPU resources on the environment; if the execution of this command
+             fails, the bind-core policy will be generated only based on the available CPU resources, without considering
+             the device affinity.
+          3. `npu-smi -t board -i {NPU_ID} -c {CHIP_ID}`, get NPU details based on the logical ID of the device; if
+             the execution of this command fails, the bind-core policy is generated based on the available CPU resources
+             only, regardless of device affinity.
+          4. `lspci -s {PCIe_No} -vvv`, get the hardware information of the device on the environment; if the execution
+             of this command fails, the bind-core policy is generated only based on the available CPU resources, without
+             considering the device affinity.
+          5. `lscpu`, get information about CPUs and NUMA nodes on the environment; if the execution of this command
+             fails, only the available CPU resources are used to generate the bind-core policy, without considering
+             the device affinity.
 
     Args:
-        enable_affinity (bool): Determine whether enable cpu affinity binding, should be 'true' or 'false'.
-        affinity_cpu_list (str, optional): Specify cpu ranges for the device.
+        enable_affinity (bool): Switches on/off thread-level core binding.
+        affinity_cpu_list (dict, optional): Specifies a customized bind-core policy. The key to be passed
+            into the dict needs to be in string ``"deviceX"`` format, and the value needs to be in list
+            ``["cpuidX-cpuidY"]`` format. Default: ``None``, i.e., use the bind-core policy generated automatically
+            based on the environment. It is allowed to pass the empty dict ``{}``, in which case the bind-core
+            policy generated automatically based on the environment will be used.
 
-    Returns:
-        None
+    Raises:
+        TypeError: The parameter `enable_affinity` is not a boolean.
+        TypeError: The parameter `affinity_cpu_list` is neither a dictionary nor a ``None``.
+        ValueError: The key of parameter `affinity_cpu_list` is not a string.
+        ValueError: The key of parameter `affinity_cpu_list` is not in ``"deviceX"`` format.
+        ValueError: The parameter `affinity_cpu_list` has a value that is not a list.
+        ValueError: The element in value of parameter `affinity_cpu_list` is not a string.
+        ValueError: The element in value for parameter `affinity_cpu_list` does not match ``["cpuidX-cpuidY"]``.
+        RuntimeError: Automatically generated binding policy or customized binding policy scenario where the number
+            of CPU cores assigned to each device is less than 7.
+        RuntimeError: A custom-specified binding policy scenario where the CPU assigned to a device is not
+            available in the environment.
+        RuntimeError: The `mindspore.runtime.set_cpu_affinity` API is called repeatedly.
 
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.set_cpu_affinity(true)
-
+        >>>
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.set_cpu_affinity(true, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-40"]})

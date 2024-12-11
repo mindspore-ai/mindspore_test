@@ -34,13 +34,13 @@ def execute_command(cmd_list):
 
 def _validate_affinity_cpu_list(affinity_cpu_list):
     """
-    Validate the user configured afrom mindspore import log as loggerffinity_cpu_list.
+    Validate the user-configured affinity_cpu_list.
 
-    Parameters:
-        affinity_cpu_list (dict): The bind policy customized which needs to be validated.
+    Args:
+        affinity_cpu_list (dict): Customized bind-core policy to be validated.
 
     Returns:
-        bool: Returns True if validation is successful, otherwise False.
+        None.
     """
     device_pattern = re.compile(r'^device\d+$')
     range_pattern = re.compile(r'^\d+-\d+$')
@@ -61,11 +61,10 @@ def _validate_affinity_cpu_list(affinity_cpu_list):
 
 def _get_cpu_available():
     """
-    Retrieves the available CPUs on the environment.
+    Get the CPU resources available on the environment.
 
     Returns:
-        int: The number of available CPUs.
-        list: The lsit of available CPUs.
+        list: List of available CPUs on the environment.
     """
     available_cpu_str = execute_command(["cat", "/sys/fs/cgroup/cpuset/cpuset.cpus"]).strip().split(",")
     available_cpus = list()
@@ -83,14 +82,14 @@ class DeviceInfo:
     A class to represent information about an Ascend device.
 
     Attributes:
-        _info_line (str): A raw string containing device informatino.
+        _info_line (str): A raw string containing device information.
         npu_id (int): The ID of the NPU.
         chip_id (int): The ID of the chip.
         chip_logic_id (Union[int, str]): The logical ID of the chip, which can be an integer or a string.
         chip_name (str): The name of the chip.
 
     Methods:
-        __post_init__(): Initializes the attributes based on input information.
+        __post_init__(): Initializes the attributes based on input.
     """
     _info_line: str = ""
     npu_id: int = 0
@@ -109,11 +108,11 @@ class DeviceInfo:
 
 def _get_device_map_info():
     """
-    Retrieves the detailed npu information of the device.
+    Get abbreviated information about all NPUs on the environment.
 
     Returns:
-        dict: The npu logical id to its detailed npu information.
-        set: Available devices on the enrionment.
+        dict: Mapping of NPU logical ID to its details.
+        set: Contains all available NPU logical ids on the environment.
     """
     device_map_info = {}
     available_devices = set()
@@ -129,13 +128,14 @@ def _get_device_map_info():
 
 def _get_pcie_info(device_map_info, available_devices, keyword="PCIeBusInfo"):
     """
-    Retrieves the PCIe information of the device.
+    Get the PCIe number of the NPU device.
 
-    This function gathers information related to PCIe devices and configurations.
+    Args:
+        device_map_info (dict): A map of NPU logical ID to its details.
+        available_devices (set): All available NPU logical ids on the environment.
 
     Returns:
-        dict: The device to its PCIe information.
-        set: Available devices on the enrionment.
+        dict: Mapping of NPU logical ID to its PCIe number.
     """
     device_pcie_map = {}
     for device in available_devices:
@@ -155,13 +155,14 @@ def _get_pcie_info(device_map_info, available_devices, keyword="PCIeBusInfo"):
 
 def _get_numa_info(device_pcie_map, keyword="NUMAnode"):
     """
-    Retrieves the NUNA affinity of the device based on its PCIe.
+    Get NUNA node affinity for device based on PCIe.
 
-    This function gathers information related to NUMA affinity and device PCIe.
+    Args:
+        device_pcie_map (dict): A map of NPU logical ID to its PCIe number.
 
     Returns:
-        dict: Key is device id, value is NUMA node.
-        dict: Key is NUMA node, value is device id.
+        dict: Mapping of device ID to its affinity NUMA nodes.
+        dict: Mapping of NUMA node to its affinity device IDs.
     """
     device_to_numa_map = {}
     numa_to_device_map = {}
@@ -185,12 +186,14 @@ def _get_numa_info(device_pcie_map, keyword="NUMAnode"):
 
 def _get_cpu_info(numa_ids, available_cpus, keyword1="NUMAnode", keyword2="CPU(s)"):
     """
-    Retrieves the CPUs on the NUMA node.
+    Get information about the CPUs on the NUMA nodes on the environment.
 
-    This function gathers information related to NUMA node and CPUs.
+    Args:
+        numa_ids (list): A list of NUMA nodes need to get related CPU information.
+        available_cpus (list): A list of available CPUs on the environment.
 
     Returns:
-        dict: Key is NUMA node, value is CPU id list.
+        dict: Mapping of NUMA node to its affinity CPUs.
     """
     numa_to_cpu_map = dict()
 
@@ -220,12 +223,18 @@ def _get_cpu_info(numa_ids, available_cpus, keyword1="NUMAnode", keyword2="CPU(s
 
 def _auto_generate_policy(available_devices, available_cpus, affinity_flag, numa_to_cpu_map, device_to_numa_map):
     """
-    Retrieves binding policy based on cpu affinity.
+    Automatically generate bind-core policy based on CPU affinity.
 
-    This function gathers bindging policy related to device id and CPUs.
+    Args:
+        available_devices (list): All available NPU logical ids on the environment.
+        available_cpus (list): A list of available CPUs on the environment.
+        affinity_flag (bool): Whether or not it satisfies generating CPU affinity bind-core policy based on the
+          resources on the environment.
+        numa_to_cpu_map (dict): A map of NUMA node to its affinity CPUs.
+        device_to_numa_map (dict): A map of device ID to its affinity NUMA nodes.
 
     Returns:
-        dict: Key is device id, value is CPU id list.
+        dict: Mapping of device to its affinity CPUs.
     """
     device_to_cpu_map = {}
     for device_id in available_devices:
@@ -273,12 +282,14 @@ def _auto_generate_policy(available_devices, available_cpus, affinity_flag, numa
 
 def _customize_generate_policy(affinity_cpu_list, available_cpus):
     """
-    Retrieves binding policy manually input.
+    Generate customized bind-core policy based on user-configured inputs.
 
-    This function gathers bindging policy related to device id and CPUs.
+    Args:
+        affinity_cpu_list (dict): User-configured inputs to generate customized bind-core policy.
+        available_cpus (list): A list of available CPUs on the environment.
 
     Returns:
-        dict: Key is device id, value is CPU id list.
+        dict: Mapping of device to its affinity CPUs.
     """
     device_to_cpu_map = {}
     _validate_affinity_cpu_list(affinity_cpu_list)
@@ -299,10 +310,13 @@ def _customize_generate_policy(affinity_cpu_list, available_cpus):
 
 def _assign_cpu_to_module(device_to_cpu_map):
     """
-    Assign specific CPUs to module.
+    Assign specific CPUs to modules.
+
+    Args:
+        device_to_cpu_map (dict): A map of device to its affinity CPUs.
 
     Returns:
-        dict: Key is module name, value is CPU id list.
+        dict: Mapping of device to its affinity CPUs based on module segmentation.
     """
     module_bind_core_policy = {}
     for device, cpu_list in device_to_cpu_map.items():
@@ -317,13 +331,15 @@ def _assign_cpu_to_module(device_to_cpu_map):
 
 def _get_cpu_affinity_policy(affinity_cpu_list=None):
     """
-    Retrieves binding policy.
+    The entry to get bind-core policy.
 
-    This function is the entry to gather bindging policy.
+    Args:
+        affinity_cpu_list (dict, optional): User-configured inputs to generate customized bind-core policy.
+          Default: ``None``.
 
     Returns:
-        dict: Key is device id, value is CPU id list.
-        bool: Whether get cpu affinity policy by user configured.
+        dict: Mapping of device to its affinity CPUs based on module segmentation.
+        bool: Whether the generated bind-core policy is based on cpu affinity.
     """
     device_target = context.get_context("device_target")
     device_pcie_map = {}
