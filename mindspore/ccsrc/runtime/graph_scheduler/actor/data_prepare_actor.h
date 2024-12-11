@@ -152,6 +152,8 @@ class DataPrepareActor : public DebugAwareActor {
   // to device side. 'tensors_need_reprepare_' records all tensors whose host value has updated, this HashSet will be
   // update by update value callback of tensors.
   static mindspore::HashSet<const tensor::Tensor *> tensors_need_reprepare_;
+  // The ref relationship of device address.
+  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
 
   bool has_dynamic_shape_{false};
 

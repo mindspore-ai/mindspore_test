@@ -965,7 +965,9 @@ const KernelTensorPtr &AnfRuntimeAlgorithm::GetOrCreateOutputKernelTensor(const 
   MS_EXCEPTION_IF_NULL(node);
 
   auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
-  MS_EXCEPTION_IF_NULL(kernel_info);
+  if (kernel_info == nullptr) {
+    MS_LOG(EXCEPTION) << "Failed to get kernel info for node:" << node->DebugString() << " index:" << output_idx;
+  }
 
   // Get output kernel tensor in device address if exists.
   if (kernel_info->OutputAddrExist(output_idx)) {

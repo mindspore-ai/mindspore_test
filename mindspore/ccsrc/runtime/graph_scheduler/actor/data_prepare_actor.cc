@@ -447,6 +447,19 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   tensor_address->SetNodeIndex(input_node, 0);
   tensor_address->set_original_ref_count(SIZE_MAX);
   tensor_address->ResetRefCount();
+  auto ref_iter = ref_device_tensors_.find({input_node, 0});
+  if (ref_iter == ref_device_tensors_.end()) {
+    return;
+  }
+  for (const auto &ref_address : ref_iter->second) {
+    if (ref_address == nullptr) {
+      continue;
+    }
+    ref_address->set_pointer_ref_count(tensor_address->pointer_ref_count());
+    MS_LOG(DEBUG) << "Set pointer ref count:" << tensor_address->pointer_ref_count()
+                  << " from node:" << input_node->DebugString() << " device address:" << tensor_address
+                  << " to device address:" << ref_address;
+  }
 }
 
 void DataPrepareActor::SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors) {
