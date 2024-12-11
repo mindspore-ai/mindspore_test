@@ -45,13 +45,15 @@ struct AutoGradUtil {
                                    size_t op_index = 0);
   static void BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor, const tensor::BaseTensorPtr &output,
                                     size_t op_index, autograd::CreationType creation_type);
-  static void MakeOutput(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op, size_t op_index,
-                         const tensor::BaseTensorPtr &view_base = nullptr);
-  static void MakeMultiOutput(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op,
-                              size_t op_index, const tensor::BaseTensorPtr &view_base = nullptr);
+  static void SetInferOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
+  static void SetInferMultiOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
+  static ValuePtr MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+                             const tensor::BaseTensorPtr &base_view = nullptr);
+  static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+                                  const tensor::BaseTensorPtr &view_base = nullptr);
   // Multi inputs and multi outputs view op enter here, temp code need discard.
-  static void MakeMultiOutput(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op,
-                              size_t op_index, const ValueTuplePtr &base_view);
+  static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+                                  const ValueTuplePtr &base_view);
   static void BumpVersion(const ValuePtr &value);
 
   static bool IsPrimNeedGrad(const PrimitivePtr &prim);

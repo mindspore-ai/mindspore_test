@@ -70,6 +70,7 @@ MS_MINT_FUNC_PATH = "mindspore/python/mindspore/mint"
 PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"
 PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/function/auto_generate"
+PYBOOST_AUTO_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/auto_generate"
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/auto_generate"
 RUNTIME_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/runtime/pynative/op_function/auto_generate"
 TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/"
@@ -78,7 +79,7 @@ ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 ADD_MINT_DOCS_PY_PATH = "mindspore/python/mindspore/mint"
 
 # yaml keys def
-OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'dispatch', 'labels'}
+OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'dispatch', 'labels', 'bprop_expander'}
 ARG_KEYS = {'dtype', 'default', 'prim_init', 'type_cast', 'arg_handler'}
 RETURN_KEYS = {'dtype', 'inplace', 'type_cast'}
 ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}
@@ -95,9 +96,9 @@ MS_OPS_VIEW_PATH = "mindspore/ops/view"
 
 # kernel
 MS_OPS_KERNEL_PATH = "mindspore/ops/kernel"
+MS_OPS_KERNEL_FUNCTIONS_AUTO_GEN_PATH = "mindspore/ops/kernel/functions/auto_generate"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 
-MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 
 OP_NAME_OP_DEF = """
 #ifndef MINDSPORE_CORE_OP_NAME_H_

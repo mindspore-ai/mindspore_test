@@ -35,6 +35,9 @@ from pyboost_op_cpp_code_generator import (
     PyboostOpRegisterCppCodeGenerator,
 )
 from pyboost_overload_functions_cpp_generator import PyboostOverloadFunctionsGenerator
+from auto_grad_impl_cc_generator import AutoGradImplGenerator
+from auto_grad_reg_cc_generator import AutoGradRegHeaderGenerator
+from functions_cc_generator import FunctionsGenerator, FunctionsHeaderGenerator
 
 
 def gen_pyboost_code(work_path, op_protos, doc_yaml_data, tensor_method_protos, mint_func_protos, alias_func_mapping):
@@ -47,6 +50,34 @@ def gen_pyboost_code(work_path, op_protos, doc_yaml_data, tensor_method_protos, 
     call_pyboost_grad_functions_cpp_generator(work_path, op_protos)
     call_pyboost_native_grad_functions_generator(work_path, op_protos)
     call_pyboost_op_cpp_code_generator(work_path, op_protos)
+    # op splice
+    call_pyboost_auto_grad_cpp_code_generator(work_path, op_protos)
+
+
+def call_pyboost_auto_grad_cpp_code_generator(work_path, op_protos):
+    call_auto_grad_impl_cc_generator(work_path, op_protos)
+    call_auto_grad_reg_header_generator(work_path, op_protos)
+    call_functions_header_generator(work_path, op_protos)
+    call_functions_cc_generator(work_path, op_protos)
+
+
+def call_auto_grad_impl_cc_generator(work_path, op_protos):
+    generator = AutoGradImplGenerator()
+    generator.generate(work_path, op_protos)
+
+
+def call_auto_grad_reg_header_generator(work_path, op_protos):
+    generator = AutoGradRegHeaderGenerator()
+    generator.generate(work_path, op_protos)
+
+
+def call_functions_header_generator(work_path, op_protos):
+    generator = FunctionsHeaderGenerator()
+    generator.generate(work_path, op_protos)
+
+def call_functions_cc_generator(work_path, op_protos):
+    generator = FunctionsGenerator()
+    generator.generate(work_path, op_protos)
 
 
 def call_pyboost_inner_prim_generator(work_path, op_protos):

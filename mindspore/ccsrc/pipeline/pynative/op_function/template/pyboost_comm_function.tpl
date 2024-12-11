@@ -48,24 +48,23 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
             (void)op->Call(${cast_args});
             ${optional_to_value}
 
-            // Data sync in mix mode(Graph and PyNative)
-            PyNativeAlgo::PyBoost::DataSyncForGraph(op, {${grad_args}});
-
             // Create output value
-            PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(op_run_info, op,
-                                                              op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index() : 0${view_arg});
-
-            // Set output value to python
-            PyNativeAlgo::PyBoost::UpdateStubOutput(op_run_info, op->output_abs(), op);
-
+            PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(op_run_info->op_grad_info, op);
+            // Create output value
+            auto real_output = PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(op_run_info->requires_grad, op,
+                                                                                 op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index() : 0${view_arg});
             // Do auto grad
             if (op_run_info->requires_grad) {
               // Refresh op prim, otherwish the size of inputs will be incorrect.
               op_run_info->op_grad_info->op_prim = op_prim;
               op_run_info->op_grad_info->input_value = {${grad_args}};
-              op_run_info->op_grad_info->out_value = op_run_info->real_out;
+              op_run_info->op_grad_info->out_value = real_output;
               PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
             }
+            // Set output value to python
+            PyNativeAlgo::PyBoost::UpdateStubOutput(op, op_run_info->stub_output, op->output_abs(), real_output);
+            // Data sync in mix mode(Graph and PyNative)
+            PyNativeAlgo::PyBoost::DataSyncForGraph(op);
             kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
 
             MS_LOG(DEBUG) << "Run frontend task ${func_name} end";

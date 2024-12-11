@@ -12,5 +12,5 @@ custom_ext:
   class:
     disable: True
   dispatch:
-    enable: True
+    enable: False
     Ascend: CustomExtAscend
