@@ -104,6 +104,9 @@ class BACKEND_EXPORT DynamicMemPool {
  public:
   virtual ~DynamicMemPool() = default;
 
+  // Initialize memory pool with init size, increase size and max size.
+  virtual void Initialize(size_t init_size, size_t increase_size, size_t max_size) {}
+
   // Release the real device memory.
   virtual void ReleaseDeviceRes() = 0;
 

@@ -178,6 +178,8 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
       : persistent_mem_(std::make_shared<MemStatusManager>()), common_mem_(std::make_shared<MemStatusManager>()) {}
   virtual ~DynamicMemPoolBestFit();
 
+  void Initialize(size_t init_size, size_t increase_size, size_t max_size) override;
+
   // The main program entry of memory alloc.
   DeviceMemPtr AllocTensorMem(size_t size, bool from_persistent_mem = false, bool need_recycle = false,
                               uint32_t stream_id = kDefaultStreamIndex) override;
