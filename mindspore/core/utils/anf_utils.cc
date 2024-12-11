@@ -422,7 +422,7 @@ std::pair<AnfNodePtr, size_t> VisitKernelImpl(const AnfNodePtr &anf_node, size_t
   }
   auto cnode = anf_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  if (auto fg = GetCNodeFuncGraph(cnode); fg != nullptr && !IsOutputNestedTuple(fg)) {
+  if (auto fg = GetCNodeFuncGraph(cnode); fg != nullptr && IsOutputNestedTuple(fg)) {
     return VisitKernelImpl(fg->output(), index, in_getitem);
   }
   if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
