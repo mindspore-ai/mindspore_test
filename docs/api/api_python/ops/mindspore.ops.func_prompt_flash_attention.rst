@@ -8,11 +8,11 @@ mindspore.ops.prompt_flash_attention
 
     全量推理场景接口。
 
-    B：batch维
-    N：头数
-    S：序列长度
-    D：头维度
-    H：隐藏大小
+    - B：batch维
+    - N：注意力头数
+    - S：序列长度
+    - D：头维度
+    - H：隐藏层大小
 
     self-attention（自注意力）利用输入样本自身的关系构建了一种注意力模型。其原理是假设有一个长度为 :math:`n` 的输入样本序列 :math:`x` ， :math:`x` 的每个元素都是一个 :math:`d` 维向量，
     可以将每个 :math:`d` 维向量看作一个token embedding，将这样一条序列经过3个权重矩阵变换得到3个维度为 :math:`n\times d` 的矩阵。
@@ -64,6 +64,7 @@ mindspore.ops.prompt_flash_attention
         - **actual_seq_lengths** (Union[Tensor, tuple[int], list[int]]，可选) - 描述 `query` 每个批次的实际序列长度，数据类型为int64。shape为 :math:`(B,)` ，每个元素应为正整数。默认值为 ``None`` 。
         - **actual_seq_lengths_kv** (Union[Tensor, tuple[int], list[int]]，可选) - 描述 `key` 或 `value` 每个批次的实际序列长度，数据类型为int64。shape为 :math:`(B,)` ，每个元素应为正整数。默认值为 ``None`` 。
         - **pse_shift** (Tensor，可选) - 位置编码Tensor，数据类型为float16或bfloat16。输入Tensor shape为 :math:`(B, N, q_S, kv_S)` 或 :math:`(1, N, q_S, kv_S)` 。默认值为 ``None`` 。
+
           - q_S必须大于等于query的S长度，kv_S必须大于等于key的S长度。
           - 如果 `pse_shift` 的数据类型为float16， `query` 应为float16或int8，这种情况下会自动启用高精度模式。
           - 如果 `pse_shift` 的数据类型为bfloat16， `query` 应为bfloat16。
