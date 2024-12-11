@@ -49,6 +49,7 @@
 #include "tools/optimizer/graph/make_list_pass.h"
 #include "tools/optimizer/graph/kvcache_quant_pass.h"
 #include "tools/optimizer/fusion/flash_attention_antiquant_fusion.h"
+#include "tools/optimizer/fusion/flash_attention_tik_fusion.h"
 #include "tools/optimizer/graph/concat_op_pass.h"
 #include "tools/optimizer/graph/grouped_matmul_op_pass.h"
 #include "tools/optimizer/graph/quant_fusion_x_offset_to_bias_pass.h"
@@ -78,6 +79,10 @@ void EnableFlashAttentionFusion(std::vector<opt::PassPtr> *fusions, const std::s
 void EnableFlashAttentionAntiquantFusion(std::vector<opt::PassPtr> *fusions,
                                          const std::shared_ptr<ConverterPara> &param) {
   fusions->push_back(std::make_shared<opt::FlashAttentionAntiquantFusion>());
+}
+
+void EnableFlashAttentionTikPass(std::vector<opt::PassPtr> *fusions, const std::shared_ptr<ConverterPara> &param) {
+  fusions->push_back(std::make_shared<opt::FlashAttentionTikPass>());
 }
 
 void EnableGroupNormSiluFusion(std::vector<opt::PassPtr> *fusions, const std::shared_ptr<ConverterPara> &param) {
@@ -110,6 +115,9 @@ int AnfTransformForGe::RunGeFusionPass(const FuncGraphPtr &old_graph, const std:
       {kFusionNameFlashAttentionAntiquant,
        std::function<void(std::vector<opt::PassPtr> *, const std::shared_ptr<ConverterPara> &)>(
          EnableFlashAttentionAntiquantFusion)},
+      {kFusionNameFlashAttentionTik,
+       std::function<void(std::vector<opt::PassPtr> *, const std::shared_ptr<ConverterPara> &)>(
+         EnableFlashAttentionTikPass)},
       {kFusionNameGroupNormSilu,
        std::function<void(std::vector<opt::PassPtr> *, const std::shared_ptr<ConverterPara> &)>(
          EnableGroupNormSiluFusion)}};
@@ -124,6 +132,13 @@ int AnfTransformForGe::RunGeFusionPass(const FuncGraphPtr &old_graph, const std:
     EnableGroupNormSiluFusion(&fusions, param);
     // MatMulAllReduce has performance degradation in incremental inference scenarios,
     // and is not controlled by "All" temporarily.
+    if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), kFusionNameMatMulAllReduce) !=
+        plugin_custom_ops.end()) {
+      EnableMatMulAllReduceFusion(&fusions, param);
+    }
+  } else if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "FlashAttentionTik") != plugin_custom_ops.end()) {
+    EnableFlashAttentionTikPass(&fusions, param);
+    EnableGroupNormSiluFusion(&fusions, param);
     if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), kFusionNameMatMulAllReduce) !=
         plugin_custom_ops.end()) {
       EnableMatMulAllReduceFusion(&fusions, param);

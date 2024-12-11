@@ -57,6 +57,7 @@
 #include "tools/optimizer/fusion/transpose_fusion.h"
 #include "tools/optimizer/fusion/batchnorm_to_scale_fusion.h"
 #include "tools/optimizer/fusion/flash_attention_fusion.h"
+#include "tools/optimizer/fusion/flash_attention_tik_fusion.h"
 #include "tools/optimizer/fusion/groupnormsilu_fusion.h"
 #include "tools/converter/quantizer/quantization_optimizer.h"
 #include "tools/converter/quantizer/insert_quant_node_manager.h"
@@ -103,6 +104,7 @@ constexpr auto kDelRedundantTranspose = "DeleteRedundantTranspose";
 constexpr auto kRemoveUnusedAddNodePass = "RemoveUnusedAddNodePass";
 constexpr auto kAdjustResizeDimsPass = "AdjustResizeDimsPass";
 constexpr auto kCustomOpFlashAttentionFusionForCustom = "FlashAttentionFusionForCustom";
+constexpr auto kFlashAttentionTikPass = "FlashAttentionTikPass";
 constexpr auto kCustomOpInsertVariableNodePass = "InsertVariableNodePass";
 constexpr auto kCustomOpFlashAttentionFusion = "FlashAttentionFusion";
 constexpr auto kCustomOpGroupNormSiluFusion = "GroupNormSiluFusion";
@@ -611,27 +613,34 @@ STATUS AclPassImpl::MakeListToMakeTuple(const FuncGraphPtr &func_graph) {
                       #config_name " op pass failed.");                                                    \
   }
 
+STATUS FlashAttentionPass(const FuncGraphPtr &func_graph, const string &soc_version) {
+  MS_LOG(INFO) << "using FlashAttention";
+  if (kSocVersionForAscendCFA.find(soc_version) != kSocVersionForAscendCFA.end()) {
+    MS_LOG(INFO) << "run " << kCustomOpFlashAttentionFusion;
+    FlashAttentionFusion::SetSocVersion(soc_version);
+    if (!lite::RunOptimizerPass(func_graph, {kCustomOpFlashAttentionFusion})) {
+      MS_LOG(ERROR) << kCustomOpFlashAttentionFusion << " op pass failed.";
+      return lite::RET_ERROR;
+    }
+  } else {
+    MS_LOG(INFO) << "run " << kCustomOpFlashAttentionFusionForCustom;
+    if (!lite::RunOptimizerPass(func_graph, {kCustomOpFlashAttentionFusionForCustom})) {
+      MS_LOG(ERROR) << kCustomOpFlashAttentionFusionForCustom << " op pass failed.";
+      return lite::RET_ERROR;
+    }
+  }
+  return lite::RET_OK;
+}
+
 STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
   auto plugin_custom_ops = user_options_cfg_.plugin_custom_ops;
   MS_LOG(INFO) << "plugin_custom_ops: " << plugin_custom_ops;
+  auto soc_version = AclModelOptions::GetSocName();
+  MS_LOG(INFO) << "soc_version: " << soc_version;
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "All") != plugin_custom_ops.end() ||
       find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "FlashAttention") != plugin_custom_ops.end()) {
-    MS_LOG(INFO) << "using FlashAttention";
-    auto soc_version = AclModelOptions::GetSocName();
-    MS_LOG(INFO) << "soc_version: " << soc_version;
-    MS_LOG(INFO) << "run " << kCustomOpFlashAttentionFusion;
-    if (kSocVersionForAscendCFA.find(soc_version) != kSocVersionForAscendCFA.end()) {
-      FlashAttentionFusion::SetSocVersion(soc_version);
-      if (!lite::RunOptimizerPass(func_graph, {kCustomOpFlashAttentionFusion})) {
-        MS_LOG(ERROR) << kCustomOpFlashAttentionFusion << " op pass failed.";
-        return lite::RET_ERROR;
-      }
-    } else {
-      MS_LOG(INFO) << "run " << kCustomOpFlashAttentionFusionForCustom;
-      if (!lite::RunOptimizerPass(func_graph, {kCustomOpFlashAttentionFusionForCustom})) {
-        MS_LOG(ERROR) << kCustomOpFlashAttentionFusionForCustom << " op pass failed.";
-        return lite::RET_ERROR;
-      }
+    if (FlashAttentionPass(func_graph, soc_version) != lite::RET_OK) {
+      return lite::RET_ERROR;
     }
   }
   MS_LOG(INFO) << "Insert AscendQuant node before matmul input.";
@@ -678,6 +687,15 @@ STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
     MS_LOG(INFO) << "using BMM2MM";
     MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kAdjustMatmulPass}), lite::RET_ERROR,
                       "BMM2MM op pass failed.");
+  }
+  if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "FlashAttentionTik") != plugin_custom_ops.end()) {
+    if (soc_version != "Ascend310P3") {
+      MS_LOG(WARNING) << "FlashAttentionTik is only supported on Ascend310P3";
+    } else {
+      MS_LOG(INFO) << "using FlashAttentionTik";
+      MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kFlashAttentionTikPass}), lite::RET_ERROR,
+                        "FlashAttentionTik op pass failed.");
+    }
   }
   if (!lite::RunOptimizerPass(func_graph, {kAdjustResizeDimsPass, kAdjustCol2imPass})) {
     MS_LOG(ERROR) << "AdjustResizeDimsPass or AdjustCol2imPass failed!";
