@@ -162,6 +162,39 @@ DynamicMemPoolBestFit::~DynamicMemPoolBestFit() {
   stream_pair_addresses_.clear();
 }
 
+void DynamicMemPoolBestFit::Initialize(size_t init_size, size_t /*increase_size*/, size_t /*max_size*/) {
+  if (init_size == 0) {
+    MS_LOG(INFO) << "Skip initialization of memory pool since init size is not configured.";
+    return;
+  }
+
+#ifdef __APPLE__
+  std::lock_guard<SpinLock> spin_lock(spin_lock_);
+#else
+  std::lock_guard<std::mutex> locker(mutex_);
+#endif
+  size_t real_init_size = init_size >> 1;
+
+  if (IsEnableVmm() || IsEnableEagerFree()) {
+    MS_LOG(INFO) << "Skip initialization of memory pool since vmm enabled.";
+    return;
+  }
+
+  auto mem_initializer = [&](const MemStatusManagerPtr &mem_status_manager, size_t size, uint32_t stream_id) {
+    DeviceMemPtr device_addr = nullptr;
+    auto real_alloc_size = AllocDeviceMem(size, &device_addr);
+    auto mem_block = std::make_shared<DynamicMemBlock>(device_addr, real_alloc_size, stream_id);
+    mem_status_manager->AddMemBlock(mem_block, stream_id);
+    auto mem_buf = std::make_shared<DynamicMemBuf>(
+      mem_block->device_addr(), DynamicMemBufStatus::kMemBufIdle, mem_block->size(), stream_id,
+      DynamicMemAllocatorDebugInfo::GetDebugInfo().name_, DynamicMemAllocatorDebugInfo::GetDebugInfo().type_);
+    mem_block->block_all_mem_buf_map_.emplace(mem_block->device_addr(), mem_buf);
+    mem_status_manager->AddMemBuf(mem_buf);
+  };
+  mem_initializer(persistent_mem_, real_init_size, kDefaultStreamIndex);
+  mem_initializer(common_mem_, real_init_size, kDefaultStreamIndex);
+}
+
 DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persistent_mem, bool need_recycle,
                                                    uint32_t stream_id) {
   if (stream_id == UINT32_MAX) {

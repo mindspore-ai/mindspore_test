@@ -52,6 +52,12 @@ bool GPUMemoryAllocator::Init() {
   } else {
     SetMemPoolBlockSize(std::min(available_device_memory_, total_size));
   }
+
+  float init_size = runtime::RuntimeConf::GetInstance()->mem_init_size();
+  size_t init_size_byte = FloatToSize(init_size * kGBToByte);
+  float increase_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
+  size_t increase_size_byte = FloatToSize(increase_size * kGBToByte);
+  Initialize(init_size_byte, increase_size_byte, available_device_memory_);
   return true;
 }
 

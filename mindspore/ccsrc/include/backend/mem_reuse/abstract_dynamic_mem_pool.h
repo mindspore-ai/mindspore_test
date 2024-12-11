@@ -270,6 +270,7 @@ class MemBufAllocator {
 
   ~MemBufAllocator();
 
+  void Initialize(size_t size);
   void ReleaseDeviceRes();
 
   MemBuf *Malloc(size_t size);
@@ -328,6 +329,8 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
  public:
   AbstractDynamicMemPool();
   ~AbstractDynamicMemPool() override = default;
+
+  void Initialize(size_t init_size, size_t increase_size, size_t max_size) override;
 
   void ReleaseDeviceRes() override;
 
@@ -436,6 +439,12 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   size_t eager_free_count_{0};
   size_t last_eager_free_count_{0};
   Lock lock_;
+
+  // init_size_ is for persistent and common.
+  size_t init_size_{kDynamicMemAllocUnitSize};
+  size_t increase_size_{kDynamicMemAllocUnitSize};
+  // Not enable currently.
+  size_t max_size_{0};
 };
 
 class BACKEND_EXPORT AbstractEnhancedDynamicMemPool : public AbstractDynamicMemPool {
