@@ -372,7 +372,8 @@ from mindspore.ops.function.math_func import frac
 
 # 161
 
-# 162
+# 162 log10
+from mindspore.ops.function.math_func import log10
 
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import new_ones
@@ -1345,6 +1346,8 @@ def tensor_frac(input):
 # 161
 
 # 162
+def tensor_log10(input):
+    return log10(input)
 
 
 # 501

@@ -1482,6 +1482,44 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('real')(self)
 
+    def tanh_(self):
+        r"""
+        Computes hyperbolic tangent of self inplace element-wise. The Tanh function is defined as:
+
+        .. math::
+
+            tanh(x_i) = \frac{\exp(x_i) - \exp(-x_i)}{\exp(x_i) + \exp(-x_i)} = \frac{\exp(2x_i) - 1}{\exp(2x_i) + 1},
+
+        where :math:`x_i` is an element of the input Tensor.
+
+        Tanh Activation Function Graph:
+
+        .. image:: ../../images/Tanh.png
+            :align: center
+
+        .. warning::
+            - This is an experimental API that is subject ot change or deletion.
+
+        Returns:
+            Tensor, with the same type and shape as the `self`.
+
+        Raises:
+            TypeError: If `self` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([1, 2, 3, 4, 5]), mindspore.float32)
+            >>> output = x.tanh_()
+            >>> print(output)
+            [0.7615941 0.9640276 0.9950547 0.9993293 0.9999092]
+        """
+        return tensor_operator_registry.get('tanh_')(self)
+
     def cov(self, *, correction=1, fweights=None, aweights=None):
         r"""
         For details, please refer to :func:`mindspore.ops.cov`.
@@ -1634,12 +1672,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.invert`.
         """
         return tensor_operator_registry.get('invert')(self)
-
-    def log10(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.log10`.
-        """
-        return tensor_operator_registry.get('log10')(self)
 
     def amin(self, axis=None, keepdims=False, *, initial=None, where=None):
         """

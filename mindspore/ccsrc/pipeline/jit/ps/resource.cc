@@ -282,6 +282,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"minimum", std::string("minimum")},                                // P.Minimum()
        {"cosh", std::string("cosh")},                                      // P.Cosh()
        {"tanh", std::string("tanh")},                                      // P.Tanh()
+       {"tanh_", std::string("tanh_")},                                    // tanh_()
        {"rad2deg", std::string("rad2deg")},                                // F.rad2deg()
        {"deg2rad", std::string("deg2rad")},                                // F.deg2rad()
        {"dot", std::string("dot")},                                        // composite.dot()
