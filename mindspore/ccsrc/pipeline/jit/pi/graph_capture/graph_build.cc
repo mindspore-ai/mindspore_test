@@ -4796,7 +4796,8 @@ AbstractWrapperPtrList MindGraphBuilder::HandleInputsForGrad(CallNode *call_node
 
   bool get_all = py::hasattr(grad_object, "get_all") && (grad_object.attr("get_all").ptr() == Py_True);
   bool get_by_list = py::hasattr(grad_object, "get_by_list") && (grad_object.attr("get_by_list").ptr() == Py_True);
-  std::vector<ValueNode *> forward_input(bind_args.begin() + 1, bind_args.end());
+  auto offset = py::isinstance<Cell>(func_info) ? 1 : 0;
+  std::vector<ValueNode *> forward_input(bind_args.begin() + offset, bind_args.end());
   size_t input_grad_cnt = get_all ? forward_input.size() : (get_by_list ? 0 : (forward_input.empty() ? 0 : 1));
 
   for (size_t index = 0; index < input_grad_cnt; index++) {
