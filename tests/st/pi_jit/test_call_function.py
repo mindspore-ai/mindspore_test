@@ -13,10 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """test bytecode CALL_FUNCTION*"""
-import pytest 
+import pytest
 from mindspore import numpy as np
-from mindspore import Tensor, jit, context
-from .share.utils import match_array
+from mindspore import Tensor, jit, context, ops
+from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
 
@@ -52,23 +52,29 @@ def jit_test6(x):
     d = {'k': 10}
     return func(*y, **d)
 
+
 def python_test1(x):
     return func(x)
+
 
 def python_test2(x):
     y = (x,)
     return func(*y)
 
+
 def python_test3(x):
     return func(x, k=10)
+
 
 def python_test4(x):
     d = {'k': 10}
     return func(x, **d)
 
+
 def python_test5(x):
     y = (x,)
     return func(*y, k=10)
+
 
 def python_test6(x):
     y = (x,)
@@ -93,6 +99,7 @@ def test_call_function1(python_func, jit_func, x):
     ms_res = jit_func(x)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test2])
 @pytest.mark.parametrize('jit_func', [jit_test2])
@@ -108,6 +115,7 @@ def test_call_function2(python_func, jit_func, x):
     context.set_context(mode=context.GRAPH_MODE)
     ms_res = jit_func(x)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
+
 
 @pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -144,6 +152,7 @@ def test_call_function4(python_func, jit_func, x):
     ms_res = jit_func(x)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
+
 @pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test5])
@@ -161,6 +170,7 @@ def test_call_function5(python_func, jit_func, x):
     ms_res = jit_func(x)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
+
 @pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('python_func', [python_test6])
@@ -177,3 +187,31 @@ def test_call_function6(python_func, jit_func, x):
     context.set_context(mode=context.GRAPH_MODE)
     ms_res = jit_func(x)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_return_a_freevar():
+    """
+    Feature: test bytecode CALL_FUNCTION/CALL_FUNCTION_KW/CALL_FUNCTION_EX.
+    Description: A subgraph returns a free variable.
+    Expectation: no graph break.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+
+    def fn(x: Tensor):
+        y = ops.add(x, 1)
+
+        def inner():
+            return x  # this subgraph returns a free variable
+
+        z = inner()
+        return ops.sub(y, z)
+
+    a = Tensor([1, 2])
+    o1 = fn(a)
+
+    compiled_fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    o2 = compiled_fn(a)
+
+    match_array(o1, o2)
+    assert_executed_by_graph_mode(compiled_fn)
