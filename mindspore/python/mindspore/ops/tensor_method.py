@@ -1445,6 +1445,8 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 def tensor_empty(*size, dtype=None, device=None):
     return pyboost_empty(size, dtype, device)
 
+def deprecated_tensor_logaddexp(input, other):
+    return F.logaddexp(input, other)
 
 # 158
 
