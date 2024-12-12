@@ -183,6 +183,7 @@ void RegModule(py::module *m) {
   mindspore::dump::RegDumpControl(m);
   RegTFT(m);
   RegTensorDoc(m);
+  RegReuseDataPtr(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegCommHandle(m);
