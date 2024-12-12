@@ -52,6 +52,11 @@ class MindDataParser(BaseParser):
     def _parse(self, data=None) -> Dict[str, Any]:
         if data is None:
             data = {}
+        if not os.path.exists(self._file_paths['pipeline']):
+            logger.info(
+                "pipeline profiling file %s does not exist. Please check whether minddata profiling data should exist.",
+                self._file_paths['pipeline'])
+            return data
         op_id_info, sample_interval = self._parse_pipeline_info_dict()
         cpu_util_info = self._parse_cpu_util_info()
         device_trace_info = self._parse_device_trace()
