@@ -277,7 +277,7 @@ from mindspore.ops.function.array_func import tril
 # 117 unfold
 
 # 118 unique
-
+from mindspore.ops.auto_generate import UniqueDim, Unique2
 # 119 unsqeeze
 
 # 120 view
@@ -375,6 +375,8 @@ from mindspore.ops.function.array_func import new_zeros
 
 
 ########################################functions########################################
+unique_dim_ = UniqueDim()
+unique2_ = Unique2()
 
 
 # 1 to
@@ -775,6 +777,9 @@ def tensor_nan_to_num(input, nan=0.0, posinf=None, neginf=None):
 
 
 # 72 narrow
+def deprecated_tensor_narrow(input, axis, start, length):
+    return F.narrow(input, axis, start, length)
+
 
 # 73 ne
 def tensor_ne(input, other):
@@ -797,6 +802,9 @@ def tensor_neg(input):
 # 79 numpy
 
 # 80 outer
+def deprecated_tensor_outer(input, vec2):
+    return F.outer(input, vec2)
+
 
 # 81 permute
 
@@ -1011,6 +1019,47 @@ def tensor_trunc(input):
 # 117 unfold
 
 # 118 unique
+def deprecated_tensor_unique(input, sorted=True, return_inverse=False, return_counts=False, dim=None):
+    """
+    Function for computing the unique elements of a tensor along a specified dimension or over the entire tensor.
+
+    Args:
+        input (Tensor): The input tensor from which to find unique elements.
+        sorted (bool, optional): If True, the unique elements will be sorted. Default is True.
+        return_inverse (bool, optional): Return the indices of the unique elements of the input tensor if true.
+        return_counts (bool, optional): Return the count of each unique element of the input tensor if true.
+        dim (int, optional): The dimension along which to find the unique elements.
+
+    Returns:
+        Tensor or tuple:
+            - If `return_inverse` is False and `return_counts` is False, returns a tensor of unique elements.
+            - If `return_inverse` is True, returns a tuple (unique_elements, inverse_indices).
+            - If `return_counts` is True, returns a tuple (unique_elements, counts).
+            - If both `return_inverse` and `return_counts` are True,
+                returns a tuple (unique_elements, inverse_indices, counts).
+
+    Raises:
+        ValueError: If `return_inverse` or `return_counts` are mutable (non-constant).
+        TypeError: If the `return_counts` argument is not a boolean when `dim` is specified.
+    """
+    if not F.isconstant(return_inverse) or not F.isconstant(return_counts):
+        raise ValueError(
+            f"For 'unique_ext', 'return_inverse' and 'return_counts' cannot be mutable")
+    if dim is None:
+        y, inverse_, counts = unique2_(
+            input, sorted, return_inverse, return_counts)
+    else:
+        validator.check_value_type(
+            "return_counts", return_counts, [bool], "unique_ext")
+        y, inverse_, counts = unique_dim_(input, sorted, return_inverse, dim)
+    if return_inverse and return_counts:
+        return y, inverse_, counts
+    if return_inverse:
+        return y, inverse_
+    if return_counts:
+        return y, counts
+    return y
+
 
 # 119 unsqeeze
 

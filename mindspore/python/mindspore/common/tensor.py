@@ -1862,12 +1862,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('dot')(self, other)
 
-    def outer(self, vec2):
-        r"""
-        For details, please refer to :func:`mindspore.ops.outer`.
-        """
-        return tensor_operator_registry.get('outer')(self, vec2)
-
     def rad2deg(self):
         r"""
         For details, please refer to :func:`mindspore.ops.rad2deg`.
@@ -1928,12 +1922,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.fmod`.
         """
         return tensor_operator_registry.get('fmod')(self, other)
-
-    def narrow(self, axis, start, length):
-        """
-        For details, please refer to :func:`mindspore.ops.narrow`.
-        """
-        return tensor_operator_registry.get('narrow')(self, axis, start, length)
 
     def swapaxes(self, axis0, axis1):
         """
