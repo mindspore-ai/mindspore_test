@@ -128,7 +128,6 @@ PrimitiveCPtr OnnxGeluParser::Parse(const onnx::GraphProto &onnx_graph, const on
   auto prim = std::make_unique<ops::Activation>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
   prim->set_activation_type(mindspore::ActivationType::GELU);
-
   return prim->GetPrim();
 }
 
@@ -136,7 +135,6 @@ PrimitiveCPtr OnnxTanhParser::Parse(const onnx::GraphProto &onnx_graph, const on
   auto prim = std::make_unique<ops::Activation>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
   prim->set_activation_type(mindspore::ActivationType::TANH);
-
   return prim->GetPrim();
 }
 
@@ -144,7 +142,6 @@ PrimitiveCPtr OnnxSigmoidParser::Parse(const onnx::GraphProto &onnx_graph, const
   auto prim = std::make_unique<ops::Activation>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
   prim->set_activation_type(mindspore::ActivationType::SIGMOID);
-
   return prim->GetPrim();
 }
 
@@ -172,7 +169,6 @@ PrimitiveCPtr OnnxSoftPlusParser::Parse(const onnx::GraphProto &onnx_graph, cons
 PrimitiveCPtr OnnxSeluParser::Parse(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node) {
   auto prim = std::make_unique<ops::SeLU>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
-
   return prim->GetPrim();
 }
 
