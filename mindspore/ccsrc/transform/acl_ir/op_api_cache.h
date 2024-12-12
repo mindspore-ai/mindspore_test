@@ -83,6 +83,14 @@ BACKEND_EXPORT void GatherInfo(mindspore::kernel::KernelTensor *);
 BACKEND_EXPORT void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
 BACKEND_EXPORT void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &);
 
+BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
+BACKEND_EXPORT void GatherInfo(const mindspore::tensor::BaseTensorPtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const std::vector<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const mindspore::tensor::TensorPtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const std::vector<tensor::TensorPtr> &);
+
 template <typename T>
 BACKEND_EXPORT void GatherInfo(const T &value) {
   MemcpyToBuf(&value, sizeof(T));
@@ -129,6 +137,9 @@ inline void RefreshAddr(const std::vector<mindspore::kernel::KernelTensor *> &te
     RefreshAddr(tensor);
   }
 }
+
+void RefreshAddr(const device::DeviceAddressPtr &device_address);
+void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor);
 
 template <typename Args>
 void RefreshAddr(const Args &values) {}
