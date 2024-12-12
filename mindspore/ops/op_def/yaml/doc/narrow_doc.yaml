@@ -1,7 +1,6 @@
 narrow:
     description: |
-        Returns a narrowed tensor from input tensor, and
-        the dimension axis is input from start to start + length.
+        Obtains a tensor of a specified length at a specified start position along a specified axis.
 
         Args:
             input (Tensor): the tensor to narrow.
