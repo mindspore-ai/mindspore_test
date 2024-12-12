@@ -200,6 +200,7 @@ deprecated_tensor_method_map = {
     # 90 rsqrt
 
     # 91 scatter
+    "scatter": "deprecated_tensor_scatter",
 
     # 92 scatter_add
     "scatter_add": "deprecated_tensor_scatter_add",
