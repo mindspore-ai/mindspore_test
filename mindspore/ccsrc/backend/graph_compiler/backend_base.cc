@@ -1012,7 +1012,11 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   PROF_START(InitCommGroup);
   InitCommGroup(root_graph);
   PROF_END(InitCommGroup);
+
+  PROF_START(WaitAllCommInit);
   (void)distributed::collective::CollectiveManager::instance()->WaitAllCommInitDone();
+  PROF_END(WaitAllCommInit);
+
   bool pynative_with_jit_call_graph = func_graph->has_flag(kFlagPyNativeWithJitCallGraph);
   if (!pynative_with_jit_call_graph) {
     UnifyMindIR(root_graph);
