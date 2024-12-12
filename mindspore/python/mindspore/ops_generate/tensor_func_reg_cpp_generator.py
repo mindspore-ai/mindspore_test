@@ -44,8 +44,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.TENSOR_FUNC_CC_REG = template.TENSOR_FUNC_CC_REG
         self.TENSOR_FUNC_CALL_BODY = template.TENSOR_FUNC_CALL_BODY
         self.TENSOR_FUNC_OVERLOAD_CALL_BODY = template.TENSOR_FUNC_OVERLOAD_CALL_BODY
-        self.TENSOR_FUNC_HEADER = template.TENSOR_FUNC_HEADER
-        self.TENSOR_FUNC_SOURCE = template.TENSOR_FUNC_SOURCE
+        self.TENSOR_API_HEADER = template.TENSOR_API_HEADER
+        self.TENSOR_API_SOURCE = template.TENSOR_API_SOURCE
         self.TENSOR_FUNC_UTILS = template.TENSOR_FUNC_UTILS
         self.TENSOR_FUNC_UT_BODY = template.TENSOR_FUNC_UT_BODY
         self.TENSOR_FUNC_UT_OVERLOAD_BODY = template.TENSOR_FUNC_UT_OVERLOAD_BODY
@@ -144,9 +144,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
         func_def_body_list, tensor_cpp_methods_list, tensor_api_declaration_list = self._get_sorted_func_def_body(
             all_op_func_data, alias_func_mapping)
-        tensor_func_header = self.TENSOR_FUNC_HEADER.replace(tensor_api_declaration_list=tensor_api_declaration_list)
-        save_file(os.path.join(work_path, K.TENSOR_FUNC_PATH), f"tensor_api.h",
-                  tensor_func_header)
+        tensor_api_header = self.TENSOR_API_HEADER.replace(tensor_api_declaration_list=tensor_api_declaration_list)
+        save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_api.h",
+                  tensor_api_header)
         self._generate_func_name_for_stub_tensor(work_path, tensor_cpp_methods_list)
         func_cc_reg = self.TENSOR_FUNC_CC_REG.replace(func_def_body=func_def_body_list)
         tensor_methods = self.TENSOR_FUNC_UTILS.replace(tensor_methods=tensor_method_list)
@@ -264,10 +264,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                               max_args=max_size,
                                                                               self_index=self_index,
                                                                               ut_body=ut_body)
-            tensor_func_source = self.TENSOR_FUNC_SOURCE.replace(tenosr_func_call_body=tensor_func_single_call_body,
-                                                                 func_name=func_name)
-            save_file(os.path.join(work_path, K.TENSOR_FUNC_PATH), f"tensor_{func_name}.cc",
-                      tensor_func_source)
+            tensor_api_source = self.TENSOR_API_SOURCE.replace(tenosr_func_call_body=tensor_func_single_call_body,
+                                                               func_name=func_name)
+            save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_{func_name}.cc",
+                      tensor_api_source)
 
     def _create_overload_op_source_files(self, work_path, overload_op_func_data):
         """
@@ -281,10 +281,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         for func_api_name, func_protos in overload_op_func_data.items():
             tensor_func_overload_call_body = self._get_overload_func_call_str(func_api_name, func_protos)
-            tensor_func_source = self.TENSOR_FUNC_SOURCE.replace(tenosr_func_call_body=tensor_func_overload_call_body,
-                                                                 func_name=func_api_name)
-            save_file(os.path.join(work_path, K.TENSOR_FUNC_PATH), f"tensor_{func_api_name}.cc",
-                      tensor_func_source)
+            tensor_api_source = self.TENSOR_API_SOURCE.replace(tenosr_func_call_body=tensor_func_overload_call_body,
+                                                               func_name=func_api_name)
+            save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_{func_api_name}.cc",
+                      tensor_api_source)
 
     def _get_overload_func_call_str(self, func_api_name, func_protos):
         """

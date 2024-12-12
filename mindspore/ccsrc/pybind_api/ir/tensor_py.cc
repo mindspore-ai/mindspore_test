@@ -30,7 +30,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
-#include "pybind_api/ir/tensor_func_reg.h"
+#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
 
 namespace mindspore {
 namespace pynative::autograd {

@@ -15,7 +15,7 @@
  */
 
 #include "pybind_api/ir/arg_handler.h"
-#include "pybind_api/ir/tensor_api/tensor_api.h"
+#include "pybind_api/ir/tensor_api/auto_generate/tensor_api.h"
 #include "pipeline/pynative/op_function/converter.h"
 
 namespace mindspore {
