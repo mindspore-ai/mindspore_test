@@ -50,6 +50,7 @@ from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
     MindDataPiplineSummaryViewer,
 )
 from mindspore.profiler.common.util import print_msg_with_pid
+from mindspore.profiler.parser.ascend_op_memory_viewer import AscendOpMemoryViewer
 
 
 @PROFILERS.register_module(DeviceTarget.NPU.value)
@@ -256,6 +257,8 @@ class NPUProfilerAnalysis:
             cann_flow_parsers.append(
                 AscendMsprofParser(**kwargs).register_post_hook(
                     AscendMemoryViewer(**kwargs).save
+                ).register_post_hook(
+                    AscendOpMemoryViewer(**kwargs).save
                 )
             )
 

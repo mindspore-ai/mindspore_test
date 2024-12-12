@@ -27,7 +27,6 @@ class AscendIntegrateViewer(BaseViewer):
 
     CSV_PREFIX_NAME = ["l2_cache", "api_statistic", "op_statistic", "static_op_mem"]
     AI_CPU_CSV_PATTERN = "aicpu_[0-9]*.csv"
-    FWK_MEM_CSV_PREFIX_NAME = ["operator_memory"]
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -42,7 +41,6 @@ class AscendIntegrateViewer(BaseViewer):
         """
         try:
             self._copy_msprof_csv_files()
-            self._copy_fwk_mem_csv_file()
             self._copy_ai_cpu_csv_file()
         except Exception as e: # pylint: disable=W0703
             logger.error("Failed to save ascend integrate data, error: %s", e)
