@@ -4313,6 +4313,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             indices (tuple[Tensor], list[Tensor]): the indices of type is bool, uint8, int32 or int64,
                 used to index into the "self Tensor". The rank of tensors in indices should be 1-D,
                 size of indices should <=  the rank of "self Tensor" and the tensors in indices should be broadcastable.
+                When tensor type is bool and uint8, the shape will be the match as the input dimension in turn.
+                For example, the first tensor of `indices` is a bool, shape (1, 2),
+                `input` shape (1, 2, 3), and then (1, 2) matches the shape of `input` (1, 2) at index 0, 1.
             values (Tensor): 1-D Tensor of the same type as "self Tensor". If size == 1, it will be broadcastable.
             accumulate (bool, optional): If `accumulate` is True, the elements in values are added to "self Tensor",
                 else the elements in `values` replace the corresponding element in the "self Tensor".

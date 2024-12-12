@@ -1848,8 +1848,6 @@ REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
   auto values = ib->GetInput(kIndex2);
   auto accumulate = ib->GetInput(kIndex3);
   auto dout = ib->GetInput(kIndex5);
-  auto accumulate_value = GetValue<bool>(accumulate->BuildValue());
-  auto zeros = ib->ZerosLikeExt(values, ib->Value(static_cast<int64_t>(ib->GetDtypeId(values))));
   // Indices is tuple[tensor]
   std::vector<ShapeVector> indices_shapes = indices->shapes();
   auto indices_nums = indices_shapes.size();
@@ -1860,23 +1858,58 @@ REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
   NodePtr values_grad = nullptr;
   if (values->need_compute_grad_out()) {
     values_grad = ib->Emit("Index", {dout, indices});
-    auto values_shape = ib->GetShape(values);
-    auto values_grad_shape = ib->GetShape(values_grad);
-    if (values_grad_shape != values_shape) {
-      auto bc_axis = ib->BroadcastGradientArgs(values, values_grad);
-      values_grad = ib->Reshape(
-        ib->Emit("SumExt", {values_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), values_shape);
+    auto values_shape = ib->Shape(values);
+    auto values_grad_shape = ib->Shape(values_grad);
+    auto bc_values = ib->BroadcastGradientArgs(values, values_grad)[kIndex0];
+    auto bc_values_shape_ptr = bc_values->GetShape();
+    // Dynamic if op need control flow
+    if (bc_values_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
+      // values_grad shape=(1, ....) don't use sum op
+      auto true_branch = [&values_grad, &values_shape](Emitter *e) -> NodePtrList {
+        return {e->Reshape(values_grad, values_shape)};
+      };
+      auto false_branch = [&values_grad, &values_shape, &bc_values](Emitter *e) -> NodePtrList {
+        auto sum_ext_result = e->Emit("SumExt", {values_grad, bc_values, e->Value(false), e->EmitValue(kNone)});
+        return {e->Reshape(sum_ext_result, values_shape)};
+      };
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_values}), ib->Value<int64_t>(0));
+      values_grad = ib->Conditional(cond, true_branch, false_branch);
+    } else {
+      auto bc_values_shape = bc_values_shape_ptr->cast<abstract::TupleShapePtr>();
+      MS_EXCEPTION_IF_NULL(bc_values_shape);
+      if (bc_values_shape->size() > 0) {
+        values_grad = ib->Reshape(ib->Emit("SumExt", {values_grad, bc_values, ib->Value(false), ib->EmitValue(kNone)}),
+                                  values_shape);
+      } else {
+        values_grad = ib->Reshape(values_grad, values_shape);
+      }
     }
   } else {
     values_grad = ib->OutZeros(values);
   }
   NodePtr dx = nullptr;
   if (input->need_compute_grad_out()) {
-    auto dout_clone = ib->Emit("Clone", {dout});
-    if (!accumulate_value) {
-      dx = ib->Emit("InplaceIndexPut", {dout_clone, indices, zeros, accumulate});
+    auto accumulate_opt = mindspore::GetScalarValue<bool>(accumulate->BuildValue());
+    if (accumulate_opt.has_value()) {
+      auto dout_clone = ib->Emit("Clone", {dout});
+      if (!accumulate_opt.value()) {
+        auto zeros = ib->ZerosLikeExt(values, ib->Value(static_cast<int64_t>(ib->GetDtypeId(values))));
+        dx = ib->Emit("InplaceIndexPut", {dout_clone, indices, zeros, accumulate});
+      } else {
+        dx = dout_clone;
+      }
     } else {
-      dx = dout_clone;
+      auto accumulate_false_branch = [&dout, &values, &indices, &accumulate](Emitter *e) -> NodePtrList {
+        auto dout_clone = e->Emit("Clone", {dout});
+        auto zeros = e->ZerosLikeExt(values, e->Value(static_cast<int64_t>(values->dtype()->type_id())));
+        auto dx_r = e->Emit("InplaceIndexPut", {dout_clone, indices, zeros, accumulate});
+        return {dx_r};
+      };
+      auto accumulate_true_branch = [&dout](Emitter *e) -> NodePtrList {
+        auto dout_clone = e->Emit("Clone", {dout});
+        return {dout_clone};
+      };
+      dx = ib->Conditional(accumulate, accumulate_true_branch, accumulate_false_branch);
     }
   } else {
     dx = ib->OutZeros(input);
