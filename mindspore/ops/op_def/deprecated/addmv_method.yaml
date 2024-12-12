@@ -1,0 +1,18 @@
+#deprecated addmv
+addmv:
+  args:
+    input:
+      dtype: tensor
+    mat:
+      dtype: tensor
+    vec:
+      dtype: tensor
+    beta:
+      dtype: number
+      default: 1
+    alpha:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor

@@ -367,6 +367,8 @@ deprecated_tensor_method_map = {
     "nansum": "deprecated_tensor_nansum",
     # 502
     "addmm": "deprecated_tensor_addmm",
+    # 790 addmv
+    "addmv": "deprecated_tensor_addmv",
     # 1028
     "var": "deprecated_tensor_var",
 }
