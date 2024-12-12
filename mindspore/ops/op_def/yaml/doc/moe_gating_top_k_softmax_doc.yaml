@@ -7,7 +7,7 @@ moe_gating_top_k_softmax:
 
         Inputs:
             - **x** (Tensor) - The input to be computed. The tensor must be 2D or 3D. Supported dtypes: float16, bfloat16, float32.
-            - **finished** (Tensor) - A 1D or 2D Tensor. Supported dtype: bool. The shape of the tensor must be :math:`x.shape[:-1]`. Default: ``None``.
+            - **finished** (Tensor, optional) - A 1D or 2D Tensor. Supported dtype: bool. The shape of the tensor must be :math:`x.shape[:-1]`. Default: ``None``.
 
         Outputs:
             - **y** (Tensor) - The topk value taken after doing softmax on `x`. The data type is the same as `x`. The -1 axis of the shape has the same size as the `k` value, and the rest of the axes have the same size as the corresponding axes of `x`.
@@ -34,7 +34,7 @@ moe_gating_top_k_softmax:
             >>> net = _infer_ops.MoeGatingTopKSoftmax()
             >>> output = net(x, finished, k=4)
             >>> print(output[0])
-            >>> [[0.2693 0.2437 0.2437 0.2437]
-                 [0.2893 0.2369 0.2369 0.2369]
-                 [0.262  0.262  0.262  0.2144]
-                 [0.378  0.2074 0.2074 0.2074]]
+            [[0.2693 0.2437 0.2437 0.2437]
+             [0.2893 0.2369 0.2369 0.2369]
+             [0.262  0.262  0.262  0.2144]
+             [0.378  0.2074 0.2074 0.2074]]
