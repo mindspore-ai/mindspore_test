@@ -43,7 +43,11 @@ class LlamaBoost(AtbBoostBase):
         )
 
     def init(self):
-        """set param"""
+        """
+        Initialize the object
+        returns True if object needs input manipulation by mindformers
+        """
+
         coder_param = {
             "normEps": self.config.rms_norm_eps,
             "normType": NormType.RMS_NORM,
@@ -93,6 +97,7 @@ class LlamaBoost(AtbBoostBase):
         }
         self.atb_encoder_operation.init(json.dumps({**encoder_param}))
         self.atb_decoder_operation.init(json.dumps({**decoder_param}))
+        return True
 
     # pylint: disable=C0330
     def _prepare_inputs(

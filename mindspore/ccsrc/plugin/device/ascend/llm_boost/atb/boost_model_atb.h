@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_BOOST_MODEL_ATB_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_BOOST_MODEL_ATB_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_LLM_BOOST_ATB_BOOST_MODEL_ATB_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_LLM_BOOST_ATB_BOOST_MODEL_ATB_H_
 #include <vector>
 #include <string>
 #include <memory>
@@ -49,6 +49,9 @@ class BACKEND_EXPORT BoostModelATB : public BoostBaseModel {
                      const std::vector<tensor::TensorPtr> &msVCacheTensors) override;
   int64_t ExecuteOutImpl(std::vector<atb::Tensor> &inTensors, std::vector<atb::Tensor> &outTensors,
                          const std::string &param);
+  int64_t SetWeightMap(const std::map<std::string, mindspore::tensor::TensorPtr> &map) override { return -1; }
+  int64_t InitData(const llm_data &data) override { return -1; }
+  int64_t AddFlags(bool is_first) override { return -1; }
 
  private:
   void InitKVCacheTensor();
@@ -68,4 +71,4 @@ class BACKEND_EXPORT BoostModelATB : public BoostBaseModel {
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_BOOST_MODEL_ATB_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_LLM_BOOST_ATB_BOOST_MODEL_ATB_H_
