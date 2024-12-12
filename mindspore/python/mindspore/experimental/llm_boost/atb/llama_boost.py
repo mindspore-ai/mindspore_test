@@ -94,7 +94,6 @@ class LlamaBoost(AtbBoostBase):
         self.atb_encoder_operation.init(json.dumps({**encoder_param}))
         self.atb_decoder_operation.init(json.dumps({**decoder_param}))
 
-    # pylint: disable=C0330
     def _prepare_inputs(
             self,
             prefill=None,
