@@ -70,6 +70,7 @@ class BaseParser:
             self._execute_post_hooks(result)
         except Exception as e: # pylint: disable=W0703
             logger.error("Parser %s error: %s", self.__class__.__name__, str(e))
+            return data
         return result
 
     def register_post_hook(self, hook: Callable[[Any], None]) -> "BaseParser":

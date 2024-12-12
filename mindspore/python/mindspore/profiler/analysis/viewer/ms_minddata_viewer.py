@@ -49,6 +49,8 @@ class MindDataPipelineRawViewer(BaseViewer):
         )
 
     def save(self, data: Dict[str, Any]) -> None:
+        if not data.get("pipeline_info"):
+            return
         try:
             dict_op_id_info, sampling_interval = data["pipeline_info"]
             op_info_list = self._analyse_data(dict_op_id_info, sampling_interval)
@@ -185,11 +187,14 @@ class MindDataPiplineSummaryViewer(BaseViewer):
 
     def save(self, data: Dict[str, Any]) -> None:
         # If there are errors in the data during the parsing phase, the data will be set to empty
-        if not data['cpu_util_info'] or not data["device_trace_info"]:
+        if not (data.get("pipeline_info") and data.get('cpu_util_info') and data.get("device_trace_info")):
             return
-        self._device_queue_file_found = data["device_queue_file_found"]
-        summary_dict = self._analyse_data(data)
-        self._save_data(summary_dict)
+        try:
+            self._device_queue_file_found = data["device_queue_file_found"]
+            summary_dict = self._analyse_data(data)
+            self._save_data(summary_dict)
+        except Exception as e: # pylint: disable=W0703
+            logger.error("Failed to save minddata %s", e)
 
     def _analyse_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
