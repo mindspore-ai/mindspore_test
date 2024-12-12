@@ -192,7 +192,7 @@ def get_bprop_virtual_assign_kv_cache(self):
         dout_update = dout + y
         kv_equal = F.equal(seq_chunk, 0)
         update_kv = F.select(kv_equal, F.broadcast_to(cast(out_tensor, dtype(y)), F.shape(y)), dout_update)
-        return F.depend((dout_update, cast(out_tensor, dtype(y)),
+        return F.depend((cast(dout_update, dtype(dout)), cast(out_tensor, dtype(y)),
                          cast(out_tensor, dtype(seq_chunk))), assign(y, update_kv))
 
     return bprop
