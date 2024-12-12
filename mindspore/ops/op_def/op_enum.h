@@ -38,7 +38,7 @@ enum CellType : int64_t { CELL_TYPE_LSTM = 0 };
 
 enum Group : int64_t { SYNC_BN_GROUP0 = 0 };
 
-enum InterpolationMode : int64_t { BILINEAR = 0, NEAREST = 1 };
+enum InterpolationMode : int64_t { BILINEAR = 0, NEAREST = 1, BICUBIC = 2 };
 
 enum Indexing : int64_t { IJ = 0, XY = 1 };
 
