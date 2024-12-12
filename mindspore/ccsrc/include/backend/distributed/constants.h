@@ -101,9 +101,9 @@ constexpr uint32_t kDefaultFinishTimeout = 30;
 constexpr uint32_t kNodeRolePortRangeNum = 4096;
 constexpr uint32_t kStartWorkerPort = 8118;
 constexpr uint32_t kStartServerPort = kStartWorkerPort + kNodeRolePortRangeNum;
-// We consider Worker and Server number on one node is 32 each.
-constexpr uint32_t kMaxWorkerNumPerNode = 32;
-constexpr uint32_t kMaxServerNumPerNode = 32;
+// We consider Worker and Server number on one node is 16 each.
+constexpr uint32_t kMaxWorkerNumPerNode = 16;
+constexpr uint32_t kMaxServerNumPerNode = 16;
 
 // For each node role, it has specified port range parameters.
 struct NodeRolePortAssignment {

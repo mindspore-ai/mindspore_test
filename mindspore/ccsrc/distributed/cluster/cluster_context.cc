@@ -295,6 +295,7 @@ void ClusterContext::PostProcess() {
     uint32_t max_node_num = port_assignment.max_node_num;
     port_range_.first = start_port + (port_range / max_node_num) * (cgn->rank_id() % max_node_num);
     port_range_.second = port_range_.first + (port_range / max_node_num) - 1;
+    MS_LOG(INFO) << "Assigned for this worker port range is " << port_range_.first << " to " << port_range_.second;
   }
 }
 }  // namespace cluster
