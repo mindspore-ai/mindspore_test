@@ -472,11 +472,13 @@ class Profiler:
         self._metadata.clear()
 
     def __enter__(self) -> 'Profiler':
-        self.start()
+        if not self._has_started:
+            self.start()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.stop()
+        if self._has_started:
+            self.stop()
 
     def __del__(self):
         if self._has_started:
