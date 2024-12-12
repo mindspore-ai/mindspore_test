@@ -1230,12 +1230,12 @@ REG_BPROP_BUILDER("AddLayerNormV2").FreeUselessValues_IO({i3}, {0, 3}).SetBody(B
   auto sum_optional = ib->TupleGetItem(dout, kIndex3);
   if (!additional_out_opt.has_value()) {
     auto true_branch = [&sum_optional](Emitter *e) -> NodePtrList { return {sum_optional}; };
-    auto false_branch = [&dy](Emitter *e) -> NodePtrList { return {e->ZerosLike(dy)}; };
+    auto false_branch = [&dy, &ib](Emitter *e) -> NodePtrList { return {e->ZerosLikeExt(dy, ib->EmitValue(kNone))}; };
     auto additional_out_true = ib->Equal(additionalOut, ib->Value<bool>(true));
     sum_optional = ib->Conditional(additional_out_true, true_branch, false_branch);
   } else {
     if (!additional_out_opt.value()) {
-      sum_optional = ib->ZerosLike(dy);
+      sum_optional = ib->ZerosLikeExt(dy, ib->EmitValue(kNone));
     }
   }
   auto grad_out = ib->Emit("AddLayerNormGrad", {dy, x1, x2, rstd, mean, gamma, sum_optional});
@@ -3109,7 +3109,7 @@ REG_BPROP_BUILDER("AdaptiveMaxPool3D").FreeUselessValues_O({i0}).SetBody(BODYFUN
   auto index = ib->TupleGetItem(out, 1);
   auto dy = ib->TupleGetItem(dout, 0);
   auto dx = ib->Emit("AdaptiveMaxPool3DGrad", {dy, x, index});
-  return {dx, ib->ZerosLike(output_size)};
+  return {dx, ib->ZerosLikeExt(output_size, ib->EmitValue(kNone))};
 });
 
 REG_BPROP_BUILDER("Conv2DTranspose").SetUnusedInputs({i2, i3}).SetBody(Conv2DTransposeBpropExpander);
@@ -3766,7 +3766,7 @@ REG_BPROP_BUILDER("ConstantPadND").FreeUselessValues_IO({i0}, {}).SetBody(BODYFU
   }
 
   auto constant_values = ib->GetInput(kIndex2);
-  auto dx = ib->ConstantPadND(dout, neg_pad, ib->ZerosLike(constant_values));
+  auto dx = ib->ConstantPadND(dout, neg_pad, ib->EmitValue(MakeValue<int64_t>(0)));
   return {dx, ib->OutZeros(paddings), ib->OutZeros(constant_values)};
 });
 

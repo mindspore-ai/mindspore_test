@@ -3948,7 +3948,7 @@ REG_BPROP_BUILDER("Polar").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   }
 
   if (input_angle->need_compute_grad_out()) {
-    auto zeros = ib->ZerosLike(input_angle);
+    auto zeros = ib->ZerosLikeExt(input_angle, ib->EmitValue(kNone));
     auto ones = ib->OnesLike(input_angle);
     auto i = ib->Complex(zeros, ones);
     auto result_mul_1_j = ib->Mul(out, i);
@@ -4749,7 +4749,7 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
   }
 
   if (axis->abstract()->BuildType()->isa<TypeNone>()) {
-    auto zero_input = ib->ZerosLike(input);
+    auto zero_input = ib->ZerosLikeExt(input, ib->EmitValue(kNone));
     auto zero_mask = ib->Cast(ib->Equal(input, zero_input), kInt64);
     auto zero_num = ib->SumExt(zero_mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
     auto has_no_zero = ib->Equal(zero_num, ib->Tensor(static_cast<int64_t>(0)));
@@ -4762,7 +4762,9 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
     };
     dx = ib->Conditional(has_no_zero, no_zero_true_branch, all_false_branch);
 
-    auto one_more_zero_true_branch = [&input](Emitter *e) -> NodePtrList { return {e->ZerosLike(input)}; };
+    auto one_more_zero_true_branch = [&input, &ib](Emitter *e) -> NodePtrList {
+      return {e->ZerosLikeExt(input, ib->EmitValue(kNone))};
+    };
     dx = ib->Conditional(has_one_more_zero, one_more_zero_true_branch, all_false_branch);
 
     auto one_zero_true_branch = [&](Emitter *e) -> NodePtrList {
@@ -4796,7 +4798,7 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
       dout = keep_dims_opt.value() ? dout : ib->Reshape(dout, res[kIndex0]);
     }
 
-    auto zero_input = ib->ZerosLike(input);
+    auto zero_input = ib->ZerosLikeExt(input, ib->EmitValue(kNone));
     auto zero_mask = ib->Equal(input, zero_input);
     auto zero_num = ib->SumExt(zero_mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
     auto has_no_zero = ib->Equal(zero_num, ib->Tensor(static_cast<int64_t>(0)));
