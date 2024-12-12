@@ -148,7 +148,8 @@ class BertTrainCell(M.nn.Cell):
 
 
 M.context.set_context(mode=M.context.GRAPH_MODE,
-                      device_target="CPU", save_graphs=False)
+                      device_target="CPU")
+os.environ["MS_DEV_SAVE_GRAPHS"] = "0"
 
 # get epoch number
 epoch_num = 1

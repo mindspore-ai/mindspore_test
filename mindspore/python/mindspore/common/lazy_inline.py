@@ -158,8 +158,9 @@ def lazy_inline(fn=None, attrs=None, policy=None):
         ...     inp = Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
         ...     net(inp)
         ...
-        >>> context.set_context(mode=context.GRAPH_MODE,
-        ...                     save_graphs=True, save_graphs_path="./lazy")
+        >>> context.set_context(mode=context.GRAPH_MODE)
+        >>> os.environ["MS_DEV_SAVE_GRAPHS"] = "2"
+        >>> os.environ["MS_DEV_SAVE_GRAPHS_PATH"] = os.path.realpath("./lazy")
         ...
         >>> test_compile()
     """

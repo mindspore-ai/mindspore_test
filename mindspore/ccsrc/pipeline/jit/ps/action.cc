@@ -341,7 +341,7 @@ void SetMindIRLoadFlag(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(manager);
   FuncGraphPtr loaded_graph = nullptr;
   size_t loaded_graph_num = 0;
-  auto all_graphs = manager->func_graphs();
+  const auto &all_graphs = manager->func_graphs();
   for (auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->has_attr("is_load")) {
@@ -1567,8 +1567,8 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
   if (common::AnfAlgo::IsDynamicGraph(func_graph) && (context_ptr->backend_policy() != "ge")) {
     if (kbk_reason != nullptr) {
       *kbk_reason =
-        "Run graph mode with kernel by kernel because graph exist dynamic shape. Call "
-        "'set_context(save_graphs=True)' to check graph irs.";
+        "Run graph mode with kernel by kernel because graph exist dynamic shape. set env variable "
+        "'MS_DEV_SAVE_GRAPHS=2' to check graph irs.";
       MS_LOG(INFO) << *kbk_reason;
     }
     set_ctx(false, false, false);
