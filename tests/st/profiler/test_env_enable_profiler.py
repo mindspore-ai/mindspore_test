@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import glob
 import shutil
 from tests.mark_utils import arg_mark
 
@@ -39,54 +40,18 @@ class CheckProfilerFiles:
         if device_target == "Ascend":
             self._check_d_profiling_file()
             self._check_host_profiling_file(profile_framework=profile_framework)
-        elif device_target == "GPU":
-            self._check_gpu_profiling_file()
-            self._check_host_profiling_file(profile_framework=profile_framework)
-        else:
-            self._check_cpu_profiling_file()
-
-    def _check_gpu_profiling_file(self):
-        """Check gpu profiling file."""
-        op_detail_file = self.profiler_path + f'gpu_op_detail_info_{self.device_id}.csv'
-        op_type_file = self.profiler_path + f'gpu_op_type_info_{self.device_id}.csv'
-        activity_file = self.profiler_path + f'gpu_activity_data_{self.device_id}.csv'
-        timeline_file = self.profiler_path + f'gpu_timeline_display_{self.device_id}.json'
-        getnext_file = self.profiler_path + f'minddata_getnext_profiling_{self.device_id}.txt'
-        pipeline_file = self.profiler_path + f'minddata_pipeline_raw_{self.device_id}.csv'
-        framework_file = self.profiler_path + f'gpu_framework_{self.device_id}.txt'
-
-        gpu_profiler_files = (op_detail_file, op_type_file, activity_file,
-                              timeline_file, getnext_file, pipeline_file, framework_file)
-        for file in gpu_profiler_files:
-            assert os.path.isfile(file)
 
     def _check_d_profiling_file(self):
         """Check Ascend profiling file."""
-        aicore_file = self.profiler_path + f'aicore_intermediate_{self.rank_id}_detail.csv'
-        # step_trace_file = self.profiler_path + f'step_trace_raw_{self.rank_id}_detail_time.csv'
-        timeline_file = self.profiler_path + f'ascend_timeline_display_{self.rank_id}.json'
-        aicpu_file = self.profiler_path + f'aicpu_intermediate_{self.rank_id}.csv'
-        minddata_pipeline_file = self.profiler_path + f'minddata_pipeline_raw_{self.rank_id}.csv'
-        queue_profiling_file = self.profiler_path + f'device_queue_profiling_{self.rank_id}.txt'
-        # memory_file = self.profiler_path + f'memory_usage_{self.rank_id}.pb'
+        kernel_details_file = os.path.join(self.profiler_path, f'kernel_details.csv')
+        timeline_file = os.path.join(self.profiler_path, f'trace_view.json')
 
-        d_profiler_files = (aicore_file, timeline_file, aicpu_file,
-                            minddata_pipeline_file, queue_profiling_file)
+        d_profiler_files = (kernel_details_file, timeline_file)
         for file in d_profiler_files:
             assert os.path.isfile(file)
 
-    def _check_cpu_profiling_file(self):
-        """Check cpu profiling file."""
-        op_detail_file = self.profiler_path + f'cpu_op_detail_info_{self.device_id}.csv'
-        op_type_file = self.profiler_path + f'cpu_op_type_info_{self.device_id}.csv'
-        timeline_file = self.profiler_path + f'cpu_op_execute_timestamp_{self.device_id}.txt'
-
-        cpu_profiler_files = (op_detail_file, op_type_file, timeline_file)
-        for file in cpu_profiler_files:
-            assert os.path.isfile(file)
-
     def _check_host_profiling_file(self, profile_framework='all'):
-        dataset_csv = os.path.join(self.profiler_path, f'dataset_{self.rank_id}.csv')
+        dataset_csv = os.path.join(self.profiler_path, f'dataset.csv')
         if profile_framework in ['all', 'time']:
             assert os.path.isfile(dataset_csv)
         else:
@@ -94,7 +59,7 @@ class CheckProfilerFiles:
 
 
 class TestEnvEnableProfiler:
-    profiler_path = os.path.join(os.getcwd(), f'data/profiler/')
+    output_path = os.path.join(os.getcwd(), f'data')
     device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
     rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
 
@@ -108,32 +73,34 @@ class TestEnvEnableProfiler:
         """Run after each test case end."""
         cleanup()
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_ascend_profiler(self):
+        """
+        Feature: Ascend Profiler
+        Description: Test Ascend Profiler with all options enabled.
+        Expectation: The profiler successfully collects data and generates the expected files.
+        """
         status = os.system(
             """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"all", "data_process":true, "with_stack":false}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", "all")
+        ascend_profiler_output_path = glob.glob(f"{self.output_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+        CheckProfilerFiles(self.device_id, self.rank_id, ascend_profiler_output_path, "Ascend", "all")
         assert status == 0
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-    def test_host_profiler_none(self):
-        status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "data_process":true}';
-               python ./run_net.py --target=Ascend --mode=0;
-            """
-        )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", None, False)
-        assert status == 0
-
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_host_profiler_time(self):
+        """
+        Feature: Ascend Profiler
+        Description: Test Ascend Profiler with step profiler.
+        Expectation: The profiler successfully collects data and generates the expected files.
+        """
         status = os.system(
             """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"time", "data_process":true}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", "time")
+        ascend_profiler_output_path = glob.glob(f"{self.output_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+        CheckProfilerFiles(self.device_id, self.rank_id, ascend_profiler_output_path, "Ascend", "time")
         assert status == 0

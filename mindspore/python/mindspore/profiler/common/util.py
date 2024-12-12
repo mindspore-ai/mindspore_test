@@ -55,6 +55,17 @@ def timeit(custom_message=None):
 
     return decorator
 
+
+def print_msg_with_pid(msg):
+    """
+    Print message with process id.
+
+    Args:
+        msg (str): The message to print.
+    """
+    print(f"[{os.getpid()}] {msg}", flush=True)
+
+
 def to_int(param, param_name):
     """
     Transfer param to int type.

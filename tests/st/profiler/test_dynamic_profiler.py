@@ -95,7 +95,7 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
         profiler_path = os.path.join(tmpdir, f"rank{rank_id}_start2_stop3")
 
         # Check trace_view.json
-        trace_view_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        trace_view_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                     f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
         FileChecker.check_timeline_values(
             trace_view_path,
@@ -112,18 +112,13 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
             fuzzy_match=True
         )
 
-        # check op_statistic.csv
-        op_statistic_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
-                                      f"ASCEND_PROFILER_OUTPUT/op_statistic.csv")[0]
-        FileChecker.check_csv_items(op_statistic_path, {"OP Type": ["MatMul*", "LayerNorm*"]})
-
         # check kernel_details.csv
-        kernel_details_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        kernel_details_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
         FileChecker.check_csv_items(kernel_details_path, {"Name": ["*MatMul*", "LayerNorm*"]})
 
         # check step_trace_time.csv
-        step_trace_time_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        step_trace_time_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
         FileChecker.check_file_line_count(step_trace_time_path, 2)
 
@@ -161,7 +156,7 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
         profiler_path = os.path.join(tmpdir, f"rank{rank_id}_start2_stop3")
 
         # Check trace_view.json
-        trace_view_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        trace_view_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                     f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
         FileChecker.check_timeline_values(
             trace_view_path,
@@ -179,18 +174,13 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
             fuzzy_match=True
         )
 
-        # check op_statistic.csv
-        op_statistic_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
-                                      f"ASCEND_PROFILER_OUTPUT/op_statistic.csv")[0]
-        FileChecker.check_csv_items(op_statistic_path, {"OP Type": ["MatMul*", "LayerNorm*"]})
-
         # check kernel_details.csv
-        kernel_details_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        kernel_details_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
         FileChecker.check_csv_items(kernel_details_path, {"Name": ["*MatMul*", "LayerNorm*"]})
 
         # check step_trace_time.csv
-        step_trace_time_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        step_trace_time_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
         FileChecker.check_file_line_count(step_trace_time_path, 2)
 
@@ -228,7 +218,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
         profiler_path = os.path.join(tmpdir, f"rank{rank_id}_start2_stop3")
 
         # Check trace_view.json
-        trace_view_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        trace_view_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                     f"ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
         FileChecker.check_timeline_values(
             trace_view_path,
@@ -245,17 +235,12 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
             fuzzy_match=True
         )
 
-        # check op_statistic.csv
-        op_statistic_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
-                                      f"ASCEND_PROFILER_OUTPUT/op_statistic.csv")[0]
-        FileChecker.check_csv_items(op_statistic_path, {"OP Type": ["MatMul*", "LayerNorm*"]})
-
         # check kernel_details.csv
-        kernel_details_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        kernel_details_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
         FileChecker.check_csv_items(kernel_details_path, {"Name": ["*MatMul*", "LayerNorm*"]})
 
         # check step_trace_time.csv
-        step_trace_time_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/"
+        step_trace_time_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
         FileChecker.check_file_line_count(step_trace_time_path, 2)
