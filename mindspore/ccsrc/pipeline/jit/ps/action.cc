@@ -371,6 +371,7 @@ abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::A
   auto manager = Manage(infer_graph, true);
   auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
   engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
+  engine->set_check_side_effect(true);
   return AbstractAnalyze(engine, infer_graph, args_abs, false, clear);
 }
 
