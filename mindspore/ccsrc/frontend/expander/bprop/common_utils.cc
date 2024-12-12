@@ -540,10 +540,11 @@ NodePtr LogSumExpGrad(Emitter *ib, const NodePtr &input, const NodePtr &dim, boo
 
 inline NodePtr DynamicRankVarImpl(Emitter *ib, const NodePtr &x, const NodePtr &dout, const NodePtr &grad,
                                   const NodePtr &correction, const NodePtr &mean) {
+  const float dof_scale = 2.0;
   auto dout_size = ib->Emit("Size", {dout});
   auto x_size = ib->Emit("Size", {x});
   auto used_size = ib->RealDiv(ib->ScalarToTensor(x_size, kFloat32), ib->ScalarToTensor(dout_size, kFloat32));
-  auto dof = ib->RealDiv(ib->Tensor(2.0, kFloat32), ib->Sub(used_size, ib->ScalarToTensor(correction, kFloat32)));
+  auto dof = ib->RealDiv(ib->Tensor(dof_scale, kFloat32), ib->Sub(used_size, ib->ScalarToTensor(correction, kFloat32)));
   dof = ib->Cast(dof, dout->dtype());
   return ib->Mul(ib->Mul(ib->Cast(grad, dout->dtype()), dof), ib->Sub(x, mean));
 }
@@ -564,6 +565,7 @@ inline NodePtr DynamicGradUnsqueeze(BpropBuilder *ib, const NodePtr &x, const No
 
 NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, const NodePtr &dout,
                 const NodePtr &correction, const NodePtr &keepdim) {
+  const float dof_scale = 2.0;
   NodePtr axis = axis_node;
   if (ib->GetDtype(axis_node)->isa<TypeNone>()) {
     axis = ib->Value<std::vector<int64_t>>({});
@@ -589,7 +591,7 @@ NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, co
     if (IsDynamic(ib->GetShape(x)) || IsDynamic(ib->GetShape(dout))) {
       auto dout_size = ib->DynSize(dout, kFloat32);
       auto used_size = ib->DynSize(x, kFloat32) / dout_size;
-      dof = ib->RealDiv(ib->Tensor(2.0, kFloat32), ib->Sub(used_size, ib->ScalarToTensor(correction, kFloat32)));
+      dof = ib->RealDiv(ib->Tensor(dof_scale, kFloat32), ib->Sub(used_size, ib->ScalarToTensor(correction, kFloat32)));
       dof = ib->Cast(dof, ib->GetDtype(dout));
     } else {
       auto dout_size = ib->GetSize(dout);
@@ -597,7 +599,7 @@ NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, co
         MS_EXCEPTION(ValueError) << "For 'Var', out shape size can not be 0";
       }
       auto used_size = ib->GetSize(x) / dout_size;
-      dof_imm = 2.0 / (used_size - GetValue<int64_t>(correction->BuildValue()));
+      dof_imm = dof_scale / (used_size - GetValue<int64_t>(correction->BuildValue()));
     }
     auto rank = ib->GetShape(x).size();
     auto mean = rank == 0 ? ib->MeanExt(x, ib->Value<std::vector<int64_t>>({}), ib->Value<bool>(false), dtype)
