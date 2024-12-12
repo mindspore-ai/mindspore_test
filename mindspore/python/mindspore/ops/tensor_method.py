@@ -404,6 +404,9 @@ from mindspore.ops.function.math_func import addbmm
 from mindspore.ops.auto_generate import addmm_op
 from mindspore.ops.function.math_func import addmm
 
+# 790 addmv
+from mindspore.ops.auto_generate import addmv_op
+
 # 1028
 from mindspore.ops.function.math_func import var_ext
 
@@ -1384,6 +1387,12 @@ def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
     """
     return addmm(input, mat1, mat2, beta=beta, alpha=alpha)
 
+# 790
+def tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
+    return addmv_op(input, mat, vec, beta, alpha)
+
+def deprecated_tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
+    return addmv_op(input, mat, vec, beta, alpha)
 
 def tensor_clone(input):
     return clone(input)
