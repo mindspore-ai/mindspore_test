@@ -132,6 +132,13 @@ def get_addcxxx_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(gen.Cdist)
 def get_cdist_vmap_rule(prim, axis_size):
     """VmapRule for `cdist` operation."""
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
+    else:
+        batch_rank = 1
+
+    prim = prim.clone()
+    prim.set_label('batch_rank', batch_rank)
 
     def vmap_rule(x_bdim, y_bdim, p_bdim):
         x, x_dim = x_bdim
