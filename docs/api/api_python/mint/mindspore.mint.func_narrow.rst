@@ -15,6 +15,7 @@ mindspore.mint.narrow
         Tensor。
 
     异常：
+        - **ValueError** - `input` 的秩为0。
         - **ValueError** - `dim` 值超出范围[-input.ndim, input.ndim)。
         - **ValueError** - `start` 值超出范围[-input.shape[dim], input.shape[dim]]。
         - **ValueError** - `length` 值超出范围[0, input.shape[dim]-start]。
