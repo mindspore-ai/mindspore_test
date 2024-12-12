@@ -53,6 +53,8 @@ update_submodule()
       GIT_LFS_SKIP_SMUDGE=1 git submodule update --init akg
     fi
   fi
+  git submodule update --init mstt
+  cp "${BASEPATH}/mstt/debug/accuracy_tools/msprobe/mindspore/dym_loader/"* "mindspore/ccsrc/debug/hooker/"
 }
 
 build_exit()
