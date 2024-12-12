@@ -20,6 +20,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
 #include "ir/value.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -52,7 +53,10 @@ class FuncGraphBuilder {
 
   FuncGraphManagerPtr manager() const { return mng_; }
 
-  void set_manager(const FuncGraphManagerPtr &mng) { mng_ = mng; }
+  void set_manager(const FuncGraphManagerPtr &mng) {
+    mng_ = mng;
+    graph_->set_manager(mng_);
+  }
 
   /// \brief Add a cnode to the graph.
   ///
@@ -166,7 +170,7 @@ class FuncGraphBuilder {
   /// \param[in] name The func_graph name to set.
   void SetGraphName(const std::string &name);
 
-  static AbstractBasePtr EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list);
+  static std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list);
 
   static bool IsParameterSequence(const py::object &object);
 
@@ -250,8 +254,8 @@ class FuncGraphBuilder {
                                  std::vector<AnfNodePtr> *input_node_list,
                                  std::vector<AbstractBasePtr> *input_abs_list);
 
-  static AbstractBasePtr DoInferAndCheck(const ValuePtr &callable_value,
-                                         const std::vector<AbstractBasePtr> &input_abs_list);
+  static std::pair<AbstractBasePtr, bool> DoInferAndCheck(const ValuePtr &callable_value,
+                                                          const std::vector<AbstractBasePtr> &input_abs_list);
 
   CNodePtr DoPrimitiveInferAndCheck(const PrimitivePtr &primitive, const AnfNodePtrList &input_node_list,
                                     const AbstractBasePtrList &args_abs_list);
@@ -278,10 +282,21 @@ class FuncGraphBuilder {
 
   static void SetParameterName(const ParameterPtr &param);
 
+  void MarkNodeIsolated(const AnfNodePtr &node, bool force);
+
+  void EraseCandidateIsolatedNode(const AnfNodePtr &node);
+
+  AnfNodePtr GenerateOutputNode();
+
+  AnfNodePtr AttachIsolatedNode(const AnfNodePtr &node) const;
+
   FuncGraphPtr graph_{nullptr};
   bool has_set_output_{false};
   HashMap<AbstractWrapperPtr, AnfNodePtr> key_to_node_;
   std::vector<AnfNodePtr> output_nodes_;
+
+  // Store all isolated nodes for graph which should be appended to the output of graph.
+  std::vector<AnfNodePtr> isolated_nodes_;
 
   // Store all previous builders for subgraph call and control flow.
   std::vector<FuncGraphBuilder *> prev_builders_;

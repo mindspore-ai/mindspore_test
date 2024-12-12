@@ -46,6 +46,7 @@ constexpr auto kTensorModule = "mindspore.common";
 constexpr auto kAdapterFlag = "adapter_flag";
 constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
 constexpr auto kRegisterHookKey = "backward_register_hook";
+constexpr auto kCandidateIsolatedFlag = "candidate_isolated";
 
 bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
   static HashSet<std::string> prims_should_fallback_in_runtime = {kListInplaceExtendOpName,
@@ -146,6 +147,10 @@ bool FunctionShouldBeParseInAst(const py::object &obj) {
     return false;
   }
   return func_names.find(py::cast<std::string>(obj.attr("__name__"))) != func_names.end();
+}
+
+bool IsSideEffectPrimitive(const PrimitivePtr &prim) {
+  return GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_IO) || GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_MEM);
 }
 }  // namespace
 
@@ -324,9 +329,10 @@ AnfNodePtr FuncGraphBuilder::ConvertPyDictToNode(const py::dict &dict) {
   return node;
 }
 
-AbstractBasePtr FuncGraphBuilder::EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list) {
+std::pair<AbstractBasePtr, bool> FuncGraphBuilder::EvalValue(const ValuePtr &value,
+                                                             const AbstractBasePtrList &inputs_abs_list) {
   if (value == nullptr) {
-    return nullptr;
+    return std::make_pair(nullptr, false);
   }
   try {
     MS_LOG_TRY_CATCH_SCOPE;
@@ -334,18 +340,18 @@ AbstractBasePtr FuncGraphBuilder::EvalValue(const ValuePtr &value, const Abstrac
       auto prim = value->cast<PrimitivePtr>();
       auto eval_res = abstract::EvalOnePrim(prim, inputs_abs_list);
       if (eval_res != nullptr) {
-        return eval_res->abstract();
+        return std::make_pair(eval_res->abstract(), IsSideEffectPrimitive(prim));
       }
     } else if (value->ToAbstract()->isa<abstract::AbstractFunction>()) {
       auto analyze_res = pipeline::AbstractAnalyze(value, inputs_abs_list);
       if (analyze_res.eval_result != nullptr) {
-        return analyze_res.eval_result->abstract();
+        return std::make_pair(analyze_res.eval_result->abstract(), analyze_res.eval_result->has_side_effect_node());
       }
     }
-    return nullptr;
+    return std::make_pair(nullptr, false);
   } catch (const std::exception &e) {
     MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString() << ". The exception:\n" << e.what();
-    return nullptr;
+    return std::make_pair(nullptr, false);
   }
 }
 
@@ -856,6 +862,57 @@ AbstractWrapperPtr FuncGraphBuilder::AddAttrPythonObject(const py::object &objec
   return abstract_wrapper;
 }
 
+void FuncGraphBuilder::MarkNodeIsolated(const AnfNodePtr &node, bool force) {
+  if (!node->isa<CNode>()) {
+    return;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  auto callable_node = cnode->input(0);
+  if (!callable_node->isa<ValueNode>()) {
+    return;
+  }
+  auto callable = callable_node->cast<ValueNodePtr>()->value();
+  if (!callable->isa<Primitive>() && !callable->isa<FuncGraph>()) {
+    return;
+  }
+  if (callable->isa<Primitive>()) {
+    auto prim = callable->cast<PrimitivePtr>();
+    if (force || IsSideEffectPrimitive(prim)) {
+      (void)isolated_nodes_.emplace_back(cnode);
+      cnode->set_has_side_effect_node(true);
+      graph_->set_has_side_effect_node(true);
+      MS_LOG(INFO) << "Mark side effect primitive call node isolated, node: " << node->DebugString();
+    }
+    return;
+  }
+  auto fg = callable->cast<FuncGraphPtr>();
+  if (!force && !fg->has_side_effect_node()) {
+    return;
+  }
+  (void)isolated_nodes_.emplace_back(cnode);
+  node->set_user_data<bool>(kCandidateIsolatedFlag, std::make_shared<bool>(true));
+  cnode->set_has_side_effect_node(true);
+  graph_->set_has_side_effect_node(true);
+  MS_LOG(INFO) << "Mark function graph call node isolated, node: " << node->DebugString();
+}
+
+void FuncGraphBuilder::EraseCandidateIsolatedNode(const AnfNodePtr &node) {
+  if (!(node->has_user_data(kCandidateIsolatedFlag) && *node->user_data<bool>(kCandidateIsolatedFlag))) {
+    return;
+  }
+  if (node->func_graph() != graph_) {
+    MS_LOG(INFO) << "Do not erase isolated flag for free variable node: " << node->DebugString();
+    return;
+  }
+  auto iter = std::find(isolated_nodes_.begin(), isolated_nodes_.end(), node);
+  if (iter == isolated_nodes_.end()) {
+    MS_LOG(EXCEPTION) << "Fail to find node " << node->DebugString() << " from isolated_nodes_";
+  }
+  isolated_nodes_.erase(iter);
+  node->set_user_data<bool>(kCandidateIsolatedFlag, std::make_shared<bool>(false));
+  MS_LOG(INFO) << "Erase node " << node->DebugString() << " from isolated_nodes_";
+}
+
 bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
                                                  const AbstractWrapperPtrList &inputs_abstract_wrapper,
                                                  std::vector<AnfNodePtr> *input_node_list,
@@ -873,6 +930,7 @@ bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
     if (node == nullptr) {
       return false;
     }
+    EraseCandidateIsolatedNode(node);
     (void)input_node_list->emplace_back(node);
     (void)input_abs_list->emplace_back(node->abstract());
   }
@@ -964,24 +1022,25 @@ AbstractBasePtr FuncGraphBuilder::GetAbstractOf(const AnfNodePtr &node) {
                      }
                      return node->abstract();
                    });
-    return EvalValue(value, abs_list);
+    return EvalValue(value, abs_list).first;
   }
   MS_LOG(INFO) << "Unsupported Node type for GetAbstractOf() method, node: " << node->DebugString();
   return nullptr;
 }
 
-AbstractBasePtr FuncGraphBuilder::DoInferAndCheck(const ValuePtr &callable_value,
-                                                  const vector<AbstractBasePtr> &input_abs_list) {
-  auto abs = EvalValue(callable_value, input_abs_list);
+std::pair<AbstractBasePtr, bool> FuncGraphBuilder::DoInferAndCheck(const ValuePtr &callable_value,
+                                                                   const vector<AbstractBasePtr> &input_abs_list) {
+  const auto &res = EvalValue(callable_value, input_abs_list);
+  auto abs = res.first;
   if (abs == nullptr) {
     MS_LOG(DEBUG) << "Eval failed for value: " << callable_value->ToString();
-    return nullptr;
+    return std::make_pair(nullptr, false);
   }
   if (!CheckCallable(callable_value, abs)) {
     MS_LOG(DEBUG) << "Check callable failed for value: " << callable_value->ToString() << ", abs: " << abs->ToString();
-    return nullptr;
+    return std::make_pair(nullptr, false);
   }
-  return abs;
+  return res;
 }
 
 AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_value, const py::object &callable_obj,
@@ -1184,14 +1243,19 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
 
   AnfNodePtr new_node;
   AbstractBasePtr abs;
+  bool is_side_effect = false;
   if (callable_value->isa<Primitive>()) {
-    new_node = DoPrimitiveInferAndCheck(callable_value->cast<PrimitivePtr>(), input_node_list, input_abs_list);
+    auto prim = callable_value->cast<PrimitivePtr>();
+    new_node = DoPrimitiveInferAndCheck(prim, input_node_list, input_abs_list);
     if (new_node != nullptr) {
       abs = new_node->abstract();
     }
+    is_side_effect = IsSideEffectPrimitive(prim);
   } else {
     // Do infer and check callable.
-    abs = DoInferAndCheck(callable_value, input_abs_list);
+    const auto &ret = DoInferAndCheck(callable_value, input_abs_list);
+    abs = ret.first;
+    is_side_effect = ret.second;
     if (abs != nullptr) {
       new_node = graph_->NewCNodeInOrder(input_node_list);
     }
@@ -1200,13 +1264,13 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
     return nullptr;
   }
 
-  auto value = abs->BuildValue();
-  if (!value->ContainsValueAny()) {
-    MS_LOG(INFO) << "Build value node for node: " << new_node->DebugString() << " with abstract " << abs->ToString();
-    new_node = NewValueNode(value);
+  if (!is_side_effect) {
+    auto value = abs->BuildValue();
+    new_node = value->ContainsValueAny() ? new_node : NewValueNode(value);
   }
 
   new_node->set_abstract(abs);
+  MarkNodeIsolated(new_node, is_side_effect);
   auto ret_abstract_wrapper = std::make_shared<AbstractWrapper>(new_node->abstract());
   (void)key_to_node_.emplace(ret_abstract_wrapper, new_node);
   MS_LOG(INFO) << "Add node: " << new_node->DebugString()
@@ -1267,8 +1331,46 @@ bool FuncGraphBuilder::AddOutput(const AbstractWrapperPtr &abstract_wrapper, boo
                  << (abs == nullptr ? "null" : abs->ToString());
     return false;
   }
+  EraseCandidateIsolatedNode(node);
   (void)output_nodes_.emplace_back(node);
   return true;
+}
+
+AnfNodePtr FuncGraphBuilder::GenerateOutputNode() {
+  if (output_nodes_.size() == 1) {
+    return output_nodes_[0];
+  }
+  output_nodes_.insert(output_nodes_.begin(), NewValueNode(prim::kPrimMakeTuple));
+  AbstractBasePtrList abstract_list;
+  (void)std::transform(output_nodes_.begin() + 1, output_nodes_.end(), std::back_inserter(abstract_list),
+                       [](const AnfNodePtr &node) -> AbstractBasePtr { return node->abstract(); });
+  auto output_node = graph_->NewCNodeInOrder(output_nodes_);
+  auto fg_output_abs = std::make_shared<abstract::AbstractTuple>(abstract_list);
+  output_node->set_abstract(fg_output_abs);
+  return output_node;
+}
+
+AnfNodePtr FuncGraphBuilder::AttachIsolatedNode(const AnfNodePtr &node) const {
+  if (!graph_->has_side_effect_node()) {
+    MS_LOG(DEBUG) << "No side effect node.";
+    return node;
+  }
+  if (isolated_nodes_.empty()) {
+    MS_LOG(INFO) << "No isolated node for graph" << graph_->ToString();
+    return node;
+  }
+  AnfNodePtr isolated_node;
+  if (isolated_nodes_.size() == 1) {
+    isolated_node = isolated_nodes_[0];
+  } else {
+    AnfNodePtrList isolated_node_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+    (void)std::copy(isolated_nodes_.begin(), isolated_nodes_.end(), std::back_inserter(isolated_node_inputs));
+    isolated_node = graph_->NewCNodeInOrder(isolated_node_inputs);
+  }
+  auto stop_gradient_node = graph_->NewCNodeInOrder({NewValueNode(prim::kPrimStopGradient), isolated_node});
+  auto ret = graph_->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), node, stop_gradient_node});
+  ret->set_abstract(node->abstract());
+  return ret;
 }
 
 FuncGraphPtr FuncGraphBuilder::graph(bool force) {
@@ -1285,20 +1387,10 @@ FuncGraphPtr FuncGraphBuilder::graph(bool force) {
     MS_LOG(INFO) << "All graph output is value node, no need to run graph.";
     return nullptr;
   }
-  // Single output case.
-  if (output_nodes_.size() == 1) {
-    graph_->set_output(output_nodes_[0]);
-    has_set_output_ = true;
-    return graph_;
-  }
-  // multiple output case.
-  output_nodes_.insert(output_nodes_.begin(), NewValueNode(prim::kPrimMakeTuple));
-  AbstractBasePtrList abstract_list;
-  (void)std::transform(output_nodes_.begin() + 1, output_nodes_.end(), std::back_inserter(abstract_list),
-                       [](const AnfNodePtr &node) -> AbstractBasePtr { return node->abstract(); });
-  auto output_node = graph_->NewCNodeInOrder(output_nodes_);
-  auto fg_output_abs = std::make_shared<abstract::AbstractTuple>(abstract_list);
-  output_node->set_abstract(fg_output_abs);
+  AnfNodePtr output_node = GenerateOutputNode();
+  MS_LOG(INFO) << "Output node before attach isolated node: " << output_node->DebugString();
+  output_node = AttachIsolatedNode(output_node);
+  MS_LOG(INFO) << "Output node after attach isolated node: " << output_node->DebugString();
 
   graph_->set_output(output_node);
   has_set_output_ = true;
@@ -1374,10 +1466,13 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithAbstract(const ValuePtr &value,
       auto node = GetNodeByWrapper(input_wrapper);
       MS_EXCEPTION_IF_NULL(node);
       (void)input_node_list.emplace_back(node);
+      EraseCandidateIsolatedNode(node);
     }
 
     auto new_node = graph_->NewCNodeInOrder(input_node_list);
     new_node->set_abstract(abstract);
+    MarkNodeIsolated(new_node, false);
+
     ret = std::make_shared<AbstractWrapper>(abstract);
     (void)key_to_node_.emplace(ret, new_node);
   } catch (const std::exception &e) {
