@@ -79,3 +79,23 @@ def test_expand_as_python(mode):
     y = Tensor(np.ones((2, 3)), dtype=ms.float32)
     expect_output = np.array([[1., 2., 3.], [1., 2., 3.]])
     assert np.allclose(netpy(x, y).asnumpy(), expect_output)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
+                      'platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_expand_as_python_ge(mode):
+    """
+    Feature: tensor.expand_as
+    Description: Verify the result of expand_as in python in GE mode
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O2"})
+    netpy = NetPy()
+    x = Tensor([1, 2, 3], dtype=ms.float32)
+    y = Tensor(np.ones((2, 3)), dtype=ms.float32)
+    expect_output = np.array([[1., 2., 3.], [1., 2., 3.]])
+    assert np.allclose(netpy(x, y).asnumpy(), expect_output)
