@@ -42,6 +42,8 @@ class BACKEND_EXPORT OpExecutor {
 
   void PushOpRunTask(const std::shared_ptr<PyBoostDeviceTask> &op_run_task);
 
+  void PushOpRunTask(const std::shared_ptr<DvmDeviceTask> &op_run_task);
+
   void PushSimpleOpRunTask(const std::shared_ptr<AsyncTask> &op_run_task);
 
   bool RunQueueEmpty();
