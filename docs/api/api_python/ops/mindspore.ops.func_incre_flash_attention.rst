@@ -79,7 +79,7 @@ mindspore.ops.incre_flash_attention
         - **antiquant_scale** (Tensor，可选) - 伪量化参数，数据类型为float16或bfloat16。当 `input_layout` 为 `'BNSD'` 时，shape为 :math:`(2, kvN, 1, D)`；当 `input_layout` 为 `'BSH'` 时，shape为 :math:`(2, kvH)` 。默认值: ``None`` 。
         - **antiquant_offset** (Tensor，可选) - 伪量化参数，数据类型为float16或bfloat16。当 `input_layout` 为 `'BNSD'` 时，shape为 :math:`(2, kvN, 1, D)`；当 `input_layout` 为 `'BSH'` 时，shape为 :math:`(2, kvH)` 。默认值: ``None`` 。
         - **block_table** (Tensor，可选) - Tensor，数据类型为int32。shape为 :math:`(B, max\_block\_num\_per\_seq)`，其中 :math:`max\_block\_num\_per\_seq = ceil(\frac{max(actual\_seq\_length)}{block\_size} )` 。默认值: ``None`` 。
-        - **num_heads** (int，可选) - 头的数量。
+        - **num_heads** (int，可选) - 头的数量。默认值: ``1`` 。
         - **input_layout** (str，可选) - 输入qkv的数据布局，支持 ``'BSH'`` 和 ``'BNSD'`` 。默认值: ``'BSH'`` 。
         - **scale_value** (double，可选) - 表示缩放系数的值，用作计算中的标量。默认值: ``1.0`` 。
         - **num_key_value_heads** (int，可选) - 用于GQA算法的 `key` / `value` 头数。如果 `key` 和 `value`具有相同的头数，则值为0，使用 `num_heads` 。默认值: ``0`` 。
