@@ -217,6 +217,10 @@
   },
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
+      "graphengine",
+      ".gitignore",
+      ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -570,6 +574,10 @@
   },
   "Compile_UT": {
     "DIR_ARRAY": [
+      "graphengine",
+      ".gitignore",
+      ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -670,6 +678,9 @@
   },
   "Compile_Lite_X86_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "graphengine",
+      ".gitignore",
+      ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -747,6 +758,9 @@
   },
   "Compile_Lite_ARM64_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "graphengine",
+      ".gitignore",
+      ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
