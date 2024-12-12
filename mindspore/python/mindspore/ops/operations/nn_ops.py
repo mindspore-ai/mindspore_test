@@ -7158,7 +7158,8 @@ class Conv3DTranspose(Primitive):
         \times (\text{kernel_size}[2] - 1) + \text{output_padding}[2] + 1
 
     Note:
-        In Ascend, only support :math:`group=1`.
+        - In Ascend, only support :math:`group=1`.
+        - For Atlas A2 training series products, `output_padding` is currently not supported.
 
     Args:
         in_channel (int): The channel of the input x.
