@@ -34,6 +34,7 @@
 #include "runtime/graph_scheduler/optimizer/batch_data_arrow_fusion.h"
 #include "runtime/graph_scheduler/optimizer/multi_actor_fusion.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "include/common/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
@@ -551,8 +552,13 @@ void GraphScheduler::Initialize() {
 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+
+  auto runtime_threads_num = context_ptr->get_param<uint32_t>(MS_CTX_RUNTIME_NUM_THREADS);
+  if (runtime::RuntimeConf::GetInstance()->IsDispatchThreadsNumConfigured()) {
+    runtime_threads_num = runtime::RuntimeConf::GetInstance()->dispatch_threads_num();
+  }
   if (default_actor_thread_num_ <= kAsyncLaunchThreadNum && EnableRuntimePipeline() &&
-      context_ptr->get_param<uint32_t>(MS_CTX_RUNTIME_NUM_THREADS) == static_cast<uint32_t>(1)) {
+      runtime_threads_num == static_cast<uint32_t>(1)) {
     MS_LOG(WARNING)
       << "The number of actor threads is only: " << default_actor_thread_num_
       << ", and pipelined runtime optimization is not enabled, the performance may not reach the optimal level. Please "
@@ -1524,7 +1530,7 @@ void GraphScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCompilerI
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     optimizer->AddPass(std::make_shared<MemoryActorInsert>());
   }
   optimizer->AddPass(std::make_shared<InvalidDataArrowElimination>());
@@ -2091,7 +2097,7 @@ bool IsNeedLinkControlArrowByMonad(const KernelGraphPtr &graph, const GraphCompi
 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     MS_LOG(INFO) << "No need to link control arrow for graph:" << graph->ToString();
     return false;
   }

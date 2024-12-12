@@ -22,6 +22,7 @@
 #include "frontend/optimizer/opt.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "utils/trace_base.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace opt {
@@ -118,7 +119,7 @@ void InsertTensorMoveForCascade::InsertOutputTensorMove(const FuncGraphPtr &grap
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto task_sink = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  auto opt_level = ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL);
+  auto opt_level = runtime::RuntimeConf::GetInstance()->mem_optimize_level();
   if (!task_sink && (opt_level == kOptimizeO0)) {
     // not use somas
     return;

@@ -172,6 +172,7 @@ void RegModule(py::module *m) {
   RegValues(m);
   mindspore::initializer::RegRandomNormal(m);
   RegMsContext(m);
+  RegDeviceManagerConf(m);
   RegSecurity(m);
   RegForkUtils(m);
   RegNumpyTypes(m);
@@ -187,6 +188,7 @@ void RegModule(py::module *m) {
   mindspore::hal::RegCommHandle(m);
   mindspore::hal::RegMemory(m);
   mindspore::hal::RegUtils(m);
+  mindspore::runtime::RegRuntimeConf(m);
   mindspore::pynative::RegPyNativeExecutor(m);
   mindspore::pynative::RegisterPyBoostFunction(m);
   mindspore::pynative::RegisterCustomizeFunction(m);

@@ -4,8 +4,6 @@ approvers:
 - zyli2020
 
 reviewers:
-- gaoyong10
-- zyli2020
 
 options:
     no_parent_owners: true

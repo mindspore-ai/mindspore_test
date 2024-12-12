@@ -121,6 +121,7 @@ set(BACKEND_SUB_COMP
         runtime/pynative
         runtime/pipeline
         runtime/data_queue
+        runtime/runtime_conf
         plugin/device/cpu/hal/device
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/hal/profiler

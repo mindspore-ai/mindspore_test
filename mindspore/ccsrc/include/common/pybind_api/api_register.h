@@ -20,6 +20,7 @@
 #include <vector>
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "include/backend/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -36,6 +37,7 @@ void RegFunctional(const py::module *m);
 void RegSignatureEnumRW(const py::module *m);
 void RegValues(const py::module *m);
 void RegMsContext(const py::module *m);
+void RegDeviceManagerConf(const py::module *m);
 void RegSecurity(py::module *m);
 void RegForkUtils(py::module *m);
 void RegRandomSeededGenerator(py::module *m);
@@ -54,6 +56,10 @@ void RegUtils(py::module *m);
 }  // namespace hal
 namespace initializer {
 void RegRandomNormal(py::module *m);
+}
+
+namespace runtime {
+BACKEND_EXPORT void RegRuntimeConf(py::module *m);
 }
 
 namespace pynative {

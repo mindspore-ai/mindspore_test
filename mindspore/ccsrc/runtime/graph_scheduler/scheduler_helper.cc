@@ -23,6 +23,7 @@
 #include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -842,7 +843,7 @@ void SchedulerHelper::AddMemorySign(AbstractActor *const from_actor, AbstractAct
   MS_EXCEPTION_IF_NULL(to_actor);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) == kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() == kOptimizeO0) {
     return;
   }
 
@@ -982,7 +983,7 @@ void SchedulerHelper::AddSomasInfoForGraphOutput(AbstractActor *const output_act
                                                  size_t graph_id) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) == kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() == kOptimizeO0) {
     return;
   }
   if ((output_actor == nullptr) || (output_actor->type() != KernelTransformType::kKernelActor &&
