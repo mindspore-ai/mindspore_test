@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
-
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_API_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_API_H_
 #include <memory>
-#include "mindspore/core/include/ir/tensor.h"
-#include "mindspore/core/include/ir/base_tensor.h"
-#include "pybind_api/ir/tensor_api/tensor_api.h"
+#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
+#include "utils/ms_context.h"
 #include "pybind11/pybind11.h"
 
 namespace py = pybind11;
 namespace mindspore {
 namespace tensor {
 
-void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class);
+${tensor_api_declaration_list}
+
 }  // namespace tensor
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_API_H_
