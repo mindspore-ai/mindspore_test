@@ -1347,13 +1347,11 @@ bool FuncGraphBuilder::AddOutput(const AbstractWrapperPtr &abstract_wrapper, boo
     MS_LOG(INFO) << "Fail to add output, abstract wrapper is NULL";
     return false;
   }
-  auto iter = key_to_node_.find(abstract_wrapper);
-  if (iter == key_to_node_.end()) {
+  AnfNodePtr node = FindNodeByWrapper(abstract_wrapper);
+  if (node == nullptr) {
     MS_LOG(INFO) << "Fail to find correspond anf node for abstract wrapper: " << abstract_wrapper->ToString();
     return false;
   }
-  auto node = iter->second;
-  MS_EXCEPTION_IF_NULL(node);
   auto abs = node->abstract();
   // Only top graph has restriction on return value type.
   if (is_top_graph && !CheckGraphOutput(abs)) {
