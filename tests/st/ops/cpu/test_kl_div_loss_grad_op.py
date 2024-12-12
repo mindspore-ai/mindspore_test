@@ -51,7 +51,7 @@ def test_mode_none_and_dtype_with_static_input(dtype):
     net = Net("none")
     output = net(prediction, target, dy)
     print(output)
-    expect = np.array([[0, 0], [-1, 0]])
+    expect = np.array([[-1, 0], [-1, 1]])
     assert np.allclose(output.asnumpy(), expect)
 
 
@@ -70,7 +70,7 @@ def test_mode_mean_and_dtype_with_static_input(dtype):
     net = Net("mean")
     output = net(prediction, target, dy)
     print(output)
-    expect = np.array([[0, 0.25], [0.25, 0]]).astype(dtype)
+    expect = np.array([[-0.25, 0.25], [0.25, -0.25]]).astype(dtype)
     assert np.allclose(output.asnumpy(), expect)
 
 
@@ -89,7 +89,7 @@ def test_mode_sum_and_dtype_with_static_input(dtype):
     net = Net("sum")
     output = net(prediction, target, dy)
     print(output)
-    expect = np.array([[0, 1], [1, 0]])
+    expect = np.array([[-1, 1], [1, -1]])
     assert np.allclose(output.asnumpy(), expect)
 
 
@@ -108,7 +108,7 @@ def test_mode_batchmean_and_dtype_with_static_input(dtype):
     net = Net("batchmean")
     output = net(prediction, target, dy)
     print(output)
-    expect = np.array([[0, 0.5], [0.5, 0]])
+    expect = np.array([[-0.5, 0.5], [0.5, -0.5]])
     assert np.allclose(output.asnumpy(), expect)
 
 
@@ -127,7 +127,7 @@ def test_reduction_default(dtype):
     net = Net()
     output = net(prediction, target, dy)
     print(output)
-    expect = np.array([[0, 0.25], [0.25, 0]]).astype(dtype)
+    expect = np.array([[-0.25, 0.25], [0.25, -0.25]]).astype(dtype)
     assert np.allclose(output.asnumpy(), expect)
 
 
@@ -339,5 +339,5 @@ def test_vmap_case():
     dy = mindspore.Tensor(np.array([[-1, 0], [1, 1]]).astype(dtype))
     output = WrapNet(NetVmap(), 0, 0)(prediction, target, dy)
     print(output)
-    expect = np.array([[0, 0], [-1, 0]])
+    expect = np.array([[-1, 0], [-1, 1]])
     assert np.allclose(output.asnumpy(), expect)
