@@ -157,11 +157,7 @@ bool KLDivLossGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
 
   auto task = [&](size_t start, size_t end) {
     for (size_t i = start; i < end; ++i) {
-      if (static_cast<double>(array_target[i]) <= 0.0) {
-        array_y[i] = static_cast<T>(0);
-      } else {
-        array_y[i] *= (static_cast<T>(coefficient) * static_cast<T>(bcast));
-      }
+      array_y[i] *= (static_cast<T>(coefficient) * static_cast<T>(bcast));
     }
   };
   ParallelLaunchAutoSearch(task, input_x_shape_size_, this, &parallel_search_info_);
