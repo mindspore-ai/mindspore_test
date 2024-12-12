@@ -478,7 +478,6 @@ NodePtrList FFTGradCommon(BpropBuilder *ib, const std::string &op_name) {
   auto n = ib->GetInput(kIndex1);
   auto dim = ib->GetInput(kIndex2);
   auto norm = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
 
   norm = FFTNormReverse(ib, norm);
@@ -1515,11 +1514,11 @@ REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFU
   return {ret, ib->OutZeros(dim), ib->OutZeros(dtype)};
 });
 
-REG_BPROP_BUILDER("Cummax").SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("Cummax").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
-REG_BPROP_BUILDER("Cummin").SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("Cummin").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
-REG_BPROP_BUILDER("CumminExt").SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
+REG_BPROP_BUILDER("CumminExt").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) { return CumMaxMinGrad(ib); });
 
 REG_BPROP_BUILDER("MulNoNan").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -1779,7 +1778,7 @@ REG_BPROP_BUILDER("Sinc").SetBody(BODYFUNC(ib) {
   return {ib->Select(cond, zeros, dx)};
 });
 
-REG_BPROP_BUILDER("CumProd").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("CumProd").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto x_shape = ib->GetShape(x);
   auto num_elements =
@@ -3579,12 +3578,12 @@ REG_BPROP_BUILDER("TridiagonalSolve").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib)
   return {grad_diags, grad_rhs};
 });
 
-REG_BPROP_BUILDER("FFT").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "IFFT"); });
-REG_BPROP_BUILDER("IFFT").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFT"); });
-REG_BPROP_BUILDER("FFT2").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "IFFT2"); });
-REG_BPROP_BUILDER("IFFT2").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFT2"); });
-REG_BPROP_BUILDER("FFTN").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "IFFTN"); });
-REG_BPROP_BUILDER("IFFTN").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFTN"); });
+REG_BPROP_BUILDER("FFT").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "IFFT"); });
+REG_BPROP_BUILDER("IFFT").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFT"); });
+REG_BPROP_BUILDER("FFT2").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "IFFT2"); });
+REG_BPROP_BUILDER("IFFT2").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFT2"); });
+REG_BPROP_BUILDER("FFTN").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "IFFTN"); });
+REG_BPROP_BUILDER("IFFTN").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFTN"); });
 
 REG_BPROP_BUILDER("HFFT").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -4113,13 +4112,12 @@ REG_BPROP_BUILDER("DCTN").SetBody(BODYFUNC(ib) {
   return {grad_dout, ib->OutZeros(type), ib->OutZeros(s), ib->OutZeros(axes), ib->OutZeros(norm)};
 });
 
-REG_BPROP_BUILDER("IDCT").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("IDCT").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto type = ib->GetInput(kIndex1);
   auto n = ib->GetInput(kIndex2);
   auto axis = ib->GetInput(kIndex3);
   auto norm = ib->GetInput(kIndex4);
-  auto out = ib->GetInput(kIndex5);
   auto dout = ib->GetInput(kIndex6);
 
   // step2：Get the gradient.
@@ -4140,13 +4138,12 @@ REG_BPROP_BUILDER("IDCT").SetBody(BODYFUNC(ib) {
   return {grad_dout, ib->OutZeros(type), ib->OutZeros(n), ib->OutZeros(axis), ib->OutZeros(norm)};
 });
 
-REG_BPROP_BUILDER("IDCTN").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("IDCTN").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto type = ib->GetInput(kIndex1);
   auto s = ib->GetInput(kIndex2);
   auto axes = ib->GetInput(kIndex3);
   auto norm = ib->GetInput(kIndex4);
-  auto out = ib->GetInput(kIndex5);
   auto dout = ib->GetInput(kIndex6);
 
   // step2：Get the gradient.
