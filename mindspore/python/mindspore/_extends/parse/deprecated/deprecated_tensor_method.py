@@ -128,7 +128,7 @@ deprecated_tensor_method_map = {
     # 55 log
 
     # 56 log2
-
+    "log2": "tensor_log2",
     # 57 logical_and
     "logical_and": "tensor_logical_and",
     # 58 logical_not

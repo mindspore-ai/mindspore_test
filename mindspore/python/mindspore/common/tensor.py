@@ -1739,12 +1739,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('log10')(self)
 
-    def log2(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.log2`.
-        """
-        return tensor_operator_registry.get('log2')(self)
-
     def amin(self, axis=None, keepdims=False, *, initial=None, where=None):
         """
         For details, please refer to :func:`mindspore.ops.amin`.
