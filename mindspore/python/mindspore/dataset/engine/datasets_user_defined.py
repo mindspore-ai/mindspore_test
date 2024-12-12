@@ -28,12 +28,10 @@ import signal
 import time
 from types import GeneratorType
 import multiprocessing
-from multiprocessing.util import Finalize
 import queue
 from functools import partial
 import subprocess
 import threading
-import weakref
 import platform
 import psutil
 import numpy as np
@@ -221,7 +219,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         self.ppid = os.getpid()
         self.pids = []
         self.check_interval = get_multiprocessing_timeout_interval()  # the interval of check queue's size
-        self._final_join = True
 
         # Event for end of epoch
         if self.multi_process is True:
@@ -272,8 +269,11 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 worker.daemon = True
                 self.need_join = True
             self.workers.append(worker)
-        if self.multi_process and platform.system().lower() != 'windows':
-            self._launch_cleanup_worker()
+
+        if self.multi_process:
+            logger.info("Launch generator worker process(es): {}".format([worker.pid for worker in self.workers]))
+            if platform.system().lower() != 'windows':
+                self._launch_monitor()
 
     def _interval_log(self, i, start_time, wait_count):
         cost_time = int(time.time()) - start_time
@@ -394,9 +394,11 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                            "the `mindspore.dataset.config.set_multiprocessing_timeout_interval` interface."
         logger.warning(warning_message)
 
-    def _launch_cleanup_worker(self):
+    def _launch_monitor(self):
         """
-        We need a extra thread and process if main process or subprocess was killed.
+        Launch a clean process and register subprocess to be monitored by the watch dog.
+        The clean process will clean up subprocesses when main process exited.
+        The watch dog will clean up subprocesses and main process when any subprocess exited.
         """
         _clean_worker_func = _PythonMultiprocessing._clean_process  # pylint: disable=W0212
         self.cleaning_process = multiprocessing.Process(target=_clean_worker_func,
@@ -404,21 +406,13 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                                                         args=(self.ppid, self.workers, self.eof))
         self.cleaning_process.daemon = True
         self.cleaning_process.start()
+        logger.info("Launch clean process {} to monitor worker "
+                    "process(es): {}".format(self.cleaning_process.pid, [worker.pid for worker in self.workers]))
 
         if get_enable_watchdog():
-            self.eot = threading.Event()
-            self.watch_dog = threading.Thread(target=_PythonMultiprocessing._watch_dog,  # pylint: disable=W0212
-                                              name="GeneratorWatchDog",
-                                              args=(self.eot, self.workers + [self.cleaning_process]))
-            self.watch_dog.daemon = True
-            self.watch_dog.start()
-
-            if self._final_join is True:
-                self._jointhread = Finalize(
-                    self.watch_dog, self._finalize_join,
-                    args=(weakref.ref(self.watch_dog), self.eot),
-                    exitpriority=-5
-                )
+            worker_ids = [worker.pid for worker in self.workers]
+            worker_ids.append(self.cleaning_process.pid)
+            cde.register_worker_pids(id(self), set(worker_ids))
 
     def _release_fd(self):
         """Release the file descriptor by subprocess"""
@@ -461,8 +455,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 except AttributeError:  # maybe occur "'NoneType' object has no attribute 'maxsize'"
                     pass
 
-            # close the watch dog first
-            self._abort_watchdog()
+            # abort the monitor first
+            self._abort_monitor()
             self.need_join = False
 
             # waiting for the sub-process stop
@@ -489,10 +483,10 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             self.workers.clear()
             self.workers = None
 
-    def _abort_watchdog(self):
-        """Let watchdog quit."""
-        if hasattr(self, 'eot') and self.eot is not None and not self.eot.is_set():
-            self.eot.set()
+    def _abort_monitor(self):
+        """Deregister workers monitored by the watch dog and join clean process."""
+        if get_enable_watchdog():
+            cde.deregister_worker_pids(id(self))
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
             # let the quit event notify the cleaning process to exit
             self.cleaning_process.join(timeout=5)
@@ -502,14 +496,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             del self.cleaning_process
         if hasattr(self, 'count'):
             del self.count
-
-    @classmethod
-    def _finalize_join(cls, twr, eot):
-        thread = twr()
-        if thread is not None:
-            if eot is not None and not eot.is_set():
-                eot.set()
-            thread.join()
 
     def __del__(self):
         try:

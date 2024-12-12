@@ -15,11 +15,17 @@
  */
 #include "minddata/dataset/util/sig_handler.h"
 
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <sys/wait.h>
+#endif
+
 #include <csignal>
+#include <unordered_map>
 
 #include "minddata/dataset/util/task_manager.h"
 
 namespace mindspore::dataset {
+static std::unordered_map<int64_t, std::set<int>> worker_groups = {};
 #if !defined(_WIN32) && !defined(_WIN64)
 /// \brief Set handler for the specified signal.
 /// \param[in] signal The signal to set handler.
@@ -41,7 +47,7 @@ void SetSignalHandler(int signal, void (*handler)(int, siginfo_t *, void *), str
 /// \param[in] signal The signal that was raised.
 /// \param[in] info The siginfo structure.
 /// \param[in] context The context info.
-void IntHandler(int signal, siginfo_t *info, void *context) {
+void SIGINTHandler(int signal, siginfo_t *info, void *context) {
   // Wake up the watchdog which is designed as async-signal-safe.
   TaskManager::WakeUpWatchDog();
 }
@@ -50,14 +56,17 @@ void IntHandler(int signal, siginfo_t *info, void *context) {
 /// \param[in] signal The signal that was raised.
 /// \param[in] info The siginfo structure.
 /// \param[in] context The context info.
-void BusHandler(int signal, siginfo_t *info, void *context) {
+void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
   if (signal != SIGBUS) {
-    MS_LOG(ERROR) << "BusHandler expects SIGBUS signal, but got: " << strsignal(signal);
+    MS_LOG(ERROR) << "SIGBUSHandler expects SIGBUS signal, but got: " << strsignal(signal);
     _exit(EXIT_FAILURE);
   }
 
-  MS_LOG(ERROR) << "Unexpected bus error encountered in process: " << getpid()
-                << ". This might be caused by insufficient shared memory.";
+  if (info->si_code == BUS_ADRERR) {
+    MS_LOG(ERROR) << "Unexpected bus error encountered in process: " << std::to_string(getpid())
+                  << ". Non-existent physical address. This might be caused by insufficient shared memory. "
+                  << "Please check if '/dev/shm' has enough available space via 'df -h'.";
+  }
 
   // reset the handler to the default
   struct sigaction bus_action {};
@@ -73,24 +82,89 @@ void BusHandler(int signal, siginfo_t *info, void *context) {
   }
   raise(signal);
 }
+
+void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
+  if (signal != SIGCHLD) {
+    MS_LOG(ERROR) << "SIGCHLDHandler expects SIGCHLD signal, but got: " << strsignal(signal);
+    _exit(EXIT_FAILURE);
+  }
+
+  for (auto &worker_group : worker_groups) {
+    auto &pids = worker_group.second;
+    for (const auto &pid : pids) {
+      siginfo_t sig_info{};
+      sig_info.si_pid = 0;
+      auto error = waitid(P_PID, pid, &sig_info, WEXITED | WNOHANG | WNOWAIT);
+      if (error < 0 || sig_info.si_pid == 0) {  // There were no children in a waitable state.
+        continue;
+      }
+      std::string msg;
+      if (sig_info.si_code == CLD_EXITED) {  // exited unexpected
+        msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpected with exit code " +
+              std::to_string(sig_info.si_status) + ".";
+      } else if (sig_info.si_code == CLD_KILLED) {  // killed by signal
+        msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
+              " was killed by signal: " + std::string(strsignal(sig_info.si_status)) + ".";
+      } else if (sig_info.si_code == CLD_DUMPED) {  // core dumped
+        msg = "Dataset worker process " + std::to_string(sig_info.si_pid) +
+              " core dumped: " + std::string(strsignal(sig_info.si_status)) + ".";
+      } else {
+        continue;
+      }
+      auto pids_to_kill = pids;
+      pids.clear();  // Clear the monitoring status of the process group before performing a termination.
+      for (const auto &pid_to_kill : pids_to_kill) {
+        if (pid_to_kill != pid) {
+          MS_LOG(INFO) << "Terminating child process: " << pid_to_kill;
+          kill(pid_to_kill, SIGTERM);
+        }
+      }
+      MS_LOG(ERROR) << msg << " Main process will be terminated.";
+      kill(getpid(), SIGTERM);
+    }
+  }
+}
 #endif
 
 void RegisterHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
-  SetSignalHandler(SIGINT, &IntHandler, nullptr);
-  SetSignalHandler(SIGTERM, &IntHandler, nullptr);
+  SetSignalHandler(SIGINT, &SIGINTHandler, nullptr);
+  SetSignalHandler(SIGTERM, &SIGINTHandler, nullptr);
 #endif
 }
 
 void RegisterMainHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
-  SetSignalHandler(SIGBUS, &BusHandler, nullptr);
+  SetSignalHandler(SIGBUS, &SIGBUSHandler, nullptr);
+  SetSignalHandler(SIGCHLD, &SIGCHLDHandler, nullptr);
 #endif
 }
 
 void RegisterWorkerHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
-  SetSignalHandler(SIGBUS, &BusHandler, nullptr);
+  SetSignalHandler(SIGBUS, &SIGBUSHandler, nullptr);
 #endif
+}
+
+std::string GetPIDsString(const std::set<int> &pids) {
+  std::string pids_string = "[";
+  for (auto itr = pids.begin(); itr != pids.end(); ++itr) {
+    if (itr != pids.begin()) {
+      pids_string += ", ";
+    }
+    pids_string += std::to_string(*itr);
+  }
+  pids_string += "]";
+  return pids_string;
+}
+
+void RegisterWorkerPIDs(int64_t id, const std::set<int> &pids) {
+  MS_LOG(INFO) << "Watch dog starts monitoring process(es): " << GetPIDsString(pids);
+  worker_groups[id] = pids;
+}
+
+void DeregisterWorkerPIDs(int64_t id) {
+  MS_LOG(INFO) << "Watch dog stops monitoring process(es): " << GetPIDsString(worker_groups[id]);
+  (void)worker_groups.erase(id);
 }
 }  // namespace mindspore::dataset
