@@ -39,6 +39,7 @@ class Net2(nn.Cell):
         output = x.flatten(start_dim, end_dim=end_dim)
         return output
 
+
 class Net3(nn.Cell):
     def construct(self, x):
         output = x.flatten()

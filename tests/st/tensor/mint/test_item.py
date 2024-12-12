@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import os
 import pytest
 from tests.mark_utils import arg_mark
 
@@ -37,7 +36,6 @@ def test_tensor_item(mode):
     Description: Verify the result of item
     Expectation: success
     """
-    os.environ["MS_TENSOR_API_ENABLE_MINT"] = '1'
     ms.set_context(mode=mode)
     eps = 1e-6
     x = ms.Tensor(1.2, ms.float32)
@@ -51,5 +49,3 @@ def test_tensor_item(mode):
     output = net(x)
     expect_output = 2.98
     assert abs(output - expect_output) <= eps
-
-    del os.environ["MS_TENSOR_API_ENABLE_MINT"]
