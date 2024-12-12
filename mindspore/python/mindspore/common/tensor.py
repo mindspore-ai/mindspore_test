@@ -4408,6 +4408,22 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return Tensor_._offload(self)
 
+    def _data_ptr(self):
+        r"""
+        Get the data ptr address of tensor, for CPU is host address, GPU/NPU is device address.
+        User should know how to use the data ptr address
+
+        Supported Platforms:
+            ``CPU/GPU/Ascend``
+
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor
+            >>> x = ms.Tensor([1, 2, 3], ms.int64)
+            >>> data_ptr = x._data_ptr()
+        """
+        return Tensor_._data_ptr(self)
+
     def normal_(self, mean=0, std=1, *, generator=None):
         r"""
         Update the `self` tensor in place by generating random numbers sampled from the normal
