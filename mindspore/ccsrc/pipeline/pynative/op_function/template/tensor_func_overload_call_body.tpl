@@ -3,7 +3,7 @@ py::object TensorMethod${class_name}(const py::object &self, const py::args &py_
     ${signatures}
   }, "${func_name}");
   py::list arg_list;
-  auto sig = parser.parse(py_args, py_kwargs, &arg_list, true);
+  auto sig = parser.Parse(py_args, py_kwargs, &arg_list, true);
   arg_list.insert(${self_index}, self);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
