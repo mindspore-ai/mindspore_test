@@ -29,9 +29,7 @@ class Net(nn.Cell):
 
 
 context.set_context(mode=context.PYNATIVE_MODE)
-affinity_cpu_list = {"device0": ["0-9"], "device1": ["10-19"], "device2": ["20-29"],
-                     "device3": ["30-39"], "device4": ["40-49"], "device5": ["50-59"],
-                     "device6": ["60-69"], "device7": ["70-79"]}
+affinity_cpu_list = {"device0": ["0-10"]}
 ms.runtime.set_cpu_affinity(True, affinity_cpu_list)
 net = Net()
 net(Tensor(2.0))

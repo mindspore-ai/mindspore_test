@@ -367,7 +367,7 @@ def _get_cpu_affinity_policy(affinity_cpu_list=None):
                 logger.warning(f"Failed to acquire device to numa affinity info, error: {e} "
                                "Will not bind core based on affinity. Module bind core policy "
                                f"generated: {available_cpus}.")
-                return available_cpus, affinity_flag
+                return available_cpus, bind_policy_flag
             # Get the affinity resources in the environment. If this fails, will bind core not based on affinity.
             try:
                 device_pcie_map = _get_pcie_info(device_map_info, available_devices)

@@ -47,6 +47,20 @@ void AsyncRQueue::SetThreadName() const {
 #endif
 }
 
+void AsyncRQueue::BindCoreForThread() {
+  auto &bind_core_manager = ThreadBindCore::GetInstance();
+  if (bind_core_manager.is_enable_thread_bind_core_) {
+    const auto &core_list = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kPYNATIVE);
+    if (core_list.empty()) {
+      MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Pynative threads.";
+    } else {
+      if (const auto it = thread_to_core_idx.find(name_); it != thread_to_core_idx.end()) {
+        bind_core_manager.bind_thread_core({core_list[it->second]});
+      }
+    }
+  }
+}
+
 void AsyncRQueue::WorkerLoop() {
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   // cppcheck-suppress unreadVariable
@@ -66,8 +80,7 @@ void AsyncRQueue::WorkerLoop() {
     thread_id_to_wait_level_[std::this_thread::get_id()] = wait_level_;
   }
 
-  auto &bind_core_manager = ThreadBindCore::GetInstance();
-  bind_core_manager.bind_thread_core(name_);
+  BindCoreForThread();
 
   while (true) {
     std::shared_ptr<AsyncTask> task = tasks_queue_.Head();

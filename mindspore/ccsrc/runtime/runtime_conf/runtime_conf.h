@@ -20,9 +20,11 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <vector>
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
+#include "runtime/runtime_conf/thread_bind_core.h"
 
 namespace mindspore {
 namespace runtime {
@@ -31,6 +33,7 @@ const char kMemoryConf[] = "MemoryConf";
 const char kDispatchThreadsNumConf[] = "DispatchThreadsNumConf";
 const char kOpThreadsNumConf[] = "OpThreadsNumConf";
 const char kLaunchBlocking[] = "launch_blocking";
+const char kThreadBindCore[] = "thread_bind_core";
 
 class BACKEND_EXPORT RuntimeConf {
  public:
@@ -89,6 +92,21 @@ class BACKEND_EXPORT RuntimeConf {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     return IsMemoryConfigured() ? mem_optimize_level_ : ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL);
+  }
+
+  // Methods for Thread bind core
+  bool IsThreadBindCoreConfigured() { return conf_status_.count(kThreadBindCore); }
+
+  void SetThreadBindCoreConfigured() { conf_status_[kThreadBindCore] = true; }
+
+  void BindCore(const std::vector<int> &module_bind_core_policy) {
+    conf_status_[kThreadBindCore] = true;
+    ThreadBindCore::GetInstance().enable_thread_bind_core(module_bind_core_policy);
+  }
+
+  void BindCoreWithPolicy(const BindCorePolicy &module_bind_core_policy) {
+    conf_status_[kThreadBindCore] = true;
+    ThreadBindCore::GetInstance().enable_thread_bind_core_with_policy(module_bind_core_policy);
   }
 
  private:

@@ -159,6 +159,9 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
   // Check whether this root_graph can enable single op and graph pipeline or not.
   bool CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info);
 
+  // Bind a specific core to the main thread.
+  void BindCoreForMainThread();
+
   // When compiling FuncGraph, it is divided according to the control nodes, and obtain the control nodes and several
   // node segments. Node segments will be compiled into kernelGraphs which are expressed as GraphId and bound to
   // the corresponding device_context.

@@ -195,7 +195,6 @@ void RegModule(py::module *m) {
   mindspore::hal::RegMemory(m);
   mindspore::hal::RegUtils(m);
   mindspore::runtime::RegRuntimeConf(m);
-  mindspore::runtime::RegRuntimeExecutor(m);
   mindspore::pynative::RegPyNativeExecutor(m);
   mindspore::pynative::RegisterPyBoostFunction(m);
   mindspore::pynative::RegisterCustomizeFunction(m);
