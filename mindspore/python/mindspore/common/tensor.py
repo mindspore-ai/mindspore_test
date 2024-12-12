@@ -2940,69 +2940,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('uniform_')(self, from_=from_, to=to, generator=generator)
 
-    def var(self, axis=None, ddof=0, keepdims=False):
-        """
-        Compute the variance along the specified axis.
-
-        The variance is the average of the squared deviations from the mean, i.e.,
-        :math:`var = mean(abs(x - x.mean())**2)`.
-
-        Return the variance, which is computed for the flattened array by default,
-        otherwise over the specified axis.
-
-        Note:
-            Numpy arguments `dtype`, `out` and `where` are not supported.
-
-        Args:
-            axis (Union[None, int, tuple(int)]): Axis or axes along which the variance is computed.
-                The default is to compute the variance of the flattened array. Default: ``None`` .
-            ddof (int): Means Delta Degrees of Freedom. Default: ``0`` .
-                The divisor used in calculations is :math:`N - ddof`, where :math:`N` represents the number of elements.
-            keepdims (bool): Default: ``False`` .
-
-        Returns:
-            Variance tensor.
-
-        See also:
-            - :func:`mindspore.Tensor.mean`: Reduce a dimension of a tensor by averaging all elements in the dimension.
-            - :func:`mindspore.Tensor.std`: Compute the standard deviation along the specified axis.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input_x = Tensor(np.array([1., 2., 3., 4.], np.float32))
-            >>> output = input_x.var()
-            >>> print(output)
-            1.25
-        """
-        if 0 in self.shape:
-            return Tensor(float('nan'), self.dtype)
-        if not isinstance(ddof, int):
-            raise TypeError("For 'Tensor.var', the type of the argument 'ddof' must be int, but got "
-                            "{}.".format(type(ddof)))
-        if not isinstance(keepdims, bool):
-            raise TypeError("For 'Tensor.var', the type of the argument 'keepdims' must be bool, but "
-                            "got {}.".format(type(keepdims)))
-
-        if axis is None:
-            axis = ()
-        else:
-            axis = validator.check_and_canonicalize_axes(axis, self.ndim)
-        x_mean = tensor_operator_registry.get('mean')(self, axis, True)
-        x_sub = tensor_operator_registry.get('__sub__')(self, x_mean)
-        x_pow = tensor_operator_registry.get('__pow__')(x_sub, 2)
-        x_sum = tensor_operator_registry.get('reducesum')(bool(keepdims))(x_pow, axis)
-        nums = 1
-        if axis == ():
-            nums = self.size
-        else:
-            for ax in axis:
-                nums *= self.shape[ax]
-        return tensor_operator_registry.get('__truediv__')(x_sum, nums - ddof)
-
     def sum_to_size(self, *size):
         r"""
         Sum self Tensor to the `size`. `size` must be expandable to the Tensor size.

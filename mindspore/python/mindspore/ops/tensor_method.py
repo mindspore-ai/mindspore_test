@@ -18,7 +18,9 @@ from mindspore import _checkparam as validator
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
-from mindspore.ops.composite.multitype_ops._compile_utils import sequence_to_tensor
+from mindspore.ops.composite.multitype_ops._compile_utils import (
+    sequence_to_tensor, _tensor_sub, _tensor_pow, _tensor_div
+)
 from mindspore.ops.auto_generate.gen_ops_prim import (
     inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op
 )
@@ -391,6 +393,9 @@ from mindspore.ops.function.math_func import addbmm
 # 502
 from mindspore.ops.auto_generate import addmm_op
 from mindspore.ops.function.math_func import addmm
+
+# 1028
+from mindspore.ops.function.math_func import var_ext
 
 ########################################functions########################################
 unique_dim_ = UniqueDim()
@@ -1375,3 +1380,38 @@ def tensor_hardshrink(input, lambd=0.5):
 # 244 log1p
 def tensor_log1p(input):
     return log1p(input)
+
+
+# 1028
+def tensor_var(input, dim=None, *, correction=1, keepdim=False):
+    return var_ext(input, dim, correction=correction, keepdim=keepdim)
+
+
+def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
+    r"""
+    For details, please refer to :func:`mindspore.ops.var`.
+    """
+    if 0 in input.shape:
+        return Tensor(float('nan'), input.dtype)
+    if not isinstance(ddof, int):
+        raise TypeError("For 'Tensor.var', the type of the argument 'ddof' must be int, but got "
+                        "{}.".format(type(ddof)))
+    if not isinstance(keepdims, bool):
+        raise TypeError("For 'Tensor.var', the type of the argument 'keepdims' must be bool, but "
+                        "got {}.".format(type(keepdims)))
+
+    if axis is None:
+        axis = ()
+    else:
+        axis = validator.check_and_canonicalize_axes(axis, input.ndim)
+    x_mean = mean(input, axis, True)
+    x_sub = _tensor_sub(input, x_mean)
+    x_pow = _tensor_pow(x_sub, 2)
+    x_sum = P.ReduceSum(bool(keepdims))(x_pow, axis)
+    nums = 1
+    if axis == ():
+        nums = input.size
+    else:
+        for ax in axis:
+            nums *= input.shape[ax]
+    return _tensor_div(x_sum, nums - ddof)
