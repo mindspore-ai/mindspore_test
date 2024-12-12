@@ -219,7 +219,7 @@ def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
     # check operate_memory.csv
     operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
-        "Name": ["Unknown"]
+        "Name": ["model.encoder*", "model.decoder*"]
     })
 
     # check static_op_mem.csv
@@ -245,7 +245,7 @@ def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
     # check operate_memory.csv
     operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
-        "Name": ["Unknown"]
+        "Name": ["*Add*", "*Sqrt*", "*LayerNorm*"]
     })
 
 
@@ -265,5 +265,5 @@ def check_ascend_profiler_kbk_files(profiler_path: str, rank_id: int):
     # check operate_memory.csv
     operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
-        "Name": ["*Default*"]
+        "Name": ["*Add*", "*MatMul*", "*LayerNorm*"]
     })
