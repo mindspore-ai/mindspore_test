@@ -69,7 +69,6 @@
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 namespace mindspore {
 namespace compile {
-constexpr char kMainThread[] = "main";
 bool Backend::GetCond(const BaseRef &c, bool *value) {
   mindspore::ScopedLongRunning long_running;
   return BaseRefToBool(c, value);
@@ -1786,12 +1785,30 @@ void MindRTBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_
   }
 }
 
+void MindRTBackendBase::BindCoreForMainThread() {
+  static bool is_bind_core_ = false;
+  if (is_bind_core_) {
+    return;
+  }
+  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
+  if (!bind_core_manager.is_enable_thread_bind_core_) {
+    return;
+  }
+
+  const auto &core_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kMAIN);
+  if (core_list.empty()) {
+    MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Main thread.";
+  } else {
+    bind_core_manager.bind_thread_core(core_list);
+    is_bind_core_ = true;
+  }
+}
+
 void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &args, VectorRef *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      actor_info, true);
-
-  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
-  bind_core_manager.bind_thread_core(kMainThread);
+  // Main thread bind to core.
+  BindCoreForMainThread();
 
   MS_EXCEPTION_IF_NULL(root_graph_);
   if (IsGraphOutputValueNodeOrParameter(root_graph_->output(), args, outputs)) {

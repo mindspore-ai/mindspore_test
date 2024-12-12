@@ -14,7 +14,7 @@
 # ============================================================================
 
 """Executor manager interfaces."""
-from mindspore._c_expression import RuntimeConf, RuntimeExecutor
+from mindspore._c_expression import RuntimeConf
 from mindspore.device_manager import _check_runtime_conf_env_valid
 from mindspore.runtime.thread_bind_core import _get_cpu_affinity_policy
 from mindspore._checkparam import args_type_check
@@ -97,11 +97,11 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
              fails, the bind-core policy will be generated only based on the available CPU resources,
              without considering the device affinity.
           3. `npu-smi -t board -i {NPU_ID} -c {CHIP_ID}`, get NPU details based on the logical ID of the device; if
-             the execution of this command fails, the bind-core policy is generated based on the available CPU resources
-             only, regardless of device affinity.
+             the execution of this command fails, the bind-core policy is generated based on the available CPU
+             resources only, regardless of device affinity.
           4. `lspci -s {PCIe_No} -vvv`, get the hardware information of the device on the environment; if the execution
-             of this command fails, the bind-core policy is generated only based on the available CPU resources, without
-             considering the device affinity.
+             of this command fails, the bind-core policy is generated only based on the available CPU resources,
+             without considering the device affinity.
           5. `lscpu`, get information about CPUs and NUMA nodes on the environment; if the execution of this command
              fails, only the available CPU resources are used to generate the bind-core policy, without considering
              the device affinity.
@@ -137,19 +137,19 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.set_cpu_affinity(true, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-40"]})
     """
-    if RuntimeExecutor.get_instance().is_thread_bind_core_configured():
+    if RuntimeConf.get_instance().is_thread_bind_core_configured():
         raise RuntimeError("The 'mindspore.runtime.set_cpu_affinity' cannot be set repeatedly.")
     if enable_affinity:
         module_bind_core_policy, bind_policy_flag = _get_cpu_affinity_policy(affinity_cpu_list)
         if not module_bind_core_policy:
             logger.warning("set_cpu_affinity is not enabled because the environment does not meet the "
                            "basic conditions for binding core.")
-            RuntimeExecutor.get_instance().set_thread_bind_core_configured()
+            RuntimeConf.get_instance().set_thread_bind_core_configured()
             return
         if bind_policy_flag:
-            RuntimeExecutor.get_instance().thread_bind_core_with_policy(module_bind_core_policy)
+            RuntimeConf.get_instance().thread_bind_core_with_policy(module_bind_core_policy)
         else:
-            RuntimeExecutor.get_instance().thread_bind_core(module_bind_core_policy)
+            RuntimeConf.get_instance().thread_bind_core(module_bind_core_policy)
     else:
-        RuntimeExecutor.get_instance().set_thread_bind_core_configured()
+        RuntimeConf.get_instance().set_thread_bind_core_configured()
         return

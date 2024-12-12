@@ -94,7 +94,6 @@ using distributed::recovery::RecoveryContext;
 namespace {
 constexpr char kNumaEnableEnv[] = "MS_ENABLE_NUMA";
 constexpr char kNumaEnableEnv2[] = "DATASET_ENABLE_NUMA";
-constexpr char kRuntimeThread[] = "runtime";
 
 // For the transform state synchronization.
 constexpr char kTransformFinishPrefix[] = "TRANSFORM_FINISH_";
@@ -636,7 +635,9 @@ void GraphScheduler::Initialize() {
   init_ = true;
 
   auto &bind_core_manager = ThreadBindCore::GetInstance();
-  numa_cpus_ = bind_core_manager.get_thread_bind_core_list(kRuntimeThread);
+  if (bind_core_manager.is_enable_thread_bind_core_) {
+    numa_cpus_ = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kRUNTIME);
+  }
 
   BindNumaNode();
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kGraphParameterStore,

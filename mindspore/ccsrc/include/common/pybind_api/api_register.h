@@ -61,7 +61,6 @@ void RegRandomNormal(py::module *m);
 
 namespace runtime {
 BACKEND_EXPORT void RegRuntimeConf(py::module *m);
-BACKEND_EXPORT void RegRuntimeExecutor(py::module *m);
 }  // namespace runtime
 
 namespace pynative {
