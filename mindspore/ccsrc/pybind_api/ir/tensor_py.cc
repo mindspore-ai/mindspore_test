@@ -722,6 +722,18 @@ void TensorPy::SetDeviceAddress(const Tensor &tensor, uintptr_t addr, const Shap
   }
 }
 
+uintptr_t TensorPy::DataPtr(const Tensor &tensor) {
+  runtime::Pipeline::Get().WaitForward();
+  const auto device_address = tensor.device_address();
+  if (device_address == nullptr) {
+    MS_LOG(ERROR) << "Tensor device address is null";
+    return reinterpret_cast<uintptr_t>(nullptr);
+  }
+  auto *data_ptr = device_address->GetMutablePtr();
+  MS_LOG(DEBUG) << "Get Tensor data ptr " << data_ptr;
+  return reinterpret_cast<uintptr_t>(data_ptr);
+}
+
 TensorPtr TensorPy::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
@@ -1156,6 +1168,7 @@ void RegMetaTensor(const py::module *m) {
     .def("__repr__", &Tensor::ToStringRepr)
     .def("_offload", &TensorPy::Offload)
     .def("set_device_address", &TensorPy::SetDeviceAddress, py::arg("addr"), py::arg("shape"), py::arg("dtype"))
+    .def("_data_ptr", &TensorPy::DataPtr)
     .def(py::pickle(
       [](const Tensor &t) {  // __getstate__
         /* Return a tuple that fully encodes the state of the object */
