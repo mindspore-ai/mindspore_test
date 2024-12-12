@@ -3945,12 +3945,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         source = tensor_operator_registry.get('__mul__')(source, alpha)
         return tensor_operator_registry.get('index_add')(self, indices=index, y=source, axis=dim)
 
-    def greater_equal(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.greater_equal`.
-        """
-        return tensor_operator_registry.get('greater_equal')(self, other)
-
     def igamma(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.igamma`.
@@ -4445,7 +4439,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> x._offload()
         """
         return Tensor_._offload(self)
-
 
     def normal_(self, mean=0, std=1, *, generator=None):
         r"""

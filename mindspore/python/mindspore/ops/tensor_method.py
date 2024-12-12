@@ -118,7 +118,7 @@ from mindspore.ops.function.array_func import gather_ext
 # 39 greater
 from mindspore.ops.function.math_func import greater
 # 40 greater_equal
-
+from mindspore.ops.function.math_func import greater_equal
 # 41 gt
 
 # 42 half
@@ -613,6 +613,9 @@ def tensor_greater(input, other):
 
 
 # 40 greater_equal
+def tensor_greater_equal(input, other):
+    return greater_equal(input, other)
+
 
 # 41 gt
 
