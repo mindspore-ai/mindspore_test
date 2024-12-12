@@ -29,17 +29,19 @@ BaseShapePtr PReLUGradFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto w_shape = input_args[kIndex2]->GetShape();
 
   auto x_shape_vector = x_shape->GetShapeVector();
-  auto x_rank = x_shape_vector.size();
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  int execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  bool is_ascend = context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice;
+  if (!IsDynamicRank(x_shape_vector)) {
+    auto x_rank = x_shape_vector.size();
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    int execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
+    bool is_ascend = context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice;
 
-  if (is_ascend && x_rank <= 1 && execution_mode == kGraphMode && !context->IsKByKExecutorMode()) {
-    MS_EXCEPTION(ValueError)
-      << "For '" << primitive->name()
-      << "', the dimension of 'x' can not be 0-D or 1-D when the platform is \"Ascend\", but got dimension of 'x' is "
-      << x_rank << ".";
+    if (is_ascend && x_rank <= 1 && execution_mode == kGraphMode && !context->IsKByKExecutorMode()) {
+      MS_EXCEPTION(ValueError)
+        << "For '" << primitive->name()
+        << "', the dimension of 'x' can not be 0-D or 1-D when the platform is \"Ascend\", but got dimension of 'x' is "
+        << x_rank << ".";
+    }
   }
 
   return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{x_shape, w_shape});
