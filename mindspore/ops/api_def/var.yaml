@@ -1,0 +1,14 @@
+var:
+  - op_yaml: deprecated/var_method.yaml
+    py_method: deprecated_tensor_var
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: var_op.yaml
+    py_method: tensor_var
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

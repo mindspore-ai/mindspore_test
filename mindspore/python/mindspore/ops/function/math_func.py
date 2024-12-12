@@ -4565,7 +4565,7 @@ def var_ext(input, dim=None, *, correction=1, keepdim=False):
 
     Args:
         input (Tensor): The tensor used to calculate the variance.
-        dim (None or int or tuple of ints, optional): The dimension or dimensions to reduce. Defaults to ``None``.
+        dim (None, int, tuple(int), optional): The dimension or dimensions to reduce. Defaults to ``None``.
             If ``None``, all dimensions are reduced.
 
     Keyword Args:
@@ -4588,7 +4588,7 @@ def var_ext(input, dim=None, *, correction=1, keepdim=False):
     Raises:
         TypeError: If `input` is not a Tensor.
         TypeError: If `input` is not in bfloat16, float16, flaot32.
-        TypeError: If `dim` is not one of the followings: None, int, tuple.
+        TypeError: If `dim` is not one of the followings: None, int, list, tuple.
         TypeError: If `correction` is not an int.
         TypeError: If `keepdim` is not a bool.
         ValueError: If `dim` is out of range :math:`[-input.ndim, input.ndim)`.
