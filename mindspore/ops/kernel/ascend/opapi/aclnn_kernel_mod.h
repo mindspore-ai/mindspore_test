@@ -92,7 +92,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
     if (capacity_ == 0 || hash_id_##FUNC_NAME##_ == 0 || iter == hash_map_.end()) {                                  \
       aclOpExecutor *executor;                                                                                       \
       std::function<void()> release_func;                                                                            \
-      std::tie(std::ignore, executor, release_func, std::ignore, std::ignore) =                                      \
+      std::tie(std::ignore, executor, release_func, hash_id_##FUNC_NAME##_, std::ignore) =                           \
         GEN_EXECUTOR_BOOST(op_type_##FUNC_NAME##_, hash_id_##FUNC_NAME##_, args...);                                 \
       return std::make_pair(executor, release_func);                                                                 \
     }                                                                                                                \
@@ -165,7 +165,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
     if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {                                           \
       aclOpExecutor *executor;                                                                                  \
       std::function<void()> release_func;                                                                       \
-      std::tie(std::ignore, executor, release_func, std::ignore, std::ignore) =                                 \
+      std::tie(std::ignore, executor, release_func, hash_id_, std::ignore) =                                    \
         GEN_EXECUTOR_BOOST(op_type_, hash_id_, args...);                                                        \
       return std::make_pair(executor, release_func);                                                            \
     }                                                                                                           \

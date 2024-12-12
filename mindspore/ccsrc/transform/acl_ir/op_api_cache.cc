@@ -124,6 +124,45 @@ void GatherInfo(mindspore::kernel::KernelTensor *tensor) {
   RefreshAddr(tensor);
 }
 
+void GatherInfo(const device::DeviceAddressPtr &device_address) {
+  Gather(device_address);
+  RefreshAddr(device_address);
+}
+
+void GatherInfo(const mindspore::tensor::BaseTensorPtr &tensor) {
+  Gather(tensor);
+  RefreshAddr(tensor);
+}
+
+void GatherInfo(const std::optional<tensor::BaseTensorPtr> &tensor) {
+  // "ot" for optional tensor
+  MemcpyToBuf("ot", kSizeTwo);
+  if (tensor.has_value()) {
+    GatherInfo(tensor.value());
+  }
+}
+
+void GatherInfo(const std::vector<tensor::BaseTensorPtr> &tensors) {
+  for (const auto &tensor : tensors) {
+    GatherInfo(tensor);
+  }
+}
+
+void GatherInfo(const mindspore::tensor::TensorPtr &tensor) { GatherInfo(tensor->cast<tensor::BaseTensorPtr>()); }
+
+void GatherInfo(const std::optional<tensor::TensorPtr> &tensor) {
+  // "ot" for optional tensor
+  MemcpyToBuf("ot", kSizeTwo);
+  if (tensor.has_value()) {
+    GatherInfo(tensor.value());
+  }
+}
+
+void GatherInfo(const std::vector<tensor::TensorPtr> &tensors) {
+  for (const auto &tensor : tensors) {
+    GatherInfo(tensor);
+  }
+}
 void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
   auto tensor = tensor_and_trans.first;
   auto trans = tensor_and_trans.second;
@@ -220,6 +259,38 @@ void RefreshAddr(mindspore::kernel::KernelTensor *tensor) {
   MS_EXCEPTION_IF_NULL(add_tensor_addr_to_cached_list_func);
 
   add_tensor_addr_to_cached_list_func(tensor->device_ptr());
+}
+
+void RefreshAddr(const device::DeviceAddressPtr &device_address) {
+  if (device_address == nullptr) {
+    return;
+  }
+
+  static const auto add_tensor_addr_to_cached_list = transform::GetOpApiFunc("AddTensorAddrToCachedList");
+  if (add_tensor_addr_to_cached_list == nullptr) {
+    MS_LOG(EXCEPTION) << "AddTensorAddrToCachedList not in " << transform::GetOpApiLibName() << ", please check!";
+  }
+  AddTensorAddrToCachedList add_tensor_addr_to_cached_list_func =
+    reinterpret_cast<AddTensorAddrToCachedList>(add_tensor_addr_to_cached_list);
+  MS_EXCEPTION_IF_NULL(add_tensor_addr_to_cached_list_func);
+
+  add_tensor_addr_to_cached_list_func(device_address->GetMutablePtr());
+}
+
+void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor) {
+  if (tensor == nullptr) {
+    return;
+  }
+
+  static const auto add_tensor_addr_to_cached_list = transform::GetOpApiFunc("AddTensorAddrToCachedList");
+  if (add_tensor_addr_to_cached_list == nullptr) {
+    MS_LOG(EXCEPTION) << "AddTensorAddrToCachedList not in " << transform::GetOpApiLibName() << ", please check!";
+  }
+  AddTensorAddrToCachedList add_tensor_addr_to_cached_list_func =
+    reinterpret_cast<AddTensorAddrToCachedList>(add_tensor_addr_to_cached_list);
+  MS_EXCEPTION_IF_NULL(add_tensor_addr_to_cached_list_func);
+
+  add_tensor_addr_to_cached_list_func(tensor->device_address()->GetMutablePtr());
 }
 
 constexpr int g_rShift33Bits = 33;
