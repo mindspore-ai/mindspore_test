@@ -8,6 +8,7 @@ from tests.st.utils import test_utils
 
 class Net(ms.nn.Cell):
     def construct(self, input_x, from_, to, generator=None):
+        input_x = input_x + 1
         input_x.random_(from_, to, generator=generator)
         return input_x
 
