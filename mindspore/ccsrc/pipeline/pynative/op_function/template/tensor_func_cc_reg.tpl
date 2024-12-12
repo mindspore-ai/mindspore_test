@@ -20,6 +20,7 @@ namespace mindspore {
 namespace tensor {
 
 void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class) {
+    tensor_class->def("nonzero", TensorMethodNonZero);
     ${func_def_body}
 }
 }  // namespace tensor
