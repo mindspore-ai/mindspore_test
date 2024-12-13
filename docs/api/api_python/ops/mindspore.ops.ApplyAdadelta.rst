@@ -3,7 +3,7 @@
 
 .. py:class:: mindspore.ops.ApplyAdadelta
 
-    根据Adadelta算法更新相关参数。
+    根据Adadelta算法更新相关参数或者Tensor。
 
     Adadelta算法，具体细节可参考论文 `ADADELTA: AN ADAPTIVE LEARNING RATE METHOD <https://arxiv.org/abs/1212.5701>`_ 。
 
@@ -21,9 +21,9 @@
     `var` 、 `accum` 、 `accum_update` 和 `grad` 的输入遵循隐式类型转换规则，使数据类型一致。如果它们具有不同的数据类型，则较低精度的数据类型将转换为相对最高精度的数据类型。
 
     输入：
-        - **var** (Parameter) - 待更新的公式参数 var。数据类型为float32或float16。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
-        - **accum** (Parameter) - 待更新的公式参数 accum，shape和数据类型与 `var` 相同。
-        - **accum_update** (Parameter) - 待更新的公式参数 accum_update，shape和数据类型与 `var` 相同。
+        - **var** (Union[Parameter, Tensor]) - 待更新的公式参数或者Tensor var。数据类型为float32或float16。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
+        - **accum** (Union[Parameter, Tensor]) - 待更新的公式参数或者Tensor accum，shape和数据类型与 `var` 相同。
+        - **accum_update** (Union[Parameter, Tensor]) - 待更新的公式参数或者Tensor accum_update，shape和数据类型与 `var` 相同。
         - **lr** (Union[Number, Tensor]) - 学习率，必须是Scalar。数据类型为float32或float16。
         - **rho** (Union[Number, Tensor]) - 衰减率，必须是Scalar。数据类型为float32或float16。
         - **epsilon** (Union[Number, Tensor]) - 加在分母上的值，以确保数值稳定，必须是Scalar。数据类型为float32或float16。

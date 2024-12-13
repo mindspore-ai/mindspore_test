@@ -3,7 +3,7 @@ mindspore.ops.ApplyAdagradV2
 
 .. py:class:: mindspore.ops.ApplyAdagradV2(epsilon, update_slots=True)
 
-    根据Adagrad算法更新相关参数。
+    根据Adagrad算法更新相关参数或者Tensor。
 
     Adagrad算法在论文 `Adaptive Subgradient Methods for Online Learning and Stochastic Optimization <http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf>`_ 中提出。
 
@@ -25,13 +25,13 @@ mindspore.ops.ApplyAdagradV2
         - **update_slots** (bool) - 如果为 ``True`` ，则将更新 `accum` 。默认值： ``True`` 。
 
     输入：
-        - **var** (Parameter) - 要更新的变量。为任意维度，其数据类型为float16或float32。其shape为 :math:`(N, *)` ，其中 :math:`*` 为任意数量的额外维度。
-        - **accum** (Parameter) - 要更新的累积。shape必须与 `var` 相同。
+        - **var** (Union[Parameter, Tensor]) - 要更新的变量。为任意维度，其数据类型为float16或float32。其shape为 :math:`(N, *)` ，其中 :math:`*` 为任意数量的额外维度。
+        - **accum** (Union[Parameter, Tensor]) - 要更新的累积。shape必须与 `var` 相同。
         - **lr** (Union[Number, Tensor]) - 学习率，必须是float或具有float16或float32数据类型的Scalar的Tensor。
         - **grad** (Tensor) - 梯度，为一个Tensor。shape必须与 `var` 相同。
 
     输出：
-        2个Tensor组成的tuple，更新后的参数。
+        2个Tensor组成的tuple，更新后的参数或者Tensor。
 
         - **var** (Tensor) - shape和数据类型与 `var` 相同。
         - **accum** (Tensor) - shape和数据类型与 `accum` 相同。
