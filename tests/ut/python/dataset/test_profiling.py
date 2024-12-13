@@ -30,19 +30,6 @@ DATASET_ROOT = "../data/dataset/testTFTestAllTypes/"
 SCHEMA_FILE = "../data/dataset/testTFTestAllTypes/datasetSchema.json"
 
 
-def test_disable_profiling_in_independent_mode():
-    """
-    Feature: Disable profiling in independent mode.
-    Description: Test profiling is disable in independent mode.
-    Expectation: Exception raised to notify feature not supported.
-    """
-    os.environ["MS_INDEPENDENT_DATASET"] = "True"
-    with pytest.raises(RuntimeError) as err:
-        cde.GlobalContext.profiling_manager()
-    assert "Dataset Profiling is not supported in Dataset Independent mode" in str(err.value)
-    os.environ["MS_INDEPENDENT_DATASET"] = "False"
-
-
 @pytest.mark.forked
 class TestMinddataProfilingManager:
     """
@@ -128,12 +115,16 @@ class TestMinddataProfilingManager:
         # Confirm there are 4 lines for each batch in the dataset iterator file
         assert actual_num_lines == 4 * num_batches
 
-    def test_profiling_simple_pipeline(self, tmp_path):
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_simple_pipeline(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling simple pipeline (Generator -> Shuffle -> Batch)
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         source = [(np.array([x]),) for x in range(1024)]
         data1 = ds.GeneratorDataset(source, ["data"])
         data1 = data1.shuffle(64)
@@ -172,7 +163,10 @@ class TestMinddataProfilingManager:
         assert os.path.exists(cpu_util_file) is True
         assert os.path.exists(dataset_iterator_file) is True
 
-    def test_profiling_complex_pipeline(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_complex_pipeline(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling complex pipeline:
@@ -183,6 +177,9 @@ class TestMinddataProfilingManager:
 
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         source = [(np.array([x]),) for x in range(1024)]
         data1 = ds.GeneratorDataset(source, ["gen"])
         data1 = data1.map(operations=[(lambda x: x + 1)], input_columns=["gen"])
@@ -204,25 +201,45 @@ class TestMinddataProfilingManager:
         cpu_util_file = str(tmp_path) + "/minddata_cpu_utilization_0.json"
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
-        with open(pipeline_file) as f:
-            data = json.load(f)
-            op_info = data["op_info"]
-            assert len(op_info) == 6
-            for i in range(5):
-                if op_info[i]["op_type"] != "ZipOp":
-                    assert "size" in op_info[i]["metrics"]["output_queue"]
-                    assert "length" in op_info[i]["metrics"]["output_queue"]
-                else:
-                    # Note: Zip is an inline op and hence does not have metrics information
-                    assert op_info[i]["metrics"] is None
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 1
+                for i in range(1):
+                    if op_info[i]["op_type"] != "ZipOp":
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
+                    else:
+                        # Note: Zip is an inline op and hence does not have metrics information
+                        assert op_info[i]["metrics"] is None
 
-        # Confirm CPU util JSON file content, when 6 ops are in the pipeline JSON file
-        self.confirm_cpuutil(cpu_util_file, 6)
+            # Confirm CPU util JSON file content, when 6 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 6
+                for i in range(5):
+                    if op_info[i]["op_type"] != "ZipOp":
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
+                    else:
+                        # Note: Zip is an inline op and hence does not have metrics information
+                        assert op_info[i]["metrics"] is None
+
+            # Confirm CPU util JSON file content, when 6 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 6)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 12)
 
-    def test_profiling_inline_ops_pipeline1(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_inline_ops_pipeline1(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling pipeline with inline ops (Concat and EpochCtrl):
@@ -233,6 +250,8 @@ class TestMinddataProfilingManager:
 
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
 
         # In source1 dataset: Number of rows is 3; its values are 0, 1, 2
         def source1():
@@ -266,33 +285,57 @@ class TestMinddataProfilingManager:
         cpu_util_file = str(tmp_path) + "/minddata_cpu_utilization_0.json"
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
-        # Confirm pipeline is created with EpochCtrl op
-        with open(pipeline_file) as f:
-            data = json.load(f)
-            op_info = data["op_info"]
-            assert len(op_info) == 4
-            for i in range(4):
-                # Note: The following ops are inline ops: Concat, EpochCtrl
-                if op_info[i]["op_type"] in ("ConcatOp", "EpochCtrlOp"):
-                    # Confirm these inline ops do not have metrics information
-                    assert op_info[i]["metrics"] is None
-                else:
-                    assert "size" in op_info[i]["metrics"]["output_queue"]
-                    assert "length" in op_info[i]["metrics"]["output_queue"]
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            # Confirm pipeline is created with EpochCtrl op
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 1
+                for i in range(1):
+                    # Note: The following ops are inline ops: Concat, EpochCtrl
+                    if op_info[i]["op_type"] in ("ConcatOp", "EpochCtrlOp"):
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
 
-        # Confirm CPU util JSON file content, when 4 ops are in the pipeline JSON file
-        self.confirm_cpuutil(cpu_util_file, 4)
+            # Confirm CPU util JSON file content, when 4 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            # Confirm pipeline is created with EpochCtrl op
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 4
+                for i in range(4):
+                    # Note: The following ops are inline ops: Concat, EpochCtrl
+                    if op_info[i]["op_type"] in ("ConcatOp", "EpochCtrlOp"):
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
+
+            # Confirm CPU util JSON file content, when 4 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 4)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 10)
 
-    def test_profiling_inline_ops_pipeline2(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_inline_ops_pipeline2(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling pipeline with many inline ops
             (Generator -> Rename -> Skip -> Repeat -> Take)
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
 
         # In source1 dataset: Number of rows is 10; its values are 0, 1, 2, 3, 4, 5 ... 9
         def source1():
@@ -316,31 +359,55 @@ class TestMinddataProfilingManager:
         cpu_util_file = str(tmp_path) + "/minddata_cpu_utilization_0.json"
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
-        with open(pipeline_file) as f:
-            data = json.load(f)
-            op_info = data["op_info"]
-            assert len(op_info) == 5
-            for i in range(5):
-                # Check for these inline ops
-                if op_info[i]["op_type"] in ("RenameOp", "RepeatOp", "SkipOp", "TakeOp"):
-                    # Confirm these inline ops do not have metrics information
-                    assert op_info[i]["metrics"] is None
-                else:
-                    assert "size" in op_info[i]["metrics"]["output_queue"]
-                    assert "length" in op_info[i]["metrics"]["output_queue"]
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 1
+                for i in range(1):
+                    # Check for these inline ops
+                    if op_info[i]["op_type"] in ("RenameOp", "RepeatOp", "SkipOp", "TakeOp"):
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
 
-        # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
-        self.confirm_cpuutil(cpu_util_file, 5)
+            # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 5
+                for i in range(5):
+                    # Check for these inline ops
+                    if op_info[i]["op_type"] in ("RenameOp", "RepeatOp", "SkipOp", "TakeOp"):
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
+
+            # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 5)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 12)
 
-    def test_profiling_sampling_interval(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_sampling_interval(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test non-default monitor sampling interval
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         interval_origin = ds.config.get_monitor_sampling_interval()
 
         ds.config.set_monitor_sampling_interval(30)
@@ -366,19 +433,29 @@ class TestMinddataProfilingManager:
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
         # Confirm pipeline file and CPU util file each have 3 ops
-        self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "ShuffleOp"])
-        self.confirm_cpuutil(cpu_util_file, 3)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_ops_in_pipeline(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "ShuffleOp"])
+            self.confirm_cpuutil(cpu_util_file, 3)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 32)
 
-    def test_profiling_basic_pipeline(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_basic_pipeline(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling pipeline with basic pipeline
             (Generator -> Map -> Batch -> Repeat -> EpochCtrl)
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
 
         def source1():
             for i in range(8000):
@@ -408,32 +485,56 @@ class TestMinddataProfilingManager:
         cpu_util_file = str(tmp_path) + "/minddata_cpu_utilization_0.json"
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
-        with open(pipeline_file) as f:
-            data = json.load(f)
-            op_info = data["op_info"]
-            assert len(op_info) == 5
-            for i in range(5):
-                # Check for inline ops
-                if op_info[i]["op_type"] in ("EpochCtrlOp", "RepeatOp"):
-                    # Confirm these inline ops do not have metrics information
-                    assert op_info[i]["metrics"] is None
-                else:
-                    assert "size" in op_info[i]["metrics"]["output_queue"]
-                    assert "length" in op_info[i]["metrics"]["output_queue"]
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 1
+                for i in range(1):
+                    # Check for inline ops
+                    if op_info[i]["op_type"] in ("EpochCtrlOp", "RepeatOp"):
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
 
-        # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
-        self.confirm_cpuutil(cpu_util_file, 5)
+            # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 5
+                for i in range(5):
+                    # Check for inline ops
+                    if op_info[i]["op_type"] in ("EpochCtrlOp", "RepeatOp"):
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
+
+            # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 5)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 1000)
 
-    def test_profiling_cifar10_pipeline(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_cifar10_pipeline(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with common pipeline with Cifar10
             (Cifar10 -> Map -> Map -> Batch -> Repeat)
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         # Create this common pipeline
         # Cifar10 -> Map -> Map -> Batch -> Repeat
         DATA_DIR_10 = "../data/dataset/testCifar10Data"
@@ -462,26 +563,47 @@ class TestMinddataProfilingManager:
         cpu_util_file = str(tmp_path) + "/minddata_cpu_utilization_0.json"
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
-        with open(pipeline_file) as f:
-            data = json.load(f)
-            op_info = data["op_info"]
-            assert len(op_info) == 5
-            for i in range(5):
-                # Check for inline ops
-                if op_info[i]["op_type"] == "RepeatOp":
-                    # Confirm these inline ops do not have metrics information
-                    assert op_info[i]["metrics"] is None
-                else:
-                    assert "size" in op_info[i]["metrics"]["output_queue"]
-                    assert "length" in op_info[i]["metrics"]["output_queue"]
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 1
+                for i in range(1):
+                    # Check for inline ops
+                    if op_info[i]["op_type"] == "RepeatOp":
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
 
-        # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
-        self.confirm_cpuutil(cpu_util_file, 5)
+            # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            with open(pipeline_file) as f:
+                data = json.load(f)
+                op_info = data["op_info"]
+                assert len(op_info) == 5
+                for i in range(5):
+                    # Check for inline ops
+                    if op_info[i]["op_type"] == "RepeatOp":
+                        # Confirm these inline ops do not have metrics information
+                        assert op_info[i]["metrics"] is None
+                    else:
+                        assert "size" in op_info[i]["metrics"]["output_queue"]
+                        assert "length" in op_info[i]["metrics"]["output_queue"]
+
+            # Confirm CPU util JSON file content, when 5 ops are in the pipeline JSON file
+            self.confirm_cpuutil(cpu_util_file, 5)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 750)
 
-    def test_profiling_seq_pipelines_epochctrl3(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_seq_pipelines_epochctrl3(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with these 2 sequential pipelines
@@ -490,6 +612,9 @@ class TestMinddataProfilingManager:
             Note: This is a simplification of the user scenario to use the same pipeline for train and then eval
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         source = [(np.array([x]),) for x in range(64)]
         data1 = ds.GeneratorDataset(source, ["data"])
         data1 = data1.batch(32)
@@ -510,8 +635,13 @@ class TestMinddataProfilingManager:
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
         # Confirm pipeline file and CPU util file each have 3 ops
-        self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "EpochCtrlOp"])
-        self.confirm_cpuutil(cpu_util_file, 3)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_ops_in_pipeline(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "EpochCtrlOp"])
+            self.confirm_cpuutil(cpu_util_file, 3)
 
         # Test B - Call create_dict_iterator with num_epochs=1
 
@@ -531,13 +661,21 @@ class TestMinddataProfilingManager:
         self.md_profiler.save(str(tmp_path))
 
         # Confirm pipeline file and CPU util file each have 2 ops
-        self.confirm_ops_in_pipeline(pipeline_file, 2, ["GeneratorOp", "BatchOp"])
-        self.confirm_cpuutil(cpu_util_file, 2)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_ops_in_pipeline(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            self.confirm_ops_in_pipeline(pipeline_file, 2, ["GeneratorOp", "BatchOp"])
+            self.confirm_cpuutil(cpu_util_file, 2)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 2)
 
-    def test_profiling_seq_pipelines_epochctrl2(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_seq_pipelines_epochctrl2(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with these 2 sequential pipelines
@@ -545,6 +683,9 @@ class TestMinddataProfilingManager:
             2) Generator -> Batch -> EpochCtrl
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         source = [(np.array([x]),) for x in range(64)]
         data2 = ds.GeneratorDataset(source, ["data"])
         data2 = data2.batch(16)
@@ -565,8 +706,13 @@ class TestMinddataProfilingManager:
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
         # Confirm pipeline file and CPU util file each have 2 ops
-        self.confirm_ops_in_pipeline(pipeline_file, 2, ["GeneratorOp", "BatchOp"])
-        self.confirm_cpuutil(cpu_util_file, 2)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_ops_in_pipeline(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            self.confirm_ops_in_pipeline(pipeline_file, 2, ["GeneratorOp", "BatchOp"])
+            self.confirm_cpuutil(cpu_util_file, 2)
 
         # Test B - Call create_dict_iterator with num_epochs>1
 
@@ -586,13 +732,21 @@ class TestMinddataProfilingManager:
         self.md_profiler.save(str(tmp_path))
 
         # Confirm pipeline file and CPU util file each have 3 ops
-        self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "EpochCtrlOp"])
-        self.confirm_cpuutil(cpu_util_file, 3)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_ops_in_pipeline(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "EpochCtrlOp"])
+            self.confirm_cpuutil(cpu_util_file, 3)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 4)
 
-    def test_profiling_seq_pipelines_repeat(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_seq_pipelines_repeat(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with these 2 sequential pipelines
@@ -600,6 +754,9 @@ class TestMinddataProfilingManager:
             2) Generator -> Batch -> Repeat
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         source = [(np.array([x]),) for x in range(64)]
         data2 = ds.GeneratorDataset(source, ["data"])
         data2 = data2.batch(16)
@@ -619,8 +776,13 @@ class TestMinddataProfilingManager:
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
         # Confirm pipeline file and CPU util file each have 2 ops
-        self.confirm_ops_in_pipeline(pipeline_file, 2, ["GeneratorOp", "BatchOp"])
-        self.confirm_cpuutil(cpu_util_file, 2)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_ops_in_pipeline(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            self.confirm_ops_in_pipeline(pipeline_file, 2, ["GeneratorOp", "BatchOp"])
+            self.confirm_cpuutil(cpu_util_file, 2)
 
         # Test B - Add repeat op to pipeline.  Call create_dict_iterator with 3 ops in pipeline
 
@@ -639,8 +801,15 @@ class TestMinddataProfilingManager:
         self.md_profiler.save(str(tmp_path))
 
         # Confirm pipeline file and CPU util file each have 3 ops
-        self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "RepeatOp"])
-        self.confirm_cpuutil(cpu_util_file, 3)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_ops_in_pipeline(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil(cpu_util_file, 1)
+        else:
+            self.confirm_ops_in_pipeline(pipeline_file, 3, ["GeneratorOp", "BatchOp", "RepeatOp"])
+            self.confirm_cpuutil(cpu_util_file, 3)
 
         # Confirm dataset iterator file content
         self.confirm_dataset_iterator_file(dataset_iterator_file, 20)
+
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
