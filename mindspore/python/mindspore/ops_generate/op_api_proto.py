@@ -149,10 +149,12 @@ def check_kwonlyargs(func_data, kw_only_args, op_name, op_proto, py_method, tens
         raise TypeError(f"The order of kwonlyargs in {py_method} should be consistent with the definition. "
                         f"Expect kwonlyarg: {kw_only_args}, current kwonlyarg: {tensor_method_kwonlyargs}.")
 
+
 def check_varargs(varargs, op_name):
     if len(varargs) != 1:
         raise ValueError(
             f'There must be only one variable argument. But got {len(varargs)} in {op_name}')
+
 
 def _get_op_name_from_op_yaml(func_name: str, func_data: dict) -> str:
     """Extracts the operation name from the given YAML function data."""
