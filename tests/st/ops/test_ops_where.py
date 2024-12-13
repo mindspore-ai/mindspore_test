@@ -20,7 +20,7 @@ import pytest
 import mindspore.common.dtype as mstype
 import mindspore as ms
 from mindspore.ops import where
-from mindspore import ops, Tensor, jit, JitConfig, context
+from mindspore import ops, Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -194,7 +194,7 @@ def test_where_ext_normal(mode):
     elif mode == 'KBK':
         ms_out = (jit(where_forward_func, jit_level="O0"))(cond, x, y)
     else:
-        ms_out = (jit(where_forward_func, jit_level="O2"))(cond, x, y)
+        ms_out = (jit(where_forward_func, backend="GE"))(cond, x, y)
 
     expect = generate_expect_forward_output(cond.asnumpy(), x.asnumpy(), y.asnumpy())
     assert np.allclose(ms_out.asnumpy(), expect, rtol=1e-4)
@@ -209,7 +209,7 @@ def test_where_ext_normal(mode):
     elif mode == 'KBK':
         ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_level="O0"))(cond, x, y)
     else:
-        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_level="O2"))(cond, x, y)
+        ms_cond, ms_x, ms_y = (jit(where_backward_func, backend="GE"))(cond, x, y)
     expect_cond, expect_x, expect_y = generate_expect_backward_output(cond.asnumpy())
     assert np.allclose(ms_cond.asnumpy(), expect_cond, rtol=1e-4)
     assert np.allclose(ms_x.asnumpy(), expect_x, rtol=1e-4)

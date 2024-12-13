@@ -19,7 +19,7 @@ import pytest
 
 import mindspore as ms
 from mindspore.mint import remainder
-from mindspore import ops, set_context, Tensor, jit, JitConfig
+from mindspore import ops, set_context, Tensor, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -30,7 +30,7 @@ def build_context_func(fn, mode):
     if mode == 'KBK':
         return jit(fn, jit_level="O0")
     # Graph Mode with GE
-    return jit(fn, jit_level="O2")
+    return jit(fn, backend="GE")
 
 
 def remainder_forward(x, y):

@@ -106,7 +106,7 @@ def do_test_matmul_dtypes(valid_dtypes, is_ge_only=False):
     y_np.shape = k, n
     matmul = Net()
     if is_ge_only:
-        matmul.set_jit_config(JitConfig(jit_level="O2"))
+        matmul.set_jit_config(JitConfig(backend="GE"))
     else:
         matmul.set_jit_config(JitConfig(jit_level="O0"))
     all_dtypes = mstype.all_types

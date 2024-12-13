@@ -106,12 +106,16 @@ def _get_jit_func(sink_fun, jit_config):
     jit_level = jit_config_dict['jit_level']
     if jit_level == "":
         jit_level = "O0"
+    backend = ""
+    if "backend" in jit_config_dict:
+        backend = jit_config_dict["backend"]
     fullgraph = False
     if jit_config_dict['jit_syntax_level'] == "STRICT":
         fullgraph = True
     exc_mode = jit_config_dict['exc_mode']
     infer_boost = jit_config_dict['infer_boost']
-    return jit(sink_fun, jit_level=jit_level, fullgraph=fullgraph, exc_mode=exc_mode, infer_boost=infer_boost)
+    return jit(sink_fun, jit_level=jit_level, backend=backend, fullgraph=fullgraph, exc_mode=exc_mode,
+               infer_boost=infer_boost)
 
 
 def _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config):

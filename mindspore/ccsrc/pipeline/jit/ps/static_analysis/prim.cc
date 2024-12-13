@@ -2460,8 +2460,8 @@ bool CheckHasOverriddenMethod(AnfNodePtr node, ValuePtr item_value) {
 }
 
 bool CheckFunctionalMethod(const TypeId &type_id, const ValuePtr &method_value) {
-  // O2 does not support tensor method overloading.
-  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  // ge does not support tensor method overloading.
+  auto ge_mode = common::AnfAlgo::IsBackendGe();
   if (ge_mode) {
     return false;
   }

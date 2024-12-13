@@ -62,9 +62,9 @@ def test_ops_cross(mode, dtype, dim_value):
         output_grad = op_backward(input1, other, dim_value)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(cross_forward_func, jit_level="O2")
+        op_froward = ms.jit(cross_forward_func, backend="GE")
         output = op_froward(input1, other, dim_value)
-        op_backward = ms.jit(cross_backward_func, jit_level="O2")
+        op_backward = ms.jit(cross_backward_func, backend="GE")
         output_grad = op_backward(input1, other, dim_value)
     np.testing.assert_allclose(output.asnumpy(), expect_forward, rtol=1e-3)
     np.testing.assert_allclose(output_grad[0].asnumpy(), expect_grad_input, rtol=1e-3)

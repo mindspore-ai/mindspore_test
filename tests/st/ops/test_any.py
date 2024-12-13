@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
@@ -135,7 +135,7 @@ def test_any_forward_static_shape(mode):
     elif mode == 'KBK':
         output = (jit(any_forward_func, jit_level="O0"))(ms.Tensor(x))
     else:
-        output = (jit(any_forward_func, jit_level="O2"))(ms.Tensor(x))
+        output = (jit(any_forward_func, backend="GE"))(ms.Tensor(x))
 
     expect = generate_expect_forward_output(x)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4)

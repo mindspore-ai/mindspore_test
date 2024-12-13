@@ -39,6 +39,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/file_utils.h"
+#include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
 #include "transform/symbol/acl_base_symbol.h"
@@ -267,6 +268,14 @@ void GeDeviceContext::Initialize() {
   if (op_tuning_conf->EnableAoeOffline()) {
     transform::EnableAoeOffline();
   }
+
+  // open tsd
+  if (!common::UseDynamicCluster()) {
+    if (!GetDeprecatedInterface()->OpenTsd(ms_context)) {
+      MS_LOG(EXCEPTION) << "Open tsd failed";
+    }
+  }
+
   initialized_ = true;
   pid_ = GetCurrentPID();  // set the pid when first initialize
   MS_LOG(INFO) << "End initializing device context.";

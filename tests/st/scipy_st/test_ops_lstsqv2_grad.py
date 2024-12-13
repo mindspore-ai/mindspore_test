@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
@@ -82,7 +82,7 @@ def test_lstsqv2_grad_like_forward(mode):
         grads = (jit(lstsqv2_grad_forward_func, jit_level="O0"))(
             ms.Tensor(Dout), ms.Tensor(A), ms.Tensor(B))
     else:
-        grads = (jit(lstsqv2_grad_forward_func, jit_level="O2"))(
+        grads = (jit(lstsqv2_grad_forward_func, backend="GE"))(
             ms.Tensor(Dout), ms.Tensor(A), ms.Tensor(B))
     for i in range(2):
         np.testing.assert_allclose(

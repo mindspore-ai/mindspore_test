@@ -20,7 +20,7 @@ import pytest
 import mindspore.common.dtype as mstype
 
 from mindspore.ops.operations._infer_ops import QuantV2
-from mindspore import Tensor, jit, JitConfig
+from mindspore import Tensor, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -71,7 +71,7 @@ def test_quant_static_shape(mode, rounding, support_type):
         ms_out = (jit(quant_forward_func, jit_level="O0")) \
             (x, scale, offset, False, rounding, mstype.int8)
     else:
-        ms_out = (jit(quant_forward_func, jit_level="O2")) \
+        ms_out = (jit(quant_forward_func, backend="GE")) \
             (x, scale, offset, False, rounding, mstype.int8)
 
     if support_type == mstype.bfloat16:

@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -64,8 +64,8 @@ def test_ops_mint_reshape(mode):
             output = (jit(reshape_forward_func, jit_level="O0"))(ms.Tensor(x), shape)
             out_grad = (jit(reshape_backward_func, jit_level="O0"))(ms.Tensor(x), shape)
         else:
-            output = (jit(reshape_forward_func, jit_level="O2"))(ms.Tensor(x), shape)
-            out_grad = (jit(reshape_backward_func, jit_level="O2"))(ms.Tensor(x), shape)
+            output = (jit(reshape_forward_func, backend="GE"))(ms.Tensor(x), shape)
+            out_grad = (jit(reshape_backward_func, backend="GE"))(ms.Tensor(x), shape)
         expect = generate_expect_forward_output(x, shape)
         np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
         np.testing.assert_allclose(out_grad.asnumpy(), 1, rtol=1e-3)

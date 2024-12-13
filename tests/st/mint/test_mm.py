@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -61,8 +61,8 @@ def test_ops(mode, dtype):
         res = (jit(mm_forward_func, jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
         res_grad = (jit(mm_backward_func, jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
     else:
-        res = (jit(mm_forward_func, jit_level="O2"))(ms.Tensor(input_x), ms.Tensor(mat2))
-        res_grad = (jit(mm_backward_func, jit_level="O2"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res = (jit(mm_forward_func, backend="GE"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res_grad = (jit(mm_backward_func, backend="GE"))(ms.Tensor(input_x), ms.Tensor(mat2))
     np.testing.assert_allclose(res.asnumpy(), expect_forward, rtol=1e-5)
     np.testing.assert_allclose(res_grad.asnumpy(), expect_grad.asnumpy(), rtol=1e-5)
 

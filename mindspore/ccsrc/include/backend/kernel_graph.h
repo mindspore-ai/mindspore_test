@@ -34,6 +34,7 @@
 #include "include/backend/device_type.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/device_address.h"
+#include "include/backend/jit_setting.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -111,6 +112,7 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
     mem_reuse_exec_order_ = graph.mem_reuse_exec_order_;
     graph_id_ = graph.graph_id_;
     device_target_ = graph.device_target_;
+    jit_setting_ = graph.jit_setting_;
     stream_distinction_label_ = graph.stream_distinction_label_;
     front_backend_anf_map_ = graph.front_backend_anf_map_;
     backend_front_anf_map_ = graph.backend_front_anf_map_;
@@ -195,6 +197,8 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   void set_root_graph_id(uint32_t root_graph_id) { root_graph_id_ = root_graph_id; }
   DeviceType device_target() const { return device_target_; }
   void set_device_target(DeviceType target) { device_target_ = target; }
+  JitSetting jit_setting() { return jit_setting_; }
+  void set_jit_setting(JitSetting jit_setting) { jit_setting_ = jit_setting; }
 
   // and a new front to backend anf relation to maop
   void FrontBackendMapAdd(const AnfNodePtr &front_anf, const AnfNodePtr &backend_anf);
@@ -604,6 +608,7 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   uint32_t graph_id_;
   uint32_t stream_distinction_label_;
   DeviceType device_target_;
+  JitSetting jit_setting_;
   uint32_t root_graph_id_{0};
 
   // record map between front anf and backend anf,use two map implement bidirectional map

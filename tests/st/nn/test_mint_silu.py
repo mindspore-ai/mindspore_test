@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from mindspore import Tensor
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -72,8 +72,8 @@ def test_silu_net(mode):
         output = (jit(SiLU_forward, jit_level="O0"))(x)
         out_grad = (jit(SiLU_grad, jit_level="O0"))(x)
     else:
-        output = (jit(SiLU_forward, jit_level="O2"))(x)
-        out_grad = (jit(SiLU_grad, jit_level="O2"))(x)
+        output = (jit(SiLU_forward, backend="GE"))(x)
+        out_grad = (jit(SiLU_grad, backend="GE"))(x)
 
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-3)
     np.testing.assert_allclose(out_grad.asnumpy(), expect_output_grad, rtol=1e-3)

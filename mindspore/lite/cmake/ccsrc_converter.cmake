@@ -14,6 +14,7 @@ if(MSLITE_ENABLE_CONVERTER)
     set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
     set(TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../tools)
     set(CCSRC_SRC
+            ${CCSRC_DIR}/backend/common/session/jit_setting.cc
             ${CCSRC_DIR}/backend/common/optimizer/pattern_engine.cc
             ${CCSRC_DIR}/backend/common/optimizer/visitor.cc
             ${CCSRC_DIR}/backend/common/optimizer/graph_optimizer.cc

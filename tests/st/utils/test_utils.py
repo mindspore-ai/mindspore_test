@@ -21,7 +21,7 @@ from typing import Sequence
 import numpy as np
 
 import mindspore as ms
-from mindspore import jit, JitConfig, nn, Tensor
+from mindspore import jit, nn, Tensor
 
 if sys.version_info >= (3, 9):
     list_annotation = list
@@ -68,7 +68,7 @@ def run_with_mode(fn):
 
         del kwargs['mode']
         if mode == "graph":
-            return (jit(fn, jit_level="O2"))(*args, **kwargs)
+            return (jit(fn, backend="GE"))(*args, **kwargs)
         if mode == "kbk":
             return (jit(fn, jit_level="O0"))(*args, **kwargs)
         return fn(*args, **kwargs)

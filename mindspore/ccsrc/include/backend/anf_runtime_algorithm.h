@@ -218,6 +218,15 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static AnfNodePtr FetchFrontNodeByBackendNode(const AnfNodePtr &backend_node, const KernelGraph &graph);
   static void InsertMakeTupleForOutput(const NotNull<KernelGraphPtr> &root_graph);
 
+  // get jit settings from kernel graph
+  static std::string GetJitLevel(const FuncGraphPtr &graph);
+  static std::string GetBackend(const FuncGraphPtr &graph);
+  static bool GetDisableFormatTransform(const KernelGraphPtr &graph);
+  static std::string GetExecOrderAlgo(const KernelGraphPtr &graph);
+  static std::map<std::string, std::map<std::string, std::string> > GetGeOptions(const KernelGraphPtr &graph);
+  // get ge options from jitconfig or context
+  static std::map<std::string, std::string> GetGeOptions(std::string option_level);
+
   static void UpdateGraphValidRefPair(const KernelGraphPtr &graph);
   static bool IsDynamicShapeSkipExecute(bool skip_mode, const ShapeVector &axes_shape);
   static bool IsDynamicShapeSkipExecute(const CNodePtr &cnode);

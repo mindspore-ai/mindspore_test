@@ -575,10 +575,10 @@ BackendPtr CreateBackend() {
   MS_LOG(INFO) << "CreateBackend is: " << name;
   context_ptr->Refresh();
 
+  BackendPtr backend = nullptr;
   if (name == kMsConvert || name == kGeVm) {
     std::string target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
     uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    BackendPtr backend = nullptr;
     // Create MindRTBackend or MsBackend according to whether mindrt is used.
     if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
       backend = std::make_shared<MindRTBackend>(name, target, device_id);
@@ -588,10 +588,12 @@ BackendPtr CreateBackend() {
     if (target == kAscendDevice && context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
       backend->set_is_multi_graph_sink(false);
     }
-    return backend;
+  } else {
+    backend = std::make_shared<Backend>(name);
   }
+  backend->set_jit_setting(session::JitSetting::ParseJitSetting());
 
-  return std::make_shared<Backend>(name);
+  return backend;
 }
 
 void SetMindRTEnable() {

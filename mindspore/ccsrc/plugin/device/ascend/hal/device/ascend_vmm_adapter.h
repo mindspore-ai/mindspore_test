@@ -30,6 +30,7 @@
 #include "utils/dlopen_macro.h"
 #include "utils/log_adapter.h"
 
+#include "include/common/utils/anfalgo.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/ms_context.h"
@@ -77,7 +78,7 @@ class AscendVmmAdapter {
   static const bool IsVmmEnabled() {
     auto ctx = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ctx);
-    if (ctx->GetJitLevel() == kAttrJitLevelO2 && IsDisableGeKernel()) {
+    if (common::AnfAlgo::IsBackendGe() && IsDisableGeKernel()) {
       MS_LOG(INFO) << "Jit level is O2, vmm is disabled.";
       return false;
     }

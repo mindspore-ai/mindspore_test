@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from mindspore import Tensor
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -76,8 +76,8 @@ def test_gelu_net(mode):
         output = (jit(GELU_forward, jit_level="O0"))(x)
         out_grad = (jit(GELU_grad, jit_level="O0"))(x)
     else:
-        output = (jit(GELU_forward, jit_level="O2"))(x)
-        out_grad = (jit(GELU_grad, jit_level="O2"))(x)
+        output = (jit(GELU_forward, backend="GE"))(x)
+        out_grad = (jit(GELU_grad, backend="GE"))(x)
 
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-4)
     np.testing.assert_allclose(out_grad.asnumpy(), expect_output_grad, rtol=1e-4)

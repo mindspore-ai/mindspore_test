@@ -1616,8 +1616,8 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
       return;
     }
     MS_LOG(INFO) << "Cell reuse micro num: " << micro_num;
-    auto jit_level = context_ptr->GetJitLevel();
-    if (micro_num > kLazyInlineThershold && jit_level != kAttrJitLevelO2) {
+    auto not_ge = !common::AnfAlgo::IsBackendGe();
+    if (micro_num > kLazyInlineThershold && not_ge) {
       MS_LOG(INFO) << "Set no inline because cell reuse micro num is greater than " << kLazyInlineThershold
                    << ", micro num: " << micro_num;
       context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
@@ -1637,10 +1637,10 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
     backend_ptr->set_is_multi_graph_sink(is_multi_graph_sink);
   };
   ProcessCanNotInline(func_graph, context_ptr);
-  auto jit_level = pipeline::GetJitLevel();
+  auto jit_level = context_ptr->GetJitLevel();
   func_graph->set_attr(kAttrJitLevel, MakeValue<std::string>(jit_level));
   auto jit_config = PhaseManager::GetInstance().jit_config();
-  jit_config[kAttrJitLevel] = context_ptr->GetJitLevel();
+  jit_config[kAttrJitLevel] = jit_level;
   graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
 
   const bool pynative_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;

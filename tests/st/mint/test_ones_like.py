@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
-from mindspore import ops, mint, Tensor, jit, JitConfig
+from mindspore import ops, mint, Tensor, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -54,8 +54,8 @@ def test_ones_like_normal(mode):
         y = (jit(ones_like_forward_func, jit_level="O0"))(input_tensor, dtype)
         input_grad = (jit(ones_like_backward_func, jit_level="O0"))(input_tensor, dtype1)
     else:
-        y = (jit(ones_like_forward_func, jit_level="O2"))(input_tensor, dtype)
-        input_grad = (jit(ones_like_backward_func, jit_level="O2"))(input_tensor, dtype1)
+        y = (jit(ones_like_forward_func, backend="GE"))(input_tensor, dtype)
+        input_grad = (jit(ones_like_backward_func, backend="GE"))(input_tensor, dtype1)
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
     np.testing.assert_allclose(input_grad.asnumpy(), expect_grad, rtol=1e-5)
 
