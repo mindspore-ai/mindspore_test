@@ -22,7 +22,7 @@ from mindspore.profiler.common.constant import DeviceTarget
 
 class Mstx:
     """
-    Mstx class provides profiling tools for marking and tracing on NPU. This class provides three static methods: mark, 
+    Mstx class provides profiling tools for marking and tracing on NPU. This class provides three static methods: mark,
     range_start and range_end for adding marker points and ranges in profiling.
     """
 
@@ -34,7 +34,7 @@ class Mstx:
 
         Args:
             message (str): Description for the marker.
-            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream. 
+            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream.
                 Default: ``None``, which means only marking on host side without marking on device stream.
 
         Examples:
@@ -104,7 +104,7 @@ class Mstx:
 
         Args:
             message (str): Description for the range.
-            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream. 
+            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream.
                 Default: ``None``, which means only starting mstx range on host side without starting on device stream.
 
         Returns:

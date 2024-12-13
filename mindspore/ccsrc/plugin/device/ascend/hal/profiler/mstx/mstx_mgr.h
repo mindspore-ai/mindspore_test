@@ -55,22 +55,24 @@ class MstxMgr {
   std::atomic<bool> isEnable_{false};
 };
 
-struct MstxRange {
-  uint64_t rangeId{0};
-  MstxRange(const std::string &message, void *stream) {
-    if (MstxMgr::GetInstance().IsEnable()) {
-      rangeId = MstxMgr::GetInstance().RangeStart(message.c_str(), stream);
-    }
-  }
-
-  ~MstxRange() {
-    if (MstxMgr::GetInstance().IsEnable()) {
-      MstxMgr::GetInstance().RangeEnd(rangeId);
-    }
-  }
-};
-
 std::string GetMstxHcomMsg(const std::string &opName, uint64_t dataCnt, HcclDataType dataType, HcclComm comm);
+
+#define MSTX_START(rangeId, opName, dataType, dataCnt, comm, stream)                                   \
+  do {                                                                                                 \
+    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) {                              \
+      rangeId = mindspore::profiler::ascend::MstxMgr::GetInstance().RangeStart(                        \
+        mindspore::profiler::ascend::GetMstxHcomMsg(opName, dataCnt, dataType, comm).c_str(), stream); \
+    }                                                                                                  \
+  } while (0);
+
+// Match MSRX_START to use.
+#define MSTX_END(rangeId)                                                    \
+  do {                                                                       \
+    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) {    \
+      mindspore::profiler::ascend::MstxMgr::GetInstance().RangeEnd(rangeId); \
+    }                                                                        \
+  } while (0);
+
 }  // namespace ascend
 }  // namespace profiler
 }  // namespace mindspore
