@@ -1,6 +1,8 @@
 lerp:
   description: |
-    Does a linear interpolation of two tensors start and end based on a float or tensor weight.
+    lerp(input, end, weight) -> Tensor
+
+    Perform a linear interpolation of two tensors input and end based on a float or tensor weight.
 
     If `weight` is a tensor, the shapes of three inputs need to be broadcast;
     If `weight` is a float, the shapes of `input` and `end` need to be broadcast.
@@ -32,14 +34,14 @@ lerp:
         ValueError: If `weight` could not be broadcast to tensors with shapes of `input` and `end` when it is a tensor.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor, mint
         >>> start = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
         >>> end = Tensor(np.array([10., 10., 10., 10.]), mindspore.float32)
-        >>> output = ops.lerp(start, end, 0.5)
+        >>> output = mint.lerp(start, end, 0.5)
         >>> print(output)
         [5.5 6. 6.5 7. ]

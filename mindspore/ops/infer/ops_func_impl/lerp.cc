@@ -44,12 +44,10 @@ std::vector<TypeId> LerpFuncImpl::InferType(const PrimitivePtr &primitive, const
   const std::set<TypeId> valid_type = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
   const auto start_type = input_infos[kInputIndex0]->GetType();
   const auto end_type = input_infos[kInputIndex1]->GetType();
-  const auto weight_type = input_infos[kInputIndex2]->GetType();
   const auto &prim_name = primitive->name();
   std::vector<TypeId> element_types;
   element_types.emplace_back(start_type);
   element_types.emplace_back(end_type);
-  element_types.emplace_back(weight_type);
   CheckAndConvertUtils::CheckTypeIdsSame("tensors", element_types, prim_name);
   CheckAndConvertUtils::CheckTypeIdValid("start", start_type, valid_type, prim_name);
   return {input_infos[kInputIndex0]->GetType()};
