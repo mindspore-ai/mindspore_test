@@ -466,10 +466,12 @@ class Parameter(Tensor_):
 
     @property
     def param_info(self):
+        Tensor_.wait_pipeline(self)
         return self._param_info
 
     @param_info.setter
     def param_info(self, param_info_):
+        Tensor_.wait_pipeline(self)
         param_info_.obj = self
         self._param_info = param_info_
         Tensor_.param_info.fset(self, param_info_)
