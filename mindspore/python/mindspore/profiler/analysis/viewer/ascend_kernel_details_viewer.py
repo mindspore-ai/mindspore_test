@@ -20,7 +20,7 @@ from decimal import Decimal
 from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import TraceViewContainer
-from mindspore.profiler.common.constant import OpSummaryHeaders, ProfilerLevel
+from mindspore.profiler.common.constant import OpSummaryHeaders
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.constant import TimelineLayerName
 from mindspore.profiler.common.constant import ProfilerStepNameConstant, JitLevel, ProfilerLevel
