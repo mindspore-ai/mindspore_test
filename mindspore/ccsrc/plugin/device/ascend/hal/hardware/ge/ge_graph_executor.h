@@ -122,6 +122,7 @@ class GeGraphExecutor : public GraphExecutor {
   void FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph);
   void FreeInputOutputMemory(const KernelGraphPtr &graph) const;
   DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor, bool is_need_alloc_mem) const;
+  void AllocInputMemory(const DeviceAddressPtr &input_address) const;
 
   void RunCheckpointGraph(const KernelGraphPtr &graph) override;
 

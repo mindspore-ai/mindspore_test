@@ -673,6 +673,20 @@ void GeGraphExecutor::FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph
   graph_refreshable_feature_mem_[graph] = nullptr;
 }
 
+void GeGraphExecutor::AllocInputMemory(const DeviceAddressPtr &input_address) const {
+  MS_EXCEPTION_IF_NULL(input_address);
+  if (input_address->GetPtr() != nullptr) {
+    MS_LOG(INFO) << "The device_address " << input_address << " memory has been alloc.";
+    return;
+  }
+
+  if (!ge_res_manager_->AllocateMemory(input_address.get(), kDefaultStreamIndex)) {
+    MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_context_->device_context_key().device_id_
+                      << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
+                      << input_address->GetSize() << "B.";
+  }
+}
+
 void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) const {
   if (!IsEnableRefMode()) {
     return;
@@ -689,6 +703,10 @@ void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) cons
   }
 
   for (size_t i = 0; i < input_datas.size(); ++i) {
+    // for dynamic shape input , alloc later
+    if (common::AnfAlgo::IsNodeOutputDynamicShape(need_update_input[i].first.lock())) {
+      continue;
+    }
     auto input_address = input_datas[i];
     if (input_address->GetPtr() == nullptr) {
       auto mem_type = device::tracker::MemType::kKernel;
@@ -727,13 +745,17 @@ void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) cons
         MS_LOG(INFO) << "The io_index[" << io.first << ", " << io.second << "] ptr is already exist and not same.";
         continue;
       }
-      output_datas[io.second]->set_is_ptr_persisted(input_datas[io.first]->is_ptr_persisted());
       output_datas[io.second]->set_pointer_ref_count(input_datas[io.first]->pointer_ref_count());
+      output_datas[io.second]->set_is_ptr_persisted(input_datas[io.first]->is_ptr_persisted());
     }
   }
 
   for (size_t i = 0; i < output_datas.size(); ++i) {
     auto output_address = output_datas[i];
+    if (common::AnfAlgo::IsDynamicShape(graph_outputs[i].first.lock())) {
+      // dynamic shape output no need to alloc device memory
+      continue;
+    }
     if (output_address->GetPtr() == nullptr) {
       UpdateTracker("AllocOutputs", graph_outputs[i].first.lock()->fullname_with_scope(), graph->ToString(),
                     device::tracker::MemType::kGraphOutput, output_address);
@@ -1018,6 +1040,7 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
   MS_LOG(INFO) << "GE run graph start in ref mode, graph: " << graph_name << ".";
+  RunInitGraph(graph_name);
   (void)ge_res_manager_->BindDeviceToCurrentThread(false);
 
   // call ge rungraph

@@ -1813,6 +1813,8 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
       device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
     MS_EXCEPTION_IF_NULL(device_context);
     device_context->device_res_manager_->SyncNotDefaultStreams();
+    // Release python gil.
+    mindspore::ScopedLongRunning long_running;
 
     std::vector<tensor::TensorPtr> output_tensors;
     ge_backend_->RunGraph(actor_info, device_context, args, &output_tensors);

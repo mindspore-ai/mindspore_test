@@ -48,23 +48,30 @@ class BACKEND_EXPORT GEBackend {
   mindspore::HashMap<std::string, KernelGraphPtr> graph_map_;
   // if param init in device, for refmode
   mindspore::HashMap<ParameterPtr, bool> is_weight_init_;
+  // if weight value update in python, it records the tensor
+  mindspore::HashSet<const tensor::Tensor *> weights_need_reprepare_;
   // graph running step
   mindspore::HashMap<KernelGraphPtr, uint32_t> graph_run_iter_;
 
   std::string GenerateGraphInfo(GraphId graph_id) { return "kernel_graph_" + std::to_string(graph_id); }
   // for run graph
   void ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
-                       std::vector<tensor::TensorPtr> *inputs_tensor);
+                       std::vector<tensor::TensorPtr> *inputs_tensor, const device::DeviceContext *device_context);
   void ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
                                 std::vector<tensor::TensorPtr> *inputs_tensor);
   void ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                              std::vector<tensor::TensorPtr> *inputs_tensor);
+                              std::vector<tensor::TensorPtr> *inputs_tensor,
+                              const device::DeviceContext *device_context);
+  void SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor);
   void SyncTensorData(const tensor::TensorPtr &host_tensor, const std::shared_ptr<device::DeviceAddress> &device_tensor,
                       const AnfNodePtr &node);
   void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
                         const device::DeviceContext *device_contextF);
   bool Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
             const mindspore::device::DeviceAddress *src_device_tensor);
+  void UpdateInputsShapeAndSize(const ParameterPtr &input_node,
+                                const mindspore::device::DeviceAddressPtr &device_tensor,
+                                const tensor::TensorPtr &input_tensor, const device::DeviceContext *device_context);
 
   // for acl dump
   bool DebugOnStepBegin(const KernelGraphPtr &func_graph);

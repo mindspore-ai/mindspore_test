@@ -89,6 +89,13 @@ std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device
   return graph_info;
 }
 
+void GEBackend::SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor) {
+  if (update_tensor != nullptr && update_tensor->update_value_callback() == nullptr && update_tensor->is_parameter()) {
+    static auto callback = [this](const tensor::Tensor *tensor) { weights_need_reprepare_.insert(tensor); };
+    update_tensor->set_update_value_callback(callback);
+  }
+}
+
 void GEBackend::ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
                                          std::vector<tensor::TensorPtr> *inputs_tensor) {
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -124,8 +131,61 @@ void GEBackend::ConstructInputsUnRefMode(const KernelGraphPtr &func_graph, const
   }
 }
 
+void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
+                                         const mindspore::device::DeviceAddressPtr &device_tensor,
+                                         const tensor::TensorPtr &input_tensor,
+                                         const device::DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(input_node);
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  // update shape and size, for dynamic shape
+  if (!input_node->has_dynamic_shape() && !IsDynamic(device_tensor->host_shape())) {
+    return;
+  }
+
+  // update shape
+  MS_LOG(DEBUG) << "Update dynamic shape for parameter:" << input_node->DebugString();
+  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0);
+  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+  if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
+    output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());
+    device_context->graph_executor_->AllocInputMemory(device_tensor);
+    return;
+  }
+  output_kernel_tensor->SetShape(input_tensor->base_shape_ptr());
+
+  // Update size.
+  auto device_format = device_tensor->format();
+  static const std::set<std::string> kNormalFormat = {
+    kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
+  };
+  if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
+    auto tensor_data_size = input_tensor->data().nbytes();
+    MS_LOG(DEBUG) << "Set device address:" << device_tensor << " size from:" << device_tensor->GetSize()
+                  << " to:" << tensor_data_size;
+    device_tensor->SetSize(tensor_data_size);
+  } else {
+    MS_LOG(DEBUG) << "Update data node device address size";
+    // Size of 5D format device_tensor is larger than tensor_data_size.
+    TypeId output_type_id = AnfAlgo::GetOutputDeviceDataType(input_node, 0);
+    if (output_type_id == kTypeUnknown) {
+      output_type_id = common::AnfAlgo::GetOutputInferDataType(input_node, 0);
+    }
+    auto device_shape =
+      trans::TransShapeToDevice(input_tensor->shape(), device_tensor->format(), input_node, 0, output_type_id);
+    size_t type_size = GetTypeByte(TypeIdToType(output_type_id));
+    auto device_address_size = type_size * SizeOf(device_shape);
+    MS_LOG(INFO) << "Size of device_address is updated from " << device_tensor->GetSize() << " to "
+                 << device_address_size;
+    device_tensor->SetSize(device_address_size);
+  }
+
+  device_context->graph_executor_->AllocInputMemory(device_tensor);
+}
+
 void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                       std::vector<tensor::TensorPtr> *inputs_tensor) {
+                                       std::vector<tensor::TensorPtr> *inputs_tensor,
+                                       const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto inputs = func_graph->inputs();
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == args.size(), "The args size is not equal to graph inputs size.");
@@ -144,25 +204,29 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
       // for refmode, weight copy to device just once
       auto parameter = params[j]->cast<ParameterPtr>();
       MS_EXCEPTION_IF_NULL(parameter);
-      if (is_weight_init_[parameter]) {
+      if (is_weight_init_[parameter] && weights_need_reprepare_.empty()) {
         continue;
       }
       // get host tensor
       if (flatten_tensors.empty()) {
         const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(inputs[i], *func_graph);
         AnfAlgo::FlattenInputArg(args[i], front_node, &flatten_tensors);
-        if (flatten_tensors.size() != params.size()) {
-          MS_LOG(EXCEPTION) << "The args[" << i << "] tensor number is not equal to inputs[" << i << "] number.";
-        }
+        MS_EXCEPTION_IF_CHECK_FAIL(flatten_tensors.size() == params.size(),
+                                   "The flatten_tensors size is not equal to params size.");
       }
 
       bool is_need_sync = true;
       auto host_tensor_address =
         std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
 
+      UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j], device_context);
+
       // in different backend object, but has init, skip
       if (common::AnfAlgo::IsParameterWeight(parameter)) {
         is_weight_init_[parameter] = true;
+        // for weight value update in python
+        SetTensorUpdateCallback(flatten_tensors[j]);
+
         device_tensor->set_is_ptr_persisted(true);
         if (host_tensor_address == device_tensor) {
           continue;
@@ -223,12 +287,15 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
       }
     }
   }
+  // clear every step
+  weights_need_reprepare_.clear();
 }
 
 void GEBackend::ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
-                                std::vector<tensor::TensorPtr> *inputs_tensor) {
+                                std::vector<tensor::TensorPtr> *inputs_tensor,
+                                const device::DeviceContext *device_context) {
   if (IsEnableRefMode()) {
-    ConstructInputsRefMode(func_graph, args, inputs_tensor);
+    ConstructInputsRefMode(func_graph, args, inputs_tensor, device_context);
   } else {
     ConstructInputsUnRefMode(func_graph, args, inputs_tensor);
   }
@@ -421,7 +488,7 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
   }
 
   if (IsEnableRefMode()) {
-    // alloc input, output device memory
+    // alloc input(static), output device memory; dynamic input will alloc later
     device_context->graph_executor_->AllocGEInputOutputMemory(func_graph);
     // alloc fixed feature memory when enable gekernel, once | const memory alloc in compilegraph
     device_context->graph_executor_->AllocGEFixMemory();
@@ -432,7 +499,7 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
 
   // input, weight from host(args) to device(device_address in graph)
   std::vector<tensor::TensorPtr> inputs_tensor;
-  ConstructInputs(func_graph, args, &inputs_tensor);
+  ConstructInputs(func_graph, args, &inputs_tensor, device_context);
 
   // run graph
   {
@@ -446,6 +513,7 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
       MS_LOG(EXCEPTION) << "Launch graph failed, graph id: " + std::to_string(func_graph->graph_id());
     }
   }
+  device_context->device_res_manager_->SyncAllStreams();
 
   // output ->VectorRef *outputs
   ConstructOutputs(func_graph, outputs, device_context);
