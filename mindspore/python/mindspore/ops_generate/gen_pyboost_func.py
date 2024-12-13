@@ -27,10 +27,8 @@ from pyboost_native_grad_functions_generator import (
 )
 from pyboost_op_cpp_code_generator import (
     PyboostCommonOpHeaderGenerator,
+    PyboostOpFunctionGenerator,
     PyboostOpHeaderGenerator,
-    PyboostOpCppGenerator,
-    PyboostViewOpCppGenerator,
-    AclnnOpCppCodeGenerator,
     delete_residual_files,
     PyboostOpRegisterCppCodeGenerator,
 )
@@ -120,13 +118,16 @@ def call_pyboost_native_grad_functions_generator(work_path, op_protos):
 
 
 def call_pyboost_op_cpp_code_generator(work_path, op_protos):
+    delete_residual_files(work_path, op_protos)
     call_PyboostCommonOpCppCodeGenerator(work_path, op_protos)
     call_PyboostOpHeaderGenerator(work_path, op_protos)
-    call_PyboostOpCppGenerator(work_path, op_protos)
-    call_PyboostViewOpCppGenerator(work_path, op_protos)
-    call_AclnnOpCppCodeGenerator(work_path, op_protos)
-    delete_residual_files(work_path, op_protos)
+    call_merge_pyboost_op_cpp_code_generator(work_path, op_protos)
     call_PyboostOpRegisterCppCodeGenerator(work_path, op_protos)
+
+
+def call_merge_pyboost_op_cpp_code_generator(work_path, op_protos):
+    generator = PyboostOpFunctionGenerator()
+    generator.generate(work_path, op_protos)
 
 
 def call_PyboostCommonOpCppCodeGenerator(work_path, op_protos):
@@ -143,39 +144,6 @@ def call_PyboostOpHeaderGenerator(work_path, op_protos):
 
     generator = PyboostOpHeaderGenerator('cpu')
     generator.generate(work_path, op_protos)
-
-
-def call_PyboostOpCppGenerator(work_path, op_protos):
-    ascend_op_cpp_generator = PyboostOpCppGenerator('ascend')
-    ascend_op_cpp_generator.generate(work_path, op_protos)
-
-    cpu_op_cpp_generator = PyboostOpCppGenerator('cpu')
-    cpu_op_cpp_generator.generate(work_path, op_protos)
-
-    gpu_op_cpp_generator = PyboostOpCppGenerator('gpu')
-    gpu_op_cpp_generator.generate(work_path, op_protos)
-
-
-def call_PyboostViewOpCppGenerator(work_path, op_protos):
-    ascend_view_op_cpp_generator = PyboostViewOpCppGenerator('ascend')
-    ascend_view_op_cpp_generator.generate(work_path, op_protos)
-
-    cpu_view_op_cpp_generator = PyboostViewOpCppGenerator('cpu')
-    cpu_view_op_cpp_generator.generate(work_path, op_protos)
-
-    gpu_view_op_cpp_generator = PyboostViewOpCppGenerator('gpu')
-    gpu_view_op_cpp_generator.generate(work_path, op_protos)
-
-
-def call_AclnnOpCppCodeGenerator(work_path, op_protos):
-    ascend_aclnn_cpp_generator = AclnnOpCppCodeGenerator('ascend')
-    ascend_aclnn_cpp_generator.generate(work_path, op_protos)
-
-    cpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('cpu')
-    cpu_aclnn_cpp_generator.generate(work_path, op_protos)
-
-    gpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('gpu')
-    gpu_aclnn_cpp_generator.generate(work_path, op_protos)
 
 
 def call_PyboostOpRegisterCppCodeGenerator(work_path, op_protos):

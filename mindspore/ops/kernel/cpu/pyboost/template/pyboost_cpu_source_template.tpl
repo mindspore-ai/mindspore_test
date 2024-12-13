@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/auto_generate/${operator_name}.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
-${customize_include}
+${merge_op_header}
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-${return_type} ${op_name}CPU::Call(${call_args_with_type}) {
-  ${call_impl}
-}
-MS_REG_PYBOOST_OP(CPU, ${op_name});
-${register_custom_kernel}
+${merge_op_function}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

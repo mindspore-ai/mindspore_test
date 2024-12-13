@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-#include "kernel/gpu/pyboost/auto_generate/${operator_name}.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "kernel/gpu/pyboost/pyboost_gpu_custom_kernel_register.h"
-${customize_include}
+${merge_op_header}
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-${return_type} ${op_name}GPU::Call(${call_args_with_type}) {
-  ${call_impl}
-}
-MS_REG_PYBOOST_OP(GPU, ${op_name});
-${register_custom_kernel}
+${merge_op_function}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
