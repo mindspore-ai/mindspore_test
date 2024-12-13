@@ -2330,6 +2330,8 @@ REG_BPROP_BUILDER("ScalarCast").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(i
 
 REG_BPROP_BUILDER("Sign").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("InplaceSign").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("Round").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("Atan2").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
