@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import numpy as np
 import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
 import mindspore as ms
-from mindspore import Tensor
+from mindspore import Tensor, set_device
 from mindspore.ops import operations as P
 from mindspore.ops.functional import vmap
-
+from mindspore.device_context.gpu.op_tuning import conv_dgrad_algo
+from mindspore.device_context.gpu.op_precision import conv_allow_tf32 as gpu_conv_allow_tf32
+from tests.mark_utils import arg_mark
 
 class NetConv3dTranspose(nn.Cell):
     def __init__(self):
@@ -52,8 +52,10 @@ def test_conv3dtranspose_dshape_1(algo, conv_allow_tf32):
     Description: Test conv3dtranspose dynamic shape.
     Expectation: Success.
     """
-    gpu_config = {"conv_dgrad_algo": algo, "conv_allow_tf32": conv_allow_tf32}
-    context.set_context(mode=context.GRAPH_MODE, device_target='GPU', gpu_config=gpu_config)
+    context.set_context(mode=context.GRAPH_MODE)
+    set_device("GPU")
+    conv_dgrad_algo(algo)
+    gpu_conv_allow_tf32(conv_allow_tf32)
     net = NetConv3dTranspose()
     input_x_dyn = Tensor(shape=[1, 2, 3, 3, None], dtype=ms.float32)
     input_w_dyn = Tensor(shape=[2, 2, 2, 2, None], dtype=ms.float32)

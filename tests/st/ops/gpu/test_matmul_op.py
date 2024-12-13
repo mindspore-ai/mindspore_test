@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import os
 
 import numpy as np
@@ -21,13 +19,14 @@ import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, set_device
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore import dtype as mstype
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common.api import _pynative_executor
-
+from mindspore.device_context.gpu.op_precision import matmul_allow_tf32
+from tests.mark_utils import arg_mark
 
 class MatMulNet(nn.Cell):
     def __init__(self):
@@ -144,7 +143,8 @@ def test_matmul_tensor_core(mode):
     Description: Test matmul tensor api for Graph and PyNative modes.
     Expectation: The result match to the expect value.
     """
-    context.set_context(mode=mode, device_target="GPU")
+    context.set_context(mode=mode)
+    set_device("GPU")
     m = 300
     n = 300
     k = 400
@@ -155,10 +155,10 @@ def test_matmul_tensor_core(mode):
     x_ms = Tensor(x_np)
     y_ms = Tensor(y_np)
 
-    context.set_context(gpu_config={"matmul_allow_tf32": False})
+    matmul_allow_tf32(False)
     out_ms_fp32 = P.MatMul()(x_ms, y_ms).asnumpy()
 
-    context.set_context(gpu_config={"matmul_allow_tf32": True})
+    matmul_allow_tf32(True)
     out_ms_tf32 = P.MatMul()(x_ms, y_ms).asnumpy()
 
     assert np.abs(out_ms_fp32 - out_ms_tf32).mean() < 0.005

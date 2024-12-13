@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import numpy as np
 import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, set_device
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.ops.functional import vmap
-
+from mindspore.device_context.gpu.op_tuning import conv_fprop_algo
+from mindspore.device_context.gpu.op_precision import conv_allow_tf32 as gpu_conv_allow_tf32
+from tests.mark_utils import arg_mark
 
 class NetConv2d(nn.Cell):
     def __init__(self):
@@ -83,8 +83,10 @@ def test_conv2d(algo, conv_allow_tf32):
                         [[126, 138, 150],
                          [162, 174, 186],
                          [198, 210, 222]]]]).astype(np.float32)
-    gpu_config = {"conv_fprop_algo": algo, "conv_allow_tf32": conv_allow_tf32}
-    context.set_context(mode=context.GRAPH_MODE, device_target="GPU", gpu_config=gpu_config)
+    context.set_context(mode=context.GRAPH_MODE)
+    set_device("GPU")
+    conv_fprop_algo(algo)
+    gpu_conv_allow_tf32(conv_allow_tf32)
     conv2d = NetConv2d()
     output = conv2d(x, w)
     assert (output.asnumpy() == expect).all()
