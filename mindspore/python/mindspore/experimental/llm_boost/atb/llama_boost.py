@@ -23,7 +23,7 @@ from mindspore.experimental.llm_boost.atb.boost_base import (
 from mindspore._c_expression import LlmBoostBinder
 from mindspore.experimental.llm_boost.register import LlmBoostRegister, LlmBoostType
 
-CPP_LLAMA_MODEL_CLASS_NAME = "llama_parallel_LlamaDecoderModel"
+CPP_LLAMA_MODEL_CLASS_NAME = "llama_LlamaDecoderModel"
 
 
 @LlmBoostRegister.register(LlmBoostType.BUILDIN, "Llama")
@@ -99,7 +99,6 @@ class LlamaBoost(AtbBoostBase):
         self.atb_decoder_operation.init(json.dumps({**decoder_param}))
         return True
 
-    # pylint: disable=C0330
     def _prepare_inputs(
             self,
             prefill=None,
