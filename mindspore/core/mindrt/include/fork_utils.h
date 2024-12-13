@@ -53,7 +53,7 @@ class MS_CORE_API ForkUtils {
 
   template <class T>
   void RegisterCallbacks(T *obj, void (T::*before_fork)(), void (T::*parent_atfork)(), void (T::*child_atfork)()) {
-#if !defined(_WIN32) && !defined(BUILD_LITE)
+#if !defined(_WIN32)
     FORK_UTILS_LOG("Register fork callback info.");
 
     struct fork_callback_info callback_info = {obj, EmptyFunction, EmptyFunction, EmptyFunction};
@@ -87,7 +87,7 @@ class MS_CORE_API ForkUtils {
   // because fork_utils object may be destructed before them.
   template <class T>
   void DeregCallbacks(const T *obj) noexcept {
-#if !defined(_WIN32) && !defined(BUILD_LITE)
+#if !defined(_WIN32)
     try {
       FORK_UTILS_LOG("Deregister fork callback info.");
       for (auto iter = fork_callbacks_.begin(); iter != fork_callbacks_.end(); (void)++iter) {

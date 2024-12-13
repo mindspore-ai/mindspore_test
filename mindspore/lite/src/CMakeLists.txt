@@ -386,7 +386,6 @@ add_subdirectory(common)
 if(MSLITE_EXPORT_COMPUTE_IR)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/common/draw)
 endif()
-
 add_library(lite_src_mid OBJECT ${LITE_SRC})
 add_dependencies(lite_src_mid lite_src_common_mid fbs_src fbs_inner_src)
 

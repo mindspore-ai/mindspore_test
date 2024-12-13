@@ -46,10 +46,6 @@
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
-#ifndef BUILD_LITE
-#include "pybind_api/ir/base_ref_py.h"
-#include "include/common/utils/stub_tensor.h"
-#endif
 
 namespace mindspore::session {
 using abstract::AbstractTensor;
@@ -2298,26 +2294,10 @@ void AnfRuntimeAlgorithm::FlattenInputArg(const BaseRef &arg, const AnfNodePtr &
     return;
   }
 
-#ifndef BUILD_LITE
-  if (utils::isa<PyObjectRef>(arg)) {
-    auto value = utils::cast<PyObjectRef>(arg).object_;
-    flatten_tensors->push_back(py::cast<tensor::TensorPtr>(value));
-    return;
-  }
-#endif
-
   if (utils::isa<tensor::Tensor>(arg)) {
     (void)flatten_tensors->emplace_back(utils::cast<tensor::TensorPtr>(arg));
   } else if (utils::isa<tensor::BaseTensor>(arg)) {
     (void)flatten_tensors->emplace_back(std::make_shared<tensor::Tensor>(*utils::cast<tensor::BaseTensorPtr>(arg)));
-#ifndef BUILD_LITE
-  } else if (utils::isa<stub::TensorNode>(arg)) {
-    auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
-    MS_EXCEPTION_IF_NULL(tensor_stub);
-    auto value = tensor_stub->WaitValue();
-    MS_EXCEPTION_IF_NULL(value);
-    FlattenInputArg(value, node, flatten_tensors);
-#endif
   } else if (utils::isa<Scalar>(arg)) {
     (void)flatten_tensors->emplace_back(ScalarToTensor(utils::cast<ScalarPtr>(arg)));
   } else if (utils::isa<Monad>(arg)) {
