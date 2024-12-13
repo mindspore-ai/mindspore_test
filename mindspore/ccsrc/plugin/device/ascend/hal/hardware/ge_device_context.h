@@ -60,6 +60,10 @@ class GeDeviceContext : public DeviceInterface<GeGraphExecutor, GeKernelExecutor
   static std::string GetDeviceName(uint32_t);
   static AscendDeviceProperties GetDeviceProperties(uint32_t);
 
+  uint32_t GetExecuteTimeout() override;
+  std::string GetAoeJobType() override;
+  std::string GetPrecisionMode() override;
+
  private:
   DISABLE_COPY_AND_ASSIGN(GeDeviceContext);
 

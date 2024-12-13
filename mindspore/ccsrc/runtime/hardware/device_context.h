@@ -52,6 +52,7 @@ using mindspore::kernel::KernelTensor;
 
 const size_t kDeviceContextsNumOne = 1;
 const size_t kDeviceContextsNumTwo = 2;
+static const uint32_t kOpTimeout = 900;
 
 constexpr auto RS_NORMAL = "RS_NORMAL";
 constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
@@ -118,6 +119,10 @@ class DeviceContext {
 
   // todo: delete
   virtual DeprecatedInterface *GetDeprecatedInterface() { return nullptr; }
+
+  virtual uint32_t GetExecuteTimeout() { return kOpTimeout; }
+  virtual std::string GetAoeJobType() { return ""; }
+  virtual std::string GetPrecisionMode() { return ""; }
 
   // Return whether this device context is initialized.
   bool initialized() const {

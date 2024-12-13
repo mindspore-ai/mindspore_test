@@ -15,6 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/ascend/hal/device/ascend_two_pointer_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_dynamic_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
@@ -40,9 +41,9 @@ AscendMemAdapterPtr AscendMemAdapter::instance_ = nullptr;
 
 AscendMemAdapterPtr AscendMemAdapter::GetInstance() {
   if (instance_ == nullptr) {
-    auto context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context);
-    if (IsDisableGeKernel() || common::IsDryRun() || context->EnableAoeOnline()) {
+    auto op_tuning_conf = OpTuningConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(op_tuning_conf);
+    if (IsDisableGeKernel() || common::IsDryRun() || op_tuning_conf->EnableAoeOnline()) {
       // disable ge kernel or dry run.
       instance_ = std::make_shared<AscendTwoPointerMemAdapter>();
     } else {
