@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <random>
 #include "frontend/parallel/device_matrix.h"
-#include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 
 namespace mindspore {
 namespace parallel {
@@ -748,15 +747,25 @@ double ReshapeCost::GetForwardCommCost(const std::vector<TensorInfo> &inputs, co
                                        int64_t stage_id) const {
   CheckGlobalDeviceManager();
   MS_EXCEPTION_IF_NULL(g_device_manager);
+  TensorLayout from = inputs[0].tensor_layout();
+  TensorLayout to = outputs[0].tensor_layout();
+  if (from_ == from && to_ == to && stage_id_ == stage_id) {
+    if (tensor_redistribution_.IsInited() && tensor_redistribution_.IsComputed()) {
+      return (inputs_type_lengths_[0] * tensor_redistribution_.comm_cost());
+    }
+  }
   RankList dev_list = g_device_manager->GetDeviceListByStageId(stage_id);
-  TensorRedistribution tensor_redistribution(false, true);
-  if (tensor_redistribution.Init(inputs[0].tensor_layout(), outputs[0].tensor_layout(), dev_list) == FAILED) {
+  tensor_redistribution_ = TensorRedistribution(false, true);
+  if (tensor_redistribution_.Init(from, to, dev_list) == FAILED) {
     MS_LOG(EXCEPTION) << "Failure: tensor_redistribution init failed.";
   }
-  if (tensor_redistribution.ComputeCost() == FAILED) {
+  if (tensor_redistribution_.ComputeCost() == FAILED) {
     MS_LOG(EXCEPTION) << "Failure: tensor_redistribution ComputeCost failed.";
   }
-  return (inputs_type_lengths_[0] * tensor_redistribution.comm_cost());
+  from_ = from;
+  to_ = to;
+  stage_id_ = stage_id;
+  return (inputs_type_lengths_[0] * tensor_redistribution_.comm_cost());
 }
 
 // return the per device communication cost in the backward phase.
@@ -786,15 +795,25 @@ double ReshapeCost::GetForwardComputationCost(const std::vector<TensorInfo> &inp
                                               const std::vector<TensorInfo> &outputs, int64_t stage_id) const {
   CheckGlobalDeviceManager();
   MS_EXCEPTION_IF_NULL(g_device_manager);
+  TensorLayout from = inputs[0].tensor_layout();
+  TensorLayout to = outputs[0].tensor_layout();
+  if (from_ == from && to_ == to && stage_id_ == stage_id) {
+    if (tensor_redistribution_.IsInited() && tensor_redistribution_.IsComputed()) {
+      return (inputs_type_lengths_[0] * tensor_redistribution_.computation_cost());
+    }
+  }
   RankList dev_list = g_device_manager->GetDeviceListByStageId(stage_id);
-  TensorRedistribution tensor_redistribution(false, true);
-  if (tensor_redistribution.Init(inputs[0].tensor_layout(), outputs[0].tensor_layout(), dev_list) == FAILED) {
+  tensor_redistribution_ = TensorRedistribution(false, true);
+  if (tensor_redistribution_.Init(from, to, dev_list) == FAILED) {
     MS_LOG(EXCEPTION) << "Failure: tensor_redistribution init failed.";
   }
-  if (tensor_redistribution.ComputeCost() == FAILED) {
+  if (tensor_redistribution_.ComputeCost() == FAILED) {
     MS_LOG(EXCEPTION) << "Failure: tensor_redistribution ComputeCost failed.";
   }
-  return (inputs_type_lengths_[0] * tensor_redistribution.computation_cost());
+  from_ = from;
+  to_ = to;
+  stage_id_ = stage_id;
+  return (inputs_type_lengths_[0] * tensor_redistribution_.computation_cost());
 }
 
 // Return the per device computation cost in the backward phase. The cost is calculated according to the bytes

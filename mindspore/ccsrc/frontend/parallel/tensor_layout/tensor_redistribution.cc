@@ -1053,6 +1053,7 @@ Status TensorRedistribution::ComputeCost() {
     computation_cost_ += COST_FACTOR * prev_prod;
     memory_cost_ += COST_FACTOR * prev_prod;
   }
+  this->is_computed_ = true;
   return Status::SUCCESS;
 }
 

@@ -214,6 +214,30 @@ class CostGraph {
   }
   const std::map<std::string, std::string> get_tuple_getitem_list() const { return tuple_getitem_list_; }
 
+  // For the cost of reshape, avoid multiple calculation
+  std::map<std::pair<TensorLayout, TensorLayout>, CostPtr> reshape_cost_cache_;
+  bool FindReshapeCostInCache(const TensorLayout &from, const TensorLayout &to, CostPtr *result);
+  void SaveReshapeCostToCache(const TensorLayout &from, const TensorLayout &to, const CostPtr &result);
+
+  // For accelerate InitEdgeCost
+  // In cost_map_cache_, key=> Edge name without number, value=> vector of cache, which means there are several cache
+  // using the same edge name. In the vector of cache is a pair, pair.first is cache key, pair.second is the cost_map_.
+  // The cache key is made of another pair of <pre_op_output_, next_op_input_>
+  std::map<std::string, std::vector<std::pair<std::pair<std::vector<std::pair<StrategyPtr, TensorLayout>>,
+                                                        std::vector<std::pair<StrategyPtr, TensorLayout>>>,
+                                              std::map<CostPtrKey, CostPtrList>>>>
+    cost_map_cache_;
+  bool CheckCacheEqual(const std::vector<std::pair<StrategyPtr, TensorLayout>> &layouts_a,
+                       const std::vector<std::pair<StrategyPtr, TensorLayout>> &layouts_b) const;
+  bool FindCostMapInCache(const std::string &edge_name,
+                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
+                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
+                          std::map<CostPtrKey, CostPtrList> *cost_map);
+  void SaveCostMapToCache(const std::string &edge_name,
+                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
+                          const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
+                          const std::map<CostPtrKey, CostPtrList> &cost_map);
+
  private:
   void TopologyOrder(std::vector<OperatorInfoPtr> *topo_order);
   void DFSForTopoOrder(const OperatorInfoPtr &current_op, std::map<OperatorInfoPtr, bool> *visited,

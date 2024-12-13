@@ -65,5 +65,17 @@ bool Array::operator==(const Array &shape) const {
   }
   return true;
 }
+
+bool Array::operator<(const Array &shape) const {
+  if (GetDimSize() != shape.GetDimSize()) {
+    return GetDimSize() < shape.GetDimSize();
+  }
+  for (uint64_t i = 0; i < GetDimSize(); i++) {
+    if (GetDimByIdx(i) != shape.GetDimByIdx(i)) {
+      return GetDimByIdx(i) < shape.GetDimByIdx(i);
+    }
+  }
+  return false;
+}
 }  // namespace parallel
 }  // namespace mindspore
