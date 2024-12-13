@@ -306,6 +306,7 @@ using BesselI0eCost = GeLUCost;
 using BesselI1eCost = GeLUCost;
 using L2NormalizeCost = GeLUCost;
 using MaxPoolCost = GeLUCost;
+using IndexCost = GeLUCost;
 
 class SoftmaxCost : public OperatorCost {
  public:
