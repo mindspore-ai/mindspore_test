@@ -58,7 +58,7 @@ def run_command(cmd, log_path, graph_path, graph_check, log_check, loss_check):
         os.remove(log_path)
 
 
-def run_command_compile(cmd, log_path, backend_time, compile_time):
+def run_command_semi_compile(cmd, log_path, backend_time, compile_time):
     if os.path.isfile(log_path):
         os.remove(log_path)
     os.system(cmd)
@@ -78,15 +78,41 @@ def run_command_compile(cmd, log_path, backend_time, compile_time):
     assert float(log_time) <= compile_time * 1.05
 
 
+def run_command_auto_compile(cmd, log_path, sharding_time):
+    if os.path.isfile(log_path):
+        os.remove(log_path)
+    os.system(cmd)
+
+    log_sharding = "parallel_strategy_search costs"
+    log_output = subprocess.check_output(
+        ["grep -r '%s' %s | awk '{print $3}'" % (log_sharding, log_path)],
+        shell=True)
+    log_time = str(log_output, 'utf-8').strip()
+    assert float(log_time) <= sharding_time
+
+    if os.path.isfile(log_path):
+        os.remove(log_path)
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_train_compile():
+def test_train_semi_compile():
     """
     Feature: Trainer.train()
-    Description: Test llama2 70b compile time.
-    Expectation: AssertionError
+    Description: Test llama2 70b semi compile time when parallel_mode=SEMI_AUTO_PARALLEL.
+    Expectation: Throw AssertionError when compile_backend_graph time > 70000 ms or compile_graph > 200000
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    run_command_compile(f"bash {sh_path}/dry_compile.sh compile", f"{sh_path}/compile.log", 70000, 200000)
+    run_command_semi_compile(f"bash {sh_path}/dry_compile.sh semi compile", f"{sh_path}/compile.log", 70000, 200000)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_train_auto_compile():
+    """
+    Feature: refactor sharding propagation when AUTO_PARALLEL.
+    Description: Test llama2 70b compile time when parallel_mode=AUTO_PARALLEL.
+    Expectation: Throw AssertionError when parallel_strategy_search time > 11000 ms
+    """
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    run_command_auto_compile(f"bash {sh_path}/dry_compile.sh auto compile", f"{sh_path}/compile.log", 11000)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')

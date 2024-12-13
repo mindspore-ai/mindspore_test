@@ -15,7 +15,8 @@
 # ============================================================================
 set -e
 BASE_PATH=$(cd "$(dirname $0)"; pwd)
-TEST_MODE=$1
+PARALLEL_MODE=$1
+TEST_MODE=$2
 export MS_SIMULATION_LEVEL=1
 export GLOG_v=2
 export RANK_SIZE=32
@@ -23,4 +24,8 @@ export RANK_ID=0
 export MS_DEV_RUNTIME_CONF="compile_statistics:True"
 export MS_ENBALE_NUMA=1
 
-taskset -c 0-23 python ${BASE_PATH}/test_dryrun_llama_compile.py --test_mode ${TEST_MODE} > ${TEST_MODE}.log 2>&1
+if [ "$PARALLEL_MODE" = "semi" ]; then
+  taskset -c 0-23 python ${BASE_PATH}/test_dryrun_llama_semi_compile.py --test_mode ${TEST_MODE} > ${TEST_MODE}.log 2>&1
+elif [ "$PARALLEL_MODE" = "auto" ]; then
+  taskset -c 0-23 python ${BASE_PATH}/test_dryrun_llama_auto_compile.py --test_mode ${TEST_MODE} > ${TEST_MODE}.log 2>&1
+fi

@@ -99,6 +99,9 @@ class TensorLayout {
 
   bool operator!=(const TensorLayout &t1) const;
 
+  // only for the map of cache in ReshapeInfo::SetCostForReshape
+  bool operator<(const TensorLayout &t1) const;
+
   bool IsSameWithoutSplit(const TensorLayout &t1) const;
 
   bool IsInterleavedParallel() const;
