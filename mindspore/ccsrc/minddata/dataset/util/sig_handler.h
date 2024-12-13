@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_
 
+#include <cstdint>
 #include <set>
 
 namespace mindspore::dataset {
