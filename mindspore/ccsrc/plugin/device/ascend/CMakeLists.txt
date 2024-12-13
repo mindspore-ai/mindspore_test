@@ -29,6 +29,7 @@ endif()
 
 ########### mindspore_ascend.so #####
 set(ASCEND_SUB_COMP
+        device_context_conf
         hal/device
         hal/hardware
         kernel

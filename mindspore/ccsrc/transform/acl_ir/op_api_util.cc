@@ -29,6 +29,7 @@
 #include "transform/symbol/acl_base_symbol.h"
 #include "transform/symbol/acl_compiler_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
@@ -80,23 +81,23 @@ void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
 }
 
 bool IsMatmulHf32Enable() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto allow_matmul_hf32 = ms_context->get_param<std::string>(MS_CTX_MATMUL_ALLOW_HF32);
+  auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_precision_conf);
+  auto allow_matmul_hf32 = op_precision_conf->matmul_allow_hf32();
   auto iter = kMatmulEnableHf32.find(allow_matmul_hf32);
   if (iter == kMatmulEnableHf32.end()) {
-    MS_LOG(EXCEPTION) << "Unexpected env MS_CTX_MATMUL_ALLOW_HF32, which is " << allow_matmul_hf32;
+    MS_LOG(EXCEPTION) << "Unexpected config matmul_allow_hf32, which is " << allow_matmul_hf32;
   }
   return iter->second;
 }
 
 bool IsConvHf32Enable() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto allow_conv_hf32 = ms_context->get_param<std::string>(MS_CTX_CONV_ALLOW_HF32);
+  auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_precision_conf);
+  auto allow_conv_hf32 = op_precision_conf->conv_allow_hf32();
   auto iter = kConvEnableHf32.find(allow_conv_hf32);
   if (iter == kConvEnableHf32.end()) {
-    MS_LOG(EXCEPTION) << "Unexpected env MS_CTX_CONV_ALLOW_HF32, which is " << allow_conv_hf32;
+    MS_LOG(EXCEPTION) << "Unexpected config conv_allow_hf32, which is " << allow_conv_hf32;
   }
   return iter->second;
 }
@@ -105,9 +106,9 @@ bool IsConvHf32Enable() {
 aclCubeMathType OpApiUtil::GetCubeMathType(bool use_hf32) {
   static std::string precision_mode = "not_inited";
   if (precision_mode == "not_inited") {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    precision_mode = ms_context->get_param<std::string>(MS_CTX_PRECISION_MODE);
+    auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(op_precision_conf);
+    precision_mode = op_precision_conf->precision_mode();
   }
 
   if (!precision_mode.empty() && kCubeMathType.count(precision_mode) != 0) {
@@ -263,9 +264,9 @@ aclError AclUtil::SetPrecisionMode(const std::string &mode) {
 
   static int8_t is_global_precision = -1;
   if (is_global_precision == -1) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto precision_mode = ms_context->get_param<std::string>(MS_CTX_PRECISION_MODE);
+    auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(op_precision_conf);
+    auto precision_mode = op_precision_conf->precision_mode();
     if (!precision_mode.empty()) {
       is_global_precision = 1;
     } else {
@@ -287,9 +288,9 @@ aclError AclUtil::SetPrecisionMode(const std::string &mode) {
 
 void AclUtil::SetOpPrecisionMode() {
   std::lock_guard<std::mutex> lock(set_opt_mutex);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto op_precision_mode = ms_context->get_param<std::string>(MS_CTX_OP_PRECISION_MODE);
+  auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_precision_conf);
+  auto op_precision_mode = op_precision_conf->op_precision_mode();
   if (op_precision_mode.empty()) {
     return;
   }

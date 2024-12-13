@@ -27,6 +27,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "transform/symbol/symbol_utils.h"
 #include "transform/symbol/acl_rt_symbol.h"
@@ -238,7 +239,7 @@ bool AddDFGraph(const FuncGraphPtr &anf_graph, const transform::TensorOrderMap &
     MS_LOG(ERROR) << "Convert df graph failed, err:" << err_code;
     return false;
   }
-  if (MsContext::GetInstance()->EnableAoeOnline()) {
+  if (OpTuningConf::GetInstance()->EnableAoeOnline()) {
     need_aoe = true;
   }
   auto graph_name = GetGraphName(anf_graph);

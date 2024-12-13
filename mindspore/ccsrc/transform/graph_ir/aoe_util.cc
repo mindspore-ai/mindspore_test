@@ -18,6 +18,7 @@
 #include <set>
 #include <string>
 #include "include/common/debug/common.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "transform/graph_ir/aoe_util.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"
@@ -89,7 +90,10 @@ void AoeUtil::Initialize() {
     aoe_destroy_session_ = DlsymFuncObj(AoeDestroySession, plugin_handle_);
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    std::string aoe_job_type = ms_context->get_param<std::string>(MS_CTX_AOE_JOB_TYPE);
+    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    MS_EXCEPTION_IF_NULL(device_context);
+    std::string aoe_job_type = device_context->GetAoeJobType();
     std::map<::ge::AscendString, ::ge::AscendString> globalOptions = {
       {AoeOptions::JOB_TYPE, ::ge::AscendString(aoe_job_type.c_str())}};
     const AoeStatus status = aoe_initialize_(globalOptions);

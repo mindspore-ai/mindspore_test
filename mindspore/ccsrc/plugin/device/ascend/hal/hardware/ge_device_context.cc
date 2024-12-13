@@ -29,6 +29,9 @@
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "plugin/device/ascend/hal/hardware/ge_utils.h"
+#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
+#include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
+#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -106,9 +109,10 @@ bool IsNeedHybridMode(const FuncGraphPtr &func_graph) {
   return has_cell_reuse;
 }
 
-void SetAclOpDebugOption(const std::shared_ptr<MsContext> &ms_context) {
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto op_debug_option = ms_context->get_param<std::string>(MS_CTX_OP_DEBUG_OPTION);
+void SetAclOpDebugOption() {
+  auto op_debug_conf = OpDebugConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_debug_conf);
+  auto op_debug_option = op_debug_conf->debug_option();
   if (op_debug_option == "oom") {
     auto ret = CALL_ASCEND_API(aclSetCompileopt, aclCompileOpt::ACL_OP_DEBUG_OPTION, op_debug_option.c_str());
     if (ret != ACL_SUCCESS) {
@@ -247,6 +251,9 @@ void GeDeviceContext::Initialize() {
     InitGe(ms_context);
   }
 
+  // should be called after ge initialize.
+  SetAclOpDebugOption();
+
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
   GetKernelExecutor(false)->Initialize();
   // DynamicKernelExecutor and KernenlExecutor should be equal for GE
@@ -256,10 +263,12 @@ void GeDeviceContext::Initialize() {
   GetKernelExecutor(true)->Initialize();
 
   InitDump();
-  if (ms_context->EnableAoeOnline()) {
+  auto op_tuning_conf = OpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  if (op_tuning_conf->EnableAoeOnline()) {
     transform::InitializeAoeUtil();
   }
-  if (ms_context->EnableAoeOffline()) {
+  if (op_tuning_conf->EnableAoeOffline()) {
     transform::EnableAoeOffline();
   }
   initialized_ = true;
@@ -269,7 +278,9 @@ void GeDeviceContext::Initialize() {
 void GeDeviceContext::Destroy() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->EnableAoeOnline()) {
+  auto op_tuning_conf = OpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  if (op_tuning_conf->EnableAoeOnline()) {
     transform::DestroyAoeUtil();
   }
   FinalizeDump();
@@ -314,7 +325,7 @@ void GeDeviceContext::InitGe(const std::shared_ptr<MsContext> &inst_context) {
     }
   }
   // should be called after ge initialize.
-  SetAclOpDebugOption(inst_context);
+  SetAclOpDebugOption();
 
   GeDeviceResManager::CreateSessionAndGraphRunner();
   auto graph_runner = transform::GetGraphRunner();
@@ -613,6 +624,24 @@ std::string GeDeviceContext::GetDeviceName(uint32_t) {
   return device_name;
 }
 
+uint32_t GeDeviceContext::GetExecuteTimeout() {
+  auto op_debug_conf = OpDebugConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_debug_conf);
+  return op_debug_conf->execute_timeout();
+}
+
+std::string GeDeviceContext::GetAoeJobType() {
+  auto op_tuning_conf = OpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  return op_tuning_conf->aoe_job_type();
+}
+
+std::string GeDeviceContext::GetPrecisionMode() {
+  auto op_precision_conf = OpPrecisionConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_precision_conf);
+  return op_precision_conf->precision_mode();
+}
+
 AscendDeviceProperties GeDeviceContext::GetDeviceProperties(uint32_t) {
   AscendDeviceProperties device_properties;
   const char *name = CALL_ASCEND_API(aclrtGetSocName);
@@ -693,6 +722,10 @@ void PybindAscendStatelessFunc(py::module *m) {
                "Get Ascend device name of specified device id.");
   (void)m->def("ascend_get_device_properties", &GeDeviceContext::GetDeviceProperties,
                "Get Ascend device properties of specified device id.");
+
+  RegOpPrecisionConf(m);
+  RegOpTuningConf(m);
+  RegOpDebugConf(m);
 }
 REGISTER_DEV_STATELESS_FUNC_CB(kAscendDevice, PybindAscendStatelessFunc);
 }  // namespace ascend

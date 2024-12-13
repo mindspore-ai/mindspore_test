@@ -26,6 +26,7 @@
 #include <string>
 #include <thread>
 #include "include/common/env_vars.h"
+#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -462,7 +463,9 @@ bool MbufDataHandler::ReceiveOneDataset(AclDatasetInfoPtr *ds_info_ptr) {
   queue_cond_var_.notify_one();
   if (receive_state_ == RecvDataState::kWaitForSync) {
     auto wait_time = common::GetDumpWaitTime();
-    auto op_timeout = MsContext::GetInstance()->get_param<uint32_t>(MsCtxParam::MS_CTX_OP_TIMEOUT);
+    auto op_debug_conf = OpDebugConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(op_debug_conf);
+    uint32_t op_timeout = op_debug_conf->execute_timeout();
     // NOTE: Now CANN not support wait_time > op_timeout, change this condition when cann changed this limitation.
     if (wait_time == 0 || wait_time > static_cast<int>(op_timeout)) {
       wait_time = static_cast<int>(op_timeout);

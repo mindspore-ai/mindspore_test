@@ -25,6 +25,8 @@
 #include "backend/common/session/kernel_graph_mgr.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/hal/hardware/ge_utils.h"
+#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
+#include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
@@ -191,9 +193,9 @@ kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel) {
 }
 
 void SetAclDebugKernel() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto op_debug_option = ms_context->get_param<std::string>(MS_CTX_OP_DEBUG_OPTION);
+  auto op_debug_conf = OpDebugConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_debug_conf);
+  auto op_debug_option = op_debug_conf->debug_option();
   if (op_debug_option == "oom") {
     auto ret = CALL_ASCEND_API(aclrtCtxSetSysParamOpt, aclSysParamOpt::ACL_OPT_ENABLE_DEBUG_KERNEL, 1);
     if (ret != ACL_SUCCESS) {
@@ -203,10 +205,10 @@ void SetAclDebugKernel() {
 }
 
 void SetAclOpPrecisionMode() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
+  auto op_precision_conf = OpPrecisionConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_precision_conf);
 
-  auto precision_mode = ms_context->get_param<std::string>(MS_CTX_PRECISION_MODE);
+  auto precision_mode = op_precision_conf->precision_mode();
   if (precision_mode.empty()) {
     precision_mode = (transform::AclUtil::KeepOriginDType() == 1) ? "must_keep_origin_dtype" : "allow_fp32_to_fp16";
   }
@@ -216,7 +218,7 @@ void SetAclOpPrecisionMode() {
     MS_LOG(EXCEPTION) << "Acl set precision mode failed! Error flag is " << ret;
   }
 
-  auto op_precision_mode = ms_context->get_param<std::string>(MS_CTX_OP_PRECISION_MODE);
+  auto op_precision_mode = op_precision_conf->op_precision_mode();
   if (op_precision_mode.empty()) {
     return;
   }
