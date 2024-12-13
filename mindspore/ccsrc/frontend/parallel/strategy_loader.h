@@ -26,7 +26,7 @@ namespace mindspore {
 namespace parallel {
 class StrategyLoader {
  public:
-  static void LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes);
+  static Status LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes);
   static void SaveStrategyToFile(const std::vector<AnfNodePtr> &all_nodes);
 };
 }  // namespace parallel
