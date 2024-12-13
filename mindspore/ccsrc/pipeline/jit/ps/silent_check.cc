@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pipeline/jit/ps/silent_check_v2.h"
+#include "pipeline/jit/ps/silent_check.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -56,6 +56,7 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
+#include "availability/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -66,83 +67,6 @@ constexpr char kParamSfdaPrefix[] = "silent_check_v2.sfda";
 constexpr char kParamStepPrefix[] = "silent_check_v2.step";
 constexpr char kNameSilentCheckV2[] = "SilentCheckV2";
 constexpr int kMinStepDefault = 100;
-
-std::string ltrim(const std::string &str) { return std::regex_replace(str, std::regex("^\\s+"), std::string("")); }
-
-std::string rtrim(const std::string &str) { return std::regex_replace(str, std::regex("\\s+$"), std::string("")); }
-
-std::string trim(const std::string &str) { return ltrim(rtrim(str)); }
-
-std::vector<std::string> split(const std::string &str, char delim) {
-  std::vector<std::string> result;
-  std::stringstream ss(str);
-  std::string item;
-
-  while (getline(ss, item, delim)) {
-    result.emplace_back(item);
-  }
-
-  return result;
-}
-
-// parse string in format "value0,value1" satisfying value0 > value1 to two int values and then convert them to float
-std::vector<float> parse_thresh(const std::string &value, float min_val) {
-  constexpr size_t kNumAsdThreshItems = 2;
-  std::vector<float> values;
-  auto items = split(value, ',');
-  if (items.size() != kNumAsdThreshItems) {
-    return values;
-  }
-  try {
-    for (const auto &elem : items) {
-      float val = std::stoll(trim(elem));
-      if (val < min_val) {
-        val = min_val;
-      }
-      values.push_back(val);
-    }
-  } catch (std::logic_error const &ex) {
-    return {};
-  }
-  if (values.front() <= values.back()) {
-    return {};
-  }
-  return values;
-}
-
-std::vector<float> parse_thresh(const std::string &env_var, const std::string &default_val, float min_val) {
-  auto env_value = common::GetEnv(env_var);
-  auto values = parse_thresh(env_value, min_val);
-  if (!values.empty()) {
-    return values;
-  }
-
-  if (!env_value.empty()) {
-    MS_LOG(WARNING) << "Value of environment var " << env_var << " is invalid, use default value " << default_val
-                    << " instead.";
-  }
-
-  values = parse_thresh(default_val, min_val);
-  if (values.empty()) {
-    MS_LOG(EXCEPTION) << "Default value of environment var " << env_var << " is invalid, of which value is "
-                      << default_val;
-  }
-  return values;
-}
-
-int GetNpuAsdDetectValue() {
-  auto var_val = common::GetEnv(kNpuAsdEnable);
-  if (var_val.empty()) {
-    return 0;
-  }
-
-  if (var_val.size() != 1 || var_val[0] < '0' || var_val[0] > '3') {
-    MS_LOG(WARNING) << "Valid values of " << kNpuAsdEnable << " are 0, 1, 2 and 3, but got " << var_val << ".";
-    return 0;
-  }
-
-  return var_val[0] - '0';
-}
 
 bool NeedCheckCommOperator(const AnfNodePtr &node) {
   if (!IsValueNode<Primitive>(node)) {
@@ -210,18 +134,6 @@ bool HasFloat16Type(const abstract::AbstractBasePtr &abs_base) {
   return false;
 }
 }  // namespace
-
-bool IsNpuAsdEnable() {
-  auto ctx = MsContext::GetInstance();
-  auto device_target = ctx->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (device_target != kAscendDevice) {
-    return false;
-  }
-  if (ctx->ascend_soc_version() == kAscendVersion910) {
-    return false;
-  }
-  return GetNpuAsdDetectValue() > 0;
-}
 
 using ParamNameValue = std::pair<std::string, tensor::TensorPtr>;
 using ParamNameValuePtr = std::shared_ptr<ParamNameValue>;
@@ -492,101 +404,6 @@ void SilentCheckV2::GetLastGradNode() {
   MS_LOG(INFO) << "Not found suitable grad node for root graph " << root_->ToString();
 }
 
-AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(node);
-
-  auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  // skip forward node in graph
-  if (!cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-    return node;
-  }
-
-  MS_LOG(INFO) << cnode->fullname_with_scope() << " has attr forward_unique_id=" << std::boolalpha
-               << GetValue<std::string>(cnode->GetPrimalAttr(kPrimalAttrForwardUniqueId));
-
-  if (loss_scale_ != nullptr && scale_sense_ == nullptr) {
-    scale_sense_ = func_graph->InsertFrontParameter();
-    scale_sense_->set_name(kScaleSense);
-    scale_sense_->set_abstract(loss_scale_->abstract()->Clone());
-    add_param_graphs_.insert(func_graph);
-  }
-
-  // create SlientCheckV2 node
-  auto check_prim = std::make_shared<Primitive>(kNameSilentCheckV2);
-  check_prim->AddAttr("side_effect_mem", std::make_shared<BoolImm>(true));
-  // input1: input_grad
-  auto dout = GetGradValue(func_graph, node, cnode->input(kIndexOne), scale_sense_);
-  // input0: val
-  auto norm_node = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2
-                     ? CreateNormForGE(func_graph, node, dout)
-                     : CreateNormForKBK(func_graph, node, dout);
-  // input2: sfda
-  auto param_sfda =
-    CreateValueNode(func_graph, GetSfdaParamNameValue()->second, kNumberTypeFloat32, kernel::KernelObjectType::TENSOR);
-  // input3: step
-  auto param_step =
-    CreateValueNode(func_graph, GetStepParamNameValue()->second, kNumberTypeInt64, kernel::KernelObjectType::TENSOR);
-  // input4: cMinSteps
-  auto min_steps = CreateValueNode(func_graph, std::make_shared<Int64Imm>(kMinStepDefault), kNumberTypeInt64,
-                                   kernel::KernelObjectType::SCALAR);
-  // input5: cThreshL1
-  auto upper_thresh = parse_thresh("NPU_ASD_UPPER_THRESH", "1000000,10000", 3);
-  auto thresh_l1 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(upper_thresh.front()), kNumberTypeFloat32,
-                                   kernel::KernelObjectType::SCALAR);
-  // input7: cThreshL2
-  auto thresh_l2 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(upper_thresh.back()), kNumberTypeFloat32,
-                                   kernel::KernelObjectType::SCALAR);
-  // input6: cCoeffL1
-  auto sigma_thresh = parse_thresh("NPU_ASD_SIGMA_THRESH", "100000,5000", 3);
-  auto coeff_l1 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(sigma_thresh.front()), kNumberTypeFloat32,
-                                  kernel::KernelObjectType::SCALAR);
-  // input8: cCoeffL2
-  auto coeff_l2 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(sigma_thresh.back()), kNumberTypeFloat32,
-                                  kernel::KernelObjectType::SCALAR);
-  // input9: npuAsdDetect
-  auto npu_asd_detect = CreateValueNode(func_graph, std::make_shared<Int64Imm>(GetNpuAsdDetectValue()),
-                                        kNumberTypeInt64, kernel::KernelObjectType::SCALAR);
-  std::vector<AnfNodePtr> check_inputs = {NewValueNode(check_prim),
-                                          norm_node,
-                                          dout,
-                                          param_sfda,
-                                          param_step,
-                                          min_steps,
-                                          thresh_l1,
-                                          coeff_l1,
-                                          thresh_l2,
-                                          coeff_l2,
-                                          npu_asd_detect};
-  auto check_node = func_graph->NewCNode(check_inputs);
-  MS_EXCEPTION_IF_NULL(check_node);
-  auto tensor_abs = dout->abstract()->cast<abstract::AbstractTensorPtr>();
-  MS_EXCEPTION_IF_NULL(tensor_abs);
-  // output0: input_grad
-  auto out_input_grad_abs = tensor_abs->abstract::AbstractTensor::Clone();
-  // output1: sfda
-  auto out_sfda_abs = param_sfda->abstract()->cast<abstract::AbstractTensorPtr>()->abstract::AbstractTensor::Clone();
-  // output2: step
-  auto out_step_abs = param_step->abstract()->cast<abstract::AbstractTensorPtr>()->abstract::AbstractTensor::Clone();
-  // output3: result
-  auto out_result_abs = std::make_shared<abstract::AbstractTensor>(kInt32, ShapeVector{});
-  check_node->set_abstract(std::make_shared<abstract::AbstractTuple>(
-    AbstractBasePtrList{out_input_grad_abs, out_sfda_abs, out_step_abs, out_result_abs}));
-  check_node->set_scope(node->scope());
-
-  // create tuple_getitem
-  auto zero =
-    CreateValueNode(func_graph, std::make_shared<Int64Imm>(0), kNumberTypeInt64, kernel::KernelObjectType::SCALAR);
-  std::vector<AnfNodePtr> tuple_getitem_inputs = {NewValueNode(std::make_shared<Primitive>(kTupleGetItemOpName)),
-                                                  check_node, zero};
-  auto tuple_getitem_node = func_graph->NewCNode(tuple_getitem_inputs);
-  MS_EXCEPTION_IF_NULL(tuple_getitem_node);
-  tuple_getitem_node->set_abstract(dout->abstract());
-  tuple_getitem_node->set_scope(node->scope());
-  return tuple_getitem_node;
-}
-
 bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   scale_sense_ = GetScaleSense(func_graph);
@@ -619,10 +436,13 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
       if (!((cnode == last_grad_node_) || NeedCheckCommOperator(cnode->input(ops::kInputIndex0)))) {
         continue;
       }
-      auto check_node = CreateSlientCheckNode(func_graph, node);
-      // update cnode input
-      manager->Replace(cnode->input(ops::kInputIndex1), check_node);
-      changed = true;
+      // add attriute "need_silent_check" to primitive
+      auto prim = GetCNodePrimitive(cnode);
+      if (prim != nullptr) {
+        MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Add attribute " << silentcheck::kAttrNeedSilentCheck << " to prim "
+                                        << prim->name() << " " << cnode->fullname_with_scope();
+        prim->AddAttr(silentcheck::kAttrNeedSilentCheck, MakeValue<bool>(true));
+      }
     }
     return changed;
   };
@@ -631,45 +451,6 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
     return fn_insert_check_node(GetRootGraphTopoNodes());
   } else {
     return fn_insert_check_node(TopoSort(func_graph->get_return()));
-  }
-}
-
-void SilentCheckV2::UpdateNodes() {
-  while (!add_param_graphs_.empty()) {
-    auto graph_iter = add_param_graphs_.begin();
-    auto graph = *graph_iter;
-    add_param_graphs_.erase(graph_iter);
-
-    auto iter = graph_users_.find(graph);
-    if (iter == graph_users_.end()) {
-      continue;
-    }
-
-    auto &user_nodes = iter->second;
-    MS_LOG(DEBUG) << "Number of user nodes of graph " << graph->ToString() << " is " << user_nodes.size();
-    for (auto &cnode : user_nodes) {
-      if (!cnode->size()) {
-        MS_LOG(EXCEPTION) << "Input size of node " << cnode->ToString() << " is " << cnode->size();
-      }
-      if (!IsPrimitiveCNode(cnode, prim::kPrimPartial) && !IsValueNode<FuncGraph>(cnode->input(kIndex0))) {
-        MS_LOG(EXCEPTION) << "Not support processing node " << cnode->DebugString();
-      }
-      // create parameter `scale_sense` for user node graph if not exists
-      auto user_node_graph = cnode->func_graph();
-      MS_EXCEPTION_IF_NULL(user_node_graph);
-      auto scale_sense = GetScaleSense(user_node_graph);
-      if (loss_scale_ != nullptr && scale_sense == nullptr) {
-        scale_sense = user_node_graph->InsertFrontParameter();
-        scale_sense->set_name(kScaleSense);
-        scale_sense->set_abstract(loss_scale_->abstract()->Clone());
-        add_param_graphs_.insert(user_node_graph);
-      }
-      // add input `scale_sense` for cnode
-      auto inputs = cnode->inputs();
-      inputs.insert(IsPrimitiveCNode(cnode, prim::kPrimPartial) ? inputs.begin() + kIndex2 : inputs.begin() + kIndex1,
-                    scale_sense);
-      cnode->set_inputs(inputs);
-    }
   }
 }
 
@@ -715,9 +496,6 @@ bool SilentCheckPass(const ResourcePtr &resource) {
   for (const auto &sub_graph : sub_graphs) {
     silent_check->Run(sub_graph);
   }
-
-  // add input `scale_sense` for some cnode
-  silent_check->UpdateNodes();
 
   return true;
 }

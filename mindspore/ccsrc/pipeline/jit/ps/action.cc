@@ -53,7 +53,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/remove_value_node_dup.h"
 #include "pipeline/jit/ps/event_message_print.h"
-#include "pipeline/jit/ps/silent_check_v2.h"
+#include "pipeline/jit/ps/silent_check.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
@@ -2024,7 +2024,7 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     auto checker = silentcheck::SilentCheckerBase::GetInstance();
     if (checker != nullptr && checker->IsNpuAsdEnable() &&
         MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
-      (void)actions.emplace_back(std::make_pair(kSilentCheckV2, SilentCheckAction));
+      (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));
     }
     if (ps::PSContext::instance()->is_worker()) {
       if (distributed::cluster::ClusterContext::instance()->initialized()) {

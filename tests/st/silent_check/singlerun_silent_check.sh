@@ -34,4 +34,4 @@ export NPU_ASD_ENABLE=3
 
 rm -rf ${LOG_PATH}
 
-python ${py_file} "$@"
+python -u ${py_file} "$@"

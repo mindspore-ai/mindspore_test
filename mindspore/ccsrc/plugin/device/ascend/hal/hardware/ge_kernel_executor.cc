@@ -40,6 +40,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
+#include "utils/log_adapter.h"
 #ifdef ENABLE_DVM
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
 #endif
@@ -66,6 +67,7 @@
 #include "include/backend/debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -131,6 +133,17 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *gr
     }
     MS_LOG(INFO) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
     MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
+    if (kernel_mod_ptr->primitive() != nullptr &&
+        kernel_mod_ptr->primitive()->HasAttr(silentcheck::kAttrNeedSilentCheck)) {
+      std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
+      if (!input_kernel_tensors.empty() && !input_kernel_tensors[0]->GetShapeVector().empty() &&
+          !input_kernel_tensors[0]->IsDynamicShape()) {
+        MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for kernel opname:" << opname
+                                        << ", kernel type:" << GetKernelTypeStr(kernel_type) << " "
+                                        << kernel->fullname_with_scope();
+        silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr, input_kernel_tensors[0]);
+      }
+    }
     AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
   }
   return true;
@@ -1229,6 +1242,10 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
   } else {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
+    if (kernel_mod->primitive() != nullptr && kernel_mod->primitive()->HasAttr(silentcheck::kAttrNeedSilentCheck)) {
+      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel_mod->kernel_name();
+      silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
+    }
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
