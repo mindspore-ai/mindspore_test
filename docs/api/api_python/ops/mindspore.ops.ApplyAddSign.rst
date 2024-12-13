@@ -3,7 +3,7 @@
 
 .. py:class:: mindspore.ops.ApplyAddSign
 
-    根据AddSign算法更新相关参数。
+    根据AddSign算法更新相关参数或者Tensor。
 
     .. math::
         \begin{array}{ll} \\
@@ -19,8 +19,8 @@
     `var` 、 `accum` 和 `grad` 的输入， `sign_decay` 和 `beta` 的输入都遵循隐式类型转换规则，使数据类型一致。 如果它们具有不同的数据类型，则低精度数据类型将转换为相对最高精度的数据类型。
 
     输入：
-        - **var** (Parameter) - 要更新的权重。任意维度，其shape为 :math:`(N, *)` ，其中 :math:`*` 为任意数量的额外维度。
-        - **m** (Parameter) - 要更新的权重，shape与 `var` 相同。
+        - **var** (Union[Parameter, Tensor]) - 要更新的权重或者Tensor。任意维度，其shape为 :math:`(N, *)` ，其中 :math:`*` 为任意数量的额外维度。
+        - **m** (Union[Parameter, Tensor]) - 要更新的权重或者Tensor，shape与 `var` 相同。
         - **lr** (Union[Number, Tensor]) - 学习率，必须是Scalar。
         - **sign_decay** (Union[Number, Tensor]) - 必须是Scalar。
         - **alpha** (Union[Number, Tensor]) - 必须是Scalar。

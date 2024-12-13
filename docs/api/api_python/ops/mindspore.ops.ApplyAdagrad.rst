@@ -3,7 +3,7 @@ mindspore.ops.ApplyAdagrad
 
 .. py:class:: mindspore.ops.ApplyAdagrad(update_slots=True)
 
-    根据Adagrad算法更新相关参数。
+    根据Adagrad算法更新相关参数或者Tensor。
 
     Adagrad算法在论文 `Adaptive Subgradient Methods for Online Learning and Stochastic Optimization <http://www.jmlr.org/papers/volume12/duchi11a/duchi11a.pdf>`_ 中提出。针对不同参数样本数不均匀的问题，自适应的为各个参数分配不同的学习率。
 
@@ -19,8 +19,8 @@ mindspore.ops.ApplyAdagrad
         - **update_slots** (bool) - 是否更新 `accum` 参数，如果为 ``True`` ， `accum` 将更新。默认值为： ``True`` 。
 
     输入：
-        - **var** (Parameter) - 要更新的权重。数据类型为float32或float16。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
-        - **accum** (Parameter) - 要更新的累积。shape必须与 `var` 相同。
+        - **var** (Union[Parameter, Tensor]) - 要更新的权重或者Tensor。数据类型为float32或float16。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
+        - **accum** (Union[Parameter, Tensor]) - 要更新的累积。shape必须与 `var` 相同。
         - **lr** (Union[Number, Tensor]) - 学习率，必须是Scalar。数据类型为float32或float16。
         - **grad** (Tensor) - 梯度，为一个Tensor。shape必须与 `var` 相同。
 
