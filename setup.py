@@ -112,7 +112,7 @@ package_data = {
         '*.pyd',
         '*.dll',
         '*.pdb',
-        'bin/*',
+        'utils/bin/*',
         'lib/plugin/*',
         'lib/plugin/*/*',
         'lib/plugin/*/*/*',
@@ -201,7 +201,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'cache_admin=mindspore.dataset.engine.cache_admin:main',
+            'dataset-cache=mindspore.dataset.engine.cache_admin:main',
             'msrun=mindspore.parallel.cluster.run:main'
         ],
     },

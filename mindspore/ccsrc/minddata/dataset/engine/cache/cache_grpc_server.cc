@@ -100,7 +100,7 @@ Status CacheServerGreeterImpl::HandleRequest(int32_t worker_id) {
         } else if (rq->st_ == CacheServerRequest::STATE::FINISH) {
           MS_LOG(DEBUG) << *rq << " Finished.";
           if (rq->type_ == BaseRequest::RequestType::kStopService) {
-            // For cache_admin --stop, ProcessRequest is just acknowledging we receive the request. Now
+            // For dataset-cache --stop, ProcessRequest is just acknowledging we receive the request. Now
             // we call the real function.
             auto &cs = CacheServer::GetInstance();
             cs.GlobalShutdown();
