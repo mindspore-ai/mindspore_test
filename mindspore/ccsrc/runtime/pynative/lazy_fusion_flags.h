@@ -68,6 +68,15 @@ class BACKEND_EXPORT LazyFusionFlags {
   bool synchronize{false};
 
   /**
+   * @brief Enables or disables online_tuning.
+   *
+   * When set to true, matmul will be optimized by online_tuning.
+   *
+   * Default value: false.
+   */
+  bool online_tuning{false};
+
+  /**
    * @brief List of operation names that are disabled for lazy fusion.
    *
    * Operations listed here will be excluded from the lazy fusion optimization process.
