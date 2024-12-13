@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-""" MSTX class for NPU profiling """
+""" Mstx class for NPU profiling """
 import mindspore._c_expression as c_expression
 
 from mindspore import log as logging
@@ -21,17 +21,68 @@ from mindspore.profiler.common.constant import DeviceTarget
 
 
 class Mstx:
-    """MSTX class provides profiling tools for marking and tracing on NPU"""
+    """
+    Mstx class provides profiling tools for marking and tracing on NPU. This class provides three static methods: mark, 
+    range_start and range_end for adding marker points and ranges in profiling.
+    """
 
     NPU_PROFILER = c_expression.Profiler.get_instance(DeviceTarget.NPU.value)
 
     @staticmethod
     def mark(message: str, stream: Stream = None) -> None:
-        """Add a marker point in profiling
+        """Add a marker point in profiling.
 
         Args:
-            message: Description for the marker
-            stream: NPU stream for async execution
+            message (str): Description for the marker.
+            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream. 
+                Default: ``None``, which means only marking on host side without marking on device stream.
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import nn
+            >>> import mindspore.dataset as ds
+            >>> from mindspore import Profiler
+            >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, schedule, tensor_board_trace_handler
+            >>> from mindspore.profiler import mstx
+            >>>
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.fc = nn.Dense(2,2)
+            ...     def construct(self, x):
+            ...         return self.fc(x)
+            >>>
+            >>> def generator():
+            ...     for i in range(2):
+            ...         yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
+            >>>
+            >>> def train(net):
+            ...     stream = ms.hal.current_stream()
+            ...     optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
+            ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+            ...     data = ds.GeneratorDataset(generator, ["data", "label"])
+            ...     model = ms.train.Model(net, loss, optimizer)
+            ...     # Add marker before training
+            ...     mstx.mark("train start", stream)
+            ...     model.train(1, data)
+            ...     # Add marker after training
+            ...     mstx.mark("train end", stream)
+            >>>
+            >>> if __name__ == '__main__':
+            ...     # Note: mstx only supports Ascend device and cannot be used in mindspore.nn.Cell.construct
+            ...     # when in mindspore.GRAPH_MODE
+            ...     ms.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+            ...     # Init Profiler
+            ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
+            ...                   on_trace_ready=tensor_board_trace_handler,
+            ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+            ...                   schedule=schedule(wait=0, warm_up=0, active=3, repeat=1, skip_first=0),
+            ...                   mstx=True) as profiler:
+            ...         net = Net()
+            ...         for i in range(5):
+            ...             train(net)
+            ...             profiler.step()
         """
         if not message or not isinstance(message, str):
             logging.warning("Invalid message for mstx.mark func. Please input valid message string.")
@@ -49,14 +100,61 @@ class Mstx:
 
     @staticmethod
     def range_start(message: str, stream: Stream = None) -> int:
-        """Start a profiling range
+        """Start a profiling range.
 
         Args:
-            message: Description for the range
-            stream: NPU stream for async execution
+            message (str): Description for the range.
+            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream. 
+                Default: ``None``, which means only starting mstx range on host side without starting on device stream.
 
         Returns:
-            Range ID for range_end
+            int, range ID for range_end.
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import nn
+            >>> import mindspore.dataset as ds
+            >>> from mindspore import Profiler
+            >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, schedule, tensor_board_trace_handler
+            >>> from mindspore.profiler import mstx
+            >>>
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.fc = nn.Dense(2,2)
+            ...     def construct(self, x):
+            ...         return self.fc(x)
+            >>>
+            >>> def generator():
+            ...     for i in range(2):
+            ...         yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
+            >>>
+            >>> def train(net):
+            ...     stream = ms.hal.current_stream()
+            ...     optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
+            ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+            ...     data = ds.GeneratorDataset(generator, ["data", "label"])
+            ...     model = ms.train.Model(net, loss, optimizer)
+            ...     # Start profiling range
+            ...     range_id = mstx.range_start("training process", stream)
+            ...     model.train(1, data)
+            ...     # End profiling range
+            ...     mstx.range_end(range_id)
+            >>>
+            >>> if __name__ == '__main__':
+            ...     # Note: mstx only supports Ascend device and cannot be used in mindspore.nn.Cell.construct
+            ...     # when in mindspore.GRAPH_MODE
+            ...     ms.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+            ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
+            ...                   on_trace_ready=tensor_board_trace_handler,
+            ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+            ...                   schedule=schedule(wait=0, warm_up=0, active=3, repeat=1, skip_first=0),
+            ...                   mstx=True) as profiler:
+            ...         net = Net()
+            ...         for i in range(5):
+            ...             train(net)
+            ...             profiler.step()
         """
         if not message or not isinstance(message, str):
             logging.warning("Invalid message for mstx.range_start func. Please input valid message string.")
@@ -76,10 +174,16 @@ class Mstx:
 
     @staticmethod
     def range_end(range_id: int) -> None:
-        """End a profiling range
+        """End a profiling range.
 
         Args:
-            range_id: Range ID from range_start
+            range_id (int): Range ID from range_start.
+
+        Examples:
+            >>> # Please refer to the example in range_start
+            >>> # range_id = mstx.range_start("training process", stream)
+            >>> # model.train(1, data)
+            >>> # mstx.range_end(range_id)
         """
         if not isinstance(range_id, int):
             logging.warning(

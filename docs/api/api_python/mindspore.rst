@@ -198,6 +198,7 @@ mindspore
     :toctree: mindspore
 
     mindspore.Profiler
+    mindspore.profiler.mstx
     mindspore.profiler.DynamicProfilerMonitor
     mindspore.SummaryCollector
     mindspore.SummaryLandscape
