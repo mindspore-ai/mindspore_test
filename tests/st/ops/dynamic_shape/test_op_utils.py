@@ -94,6 +94,27 @@ class GradNet(nn.Cell):
         return forward_out, grad_out
 
 
+class GradNetInplace(nn.Cell):
+    def __init__(self, net):
+        super().__init__()
+        self.net = net
+        self.grad_func = ops.GradOperation(get_all=True)
+
+    def construct(self, *args):
+
+        def clone_grad_inputs(args):
+            def clone_func(arg):
+                if isinstance(arg, (Tensor, Parameter)):
+                    return arg.copy()
+                return arg
+            return tuple(clone_func(arg) for arg in args)
+
+        func = self.grad_func(self.net)
+        forward_out = self.net(*args)
+        grad_out = func(*clone_grad_inputs(args))
+        return forward_out, grad_out
+
+
 def set_debug_status_info(mode_name, tensor_dynamic_type='', notensor_dynamic_type=''):
     global DEBUG_STATUS_INFO
     DEBUG_STATUS_INFO = f"{mode_name} {tensor_dynamic_type} {notensor_dynamic_type}"
@@ -341,7 +362,7 @@ def run_in_dynamic_env(prim, inputs, dump_ir, ir_path, dynamic_type, grad, inpla
     if dump_ir:
         context.set_context(save_graphs=IR_LEVEL, save_graphs_path=ir_path)
 
-    dynamic_net = create_net(prim, grad)
+    dynamic_net = create_net(prim, grad, inplace_update)
     dynamic_net.set_inputs(*compile_inputs)
     if JIT_CONFIG:
         dynamic_net.set_jit_config(JIT_CONFIG)
@@ -635,13 +656,15 @@ def get_name_by_op(prim):
     return "ir_" + name
 
 
-def create_net(prim, grad):
+def create_net(prim, grad, inplace_update):
     if isinstance(prim, ops.Primitive):
         net_class = OpNet
     else:
         net_class = OpFunctionNet
 
     if grad:
+        if inplace_update:
+            return GradNetInplace(net_class(prim))
         return GradNet(net_class(prim))
 
     return net_class(prim)
@@ -787,9 +810,15 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
             if device_target != "Ascend":
                 warning_log(f"GRAPH_MODE_O0 is skipped, because device_target is not 'Ascend', but {device_target}")
                 continue
-            JIT_CONFIG = JitConfig(jit_level="O0")
+            if inplace_update:
+                JIT_CONFIG = JitConfig(jit_level="O0", jit_syntax_level="LAX")
+            else:
+                JIT_CONFIG = JitConfig(jit_level="O0")
         elif mode_name == 'GRAPH_MODE':
-            JIT_CONFIG = JitConfig(jit_level="O2")
+            if inplace_update:
+                JIT_CONFIG = JitConfig(jit_level="O2", jit_syntax_level="LAX")
+            else:
+                JIT_CONFIG = JitConfig(jit_level="O2")
             os.environ['MS_ALLOC_CONF'] = "enable_vmm:False"
         else:
             JIT_CONFIG = None
@@ -818,7 +847,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
             grad = False
 
         try:
-            static_net = create_net(op, grad)
+            static_net = create_net(op, grad, inplace_update)
             if JIT_CONFIG:
                 static_net.set_jit_config(JIT_CONFIG)
             out_expect = static_net(
@@ -834,7 +863,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
                     ir_path = f"{prefix_name}/static_second_inputs"
                     context.set_context(save_graphs=IR_LEVEL, save_graphs_path=ir_path)
 
-                static_net_second = create_net(op, grad)
+                static_net_second = create_net(op, grad, inplace_update)
                 if JIT_CONFIG:
                     static_net_second.set_jit_config(JIT_CONFIG)
                 out_expect_second = static_net_second(
