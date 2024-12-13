@@ -1057,6 +1057,9 @@ void LazyFusionAscendInit() {
   MS_REPLACE_DVM_OP(InplaceCopy);
   MS_REPLACE_DVM_OP(Dense);
   MS_REPLACE_DVM_OP(MatMul);
+  if (LazyFusionFlags::GetInstance().online_tuning) {
+    dvm::SetOnlineTuning(true);
+  }
 }
 
 MS_REGISTER_LAZY_FUSION_INIT(kAscendDevice, LazyFusionAscendInit);
