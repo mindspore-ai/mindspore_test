@@ -12990,13 +12990,14 @@ def round(input, *, decimals=0):
     Keyword Args:
         decimals (int, optional): Number of decimal places to round to (default: 0). If decimals is negative,
             it specifies the number of positions to the left of the decimal point. It supports converting the
-            single-element tensor to an int.
+            single-element tensor to an int. When `input` type is int32 or int64, the `decimals` should be 0.
 
     Returns:
         Tensor, has the same shape and type as the `input`.
 
     Raises:
         TypeError: If `input` is not a Tensor.
+        RuntimeError: If `input` type is int32 or int64, the `decimals` is not 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
