@@ -39,7 +39,7 @@ std::make_shared<runtime::PyBoostDeviceTask>([this, op, ${call_args_with_tensor}
 }
 )
 );
-op->CreateOutputSimpleInfoForView();
+op->CreateOutputSimpleInfo();
 ProfileTrackerInput(${call_args});
 ProfileTrackerOutput(${return_values});
 MS_LOG(DEBUG) << op_name() << " call end";
