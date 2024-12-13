@@ -20,11 +20,11 @@
 
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/utils.h"
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "common/debug/profiler/profiling_python.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #include "plugin/device/ascend/hal/profiler/memory_profiling.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
@@ -197,28 +197,22 @@ void AscendProfiler::InitFwkMemProfiling() {
   if (config_.profileMemory) {
     auto msContext = MsContext::GetInstance();
     msContext->set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, config_.frameworkDataPath);
-    msContext->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, true);
     MS_LOG(INFO) << "profile_memory enabled, save path:" << config_.frameworkDataPath;
   }
 }
 
 void AscendProfiler::StartFwkMemProfiling() {
   if (config_.profileMemory) {
-    auto &mem_tracker = device::tracker::MemTrackerManager::GetInstance();
-    mem_tracker.UpdateProfilingPos();
-    auto &&ms_context = MsContext::GetInstance();
-    ms_context->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, true);
+    device::ascend::AscendMemoryPool::GetInstance().SetEnableTimeEvent(true);
+    device::ascend::AscendMemoryPool::SetEnhancedMemoryPool(true);
     MS_LOG(INFO) << "Start framework memory profiling";
   }
 }
 
 void AscendProfiler::StopFwkMemProfiling() {
   if (config_.profileMemory) {
-    std::string csvPrefix = "operator_memory";
-    device::tracker::MemTrackerManager::GetInstance().DumpProfilingMemInfo(config_.frameworkDataPath, csvPrefix);
-    device::tracker::MemTrackerManager::GetInstance().Dump();
-    auto &&ms_context = MsContext::GetInstance();
-    ms_context->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, false);
+    device::ascend::AscendMemoryPool::GetInstance().SetEnableTimeEvent(false);
+    device::ascend::AscendMemoryPool::SetEnhancedMemoryPool(false);
     MS_LOG(INFO) << "Stop framework memory profiling, save path: " << config_.frameworkDataPath;
   }
 }
