@@ -307,6 +307,9 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor
       MS_LOG(DEBUG) << "Create new auto grad meta for input tensor of view op " << src_tensor->id();
       auto auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
       src_tensor->set_auto_grad_meta_data(auto_grad_meta_data);
+      if (src_tensor->is_parameter()) {
+        autograd::RegisterHook::UpdateTensorBackwardHook(auto_grad_meta_data, src_tensor->id());
+      }
     }
     // Temp method to avoid view tensor hold by grad.
     auto base_tensor = std::make_shared<tensor::BaseTensor>(*src_tensor);

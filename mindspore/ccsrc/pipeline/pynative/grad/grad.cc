@@ -568,6 +568,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
     // Only ir grad need resource.
     auto resource = std::make_shared<pipeline::Resource>();
     top_cell_->set_resource(resource);
+    top_cell_->set_is_ir_grad(true);
   } else {
     top_cell_->set_auto_grad_cell_ptr(
       std::make_shared<autograd::FuncGrad>(input_param_values, op_num_in_bprop_graph_ * kContainerRatio,
@@ -978,9 +979,10 @@ void GradExecutor::CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info
     // 1. grad(net)(input), top cell id will include grad_operation_;
     // 2. net(input), grad(net)(input), top cell id not include grad_operation_.But just only keep one for cccurate
     // find when call GetTopCell
-    auto it = std::find_if(
-      already_run_top_cell_.begin(), already_run_top_cell_.end(),
-      [&obj_id_with_order](const auto &item) { return item.second->obj_id_with_grad_order() == obj_id_with_order; });
+    auto it =
+      std::find_if(already_run_top_cell_.begin(), already_run_top_cell_.end(), [&obj_id_with_order](const auto &item) {
+        return item.second->obj_id_with_grad_order().find(obj_id_with_order) != std::string::npos;
+      });
     if (it != already_run_top_cell_.end()) {
       already_run_top_cell_.erase(it);
     }
@@ -1096,7 +1098,7 @@ TopCellInfoPtr GradExecutor::GetPipelineTopCell(const std::string &already_run_c
 }
 
 void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
-                                        bool is_pipeline_ir_top_cell) {
+                                        bool is_pipeline_top_cell) {
   for (auto &t : pipeline_top_cell_map_) {
     if (already_run_cell_id.find(t.first) == std::string::npos) {
       MS_LOG(DEBUG) << "Get already run cell id " << already_run_cell_id << ", and pipeline key id " << t.first;
@@ -1104,8 +1106,8 @@ void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, 
     }
 
     // If top cell is pipeline ir top cell and finish backward, skip the first ir top cell
-    auto begin = !is_pipeline_ir_top_cell && !t.second.empty() && !t.second.front()->use_dynamic_shape_process() &&
-                     t.second.front()->is_finish_backward()
+    auto begin = is_pipeline_top_cell && !t.second.empty() && !t.second.front()->use_dynamic_shape_process() &&
+                     t.second.front()->is_finish_backward() && t.second.front()->is_ir_grad()
                    ? t.second.begin() + 1
                    : t.second.begin();
     auto input_args_id_with_top_cell = std::find_if(
@@ -1113,7 +1115,7 @@ void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, 
       [input_args_id](const TopCellInfoPtr &pipe_top_cell) { return input_args_id == pipe_top_cell->input_args_id(); });
     if (input_args_id_with_top_cell == t.second.end()) {
       MS_LOG(DEBUG) << "Can not find top cell with input args id " << input_args_id << ", is pipeline ir top cell "
-                    << is_pipeline_ir_top_cell;
+                    << is_pipeline_top_cell;
       continue;
     }
     MS_LOG(DEBUG) << "Erase pipeline top cell " << input_args_id_with_top_cell->get() << " with input args id "
@@ -1855,16 +1857,16 @@ void GradExecutor::ClearPipelineTopCellRes() {
   if (top_cell_->is_pipeline_top_cell()) {
     // Run the second step and the following step
     if (top_cell_->shadow_top_cell() != nullptr) {
-      ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->shadow_top_cell()->input_args_id(), false);
+      ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->shadow_top_cell()->input_args_id(), true);
       top_cell_->set_shadow_top_cell(nullptr);
     } else if (!top_cell_->is_ir_grad()) {
       // Pipeline top cell excludes the first top cell
-      ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->input_args_id(), false);
+      ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->input_args_id(), true);
     }
   } else {
     // If top cell is not pipeline, because it is stored in pipeline top cell map in the first step, here need to do
     // delete from the map.
-    ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->input_args_id(), true);
+    ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->input_args_id(), false);
   }
   if (top_cell_->grad_first()) {
     DecreaseGradOrder();

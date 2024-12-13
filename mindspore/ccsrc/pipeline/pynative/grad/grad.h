@@ -119,7 +119,7 @@ class ME_EXPORT GradExecutor {
   TopCellInfoPtr GetPipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
                                     bool is_reverse_match) const;
   void ErasePipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
-                            bool is_pipeline_ir_top_cell);
+                            bool is_pipeline_top_cell);
   void GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr &grad, const py::object &obj,
                                         const py::args &args);
   bool ReplacePipelineTopCellForwardOutput();
