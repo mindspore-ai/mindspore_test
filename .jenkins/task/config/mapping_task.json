@@ -668,8 +668,7 @@
       "third_party/patch/openssl"
     ],
     "LLT": [
-      "Smoke_CPU_CentOS_Level0_Group1",
-      "Smoke_CPU_CentOS_Level0_Group2",
+      "Smoke_CPU_CentOS_Level0",
       "Smoke_CPU_CentOS_Level1",
       "Smoke_Lite_import_ms_and_mslite"
     ],
