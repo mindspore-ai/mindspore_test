@@ -253,7 +253,7 @@ from mindspore.ops.function.math_func import sum
 # 105 swapaxes
 
 # 106 t
-
+from mindspore.ops.auto_generate import t_ext as t
 # 107 tanh
 from mindspore.ops.auto_generate import tanh
 # 108 tile
@@ -983,6 +983,11 @@ def deprecated_tensor_sum(input, axis=None, dtype=None, keepdims=False, initial=
 # 105 swapaxes
 
 # 106 t
+def tensor_t(input):
+    return t(input)
+
+def deprecated_tensor_t(input):
+    return t(input)
 
 # 107 tanh
 def tensor_tanh(input):

@@ -231,7 +231,7 @@ deprecated_tensor_method_map = {
     # 105 swapaxes
 
     # 106 t
-
+    "t": "deprecated_tensor_t",
     # 107 tanh
 
     # 108 tile
