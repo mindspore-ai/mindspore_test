@@ -52,6 +52,10 @@ from mindspore.mint.distributed.distributed import (
     scatter,
     all_gather,
     reduce_scatter,
+    all_gather_object,
+    broadcast_object_list,
+    gather_object,
+    scatter_object_list,
 )
 
 __all__ = [
@@ -82,4 +86,8 @@ __all__ = [
     "reduce",
     "P2POp",
     "batch_isend_irecv",
+    "all_gather_object",
+    "broadcast_object_list",
+    "gather_object",
+    "scatter_object_list",
 ]

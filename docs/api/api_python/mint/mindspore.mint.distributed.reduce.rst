@@ -14,7 +14,7 @@ mindspore.mint.distributed.reduce
         - **tensor** (Tensor) - 输入和输出规约的Tensor，输出会直接修改输入。
         - **dst** (int) - 指定接收输出的目标进程编号，只有该进程会接收规约操作后的输出结果。
         - **op** (str, 可选) - 规约的具体操作。如 ``"sum"`` 、 ``"prod"`` 、 ``"max"`` 、和 ``"min"`` 。默认值： ``ReduceOp.SUM`` 。
-        - **group** (str，可选) - 通信组名称，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：

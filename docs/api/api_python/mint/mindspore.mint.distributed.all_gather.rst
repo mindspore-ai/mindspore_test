@@ -11,7 +11,7 @@ mindspore.mint.distributed.all_gather
     参数：
         - **tensor_list** (list[Tensor]) - 输出汇聚的Tensor列表。
         - **tensor** (Tensor) - 输入待汇聚操作的Tensor。
-        - **group** (str，可选) - 通信组名称，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：

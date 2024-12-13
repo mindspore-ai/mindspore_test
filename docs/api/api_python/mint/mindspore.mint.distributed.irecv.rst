@@ -11,7 +11,7 @@ mindspore.mint.distributed.irecv
     参数：
         - **tensor** (Tensor) - 接收发送方数据存入Tensor。Tensor的shape为 :math:`(x_1, x_2, ..., x_R)` 。
         - **src** (int，可选) - 表示发送源的进程编号。只会接收来自源进程的张量。默认值：0。
-        - **group** (str，可选) - 通信组名称，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
         - **tag** (int，可选) - 用于区分发送、接收消息的标签。该消息将被接收来自相同 `tag` 的Send发送的张量。默认值： ``0`` 。当前为预留参数。
 
     返回：

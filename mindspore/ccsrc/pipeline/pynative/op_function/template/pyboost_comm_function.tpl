@@ -6,18 +6,19 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
     static Converter converter(&ops::${op_def_name});
     converter.Parse(args);
     ${parser_body}
-
+    std::string target;
+    const auto &group_str = GetValue<std::string>(group);
+    if (group_str.compare(0, 4, "mccl") == 0) {
+      target = "CPU";
+    } else {
+      target = op_run_info->base_op_run_info.device_target;
+    }
     static auto top_type = PredictOutType(op_run_info);
     auto node = stub::MakeTopNode(top_type);
-    auto comm_handle_py = std::make_shared<hal::CommHandlePy>(runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target));
+    auto comm_handle_py = std::make_shared<hal::CommHandlePy>(runtime::OpRunner::GetDeviceContext(target));
     auto comm_handle_py_obj = py::cast(comm_handle_py);
     const auto &output_obj = py::make_tuple(node.first, comm_handle_py_obj);
     kernel::pyboost::CommHandlePtr comm_handle{nullptr};
-    bool is_ascend = op_run_info->base_op_run_info.device_target == kAscendDevice;
-    if (!is_ascend) {
-      MS_LOG(EXCEPTION) << "mindspore.communication.comm_func is not supported in CPU or GPU. Please use "
-                        << "Operators in mindspore.communication.comm_ops.py";
-    }
 
     comm_handle_py->comm_handle()->CreateEvent();
     comm_handle = comm_handle_py->comm_handle();
@@ -27,7 +28,7 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
       op_run_info->source_type = converter.source_type();
       DispatchOp(
         std::make_shared<FrontendTask>(
-          [${op_args}, comm_handle](const FrontendOpRunInfoPtr &op_run_info) {
+          [${op_args}, comm_handle, target](const FrontendOpRunInfoPtr &op_run_info) {
             MS_LOG(DEBUG) << "Run frontend task ${func_name} start";
             auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
             kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
@@ -36,7 +37,7 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
             ${convert_stub}
 
             // Create op
-            auto op = CREATE_PYBOOST_OP(${op_name}, op_run_info->base_op_run_info.device_target);
+            auto op = CREATE_PYBOOST_OP(${op_name}, target);
             op->set_comm_handle(comm_handle);
             const auto &op_prim = op->primitive();
 
@@ -102,3 +103,4 @@ class ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
      return ${func_name}_Base(prim::kPrim${class_name}, args);
    }
 };
+

@@ -476,14 +476,17 @@ mindspore.mint.distributed
 
     mindspore.mint.distributed.all_gather
     mindspore.mint.distributed.all_gather_into_tensor
+    mindspore.mint.distributed.all_gather_object
     mindspore.mint.distributed.all_reduce
     mindspore.mint.distributed.all_to_all
     mindspore.mint.distributed.all_to_all_single
     mindspore.mint.distributed.barrier
     mindspore.mint.distributed.batch_isend_irecv
     mindspore.mint.distributed.broadcast
+    mindspore.mint.distributed.broadcast_object_list
     mindspore.mint.distributed.destroy_process_group
     mindspore.mint.distributed.gather
+    mindspore.mint.distributed.gather_object
     mindspore.mint.distributed.get_backend
     mindspore.mint.distributed.get_global_rank
     mindspore.mint.distributed.get_group_rank
@@ -500,4 +503,5 @@ mindspore.mint.distributed
     mindspore.mint.distributed.reduce_scatter
     mindspore.mint.distributed.reduce_scatter_tensor
     mindspore.mint.distributed.scatter
+    mindspore.mint.distributed.scatter_object_list
     mindspore.mint.distributed.send
