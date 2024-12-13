@@ -47,7 +47,7 @@ std::vector<TypeId> DistCommReduceScatterTensorFuncImpl::InferType(const Primiti
                                                                    const InferInfoPtrList &input_infos) const {
   auto type = input_infos[kIndex1]->GetType();
   auto out_type = input_infos[kIndex0]->GetType();
-  return {CheckInferTypes(primitive->name(), type, out_type)};
+  return {CheckInferTypes(primitive->name(), type, out_type, true)};
 }
 }  // namespace ops
 }  // namespace mindspore

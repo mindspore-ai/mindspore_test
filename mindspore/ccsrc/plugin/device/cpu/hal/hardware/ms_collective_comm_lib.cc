@@ -275,10 +275,9 @@ bool MsCollectiveCommLib::AllGather(const void *send_buff, void *recv_buff, size
   if (!CheckIfVal(send_buff, recv_buff, group_name, &group_info)) {
     return false;
   }
-
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return CollectiveOpsImpl::GetInstance().AllGather<char>(send_buff, recv_buff, send_count, node_, group_info);
+      return CollectiveOpsImpl::GetInstance().AllGather<int8_t>(send_buff, recv_buff, send_count, node_, group_info);
     case TypeId::kNumberTypeInt32:
     case TypeId::kNumberTypeInt:
       return CollectiveOpsImpl::GetInstance().AllGather<int32_t>(send_buff, recv_buff, send_count, node_, group_info);
@@ -291,8 +290,16 @@ bool MsCollectiveCommLib::AllGather(const void *send_buff, void *recv_buff, size
       return CollectiveOpsImpl::GetInstance().AllGather<float16>(send_buff, recv_buff, send_count, node_, group_info);
     case TypeId::kNumberTypeBFloat16:
       return CollectiveOpsImpl::GetInstance().AllGather<bfloat16>(send_buff, recv_buff, send_count, node_, group_info);
-    case TypeId::kNumberTypeComplex64:
-      return CollectiveOpsImpl::GetInstance().AllGather<complex64>(send_buff, recv_buff, send_count, node_, group_info);
+    case TypeId::kNumberTypeUInt8:
+      return CollectiveOpsImpl::GetInstance().AllGather<uint8_t>(send_buff, recv_buff, send_count, node_, group_info);
+    case TypeId::kNumberTypeUInt16:
+      return CollectiveOpsImpl::GetInstance().AllGather<uint16_t>(send_buff, recv_buff, send_count, node_, group_info);
+    case TypeId::kNumberTypeUInt32:
+      return CollectiveOpsImpl::GetInstance().AllGather<uint32_t>(send_buff, recv_buff, send_count, node_, group_info);
+    case TypeId::kNumberTypeUInt64:
+      return CollectiveOpsImpl::GetInstance().AllGather<uint64_t>(send_buff, recv_buff, send_count, node_, group_info);
+    case TypeId::kNumberTypeFloat64:
+      return CollectiveOpsImpl::GetInstance().AllGather<double>(send_buff, recv_buff, send_count, node_, group_info);
     default:
       return false;
   }
@@ -306,8 +313,8 @@ bool MsCollectiveCommLib::Gather(const void *send_buff, void *recv_buff, size_t 
   }
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return CollectiveOpsImpl::GetInstance().Gather<char>(send_buff, recv_buff, send_count, root_rank, node_,
-                                                           group_info);
+      return CollectiveOpsImpl::GetInstance().Gather<int8_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                             group_info);
     case TypeId::kNumberTypeInt32:
     case TypeId::kNumberTypeInt:
       return CollectiveOpsImpl::GetInstance().Gather<int32_t>(send_buff, recv_buff, send_count, root_rank, node_,
@@ -325,9 +332,21 @@ bool MsCollectiveCommLib::Gather(const void *send_buff, void *recv_buff, size_t 
     case TypeId::kNumberTypeBFloat16:
       return CollectiveOpsImpl::GetInstance().Gather<bfloat16>(send_buff, recv_buff, send_count, root_rank, node_,
                                                                group_info);
-    case TypeId::kNumberTypeComplex64:
-      return CollectiveOpsImpl::GetInstance().Gather<complex64>(send_buff, recv_buff, send_count, root_rank, node_,
-                                                                group_info);
+    case TypeId::kNumberTypeUInt8:
+      return CollectiveOpsImpl::GetInstance().Gather<uint8_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                              group_info);
+    case TypeId::kNumberTypeUInt16:
+      return CollectiveOpsImpl::GetInstance().Gather<uint16_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                               group_info);
+    case TypeId::kNumberTypeUInt32:
+      return CollectiveOpsImpl::GetInstance().Gather<uint32_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                               group_info);
+    case TypeId::kNumberTypeUInt64:
+      return CollectiveOpsImpl::GetInstance().Gather<uint64_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                               group_info);
+    case TypeId::kNumberTypeFloat64:
+      return CollectiveOpsImpl::GetInstance().Gather<double>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                             group_info);
     default:
       return false;
   }
@@ -341,8 +360,8 @@ bool MsCollectiveCommLib::Scatter(const void *send_buff, void *recv_buff, size_t
   }
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return CollectiveOpsImpl::GetInstance().Scatter<char>(send_buff, recv_buff, send_count, root_rank, node_,
-                                                            group_info);
+      return CollectiveOpsImpl::GetInstance().Scatter<int8_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                              group_info);
     case TypeId::kNumberTypeInt32:
     case TypeId::kNumberTypeInt:
       return CollectiveOpsImpl::GetInstance().Scatter<int32_t>(send_buff, recv_buff, send_count, root_rank, node_,
@@ -360,9 +379,21 @@ bool MsCollectiveCommLib::Scatter(const void *send_buff, void *recv_buff, size_t
     case TypeId::kNumberTypeBFloat16:
       return CollectiveOpsImpl::GetInstance().Scatter<bfloat16>(send_buff, recv_buff, send_count, root_rank, node_,
                                                                 group_info);
-    case TypeId::kNumberTypeComplex64:
-      return CollectiveOpsImpl::GetInstance().Scatter<complex64>(send_buff, recv_buff, send_count, root_rank, node_,
-                                                                 group_info);
+    case TypeId::kNumberTypeUInt8:
+      return CollectiveOpsImpl::GetInstance().Scatter<uint8_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                               group_info);
+    case TypeId::kNumberTypeUInt16:
+      return CollectiveOpsImpl::GetInstance().Scatter<uint16_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                group_info);
+    case TypeId::kNumberTypeUInt32:
+      return CollectiveOpsImpl::GetInstance().Scatter<uint32_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                group_info);
+    case TypeId::kNumberTypeUInt64:
+      return CollectiveOpsImpl::GetInstance().Scatter<uint64_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                group_info);
+    case TypeId::kNumberTypeFloat64:
+      return CollectiveOpsImpl::GetInstance().Scatter<double>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                              group_info);
     default:
       return false;
   }
@@ -398,8 +429,8 @@ bool MsCollectiveCommLib::Broadcast(const void *send_buff, void *recv_buff, size
 
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return CollectiveOpsImpl::GetInstance().Broadcast<char>(send_buff, recv_buff, send_count, root_rank, node_,
-                                                              group_info);
+      return CollectiveOpsImpl::GetInstance().Broadcast<int8_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                group_info);
     case TypeId::kNumberTypeInt32:
       [[fallthrough]];
     case TypeId::kNumberTypeInt:
@@ -419,9 +450,21 @@ bool MsCollectiveCommLib::Broadcast(const void *send_buff, void *recv_buff, size
     case TypeId::kNumberTypeBFloat16:
       return CollectiveOpsImpl::GetInstance().Broadcast<bfloat16>(send_buff, recv_buff, send_count, root_rank, node_,
                                                                   group_info);
-    case TypeId::kNumberTypeComplex64:
-      return CollectiveOpsImpl::GetInstance().Broadcast<complex64>(send_buff, recv_buff, send_count, root_rank, node_,
-                                                                   group_info);
+    case TypeId::kNumberTypeUInt8:
+      return CollectiveOpsImpl::GetInstance().Broadcast<uint8_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                 group_info);
+    case TypeId::kNumberTypeUInt16:
+      return CollectiveOpsImpl::GetInstance().Broadcast<uint16_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                  group_info);
+    case TypeId::kNumberTypeUInt32:
+      return CollectiveOpsImpl::GetInstance().Broadcast<uint32_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                  group_info);
+    case TypeId::kNumberTypeUInt64:
+      return CollectiveOpsImpl::GetInstance().Broadcast<uint64_t>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                  group_info);
+    case TypeId::kNumberTypeFloat64:
+      return CollectiveOpsImpl::GetInstance().Broadcast<double>(send_buff, recv_buff, send_count, root_rank, node_,
+                                                                group_info);
     default:
       return false;
   }

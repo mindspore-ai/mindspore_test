@@ -28,9 +28,9 @@ namespace ops {
 uint64_t CheckRankSize(const std::string &name, const std::unique_ptr<InferInfo> &value);
 uint64_t GetRankValue(const std::string &name, const std::unique_ptr<InferInfo> &value);
 void CheckInferShape(const std::string &name, const ShapeVector &input_shape, const ShapeVector &Soutput_shape);
-TypeId CheckInferTypes(const std::string &name, const TypeId type, const TypeId out_type);
+TypeId CheckInferTypes(const std::string &name, const TypeId type, const TypeId out_type, bool is_reduce_op = false);
 TypeId CheckInferType(const std::string &name, const TypeId type);
-
+TypeId CheckReduceInferType(const std::string &name, const TypeId type);
 }  // namespace ops
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_OP_COMM_FUNC_IMPL_H
