@@ -988,6 +988,9 @@ class NeighborExchangeV2(Primitive):
         in the same subnet, please check the `details \
         <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#notes>`_.
 
+        Users need to ensure that the length of the received data `recv_lens` is consistent with that of
+        the sent data `send_lens`.
+
     Args:
         send_rank_ids (list(int)): Ranks which the data is sent to. 8 rank_ids represents 8 directions, if one
                                    direction is not send to , set it -1.
