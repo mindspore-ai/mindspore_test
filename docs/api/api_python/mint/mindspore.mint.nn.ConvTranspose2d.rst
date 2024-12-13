@@ -15,6 +15,7 @@ mindspore.mint.nn.ConvTranspose2d
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
         - 在输入非连续场景下， `output_padding` 必须小于 `stride` 。
+        - 在Atlas训练系列产品上，float32类型输入时，仅支持 `groups` 为1。
 
     参数：
         - **in_channels** (int) - 输入图像中的通道数。
@@ -22,7 +23,7 @@ mindspore.mint.nn.ConvTranspose2d
         - **kernel_size** (Union[int, tuple(int)]) - 卷积核的大小。
         - **stride** (Union[int, tuple(int)], 可选) - 卷积的步长。默认值： ``1`` 。
         - **padding** (Union[int, tuple(int)], 可选) - :math:`dilation * (kernel\_size - 1) - padding` 零填充将添加到输入中每个维度的两侧。默认值： ``0`` 。
-        - **output_padding** (Union[int, tuple(int)], 可选) - 在输出形状中每个维度的一侧增加额外的尺寸。默认值： ``0`` 。
+        - **output_padding** (Union[int, tuple(int)], 可选) - 在输出形状中每个维度的一侧增加额外的尺寸。 `output_padding` 的值必须小于 `stride` 或 `dilation` 。默认值： ``0`` 。
         - **groups** (int, 可选) - 从输入通道到输出通道的分块数。默认值： ``1`` 。
         - **bias** (bool, 可选) - 如果值为 ``True`` ， 则添加一个可学习的偏置至输出中。默认值： ``True`` 。
         - **dilation** (Union[int, tuple(int)], 可选) - 内核元素之间的间距。默认值： ``1`` 。
