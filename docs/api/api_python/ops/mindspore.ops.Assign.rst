@@ -8,7 +8,7 @@ mindspore.ops.Assign
     更多细节请参考 :func:`mindspore.ops.assign` 。
 
     输入：
-        - **variable** (Parameter, Tensor) - 待赋值的网络参数或者Tensor，shape: :math:`(N,*)` ，其中 :math:`*` 表示任何数量的附加维度。其秩应小于8。
+        - **variable** (Union[Parameter, Tensor]) - 待赋值的网络参数或者Tensor，shape: :math:`(N,*)` ，其中 :math:`*` 表示任何数量的附加维度。其秩应小于8。
         - **value** (Tensor) - 被赋给网络参数或者Tensor的值，和 `variable` 有相同的shape。
 
     输出：
