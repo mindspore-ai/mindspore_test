@@ -167,8 +167,9 @@ bool EventLoop::Initialize(const std::string &threadName) {
   }
   (void)sem_init(&sem_id_, 0, 0);
 
-  if (pthread_create(&loop_thread_, nullptr, EvloopRun, reinterpret_cast<void *>(this)) != 0) {
-    MS_LOG(ERROR) << "Failed to call pthread_create";
+  retval = pthread_create(&loop_thread_, nullptr, EvloopRun, reinterpret_cast<void *>(this));
+  if (retval != 0) {
+    MS_LOG(ERROR) << "Failed to call pthread_create, errno: " << retval << ", strerror: " << strerror(retval);
     Finalize();
     return false;
   }
