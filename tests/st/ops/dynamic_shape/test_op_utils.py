@@ -819,7 +819,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
                 continue
             JIT_CONFIG = JitConfig(jit_level="O0")
         elif mode_name == 'GRAPH_MODE':
-            JIT_CONFIG = JitConfig(jit_level="O2")
+            JIT_CONFIG = JitConfig(backend="GE")
             os.environ['MS_ALLOC_CONF'] = "enable_vmm:False"
         else:
             JIT_CONFIG = None

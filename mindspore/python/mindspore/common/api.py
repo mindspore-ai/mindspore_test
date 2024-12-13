@@ -29,7 +29,7 @@ import contextlib
 import json
 from collections import OrderedDict, namedtuple
 from functools import wraps
-from typing import Optional, Callable, Union
+from typing import Optional, Callable
 import numpy as np
 import mindspore as ms
 from mindspore import context
@@ -909,18 +909,115 @@ def _get_hash_obj(options):
     return hash_obj
 
 
-def _check_options(options):
-    """Check whether there are deprecated parameters in the dict `options`."""
+def _check_option_device(option, device):
+    """Check jit options wiwh device"""
+    option_device_cfgs = {
+        'disable_format_transform': ['GPU'],
+        'exec_order': ['Ascend'],
+        'ge_options': ['Ascend'],
+        'infer_boost': ['Ascend'],
+    }
+    if option in option_device_cfgs and device not in option_device_cfgs[option]:
+        logger.warning(f"For 'jit(options)', the option '{option}' is only support device in "
+                       f"'{option_device_cfgs[option]}', but got '{device}', ignore it.")
+
+
+def _check_option_backend(option, backend):
+    """Check jit options wiwh backend"""
+    option_backend_cfgs = {
+        'disable_format_transform': ['ms_backend'],
+        'exec_order': ['ms_backend'],
+        'ge_options': ['GE'],
+        'infer_boost': ['ms_backend'],
+    }
+    if option in option_backend_cfgs and backend not in option_backend_cfgs[option]:
+        logger.warning(f"For 'jit(options)', the option '{option}' is only support backend in "
+                       f"'{option_backend_cfgs[option]}', but got '{backend}', ignore it.")
+
+
+def _check_disable_format_transform_value(option, disable_format_transform):
+    """check disable_format_transform option value"""
+    if not isinstance(disable_format_transform, bool):
+        raise TypeError(f"For 'jit(options)', the type of '{option}' must be bool, "
+                        f"but got {type(disable_format_transform)}.")
+
+
+def _check_exec_order_value(option, exec_order):
+    """check exec_order option value"""
+    if not isinstance(exec_order, str):
+        raise TypeError(f"For 'jit(options)', the type of '{option}' must be str, but got {type(exec_order)}.")
+
+    if exec_order not in ['bfs', 'dfs', 'gpto']:
+        raise ValueError(f"For '{option}', the value of '{option}' must be one of "
+                         f"['bfs', 'dfs', 'gpto'], but got '{exec_order}'.")
+
+
+def _check_ge_options_value(option, ge_options):
+    """check ge_options option value"""
+    if not isinstance(ge_options, dict):
+        raise TypeError(f"For 'jit(options)', the type of '{option}' must be dict, but got {type(ge_options)}.")
+
+    for level, options in ge_options.items():
+        if level not in ['global', 'session']:
+            raise ValueError(f"For '{option}', the key of '{option}' must be one of "
+                             f"['global', 'session'], but got '{level}'.")
+
+        if not isinstance(options, dict):
+            raise TypeError(f"For '{option}', the type of {level} options must be dict, "
+                            f"but got {type(options)}. The error options: {options}.")
+
+        for key, value in options.items():
+            if not isinstance(key, str):
+                raise TypeError(f"For '{option}', the type of key and value must be str, "
+                                f"but got {type(key)}. The error key is {key}.")
+            if not isinstance(value, str):
+                raise TypeError(f"For '{option}', the type of key and value must be str, "
+                                f"but got {type(value)}. The error value is {value}")
+
+
+def _check_infer_boost_value(option, value):
+    """check infer_boost option value"""
+    if not isinstance(value, str):
+        raise TypeError(f"For 'jit(options)', the type of '{option}' must be str, but got {type(value)}.")
+
+    if value not in ['on', 'off']:
+        raise ValueError(f"For '{option}', the value of '{option}' must be one of ['on', 'off'], but got '{value}'.")
+
+
+def _check_option_value(option, value):
+    """check jit options wiwh value"""
+    option_valuecheck_funcs = {
+        'disable_format_transform': _check_disable_format_transform_value,
+        'exec_order': _check_exec_order_value,
+        'ge_options': _check_ge_options_value,
+        'infer_boost': _check_infer_boost_value,
+    }
+    if option in option_valuecheck_funcs:
+        option_valuecheck_funcs[option](option, value)
+    else:
+        logger.warning(f"For 'jit(options)', the option argument '{option}' is not recognized, please check!"
+                       f"For detailed usage of 'jit(options)', please refer to the Mindspore official website.")
+
+
+def _check_options(options, backend):
+    """Check jit options"""
+    # check whether there are deprecated parameters in the dict `options`.
     deprecated_args = {'mode': 'capture_mode', 'input_signature': 'dynamic', 'hash_args: ': '',
                        'jit_config': 'jit_level, fullgraph or options', 'compile_once': ''}
-    for key in deprecated_args:
+    for key, value in deprecated_args.items():
         if key in options:
             log = f"For 'jit', the parameter '{key}' has been deprecated."
-            value = deprecated_args.get(key)
             if value != '':
                 log += f" Please use the parameter '{value}' instead. For more details, please refer to " \
                        f"https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html."
             logger.warning(log)
+            del options[key]
+
+    # check options' device, backend and value
+    for option, value in options.items():
+        # _check_option_device(option, device)
+        _check_option_backend(option, backend)
+        _check_option_value(option, value)
 
 
 def jit(
@@ -930,7 +1027,7 @@ def jit(
         jit_level: str = "O0",
         dynamic: bool = False,
         fullgraph: bool = False,
-        backend: Union[str, Callable] = "default",
+        backend: str = "",
         **options):
     """
     Create a callable MindSpore graph from a Python function.
@@ -950,8 +1047,13 @@ def jit(
             - `trace` : Trace the execution of Python code to build graph. This is an experimental prototype that is
               subject to change and/or deletion.
 
-        jit_level (str, optional): Used to control the compilation optimization level. The value of jit_level
-            should be ``O0`` , ``O1`` or ``O2`` . Default: ``O0`` .
+        jit_level (str, optional): Used to control the compilation optimization level. Currently is only effective
+            with default backend. The value of jit_level should be ``O0`` or ``O1`` . Default: ``O0`` .
+
+            - `O0`: Except for optimizations that may affect functionality, all other optimizations are turned off.
+            - `O1`: Using commonly used optimizations and automatic operator fusion optimizations. This optimization
+              level is experimental and is being improved.
+
         dynamic (bool, optional): Whether dynamic shape compilation should be performed. Currently, it is a
             reserved parameter, so it does not work. Default: False.
         fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
@@ -959,8 +1061,56 @@ def jit(
             entire function can be captured into graph. If this is not possible (that is, if there is Python syntax
             not supported), then it will raise an exception. This currently only applies when capture_mode is ast.
             Default: False.
-        backend (str, optional): The compilation backend to be used. Default: ``default`` .
+        backend (str, optional): The compilation backend to be used. If this parameter is not set, the framework will
+            use ``GE`` backend for Atlas training series products and ``ms_backend`` backend for others including Atlas
+            A2 training series products by default.
+
+            - `ms_backend`: Adopt KernelByKernel execution mode.
+            - `GE`: Adopt Sink execution mode. The whole model will be sinked to device to execute, only applicable to
+              the top cell of model. And only can be used in Ascend platform.
+
         **options (dict): A dictionary of options to pass to the compilation backend.
+
+            Some options are device specific, see the below table for details:
+
+            +---------------------------+---------------------------+-------------------------+
+            |  Option Parameters        | Hardware Platform Support |  Backend Support        |
+            +===========================+===========================+=========================+
+            | disable_format_transform  |  GPU                      |  ms_backend             |
+            +---------------------------+---------------------------+-------------------------+
+            | exec_order                |  Ascend                   |  ms_backend             |
+            +---------------------------+---------------------------+-------------------------+
+            | ge_options                |  Ascend                   |  GE                     |
+            +---------------------------+---------------------------+-------------------------+
+            | infer_boost               |  Ascend                   |  ms_backend             |
+            +---------------------------+---------------------------+-------------------------+
+
+            - disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW to
+              NHWC. When the network training performance of fp16 is worse than fp32, `disable_format_transform` can be
+              set to ``True`` to try to improve training performance. Default: ``False`` .
+            - exec_order (str): Set the sorting method for operator execution, currently only three sorting methods are
+              supported: ``bfs``, ``dfs`` and ``gpto`` . Default: ``bfs`` .
+
+              - `bfs`: The default sorting method, breadth priority, good communication masking, relatively good
+                performance.
+              - `dfs`: An optional sorting method, depth-first sorting. The performance is relatively worse than that
+                of bfs execution order, but it occupies less memory. It is recommended to try dfs in scenarios where
+                other execution orders run out of memory (OOM).
+              - `gpto`: An optional sorting method. This method combines multiple execution orders and selects a
+                method with relatively good performance. There may be some performance gains in scenarios with
+                multiple replicas running in parallel.
+
+            - ge_options (dict): Set options for ge backend. The options are divided into two categories: global,
+              and session. This is an experimental prototype that is subject to change and/or deletion.
+              For detailed information, please refer to `Ascend community <https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/apiref/ascendgraphapi/atlasgeapi_07_0146.html>`_ .
+
+              - global (dict): Set global options.
+              - session (dict): Set session options.
+
+            - infer_boost (str): Used to control the infer mode. Default: ``off`` .
+
+              - `on`: Enable inference mode, get better infer performance.
+              - `off`: Disable inference mode, use forward for inference. The performance is poor.
 
     Returns:
         Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is
@@ -1005,11 +1155,13 @@ def jit(
     """
 
     capture_mode = Validator.check_string(capture_mode, ["ast", "bytecode", "trace"], "capture_mode", "jit")
-    jit_level = Validator.check_string(jit_level, ["O0", "O1", "O2"], "jit_level", "jit")
+    jit_level = Validator.check_string(jit_level, ["O0", "O1"], "jit_level", "jit")
     fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
+    if backend != "":
+        backend = Validator.check_string(backend, ["ms_backend", "GE"], "backend", "jit")
     jit_syntax_level = "LAX" if fullgraph is False else "STRICT"
     hash_obj = _get_hash_obj(options)
-    _check_options(options)
+    _check_options(options, backend)
     options_str = json.dumps(options)
     infer_boost = options['infer_boost'] if 'infer_boost' in options else "off"
     exc_mode = options['exc_mode'] if 'exc_mode' in options else "auto"

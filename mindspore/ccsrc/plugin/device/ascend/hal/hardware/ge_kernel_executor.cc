@@ -1174,7 +1174,7 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   std::vector<std::pair<CNodePtr, CNodePtr>> sched_events;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto ms_context_exec_order = ms_context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  auto ms_context_exec_order = AnfAlgo::GetExecOrderAlgo(graph->cast<KernelGraphPtr>());
   MS_LOG(INFO) << "Current Exec Order Algo in MS Context is " << ms_context_exec_order;
   const std::string kExecOrderGpto = "gpto";
   if (ms_context_exec_order == kExecOrderGpto) {

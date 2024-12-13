@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.common.dtype as mstype
-from mindspore import ops, Tensor, jit, JitConfig
+from mindspore import ops, Tensor, jit
 from mindspore.ops import square
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -68,8 +68,8 @@ def test_square_normal(mode):
         output = (jit(square_forward_func, jit_level="O0"))(Tensor(x))
         output1 = (jit(square_backward_func, jit_level="O0"))(Tensor(x))
     else:
-        output = (jit(square_forward_func, jit_level="O2"))(Tensor(x))
-        output1 = (jit(square_backward_func, jit_level="O2"))(Tensor(x))
+        output = (jit(square_forward_func, backend="GE"))(Tensor(x))
+        output1 = (jit(square_backward_func, backend="GE"))(Tensor(x))
 
     expect = generate_expect_forward_output(x)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4)

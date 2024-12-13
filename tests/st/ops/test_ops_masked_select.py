@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.mint import masked_select
-from mindspore import Tensor, ops, jit, JitConfig
+from mindspore import Tensor, ops, jit
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
@@ -30,7 +30,7 @@ def masked_select_forward_func(input1, mask):
 
 
 def masked_select_backward_func(input1, mask):
-    return ops.grad(masked_select_forward_func, (0, 1))(input1, mask)
+    return ops.grad(masked_select_forward_func, (0, 1))(input1, mask)  # pylint: disable=not-callable
 
 
 @pytest.mark.level0
@@ -60,8 +60,8 @@ def test_ops_masked_select(mode, dtype):
         output_grad = (jit(masked_select_backward_func, jit_level="O0"))(input1, mask)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(masked_select_forward_func, jit_level="O2"))(input1, mask)
-        output_grad = (jit(masked_select_backward_func, jit_level="O2"))(input1, mask)
+        output = (jit(masked_select_forward_func, backend="GE"))(input1, mask)
+        output_grad = (jit(masked_select_backward_func, backend="GE"))(input1, mask)
     np.testing.assert_allclose(output.asnumpy(), expect_value, rtol=1e-3)
     np.testing.assert_allclose(output_grad[0].asnumpy(), expect_input_grad, rtol=1e-3)
     np.testing.assert_allclose(output_grad[1].asnumpy(), expect_mask_grad, rtol=1e-3)

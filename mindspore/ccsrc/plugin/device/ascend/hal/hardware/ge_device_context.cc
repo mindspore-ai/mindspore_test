@@ -39,6 +39,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/file_utils.h"
+#include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
 #include "transform/symbol/acl_base_symbol.h"

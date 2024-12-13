@@ -46,7 +46,8 @@ constexpr size_t kGraphInfoSavePrefixLen = 5;
 }  // namespace
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
 
-std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device::DeviceContext *device_context) {
+std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device::DeviceContext *device_context,
+                                    const session::JitSetting &jit_setting) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(INFO) << "Status record: start compile graph.";
@@ -55,7 +56,7 @@ std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device
 
   auto device_target = device_context->GetDeviceType();
   auto kg_mgr = std::make_shared<session::KernelGraphMgr>();
-  KernelGraphPtr root_graph = kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device_target);
+  KernelGraphPtr root_graph = kg_mgr->ConstructKernelGraph(func_graph, &all_graphs, device_target, jit_setting);
   MS_EXCEPTION_IF_NULL(root_graph);
   for (const auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);

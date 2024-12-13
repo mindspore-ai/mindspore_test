@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.mint.nn as nn
-from mindspore import Tensor, jit, JitConfig
+from mindspore import Tensor, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -171,8 +171,8 @@ def test_batchnorm3d(mode):
         out_grad = (jit(grad_batch_norm_3d_net, jit_level="O0"))(
             x, num_features)
     else:
-        output = (jit(forward_batch_norm_3d_net, jit_level="O2"))(x, num_features)
-        out_grad = (jit(grad_batch_norm_3d_net, jit_level="O2"))(
+        output = (jit(forward_batch_norm_3d_net, backend="GE"))(x, num_features)
+        out_grad = (jit(grad_batch_norm_3d_net, backend="GE"))(
             x, num_features)
 
     assert np.allclose(expect_output_shape, output.shape)

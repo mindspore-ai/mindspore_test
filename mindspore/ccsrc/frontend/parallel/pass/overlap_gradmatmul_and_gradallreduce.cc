@@ -29,6 +29,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {
@@ -111,7 +112,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_i1, c
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->GetJitLevel() != kAttrJitLevelO2) {
+  if (!common::AnfAlgo::IsBackendGe()) {
     std::vector<AnfNodePtr> depend3_inputs{NewValueNode(prim::kPrimDepend), matmul_i_input, comm_i1};
     auto depend_node3 = matmul_i_input->func_graph()->NewCNode(depend3_inputs);
     MS_EXCEPTION_IF_NULL(depend_node3);

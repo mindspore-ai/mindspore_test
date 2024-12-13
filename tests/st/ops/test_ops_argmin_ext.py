@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import Tensor, mint, jit, JitConfig
+from mindspore import Tensor, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -74,8 +74,8 @@ def test_ops_argmin_ext(mode):
             output = (jit(argmin_ext_forward_func, jit_level="O0"))(ms.Tensor(x), dim, keepdim)
             out_grad = (jit(argmin_ext_backward_func, jit_level="O0"))(ms.Tensor(x), dim, keepdim)
         else:
-            output = (jit(argmin_ext_forward_func, jit_level="O2"))(ms.Tensor(x), dim, keepdim)
-            out_grad = (jit(argmin_ext_backward_func, jit_level="O2"))(ms.Tensor(x), dim, keepdim)
+            output = (jit(argmin_ext_forward_func, backend="GE"))(ms.Tensor(x), dim, keepdim)
+            out_grad = (jit(argmin_ext_backward_func, backend="GE"))(ms.Tensor(x), dim, keepdim)
         expect = generate_expect_forward_output(x, dim, keepdim)
         np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
         np.testing.assert_allclose(out_grad.asnumpy(), 0, rtol=1e-3)

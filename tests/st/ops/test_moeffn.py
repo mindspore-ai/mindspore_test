@@ -16,7 +16,7 @@ from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 import mindspore.nn as nn
-from mindspore import Tensor, jit, JitConfig
+from mindspore import Tensor, jit
 from mindspore.ops.auto_generate import FFNExt
 
 
@@ -146,7 +146,7 @@ def test_ffn_forward_mode(mode):
     elif mode == 'KBK':
         output = (jit(ffn_forward_func, jit_level="O0"))(x, w1, w2, expert_tokens, bias1, bias2)
     else:
-        output = (jit(ffn_forward_func, jit_level="O2"))(x, w1, w2, expert_tokens, bias1, bias2)
+        output = (jit(ffn_forward_func, backend="GE"))(x, w1, w2, expert_tokens, bias1, bias2)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-1)
 
 

@@ -504,7 +504,7 @@ void FormatTransformChecker::CheckSupportFormatTransform(const std::shared_ptr<s
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_DISABLE_FORMAT_TRANSFORM)) {
+  if (AnfAlgo::GetDisableFormatTransform(kernel_graph)) {
     MS_LOG(INFO) << "Disable the automatic format transform function.";
     format_transform_ = false;
     return;

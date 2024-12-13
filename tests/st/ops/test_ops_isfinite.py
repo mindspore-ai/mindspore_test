@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.common.dtype as mstype
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from mindspore.ops import isfinite
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -69,8 +69,8 @@ def test_isfinite_normal(mode):
         output = (jit(isfinite_forward_func, jit_level="O0"))(ms.Tensor(x))
         output1 = (jit(isfinite_backward_func, jit_level="O0"))(ms.Tensor(x1))
     else:
-        output = (jit(isfinite_forward_func, jit_level="O2"))(ms.Tensor(x))
-        output1 = (jit(isfinite_backward_func, jit_level="O2"))(ms.Tensor(x1))
+        output = (jit(isfinite_forward_func, backend="GE"))(ms.Tensor(x))
+        output1 = (jit(isfinite_backward_func, backend="GE"))(ms.Tensor(x1))
 
     expect = generate_expect_forward_output(x)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4)

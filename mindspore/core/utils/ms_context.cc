@@ -21,6 +21,7 @@
 #include <fstream>
 #include <algorithm>
 #include <utility>
+#include <nlohmann/json.hpp>
 #include "utils/ms_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/phase.h"
@@ -43,6 +44,8 @@ constexpr auto kAttrJitLevel = "jit_level";
 constexpr auto kAttrJitLevelO0 = "O0";
 constexpr auto kAttrJitLevelO1 = "O1";
 constexpr auto kAttrJitLevelO2 = "O2";
+constexpr auto kBackendMSBackend = "ms_backend";
+constexpr auto kBackendGE = "GE";
 }  // namespace
 std::atomic<bool> thread_1_must_end(false);
 
@@ -531,6 +534,22 @@ std::string MsContext::GetJitLevel() const {
   return jit_level;
 }
 
+std::string MsContext::GetBackend() const {
+  const auto &jit_config = PhaseManager::GetInstance().jit_config();
+  std::string backend = "";
+  auto iter = jit_config.find("backend");
+  if (iter != jit_config.end()) {
+    backend = iter->second;
+  }
+
+  if (backend.empty()) {
+    auto jit_level = GetJitLevel();
+    backend = jit_level == kAttrJitLevelO2 ? kBackendGE : kBackendMSBackend;
+  }
+
+  return backend;
+}
+
 bool MsContext::IsKByKExecutorMode() {
   // Get jit level.
   std::string jit_level = GetJitLevel();
@@ -542,6 +561,12 @@ bool MsContext::IsKByKExecutorMode() {
     jit_level_log = jit_level;
     CheckHcclBufferSize(jit_level);
     set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, false);
+  }
+
+  const auto &jit_config = PhaseManager::GetInstance().jit_config();
+  if (jit_config.find("backend") != jit_config.end() && jit_config.at("backend") == kBackendGE) {
+    MS_LOG(INFO) << "Enable graph_sink executor for ge backend.";
+    return false;
   }
 
   if (get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {

@@ -1588,8 +1588,8 @@ void GeGraphExecutor::Initialize() {
   ge_res_manager_->Initialize();
 
   std::map<std::string, std::string> ge_options;
-  GetGeOptions(&ge_options);
-  SetPassthroughGeOptions(true, &ge_options);
+  GetGeGlobalOptions(&ge_options);
+  SetPassthroughGeOptions("global", &ge_options);
   {
     // Release GIL before calling into (potentially long-running) C++ code
     GilReleaseWithCheck gil_release;
@@ -1624,7 +1624,7 @@ void GeGraphExecutor::CreateSessionAndGraphRunner() const {
   if (sess == nullptr) {
     transform::SessionOptions options;
     GetGeSessionOptions(&options);
-    SetPassthroughGeOptions(false, &options);
+    SetPassthroughGeOptions("session", &options);
     sess = transform::NewSession(options);
     transform::SetGeSession(sess);
   }

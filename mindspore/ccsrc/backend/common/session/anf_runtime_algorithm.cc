@@ -1574,6 +1574,87 @@ void AnfRuntimeAlgorithm::InsertMakeTupleForOutput(const NotNull<KernelGraphPtr>
   root_graph->set_output(make_tuple);
 }
 
+std::string AnfAlgo::GetJitLevel(const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  if (graph->cast<KernelGraphPtr>()) {
+    const auto &jit_setting = graph->cast<KernelGraphPtr>()->jit_setting();
+    if (!jit_setting.jit_level.empty()) {
+      return jit_setting.jit_level;
+    }
+  }
+
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string jit_level = context->GetJitLevel();
+  return jit_level;
+}
+
+std::string AnfAlgo::GetBackend(const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  if (graph->cast<KernelGraphPtr>()) {
+    const auto &jit_setting = graph->cast<KernelGraphPtr>()->jit_setting();
+    if (!jit_setting.backend.empty()) {
+      return jit_setting.backend;
+    }
+  }
+
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string backend = context->GetBackend();
+  return backend;
+}
+
+bool AnfAlgo::GetDisableFormatTransform(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &jit_setting = graph->jit_setting();
+  auto disable_format_transform = jit_setting.disable_format_transform;
+  if (disable_format_transform == false) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    disable_format_transform = context->get_param<bool>(MS_CTX_DISABLE_FORMAT_TRANSFORM);
+  }
+  return disable_format_transform;
+}
+
+std::string AnfAlgo::GetExecOrderAlgo(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &jit_setting = graph->jit_setting();
+  auto exec_order = jit_setting.exec_order;
+  if (exec_order.empty()) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    exec_order = context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  }
+  return exec_order;
+}
+
+std::map<std::string, std::map<std::string, std::string>> AnfAlgo::GetGeOptions(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &jit_setting = graph->jit_setting();
+  return jit_setting.ge_options;
+}
+
+std::map<std::string, std::string> AnfAlgo::GetGeOptions(std::string option_level) {
+  std::map<std::string, std::string> ret;
+  const auto &jit_setting = session::JitSetting::ParseJitSetting();
+  if (jit_setting.ge_options.find(option_level) != jit_setting.ge_options.end()) {
+    ret = jit_setting.ge_options.at(option_level);
+  }
+
+  if (ret.empty()) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    const auto &ge_options_str = context->get_param<std::string>(MS_CTX_GE_OPTIONS);
+    if (!ge_options_str.empty()) {
+      nlohmann::json options_json = nlohmann::json::parse(ge_options_str);
+      if (options_json.contains(option_level)) {
+        options_json[option_level].get_to(ret);
+      }
+    }
+  }
+  return ret;
+}
+
 void AnfRuntimeAlgorithm::UpdateGraphValidRefPair(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
 

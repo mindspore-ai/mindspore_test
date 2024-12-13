@@ -131,19 +131,21 @@ class GraphCompiler {
   // Construct kernel graph from anf nodes list and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileGraph(const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, device::RunMode run_mode, bool run_in_pynative = false);
+                       const DeviceContext *device_context, const session::JitSetting &jit_setting,
+                       device::RunMode run_mode, bool run_in_pynative = false);
 
   GraphId CompileGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                        const DeviceContext *device_context, device::RunMode run_mode, bool run_in_pynative);
 
   // For Pyantive dynamic shape or dynamic structure
   GraphId CompileDynamicGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs,
-                              const DeviceContext *device_context);
+                              const DeviceContext *device_context, const session::JitSetting &jit_setting);
   GraphId CompileDynamicGraph(const KernelGraphPtr &kernel_graph, const DeviceContext *device_context);
 
   // Construct kernel graph from function graph and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
-  GraphId CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph, const DeviceContext *device_context);
+  GraphId CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph, const DeviceContext *device_context,
+                                           const session::JitSetting &jit_setting);
 
   // Construct kernel graph from function graph and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
@@ -227,6 +229,7 @@ class GraphCompiler {
   void SetGraphDependency(const KernelGraphPtr &graph, const GraphSegmentPtr &segment) const;
   KernelGraphPtr ConstructKernelGraphForGraphRunMode(const FuncGraphPtr &func_graph,
                                                      const DeviceContext *device_context,
+                                                     const session::JitSetting &jit_setting,
                                                      std::vector<KernelGraphPtr> *const all_graphs,
                                                      bool *const need_return_ahead);
   KernelGraphPtr ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target,

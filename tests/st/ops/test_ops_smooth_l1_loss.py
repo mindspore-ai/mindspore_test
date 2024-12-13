@@ -106,9 +106,9 @@ def test_ops_smooth_l1_loss_normal(mode, reduction):
         output_backward = op_backward(ms.Tensor(inputx_b), ms.Tensor(target_b), reduction, beta_b)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(smooth_l1_loss_forward_func, jit_level="O2")
+        op_froward = ms.jit(smooth_l1_loss_forward_func, backend="GE")
         output_forward = op_froward(ms.Tensor(inputx_f), ms.Tensor(target_f), reduction, beta_f)
-        op_backward = ms.jit(smooth_l1_loss_backward_func, jit_level="O2")
+        op_backward = ms.jit(smooth_l1_loss_backward_func, backend="GE")
         output_backward = op_backward(ms.Tensor(inputx_b), ms.Tensor(target_b), reduction, beta_b)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
@@ -140,7 +140,7 @@ def test_ops_smooth_l1_loss_bf16(mode, reduction):
         output = op_froward(inputx_tensor, target_tensor, reduction, beta)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(smooth_l1_loss_forward_func, jit_level="O2")
+        op_froward = ms.jit(smooth_l1_loss_forward_func, backend="GE")
         output = op_froward(inputx_tensor, target_tensor, reduction, beta)
     np.testing.assert_allclose(output.float().asnumpy(), expect, rtol=4e-3, atol=1e-2)
 
@@ -173,7 +173,7 @@ def test_ops_smooth_l1_loss_vmap(mode, reduction):
         output = op_froward(ms.Tensor(inputx), ms.Tensor(target), reduction, beta)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(smooth_l1_loss_vmap_func, jit_level="O2")
+        op_froward = ms.jit(smooth_l1_loss_vmap_func, backend="GE")
         output = op_froward(ms.Tensor(inputx), ms.Tensor(target), reduction, beta)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 

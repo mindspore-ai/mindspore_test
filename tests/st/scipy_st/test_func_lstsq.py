@@ -18,7 +18,7 @@ import scipy
 from mindspore.scipy.linalg import lstsq
 
 import mindspore as ms
-from mindspore import Tensor, jit, JitConfig, context
+from mindspore import Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 
@@ -92,7 +92,7 @@ def test_ops_lstsq_forward(mode):
         outs = (jit(lstsq_forward_func, jit_level="O0"))(
             ms.Tensor(A), ms.Tensor(B))
     else:
-        outs = (jit(lstsq_forward_func, jit_level="O2"))(
+        outs = (jit(lstsq_forward_func, backend="GE"))(
             ms.Tensor(A), ms.Tensor(B))
     for i in range(4):
         np.testing.assert_allclose(
@@ -123,7 +123,7 @@ def test_ops_lstsq_backward(mode):
         grads = (jit(lstsq_backward_func, jit_level="O0"))(
             Tensor(A), Tensor(B))
     else:
-        grads = (jit(lstsq_backward_func, jit_level="O2"))(
+        grads = (jit(lstsq_backward_func, backend="GE"))(
             Tensor(A), Tensor(B))
     for i in range(2):
         np.testing.assert_allclose(
