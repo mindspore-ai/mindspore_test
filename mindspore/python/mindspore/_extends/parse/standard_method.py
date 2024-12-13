@@ -2776,9 +2776,9 @@ def enumerate_(x, start=0):
     return ret
 
 
-def expand_tensor_as(x, y):
+def expand_tensor_as(input, x):
     """Expand tensor"""
-    return F.broadcast_to(x, shape_(y))
+    return F.broadcast_to(input, shape_(x))
 
 
 def broadcast_to(x, shape):
