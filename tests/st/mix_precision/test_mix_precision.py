@@ -28,11 +28,11 @@ from mindspore import Tensor
 from mindspore import context
 from mindspore.train.loss_scale_manager import FixedLossScaleManager
 from mindspore.train import Model
-from utils import FakeData
-from utils import allclose_nparray
-from utils import FakeDataInitMode
-from utils import find_newest_validateir_file
-from utils import clean_all_ir_files
+from tests.st.mix_precision.minx_precision_utils import FakeData
+from tests.st.mix_precision.minx_precision_utils import allclose_nparray
+from tests.st.mix_precision.minx_precision_utils import FakeDataInitMode
+from tests.st.mix_precision.minx_precision_utils import find_newest_validateir_file
+from tests.st.mix_precision.minx_precision_utils import clean_all_ir_files
 from functools import wraps
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
