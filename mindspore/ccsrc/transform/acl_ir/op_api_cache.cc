@@ -18,6 +18,8 @@
 
 namespace mindspore::transform {
 namespace {
+constexpr size_t kSizeFive = 5;
+
 void Gather(mindspore::kernel::KernelTensor *tensor) {
   if (tensor == nullptr || tensor->type_id() == kMetaTypeNone) {
     MemcpyToBuf("None", kSizeFive);
@@ -127,20 +129,6 @@ void GatherInfo(const device::DeviceAddressPtr &device_address) {
   RefreshAddr(device_address);
 }
 
-void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
-  auto tensor = tensor_and_trans.first;
-  auto trans = tensor_and_trans.second;
-  GatherInfo(tensor);
-  // trans
-  MemcpyToBuf(&trans, 1);
-}
-
-void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &tensor_list) {
-  for (auto tensor : tensor_list) {
-    GatherInfo(tensor);
-  }
-}
-
 void GatherInfo(const mindspore::tensor::BaseTensorPtr &tensor) {
   Gather(tensor);
   RefreshAddr(tensor);
@@ -175,10 +163,23 @@ void GatherInfo(const std::vector<tensor::TensorPtr> &tensors) {
     GatherInfo(tensor);
   }
 }
+void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
+  auto tensor = tensor_and_trans.first;
+  auto trans = tensor_and_trans.second;
+  GatherInfo(tensor);
+  // trans
+  MemcpyToBuf(&trans, 1);
+}
+
+void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &tensor_list) {
+  for (auto tensor : tensor_list) {
+    GatherInfo(tensor);
+  }
+}
 
 void GatherInfo(const ScalarPtr &scalar) {
   if (scalar == nullptr) {
-    MemcpyToBuf("None", 5);
+    MemcpyToBuf("None", kSizeFive);
     return;
   }
   // "s" for scalar
@@ -290,10 +291,6 @@ void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(add_tensor_addr_to_cached_list_func);
 
   add_tensor_addr_to_cached_list_func(tensor->device_address()->GetMutablePtr());
-}
-
-void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
-  RefreshAddr(tensor_and_trans.first);
 }
 
 constexpr int g_rShift33Bits = 33;
@@ -521,72 +518,6 @@ void GatherHash(const std::optional<tensor::BaseTensorPtr> &tensor) {
 void GatherHash(const std::vector<tensor::BaseTensorPtr> &tensors) {
   for (const auto &tensor : tensors) {
     GatherHash(tensor);
-  }
-}
-
-void GatherHash(const ScalarPtr &scalar) {
-  if (scalar == nullptr) {
-    MemcpyToBuf("None", kSizeFive);
-    return;
-  }
-  // "s" for scalar
-  MemcpyToBuf("s", 1);
-  if (scalar->isa<BoolImm>()) {
-    auto value = GetValue<bool>(scalar);
-    MemcpyToBuf(&value, sizeof(bool));
-  } else if (scalar->isa<Int64Imm>()) {
-    auto value = GetValue<int64_t>(scalar);
-    MemcpyToBuf(&value, sizeof(int64_t));
-  } else if (scalar->isa<FP32Imm>()) {
-    auto value = GetValue<float>(scalar);
-    MemcpyToBuf(&value, sizeof(float));
-  } else if (scalar->isa<Int32Imm>()) {
-    auto value = GetValue<int32_t>(scalar);
-    MemcpyToBuf(&value, sizeof(int32_t));
-  } else if (scalar->isa<Int8Imm>()) {
-    auto value = GetValue<int8_t>(scalar);
-    MemcpyToBuf(&value, sizeof(int8_t));
-  } else if (scalar->isa<Int16Imm>()) {
-    auto value = GetValue<int16_t>(scalar);
-    MemcpyToBuf(&value, sizeof(int16_t));
-  } else if (scalar->isa<UInt8Imm>()) {
-    auto value = GetValue<uint8_t>(scalar);
-    MemcpyToBuf(&value, sizeof(uint8_t));
-  } else if (scalar->isa<FP64Imm>()) {
-    auto value = GetValue<double>(scalar);
-    MemcpyToBuf(&value, sizeof(double));
-  } else if (scalar->isa<BF16Imm>()) {
-    auto value = GetValue<bfloat16>(scalar);
-    MemcpyToBuf(&value, sizeof(int16_t));
-  } else {
-    MS_LOG(EXCEPTION) << "Currently not support value: " << scalar->ToString();
-  }
-}
-
-void GatherHash(const std::optional<ScalarPtr> &scalar) {
-  if (scalar.has_value()) {
-    GatherHash(scalar.value());
-  } else {
-    MemcpyToBuf("None", kSizeFive);
-  }
-}
-
-void GatherHash(const TypePtr &type) {
-  const auto type_id = type->type_id();
-  MemcpyToBuf(&type_id, sizeof(int));
-}
-
-void GatherHash(const std::optional<TypePtr> &type) {
-  if (type.has_value()) {
-    GatherHash(type.value());
-  }
-}
-
-void GatherHash(const string &s) { MemcpyToBuf(s.c_str(), static_cast<int64_t>(s.size())); }
-
-void GatherHash(const std::optional<string> &s) {
-  if (s.has_value()) {
-    GatherHash(s.value());
   }
 }
 

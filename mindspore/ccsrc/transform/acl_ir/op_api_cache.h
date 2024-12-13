@@ -57,7 +57,7 @@ inline int32_t SetExecutorRepeatable(const std::string &workspace_api_name, aclO
   } else {
     repeat_ret = aclSetAclOpExecutorRepeatable(executor);
     if (repeat_ret != 0) {
-      MS_LOG(INFO) << workspace_api_name << " don't support cache!";
+      MS_LOG(INFO) << workspace_api_name << " don't support cache, repeat_ret is " << repeat_ret;
     }
   }
   return repeat_ret;
@@ -78,12 +78,12 @@ inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
   g_hash_offset += size_expression;
 }
 
-// Old cache hash.
+// Old cache hash for kbk only when cache is disabled.
 BACKEND_EXPORT void GatherInfo(mindspore::kernel::KernelTensor *);
 BACKEND_EXPORT void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
 BACKEND_EXPORT void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &);
-BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
 
+BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
 BACKEND_EXPORT void GatherInfo(const mindspore::tensor::BaseTensorPtr &);
 BACKEND_EXPORT void GatherInfo(const std::optional<tensor::BaseTensorPtr> &);
 BACKEND_EXPORT void GatherInfo(const std::vector<tensor::BaseTensorPtr> &);
@@ -128,14 +128,18 @@ void GatherInfo(const T &arg, const Args &... args) {
 }
 
 void RefreshAddr(mindspore::kernel::KernelTensor *);
-void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
-void RefreshAddr(const device::DeviceAddressPtr &device_address);
-void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor);
+inline void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
+  RefreshAddr(tensor_and_trans.first);
+}
+
 inline void RefreshAddr(const std::vector<mindspore::kernel::KernelTensor *> &tensor_list) {
   for (auto tensor : tensor_list) {
     RefreshAddr(tensor);
   }
 }
+
+void RefreshAddr(const device::DeviceAddressPtr &device_address);
+void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor);
 
 template <typename Args>
 void RefreshAddr(const Args &values) {}
@@ -181,13 +185,6 @@ bool HitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspa
 }
 
 template <typename... Args>
-uint64_t CalcOpApiHash(const std::string &arg, const Args &... args) {
-  g_hash_offset = 0;
-  GatherInfo(arg, args...);
-  return calc_hash_id();
-}
-
-template <typename... Args>
 bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size, uint64_t *hash_id,
                     const Args &... args) {
   static const auto get_exec_cache = transform::GetOpApiFunc("PTAGetExecCache");
@@ -224,12 +221,12 @@ bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
   return true;
 }
 
-// New cache hash.
+// New cache hash for kbk and pyboost.
 BACKEND_EXPORT void GatherHash(mindspore::kernel::KernelTensor *);
 BACKEND_EXPORT void GatherHash(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
 BACKEND_EXPORT void GatherHash(const std::vector<mindspore::kernel::KernelTensor *> &);
-BACKEND_EXPORT void GatherHash(const device::DeviceAddressPtr &);
 
+BACKEND_EXPORT void GatherHash(const device::DeviceAddressPtr &);
 BACKEND_EXPORT void GatherHash(const mindspore::tensor::BaseTensorPtr &);
 BACKEND_EXPORT void GatherHash(const std::optional<tensor::BaseTensorPtr> &);
 BACKEND_EXPORT void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
