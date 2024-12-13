@@ -2944,12 +2944,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return x.sum(tuple(axes), keepdims=True)
         return x
 
-    def nansum(self, axis=None, keepdims=False, dtype=None):
-        """
-        For details, please refer to :func:`mindspore.ops.nansum`.
-        """
-        return tensor_operator_registry.get('nansum')(self, axis=axis, keepdims=keepdims, dtype=dtype)
-
     def nanmean(self, axis=None, keepdims=False, *, dtype=None):
         r"""
         For details, please refer to :func:`mindspore.ops.nanmean`.
