@@ -48,20 +48,25 @@ def set_device(device_target, device_id=0):
         logger.info("Reset device target to CPU when set_device.")
         device_target = "CPU"
 
+    is_config = True
+    if device_id is None:
+        device_id = 0
+        is_config = False
+    if device_id < 0:
+        raise ValueError("The device id must bigger than or equal to 0.")
+
     if DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError("The 'mindspore.set_device' can not be set repeatedly.")
+        old_device_target = DeviceManagerConf.get_instance().get_device_target()
+        old_device_id = DeviceManagerConf.get_instance().get_device_id()
+        if old_device_target != device_target or old_device_id != device_id:
+            raise RuntimeError("The 'mindspore.set_device' can not be modified.")
+        return
 
     device_context = DeviceContextManager.get_instance().get_device_context(device_target)
     if device_context is not None and device_context.initialized():
         raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
                            "Suggest setting it as early as possible.")
-
-    if device_id is None:
-        DeviceManagerConf.get_instance().set_device(device_target, 0, True)
-    else:
-        if device_id < 0:
-            raise ValueError("The device id must bigger than or equal to 0.")
-        DeviceManagerConf.get_instance().set_device(device_target, device_id, False)
+    DeviceManagerConf.get_instance().set_device(device_target, device_id, is_config)
 
 @args_type_check(deterministic=bool)
 def set_deterministic(deterministic):
@@ -128,3 +133,11 @@ def _check_runtime_conf_env_valid():
     if device_context is not None and device_context.initialized():
         raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
                            "Suggest setting it as early as possible, but after the 'mindspore.set_device'.")
+
+def _check_device_vaild():
+    '''
+    Check the device must be initialized:
+    The 'mindspore.set_device' is configured to indicate that the device has been initialized.
+    '''
+    if not DeviceManagerConf.get_instance().is_device_enable():
+        raise RuntimeError("The device has not been initialized, please set 'mindspore.set_device' first.")

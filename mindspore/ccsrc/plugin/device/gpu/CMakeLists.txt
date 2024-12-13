@@ -5,6 +5,7 @@ include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CU
 
 ########### mindspore_gpu.so #####
 set(GPU_SUB_COMP
+        device_context_conf
         hal/device
         hal/hardware
         hal/profiler

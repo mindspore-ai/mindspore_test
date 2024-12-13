@@ -1275,6 +1275,48 @@ def _check_key(key):
         raise ValueError(f"Please set '{key}' through parameter ascend_config")
 
 
+def _check_context_deprecated(key):
+    """Checking whether a context key will be deprecated."""
+    deprecated_context_dict = {'save_graphs': 'env MS_DEV_SAVE_GRAPHS',
+                               'save_graphs_path': 'env MS_DEV_SAVE_GRAPHS_PATH',
+                               'precompile_only': 'env MS_DEV_PRECOMPILE_ONLY',
+                               'check_bprop': '',
+                               'max_call_depth': 'api mindspore.set_recursion_limit()',
+                               'grad_for_scalar': 'tensor derivative',
+                               'enable_compile_cache': 'env MS_COMPILER_CACHE_ENABLE',
+                               'enable_cache_path': 'env MS_COMPILER_CACHE_PATH',
+                               'debug_level': '',
+                               'device_target': 'api mindspore.set_device()',
+                               'device_id': 'api mindspore.set_device()',
+                               'deterministic': 'api mindspore.set_deterministic()',
+                               'inter_op_parallel_num': 'api mindspore.runtime.dispatch_threads_num()',
+                               'pynative_synchronize': 'api mindspore.runtime.launch_blocking()',
+                               'max_device_memory': 'api mindspore.runtime.set_memory()',
+                               'variable_memory_max_size': 'api mindspore.runtime.set_memory()',
+                               'mempool_block_size': 'api mindspore.runtime.set_memory()',
+                               'memory_optimize_level': 'api mindspore.runtime.set_memory()',
+                               'ascend_config': '''api mindspore.device_context.ascend.op_precision.precision_mode(),
+                                                       mindspore.device_context.ascend.op_precision.op_precision_mode(),
+                                                       mindspore.device_context.ascend.op_precision.matmul_allow_hf32(),
+                                                       mindspore.device_context.ascend.op_precision.conv_allow_hf32(),
+                                                       mindspore.device_context.ascend.op_tuning.op_compile()''',
+                               'aoe_tune_mode': 'api mindspore.device_context.ascend.op_tuning.aoe_tune_mode()',
+                               'aoe_config': 'api mindspore.device_context.ascend.op_tuning.aoe_job_type()',
+                               'op_timeout': 'api mindspore.device_context.ascend.op_debug.execute_timeout()',
+                               'op_debug_option': 'api mindspore.device_context.ascend.op_debug.debug_option()',
+                               'gpu_config': '''api mindspore.device_context.gpu.op_precision.conv_allow_tf32(),
+                                                     mindspore.device_context.gpu.op_precision.matmul_allow_tf32(),
+                                                     mindspore.device_context.gpu.op_precision.conv_fprop_algo(),
+                                                     mindspore.device_context.gpu.op_precision.conv_wgrad_algo(),
+                                                     mindspore.device_context.gpu.op_precision.conv_dgrad_algo()''',
+                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()'}
+    if key in deprecated_context_dict:
+        log = f"For 'context.set_context', the parameter '{key}' will be deprecated and removed in a future version."
+        if deprecated_context_dict.get(key) != '':
+            log += f" Please use the {deprecated_context_dict.get(key)} instead."
+        logger.warning(log)
+
+
 @args_type_check(mode=int, precompile_only=bool, device_target=str, device_id=int, save_graphs=(bool, int),
                  save_graphs_path=str, aoe_tune_mode=str, aoe_config=dict,
                  enable_reduce_precision=bool, variable_memory_max_size=str,
@@ -1358,7 +1400,7 @@ def set_context(**kwargs):
     |                         |  inter_op_parallel_num (D)   | CPU/GPU/Ascend            |mindspore.runtime.dispatch_t|
     |                         |                              |                           |hreads_num                  |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  runtime_num_threads (D)     | CPU/GPU/Ascend            |cpu.op_tuning.threads_num   |
+    |                         |runtime_num_threads (D)       | CPU/GPU/Ascend            |cpu.op_tuning.threads_num   |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  compile_cache_path          | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
@@ -1366,7 +1408,7 @@ def set_context(**kwargs):
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  support_binary              | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  memory_optimize_level (D)   | CPU/GPU/Ascend            |mindspore.runtime.set_memory|
+    |                         |  memory_optimize_level (D)    | CPU/GPU/Ascend            |mindspore.runtime.set_memory|
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  memory_offload              | GPU/Ascend                |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
@@ -1852,6 +1894,7 @@ def set_context(**kwargs):
     _check_ascend_device_context_initialized(device, kwargs)
 
     for key, value in kwargs.items():
+        _check_context_deprecated(key)
         if key in ('enable_sparse', 'auto_tune_mode'):
             logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated, "
                            "and will be removed in the next version.")
@@ -1910,6 +1953,7 @@ def set_context(**kwargs):
 
 
 def get_context(attr_key):
+
     """
     Get context attribute value according to the input key.
     If some attributes are not set, they will be automatically obtained.

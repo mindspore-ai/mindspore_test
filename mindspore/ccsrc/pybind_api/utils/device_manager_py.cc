@@ -25,6 +25,7 @@ void RegDeviceManagerConf(const py::module *m) {
     .def_static("get_instance", &DeviceManagerConf::GetInstance, "Get DeviceManagerConf instance.")
     .def("set_device", &DeviceManagerConf::set_device, "Set device target and device id.")
     .def("get_device_target", &DeviceManagerConf::device_target, "Get device target.")
+    .def("get_device_id", &DeviceManagerConf::device_id, "Get device id.")
     .def("is_device_enable", &DeviceManagerConf::IsDeviceEnable, "Is device enable.")
     .def("set_deterministic", &DeviceManagerConf::set_deterministic, "Set deterministic.")
     .def("is_deterministic_configured", &DeviceManagerConf::IsDeterministicConfigured, "Set deterministic.");
