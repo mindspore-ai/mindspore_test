@@ -1,0 +1,34 @@
+squeeze:
+  description: |
+    Return the Tensor after deleting the dimension of size 1 in the specified `axis`.
+
+    Refer to :func:`mindspore.ops.squeeze` for more details.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        axis (Union[int, tuple(int)]): Specifies the dimension indexes of shape to be removed, which will remove
+            all the dimensions of size 1 in the given axis parameter. If specified, it must be int32 or int64.
+            Default: ``()`` .
+
+    Inputs:
+        - **input** (Tensor) - The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
+
+    Outputs:
+        Tensor, the shape of tensor is :math:`(x_1, x_2, ..., x_S)`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.ones(shape=[3, 2, 1]), mindspore.float32)
+        >>> squeeze = ops.Squeeze(2)
+        >>> output = squeeze(input)
+        >>> print(output)
+        [[1. 1.]
+         [1. 1.]
+         [1. 1.]]

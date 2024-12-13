@@ -2323,10 +2323,12 @@ def squeeze(input, axis=None):
     to (A, B) when :math:`axis=1`, but when :math:`axis=0` or :math:`axis=2`, an error will occur.
 
     Note:
-        - Squeezing a dimension that is not 1 will raise an error.
         - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
           and there is no Tensor data copy process.
         - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
@@ -2341,7 +2343,6 @@ def squeeze(input, axis=None):
         TypeError: If `input` is not a tensor.
         TypeError: If `axis` is not an int, tuple or list.
         TypeError: If `axis` is a tuple or list whose elements are not all int.
-        ValueError: If the corresponding dimension of the specified axis isn't equal to 1.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
