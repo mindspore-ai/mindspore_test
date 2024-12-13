@@ -406,6 +406,7 @@ class GraphExecutor {
   virtual void InitGraphInfo(const FuncGraphPtr &graph) { return; }
   virtual void InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const { return; }
   virtual void AllocGEInputOutputMemory(const KernelGraphPtr &graph) const { return; }
+  virtual void AllocInputMemory(const DeviceAddressPtr &input_address) const { return; }
   virtual void AllocGEFixMemory() const { return; }
   virtual void RunCheckpointGraph(const KernelGraphPtr &graph) { return; }
   virtual void AllocGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
