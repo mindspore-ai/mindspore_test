@@ -17,7 +17,6 @@
 #include <vector>
 #include <map>
 #include "common/common_test.h"
-#include "include/backend/mem_reuse/enhanced_dynamic_mem_pool.h"
 #include "runtime/device/memory_scheduler.h"
 
 namespace mindspore::device {
