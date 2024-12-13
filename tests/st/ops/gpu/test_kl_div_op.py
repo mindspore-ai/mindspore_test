@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import numpy as np
-import pytest
+from tests.mark_utils import arg_mark
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -29,10 +27,10 @@ context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 class Net(nn.Cell):
     def __init__(self, reduction="none"):
         super(Net, self).__init__()
-        self.KLDivLoss = P.KLDivLoss("none")
+        self.kl_div_loss = P.KLDivLoss(reduction)
 
     def construct(self, x, y):
-        return self.KLDivLoss(x, y)
+        return self.kl_div_loss(x, y)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -52,6 +50,21 @@ def test_kl_div_loss():
               -0.23191005, -0.2512708, -0.20934652, -0.32021108, -0.45477402, -0.278453,
               -0.5551879, -0.48938933]
     assert np.allclose(loss.asnumpy(), expect)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_kl_div_loss_negative_target():
+    """
+    Feature: Test KLDivLoss.
+    Description: Test KLDivLoss op with negative target.
+    Expectation: The result match to expect.
+    """
+    prediction = Tensor(np.array([[0.3, 0.7], [0.5, 0.5]]).astype(np.float32))
+    target = Tensor(np.array([[-1, 1], [1, -1]]).astype(np.float32))
+    net = Net("none")
+    output = net(prediction, target)
+    expect = np.array([[0, -0.7], [-0.5, 0]])
+    assert np.allclose(output.asnumpy(), expect)
 
 
 class Grad(nn.Cell):
@@ -107,3 +120,19 @@ def test_kl_div_loss_grad_float64():
                   -0.03094601, -0.14319494]
 
     assert np.allclose(dx[0].asnumpy(), dx1_expect)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_kl_div_loss_grad_negative_target():
+    """
+    Feature: Test KLDivLoss.
+    Description: Test KLDivLossGrad op with negative target.
+    Expectation: The result match to expect.
+    """
+    prediction = Tensor(np.array([[0.3, 0.7], [0.5, 0.5]]).astype(np.float32))
+    target = Tensor(np.array([[-1, 1], [1, -1]]).astype(np.float32))
+    sens = Tensor(np.array([-1]).astype(np.float32))
+    grad = Grad(Net("sum"))
+    dx = grad(prediction, target, sens)
+    expect = np.array([[-1, 1], [1, -1]])
+    assert np.allclose(dx[0].asnumpy(), expect)
