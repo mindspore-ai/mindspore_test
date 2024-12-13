@@ -17,6 +17,12 @@ import re
 import shutil
 from tests.mark_utils import arg_mark
 
+def check_has_vmm_log(log_file_path):
+    with open(log_file_path, 'r') as file:
+        for line in file:
+            if 'VMM is enabled' in line:
+                return
+    assert False, "No VMM log found in log file: " + log_file_path
 
 def check_log_for_error(log_file_path):
     with open(log_file_path, 'r') as file:
@@ -45,7 +51,7 @@ def check_file_exists_and_not_empty(file_path):
     print(f"File '{file_path}' exists and is not empty.")
 
 
-@arg_mark(plat_marks=['platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level0',
           card_mark='allcards',
           essential_mark='essential')
@@ -78,6 +84,7 @@ def test_dry_pynative_resnet50_ascend_8p():
     # compare
     check_log_for_error("real_run/worker_0.log")
     check_log_for_error("dry_run/worker_0.log")
+    check_has_vmm_log("real_run/worker_0.log")
     dry_run_memory = get_used_max_memory("dry_run/worker_0.log")
     real_run_memory = get_used_max_memory("real_run/worker_0.log")
     check_file_exists_and_not_empty("dry_run/rank_0/tracker_graph.ir")
