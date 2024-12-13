@@ -174,17 +174,17 @@ void AddCommFusionForKbk(const PassManagerPtr &opt_acl_pm, const KernelGraphPtr 
   // So these passes are before kernel select process, no need to generate kernel build info in them.
   if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {
     MS_LOG(INFO) << "Parallel comm_fusion of AllReduce is enabled.";
-    opt_acl_pm->AddPass(std::make_shared<opt::AllReduceFusion>());
+    opt_acl_pm->AddFusionPass(std::make_shared<opt::AllReduceFusion>());
   }
   if (parallel::ParallelContext::GetInstance()->enable_all_gather_fusion()) {
     MS_LOG(INFO) << "Parallel comm_fusion of AllGather is enabled.";
-    opt_acl_pm->AddPass(std::make_shared<opt::AllGatherFusion>());
-    opt_acl_pm->AddPass(std::make_shared<opt::ConcatOutputsForAllGather>());
+    opt_acl_pm->AddFusionPass(std::make_shared<opt::AllGatherFusion>());
+    opt_acl_pm->AddFusionPass(std::make_shared<opt::ConcatOutputsForAllGather>());
   }
   if (parallel::ParallelContext::GetInstance()->enable_reduce_scatter_fusion()) {
     MS_LOG(INFO) << "Parallel comm_fusion of ReduceScatter is enabled.";
-    opt_acl_pm->AddPass(std::make_shared<opt::ReduceScatterFusion>());
-    opt_acl_pm->AddPass(std::make_shared<opt::SplitInputsForReduceScatter>());
+    opt_acl_pm->AddFusionPass(std::make_shared<opt::ReduceScatterFusion>());
+    opt_acl_pm->AddFusionPass(std::make_shared<opt::SplitInputsForReduceScatter>());
   }
 }
 }  // namespace
@@ -268,9 +268,9 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::InsertTypeTransformOp>());
   }
   if (!kernel_graph->is_graph_run_mode() && context_ptr->ascend_soc_version() != "ascend910") {
-    opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::ShapeReshapeFusion>());
-    opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::ShapeReshapeFusion2>());
-    opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::ShapeReshapeDirectFusion>());
+    opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
+    opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion2>());
+    opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeDirectFusion>());
   }
   if (!common::IsDisableRuntimeConfig(common::kRuntimeView)) {
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::GraphViewReplacePass>());
@@ -336,7 +336,7 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   kernel_graph->SetExecOrderByDefault();
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto after_inline_pm = std::make_shared<PassManager>("after_inline_pm");
-  after_inline_pm->AddPass(std::make_shared<DropoutGenMaskFusion>());
+  after_inline_pm->AddFusionPass(std::make_shared<DropoutGenMaskFusion>());
   after_inline_pm->AddPass(std::make_shared<CommonSubexpressionElimination>());
   after_inline_pm->AddPass(std::make_shared<EliminateMaketupleGetitem>());
   after_inline_pm->AddPass(std::make_shared<InsertMoveTo>());
@@ -388,7 +388,7 @@ void GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph) {
 }
 
 PassManagerPtr GetGEUnifyMindIRPassManager() {
-  auto unify_mindir_pm = std::make_shared<opt::PassManager>("ge_unify_mindir_pm");
+  auto unify_mindir_pm = std::make_shared<opt::PassManager>("unify_mindir_1");
   MS_EXCEPTION_IF_NULL(unify_mindir_pm);
   GetBackendCommonUnifyMindIRPassManager(&unify_mindir_pm);
   return unify_mindir_pm;

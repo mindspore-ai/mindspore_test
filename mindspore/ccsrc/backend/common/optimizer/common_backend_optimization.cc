@@ -52,7 +52,7 @@
 
 namespace mindspore {
 namespace opt {
-PassManagerPtr GetBackendCommonOptimizationPassManagerPtr(const FuncGraphPtr &graph) {
+PassManagerPtr GetBackendCommonOptimizationPassManagerPtr() {
   auto common_pm = std::make_shared<PassManager>("common_pm");
   common_pm->AddPass(std::make_shared<ConvertDynamicBroadcastTo>());
   common_pm->AddPass(std::make_shared<ConvertConstInputToAttr>());
@@ -67,11 +67,11 @@ PassManagerPtr GetBackendCommonOptimizationPassManagerPtr(const FuncGraphPtr &gr
   common_pm->AddPass(std::make_shared<ConvertConstInputToTensorInputForPrint>());
   common_pm->AddPass(std::make_shared<ConvertTupleOutputToMaketuple>());
   common_pm->AddPass(std::make_shared<ConvertUnusedTupleParaToMakeTuple>());
-  common_pm->AddPass(std::make_shared<FlattenConcatFission>());
+  common_pm->AddFusionPass(std::make_shared<FlattenConcatFission>());
   common_pm->AddPass(std::make_shared<AddInputStructuralForPyExecute>());
-  common_pm->AddPass(std::make_shared<BroadcastToFusion>());
+  common_pm->AddFusionPass(std::make_shared<BroadcastToFusion>());
   common_pm->AddPass(std::make_shared<AddAttrToNode>());
-  common_pm->AddPass(std::make_shared<ReplaceAddNFusion>());
+  common_pm->AddFusionPass(std::make_shared<ReplaceAddNFusion>());
   return common_pm;
 }
 
@@ -88,7 +88,7 @@ void BackendCommonOptimization(const std::shared_ptr<session::KernelGraph> &kern
   }
 #endif
   auto optimizer = std::make_shared<GraphOptimizer>();
-  optimizer->AddPassManager(GetBackendCommonOptimizationPassManagerPtr(kernel_graph));
+  optimizer->AddPassManager(GetBackendCommonOptimizationPassManagerPtr());
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
   PROF_END(BackendCommonOptimization);

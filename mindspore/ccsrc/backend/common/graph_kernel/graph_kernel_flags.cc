@@ -476,4 +476,48 @@ std::string GraphKernelFlags::DumpAllFlags() const {
 
   return json.dump();
 }
+
+GraphKernelPassChecker &GraphKernelPassChecker::GetInstance() {
+  static GraphKernelPassChecker instance;
+  return instance;
+}
+
+void GraphKernelPassChecker::SetEnablePassActive(size_t index, bool value) {
+  if (index < GraphKernelFlags::GetInstance().enable_pass.size()) {
+    if (enable_pass_active_[index]) {
+      MS_LOG(WARNING) << "More than one graph kernel pass enable by "
+                      << GraphKernelFlags::GetInstance().enable_pass[index] << "!";
+    } else {
+      enable_pass_active_[index] = value;
+    }
+  }
+}
+void GraphKernelPassChecker::SetDisablePassActive(size_t index, bool value) {
+  if (index < GraphKernelFlags::GetInstance().disable_pass.size()) {
+    if (disable_pass_active_[index]) {
+      MS_LOG(WARNING) << "More than one graph kernel pass disable by "
+                      << GraphKernelFlags::GetInstance().disable_pass[index] << "!";
+    } else {
+      disable_pass_active_[index] = value;
+    }
+  }
+}
+
+void GraphKernelPassChecker::PassFlagsValidation() {
+  for (size_t i = 0; i < enable_pass_active_.size(); ++i) {
+    if (enable_pass_active_[i]) {
+      continue;
+    }
+    MS_LOG(WARNING) << "graph kernel pass enable flag \"" << GraphKernelFlags::GetInstance().enable_pass[i]
+                    << "\" is not valid!";
+  }
+
+  for (size_t i = 0; i < disable_pass_active_.size(); ++i) {
+    if (disable_pass_active_[i]) {
+      continue;
+    }
+    MS_LOG(WARNING) << "graph kernel pass disable flag \"" << GraphKernelFlags::GetInstance().disable_pass[i]
+                    << "\" is not valid!";
+  }
+}
 }  // namespace mindspore::graphkernel
