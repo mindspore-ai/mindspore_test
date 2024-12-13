@@ -134,7 +134,7 @@ void DvmCall(const std::string &op_name, OpRunner *op, const F &func, const Args
   tensor->set_need_pipeline_sync(true);
   auto &outputs = const_cast<std::vector<tensor::BaseTensorPtr> &>(op->outputs());
   outputs.emplace_back(std::move(tensor));
-  op->CreateOutputSimpleInfoForView();
+  op->CreateOutputSimpleInfo();
   MS_LOG(INFO) << op_name << " call end, kernel id is " << k->id();
 }
 
@@ -189,7 +189,7 @@ void BinaryDvmCall(const std::string &op_name, OpRunner *op, dvm::BinaryOpType o
   tensor->set_need_pipeline_sync(true);
   auto &outputs = const_cast<std::vector<tensor::BaseTensorPtr> &>(op->outputs());
   outputs.emplace_back(std::move(tensor));
-  op->CreateOutputSimpleInfoForView();
+  op->CreateOutputSimpleInfo();
   MS_LOG(INFO) << op_name << " call end, kernel id is " << k->id();
 }
 }  // namespace
@@ -922,7 +922,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   for (const auto &output : outputs_) {
     output->set_need_pipeline_sync(true);
   }
-  CreateOutputSimpleInfoForView();
+  CreateOutputSimpleInfo();
   MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
   FlushLazyFusion();
   return std::make_tuple(outputs_[kIndex0], outputs_[kIndex1], outputs_[kIndex2]);
@@ -941,7 +941,7 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
     PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
     outputs_.push_back(variable_tensor);
     outputs_[0]->set_need_pipeline_sync(true);
-    CreateOutputSimpleInfoForView();
+    CreateOutputSimpleInfo();
     FlushLazyFusion();
     return outputs_[0];
   }
@@ -957,7 +957,7 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
   outputs_.push_back(variable_tensor);
   k->Output(outputs_[0], value_obj);
   outputs_[0]->set_need_pipeline_sync(true);
-  CreateOutputSimpleInfoForView();
+  CreateOutputSimpleInfo();
   MS_LOG(INFO) << op_name() << " call end, kernel id is " << k->id();
   FlushLazyFusion();
   return outputs_[0];
