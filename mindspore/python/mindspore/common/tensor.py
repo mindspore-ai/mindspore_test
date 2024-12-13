@@ -1531,12 +1531,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('floor_divide')(self, other)
 
-    def lerp(self, end, weight):
-        """
-        For details, please refer to :func:`mindspore.ops.lerp`.
-        """
-        return tensor_operator_registry.get('lerp')(self, end, weight)
-
     # pylint: disable=redefined-builtin
     def norm(self, ord=None, dim=None, keepdim=False, *, dtype=None):
         """

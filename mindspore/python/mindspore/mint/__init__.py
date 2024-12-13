@@ -344,7 +344,7 @@ from mindspore.ops.auto_generate import floor
 # 231
 from mindspore.ops.function.math_func import inverse_ext as inverse
 # 239
-from mindspore.ops.function.math_func import lerp_ext as lerp
+from mindspore.ops.functional_overload import lerp
 # 244
 from mindspore.ops.auto_generate import log1p
 # 261

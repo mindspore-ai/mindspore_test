@@ -204,7 +204,6 @@ invert_ = P.Invert()
 isnan_ = P.IsNan()
 lcm_ = Lcm()
 lerp_ = P.Lerp()
-lerp_scalar_ = P.LerpScalar()
 lgamma_ = P.Lgamma()
 linspace_ = P.LinSpace()
 log1p_ = P.Log1p()
@@ -5599,6 +5598,7 @@ def lerp(input, end, weight):
 
     If `weight` is a tensor, the shapes of three inputs need to be broadcast;
     If `weight` is a float, the shapes of `input` and `end` need to be broadcast.
+    If `weight` is a float and platform is Ascend, the types of `input` and `end` need to be float32.
 
     .. math::
 
@@ -5636,56 +5636,6 @@ def lerp(input, end, weight):
         >>> print(output)
         [5.5 6. 6.5 7. ]
     """
-    return lerp_(input, end, weight)
-
-
-def lerp_ext(input, end, weight):
-    """
-    Does a linear interpolation of two tensors input and end based on a float or tensor weight.
-
-    If `weight` is a tensor, the shapes of three inputs need to be broadcast;
-    If `weight` is a float, the shapes of `input` and `end` need to be broadcast.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    .. math::
-        output_{i} = input_{i} + weight_{i} * (end_{i} - input_{i})
-
-    Args:
-        input (Tensor): The tensor with the starting points. Data type must be float16 or float32.
-        end (Tensor): The tensor with the ending points. Data type must be the same as `input`.
-        weight (Union[float, Tensor]): The weight for the interpolation formula. Must be a float
-            or a scalar tensor with float16 or float32 data type.
-
-    Returns:
-        Tensor, has the same type and shape as input `input`.
-
-    Raises:
-        TypeError: If `input` or `end` is not a tensor.
-        TypeError: If `weight` is neither scalar(float) nor tensor.
-        TypeError: If dtype of `input` or `end` is neither float16 nor float32.
-        TypeError: If dtype of `weight` is neither float16 nor float32 when it is a tensor.
-        TypeError: If `input` and `end` have different data types.
-        TypeError: If `input`, `end` and `weight` have different data types when `weight` is a tensor.
-        ValueError: If `end` could not be broadcast to a tensor with shape of `input`.
-        ValueError: If `weight` could not be broadcast to tensors with shapes of `input` and `end` when it is a tensor.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-        >>> end = Tensor(np.array([10., 10., 10., 10.]), mindspore.float32)
-        >>> output = ops.lerp(input, end, 0.5)
-        >>> print(output)
-        [5.5 6. 6.5 7. ]
-    """
-    if isinstance(weight, float):
-        return lerp_scalar_(input, end, weight)
     return lerp_(input, end, weight)
 
 

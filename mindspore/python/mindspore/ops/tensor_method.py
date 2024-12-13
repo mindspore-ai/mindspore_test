@@ -395,6 +395,8 @@ from mindspore.ops.function.math_func import addbmm
 # 502
 from mindspore.ops.auto_generate import addmm_op
 from mindspore.ops.function.math_func import addmm
+# 880
+from mindspore.ops.auto_generate import lerp, lerp_scalar
 
 # 1028
 from mindspore.ops.function.math_func import var_ext
@@ -1381,6 +1383,15 @@ def tensor_erfc(input):
 # 207 expm1
 def tensor_expm1(input):
     return expm1(input)
+
+
+# 880
+def tensor_lerp(input, end, weight):
+    return lerp(input, end, weight)
+
+
+def tensor_lerp_scalar(input, end, weight):
+    return lerp_scalar(input, end, weight)
 
 
 # 220 hardshrink
