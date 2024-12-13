@@ -15,7 +15,7 @@ assign_add:
             it is recommended to use the same data type when using this operator.
 
         Args:
-            variable (Parameter, Tensor): The `Parameter` or `Tensor`.
+            variable (Union[Parameter, Tensor]): The `Parameter` or `Tensor`.
                 :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
             value (Union[Tensor, Number]): The value to be added to the `variable`.
                 If `value` is a number, the number is automatically converted to Tensor.

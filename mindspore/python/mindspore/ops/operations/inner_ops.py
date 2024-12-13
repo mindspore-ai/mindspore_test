@@ -302,8 +302,8 @@ class FusedWeightScaleApplyMomentum(PrimitiveWithInfer):
           Default: ``0.0`` .
         - **loss_scale** (Tensor) - The loss scale value, must be a scalar tensor with float data type.
           Default: ``1.0`` .
-        - **variable** (Parameter) - Weights to be updated. data type must be float.
-        - **accumulation** (Parameter) - Accumulated gradient value by moment weight.
+        - **variable** (Union[Parameter, Tensor]) - Weights to be updated. data type must be float.
+        - **accumulation** (Union[Parameter, Tensor]) - Accumulated gradient value by moment weight.
           Has the same data type with `variable`.
         - **learning_rate** (Union[Number, Tensor]) - The learning rate value, must be a float number or
           a scalar tensor with float data type.

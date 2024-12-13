@@ -615,12 +615,12 @@ class InstanceNorm(PrimitiveWithInfer):
     Inputs:
         - **input_x** (Tensor) - The input of InstanceNorm, Tensor of shape :math:`(N, C)`,
           data type: float16 or float32.
-        - **gamma** (Parameter) - Scale, Tensor of shape :math:`(C,)`,
+        - **gamma** (Union[Parameter, Tensor])) - Scale, Tensor of shape :math:`(C,)`,
           data type: float32.
-        - **beta** (Parameter) - Bias, Tensor of shape :math:`(C,)`,
+        - **beta** (Union[Parameter, Tensor])) - Bias, Tensor of shape :math:`(C,)`,
           data type: float32.
-        - **mean** (Parameter) - Mean value, Tensor of shape :math:`(C,)`, data type: float32.
-        - **variance** (Parameter) - Variance value, Tensor of shape :math:`(C,)`, data type: float32.
+        - **mean** (Union[Parameter, Tensor])) - Mean value, Tensor of shape :math:`(C,)`, data type: float32.
+        - **variance** (Union[Parameter, Tensor])) - Variance value, Tensor of shape :math:`(C,)`, data type: float32.
 
     Outputs:
         Tuple of 3 Tensors, the normalized input, the updated parameters.
@@ -2290,9 +2290,9 @@ class ApplyMomentum(Primitive):
         gradient_scale (float): The scale of the gradient. Default: ``1.0`` .
 
     Inputs:
-        - **variable** (Parameter) - Weights to be updated. Data type must be float64, int64, float, float16,
-          int16, int32, int8, uint16, uint32, uint64, uint8, complex64, complex128.
-        - **accumulation** (Parameter) - Accumulated gradient value by moment weight,
+        - **variable** (Union[Parameter, Tensor]) - Weights to be updated. Data type must be float64, int64, float,
+          float16, int16, int32, int8, uint16, uint32, uint64, uint8, complex64, complex128.
+        - **accumulation** (Union[Parameter, Tensor]) - Accumulated gradient value by moment weight,
           has the same data type with `variable`.
         - **learning_rate** (Union[Number, Tensor]) - The learning rate value, must be a float64, int64, float,
           float16, int16, int32, int8, uint16, uint32, uint64, uint8, complex64, complex128 number or
@@ -2309,7 +2309,7 @@ class ApplyMomentum(Primitive):
 
     Raises:
         TypeError: If the `use_locking` or `use_nesterov` is not a bool or `gradient_scale` is not a float.
-        TypeError: If the data type of `var`, `accum` and `grad` conversion of Parameter is not supported.
+        TypeError: If the data type of `var`, `accum` and `grad` conversion is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -3564,11 +3564,11 @@ class Adam(Primitive):
             If ``False`` , update the gradients without using NAG. Default: ``False`` .
 
     Inputs:
-        - **var** (Parameter) - Weights to be updated. The shape is :math:`(N, *)` where :math:`*` means,
+        - **var** (Union[Parameter, Tensor]) - Weights to be updated. The shape is :math:`(N, *)` where :math:`*` means,
           any number of additional dimensions. The data type can be float16 or float32.
-        - **m** (Parameter) - The 1st moment vector in the updating formula,
+        - **m** (Union[Parameter, Tensor]) - The 1st moment vector in the updating formula,
           the shape should be the same as `var`.
-        - **v** (Parameter) - the 2nd moment vector in the updating formula,
+        - **v** (Union[Parameter, Tensor]) - the 2nd moment vector in the updating formula,
           the shape should be the same as `var`.
         - **beta1_power** (float) - :math:`beta_1^t(\beta_1^{t})` in the updating formula.
         - **beta2_power** (float) - :math:`beta_2^t(\beta_2^{t})` in the updating formula.

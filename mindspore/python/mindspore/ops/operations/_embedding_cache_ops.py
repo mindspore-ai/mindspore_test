@@ -27,7 +27,7 @@ class UpdateCache(PrimitiveWithCheck):
     The difference is that UpdateCache will not update when indices < 0 or indices >= max_num.
 
     Inputs:
-        - **input_x** (Parameter) - Parameter which is going to be updated.
+        - **input_x** (Union[Parameter, Tensor]) - Parameter or Tensor which is going to be updated.
         - **indices** (Tensor) - Update indices of input_x.
         - **updates** (Tensor) - The update values.
 
@@ -148,7 +148,7 @@ class CacheSwapTable(PrimitiveWithCheck):
     Delete a hashmap entry,and insert a new key to hashmap, return the key and value of delete entry.
 
     Inputs:
-        - **cache_table** (Parameter) - The cache table which is on device.
+        - **cache_table** (Union[Parameter, Tensor]) - The cache table which is on device.
         - **swap_cache_idx** (Tensor) - The index of table which need to swap. -1 is skipped.
         - **miss_value** (int) - The values which arg going to swap into cache table.
 
@@ -227,10 +227,10 @@ class MapCacheIdx(PrimitiveWithCheck):
 
 class DynamicAssign(PrimitiveWithCheck):
     """
-    Assigns `Parameter` with a value, the `value` can have a dynamic shape.
+    Assigns `Parameter` or `Tensor` with a value, the `value` can have a dynamic shape.
 
     Inputs:
-        - **variable** (Parameter) - The `Parameter`.
+        - **variable** (Union[Parameter, Tensor]) - The `Parameter` or `Tensor`.
         - **value** (Tensor) - The value to be assigned.
 
     Outputs:

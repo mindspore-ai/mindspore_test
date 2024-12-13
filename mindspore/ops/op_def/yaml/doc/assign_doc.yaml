@@ -7,7 +7,7 @@ assign:
         the relatively highest priority data type.
     
         Args:
-            variable (Parameter, Tensor): The `Parameter` or `Tensor`. :math:`(N,*)` where :math:`*` means,
+            variable (Union[Parameter, Tensor]): The `Parameter` or `Tensor`. :math:`(N,*)` where :math:`*` means,
                 any number of additional dimensions.
             value (Tensor): The value to be assigned, has the same shape with `variable`.
     

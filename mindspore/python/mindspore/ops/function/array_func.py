@@ -2395,8 +2395,8 @@ def scatter_mul(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2482,7 +2482,7 @@ def scatter_max(input_x, indices, updates):
     required by `input_x`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
             The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
         indices (Tensor): The index to do max operation whose data type must be mindspore.int32.
         updates (Tensor): The tensor doing the max operation with `input_x`,
@@ -2494,8 +2494,8 @@ def scatter_max(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2523,7 +2523,7 @@ def scatter_add(input_x, indices, updates):
     This operation outputs the `input_x` after the update is done, which makes it convenient to use the updated value.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do add operation whose data type must be int32 or int64.
         updates (Tensor): The tensor doing the add operation with `input_x`,
             the data type is same as `input_x`, the shape is `indices.shape + x.shape[1:]`.
@@ -2534,8 +2534,8 @@ def scatter_add(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-            is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2575,7 +2575,7 @@ def scatter_min(input_x, indices, updates):
     when `updates` does not support conversion to the data type required by `input_x`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do min operation whose data type must be mindspore.int32 or mindspore.int64.
         updates (Tensor): The tensor doing the min operation with `input_x`,
             the data type is same as `input_x`, the shape is `indices.shape + input_x.shape[1:]`.
@@ -2586,8 +2586,8 @@ def scatter_min(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2627,7 +2627,7 @@ def scatter_div(input_x, indices, updates):
     when `updates` does not support conversion to the data type required by `input_x`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do divide operation whose data type must be mindspore.int32 or
           mindspore.int64.
         updates (Tensor): The tensor doing the divide operation with `input_x`, the data type is same as `input_x`,
@@ -2639,8 +2639,8 @@ def scatter_div(input_x, indices, updates):
     Raises:
         TypeError: If the type of `indices` is not one of the following dtype: int32, int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter is required
-                      when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter or Tensor is required
+                      when data type conversion of Parameter or Tensor is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2713,7 +2713,7 @@ def scatter_update(input_x, indices, updates):
     the relatively highest priority data type.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index of input tensor. With int32 or int64 data type.
             If there are duplicates in indices, the order for updating is undefined.
         updates (Tensor): The tensor to update the input tensor, has the same type as input,
@@ -2725,8 +2725,8 @@ def scatter_update(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2765,7 +2765,7 @@ def scatter_nd_add(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do min operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor doing the addition operation with `input_x`,
@@ -2780,8 +2780,8 @@ def scatter_nd_add(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2840,7 +2840,7 @@ def scatter_nd_sub(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index of input tensor, with int32 or int64 data type.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor doing the subtraction operation with `input_x`, has the same type as input.
@@ -2855,8 +2855,8 @@ def scatter_nd_sub(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2915,7 +2915,7 @@ def scatter_nd_mul(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): Input parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do multiplication operation whose data type must be mindspore.int32 or
             mindspore.int64. The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the multiplication operation with `input_x`.
@@ -2930,8 +2930,8 @@ def scatter_nd_mul(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``GPU`` ``CPU``
@@ -2990,7 +2990,7 @@ def scatter_nd_div(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do div operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the div operation with `input_x`.
@@ -3005,8 +3005,8 @@ def scatter_nd_div(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``GPU`` ``CPU``
@@ -3066,7 +3066,7 @@ def scatter_nd_max(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do maximum operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the max operation with `input_x`.
@@ -3081,8 +3081,8 @@ def scatter_nd_max(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -3141,7 +3141,7 @@ def scatter_nd_min(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do min operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the min operation with `input_x`.
@@ -3156,8 +3156,8 @@ def scatter_nd_min(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

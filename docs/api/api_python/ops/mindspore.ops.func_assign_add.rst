@@ -11,7 +11,7 @@ mindspore.ops.assign_add
         由于 `variable` 是数据类型为Parameter或者Tensor，数据类型不能更改，因此只允许 `value` 的数据类型转换为 `variable` 的数据类型。而且不同设备支持的转换类型会有所不同，建议在使用此函数时使用相同的数据类型。
 
     参数：
-        - **variable** (Parameter, Tensor) - 网络参数或者Tensor。shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。
+        - **variable** (Union[Parameter, Tensor]) - 网络参数或者Tensor。shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。
         - **value** (Union[Tensor, Number]) - 要和 `variable` 相加的值，shape必须与 `variable` 相同。如果 `value` 是数值型，则会自动转换为Tensor。建议在使用此函数时使用相同的数据类型。
 
     返回：
