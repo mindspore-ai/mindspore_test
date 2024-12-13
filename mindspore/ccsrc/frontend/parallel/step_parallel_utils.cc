@@ -1246,8 +1246,8 @@ bool IsSplittableOperator(const std::string &op_name) {
   // clang-format off
   static const std::set<std::string> splittable_op =
     {MATMUL, TRANSPOSE, GELU, FAST_GELU, TANH, SOFTMAX, SUB, MUL, DIV, RESHAPE, GREATER, LOG_SOFTMAX, ACTIVATION, PRELU,
-     BATCH_MATMUL_EXT, MATMUL_EXT, LAYER_NORM_V3,
-     FLOORDIV, L2_NORMALIZE, ADD, MAXPOOL, AVGPOOL, MAXPOOLV2, VIRTUAL_DATA_SET, RELU, ONEHOT, DROPOUT_DO_MASK,
+     BATCH_MATMUL_EXT, MATMUL_EXT, LAYER_NORM_V3, FLOORDIV, L2_NORMALIZE, ADD, MAXPOOL,
+     AVGPOOL, MAXPOOLV2, INDEX_INFO, VIRTUAL_DATA_SET, RELU, ONEHOT, DROPOUT_DO_MASK,
      REDUCE_MAX, REDUCE_MIN, ARGMAXWITHVALUE, ARGMINWITHVALUE, REDUCE_SUM, CONV2D, FUSE_BATCH_NORM, POOLING, STACK_EXT,
      MAX_POOL_WITH_ARGMAX, SIMPLE_MEAN, FLATTEN, BATCH_NORM, LAYER_NORM, BIAS_ADD, ASSIGN_SUB, COS, ACOS, EXP, STACK,
      LOG, REDUCE_MEAN, REAL_DIV, SIGMOID, POW, MAXIMUM, MINIMUM, EQUAL, NOT_EQUAL, LOGICALNOT, GATHERV2, SQRT, CONCAT,
@@ -3428,8 +3428,9 @@ TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info) {
     return ret;
   }
 
-  TensorInfo loss_grad_tensor_info;
-  size_t op_output_size = operator_info->outputs_tensor_info().size();
+  auto op_output_size = operator_info->outputs_tensor_info_new().empty()
+                          ? operator_info->outputs_tensor_info().size()
+                          : operator_info->outputs_tensor_info_new().size();
   MS_LOG(INFO) << "The loss name is " << operator_info->name() << ", the has tuple item is  "
                << node_info.has_tuple_getitem << ", the output size is  " << op_output_size << ", the dout_index is  "
                << node_info.dout_index;
@@ -3443,8 +3444,17 @@ TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info) {
     MS_LOG_WITH_NODE(EXCEPTION, loss_cnode) << "Currently, it is not supported that the sens is a tuple.";
   }
 
-  loss_grad_tensor_info = operator_info->outputs_tensor_info()[LongToSize(node_info.dout_index)];
-  ret.push_back(loss_grad_tensor_info.tensor_layout());
+  if (operator_info->outputs_tensor_info_new().empty()) {
+    auto loss_grad_tensor_info = operator_info->outputs_tensor_info()[LongToSize(node_info.dout_index)];
+    ret.push_back(loss_grad_tensor_info.tensor_layout());
+  } else {
+    auto loss_grad_tensor_info = operator_info->outputs_tensor_info_new()[LongToSize(node_info.dout_index)];
+    if (loss_grad_tensor_info->is_list()) {
+      MS_LOG_WITH_NODE(EXCEPTION, loss_cnode) << "For" << operator_info->name() << ": the" << node_info.dout_index
+                                              << " out tensorinfo is a list, which does not support yet";
+    }
+    ret.push_back(loss_grad_tensor_info->GetValue().tensor_layout());
+  }
   return ret;
 }
 
