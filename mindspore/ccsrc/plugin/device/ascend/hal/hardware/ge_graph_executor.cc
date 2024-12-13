@@ -785,9 +785,7 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
     session::AnfWithOutIndex origin_node = std::make_pair(graph_inputs[in_out_index.first], 0);
     session::AnfWithOutIndex final_node = graph_outputs[in_out_index.second];
     if (origin_node.first == final_node.first) {
-      if (origin_node.first->isa<Parameter>() &&
-          common::AnfAlgo::IsParameterWeight(origin_node.first->cast<ParameterPtr>()) &&
-          inputs_index.find(in_out_index.first) == inputs_index.end()) {
+      if (inputs_index.find(in_out_index.first) == inputs_index.end()) {
         kg_io_indexes.emplace_back(
           std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
         inputs_index.insert(in_out_index.first);
@@ -810,9 +808,7 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
     }
 
     ref_out_in_map.emplace(final_node, origin_node);
-    if (origin_node.first->isa<Parameter>() &&
-        common::AnfAlgo::IsParameterWeight(origin_node.first->cast<ParameterPtr>()) &&
-        inputs_index.find(in_out_index.first) == inputs_index.end()) {
+    if (inputs_index.find(in_out_index.first) == inputs_index.end()) {
       kg_io_indexes.emplace_back(
         std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
       inputs_index.insert(in_out_index.first);
