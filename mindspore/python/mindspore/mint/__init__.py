@@ -86,7 +86,7 @@ from mindspore.ops.auto_generate import bmm_ext as bmm
 # 17
 
 # 18
-from mindspore.ops.functional import sum
+
 # 19
 from mindspore.ops.functional import log
 # 20
@@ -1351,6 +1351,43 @@ def item(input):
 
 def mean(input, dim=None, keepdim=False, *, dtype=None):
     r"""
+    mean(input, *, dtype=None) -> Tensor
+
+    Reduces all dimension of a tensor by averaging all elements.
+
+    Args:
+        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
+            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
+        ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ... [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]),
+        ... mindspore.float32)
+        >>> output = mint.mean(x)
+        >>> print(output)
+        5.0
+        >>> print(output.shape)
+        ()
+
+    .. function:: mean(input, dim, keepdim=False, *, dtype=None) -> Tensor
+        :noindex:
+
     Reduces all dimension of a tensor by averaging all elements in the dimension, by default.
     And reduce a dimension of `input` along the specified `dim`. `keepdim`
     determines whether the dimensions of the output and input are the same.
@@ -1361,9 +1398,8 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     Args:
         input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
             :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. Default: ``None`` ,
-            reduce all dimensions. Only constant value is allowed. Assume the rank of `input` is r,
-            and the value range is [-r,r).
+        dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce.
+            Only constant value is allowed. Assume the rank of `input` is r, and the value range is [-r,r).
         keepdim (bool): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default: ``False`` .
 
@@ -1373,8 +1409,6 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     Returns:
         Tensor.
 
-        - If `dim` is ``None`` , and `keepdim` is ``False`` ,
-          the output is a 0-D tensor representing the product of all elements in the input tensor.
         - If `dim` is int, set as 1, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_0, input_2, ..., input_R)`.
         - If `dim` is tuple(int) or list(int), set as (1, 2), and `keepdim` is ``False`` ,
@@ -1395,51 +1429,57 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, mint
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = mint.mean(x, 1, keepdim=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by averaging all elements in the dimension.
         >>> x = Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
         ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
         ... [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]),
         ... mindspore.float32)
-        >>> output = mint.mean(x)
-        >>> print(output)
-        5.0
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along the axis 0
         >>> output = mint.mean(x, 0, True)
         >>> print(output)
         [[[4. 4. 4. 4. 4. 4.]
           [5. 5. 5. 5. 5. 5.]
           [6. 6. 6. 6. 6. 6.]]]
-        >>> # case 3: Reduces a dimension along the axis 1
-        >>> output = mint.mean(x, 1, True)
-        >>> print(output)
-        [[[2. 2. 2. 2. 2. 2.]]
-         [[5. 5. 5. 5. 5. 5.]]
-         [[8. 8. 8. 8. 8. 8.]]]
-        >>> # case 4: Reduces a dimension along the axis 2
-        >>> output = mint.mean(x, 2, True)
-        >>> print(output)
-        [[[ 2.]
-          [ 2.]
-          [ 2.]]
-         [[ 4.]
-          [ 5.]
-          [ 6.]]
-         [[ 6.]
-          [ 8.]
-          [10.]]]
     """
-    return ops.function.math_func.mean_ext(input, axis=dim, keep_dims=keepdim, dtype=dtype)
+    return ops.auto_generate.mean_ext(input, dim, keepdim, dtype)
 
 
 def prod(input, dim=None, keepdim=False, *, dtype=None):
     r"""
+    prod(input, *, dtype=None) -> Tensor
+
+    Multiplying all elements of input.
+
+    Args:
+        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
+            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mindspore.float32)
+        >>> output = mint.prod(x)
+        >>> print(output)
+        2.2833798e+33
+        >>> print(output.shape)
+        ()
+
+    .. function:: prod(input, dim, keepdim=False, *, dtype=None) -> Tensor
+        :noindex:
+
     Reduces a dimension of a tensor by multiplying all elements in the dimension, by default. And also can
     reduce a dimension of `input` along the `dim`. Determine whether the dimensions of the output and input are the
     same by controlling `keepdim`.
@@ -1447,7 +1487,7 @@ def prod(input, dim=None, keepdim=False, *, dtype=None):
     Args:
         input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
             :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        dim (int): The dimensions to reduce. Default: ``None`` , reduce all dimensions. Only constant value is allowed.
+        dim (int): The dimensions to reduce. Only constant value is allowed.
             Assume the rank of `x` is r, and the value range is [-r,r).
         keepdim (bool): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default: ``False`` .
@@ -1458,8 +1498,6 @@ def prod(input, dim=None, keepdim=False, *, dtype=None):
     Returns:
         Tensor.
 
-        - If `dim` is ``None`` , and `keepdim` is ``False`` ,
-          the output is a 0-D tensor representing the product of all elements in the input tensor.
         - If `dim` is int, set as 1, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_0, input_2, ..., input_R)`.
 
@@ -1476,46 +1514,112 @@ def prod(input, dim=None, keepdim=False, *, dtype=None):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, mint
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = mint.prod(x, 1, keepdim=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by multiplying all elements in the dimension.
         >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
         ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
         ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mindspore.float32)
-        >>> output = mint.prod(x)
-        >>> print(output)
-        2.2833798e+33
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along axis 0.
         >>> output = mint.prod(x, 0, True)
         >>> print(output)
         [[[ 28.  28.  28.  28.  28.  28.]
           [ 80.  80.  80.  80.  80.  80.]
           [162. 162. 162. 162. 162. 162.]]]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = mint.prod(x, 1, True)
-        >>> print(output)
-        [[[  6.   6.   6.   6.   6.   6.]]
-         [[120. 120. 120. 120. 120. 120.]]
-         [[504. 504. 504. 504. 504. 504.]]]
-        >>> # case 4: Reduces a dimension along axis 2.
-        >>> output = mint.prod(x, 2, True)
-        >>> print(output)
-        [[[1.00000e+00]
-          [6.40000e+01]
-          [7.29000e+02]]
-         [[4.09600e+03]
-          [1.56250e+04]
-          [4.66560e+04]]
-         [[1.17649e+05]
-          [2.62144e+05]
-          [5.31441e+05]]]
     """
-    return ops.auto_generate.prod_ext(input, axis=dim, keep_dims=keepdim, dtype=dtype)
+    return ops.auto_generate.prod_ext(input, dim, keepdim, dtype)
+
+
+def sum(input, dim=None, keepdim=False, *, dtype=None):
+    r'''
+    sum(input, *, dtype=None) -> Tensor
+
+    Calculate sum of all elements in Tensor.
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        A Tensor, sum of all elements in `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mstype.float32)
+        >>> out = mint.sum(x)
+        >>> print(out)
+        270.0
+
+    .. function:: sum(input, dim, keepdim=False, *, dtype=None) -> Tensor
+        :noindex:
+
+    Calculate sum of Tensor elements over a given dim.
+
+    Note:
+        The `dim` with tensor type is only used for compatibility with older versions and is not recommended.
+
+    Args:
+        input (Tensor): The input tensor.
+        dim (Union[int, tuple(int), list(int), Tensor]): Dimensions along which a sum is performed.
+            If the `dim` is a tuple or list of ints, a sum is performed on all the dimensions specified in the tuple.
+            Must be in the range :math:`[-input.ndim, input.ndim)` .
+        keepdim (bool): Whether the output tensor has `dim` retained or not.
+            If ``True`` , keep these reduced dimensions and the length is 1.
+            If ``False`` , don't keep these dimensions. Default: ``False`` .
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        A Tensor, sum of elements over a given `dim` in `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not an int, tulpe(int), list(int) or Tensor.
+        ValueError: If `dim` is not in the range :math:`[-input.ndim, input.ndim)` .
+        TypeError: If `keepdim` is not a bool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mstype.float32)
+        >>> out = mint.sum(x)
+        >>> print(out)
+        270.0
+        >>> out = mint.sum(x, dim=2)
+        >>> print(out)
+        [[ 6. 12. 18.]
+         [24. 30. 36.]
+         [42. 48. 54.]]
+        >>> out = mint.sum(x, dim=2, keepdim=True)
+        >>> print(out)
+        [[[ 6.]
+          [12.]
+          [18.]]
+         [[24.]
+          [30.]
+          [36.]]
+         [[42.]
+          [48.]
+          [54.]]]
+    '''
+    return ops.auto_generate.sum_ext(input, dim, keepdim, dtype)
 
 
 def ones(size, *, dtype=None):

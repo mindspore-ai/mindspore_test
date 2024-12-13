@@ -3,10 +3,10 @@ prod_ext:
     args:
         input:
             dtype: tensor
-        axis:
+        dim:
             dtype: int
             default: None
-        keep_dims:
+        keepdim:
             dtype: bool
             default: False
         dtype:
