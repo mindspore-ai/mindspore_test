@@ -338,7 +338,7 @@ from mindspore.ops.auto_generate import view_as
 from mindspore.ops.auto_generate import gcd
 
 # 147 isinf
-
+from mindspore.ops.auto_generate import isinf
 # 148 not_equal
 
 # 149 triu
@@ -1156,6 +1156,8 @@ def tensor_gcd(input, other):
 
 
 # 147 isinf
+def tensor_isinf():
+    return isinf()
 
 # 148 not_equal
 def tensor_not_equal(input, other):
