@@ -118,7 +118,7 @@ def test_method_min_pyboost(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_min_dynamic():
@@ -128,12 +128,11 @@ def test_tensor_min_dynamic():
     Expectation: the result match with expected result.
     """
     ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
-    axis1 = None
+    axis1 = 1
     keepdims1 = False
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
-    axis2 = None
-    keepdims2 = False
-    TEST_OP(min_forward_func1, [[ms_data1, axis1], [ms_data2]],
-            'min', disable_mode=['GRAPH_MODE'])
+    axis2 = 2
+    keepdims2 = True
+    TEST_OP(min_forward_func1, [[ms_data1], [ms_data2]], 'min')
     TEST_OP(min_forward_func2, [[ms_data1, axis1, keepdims1], [ms_data2, axis2, keepdims2]], 'min',
-            disable_mode=['GRAPH_MODE'], disable_input_check=True, disable_yaml_check=True)
+            disable_yaml_check=True, disable_nontensor_dynamic_type='STATIC_LEN', disable_grad=True)

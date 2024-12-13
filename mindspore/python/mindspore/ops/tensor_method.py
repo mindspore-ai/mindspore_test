@@ -247,7 +247,7 @@ from mindspore.ops.auto_generate import square
 # 102 std
 
 # 103 sub
-from mindspore.ops.auto_generate import sub
+from mindspore.ops.auto_generate import sub, sub_ext
 # 104 sum
 from mindspore.ops.function.math_func import sum
 # 105 swapaxes
@@ -740,8 +740,8 @@ def tensor_maximum(input, other):
 
 
 # 67 mean
-def tensor_mean_ext(input, axis=None, keep_dims=False, dtype=None):
-    return mean_ext(input, axis, keep_dims, dtype)
+def tensor_mean_ext(input, axis=None, keep_dims=False, *, dtype=None):
+    return mean_ext(input, axis, keep_dims, dtype=dtype)
 
 
 def deprecated_tensor_mean(input, axis=None, keep_dims=False):
@@ -959,6 +959,10 @@ def tensor_square(input):
 # 102 std
 
 # 103 sub
+def tensor_sub_ext(input, other, *, alpha=1):
+    return sub_ext(input, other, alpha=alpha)
+
+
 def deprecated_tensor_sub(input, y):
     if isinstance(y, COOTensor):
         return F.tensor_scatter_sub(input, y.indices, y.values)
@@ -970,6 +974,10 @@ def deprecated_tensor_sub(input, y):
 
 
 # 104 sum
+def tensor_sum_ext(input, dim=None, keepdim=False, *, dtype=None):
+    return sum(input, dim, keepdim, dtype=dtype)
+
+
 def deprecated_tensor_sum(input, axis=None, dtype=None, keepdims=False, initial=None):
     if initial is None:
         res = sum(input, axis, keepdims, dtype=dtype)
@@ -1220,7 +1228,6 @@ def tensor_isneginf(input):
 # 161
 
 # 162
-
 def tensor_clone(input):
     return clone(input)
 

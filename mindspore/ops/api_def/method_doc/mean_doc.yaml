@@ -1,6 +1,6 @@
 mean:
   description: |
-    mean(axis=None, keep_dims=False, dtype=None) -> Tensor
+    mean(axis=None, keep_dims=False, *, dtype=None) -> Tensor
     
     Reduces all dimension of a tensor by averaging all elements in the dimension, by default.
     And reduce a dimension of `self` along the specified `axis`. `keep_dims`
@@ -15,6 +15,8 @@ mean:
             and the value range is [-r,r).
         keep_dims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default: ``False`` .
+
+    Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
     
     Returns:

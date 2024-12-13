@@ -1,7 +1,7 @@
 mindspore.Tensor.mean
 =====================
 
-.. py:method:: mindspore.Tensor.mean(axis=None, keep_dims=False, dtype=None)
+.. py:method:: mindspore.Tensor.mean(axis=None, keep_dims=False, *, dtype=None)
 
     默认情况下，移除输入所有维度，返回 ``input`` 中所有元素的平均值，也可仅缩小指定维度 `axis` 大小至1。 `keep_dims` 控制输出和输入的维度是否相同。
 
@@ -11,6 +11,8 @@ mindspore.Tensor.mean
     参数：
         - **axis** (Union[int，tuple(int)，list(int)，Tensor]，可选) - 要减少的维度。默认值: ``None`` 。缩小所有维度，只允许常量值。假设 `self` 的秩为r，其取值范围为[-r,r)。
         - **keep_dims** (bool，可选) - 如果为 ``True`` ，则保留缩小的维度并且大小为1。否则移除维度。默认值： ``False`` 。
+
+    关键词参数：
         - **dtype** (:class:`mindspore.dtype`，可选) - 期望返回的Tensor数据类型。默认值：``None`` 。
 
     返回：

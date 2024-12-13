@@ -31,7 +31,7 @@ class IsNanNet(nn.Cell):
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_method_isfinite(mode):
+def test_method_isnan(mode):
     """
     Feature: Functional.
     Description: Test functional feature with Tensor.isnan.

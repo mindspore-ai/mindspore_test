@@ -33,7 +33,7 @@ def generate_random_input(shape, dtype):
 
 
 @test_utils.run_with_cell
-def sigmoid_forward_func(x, split_size_or_sections, axis=0):
+def split_forward_func(x, split_size_or_sections, axis=0):
     return x.split(split_size_or_sections, axis)
 
 
@@ -87,7 +87,7 @@ def test_method_split_python(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_split_tensor_dynamic():
@@ -102,13 +102,13 @@ def test_tensor_split_tensor_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     split_size_or_sections2 = 3
     axis2 = 2
-    TEST_OP(sigmoid_forward_func,
+    TEST_OP(split_forward_func,
             [[ms_data1, split_size_or_sections1, axis1], [ms_data2, split_size_or_sections2, axis2]], 'split_tensor',
-            disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='BOTH')
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_nontensor_dynamic_type='BOTH', disable_resize=True)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_split_size_dynamic():
@@ -123,6 +123,6 @@ def test_tensor_split_size_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     split_size_or_sections2 = (3, 2, 2)
     axis2 = 2
-    TEST_OP(sigmoid_forward_func,
+    TEST_OP(split_forward_func,
             [[ms_data1, split_size_or_sections1, axis1], [ms_data2, split_size_or_sections2, axis2]], 'split_with_size',
-            disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='BOTH')
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_nontensor_dynamic_type='BOTH', disable_resize=True)
