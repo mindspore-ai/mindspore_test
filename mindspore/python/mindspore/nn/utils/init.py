@@ -19,6 +19,7 @@ from __future__ import absolute_import
 from contextlib import contextmanager
 from mindspore.common.parameter import Parameter
 
+
 @contextmanager
 def no_init_parameters():
     r"""
@@ -37,13 +38,28 @@ def no_init_parameters():
         Parameters created by `Tensor` or `numpy` cannot be skipped.
 
     Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import nn, ops, load_checkpoint
+        >>> from mindspore.common.initializer import initializer
         >>> from mindspore.nn.utils import no_init_parameters
         >>> # 1. Add a decorator to the network that requires delayed initialization
+        >>> class Net(nn.Cell):
+        ...     def __init__(self, in_channels, out_channels):
+        ...         super().__init__()
+        ...         self.weight = ms.Parameter(initializer("normal", [in_channels, out_channels], ms.float32))
+        ...         self.bias = ms.Parameter(initializer("normal", [out_channels], ms.float32))
+        ...         self.matmul = ops.MatMul()
+        ...         self.add = ops.Add()
+        ...
+        ...     def construct(self, x):
+        ...         x = self.matmul(x, self.weight)
+        ...         x = self.add(x, self.bias)
+        ...         return x
         >>> with no_init_parameters():
-        >>> # After instantiation, all parameters in the net are not initialized
-        >>>    net = Net()
+        ...     # After instantiation, all parameters in the net are not initialized
+        ...     net = Net(28*28, 64)
         >>> # 2. Load checkpoint parameters to the net
-        >>> load_checkpoint(ckpt_file, net=net)
+        >>> load_checkpoint('./checkpoint/test_net.ckpt', net=net)
         >>> # 3. After loading the checkpoint, manually call init_parameters_data() to initialize
         >>> #    the uninitialized parameters in the net if need. If the network is executed,
         >>> #    the framework will automatically call this interface.
