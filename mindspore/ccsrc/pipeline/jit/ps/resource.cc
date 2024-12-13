@@ -490,6 +490,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"new_ones", std::string("new_ones")},                              // new_ones()
        {"sgn", std::string("sgn")},                                        // sgn()
        {"sign", std::string("sign")},                                      // sign()
+       {"sign_", std::string("sign_")},                                    // sign_()
        {"signbit", std::string("signbit")},                                // signbit()
        {"sinh", std::string("sinh")},                                      // sinh()
        {"sort", std::string("sort")},                                      // sort()
