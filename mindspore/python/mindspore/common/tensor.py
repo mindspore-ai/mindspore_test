@@ -3242,13 +3242,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('dsplit')(self, indices_or_sections)
 
-    def xlogy(self, y):
-        r"""
-        For details, please refer to :func:`mindspore.ops.xlogy`.
-        The parameter `y` of the current interface is the same as the parameter `other` of the reference interface.
-        """
-        return tensor_operator_registry.get("xlogy")(self, y)
-
     def eigvals(self):
         r"""
         For details, please refer to :func:`mindspore.ops.eigvals`.

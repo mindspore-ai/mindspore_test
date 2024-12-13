@@ -367,6 +367,7 @@ from mindspore.ops.function.math_func import median
 # 157
 from mindspore._c_expression import pyboost_empty
 
+from mindspore.ops.auto_generate import xlogy_op
 # 158
 
 # 159 histc
@@ -1447,6 +1448,9 @@ def tensor_empty(*size, dtype=None, device=None):
 
 def deprecated_tensor_logaddexp(input, other):
     return F.logaddexp(input, other)
+
+def tensor_xlogy(input, other):
+    return xlogy_op(input, other)
 
 # 158
 

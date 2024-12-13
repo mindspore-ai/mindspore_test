@@ -1710,57 +1710,6 @@ def xlogy(input, other):
     return xlogy_(input, other)
 
 
-def xlogy_ext(input, other):
-    r"""
-    Computes the first input multiplied by the logarithm of second input element-wise.
-    Returns zero when `input` is zero.
-
-    .. math::
-
-        out_i = input_{i} * \log({other_{i}})
-
-    Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
-    The inputs must be two tensors or one tensor and one scalar.
-    When the inputs are two tensors, the shapes of them could be broadcast.
-
-    Args:
-        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, numbers.Number, bool]): The second input is a numbers.Number or
-            a bool or a tensor whose data type is number or bool when the first input is a tensor.
-            When the first input is Scalar, the second input must be a Tensor whose data type is number or bool.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Raises:
-        TypeError: If `input` and `other` is not a numbers.Number or a bool or a Tensor.
-        ValueError: If `input` could not be broadcast to a tensor with shape of `other`.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([-5, 0, 4]), mindspore.float32)
-        >>> other = Tensor(np.array([2, 2, 2]), mindspore.float32)
-        >>> output = ops.xlogy_ext(input, other)
-        >>> print(output)
-        [-3.465736   0.        2.7725887]
-    """
-    if isinstance(input, Tensor) and isinstance(other, Tensor):
-        return xlogy_op(input, other)
-    if isinstance(input, Tensor) and isinstance(other, (float, int, bool)):
-        return xlogy_scalar_other_op(input, other)
-    if isinstance(input, (float, int, bool)) and isinstance(other, Tensor):
-        return xlogy_scalar_self_op(input, other)
-    raise TypeError(f"For 'xlogy', at least one of input and other should be Tensor.")
-
 def arccosh(input):
     r"""
     Alias for :func:`mindspore.ops.acosh`.
