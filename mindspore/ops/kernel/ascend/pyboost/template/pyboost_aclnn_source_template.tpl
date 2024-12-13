@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/auto_generate/${operator_name}.h"
-${customize_include}
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+${merge_op_header}
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-${return_type} ${op_name}Ascend::Call(${call_args_with_type}) {
-  ${call_impl}
-}
-MS_REG_PYBOOST_OP(Ascend, ${op_name});
-${register_custom_kernel}
+${merge_op_function}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
