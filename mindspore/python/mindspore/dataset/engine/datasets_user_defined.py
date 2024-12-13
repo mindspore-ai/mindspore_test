@@ -700,13 +700,22 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
     The column names and column types of generated dataset depend on Python data defined by users.
 
     Args:
-        source (Union[Callable, Iterable, Random Accessible]):
-            A generator callable object, an iterable Python object or a random accessible Python object.
-            Callable source is required to return a tuple of NumPy arrays as a row of the dataset on source().next().
-            Iterable source is required to return a tuple of NumPy arrays as a row of the dataset on
-            iter(source).next().
-            Random accessible source is required to return a tuple of NumPy arrays as a row of the dataset on
-            source[idx].
+        source (Union[Callable, Iterable, Random Accessible]): A custom dataset from which to load the data.
+            MindSpore supports the following types of datasets:
+
+            - Random-accessible (map-style) datasets: A dataset object that implements the `__getitem__()`
+              and `__len__()` methods, represents a mapping from indexes/keys to data samples.
+              For example, such a dataset `source`, when accessed with `source[idx]`, can read the idx-th sample
+              from disk, see `Random-accessible dataset example <https://www.mindspore.cn/tutorials/en/master/
+              beginner/dataset.html#random-accessible-dataset>`_ for details.
+
+            - Iterable-style dataset: An iterable dataset object that implements `__iter__()` and `__next__()` methods,
+              represents an iterable over data samples. This type of dataset is suitable for situations where
+              random reads are costly or even impossible, and where batch sizes depend on the data being acquired.
+              For example, such a dataset `source`, when accessed `iter(source)`, can return a stream of data reading
+              from a database or remote server, see `Iterable-style dataset example
+              <https://www.mindspore.cn/tutorials/en/master/beginner/dataset.html#iterable-dataset>`_ for details.
+
         column_names (Union[str, list[str]], optional): List of column names of the dataset. Default: ``None`` .
             Users are required to provide either column_names or schema.
         column_types (list[mindspore.dtype], optional): List of column data types of the dataset. Default: ``None`` .
@@ -724,7 +733,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             input is required. Default: ``None`` , expected order behavior shown in the table below.
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             Random accessible input is required. When this argument is specified, `num_samples` reflects the maximum
-            sample number of per shard.
+            sample number of per shard. Used in `data parallel training <https://www.mindspore.cn/docs/en/master/
+            model_train/parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` .
             This argument must be specified only when `num_shards` is also specified.
             Random accessible input is required.
@@ -1129,6 +1139,8 @@ class NumpySlicesDataset(GeneratorDataset):
             Default: ``None`` , expected order behavior shown in the table below.
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
+            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
+            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This argument must be
             specified only when `num_shards` is also specified.
 
