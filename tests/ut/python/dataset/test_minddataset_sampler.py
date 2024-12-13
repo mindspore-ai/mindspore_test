@@ -829,6 +829,7 @@ def test_cv_minddataset_split_sharding(add_and_remove_cv_file):
     Description: Test read MindDataset with DistributedSampler after deterministic Split op is applied
     Expectation: Output is equal to the expected output
     """
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
     data = get_data(CV_DIR_NAME, True)
     columns_list = ["data", "file_name", "label"]
     num_readers = 4
@@ -899,6 +900,7 @@ def test_cv_minddataset_split_sharding(add_and_remove_cv_file):
     assert epoch3_dataset != epoch1_dataset
 
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 def get_data(dir_name, sampler=False):
@@ -1176,6 +1178,85 @@ def test_minddataset_getitem_exception(add_and_remove_cv_file):
     ds.config.set_seed(origin_seed)
 
 
+@pytest.mark.parametrize("cleanup_tmp_file", ["test_distributed.mindrecord*"], indirect=True)
+def test_minddataset_distributed_samples(cleanup_tmp_file):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset sharding sampling: two strategies of block sampling and shard sampling results
+    Expectation: Output is equal to the expected output
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1024)
+    mindrecord_name = "test_distributed.mindrecord"
+    writer = FileWriter(file_name=mindrecord_name, shard_num=1, overwrite=True)
+    schema_json = {"file_name": {"type": "string"}, "label": {"type": "int32"}, "data": {"type": "float64"}}
+    writer.add_schema(schema_json, "test_schema")
+    indexes = ["file_name", "data"]
+    writer.add_index(indexes)
+    for i in range(12):
+        data = [{"file_name": str(i) + ".jpg", "label": i, "data": float(i)}]
+        writer.write_raw_data(data)
+    writer.commit()
+
+    columns_list = ["label", "file_name", "data"]
+
+    # Validate the results of two strategies for shard sampling in MindDataset
+    sampler1 = ds.DistributedSampler(3, 1, shuffle=False)
+    output1 = [1.0, 4.0, 7.0, 10.0]
+    output2 = [4.0, 5.0, 6.0, 7.0]
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "false"
+    data_set1 = ds.MindDataset(mindrecord_name, columns_list, 1, sampler=sampler1)
+    for i, item in enumerate(data_set1.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output1[i] == item['data']
+    data_set11 = ds.MindDataset(mindrecord_name, columns_list, 1, num_shards=3, shard_id=1, shuffle=False)
+    for i, item in enumerate(data_set11.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output1[i] == item['data']
+
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
+    data_set2 = ds.MindDataset(mindrecord_name, columns_list, 1, sampler=sampler1)
+    for i, item in enumerate(data_set2.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output2[i] == item['data']
+    data_set22 = ds.MindDataset(mindrecord_name, columns_list, 1, num_shards=3, shard_id=1, shuffle=False)
+    for i, item in enumerate(data_set22.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output2[i] == item['data']
+
+    # Validate the results of two strategies for shard sampling in MindDataset mixed sampling
+    sampler2 = ds.RandomSampler()
+    output3 = [5.0, 7.0, 2.0]
+    output4 = [7.0, 9.0, 6.0]
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "false"
+    data_set3 = ds.MindDataset(mindrecord_name, columns_list, 1, sampler=sampler2)
+    output_random_sampler = [8.0, 3.0, 5.0, 0.0, 10.0, 4.0, 7.0, 9.0, 6.0, 11.0, 2.0, 1.0]
+    for i, item in enumerate(data_set3.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output_random_sampler[i] == item['data']
+    sampler3 = ds.DistributedSampler(4, 2, shuffle=False)
+    data_set3.add_sampler(sampler3)
+    for i, item in enumerate(data_set3.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output3[i] == item['data']
+
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
+    data_set4 = ds.MindDataset(mindrecord_name, columns_list, 1, sampler=sampler2)
+    sampler4 = ds.DistributedSampler(4, 2, shuffle=False)
+    data_set4.add_sampler(sampler4)
+    for i, item in enumerate(data_set4.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output4[i] == item['data']
+
+    # Verify MindDataset by slice sampling && num_padded parameter
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "false"
+    padded_sample = {}
+    padded_sample["data"] = 1234.1234
+    padded_sample["file_name"] = "1234.1234.jpg"
+    padded_sample["label"] = -1
+    output5 = [3.0, 8.0, 1234.1234]
+    data_set5 = ds.MindDataset(mindrecord_name, columns_list, 1, padded_sample=padded_sample, num_padded=3,
+                               num_shards=5, shard_id=3, shuffle=False)
+    for i, item in enumerate(data_set5.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        assert output5[i] == item['data']
+
+    ds.config.set_seed(origin_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
+
+
 if __name__ == '__main__':
     test_cv_minddataset_pk_sample_no_column(add_and_remove_cv_file)
     test_cv_minddataset_pk_sample_basic(add_and_remove_cv_file)
@@ -1203,3 +1284,4 @@ if __name__ == '__main__':
     test_minddataset_getitem_distributed_sampler(add_and_remove_cv_file, True)
     test_minddataset_getitem_random_sampler_and_distributed_sampler(add_and_remove_cv_file)
     test_minddataset_getitem_exception(add_and_remove_cv_file)
+    test_minddataset_distributed_samples(cleanup_tmp_file)
