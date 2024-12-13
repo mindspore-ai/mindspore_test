@@ -57,7 +57,7 @@ def expect_func(var, indices, updates, axis):
     return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='dryrun', essential_mark='essential')
 def test_kvcachescatterupdate_forward_mode():
     """
     Feature: Test kv_cache_scatter_update with static shape in GE.
