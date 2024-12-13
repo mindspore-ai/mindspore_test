@@ -7,9 +7,9 @@ remainder:
 
     Supports broadcasting to a common shape and implicit type promotion.
 
-    .. math::
+    .. code:: python
 
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
     Note:
         Complex inputs are not supported. At least one input need to be tensor, but not both are bool tensors.
