@@ -2289,6 +2289,7 @@ def test_distributed_shuffle_with_global_infile_files(create_multi_mindrecord_fi
     Description: Test distributed MindDataset (with num_shards and shard_id) without and with shuffle args
     Expectation: Output is equal to the expected output
     """
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
     original_seed = config_get_set_seed(1)
     datas_all = []
     datas_all_samples = []
@@ -2481,6 +2482,7 @@ def test_distributed_shuffle_with_global_infile_files(create_multi_mindrecord_fi
     assert origin_index != current_index
 
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 def test_distributed_shuffle_with_multi_epochs(create_multi_mindrecord_files):
@@ -2490,6 +2492,7 @@ def test_distributed_shuffle_with_multi_epochs(create_multi_mindrecord_files):
         without and with shuffle args under multiple epochs
     Expectation: Output is equal to the expected output
     """
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
     original_seed = config_get_set_seed(1)
     datas_all = []
     datas_all_samples = []
@@ -2653,6 +2656,7 @@ def test_distributed_shuffle_with_multi_epochs(create_multi_mindrecord_files):
     assert datas_epoch3 not in (datas_epoch2, datas_epoch1)
 
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 def test_field_is_null_numpy():
@@ -3055,6 +3059,7 @@ def test_parameter_shuffle(add_and_remove_mindrecord_files, shuffle, label):
     actual_dataset_size = sum(mindrecord_sample_count)
 
     original_seed = config_get_set_seed(1234)
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
 
     dataset = ds.MindDataset(dataset_files=mindrecord_files, shuffle=shuffle)
     get_attribute(dataset, actual_dataset_size)
@@ -3063,6 +3068,7 @@ def test_parameter_shuffle(add_and_remove_mindrecord_files, shuffle, label):
         break
 
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 @pytest.mark.parametrize("sampler, label",
@@ -3083,6 +3089,7 @@ def test_parameter_RandomSampler(add_and_remove_mindrecord_files, sampler, label
     actual_dataset_size = sum(mindrecord_sample_count)
 
     original_seed = config_get_set_seed(1234)
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
 
     dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=sampler)
     get_attribute(dataset, actual_dataset_size)
@@ -3091,6 +3098,7 @@ def test_parameter_RandomSampler(add_and_remove_mindrecord_files, sampler, label
         break
 
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 def test_parameter_DistributedSampler(add_and_remove_mindrecord_files):
@@ -3104,6 +3112,7 @@ def test_parameter_DistributedSampler(add_and_remove_mindrecord_files):
     actual_dataset_size = sum(mindrecord_sample_count)
 
     original_seed = config_get_set_seed(1234)
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
 
     # Parmetrize will cause config.set_seed to fail to take effect.
     # Therefore, parametrize is not used in this test case.
@@ -3164,6 +3173,7 @@ def test_parameter_DistributedSampler(add_and_remove_mindrecord_files):
         break
 
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 @pytest.mark.parametrize("shuffle, num_shards, shard_id, label",
@@ -3186,6 +3196,7 @@ def test_parameter_shuffle_num_shards_shard_id(add_and_remove_mindrecord_files, 
     actual_dataset_size = sum(mindrecord_sample_count)
 
     original_seed = config_get_set_seed(1234)
+    os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"] = "true"
 
     dataset = ds.MindDataset(dataset_files=mindrecord_files, shuffle=shuffle, num_shards=num_shards, shard_id=shard_id)
     get_attribute(dataset, math.ceil(actual_dataset_size / 8))
@@ -3194,6 +3205,7 @@ def test_parameter_shuffle_num_shards_shard_id(add_and_remove_mindrecord_files, 
         break
 
     ds.config.set_seed(original_seed)
+    del os.environ["MS_DEV_MINDRECORD_SHARD_BY_BLOCK"]
 
 
 if __name__ == '__main__':

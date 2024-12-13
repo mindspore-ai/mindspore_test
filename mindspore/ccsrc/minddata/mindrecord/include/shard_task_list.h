@@ -51,11 +51,13 @@ using SampleMeta = std::tuple<std::vector<uint64_t>, json>;
 // shard_id: the index of mindrecord files
 // start: the global index of all the samples
 // end: the global index of all the samples
+// step: the step size of the sample id increasing sequentially on each card
 struct PartitionedShardSampleCount {
   TaskType task_type;
   int32_t shard_id;
   int64_t start;
   int64_t end;
+  int64_t step;
 };
 
 class MINDRECORD_API GeneratorIds {

@@ -39,7 +39,7 @@
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     .. note::
-        对MindRecord进行分片（配置 `num_shards` 和 `shard_id` ）时，数据的切分逻辑有2种实现策略，此API采用了策略2。
+        对MindRecord进行分片（配置 `num_shards` 和 `shard_id` ）时，数据的切分逻辑有2种实现策略，此API默认采用策略1，可通过设置环境变量 `MS_DEV_MINDRECORD_SHARD_BY_BLOCK=True` 切换回策略2。该环境变量只对 `DistributedSampler` 采样器生效。
 
         .. list-table:: 数据分片的实现策略1
             :widths: 50 50 50 50

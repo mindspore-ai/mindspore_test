@@ -179,7 +179,9 @@ class MindDataset(MappableDataset, UnionBaseDataset):
 
     Note:
         - When sharding MindRecord (by configuring `num_shards` and `shard_id`), there are two strategies to implement
-          the data sharding logic. This API uses the strategy 2.
+          the data sharding logic. This API uses the strategy 1 by default, which can be switched to strategy 2 by
+          setting the environment variable `MS_DEV_MINDRECORD_SHARD_BY_BLOCK=True` . This environment variable only
+          applies to the `DistributedSampler` sampler.
 
         .. list-table:: Data sharding strategy 1
             :widths: 50 50 50 50
