@@ -48,6 +48,64 @@ const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
   return rmsnorm;
 }
 
+bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (!ms_context->IsEnableInferBoost()) {
+    MS_LOG(INFO) << "for MatMulAllReduceAddRmsNormFusion ops, infer_boost must be enabled.";
+    return false;
+  }
+
+  bool is_enable_lccl = device::ascend::EnableLccl();
+  if (is_enable_lccl) {
+    MS_LOG(INFO) << "disable MatMulAllReduceAddRmsNormFusion when lccl is enabled.";
+    return false;
+  }
+
+  // only support ascend910b
+  auto soc_version = ms_context->ascend_soc_version();
+  if (soc_version != kAscendVersion910b) {
+    MS_LOG(INFO) << "MatMulAllReduceAddRmsNorm does not support soc version " << soc_version;
+    return false;
+  }
+
+  auto add_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(node), kIndex0);
+  auto reshape_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(add_node), kIndex1);
+  auto allreduce_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(reshape_node), kIndex0);
+  auto matmul_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(allreduce_node), kIndex0);
+
+  auto matmul_cnode = matmul_node->cast<CNodePtr>();
+  auto transpose_a = matmul_cnode->input(kIndex3)->cast<ValueNodePtr>();
+  auto is_transpose_a = GetValue<bool>(transpose_a->value());
+  if (is_transpose_a) {
+    MS_LOG(INFO) << "only support transpose_a=False, but got transpose_a=True.";
+    return false;
+  }
+
+  auto x1_type = common::AnfAlgo::GetPrevNodeOutputInferDataType(matmul_node, kIndex0);
+  auto x2_type = common::AnfAlgo::GetPrevNodeOutputInferDataType(matmul_node, kIndex1);
+  auto residual_type = common::AnfAlgo::GetPrevNodeOutputInferDataType(add_node, kIndex0);
+  auto gamma_type = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, kIndex1);
+  if ((x1_type != kNumberTypeFloat16 && x1_type != kNumberTypeBFloat16) ||
+      (x2_type != kNumberTypeFloat16 && x2_type != kNumberTypeBFloat16) ||
+      (residual_type != kNumberTypeFloat16 && residual_type != kNumberTypeBFloat16) ||
+      (gamma_type != kNumberTypeFloat16 && gamma_type != kNumberTypeBFloat16)) {
+    MS_LOG(INFO) << "input dtype does not support, x1_dtype = " << x1_type << ", x2_dtype = " << x2_type
+                 << ", residual_dtype = " << residual_type << ", gamma_dtype = " << gamma_type;
+    return false;
+  }
+
+  auto x1_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(matmul_node, kIndex0);
+  auto x2_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(matmul_node, kIndex1);
+  if ((x1_shape.size() != kSizeTwo && x1_shape.size() != kSizeThree) || x2_shape.size() != kSizeTwo) {
+    MS_LOG(INFO) << "only support x1 two or three dimensions and x2 two dimensions, but got x1 " << x1_shape.size()
+                 << " dimensions and x2 " << x2_shape.size() << " dimensions.";
+    return false;
+  }
+
+  return true;
+}
+
 std::vector<std::string> MatMulAllReduceAddRmsNormFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret;
   ret.emplace_back(prim::kPrimAllReduce->name());
@@ -58,7 +116,7 @@ std::vector<std::string> MatMulAllReduceAddRmsNormFusion::MustExistPrimitiveName
 
 AnfNodePtr NewTransposeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &x2, const AnfNodePtr &node,
                             const TypeId &add_result_type) {
-  MS_LOG(DEBUG) << "start to create Transpose node.";
+  MS_LOG(INFO) << "start to create Transpose node.";
   auto prim = std::make_shared<Primitive>(ops::kNameTranspose);
   ShapeVector perm_vec{1, 0};
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim), x2, CreateShapeValueNode(func_graph, perm_vec, false)};
@@ -80,7 +138,7 @@ AnfNodePtr NewTransposeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &x2
   transpose_cnode->set_scope(node->scope());
   auto build_info = GenerateKernelBuildInfo(transpose_cnode);
   AnfAlgo::SetSelectKernelBuildInfo(build_info, transpose_cnode.get());
-  MS_LOG(DEBUG) << "create Transpose node success.";
+  MS_LOG(INFO) << "create Transpose node success.";
   return transpose_cnode;
 }
 
@@ -88,7 +146,7 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
                                                                               const AnfNodePtr &node,
                                                                               const EquivPtr &equiv,
                                                                               const TypeId &add_result_type) const {
-  MS_LOG(DEBUG) << "start to create MatMulAllReduceAddRmsNorm node.";
+  MS_LOG(INFO) << "start to create MatMulAllReduceAddRmsNorm node.";
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
 
@@ -118,7 +176,7 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
   auto reduction = GetValue<std::string>(reduce_op_ptr);
   auto iter = std::find(support_reduce_op_list_.begin(), support_reduce_op_list_.end(), reduction);
   if (iter == support_reduce_op_list_.end()) {
-    MS_LOG(ERROR) << "reduce operation is not supported.";
+    MS_LOG(INFO) << "reduce operation is not supported.";
     return nullptr;
   }
 
@@ -133,18 +191,11 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
 
   auto matmul_cnode = matmul_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(matmul_cnode);
-  auto transpose_a_node = common::AnfAlgo::GetInputNode(matmul_cnode, kIndex2)->cast<ValueNodePtr>();
-  auto transpose_b_node = common::AnfAlgo::GetInputNode(matmul_cnode, kIndex3)->cast<ValueNodePtr>();
-  auto transpose_a = GetValue<bool>(transpose_a_node->value());
-  auto transpose_b = GetValue<bool>(transpose_b_node->value());
-
-  if (transpose_a) {
-    MS_LOG(ERROR) << "only support transpose_a=False, but got transpose_a=True.";
-    return nullptr;
-  }
+  auto transpose_b = matmul_cnode->input(kIndex4)->cast<ValueNodePtr>();
+  auto is_transpose_b = GetValue<bool>(transpose_b->value());
 
   AnfNodePtr transposed_x2 = x2;
-  if (transpose_b) {
+  if (is_transpose_b) {
     transposed_x2 = NewTransposeNode(func_graph, x2, node, add_result_type);
   }
 
@@ -154,28 +205,15 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
             reduce_op,          comm_turn, stream_mode};
   auto matmul_allreduce_addrmsnorm_cnode = func_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(matmul_allreduce_addrmsnorm_cnode);
-  MS_LOG(DEBUG) << "create MatMulAllReduceAddRmsNorm node success.";
+  MS_LOG(INFO) << "create MatMulAllReduceAddRmsNorm node success.";
 
   return matmul_allreduce_addrmsnorm_cnode;
 }
 
 const AnfNodePtr MatMulAllReduceAddRmsNormFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                                           const EquivPtr &equiv) const {
-  MS_LOG(DEBUG) << "start to process MatMulAllReduceAddRmsNormFusion.";
-  MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(equiv);
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    MS_LOG(DEBUG) << "for MatMulAllReduceAddRmsNormFusion ops, infer_boost must be enabled.";
-    return nullptr;
-  }
-
-  bool is_enable_lccl = device::ascend::EnableLccl();
-  if (is_enable_lccl) {
-    MS_LOG(DEBUG) << "disable MatMulAllReduceAddRmsNormFusion when lccl is enabled.";
+  MS_LOG(INFO) << "start to process MatMulAllReduceAddRmsNormFusion.";
+  if (!IsSupport(node, graph)) {
     return nullptr;
   }
 
@@ -230,7 +268,7 @@ const AnfNodePtr MatMulAllReduceAddRmsNormFusion::Process(const FuncGraphPtr &gr
   // replace
   (void)manager->Replace(add, add_result);
   (void)manager->Replace(rms_norm, rms_norm_result);
-  MS_LOG(DEBUG) << "process MatMulAllReduceAddRmsNormFusion success.";
+  MS_LOG(INFO) << "process MatMulAllReduceAddRmsNormFusion success.";
   return matmul_allreduce_addrmsnorm_cnode;
 }
 }  // namespace opt
