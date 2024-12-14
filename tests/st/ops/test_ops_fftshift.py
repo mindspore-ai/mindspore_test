@@ -19,7 +19,6 @@ from mindspore import ops, nn, mutable
 from mindspore.ops import fftshift
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_dryrun_cases import ops_dryrun_check_ndarray_result
 
 
 class FFTShiftNet(nn.Cell):
@@ -55,7 +54,7 @@ def generate_expect_backward_output(dout, dim=None):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='dryrun', essential_mark='essential')
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_fftshift_normal(mode):
@@ -69,7 +68,7 @@ def test_ops_fftshift_normal(mode):
     net = FFTShiftNet()
     output = net(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
-    ops_dryrun_check_ndarray_result(output.asnumpy(), expect, rtol=1e-3)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
     ## auto grad
     x = generate_random_input((2, 3, 4, 5), np.float32)
@@ -79,7 +78,7 @@ def test_ops_fftshift_normal(mode):
     grad_net.set_train()
     output = grad_net(ms.Tensor(x))
     expect = generate_expect_backward_output(dout)
-    ops_dryrun_check_ndarray_result(output.asnumpy(), expect, rtol=1e-3)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

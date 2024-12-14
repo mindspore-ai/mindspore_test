@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, nn, mutable
 from mindspore.ops import ifft2
-from tests.mark_utils import arg_mark
-from tests.st.ops.ops_dryrun_cases import ops_dryrun_check_ndarray_result
 
 
 class IFFT2Net(nn.Cell):
@@ -55,7 +54,7 @@ def generate_expect_backward_output(x, s, dim):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='dryrun', essential_mark='essential')
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_ifft2_normal(mode):
     """
@@ -70,14 +69,14 @@ def test_ops_ifft2_normal(mode):
     net = IFFT2Net()
     output = net(ms.Tensor(x), s, dim)
     expect = generate_expect_forward_output(x, s, dim)
-    ops_dryrun_check_ndarray_result(output.asnumpy(), expect, rtol=1e-3, atol=1e-5, dtype_cmp=False)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 
     dout = generate_random_input((2, 3, 4, 5), np.complex64)
     grad_net = IFFT2GradNet(net, ms.Tensor(dout))
     grad_net.set_train()
     grad = grad_net(ms.Tensor(x), s, dim)
     expect = generate_expect_backward_output(dout, s, dim)
-    ops_dryrun_check_ndarray_result(grad.asnumpy(), expect, rtol=1e-3, atol=1e-5, dtype_cmp=False)
+    np.testing.assert_allclose(grad.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
