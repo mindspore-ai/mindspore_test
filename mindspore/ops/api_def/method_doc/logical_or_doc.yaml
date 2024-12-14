@@ -35,13 +35,3 @@ logical_or:
         >>> output = input.logical_or(other)
         >>> print(output)
         True
-        >>> input = True
-        >>> other = Tensor(0, mindspore.bool_)
-        >>> output = input.logical_or(other)
-        >>> print(output)
-        True
-        >>> input = True
-        >>> other = Tensor(np.array([True, False]), mindspore.bool_)
-        >>> output = input.logical_or(other)
-        >>> print(output)
-        [True True]
