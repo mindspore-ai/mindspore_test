@@ -17,7 +17,7 @@ import subprocess
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_bind_core_auto():
     """
@@ -31,7 +31,7 @@ def test_bind_core_auto():
     assert result.find("Module bind core policy generated:") != -1
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_bind_core_manual():
     """
