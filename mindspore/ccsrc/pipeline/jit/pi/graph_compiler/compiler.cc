@@ -79,9 +79,13 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
   for (auto param : params) {
     auto abstract = param->abstract();
     MS_EXCEPTION_IF_NULL(abstract);
-    if (abstract->BuildValue() == kValueAny && abstract->has_user_data("param_index")) {
+    if (!abstract->isa<abstract::AbstractTensor>() && abstract->BuildValue() == kValueAny &&
+        abstract->has_user_data("param_index")) {
       auto index = *(abstract->user_data<size_t>("param_index"));
       auto arg = args[index];
+      if (GraphUtils::IsMutable(arg)) {
+        continue;
+      }
       py::object o = python_adapter::CallPyFn("mindspore.common.mutable", "_check_element_type", arg);
       if (py::isinstance<py::bool_>(o) && py::bool_(o)) {
         args[index] = python_adapter::CallPyFn("mindspore.common", "mutable", arg);
