@@ -22,7 +22,7 @@ from abc import ABC
 
 from mindspore import log as logger
 from mindspore.profiler.parser.ascend_analysis.tlv_decoder import TLVDecoder
-from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
+from mindspore.profiler.common.file_manager import FileManager
 
 
 class OpMemoryIndexEnum(Enum):
@@ -198,9 +198,10 @@ class AscendOpMemoryViewer:
     EMPTY_VALUE = "N/A"
     ALLOC_TIME_INDEX = 2
 
-    def __init__(self, source_path: str, ascend_ms_output_path: str):
-        self._source_path = source_path
-        self._ascend_ms_output_path = ascend_ms_output_path
+    def __init__(self, **kwargs):
+        self._enable_profile_memory = kwargs.get("profile_memory", False)
+        self._framework_path = kwargs.get("framework_path")
+        self._ascend_profiler_output_path = kwargs.get("ascend_profiler_output_path")
         self._op_memory_events = None
         self._op_memory_data = []
         self._addr_to_event_map = defaultdict(list)
@@ -209,6 +210,9 @@ class AscendOpMemoryViewer:
         """
         Save step trace time data to csv file
         """
+        if not self._enable_profile_memory:
+            return
+
         try:
             self._read_fwk_binary_file()
             self._calculate_op_memory_data()
@@ -220,7 +224,7 @@ class AscendOpMemoryViewer:
         """
         Read fwk binary file
         """
-        op_name_file_path = os.path.join(self._source_path, self.FWK_BINARY_FILE_NAME)
+        op_name_file_path = os.path.join(self._framework_path, self.FWK_BINARY_FILE_NAME)
         raw_bin_data = FileManager.read_file_content(op_name_file_path, mode="rb")
         self._op_memory_events = TLVDecoder.decode(
             raw_bin_data, OpMemoryEvent, OpMemoryEvent.FIX_DATA_SIZE
@@ -302,5 +306,5 @@ class AscendOpMemoryViewer:
         """
         Write data to csv file
         """
-        save_path = os.path.join(self._ascend_ms_output_path, self.OUTPUT_FILE_NAME)
+        save_path = os.path.join(self._ascend_profiler_output_path, self.OUTPUT_FILE_NAME)
         FileManager.create_csv_file(save_path, self._op_memory_data, self.HEADERS)

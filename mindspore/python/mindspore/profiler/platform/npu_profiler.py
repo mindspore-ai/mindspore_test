@@ -45,6 +45,7 @@ from mindspore.profiler.analysis.viewer.ascend_step_trace_time_viewer import Asc
 from mindspore.profiler.analysis.viewer.ascend_communication_viewer import AscendCommunicationViewer
 from mindspore.profiler.analysis.viewer.ascend_integrate_viewer import AscendIntegrateViewer
 from mindspore.profiler.analysis.viewer.ascend_memory_viewer import AscendMemoryViewer
+from mindspore.profiler.analysis.viewer.ascend_op_memory_viewer import AscendOpMemoryViewer
 from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
     MindDataPipelineRawViewer,
     MindDataPiplineSummaryViewer,
@@ -254,9 +255,9 @@ class NPUProfilerAnalysis:
         cann_flow_parsers = []
         if ProfilerActivity.NPU.value in activities:
             cann_flow_parsers.append(
-                AscendMsprofParser(**kwargs).register_post_hook(
-                    AscendMemoryViewer(**kwargs).save
-                )
+                AscendMsprofParser(**kwargs)
+                .register_post_hook(AscendMemoryViewer(**kwargs).save)
+                .register_post_hook(AscendOpMemoryViewer(**kwargs).save)
             )
 
         if ProfilerActivity.CPU.value in activities:

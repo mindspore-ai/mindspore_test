@@ -65,7 +65,6 @@ from mindspore.profiler.parser.ascend_integrate_generator import AscendIntegrate
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.parser.ascend_analysis.constant import Constant
-from mindspore.profiler.parser.ascend_op_memory_viewer import AscendOpMemoryViewer
 from mindspore.profiler.common.util import timeit
 
 
@@ -1399,7 +1398,6 @@ class Profiler:
         self._ascend_graph_communicate_analyse(source_path, ascend_profiler_output_path)
         AscendIntegrateGenerator(source_path, ascend_profiler_output_path).parse()
         AscendMemoryGenerator(self._output_path, self._rank_id, source_path, ascend_profiler_output_path).parse()
-        AscendOpMemoryViewer(self._framework_path, ascend_profiler_output_path).save()
 
     def _ascend_graph_cluster_analyse(self, source_path, ascend_profiler_output_path):
         """Analyse step trace time info"""
