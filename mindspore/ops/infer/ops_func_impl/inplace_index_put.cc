@@ -23,9 +23,7 @@ namespace ops {
 
 ShapeArray InplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const InferInfoPtrList &input_infos) const {
-  MS_EXCEPTION_IF_NULL(input_infos[kIndex0]);
   auto &indices = input_infos[kIndex1];
-  ShapeVector output_shape;
   if (indices->IsSequence() && indices->IsDynamicSequence()) {
     MS_EXCEPTION(ValueError) << "For `InplaceIndexPut` op, 'indices' shape can not DynamicSequenceShape.";
   }
@@ -34,7 +32,6 @@ ShapeArray InplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 std::vector<TypeId> InplaceIndexPutFuncImpl::InferType(const PrimitivePtr &primitive,
                                                        const InferInfoPtrList &input_infos) const {
-  MS_EXCEPTION_IF_NULL(input_infos[kIndex0]);
   return {input_infos[kIndex0]->GetType()};
 }
 }  // namespace ops
