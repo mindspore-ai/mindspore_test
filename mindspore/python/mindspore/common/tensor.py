@@ -838,24 +838,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         self.const_arg = const_arg
         return self
 
-    def arccosh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.arccosh`.
-        """
-        return tensor_operator_registry.get('acosh')(self)
-
-    def arcsin(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.arcsin`.
-        """
-        return tensor_operator_registry.get('asin')(self)
-
-    def arctan(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.arctan`.
-        """
-        return tensor_operator_registry.get('atan')(self)
-
     def cauchy(self, median=0.0, sigma=1.0):
         r"""
         Fills the tensor with numbers drawn from the Cauchy distribution. It is
@@ -1497,47 +1479,17 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('real')(self)
 
-    def tan(self):
-        """
-        For details, please refer to :func:`mindspore.ops.tan`.
-        """
-        return tensor_operator_registry.get('tan')(self)
-
     def cosh(self):
         r"""
         For details, please refer to :func:`mindspore.ops.cosh`.
         """
         return tensor_operator_registry.get('cosh')(self)
 
-    def acos(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.acos`.
-        """
-        return tensor_operator_registry.get('acos')(self)
-
-    def arccos(self):
-        r"""
-        Alias for :func:`mindspore.Tensor.acos`.
-        """
-        return self.acos()
-
     def cov(self, *, correction=1, fweights=None, aweights=None):
         r"""
         For details, please refer to :func:`mindspore.ops.cov`.
         """
         return tensor_operator_registry.get('cov')(self, correction=correction, fweights=fweights, aweights=aweights)
-
-    def acosh(self):
-        """
-        For details, please refer to :func:`mindspore.ops.acosh`.
-        """
-        return tensor_operator_registry.get('acosh')(self)
-
-    def asin(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.asin`.
-        """
-        return tensor_operator_registry.get('asin')(self)
 
     def floor_(self):
         r"""
@@ -1814,12 +1766,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.deg2rad`.
         """
         return tensor_operator_registry.get('deg2rad')(self)
-
-    def dot(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.dot`.
-        """
-        return tensor_operator_registry.get('dot')(self, other)
 
     def rad2deg(self):
         r"""
@@ -3496,36 +3442,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.addmv`.
         """
         return tensor_operator_registry.get('addmv')(self, mat, vec, beta=beta, alpha=alpha)
-
-    def asinh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.asinh`.
-        """
-        return tensor_operator_registry.get('asinh')(self)
-
-    def arcsinh(self):
-        r"""
-        Alias for :func:`mindspore.Tensor.asinh`.
-        """
-        return tensor_operator_registry.get('arcsinh')(self)
-
-    def atan(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.atan`.
-        """
-        return tensor_operator_registry.get('atan')(self)
-
-    def atanh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.atanh`.
-        """
-        return tensor_operator_registry.get('atanh')(self)
-
-    def arctanh(self):
-        r"""
-        Alias for :func:`mindspore.Tensor.atanh`.
-        """
-        return tensor_operator_registry.get('arctanh')(self)
 
     def bmm(self, mat2):
         r"""

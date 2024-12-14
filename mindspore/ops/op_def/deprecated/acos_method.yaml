@@ -1,0 +1,10 @@
+#deprecated acos
+acos:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output: 
+            dtype: tensor
+    class :
+        name : ACos

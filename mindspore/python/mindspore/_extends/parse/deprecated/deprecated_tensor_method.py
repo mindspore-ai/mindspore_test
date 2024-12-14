@@ -323,9 +323,18 @@ deprecated_tensor_method_map = {
     # 151
 
     # 152
-
-    # 153
-
+    # 153 acos, arccos; acosh, arccosh, asin, arcsin; asinh, arcsinh; atan, arctan; dot
+    "acos": "deprecated_tensor_acos",
+    "arccos": "deprecated_tensor_arccos",
+    "acosh": "deprecated_tensor_acosh",
+    "arccosh": "deprecated_tensor_arccosh",
+    "asin": "deprecated_tensor_asin",
+    "arcsin": "deprecated_tensor_arcsin",
+    "asinh": "deprecated_tensor_asinh",
+    "arcsinh": "deprecated_tensor_arcsinh",
+    "atan": "deprecated_tensor_atan",
+    "arctan": "deprecated_tensor_arctan",
+    "dot": "deprecated_tensor_dot",
     # 154
 
     # 155

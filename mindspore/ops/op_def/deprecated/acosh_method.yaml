@@ -1,0 +1,8 @@
+#deprecated acosh
+acosh:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output: 
+            dtype: tensor
