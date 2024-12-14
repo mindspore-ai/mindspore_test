@@ -23,7 +23,7 @@ mindspore.load_distributed_checkpoint
         - **output_format** (str, 可选) - 控制转换后输出的 checkpoint 格式。可以设置为 "ckpt" 或 "safetensors"。默认值："safetensors"。
         - **name_map** (dict) - 权重映射字典，切分完的权重加载到网络或保存之前，会按照映射字典修改权重名字。默认值：None。
         - **max_process_num** (int) - 最大进程数。默认值：64。
-        - **return_param_dict** (bool) - 是否返回 `param_dict`。默认值：64。
+        - **return_param_dict** (bool) - 是否返回 `param_dict`。默认值：``False`` 。
 
     异常：
         - **TypeError** - 输入类型不符合要求。
