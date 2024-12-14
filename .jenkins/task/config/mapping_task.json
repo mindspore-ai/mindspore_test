@@ -28,6 +28,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -154,6 +156,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -232,6 +236,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "cmake/package.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
@@ -346,6 +352,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "cmake/package.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
@@ -436,6 +444,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "cmake/package.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
@@ -521,6 +531,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "cmake/package.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
@@ -608,6 +620,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "cmake/package.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
@@ -714,6 +728,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -794,6 +810,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -897,6 +915,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
       "mindspore/ccsrc/minddata/dataset/core",
@@ -958,6 +978,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
       "mindspore/ccsrc/minddata/dataset/core",
@@ -987,6 +1009,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
@@ -1037,6 +1061,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
@@ -1116,6 +1142,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
       "mindspore/ccsrc/minddata/dataset/core",
@@ -1155,6 +1183,8 @@
       ".gitattributes",
       "include/api",
       "mindspore/ccsrc/include",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -1220,6 +1250,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
       "mindspore/ccsrc/minddata/dataset/core",
@@ -1253,6 +1285,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
@@ -1306,6 +1340,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
@@ -1359,6 +1395,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
@@ -1435,6 +1473,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/external_libs",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
