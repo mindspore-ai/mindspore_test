@@ -551,7 +551,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
   if (IsCreateIrGrad()) {
     top_cell_->set_is_ir_grad(true);
   }
-  // High-order must use ir grad
+  // High-order must use ir grad.
   if (top_cell_->is_ir_grad() || top_cell_->is_high_order_top_cell()) {
     top_cell_->set_auto_grad_cell_ptr(
       std::make_shared<autograd::IrGrad>(input_param_values, abs_list, op_num_in_bprop_graph_ * kContainerRatio,
