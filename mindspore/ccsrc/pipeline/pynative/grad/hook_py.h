@@ -40,8 +40,8 @@ struct RegisterHook {
   /// \brief Remove a backward hook
   ///
   /// \ void
+  static void RemoveTensorBackwardHookOfGraph(uint64_t tensor_id, uint64_t handle_id);
   static void RemoveTensorBackwardHook(uint64_t handle_id);
-
   static py::list GetHooks(const tensor::Tensor &tensor);
 
   /// \brief Update weight meta

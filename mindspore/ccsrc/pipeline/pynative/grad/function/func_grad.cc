@@ -393,7 +393,8 @@ void BuildCheckVersionFunc(const BackwardNodePtr &func, const std::vector<ValueP
 size_t ProcessDictElement(const ValueDictionaryPtr &dict_value, const ValuePtrList &real_dout, size_t index,
                           VectorRef *args_) {
   MS_EXCEPTION_IF_NULL(args_);
-  ValuePtrList key_inputs, value_inputs;
+  ValuePtrList key_inputs;
+  ValuePtrList value_inputs;
   size_t real_dout_index = index;
   const size_t real_dout_size = real_dout.size();
 
@@ -583,7 +584,7 @@ NodePtrList CopySliceNode::CallBackwardImpl(const NodePtr &grad_node, const tens
   auto base_tensor = base_->Value()->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(base_tensor);
   MS_EXCEPTION_IF_NULL(view_tensor->storage_info());
-  int64_t view_offset = view_tensor->storage_info()->storage_offset;
+  auto view_offset = view_tensor->storage_info()->storage_offset;
   if (base_tensor->storage_info() != nullptr) {
     view_offset = view_offset - base_tensor->storage_info()->storage_offset;
   }
@@ -592,7 +593,7 @@ NodePtrList CopySliceNode::CallBackwardImpl(const NodePtr &grad_node, const tens
   auto clone_grad = emitter_->InplaceCopy(result, grad_node);
   auto grad_slice =
     emitter_->AsStrided(clone_grad, emitter_->Value(view_tensor->storage_info()->shape),
-                        emitter_->Value(view_tensor->storage_info()->strides), emitter_->Value(view_offset));
+                        emitter_->Value(view_tensor->storage_info()->strides), emitter_->Value((int64_t)view_offset));
   auto clone_grad_slice = emitter_->Contiguous(grad_slice);
   (void)node_inputs_.emplace_back(clone_grad_slice);
   emitter_->SetInputs(inplace_op_name(), &node_inputs_, &attrs_);

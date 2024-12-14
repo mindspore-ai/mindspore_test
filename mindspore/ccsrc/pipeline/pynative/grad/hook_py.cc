@@ -75,6 +75,23 @@ uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::Tensor &tensor, 
   return unique_id_;
 }
 
+void RegisterHook::RemoveTensorBackwardHookOfGraph(uint64_t tensor_id, uint64_t handle_id) {
+  auto found = tensor_id_with_hook_map_.find(tensor_id);
+  if (found != tensor_id_with_hook_map_.end()) {
+    auto hook_map = found->second.lock();
+    if (hook_map != nullptr) {
+      auto iter = hook_map->find(handle_id);
+      if (iter != hook_map->end()) {
+        MS_LOG(DEBUG) << "Remove hook, handle id: " << handle_id
+                      << ", hook: " << py::cast<std::string>(py::str(iter->second));
+        hook_map->erase(iter);
+      } else {
+        MS_LOG(WARNING) << "No hook was found for handle id: " << handle_id;
+      }
+    }
+  }
+}
+
 void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
   MS_LOG(DEBUG) << "Remove hook by id " << handle_id;
   const auto it = hook_meta_fn_map_.find(handle_id);
@@ -93,20 +110,7 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
       }
 
       if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-        auto found = tensor_id_with_hook_map_.find(tensor_id);
-        if (found != tensor_id_with_hook_map_.end()) {
-          auto hook_map = found->second.lock();
-          if (hook_map != nullptr) {
-            auto iter = hook_map->find(handle_id);
-            if (iter != hook_map->end()) {
-              MS_LOG(DEBUG) << "Remove hook, handle id: " << handle_id
-                            << ", hook: " << py::cast<std::string>(py::str(iter->second));
-              hook_map->erase(iter);
-            } else {
-              MS_LOG(WARNING) << "No hook was found for handle id: " << handle_id;
-            }
-          }
-        }
+        RemoveTensorBackwardHookOfGraph(tensor_id, handle_id);
       }
       break;
     } else {
