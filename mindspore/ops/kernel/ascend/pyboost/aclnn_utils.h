@@ -78,6 +78,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
 
 #define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                  \
   [](const std::string &api_str, const auto &... args) -> auto {                                  \
+    std::unique_lock<std::mutex> lock(mutex_);                                                    \
     if (capacity_ == 0) {                                                                         \
       auto [ws_size, executor, cache, release_func] = GEN_EXECUTOR(api_str, args...);             \
       std::function<void()> update_func = nullptr;                                                \
@@ -132,6 +133,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
     static std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;                               \
     static std::list<CacheTuple> hash_cache_;                                                                     \
     static size_t capacity_{1024};                                                                                \
+    static std::mutex mutex_;                                                                                     \
     static std::string capaticy_from_user = common::GetCacheCapaticy();                                           \
     static bool not_set_capaticy = true;                                                                          \
     if (!capaticy_from_user.empty() && not_set_capaticy) {                                                        \
@@ -186,6 +188,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
     static std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;                           \
     static std::list<CacheTuple> hash_cache_;                                                                 \
     static size_t capacity_{1024};                                                                            \
+    static std::mutex mutex_;                                                                                 \
     static std::string capaticy_from_user = common::GetCacheCapaticy();                                       \
     static bool not_set_capaticy = true;                                                                      \
     if (!capaticy_from_user.empty() && not_set_capaticy) {                                                    \
