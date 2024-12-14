@@ -2221,5 +2221,72 @@ void CostGraph::CheckApproximateCostGraphEdges() {
     }
   }
 }
+
+bool CostGraph::FindReshapeCostInCache(const TensorLayout &from, const TensorLayout &to, CostPtr *result) {
+  auto key = std::make_pair(from, to);
+  auto iter = reshape_cost_cache_.find(key);
+  if (iter != reshape_cost_cache_.end()) {
+    *result = iter->second;
+    return true;
+  }
+  return false;
+}
+
+void CostGraph::SaveReshapeCostToCache(const TensorLayout &from, const TensorLayout &to, const CostPtr &result) {
+  auto key = std::make_pair(from, to);
+  reshape_cost_cache_.emplace(key, result);
+}
+
+bool CostGraph::CheckCacheEqual(const std::vector<std::pair<StrategyPtr, TensorLayout>> &pairs_a,
+                                const std::vector<std::pair<StrategyPtr, TensorLayout>> &pairs_b) const {
+  if (pairs_a.size() != pairs_b.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < pairs_a.size(); i++) {
+    std::pair<StrategyPtr, TensorLayout> pair_a = pairs_a[i];
+    std::pair<StrategyPtr, TensorLayout> pair_b = pairs_b[i];
+    if (!pair_a.first->IsEqual(pair_b.first)) {
+      return false;
+    }
+    if (pair_a.second != pair_b.second) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CostGraph::FindCostMapInCache(const std::string &edge_name,
+                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
+                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
+                                   std::map<CostPtrKey, CostPtrList> *cost_map) {
+  auto key = edge_name;
+  auto iter = cost_map_cache_.find(key);
+  if (iter == cost_map_cache_.end()) {
+    return false;
+  }
+  for (auto &layout_cost_map : iter->second) {
+    auto layout_cost_map_key = layout_cost_map.first;
+    auto layout_cost_map_value = layout_cost_map.second;
+    if (CheckCacheEqual(layout_cost_map_key.first, pre_op_output) &&
+        CheckCacheEqual(layout_cost_map_key.second, next_op_input)) {
+      *cost_map = layout_cost_map_value;
+      return true;
+    }
+  }
+  return false;
+}
+
+void CostGraph::SaveCostMapToCache(const std::string &edge_name,
+                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &pre_op_output,
+                                   const std::vector<std::pair<StrategyPtr, TensorLayout>> &next_op_input,
+                                   const std::map<CostPtrKey, CostPtrList> &cost_map) {
+  std::string key = edge_name;
+  auto iter = cost_map_cache_.find(key);
+  if (iter == cost_map_cache_.end()) {
+    cost_map_cache_[key] = {std::make_pair(std::make_pair(pre_op_output, next_op_input), cost_map)};
+  } else {
+    (void)iter->second.emplace_back(std::make_pair(std::make_pair(pre_op_output, next_op_input), cost_map));
+  }
+}
 }  // namespace parallel
 }  // namespace mindspore

@@ -2322,7 +2322,7 @@ Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
 CostPtrList OperatorInfo::GetCostByStrategyPtr(const StrategyPtr &strategy) {
   auto target = std::find_if(
     strategy_cost_.begin(), strategy_cost_.end(),
-    [&](const std::shared_ptr<StrategyWithCost> &stra_cost) { return stra_cost->strategy_ptr == strategy; });
+    [&](const std::shared_ptr<StrategyWithCost> &stra_cost) { return stra_cost->strategy_ptr->IsEqual(strategy); });
   if (target == strategy_cost_.end()) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "There is no StrategyWithCost with a strategy";
   }

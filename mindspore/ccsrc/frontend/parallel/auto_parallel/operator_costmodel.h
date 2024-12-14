@@ -23,6 +23,7 @@
 #include "frontend/parallel/tensor_layout/tensor_info.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/auto_parallel/costmodel.h"
+#include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 
 namespace mindspore {
 namespace parallel {
@@ -622,6 +623,12 @@ class ReshapeCost : public OperatorCost {
   void CalculateOutputInMemory() override;
   // Not taking account of input
   void CalculateInputsInMemory(const std::map<size_t, bool> &prev_output_in_mem) override;
+
+ private:
+  mutable TensorLayout from_;
+  mutable TensorLayout to_;
+  mutable int64_t stage_id_;
+  mutable TensorRedistribution tensor_redistribution_;
 };
 using ReshapeCostPtr = std::shared_ptr<ReshapeCost>;
 

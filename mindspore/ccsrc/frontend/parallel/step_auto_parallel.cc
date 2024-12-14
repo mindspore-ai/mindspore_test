@@ -77,10 +77,12 @@ void SearchParallelStrategy(const std::string &strategy_search_mode, const FuncG
     MS_LOG(EXCEPTION) << "Load strategies failed, please check whether your config is changed.";
   }
   if ((strategy_search_mode == kDynamicProgramming) || (strategy_search_mode == kShardingPropagation)) {
+    PROF_START(parallel_strategy_search);
     if (ParallelStrategySearch(all_nodes, root) != SUCCESS) {
       MS_LOG(EXCEPTION) << "Auto-parallel strategy search failed when using " << strategy_search_mode
                         << " searching mode";
     }
+    PROF_END(parallel_strategy_search);
   } else if (strategy_search_mode == kRecursiveProgramming) {
     if (ParallelStrategyRecSearch(all_nodes, root) != SUCCESS) {
       MS_LOG(EXCEPTION) << "Auto-parallel strategy search failed when using RP searching mode";
