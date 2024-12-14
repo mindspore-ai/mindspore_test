@@ -562,6 +562,8 @@ constexpr const char kNameEmbeddingComputeVarImport[] = "EmbeddingComputeVarImpo
 constexpr const char kNameEmbeddingTableExport[] = "EmbeddingTableExport";
 constexpr const char kNameFakeRemoteLookupUniqued[] = "FakeRemoteLookupUniqued";
 constexpr const char kNameNonMaxSuppression[] = "NonMaxSuppression";
+constexpr const char kNameAlltoAllAllGatherBatchMatMul[] = "AlltoAllAllGatherBatchMatMul";
+constexpr const char kNameBatchMatMulReduceScatterAlltoAll[] = "BatchMatMulReduceScatterAlltoAll";
 
 class OpAdapterDesc;
 
