@@ -20,6 +20,7 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif
+#include "runtime/runtime_conf/thread_bind_core.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
 #include "include/common/profiler.h"
@@ -64,6 +65,9 @@ void AsyncRQueue::WorkerLoop() {
     std::unique_lock<std::mutex> lock(level_mutex_);
     thread_id_to_wait_level_[std::this_thread::get_id()] = wait_level_;
   }
+
+  auto &bind_core_manager = ThreadBindCore::GetInstance();
+  bind_core_manager.bind_thread_core(name_);
 
   while (true) {
     std::shared_ptr<AsyncTask> task = tasks_queue_.Head();

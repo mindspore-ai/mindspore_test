@@ -35,6 +35,7 @@
 #include "runtime/graph_scheduler/optimizer/multi_actor_fusion.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "runtime/runtime_conf/thread_bind_core.h"
 #include "include/common/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
@@ -92,6 +93,7 @@ using distributed::recovery::RecoveryContext;
 namespace {
 constexpr char kNumaEnableEnv[] = "MS_ENABLE_NUMA";
 constexpr char kNumaEnableEnv2[] = "DATASET_ENABLE_NUMA";
+constexpr char kRuntimeThread[] = "runtime";
 
 // For the transform state synchronization.
 constexpr char kTransformFinishPrefix[] = "TRANSFORM_FINISH_";
@@ -515,6 +517,9 @@ void GraphScheduler::Initialize() {
     return;
   }
   init_ = true;
+
+  auto &bind_core_manager = ThreadBindCore::GetInstance();
+  numa_cpus_ = bind_core_manager.get_thread_bind_core_list(kRuntimeThread);
 
   BindNumaNode();
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kDeviceDataSourceActor,
@@ -3650,6 +3655,10 @@ void GraphScheduler::BindNumaNode() {
   }
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+  if (!numa_cpus_.empty()) {
+    MS_LOG(WARNING) << "Have already been bound numa node to " << numa_cpus_ << ", will not bind again.";
+    return;
+  }
   uint32_t rank_id = CollectiveManager::instance()->local_rank_id();
   MS_LOG(INFO) << "Bind numa node for rank " << rank_id;
   if (numa_handle_ == nullptr) {

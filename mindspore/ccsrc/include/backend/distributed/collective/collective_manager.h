@@ -91,6 +91,7 @@ class BACKEND_EXPORT CollectiveManager {
   uint32_t global_rank_id() const;
   uint32_t local_rank_id() const;
   uint32_t global_rank_size() const;
+  uint32_t local_rank_size() const;
 
   bool need_init() const { return need_init_.load(); }
 
@@ -170,6 +171,9 @@ class BACKEND_EXPORT CollectiveManager {
 
   // The global rank size. Normally this is equal to `total process number`.
   uint32_t global_rank_size_;
+
+  // The num of processes on this local node.
+  uint32_t local_rank_size_;
 
   // Global group ranks.
   std::vector<uint32_t> global_group_ranks_;

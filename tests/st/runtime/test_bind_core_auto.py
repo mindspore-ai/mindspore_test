@@ -12,16 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import mindspore as ms
+import mindspore.nn as nn
+import mindspore.context as context
+from mindspore import Tensor
+from mindspore.ops import operations as P
 
-"""
-The runtime interface.
-"""
 
-from mindspore.runtime.executor import launch_blocking, dispatch_threads_num, set_cpu_affinity
-from mindspore.runtime.memory import set_memory
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.ops = P.Abs()
 
-__all__ = [
-    "launch_blocking", "dispatch_threads_num", "set_memory", "set_cpu_affinity"
-]
+    def construct(self, x):
+        return self.ops(x)
 
-__all__.sort()
+
+context.set_context(mode=context.PYNATIVE_MODE)
+ms.runtime.set_cpu_affinity(True)
+net = Net()
+net(Tensor(2.0))
