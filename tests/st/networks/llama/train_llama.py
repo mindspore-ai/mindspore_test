@@ -124,6 +124,7 @@ def build_model(test_mode,
 
 def run_llama_4p_train():
     """test msrun launch llama on 4p for Trainer.train()."""
+    ms.set_auto_parallel_context(pipeline_config={'pipeline_scheduler': '1f1b', 'pipeline_interleave': True})
     task_trainer = build_model('test_train', fine_grain_interleave=2)
     task_trainer.config.callbacks[1].save_checkpoint_steps = 100
     task_trainer.config.callbacks = task_trainer.config.callbacks[:1]

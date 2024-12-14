@@ -102,6 +102,7 @@ const char kRuntimeCompileStat[] = "compile_statistics";
 const char kRuntimePerformanceStat[] = "performance_statistics";
 const char kRuntimePerformanceStatTopNum[] = "performance_statistics_top_num";
 const char kRuntimeAclnnCacheQueueLength[] = "aclnn_cache_queue_length";
+const char kRuntimePreBuildCommKernel[] = "pre_build_comm_kernel";
 const char kSingleQuote = '\'';
 const char kDoubleQuote = '"';
 const char kSemicolon = ';';

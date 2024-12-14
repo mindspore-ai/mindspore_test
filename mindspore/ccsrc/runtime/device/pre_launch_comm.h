@@ -1,0 +1,70 @@
+/**
+ * Copyright 2024 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_HCCL_PRE_LAUNCH_HCCL_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_HCCL_PRE_LAUNCH_HCCL_H_
+
+#include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
+#include "runtime/graph_scheduler/actor/kernel_actor.h"
+#include "runtime/graph_scheduler/actor/actor_set.h"
+
+namespace mindspore {
+namespace runtime {
+
+struct CommKernelInfo {
+  std::string name;
+  std::string group;
+  int64_t src_rank{-1};
+  int64_t dest_rank{-1};
+  std::string ToString() const { return name + group + std::to_string(src_rank) + std::to_string(dest_rank); }
+
+  bool operator==(const CommKernelInfo &other) const {
+    return (name == other.name) && (group == other.group) && (src_rank == other.src_rank) &&
+           (dest_rank == other.dest_rank);
+  }
+};
+
+enum SortedFunc {
+  SORTED_BY_SEND_SEQUENTAIL,
+  SORTED_BY_RECV_SEQUENTAIL,
+  SORTED_BY_SEND_REVERSE,
+  SORTED_BY_RECV_REVERSE
+};
+using LaunchCommNode = std::tuple<runtime::KernelActorPtr, CNodePtr, CommKernelInfo, runtime::KernelLaunchInfo>;
+
+// PreLaunchComm is used to launch communication kernel before launch all kernels.
+class BACKEND_EXPORT PreLaunchComm {
+ public:
+  static PreLaunchComm &GetInstance();
+
+  CommKernelInfo GetKenrelInfo(const CNodePtr &);
+  void SpiltBucket(const std::vector<LaunchCommNode> &, std::vector<LaunchCommNode> *, std::vector<LaunchCommNode> *,
+                   std::vector<LaunchCommNode> *, std::vector<LaunchCommNode> *);
+  void Launch(std::vector<LaunchCommNode> &, SortedFunc);
+  void PreLaunchCommKernel(runtime::ActorSet *);
+
+ private:
+  PreLaunchComm() = default;
+  ~PreLaunchComm() = default;
+};
+
+}  // namespace runtime
+}  // namespace mindspore
+
+#endif
