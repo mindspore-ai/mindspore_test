@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #include <mutex>
 #include <string>
 #include <functional>
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "include/backend/distributed/rpc/tcp/tcp_server.h"
 #include "distributed/cluster/actor_route_table_proxy.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
@@ -29,6 +28,7 @@
 #include "kernel/cpu/rpc/rpc_recv_kernel.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -214,13 +214,8 @@ bool HcomReceiveKernel::Launch(const std::vector<KernelTensor *> &, const std::v
   }
   MS_EXCEPTION_IF_NULL(outputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(outputs[0]->device_ptr(), hccl_count_,
-                                                               hccl_data_type_list_[0], src_rank_, stream_ptr, comm_);
-  if (hccl_result != HCCL_SUCCESS) {
-    MS_LOG(ERROR) << "HcomReceive failed, ret:" << hccl_result;
-    return false;
-  }
-  return true;
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  return comm_lib->Recv(outputs[0]->device_ptr(), hccl_count_, outputs[0]->dtype_id(), src_rank_, group_, stream_ptr);
 }
 }  // namespace kernel
 }  // namespace mindspore

@@ -221,6 +221,10 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_matmul_all_reduce.cc")
+list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
+        "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_send.cc")
+list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
+        "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_receive.cc")
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
 target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend mindspore_core

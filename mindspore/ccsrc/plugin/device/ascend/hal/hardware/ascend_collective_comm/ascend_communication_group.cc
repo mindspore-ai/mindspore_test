@@ -22,6 +22,7 @@
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/acl_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "include/backend/distributed/cluster/cluster_context.h"
 
 namespace mindspore {
 namespace device {
@@ -65,7 +66,7 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
 
   bool ret = false;
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
-  if (!rank_table_file_path.empty()) {
+  if (!rank_table_file_path.empty() && !distributed::cluster::ClusterContext::instance()->enable_cross_cluster()) {
     ret = InitializeByRankTable(rank_table_file_path, group_size, group_rank);
   } else {
     ret = InitializeByRootInfo(root_info, group_size, group_rank);

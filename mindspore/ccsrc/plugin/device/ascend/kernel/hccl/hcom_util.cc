@@ -15,6 +15,7 @@
  */
 
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
+#include <set>
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -181,7 +182,8 @@ std::pair<uint64_t, ::HcclDataType> HcomUtil::GetHcclCountAndTypeFromTensor(
   return std::make_pair(hccl_count, hccl_type);
 }
 
-bool HcomUtil::GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp *op_type) {
+bool HcomUtil::GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp *op_type,
+                                    device::CollectiveOpReduceType *collective_reduce_type) {
   MS_EXCEPTION_IF_NULL(primitive);
   MS_EXCEPTION_IF_NULL(op_type);
 
@@ -190,13 +192,23 @@ bool HcomUtil::GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp 
     return false;
   }
 
-  auto iter = kConstOpHcomReduceOpTypeMap.find(hcom_op_type);
-  if (iter == kConstOpHcomReduceOpTypeMap.end()) {
+  auto hcom_op_iter = kConstOpHcomReduceOpTypeMap.find(hcom_op_type);
+  auto coll_op_iter = kConstOpCollectiveOpReduceTypeMap.find(hcom_op_type);
+  if (hcom_op_iter == kConstOpHcomReduceOpTypeMap.end() || coll_op_iter == kConstOpCollectiveOpReduceTypeMap.end()) {
     MS_LOG(ERROR) << "HcomUtil::Get HCOM_ATTR_REDUCE_TYPE fail, [" << hcom_op_type << "] not support!";
     return false;
   }
-  *op_type = iter->second;
+  *op_type = hcom_op_iter->second;
+  *collective_reduce_type = coll_op_iter->second;
   return true;
+}
+
+device::CollectiveOpReduceType HcomUtil::GetCollectiveOpReduceType(const std::string &reduce_op) {
+  auto iter = kConstOpCollectiveOpReduceTypeMap.find(reduce_op);
+  if (iter == kConstOpCollectiveOpReduceTypeMap.end()) {
+    MS_LOG(EXCEPTION) << "HcomUtil::Get CollectiveOpReduceType fail, [" << reduce_op << "] not support!";
+  }
+  return iter->second;
 }
 
 HcclReduceOp HcomUtil::GetHcomReduceOpType(const std::string &reduce_op) {

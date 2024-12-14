@@ -86,6 +86,12 @@ class BACKEND_EXPORT ClusterContext {
   void set_cluster_exit_with_exception();
   bool cluster_exit_with_exception() const;
 
+  // Set whether enable cross cluster communication.
+  void set_enable_cross_cluster(bool enable_cross_cluster) { enable_cross_cluster_ = enable_cross_cluster; }
+
+  // Return whether enable cross cluster communication.
+  bool enable_cross_cluster() const { return enable_cross_cluster_; }
+
   // Return server range of this node.
   const std::pair<uint32_t, uint32_t> &port_range() const { return port_range_; }
 
@@ -103,6 +109,9 @@ class BACKEND_EXPORT ClusterContext {
   void InitNodeRole();
   void InitSchedulerIp();
   void InitSchedulerPort();
+
+  // Check whether the cluster enables the cross cluster communication.
+  bool IsEnableCrossCluster();
 
   // After cluster is successfully built, some post process should be done. For example, port range assignment and
   // client ip set, etc.
@@ -143,6 +152,9 @@ class BACKEND_EXPORT ClusterContext {
   std::shared_ptr<ActorRouteTableProxy> actor_route_table_proxy_;
 
   std::pair<uint32_t, uint32_t> port_range_;
+
+  // Indicate whether enable cross cluster communication.
+  bool enable_cross_cluster_;
 };
 }  // namespace cluster
 }  // namespace distributed

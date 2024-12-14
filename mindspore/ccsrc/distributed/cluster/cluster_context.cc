@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+#include "include/backend/distributed/cluster/cluster_context.h"
+
 #include <mutex>
 #include <vector>
 #include <string>
 #include <memory>
-#include "include/backend/distributed/cluster/cluster_context.h"
+
 #include "include/backend/distributed/cluster/topology/common.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
@@ -27,6 +29,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "proto/topology.pb.h"
 #include "utils/ms_context.h"
+#include "utils/file_utils.h"
 #include "nlohmann/json.hpp"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "ps/core/comm_util.h"
@@ -45,7 +48,8 @@ ClusterContext::ClusterContext()
       scheduler_port_(kDefaultSchedPort),
       node_id_(""),
       node_role_(""),
-      cluster_config_(nullptr) {}
+      cluster_config_(nullptr),
+      enable_cross_cluster_(false) {}
 
 ClusterContext::~ClusterContext() {
   if (!finalized_) {
@@ -298,6 +302,38 @@ void ClusterContext::InitSchedulerPort() {
   }
 }
 
+bool ClusterContext::IsEnableCrossCluster() {
+  constexpr char kRankTableClusterList[] = "cluster_list";
+  std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
+  if (rank_table_file_path.empty()) {
+    return false;
+  }
+  auto realpath = FileUtils::GetRealPath(rank_table_file_path.c_str());
+  if (!realpath.has_value()) {
+    MS_LOG(WARNING) << "Failed to get real path.";
+    return false;
+  }
+  std::ifstream jsonFile(realpath.value(), std::ifstream::in);
+  if (!jsonFile.is_open()) {
+    MS_LOG(WARNING)
+      << "Failed to open rank table file. This may be because the path of rank table file is incorrect or the access"
+      << " of json file is not permitted.";
+    return false;
+  }
+  try {
+    nlohmann::json rank_table_file_data;
+    rank_table_file_data = nlohmann::json::parse(jsonFile);
+    if (rank_table_file_data.is_null()) {
+      MS_LOG(WARNING) << "Failed to read data from rank table file.";
+      return false;
+    }
+    return rank_table_file_data.contains(kRankTableClusterList);
+  } catch (const std::exception &e) {
+    MS_LOG(WARNING) << "Rank table file is incorrect. Json error: " << e.what();
+    return false;
+  }
+}
+
 void ClusterContext::PostProcess() {
   if (node_role_ != kEnvRoleOfScheduler) {
     auto cgn = std::dynamic_pointer_cast<topology::ComputeGraphNode>(node_base_);
@@ -331,6 +367,12 @@ void ClusterContext::PostProcess() {
     uint32_t max_node_num = port_assignment.max_node_num;
     port_range_.first = start_port + (port_range / max_node_num) * (cgn->rank_id() % max_node_num);
     port_range_.second = port_range_.first + (port_range / max_node_num) - 1;
+
+    // 4. Set whether enable cross cluster communication.
+    if (IsEnableCrossCluster()) {
+      MS_LOG(WARNING) << "This node enable the cross cluster communication.";
+      enable_cross_cluster_ = true;
+    }
   }
 }
 }  // namespace cluster
