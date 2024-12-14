@@ -60,8 +60,8 @@ def test_acos_std(mode):
         output = (jit(acos_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
         output_grad = (jit(acos_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
 
-    np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
-    np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
+    assert np.allclose(output.asnumpy(), expect, rtol=1e-4, equal_nan=True)
+    assert np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-4, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -97,5 +97,5 @@ def test_acos_bfloat16(mode):
         output = (jit(acos_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
         output_grad = (jit(acos_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
 
-    np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
-    np.allclose(output_grad.float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)
+    assert np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
+    assert np.allclose(output_grad.float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)

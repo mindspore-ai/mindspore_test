@@ -1,0 +1,14 @@
+dot:
+  - op_yaml: dot_op.yaml
+    py_method: deprecated_tensor_dot
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/dot_method.yaml
+    py_method: deprecated_tensor_dot
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
