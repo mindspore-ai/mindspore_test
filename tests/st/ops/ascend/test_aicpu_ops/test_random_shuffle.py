@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 
-import os
 import pytest
 import numpy as np
 import mindspore as ms
@@ -39,7 +38,7 @@ class RandomShuffleNet(nn.Cell):
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16,
-                                   np.uint32, np.uint64, np.bool_, np.complex64, np.complex128,
+                                   np.uint32, np.uint64, np.bool, np.complex64, np.complex128,
                                    np.float64, np.float32, np.float16])
 def test_random_shuffle_op_dtype(mode, dtype):
     """
@@ -56,7 +55,7 @@ def test_random_shuffle_op_dtype(mode, dtype):
     assert output.shape == expect_shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='dryrun', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize("shape", [(5,), (2, 3), (12, 3, 5)])
 def test_random_shuffle_op_tensor(mode, shape):
@@ -71,8 +70,7 @@ def test_random_shuffle_op_tensor(mode, shape):
     output = net(x)
     expect_shape = shape
     assert output.shape == expect_shape
-    if not os.environ.get("MS_SIMULATION_LEVEL"):
-        assert np.all(np.sort(x.asnumpy().flatten()) == np.sort(output.asnumpy().flatten()))
+    assert np.all(np.sort(x.asnumpy().flatten()) == np.sort(output.asnumpy().flatten()))
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
