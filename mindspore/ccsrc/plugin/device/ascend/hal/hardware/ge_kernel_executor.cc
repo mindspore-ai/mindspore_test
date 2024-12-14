@@ -1163,9 +1163,8 @@ void GeKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) c
 
 bool GeKernelExecutor::PySyncRuning(void *stream) const {
   MS_EXCEPTION_IF_NULL(res_manager_);
-  static bool sync_stream = common::IsEnableRuntimeConfig(common::kRuntimeSynchronize);
   auto isSync = mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking();
-  if ((sync_stream || isSync) && !AscendStreamMng::GetInstance().SyncStream(stream)) {
+  if ((isSync) && !AscendStreamMng::GetInstance().SyncStream(stream)) {
     return false;
   }
   return true;

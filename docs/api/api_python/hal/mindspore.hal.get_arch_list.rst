@@ -6,6 +6,9 @@ mindspore.hal.get_arch_list
     返回此MindSpore包支持哪些后端架构。
 
     .. note::
+        - 接口即将废弃。
+
+    .. note::
         - 若用户不指定 `device_target` ，将此参数设置为当前已经设置的后端类型。
 
     参数：

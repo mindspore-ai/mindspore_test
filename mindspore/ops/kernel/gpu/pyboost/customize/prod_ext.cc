@@ -17,6 +17,7 @@
 #include "kernel/gpu/pyboost/customize/prod_ext.h"
 #include "kernel/gpu/pyboost/auto_generate/cast.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
@@ -47,7 +48,7 @@ void ProdExtGPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &in
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
 
     PyBoostUtils::LaunchKernel(primitive, device_context, input_address_info, output_address_info, op->stream_id());
-    static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+    auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
     if (sync && !device_context->device_res_manager_->SyncAllStreams()) {
       MS_LOG(EXCEPTION) << "SyncStream failed for op " << primitive->name();
     }

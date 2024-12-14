@@ -17,6 +17,7 @@
 #include "pipeline/pynative/grad/ir/dynamic_shape.h"
 #include <algorithm>
 #include "pipeline/pynative/pynative_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace pynative {
@@ -426,9 +427,8 @@ void NodeDynamicDetect::CheckNodeDynamic(const TopCellInfoPtr &top_cell, const V
     (void)cell_id_with_dynamic_detect_nodes_.erase(top_cell->obj_id_with_grad_order());
   }
   if (node_is_dynamic) {
-    auto context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context);
-    if (context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE)) {
+    bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
+    if (sync_stream) {
       MS_LOG(WARNING) << "Detect dynamic shape or dynamic graph structure, the python stack is: ";
       py::gil_scoped_acquire acquire_gil;
       py::exec(R"(

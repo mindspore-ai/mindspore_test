@@ -18,6 +18,7 @@
 #include <utility>
 #include "mindspore/ops/kernel/common/pyboost/customize/divmod.h"
 #include "mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "mindspore/ccsrc/runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
@@ -26,7 +27,7 @@ tensor::BaseTensorPtr DivModGPUCustomize(const std::shared_ptr<OpRunner> &op, co
                                          const BaseTensorPtr &y_tensor,
                                          const std::optional<Int64ImmPtr> &rounding_mode) {
   DivModCustomize(op, x_tensor, y_tensor, rounding_mode);
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync && !op->device_context()->device_res_manager_->SyncAllStreams()) {
     MS_LOG(EXCEPTION) << "SyncStream failed for op DivMod.";
   }

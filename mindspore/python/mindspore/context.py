@@ -1297,97 +1297,130 @@ def set_context(**kwargs):
         The mode is not recommended to be changed after net was initialized because the implementations of some
         operations are different in graph mode and pynative mode. Default: ``PYNATIVE_MODE`` .
 
-    Some configurations are device specific, see the below table for details:
+    Some configurations are device specific, and some parameters will be deprecated and removed in the future version
+    (marked ``D`` in the second column), please use the replacement in the fourth column.
+    see the below table for details:
 
-    +-------------------------+------------------------------+----------------------------+
-    | Function Classification |   Configuration Parameters   |   Hardware Platform Support|
-    +=========================+==============================+============================+
-    | System Configuration    |   device_id                  |   CPU/GPU/Ascend           |
-    |                         +------------------------------+----------------------------+
-    |                         |   device_target              |   CPU/GPU/Ascend           |
-    |                         +------------------------------+----------------------------+
-    |                         |  max_device_memory           |  GPU/Ascend                |
-    |                         +------------------------------+----------------------------+
-    |                         |  variable_memory_max_size    |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  mempool_block_size          |  GPU/Ascend                |
-    |                         +------------------------------+----------------------------+
-    |                         |  op_timeout                  |  Ascend                    |
-    +-------------------------+------------------------------+----------------------------+
-    | Debug Configuration     |  save_graphs                 |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  save_graphs_path            |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  deterministic               |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  print_file_path             |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  env_config_path             |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  precompile_only             |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  reserve_class_name_in_scope |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  pynative_synchronize        |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  debug_level                 |  CPU/GPU/Ascend            |
-    +-------------------------+------------------------------+----------------------------+
-    | Executive Control       |   mode                       |   CPU/GPU/Ascend           |
-    |                         +------------------------------+----------------------------+
-    |                         |  enable_reduce_precision     |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  aoe_tune_mode               |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  aoe_config                  |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  check_bprop                 |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  max_call_depth              |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  grad_for_scalar             |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  enable_compile_cache        |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  inter_op_parallel_num       |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  runtime_num_threads         |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  compile_cache_path          |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  disable_format_transform    |  GPU                       |
-    |                         +------------------------------+----------------------------+
-    |                         |  support_binary              |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  memory_optimize_level       |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  memory_offload              |  GPU/Ascend                |
-    |                         +------------------------------+----------------------------+
-    |                         |  ascend_config               |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  jit_syntax_level            |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  gpu_config                  |  GPU                       |
-    |                         +------------------------------+----------------------------+
-    |                         |  jit_config                  |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  exec_order                  |  Ascend                    |
-    +-------------------------+------------------------------+----------------------------+
+    +-------------------------+------------------------------+---------------------------+----------------------------+
+    | Function Classification |   Configuration Parameters   |  Hardware Platform Support|   Replacement              |
+    +=========================+==============================+===========================+============================+
+    | System Configuration    |   device_id (D)              |  CPU/GPU/Ascend           |   mindspore.set_device     |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |   device_target (D)          |  CPU/GPU/Ascend           |   mindspore.set_device     |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  max_device_memory(D)        | GPU/Ascend                |mindspore.runtime.set_memory|
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         | variable_memory_max_size (D) | Ascend                    |mindspore.runtime.set_memory|
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  mempool_block_size (D)      | GPU/Ascend                |mindspore.runtime.set_memory|
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  op_timeout (D)              | Ascend                    |mindspore.device_context.asc|
+    |                         |                              |                           |end.op_debug.execute_timeout|
+    +-------------------------+------------------------------+---------------------------+----------------------------+
+    | Debug Configuration     |  save_graphs (D)             | CPU/GPU/Ascend            | MS_DEV_SAVE_GRAPHS         |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  save_graphs_path (D)        | CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS_PATH   |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  deterministic (D)           | Ascend                    |mindspore.set_deterministic |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  print_file_path             | Ascend                    |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  env_config_path             | CPU/GPU/Ascend            |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  precompile_only (D)         | CPU/GPU/Ascend            |  MS_DEV_PRECOMPILE_ONLY    |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  reserve_class_name_in_scope | CPU/GPU/Ascend            |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  pynative_synchronize (D)    | CPU/GPU/Ascend            | mindspore.runtime.launch_bl|
+    |                         |                              |                           |ocking                      |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  debug_level (D)             | CPU/GPU/Ascend            |  NA                        |
+    +-------------------------+------------------------------+---------------------------+----------------------------+
+    | Executive Control       |   mode                       |  CPU/GPU/Ascend           |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  enable_reduce_precision     | Ascend                    |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  aoe_tune_mode (D)           | Ascend                    |ascend.op_tuning.aoe_tune_mo|
+    |                         |                              |                           |de                          |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  aoe_config (D)              | Ascend                    |ascend.op_tuning.aoe_job_typ|
+    |                         |                              |                           |e                           |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  check_bprop (D)             | CPU/GPU/Ascend            |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  max_call_depth (D)          | CPU/GPU/Ascend            |mindspore.set_recursion_limi|
+    |                         |                              |                           |t                           |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  grad_for_scalar (D)         | CPU/GPU/Ascend            |  derivative                |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  enable_compile_cache (D)    | CPU/GPU/Ascend            |  MS_COMPILER_CACHE_ENABLE  |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  inter_op_parallel_num (D)   | CPU/GPU/Ascend            |mindspore.runtime.dispatch_t|
+    |                         |                              |                           |hreads_num                  |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  runtime_num_threads (D)     | CPU/GPU/Ascend            |cpu.op_tuning.threads_num   |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  compile_cache_path          | CPU/GPU/Ascend            |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  disable_format_transform    | GPU                       |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  support_binary              | CPU/GPU/Ascend            |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  memory_optimize_level (D)   | CPU/GPU/Ascend            |mindspore.runtime.set_memory|
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  memory_offload              | GPU/Ascend                |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  ascend_config (D)           | Ascend                    |ascend.op_precision.precisio|
+    |                         |                              |                           |n_mode                      |
+    |                         |                              |                           |ascend.op_precision.op_preci|
+    |                         |                              |                           |sion_mode                   |
+    |                         |                              |                           |ascend.op_precision.matmul_a|
+    |                         |                              |                           |llow_hf32                   |
+    |                         |                              |                           |ascend.op_precision.conv_all|
+    |                         |                              |                           |ow_hf32                     |
+    |                         |                              |                           |ascend.op_tuning.op_compile |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  jit_syntax_level            | CPU/GPU/Ascend            |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  gpu_config (D)              | GPU                       |gpu.op_precision.conv_allow_|
+    |                         |                              |                           |tf32                        |
+    |                         |                              |                           |gpu.op_precision.matmul_allo|
+    |                         |                              |                           |w_tf32                      |
+    |                         |                              |                           |gpu.op_precision.conv_fprop_|
+    |                         |                              |                           |algo                        |
+    |                         |                              |                           |gpu.op_precision.conv_wgrad_|
+    |                         |                              |                           |algo                        |
+    |                         |                              |                           |gpu.op_precision.conv_dgrad_|
+    |                         |                              |                           |algo                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  jit_config                  | CPU/GPU/Ascend            |  NA                        |
+    |                         +------------------------------+---------------------------+----------------------------+
+    |                         |  exec_order                  | Ascend                    |  NA                        |
+    +-------------------------+------------------------------+---------------------------+----------------------------+
 
     Args:
         device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1],
-            while device_num_per_host should be no more than 4096. Default: ``0`` .
+            while device_num_per_host should be no more than 4096. Default: ``0`` . This parameter will be deprecated
+            and will be removed in future versions.Please use api :func:`mindspore.set_device`
+            with 'device_target' instead.
         device_target (str): The target device to run, support "Ascend", "GPU", and "CPU".
-            If device target is not set, the version of MindSpore package is used.
+            If device target is not set, the version of MindSpore package is used. This parameter will be deprecated
+            and will be removed in future versions.Please use api :func:`mindspore.set_device`
+            with 'device_id' instead.
         max_device_memory (str): Set the maximum memory available for devices. The format is "xxGB".
             Default: ``" 1024GB"`` . The actual used memory size is the minimum of the available memory of the device
             and max_device_memory. 'max_device_memory' should be set before the program runs. When virtual memory is
             enabled, a too small 'max_device_memory' will cause frequent defragmentation, affecting performance.
-        variable_memory_max_size (str): This parameter is deprecated, and will be removed in a future version.
-            Please use parameter 'max_device_memory' instead.
+            This parameter will be deprecated and will be removed in future versions. Please use the
+            api :func:`mindspore.runtime.set_memory` instead.
+        variable_memory_max_size (str): This parameter will be deprecated and will be removed in future versions. Please
+            use the api :func:`mindspore.runtime.set_memory` instead.
         mempool_block_size (str): It takes effect when virtual memory is turned off, set the size of the memory pool
             block for devices. The format is "xxGB". Default: ``"1GB"`` . Minimum size is "1G". The actual used memory
             block size is the minimum of the available memory of the device and mempool_block_size. When there is
             enough memory, the memory will be expanded by this value.
+            This parameter will be deprecated and will be removed in future versions. Please use the
+            api :func:`mindspore.runtime.set_memory` instead.
         op_timeout (int): Set the maximum duration of executing an operator in seconds.
             If the execution time exceeds this value, system will terminate the task.
             0 means endless wait. The defaults for AI Core and AICPU operators vary on different hardware.
@@ -1421,20 +1454,22 @@ def set_context(**kwargs):
 
             When deterministic mode is on, model ops will be deterministic in Ascend. This means that if op run
             multiple times with the same inputs on the same hardware, it will have the exact same outputs each time.
-            This is useful for debugging models.
-        print_file_path (str):This parameter will be deprecated and will be removed in future versions.
+            This is useful for debugging models. This parameter will be deprecated and will be removed in
+            future versions. Please use the api :func:`mindspore.set_deterministic` instead.
+        print_file_path (str): This parameter will be deprecated and will be removed in future versions.
         env_config_path (str): This parameter will be deprecated and will be removed in future versions.
 
         precompile_only (bool): Whether to only precompile the network. Default: ``False`` .
             If set to ``True`` , the network will only be compiled, not executed.
-        reserve_class_name_in_scope (bool) : This parameter will be deprecated and will be removed in future versions.
+        reserve_class_name_in_scope (bool): This parameter will be deprecated and will be removed in future versions.
         pynative_synchronize (bool): Whether to enable synchronous execution of the device in PyNative mode.
             Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
             device. When an error occurs in the execution of the operator, the specific error script code location
             cannot be located, when the value is set to ``True`` , the operator is executed synchronously on the
             device. It will reduce the execution performance of the program. At this time, when an error occurs in the
             execution of the operator, the location of the error script code can be located according to the call stack
-            of the error.
+            of the error. This parameter will be deprecated and will be removed in future versions.Please use
+            the api :func:`mindspore.runtime.launch_blocking` instead.
         mode (int): Running in GRAPH_MODE(0) or PYNATIVE_MODE(1).
             Both modes support all backends. Default: ``PYNATIVE_MODE`` .
         enable_reduce_precision (bool): Whether to enable precision reduction.
@@ -1478,6 +1513,8 @@ def set_context(**kwargs):
             which must bigger than or equal to 0. Default value is ``30`` , if you run many processes at
             the same time, you should set the value smaller to avoid thread contention. If set runtime_num_threads to 1,
             the runtime asynchronous pipeline capability cannot be enabled, which may affect performance.
+            This parameter will be deprecated and will be removed in future versions. Please use the
+            api :func:`mindspore.device_context.cpu.op_tuning.threads_num` instead.
         disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW to NHWC.
             When the network training performance of fp16 is worse than fp32, `disable_format_transform` can be set to
             ``True`` to try to improve training performance. Default: ``False`` .
@@ -1492,6 +1529,10 @@ def set_context(**kwargs):
             - O0: priority performance option, disable SOMAS (Safe Optimized Memory Allocation Solver)
               and some other memory optimizations.
             - O1: priority memory option, enable SOMAS and some other memory optimizations.
+
+            This parameter will be deprecated and will be removed in future versions. Please use the
+            api :func:`mindspore.runtime.set_memory` instead.
+
         memory_offload (str): Whether to enable the memory offload function. When it is enabled, the idle data will be
             temporarily copied to the host side in the case of insufficient device memory. The value must be in the
             range of ['ON', 'OFF'], and the default value is ``'OFF'`` .

@@ -38,6 +38,7 @@ using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/device/device_address_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "pipeline/pynative/grad/grad_utils.h"
 #include "kernel/functions/auto_grad_reg.h"
 
@@ -349,7 +350,8 @@ void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
 
 void ForwardExecutor::ReInit() {
   device_target_ = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  enable_async_ = !MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
+  enable_async_ = !sync_stream;
 }
 
 void ForwardExecutor::Init() {

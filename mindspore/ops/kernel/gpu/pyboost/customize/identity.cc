@@ -19,6 +19,7 @@
 #include <utility>
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "mindspore/ops/kernel/common/pyboost/customize/identity.h"
+#include "mindspore/ccsrc/runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
@@ -26,7 +27,7 @@ namespace pyboost {
 tensor::BaseTensorPtr IdentityGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
   MS_LOG(DEBUG) << "Identity call start";
   IdentityCustomize(op, x_tensor);
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync && !op->device_context()->device_res_manager_->SyncAllStreams()) {
     MS_LOG(EXCEPTION) << "SyncStream failed for op Identity.";
   }

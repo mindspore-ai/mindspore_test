@@ -27,6 +27,7 @@
 #include <memory>
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "transform/acl_ir/op_api_exec.h"
 #include "transform/acl_ir/op_api_convert.h"
 
@@ -154,7 +155,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
       DISPATCH_LAUNCH_KERNEL(device_context, aclnn_name, work_ptr->ptr_, ws_size, executor_handle, stream_ptr,    \
                              release_function, update_function);                                                  \
     }                                                                                                             \
-    static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);             \
+    auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();                                           \
     if (sync) {                                                                                                   \
       if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {                                     \
         MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;                                           \

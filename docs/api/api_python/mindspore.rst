@@ -48,6 +48,8 @@ mindspore
 .. mscnautosummary::
     :toctree: mindspore
 
+    mindspore.set_device
+    mindspore.set_deterministic
     mindspore.set_context
     mindspore.get_context
     mindspore.set_auto_parallel_context

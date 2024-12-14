@@ -47,8 +47,9 @@ Memory
     mindspore.runtime.reset_max_memory_allocated
     mindspore.runtime.reset_peak_memory_stats
     mindspore.runtime.empty_cache
+    mindspore.runtime.set_memory
 
-Excutor
+Executor
 ------------
 
 .. msplatformautosummary::

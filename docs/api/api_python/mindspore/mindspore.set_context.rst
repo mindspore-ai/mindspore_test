@@ -87,11 +87,11 @@ mindspore.set_context
     +-------------------------+------------------------------+----------------------------+
 
     参数：
-        - **device_id** (int) - 表示目标设备的ID，其值必须在[0, device_num_per_host-1]范围中，且 `device_num_per_host` 的值不应超过4096。默认值： ``0`` 。
-        - **device_target** (str) - 表示待运行的目标设备，支持 'Ascend'、 'GPU'和 'CPU'。如果未设置此参数，则使用MindSpore包对应的后端设备。
-        - **max_device_memory** (str) - 设置设备可用的最大内存。格式为"xxGB"。默认值： ``1024GB`` 。实际使用的内存大小是设备的可用内存和 `max_device_memory` 值中的最小值。 `max_device_memory` 需要在程序运行之前设置。当使能虚拟内存时，过小的 `max_device_memory` 会导致频繁的碎片整理，影响性能。
-        - **variable_memory_max_size** (str) - 此参数已弃用，将被删除。请使用 `max_device_memory` 。
-        - **mempool_block_size** (str) - 关闭虚拟内存下生效，设置设备内存池的块大小。格式为"xxGB"。默认值： ``1GB`` 。最小值是1GB。实际使用的内存池块大小是设备的可用内存和 `mempool_block_size` 值中的最小值。当内存足够时，将按照此值扩展内存。
+        - **device_id** (int) - 表示目标设备的ID，其值必须在[0, device_num_per_host-1]范围中，且 `device_num_per_host` 的值不应超过4096。默认值： ``0`` 。此参数将被弃用，将在后续版本中删除，请配合 `device_target` 使用接口 :func:`mindspore.set_device` 代替。
+        - **device_target** (str) - 表示待运行的目标设备，支持 'Ascend'、 'GPU'和 'CPU'。如果未设置此参数，则使用MindSpore包对应的后端设备。此参数将被弃用，将在后续版本中删除，请配合 `device_id` 使用接口 :func:`mindspore.set_device` 代替。
+        - **max_device_memory** (str) - 设置设备可用的最大内存。格式为"xxGB"。默认值： ``1024GB`` 。实际使用的内存大小是设备的可用内存和 `max_device_memory` 值中的最小值。 `max_device_memory` 需要在程序运行之前设置。当使能虚拟内存时，过小的 `max_device_memory` 会导致频繁的碎片整理，影响性能。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
+        - **variable_memory_max_size** (str) - 此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
+        - **mempool_block_size** (str) - 关闭虚拟内存下生效，设置设备内存池的块大小。格式为"xxGB"。默认值： ``1GB`` 。最小值是1GB。实际使用的内存池块大小是设备的可用内存和 `mempool_block_size` 值中的最小值。当内存足够时，将按照此值扩展内存。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **op_timeout** (int) - 设置一个算子的最大执行时间，以秒为单位。如果执行时间超过这个值，系统将终止该任务。0意味着使用默认值，AI Core和AICPU算子在不同硬件上的默认值有差异，详细信息请查看 `昇腾社区关于aclrtSetOpExecuteTimeOut文档说明 <https://www.hiascend.com/en/document/detail/zh/CANNCommunityEdition/80RC1alpha003/apiref/appdevgapi/aclcppdevg_03_0228.html>`_。MindSpore默认设置值： ``900`` 。
         - **save_graphs** (bool 或 int) - 表示是否保存中间编译图。默认值： ``0`` 。可用的选项为：
 
@@ -110,13 +110,14 @@ mindspore.set_context
           - OFF：关闭算子确定性运行模式。
 
           当确定性开启时，模型中的算子将在Ascend中具有确定性。这意味着，如果算子在同一硬件上使用相同的输入运行多次，则每次都会有完全相同的输出。这对于调试模型很有用。
+          此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.set_deterministic` 代替。
         - **enable_dump** (bool) - 此参数已弃用，将在下一版本中删除。
         - **save_dump_path** (str) - 此参数已弃用，将在下一版本中删除。
         - **print_file_path** (str) - 此参数将被弃用，将在后续版本中删除。
         - **env_config_path** (str) - 此参数将被弃用，将在后续版本中删除。
         - **precompile_only** (bool) - 表示是否仅预编译网络。默认值： ``False`` 。设置为 ``True`` 时，仅编译网络，而不执行网络。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_PRECOMPILE_ONLY` 替代。
         - **reserve_class_name_in_scope** (bool) - 此参数将被弃用，将在后续版本中删除。
-        - **pynative_synchronize** (bool) - 表示是否在PyNative模式下启动设备同步执行。默认值： ``False`` 。设置为 ``False`` 时，将在设备上异步执行算子。当算子执行出错时，将无法定位特定错误脚本代码的位置。当设置为 ``True`` 时，将在设备上同步执行算子。这将降低程序的执行性能。此时，当算子执行出错时，可以根据错误的调用栈来定位错误脚本代码的位置。
+        - **pynative_synchronize** (bool) - 表示是否在PyNative模式下启动设备同步执行。默认值： ``False`` 。设置为 ``False`` 时，将在设备上异步执行算子。当算子执行出错时，将无法定位特定错误脚本代码的位置。当设置为 ``True`` 时，将在设备上同步执行算子。这将降低程序的执行性能。此时，当算子执行出错时，可以根据错误的调用栈来定位错误脚本代码的位置。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.launch_blocking` 代替。
         - **mode** (int) - 表示在GRAPH_MODE(0)或PYNATIVE_MODE(1)模式中运行，两种模式都支持所有后端。默认值： ``PYNATIVE_MODE`` 。
         - **enable_reduce_precision** (bool) - 表示是否开启降低精度计算。默认值： ``True`` 。设置为 ``True`` 时，不支持用户指定的精度，且精度将自动更改。设置为 ``False`` 时，如果未指定用例的精度，则会报错并退出。
         - **aoe_tune_mode** (str) - 表示启动AOE调优，默认不设置。设置为 ``online`` 时，将启动在线调优，设置为 ``offline`` 时，将为离线调优保存GE图 。
@@ -133,13 +134,16 @@ mindspore.set_context
         - **enable_compile_cache** (bool) - 表示是否加载或者保存前端编译的图。当 `enable_compile_cache` 被设置为True时，在第一次执行的过程中，一个硬件无关的编译缓存会被生成并且导出为一个MINDIR文件。当该网络被再次执行时，如果 `enable_compile_cache` 仍然为True并且网络脚本没有被更改，那么这个编译缓存会被加载。注意目前只支持有限的Python脚本更改的自动检测，这意味着可能有正确性风险。默认值： ``False`` 。当前不支持编译后大于2G的图。这是一个实验特性，可能会被更改或者删除。
         - **compile_cache_path** (str) - 保存编译缓存的路径。默认值： ``"."`` 。如果目录不存在，系统会自动创建这个目录。缓存会被保存到如下目录： `compile_cache_path/rank_${rank_id}/` 。 `rank_id` 是集群上当前设备的ID。
         - **inter_op_parallel_num** (int) - 算子间并行数控制。 默认值为 ``0`` ，表示由框架默认指定。
-        - **runtime_num_threads** (int) - 运行时actor和CPU算子核使用的线程池线程数，必须大于等于 ``0`` 。默认值为 ``30`` ，如果同时运行多个进程，应将该值设置得小一些，以避免线程争用。如果设置为1，则无法使能运行时异步流水能力，可能会影响执行性能。
+        - **runtime_num_threads** (int) - 运行时actor和CPU算子核使用的线程池线程数，必须大于等于 ``0`` 。默认值为 ``30`` ，如果同时运行多个进程，应将该值设置得小一些，以避免线程争用。如果设置为1，则无法使能运行时异步流水能力，可能会影响执行性能。此参数将被弃用，将在后续版本中删除。请使用接口 :func:`mindspore.device_context.cpu.op_tuning.threads_num` 代替。
         - **disable_format_transform** (bool) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
         - **support_binary** (bool) - 是否支持在图形模式下运行.pyc或.so。如果要支持在图形模式下运行.so或.pyc，可将 `support_binary` 置为 ``True`` ，并运行一次.py文件，从而将接口源码保存到接口定义.py文件中，因此要保证该文件可写。然后将.py文件编译成.pyc或.so文件，即可在图模式下运行。
         - **memory_optimize_level** (str) - 内存优化级别，默认值： ``O0`` 。其值必须在 ['O0', 'O1'] 范围中。
 
           - O0: 执行性能优先，关闭 SOMAS (Safe Optimized Memory Allocation Solver) 和一些其他内存优化。
           - O1: 内存性能优先，使能 SOMAS 和一些其他内存优化。
+          
+          此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
+
         - **memory_offload** (str) - 是否开启Offload功能，在内存不足场景下将空闲数据临时拷贝至Host侧内存。其值必须在['ON', 'OFF']范围中，默认值为 ``'OFF'`` 。
 
           - ON：开启memory offload功能。在Ascend硬件平台，在图编译等级不为O0时本参数不生效；设置memory_optimize_level='O1'时本参数不生效。
