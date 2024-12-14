@@ -4718,7 +4718,8 @@ class SparseApplyAdagradV2(Primitive):
         - **grad** (Tensor) - Gradients has the same shape as `var` and
           :math:`grad.shape[1:] = var.shape[1:]` if var.shape > 1.
         - **indices** (Tensor) - A vector of indices into the first dimension of `var` and `accum`.
-          The type must be int32 and :math:`indices.shape[0] = grad.shape[0]`.
+          The type must be int32 and :math:`indices.shape[0] = grad.shape[0]`. The value of indices
+          must be unique. Otherwise, the result is unpredictable.
 
     Outputs:
         Tuple of 2 tensors, the updated parameters or tensors.
