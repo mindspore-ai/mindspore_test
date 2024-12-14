@@ -31,6 +31,9 @@ ShapeArray DistCommAllGatherIntoTensorFuncImpl::InferShape(const PrimitivePtr &p
   auto rank_size = CheckRankSize(primitive->name(), value);
 
   auto input_shape = input_infos[kIndex1]->GetShape();
+  if (input_shape.size() == 0) {
+    return {ShapeVector({static_cast<int64_t>(rank_size)})};
+  }
   input_shape[kIndex0] = input_shape[kIndex0] * rank_size;
 
   const auto &output_shape = input_infos[kIndex0]->GetShape();

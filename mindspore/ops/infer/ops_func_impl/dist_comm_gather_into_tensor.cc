@@ -29,11 +29,17 @@ ShapeArray DistCommGatherIntoTensorFuncImpl::InferShape(const PrimitivePtr &prim
                                                         const InferInfoPtrList &input_infos) const {
   auto &value = input_infos[kIndex2];
   auto rank_size = CheckRankSize(primitive->name(), value);
-
-  auto input_shape = input_infos[kIndex1]->GetShape();
-  input_shape[kIndex0] = input_shape[kIndex0] * rank_size;
   auto dst_rank = GetRankValue(primitive->name(), input_infos[kIndex3]);
   auto local_rank = GetRankValue(primitive->name(), input_infos[kIndex4]);
+  auto input_shape = input_infos[kIndex1]->GetShape();
+  if (input_shape.size() == 0) {
+    if (dst_rank == local_rank) {
+      const auto &output_shape = input_infos[kIndex0]->GetShape();
+      CheckInferShape(primitive->name(), ShapeVector({static_cast<int64_t>(rank_size)}), output_shape);
+    }
+    return {ShapeVector({static_cast<int64_t>(rank_size)})};
+  }
+  input_shape[kIndex0] = input_shape[kIndex0] * rank_size;
   if (dst_rank == local_rank) {
     const auto &output_shape = input_infos[kIndex0]->GetShape();
     CheckInferShape(primitive->name(), input_shape, output_shape);
