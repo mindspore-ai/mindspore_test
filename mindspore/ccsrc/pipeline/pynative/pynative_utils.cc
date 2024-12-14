@@ -168,7 +168,8 @@ void PlantTupleParam(const FuncGraphPtr &bprop_graph, const abstract::AbstractSe
     } else if (cur_abs->isa<abstract::AbstractDictionary>()) {
       // Support output type of tuple contains dict
       const auto &abs_dict = cur_abs->cast<abstract::AbstractDictionaryPtr>();
-      abstract::AbstractBasePtrList local_key_abs_inputs, local_value_abs_inputs;
+      abstract::AbstractBasePtrList local_key_abs_inputs;
+      abstract::AbstractBasePtrList local_value_abs_inputs;
       for (const auto &element : abs_dict->elements()) {
         (void)local_key_abs_inputs.emplace_back(element.first);
         (void)local_value_abs_inputs.emplace_back(element.second);

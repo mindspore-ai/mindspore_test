@@ -93,7 +93,7 @@ struct OpGradInfo {
   // If recompute, we record weight_size.
   size_t weight_size{0};
   // op index
-  size_t op_index;
+  size_t op_index{0};
   std::string op_info;
 
   PrimitivePtr op_prim{nullptr};
