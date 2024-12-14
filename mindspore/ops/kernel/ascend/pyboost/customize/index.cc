@@ -91,6 +91,9 @@ tensor::BaseTensorPtr IndexAscendCustomize(const std::shared_ptr<OpRunner> &op, 
                                            const ValueTuplePtr &indices_tensor_list) {
   MS_LOG(DEBUG) << "Index Ascend start";
   std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
+  if (indices_tensor_vector.size() == 0) {
+    MS_EXCEPTION(ValueError) << "For 'Index', 'indices' shape can't be empty.";
+  }
   auto new_indices_tensor_vector = GetNewTensor(op, input_tensor, indices_tensor_vector);
   ValueTuplePtr new_indices_tensor_list = PyBoostUtils::ConvertTensorVectorToTuple(new_indices_tensor_vector);
 
