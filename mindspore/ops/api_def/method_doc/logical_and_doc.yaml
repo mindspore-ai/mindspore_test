@@ -35,13 +35,3 @@ logical_and:
         >>> output = x.logical_and(other)
         >>> print(output)
         False
-        >>> x = True
-        >>> other = Tensor(0, mindspore.bool_)
-        >>> output = x.logical_and(other)
-        >>> print(output)
-        False
-        >>> x = True
-        >>> other = Tensor(np.array([True, False]), mindspore.bool_)
-        >>> output = x.logical_and(other)
-        >>> print(output)
-        [True False]
