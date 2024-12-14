@@ -55,6 +55,8 @@ class MatMulBase : public OperatorInfo {
 
   bool three_d_tp_ = false;
   bool enable_nd_tp_ = false;
+  bool ndtp_split_y_ = false;
+  int64_t ndtp_reduce_scatter_axis_ = -1;
   bool candidate_flag_ = false;
   bool transpose_a_ = false;
   bool transpose_b_ = false;
