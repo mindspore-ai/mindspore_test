@@ -234,10 +234,14 @@ NodePtrList BpropAddcCommon(BpropBuilder *ib, const std::string &op_name) {
 std::optional<float> GetAlpha(const NodePtr &alpha) {
   auto alpha_value = alpha->BuildValue();
   if (alpha_value->isa<Int64Imm>()) {
-    auto imm_int64 = alpha_value->cast_ptr<Int64Imm>()->value();
+    auto imm_int64_ptr = alpha_value->cast_ptr<Int64Imm>();
+    MS_EXCEPTION_IF_NULL(imm_int64_ptr);
+    auto imm_int64 = imm_int64_ptr->value();
     return std::make_optional(imm_int64);
   } else if (alpha_value->isa<FP32Imm>()) {
-    auto imm_fp32 = alpha_value->cast_ptr<FP32Imm>()->value();
+    auto imm_fp32_ptr = alpha_value->cast_ptr<FP32Imm>();
+    MS_EXCEPTION_IF_NULL(imm_fp32_ptr);
+    auto imm_fp32 = imm_fp32_ptr->value();
     return std::make_optional(imm_fp32);
   }
 
