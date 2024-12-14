@@ -32,7 +32,7 @@ ShapeArray DistCommAllReduceFuncImpl::InferShape(const PrimitivePtr &primitive,
 std::vector<TypeId> DistCommAllReduceFuncImpl::InferType(const PrimitivePtr &primitive,
                                                          const InferInfoPtrList &input_infos) const {
   auto type = input_infos[kIndex0]->GetType();
-  return {CheckInferType(primitive->name(), type)};
+  return {CheckReduceInferType(primitive->name(), type)};
 }
 }  // namespace ops
 }  // namespace mindspore

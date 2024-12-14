@@ -682,18 +682,30 @@ template bool CollectiveOpsImpl::AllGather<int64_t>(const void *sendbuff, void *
 template bool CollectiveOpsImpl::AllGather<int>(const void *sendbuff, void *recvbuff, size_t send_count,
                                                 const ps::core::AbstractNodePtr &node,
                                                 const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::AllGather<char>(const void *sendbuff, void *recvbuff, size_t send_count,
-                                                 const ps::core::AbstractNodePtr &node,
-                                                 const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::AllGather<int8_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                   const ps::core::AbstractNodePtr &node,
+                                                   const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::AllGather<float16>(const void *sendbuff, void *recvbuff, size_t send_count,
                                                     const ps::core::AbstractNodePtr &node,
                                                     const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::AllGather<bfloat16>(const void *sendbuff, void *recvbuff, size_t send_count,
                                                      const ps::core::AbstractNodePtr &node,
                                                      const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::AllGather<complex64>(const void *sendbuff, void *recvbuff, size_t send_count,
-                                                      const ps::core::AbstractNodePtr &node,
-                                                      const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::AllGather<uint8_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                    const ps::core::AbstractNodePtr &node,
+                                                    const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::AllGather<uint16_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                     const ps::core::AbstractNodePtr &node,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::AllGather<uint32_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                     const ps::core::AbstractNodePtr &node,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::AllGather<uint64_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                     const ps::core::AbstractNodePtr &node,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::AllGather<double>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                   const ps::core::AbstractNodePtr &node,
+                                                   const CommunicationGroupInfo &group_info);
 
 template bool CollectiveOpsImpl::RingAllGather<float>(const void *sendbuff, void *recvbuff, size_t send_count,
                                                       const CommunicationGroupInfo &group_info);
@@ -701,14 +713,22 @@ template bool CollectiveOpsImpl::RingAllGather<int64_t>(const void *sendbuff, vo
                                                         const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::RingAllGather<int>(const void *sendbuff, void *recvbuff, size_t send_count,
                                                     const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::RingAllGather<char>(const void *sendbuff, void *recvbuff, size_t send_count,
-                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::RingAllGather<int8_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                       const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::RingAllGather<float16>(const void *sendbuff, void *recvbuff, size_t send_count,
                                                         const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::RingAllGather<bfloat16>(const void *sendbuff, void *recvbuff, size_t send_count,
                                                          const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::RingAllGather<complex64>(const void *sendbuff, void *recvbuff, size_t send_count,
-                                                          const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::RingAllGather<uint8_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                        const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::RingAllGather<uint16_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                         const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::RingAllGather<uint32_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                         const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::RingAllGather<uint64_t>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                         const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::RingAllGather<double>(const void *sendbuff, void *recvbuff, size_t send_count,
+                                                       const CommunicationGroupInfo &group_info);
 
 template bool CollectiveOpsImpl::Broadcast<float>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                   const ps::core::AbstractNodePtr &node,
@@ -719,18 +739,30 @@ template bool CollectiveOpsImpl::Broadcast<int64_t>(const void *sendbuff, void *
 template bool CollectiveOpsImpl::Broadcast<int>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                 const ps::core::AbstractNodePtr &node,
                                                 const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Broadcast<char>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                 const ps::core::AbstractNodePtr &node,
-                                                 const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<int8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const ps::core::AbstractNodePtr &node,
+                                                   const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Broadcast<float16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                     const ps::core::AbstractNodePtr &node,
                                                     const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Broadcast<bfloat16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                      const ps::core::AbstractNodePtr &node,
                                                      const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Broadcast<complex64>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                      const ps::core::AbstractNodePtr &node,
-                                                      const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                    const ps::core::AbstractNodePtr &node,
+                                                    const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint16_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                     const ps::core::AbstractNodePtr &node,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint32_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                     const ps::core::AbstractNodePtr &node,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint64_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                     const ps::core::AbstractNodePtr &node,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<double>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const ps::core::AbstractNodePtr &node,
+                                                   const CommunicationGroupInfo &group_info);
 
 template bool CollectiveOpsImpl::Broadcast<float>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                   const CommunicationGroupInfo &group_info);
@@ -738,14 +770,22 @@ template bool CollectiveOpsImpl::Broadcast<int64_t>(const void *sendbuff, void *
                                                     const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Broadcast<int>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                 const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Broadcast<char>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                 const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<int8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Broadcast<float16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                     const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Broadcast<bfloat16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                      const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Broadcast<complex64>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                      const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                    const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint16_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint32_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<uint64_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                     const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Broadcast<double>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const CommunicationGroupInfo &group_info);
 
 template bool CollectiveOpsImpl::Gather<float>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                const ps::core::AbstractNodePtr &node,
@@ -756,18 +796,30 @@ template bool CollectiveOpsImpl::Gather<int64_t>(const void *sendbuff, void *rec
 template bool CollectiveOpsImpl::Gather<int>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                              const ps::core::AbstractNodePtr &node,
                                              const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Gather<char>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                              const ps::core::AbstractNodePtr &node,
-                                              const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<int8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                const ps::core::AbstractNodePtr &node,
+                                                const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Gather<float16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                  const ps::core::AbstractNodePtr &node,
                                                  const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Gather<bfloat16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                   const ps::core::AbstractNodePtr &node,
                                                   const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Gather<complex64>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                   const ps::core::AbstractNodePtr &node,
-                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                 const ps::core::AbstractNodePtr &node,
+                                                 const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint16_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const ps::core::AbstractNodePtr &node,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint32_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const ps::core::AbstractNodePtr &node,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint64_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const ps::core::AbstractNodePtr &node,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<double>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                const ps::core::AbstractNodePtr &node,
+                                                const CommunicationGroupInfo &group_info);
 
 template bool CollectiveOpsImpl::Gather<float>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                const CommunicationGroupInfo &group_info);
@@ -775,14 +827,22 @@ template bool CollectiveOpsImpl::Gather<int64_t>(const void *sendbuff, void *rec
                                                  const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Gather<int>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                              const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Gather<char>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                              const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<int8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Gather<float16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                  const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Gather<bfloat16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                   const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Gather<complex64>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                 const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint16_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint32_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<uint64_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Gather<double>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                const CommunicationGroupInfo &group_info);
 
 template bool CollectiveOpsImpl::Scatter<float>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                 const ps::core::AbstractNodePtr &node,
@@ -793,18 +853,30 @@ template bool CollectiveOpsImpl::Scatter<int64_t>(const void *sendbuff, void *re
 template bool CollectiveOpsImpl::Scatter<int>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                               const ps::core::AbstractNodePtr &node,
                                               const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Scatter<char>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                               const ps::core::AbstractNodePtr &node,
-                                               const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<int8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                 const ps::core::AbstractNodePtr &node,
+                                                 const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Scatter<float16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                   const ps::core::AbstractNodePtr &node,
                                                   const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Scatter<bfloat16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                    const ps::core::AbstractNodePtr &node,
                                                    const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Scatter<complex64>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                    const ps::core::AbstractNodePtr &node,
-                                                    const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const ps::core::AbstractNodePtr &node,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint16_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const ps::core::AbstractNodePtr &node,
+                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint32_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const ps::core::AbstractNodePtr &node,
+                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint64_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const ps::core::AbstractNodePtr &node,
+                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<double>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                 const ps::core::AbstractNodePtr &node,
+                                                 const CommunicationGroupInfo &group_info);
 
 template bool CollectiveOpsImpl::Scatter<float>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                 const CommunicationGroupInfo &group_info);
@@ -812,14 +884,22 @@ template bool CollectiveOpsImpl::Scatter<int64_t>(const void *sendbuff, void *re
                                                   const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Scatter<int>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                               const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Scatter<char>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                               const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<int8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                 const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Scatter<float16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                   const CommunicationGroupInfo &group_info);
 template bool CollectiveOpsImpl::Scatter<bfloat16>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
                                                    const CommunicationGroupInfo &group_info);
-template bool CollectiveOpsImpl::Scatter<complex64>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
-                                                    const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint8_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                  const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint16_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint32_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<uint64_t>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                   const CommunicationGroupInfo &group_info);
+template bool CollectiveOpsImpl::Scatter<double>(const void *sendbuff, void *recvbuff, size_t count, uint32_t root,
+                                                 const CommunicationGroupInfo &group_info);
 
 }  // namespace server
 }  // namespace fl
