@@ -76,7 +76,8 @@ void ExpandJPrim::CloneUsedPrimalGraph(const FuncGraphManagerPtr &manager, FuncG
 
 bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
   // Check whether need to eliminate forward cnodes in pynative mode.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
+      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
     const auto &jit = pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit();
     jit->set_eliminate_forward(jit->eliminate_forward() && prim_nodes_.empty());
   }

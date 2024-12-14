@@ -139,6 +139,9 @@ struct GradParam {
   std::string graph_cache_key;
   // Used for pyexecute
   CNodePtr cnode;
+  // Used for store input args
+  VectorRef args{};
+  VectorRef added_args{};
 };
 
 using GradParamPtr = std::shared_ptr<GradParam>;

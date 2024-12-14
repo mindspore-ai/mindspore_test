@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "ir/func_graph_cloner.h"
 #include "pipeline/pynative/pynative_utils.h"
@@ -40,20 +41,18 @@ tensor::TensorPtr GenNewTensorInner(const TypePtr &type_elem, const BaseShapePtr
 ValuePtr NewValue(const TypePtr &type_elem, const BaseShapePtr &shape_elem) {
   MS_EXCEPTION_IF_NULL(type_elem);
   MS_EXCEPTION_IF_NULL(shape_elem);
-  if (shape_elem->isa<abstract::TupleShape>()) {
-    auto tuple_shape = shape_elem->cast<abstract::TupleShapePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_shape);
-    auto tuple_type = type_elem->cast<TuplePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_type);
-    size_t output_num = tuple_type->elements().size();
+  if (shape_elem->isa<abstract::SequenceShape>()) {
+    auto shapes = shape_elem->cast<abstract::SequenceShapePtr>()->shape();
+    auto is_tuple = type_elem->isa<Tuple>();
+    auto elements = is_tuple ? type_elem->cast<TuplePtr>()->elements() : type_elem->cast<ListPtr>()->elements();
+    MS_EXCEPTION_IF_CHECK_FAIL(shapes.size() == elements.size(), "type_elem and shape_elem are not match.");
     std::vector<ValuePtr> value_list;
-    for (size_t i = 0; i < output_num; ++i) {
-      auto sub_shape_elem = tuple_shape->shape()[i];
-      auto sub_type_elem = tuple_type->elements()[i];
-      ValuePtr new_value = NewValue(sub_type_elem, sub_shape_elem);
+    for (size_t i = 0; i < elements.size(); ++i) {
+      ValuePtr new_value = NewValue(elements[i], shapes[i]);
       value_list.push_back(new_value);
     }
-    return std::make_shared<ValueTuple>(value_list);
+    return is_tuple ? std::make_shared<ValueTuple>(value_list)->cast<ValuePtr>()
+                    : std::make_shared<ValueList>(value_list)->cast<ValuePtr>();
   }
   if (type_elem->isa<TensorType>()) {
     return GenNewTensorInner(type_elem, shape_elem);

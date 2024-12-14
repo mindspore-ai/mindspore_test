@@ -141,14 +141,53 @@ void PlantTupleParam(const FuncGraphPtr &bprop_graph, const abstract::AbstractSe
   MS_EXCEPTION_IF_NULL(new_param);
   MS_EXCEPTION_IF_NULL(abs_seq);
   for (size_t i = 0; i < abs_seq->size(); ++i) {
-    if (abs_seq->elements()[i]->isa<abstract::AbstractSequence>()) {
-      PlantTupleParam(bprop_graph, abs_seq->elements()[i]->cast<abstract::AbstractSequencePtr>(), make_tuple,
-                      new_param);
-    } else if (abs_seq->elements()[i]->isa<abstract::AbstractTensor>()) {
+    const auto &cur_abs = abs_seq->elements()[i];
+    if (cur_abs->isa<abstract::AbstractSequence>()) {
+      auto is_tuple = cur_abs->isa<abstract::AbstractTuple>();
+      AnfNodePtrList cur_make_tuple_inputs;
+      auto prim = is_tuple ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+      (void)cur_make_tuple_inputs.emplace_back(NewValueNode(prim));
+      PlantTupleParam(bprop_graph, cur_abs->cast<abstract::AbstractSequencePtr>(), &cur_make_tuple_inputs, new_param);
+      auto cur_make_tuple_node = bprop_graph->NewCNode(cur_make_tuple_inputs);
+      AbstractBasePtrList cur_abstract_elements;
+      (void)std::transform(cur_make_tuple_inputs.begin() + 1, cur_make_tuple_inputs.end(),
+                           std::back_inserter(cur_abstract_elements), [](const auto &e) { return e->abstract(); });
+      AbstractBasePtr cur_abstract;
+      if (is_tuple) {
+        cur_abstract = std::make_shared<abstract::AbstractTuple>(cur_abstract_elements);
+      } else {
+        cur_abstract = std::make_shared<abstract::AbstractList>(cur_abstract_elements);
+      }
+      cur_make_tuple_node->set_abstract(cur_abstract);
+      (void)make_tuple->emplace_back(cur_make_tuple_node);
+    } else if (cur_abs->isa<abstract::AbstractTensor>()) {
       auto plant_param = bprop_graph->add_parameter();
-      plant_param->set_abstract(abs_seq->elements()[i]);
+      plant_param->set_abstract(cur_abs);
       (void)make_tuple->emplace_back(plant_param);
       (void)new_param->emplace_back(plant_param);
+    } else if (cur_abs->isa<abstract::AbstractDictionary>()) {
+      // Support output type of tuple contains dict
+      const auto &abs_dict = cur_abs->cast<abstract::AbstractDictionaryPtr>();
+      abstract::AbstractBasePtrList local_key_abs_inputs, local_value_abs_inputs;
+      for (const auto &element : abs_dict->elements()) {
+        (void)local_key_abs_inputs.emplace_back(element.first);
+        (void)local_value_abs_inputs.emplace_back(element.second);
+      }
+      auto key_param = bprop_graph->add_parameter();
+      key_param->set_abstract(std::make_shared<abstract::AbstractTuple>(local_key_abs_inputs));
+      auto value_param = bprop_graph->add_parameter();
+      value_param->set_abstract(std::make_shared<abstract::AbstractTuple>(local_value_abs_inputs));
+      (void)new_param->emplace_back(key_param);
+      (void)new_param->emplace_back(value_param);
+      // Add Makedict node as tuple element
+      auto dict_node = bprop_graph->NewCNode({NewValueNode(prim::kPrimMakeDict), key_param, value_param});
+      dict_node->set_abstract(abs_dict);
+      (void)make_tuple->emplace_back(dict_node);
+    } else {
+      auto value = MakeValue(static_cast<int64_t>(0));
+      auto value_node = NewValueNode(value);
+      value_node->set_abstract(value->ToAbstract());
+      (void)make_tuple->emplace_back(value_node);
     }
   }
 }
@@ -900,7 +939,11 @@ void Common::ProcessTupleParam(const FuncGraphPtr &bprop_graph, size_t position)
   (void)bprop_params.insert(it, new_param.begin(), new_param.end());
   bprop_graph->set_parameters(bprop_params);
   auto make_tuple_param = bprop_graph->NewCNode(make_tuple);
-  make_tuple_param->set_abstract(target_abstract);
+  AbstractBasePtrList cur_abstract_elements;
+  (void)std::transform(make_tuple.begin() + 1, make_tuple.end(), std::back_inserter(cur_abstract_elements),
+                       [](const auto &e) { return e->abstract(); });
+  AbstractBasePtr cur_abstract = std::make_shared<abstract::AbstractTuple>(cur_abstract_elements);
+  make_tuple_param->set_abstract(cur_abstract);
   auto manager = bprop_graph->manager();
   if (manager == nullptr) {
     manager = MakeManager({bprop_graph}, false);

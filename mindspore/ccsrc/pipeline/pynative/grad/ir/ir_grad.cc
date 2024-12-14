@@ -24,6 +24,7 @@
 #include <vector>
 #include "frontend/expander/bprop/bprop.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "frontend/optimizer/ad/pynative_jit_grad.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/profiler.h"
@@ -371,7 +372,8 @@ CNodePtr IrGrad::GetBPropCNode(const GradParamPtr &grad_param, const AnfNodePtrL
   AnfNodePtrList bprop_inputs(args.begin(), args.end());
   bool is_jit_dynamic_shape = grad_param->is_jit_graph && grad_param->use_dynamic_shape_process;
   // Save replace info in first time
-  if (!cache_hit && is_jit_dynamic_shape && grad_param->has_added_v) {
+  if (!cache_hit && is_jit_dynamic_shape && grad_param->has_added_v &&
+      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
     const auto &jit = PyNativeExecutor::grad_executor()->jit();
     jit->SaveForwardOutputTensorInfoInBpropGraph(bprop_graph, grad_param->graph_cache_key);
   }
@@ -416,10 +418,8 @@ CNodePtr IrGrad::GetBPropCNode(const GradParamPtr &grad_param, const AnfNodePtrL
 CNodePtr IrGrad::GetBpropGraphCNode(const GradParamPtr &grad_param, const AnfNodePtrList &args,
                                     AnfNodePtr *const tape_dout) {
   MS_EXCEPTION_IF_NULL(grad_param);
-  auto [cache_hit, bprop_graph] = ir_bprop_->GetBpropGraph(grad_param);
-  if (grad_param->is_control_flow || grad_param->is_jit_self_dynamic_shape) {
-    need_do_manager_replace_ = true;
-  }
+  auto [cache_hit, bprop_graph] = mindspore::ad::GetBpropGraph(grad_param);
+  need_do_manager_replace_ = true;
   return GetBPropCNode(grad_param, args, bprop_graph, cache_hit, tape_dout);
 }
 
