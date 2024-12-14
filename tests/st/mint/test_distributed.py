@@ -1282,3 +1282,40 @@ def test_hccl_scatter():
     with pytest.raises(TypeError):
         scatter(output_tensor, input_tensor, src=rank)
         _pynative_executor.sync()
+
+
+def test_hccl_scalar():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # gather场景
+    input_tensor = ms.Tensor(1)
+    output_gather = []
+    output_all_gather = []
+    except_output_gather = []
+    except_output_all_gather = []
+    for _ in range(size):
+        output_gather.append(ms.Tensor(0))
+        output_all_gather.append(ms.Tensor(0))
+        except_output_all_gather.append(ms.Tensor(1))
+        if rank == 0:
+            except_output_gather.append(ms.Tensor(1))
+        else:
+            except_output_gather.append(ms.Tensor(0))
+    output_handle = gather(input_tensor, output_gather)
+    assert output_handle is None
+    assert np.allclose(output_gather[0].asnumpy(), except_output_gather[0].asnumpy())
+    assert np.allclose(output_gather[1].asnumpy(), except_output_gather[1].asnumpy())
+
+    output_handle = all_gather(output_all_gather, input_tensor)
+    assert output_handle is None
+    assert np.allclose(output_all_gather[0].asnumpy(), except_output_all_gather[0].asnumpy())
+    assert np.allclose(output_all_gather[1].asnumpy(), except_output_all_gather[1].asnumpy())
+
+    output_tensor = ms.Tensor(np.zeros([size]).astype(np.int64))
+    except_output_tensor = ms.Tensor(np.ones([size]).astype(np.int64))
+    output_handle = all_gather_into_tensor(output_tensor, input_tensor)
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), except_output_tensor.asnumpy())

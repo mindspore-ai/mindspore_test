@@ -33,6 +33,9 @@ ShapeArray DistCommScatterTensorFuncImpl::InferShape(const PrimitivePtr &primiti
   auto dst_rank = GetRankValue(primitive->name(), input_infos[kIndex3]);
   auto local_rank = GetRankValue(primitive->name(), input_infos[kIndex4]);
   if (dst_rank == local_rank) {
+    if (input_shape.size() == 0) {
+      MS_EXCEPTION(ValueError) << "the shape size of 'input_shape' can not be 0.";
+    }
     if (input_shape[0] % rank_size != 0) {
       MS_EXCEPTION(ValueError)
         << "the first dimension for 'input_shape' must be divided by 'rank_size', but got input_shape[0]: "
