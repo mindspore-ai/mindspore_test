@@ -1,6 +1,6 @@
 type_as:
     description: | 
-        Returns first input tensor cast to the type of the with the second input tensor.
+        Returns input cast to the type of the with the other.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.

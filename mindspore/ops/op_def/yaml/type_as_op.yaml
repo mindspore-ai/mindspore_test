@@ -3,7 +3,7 @@ type_as:
     args:
         input:
             dtype: tensor
-        tensor:
+        other:
             dtype: tensor
     returns:
         output: 
