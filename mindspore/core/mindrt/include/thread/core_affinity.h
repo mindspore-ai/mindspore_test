@@ -28,7 +28,7 @@
 #define BIND_CORE
 #endif
 // Lite not support bind core.
-#if defined(__linux__)
+#if !defined(BUILD_LITE) && defined(__linux__)
 #define BIND_CORE
 #endif
 
