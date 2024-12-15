@@ -502,7 +502,8 @@ void KPrim::CheckBprop(const FuncGraphPtr &bprop_fg, const string &prim_to_check
   TraceGuard guard(MakeTraceInfo<TraceCopy>(bprop_fg->return_node()->debug_info()));
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  bool check_bprop_flag = context->get_param<bool>(MS_CTX_CHECK_BPROP_FLAG);
+  bool check_bprop_flag =
+    (context->get_param<bool>(MS_CTX_CHECK_BPROP_FLAG) || common::GetCompileConfig("CHECK_BPROP") == "1");
   // Skip checking if check_bprop not set
   if (!check_bprop_flag) {
     return;

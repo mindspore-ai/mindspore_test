@@ -211,7 +211,9 @@ bool EnableTupleBroaden(const ValuePtr &value, bool enable_tuple_broaden) {
 }
 
 bool GradForScalar(const ValuePtr &value) {
-  return MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) && value->isa<Scalar>();
+  return (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) ||
+          common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") &&
+         value->isa<Scalar>();
 }
 
 AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden = false) {

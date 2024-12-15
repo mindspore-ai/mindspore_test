@@ -133,6 +133,8 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
     compile_cache_dep_files_ = compile_cache_dep_files;
   }
   void set_weights_values(const py::dict &weights) { weights_ = weights; }
+  uint32_t max_call_depth() const { return max_call_depth_; }
+  void set_max_call_depth(uint32_t max_call_depth) { max_call_depth_ = max_call_depth; }
   void SetOptimizeConfig(const py::list &optimize_cfg);
   std::string GetOptimizeConfig();
   void SetConfigPasses(const py::list &passes);
@@ -190,6 +192,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   py::dict weights_;
   std::map<PyObject *, std::pair<ValuePtr, AbstractBasePtr>> cur_convert_input_;
   bool executor_running_{false};
+  uint32_t max_call_depth_{1000};
 };
 using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
 

@@ -521,7 +521,7 @@ GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, co
 
 void Jit::RecordForwardGraphForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                                    const FuncGraphPtr &jit_forward_graph) const {
-  int save_graphs = MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG);
+  int save_graphs = MsContext::GetInstance()->CanDump(kIntroductory);
   if (save_graphs) {
     CNodePtr jit_cnode = nullptr;
     MakeCNodeForJit(op_run_info, grad_executor, jit_forward_graph, &jit_cnode);

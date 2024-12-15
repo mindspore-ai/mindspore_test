@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+import os
 import pytest
 import numpy as np
 from mindspore import Tensor, context
@@ -35,5 +36,11 @@ def test_Angle_op_cpu(data_type):
     Expectation: match to np benchmark.
     """
     x = Tensor(np.array([-2.0, -1.0, 1.0, 2.0]).astype(data_type))
-    context.set_context(mode=context.GRAPH_MODE, precompile_only=True)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+    context.set_context(mode=context.GRAPH_MODE)
     output = angle_forward_func(x)
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env

@@ -2280,7 +2280,7 @@ void GradExecutor::RecordCustomBprop(const autograd::CustomContext &context) con
 
 void GradExecutor::RecordForwardGraphForInput(const ValuePtr &value, const string &input_id,
                                               const abstract::AbstractBasePtr &param_abs) {
-  save_graphs_ = MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG);
+  save_graphs_ = MsContext::GetInstance()->CanDump(kIntroductory);
   if (save_graphs_ || top_cell_->is_bprop_need_get_forward_graph()) {
     auto new_param = curr_g()->add_parameter();
     new_param->set_abstract(param_abs);

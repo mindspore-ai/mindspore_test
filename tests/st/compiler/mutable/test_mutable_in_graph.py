@@ -22,9 +22,18 @@ from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
 from mindspore.common import mutable
 from mindspore import context
+from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE, grad_for_scalar=True)
+context.set_context(mode=context.GRAPH_MODE)
+
+
+def setup_module():
+    compile_config.GRAD_FOR_SCALAR = 1
+
+
+def teardown_module():
+    compile_config.GRAD_FOR_SCALAR = ''
 
 
 def compare(a, b):

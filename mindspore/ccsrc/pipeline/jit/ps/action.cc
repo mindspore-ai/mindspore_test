@@ -93,8 +93,9 @@ bool ExistControlFlow(const FuncGraphPtr &func_graph) {
 
 bool EnableGradForScalar(const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
-  return MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) && abs->BuildType() != nullptr &&
-         abs->BuildType()->isa<Number>();
+  return (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) ||
+          common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") &&
+         abs->BuildType() != nullptr && abs->BuildType()->isa<Number>();
 }
 
 bool EnableSequenceBroaden(const abstract::AbstractBasePtr &abs) {
@@ -2043,7 +2044,8 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     actions = EraseParseActions(actions);
   }
 
-  auto is_precompile_only = MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY);
+  auto is_precompile_only = MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) ||
+                            common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1";
   if (is_precompile_only) {
     MS_LOG(INFO) << "PrecompileOnly, stop run graph";
     return actions;

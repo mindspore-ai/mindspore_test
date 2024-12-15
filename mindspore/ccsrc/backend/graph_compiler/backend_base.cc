@@ -1637,7 +1637,7 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
 
   const auto &context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<bool>(MS_CTX_PRECOMPILE_ONLY)) {
+  if (context_ptr->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) || common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1") {
     MS_LOG(INFO) << "PrecompileOnly, stop run graph";
     return;
   }

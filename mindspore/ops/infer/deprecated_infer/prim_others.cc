@@ -86,7 +86,8 @@ AbstractBasePtr InferImplDepend(const AnalysisEnginePtr &, const PrimitivePtr &p
   }
 
   auto depends_abs = depends->Broaden();  // Avoid eliminating the dependent node.
-  if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR)) {
+  if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) &&
+      common::GetCompileConfig("GRAD_FOR_SCALAR") != "1") {
     // For scalar, need to set value to kValueAny, because broaden scalar will not change the value.
     if (depends_abs->isa<AbstractScalar>()) {
       depends_abs->set_value(kValueAny);

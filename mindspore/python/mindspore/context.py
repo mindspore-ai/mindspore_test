@@ -1442,10 +1442,14 @@ def set_context(**kwargs):
             When the `save_graphs` attribute is set as ``True`` , ``1`` , ``2`` or ``3`` , attribute of
             `save_graphs_path` is used to set the intermediate compilation graph storage path. By default, the graphs
             are saved in the current directory.
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_DEV_SAVE_GRAPHS` instead.
         save_graphs_path (str): Path to save graphs. Default: ``"."``.
             If the specified directory does not exist, the system will automatically create the directory.
             During distributed training, graphs will be saved to the directory of
             `save_graphs_path/rank_${rank_id}/`. `rank_id` is the ID of the current device in the cluster.
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_DEV_SAVE_GRAPHS_PATH` instead.
         deterministic (str): Whether to enable op run in deterministic mode. The value must be in the
             range of ['ON', 'OFF'], and the default value is ``'OFF'`` .
 
@@ -1461,7 +1465,8 @@ def set_context(**kwargs):
 
         precompile_only (bool): Whether to only precompile the network. Default: ``False`` .
             If set to ``True`` , the network will only be compiled, not executed.
-        reserve_class_name_in_scope (bool): This parameter will be deprecated and will be removed in future versions.
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_DEV_PRECOMPILE_ONLY` instead.
         pynative_synchronize (bool): Whether to enable synchronous execution of the device in PyNative mode.
             Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
             device. When an error occurs in the execution of the operator, the specific error script code location
@@ -1487,26 +1492,34 @@ def set_context(**kwargs):
 
         check_bprop (bool): Whether to check back propagation nodes. The checking ensures that the shape and dtype
             of back propagation node outputs is the same as input parameters. Default: ``False`` .
+            This parameter will be deprecated and removed in a future version.
         max_call_depth (int): Specify the maximum depth of function call. Must be positive integer. Default: ``1000`` .
             The max_call_depth parameter needs to be set when the nested call is too deep or the number
             of subgraphs is too large. If max_call_depth is set larger than before, the system max stack depth should be
             set larger too, otherwise a `core dumped` exception may be raised because of system stack overflow.
+            This parameter will be deprecated and removed in a future version. Please use the api
+            `mindspore.set_recursion_limit()` instead.
         grad_for_scalar (bool):  Whether to get gradient for scalar. Default: ``False`` .
             When grad_for_scalar is set to ``True`` , the function's scalar input can be derived.
             The default value is ``False`` . Because the back-end does not support scaling operations currently,
             this interface only supports simple operations that can be deduced by the front-end.
-        enable_compile_cache (bool): Whether to save or load the cache of the graph compiled by front-end.
-            After enable_compile_cache is set to ``True`` , during the first execution, a hardware-independent
-            compilation cache is generated and exported to a MINDIR file. When the network is executed again,
-            if enable_compile_cache is still set to ``True`` and the network scripts are not changed,
-            the compile cache is loaded. Note that only limited automatic detection for the changes of
-            python scripts is supported by now, which means that there is a correctness risk. Default: ``False`` .
+            This parameter will be deprecated and removed in a future version. Please take the tensor derivative.
+        enable_compile_cache (bool): Whether to save or load the compiled cache of the graph.
+            After enable_compile_cache is set to ``True`` , during the first execution, a compilation cache is
+            generated and exported to a MINDIR file. When the network is executed again, if enable_compile_cache is
+            still set to ``True`` and the network scripts are not changed, the compile cache is loaded.
+            Note that only limited automatic detection for the changes of python scripts is supported by now,
+            which means that there is a correctness risk. Default: ``False`` .
             Currently, do not support the graph which is larger than 2G after compiled.
             This is an experimental prototype that is subject to change and/or deletion.
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_COMPILER_CACHE_ENABLE` instead.
         compile_cache_path (str): Path to save the compile cache. Default: ``"."``.
             If the specified directory does not exist, the system will automatically create the directory.
             The cache will be saved to the directory of `compile_cache_path/rank_${rank_id}/`. The `rank_id` is
             the ID of the current device in the cluster.
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_COMPILER_CACHE_PATH` instead.
         inter_op_parallel_num(int): The thread number of op parallel at the same time. Default value is ``0`` ,
             which means use the default num.
         runtime_num_threads(int): The thread pool number of cpu kernel used in runtime,
@@ -1684,6 +1697,7 @@ def set_context(**kwargs):
               compiling performance.
             - ``DEBUG``: Used for debugging when errors occur, more information will be record in compiling process.
 
+            This parameter will be deprecated and removed in a future version.
         gpu_config (dict): Set the parameters specific to gpu hardware platform. It is not set by default.
             Currently, only setting `conv_fprop_algo` and `conv_dgrad_algo` and `conv_wgrad_algo` and `conv_allow_tf32`
             and `matmul_allow_tf32` are supported on GPU hardware platform.
