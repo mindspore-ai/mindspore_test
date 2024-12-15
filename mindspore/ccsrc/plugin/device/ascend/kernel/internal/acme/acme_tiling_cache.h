@@ -50,6 +50,7 @@ inline void GatherSingleInfo(const std::string &kernel_name, const std::vector<K
     auto type = input->type_id();
     if (type == kObjectTypeTensorType) {
       transform::GatherHash(input);
+      transform::GatherHash(input->format());
     } else if (type == kObjectTypeNumber) {
       auto data_type = input->dtype_id();
       switch (data_type) {
