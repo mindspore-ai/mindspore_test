@@ -39,6 +39,11 @@ constexpr char kExecuteModeAttrName[] = "_dynamic_graph_execute_mode";
 constexpr char kInputsShapeRangeAttrName[] = "_getnext_inputs_shape_range";
 }  // namespace
 
+std::vector<std::string> GetNextForGE::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimGetNext->name()};
+  return ret;
+}
+
 const BaseRef GetNextForGE::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimGetNext, Xs});

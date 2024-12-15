@@ -260,8 +260,7 @@ CNodePtr SyncBnGradSplit::SyncBNGradSplitForTBE(const FuncGraphPtr &func_graph, 
 }
 
 std::vector<std::string> BnGradSplit::MustExistPrimitiveName() const {
-  std::vector<std::string> ret;
-  ret.emplace_back(prim::kPrimBatchNormGrad->name());
+  std::vector<std::string> ret{prim::kPrimBatchNormGrad->name()};
   return ret;
 }
 
@@ -282,6 +281,11 @@ const AnfNodePtr BnGradSplit::Process(const FuncGraphPtr &func_graph, const AnfN
     return nullptr;
   }
   return BNGradSplitForTBE(func_graph, cnode);
+}
+
+std::vector<std::string> SyncBnGradSplit::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimSyncBatchNormGrad->name()};
+  return ret;
 }
 
 const BaseRef SyncBnGradSplit::DefinePattern() const {

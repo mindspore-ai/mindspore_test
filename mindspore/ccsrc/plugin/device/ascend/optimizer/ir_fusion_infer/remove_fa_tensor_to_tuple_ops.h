@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFER_REMOVE_FA_TENSOR_TO_TUPLE_OPS_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFER_REMOVE_FA_TENSOR_TO_TUPLE_OPS_H_
 
+#include <string>
+#include <vector>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -29,6 +31,9 @@ class RemoveFATensorToTupleOps : public PatternProcessPass {
 
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

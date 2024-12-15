@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_MATMUL_ALLREDUCE_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_MATMUL_ALLREDUCE_FUSION_H_
 
+#include <vector>
 #include <string>
 #include <memory>
 #include "include/backend/optimizer/optimizer.h"
@@ -33,6 +34,7 @@ class MatMulAllReduceFusion : public PatternProcessPass {
  private:
   virtual AnfNodePtr CreateMatMulAllReduceNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node) const;
   PrimitivePtr CreateMatMulAllReducePrim(const PrimitivePtr &allreduce_prim, const CNodePtr &matmul_node) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 
  protected:
   const std::string kAttrNameGroup = "group";

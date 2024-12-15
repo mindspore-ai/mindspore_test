@@ -87,6 +87,11 @@ AnfNodePtr CreateAssignCNode(const FuncGraphPtr &graph, const AnfNodePtr &src_no
 }
 }  // namespace
 
+std::vector<std::string> AdamWeightDecayUnifyMindIR::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimAdamWeightDecay->name()};
+  return ret;
+}
+
 const BaseRef AdamWeightDecayUnifyMindIR::DefinePattern() const {
   auto Xs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimAdamWeightDecay, Xs});

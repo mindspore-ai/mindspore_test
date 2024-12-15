@@ -27,6 +27,11 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> RmsNormQuantFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimQuantV2->name()};
+  return ret;
+}
+
 const BaseRef RmsNormQuantFusion::DefinePattern() const {
   VarPtr index0 = std::make_shared<CondVar>(IsConstant);
   VectorRef rms_norm = VectorRef({prim::kPrimRmsNorm, x1_, gamma_, eps_});

@@ -159,6 +159,11 @@ const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const An
   return fusion_node;
 }
 
+std::vector<std::string> MatmulReduceScatterFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimMatMul->name(), prim::kPrimReduceScatter->name()};
+  return ret;
+}
+
 const VectorRef MatmulReduceScatterFusion::DefineFusionPattern() const {
   MS_LOG(DEBUG) << "Do MatmulReduceScatterPattern.";
   // MatMul
@@ -248,6 +253,11 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   matmul_reduce_scatter_cnode->set_scope(reduce_scatter_cnode->scope());
   MS_LOG(DEBUG) << "Create MatmulReduceScatter cnode success.";
   return matmul_reduce_scatter_cnode;
+}
+
+std::vector<std::string> AllGatherMatmulFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimAllGather->name(), prim::kPrimMatMul->name()};
+  return ret;
 }
 
 const VectorRef AllGatherMatmulFusion::DefineFusionPattern() const {
@@ -369,6 +379,11 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
 
   MS_LOG(DEBUG) << "Create AllGatherMatmul cnode success.";
   return all_gather_matmul_cnode;
+}
+
+std::vector<std::string> QuantBatchMatmulAllReduceFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimAllReduce->name()};
+  return ret;
 }
 
 const VectorRef QuantBatchMatmulAllReduceFusion::DefineFusionPattern() const {

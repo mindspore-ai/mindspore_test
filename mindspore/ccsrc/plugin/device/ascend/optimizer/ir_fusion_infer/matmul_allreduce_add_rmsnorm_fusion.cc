@@ -51,6 +51,8 @@ const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
 std::vector<std::string> MatMulAllReduceAddRmsNormFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret;
   ret.emplace_back(prim::kPrimAllReduce->name());
+  ret.emplace_back(prim::kPrimRmsNorm->name());
+  ret.emplace_back(prim::kPrimMatMul->name());
   return ret;
 }
 

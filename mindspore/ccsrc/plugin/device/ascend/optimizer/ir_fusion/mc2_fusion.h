@@ -49,6 +49,7 @@ class MatmulReduceScatterFusion : public MC2FusionBase {
   const VectorRef DefineFusionPattern() const override;
   CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                              const EquivPtr &equiv) const override;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class AllGatherMatmulFusion : public MC2FusionBase {
@@ -61,6 +62,7 @@ class AllGatherMatmulFusion : public MC2FusionBase {
   const VectorRef DefineFusionPattern() const override;
   CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                              const EquivPtr &equiv) const override;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class QuantBatchMatmulAllReduceFusion : public MC2FusionBase {
@@ -74,6 +76,7 @@ class QuantBatchMatmulAllReduceFusion : public MC2FusionBase {
   const VectorRef DefineFusionPattern() const override;
   CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                              const EquivPtr &equiv) const override;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

@@ -46,6 +46,11 @@ bool IsFlashAttentionScoreNode(const BaseRef &ref) {
 }
 }  // namespace
 
+std::vector<std::string> RemoveFATensorToTupleOps::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimFlashAttentionScore->name()};
+  return ret;
+}
+
 const BaseRef RemoveFATensorToTupleOps::DefinePattern() const {
   VarPtr resize = std::make_shared<CondVar>(IsFlashAttentionScoreNode);
   VarPtr inputs = std::make_shared<SeqVar>();

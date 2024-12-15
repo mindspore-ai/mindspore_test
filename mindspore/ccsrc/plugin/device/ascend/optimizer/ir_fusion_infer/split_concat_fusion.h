@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_SPLIT_CONCAT_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_SPLIT_CONCAT_FUSION_H_
 
+#include <vector>
+#include <string>
 #include <memory>
 #include "include/backend/optimizer/optimizer.h"
 
@@ -33,6 +35,8 @@ class BACKEND_EXPORT SplitConcatFusion : public PatternProcessPass {
                            const EquivPtr &equiv) const override;
 
  private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
+
   VarPtr x1_;
   mutable VarPtr split_axis_;
   mutable VarPtr output_num_;
