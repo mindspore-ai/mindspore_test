@@ -242,10 +242,6 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
             install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
                     DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         endif()
-        if((NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
-            install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
-                DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
         if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
                 install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
                         ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -269,10 +265,6 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
         if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
                 install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
                         DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
-        if((NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
-                        DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         endif()
         if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
                 install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
