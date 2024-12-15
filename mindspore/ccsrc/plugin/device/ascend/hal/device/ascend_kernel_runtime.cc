@@ -24,6 +24,7 @@
 #include "include/common/utils/signal_util.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "utils/ms_context.h"
+#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
@@ -320,7 +321,9 @@ bool AscendKernelRuntime::Init() {
     if (rt_ret != ACL_ERROR_NONE) {
       MS_LOG(EXCEPTION) << "Reg SetTaskFailCallback failed, error: " << rt_ret;
     }
-    uint32_t op_execute_timeout = ms_context->get_param<uint32_t>(MS_CTX_OP_TIMEOUT);
+    auto op_debug_conf = OpDebugConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(op_debug_conf);
+    uint32_t op_execute_timeout = op_debug_conf->execute_timeout();
     std::string hccl_exec_timeout = common::GetEnv("HCCL_EXEC_TIMEOUT");
     uint32_t notify_wait_timeout;
     if (hccl_exec_timeout.empty()) {
