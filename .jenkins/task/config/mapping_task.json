@@ -94,7 +94,9 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_CPU_Win_Level0"
@@ -133,7 +135,9 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_Windows_AVX"
@@ -211,7 +215,9 @@
       "mindspore/ops/op_def",
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
-      "mindspore/python"
+      "mindspore/python",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "ENVIRONMENT": "MACOS"
   },
@@ -318,7 +324,9 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Ascend",
@@ -403,7 +411,9 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_GPU"
@@ -486,7 +496,9 @@
       "mindspore/ops/op_def",
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
-      "mindspore/python"
+      "mindspore/python",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "ENVIRONMENT": "LINUX"
   },
@@ -562,7 +574,9 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_CPU_CentOS_Level0",
@@ -653,7 +667,9 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "tests/ut",
-      "mindspore/python"
+      "mindspore/python",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "UT_CPP",
@@ -743,7 +759,9 @@
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/kernel/gpu/cuda_impl/cuda_ops",
       "mindspore/ops/op_def",
-      "mindspore/python"
+      "mindspore/python",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_MINDIR",
@@ -818,7 +836,9 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/op_def",
-      "mindspore/python"
+      "mindspore/python",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_CLOUD_ASCEND",
@@ -869,7 +889,9 @@
       "mindspore/lite/tools/benchmark",
       "mindspore/lite/tools/common",
       "mindspore/lite/tools/converter",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_TF",
@@ -969,7 +991,9 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_Linux_TFLITE"
@@ -1017,7 +1041,9 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1068,7 +1094,9 @@
       "mindspore/lite/tools/converter",
       "mindspore/lite/tools/cropper",
       "mindspore/lite/tools/schema_gen",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1125,7 +1153,9 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1163,7 +1193,9 @@
       "mindspore/lite/tools/converter",
       "mindspore/lite/tools/cropper",
       "mindspore/lite/tools/schema_gen",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_X86_AVX512_CAFFE",
@@ -1215,7 +1247,9 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_X86_ASAN"
@@ -1263,7 +1297,9 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_SIM_SD3403"
@@ -1311,7 +1347,9 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "ENVIRONMENT": "LITE"
   },
@@ -1331,7 +1369,9 @@
       "mindspore/lite/tools/converter/micro/coder/wrapper/thread",
       "mindspore/lite/tools/converter/micro/providers/nnie",
       "mindspore/lite/tools/converter/quantizer",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_ARM32_3516D"
@@ -1379,7 +1419,9 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      "cmake/external_libs/openssl.cmake",
+      "third_party/patch/openssl"
     ],
     "LLT": [
       "Smoke_Lite_ARM32_3516D"
