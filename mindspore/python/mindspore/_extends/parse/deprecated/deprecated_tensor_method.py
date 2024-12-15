@@ -249,7 +249,7 @@ deprecated_tensor_method_map = {
     # 114 type
 
     # 115 type_as
-
+    "type_as": "deprecated_tensor_type_as",
     # 116 unbind
 
     # 117 unfold
