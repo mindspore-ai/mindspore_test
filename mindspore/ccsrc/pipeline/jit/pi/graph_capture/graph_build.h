@@ -379,6 +379,7 @@ class MindGraphBuilder : public GraphBuilder {
   void ExpandContainerParameters(ValueNode *node);
 
  private:
+  void FGAddTopInputsWithExpander();
   void FGAddTopInputs();
   bool FGAddInputs(const std::vector<ValueNode *> &args);
 

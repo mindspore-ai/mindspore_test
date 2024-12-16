@@ -158,6 +158,7 @@ class MindGraphAnalyzer : public GraphAnalyzer {
   void CollectGraphInputs() override;
   void UpdateCapturedOrder();
   void CollectCapturedAndInterpret() override;
+  void ExpandGraphOutput();
   bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
   void ResetSideEffectRecord() const override;
   void UpdateUseDefNode();

@@ -33,6 +33,16 @@ def match_array(actual, expected, error=0, err_msg=''):
     else:
         onp.testing.assert_equal(actual, expected, err_msg=err_msg)
 
+def match_value(actual, expected, error=0, err_msg=''):
+    if isinstance(actual, (tuple, list)) and isinstance(expected, (tuple, list)):
+        assert len(actual) == len(expected)
+        for idx in range(len(actual)):
+            match_value(actual[idx], expected[idx], error, err_msg)
+    elif isinstance(actual, dict) and isinstance(expected, dict):
+        match_value(tuple(actual.keys()), tuple(expected.keys()), error, err_msg)
+        match_value(tuple(actual.values()), tuple(expected.values()), error, err_msg)
+    else:
+        match_array(actual, expected, error, err_msg)
 
 def assert_equal(expected, actual, decimal=7, err_msg=''):
     if isinstance(expected, (list, tuple)):

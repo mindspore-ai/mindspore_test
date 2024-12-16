@@ -4352,6 +4352,7 @@ void MindGraphBuilder::AddInput(ValueNode *node) {
   root()->GetGraph()->PrepareParameter(node);
 }
 
+namespace {
 bool IsSelfRef(const py::handle &obj) {
   ReprRecursionScope scope(obj.ptr());
   if (scope.ReEnterOrError()) {
@@ -4367,6 +4368,19 @@ bool IsSelfRef(const py::handle &obj) {
   }
   return false;
 }
+
+bool IsGradOperation(const ValueNode *node) {
+  if (node == nullptr) {
+    return false;
+  }
+  auto vobj = node->GetVobj();
+  if (vobj == nullptr) {
+    return false;
+  }
+  auto type = vobj->GetTypeObject();
+  return type != nullptr && IsGradOperationType<true>(type);
+}
+}  // namespace
 
 void MindGraphBuilder::ExpandContainerParameters(ValueNode *node) {
   auto expand_list_tuple = [this](ValueNode *node, const py::object &obj) {
@@ -4406,25 +4420,12 @@ void MindGraphBuilder::ExpandContainerParameters(ValueNode *node) {
   }
 }
 
-bool IsGradOperation(const ValueNode *node) {
-  if (node == nullptr) {
-    return false;
-  }
-  auto vobj = node->GetVobj();
-  if (vobj == nullptr) {
-    return false;
-  }
-  auto type = vobj->GetTypeObject();
-  return type != nullptr && IsGradOperationType<true>(type);
-}
-
-void MindGraphBuilder::FGAddTopInputs() {
-  bool has_vargs;
-  bool has_kwargs;
+void MindGraphBuilder::FGAddTopInputsWithExpander() {
+  bool has_vargs = false;
+  bool has_kwargs = false;
   int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
   const auto &locals = frame_.GetLocals();
   MS_EXCEPTION_IF_CHECK_FAIL(args_count <= SizeToInt(locals.size()), "Locals size check failed");
-
   const auto &closure = frame_.GetClosures();
   for (size_t index = 0; index < closure.size(); ++index) {
     auto value = closure[index]->GetValue();
@@ -4444,6 +4445,53 @@ void MindGraphBuilder::FGAddTopInputs() {
     } else {
       ExpandContainerParameters(locals[index]);
       locals[index]->set_abstract_wrapper(pop()->abstract_wrapper());
+    }
+  }
+}
+
+void MindGraphBuilder::FGAddTopInputs() {
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput)) {
+    FGAddTopInputsWithExpander();
+  } else {
+    auto add_var_input = [this](ValueNode *cur, bool is_var_keywords) {
+      if (cur == &ValueNode::kUnboundLocal) {
+        return; /* LOAD_DEREF */
+      }
+      auto cur_object = cur->GetVobj()->GetPyObject();
+      auto ret = is_var_keywords ? FGBuilder()->AddTopGraphKwargsInputs(cur_object)
+                                 : FGBuilder()->AddTopGraphVargsInputs(cur_object);
+      if (ret == nullptr) {
+        return;
+      }
+      cur->set_abstract_wrapper(ret);
+      root()->GetGraph()->PrepareParameter(cur);
+    };
+    bool has_vargs;
+    bool has_kwargs;
+    int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
+    const auto &locals = frame_.GetLocals();
+    MS_EXCEPTION_IF_CHECK_FAIL(args_count <= SizeToInt(locals.size()), "Locals size check failed");
+    args_count = args_count - has_vargs - has_kwargs;
+
+    for (const auto &node : frame_.GetClosures()) {
+      auto cur = node->GetValue();
+      if (cur != nullptr) {
+        AddInput(cur); /* LOAD_DEREF */
+      }
+    }
+    int cur_index = 0;
+    for (cur_index = 0; cur_index < args_count; ++cur_index) {
+      auto cur = locals[cur_index];
+      AddInput(cur);
+    }
+    if (has_vargs) {
+      auto cur = locals[cur_index];
+      add_var_input(cur, false);
+      cur_index++;
+    }
+    if (has_kwargs) {
+      auto cur = locals[cur_index];
+      add_var_input(cur, true);
     }
   }
 }
