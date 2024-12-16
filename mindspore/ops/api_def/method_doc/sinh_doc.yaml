@@ -1,0 +1,31 @@
+sinh:
+  description: |
+    sinh() -> Tensor
+    
+    Computes hyperbolic sine of the self element-wise.
+
+    .. math::
+
+        output_i = \sinh(self_i)
+
+    Returns:
+        Tensor, has the same shape as the `self`. 
+        The dtype of output is float32 when dtype of `self` is in
+        [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as the `self`.
+
+    :raise TypeError: If `self` is not a Tensor.
+    :raise TypeError:
+        * CPU/GPU: If dtype of `self` is not float16, float32 or float64, complex64, complex128.
+        * Ascend: If dtype of `self` is not bool, int8, uint8, int16, int32, int64, float16, float32, float64, complex64, complex128 or bfloat16.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([0.62, 0.28, 0.43, 0.62]), mindspore.float32)
+        >>> output = input.sinh()
+        >>> print(output)
+        [0.6604918  0.28367308 0.44337422 0.6604918 ]

@@ -352,7 +352,7 @@ deprecated_tensor_method_map = {
     "frac": "tensor_frac",
 
     # 161
-
+    "fmod": "deprecated_tensor_fmod",
     # 162
 
     # 501

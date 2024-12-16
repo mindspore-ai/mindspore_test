@@ -1,0 +1,7 @@
+unsqueeze:
+  op_yaml: expand_dims_op.yaml
+  py_method: tensor_unsqueeze
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

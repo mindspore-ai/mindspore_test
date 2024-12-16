@@ -1,0 +1,28 @@
+sinc:
+  description: |
+    sinc() -> Tensor
+    
+    Computes the normalized sinc of self.
+
+    .. math::
+        out_i = \begin{cases} \frac{sin(\pi self_i)}{\pi self_i} & self_i\neq 0\\ 
+        1 & self_i=0 \end{cases}
+
+    Returns:
+        Tensor, has the same shape as the `self`. The dtype of output is float32 when dtype of `self` is in
+        [int, bool]. Otherwise output has the same dtype as the `self`.
+
+    Raises:
+        TypeError: If `self` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([0.62, 0.28, 0.43, 0.62]), mindspore.float32)
+        >>> output = input.sinc()
+        >>> print(output)
+        [0.47735003 0.8759357  0.7224278  0.47735003]

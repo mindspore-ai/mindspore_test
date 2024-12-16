@@ -1,0 +1,34 @@
+fmod:
+  description: |
+    fmod(other) -> Tensor
+    
+    Computes the floating-point remainder of the division operation self/other.
+
+    .. math::
+
+        out = self - n * other
+
+    Where :math:`n` is :math:`self/other` with its fractional part truncated.
+    The returned value has the same sign as `self` and is less than `other` in magnitude.
+
+    Args:
+        other (Union[Tensor, Number]): the divisor.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting,
+        and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If neither `self` nor `other` is a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([-4., -3.5, 0, 3.5, 4]), mindspore.float32)
+        >>> output = input.fmod(2.5)
+        >>> print(output)
+        [-1.5 -1.   0.   1.   1.5]
