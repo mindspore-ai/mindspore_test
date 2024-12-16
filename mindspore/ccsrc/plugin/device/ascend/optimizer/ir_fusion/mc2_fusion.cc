@@ -236,15 +236,21 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   MS_CHECK_TRUE_RET(matmul_reduce_scatter_prim, {});
   auto reduce_scatter_prim = GetCNodePrimitive(reduce_scatter_cnode);
   matmul_reduce_scatter_prim->AddAttr(kAttrGroup, reduce_scatter_prim->GetAttr(kAttrGroup));
+  auto reduce_op = GetValue<std::string>(reduce_scatter_prim->GetAttr(kAttrOp));
+  if (reduce_op != "sum") {
+    MS_LOG(WARNING) << "The reduce op is " << reduce_op << ", but aclnnMatmulReduceScatter only support sum.";
+    return nullptr;
+  }
+
   auto kernel_graph = func_graph->cast<std::shared_ptr<mindspore::session::KernelGraph>>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto matmul_reduce_scatter_cnode = func_graph->NewCNode(
     {NewValueNode(matmul_reduce_scatter_prim), input, x2,
      kernel_graph->NewValueNode(reduce_scatter_prim->GetAttr(kAttrGroup)),
      kernel_graph->NewValueNode(reduce_scatter_prim->GetAttr(kAttrRankSize)),
-     kernel_graph->NewValueNode(reduce_scatter_prim->GetAttr(kAttrOp)), kernel_graph->NewValueNode(mindspore::kNone),
-     kernel_graph->NewValueNode(MakeValue<int64_t>(0)), kernel_graph->NewValueNode(MakeValue<bool>(trans_input)),
-     kernel_graph->NewValueNode(MakeValue<bool>(trans_x2))});
+     kernel_graph->NewValueNode(MakeValue<int64_t>(Reduction::REDUCTION_SUM)),
+     kernel_graph->NewValueNode(mindspore::kNone), kernel_graph->NewValueNode(MakeValue<int64_t>(0)),
+     kernel_graph->NewValueNode(MakeValue<bool>(trans_input)), kernel_graph->NewValueNode(MakeValue<bool>(trans_x2))});
   if (matmul_reduce_scatter_cnode == nullptr) {
     MS_LOG(DEBUG) << "New matmul_reduce_scatter_cnode should not be null, but it is null.";
     return nullptr;
