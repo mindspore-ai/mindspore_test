@@ -118,9 +118,10 @@ class TestTaskManager(unittest.TestCase):
             output = f.read().strip().split('\n')
             print(f"output: {output}")
 
-        self.assertEqual(len(output), 2)
+        self.assertEqual(len(output), 3)
         self.assertEqual(output[0], "parser1:1")
         self.assertEqual(output[1], "parser2:error")
+        self.assertEqual(output[2], "parser3:2")
 
 
     def test_run_should_execute_success_when_multiple_flows(self):
