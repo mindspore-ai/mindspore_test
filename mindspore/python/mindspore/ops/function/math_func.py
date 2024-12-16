@@ -7055,6 +7055,37 @@ def dist(input, other, p=2):
     return ops.LpNorm(axis=0, p=p)(ops.reshape(z, (-1,)))
 
 
+def dist_ext(input, other, p=2):
+    r"""
+    Computes batched the :math:`p`-norm distance between each pair of the two collections of row vectors.
+
+    Args:
+        input (Tensor): The first input tensor. The dtype must be float16 or float32.
+        other (Tensor): The second input tensor. The dtype must be float16 or float32.
+        p (float, optional): The order of norm. `p` is greater than or equal to 0. Default: ``2`` .
+
+    Returns:
+        Tensor, has the same dtype as `input`, which shape is :math:`(1)`.
+
+    Raises:
+        TypeError: If `input` or `other` is not a Tensor.
+        TypeError: If dtype of `input` or `other` is neither float16 nor float32.
+        TypeError: If `p` is not a non-negative integer.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> from mindspore import Tensor, ops
+        >>> input_x = Tensor([[[1.0, 1.0], [2.0, 2.0]]])
+        >>> input_y = Tensor([[[3.0, 3.0], [3.0, 3.0]]])
+        >>> out = ops.dist_ext(input_x, input_y)
+        >>> print(out.asnumpy())
+        3.1622777
+    """
+    return norm_op((input-other), p)
+
+
 def copysign(x, other):
     r"""
     Create a new floating-point tensor with the magnitude of `x` and the sign of `other`, element-wise.
@@ -13085,58 +13116,6 @@ def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_thresh
     iou = rotated_iou_op(boxes_cp, query_boxes_cp, trans, mode, is_cross, v_threshold, e_threshold)
     return cast_(iou, origin_dtype)
 
-
-def mul_ext(input, other):
-    r"""
-    Multiply other value by input Tensor.
-
-    .. math::
-
-        out_{i} = input_{i} \times other_{i}
-
-    Note:
-        - When the two inputs have different shapes, they must be able to broadcast to a common shape.
-        - The two inputs comply with the implicit type conversion rules to make the data types
-          consistent.
-
-    Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-
-    Returns:
-        Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Raises:
-        TypeError: If the type of `input`, `other` is not one of the following: Tensor, number.Number, bool.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> x = Tensor(np.array([2, 6, 9]).astype(np.int32))
-        >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
-        >>> output = ops.mul_ext(x, y)
-        >>> print(output)
-        [8. 30. 54.]
-        >>> # the data type of x is int32, the data type of y is float32,
-        >>> # and the output is the data format of higher precision float32.
-        >>> print(output.dtype)
-        Float32
-    """
-    if isinstance(other, (float, int, bool)) and isinstance(input, Tensor):
-        return muls(input, other)
-    return mul(input, other)
 
 
 def _for_each_transpose(inputs):

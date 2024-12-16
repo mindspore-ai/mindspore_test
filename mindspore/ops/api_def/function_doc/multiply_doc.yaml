@@ -1,0 +1,5 @@
+multiply:
+  description: |
+    multiply(input, other) -> Tensor
+    
+    Alias for :func:`mindspore.mint.mul`.

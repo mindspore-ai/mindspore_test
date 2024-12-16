@@ -186,7 +186,7 @@ from mindspore.ops.function.array_func import min as min_func
 # 69 minimum
 
 # 70 mul
-
+from mindspore.ops.auto_generate import mul, muls
 # 71 nan_to_num
 
 # 72 narrow
@@ -390,6 +390,11 @@ from mindspore.ops.auto_generate import cosh
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
 from mindspore.ops.function.array_func import unsqueeze
+
+# 202 multiply
+
+# 203 dist
+from mindspore.ops.function.math_func import dist_ext
 
 # 204 erfc
 from mindspore.ops.auto_generate import erfc
@@ -848,8 +853,11 @@ def tensor_minimum(input, other):
 
 
 # 70 mul
-def tensor_mul(input, other):
-    return F.mul(input, other)
+def tensor_mul_tensor(input, value):
+    return mul(input, value)
+
+def tensor_mul_scalar(input, value):
+    return muls(input, value)
 
 
 # 71 nan_to_num
@@ -1468,6 +1476,18 @@ def tensor_bitwise_not(input):
 # 162
 def tensor_log10(input):
     return log10(input)
+
+
+# 202 multiply
+def tensor_multiply_tensor(input, value):
+    return mul(input, value)
+
+def tensor_multiply_scalar(input, value):
+    return muls(input, value)
+
+# 203 dist
+def tensor_dist(input, other, p=2):
+    return dist_ext(input, other, p)
 
 
 # 501
