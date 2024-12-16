@@ -68,7 +68,7 @@ scatter:
          [0. 0. 0. 0. 0.]
          [0. 0. 0. 0. 0.]] 
 
-    .. method:: Tensor.scatter(dim, index, src) -> Tensor
+    .. method:: Tensor.scatter(axis, index, src) -> Tensor
         :noindex:
 
     Update the value in `src` to `self` according to the specified index.

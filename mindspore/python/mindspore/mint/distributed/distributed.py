@@ -2588,6 +2588,7 @@ def gather_object(obj, object_gather_list=None, dst=0, group=None):
             for more details.
 
             This example should be run with 2 devices.
+
         >>> from mindspore.mint.distributed import init_process_group, gather_object, get_rank
         >>> init_process_group()
         >>> rank = get_rank()

@@ -8931,9 +8931,9 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
     Args:
         query (Tensor): The query tensor with data type of float16 or bfloat16.
             The shape is :math:`(B, 1, H)` / :math:`(B, N, 1, D)`.
-        key (TensorList): The key tensor with data type of float16 or bfloat16 or int8.
+        key (Union[tuple, list]): The key tensor with data type of float16 or bfloat16 or int8.
             The shape is :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)`.
-        value (TensorList): The value tensor with data type of float16 or bfloat16 or int8.
+        value (Union[tuple, list]): The value tensor with data type of float16 or bfloat16 or int8.
             The shape is :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)`.
         attn_mask (Tensor, optional): The attention mask tensor with data type of bool or int8 or uint8.
             The shape is :math:`(B, S)` / :math:`(B, 1, S)` / :math:`(B, 1, 1, S)`. Default: ``None``.

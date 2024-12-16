@@ -66,8 +66,8 @@ mindspore.ops.incre_flash_attention
 
     参数：
         - **query** (Tensor) - 公式中的输入Q，数据类型float16或bfloat16。shape为 :math:`(B, 1, H)` / :math:`(B, N, 1, D)` 。
-        - **key** (Tensor) - 公式中的输入K，数据类型为float16、bfloat16或int8。shape为 :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)` 。
-        - **value** (Tensor) - 公式中的输入V，数据类型为float16、bfloat16或int8。shape为 :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)` 。
+        - **key** (Union[tuple, list]) - 公式中的输入K，数据类型为float16、bfloat16或int8。shape为 :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)` 。
+        - **value** (Union[tuple, list]) - 公式中的输入V，数据类型为float16、bfloat16或int8。shape为 :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)` 。
         - **attn_mask** (Tensor，可选) - 注意力掩码Tensor，数据类型为bool、int8或uint8。shape为 :math:`(B, S)` / :math:`(B, 1, S)` / :math:`(B, 1, 1, S)` 。默认值： ``None`` 。
         - **actual_seq_lengths** (Union[Tensor, tuple[int], list[int]]，可选) - 描述每个输入的实际序列长度，数据类型为int32或int64。shape为 :math:`(B, )` 。默认值: ``None`` 。
         - **pse_shift** (Tensor，可选) - 位置编码Tensor，数据类型为float16或bfloat16。输入Tensorshape为 :math:`(1, N, 1, S)` / :math:`(B, N, 1, S)` 。默认值: ``None`` 。
