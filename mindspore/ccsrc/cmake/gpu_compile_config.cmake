@@ -1,5 +1,3 @@
-include(${CMAKE_SOURCE_DIR}/cmake/gpu_env_setup.cmake)
-
 if(GPU_BACKEND_CUDA)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/gpu)
     add_subdirectory(plugin/device/gpu)

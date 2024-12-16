@@ -1,8 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CUPTI_INCLUDE_DIRS})
 
-include(${CMAKE_SOURCE_DIR}/cmake/gpu_env_setup.cmake)
-
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-non-abstract-non-virtual-dtor -Wno-overloaded-virtual")
 endif()
