@@ -374,6 +374,17 @@ from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import new_ones
 from mindspore.ops.function.array_func import new_zeros
 
+# 204 erfc
+from mindspore.ops.auto_generate import erfc
+
+# 207 expm1
+from mindspore.ops.auto_generate import expm1
+
+# 220 hardshrink
+from mindspore.ops.auto_generate import hardshrink
+
+# 244 log1p
+from mindspore.ops.auto_generate import log1p
 
 ########################################functions########################################
 unique_dim_ = UniqueDim()
@@ -1298,3 +1309,23 @@ def tensor_new_ones(input, size, dtype=None):
 
 def tensor_new_zeros(input, size, dtype=None):
     return new_zeros(input, size, dtype=dtype)
+
+
+# 204 erfc
+def tensor_erfc(input):
+    return erfc(input)
+
+
+# 207 expm1
+def tensor_expm1(input):
+    return expm1(input)
+
+
+# 220 hardshrink
+def tensor_hardshrink(input, lambd=0.5):
+    return hardshrink(input, lambd)
+
+
+# 244 log1p
+def tensor_log1p(input):
+    return log1p(input)
