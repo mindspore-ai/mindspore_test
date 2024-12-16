@@ -539,7 +539,6 @@ class MS_CORE_API Tensor : public BaseTensor {
 
   void set_copy_done_flag(bool flag) { copy_done_flag_ = flag; }
   bool get_copy_done_flag() const { return copy_done_flag_; }
-  bool copy_done_flag_{false};
 
  private:
   // Really execute callback function when host value is updated of Tensor.
@@ -564,6 +563,7 @@ class MS_CORE_API Tensor : public BaseTensor {
   //
   // Includes the format and data type of a tensor on device.
   DeviceInfo device_info_;
+  bool copy_done_flag_{false};
 };
 
 // CSRTensor entity class

@@ -145,7 +145,8 @@ Tensor::Tensor(const Tensor &tensor)
       pin_mem_register_(tensor.pin_mem_register_),
       compression_type_(tensor.compression_type_),
       tensor_name_(tensor.tensor_name_),
-      device_info_(tensor.device_info_) {}
+      device_info_(tensor.device_info_),
+      copy_done_flag_(tensor.copy_done_flag_) {}
 
 Tensor::Tensor(const Tensor &tensor, TypeId data_type)
     : BaseTensor(tensor, data_type),
@@ -157,7 +158,8 @@ Tensor::Tensor(const Tensor &tensor, TypeId data_type)
       pin_mem_register_(tensor.pin_mem_register_),
       compression_type_(tensor.compression_type_),
       tensor_name_(tensor.tensor_name_),
-      device_info_(tensor.device_info_) {}
+      device_info_(tensor.device_info_),
+      copy_done_flag_(tensor.copy_done_flag_) {}
 
 Tensor::Tensor(const BaseTensor &tensor, TypeId data_type) : BaseTensor(tensor, data_type) {}
 
@@ -182,6 +184,7 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   quant_params_ = tensor.quant_params_;
   updated_by_device_ = tensor.updated_by_device_;
   device_info_ = tensor.device_info_;
+  copy_done_flag_ = tensor.copy_done_flag_;
   return *this;
 }
 
