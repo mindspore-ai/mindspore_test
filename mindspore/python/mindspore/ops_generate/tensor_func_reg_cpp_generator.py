@@ -51,7 +51,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.TENSOR_FUNC_UT_OVERLOAD_BODY = template.TENSOR_FUNC_UT_OVERLOAD_BODY
         self.TENSOR_CPP_METHOD = template.TENSOR_CPP_METHOD
 
-        self.func_def_reg = Template("tensor_class->def(\"${func_name}\", TensorMethod${class_name});\n")
+        self.func_def_reg = Template("tensor_class->def(\"${func_name}\", TensorMethod${cpp_func_name});\n")
         self.single_case_template = Template(
             'case ${case_id}:\n'
             '  ${device_dispatcher}\n'
@@ -105,7 +105,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '}\n'
         )
         self.header_func_header_template = Template(
-            "py::object TensorMethod${class_name}"
+            "py::object TensorMethod${cpp_func_name}"
             "(const py::object &self, const py::args &py_args, const py::kwargs &py_kwargs);\n"
         )
         # The format of arg_handler_map is {arg_handler_name : list of supported types}.
@@ -212,28 +212,28 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         tensor_cpp_methods_list = []
         tensor_api_declaration_list = ""
         for func_api_name, func_protos in all_op_func_data.items():
+            cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
             if len(func_protos) == 1:
                 func_proto = func_protos[0]
                 func_name = func_proto.func_name
-                class_name = func_proto.op_proto.op_class.name
-                func_def_body_list.append(self.func_def_reg.replace(func_name=func_name, class_name=class_name))
+                func_def_body_list.append(self.func_def_reg.replace(func_name=func_name,
+                                                                    cpp_func_name=cpp_func_name))
                 tensor_cpp_methods_list.append(func_name)
-                tensor_api_declaration_list += self.header_func_header_template.replace(class_name=class_name)
+                tensor_api_declaration_list += self.header_func_header_template.replace(cpp_func_name=cpp_func_name)
                 if func_name in alias_func_mapping:
                     for alias_func_name in alias_func_mapping[func_name]:
                         func_def_body_list.append(
-                            self.func_def_reg.replace(func_name=alias_func_name, class_name=class_name))
+                            self.func_def_reg.replace(func_name=alias_func_name, cpp_func_name=cpp_func_name))
                         tensor_cpp_methods_list.append(alias_func_name)
             elif len(func_protos) > 1:
-                formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
                 func_def_body_list.append(
-                    self.func_def_reg.replace(func_name=func_api_name, class_name=formatted_class_name))
+                    self.func_def_reg.replace(func_name=func_api_name, cpp_func_name=cpp_func_name))
                 tensor_cpp_methods_list.append(func_api_name)
-                tensor_api_declaration_list += self.header_func_header_template.replace(class_name=formatted_class_name)
+                tensor_api_declaration_list += self.header_func_header_template.replace(cpp_func_name=cpp_func_name)
                 if func_api_name in alias_func_mapping:
                     for alias_func_name in alias_func_mapping[func_api_name]:
                         func_def_body_list.append(self.func_def_reg.replace(func_name=alias_func_name,
-                                                                            class_name=formatted_class_name))
+                                                                            cpp_func_name=cpp_func_name))
                         tensor_cpp_methods_list.append(alias_func_name)
         return func_def_body_list, tensor_cpp_methods_list, tensor_api_declaration_list
 
@@ -247,9 +247,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         Returns:
             list: Updated str list for generating C++ function call bodies.
         """
-        for _, func_proto in single_op_func_data.items():
+        for func_api_name, func_proto in single_op_func_data.items():
             func_name = func_proto.func_name
-            class_name = func_proto.op_proto.op_class.name
+            cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
             signature_str = self._generate_single_signature_str(func_proto.op_proto, func_proto.kw_only_args,\
                                                                 func_proto.varargs)
@@ -257,14 +257,13 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             max_size = len(op_args)
             self_index = self._get_input_tensor_index(func_proto)
             ut_body = self.TENSOR_FUNC_UT_BODY.replace(py_method=func_proto.py_method)
-            tensor_func_single_call_body = self.TENSOR_FUNC_CALL_BODY.replace(
-                class_name=class_name,
-                func_name=func_name,
-                device_dispatcher=device_dispatcher_str,
-                signatures=signature_str,
-                max_args=max_size,
-                self_index=self_index,
-                ut_body=ut_body)
+            tensor_func_single_call_body = self.TENSOR_FUNC_CALL_BODY.replace(cpp_func_name=cpp_func_name,
+                                                                              func_name=func_name,
+                                                                              device_dispatcher=device_dispatcher_str,
+                                                                              signatures=signature_str,
+                                                                              max_args=max_size,
+                                                                              self_index=self_index,
+                                                                              ut_body=ut_body)
             tensor_func_source = self.TENSOR_FUNC_SOURCE.replace(tenosr_func_call_body=tensor_func_single_call_body,
                                                                  func_name=func_name)
             save_file(os.path.join(work_path, K.TENSOR_FUNC_PATH), f"tensor_{func_name}.cc",
@@ -310,8 +309,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
             self_index = self._get_input_tensor_index(tensor_proto)
-        formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
-        overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(class_name=formatted_class_name,
+        cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
+        overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(cpp_func_name=cpp_func_name,
                                                                              func_name=func_api_name,
                                                                              signatures=signatures_str,
                                                                              dispatch_cases=dispatch_cases,

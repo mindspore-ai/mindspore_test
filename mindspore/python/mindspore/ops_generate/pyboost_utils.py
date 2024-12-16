@@ -340,6 +340,10 @@ def format_func_api_name(func_api_name):
     if is_one_underscore and not is_double_underscore:
         formatted_func_api_name += '_'
 
+    # If the original name is a double-underscore name, add a 'Magic' suffix.
+    if is_double_underscore:
+        formatted_func_api_name += 'Magic'
+
     return formatted_func_api_name
 
 

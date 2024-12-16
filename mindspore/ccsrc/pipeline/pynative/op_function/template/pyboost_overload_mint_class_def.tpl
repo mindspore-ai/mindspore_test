@@ -1,7 +1,7 @@
-class ${class_name}Functional : public Functional {
+class ${cpp_func_name}Functional : public Functional {
  public:
-  ${class_name}Functional() : Functional("${func_name}") {};
-  ~${class_name}Functional() = default;
+  ${cpp_func_name}Functional() : Functional("${func_name}") {};
+  ~${cpp_func_name}Functional() = default;
   py::object Call(const py::args &args, const py::kwargs &kwargs) {
     static PythonArgParser parser({
     ${signatures}
@@ -22,5 +22,5 @@ class ${class_name}Functional : public Functional {
   }
 };
 
-static std::shared_ptr<${class_name}Functional> ${func_name}_instance = std::make_shared<${class_name}Functional>();
+static std::shared_ptr<${cpp_func_name}Functional> ${func_name}_instance = std::make_shared<${cpp_func_name}Functional>();
 
