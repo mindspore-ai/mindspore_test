@@ -42,8 +42,6 @@ class MatMulAllReduceAddRmsNormBaseFusion : public PatternProcessPass {
   VarPtr eps_;
   const std::string kAttrNameGroup = "group";
   const std::string kAttrNameOp = "op";
-  const std::string kAttrNameTransposeA = "transpose_a";
-  const std::string kAttrNameTransposeB = "transpose_b";
 };
 
 class MatMulAllReduceAddRmsNormFusion : public MatMulAllReduceAddRmsNormBaseFusion {
@@ -57,6 +55,8 @@ class MatMulAllReduceAddRmsNormFusion : public MatMulAllReduceAddRmsNormBaseFusi
  private:
   virtual CNodePtr CreateMatMulAllReduceAddRmsNormNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                        const EquivPtr &equiv, const TypeId &add_result_type) const;
+  bool IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) const;
+
   // currently, reduction only support "sum"
   const std::vector<std::string> support_reduce_op_list_ = {"sum"};
 };
