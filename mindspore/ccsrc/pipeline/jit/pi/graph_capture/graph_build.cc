@@ -2658,6 +2658,20 @@ bool HasPyObj(const ValueNode *node) {
   MS_LOG(DEBUG) << "ValueNode's python object is null, node: " << node->ToString();
   return false;
 }
+
+void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTraceReason *stop_reason) {
+  if (res == nullptr) {
+    MS_LOG(INFO) << "Add node fail";
+    *stop_reason = StopTraceReason::kTrace_Fail;
+  } else {
+    MS_LOG(INFO) << "Add node succ";
+    auto node = AObject::Convert(res);
+    MS_LOG(INFO) << node->ToString();
+    call_node->SetVobj(node);
+    call_node->set_abstract_wrapper(res);
+    *stop_reason = StopTraceReason::kNonStopTrace;
+  }
+}
 }  // namespace
 
 AbstractWrapperPtrList MindGraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
@@ -4551,25 +4565,18 @@ bool MindGraphBuilder::FGAddSideEffectOutput() {
   return true;
 }
 
-void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTraceReason *stop_reason) {
-  if (res == nullptr) {
-    MS_LOG(INFO) << "Add node fail";
-    *stop_reason = StopTraceReason::kTrace_Fail;
-  } else {
-    MS_LOG(INFO) << "Add node succ";
-    auto node = AObject::Convert(res);
-    MS_LOG(INFO) << node->ToString();
-    call_node->SetVobj(node);
-    call_node->set_abstract_wrapper(res);
-    *stop_reason = StopTraceReason::kNonStopTrace;
-  }
-}
-
 void MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_info,
                                  const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << py::str(callable_info);
   TraceGuard trace_guard(GetLocation(call_node));
-  auto res = FGBuilder()->AddNode(callable_info, args);
+  AbstractWrapperPtr res;
+  if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
+    res = FGBuilder()->AddNodeCallFunctionKw(callable_info, args);
+  } else if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
+    res = FGBuilder()->AddNodeCallFunctionEx(callable_info, args);
+  } else {
+    res = FGBuilder()->AddNode(callable_info, args);
+  }
   UpdateNodeInfo(res, call_node, stop_reason);
 }
 
@@ -4577,7 +4584,14 @@ void MindGraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_v
                                  const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << callable_value->ToString();
   TraceGuard trace_guard(GetLocation(call_node));
-  auto res = FGBuilder()->AddNode(callable_value, args);
+  AbstractWrapperPtr res;
+  if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
+    res = FGBuilder()->AddNodeCallFunctionKw(callable_value, args);
+  } else if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
+    res = FGBuilder()->AddNodeCallFunctionEx(callable_value, args);
+  } else {
+    res = FGBuilder()->AddNode(callable_value, args);
+  }
   UpdateNodeInfo(res, call_node, stop_reason);
 }
 
@@ -5262,16 +5276,6 @@ void MindGraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &c
     py::isinstance<mindspore::Cell>(callable_info)
       ? py::reinterpret_steal<py::object>(PyObject_GetAttrString(callable_info.ptr(), "construct"))
       : callable_info;
-  // Need to add unpack call when handling kwargs.
-  if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
-    auto res = FGBuilder()->AddNodeCallFunctionKw(callable_object, HandleInputArgs(args));
-    UpdateNodeInfo(res, call_node, stop_reason);
-    return;
-  } else if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
-    auto res = FGBuilder()->AddNodeCallFunctionEx(callable_object, HandleInputArgs(args));
-    UpdateNodeInfo(res, call_node, stop_reason);
-    return;
-  }
   FGAddNode(call_node, callable_object, HandleInputArgs(args), stop_reason);
 }
 
