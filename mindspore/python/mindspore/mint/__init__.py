@@ -39,15 +39,15 @@ from mindspore.ops.auto_generate import abs
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import full_like_ext as full_like
 # 1
-from mindspore.mint.functional_overload import divide, div
+from mindspore.ops.functional_overload import divide, div
 from mindspore.ops.auto_generate import topk_ext as topk
 from mindspore.ops.function.math_func import roll
 # 2
 from mindspore.ops.function.math_func import sin
 # 3
-from mindspore.mint.functional_overload import clamp
-from mindspore.mint.functional_overload import clip
-from mindspore.mint.functional_overload import fmod
+from mindspore.ops.functional_overload import clamp
+from mindspore.ops.functional_overload import clip
+from mindspore.ops.functional_overload import fmod
 # 4
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
@@ -73,7 +73,7 @@ from mindspore.ops.function.math_func import ne
 # 11
 from mindspore.ops.function.math_func import cdist as cdist_
 # 12
-from mindspore.mint.functional_overload import repeat_interleave
+from mindspore.ops.functional_overload import repeat_interleave
 # 13
 from mindspore.ops.functional import flip
 # 14
@@ -350,7 +350,7 @@ from mindspore.ops.auto_generate import log1p
 # 261
 from mindspore.ops.function.random_func import multinomial_ext as multinomial
 # 275
-from mindspore.mint.functional_overload import remainder
+from mindspore.ops.functional_overload import remainder
 # 285
 from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 # 289

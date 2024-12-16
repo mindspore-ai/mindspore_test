@@ -77,7 +77,7 @@ class FunctionalOverloadPyGenerator(BaseGenerator):
                                                                              mint_init_list=mint_init_list,
                                                                              mint_def_list=mint_def_list,
                                                                              add_to_all_list=add_to_all_list)
-        save_path = os.path.join(work_path, K.MS_MINT_FUNC_PATH)
+        save_path = os.path.join(work_path, K.MS_MINT_FUNC_OVERLOAD_PATH)
         file_name = "functional_overload.py"
         gen_utils.save_file(save_path, file_name, func_overload_py_file)
 
