@@ -15,9 +15,15 @@
 """llm boost"""
 import json
 import mindspore.common.dtype as mstype
-from mindspore.experimental.llm_boost.atb.boost_base import AtbBoostBase
+from mindspore.experimental.llm_boost.atb.boost_base import (
+    AtbBoostBase,
+    PositionEmbeddingType,
+    NormType,
+)
 from mindspore._c_expression import LlmBoostBinder
 from mindspore.experimental.llm_boost.register import LlmBoostRegister, LlmBoostType
+
+CPP_LLAMA_MODEL_CLASS_NAME = "llama_LlamaDecoderModel"
 
 
 @LlmBoostRegister.register(LlmBoostType.BUILDIN, "Llama")
@@ -30,16 +36,17 @@ class LlamaBoost(AtbBoostBase):
         self.acl_encoder_operation_inputs = [None] * self.in_tensor_length
         self.acl_decoder_operation_inputs = [None] * self.in_tensor_length
         self.atb_encoder_operation = LlmBoostBinder(
-            "ATB", "llama_parallel_DecoderModel"
+            self.backend_name, CPP_LLAMA_MODEL_CLASS_NAME
         )
         self.atb_decoder_operation = LlmBoostBinder(
-            "ATB", "llama_parallel_DecoderModel"
+            self.backend_name, CPP_LLAMA_MODEL_CLASS_NAME
         )
 
     def init(self):
         """set param"""
         coder_param = {
-            "rmsNormEps": self.config.rms_norm_eps,
+            "normEps": self.config.rms_norm_eps,
+            "normType": NormType.RMS_NORM,
             "numAttentionHeadsPerRank": self.config.num_heads // self.device_num,
             "hiddenSizePerAttentionHead": self.head_dim,
             "numHiddenLayers": self.num_layers,
@@ -57,49 +64,50 @@ class LlamaBoost(AtbBoostBase):
             "isEmbeddingParallel": False,
             "isLmHeadParallel": not self.config.parallel_config.vocab_emb_dp,
             "lmHeadTransposeType": 1,
-            "supportSwiGLU": True,
-            "kvQuant": self.kv_quant is not None,
+            "enableSwiGLU": True,
+            "enablekvQuant": self.kv_quant is not None,
             "rank": self.rank_id,
             "worldSize": self.device_num,
             "backend": self.config.communication_backend,
             "rankTableFile": "",
-            "positionEmbeddingType": self.position_embedding_type,
+            "positionEmbeddingType": PositionEmbeddingType.ROPE,
             "hiddenSize": self.config.hidden_size,
             "gemma": False,
             "enableAddNorm": False,
-            "supportCompressHead": False,
+            "enableCompressHead": False,
+            "isUnpadInputs": True,
         }
         encoder_param = {
             **coder_param,
             "isPrefill": True,
-            "supportLcoc": True,
-            "supportSpeculate": False,
+            "enableLcoc": True,
+            "enableSpeculate": False,
             "skipWordEmbedding": False,
+            "enableSplitFuse": False,
         }
         decoder_param = {
             **coder_param,
             "isPrefill": False,
-            "supportLcoc": False,
-            "supportSpeculate": False,
+            "enableLcoc": False,
+            "enableSpeculate": False,
         }
         self.atb_encoder_operation.init(json.dumps({**encoder_param}))
         self.atb_decoder_operation.init(json.dumps({**decoder_param}))
 
-    # pylint: disable=C0330
     def _prepare_inputs(
-        self,
-        prefill=None,
-        input_ids=None,
-        position_ids=None,
-        cos_embed=None,
-        sin_embed=None,
-        attention_mask=None,
-        block_tables=None,
-        slots=None,
-        input_lengths=None,
-        lm_head_indices=None,
-        seqLen=None,
-        **kwargs
+            self,
+            prefill=None,
+            input_ids=None,
+            position_ids=None,
+            cos_embed=None,
+            sin_embed=None,
+            attention_mask=None,
+            block_tables=None,
+            slots=None,
+            input_lengths=None,
+            lm_head_indices=None,
+            seqLen=None,
+            **kwargs
     ):
         """prepare inputs"""
         self.acl_param = json.dumps(
