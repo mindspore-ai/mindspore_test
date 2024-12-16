@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pipeline/pynative/grad/hook_py.h"
@@ -49,7 +50,8 @@ using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
 const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         kMakeListOpName,
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
-                                                     kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName};
+                                                     kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName,
+                                                     kZerosLikeExtOpName,      kOnesLikeExtOpName};
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_call_graph_compile_cache_;
 
 // for simply infer (simple infer will push abs in bprop queue)
@@ -475,7 +477,8 @@ ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor
     return grad;
   }
   if (value->isa<tensor::BaseTensor>()) {
-    return (type == SpecialType::kZerosLikeType ? func_builder->Zeros(value) : func_builder->Ones(value));
+    const auto tensor = value->cast<tensor::BaseTensorPtr>();
+    return (type == SpecialType::kZerosLikeType ? func_builder->Zeros(tensor) : func_builder->Ones(tensor));
   }
   if (value->isa<ValueSequence>()) {
     ValuePtr zero_value = nullptr;
