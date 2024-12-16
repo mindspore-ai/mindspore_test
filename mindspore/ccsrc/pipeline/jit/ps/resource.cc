@@ -245,6 +245,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"index_select", std::string("index_select")},                      // index_select()
        {"repeat_interleave", std::string("repeat_interleave")},            // repeat_interleave()
        {"copy", std::string("copy")},                                      // copy()
+       {"copy_", std::string("copy_")},                                    // copy_()
        {"copysign", std::string("copysign")},                              // copysign()
        {"inplace_update", std::string("inplace_update")},                  // P.InplaceUpdateV2
        {"lerp", std::string("lerp")},                                      // lerp()
