@@ -1050,6 +1050,12 @@ def tensor_trunc(input):
 # 115 type_as
 
 # 116 unbind
+def deprecated_tensor_unbind(input, dim=0):
+    r"""
+    For details, please refer to :func:`mindspore.ops.unbind`.
+    """
+    return F.unstack(input, dim)
+
 
 # 117 unfold
 

@@ -3335,12 +3335,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.asnumpy().tolist()
 
-    def unbind(self, dim=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.unbind`.
-        """
-        return tensor_operator_registry.get('unbind')(self, dim)
-
     def unsorted_segment_min(self, segment_ids, num_segments):
         r"""
         For details, please refer to :func:`mindspore.ops.unsorted_segment_min`.

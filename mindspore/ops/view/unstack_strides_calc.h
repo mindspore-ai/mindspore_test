@@ -22,6 +22,7 @@
 namespace mindspore {
 namespace ops {
 OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList UnstackStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim);
 
 }  // namespace ops
 }  // namespace mindspore
