@@ -1012,6 +1012,74 @@ std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode 
   return std::make_pair(bc_keys, bc_values);
 }
 
+namespace {
+bool IsNeedExpand(const ValueNode *node) {
+  auto wrapper = node->abstract_wrapper();
+  MS_EXCEPTION_IF_NULL(wrapper);
+  auto abs = wrapper->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  constexpr int allow_tuple_max_depth = 3;
+  return abs->has_user_data("depth") && *abs->user_data<int>("depth") > allow_tuple_max_depth;
+}
+}  // namespace
+
+void MindGraphAnalyzer::ExpandGraphOutput() {
+  if (!graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphOutput)) {
+    return;
+  }
+  std::function<int(const abstract::AbstractBasePtr &)> depth_marker =
+    [&depth_marker](const abstract::AbstractBasePtr &abstract) {
+      MS_EXCEPTION_IF_NULL(abstract);
+      if (!abstract->isa<abstract::AbstractSequence>()) {
+        return 0;
+      }
+      std::vector<int> depths;
+      const auto &elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
+      std::transform(elements.begin(), elements.end(), std::back_inserter(depths),
+                     [&depth_marker](const auto &element) { return depth_marker(element); });
+      auto depth = *std::max_element(depths.begin(), depths.end()) + 1;
+      abstract->set_user_data<int>("depth", std::make_shared<int>(depth));
+      return depth;
+    };
+  auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
+  MS_EXCEPTION_IF_NULL(mind_graph_builder);
+  auto func_graph_builder = mind_graph_builder->FGBuilder();
+  MS_EXCEPTION_IF_NULL(func_graph_builder);
+  func_graph_builder->ClearOutputNodes();
+  auto &captured = GetCaptureInfo().captured_;
+  auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
+  mindspore::CompactSet<ValueNode *> nodes;
+  nodes.insert(captured.outputs.begin(), captured.outputs.end());
+  captured.outputs.clear();
+  for (const auto &node : nodes) {
+    auto wrapper = node->abstract_wrapper();
+    MS_EXCEPTION_IF_NULL(wrapper);
+    auto abs = wrapper->abstract();
+    MS_EXCEPTION_IF_NULL(abs);
+    (void)depth_marker(abs);
+  }
+  while (!nodes.empty()) {
+    auto node = nodes.pop();
+    MS_LOG(DEBUG) << "Start process : " << node->ToString();
+    if (!IsNeedExpand(node)) {
+      MS_LOG(DEBUG) << "Add to output : " << node->ToString();
+      captured.outputs.push_back(node);
+      auto succ = func_graph_builder->AddOutput(node->abstract_wrapper(), true);
+      MS_EXCEPTION_IF_CHECK_FAIL(succ, "Add " + node->ToString() + " to graph outputs failed.");
+      continue;
+    }
+    MS_LOG(DEBUG) << "Start expand : " << node->ToString();
+    auto opcode = node->GetOpcode();
+    if (opcode != BUILD_LIST && opcode != BUILD_TUPLE) {
+      MS_LOG(DEBUG) << "Start mutate : " << node->ToString();
+      node = MutateSequenceNode(node);  // transform to build_list or build_tuple
+      MS_LOG(DEBUG) << "After mutate : " << node->ToString();
+    }
+    ADD_NODE(outputs_optimize.operations, node);
+    nodes.insert(node->getInputs().begin(), node->getInputs().end());
+  }
+}
+
 bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
   MS_EXCEPTION_IF_NULL(mind_graph_builder);
@@ -1079,6 +1147,7 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
                                  << node->ToString();
     }
   }
+  ExpandGraphOutput();
   std::reverse(outputs_optimize.operations.begin(), outputs_optimize.operations.end());
   // avoid missing value, update use-def at last, update all inputs use new node
   UpdateUseDefNode();

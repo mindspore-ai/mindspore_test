@@ -66,6 +66,8 @@ class GraphJitConfig {
     kTraceFlag,
     kSkipException,
     kPIJitContextMode,
+    kExpandGraphInput,
+    kExpandGraphOutput,
     /* ------------------------------ */
     kIntConf,
     kMaxInlineDepth,
