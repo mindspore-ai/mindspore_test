@@ -251,7 +251,7 @@ deprecated_tensor_method_map = {
     # 115 type_as
     "type_as": "deprecated_tensor_type_as",
     # 116 unbind
-
+    "unbind": "deprecated_tensor_unbind",
     # 117 unfold
 
     # 118 unique

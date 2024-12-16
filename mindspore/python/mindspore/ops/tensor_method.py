@@ -1100,6 +1100,12 @@ def deprecated_tensor_type_as(input, other):
 def tensor_type_as(input, other):
     return type_as_op(input, other)
 # 116 unbind
+def deprecated_tensor_unbind(input, dim=0):
+    r"""
+    For details, please refer to :func:`mindspore.ops.unbind`.
+    """
+    return F.unstack(input, dim)
+
 
 # 117 unfold
 
