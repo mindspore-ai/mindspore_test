@@ -1,5 +1,7 @@
 view_as:
   description: |
+    view_as(other) -> Tensor
+
     View `self` Tensor as the same shape as `other` .
 
     Args:
