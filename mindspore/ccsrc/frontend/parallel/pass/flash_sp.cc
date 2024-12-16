@@ -106,7 +106,8 @@ struct LayoutInfo {
 };
 
 std::vector<CNodePtr> FindFWFlashAttentionScore(const FuncGraphManagerPtr &manager,
-                                                const std::vector<AnfNodePtr> &origin_nodes_topological) {
+                                                const std::vector<AnfNodePtr> &origin_nodes_topological,
+                                                bool *fine_grained_interleave) {
   std::vector<CNodePtr> result;
   auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != kSemiAutoParallel) {
@@ -116,6 +117,10 @@ std::vector<CNodePtr> FindFWFlashAttentionScore(const FuncGraphManagerPtr &manag
     auto node = origin_nodes_topological[i];
     if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScore)) {
       result.push_back(node->cast<CNodePtr>());
+    }
+    if (IsPrimitiveCNode(node, prim::kPrimConcat) &&
+        GetCNodePrimitive(node)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+      *fine_grained_interleave = true;
     }
   }
   return result;
@@ -1071,8 +1076,8 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
                                *acc_attention);
   if (is_last_update) {
     weighted_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_MUL, MakeValue<int>(fa_index));
-    (*history_max)->AddPrimalAttr(RING_ATTENTION_UPDATE_MAX, MakeValue<int>(fa_index));
-    (*history_sum)->AddPrimalAttr(RING_ATTENTION_UPDATE_SUM, MakeValue<int>(fa_index));
+    common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_MAX, MakeValue<int>(fa_index), *history_max);
+    common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_SUM, MakeValue<int>(fa_index), *history_sum);
   }
 }
 
@@ -2280,7 +2285,7 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
   acc_attention = CreateDepends(acc_attention, {last_send_node, last_recv_node});
   softmax_out = NewTupleGetItemNode(local_fa_node, kIndex2);
   std::vector<AnfNodePtr> output_tuple = {history_max, history_sum, softmax_out, acc_attention};
-  acc_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index));
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index), acc_attention);
   auto attention_results = NewMakeTupleNode(output_tuple);
   return attention_results;
 }
@@ -2578,7 +2583,7 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
     }
   }
   auto softmax_out = NewTupleGetItemNode(local_fa_node, kIndex2);
-  acc_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index));
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index), acc_attention);
   std::vector<AnfNodePtr> output_tuple = {history_max, history_sum, softmax_out, acc_attention};
   auto attention_results = NewMakeTupleNode(output_tuple);
   return attention_results;
@@ -2669,7 +2674,9 @@ bool SetFlashSP(const FuncGraphPtr &func_graph) {
   auto ret = func_graph->get_return();
   auto origin_nodes_topological = DeepScopedGraphSearch(ret);
 
-  std::vector<CNodePtr> fa_score_nodes = FindFWFlashAttentionScore(manager, origin_nodes_topological);
+  bool fine_grained_interleave = false;
+  std::vector<CNodePtr> fa_score_nodes =
+    FindFWFlashAttentionScore(manager, origin_nodes_topological, &fine_grained_interleave);
   bool is_changed = false;
 
   for (size_t i = 0; i < fa_score_nodes.size(); ++i) {
@@ -2681,6 +2688,9 @@ bool SetFlashSP(const FuncGraphPtr &func_graph) {
         (!fa_score_node_prim->HasAttr(parallel::ENABLE_FLASH_SP) ||
          !GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_FLASH_SP))))) {
       continue;
+    }
+    if (fine_grained_interleave) {
+      MS_LOG(EXCEPTION) << "RingAttention is not supported when fine_grained_interleave is enable.";
     }
     auto fsp_info = FSPInfo(fa_score_node);
     if (!CheckUserSettings(func_graph, &fsp_info)) {

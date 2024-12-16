@@ -78,6 +78,13 @@ namespace parallel {
 namespace {
 constexpr int kRingStep2 = 2;
 
+struct FAGradInputInfo {
+  AnfNodePtr attn_out;
+  AnfNodePtr max;
+  AnfNodePtr sum;
+  AnfNodePtr dout;
+};
+
 std::string GetPreviousStr(std::string origin_str) {
   size_t underscore_pos = origin_str.find('_');
   if (underscore_pos == std::string::npos) {
@@ -172,18 +179,27 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *at
       dout_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_MAX)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_MAX));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_MAX, node) && !node->HasPrimalAttr("forward_unique_id")) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_MAX);
+      if (softmax_max_map->count(flash_index) != 0 && !node->HasAttr("duplicated")) {
+        return;
+      }
       softmax_max_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_SUM)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_SUM));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_SUM, node) && !node->HasPrimalAttr("forward_unique_id")) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_SUM);
+      if (softmax_sum_map->count(flash_index) != 0 && !node->HasAttr("duplicated")) {
+        return;
+      }
       softmax_sum_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_ATTN)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_ATTN));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_ATTN, node) && !node->HasPrimalAttr("forward_unique_id")) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_ATTN);
+      if (attention_out_map->count(flash_index) != 0 && !node->HasAttr("duplicated")) {
+        return;
+      }
       attention_out_map->insert({flash_index, node});
     }
   }
@@ -197,7 +213,10 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
                     std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *dout_map) {
   auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
   for (auto &anf_node : *origin_nodes_topological) {
-    CNodePtr node = anf_node->cast<CNodePtr>();
+    if (!anf_node->isa<CNode>()) {
+      continue;
+    }
+    auto node = anf_node->cast<CNodePtr>();
     if (node != nullptr && node->HasPrimalAttr(FLASH_LOSS_NODE) && pipeline_stages <= 1) {
       (*loss_node) = node;
     }
@@ -226,10 +245,12 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
       (*grad_recv_map).insert({flash_index, node});
     }
 
-    if (IsPrimitiveCNode(node, prim::kPrimReceive) && node->HasPrimalAttr(RING_ATTENTION_INDEX)) {
-      auto flash_index = GetValue<std::string>(node->GetPrimalAttr(RING_ATTENTION_INDEX));
+    if (IsPrimitiveCNode(node, prim::kPrimReceive) && common::AnfAlgo::HasNodeAttr(RING_ATTENTION_INDEX, node)) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<std::string>(node, RING_ATTENTION_INDEX);
       if (node->HasPrimalAttr("forward_unique_id")) {
         (*grad_send_map).insert({flash_index, node});
+      } else if (node->HasAttr("duplicated")) {
+        (*kv_recv_map).insert({flash_index + "duplicated", node});
       } else {
         (*kv_recv_map).insert({flash_index, node});
       }
@@ -827,53 +848,58 @@ void PrepareFAGradInput(const FuncGraphPtr &graph,
   AnfNodePtr cur_attn_out;
   AnfNodePtr cur_dout;
   AnfNodePtr cur_max;
+  FAGradInputInfo full_info;
+  FAGradInputInfo half_info;
   AnfNodePtr cur_sum;
   int64_t step = 0;
+  int64_t last_fa_index = -1;
   for (auto it = grad_fa_map.rbegin(); it != grad_fa_map.rend(); ++it, ++step) {
-    string fa_index = it->first;
-    size_t underscore_pos = fa_index.find('_');
-    std::string first_number_str = fa_index.substr(0, underscore_pos);
-    int first_number = std::stoi(first_number_str);
-    auto dout_node = dout_map.find(first_number)->second;
-    MS_EXCEPTION_IF_NULL(dout_node);
-    dout_node = dout_node->cast<CNodePtr>()->input(kIndex2);
-    auto filter_func = [&](const CNodePtr &cnode) {
-      bool filter = IsPrimitiveCNode(cnode, prim::kPrimSplit) || IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem) ||
-                    IsPrimitiveCNode(cnode, prim::kPrimDepend);
-      return std::make_pair(filter, 1);
-    };
-    auto full_dout_node = GetInputNodeWithFilter(dout_node, filter_func);
-    auto softmax_max_node = softmax_max_map.find(first_number)->second;
-    MS_EXCEPTION_IF_NULL(softmax_max_node);
-    auto softmax_sum_node = softmax_sum_map.find(first_number)->second;
-    MS_EXCEPTION_IF_NULL(softmax_sum_node);
-    auto attention_out_node = attention_out_map.find(first_number)->second;
-    MS_EXCEPTION_IF_NULL(attention_out_node);
+    size_t underscore_pos = it->first.find('_');
+    std::string str_fa_index = it->first.substr(0, underscore_pos);
+    int fa_index = std::stoi(str_fa_index);
+    if (fa_index != last_fa_index) {
+      auto dout_node = dout_map.find(fa_index)->second;
+      MS_EXCEPTION_IF_NULL(dout_node);
+      dout_node = dout_node->cast<CNodePtr>()->input(kIndex2);
+      auto filter_func = [&](const CNodePtr &cnode) {
+        bool filter = IsPrimitiveCNode(cnode, prim::kPrimSplit) || IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem) ||
+                      IsPrimitiveCNode(cnode, prim::kPrimDepend);
+        return std::make_pair(filter, 1);
+      };
+      full_info.dout = GetInputNodeWithFilter(dout_node, filter_func);
+      MS_EXCEPTION_IF_NULL(full_info.dout);
+      full_info.max = softmax_max_map.find(fa_index)->second;
+      MS_EXCEPTION_IF_NULL(full_info.max);
+      full_info.sum = softmax_sum_map.find(fa_index)->second;
+      MS_EXCEPTION_IF_NULL(full_info.sum);
+      full_info.attn_out = attention_out_map.find(fa_index)->second;
+      MS_EXCEPTION_IF_NULL(full_info.attn_out);
+
+      auto split_max = NewSplitNode(full_info.max, kDim2, kIndex2);
+      half_info.max = NewTupleGetItemNode(split_max, kIndex1);
+      auto split_sum = NewSplitNode(full_info.sum, kDim2, kIndex2);
+      half_info.sum = NewTupleGetItemNode(split_sum, kIndex1);
+      auto axis = input_layout == ops::FASInputLayoutMode::BSH ? kDim1 : kDim2;
+      auto split_attn = NewSplitNode(full_info.attn_out, axis, kIndex2);
+      half_info.attn_out = NewTupleGetItemNode(split_attn, kIndex1);
+      auto split_dout = NewSplitNode(full_info.dout, axis, kIndex2);
+      half_info.dout = NewTupleGetItemNode(split_dout, kIndex1);
+      last_fa_index = fa_index;
+    }
 
     auto grad_fa_node = it->second->cast<CNodePtr>();
     auto sp_num = GetValue<int64_t>(grad_fa_node->GetPrimalAttr("sp_num"));
     step = step % sp_num;
-    if (step >= sp_num - rank - 1) {
-      cur_attn_out = attention_out_node;
-      cur_dout = full_dout_node;
-      cur_max = softmax_max_node;
-      cur_sum = softmax_sum_node;
-    } else {
-      auto split_max = NewSplitNode(softmax_max_node, kDim2, kIndex2);
-      cur_max = NewTupleGetItemNode(split_max, kIndex1);
-      auto split_sum = NewSplitNode(softmax_sum_node, kDim2, kIndex2);
-      cur_sum = NewTupleGetItemNode(split_sum, kIndex1);
-      auto axis = input_layout == ops::FASInputLayoutMode::BSH ? kDim1 : kDim2;
-      auto split_attn = NewSplitNode(attention_out_node, axis, kIndex2);
-      cur_attn_out = NewTupleGetItemNode(split_attn, kIndex1);
-      cur_dout = dout_node;
-    }
-
+    bool full_q = step >= sp_num - rank - 1;
+    cur_attn_out = full_q ? full_info.attn_out : half_info.attn_out;
+    cur_dout = full_q ? full_info.dout : half_info.dout;
+    cur_max = full_q ? full_info.max : half_info.max;
+    cur_sum = full_q ? full_info.sum : half_info.sum;
     MS_EXCEPTION_IF_NULL(cur_attn_out);
     MS_EXCEPTION_IF_NULL(cur_dout);
     MS_EXCEPTION_IF_NULL(cur_max);
     MS_EXCEPTION_IF_NULL(cur_sum);
-    auto fwd_graph = softmax_max_node->func_graph();
+    auto fwd_graph = cur_sum->func_graph();
     auto bck_graph = grad_fa_node->func_graph();
     if (fwd_graph != bck_graph) {
       vector<AnfNodePtr> outputs;
@@ -912,6 +938,7 @@ void AdjustCommDepForCPGrad(const FuncGraphPtr &graph, const CNodePtr &pre_recv_
     auto grad_fa_input = (*grad_fa_node)->input(1);
     grad_fa_input = CreateDepend(grad_fa_input, pre_fa_grad, *grad_fa_node);
     grad_fa_input = CreateDepend(grad_fa_input, *dkv_recv_node, *grad_fa_node);
+    grad_fa_input = CreateDepend(grad_fa_input, pre_recv_kv_dkv_node, *grad_fa_node);
     manager->SetEdge(*grad_fa_node, 1, grad_fa_input);
 
     manager->Replace(*grad_fa_node, CreateDepend(*grad_fa_node, *dkv_recv_node, *grad_fa_node));
@@ -931,6 +958,7 @@ void AdjustCommDepForCPGrad(const FuncGraphPtr &graph, const CNodePtr &pre_recv_
     auto grad_fa_input = (*grad_fa_node)->input(1);
     grad_fa_input = CreateDepend(grad_fa_input, pre_fa_grad, *grad_fa_node);
     grad_fa_input = CreateDepend(grad_fa_input, *dkv_send_node, *grad_fa_node);
+    grad_fa_input = CreateDepend(grad_fa_input, pre_send_kv_dkv_node, *grad_fa_node);
     manager->SetEdge(*grad_fa_node, 1, grad_fa_input);
 
     manager->Replace(*grad_fa_node, CreateDepend(*grad_fa_node, *dkv_send_node, *grad_fa_node));
@@ -959,6 +987,10 @@ void CreateCommForFirstStep(const FuncGraphPtr &graph, const std::map<std::strin
   auto sp_num = GetValue<int64_t>((*grad_fa_node)->GetPrimalAttr("sp_num"));
   auto first_str = GetFirstStr(fa_index, sp_num - 1);  // last send/recv node in fwd graph
   auto kv_concat = kv_recv_map.at(first_str);
+  auto duplicated_index = first_str + "duplicated";
+  if (kv_recv_map.count(duplicated_index) != 0) {
+    kv_concat = kv_recv_map.at(duplicated_index);
+  }
   MS_EXCEPTION_IF_NULL(kv_concat);
   AnfNodePtr recv_kv;
   auto fwd_graph = kv_concat->func_graph();
@@ -972,7 +1004,7 @@ void CreateCommForFirstStep(const FuncGraphPtr &graph, const std::map<std::strin
   }
   MS_EXCEPTION_IF_NULL(recv_kv);
   recv_kv = CreateDepend(recv_kv, dout, *grad_fa_node);
-  if (pos % kIndex2 == kIndex0) {
+  if (pos % kIndex2 == 1) {
     *kv_send_node =
       NewSendNode(recv_kv, 0, send_rank_id, neigh_shape, output_type_id, g_device_manager->world_group(), rank_list);
     *kv_recv_node = NewReceiveNode(*kv_send_node, 0, recv_rank_id, neigh_shape, output_type_id,
@@ -1151,11 +1183,10 @@ bool OverlapGradRingAttentionCP(
     if (grad_send_map.count(it->first) != 0) {
       dkv_send_node = grad_send_map.at(it->first)->cast<CNodePtr>();
     }
-    auto new_str = GetPreviousStr(it->first);
-    if (grad_fa_map.count(new_str) != 0) {
-      pre_fa_grad = grad_fa_map.at(new_str)->cast<CNodePtr>();
-    }
     if (step == 0) {
+      pre_fa_grad = nullptr;
+      pre_recv_kv_dkv_node = nullptr;
+      pre_send_kv_dkv_node = nullptr;
       CreateCommForFirstStep(graph, fa_map, kv_recv_map, it->first, &grad_fa_node, &kv_send_node, &kv_recv_node);
       pre_recv_kv_dkv_node = kv_send_node;
       pre_send_kv_dkv_node = kv_recv_node;
@@ -1165,6 +1196,7 @@ bool OverlapGradRingAttentionCP(
       pre_recv_kv_dkv_node = dkv_recv_node;
       pre_send_kv_dkv_node = dkv_send_node;
     }
+    pre_fa_grad = grad_fa_node;
   }
   return true;
 }

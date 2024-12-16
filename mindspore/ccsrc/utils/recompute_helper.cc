@@ -26,11 +26,15 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "include/common/utils/utils.h"
+#include "frontend/parallel/ops_info/ops_utils.h"
 
 namespace mindspore {
 constexpr auto kGradientsFlag = "Gradients";
 const int64_t fusion_id_increasement_size = 2000;
 bool CanNotRecomputed(const CNodePtr &node) {
+  if (node->HasPrimalAttr(parallel::RING_ATTENTION_INDEX)) {
+    return false;
+  }
   static mindspore::HashSet<PrimitivePtr> not_recomputed_op_list{
     prim::kPrimDropoutGenMask, prim::kPrimLoad, prim::kPrimTupleGetItem, prim::kPrimSend, prim::kPrimReceive};
   if (IsPrimitiveCNode(node, prim::kPrimLoad)) {
