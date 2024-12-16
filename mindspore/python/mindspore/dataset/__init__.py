@@ -24,16 +24,16 @@ This module provides the following data loading methods to help users load datas
 - Standard format dataset loading: support loading dataset files in standard data formats, including
   `MindRecord <https://www.mindspore.cn/docs/en/master/model_train/dataset/record.html>`_,
   `TFRecord <https://tensorflow.google.cn/tutorials/load_data/tfrecord.md?hl=en>`_ .
-- Open source dataset loading: supports reading `Open source datasets <#Open Source>`_ ,
+- Open source dataset loading: supports reading `open source datasets <#open-source>`_ ,
   such as MNIST, CIFAR-10, CLUE, LJSpeech, etc.
 
 In addition, this module also provides data sampler, transformations, batching, as well as basic configurations
 such as random seed, parallelism setting and other features, to be used in conjunction with the dataset loading.
 
-- Data Sampler: Provides various common `Sampler <#Sampler>`_, such as RandomSampler, DistributedSampler, etc.
+- Data Sampler: Provides various common `sampler <#sampler-1>`_, such as RandomSampler, DistributedSampler, etc.
 - Data Transformations: Provides multiple `dataset operations <https://www.mindspore.cn/docs/en/master/api_python/
   dataset/mindspore.dataset.GeneratorDataset.html#pre-processing-operation>`_ to perform data augmentation, batching.
-- Basic Configuration: Provides `pipeline configuration <#Config>`_ for random seed setting, parallelism setting,
+- Basic Configuration: Provides `pipeline configuration <#config>`_ for random seed setting, parallelism setting,
   data recovery mode, etc.
 
 Descriptions of common dataset terms are as follows:

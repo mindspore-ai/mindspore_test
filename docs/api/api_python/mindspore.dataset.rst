@@ -12,7 +12,7 @@ MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计�
 
 此外，该模块也提供了对数据进行采样、增强变换、批处理等功能，以及随机种子、并行数等基础配置，与数据集加载API配合使用。
 
-- 数据采样器：提供了多种常见 `采样器 <#采样器>`_ ，如RandomSampler、DistributedSampler等。
+- 数据采样器：提供了多种常见 `采样器 <#采样器-1>`_ ，如RandomSampler、DistributedSampler等。
 - 数据增强变换：提供了多种 `数据集操作 <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/mindspore.dataset.GeneratorDataset.html#预处理操作>`_ ，以此对数据进行增强，批处理等。
 - 基础配置：提供了 `Pipeline配置 <#配置>`_ 用于随机种子设置、并行数设置、数据恢复模式等功能。
 
