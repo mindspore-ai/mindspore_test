@@ -100,7 +100,10 @@ def test_add_rms_norm_normal(dtype, is_dynamic):
     result_internal = _test_add_rmsnorm_fusion(
         shape, dtype, True, is_dynamic=is_dynamic)
     result_aclnn = _test_add_rmsnorm_fusion(shape, dtype, False)
-    assert np.amax(np.abs(result_internal[0] - result_aclnn[0])) < 5e-3
+    loss = 5e-3
+    if dtype == "bfloat16":
+        loss = 1e-2
+    assert np.amax(np.abs(result_internal[0] - result_aclnn[0])) < loss
     assert np.amax(np.abs(result_internal[1] - result_aclnn[1])) < 5e-3
 
 

@@ -448,6 +448,7 @@ constexpr char RECEIVE[] = "Receive";
 constexpr char SEND[] = "Send";
 constexpr char SHAPE_OP[] = "Shape";
 constexpr char SOFTMAX[] = "Softmax";
+constexpr char SWIGLU[] = "Swiglu";
 constexpr char REVERSEV2[] = "ReverseV2";
 constexpr char LOG_SOFTMAX[] = "LogSoftmax";
 constexpr char ACTIVATION[] = "Activation";

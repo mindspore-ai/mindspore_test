@@ -46,7 +46,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/inference_qbmm_allreduce_add_fusion.cc"
         "./ir_fusion_infer/shape_reshape_fusion.cc"
         "./ir_fusion_infer/add_layer_norm_fusion.cc"
-        "./ir_fusion_infer/add_rms_norm_fusion.cc"
+        "./ir_fusion/add_rms_norm_fusion.cc"
         "./ir_fusion_infer/rms_norm_quant_fusion.cc"
         "./ir_fusion_infer/add_rms_norm_quant_fusion.cc"
         "./ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.cc"

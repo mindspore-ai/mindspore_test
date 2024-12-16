@@ -47,6 +47,9 @@ class ActivationBase : public OperatorInfo {
   Status CheckOutputLayout() override;
   Status InferOutputTensorInfo() override;
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
+  void set_output_infer_tensor_layout(const TensorLayout &tensor_layout) {
+    output_infer_tensor_layout_ = tensor_layout;
+  }
 
  private:
   TensorLayout output_infer_tensor_layout_;
@@ -529,6 +532,19 @@ class PopulationCountInfo : public ActivationOther {
                       const PrimitiveAttrs &attrs)
       : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<ReLUCost>()) {}
   ~PopulationCountInfo() = default;
+};
+
+class SwigluInfo : public Softmax {
+ public:
+  SwigluInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+             const PrimitiveAttrs &attrs)
+      : Softmax(name, inputs_shape, outputs_shape, attrs) {}
+  ~SwigluInfo() override = default;
+
+ protected:
+  Status GetAttrs() override;
+  Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) override;
+  Status InferOutputTensorInfo() override;
 };
 }  // namespace parallel
 }  // namespace mindspore
