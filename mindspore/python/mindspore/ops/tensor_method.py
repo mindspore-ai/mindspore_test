@@ -374,6 +374,8 @@ from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import new_ones
 from mindspore.ops.function.array_func import new_zeros
 
+# 880
+from mindspore.ops.auto_generate import lerp, lerp_scalar
 
 ########################################functions########################################
 unique_dim_ = UniqueDim()
@@ -1238,3 +1240,12 @@ def tensor_new_ones(input, size, dtype=None):
 
 def tensor_new_zeros(input, size, dtype=None):
     return new_zeros(input, size, dtype=dtype)
+
+
+# 880
+def tensor_lerp(input, end, weight):
+    return lerp(input, end, weight)
+
+
+def tensor_lerp_scalar(input, end, weight):
+    return lerp_scalar(input, end, weight)
