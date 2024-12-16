@@ -203,7 +203,7 @@ def test_fallback_map_with_numpy():
     assert operator.eq(out, (2, 3, 4, 5))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_fallback_map_with_numpy_and_tensor():
     """
     Feature: JIT Fallback
