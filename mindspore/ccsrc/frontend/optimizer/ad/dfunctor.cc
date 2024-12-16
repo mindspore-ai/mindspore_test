@@ -320,7 +320,7 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const CNodePtr &k_app,
     bprop_app = tape_->NewCNodeInFront({bprop, node_adjoint->dout()});
     tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
   } else {
-    bprop_app = tape_->NewCNode({bprop, node_adjoint->dout()});
+    bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
   }
 
   if (HasSideEffectBackPropMem(cnode_morph)) {
