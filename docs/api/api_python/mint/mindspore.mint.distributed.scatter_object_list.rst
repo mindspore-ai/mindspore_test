@@ -17,7 +17,7 @@ mindspore.mint.distributed.scatter_object_list
         - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
 
     异常：
-        - **TypeError** - `src`不是int或 `group` 不是str。
+        - **TypeError** - `src` 不是int或 `group` 不是str。
         - **TypeError** - `scatter_object_input_list` 的大小不为通信组大小。
         - **RuntimeError** - 如果目标设备无效，或者后端无效，或者分布式初始化失败。
 

@@ -10,4 +10,4 @@ mindspore.set_deterministic
     框架默认不开启确定性计算。
     
     参数：
-        - **deterministic** (bool) 是否开启确定性计算。
+        - **deterministic** (bool) - 是否开启确定性计算。

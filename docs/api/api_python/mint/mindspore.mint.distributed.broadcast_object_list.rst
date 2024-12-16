@@ -16,7 +16,7 @@ mindspore.mint.distributed.broadcast_object_list
         - **device** (str，可选) - 当前为预留参数。默认值： ``None`` 。
 
     异常：
-        - **TypeError** - `src`不是int或 `group` 不是str。
+        - **TypeError** - `src` 不是int或 `group` 不是str。
         - **RuntimeError** - 如果目标设备无效，或者后端无效，或者分布式初始化失败。
 
     样例：
