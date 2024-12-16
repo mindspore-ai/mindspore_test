@@ -1572,12 +1572,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             tensor_operator_registry.get('__sub__')(input_x, input_y)
         ), tolerance)
 
-    def log1p(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.log1p`.
-        """
-        return tensor_operator_registry.get('log1p')(self)
-
     def logit(self, eps=None):
         r"""
         For details, please refer to :func:`mindspore.ops.logit`.
@@ -3224,12 +3218,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         s, _, _ = svd_op(full_matrices, compute_uv)(self)
         return s
 
-    def hardshrink(self, lambd=0.5):
-        r"""
-        For details, please refer to :func:`mindspore.ops.hardshrink`.
-        """
-        return tensor_operator_registry.get('hardshrink')(self, lambd)
-
     def heaviside(self, values):
         r"""
         For details, please refer to :func:`mindspore.ops.heaviside`.
@@ -3447,12 +3435,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             This is an experimental API that is subject to change or deletion.
         """
         return tensor_operator_registry.get("eigvals")()(self)
-
-    def erfc(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.erfc`.
-        """
-        return tensor_operator_registry.get("erfc")(self)
 
     def top_k(self, k, sorted=True):
         r"""
@@ -3831,12 +3813,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.equal`.
         """
         return tensor_operator_registry.get('equal')(self, other)
-
-    def expm1(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.expm1`.
-        """
-        return tensor_operator_registry.get('expm1')(self)
 
     def index_add(self, dim, index, source, *, alpha=1):
         r"""

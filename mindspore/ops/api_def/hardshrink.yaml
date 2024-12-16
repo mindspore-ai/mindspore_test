@@ -1,0 +1,7 @@
+hardshrink:
+  op_yaml: hshrink_op.yaml
+  py_method: tensor_hardshrink
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor
