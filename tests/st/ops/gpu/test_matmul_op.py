@@ -19,7 +19,7 @@ import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor, set_device
+from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore import dtype as mstype
@@ -27,6 +27,8 @@ from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common.api import _pynative_executor
 from mindspore.device_context.gpu.op_precision import matmul_allow_tf32
 from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
+
 
 class MatMulNet(nn.Cell):
     def __init__(self):
@@ -144,7 +146,7 @@ def test_matmul_tensor_core(mode):
     Expectation: The result match to the expect value.
     """
     context.set_context(mode=mode)
-    set_device("GPU")
+    set_device()
     m = 300
     n = 300
     k = 400
