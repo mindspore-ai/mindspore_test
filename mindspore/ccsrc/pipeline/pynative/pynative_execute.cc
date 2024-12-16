@@ -19,6 +19,7 @@
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/ir/ir_bprop.h"
 #include "pipeline/pynative/predict_out_type_map.h"
+#include "pipeline/pynative/op_function/auto_grad_register.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
@@ -217,6 +218,7 @@ void PyNativeExecutor::Init() {
   forward_executor_->RefreshForwardCallback();
   runtime::ProfilerAnalyzer::GetInstance().SetThreadIdToName(std::this_thread::get_id(), "Python");
   LazyFusionInit();
+  OpsAutoGradImplRegister();
 }
 
 void PyNativeExecutor::Sync() const {
@@ -338,6 +340,7 @@ void PyNativeExecutor::ChildAfterFork() {
     grad_executor_->ChildAfterFork();
   }
   runtime::OpRunner::ChildAfterFork();
+  OpsAutoGradImplRegister();
   MS_LOG(DEBUG) << "PyNativeExecutor reinitialize after fork done.";
 }
 

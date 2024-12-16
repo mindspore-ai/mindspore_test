@@ -42,5 +42,7 @@ inline bool NeedAutoGrad() {
 
 ${do_grad_op}
 
-${auto_grad_reg}
+void OpsAutoGradImplRegister() {
+  ${auto_grad_reg}
+}
 }  // namespace mindspore::pynative

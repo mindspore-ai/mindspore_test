@@ -38,7 +38,8 @@ class AutoGradImplGenerator(BaseGenerator):
         self.AUTO_GRAD_IMPL_CC_TEMPLATE = template.AUTO_GRAD_IMPL_CC_TEMPLATE
         self.DO_GRAD_FUNCTION_BODY_TEMPLATE = template.DO_GRAD_FUNCTION_BODY_TEMPLATE
         self.auto_grad_reg_template = Template(
-            "MS_AUTO_GRAD_REG(kernel::pyboost::OpType::k${class_name}, DoGrad${class_name});"
+            "kernel::pyboost::AutoGradFactory::Get()." + \
+            "Register(kernel::pyboost::OpType::k${class_name}, DoGrad${class_name});"
         )
         self.do_grad_op_args_with_type = Template(
             "const kernel::pyboost::OpPtr &op, ${input_args_with_type}"
