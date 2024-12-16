@@ -27,7 +27,7 @@ from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _reverse, \
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
-from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op
+from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op, inplace_index_add_op
 from mindspore.ops.auto_generate import inplace_copy_op
 from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
 
@@ -111,7 +111,7 @@ def index_add_(x, dim, index, source, *, alpha=1):
     Accumulate the elements of `alpha` times `source` into the `self` by adding to the indices
     in the order given in `index`.
     """
-    return F.auto_generate.index_add_(x, dim, index, source, alpha)
+    return inplace_index_add_op(x, dim, index, source, alpha)
 
 def mean(x, axis=None, keep_dims=False):
     """

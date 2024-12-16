@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INDEX_ADD__H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INDEX_ADD__H_
-
+#include "infer/ops_func_impl/inplace_index_add.h"
 #include <memory>
-#include <vector>
-#include "mindapi/base/types.h"
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API InplaceIndexAddExtFuncImpl : public OpFuncImpl {
- public:
-  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  bool GeneralInferRegistered() const override { return true; };
-};
+ShapeArray InplaceIndexAddExtFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                  const InferInfoPtrList &input_infos) const {
+  return ShapeArray{input_infos[kIndex0]->GetShape()};
+}
+
+std::vector<TypeId> InplaceIndexAddExtFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                          const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex0]->GetType()};
+}
 }  // namespace ops
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INDEX_ADD__H_
