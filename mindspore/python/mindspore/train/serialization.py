@@ -2950,7 +2950,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
             dictionary before loading or saving the segmented weights into the network. Default: None.
         max_process_num (int): Maximum number of processes. Default: 64.
-        return_param_dict (bool): Whether to return the param_dict. Default: False.
+        return_param_dict (bool): Whether to return the param_dict. Default: ``False``.
 
     Raises:
         TypeError: The type of inputs do not match the requirements.
