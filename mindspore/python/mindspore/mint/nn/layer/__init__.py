@@ -33,6 +33,7 @@ from mindspore.mint.nn.layer.activation import SiLU
 from mindspore.mint.nn.layer.basic import Dropout2d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool3d
 
 
 __all__ = [
@@ -46,5 +47,6 @@ __all__ = [
     'Dropout2d',
     'AdaptiveAvgPool1d',
     'AdaptiveAvgPool2d',
+    'AdaptiveAvgPool3d',
     'SyncBatchNorm',
 ]

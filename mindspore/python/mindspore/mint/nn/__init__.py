@@ -235,6 +235,8 @@ from mindspore.nn.layer import AvgPool1dExt as AvgPool1d
 from mindspore.nn.layer import AvgPool2dExt as AvgPool2d
 # 100
 from mindspore.nn.layer import SoftShrink as Softshrink
+# 152
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool3d
 # 159
 
 # 220
@@ -1139,6 +1141,8 @@ __all__ = [
     'AvgPool2d',
     # 100
     'SELU',
+    # 152
+    'AdaptiveAvgPool3d',
     # 159
     'GELU',
     # 220
