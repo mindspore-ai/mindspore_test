@@ -350,7 +350,7 @@ from mindspore.ops.auto_generate import isinf
 # 152
 
 # 153
-
+from mindspore.ops.auto_generate import acos_ext, acosh_ext, asin_ext, asinh_ext, atan_ext, dot
 # 154 isneginf
 from mindspore.ops.auto_generate import isneginf_ext
 
@@ -1213,7 +1213,62 @@ def fmod_scalar(input, other):
     return
 
 
-# 153
+# 153 acos, arccos; acosh, arccosh; asin, arcsin; asinh, arcsinh; atan, arctanh, dot
+def tensor_acos(input):
+    return acos_ext(input)
+
+
+def deprecated_tensor_acos(input):
+    return F.acos(input)
+
+
+def tensor_acosh(input):
+    return acosh_ext(input)
+
+
+def deprecated_tensor_acosh(input):
+    return F.acosh(input)
+
+
+def tensor_asin(input):
+    return asin_ext(input)
+
+
+def deprecated_tensor_asin(input):
+    return F.asin(input)
+
+
+def tensor_asinh(input):
+    return asinh_ext(input)
+
+
+def deprecated_tensor_asinh(input):
+    return F.asinh(input)
+
+
+def tensor_atan(input):
+    return atan_ext(input)
+
+
+def deprecated_tensor_atan(input):
+    return F.atan(input)
+
+
+def tensor_atanh(input):
+    return F.atanh(input)
+
+
+def tensor_tan(input):
+    return F.tan(input)
+
+
+def tensor_dot(input, other):
+    return dot(input, other)
+
+
+def deprecated_tensor_dot(input, other):
+    return F.dot(input, other)
+
 
 # 154
 def tensor_isneginf(input):
