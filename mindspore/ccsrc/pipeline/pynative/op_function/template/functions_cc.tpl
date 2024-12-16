@@ -31,6 +31,19 @@ namespace {
 inline const std::string &GetDeviceTarget() { return OpRunStatus::Get().device_target(); }
 
 using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
+
+CloneFunc inplace_clone_func{nullptr};
+}
+
+void RegisterCloneFunc(const CloneFunc &clone_func) {
+  inplace_clone_func = clone_func;
+}
+
+const CloneFunc& GetCloneFunc() {
+  if (inplace_clone_func == nullptr) {
+    MS_LOG(EXCEPTION) << "Clone func not register!";
+  }
+  return inplace_clone_func;
 }
 
 ${op_call_with_grad}

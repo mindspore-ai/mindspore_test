@@ -128,8 +128,8 @@ class CopySliceNode : public BackwardNode {
   }
   ~CopySliceNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
-  NodePtrList CallBackwardImpl(const NodePtr &grad_node, const tensor::BaseTensorPtr &view_tensor);
   std::string inplace_op_name() const { return inplace_op_name_; }
+  NodePtrList CallBackwardImpl(const NodePtr &grad_node, const tensor::BaseTensorPtr &view_tensor);
   void Release() override;
 
  private:

@@ -59,7 +59,6 @@ class PyboostFunctionsGenerator(BaseGenerator):
             'op_run_info->requires_grad);\n'
         )
         self.convert_template = Template("auto $arg_name = converter.${convert_func}(args, $arg_index);\n")
-
         self.PYBOOST_FUNCTION_TEMPLATE = template.PYBOOST_FUNCTION_TEMPLATE
         self.PYBOOST_COMM_FUNCTION_TEMPLATE = template.PYBOOST_COMM_FUNCTION_TEMPLATE
         self.REGISTER_DEFINE_TEMPLATE = template.REGISTER_DEFINE_TEMPLATE
@@ -100,8 +99,9 @@ class PyboostFunctionsGenerator(BaseGenerator):
             call_args_str = self._get_call_args_str(op_proto)
             grad_args_str = self._get_grad_args_str(op_proto)
             cast_args_str = self._get_cast_to_value_str(op_proto)
-            view_arg_str = self._get_view_str(op_proto.op_view, grad_args_str)
-            multi_output_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
+            view_arg_str = self._get_first_str(op_proto.op_view, grad_args_str)
+            view_arg_str = ", " + view_arg_str if view_arg_str else ''
+            multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
             # communication operators have different func template
             function_tpl = self.PYBOOST_COMM_FUNCTION_TEMPLATE \
                 if op_proto.op_dispatch.is_comm_op else self.PYBOOST_FUNCTION_TEMPLATE
@@ -119,7 +119,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
                                                      grad_args=grad_args_str,
                                                      cast_args=cast_args_str,
                                                      view_arg=view_arg_str,
-                                                     is_multi=multi_output_str,
+                                                     is_multi=multi_ouptut_str,
                                                      operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE + template.NEW_LINE
             pyboost_op_name = op_parser.get_pyboost_name()
@@ -349,21 +349,22 @@ class PyboostFunctionsGenerator(BaseGenerator):
             cast_args_str.append(cast_arg)
         return cast_args_str
 
-    def _get_view_str(self, is_view_op: bool, grad_args: list):
+    def _get_first_str(self, is_view_or_inplace: bool, grad_args: list):
         """
         Generates the view base str of arguments for the operator.
 
         This method constructs a list of argument names that need to be cast to their corresponding types.
 
         Args:
-            op_proto (OpProto): The operator prototype containing the argument information.
+            is_view_or_inplace (bool): Whether the op is view op or inplace op.
+            grad_args (list): grad args
 
         Returns:
-            str: Formatted view argument names.
+            str: Formatted view or inplace first argument names.
         """
-        view_arg_str = ''
+        arg_str = ''
         for i, grad_arg in enumerate(grad_args):
-            if is_view_op and i == 0:
-                view_arg_str = ", " + grad_arg
+            if is_view_or_inplace and i == 0:
+                arg_str = grad_arg
                 break
-        return view_arg_str
+        return arg_str

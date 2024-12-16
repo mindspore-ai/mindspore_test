@@ -54,6 +54,11 @@ void Pipeline::WaitFrontend() {
   frontend_stage_->Wait();
 }
 
+void Pipeline::WaitBpropStage() {
+  GilReleaseWithCheck gil_release;
+  bprop_stage()->Wait();
+}
+
 void Pipeline::SetSpin(bool spin) {
   frontend_stage_->SetSpin(spin);
   bprop_stage_->SetSpin(spin);

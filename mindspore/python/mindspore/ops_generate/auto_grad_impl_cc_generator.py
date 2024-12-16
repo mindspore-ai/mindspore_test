@@ -110,7 +110,7 @@ class AutoGradImplGenerator(BaseGenerator):
                 args_list.append(f"const {input_dtype} &{op_arg.arg_name}_tensor")
             else:
                 if not with_optional and is_optional_param(op_arg):
-                    args_list.append(f"PyNativeAlgo::PyBoost::OptionalToValue({op_arg.arg_name}_tensor)")
+                    args_list.append(f"OptionalToValue({op_arg.arg_name}_tensor)")
                 else:
                     args_list.append(f"{op_arg.arg_name}_tensor")
         return args_list

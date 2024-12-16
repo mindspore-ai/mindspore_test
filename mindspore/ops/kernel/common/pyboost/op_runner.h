@@ -67,7 +67,8 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   const std::vector<tensor::BaseTensorPtr> &outputs() const { return outputs_; }
   void set_outputs(const std::vector<tensor::BaseTensorPtr> &outputs) { outputs_ = outputs; }
   void set_stream_id(size_t stream_id) { stream_id_ = stream_id; }
-
+  void set_clone_tensor(const tensor::BaseTensorPtr &clone_tensor) { clone_tensor_ = clone_tensor; }
+  const tensor::BaseTensorPtr &clone_tensor() { return clone_tensor_; }
   void set_comm_handle(const CommHandlePtr &comm_handle) { comm_handle_ = comm_handle; }
   CommHandlePtr comm_handle() const { return comm_handle_; }
 
@@ -219,6 +220,8 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   CommHandlePtr comm_handle_{nullptr};
   // Forward output for grad.
   std::vector<tensor::BaseTensorPtr> outputs_{};
+  // clone inplace tensor, temp method, later we will erease it.
+  tensor::BaseTensorPtr clone_tensor_{nullptr};
   const DeviceContext *device_context_{nullptr};
   // Device address promise for multi-stage pipeline.
   std::vector<pynative::DeviceAddressPromisePtr> device_sync_promises_;

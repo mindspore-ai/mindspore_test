@@ -37,8 +37,10 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "include/common/pynative/abstract_converter.h"
+#include "mindspore/ops/kernel/common/pyboost/auto_generate/clone.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
+#include "mindspore/ops/kernel/functions/auto_generate/functions.h"
 
 namespace mindspore {
 namespace pynative {
@@ -56,6 +58,12 @@ using AutoGradMetaData = autograd::AutoGradMetaData;
 using ViewAutoGradMetaData = autograd::ViewAutoGradMetaData;
 using ViewAutoGradMetaDataPtr = std::shared_ptr<ViewAutoGradMetaData>;
 using ViewInfo = autograd::ViewInfo;
+
+class CloneFuncRegister {
+ public:
+  CloneFuncRegister() { kernel::pyboost::RegisterCloneFunc(AutoGradUtil::CheckAndCloneInplaceInput); }
+};
+static CloneFuncRegister clone_func_register;
 namespace {
 AnfNodePtr CreateMakeTupleNode(const KernelGraphPtr &tape, const ValueSequencePtr &tuple,
                                const abstract::AbstractSequencePtr &abs_seq, const SpecialType &type) {
@@ -211,7 +219,7 @@ InputType AutoGradUtil::SetValueGradInfo(const ValuePtr &value, InputType grad_t
   return grad_type;
 }
 
-InputType AutoGradUtil::SetTensorGradInfo(const tensor::BaseTensorPtr &tensor, OperatorType op_type) {
+InputType AutoGradUtil::SetTensorGradInfo(const tensor::BaseTensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(tensor);
   if (auto_grad_meta_data != nullptr) {
@@ -223,13 +231,6 @@ InputType AutoGradUtil::SetTensorGradInfo(const tensor::BaseTensorPtr &tensor, O
     MS_LOG(DEBUG) << "Create new auto grad meta for tensor " << tensor->id();
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
     autograd::RegisterHook::UpdateTensorBackwardHook(auto_grad_meta_data, tensor->id());
-    tensor->set_auto_grad_meta_data(auto_grad_meta_data);
-  } else if (op_type == OperatorType::kViewOp) {
-    // If base tensor is input of view op, we need construct auto_grad_meta_data for base tensor, to
-    // avoid view tensor being inplaced by inpalce op, which will need update grad info of base tensor.
-    // we need construct auto_grad_meta_data in second thread rather than bprop thread.
-    MS_LOG(DEBUG) << "Create new auto grad meta for input tensor of view op " << tensor->id();
-    auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
     tensor->set_auto_grad_meta_data(auto_grad_meta_data);
   }
   // Set weight tensor grad type
@@ -400,20 +401,28 @@ void AutoGradUtil::BumpVersion(const ValuePtr &value) {
   tensor->BumpVersion();
 }
 
+bool AutoGradUtil::NeedGrad(const tensor::BaseTensorPtr &input_tensor) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  if (IsParamRequiresGrad(input_tensor)) {
+    return true;
+  }
+  auto auto_grad_meta_data = input_tensor->auto_grad_meta_data();
+  if (auto_grad_meta_data != nullptr) {
+    auto variable = auto_grad_meta_data->UnsafeGetVariableImpl();
+    if (variable != nullptr) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool AutoGradUtil::NeedGrad(const std::vector<ValuePtr> &input_values) {
   for (const ValuePtr &input_arg : input_values) {
     MS_EXCEPTION_IF_NULL(input_arg);
     if (input_arg->isa<tensor::BaseTensor>()) {
-      auto input_tensor = input_arg->cast<tensor::BaseTensorPtr>();
-      auto auto_grad_meta_data = input_tensor->auto_grad_meta_data();
-      if (auto_grad_meta_data != nullptr) {
-        if (auto_grad_meta_data->input_type() == InputType::kParameter && IsParamRequiresGrad(input_tensor)) {
-          return true;
-        }
-        auto variable = auto_grad_meta_data->UnsafeGetVariableImpl();
-        if (variable != nullptr) {
-          return true;
-        }
+      const auto input_tensor = input_arg->cast<tensor::BaseTensorPtr>();
+      if (NeedGrad(input_tensor)) {
+        return true;
       }
     } else if (input_arg->isa<ValueSequence>()) {
       auto value_seq = input_arg->cast<ValueSequencePtr>()->value();
@@ -788,7 +797,31 @@ void AutoGradUtil::CacheOutputAbstract(const ValuePtr &v, const abstract::Abstra
     }
   }
 }
+
+void AutoGradUtil::CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inplace_op, const PrimitivePtr &prim,
+                                             const std::string &device_target, ValuePtrList &&inputs) {
+  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  ValuePtr val = nullptr;
+  if (!BpropExpander::IsCloneInplaceInput(BpropCallback(prim, &inputs, &val))) {
+    return;
+  }
+  MS_LOG(DEBUG) << "Begin clone src value for op " << prim->name();
+  auto op = CREATE_PYBOOST_OP(Clone, device_target);
+  (void)op->Call(input_tensor);
+  inplace_op->set_clone_tensor(op->output(0));
+}
 }  // namespace PyNativeAlgo
+
+bool BpropCallback::IsNotRequiresGrad(size_t index) const {
+  // Check Tensor need grad.
+  runtime::Pipeline::Get().WaitBpropStage();
+  return !PyNativeAlgo::AutoGradUtil::NeedGrad({(*inputs_)[index]});
+}
+
+void BpropCallback::FreeDeviceAddress(ValuePtr *value) const {
+  *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
+}
 }  // namespace pynative
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_GRAD_UTILS_H_
