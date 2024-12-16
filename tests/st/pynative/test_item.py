@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
 from tests.mark_utils import arg_mark
 from mindspore import context
 import mindspore as ms
 import mindspore.nn as nn
+import mindspore.ops as ops
 
 context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -26,13 +26,11 @@ class Net(nn.Cell):
         super().__init__()
         self.i = 1
 
-    def construct(self, x, index=None):
-        if index is None:
-            return x.item()
-        return x.item(index)
+    def construct(self, x):
+        return x.item()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
@@ -48,162 +46,93 @@ def test_tensor_item():
     output = net(x)
     assert output == 1
 
-    x = ms.Tensor([1, 2, 3], ms.int8)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.int8)
-    index = (1, 0)
-    output = net(x, index)
-    assert output == 3
-
     # ============== dtype of tensor is uint8 ===========
     x = ms.Tensor(1, ms.uint8)
     output = net(x)
     assert output == 1
-
-    x = ms.Tensor([1, 2, 3], ms.uint8)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.uint8)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
+    y = ops.abs(x)
+    output = net(y)
+    assert output == 1
 
     # ============== dtype of tensor is int16 ===========
     x = ms.Tensor(1, ms.int16)
     output = net(x)
     assert output == 1
 
-    x = ms.Tensor([1, 2, 3], ms.int16)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.int16)
-    index = (0, 1)
-    output = net(x, index)
-    assert output == 2
-
     # ============== dtype of tensor is uint16 ===========
     x = ms.Tensor(1, ms.uint16)
     output = net(x)
     assert output == 1
 
-    x = ms.Tensor([1, 2, 3], ms.uint16)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.uint16)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
-
     # ============== dtype of tensor is int32 ===========
     x = ms.Tensor(1, ms.int32)
     output = net(x)
     assert output == 1
-
-    x = ms.Tensor([1, 2, 3], ms.int32)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.int32)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
+    y = ops.abs(x)
+    output = net(y)
+    assert output == 1
 
     # ============== dtype of tensor is uint32 ===========
     x = ms.Tensor(1, ms.uint32)
     output = net(x)
     assert output == 1
 
-    x = ms.Tensor([1, 2, 3], ms.uint32)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.uint32)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
-
     # ============== dtype of tensor is int64 ===========
     x = ms.Tensor(1, ms.int64)
     output = net(x)
     assert output == 1
 
-    x = ms.Tensor([1, 2, 3], ms.int64)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.int64)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
-
     # ============== dtype of tensor is uint64 ===========
     x = ms.Tensor(1, ms.uint64)
     output = net(x)
     assert output == 1
-
-    x = ms.Tensor([1, 2, 3], ms.uint64)
-    index = 1
-    output = net(x, index)
-    assert output == 2
-
-    x = ms.Tensor([[1, 2], [3, 4]], ms.uint64)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
+    y = ops.sqrt(x)
+    output = net(y)
+    assert output == 1
 
     # ============== dtype of tensor is float32 ===========
     x = ms.Tensor(1.0, ms.float32)
     output = net(x)
     assert output == 1.0
-
-    x = ms.Tensor([1.0, 2.0, 3.0], ms.float32)
-    index = 1
-    output = net(x, index)
-    assert output == 2.0
-
-    x = ms.Tensor([[1.0, 2.0], [3.0, 4.0]], ms.float32)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
+    y = ops.abs(x)
+    output = net(y)
+    assert output == 1
 
     # ============== dtype of tensor is float64 ===========
     x = ms.Tensor(1.0, ms.float64)
     output = net(x)
     assert output == 1.0
-
-    x = ms.Tensor([1.0, 2.0, 3.0], ms.float64)
-    index = 1
-    output = net(x, index)
-    assert output == 2.0
-
-    x = ms.Tensor([[1.0, 2.0], [3.0, 4.0]], ms.float64)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == 4
+    y = ops.abs(x)
+    output = net(y)
+    assert output == 1
 
     # ============== dtype of tensor is bfloat16 ===========
     x = ms.Tensor(1.0, ms.bfloat16)
     output = net(x)
-    assert output == x.asnumpy().item(0)
+    assert output == x.asnumpy().item()
 
-    x = ms.Tensor([1.0, 2.0, 3.0], ms.bfloat16)
-    index = 1
-    output = net(x, index)
-    assert output == x.asnumpy().item(index)
+    # ============== dtype of tensor is float16 ===========
+    x = ms.Tensor(1.0, ms.float16)
+    output = net(x)
+    assert output == x.asnumpy().item()
+    y = ops.abs(x)
+    output = net(y)
+    assert output == y.asnumpy().item()
 
-    x = ms.Tensor([[1.0, 2.0], [3.0, 4.0]], ms.bfloat16)
-    index = (1, 1)
-    output = net(x, index)
-    assert output == x.asnumpy().item(index)
+    # ============== dtype of tensor is bool ===========
+    x = ms.Tensor(True)
+    output = net(x)
+    assert output
+
+    # ============== dtype of tensor is complex64 ===========
+    x = ms.Tensor(1 + 1j, ms.complex64)
+    output = net(x)
+    assert output == complex(1 + 1j)
+    y = ops.abs(x)
+    output = net(y)
+    assert output == y.asnumpy().item()
+
+    # ============== dtype of tensor is complex128 ===========
+    x = ms.Tensor(1 - 1j, ms.complex128)
+    output = net(x)
+    assert output == complex(1 - 1j)

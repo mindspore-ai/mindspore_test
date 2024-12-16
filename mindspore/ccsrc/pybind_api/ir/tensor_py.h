@@ -134,8 +134,6 @@ class TensorPy {
                                         const TypePtr &type_ptr = nullptr);
 
   static py::object Item(const Tensor &tensor);
-  static py::object ItemWithIndex(const Tensor &tensor, const int index);
-  static py::object ItemWithTupleIndex(const Tensor &tensor, const py::tuple &index);
 
   static py::array SyncAsNumpy(const Tensor &tensor);
 
