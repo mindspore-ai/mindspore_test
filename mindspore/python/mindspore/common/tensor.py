@@ -1423,12 +1423,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             shape = shape[0]
         return tensor_operator_registry.get('reshape')(self, shape)
 
-    def t(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.t`.
-        """
-        return tensor_operator_registry.get("t")(self)
-
     def bitwise_and(self, other):
         """
         For details, please refer to :func:`mindspore.ops.bitwise_and`.
