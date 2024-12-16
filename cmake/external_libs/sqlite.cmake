@@ -1,11 +1,5 @@
-if(ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/sqlite/repository/archive/version-3.46.1.tar.gz")
-    set(SHA256 "99c578c9326b12374a64dedae88a63d17557b5d2b0ac65122be67cb3fa2703da")
-else()
-    set(REQ_URL "https://github.com/sqlite/sqlite/archive/version-3.46.1.tar.gz")
-    set(SHA256 "99c578c9326b12374a64dedae88a63d17557b5d2b0ac65122be67cb3fa2703da")
-endif()
-
+set(REQ_URL "https://github.com/sqlite/sqlite/archive/version-3.46.1.tar.gz")
+set(SHA256 "99c578c9326b12374a64dedae88a63d17557b5d2b0ac65122be67cb3fa2703da")
 
 if(WIN32)
     if(MSVC)
