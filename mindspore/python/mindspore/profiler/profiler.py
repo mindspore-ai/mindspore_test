@@ -33,6 +33,48 @@ from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
 def tensor_board_trace_handler():
+    """
+    For each step in dynamic graph mode, call this method for online analyse.
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.dataset as ds
+        >>> from mindspore import context, nn, Profiler
+        >>> from mindspore.profiler import schedule, tensor_board_trace_handler
+        >>>
+        >>> class Net(nn.Cell):
+        ...     def __init__(self):
+        ...         super(Net, self).__init__()
+        ...         self.fc = nn.Dense(2, 2)
+        ...
+        ...     def construct(self, x):
+        ...         return self.fc(x)
+        >>>
+        >>> def generator_net():
+        ...     for _ in range(2):
+        ...         yield np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32)
+        >>>
+        >>> def train(test_net):
+        ...     optimizer = nn.Momentum(test_net.trainable_params(), 1, 0.9)
+        ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+        ...     data = ds.GeneratorDataset(generator_net(), ["data", "label"])
+        ...     model = ms.train.Model(test_net, loss, optimizer)
+        ...     model.train(1, data)
+        >>>
+        >>> if __name__ == '__main__':
+        ...     context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        ...
+        ...     net = Net()
+        ...     STEP_NUM = 15
+        ...
+        ...     with Profiler(schedule=schedule(wait=1, warm_up=1, active=2, repeat=1, skip_first=2),
+        ...                   on_trace_ready=tensor_board_trace_handler) as prof:
+        ...         for i in range(STEP_NUM):
+        ...             train(net)
+        ...             prof.step()
+    """
+
     try:
         NPUProfilerAnalysis.online_analyse()
         if ProfilerContext().data_simplification:
@@ -383,7 +425,49 @@ class Profiler:
 
     def step(self) -> None:
         """
-        Step the profiler.
+        Used for Ascend, distinguish step collection and parsing performance data through schedule and on_trace_ready.
+
+        Raises:
+            RuntimeError: If the `start_profile` parameter is not set or the Profiler is not started.
+            RuntimeError: If the `schedule` parameter is not set.
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> import mindspore.dataset as ds
+            >>> from mindspore import context, nn, Profiler
+            >>> from mindspore.profiler import schedule, tensor_board_trace_handler
+            >>>
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.fc = nn.Dense(2, 2)
+            ...
+            ...     def construct(self, x):
+            ...         return self.fc(x)
+            >>>
+            >>> def generator_net():
+            ...     for _ in range(2):
+            ...         yield np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32)
+            >>>
+            >>> def train(test_net):
+            ...     optimizer = nn.Momentum(test_net.trainable_params(), 1, 0.9)
+            ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+            ...     data = ds.GeneratorDataset(generator_net(), ["data", "label"])
+            ...     model = ms.train.Model(test_net, loss, optimizer)
+            ...     model.train(1, data)
+            >>>
+            >>> if __name__ == '__main__':
+            ...     context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+            ...
+            ...     net = Net()
+            ...     STEP_NUM = 15
+            ...
+            ...     with Profiler(schedule=schedule(wait=1, warm_up=1, active=2, repeat=1, skip_first=2),
+            ...                   on_trace_ready=tensor_board_trace_handler) as prof:
+            ...         for i in range(STEP_NUM):
+            ...             train(net)
+            ...             prof.step()
         """
         if self.schedule_arg is None:
             logger.error("With no schedule in the Profiler, step takes no effect!")

@@ -115,3 +115,11 @@ mindspore.Profiler
 
         异常：
             - **RuntimeError** - Profiler没有开启。
+
+    .. py:method:: step()
+
+        用于在Ascend设备上，通过schedule和on_trace_ready区分步骤收集和解析性能数据。
+
+        异常：
+            - **RuntimeError** - 如果 `start_profile` 参数未设置或Profiler未开启。
+            - **RuntimeError** - 如果 `schedule` 参数未设置。
