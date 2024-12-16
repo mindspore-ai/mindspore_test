@@ -1,10 +1,25 @@
 div:
+  - op_yaml: divs_op.yaml
+    py_method: tensor_div
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+
   - op_yaml: div_op.yaml
     py_method: tensor_div
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor
+    interface: tensor, function
+
+  - op_yaml: divmods_op.yaml
+    py_method: tensor_div
+    kwonlyargs: rounding_mode
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
 
   - op_yaml: divmod_op.yaml
     py_method: tensor_div
@@ -12,4 +27,12 @@ div:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
+    interface: tensor, function
+
+  - op_yaml: deprecated/div_method.yaml
+    py_method: tensor_div
+    kwonlyargs: rounding_mode
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
     interface: tensor

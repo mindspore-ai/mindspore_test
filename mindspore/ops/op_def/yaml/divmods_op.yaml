@@ -1,0 +1,21 @@
+#operator divmods
+divmods:
+    args:
+        input:
+            dtype: tensor
+        other:
+            dtype: number
+        rounding_mode:
+            dtype: int
+            default: None
+            arg_handler: str_to_enum
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: DivMods
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: DivModsAscend

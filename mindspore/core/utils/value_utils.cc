@@ -88,7 +88,7 @@ template MS_CORE_API bool GetScalarCastValue(const std::string &op_name, const V
 template <typename T>
 std::optional<T> GetScalarValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<ValueAny>()) {
+  if (value->isa<ValueAny>() || value->isa<None>()) {
     return std::nullopt;
   }
 
@@ -146,11 +146,7 @@ template MS_CORE_API std::optional<bool> GetScalarValue(const ValuePtr &value);
 template <typename T>
 std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<ValueAny>()) {
-    return std::nullopt;
-  }
-
-  if (value->isa<None>()) {
+  if (value->isa<ValueAny>() || value->isa<None>()) {
     return std::nullopt;
   }
 

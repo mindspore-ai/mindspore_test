@@ -3,7 +3,7 @@ mindspore.mint.div
 
 .. py:function:: mindspore.mint.div(input, other, *, rounding_mode=None)
 
-    逐元素计算当前Tensor除以输入的另一个Tensor的商。
+    逐元素计算 `input` 除以 `other` 的商。
 
     .. math::
         out_{i} = input_{i} / other_{i}
@@ -14,8 +14,8 @@ mindspore.mint.div
         - 两个输入遵循隐式类型转换规则，使数据类型保持一致。
 
     参数：
-        - **input** (Union[Tensor, Number, bool]) - 第一个输入，为 Number，或 bool，或数据类型为 Number 或 bool 的 Tensor。
-        - **other** (Union[Tensor, Number, bool]) - 另一个输入，为数值型，或 bool，或数据类型为 Number 或 bool 的 Tensor。
+        - **input** (Union[Tensor, Number, bool]) - 被除数。
+        - **other** (Union[Tensor, Number, bool]) - 除数。
 
     关键字参数：
         - **rounding_mode** (str, 可选) - 应用于结果的舍入类型。三种类型被定义为 ``None`` 、 ``"floor"`` 和 ``"trunc"`` 。默认值： ``None`` 。

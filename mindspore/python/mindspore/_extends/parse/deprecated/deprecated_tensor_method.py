@@ -71,7 +71,7 @@ deprecated_tensor_method_map = {
     # 26 dim
 
     # 27 div
-
+    "div": "tensor_div",
     # 28 divide
 
     # 29 eq
