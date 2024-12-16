@@ -76,11 +76,29 @@ class FuncGraphBuilder {
 
   /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionEx.
   ///
-  /// \param[in] callable_value The callable value.
+  /// \param[in] callable_obj The callable python object.
   /// \param[in] inputs_obj The input python objects.
   ///
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNodeCallFunctionEx(const py::object &callable_obj,
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+
+  /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionEx.
+  ///
+  /// \param[in] callable_value The callable value.
+  /// \param[in] inputs_obj The input python objects.
+  ///
+  /// \return The abstract wrapper of the infer result.
+  AbstractWrapperPtr AddNodeCallFunctionEx(const ValuePtr &callable_value,
+                                           const AbstractWrapperPtrList &inputs_abstract_wrapper);
+
+  /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionKw.
+  ///
+  /// \param[in] callable_obj The callable python object.
+  /// \param[in] inputs_obj The input python objects.
+  ///
+  /// \return The abstract wrapper of the infer result.
+  AbstractWrapperPtr AddNodeCallFunctionKw(const py::object &callable_obj,
                                            const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   /// \brief Add a cnode to the graph with graph is parsed in ast and byte code is CallFunctionKw.
@@ -89,7 +107,7 @@ class FuncGraphBuilder {
   /// \param[in] inputs_obj The input python objects.
   ///
   /// \return The abstract wrapper of the infer result.
-  AbstractWrapperPtr AddNodeCallFunctionKw(const py::object &callable_obj,
+  AbstractWrapperPtr AddNodeCallFunctionKw(const ValuePtr &callable_value,
                                            const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   /// \brief Add a python object to graph.
@@ -279,6 +297,8 @@ class FuncGraphBuilder {
   AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) const;
 
   void UpdateParameterFuncGraph(const AnfNodePtr &node);
+
+  static ParameterPtr AddParameter(const FuncGraphPtr &fg);
 
   static void SetParameterName(const ParameterPtr &param);
 
