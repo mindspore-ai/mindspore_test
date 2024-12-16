@@ -50,6 +50,10 @@ class PIJitCaptureContext:
         elif jit_config is not None:
             config.update(jit_config)
 
+        disable_pijit = config.get('_disable_pijit', None)
+        if disable_pijit is not None and not callable(disable_pijit):
+            raise TypeError(f"The config '_disable_pijit' must be callable but got {disable_pijit}")
+
         self.config = config
         self.input_signature = input_signature
         self.ret = None
@@ -72,6 +76,10 @@ class PIJitCaptureContext:
     def _wrapper(self):
         def _fn(*args, **kwds):
             PreJit(args, kwds)
+            disable_pijit = self.config.get('_disable_pijit', None)
+            if disable_pijit is not None and disable_pijit(args, kwds):
+                return self.fn(*args, **kwds)
+
             with self:
                 self.ret = self.fn(*args, **kwds)
                 return self.ret
