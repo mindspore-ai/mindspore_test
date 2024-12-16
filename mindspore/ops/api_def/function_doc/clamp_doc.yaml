@@ -23,6 +23,7 @@ clamp:
         - The data type of `input`, `min` and `max` should support implicit type conversion and cannot be bool type.
     
     Args:
+        input (Tensor): Input data, which type is Tensor. Tensors of arbitrary dimensions are supported.
         min (Union(Tensor, float, int), optional): The minimum value. Default: ``None`` .
         max (Union(Tensor, float, int), optional): The maximum value. Default: ``None`` .
     
