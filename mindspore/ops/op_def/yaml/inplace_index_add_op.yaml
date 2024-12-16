@@ -1,5 +1,5 @@
-#operator index_add_
-index_add_:
+#operator inplace_index_add
+inplace_index_add:
   args:
     input:
         dtype: tensor
@@ -20,6 +20,8 @@ index_add_:
       inplace: input
   labels:
     side_effect_mem: True
+  function:
+    disable: True
   class:
     name: InplaceIndexAddExt
   dispatch:

@@ -87,9 +87,9 @@ def test_tensor_index_add_(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
-          essential_mark='essential')
+          essential_mark='unessential')
 def test_index_add__dynamic_shape():
     """
     Feature: dynamic shape forward, backward features.

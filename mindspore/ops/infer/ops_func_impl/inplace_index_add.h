@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/index_add_.h"
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_INDEX_ADD_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_INDEX_ADD_H_
+
 #include <memory>
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include <vector>
+#include "mindapi/base/types.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-ShapeArray InplaceIndexAddExtFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                  const InferInfoPtrList &input_infos) const {
-  return ShapeArray{input_infos[kIndex0]->GetShape()};
-}
-
-std::vector<TypeId> InplaceIndexAddExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                          const InferInfoPtrList &input_infos) const {
-  return {input_infos[kIndex0]->GetType()};
-}
+class OPS_API InplaceIndexAddExtFuncImpl : public OpFuncImpl {
+ public:
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
+};
 }  // namespace ops
 }  // namespace mindspore
+
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_INDEX_ADD_H_
