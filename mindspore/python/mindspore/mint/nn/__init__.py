@@ -253,6 +253,9 @@ from mindspore.nn.loss import L1LossExt as L1Loss
 # 254
 from mindspore.mint.nn.layer.pooling import MaxUnpool2d
 
+# 256
+from mindspore.mint.nn.layer.activation import Threshold
+
 # 257
 
 # 258
@@ -1322,6 +1325,8 @@ __all__ = [
     'L1Loss',
     # 254
     'MaxUnpool2d',
+    # 256
+    'Threshold',
     # 267
     'Mish',
     # 258

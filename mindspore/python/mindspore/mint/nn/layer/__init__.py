@@ -30,6 +30,7 @@ from mindspore.mint.nn.layer.normalization import LayerNorm
 from mindspore.mint.nn.layer.normalization import SyncBatchNorm
 from mindspore.mint.nn.layer.activation import LogSigmoid
 from mindspore.mint.nn.layer.activation import SiLU
+from mindspore.mint.nn.layer.activation import Threshold
 from mindspore.mint.nn.layer.basic import Dropout2d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
@@ -49,4 +50,5 @@ __all__ = [
     'AdaptiveAvgPool2d',
     'AdaptiveAvgPool3d',
     'SyncBatchNorm',
+    'Threshold',
 ]

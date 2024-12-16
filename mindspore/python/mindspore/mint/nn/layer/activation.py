@@ -296,10 +296,67 @@ class Tanh(Cell):
         return mint.nn.functional.tanh(input)
 
 
+class Threshold(Cell):
+    r"""
+    Compute the Threshold activation function element-wise.
+
+    The Threshold is defined as:
+
+    .. math::
+        y =
+        \begin{cases}
+        x, &\text{ if } x > \text{threshold} \\
+        \text{value}, &\text{ otherwise }
+        \end{cases}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        threshold (Union[int, float]): The value of the threshold.
+        value (Union[int, float]): The value to replace with when element is less than threshold.
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+    Inputs:
+        - **input** (Tensor) - The input Tensor.
+
+    Outputs:
+        Tensor, the same shape and data type as the input.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `threshold` is not a float or an int.
+        TypeError: If `value` is not a float or an int.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> inputs = mindspore.Tensor([0.0, 2, 3], mindspore.float32)
+        >>> net = mint.nn.Threshold(1, 100)
+        >>> outputs = net(inputs)
+        >>> print(outputs)
+        [100.   2.   3.]
+    """
+
+    def __init__(self, threshold, value, inplace=False):
+        """Initialize Tanh."""
+        super(Threshold, self).__init__()
+        self.threshold = threshold
+        self.value = value
+        self.inplace = inplace
+
+    def construct(self, input):
+        return mint.nn.functional.threshold(input, self.threshold, self.value,
+                                            self.inplace)
+
 __all__ = [
     'LogSigmoid',
     'SiLU',
     'ELU',
     'GLU',
     'Tanh',
+    'Threshold',
 ]
