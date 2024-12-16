@@ -348,7 +348,7 @@ from mindspore.ops.auto_generate import isinf
 # 150 __eq__
 
 # 151 fmod
-
+from mindspore.ops.function.math_func import fmod
 # 152
 
 # 153
@@ -377,6 +377,12 @@ from mindspore.ops.function.math_func import frac
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import new_ones
 from mindspore.ops.function.array_func import new_zeros
+
+# 163
+from mindspore.ops.auto_generate import cosh
+from mindspore.ops.auto_generate import sinc
+from mindspore.ops.auto_generate import sinh
+
 # 204 erfc
 from mindspore.ops.auto_generate import erfc
 
@@ -1247,11 +1253,15 @@ def tensor_inplace_scatter_value_reduce(input, dim, index, value, *, reduce):
 
 # 152 fmod
 def fmod_tensor(input, other):
-    return
+    return fmod(input, other)
 
 
 def fmod_scalar(input, other):
-    return
+    return fmod(input, other)
+
+
+def deprecated_tensor_fmod(input, other):
+    return fmod(input, other)
 
 
 # 153 acos, arccos; acosh, arccosh; asin, arcsin; asinh, arcsinh; atan, arctanh, dot
@@ -1371,6 +1381,22 @@ def tensor_new_ones(input, size, dtype=None):
 
 def tensor_new_zeros(input, size, dtype=None):
     return new_zeros(input, size, dtype=dtype)
+
+
+def tensor_cosh(input):
+    return cosh(input)
+
+
+def tensor_sinh(input):
+    return sinh(input)
+
+
+def tensor_sinc(input):
+    return sinc(input)
+
+
+def tensor_unsqueeze(input, dim):
+    return
 
 
 # 204 erfc
