@@ -23,6 +23,7 @@
 #include "include/common/utils/utils.h"
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "common/debug/profiler/profiling_python.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
@@ -57,7 +58,8 @@ std::map<std::string, aclprofAicoreMetrics> kAicMetrics{{"ArithmeticUtilization"
                                                         {"L2Cache", ACL_AICORE_L2_CACHE},
                                                         {"None", ACL_AICORE_NONE}};
 
-std::map<std::string, uint64_t> profLevelMap{{"Level0", Level0}, {"Level1", Level1}, {"Level2", Level2}};
+std::map<std::string, uint64_t> profLevelMap{
+  {"LevelNone", LevelNone}, {"Level0", Level0}, {"Level1", Level1}, {"Level2", Level2}};
 
 std::shared_ptr<AscendProfiler> AscendProfiler::GetInstance() {
   auto instance = Profiler::GetInstance(kAscendDevice);
@@ -93,6 +95,7 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.aicoreMetrics = options["aicore_metrics"];
   config_.cpuTrace = options["cpu_trace"];
   config_.npuTrace = options["npu_trace"];
+  config_.mstx = options["mstx"];
   config_.outputPath = profiling_path;
 
   is_parallel_strategy = config_.parallelStrategy;
@@ -148,12 +151,9 @@ aclprofAicoreMetrics AscendProfiler::GetAicMetrics() const {
 }
 
 uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
-  uint64_t mask = ACL_AICORE_NONE;
-
-  if (profLevelMap.find(config_.profilerLevel) != profLevelMap.end()) {
-    mask = profLevelMap[config_.profilerLevel];
-    MS_LOG(INFO) << "profiler_level is " << config_.profilerLevel << ", mask is " << mask;
-  }
+  auto level_iter = profLevelMap.find(config_.profilerLevel);
+  uint64_t mask = (level_iter == profLevelMap.end()) ? Level0 : profLevelMap[config_.profilerLevel];
+  MS_LOG(INFO) << "profiler_level is " << config_.profilerLevel << ", mask is " << mask;
 
   if (aicMetrics != ACL_AICORE_NONE) {
     mask |= ACL_PROF_AICORE_METRICS;
@@ -168,6 +168,10 @@ uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
   if (config_.profileMemory) {
     mask |= ACL_PROF_TASK_MEMORY;
     MS_LOG(INFO) << "profile_memory is enabled, mask is " << mask;
+  }
+  if (config_.mstx) {
+    mask |= ACL_PROF_MSPROFTX;
+    MS_LOG(INFO) << "mstx is enabled, mask is " << mask;
   }
   return mask;
 }
@@ -225,6 +229,9 @@ void AscendProfiler::Start() {
     if (aclRet != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Failed call aclprofStart function. error_code : " << static_cast<int>(aclRet);
     }
+    if (config_.mstx) {
+      MstxMgr::GetInstance().Enable();
+    }
     MS_LOG(INFO) << "Start AscendProfiler npu trace";
   }
 
@@ -245,6 +252,9 @@ void AscendProfiler::Stop() {
   MS_LOG(INFO) << "Stop AscendProfiler begin";
 
   if (config_.npuTrace) {
+    if (config_.mstx) {
+      MstxMgr::GetInstance().Disable();
+    }
     aclError aclRet = CALL_ASCEND_API(aclprofStop, aclConfig_);
     if (aclRet != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Failed call aclprofStop function. error_code : " << static_cast<int>(aclRet);
@@ -318,6 +328,21 @@ void AscendProfiler::StepStop() {
     aclProfStepInfo_ = nullptr;
   }
   aclStream_ = nullptr;
+}
+
+void AscendProfiler::MstxMark(const std::string &message, void *stream) {
+  MS_LOG(INFO) << "Ascend mstx mark, message: " << message;
+  MstxMgr::GetInstance().Mark(message.c_str(), stream);
+}
+
+int AscendProfiler::MstxRangeStart(const std::string &message, void *stream) {
+  MS_LOG(INFO) << "Ascend mstx range start, message: " << message;
+  return MstxMgr::GetInstance().RangeStart(message.c_str(), stream);
+}
+
+void AscendProfiler::MstxRangeEnd(int range_id) {
+  MS_LOG(INFO) << "Ascend mstx range end, range_id: " << range_id;
+  MstxMgr::GetInstance().RangeEnd(range_id);
 }
 
 }  // namespace ascend

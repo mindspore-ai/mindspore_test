@@ -71,6 +71,8 @@ class AscendKernelDetailsViewer(BaseViewer):
         Save kernel details to csv file.
         """
         try:
+            if self._profiler_level == ProfilerLevel.LevelNone.value:
+                return
             self._check_input_data(data)
             self._update_kernel_name()
             self._update_headers()

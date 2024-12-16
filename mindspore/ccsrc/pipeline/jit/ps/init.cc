@@ -93,8 +93,13 @@ void RegProfiler(const py::module *m) {
     .def("step_profiling_enable", &Profiler::StepProfilingEnable, py::arg("enable_flag"),
          "enable or disable step profiling")
     .def("enable_op_time", &Profiler::EnableOpTime, "Enable op_time.")
-    .def("enable_profile_memory", &Profiler::EnableProfileMemory, "Enable profile_memory.");
+    .def("enable_profile_memory", &Profiler::EnableProfileMemory, "Enable profile_memory.")
+    .def("mstx_mark", &Profiler::MstxMark, py::arg("message"), py::arg("stream") = py::none(), "Mark a profiling point")
+    .def("mstx_range_start", &Profiler::MstxRangeStart, py::arg("message"), py::arg("stream") = py::none(),
+         "Start a profiling range")
+    .def("mstx_range_end", &Profiler::MstxRangeEnd, py::arg("range_id"), "End a profiling range");
 }
+
 void RegProfilerManager(const py::module *m) {
   (void)py::class_<ProfilerManager, std::shared_ptr<ProfilerManager>>(*m, "ProfilerManager")
     .def_static("get_instance", &ProfilerManager::GetInstance, "ProfilerManager get_instance.")

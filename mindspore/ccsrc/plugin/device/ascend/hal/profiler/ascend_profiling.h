@@ -26,6 +26,7 @@
 namespace mindspore {
 namespace profiler {
 namespace ascend {
+constexpr uint64_t LevelNone = 0;
 constexpr uint64_t Level0 = ACL_PROF_TASK_TIME_L0 | ACL_PROF_ACL_API;
 constexpr uint64_t Level1 = ACL_PROF_TASK_TIME | ACL_PROF_ACL_API | ACL_PROF_HCCL_TRACE | ACL_PROF_AICORE_METRICS;
 constexpr uint64_t Level2 = Level1 | ACL_PROF_AICPU | ACL_PROF_RUNTIME_API;
@@ -38,6 +39,7 @@ struct AscendProfilerConfig {
   bool hbmDdr{false};
   bool pcie{false};
   bool withStack{false};
+  bool mstx{false};
   bool parallelStrategy{false};
   bool cpuTrace{false};
   bool npuTrace{false};
@@ -48,7 +50,7 @@ struct AscendProfilerConfig {
 
   AscendProfilerConfig() = default;
   AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool pcie,
-                       bool withStack, bool parallelStrategy, const std::string &profilerLevel,
+                       bool withStack, bool mstx, bool parallelStrategy, const std::string &profilerLevel,
                        const std::string &aicoreMetrics, const std::string &outputPath,
                        const std::string &frameworkDataPath)
       : deviceId(deviceId),
@@ -58,6 +60,7 @@ struct AscendProfilerConfig {
         hbmDdr(hbmDdr),
         pcie(pcie),
         withStack(withStack),
+        mstx(mstx),
         parallelStrategy(parallelStrategy),
         profilerLevel(profilerLevel),
         aicoreMetrics(aicoreMetrics),
@@ -98,6 +101,9 @@ class AscendProfiler : public Profiler {
   void StepStop() override;
   void StepProfilingEnable(const bool enable_flag) override;
   void OpDataProducerEnd() override { return; }
+  void MstxMark(const std::string &message, void *stream = nullptr) override;
+  int MstxRangeStart(const std::string &message, void *stream = nullptr) override;
+  void MstxRangeEnd(int range_id) override;
 
  protected:
   void SaveProfileData() override { return; }

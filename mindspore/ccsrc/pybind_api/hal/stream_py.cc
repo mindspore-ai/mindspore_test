@@ -122,6 +122,7 @@ void RegStream(py::module *m) {
     .def("synchronize", &StreamPy::Synchronize)
     .def("__repr__", &StreamPy::ToStringRepr)
     .def("__eq__", &StreamPy::StreamEqual)
+    .def("device_stream", &StreamPy::stream)
     .def_property_readonly("id", &StreamPy::stream_id)
     .def_property_readonly("device_name", &StreamPy::device_name)
     .def_property_readonly("device_id", &StreamPy::device_id);

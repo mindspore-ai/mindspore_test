@@ -110,8 +110,10 @@ class EventConstant:
     HOST_TO_DEVICE_FLOW_CAT = "HostToDevice"
     MINDSPORE_NPU_FLOW_CAT = "async_npu"
     MINDSPORE_SELF_FLOW_CAT = "async_mindspore"
+    MSTX_FLOW_CAT = "MsTx"
     MINDSPORE_SELF_FLOW_NAME = "mindspore_to_self"
     MINDSPORE_NPU_FLOW_NAME = "mindspore_to_npu"
+    MSTX_FLOW_NAME = "mindspore_to_mstx"
 
     MINDSPORE_PID = 1
     CPU_OP_PID = 2
@@ -134,6 +136,7 @@ class EventConstant:
     CUSTOM_INFO = "custom_info"
     TOP_SCOPE_NAMES = ('Default', 'Gradients', 'recompute_Default')
     KERNEL_LAUNCH_KEYWORDS = ("KernelLaunch", "LaunchTask")
+    MSTX_KEYWORD = "mstx"
 
     FLOW_OP = "flow"
     INVALID_FLOW_ID = 18446744073709551615
@@ -165,6 +168,7 @@ class TimelineLayerName(Enum):
     """Timeline layer types."""
     MINDSPORE = "MindSpore"
     CPU_OP = "CPU OP"
+    MSTX = "python"
     CANN = "CANN"
     SCOPER_LAYER = "Scope Layer"
     ASCEND_HARDWARE = "Ascend Hardware"

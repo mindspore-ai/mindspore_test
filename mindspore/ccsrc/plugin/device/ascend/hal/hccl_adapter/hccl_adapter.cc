@@ -35,6 +35,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 
 static constexpr const auto kHcclPluginFileName = "libhccl_plugin.so";
 
@@ -319,7 +320,11 @@ HcclResult HcclAdapter::HcclBroadcast(void *buf, uint64_t count, HcclDataType da
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_broadcast_(buf, count, dataType, root, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, hccl_comm, stream);
+  HcclResult ret = launch_hccl_broadcast_(buf, count, dataType, root, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclAllReduce(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
@@ -328,7 +333,11 @@ HcclResult HcclAdapter::HcclAllReduce(void *send_buf, void *recv_buf, uint64_t c
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_all_reduce_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, hccl_comm, stream);
+  HcclResult ret = launch_hccl_all_reduce_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclReduce(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
@@ -337,12 +346,20 @@ HcclResult HcclAdapter::HcclReduce(void *send_buf, void *recv_buf, uint64_t coun
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_reduce_(send_buf, recv_buf, count, dataType, op, root, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, hccl_comm, stream);
+  HcclResult ret = launch_hccl_reduce_(send_buf, recv_buf, count, dataType, op, root, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                     uint32_t root, HcclComm comm, aclrtStream stream) const {
-  return launch_hccl_scatter_(send_buf, recv_buf, count, dataType, root, comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, comm, stream);
+  HcclResult ret = launch_hccl_scatter_(send_buf, recv_buf, count, dataType, root, comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclReduceScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
@@ -351,7 +368,11 @@ HcclResult HcclAdapter::HcclReduceScatter(void *send_buf, void *recv_buf, uint64
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_reduce_scatter_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, hccl_comm, stream);
+  HcclResult ret = launch_hccl_reduce_scatter_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclAllGather(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
@@ -360,7 +381,11 @@ HcclResult HcclAdapter::HcclAllGather(void *send_buf, void *recv_buf, uint64_t c
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_all_gather_(send_buf, recv_buf, count, dataType, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, hccl_comm, stream);
+  HcclResult ret = launch_hccl_all_gather_(send_buf, recv_buf, count, dataType, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclSend(void *send_buf, uint64_t count, HcclDataType dataType, uint32_t destRank,
@@ -369,7 +394,11 @@ HcclResult HcclAdapter::HcclSend(void *send_buf, uint64_t count, HcclDataType da
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_send_(send_buf, count, dataType, destRank, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, hccl_comm, stream);
+  HcclResult ret = launch_hccl_send_(send_buf, count, dataType, destRank, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclRecv(void *recv_buf, uint64_t count, HcclDataType dataType, uint32_t srcRank,
@@ -378,7 +407,11 @@ HcclResult HcclAdapter::HcclRecv(void *recv_buf, uint64_t count, HcclDataType da
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_recv_(recv_buf, count, dataType, srcRank, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, count, hccl_comm, stream);
+  HcclResult ret = launch_hccl_recv_(recv_buf, count, dataType, srcRank, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclBarrier(const aclrtStream stream, HcclComm hccl_comm) const {
@@ -395,7 +428,11 @@ HcclResult HcclAdapter::HcclBatchISendIRecv(HcclSendRecvItem *sendRecvInfo, uint
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
-  return launch_hccl_batch_isend_irecv_(sendRecvInfo, itemNum, comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, sendRecvInfo[0].dataType, sendRecvInfo[0].count, comm, stream);
+  HcclResult ret = launch_hccl_batch_isend_irecv_(sendRecvInfo, itemNum, comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclCommResume(HcclComm comm) const {
@@ -672,8 +709,13 @@ HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::Hccl
   CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_to_allv_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
-  return launch_hccl_all_to_allv_(send_buf, params.sendcounts.data(), params.sdispls.data(), dataType, recv_buf,
-                                  params.recvcounts.data(), params.rdispls.data(), dataType, hccl_comm, stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, static_cast<uint64_t>(params.sendcounts.size()), hccl_comm, stream);
+  HcclResult ret =
+    launch_hccl_all_to_allv_(send_buf, params.sendcounts.data(), params.sdispls.data(), dataType, recv_buf,
+                             params.recvcounts.data(), params.rdispls.data(), dataType, hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 HcclResult HcclAdapter::HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclAllToAllParams params,
@@ -685,8 +727,12 @@ HcclResult HcclAdapter::HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclA
   CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_to_all_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
-  return launch_hccl_all_to_all_(send_buf, params.sendcount, dataType, recv_buf, params.recvcount, dataType, hccl_comm,
-                                 stream);
+  uint64_t rangeId = 0;
+  MSTX_START(rangeId, __func__, dataType, params.sendcount, hccl_comm, stream);
+  HcclResult ret = launch_hccl_all_to_all_(send_buf, params.sendcount, dataType, recv_buf, params.recvcount, dataType,
+                                           hccl_comm, stream);
+  MSTX_END(rangeId);
+  return ret;
 }
 
 bool HcclAdapter::IsSameServer(const std::vector<uint32_t> &rank_ids) const {

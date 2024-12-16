@@ -258,6 +258,11 @@ class ProfilerContext:
         return self._profiler_params_mgr.with_stack
 
     @property
+    def mstx(self) -> bool:
+        """Get the mstx from ProfilerParameters."""
+        return self._profiler_params_mgr.mstx
+
+    @property
     def data_simplification(self) -> bool:
         """Get the data simplification from ProfilerParameters."""
         return self._profiler_params_mgr.data_simplification
