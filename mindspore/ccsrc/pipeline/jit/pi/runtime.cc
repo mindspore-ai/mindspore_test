@@ -1169,9 +1169,30 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   return c->code() != nullptr;
 }
 
+class JitSyntaxLevelScope {
+ public:
+  explicit JitSyntaxLevelScope(bool enable) : enable_(enable) {
+    if (enable_) {
+      MS_LOG(INFO) << "Start run PIJit with one stage mode";
+      origin_jit_syntax_level_ = common::GetEnv("MS_DEV_JIT_SYNTAX_LEVEL");
+      common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", "0");
+    }
+  }
+  ~JitSyntaxLevelScope() {
+    if (enable_) {
+      common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", origin_jit_syntax_level_.c_str());
+    }
+  }
+
+ private:
+  std::string origin_jit_syntax_level_;
+  bool enable_;
+};
+
 static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
+  JitSyntaxLevelScope jit_syntax_level_scope(c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag));
   StaticAnalysisExceptionCleaner exception_cleaner;
   CaptureContext::DisableScope compiler_disable_scope;
 
