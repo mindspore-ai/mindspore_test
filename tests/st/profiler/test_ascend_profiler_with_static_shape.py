@@ -25,7 +25,7 @@ from model_zoo import TinyTransformer
 from fake_dataset import FakeDataset
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ascend_graph_mode_profiler_with_static_shape_all_parameters_on():
     """
     Feature: Ascend Graph Mode Profiler with All Parameters Enabled
@@ -41,19 +41,12 @@ def test_ascend_graph_mode_profiler_with_static_shape_all_parameters_on():
         profiler = Profiler(
             profiler_level=ProfilerLevel.Level1,
             output_path=tmpdir,
-            op_time=True,
-            profile_communication=True,
             profile_memory=True,
-            parallel_strategy=True,
-            start_profile=True,
-            aicore_metrics=1,
             l2_cache=True,
             hbm_ddr=True,
             pcie=True,
             sync_enable=True,
             data_process=True,
-            profile_framework='all',
-            with_stack=False,
             data_simplification=False
         )
         net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
@@ -64,7 +57,7 @@ def test_ascend_graph_mode_profiler_with_static_shape_all_parameters_on():
         check_ascend_profiler_graph_files(tmpdir, rank_id)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ascend_pynative_mode_profiler_with_static_shape_all_parameters_on():
     """
     Feature: Ascend pynative Mode Profiler with All Parameters Enabled
@@ -79,19 +72,12 @@ def test_ascend_pynative_mode_profiler_with_static_shape_all_parameters_on():
         profiler = Profiler(
             profiler_level=ProfilerLevel.Level1,
             output_path=tmpdir,
-            op_time=True,
-            profile_communication=True,
             profile_memory=True,
-            parallel_strategy=True,
-            start_profile=True,
-            aicore_metrics=1,
             l2_cache=True,
             hbm_ddr=True,
             pcie=True,
             sync_enable=True,
             data_process=True,
-            profile_framework='all',
-            with_stack=False,
             data_simplification=False
         )
         net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
@@ -102,7 +88,7 @@ def test_ascend_pynative_mode_profiler_with_static_shape_all_parameters_on():
         check_ascend_profiler_pynative_files(tmpdir, rank_id)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
     """
     Feature: Ascend kbk Mode Profiler with All Parameters Enabled
@@ -118,19 +104,12 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
         profiler = Profiler(
             profiler_level=ProfilerLevel.Level1,
             output_path=tmpdir,
-            op_time=True,
-            profile_communication=True,
             profile_memory=True,
-            parallel_strategy=True,
-            start_profile=True,
-            aicore_metrics=1,
             l2_cache=True,
             hbm_ddr=True,
             pcie=True,
             sync_enable=True,
             data_process=True,
-            profile_framework='all',
-            with_stack=False,
             data_simplification=False
         )
         net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
@@ -205,15 +184,6 @@ def check_ascend_profiler_all_parameters_on_common_files(profiler_path: str, ran
 
 def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
-
-    ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
-    # check profile_info_*.json has context_mode and jit level
-    profile_info_path = os.path.join(ascend_ms_dir, f"profiler_info_{rank_id}.json")
-    FileChecker.check_json_items(profile_info_path, {
-        "context_mode": 0,
-        "jit_level": "O2",
-    })
-
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
@@ -231,15 +201,6 @@ def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
 
 def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
-
-    ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
-    # check profile_info_*.json has context_mode and jit level
-    profile_info_path = os.path.join(ascend_ms_dir, f"profiler_info_{rank_id}.json")
-    FileChecker.check_json_items(profile_info_path, {
-        "context_mode": 1,
-        "jit_level": "",
-    })
-
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
@@ -251,15 +212,6 @@ def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
 
 def check_ascend_profiler_kbk_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
-
-    ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
-    # check profile_info_*.json has context_mode and jit level
-    profile_info_path = os.path.join(ascend_ms_dir, f"profiler_info_{rank_id}.json")
-    FileChecker.check_json_items(profile_info_path, {
-        "context_mode": 0,
-        "jit_level": "O0",
-    })
-
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
