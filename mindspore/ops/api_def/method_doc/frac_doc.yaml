@@ -1,0 +1,26 @@
+frac:
+  description: |
+    frac() -> Tensor
+    
+    Calculates the fractional part of each element in `self`.
+
+    .. math::
+        out_i = self_i - \lfloor |self_i| \rfloor * sgn(self_i)
+
+    Returns:
+        Tensor, has the same shape and type as `self`.
+
+    Raises:
+        TypeError: If `self` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([2, 4.2, -2.5]), mindspore.float16)
+        >>> output = input.frac()
+        >>> print(output)
+          [ 0.      0.1992 -0.5   ]
