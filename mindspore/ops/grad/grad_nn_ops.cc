@@ -294,6 +294,32 @@ NodePtrList FastGeLUBpropExpander(BpropBuilder *ib) {
   return {dx};
 }
 
+NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, const NodePtr &out, const NodePtr &dout) {
+  auto input_dtype_id = ib->GetDtypeId(input);
+  if (input_dtype_id == kNumberTypeComplex64 || input_dtype_id == kNumberTypeComplex128) {
+    MS_EXCEPTION(TypeError) << "For 'MeanExt', gradient not support for complex type currently.";
+  }
+
+  auto grad = SumGrad(ib, input, ib->Value<std::vector<int64_t>>({-1, -2, -3}), dout, true);
+  grad = ib->Cast(grad, ib->GetDtype(input));
+
+  NodePtr div_shape_node;
+  if (IsDynamic(ib->GetShape(input)) || IsDynamic(ib->GetShape(out))) {
+    auto shape_out_sz = ib->DynSize(out, kFloat32);
+    auto div_shape = ib->DynSize(input, kFloat32) / shape_out_sz;
+    div_shape_node = ib->Cast(div_shape, ib->GetDtype(grad));
+  } else {
+    auto shape_out_sz = ib->GetSize(out);
+    if (shape_out_sz == 0) {
+      MS_EXCEPTION(ValueError) << "For 'MeanExt', out shape size can not be 0";
+    }
+    auto div_shape = ib->GetSize(input) / shape_out_sz;
+    div_shape_node = ib->Tensor(div_shape, ib->GetDtype(grad));
+  }
+  auto dx = ib->Div(grad, div_shape_node);
+  return dx;
+}
+
 DAttr Conv2DAttrs(BpropBuilder *ib) {
   DAttr attrs{{"pad_mode", ib->GetAttr("pad_mode")},
               {"pad", ib->GetAttr("pad")},
@@ -3430,6 +3456,27 @@ REG_BPROP_BUILDER("AdaptiveAvgPool3D").SetUnusedInputs({i0, i1}).SetBody(BODYFUN
   auto x_shape = ib->Shape(x, true);
   auto dx = ib->Emit("AdaptiveAvgPool3DGrad", {dout, ib->Cast(x_shape, kInt32)});
   return {dx};
+});
+
+REG_BPROP_BUILDER("AdaptiveAvgPool3DExt").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto output_size = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex3);
+  auto dim1d = 1;
+  auto out_shape = out->shape();
+
+  if (IsDynamic(out_shape)) {
+    return {ib->Emit("AdaptiveAvgPool3DGradExt", {dout, x}), ib->OutZeros(output_size)};
+  } else {
+    ShapeVector out_shape_last_3d(out_shape.begin() + out_shape.size() - 3, out_shape.end());
+    if (out_shape_last_3d[kIndex0] == dim1d && out_shape_last_3d[kIndex1] == dim1d &&
+        out_shape_last_3d[kIndex2] == dim1d) {
+      return {MeanExtGrad(ib, x, out, dout), ib->OutZeros(output_size)};
+    } else {
+      return {ib->Emit("AdaptiveAvgPool3DGradExt", {dout, x}), ib->OutZeros(output_size)};
+    }
+  }
 });
 
 REG_BPROP_BUILDER("AdaptiveAvgPool2D").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {

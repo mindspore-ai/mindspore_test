@@ -226,6 +226,8 @@ from mindspore.ops.function.math_func import tanh
 from mindspore.ops.auto_generate import selu_ext as selu  # pylint: disable=W0611
 # 100
 from mindspore.ops.auto_generate import softshrink  # pylint: disable=W0611
+# 152
+from mindspore.ops.auto_generate import adaptive_avg_pool3d_ext
 # 220
 from mindspore.ops.function.nn_func import hardshrink  # pylint: disable=W0611
 # 221
@@ -809,6 +811,83 @@ def normalize(input, p=2.0, dim=1, eps=1e-12):
 
 
 
+def adaptive_avg_pool3d(input, output_size):
+    r"""
+    Performs 3D adaptive average pooling on a multi-plane input signal.
+    That is, for any input size, the size of the specified output is :math:`(D, H, W)`.
+    The number of output features is equal to the number of input planes.
+
+    Suppose the last 3 dimension size of x is :math:`(inD, inH, inW)`, the last 3 dimension size of output is
+    :math:`(outD, outH, outW)`.
+
+    .. math::
+        \begin{array}{ll} \\
+            \forall \quad od \in [0,outD-1], oh \in [0,outH-1], ow \in [0,outW-1]\\
+            output[od,oh,ow] = \\
+            \qquad mean(x[istartD:iendD+1,istartH:iendH+1,istartW:iendW+1])\\
+            where,\\
+            \qquad istartD= \left\lceil \frac{od * inD}{outD} \right\rceil \\
+            \qquad iendD=\left\lfloor \frac{(od+1)* inD}{outD} \right\rfloor \\
+            \qquad istartH=\left\lceil \frac{oh * inH}{outH} \right\rceil \\
+            \qquad iendH=\left\lfloor \frac{(oh+1) * inH}{outH} \right\rfloor \\
+            \qquad istartW=\left\lceil \frac{ow * inW}{outW} \right\rceil \\
+            \qquad iendW=\left\lfloor \frac{(ow+1) * inW}{outW} \right\rfloor
+        \end{array}
+
+    .. warning::
+        For Ascend, it is only supported on Atlas A2 Training Series Products.
+        This is an experimental optimizer API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of adaptive_avg_pool3d, which is a 4D or 5D Tensor.
+        output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(D, H, W)`,
+            or an int D for :math:`(D, D, D)`. :math:`D`, :math:`H` and :math:`W` can be int or None
+            which means the output size is the same as that of the input.
+
+    Returns:
+        Tensor, with the same type as the `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        ValueError: If the dimension of `input` is not 4D or 5D.
+        ValueError: If `output_size` value is not positive.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> # case 1: output_size=(3, 3, 4)
+        >>> output_size=(3, 3, 4)
+        >>> input_val = np.random.randn(4, 3, 5, 6, 7)
+        >>> input = Tensor(input_val, mindspore.float32)
+        >>> output = mint.nn.functional.adaptive_avg_pool3d(input, output_size)
+        >>> print(output.shape)
+        (4, 3, 3, 3, 4)
+        >>> # case 2: output_size=4
+        >>> output_size=5
+        >>> input_val = np.random.randn(2, 3, 8, 6, 12)
+        >>> input = Tensor(input_val, mindspore.float32)
+        >>> output = mint.nn.functional.adaptive_avg_pool3d(input, output_size)
+        >>> print(output.shape)
+        (2, 3, 5, 5, 5)
+        >>> # case 3: output_size=(None, 4, 5)
+        >>> output_size=(None, 4, 5)
+        >>> input_val = np.random.randn(4, 1, 9, 10, 8)
+        >>> input = Tensor(input_val, mindspore.float32)
+        >>> output = mint.nn.functional.adaptive_avg_pool3d(input, output_size)
+        >>> print(output.shape)
+        (4, 1, 9, 4, 5)
+    """
+    validator.check_value_type("output_size", output_size, [int, tuple, list], "adaptive_avg_pool3d")
+    if isinstance(output_size, int):
+        output_size = (output_size, output_size, output_size)
+    output_size = tuple(-1 if val is None else val for val in output_size)
+    return adaptive_avg_pool3d_ext(input, output_size)
+
+
 __all__ = [
     'conv_transpose2d',
     'max_pool2d',
@@ -1016,6 +1095,8 @@ __all__ = [
 
     # 100
 
+    # 152
+    'adaptive_avg_pool3d',
     # 254
     'max_unpool2d',
 
