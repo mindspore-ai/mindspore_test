@@ -29,7 +29,6 @@ constexpr size_t kInnerInplaceIndexPutMinNum = 4;
 constexpr size_t kInnerInplaceIndexPutEmptyShape = 9;
 std::vector<TypeId> InnerInplaceIndexPutFuncImpl::InferType(const PrimitivePtr &primitive,
                                                             const InferInfoPtrList &input_infos) const {
-  MS_EXCEPTION_IF_NULL(input_infos[kIndex0]);
   return {input_infos[kIndex0]->GetType()};
 }
 
@@ -37,13 +36,12 @@ ShapeArray InnerInplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitiv
                                                     const InferInfoPtrList &input_infos) const {
   const auto &x_tensor = input_infos[kIndex0];
   auto op_name = primitive->name();
-  MS_EXCEPTION_IF_NULL(x_tensor);
   if (x_tensor->IsDynamicRank()) {
     return {{abstract::TensorShape::kShapeRankAny}};
   }
   auto x_shape = x_tensor->GetShape();
   auto &indices = input_infos[kIndex1];
-  ShapeVector output_shape;
+  ShapeVector output_shape = {};
   if (indices->IsSequence()) {
     if (indices->IsDynamicSequence()) {
       MS_EXCEPTION(ValueError) << "For `" << op_name << "` op, 'indices' shape can not DynamicSequenceShape.";

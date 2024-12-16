@@ -38,13 +38,12 @@ std::vector<TypeId> InnerIndexFuncImpl::InferType(const PrimitivePtr &primitive,
 ShapeArray InnerIndexFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   const auto &x_tensor = input_infos[kIndex0];
   auto op_name = primitive->name();
-  MS_EXCEPTION_IF_NULL(x_tensor);
   if (x_tensor->IsDynamicRank()) {
     return {{abstract::TensorShape::kShapeRankAny}};
   }
   auto x_shape = x_tensor->GetShape();
   auto &indices = input_infos[kIndex1];
-  ShapeVector output_shape;
+  ShapeVector output_shape = {};
   if (indices->IsSequence()) {
     if (indices->IsDynamicSequence()) {
       MS_EXCEPTION(ValueError) << "For `" << op_name << "` op, 'indices' shape can not DynamicSequenceShape.";

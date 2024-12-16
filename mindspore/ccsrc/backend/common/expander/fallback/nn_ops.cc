@@ -797,7 +797,7 @@ REG_FALLBACK_BUILDER("Index").SetBody(BODYFUNC(ib) {
   }
   std::vector<ShapeVector> indices_shapes = indices->shapes();
   if (indices_shapes.empty()) {
-    MS_EXCEPTION(ValueError) << "For 'Index', 'indices' shape can be empty.";
+    MS_EXCEPTION(ValueError) << "For 'Index', 'indices' shape can't be empty.";
   }
   auto indices_nums = indices_shapes.size();
   if (!IsDynamicRank(input_shape) && indices_nums > input_shape_nums) {
@@ -873,7 +873,7 @@ REG_FALLBACK_BUILDER("InplaceIndexPut").SetBody(BODYFUNC(ib) {
   }
   std::vector<ShapeVector> indices_shapes = indices->shapes();
   if (indices_shapes.empty()) {
-    MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', 'indices' shape can be empty.";
+    return {input_tensor};
   }
   auto indices_nums = indices_shapes.size();
   auto input_shape = ib->GetShape(input_tensor);
