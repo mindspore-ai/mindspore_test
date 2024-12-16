@@ -214,8 +214,8 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             op_proto = tensor_proto.op_proto
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
-        formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
-        overload_func_call_str = self.PYBOOST_OVERLOAD_MINT_CLASS_DEF.replace(class_name=formatted_class_name,
+        cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
+        overload_func_call_str = self.PYBOOST_OVERLOAD_MINT_CLASS_DEF.replace(cpp_func_name=cpp_func_name,
                                                                               func_name=func_api_name,
                                                                               signatures=signatures_str,
                                                                               dispatch_cases=dispatch_cases,
@@ -416,7 +416,7 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         for func_name in mint_func_protos_data.keys():
             api_def_list = mint_func_protos_data[func_name]
             if len(api_def_list) == 1:
-                cpp_func_name = pyboost_utils.format_func_api_name(mint_func_protos_data[func_name][0].op_proto.op_name)
+                cpp_func_name = pyboost_utils.format_func_api_name(mint_func_protos_data[func_name][0].func_name)
             elif len(api_def_list) > 1:
                 cpp_func_name = pyboost_utils.format_func_api_name(func_name)
             mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=func_name,
