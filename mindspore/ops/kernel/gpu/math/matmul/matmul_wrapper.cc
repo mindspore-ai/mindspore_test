@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "mindspore/ccsrc/plugin/device/gpu/device_context_conf/op_precision_conf.h"
 #include "kernel/gpu/math/matmul/matmul_wrapper.h"
 
 namespace mindspore {
@@ -27,8 +28,8 @@ std::map<cudaDataType_t, cublasComputeType_t> data_compute_type_map_ = {
 cublasComputeType_t GetComputeType(cudaDataType_t data_type) {
   if (data_type == CUDA_R_32F) {
     // tf32 only speed up in Ampere Architecture, such as 3090 or A100
-    auto context_ptr = MsContext::GetInstance();
-    auto matmul_allow_tf32 = context_ptr->get_param<bool>(MS_CTX_MATMUL_ALLOW_TF32);
+    auto op_precision_conf = device::gpu::GPUOpPrecisionConf::GetInstance();
+    auto matmul_allow_tf32 = op_precision_conf->matmul_allow_tf32();
     if (matmul_allow_tf32) {
       return CUBLAS_COMPUTE_32F_FAST_TF32;
     }

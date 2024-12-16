@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+"""init file for GPU device context"""
 
-"""
-The device context interface.
-"""
-import mindspore.device_context.gpu
-import mindspore.device_context.cpu
-import mindspore.device_context.ascend
+from .device import device_count, is_available
+from .op_precision import *
+from .op_tuning import *
+
+__all__ = ["device_count", "is_available"]

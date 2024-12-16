@@ -22,6 +22,8 @@
 #include <tuple>
 #include <utility>
 #include <unordered_set>
+#include "plugin/device/gpu/device_context_conf/op_precision_conf.h"
+#include "plugin/device/gpu/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
 #include "plugin/device/gpu/hal/device/gpu_device_address.h"
@@ -1317,6 +1319,9 @@ void PybindGPUStatelessFunc(py::module *m) {
   (void)m->def("gpu_get_device_properties", &GPUDeviceContext::GetDeviceProperties,
                "Get GPU device properties of specified device id.");
   (void)m->def("gpu_get_arch_list", &GPUDeviceContext::GetArchList, "Get GPU arch list of this MindSpore package.");
+
+  RegGPUOpPrecisionConf(m);
+  RegGPUOpTuningConf(m);
 }
 REGISTER_DEV_STATELESS_FUNC_CB(kGPUDevice, PybindGPUStatelessFunc);
 }  // namespace gpu
