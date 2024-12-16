@@ -791,8 +791,7 @@ def deprecated_tensor_max(input, axis=None, keepdims=False, *, initial=None, whe
         maximum = F.maximum
         return utils.reduce_(input, reduce_max(keepdims), cmp_fn=maximum, axis=axis, keepdims=keepdims,
                              initial=initial, where=where)
-    values, indices = max_func(
-        input, axis, keepdims, initial=initial, where=where)
+    values, indices = max_func(input, axis, keepdims, initial=initial, where=where)
     if not return_indices:
         return values
     return values, indices
@@ -832,8 +831,7 @@ def deprecated_tensor_min(input, axis=None, keepdims=False, *, initial=None, whe
         minimum = F.minimum
         return utils.reduce_(input, reduce_min(keepdims), cmp_fn=minimum, axis=axis, keepdims=keepdims,
                              initial=initial, where=where)
-    values, indices = min_func(
-        input, axis, keepdims, initial=initial, where=where)
+    values, indices = min_func(input, axis, keepdims, initial=initial, where=where)
     if not return_indices:
         return values
     return values, indices
@@ -890,13 +888,10 @@ def deprecated_tensor_outer(input, vec2):
 def tensor_pow_tensor_tensor(input, exponent):
     return pow(input, exponent)
 
-
 def deprecated_tensor_pow(input, exponent):
     return pow(input, exponent)
 
 # 83 prod
-
-
 def tensor_prod(input, axis=None, keep_dims=False, dtype=None):
     return prod_ext(input, axis, keep_dims, dtype)
 
@@ -1091,8 +1086,6 @@ def deprecated_tensor_t(input):
 
 
 # 107 tanh
-
-
 def tensor_tanh(input):
     return tanh(input)
 
@@ -1155,8 +1148,6 @@ def deprecated_tensor_unbind(input, dim=0):
 # 117 unfold
 
 # 118 unique
-
-
 def deprecated_tensor_unique(input, sorted=True, return_inverse=False, return_counts=False, dim=None):
     """
     Function for computing the unique elements of a tensor along a specified dimension or over the entire tensor.
@@ -1259,8 +1250,6 @@ def tensor_bincount(input, weights=None, minlength=0):
 # 136 lcm
 
 # 137 mm
-
-
 def tensor_mm(input, mat2):
     return F.mm(input, mat2)
 
@@ -1303,8 +1292,6 @@ def tensor_isinf():
     return isinf()
 
 # 148 not_equal
-
-
 def tensor_not_equal(input, other):
     return F.ne(input, other)
 
@@ -1428,26 +1415,18 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 # 158
 
 # 159 histc
-
-
 def tensor_histc(input, bins=100, min=0, max=0):
     return histc(input, bins, min, max)
 
 # 160 frac
-
-
 def tensor_frac(input):
     return frac(input)
 
 # 161 bitwise_not
-
-
 def tensor_bitwise_not(input):
     return bitwise_not_op(input)
 
 # 162
-
-
 def tensor_log10(input):
     return log10(input)
 
@@ -1585,18 +1564,14 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
             nums *= input.shape[ax]
     return _tensor_div(x_sum, nums - ddof)
 
-
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
-
 
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")
 
-
 def tensor_subtract(input, other, *, alpha=1):
     return tensor_sub_ext(input, other, alpha=alpha)
-
 
 def tensor_true_divide(input, other):
     return div(input, other)

@@ -1217,7 +1217,7 @@ def rand_ext(*size, generator=None, dtype=None):
     Keyword Args:
         generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
             Default: ``None``, uses the default pseudorandom number generator.
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             `mindspore.float32` will be applied. Default: ``None`` .
 
     Returns:
@@ -1226,6 +1226,7 @@ def rand_ext(*size, generator=None, dtype=None):
 
     Raises:
         ValueError: If `dtype` is not a `mstype.float_type` type.
+        ValueError: If `size` contains negative number.
 
     Supported Platforms:
         ``Ascend``
@@ -1239,6 +1240,8 @@ def rand_ext(*size, generator=None, dtype=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
+    if size and isinstance(size[0], (tuple, list)):
+        size = size[0]
     return rand_ext_(size, seed, offset, dtype)
 
 
@@ -1292,7 +1295,7 @@ def randn_ext(*size, generator=None, dtype=None):
     Keyword Args:
         generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
             Default: ``None``, uses the default pseudorandom number generator.
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             `mindspore.float32` will be applied. Default: ``None`` .
 
     Returns:
@@ -1300,7 +1303,7 @@ def randn_ext(*size, generator=None, dtype=None):
         the interval :math:`[0, 1)`.
 
     Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
+        ValueError: If `size` contains negative number.
 
     Supported Platforms:
         ``Ascend``
@@ -1314,6 +1317,8 @@ def randn_ext(*size, generator=None, dtype=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
+    if size and isinstance(size[0], (tuple, list)):
+        size = size[0]
     return randn_(size, seed, offset, dtype)
 
 
@@ -1356,8 +1361,10 @@ def randn_like_ext(input, *, dtype=None):
 
 
 @_function_forbid_reuse
-def randint_ext(low, high, size, *, generator=None, dtype=None):
+def randint_ext(*args, generator=None, dtype=None):
     r"""
+    randint(low=0, high, size, *, generator=None, dtype=None) -> Tensor
+
     Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
     based on the given shape and dtype.
 
@@ -1365,7 +1372,7 @@ def randint_ext(low, high, size, *, generator=None, dtype=None):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        low (int): the lower bound of the generated random number
+        low (int): the lower bound of the generated random number. Default: 0.
         high (int): the upper bound of the generated random number
         size (Union[tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)`.
 
@@ -1395,7 +1402,11 @@ def randint_ext(low, high, size, *, generator=None, dtype=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
-    return randint_(low, high, size, seed, offset, dtype)
+    args = list(args)
+    if len(args) == 2:
+        args = [0] + args
+    args.extend([seed, offset])
+    return randint_(*args, dtype=dtype)
 
 
 @_function_forbid_reuse
