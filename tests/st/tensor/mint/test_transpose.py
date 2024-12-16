@@ -15,7 +15,6 @@
 
 import numpy as np
 import pytest
-import os
 from tests.mark_utils import arg_mark
 
 import mindspore.common.dtype as mstype
@@ -38,7 +37,6 @@ def test_f_transpose(mode):
     Description: Verify the result of tensor.transpose
     Expectation: success
     """
-    os.environ["MS_TENSOR_API_ENABLE_MINT"] = '1'
     ms.set_context(mode=mode)
     net = TransposeNet()
     x = ms.Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), dtype=mstype.float32)
@@ -46,5 +44,4 @@ def test_f_transpose(mode):
     output = net(x, y)
     expected = np.array([[[1, 4], [2, 5], [3, 6]], [[7, 10], [8, 11], [9, 12]]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
-    del os.environ["MS_TENSOR_API_ENABLE_MINT"]
     
