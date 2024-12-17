@@ -24,6 +24,7 @@
 #include "kernel/ascend/pyboost/auto_generate/add.h"
 #include "kernel/ascend/pyboost/auto_generate/cast.h"
 #include "kernel/ascend/pyboost/auto_generate/mul.h"
+#include "kernel/ascend/pyboost/auto_generate/muls.h"
 #include "kernel/ascend/pyboost/auto_generate/sub.h"
 #include "kernel/ascend/pyboost/auto_generate/exp.h"
 #include "kernel/ascend/pyboost/auto_generate/div.h"
@@ -61,6 +62,7 @@
 #include "kernel/ascend/pyboost/auto_generate/inplace_copy.h"
 #include "kernel/ascend/pyboost/auto_generate/dense.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul.h"
+#include "kernel/ascend/pyboost/auto_generate/batch_mat_mul.h"
 
 namespace mindspore {
 namespace kernel {
@@ -283,6 +285,14 @@ class LogicalOrAscendDvm : public LogicalOrAscend {
   tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor) override;
 };
 
+class MulsAscendDvm : public MulsAscend {
+ public:
+  MulsAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : MulsAscend(std::move(primitive), device_context) {}
+  ~MulsAscendDvm() = default;
+  tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const ScalarPtr &other_tensor) override;
+};
+
 class SigmoidAscendDvm : public SigmoidAscend {
  public:
   SigmoidAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
@@ -405,6 +415,15 @@ class MatMulAscendDvm : public MatMulAscend {
   ~MatMulAscendDvm() = default;
 
   tensor::BaseTensorPtr Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &mat2_tensor,
+                             const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) override;
+};
+class BatchMatMulAscendDvm : public pyboost::BatchMatMulAscend {
+ public:
+  BatchMatMulAscendDvm(PrimitivePtr primitive, const DeviceContext *device_context)
+      : BatchMatMulAscend(std::move(primitive), device_context) {}
+  ~BatchMatMulAscendDvm() = default;
+
+  tensor::BaseTensorPtr Call(const BaseTensorPtr &x_tensor, const BaseTensorPtr &y_tensor,
                              const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) override;
 };
 }  // namespace pyboost
