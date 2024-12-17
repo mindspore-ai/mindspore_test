@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """dryrun."""
-import types
 import traceback
 import os
 from mindspore._c_expression import Tensor as Tensor_
@@ -74,9 +73,11 @@ def set_simulation():
     os.environ["MS_SIMULATION_LEVEL"] = "1"
     obj = TraceBack()
     Tensor.asnumpy = obj.inject(Tensor.asnumpy)
+    Tensor._getitem = obj.inject(Tensor._getitem)
     Tensor.is_contiguous = obj.inject(Tensor.is_contiguous)
     Tensor.flush_from_cache = obj.inject(Tensor.flush_from_cache)
     StubTensor.asnumpy = obj.inject(StubTensor.asnumpy)
+    StubTensor._getitem = obj.inject(StubTensor._getitem)
     StubTensor.is_contiguous = obj.inject(StubTensor.is_contiguous)
     StubTensor.flush_from_cache = obj.inject(StubTensor.flush_from_cache)
     Tensor.__str__ = no_inject_traceback_for_print
@@ -128,7 +129,7 @@ def mock(mock_val, *args):
     if os.environ.get('MS_SIMULATION_LEVEL'):
         return mock_val
     if len(args) == 1:
-        if isinstance(args[0], types.MethodType):
+        if callable(args[0]):
             return args[0]()
         return args[0]
     return args[0](*args[1:])

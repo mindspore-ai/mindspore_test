@@ -29,7 +29,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 #include "include/backend/distributed/collective/collective_manager.h"
-
+#include "mindspore/core/include/utils/ms_utils.h"
 namespace mindspore {
 namespace kernel {
 HcomReceiveKernel::~HcomReceiveKernel() {
@@ -151,6 +151,12 @@ int HcomReceiveKernel::Resize(const std::vector<KernelTensor *> &inputs, const s
     }
 
     return KRET_OK;
+  }
+  static auto simu = common::SimulateCompile();
+  if (simu) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_
+                      << ", the output shape depends on the actual execution, and it will affect the accuracy of "
+                         "memory in dryrun mode.";
   }
 
   real_shape_.clear();

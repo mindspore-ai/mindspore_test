@@ -185,9 +185,9 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
   for (auto group_name : init_order) {
     size_t init_hccl_buffsize = default_size;
     if (comm_ops_group[group_name].size() == 0) {
+      init_hccl_buffsize = 200;
       MS_LOG(WARNING) << "There are no communication ops in the group: " << group_name
-                      << ", and the hccl_buffsize is set to 10M.";
-      init_hccl_buffsize = 10;
+                      << ", HCCL_BUFFSIZE: " << init_hccl_buffsize << " MB.";
     } else {
       std::string env_name = "HCCL_BUFFSIZE";
       bool is_dynamic = false;
