@@ -193,6 +193,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   std::map<PyObject *, std::pair<ValuePtr, AbstractBasePtr>> cur_convert_input_;
   bool executor_running_{false};
   uint32_t max_call_depth_{1000};
+  bool need_recompile_{true};
 };
 using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
 

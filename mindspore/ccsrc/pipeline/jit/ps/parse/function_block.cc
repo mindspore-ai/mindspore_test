@@ -72,8 +72,44 @@ static bool CanBeIsolatedNode(const std::string &var_name, const AnfNodePtr &nod
   return GetPrimitiveFlag(prim, ATTR_NO_ELIMINATE);
 }
 
+namespace {
+bool IsDescendant(const AnfNodePtr &node, const AnfNodePtr &ancestor) {
+  if (node == ancestor) {
+    return true;
+  }
+
+  if (ancestor->isa<CNode>()) {
+    const auto &inputs = ancestor->cast<CNodePtr>()->inputs();
+    return std::any_of(inputs.begin(), inputs.end(), [&node](const auto &e) { return IsDescendant(node, e); });
+  }
+
+  return false;
+}
+}  // namespace
+
+void FunctionBlock::ReplaceHiddenNode(const AnfNodePtr &hidden_node, const AnfNodePtr &new_node) {
+  for (const auto &var : assigned_vars_) {
+    if (!var.second.first->isa<CNode>()) {
+      continue;
+    }
+
+    auto cnode = var.second.first->cast<CNodePtr>();
+    if (IsDescendant(cnode, new_node)) {
+      MS_LOG(DEBUG) << cnode->DebugString(2) << " is a descendant of " << new_node->DebugString(2) << ", ignore it.";
+      continue;
+    }
+
+    for (size_t idx = 0; idx < cnode->inputs().size(); idx++) {
+      if (cnode->input(idx) == hidden_node) {
+        MS_LOG(DEBUG) << "Replace node " << hidden_node->DebugString(2) << " with " << new_node->DebugString(2);
+        cnode->set_input(idx, new_node);
+      }
+    }
+  }
+}
+
 // Write variable records the variable name to corresponding node
-void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr &node) {
+void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr &node, bool need_reorder) {
   MS_EXCEPTION_IF_NULL(node);
   MS_LOG(DEBUG) << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " write var `" << var_name << "` with node "
                 << node->DebugString();
@@ -110,6 +146,13 @@ void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr 
     MS_LOG(INFO) << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " update var `" << var_name
                  << "` with node " << node->DebugString();
     iter->second = std::make_pair(node, false);
+    if (is_used && need_reorder) {
+      MS_LOG(DEBUG) << "Replace " << hidden_node->ToString() << " with " << node->ToString();
+      ReplaceHiddenNode(hidden_node, node);
+      iter->second = std::make_pair(node, true);
+    } else {
+      iter->second = std::make_pair(node, false);
+    }
   }
   if (!HasGlobalPyParam(var_name)) {
     UpdateLocalPyParam(var_name, node);

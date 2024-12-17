@@ -606,9 +606,8 @@ void GraphExecutorPy::CheckArgumentsConsistency(const py::tuple &compile_args, c
 
 py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py::tuple &args, const py::dict &kwargs,
                                                  bool enable_tuple_broaden) {
-  MS_LOG(DEBUG) << "GenerateArgumentsKey args size: " << args.size()
+  MS_LOG(DEBUG) << "GenerateArgumentsKey, args size: " << args.size()
                 << ", enable_tuple_broaden: " << enable_tuple_broaden;
-
   abstract::AbstractBasePtrList args_abs;
   ClearCurConvertInput();
   for (std::size_t i = 0; i < args.size(); i++) {
@@ -618,6 +617,7 @@ py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py
                                  << args[i].get_type() << ", value is '" << py::str(args[i]) << "'.";
     }
     AbstractBasePtr abs = ArgsToAbstract(args[i], converted, enable_tuple_broaden);
+
     (void)args_abs.emplace_back(abs);
     // The 'converted' maybe a Parameter, we need connect it to the Parameter of func graph,
     // so we keep all inputs for subsequent procedure.
@@ -634,6 +634,7 @@ py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py
     }
     AbstractBasePtr value_abs = ArgsToAbstract(py::cast<py::object>(item.second), value, enable_tuple_broaden);
     auto keyword_arg_abs = std::make_shared<abstract::AbstractKeywordArg>(GetValue<std::string>(key), value_abs);
+
     (void)args_abs.emplace_back(keyword_arg_abs);
     (void)cur_convert_input_.emplace(item.first.ptr(), std::make_pair(value, keyword_arg_abs));
   }
@@ -647,6 +648,7 @@ py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py
   static uint64_t key_counter = 0;
   kArgsCache[args_abs] = key_counter;
   kCellArgsMap[obj.ptr()] = args_abs;
+
   MS_LOG(INFO) << "Generate a new compile key for new args, key: " << key_counter;
   if (IS_OUTPUT_ON(mindspore::kInfo)) {
     std::ostringstream buffer;
@@ -1314,6 +1316,25 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   return true;
 }
 
+namespace {
+void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs) {
+  if (py::isinstance<Tensor>(arg)) {
+    auto tensor = arg.cast<std::shared_ptr<Tensor>>();
+    if (tensor->has_user_data("backward_hook") && !abs->has_user_data("backward_hook")) {
+      MS_LOG(DEBUG) << "set hooks for arg: " << py::str(arg) << ", abs(" << abs.get() << "): " << abs << ".";
+      auto hook_map = tensor->user_data<std::map<uint64_t, py::function>>("backward_hook");
+      auto hook_fns = std::make_shared<std::vector<py::function>>();
+      for (auto iter = hook_map->begin(); iter != hook_map->end(); iter++) {
+        hook_fns->push_back(iter->second);
+      }
+      abs->set_user_data("backward_hook", hook_fns);
+    }
+  } else {
+    MS_LOG(WARNING) << "arg: " << py::str(arg) << " is not a Tensor, we only support arg of type Tensor now.";
+  }
+}
+}  // namespace
+
 void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
                                   abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments) {
   MS_EXCEPTION_IF_NULL(args_abs);
@@ -1331,6 +1352,7 @@ void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs,
         continue;
       }
       (void)args_abs->emplace_back(iter->second.second);
+      SetHookForArgAbstract(args[i], iter->second.second);
       continue;
     }
     ValuePtr converted = nullptr;
@@ -1345,12 +1367,15 @@ void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs,
       (void)parallel::ExtendInputArgsAbstractShape(args_abstract_item, i);
     }
     (void)args_abs->emplace_back(args_abstract_item);
+    SetHookForArgAbstract(args[i], args_abstract_item);
   }
   for (const auto &item : kwargs) {
     auto iter = cur_convert_input_.find(item.first.ptr());
     if (iter != cur_convert_input_.end()) {
       (void)arguments->emplace_back(iter->second.first);
       (void)args_abs->emplace_back(iter->second.second);
+      auto keyword_arg_abs = iter->second.second->cast<abstract::AbstractKeywordArgPtr>();
+      SetHookForArgAbstract(py::cast<py::object>(item.second), keyword_arg_abs->get_arg());
       continue;
     }
     ValuePtr key = nullptr;
@@ -1365,6 +1390,7 @@ void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs,
     auto keyword_arg_abs = std::make_shared<abstract::AbstractKeywordArg>(GetValue<std::string>(key), value_abs);
     (void)arguments->emplace_back(value);
     (void)args_abs->emplace_back(keyword_arg_abs);
+    SetHookForArgAbstract(py::cast<py::object>(item.second), value_abs);
   }
 }
 
@@ -1487,6 +1513,8 @@ bool GraphExecutorPy::Compile(const py::object &source, const py::tuple &args, c
       ReleaseResourceOnException(phase);
     },
     [this, &phase]() { ReleaseResourceOnException(phase); }, [this, &phase]() { ReleaseResourceOnException(phase); });
+
+  // Set need recompile to false after compile finished.
   return res;
 }
 
