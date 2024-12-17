@@ -40,7 +40,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
         self.k_prim_op_template = template.Template("prim::kPrim${camel_op_name}")
         self.tensor_method_kwonlyargs_map_template = template.Template(
             "{\"${camel_op_name}\", {${kw_only_args_list}}},")
-        self.tensor_method_varargs_map_template =\
+        self.tensor_method_varargs_map_template = \
             template.Template("{\"${op_name}\", ${vararg_index}},")
         self.deprecated_method_decl_template = template.Template(
             "auto ${dep_op_name} = std::make_shared<prim::DeprecatedTensorMethod>(\"${dep_op_name}\", \"${op_name}\");")
@@ -55,6 +55,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "to_dilations": ["tuple[int]", "list[int]", "int"],
                                 "to_output_padding": ["tuple[int]", "list[int]", "int"],
                                 "to_rates": ["tuple[int]", "list[int]", "int"]}
+
         self.prompt_type_map = {"any": "any",
                                 "int": "int",
                                 "float": "float",
@@ -64,10 +65,6 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "tensor": "Tensor",
                                 "type": "mstype",
                                 "None": "None"}
-        # Generic Input Name
-        self.input_args_name = {"input", "x", "input_x"}
-        # This map is used to specify the operator input name. {op name: input name}
-        self.input_name_map = {"DeprecatedExpandAs": "input"}
 
     def generate(self, work_path, tensor_method_protos_data, mint_func_protos_data, alias_func_mapping):
         """
@@ -153,9 +150,9 @@ class FunctionalMapCppGenerator(BaseGenerator):
 
     def _is_input_arg(self, arg_name, op_name):
         res = False
-        if op_name in self.input_name_map and arg_name == self.input_name_map[op_name]:
+        if op_name in K.INPUT_NAME_MAP and arg_name == K.INPUT_NAME_MAP[op_name]:
             res = True
-        elif op_name not in self.input_name_map and arg_name in self.input_args_name:
+        elif op_name not in K.INPUT_NAME_MAP and arg_name in K.INPUT_ARGS_NAME:
             res = True
         return res
 

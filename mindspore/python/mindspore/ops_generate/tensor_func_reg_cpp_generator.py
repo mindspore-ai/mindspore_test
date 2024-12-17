@@ -22,6 +22,7 @@ that can be used to call the Pyboost primitive implementations.
 """
 
 import os
+
 import template
 from template import Template
 import gen_constants as K
@@ -30,6 +31,7 @@ import op_api_proto
 from gen_utils import save_file
 from base_generator import BaseGenerator
 from op_proto import OpProto
+from op_template_parser import OpTemplateParser
 
 
 class TensorFuncRegCppGenerator(BaseGenerator):
@@ -91,38 +93,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'res = fn(self, *py_args, **py_kwargs);\n'
             'break;\n'
         )
-        self.arg_handler_prt_template = Template(
-            "arg_list[${idx}] = "
-            "(*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
-        )
-        self.arg_handler_template = Template(
-            "arg_list[${idx}] = "
-            "pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]);\n"
-        )
-        self.arg_handler_optional_template = Template(
-            'if (!py::isinstance<py::none>(arg_list[${idx}])) {\n'
-            '  ${arg_handler_str}\n'
-            '}\n'
-        )
         self.header_func_header_template = Template(
             "py::object TensorMethod${cpp_func_name}"
             "(const py::object &self, const py::args &py_args, const py::kwargs &py_kwargs);\n"
         )
-        # The format of arg_handler_map is {arg_handler_name : list of supported types}.
-        # The first one of type list is the target dtype. Types corresponds to type_str_map.
-        self.arg_handler_map = {"to_2d_paddings": "int|tuple[int]|list[int]",
-                                "dtype_to_type_id": "type",
-                                "to_kernel_size": "int|tuple[int]|list[int]",
-                                "to_strides": "int|tuple[int]|list[int]",
-                                "str_to_enum": "str",
-                                "to_pair": "int|tuple[int]|list[int]|float",
-                                "to_dilations": "tuple[int]|list[int]|int",
-                                "to_output_padding": "int|tuple[int]|list[int]",
-                                "to_rates": "int|tuple[int]|list[int]"}
-        # Generic Input Name
-        self.input_args_name = {"input", "x", "input_x"}
-        # This map is used to specify the operator input name. {op name: input name}
-        self.input_name_map = {"DeprecatedExpandAs": "input"}
 
     def generate(self, work_path, op_protos, func_protos_data, alias_func_mapping):
         """
@@ -216,8 +190,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if len(func_protos) == 1:
                 func_proto = func_protos[0]
                 func_name = func_proto.func_name
-                func_def_body_list.append(self.func_def_reg.replace(func_name=func_name,
-                                                                    cpp_func_name=cpp_func_name))
+                func_def_body_list.append(self.func_def_reg.replace(func_name=func_name, cpp_func_name=cpp_func_name))
                 tensor_cpp_methods_list.append(func_name)
                 tensor_api_declaration_list += self.header_func_header_template.replace(cpp_func_name=cpp_func_name)
                 if func_name in alias_func_mapping:
@@ -251,8 +224,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             func_name = func_proto.func_name
             cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
-            signature_str = self._generate_single_signature_str(func_proto.op_proto, func_proto.kw_only_args,\
-                                                                func_proto.varargs)
+            signature_str = self._generate_single_signature_str(
+                func_proto.op_proto, func_proto.kw_only_args, func_proto.varargs
+            )
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
             self_index = self._get_input_tensor_index(func_proto)
@@ -339,61 +313,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             sig_str += self._generate_single_signature_str(op_proto, tensor_proto.kw_only_args, tensor_proto.varargs)
         return sig_str
 
-    def _is_input_arg(self, arg_name, op_name):
-        res = False
-        if op_name in self.input_name_map and arg_name == self.input_name_map[op_name]:
-            res = True
-        elif op_name not in self.input_name_map and arg_name in self.input_args_name:
-            res = True
-        return res
-
     def _generate_single_signature_str(self, op_proto: OpProto, kw_only_args, varargs) -> str:
-        """
-        Generates a single function signature string for the given operation prototype.
-
-        Args:
-            op_proto (OpProto): Operation prototype to generate the signature for.
-
-        Returns:
-            str: Generated function signature string.
-        """
-        op_name = op_proto.op_class.name
-        args_str = f'"{op_name}('
-        first_arg = True
-        kw_args_init_flag = False
-        for _, arg in enumerate(op_proto.op_args):
-            arg_name = arg.arg_name
-            if self._is_input_arg(arg_name, op_name):
-                continue
-            single_arg = ''
-            if not first_arg:
-                single_arg = ', '
-            arg_handler = arg.arg_handler
-            if arg_handler != '':
-                if arg_handler in self.arg_handler_map:
-                    arg_dtype = self.arg_handler_map[arg_handler]
-                else:
-                    raise ValueError("Generate failed. Check if {} is registered in TensorFuncRegCppGenerator."
-                                     .format(arg_handler))
-            else:
-                arg_dtype = arg.arg_dtype
-                for cast_type in arg.type_cast:
-                    arg_dtype += '|'
-                    arg_dtype += cast_type
-            if varargs:
-                single_arg += f"{arg_dtype} *{arg_name}"
-            else:
-                single_arg += f"{arg_dtype} {arg_name}"
-            if arg.as_init_arg:
-                arg_default = str(arg.default)
-                single_arg += '='
-                single_arg += arg_default
-            if kw_only_args and not kw_args_init_flag and arg_name == kw_only_args[0]:
-                single_arg = ("*, " if first_arg else ", *") + single_arg
-                kw_args_init_flag = True
-            args_str += single_arg
-            first_arg = False
-        return args_str + ')"'
+        op_parser = OpTemplateParser(op_proto)
+        return op_parser.generate_signature_str(kw_only_args, varargs, is_tensor_api=True)
 
     def _get_input_tensor_index(self, func_proto):
         """
@@ -407,10 +329,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         op_name = func_proto.op_proto.op_class.name
         op_args = func_proto.op_proto.op_args
-        if op_name in self.input_name_map:
-            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name == self.input_name_map[op_name]]
+        if op_name in K.INPUT_NAME_MAP:
+            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name == K.INPUT_NAME_MAP[op_name]]
         else:
-            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
+            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in K.INPUT_ARGS_NAME]
         if len(self_index) != 1:
             raise ValueError(
                 f'There must be only one field named \'input\'. But got {len(self_index)} in {op_name}')
@@ -485,7 +407,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         func_proto_device = getattr(func_proto, device)
         if func_proto_device == 'pyboost':
-            arg_handler_processor_str = self._get_arg_handler_processor(func_proto)
+            arg_handler_processor_str = self._get_arg_handler_processor(func_proto.func_name, func_proto.op_proto)
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name)
 
@@ -494,39 +416,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
         raise TypeError("Only support pyboost or python_method.")
 
-    def _get_arg_handler_processor(self, func_proto):
-        """
-        Generates argument handler processing code for the given function prototype.
-
-        Args:
-            func_proto (TensorFuncProto): Function prototype to generate argument processing for.
-
-        Returns:
-            str: Generated argument handler processing code.
-        """
-        arg_handler_processor = []
-        op_proto = func_proto.op_proto
-        op_args = op_proto.op_args
-        for idx, op_arg in enumerate(op_args):
-            arg_handler = op_arg.arg_handler
-            func_str = ''.join(word.capitalize() for word in arg_handler.split('_'))
-            if arg_handler:
-                func_name = func_proto.func_name
-                op_arg_name = op_arg.arg_name
-                if func_str in ("StrToEnum", "DtypeToTypeId"):
-                    arg_handler_str = self.arg_handler_prt_template.replace(func_str=func_str,
-                                                                            func_name=func_name,
-                                                                            op_arg_name=op_arg_name,
-                                                                            idx=idx)
-                else:
-                    arg_handler_str = self.arg_handler_template.replace(func_str=func_str,
-                                                                        func_name=func_name,
-                                                                        op_arg_name=op_arg_name,
-                                                                        idx=idx)
-
-                if op_arg.default == "None":
-                    arg_handler_str = self.arg_handler_optional_template.replace(idx=idx,
-                                                                                 arg_handler_str=arg_handler_str)
-                arg_handler_processor.append(arg_handler_str)
-
-        return arg_handler_processor
+    def _get_arg_handler_processor(self, func_name, op_proto):
+        op_parser = OpTemplateParser(op_proto)
+        return op_parser.get_arg_handler_processor(func_name, op_proto, is_tensor_api=True)
