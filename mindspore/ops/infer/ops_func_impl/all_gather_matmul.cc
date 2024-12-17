@@ -99,7 +99,6 @@ std::vector<TypeId> AllGatherMatmulFuncImpl::InferType(const PrimitivePtr &primi
 
   auto input_type = input_infos[kAllGatherMatmulInputInputIndex]->GetType();
   auto x2_type = input_infos[kAllGatherMatmulInputX2Index]->GetType();
-
   if (input_type != x2_type) {
     MS_LOG(EXCEPTION) << op_name << ": the dtype of input and the dtype of x2 must be the same, "
                       << "but the dtype of input is " << input_type << " and the dtype of x2 is " << x2_type;

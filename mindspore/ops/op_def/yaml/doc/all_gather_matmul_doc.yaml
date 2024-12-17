@@ -55,7 +55,7 @@ all_gather_matmul:
             RuntimeError: ``bias`` is not None.
             RuntimeError: ``group`` does not exist.
             RuntimeError: ``world_size`` is inconsistent with the actual number of running cards.
-            RuntimeError: ``world_size`` is not equal to ``2`` , ``4`` , ``8`` .
+            RuntimeError: ``world_size`` is not equal to ``2`` , ``4`` , or ``8`` .
             RuntimeError: ``gather_index`` is not ``0`` .
             RuntimeError: ``trans_input`` is ``True`` .
 

@@ -117,8 +117,21 @@ def compare(output, expect):
             raise ValueError(f"compare failed \n output: {output.asnumpy()}\n expect: {expect}")
 
 
-def generate_random_input(shape: Sequence[int], dtype: type) -> np.ndarray:
-    return np.random.randn(*shape).astype(dtype)
+def generate_random_input(shape: Sequence[int], dtype: type = None) -> np.ndarray:
+    array = np.random.randn(*shape)
+    if dtype:
+        array = array.astype(dtype)
+    return array
+
+
+def generate_random_tensor(shape: Sequence[int], dtype: ms.dtype) -> ms.Tensor:
+    # Q: Why use `numpy.random.randn` to generate a random `numpy.ndarray` and then convert it into a
+    #    `mindspore.Tensor` instead of directly using `mindspore.ops.StandardNormal` to generate a random
+    #    `mindspore.Tensor`?
+    # A: Because `mindspore.ops.StandardNormal` does not support the random seed reproduction function on the Ascend
+    #    backend, which is not conducive to reproduct results. Reference
+    #    https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.StandardNormal.html .
+    return ms.Tensor(generate_random_input(shape)).type(dtype)
 
 
 def get_inputs_np(shapes, dtypes):
