@@ -55,11 +55,9 @@ class AcmeKernelMod : public KernelMod {
 
  protected:
   virtual bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
-  virtual void CreateOpParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-    return;
+  virtual bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+    return true;
   }
-  virtual bool IsParamChanged() { return false; }
-  virtual void *GetParam() { return nullptr; }
   virtual acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
                                        const acme::OutputsImmutableInfoList &outputs,
                                        const std::vector<KernelTensor *> &ms_inputs,
