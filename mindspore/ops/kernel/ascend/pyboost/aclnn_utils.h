@@ -178,6 +178,11 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
 #define LAUNCH_ACLNN_SYNC(aclnn_api, device_context, stream_id, ...)                                          \
   [](const std::string &aclnn_name, const device::DeviceContext *device_context, size_t real_stream_id,       \
      auto &... args) -> auto {                                                                                \
+    static auto simu = common::SimulateCompile();                                                             \
+    if (simu) {                                                                                               \
+      MS_LOG(EXCEPTION) << "For " << aclnn_name << ", the output shape depends on the actual execution,"      \
+                        << " and it will affect the accuracy of memory in dryrun mode.";                      \
+    }                                                                                                         \
     static std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;                           \
     static std::list<CacheTuple> hash_cache_;                                                                 \
     static size_t capacity_{1024};                                                                            \

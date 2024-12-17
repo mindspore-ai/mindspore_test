@@ -42,7 +42,7 @@
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pynative/ir_converter.h"
-
+#include "mindspore/ops/op_def/framework_op_name.h"
 using mindspore::profiler::ProfilerManager;
 using EdgePtr = mindspore::pynative::EdgePtr;
 
@@ -907,7 +907,18 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     const auto &output_kernel_tensors = GetOutputKernelTensors(output_edges, device_context);
 
     BaseShapePtr out_shape;
+    static auto no_simu = !common::SimulateCompile();
     if (is_need_infer) {
+      if (!no_simu) {
+        bool is_dyn_shape = common::AnfAlgo::IsDynamicShape(kernel) || common::AnfAlgo::IsDynamicSequence(kernel);
+        bool is_dyn_value = common::AnfAlgo::IsDynamicValue(kernel);
+        bool is_dyn_type = common::AnfAlgo::IsAnyTypeOutput(kernel);
+        if (is_dyn_value && (is_dyn_shape || is_dyn_type)) {
+          MS_LOG(EXCEPTION) << "For " << kernel->fullname_with_scope()
+                            << ", the output shape depends on the actual execution, and it will affect the accuracy of "
+                               "memory in dryrun mode.";
+        }
+      }
       out_shape = InferNodeRealShape(kernel, input_abstracts);
     } else {
       kernel->set_abstract(op_run_info->base_op_run_info.abstract);
@@ -936,7 +947,6 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     MS_EXCEPTION_IF_NULL(kernel_mod);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
     auto stream = device_context->device_res_manager_->GetStream(stream_id);
-    static auto no_simu = !common::SimulateCompile();
     TrackerACLMemory(input_kernel_tensors, output_kernel_tensors);
     if (no_simu &&
         !device_context->GetKernelExecutor(true)->LaunchKernel(kernel, input_kernel_tensors, workspace_kernel_tensors,
@@ -946,9 +956,10 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
 
     if (is_need_infer) {
       if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
-        static auto simu = common::SimulateCompile();
-        if (simu) {
-          MS_LOG(EXCEPTION) << "For " << kernel_mod->kernel_name()
+        static std::set<std::string> no_dyn_need_update_ops = {kDynamicGetNextV2OpName, kDynamicGetNextAscendOpName,
+                                                               kReceiveOpName};
+        if (!no_simu && no_dyn_need_update_ops.find(kernel_mod->kernel_name()) == no_dyn_need_update_ops.end()) {
+          MS_LOG(EXCEPTION) << "For " << kernel->fullname_with_scope()
                             << ", the output shape depends on the actual execution, and it will affect the accuracy of "
                                "memory in dryrun mode.";
         }
