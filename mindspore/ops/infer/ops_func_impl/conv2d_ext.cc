@@ -17,15 +17,16 @@
 #include "infer/ops_func_impl/conv2d_ext.h"
 #include <string>
 #include <set>
+#include <utility>
+#include "include/common/utils/utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-
+#include "utils/convert_utils_base.h"
+#include "utils/shape_utils.h"
 #include "abstract/dshape.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/log_adapter.h"
-#include "utils/shape_utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -34,16 +35,10 @@ constexpr size_t kConvolutionInputArgsSize = 7;
 }  // namespace
 
 ShapeArray Conv2DExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  if (input_infos.size() != kConvolutionInputArgsSize) {
-    MS_LOG(EXCEPTION) << "input args size should be  " << kConvolutionInputArgsSize << ", but got "
-                      << input_infos.size();
-  }
-
   auto &input_tensor = input_infos[kIndex0];
   auto &weight_tensor = input_infos[kIndex1];
   auto input_shape = input_tensor->GetShape();
   auto weight_shape = weight_tensor->GetShape();
-  auto prim_name = primitive->name();
 
   const auto rank_2d_isbatch = 4;
   const auto rank_2d_notbatch = 3;
@@ -61,7 +56,9 @@ ShapeArray Conv2DExtFuncImpl::InferShape(const PrimitivePtr &primitive, const In
     }
     if (MS_LIKELY(!weight_tensor->IsDynamicRank())) {
       auto weight_rank = SizeToLong(weight_shape.size());
-      (void)CheckAndConvertUtils::CheckInteger("weight rank", weight_rank, kEqual, rank_2d_isbatch, prim_name);
+      MS_CHECK_VALUE(
+        weight_rank == rank_2d_isbatch,
+        CheckAndConvertUtils::CheckInteger("weight rank", weight_rank, kEqual, rank_2d_isbatch, primitive->name()));
       auto output_shape = ShapeVector(weight_rank, abstract::Shape::kShapeDimAny);
       output_shape[1] = weight_shape[0];
       return {output_shape};
@@ -70,19 +67,12 @@ ShapeArray Conv2DExtFuncImpl::InferShape(const PrimitivePtr &primitive, const In
     return {output_shape};
   }
 
-  auto input_rank = SizeToLong(input_shape.size());
-  MS_CHECK_VALUE(
-    input_rank == rank_2d_isbatch || input_rank == rank_2d_notbatch,
-    CheckAndConvertUtils::FormatCheckInRangeMsg<int64_t>("rank of input", input_rank, kIncludeBoth, {3, 4}, primitive));
-  int64_t weight_rank = SizeToLong(weight_shape.size());
-  (void)CheckAndConvertUtils::CheckInteger("weight rank", weight_rank, kEqual, rank_2d_isbatch, prim_name);
-  auto output_padding_2d = ShapeVector(weight_rank - 2, 0);
-  return ConvNdInferShape(primitive, input_infos, input_shape, weight_shape, output_padding_2d, false);
-}
-
-std::vector<TypeId> Conv2DExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                 const InferInfoPtrList &input_infos) const {
-  return {input_infos[kIndex0]->GetType()};
+  auto [batched_input_shape, is_batched] = Batchify(input_shape, 2, primitive->name());
+  auto output_shape = ConvNdInferShape(primitive, input_infos, batched_input_shape, weight_shape, false);
+  if (!is_batched) {
+    output_shape.erase(output_shape.begin());
+  }
+  return {std::move(output_shape)};
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -30,6 +30,13 @@
 
 namespace mindspore {
 namespace kernel {
+namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+}  // namespace
 bool Conv2DPaddingAscend::GetSymmetricPadding(const std::vector<int64_t> &stride_,
                                               const std::vector<int64_t> &dilation_, const ShapeVector &input_sizes,
                                               const ShapeVector &weight_sizes, const size_t dim,
@@ -111,9 +118,13 @@ void Conv2DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
+  const auto &weight_shape = inputs[kIndex1]->GetShapeVector();
+  auto spatial_len = weight_shape.size() - kIndex2;
   stride_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
+  ExpandParamIfNeeded(&stride_, spatial_len);
   padding_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   dilation_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
+  ExpandParamIfNeeded(&dilation_, spatial_len);
   groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex6]);
   auto input_sizes = inputs[kIndex0]->GetShape()->GetShapeVector();
   auto output_sizes = outputs[kIndex0]->GetShape()->GetShapeVector();

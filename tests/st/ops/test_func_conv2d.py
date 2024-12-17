@@ -159,8 +159,7 @@ def test_conv2d_dynamic():
     groups = 1
     TEST_OP(conv2d, [[x1, weight1, bias, stride, padding, dilation, groups],
                      [x2, weight2, bias, stride, padding, dilation, groups]],
-            'conv2d', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'],
-            disable_nontensor_dynamic_type="STATIC_LEN")
+            'conv2d', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
 
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
