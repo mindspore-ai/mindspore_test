@@ -61,7 +61,7 @@ class AclMemManager {
   STATUS GetModelWorkMem(void **work_ptr, int32_t device_id, std::thread::id thread_id);
   STATUS GetModelWeightMem(AclModelMemInfo *acl_weight_mem_info);
   STATUS GetModelWeightMem(void **weight_ptr, std::string model_path, int32_t device_id);
-  void ReleaseDeviceMem();
+  void ReleaseDeviceMem(int32_t device_id, std::string model_path);
   void Lock() { return acl_execute_mutex_.lock(); }
   void Unlock() { return acl_execute_mutex_.unlock(); }
 

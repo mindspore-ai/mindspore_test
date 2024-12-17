@@ -137,7 +137,7 @@ bool ModelInfer::Finalize() {
     MS_LOG(INFO) << "use default context, not destroy context";
   }
   MS_LOG(INFO) << "End to destroy context.";
-  AclMemManager::GetInstance().ReleaseDeviceMem();
+  AclMemManager::GetInstance().ReleaseDeviceMem(options_->device_id, options_->model_path);
 
   rt_ret = CALL_ASCEND_API(aclrtResetDevice, options_->device_id);
   if (rt_ret != ACL_ERROR_NONE) {
