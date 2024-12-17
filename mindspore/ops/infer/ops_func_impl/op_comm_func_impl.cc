@@ -43,8 +43,8 @@ uint64_t GetRankValue(const std::string &name, const std::unique_ptr<InferInfo> 
 
 void CheckInferShape(const std::string &name, const ShapeVector &input_shape, const ShapeVector &output_shape) {
   if (input_shape.size() != output_shape.size()) {
-    MS_EXCEPTION(ValueError) << "For '" << name << "', output_tensor shape must be equal to " << input_shape
-                             << ", but got " << output_shape;
+    MS_EXCEPTION(ValueError) << "For '" << name << "', output_tensor shape size must be equal to " << input_shape.size()
+                             << ", but got " << output_shape.size();
   }
   if (!std::equal(output_shape.begin(), output_shape.end(), input_shape.begin())) {
     MS_EXCEPTION(ValueError) << "For '" << name << "', output_tensor shape must be equal to " << input_shape
