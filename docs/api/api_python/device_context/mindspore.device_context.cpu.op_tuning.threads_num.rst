@@ -1,4 +1,4 @@
-mindspore.device_context.cpu.op_tuning.threads_num.rst
+mindspore.device_context.cpu.op_tuning.threads_num
 =======================================================
 
 .. py:function:: mindspore.device_context.cpu.op_tuning.threads_num(num)

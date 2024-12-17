@@ -1,7 +1,7 @@
 mindspore.device_context.ascend.op_debug.debug_option
 =====================================================
 
-.. py:function:: mindspore.device_context.op_debug.debug_option(option_value)
+.. py:function:: mindspore.device_context.ascend.op_debug.debug_option(option_value)
 
     使能Ascend算子调试选项，默认不开启。
 
