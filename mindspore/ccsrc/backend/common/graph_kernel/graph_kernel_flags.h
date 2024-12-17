@@ -340,13 +340,12 @@ class BACKEND_EXPORT GraphKernelPassChecker {
   GraphKernelPassChecker &operator=(GraphKernelPassChecker &&flags) = delete;
   ~GraphKernelPassChecker() { PassFlagsValidation(); }
 
+  void Init();
   void SetEnablePassActive(size_t index, bool value);
   void SetDisablePassActive(size_t index, bool value);
 
  private:
-  GraphKernelPassChecker()
-      : enable_pass_active_(std::vector<bool>(GraphKernelFlags::GetInstance().enable_pass.size(), false)),
-        disable_pass_active_(std::vector<bool>(GraphKernelFlags::GetInstance().disable_pass.size(), false)) {}
+  GraphKernelPassChecker() = default;
   void PassFlagsValidation();
 
   std::vector<bool> enable_pass_active_;
