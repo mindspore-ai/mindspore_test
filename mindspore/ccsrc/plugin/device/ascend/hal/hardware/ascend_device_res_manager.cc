@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
-#include "hal/device/mbuf_receive_manager.h"
+#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
+#include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #ifndef _WIN32
 #include <dlfcn.h>
 #include <libgen.h>
 #endif
-#include "plugin/device/ascend/hal/hardware/ge_utils.h"
 #include <utility>
 #include <unordered_set>
 #include <vector>
@@ -77,27 +76,10 @@ Format GetFormat(const tensor::TensorPtr &tensor) {
 
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 
-::ge::MemBlock *GeAllocator::Malloc(size_t size) {
-  MS_EXCEPTION_IF_NULL(res_manager_);
-  auto addr = res_manager_->AllocateMemory(size);
-  MS_LOG(DEBUG) << "GE Allocator malloc addr: " << addr << " size: " << size;
-  if (addr == nullptr) {
-    MS_LOG(ERROR) << "GE Allocator malloc addr failed.";
-    return nullptr;
+void AscendDeviceResManager::Initialize() {
+  if (initialized_) {
+    return;
   }
-  auto mem_block = new ::ge::MemBlock(*this, addr, size);
-  return mem_block;
-}
-
-void GeAllocator::Free(::ge::MemBlock *block) {
-  if (res_manager_) {
-    res_manager_->FreeMemory(block->GetAddr());
-    MS_LOG(DEBUG) << "GE Allocator free addr: " << block->GetAddr();
-  }
-  delete block;
-}
-
-void GeDeviceResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -112,9 +94,10 @@ void GeDeviceResManager::Initialize() {
     swap_manager_ = std::make_shared<SwapManager>(kDefaultStreamIndex, &AscendMemoryPool::GetInstance(),
                                                   &AscendPinMemPool::GetInstance());
   }
+  initialized_ = true;
 }
 
-void GeDeviceResManager::SetCPUMemManager() {
+void AscendDeviceResManager::SetCPUMemManager() {
   if (is_use_cpu_memory_) {
     return;
   }
@@ -128,28 +111,32 @@ void GeDeviceResManager::SetCPUMemManager() {
   is_use_cpu_memory_ = true;
 }
 
-void GeDeviceResManager::Destroy() {
+void AscendDeviceResManager::Destroy() {
+  if (!initialized_) {
+    return;
+  }
   (void)DestroyAllEvents();
+  // release runtime
+  if (runtime_instance_ != nullptr) {
+    runtime_instance_->ReleaseDeviceRes();
+    runtime_instance_ = nullptr;
+  }
   // Release memory.
   if (mem_manager_ != nullptr) {
     mem_manager_->Finalize();
     mem_manager_ = nullptr;
   }
+
+  initialized_ = false;
 }
 
-bool GeDeviceResManager::IsEnableVmm() const { return AscendVmmAdapter::GetInstance().IsEnabled(); }
+bool AscendDeviceResManager::IsEnableVmm() const { return AscendVmmAdapter::GetInstance().IsEnabled(); }
 
-bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
+bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
   MS_EXCEPTION_IF_NULL(mem_manager_);
 
-  if (IsEnableRefMode() && (address->GetDeviceType() != device_context_->GetDeviceType())) {
-    MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:"
-                      << GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()))
-                      << ", type name in context:" << device_context_->device_context_key().device_name_;
-  }
-
-  if (address->GetPtr() != nullptr) {
+  if (address->pointer_ref_count()->ptr() != nullptr) {
     MS_LOG(ERROR) << "Memory leak detected!";
     return false;
   }
@@ -201,13 +188,14 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+  static bool enable_memory_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  if (enable_memory_tracker) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   }
   return true;
 }
 
-void *GeDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
+void *AscendDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(runtime_instance_);
   runtime_instance_->SetContext();
   MS_EXCEPTION_IF_NULL(mem_manager_);
@@ -217,7 +205,7 @@ void *GeDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const 
   return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
 }
 
-void *GeDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
+void *AscendDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(runtime_instance_);
   runtime_instance_->SetContext();
   if (swap_manager_ != nullptr) {
@@ -226,12 +214,12 @@ void *GeDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) 
   return mem_manager_->MallocMemFromMemPool(size, true, false, stream_id);
 }
 
-size_t GeDeviceResManager::GetMaxUsedMemorySize() const {
+size_t AscendDeviceResManager::GetMaxUsedMemorySize() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetMaxUsedMemorySize();
 }
 
-void GeDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
+void AscendDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
   if (swap_manager_ != nullptr) {
     const auto &hete_info =
@@ -261,94 +249,95 @@ void GeDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
   }
 }
 
-void GeDeviceResManager::FreeMemory(void *ptr) const {
+void AscendDeviceResManager::FreeMemory(void *ptr) const {
   MS_EXCEPTION_IF_NULL(ptr);
   MS_EXCEPTION_IF_NULL(mem_manager_);
   mem_manager_->FreeMemFromMemPool(ptr);
 }
 
-void GeDeviceResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                                         const std::vector<size_t> &keep_addr_sizes) const {
+void AscendDeviceResManager::FreePartMemorys(const std::vector<void *> &free_addrs,
+                                             const std::vector<void *> &keep_addrs,
+                                             const std::vector<size_t> &keep_addr_sizes) const {
   AscendMemoryPool::GetInstance().FreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
 }
 
-void GeDeviceResManager::DefragMemory() { AscendMemoryPool::GetInstance().DefragMemory(); }
+void AscendDeviceResManager::DefragMemory() { AscendMemoryPool::GetInstance().DefragMemory(); }
 
 // Relevant function to manage memory statistics
-size_t GeDeviceResManager::GetTotalMemStatistics() const {
+size_t AscendDeviceResManager::GetTotalMemStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetTotalMemStatistics();
 }
 
-size_t GeDeviceResManager::GetTotalUsedMemStatistics() const {
+size_t AscendDeviceResManager::GetTotalUsedMemStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetTotalUsedMemStatistics();
 }
 
-size_t GeDeviceResManager::GetTotalIdleMemStatistics() const {
+size_t AscendDeviceResManager::GetTotalIdleMemStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetTotalIdleMemStatistics();
 }
 
-size_t GeDeviceResManager::GetTotalEagerFreeMemStatistics() const {
+size_t AscendDeviceResManager::GetTotalEagerFreeMemStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetTotalEagerFreeMemStatistics();
 }
 
-size_t GeDeviceResManager::GetUsedMemPeakStatistics() const {
+size_t AscendDeviceResManager::GetUsedMemPeakStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetUsedMemPeakStatistics();
 }
 
-size_t GeDeviceResManager::GetReservedMemPeakStatistics() const {
+size_t AscendDeviceResManager::GetReservedMemPeakStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetReservedMemPeakStatistics();
 }
 
-std::unordered_map<std::string, std::size_t> GeDeviceResManager::GetBlockCountsStatistics() const {
+std::unordered_map<std::string, std::size_t> AscendDeviceResManager::GetBlockCountsStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetBlockCountsStatistics();
 }
 
-std::unordered_map<std::string, std::size_t> GeDeviceResManager::GetBlockUnitSizeStatistics() const {
+std::unordered_map<std::string, std::size_t> AscendDeviceResManager::GetBlockUnitSizeStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetBlockUnitSizeStatistics();
 }
 
-DeviceMemInfo GeDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
+DeviceMemInfo AscendDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetCommonMemBlocksInfoStatistics();
 }
 
-DeviceMemInfo GeDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
+DeviceMemInfo AscendDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetPersistentMemBlocksInfoStatistics();
 }
 
-void GeDeviceResManager::ResetMaxMemoryReserved() {
+void AscendDeviceResManager::ResetMaxMemoryReserved() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   auto memory_pool = mem_manager_->GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   memory_pool->ResetMaxMemReserved();
 }
 
-void GeDeviceResManager::ResetMaxMemoryAllocated() {
+void AscendDeviceResManager::ResetMaxMemoryAllocated() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   auto memory_pool = mem_manager_->GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   memory_pool->ResetMaxMemAllocated();
 }
 
-void GeDeviceResManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
+void AscendDeviceResManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
   (void)mem_manager_->SwapIn(host_ptr, device_ptr, mem_size, stream);
 }
 
-void GeDeviceResManager::SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) {
+void AscendDeviceResManager::SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) {
   (void)mem_manager_->SwapOut(device_ptr, host_ptr, mem_size, stream);
 }
 
-std::vector<void *> GeDeviceResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
-                                                                 uint32_t stream_id) const {
+std::vector<void *> AscendDeviceResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
+                                                                     uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(runtime_instance_);
   runtime_instance_->SetContext();
   MS_EXCEPTION_IF_NULL(mem_manager_);
@@ -363,7 +352,7 @@ std::vector<void *> GeDeviceResManager::AllocateContinuousMemory(const std::vect
   return mem_manager_->MallocContinuousMemFromMemPool(aligned_size_list, stream_id);
 }
 
-DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
+DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   if (!is_use_cpu_memory_) {
     if (kernel_tensor->device_name().empty()) {
@@ -384,10 +373,10 @@ DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &
   }
 }
 
-DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
-                                                         const Format &format, TypeId type_id,
-                                                         const std::string &device_name, uint32_t device_id,
-                                                         uint32_t stream_id) const {
+DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
+                                                             const Format &format, TypeId type_id,
+                                                             const std::string &device_name, uint32_t device_id,
+                                                             uint32_t stream_id) const {
   if (!is_use_cpu_memory_) {
     return std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, device_name, device_id,
                                                  stream_id);
@@ -397,56 +386,7 @@ DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(void *ptr, size_t size,
   }
 }
 
-void GeDeviceResManager::GeSetContextOptions(const std::shared_ptr<MsContext> &ms_context_ptr,
-                                             transform::SessionOptions *options) {
-  MS_EXCEPTION_IF_NULL(options);
-  if (ms_context_ptr->get_param<std::string>(MS_CTX_GRAPH_MEMORY_MAX_SIZE) != "0") {
-    (*options)["ge.graphMemoryMaxSize"] = ms_context_ptr->get_param<std::string>(MS_CTX_GRAPH_MEMORY_MAX_SIZE);
-  }
-
-  if (ms_context_ptr->get_param<std::string>(MS_CTX_VARIABLE_MEMORY_MAX_SIZE) != "0") {
-    (*options)["ge.variableMemoryMaxSize"] = ms_context_ptr->get_param<std::string>(MS_CTX_VARIABLE_MEMORY_MAX_SIZE);
-  }
-
-  auto atomic_clean_policy = ms_context_ptr->get_param<std::string>(MS_CTX_ATOMIC_CLEAN_POLICY);
-  if (atomic_clean_policy.empty()) {
-    atomic_clean_policy = "1";
-  }
-  (*options)["ge.exec.atomicCleanPolicy"] = atomic_clean_policy;
-  MS_LOG(INFO) << "Set GE atomic clean policy to " << atomic_clean_policy << ".";
-  (*options)["ge.graphRunMode"] = "1";
-}
-
-void GeDeviceResManager::CreateSessionAndGraphRunner() {
-  std::shared_ptr<::ge::Session> sess = transform::GetGeSession();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (sess == nullptr) {
-    transform::SessionOptions options;
-    options["ge.enablePrintOpPass"] = "0";
-    GeSetContextOptions(ms_context, &options);
-    options["ge.constLifecycle"] = "graph";
-
-    options["ge.exec.formatMode"] = "0";
-    auto format_mode = common::GetEnv("MS_FORMAT_MODE");
-    if (format_mode == "1" || (format_mode.empty() && ms_context->ascend_soc_version() != "ascend910")) {
-      MS_LOG(INFO) << "Set GE option ge.exec.formatMode to 1.";
-      options["ge.exec.formatMode"] = "1";
-    }
-
-    SetPassthroughGeOptions(false, &options);
-
-    sess = transform::NewSession(options);
-    transform::SetGeSession(sess);
-  }
-
-  transform::GraphRunnerOptions options;
-  options.sess_ptr = sess;
-  auto graph_runner = transform::NewGraphRunner(options);
-  transform::SetGraphRunner(graph_runner);
-}
-
-bool GeDeviceResManager::LoadCollectiveCommLib() {
+bool AscendDeviceResManager::LoadCollectiveCommLib() {
   // If this is simulation, load dummy collective communication library.
   if (!common::GetEnv(kSimulationLevel).empty()) {
     collective_comm_lib_ = &DummyAscendCollectiveCommLib::GetInstance();
@@ -465,7 +405,7 @@ bool GeDeviceResManager::LoadCollectiveCommLib() {
   return true;
 }
 
-bool GeDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
+bool AscendDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
   static thread_local std::once_flag is_set;
   std::call_once(is_set, []() {
     auto ms_context = MsContext::GetInstance();
@@ -488,13 +428,13 @@ bool GeDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
   return true;
 }
 
-void GeDeviceResManager::ResetStreamAndCtx() {
+void AscendDeviceResManager::ResetStreamAndCtx() {
   if (runtime_instance_ != nullptr) {
     runtime_instance_->ResetStreamAndCtx();
   }
 }
 
-bool GeDeviceResManager::CreateStream(size_t *stream_id) const {
+bool AscendDeviceResManager::CreateStream(size_t *stream_id) const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return false;
@@ -503,7 +443,7 @@ bool GeDeviceResManager::CreateStream(size_t *stream_id) const {
   return true;
 }
 
-bool GeDeviceResManager::CreateStreamWithPriority(size_t *stream_id, int32_t priority) const {
+bool AscendDeviceResManager::CreateStreamWithPriority(size_t *stream_id, int32_t priority) const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return false;
@@ -513,19 +453,21 @@ bool GeDeviceResManager::CreateStreamWithPriority(size_t *stream_id, int32_t pri
   return true;
 }
 
-size_t GeDeviceResManager::QueryStreamSize() const { return AscendStreamMng::GetInstance().QueryStreamSize(); }
+size_t AscendDeviceResManager::QueryStreamSize() const { return AscendStreamMng::GetInstance().QueryStreamSize(); }
 
-std::vector<uint32_t> GeDeviceResManager::GetStreamIds() const { return AscendStreamMng::GetInstance().GetStreamIds(); }
+std::vector<uint32_t> AscendDeviceResManager::GetStreamIds() const {
+  return AscendStreamMng::GetInstance().GetStreamIds();
+}
 
-bool GeDeviceResManager::single_op_multi_stream_enable() const {
+bool AscendDeviceResManager::single_op_multi_stream_enable() const {
   return AscendStreamMng::GetInstance().single_op_multi_stream_enable();
 }
 
-void GeDeviceResManager::set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) {
+void AscendDeviceResManager::set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) {
   return AscendStreamMng::GetInstance().set_single_op_multi_stream_enable(single_op_multi_stream_enable);
 }
 
-void *GeDeviceResManager::GetStream(size_t stream_id) const {
+void *AscendDeviceResManager::GetStream(size_t stream_id) const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return nullptr;
@@ -533,7 +475,7 @@ void *GeDeviceResManager::GetStream(size_t stream_id) const {
   return AscendStreamMng::GetInstance().GetStream(stream_id);
 }
 
-size_t GeDeviceResManager::GetCommunicationStreamID() const {
+size_t AscendDeviceResManager::GetCommunicationStreamID() const {
   if (runtime_instance_ == nullptr) {
     MS_LOG(WARNING) << "runtime_instance_ is nullptr, can not to get communication stream";
     return kDefaultStreamIndex;
@@ -541,7 +483,7 @@ size_t GeDeviceResManager::GetCommunicationStreamID() const {
   return runtime_instance_->communication_stream_id();
 }
 
-size_t GeDeviceResManager::GetCommunicationStreamIDByGroup(const std::string &group) const {
+size_t AscendDeviceResManager::GetCommunicationStreamIDByGroup(const std::string &group) const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return false;
@@ -553,7 +495,7 @@ size_t GeDeviceResManager::GetCommunicationStreamIDByGroup(const std::string &gr
   return runtime_instance_->GetCommunicationStreamIDByGroup(group);
 }
 
-void GeDeviceResManager::SetCurrentStreamId(size_t stream_id) {
+void AscendDeviceResManager::SetCurrentStreamId(size_t stream_id) {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return;
@@ -561,7 +503,7 @@ void GeDeviceResManager::SetCurrentStreamId(size_t stream_id) {
   AscendStreamMng::GetInstance().set_current_stream(stream_id);
 }
 
-size_t GeDeviceResManager::GetCurrentStreamId() const {
+size_t AscendDeviceResManager::GetCurrentStreamId() const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return SIZE_MAX;
@@ -569,7 +511,7 @@ size_t GeDeviceResManager::GetCurrentStreamId() const {
   return AscendStreamMng::GetInstance().current_stream();
 }
 
-bool GeDeviceResManager::QueryStream(size_t stream_id) const {
+bool AscendDeviceResManager::QueryStream(size_t stream_id) const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return false;
@@ -577,7 +519,7 @@ bool GeDeviceResManager::QueryStream(size_t stream_id) const {
   return AscendStreamMng::GetInstance().QueryStream(stream_id);
 }
 
-bool GeDeviceResManager::SyncStream(size_t stream_id) const {
+bool AscendDeviceResManager::SyncStream(size_t stream_id) const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return false;
@@ -585,7 +527,7 @@ bool GeDeviceResManager::SyncStream(size_t stream_id) const {
   return AscendStreamMng::GetInstance().SyncStream(stream_id);
 }
 
-bool GeDeviceResManager::SyncAllStreams() const {
+bool AscendDeviceResManager::SyncAllStreams() const {
   if (runtime_instance_ == nullptr) {
     return true;
   }
@@ -593,7 +535,7 @@ bool GeDeviceResManager::SyncAllStreams() const {
   return AscendStreamMng::GetInstance().SyncAllStreams();
 }
 
-bool GeDeviceResManager::SyncNotDefaultStreams() const {
+bool AscendDeviceResManager::SyncNotDefaultStreams() const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return false;
@@ -601,7 +543,7 @@ bool GeDeviceResManager::SyncNotDefaultStreams() const {
   return AscendStreamMng::GetInstance().SyncNotDefaultStreams();
 }
 
-size_t GeDeviceResManager::DefaultStream() const {
+size_t AscendDeviceResManager::DefaultStream() const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return SIZE_MAX;
@@ -609,7 +551,7 @@ size_t GeDeviceResManager::DefaultStream() const {
   return AscendStreamMng::GetInstance().default_stream_id();
 }
 
-std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryForTensorList(
+std::pair<vector<size_t>, vector<size_t>> AscendDeviceResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
   MS_LOG(INFO) << "Start AllocDeviceMemoryForTensorList";
   MS_EXCEPTION_IF_NULL(mem_manager_);
@@ -702,10 +644,10 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
   return std::make_pair(before_padding_sizes, after_padding_sizes);
 }
 
-TensorPtr GeDeviceResManager::GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                                              const std::vector<size_t> &before_padding_size,
-                                                              const std::vector<size_t> &after_padding_size,
-                                                              size_t start, size_t end) {
+TensorPtr AscendDeviceResManager::GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
+                                                                  const std::vector<size_t> &before_padding_size,
+                                                                  const std::vector<size_t> &after_padding_size,
+                                                                  size_t start, size_t end) {
   if (start >= tensor_list.size() || end > tensor_list.size()) {
     MS_EXCEPTION(ValueError) << "start:" << start << ", end:" << end << ", but tensor_list size:" << tensor_list.size();
   }
@@ -728,8 +670,8 @@ TensorPtr GeDeviceResManager::GetSliceByTensorListIndexHandle(const std::vector<
   return tensor;
 }
 
-TensorPtr GeDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
-                                                           size_t end) {
+TensorPtr AscendDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
+                                                               size_t end) {
   auto type_id = first_tensor->data_type();
   auto type_size = UnitSizeInBytes(type_id);
   size_t tensor_size = (end - start) * type_size;
@@ -753,7 +695,7 @@ TensorPtr GeDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorP
   return tensor;
 }
 
-int GeDeviceResManager::StressDetect() const {
+int AscendDeviceResManager::StressDetect() const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return 0;
@@ -763,13 +705,13 @@ int GeDeviceResManager::StressDetect() const {
 }
 
 // return 0 when success, otherwise return 1
-int GeDeviceResManager::SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
+int AscendDeviceResManager::SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
   ParamReplication replicator(this);
   replicator.Init();
   return replicator.SendRecv(params, src_rank, dst_rank);
 }
 
-int GeDeviceResManager::CleanTdtChannel() const {
+int AscendDeviceResManager::CleanTdtChannel() const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
     return 1;
@@ -786,7 +728,7 @@ int GeDeviceResManager::CleanTdtChannel() const {
 //  synchronization between multiple streams.
 // ACL_EVENT_CAPTURE_STREAM_PROGRESS: indicates that the number of created events is not limited and high performance,
 //  and the created events can not be used for timing and synchronization.
-DeviceEventPtr GeDeviceResManager::CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) {
+DeviceEventPtr AscendDeviceResManager::CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) {
   if (!enable_blocking && !enable_record_wait) {
     MS_LOG(INTERNAL_EXCEPTION) << "Bad parameters, enable_blocking is false and enable_record_wait is false.";
   }
@@ -801,7 +743,7 @@ DeviceEventPtr GeDeviceResManager::CreateRuntimeEvent(bool enable_blocking, bool
   return std::make_shared<AscendEvent>(flag);
 }
 
-DeviceEventPtr GeDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
+DeviceEventPtr AscendDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
   auto flag = enable_timing ? (ACL_EVENT_TIME_LINE | ACL_EVENT_SYNC) : ACL_EVENT_SYNC;
   auto event = std::make_shared<AscendEvent>(flag);
   MS_EXCEPTION_IF_NULL(event);
@@ -810,12 +752,12 @@ DeviceEventPtr GeDeviceResManager::CreateEventWithFlag(bool enable_timing, bool 
   return event;
 }
 
-void GeDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                                const std::string &to, bool blocking, bool *return_self) {
+void AscendDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
+                                    const std::string &to, bool blocking, bool *return_self) {
   device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
 }
 
-bool GeDeviceResManager::GetMemUceInfo(int32_t device_id) {
+bool AscendDeviceResManager::GetMemUceInfo(int32_t device_id) {
   aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
   size_t retSize = 0;
   auto ret = CALL_ASCEND_API(aclrtGetMemUceInfo, device_id, info, sizeof(info) / sizeof(aclrtMemUceInfo), &retSize);
@@ -840,7 +782,7 @@ bool GeDeviceResManager::GetMemUceInfo(int32_t device_id) {
   return true;
 }
 
-std::vector<std::pair<device::DeviceMemPtr, size_t>> GeDeviceResManager::GetMemUceAddr() {
+std::vector<std::pair<device::DeviceMemPtr, size_t>> AscendDeviceResManager::GetMemUceAddr() {
   std::vector<std::pair<device::DeviceMemPtr, size_t>> mem_uce_addr;
   for (size_t i = 0; i < mem_uce_info_.info.size(); ++i) {
     std::pair<device::DeviceMemPtr, size_t> mem(mem_uce_info_.info[i].addr, mem_uce_info_.info[i].len);
@@ -850,7 +792,7 @@ std::vector<std::pair<device::DeviceMemPtr, size_t>> GeDeviceResManager::GetMemU
   return mem_uce_addr;
 }
 
-void GeDeviceResManager::UceMemRepair(int32_t device_id) {
+void AscendDeviceResManager::UceMemRepair(int32_t device_id) {
   if (device_id != mem_uce_info_.device_id) {
     MS_LOG(EXCEPTION) << "Uce mem repair device id is not correct, device id is " << mem_uce_info_.device_id
                       << ", but got " << device_id << ".";
@@ -866,7 +808,7 @@ void GeDeviceResManager::UceMemRepair(int32_t device_id) {
   mem_uce_info_.retSize = 0;
 }
 
-void GeDeviceResManager::StopDevice(int32_t device_id) {
+void AscendDeviceResManager::StopDevice(int32_t device_id) {
   UCEException::GetInstance().set_force_stop_flag(true);
   // Wait 1 s to avoid stop device and suspension occur at the same time.
   const int64_t kTimeToWait = 1;
@@ -879,7 +821,7 @@ void GeDeviceResManager::StopDevice(int32_t device_id) {
   }
 }
 
-void *GeDeviceResManager::GetCopyDataStream() const {
+void *AscendDeviceResManager::GetCopyDataStream() const {
   auto copy_data_stream = AscendStreamMng::GetInstance().GetCopyStream();
   if (copy_data_stream == nullptr) {
     size_t copy_stream_id;

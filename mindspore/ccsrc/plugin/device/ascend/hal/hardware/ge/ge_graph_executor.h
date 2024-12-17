@@ -21,15 +21,13 @@
 #include <utility>
 #include <map>
 #include <set>
-#include "plugin/device/ascend/hal/hardware/ascend_deprecated_interface.h"
+#include <unordered_set>
 #include "runtime/hardware/device_context.h"
-#include "runtime/device/memory_manager.h"
 #include "utils/ms_context.h"
 #include "include/transform/graph_ir/types.h"
-#include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
-#include "plugin/device/ascend/hal/hardware/ge_summary.h"
-#include "plugin/device/ascend/hal/hardware/ge_memory_manager.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_device_res_manager.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_summary.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_memory_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -89,20 +87,24 @@ class GeMessageManager {
 class GeGraphExecutor : public GraphExecutor {
  public:
   ~GeGraphExecutor() override = default;
+  void Initialize() override;
+  void Finalize() override;
+  void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph);
   bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) override;
-  bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
-                std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) override;
+  bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
+                std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) override;
 
-  static FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph, const transform::TensorOrderMap &init_inputs_map,
-                                   bool export_air);
-  void PreprocessBeforeRun(const KernelGraphPtr &graph);
+  FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph,
+                            const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_inputs_map,
+                            bool export_air) override;
+  string ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph, bool is_save_to_file) override;
   size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const override;
   void InitGraphInfo(const FuncGraphPtr &graph) override;
 
   // For run as kernelmod.
   std::vector<std::pair<uint32_t, uint32_t>> GetGraphRefIndexes(const KernelGraphPtr &graph) const;
   void SetGraphWorkspaceMemory(const KernelGraphPtr &graph, void *device_ptr, size_t size);
-  size_t GetGraphWorkSpaceMemory(const std::string &graph_name) const;
+  size_t GetGraphWorkSpaceMemory(const KernelGraphPtr &graph) const;
   bool CompileGraphForKernel(const KernelGraphPtr &graph);
   bool RunGraphRefModeForKernel(const KernelGraphPtr &graph, const AnfNodeWeakPtr &node,
                                 const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
@@ -114,8 +116,29 @@ class GeGraphExecutor : public GraphExecutor {
     output_datas_.clear();
   }
 
+  // for ge
+  void AllocGEInputOutputMemory(const KernelGraphPtr &graph) const;
+  void AllocGERefreshableFeatureMemory(const KernelGraphPtr &graph);
+  void FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph);
+  void FreeInputOutputMemory(const KernelGraphPtr &graph) const;
+  DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor, bool is_need_alloc_mem) const;
+  void AllocInputMemory(const DeviceAddressPtr &input_address) const;
+
+  void RunCheckpointGraph(const KernelGraphPtr &graph) override;
+
+  std::unordered_set<std::string> GetInferParameterNames() override;
+
  private:
-  bool RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs);
+  // for ge_init
+  bool initialized_ = false;
+  std::shared_ptr<GeAllocator> ge_allocator_;
+  void CreateSessionAndGraphRunner() const;
+
+  // for ge_finalize
+  bool FinalizeGe();
+  void UnregisterExternalAllocator();
+
+  bool RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs);
   bool RunGraphRefModeInnner(const FuncGraphPtr &graph, const std::vector<GeTensor> &inputs,
                              std::vector<GeTensor> *outputs, void *stream);
   void BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph);
@@ -129,13 +152,9 @@ class GeGraphExecutor : public GraphExecutor {
                                                 const KernelGraphPtr &graph);
   std::vector<GeTensor> CreateOutputGeTensorList(const std::vector<KernelTensor *> &tensorsz,
                                                  const KernelGraphPtr &graph);
-  GeDeviceResManager *ResManager() const;
   void RunInitGraph(const std::string &graph_name);
   void AddRefCorrespondPairs(const KernelGraphPtr &graph, const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes);
   bool BuildGraph(const KernelGraphPtr &graph, const transform::TensorOrderMap &tensor_order_map);
-  DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_graph,
-                                             const KernelWithIndex &output_with_index,
-                                             size_t need_alloc_output_cnt) const;
   void DoAsyncCkpt(const FuncGraphPtr &graph);
   void SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;
@@ -146,6 +165,10 @@ class GeGraphExecutor : public GraphExecutor {
   int64_t pre_sink_size_{-1};
   bool disable_ge_kernel_ = IsDisableGeKernel();
   GeMessageManager ge_message_manager_;
+  mindspore::HashMap<FuncGraphPtr, bool> is_init_graph_run_;
+  // <graph_ptr, refreshable_feature_mem_ptr>
+  std::map<KernelGraphPtr, void *> graph_refreshable_feature_mem_;
+  std::shared_ptr<GeDeviceResManager> ge_res_manager_;
 };
 }  // namespace ascend
 }  // namespace device

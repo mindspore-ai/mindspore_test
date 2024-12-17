@@ -19,7 +19,6 @@
 #include <map>
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
-#include "plugin/device/ascend/hal/hardware/ge_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -28,6 +27,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/trace_base.h"
 #include "op_def/framework_ops.h"
+#include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,8 +35,17 @@ namespace {
 static const char kAlreadyCompile[] = "AlreadyCompile";
 }  // namespace
 
-KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecutor *graph_executor) {
+KernelModPtr GeOpBuild(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
+
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+  MS_EXCEPTION_IF_NULL(device_context);
+  auto graph_executor = dynamic_cast<device::ascend::GeGraphExecutor *>(device_context->graph_executor_.get());
   MS_EXCEPTION_IF_NULL(graph_executor);
 
   if (!common::AnfAlgo::CheckPrimitiveType(anf_node, prim::kPrimGEGraphOp)) {
@@ -94,8 +103,7 @@ KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecut
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "#dmsg#Kernel build failed:#dmsg#ge kernel op["
                                          << cnode->fullname_with_scope() << "] Resize failed.";
     }
-    const auto &key = device::ascend::GetGraphName(inline_subgraph);
-    auto dynamic_mem = graph_executor->GetGraphWorkSpaceMemory(key);
+    auto dynamic_mem = graph_executor->GetGraphWorkSpaceMemory(inline_subgraph);
     insert_func(dynamic_mem);
     kernel_mod_ptr->SetWorkspaceSizeList(workspace_list);
   }

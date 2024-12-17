@@ -247,6 +247,9 @@ void AscendKernelRuntime::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
 
 void AscendKernelRuntime::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Ascend finalize start";
+  if (!initialized_) {
+    return;
+  }
   SetContextForce();
 
   // release ge runtime
@@ -314,7 +317,11 @@ bool AscendKernelRuntime::Init() {
 #ifdef ENABLE_DEBUGGER
     SetDebugger();
 #endif
-    mem_manager_ = std::make_shared<AscendMemoryManager>();
+    if (!(IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK))) {
+      mem_manager_ = std::make_shared<AscendMemoryManager>();
+    } else {
+      mem_manager_ = std::make_shared<EnhancedAscendMemoryManager>();
+    }
     MS_EXCEPTION_IF_NULL(mem_manager_);
     mem_manager_->Initialize();
     auto rt_ret = CALL_ASCEND_API(aclrtSetExceptionInfoCallback, TaskExceptionCallback);

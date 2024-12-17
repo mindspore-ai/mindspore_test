@@ -17,11 +17,11 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GE_KERNEL_BUILD_H_
 #include <memory>
 #include "kernel/kernel.h"
-#include "plugin/device/ascend/hal/hardware/ge_graph_executor.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_graph_executor.h"
 
 namespace mindspore {
 namespace kernel {
-KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecutor *graph_executor);
+KernelModPtr GeOpBuild(const AnfNodePtr &anf_node);
 }  // namespace kernel
 }  // namespace mindspore
 

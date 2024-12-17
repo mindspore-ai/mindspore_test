@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <string>
+
 #include <unordered_map>
 #include "runtime/device/memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
@@ -73,6 +74,29 @@ class BACKEND_EXPORT AscendMemoryManager : public MemoryManager {
  protected:
   uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;
   uint8_t *MallocDynamicMem(size_t size, bool communication_mem) override;
+};
+
+class BACKEND_EXPORT EnhancedAscendMemoryManager : public AscendMemoryManager {
+ public:
+  EnhancedAscendMemoryManager() = default;
+  ~EnhancedAscendMemoryManager() override = default;
+
+  void Initialize() override;
+
+  void Finalize() override;
+
+  void *MallocMemFromMemPool(size_t size, bool from_persistent_mem, bool need_recycle, uint32_t stream_id) override;
+
+  bool MallocContinuousMemFromMemPool(const DeviceAddressPtrList &addr_list, size_t total_size,
+                                      std::vector<size_t> size_list, uint32_t stream_id = kDefaultStreamIndex) override;
+
+ private:
+  inline uint64_t GetCurrentTick() {
+    auto &&ts = std::chrono::system_clock::now();
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(ts.time_since_epoch()).count());
+  }
+
+  std::vector<size_t> alloc_costs_;
 };
 }  // namespace ascend
 }  // namespace device

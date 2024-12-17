@@ -99,13 +99,12 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   py::bytes GetOptimizeGraphProto(const std::string &phase);
 
   void SetJitConfig(const py::dict &jit_config);
-  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase);
+  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase, const std::string &kind = kOutput);
   bool HasCompiled(const std::string &phase) const;
 
   FuncGraphPtr BuildGraph(const py::dict &init_params, const std::string &phase) const;
   void ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt = py::none(),
                    char *key = nullptr);
-  bool InitParams(const py::dict &init_params, const std::string &phase) const;
   py::dict GetParams(const std::string &phase);
   py::bytes GetRandomStatus(const std::string &phase) const;
   void UpdataParamNodeDefaultInput(const std::string &phase,
@@ -168,14 +167,13 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   // If enable compile cache, get the compile cache resource.
   void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);
 
-#ifdef WITH_BACKEND
-  void GeFirstInitParams();
-#endif
-
   bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
                     bool use_vm);
   py::object RunInner(const py::tuple &args, const py::object &phase);
   void ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list);
+  void ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend, const py::dict &dict,
+                              std::map<std::string, std::shared_ptr<tensor::Tensor>> *const tensors,
+                              const FuncGraphPtr &anf_graph) const;
 
   std::map<std::string, ExecutorInfoPtr> info_;
   static std::shared_ptr<GraphExecutorPy> executor_;

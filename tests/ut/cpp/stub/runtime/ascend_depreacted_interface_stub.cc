@@ -19,21 +19,12 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-void AscendDeprecatedInterface::DoExecNonInputGraph(const std::string &) {}
-
-void AscendDeprecatedInterface::ExportDFGraph(const std::string &, const std::string &, const pybind11::object &,
-                                              char *) {}
-FuncGraphPtr AscendDeprecatedInterface::BuildDFGraph(const FuncGraphPtr &, const pybind11::dict &) { return nullptr; }
-bool AscendDeprecatedInterface::RunInitGraph(const FuncGraphPtr &anf_graph, const pybind11::dict &init_params) { return true; }
-void AscendDeprecatedInterface::ClearGraphWrapper() {}
-void AscendDeprecatedInterface::ClearOpAdapterMap() {}
 void AscendDeprecatedInterface::DumpProfileParallelStrategy(const FuncGraphPtr &) {}
 
 bool AscendDeprecatedInterface::OpenTsd(const std::shared_ptr<MsContext> &) { return true; }
 bool AscendDeprecatedInterface::CloseTsd(const std::shared_ptr<MsContext> &, bool) { return true; }
 bool AscendDeprecatedInterface::IsTsdOpened(const std::shared_ptr<MsContext> &) { return true; }
 bool AscendDeprecatedInterface::CheckIsAscend910Soc() { return true; }
-void AscendDeprecatedInterface::UnregisterExternalAllocator() {}
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

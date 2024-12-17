@@ -16,7 +16,7 @@
 #include "common/common_test.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/hal/hardware/ge_memory_manager.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_memory_manager.h"
 #undef private
 #undef protected
 
