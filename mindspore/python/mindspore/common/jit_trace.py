@@ -28,8 +28,10 @@ from mindspore._c_expression import JitExecutor_
 from mindspore._c_expression import TensorNode
 from mindspore._c_expression import Tensor, CSRTensor, COOTensor
 
+
 class TraceJitContext(JitContext):
     """JIT Context for trace JIT."""
+
     def __init__(self):
         JitContext.__init__(self)
 
@@ -60,6 +62,7 @@ _trace_compile_cache = set()
 _jit_executor = JitExecutor_.get_instance()
 _using_trace = False
 
+
 def _set_compile_only(compile_only=True):
     global _compile_only
     _compile_only = compile_only
@@ -69,14 +72,26 @@ def _sync_stub_tensor(stub):
     """Synchronize stub tensor"""
     if is_stub_tensor(stub):
         real_tensor = stub.stub_sync()
-        logger.debug(f'Convert stub tensor, stub: [{type(stub)}] {id(stub)}/{stub}, '\
-            f'tensor: [{type(real_tensor)}] {id(real_tensor)}/{real_tensor}')
+        logger.debug(f'Convert stub tensor, stub: [{type(stub)}] {id(stub)}/{stub}, '
+                     f'tensor: [{type(real_tensor)}] {id(real_tensor)}/{real_tensor}')
         return real_tensor
     if isinstance(stub, tuple):
         return tuple(_sync_stub_tensor(item) for item in stub)
     if isinstance(stub, list):
         return list(_sync_stub_tensor(item) for item in stub)
     return stub
+
+
+def nested_run(fn, *args):
+    """Start a trace process nested in ast."""
+    set_jit_context(_trace_jit_context)
+    args = args[0]
+    res = fn.__wrapped__(*args)
+    if res is not tuple:
+        res = (res,)
+    file_names, linenos = _get_caller_lines()
+    set_jit_context(None)
+    return file_names, linenos, res
 
 
 def _jit_trace(fn):
@@ -129,7 +144,7 @@ def _jit_trace(fn):
             generate_name = generate_name + "." + obj.__class__.__name__
         generate_name = generate_name + "." + fn.__name__ + "#" + str(id(fn))
         if hasattr(obj, fn.__name__):  # Add create time for Cell.
-            generate_name = generate_name  + '#created_' + str(args[0].create_time)
+            generate_name = generate_name + '#created_' + str(args[0].create_time)
         line_str = fn.__code__.co_filename + ":" + str(fn.__code__.co_firstlineno)
         generate_name = generate_name + '#[' + line_str + ']'
 
@@ -144,6 +159,7 @@ def _jit_trace(fn):
         logger.debug(f'output: {output}')
         return output
 
+    jit_trace_wrap.__trace_func__ = True
     return jit_trace_wrap
 
 
@@ -161,6 +177,7 @@ def _get_caller_lines():
         file_names.append(file_name)
         linenos.append(lineno)
     return file_names, linenos
+
 
 def _get_args_for_run(args):
     """Get the actual input args and kwargs for runtime."""

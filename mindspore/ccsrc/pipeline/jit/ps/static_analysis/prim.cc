@@ -64,6 +64,7 @@
 #include "pipeline/jit/ps/static_analysis/builtin_prim.h"
 #include "pipeline/jit/ps/static_analysis/prim_to_function.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "pipeline/jit/trace/trace_recorder.h"
 #include "utils/check_convert_utils.h"
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
@@ -5457,6 +5458,59 @@ class DoUnpackCallEvaluator : public TransitionPrimEvaluator {
   }
 };
 
+class TraceGraphEvaluator : public TransitionPrimEvaluator {
+ public:
+  TraceGraphEvaluator() : TransitionPrimEvaluator("TraceGraphEvaluator") {}
+  ~TraceGraphEvaluator() override = default;
+  MS_DECLARE_PARENT(TraceGraphEvaluator, TransitionPrimEvaluator);
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override {
+    const auto &node = out_conf->node();
+    MS_EXCEPTION_IF_NULL(node);
+    const auto &cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    const auto &fg = cnode->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    const auto &trace_recorder = trace::TraceRecorder::GetInstance();
+    const auto &trace_top_graph = trace_recorder->InitTopGraph(node->debug_info());
+    py::tuple py_inputs(args_abs_list.size());
+    for (size_t i = 0; i < args_abs_list.size(); ++i) {
+      const auto &param = trace_top_graph->add_parameter();
+      param->set_abstract(args_abs_list[i]);
+      py_inputs[i] = trace_recorder->InitTraceGraphInputs(args_abs_list[i], param);
+    }
+    const auto &trace_prim_node = cnode->input(0);
+    const auto &trace_prim_cnode = trace_prim_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(trace_prim_cnode);
+    constexpr auto obj_index = 3;
+    const auto &obj_node = trace_prim_cnode->input(obj_index);
+    if (!obj_node->isa<ValueNode>()) {
+      MS_LOG(EXCEPTION) << "Trace node missing function object.";
+    }
+    const auto &obj_value_node = obj_node->cast<ValueNodePtr>();
+    const auto &obj_value = GetValueNode<parse::InterpretedObjectPtr>(obj_value_node);
+    MS_EXCEPTION_IF_NULL(obj_value);
+    const py::object &func_obj = obj_value->obj();
+    const py::tuple &output =
+      python_adapter::CallPyFn("mindspore.common.jit_trace", "nested_run", func_obj, *py_inputs);
+    const py::list &file_names = output[0];
+    const py::list &linenos = output[1];
+    const py::tuple &output_args = output[2];
+    const auto &func_graph = trace_recorder->BuildEndGraph(file_names, linenos, py::args(output_args), true);
+    MS_EXCEPTION_IF_NULL(out_conf);
+    auto eng = out_conf->engine();
+    AddToManager(eng, trace_top_graph);
+    AnfNodePtrList new_inputs{NewValueNode(trace_top_graph)};
+    const auto &origin_inputs = cnode->inputs();
+    for (size_t i = 1; i < origin_inputs.size(); ++i) {
+      (void)new_inputs.emplace_back(origin_inputs[i]);
+    }
+    const auto &new_node = fg->NewCNodeInOrder(new_inputs);
+    AnfNodeConfigPtr fn_conf = engine->MakeConfig(new_node, out_conf->context(), out_conf->func_graph());
+    return engine->ForwardConfig(out_conf, fn_conf);
+  }
+};
+
 struct PrimitiveImplInferValue {
   PrimitiveImpl impl_;        // implement function of primitive
   bool eval_value_;           // whether evaluate value
@@ -5523,6 +5577,7 @@ void InitPrimEvaluatorConstructors() {
   constructor[prim::kPrimWhileLoop] = std::make_shared<WhileLoopEvaluator>();
   constructor[prim::kPrimScan] = std::make_shared<ScanEvaluator>();
   constructor[prim::kPrimForiLoop] = std::make_shared<ForiLoopEvaluator>();
+  constructor[prim::kPrimTraceGraph] = std::make_shared<TraceGraphEvaluator>();
 }
 
 void InitBuiltinPrimEvaluatorConstructors() {
