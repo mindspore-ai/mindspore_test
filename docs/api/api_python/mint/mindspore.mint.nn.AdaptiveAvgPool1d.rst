@@ -1,7 +1,7 @@
 mindspore.mint.nn.AdaptiveAvgPool1d
 ====================================
 
-.. py:class:: mindspore.mint.nn.AdaptiveAvgPool1d(input, output_size)
+.. py:class:: mindspore.mint.nn.AdaptiveAvgPool1d(output_size)
 
     对由多个输入平面组成的输入信号应用1D自适应平均池化。
 
