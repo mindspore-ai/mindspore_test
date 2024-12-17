@@ -242,6 +242,11 @@ bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr)
   return SyncDeviceToDevice(src_device_addr);
 }
 
+bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                         const std::string &format) const {
+  return SyncHostToDevice(GetShapeVector(), size, type, tensor_data->data(), format);
+}
+
 bool CPUDeviceAddress::SyncDeviceToDevice(const DeviceSync *src_device_addr) const {
   MS_EXCEPTION_IF_NULL(src_device_addr);
   auto src_cpu_device = dynamic_cast<const CPUDeviceAddress *>(src_device_addr);

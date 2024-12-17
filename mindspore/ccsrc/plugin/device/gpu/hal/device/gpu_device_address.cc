@@ -310,6 +310,11 @@ bool GPUDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr) const {
   return true;
 }
 
+bool GPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                         const std::string &format) const {
+  return AsyncHostToDevice(size, tensor_data->data());
+}
+
 bool GPUDeviceAddress::AsyncHostToDevice(const ShapeVector &, size_t size, TypeId, const void *host_ptr,
                                          size_t stream_id) const {
   MS_ERROR_IF_NULL(host_ptr);

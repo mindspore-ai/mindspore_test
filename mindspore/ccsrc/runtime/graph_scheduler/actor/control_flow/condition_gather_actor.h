@@ -47,6 +47,8 @@ class ConditionGatherActor : public KernelActor {
   void Run(OpContext<DeviceTensor> *const context) override;
 
  private:
+  void FetchParameterInput(size_t start_index, OpContext<DeviceTensor> *const context);
+
   friend class InlineControlFlowScheduler;
   // Output num of each branch.
   size_t branch_output_num_{0};

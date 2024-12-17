@@ -64,6 +64,8 @@ class OutputActor : public AbstractActor {
   // The output actor collects output result when receive the data of actor.
   void RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) override;
 
+  void FetchParameterInput(OpContext<DeviceTensor> *const context);
+
   // The graph output need be set new device address every step or loop, to avoid that the device address
   // context of tensor be rewritten in the next step or next loop.
   void UpdateOutputDeviceAddress();

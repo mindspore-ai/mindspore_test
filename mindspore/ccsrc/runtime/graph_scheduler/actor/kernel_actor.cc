@@ -814,6 +814,12 @@ void KernelActor::UpdateInputDeviceTensor(const OpData<DeviceTensor> *input_data
 }
 
 void KernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const context) {
+  // Collect the inputs from graph root parameter.
+  if (enable_input_optimize_) {
+    FetchParameterByTensorStore(&input_device_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
+                                &memory_free_list_, context);
+  }
+
   // Collect the inputs from input data.
   const auto &data_iter = input_op_datas_.find(context->sequential_num_);
   if (data_iter != input_op_datas_.end()) {

@@ -94,9 +94,9 @@ const char kAclnnViewOp[] = "MS_DEV_VIEW_OP";
 const char kRuntimeCache[] = "backend_compile_cache";
 const char kRuntimeCopyAsync[] = "copy_async";
 const char kRuntimeClusterThreadNum[] = "cluster_thread_num";
-const char kRuntimeDisableInputOptimize[] = "disable_input_optimize";
 const char kRuntimeThreadLoadCache[] = "multi_thread_load_cache";
 const char kRuntimeAsyncInitComm[] = "async_init_comm";
+const char kRuntimeInputOptimize[] = "input_optimize";
 // Runtime debug config.
 const char kRuntimeSynchronize[] = "synchronize";
 const char kRuntimeMemoryTrack[] = "memory_track";

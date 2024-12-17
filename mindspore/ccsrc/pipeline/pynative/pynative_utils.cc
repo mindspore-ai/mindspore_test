@@ -1500,7 +1500,7 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
       if (device_address == nullptr) {
         continue;
       }
-      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output);
+      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output.get());
       output->data_sync(true);
     }
   }

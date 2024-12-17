@@ -106,6 +106,27 @@ void ConditionGatherActor::Init() {
   }
 }
 
+void ConditionGatherActor::FetchParameterInput(size_t start_index, OpContext<DeviceTensor> *const context) {
+  // Fetch parameter input tensor from device tensor store.
+  if (!enable_input_optimize_) {
+    return;
+  }
+
+  for (auto &parameter_index : parameter_indexs_) {
+    if (parameter_index.first < start_index || parameter_index.first - start_index >= input_device_tensors_.size()) {
+      continue;
+    }
+    auto device_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
+    if (device_tensor == nullptr) {
+      std::string error_info =
+        GetAID().Name() + " get graph parameter store failed: " + parameter_index.second.first.first->DebugString() +
+        ", device type:" + std::to_string(static_cast<int>(device_contexts_[0]->GetDeviceType()));
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    input_device_tensors_[parameter_index.first - start_index] = device_tensor;
+  }
+}
+
 void ConditionGatherActor::FetchInput(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   auto iter = std::find(branch_names_.begin(), branch_names_.end(), current_branch_name_);
@@ -152,6 +173,8 @@ void ConditionGatherActor::FetchInput(OpContext<DeviceTensor> *const context) {
     }
     input_device_tensors_[device_tensor_store_key.first - start_index] = device_tensor.get();
   }
+
+  FetchParameterInput(start_index, context);
 
   if (output_data_.size() != output_data_arrows_.size()) {
     MS_LOG(EXCEPTION) << "Invalid output data size:" << output_data_.size()

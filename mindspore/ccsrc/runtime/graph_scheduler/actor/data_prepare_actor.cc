@@ -49,16 +49,6 @@ constexpr size_t kMapTensorValueIndex = 1;
 constexpr size_t kMapTensorStatusIndex = 2;
 constexpr size_t kPinMemThreshold = 1024 << 10;
 
-bool IsEmptySequenceTensor(const TensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  if (tensor->base_shape_ptr() == nullptr || (!tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
-    return false;
-  }
-  const auto &sequence_shape = tensor->base_shape_ptr()->cast<abstract::SequenceShapePtr>();
-  MS_EXCEPTION_IF_NULL(sequence_shape);
-  return sequence_shape->size() == 0;
-}
-
 bool IsDataTakenOverByMemOffload(const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(device_context);
   if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
@@ -368,7 +358,7 @@ void DataPrepareActor::Init() {
 
 void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor) const {
   MS_EXCEPTION_IF_NULL(input_node);
-  if (input_tensor == nullptr || IsEmptySequenceTensor(input_tensor)) {
+  if (input_tensor == nullptr || IsEmptySequenceTensor(input_tensor.get())) {
     return;
   }
   if (!input_node->isa<Parameter>()) {
@@ -480,6 +470,30 @@ void DataPrepareActor::SetInitTensorsIfNeeded(const std::vector<std::vector<Tens
   }
 }
 
+void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors,
+                                                      const VectorRef &args, OpContext<DeviceTensor> *const context,
+                                                      uint64_t start_time) {
+  ParameterStore::GetInstance().GetGraphParameterStore()->ResetPrepareState();
+  if (first_step_) {
+    PrepareDataForDeviceTensorStore(input_tensors, args, context);
+  }
+  first_step_ = false;
+  // Debug actor is blocked, must wait debug actor callback message to process continue.
+  if (debug_aid_ != nullptr && strategy_ == GraphExecutionStrategy::kPipeline) {
+    SendDebugReq(context);
+    return;
+  }
+
+  if (profiler_aid_ != nullptr && strategy_ == GraphExecutionStrategy::kPipeline) {
+    SendProfilerReq(context);
+    return;
+  }
+
+  PROFILER_END(start_time, runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kPreLaunch, GetAID().Name(),
+               false);
+  PostRun(context);
+}
+
 void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
                                    OpContext<DeviceTensor> *const context, GraphExecutionStrategy real_strategy) {
   MS_EXCEPTION_IF_NULL(context);
@@ -498,6 +512,11 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
     MsException::Instance().SetException();
     std::string error_info = e.what();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
+  }
+
+  if (enable_input_optimize_) {
+    PrepareDataBeforeInputOptimize(input_tensors, args, context, start_time);
+    return;
   }
 
   MS_LOG(DEBUG) << "Data prepare actor(" << GetAID().Name() << ") prepares data.";
@@ -588,35 +607,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   }
   auto arg_index = iter - graph_compiler_info_->origin_parameters_order_.begin();
   auto tensor = FetchInputTensorByArg(args, arg_index, front_node);
-  // The tensor needs to be converted to contiguous before being given to the actors.
-  // After the view feature is supported in the graph mode, the following code will be deleted.
-  DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
-  runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
-  return tensor;
-}
-
-TensorPtr DataPrepareActor::FetchInputTensorByArg(const VectorRef &args, size_t arg_index,
-                                                  const KernelWithIndex &front_node) const {
-  if (arg_index >= args.size()) {
-    MS_LOG(INFO) << "Arg index out of args range, index is " << arg_index << " and args size is " << args.size();
-    return nullptr;
-  }
-
-  std::vector<tensor::TensorPtr> flatten_tensors;
-  AnfAlgo::FlattenInputArg(args[arg_index], front_node.first, &flatten_tensors);
-  auto input_tensor_index = FetchInputTensorIndex(front_node);
-  if (input_tensor_index >= flatten_tensors.size()) {
-    MS_LOG(INFO) << "Input tensor index out of args range, index is " << input_tensor_index << " and tensors size is "
-                 << flatten_tensors.size();
-    return nullptr;
-  }
-
-  auto tensor = flatten_tensors[input_tensor_index];
-  // The tensor needs to be converted to contiguous before being given to the actors.
-  // After the view feature is supported in the graph mode, the following code will be deleted.
-  DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
-  runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
-
+  // The tensor needs to be updated if modified.
   if (tensor != nullptr && tensor->update_value_callback() == nullptr && tensor->is_parameter()) {
     static auto callback = [](const tensor::Tensor *tensor) { tensors_need_reprepare_.insert(tensor); };
     tensor->set_update_value_callback(callback);
@@ -627,22 +618,11 @@ TensorPtr DataPrepareActor::FetchInputTensorByArg(const VectorRef &args, size_t 
     MS_LOG(DEBUG) << "Erase " << erased_num << " tensor which is reprepared.";
   }
 
+  // The tensor needs to be converted to contiguous before being given to the actors.
+  // After the view feature is supported in the graph mode, the following code will be deleted.
+  DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+  runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
   return tensor;
-}
-
-size_t DataPrepareActor::FetchInputTensorIndex(const KernelWithIndex &front_node) const {
-  MS_EXCEPTION_IF_NULL(front_node.first);
-  if (common::AnfAlgo::IsDynamicSequence(front_node.first)) {
-    return 0;
-  }
-
-  const auto &abs = front_node.first->abstract();
-  MS_EXCEPTION_IF_NULL(abs);
-  if (abs->isa<abstract::AbstractSequence>()) {
-    return front_node.second;
-  }
-
-  return 0;
 }
 
 void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors,
@@ -701,6 +681,14 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
                     << " backend is weight:" << IsPersistentDeviceTensor(input_node)
                     << " front is weight:" << parser->IsRootGraphPersistentDeviceTensor(front_node);
       if (IsPersistentDeviceTensor(input_node) && parser->IsRootGraphPersistentDeviceTensor(front_node)) {
+        if (enable_input_optimize_) {
+          auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+          MS_EXCEPTION_IF_NULL(graph_parameter_store);
+          auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
+          (void)FetchParameter(std::make_pair(std::make_pair(front_node, 0), outer_idx), context, real_device_context,
+                               GetAID());
+          continue;
+        }
         std::vector<TensorPtr> graph_tensors = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors[i];
         TensorPtr input_tensor = FetchInputTensor(graph_tensors, j, args, {front_node, 0});
         PrepareDataForWeightNode(input_node, front_node, input_tensor, real_device_context, context);
@@ -1344,6 +1332,14 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     auto &front_parameter = control_node_parameters[i].first;
     MS_EXCEPTION_IF_NULL(front_parameter);
     if (!control_node_parser->IsRootGraphPersistentDeviceTensor(front_parameter)) {
+      continue;
+    }
+
+    if (enable_input_optimize_) {
+      auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+      MS_EXCEPTION_IF_NULL(graph_parameter_store);
+      auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_parameter.get());
+      (void)FetchParameter(std::make_pair(control_node_parameters[i], outer_idx), context, nullptr, GetAID());
       continue;
     }
 
