@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import context
 from mindspore.mint.distributed.distributed import (
     init_process_group,
+    new_group,
     get_rank,
     get_world_size,
     all_gather_object,
@@ -140,6 +141,18 @@ def test_hccl_scatter_object_list():
     scatter_object_list(scatter_object_output_list, scatter_object_input_list)
     assert len(scatter_object_input_list) == size
     assert scatter_object_output_list[0] == str(rank)
+    if rank == 2 or rank == 3:
+        group = new_group([2, 3])
+        scatter_object_input_list = []
+        scatter_object_output_list = [None]
+        for i in range(2):
+            if rank != 2:
+                scatter_object_input_list.append(None)
+            else:
+                scatter_object_input_list.append(str(i))
+        scatter_object_list(scatter_object_output_list, scatter_object_input_list, src=2, group=group)
+        assert len(scatter_object_input_list) == 2
+        assert scatter_object_output_list[0] == str(rank-2)
     #异常用例
     with pytest.raises(TypeError):
         scatter_object_list(scatter_object_output_list, scatter_object_input_list, group=1)

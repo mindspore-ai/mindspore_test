@@ -2548,7 +2548,8 @@ def scatter_object_list(scatter_object_output_list, scatter_object_input_list, s
         tensor_list = [Tensor(data) for i in range(group_size)]
     out_tensor = Tensor(data)
     scatter(out_tensor, tensor_list, src, group)
-    scatter_object_output_list[0] = _tensor_to_object(out_tensor, object_size[rank_id])
+    group_id = get_group_rank_from_world_rank(rank_id, group)
+    scatter_object_output_list[0] = _tensor_to_object(out_tensor, object_size[group_id])
 
 
 def gather_object(obj, object_gather_list=None, dst=0, group=None):
