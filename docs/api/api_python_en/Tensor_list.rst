@@ -42,6 +42,7 @@
 
     mindspore.Tensor.__abs__
     mindspore.Tensor.__add__
+    mindspore.Tensor.__eq__
     mindspore.Tensor.__isub__
     mindspore.Tensor.__sub__
     mindspore.Tensor.abs
@@ -159,6 +160,7 @@
     mindspore.Tensor.gather
     mindspore.Tensor.gather_elements
     mindspore.Tensor.gather_nd
+    mindspore.Tensor.gcd
     mindspore.Tensor.ge
     mindspore.Tensor.geqrf
     mindspore.Tensor.ger
