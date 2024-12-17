@@ -34,7 +34,7 @@ SET FFMPEG_COMPILE_SOURCE_PATH=%MSYS64_PATH%\home\ffmpeg\install_ffmpeg_lib
 SET FFMPEG_DLL_PATH=%BASE_PATH%\build\mindspore\ffmpeg_lib
 SET MINDSPORE_FFMPEG_PATCH_PATH=%BASE_PATH%\third_party\patch\ffmpeg
 SET MSYS_FFMPEG_PATCH_PATH=%MSYS64_PATH%\home\patch
-SET FFMPEG_ERROR_LOG=%MSYS64_PATH%\home\ffmpeg\ffbuild\config.log
+SET FFMPEG_ERROR_LOG=%MSYS64_PATH%\home\ffmpeg\build\ffbuild\config.log
 
 
 SET SOFTWARE_NAME=FFmpeg
