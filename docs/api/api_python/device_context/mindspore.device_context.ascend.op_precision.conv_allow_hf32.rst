@@ -1,7 +1,7 @@
 mindspore.device_context.ascend.op_precision.conv_allow_hf32
 ============================================================
 
-.. py:function:: mindspore.device_context.op_precision.conv_allow_hf32(value)
+.. py:function:: mindspore.device_context.ascend.op_precision.conv_allow_hf32(value)
 
     是否为Conv类算子使能FP32转换为HF32。CANN默认使能Conv类算子FP32转换为HF32。
     如果您想了解更多详细信息，

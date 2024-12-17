@@ -1,7 +1,7 @@
 mindspore.device_context.ascend.op_tuning.aoe_job_type
 ======================================================
 
-.. py:function:: mindspore.device_context.op_tuning.aoe_job_type(config)
+.. py:function:: mindspore.device_context.ascend.op_tuning.aoe_job_type(config)
 
     设置AOE工具专用的参数，需要和mindspore.device_context.op_tuning.aoe_tune_mode(tune_mode)配合使用，框架默认设置为2。
     如果您想了解更多详细信息，

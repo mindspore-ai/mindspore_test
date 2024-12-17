@@ -1,7 +1,7 @@
 mindspore.device_context.ascend.op_tuning.aoe_tune_mode
 =======================================================
 
-.. py:function:: mindspore.device_context.op_tuning.aoe_tune_mode(tune_mode)
+.. py:function:: mindspore.device_context.ascend.op_tuning.aoe_tune_mode(tune_mode)
 
     表示启动AOE调优，默认不设置。
     如果您想了解更多详细信息，
