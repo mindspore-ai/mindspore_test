@@ -54,6 +54,16 @@ else()
             PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2022-3965.patch
             PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-47342.patch
             PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-7272.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-50008.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-51793.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-51795.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-31578.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-35366.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-35367.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-35368.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-36616.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-36617.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-36618.patch
             CONFIGURE_COMMAND ./configure ${FFMPEG_FLAGS}
             )
 
