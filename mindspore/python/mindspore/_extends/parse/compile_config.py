@@ -316,6 +316,15 @@ Value Range:
 """
 PYNATIVE_JIT_GRAD_MODE = ''
 
+"""
+Name: PUT_ALL_CNODE_INTO_ORDER_LIST
+Function: Whether to put all CNode into order list in back prop.
+Value Range:
+    0: Disable
+    Default: Enable.
+"""
+PUT_ALL_CNODE_INTO_ORDER_LIST = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -350,4 +359,5 @@ __all__ = [
     "GRAD_FOR_SCALAR",
     "DEBUG_LEVEL",
     "PYNATIVE_JIT_GRAD_MODE",
+    "PUT_ALL_CNODE_INTO_ORDER_LIST",
 ]
