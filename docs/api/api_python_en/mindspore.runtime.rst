@@ -6,7 +6,7 @@ Runtime encapsulates interfaces for stream, event, memory, and executor. MindSpo
 Stream
 ---------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
@@ -22,7 +22,7 @@ Stream
 Event
 ---------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
@@ -32,7 +32,7 @@ Event
 Memory
 ------------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
@@ -52,7 +52,7 @@ Memory
 Executor
 ------------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
