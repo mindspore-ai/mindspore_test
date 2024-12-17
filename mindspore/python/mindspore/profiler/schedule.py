@@ -47,27 +47,81 @@ class ProfilerAction(Enum):
             value (int): The value of the ProfilerAction enum member to retrieve.
 
         Returns:
-            ProfilerAction: The enum member corresponding to the given value, or None if not found.
+            ProfilerAction, The enum member corresponding to the given value, or None if not found.
         """
         value_map = {action.value: action for action in ProfilerAction}
         return value_map.get(value, None)
 
 
 class Schedule:
-    """
-    Schedule class use to get the actions of each step
+    r"""
+    This class use to get the actions of each step.
     The schedule is as follows:
-    (NONE)        (NONE)            (NONE)       (WARM_UP)       (RECORD)      (RECORD)        (RECORD_AND_SAVE)    None
-    START-------->skip_first-------->wait-------->warm_up-------->active........active.........active-------------->stop
-                                    |                                                               |
-                                    |                           repeat_1                            |
-                                    ----------------------------------------------------------------
-    details:
+
+    .. code-block::
+
+        (NONE)        (NONE)          (NONE)       (WARM_UP)       (RECORD)      (RECORD)     (RECORD_AND_SAVE)    None
+        START------->skip_first------->wait-------->warm_up-------->active........active.........active----------->stop
+                                      |                                                             |
+                                      |                           repeat_1                          |
+                                      ---------------------------------------------------------------
+
     The profiler will skip the first ``skip_first`` steps, then wait for ``wait`` steps,
     then do the warm_up for the next ``warm_up`` steps, then do the active recording for the next
     ``active`` steps and then repeat the cycle starting with ``wait`` steps. The optional number
     of cycles is specified with the ``repeat`` parameter, the zero value means that
     the cycles will continue until the profiling is finished.
+
+    Args:
+        wait (int): The number of steps to wait before starting the warm-up phase.
+        active (int): The number of steps to record data during the active phase.
+        warm_up (int, optional): The number of steps to perform the warm-up phase. Default: ``0``.
+        repeat (int, optional): The number of times to repeat the cycle. Default: ``0``.
+        skip_first (int, optional): The number of steps to skip at the beginning. Default: ``0``.
+
+    Raises:
+        ValueError: When the parameter step is less than 0.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.dataset as ds
+        >>> from mindspore import context, nn, Profiler
+        >>> from mindspore.profiler import schedule, tensor_board_trace_handler
+        >>>
+        >>> class Net(nn.Cell):
+        ...     def __init__(self):
+        ...         super(Net, self).__init__()
+        ...         self.fc = nn.Dense(2, 2)
+        ...
+        ...     def construct(self, x):
+        ...         return self.fc(x)
+        >>>
+        >>> def generator_net():
+        ...     for _ in range(2):
+        ...         yield np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32)
+        >>>
+        >>> def train(test_net):
+        ...     optimizer = nn.Momentum(test_net.trainable_params(), 1, 0.9)
+        ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+        ...     data = ds.GeneratorDataset(generator_net(), ["data", "label"])
+        ...     model = ms.train.Model(test_net, loss, optimizer)
+        ...     model.train(1, data)
+        >>>
+        >>> if __name__ == '__main__':
+        ...     context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        ...
+        ...     net = Net()
+        ...     STEP_NUM = 15
+        ...
+        ...     with Profiler(schedule=schedule(wait=1, warm_up=1, active=2, repeat=1, skip_first=2),
+        ...                   on_trace_ready=tensor_board_trace_handler) as prof:
+        ...         for i in range(STEP_NUM):
+        ...             train(net)
+        ...             prof.step()
     """
 
     def __init__(self, *, wait: int, active: int, warm_up: int = 0, repeat: int = 0, skip_first: int = 0) -> None:
@@ -80,13 +134,13 @@ class Schedule:
 
     def __call__(self, step: int) -> ProfilerAction:
         """
-        Obtain the action of the specified step from the schedule
+        Obtain the action of the specified step from the schedule.
 
         Args:
-            step: step num
+            step (int): step num.
 
         Returns:
-            ProfilerAction: The action corresponding to a step
+            ProfilerAction, The action corresponding to a step.
         """
         if step < 0:
             raise ValueError("Invalid parameter step, which must be not less than 0.")
@@ -109,7 +163,7 @@ class Schedule:
     def _check_params(self):
         """
         Verify all parameters in the schedule,
-        and set them to default values if the parameters are not compliant
+        and set them to default values if the parameters are not compliant.
         """
         if not isinstance(self.wait, int) or self.wait < 0:
             logger.warning("Invalid parameter wait, reset it to 0.")
@@ -131,10 +185,10 @@ class Schedule:
 
     def to_dict(self):
         """
-        Convert the schedule class to a map
+        Convert schedule to a dict.
 
         Returns:
-            Map: schedule map.
+            dict, the parameters of schedule and their values.
         """
         return {'wait': self.wait, 'active': self.active, 'warm_up': self.warm_up,
                 'repeat': self.repeat, 'skip_first': self.skip_first}
@@ -146,9 +200,9 @@ def _default_schedule_fn(_: int) -> ProfilerAction:
     keeps doing it on every profiler step.
 
     Args:
-        _: step num
+        _ (int): step num.
 
     Returns:
-        ProfilerAction: The RECORD action.
+        ProfilerAction, The RECORD action.
     """
     return ProfilerAction.RECORD

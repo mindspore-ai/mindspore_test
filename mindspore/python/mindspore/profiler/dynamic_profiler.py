@@ -24,12 +24,12 @@ import multiprocessing
 
 from mindspore import log as logger
 from mindspore.train import Callback
-from mindspore.profiler import Profiler
-from mindspore.profiler import ProfilerLevel
+from mindspore.profiler import Profiler, tensor_board_trace_handler, schedule
 from mindspore.communication import get_rank
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.profiler_interface import ProfilerInterface
+from mindspore.profiler.common.constant import ProfilerActivity, ProfilerLevel
 
 
 def get_real_rank():
@@ -49,17 +49,16 @@ class DynamicProfilerArgs:
     """
     Data class for dynamic profile config.
     """
-    FMT = "iiiiii?????"
+    FMT = "iiiiii????"
     SIZE = struct.calcsize(FMT)
 
     def __init__(self,
                  start_step: int = -1,
                  stop_step: int = -1,
                  aicore_metrics: int = -1,
-                 profiler_level: int = -1,
-                 profile_framework: int = -1,
+                 profiler_level: int = 0,
                  analyse_mode: int = -1,
-                 profile_communication: bool = False,
+                 activities: int = 0,
                  parallel_strategy: bool = False,
                  with_stack: bool = False,
                  data_simplification: bool = True,
@@ -69,9 +68,8 @@ class DynamicProfilerArgs:
         self._stop_step = stop_step
         self._aicore_metrics = aicore_metrics
         self._profiler_level = profiler_level
-        self._profile_framework = profile_framework
         self._analyse_mode = analyse_mode
-        self._profile_communication = profile_communication
+        self._activities = activities
         self._parallel_strategy = parallel_strategy
         self._with_stack = with_stack
         self._data_simplification = data_simplification
@@ -93,24 +91,16 @@ class DynamicProfilerArgs:
             self._aicore_metrics = -1
 
         if not isinstance(self._profiler_level, int):
-            logger.warning("profiler_level should be int type, profiler_level will be reset to -1.")
-            self._profiler_level = -1
-
-        if not isinstance(self._profile_framework, int):
-            logger.warning("profile_framework should be int type, profile_framework will be reset to -1.")
-            self._profile_framework = -1
+            logger.warning("profiler_level should be int type, profiler_level will be reset to 0.")
+            self._profiler_level = 0
 
         if not isinstance(self._analyse_mode, int):
             logger.warning("analyse_mode should be int type, analyse_mode will be reset to -1.")
             self._analyse_mode = -1
 
-        if not isinstance(self._profile_communication, bool):
-            logger.warning("profile_communication should be bool type, profile_communication will be reset to False.")
-            self._profile_communication = False
-
-        if not isinstance(self._parallel_strategy, bool):
-            logger.warning("parallel_strategy should be bool type, parallel_strategy will be reset to False.")
-            self._parallel_strategy = False
+        if not isinstance(self._activities, int):
+            logger.warning("activities should be int type, activities will be reset to 0.")
+            self._activities = 0
 
         if not isinstance(self._with_stack, bool):
             logger.warning("with_stack should be bool type, with_stack will be reset to False.")
@@ -163,7 +153,7 @@ class DynamicProfilerArgs:
     def args(self):
         """ get all args in DynamicProfilerArgs."""
         self._profiler_level = self._convert_profiler_level(self._profiler_level)
-        self._profile_framework = self._convert_profile_framework(self._profile_framework)
+        self._activities = self._convert_activities(self._activities)
         not_supported_args = ['_start_step', '_stop_step', '_analyse_mode', '_is_valid']
         res = {}
         for key, value in self.__dict__.items():
@@ -200,15 +190,17 @@ class DynamicProfilerArgs:
             return ProfilerLevel.Level1
         if profiler_level == 2:
             return ProfilerLevel.Level2
-        return None
+        return ProfilerLevel.Level0
 
-    def _convert_profile_framework(self, profile_framework: int) -> str:
-        """ convert profile_framework to real args in Profiler."""
-        if profile_framework == 0:
-            return "time"
-        if profile_framework == 1:
-            return "all"
-        return None
+    def _convert_activities(self, activities: int) -> ProfilerLevel:
+        """ convert activities to real args in Profiler."""
+        if activities == 0:
+            return [ProfilerActivity.CPU, ProfilerActivity.NPU]
+        if activities == 1:
+            return [ProfilerActivity.CPU]
+        if activities == 2:
+            return [ProfilerActivity.NPU]
+        return [ProfilerActivity.CPU, ProfilerActivity.NPU]
 
 
 class DynamicProfilerMonitorBase(Callback):
@@ -241,6 +233,9 @@ class DynamicProfilerMonitorBase(Callback):
         self._last_stop_step = None
         self._is_create_process = None
         self._is_started = False
+        self._start_step = 0
+        self._stop_step = 0
+        self._step_num = 0
 
         self._init_cfg_json()
         self._create_shm()
@@ -317,6 +312,126 @@ class DynamicProfilerMonitorBase(Callback):
                 self._profiler = None
                 self._is_started = False
                 print_msg(f"Rank {self._rank_id} Dynamic profiler stop at step {step_num}")
+
+    def step(self):
+        """
+        Used for Ascend, distinguish step collection and parsing performance data by dynamic profiler.
+
+        Raises:
+            RuntimeError: If the 'start_step' parameter setting is greater than the 'stop_step' parameter setting.
+
+        Examples:
+            >>> import json
+            >>> import os
+            >>> import numpy as np
+            >>>
+            >>> import mindspore
+            >>> import mindspore.dataset as ds
+            >>> from mindspore import context, nn
+            >>> from mindspore.profiler import DynamicProfilerMonitor
+            >>>
+            >>>
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.fc = nn.Dense(2, 2)
+            ...
+            ...     def construct(self, x):
+            ...         return self.fc(x)
+            >>>
+            >>> def generator_net():
+            ...     for _ in range(2):
+            ...         yield np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32)
+            >>>
+            >>> def train(test_net):
+            ...     optimizer = nn.Momentum(test_net.trainable_params(), 1, 0.9)
+            ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+            ...     data = ds.GeneratorDataset(generator_net(), ["data", "label"])
+            ...     model = mindspore.train.Model(test_net, loss, optimizer)
+            ...     model.train(1, data)
+            >>>
+            >>> def change_cfg_json(json_path):
+            ...     with open(json_path, 'r', encoding='utf-8') as file:
+            ...          data = json.load(file)
+            ...
+            ...     data['start_step'] = 6
+            ...     data['stop_step'] = 7
+            ...
+            ...     with open(json_path, 'w', encoding='utf-8') as file:
+            ...          json.dump(data, file, ensure_ascii=False, indent=4)
+            >>>
+            >>> if __name__ == '__main__':
+            ...      # set json configuration file
+            ...      cfg_json = {
+            ...          "start_step": 2,
+            ...          "stop_step": 5,
+            ...          "aicore_metrics": 1,
+            ...          "profiler_level": -1,
+            ...          "profile_framework": 1,
+            ...          "analyse_mode": 0,
+            ...          "with_stack": True,
+            ...          "parallel_strategy": True,
+            ...          "data_simplification": False,
+            ...          }
+            ...      context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+            ...      context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+            ...      cfg_path = os.path.join("./cfg_path", "profiler_config.json")
+            ...      # set cfg file
+            ...      with open(cfg_path, 'w') as f:
+            ...           json.dump(cfg_json, f, indent=4)
+            ...      # Assume the user has correctly configured the environment variable (RANK_ID is not a non-numeric type)
+            ...      rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
+            ...      # cfg_path contains the json configuration file path, and output_path is the output path
+            ...      dp = DynamicProfilerMonitor(cfg_path=cfg_path, output_path=cfg_path)
+            ...      STEP_NUM = 15
+            ...      # Define a network of training models
+            ...      net = Net()
+            ...      for i in range(STEP_NUM):
+            ...          print(f"step {i}")
+            ...          train(net)
+            ...          # Modify the configuration file after step 7. For example, change start_step to 8 and stop_step to 10
+            ...          if i == 7:
+            ...             # Modify parameters in the JSON file
+            ...             change_cfg_json(os.path.join(cfg_path, "profiler_config.json"))
+            ...             # Call step collection
+            ...             dp.step()
+        """
+
+        self._step_num += 1
+        prof_args = self._get_prof_args()
+
+        if not prof_args.is_valid:
+            logger.error("Dynamic profile json is not valid, please check the json file.")
+            return
+
+        if prof_args.start_step == -1 or prof_args.stop_step == -1:
+            return
+
+        # Skips the number of steps less than start_step
+        if self._step_num < prof_args.start_step:
+            return
+
+        if self._start_step != prof_args.start_step or self._stop_step != prof_args.stop_step:
+            # Update new start_step and stop_step
+            self._start_step = prof_args.start_step
+            self._stop_step = prof_args.stop_step
+            if self._start_step >= 0 and 0 <= self._start_step < self._stop_step:
+                prof_path = os.path.join(self._output_path,
+                                         f"rank{self._rank_id}_start{self._start_step}_stop{self._stop_step}")
+                self._profiler = Profiler(output_path=prof_path,
+                                          schedule=schedule(wait=0, warm_up=0,
+                                                            active=self._stop_step - self._start_step + 1,
+                                                            repeat=1,
+                                                            skip_first=1),
+                                          on_trace_ready=tensor_board_trace_handler,
+                                          **prof_args.args)
+            else:
+                self._profiler = None
+                logger.error("Both stop_step and start_step must be greater than zero, "
+                             "and stop_step must be greater than start_step!")
+
+        if self._profiler:
+            self._profiler.step()
 
     def on_train_end(self, run_context):
         """
@@ -431,13 +546,43 @@ if sys.version_info >= (3, 8):
     from multiprocessing import shared_memory
     from unittest.mock import patch
 
+
     class DynamicProfilerMonitor(DynamicProfilerMonitorBase):
         r"""
         This class to enable the dynamic profile monitoring of MindSpore neural networks.
 
         Args:
             cfg_path (str): Dynamic profile json config file directory. The requirement is a shared path
-                that can be accessed by all nodes.
+                that can be accessed by all nodes. The parameters of the json configuration file are as follows:
+
+                - start_step (int, required) - Sets the step number at which the Profiler starts collecting data.
+                  It is a relative value, with the first step of training being 1. The default value is -1, indicating
+                  that data collection will not start during the entire training process.
+                - stop_step (int, required) - Sets the step number at which the Profiler stops collecting data. It is
+                  a relative value, with the first step of training being 1. The stop_step must be greater than or
+                  equal to start_step. The default value is -1, indicating that data collection will not start during
+                  the entire training process.
+                - aicore_metrics (int, optional) - Sets the collection of AI Core metric data, with the same range of
+                  values as the Profiler. The default value is -1, indicating that AI Core metrics are not collected.
+                - profiler_level (int, optional) - Sets the level of performance data collection, where 0 represents
+                  ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and 2 represents ProfilerLevel.Level2. The
+                  default value is 0, indicating the ProfilerLevel.Level0 collection level.
+                - activities (int, optional) - Sets the devices for performance data collection, where 0 represents
+                  CPU+NPU, 1 represents CPU, and 2 represents NPU. The default value is 0, indicating the collection
+                  of CPU+NPU performance data.
+                - analyse_mode (int, optional) - Sets the mode for online analysis, corresponding to the analyse_mode
+                  parameter of the mindspore.Profiler.analyse interface, where 0 represents "sync" and 1 represents
+                  "async". The default value is -1, indicating that online analysis is not used.
+                - parallel_strategy (bool, optional) - Sets whether to collect parallel strategy performance data,
+                  where true means to collect and false means not to collect. The default value is false, indicating
+                  that parallel strategy performance data is not collected.
+                - with_stack (bool, optional) - Sets whether to collect call stack information, where true means to
+                  collect and false means not to collect. The default value is false, indicating that call stack
+                  information is not collected.
+                - data_simplification (bool, optional) - Sets whether to enable data simplification, where true means
+                  to enable and false means not to enable. The default value is true, indicating that data
+                  simplification is enabled.
+
             output_path (str, optional): Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): The polling period of the monitoring process, in seconds.
                 Default value: ``2``.
@@ -494,7 +639,7 @@ if sys.version_info >= (3, 8):
             # stop profiler when stop_step over all train step
             if self._profiler:
                 self._profiler.stop()
-                self._profiler._ascend_profiler.finalize()
+                ProfilerInterface.finalize()
                 self._profiler = None
                 logger.warning("Rank %d Dynamic profiler stop at end of training", self._rank_id)
 
@@ -550,6 +695,7 @@ if sys.version_info >= (3, 8):
 else:
     import mmap
     import stat
+
 
     class DynamicProfilerMonitor(DynamicProfilerMonitorBase):
         r"""
@@ -623,7 +769,7 @@ else:
             # stop profiler when stop_step over all train step
             if self._profiler:
                 self._profiler.stop()
-                self._profiler._ascend_profiler.finalize()
+                ProfilerInterface.finalize()
                 self._profiler = None
                 logger.warning("Rank %d Dynamic profiler stop at end of training", self._rank_id)
 
