@@ -20,6 +20,7 @@ from mindspore.common.api import _pynative_executor
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.common.profiler_context import ProfilerContext
+from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
 class ProfilerInterface:
@@ -38,6 +39,8 @@ class ProfilerInterface:
         if cls.is_initialized:
             return
 
+        ProfilerPathManager().set_ascend_ms_dir()
+        ProfilerPathManager().create_profiler_paths()
         platforms = ProfilerContext().device_target_set
         for device_target in platforms:
             cls.platform_profilers_set.add(PROFILERS.modules.get(device_target)())

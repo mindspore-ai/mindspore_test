@@ -379,7 +379,7 @@ class Profiler:
         ProfilerInterface.finalize()
 
     @classmethod
-    def offline_analyse(cls, path: str, pretty=False, step_list=None, data_simplification=False) -> None:
+    def offline_analyse(cls, path: str, pretty=False, step_list=None, data_simplification=True) -> None:
         """
         Analyze training performance data offline, which is invoked after performance data collection is completed.
 
