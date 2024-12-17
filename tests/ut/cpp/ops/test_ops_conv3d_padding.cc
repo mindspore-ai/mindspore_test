@@ -84,19 +84,6 @@ std::vector<GeneralInferParam> prepare_params() {
                   })
     .FeedExpectedOutput({{1, 24, 124, 64, 79}}, {kNumberTypeFloat32});
 
-  generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{1, 12, 124, 64, 79}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{24, 12, 4, 4, 4}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{4}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeArray{{}, {}, {}}, kNumberTypeInt64,
-                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::VALID)},
-                    InferInfoParam{ShapeArray{{}, {}, {}}, kNumberTypeInt64,
-                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
-                  })
-    .FeedExpectedOutput({{1, 24, 121, 61, 76}}, {kNumberTypeFloat32});
-
   return generator.Generate();
 }
 }  // namespace

@@ -33,6 +33,8 @@ mindspore.mint.nn.Conv3d
 
     想更深入了解卷积层，请参考论文 `Gradient Based Learning Applied to Document Recognition <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ 。
 
+    参数的约束细节，请参考 :func:`mindspore.mint.nn.functional.conv3d` 。
+
     .. warning::
         这是一个实验性API，后续可能修改或删除。
 

@@ -7114,8 +7114,9 @@ def conv3d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
 def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     r"""
     Applies a 3D convolution over an input tensor. The input tensor is typically of
-    shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`, where :math:`N` is batch size, :math:`C`
-    is channel number, :math:`D, H, W` are the depth, height and width of the feature graph, respectively.
+    shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` or :math:`(C_{in}, D_{in}, H_{in}, W_{in})`,
+    where :math:`N` is batch size, :math:`C` is channel number, :math:`D, H, W` are the depth,
+    height and width of the feature graph, respectively.
 
     The output is calculated based on formula:
 
@@ -7146,26 +7147,58 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     kernel in the :math:`k`-th channel, and :math:`{X}(N_i, k)` represents the slice of the :math:`k`-th input
     channel in the :math:`i`-th batch of the input feature map.
 
-    The shape of the convolutional kernel is given by
-    :math:`(\text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})`
-    where :math:`\text{kernel_size[0]}` , :math:`\text{kernel_size[1]}` and :math:`\text{kernel_size[2]}` are the depth,
-    height and width of the kernel, respectively.
+    The shape of the convolutional kernel is given by :math:`(kd, kh, kw)` where :math:`kd` , :math:`kd` and\
+    :math:`kw` are the depth, height and width of the kernel, respectively.
     If we consider the input and output channels as well as the `group` parameter, the complete kernel shape
-    will be :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size[0]},
-    \text{kernel_size[1]}, \text{kernel_size[2]})`,
+    will be :math:`(C_{out}, C_{in} / \text{group}, kd, kh, kw)`,
     where `group` is the number of groups dividing `x`'s input channel when applying group convolution.
 
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
+    The following lists some of the limitations of the parameters.
+
+    input -- The input to the conv3d. The input must have each dimension size within the range [1, int32_max].
+    weight -- Filters of shape :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`. The value of :math:`kh`
+              and :math:`kw` is in the range [1, 511]. The remaining values are in the range [1, int32_max].
+              And :math:`kh*kw*k0` is less 65536 (k0 is 16. If data type is float32, k0 is 8).
+    bias -- Bias Tensor with shape :math:`(C_{out})`. The shape must equal the first dimension of the weight.
+    math:`stride` -- The distance of kernel moving. It can be an int number or
+    tuple (noted by :math:`(stride_d, stride_h, stride_w)`). stride_h and stride_w are in the range [1, 63].
+    stride_d is in the range [1, 255].
+    padding -- If padding is an int number, it is in the range [0, 255].
+    dilation -- The value is in the range [1, 255].
+    groups -- The value is in the range [1, 65535].
+
+    Constraints between attributes:
+    1. :math:`C_{in} % groups == 0 && C_{out} % groups == 0` .
+    2. :math:`weight[1] == C_{in} / groups` .
+    3. :math:`H_{in} + PadUp + PadDown >= (kh - 1) * DilationH + 1` .
+    4. :math:`W_{in} + PadLeft + PadRight >= (kw - 1) * DilationW + 1` .
+    5. :math:`D_{in} + PadFront + PadBack >= (kd - 1) * DilationD + 1` .
+    6. :math:`H_{out} = (H_{in} + PadUp + PadDown - ((kh - 1) * DilationH + 1)) / StrideH + 1` .
+    7. :math:`W_{out} = (W_{in} + PadLeft + PadRight - ((kw - 1) * DilationW + 1)) / StrideW + 1` .
+    8. :math:`D_{out} = (D_{in} + PadFront + PadBack - ((kd - 1) * DilationD + 1)) / StrideD + 1` .
+    9. :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) % StrideD <= PadBack` .
+    10. :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) % StrideH <= PadDown` .
+    11. :math:`stride_d <= kernel_d` .
+    12. :math:`pad < kernel` . When padding='valid', `pad` is zeros. When padding='same', pad can be calculated by
+    :math:`floor(((H_{out}-1) * strideH + (kh - 1) * DilationH + 1 - H_{in}) / 2)` for high dimension.
+    It is similar way to calculate the padding for depth and width dimension.
+    13. :math:`((kh - 1) * dilation_h - pad_up)` should be in [0, 255]. It is the same constraint for depth
+    and width dimension.
+    14. :math:`groups == 1 or groups == C_{in}`.
+    15. If `padding` is ``same``, `stride` must be 1.
+
+
     .. warnings:
+        This API is unsupported on Ascend 910.
         This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`.
-        weight (Tensor): Set size of kernel is :math:`(\text{kernel_size[0]}, \text{kernel_size[1]},
-            \text{kernel_size[2]})`, then the shape is :math:`(C_{out}, C_{in}, \text{kernel_size[0]},
-            \text{kernel_size[1]}, \text{kernel_size[1]})`.
+        weight (Tensor): Set size of kernel is :math:`(kd, kd,
+            kw)`, then the shape is :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`.
         bias (Tensor, optional): Bias Tensor with shape :math:`(C_{out})`.
             When bias is ``None`` , zeros will be used. Default: ``None`` .
         stride (Union(int, tuple[int]), optional): The distance of kernel moving, an int number that represents
@@ -7178,10 +7211,10 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
             - same: Adopts the way of completion. The height and width of the output will be equal to
               the input `x` divided by stride. The padding will be evenly calculated in top and bottom,
               left and right possiblily. Otherwise, the last extra padding will be calculated from the bottom
-              and the right side. If this mode is set, `padding` must be 0.
+              and the right side. If this mode is set, `stride` must be 1.
 
             - valid: Adopts the way of discarding. The possible largest height and width of output will be returned
-              without padding. Extra pixels will be discarded. If this mode is set, `padding` must be 0.
+              without padding. Extra pixels will be discarded.
 
             If `padding` is one integer, the paddings of top, bottom, left and right are the same, equal to padding.
             If `padding` is a tuple/list with 3 integers, the padding of head, tail, top, bottom,

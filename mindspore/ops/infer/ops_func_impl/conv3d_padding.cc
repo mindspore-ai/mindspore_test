@@ -113,6 +113,15 @@ ShapeArray Conv3DPaddingFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &pri
     }
     const auto &stride = stride_opt.value();
     const auto &dilation = dilation_opt.value();
+    if (padding_enum == PadMode::SAME) {
+      for (int i = 0; i < SizeToLong(stride.size()); i++) {
+        if (!stride.IsValueUnknown(i)) {
+          if (stride[i] != 1) {
+            MS_EXCEPTION(ValueError) << "For primitive[Conv3DPadding], stride must be 1 when padding is same.";
+          }
+        }
+      }
+    }
     IndicesCheckPositiveVectorPadding("stride", stride, prim_name, true);
     IndicesCheckPositiveVectorPadding("dilation", dilation, prim_name, true);
 
@@ -129,6 +138,20 @@ ShapeArray Conv3DPaddingFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &pri
         (void)CheckAndConvertUtils::CheckInteger("out_channels/groups", nd_output_shape[1] % groups, kEqual, 0);
         (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
                                                  weight_shape[kIndex1]);
+
+        if (padding_enum == PadMode::VALID) {
+          for (int i = 0; i < SizeToLong(stride.size()); i++) {
+            if (!dilation.IsValueUnknown(i)) {
+              if (input_shape[i + 2] - (weight_shape[i + 2] - 1) * dilation[i] - 1 < 0) {
+                MS_EXCEPTION(ValueError)
+                  << "For primitive[Conv3DPadding], (Hin + PadUp + PadDown - (Hk - 1) * DilationH - 1), "
+                  << "(Win + PadLeft + PadRight - (Wk - 1) * DilationW - 1) and (Din + PadFront + PadBack - (Dk - 1) * "
+                     "DilationD - 1)"
+                  << " must greater than 0.";
+              }
+            }
+          }
+        }
       }
     }
 
