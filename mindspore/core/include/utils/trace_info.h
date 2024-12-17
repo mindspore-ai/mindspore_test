@@ -492,6 +492,14 @@ class TraceAssert : public TraceInfo {
   TraceInfoPtr clone() override { return std::make_shared<TraceAssert>(*this); }
 };
 
+class TraceInplace : public TraceInfo {
+ public:
+  explicit TraceInplace(const DebugInfoPtr &info) : TraceInfo(info) {}
+  ~TraceInplace() override = default;
+  MS_DECLARE_TRACE_NAME_SYMBOL("inplace", "");
+  TraceInfoPtr clone() override { return std::make_shared<TraceInplace>(*this); }
+};
+
 template <typename T, typename U>
 TraceInfoPtr MakeTraceInfo(const U &info) {
   if (DebugMode::IsDebug()) {

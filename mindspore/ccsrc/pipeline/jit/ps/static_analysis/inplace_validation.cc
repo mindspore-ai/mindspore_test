@@ -61,6 +61,7 @@ void CheckInplaceOpValidate(const FuncGraphPtr &func_graph, const std::vector<st
     if (!abs->isa<abstract::AbstractRefTensor>()) {
       continue;
     }
+    TraceGuard guard(MakeTraceInfo<TraceInplace>(node->debug_info()));
     auto abs_ref = abs->cast<abstract::AbstractRefPtr>();
     MS_EXCEPTION_IF_NULL(abs_ref->ref_key_value());
     auto ref_key = abs_ref->ref_key_value()->cast<StringImmPtr>();
