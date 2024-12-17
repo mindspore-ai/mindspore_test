@@ -6659,16 +6659,17 @@ def mvlgamma(input, p):
     return mvlgamma_op(input)
 
 
-def nonzero(input, as_tuple=False):
+def nonzero(input, *, as_tuple=False):
     r"""
     Return the positions of all non-zero values.
 
     Args:
         input (Tensor): The input Tensor, its rank should be greater than or equal to 1.
+
+    Keyword Args:
         as_tuple (bool, optional): Whether the output is tuple.
             If ``False`` , return Tensor. Default: ``False`` .
             If ``True`` , return Tuple of Tensor, only support ``Ascend`` .
-
 
     Returns:
         - If `as_tuple` is ``False``, return the Tensor, a 2-D Tensor whose data type is int64,
@@ -6696,19 +6697,19 @@ def nonzero(input, as_tuple=False):
         [[0 0 0]
          [0 1 0]]
         >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-        >>> output = ops.nonzero(x, False)
+        >>> output = ops.nonzero(x, as_tuple=False)
         >>> print(output)
         [[0]
          [2]
          [4]]
         >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
-        >>> output = ops.nonzero(x, True)
+        >>> output = ops.nonzero(x, as_tuple=True)
         >>> print(output)
         (Tensor(shape=[2], dtype=Int64, value=[0, 0]),
          Tensor(shape=[2], dtype=Int64, value=[0, 1]),
          Tensor(shape=[2], dtype=Int64, value=[0, 0]))
         >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-        >>> output = ops.nonzero(x, True)
+        >>> output = ops.nonzero(x, as_tuple=True)
         >>> print(output)
         (Tensor(shape=[3], dtype=Int64, value=[0, 2, 4]), )
     """
