@@ -226,4 +226,12 @@ ATTR_MAP(GeGluV2) = {{"dim", ATTR_DESC(dim, AnyTraits<int64_t>())},
                      {"activate_left", ATTR_DESC(activate_left, AnyTraits<bool>())}};
 OUTPUT_MAP(GeGluV2) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(gelu)}};
 REG_ADPT_DESC(GeGluV2, "GeGluV2", ADPT_DESC(GeGluV2))
+
+// MoeGatingTopKSoftmax
+INPUT_MAP(MoeGatingTopKSoftmax) = {{kIndex1, INPUT_DESC(x)}, {kIndex2, INPUT_DESC(finished)}};
+ATTR_MAP(MoeGatingTopKSoftmax) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(MoeGatingTopKSoftmax) = {{kIndex3, ATTR_DESC(k, AnyTraits<int64_t>())}};
+OUTPUT_MAP(MoeGatingTopKSoftmax) = {
+  {kIndex0, OUTPUT_DESC(y)}, {kIndex1, OUTPUT_DESC(expert_idx)}, {kIndex2, OUTPUT_DESC(row_idx)}};
+REG_ADPT_DESC(MoeGatingTopKSoftmax, kNameMoeGatingTopKSoftmax, ADPT_DESC(MoeGatingTopKSoftmax))
 }  // namespace mindspore::transform
