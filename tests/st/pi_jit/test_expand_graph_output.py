@@ -1,18 +1,23 @@
 import pytest
-from mindspore import jit, context, Tensor, JitConfig
+from mindspore import jit, context, Tensor
 from mindspore.common import dtype as mstype
-from mindspore._c_expression import get_code_extra
 from .share.utils import match_value, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
-def run_call_result(x, y):
+# set feature expand graph output on
+config = { "expand_graph_output": True, }
+
+def create_nested_tuple(x, y):
     ret = (x, y)
     for index in range(22):
         ret = (ret, x * index, y * index)
     return ret
 
-def run_nested_tuple(x, y):
-    res = run_call_result(x, y)
+def run_call_result(x, y, t):
+    return (x * 100, y * 100, t)
+
+def run_nested_tuple(x, y, t):
+    res = run_call_result(x, y, t)
     return x, y, (x * 10, y * 10), ((x * 20, y * 20), (x * 30, y * 30), res)
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -27,10 +32,11 @@ def test_call_result(func, x, y):
     Note: Must call pijit first, the args x and y will be modified in pynative
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit')
-    ms_res = wrapped_func(x, y)
+    t = create_nested_tuple(x, y)
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    ms_res = wrapped_func(x, y, t)
     assert_executed_by_graph_mode(wrapped_func)
-    res = func(x, y)
+    res = func(x, y, t)
     match_value(ms_res, res)
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -45,8 +51,9 @@ def test_nested_tuple(func, x, y):
     Note: Must call pijit first, the args x and y will be modified in pynative
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit')
-    ms_res = wrapped_func(x, y)
+    t = create_nested_tuple(x, y)
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
+    ms_res = wrapped_func(x, y, t)
     assert_executed_by_graph_mode(wrapped_func)
-    res = func(x, y)
+    res = func(x, y, t)
     match_value(ms_res, res)

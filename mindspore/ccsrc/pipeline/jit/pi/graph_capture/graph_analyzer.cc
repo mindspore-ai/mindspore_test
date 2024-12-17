@@ -1013,13 +1013,16 @@ std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode 
 }
 
 namespace {
+constexpr auto kPiJitOutputDepthKey = "pi_jit_output_depth";
+constexpr int kAllowMaxDepth = 3;
+
 bool IsNeedExpand(const ValueNode *node) {
   auto wrapper = node->abstract_wrapper();
   MS_EXCEPTION_IF_NULL(wrapper);
   auto abs = wrapper->abstract();
   MS_EXCEPTION_IF_NULL(abs);
   constexpr int allow_tuple_max_depth = 3;
-  return abs->has_user_data("depth") && *abs->user_data<int>("depth") > allow_tuple_max_depth;
+  return abs->has_user_data(kPiJitOutputDepthKey) && *abs->user_data<int>(kPiJitOutputDepthKey) > allow_tuple_max_depth;
 }
 }  // namespace
 
@@ -1037,8 +1040,8 @@ void MindGraphAnalyzer::ExpandGraphOutput() {
       const auto &elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
       std::transform(elements.begin(), elements.end(), std::back_inserter(depths),
                      [&depth_marker](const auto &element) { return depth_marker(element); });
-      auto depth = *std::max_element(depths.begin(), depths.end()) + 1;
-      abstract->set_user_data<int>("depth", std::make_shared<int>(depth));
+      auto depth = (depths.empty() ? 0 : *std::max_element(depths.begin(), depths.end())) + 1;
+      abstract->set_user_data<int>(kPiJitOutputDepthKey, std::make_shared<int>(depth));
       return depth;
     };
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
