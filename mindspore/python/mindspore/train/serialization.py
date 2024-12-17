@@ -24,9 +24,10 @@ import os
 import re
 import shutil
 import stat
+import atexit
 import threading
 from threading import Thread, RLock
-from multiprocessing import Pool
+from multiprocessing import Pool, active_children
 import multiprocessing as mp
 from collections import defaultdict, OrderedDict
 from io import BytesIO
@@ -123,6 +124,31 @@ def init_ckpt_file_system(fs: FileSystem):
 
 # Initialize checkpoint file system
 init_ckpt_file_system(_ckpt_fs)
+
+
+def _wait_async_process_save_ckpt():
+    """Waiting for asynchronous saving process of ckpt to complete"""
+    for process in active_children():
+        if process.name == "asyn_save_ckpt":
+            process.join()
+
+
+def _wait_async_thread_save_ckpt():
+    """Waiting for asynchronous saving thread of ckpt to complete"""
+    thread_list = threading.enumerate()
+    for thread in thread_list:
+        if thread.getName() == "asyn_save_ckpt":
+            thread.join()
+
+
+def _async_save_close():
+    """Waiting for asynchronous saving of ckpt to complete"""
+    _wait_async_process_save_ckpt()
+    _wait_async_thread_save_ckpt()
+
+
+# Registering atexit handles asynchronous save
+atexit.register(_async_save_close)
 
 
 def _get_cur_rank_dp(parameter_layout_dict):
@@ -550,6 +576,26 @@ def _check_format_and_other_params(format, enc_key, enc_mode, async_save=False, 
         raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
 
 
+def _check_async_save(async_save):
+    """Check async_save for save_checkpoint."""
+    if not isinstance(async_save, (bool, str)):
+        raise TypeError("For 'save_checkpoint', the parameter 'async_save' must be bool or str, "
+                        "but got {}.".format(type(async_save)))
+    if isinstance(async_save, str):
+        if async_save not in ("process", "thread"):
+            raise ValueError("For 'save_checkpoint', the argument 'async_save' can only be 'process' or 'thread',"
+                             "but got {}.".format(async_save))
+    return async_save
+
+
+def _async_process_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_param_inc=False,
+                        crc_check=False, format="ckpt", cond=None):
+    """Check whether the process is pulled up successfully, execute the process of saving checkpoint into file."""
+    with cond:
+        cond.notify()
+    _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+
+
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     async_save=False, append_dict=None, enc_key=None, enc_mode="AES-GCM", choice_func=None,
                     crc_check=False, format="ckpt", **kwargs):
@@ -567,7 +613,10 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
             it can be the returned value of `mindspore.load_checkpoint()`.
         ckpt_file_name (str): Checkpoint file name. If the file name already exists, it will be overwritten.
         integrated_save (bool): Whether to integrated save in automatic model parallel scene. Default: ``True`` .
-        async_save (bool): Whether to open an independent thread to save the checkpoint file. Default: ``False`` .
+        async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file, if True,
+                                    the asynchronous thread is used by default. If the type is string,
+                                    the method of asynchronous saving, it can be "process" or "thread".
+                                    Default: ``False`` .
         append_dict (dict): Additional information that needs to be saved. The key of dict must be str, the value
                             of dict must be one of int, float, bool, string, Parameter or Tensor. Default: ``None`` .
         enc_key (Union[None, bytes]): Byte type key used for encryption. If the value is ``None`` , the encryption
@@ -587,8 +636,10 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
 
     Raises:
         TypeError: If the parameter `save_obj` is not :class:`mindspore.nn.Cell` , list or dict type.
-        TypeError: If the parameter `integrated_save` or `async_save` is not bool type.
+        TypeError: If the parameter `integrated_save` is not bool type.
         TypeError: If the parameter `ckpt_file_name` is not string type.
+        TypeError: If the parameter `async_save` is not bool or string type.
+        ValueError: If the parameter `async_save` is string type but not in ["process", "thread"].
 
     Examples:
         >>> import mindspore as ms
@@ -618,7 +669,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     """
     ckpt_file_name = _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format)
     integrated_save = Validator.check_bool(integrated_save)
-    async_save = Validator.check_bool(async_save)
+    async_save = _check_async_save(async_save)
     append_dict = _check_append_dict(append_dict)
     enc_key = Validator.check_isinstance('enc_key', enc_key, (type(None), bytes))
     enc_mode = Validator.check_isinstance('enc_mode', enc_mode, str)
@@ -702,7 +753,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data_list[key].append(dims)
                     tensor_type = str(param["data"].dtype)
                     data_list[key].append(tensor_type)
-                    data = param["data"]
+                    data = param["data"] if async_save != "process" else param["data"].asnumpy()
                     data_list[key].append(data)
 
     if os.getenv("AITURBO") == "1":
@@ -710,11 +761,35 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         ckpt_name = os.path.basename(ckpt_file_name)
         aiturbo.save_ckpt(ckpt_name, global_step_num, data_list_np, crc_check)
     elif async_save:
-        data_copy = copy.deepcopy(data_list)
-        thr = Thread(target=_exec_save,
-                     args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
-                     name="asyn_save_ckpt")
-        thr.start()
+        if async_save == "process":
+            _wait_async_process_save_ckpt()
+            ctx = mp.get_context("fork")
+            if sys.platform.startswith("win"):
+                logger.warining("The Win platform currently does not support asynchronous process saving of ckpt, "
+                                "so serial saving of ckpt is used now.")
+                _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+            else:
+                cond = ctx.Condition()
+                process_flag = True
+                while process_flag:
+                    process = ctx.Process(target=_async_process_save,
+                                          args=(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check,
+                                                format, cond), daemon=True, name="asyn_save_ckpt")
+                    process.start()
+                    with cond:
+                        wait_flag = cond.wait(timeout=5)
+                        if not wait_flag:
+                            logger.warning("Async save process fails to create. will kill and recreate")
+                            process.kill()
+                        else:
+                            process_flag = False
+        else:
+            data_copy = copy.deepcopy(data_list)
+            _wait_async_thread_save_ckpt()
+            thr = Thread(target=_exec_save,
+                         args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
+                         name="asyn_save_ckpt")
+            thr.start()
     else:
         _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
