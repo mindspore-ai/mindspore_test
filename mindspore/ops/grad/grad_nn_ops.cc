@@ -631,8 +631,10 @@ DEF_PURE_SHAPE_CALC(g_conv2d_padding_shapecalc)
     auto symmetric_padding = symmetric_padding_true;
 
     for (size_t i = 0; i < dim; ++i) {
-      auto stride = stride_values.size() == 1 ? stride_values[0] : stride_values[i];
-      auto dilation = dilation_values.size() == 1 ? dilation_values[0] : dilation_values[i];
+      auto i_stride = i % stride_values.size();
+      auto i_dilation = i % dilation_values.size();
+      auto stride = stride_values[i_stride];
+      auto dilation = dilation_values[i_dilation];
       auto inputSize = input_sizes[i + 2];
       auto kernelSize = weight_sizes[i + 2];
       auto total_padding = dilation * (kernelSize - 1);
@@ -859,8 +861,10 @@ DEF_PURE_SHAPE_CALC(g_convolution_str_shapecalc)
     auto symmetric_padding = symmetric_padding_true;
 
     for (size_t i = 0; i < dim; ++i) {
-      auto stride = stride_values.size() == 1 ? stride_values[0] : stride_values[i];
-      auto dilation = dilation_values.size() == 1 ? dilation_values[0] : dilation_values[i];
+      auto i_stride = i % stride_values.size();
+      auto i_dilation = i % dilation_values.size();
+      auto stride = stride_values[i_stride];
+      auto dilation = dilation_values[i_dilation];
       auto inputSize = input_sizes[i + 2];
       auto kernelSize = weight_sizes[i + 2];
       auto total_padding = dilation * (kernelSize - 1);

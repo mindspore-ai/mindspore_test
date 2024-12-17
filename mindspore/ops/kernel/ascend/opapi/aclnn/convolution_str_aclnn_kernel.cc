@@ -107,7 +107,7 @@ void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
       pad_vector_ = padding_l;
       need_ConstantPadNd_ = true;
 
-      //   infer outshape
+      // infer outshape
       pad_nd_shape_ = std::vector<int64_t>{};
       std::vector<int64_t> x_shape = inputs[kIndex0]->GetShapeVector();
       auto x_rank = x_shape.size();

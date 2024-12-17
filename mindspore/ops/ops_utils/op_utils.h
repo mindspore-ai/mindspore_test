@@ -118,23 +118,6 @@ abstract::ShapePtr BroadCastInferShape(const std::string &op_name,
                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 bool IsBroadcastable(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape);
 ShapeVector BroadCastInferShape(const std::string &op_name, const ValuePtrList &input_values);
-ShapeArray ConvNdInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
-                            const ShapeVector &input_shape, const ShapeVector &weight_shape,
-                            const ShapeVector &output_padding, const bool padding_str);
-ShapeArray ConvNdCommonInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
-                                  const ShapeVector &input_shape, const ShapeVector &weight_shape,
-                                  const ShapeVector &output_shpe, const ShapeVector &output_padding);
-void IndicesCheckPositiveVec(const string &arg_name, const ArrayValue<int64_t> &array, const string &prim_name,
-                             bool exclude_zeros);
-int64_t GetOutputHW(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
-                    const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &padding,
-                    const ArrayValue<int64_t> &dilation, bool transposed, const ShapeVector &output_padding);
-ShapeArray ConvNdPaddingCommonInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
-                                         const ShapeVector &input_shape, const ShapeVector &weight_shape,
-                                         const ShapeVector &output_shpe, const ShapeVector &output_padding);
-int64_t GetOutputHWPadding(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
-                           const ArrayValue<int64_t> &stride, const mindspore::PadMode &padding_enum,
-                           const ArrayValue<int64_t> &dilation, const ShapeVector &output_padding);
 BaseShapePtr EltwiseGradInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
 TypePtr EltwiseGradInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
 TypePtrList EltwiseGradSimpleInferType(const PrimitivePtr &primitive, const ValuePtrList &input_values);

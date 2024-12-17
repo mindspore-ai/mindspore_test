@@ -153,8 +153,6 @@ class Conv2d(_Conv):
     the `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_,
     :math:`weight` is the convolution kernel value and :math:`X` represents the input feature map.
 
-    Here are the indices' meanings:
-
     - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`,
       where :math:`N` is the batch size of the input.
 
@@ -181,10 +179,6 @@ class Conv2d(_Conv):
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
-    Note:
-        On Ascend platform, only groups convolution in depthwise convolution scenarios is supported.
-        That is, when `groups>1`, condition `in\_channels` = `out\_channels` = `groups` must be satisfied.
-
     Args:
         in_channels (int): The channel number of the input tensor of the Conv2d layer.
         out_channels (int): The channel number of the output tensor of the Conv2d layer.
@@ -198,7 +192,7 @@ class Conv2d(_Conv):
             and width directions respectively. Default: ``1`` .
         padding (Union[int, tuple[int], str], optional): The number of padding
             on the height and width directions of the input.
-            The data type is an integer or string {`valid`, `same`} or a tuple of four integers. If `padding` is an
+            The data type is an integer or a tuple of four integers or string {`valid`, `same`}. If `padding` is an
             integer, then the top, bottom, left, and right padding are all equal to `padding`.
             If `padding` is a tuple of 4 integers, then the top, bottom, left, and right padding
             is equal to `padding[0]`, `padding[1]`, `padding[2]`, and `padding[3]` respectively.
@@ -208,6 +202,7 @@ class Conv2d(_Conv):
               are the same when `stride` is set to ``1``.
               The amount of padding to is calculated by the operator internally, If the amount is even, it is
               uniformly distributed around the input, if it is odd, the excess amount goes to the right/bottom side.
+              If this mode is set, `stride` must be 1.
 
             - ``"valid"``: No padding is applied to the input, and the output returns the maximum
               possible height and width. Extra pixels that could not complete a full stride will
@@ -228,15 +223,17 @@ class Conv2d(_Conv):
         groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
             divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`,
             this 2D convolution layer also can be called 2D depthwise convolution layer. Default: ``1`` .
+            :math:`C_{in} % groups == 0` , :math:`C_{out} % groups == 0` , :math:`C_{out} >= groups` ,
+            :math:` \text{kernel_size[1]} = C_{in} / groups`
         bias (bool, optional): Whether the Conv2d layer has a bias parameter. Default: ``True`` .
-        dtype (mindspore.dtype): Dtype of Parameters. Default: mstype.float32 .
+        dtype (mindspore.dtype, optional): Dtype of Parameters. Default: mstype.float32 .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` \
-          or :math:`(N, H_{in}, W_{in}, C_{in})`.
+          or :math:`(C_{in}, H_{in}, W_{in})`.
 
     Outputs:
-        Tensor of shape :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(N, H_{out}, W_{out}, C_{out})`.
+        Tensor of shape :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`.
 
         padding is ``'same'``:
 
@@ -261,7 +258,7 @@ class Conv2d(_Conv):
         TypeError: If `kernel_size`, `stride`, `padding` or `dilation` is neither an int not a tuple.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
-        ValueError: If `padding` is a tuple whose length is not equal to 4.
+        ValueError: If `padding` is `same` , but `stride` is not equal 1.
 
     Supported Platforms:
         ``Ascend``
