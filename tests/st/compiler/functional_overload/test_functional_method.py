@@ -197,3 +197,20 @@ def test_method_reshape():
     out = func(x)
     expect = ms.Tensor([[[1, 2, 3], [4, 5, 6]]])
     assert np.all(out.asnumpy() == expect.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_method_transpose():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.transpose.
+    Expectation: Run success
+    """
+    @ms.jit
+    def func(x):
+        return x.transpose(1, 0)
+
+    x = ms.Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
+    out = func(x)
+    expect = ms.Tensor(np.array([[1, 4], [2, 5], [3, 6]]))
+    assert np.all(out.asnumpy() == expect.asnumpy())

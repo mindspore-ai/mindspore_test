@@ -30,6 +30,7 @@ class OpApiProto:
                  op_proto,
                  py_method,
                  kw_only_args,
+                 varargs,
                  ascend,
                  gpu,
                  cpu):
@@ -37,6 +38,7 @@ class OpApiProto:
         self.op_proto = op_proto
         self.py_method = py_method
         self.kw_only_args = kw_only_args
+        self.varargs = varargs
         self.ascend = ascend
         self.gpu = gpu
         self.cpu = cpu
@@ -93,6 +95,10 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
             if kw_only_args:
                 kw_only_args = [item.strip() for item in kw_only_args.split(',')]
                 check_kwonlyargs(func_data, kw_only_args, op_name, op_proto, py_method, tensor_method_def_ast_dict)
+            varargs = func_data.get('varargs', None)
+            if varargs:
+                varargs = [item.strip() for item in varargs.split(',')]
+                check_varargs(varargs, op_name)
             ascend = func_data.get('Ascend', 'aclnn')
             gpu = func_data.get('GPU', 'aclnn')
             cpu = func_data.get('CPU', 'aclnn')
@@ -110,8 +116,8 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
                     f"'tensor, function', or 'function, tensor'. File name is {func_name}.yaml"
                 )
 
-            proto = OpApiProto(func_name=func_name, op_proto=op_proto,
-                               py_method=py_method, kw_only_args=kw_only_args, ascend=ascend, gpu=gpu, cpu=cpu)
+            proto = OpApiProto(func_name=func_name, op_proto=op_proto, py_method=py_method,
+                               kw_only_args=kw_only_args, varargs=varargs, ascend=ascend, gpu=gpu, cpu=cpu)
 
             if 'tensor' in interface:
                 tensor_method_protos[func_name].append(proto)
@@ -143,6 +149,10 @@ def check_kwonlyargs(func_data, kw_only_args, op_name, op_proto, py_method, tens
         raise TypeError(f"The order of kwonlyargs in {py_method} should be consistent with the definition. "
                         f"Expect kwonlyarg: {kw_only_args}, current kwonlyarg: {tensor_method_kwonlyargs}.")
 
+def check_varargs(varargs, op_name):
+    if len(varargs) != 1:
+        raise ValueError(
+            f'There must be only one variable argument. But got {len(varargs)} in {op_name}')
 
 def _get_op_name_from_op_yaml(func_name: str, func_data: dict) -> str:
     """Extracts the operation name from the given YAML function data."""
