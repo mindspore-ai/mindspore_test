@@ -81,6 +81,7 @@
 #include "frontend/parallel/pass/split_layernorm_comm_fp.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_transformer.h"
 #include "frontend/parallel/pass/overlap_grad_comm.h"
+#include "frontend/parallel/pass/overlap_param_gather.h"
 #include "frontend/optimizer/recompute.h"
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/slice_activation_in_recompute.h"
@@ -883,6 +884,12 @@ bool OptimizeParallelAllGatherCommPass(const ResourcePtr &resource) {
   return true;
 }
 
+bool OptimizeParamGatherPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  parallel::OverlapParamGather(resource->func_graph());
+  return true;
+}
+
 bool LabelFineGrainedInterleavedIndexPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   parallel::LabelFineGrainedInterleavedIndex(resource->func_graph());
@@ -1372,6 +1379,7 @@ std::vector<PassItem> kVmPasses = {
   {"order_py_execute_after_rewriter", OrderPyExecuteAfterRewriterPass},
   {"opt_b", OptPassBGroup},
   {"optimize_parallel_all_gather_comm", OptimizeParallelAllGatherCommPass},
+  {"overlap_param_gather", OptimizeParamGatherPass},
   {"cconv", CconvPass},
   {"loop_unroll", LoopUnrollPass},
   {"opt_after_cconv", OptPassAfterCconvGroup},
@@ -1409,7 +1417,6 @@ std::vector<PassItem> kVmPasses = {
   {"overlap_grad_ring_attention", OverlapGradRingAttentionPass},
   {"overlap_grad_flash_sp", OverlapGradFlashSP},
   {"begin_end_overlap_inline", BeginEndOverlapInlinePass},
-  {"overlap_grad_comm", OverlapGradCommPass},
   {"split_matmul_comm_elemetwise", SplitMatmulCommElementwiseOpFpPass},
   {"split_layernorm_comm", SplitLayerNormCommFpPass},
   // The pass cache hccl group, so the hccl group should be created before the pass
