@@ -24,8 +24,8 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
-#include "plugin/device/ascend/kernel/internal/acme_kernel_mod.h"
-#include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/factory/ms_factory.h"
@@ -64,12 +64,12 @@ static const std::unordered_map<std::string, std::vector<std::vector<std::vector
 // ATTENTION_INPUT_QKV: ms_nd_shape{b, s, h} need convert to {b * s, h}, then transform nz format
 // ATTENTION_INPUT_MASK: ms_nd_shape{b, 1, s, s} need convert to {b, 1, s, s}, then transform nz format
 static const std::unordered_map<std::string, std::unordered_map<size_t, int64_t>> kSpecialNzFormatOpsList = {
-  {kPagedAttentionOpName, {{0, acme::TransDataParam::ATTENTION_INPUT_QKV}}},
+  {kPagedAttentionOpName, {{0, internal::TransDataParam::ATTENTION_INPUT_QKV}}},
   {kFlashAttentionScoreOpName,
-   {{0, acme::TransDataParam::ATTENTION_INPUT_QKV},
-    {1, acme::TransDataParam::ATTENTION_INPUT_QKV},
-    {2, acme::TransDataParam::ATTENTION_INPUT_QKV},
-    {6, acme::TransDataParam::ATTENTION_INPUT_MASK}}}};
+   {{0, internal::TransDataParam::ATTENTION_INPUT_QKV},
+    {1, internal::TransDataParam::ATTENTION_INPUT_QKV},
+    {2, internal::TransDataParam::ATTENTION_INPUT_QKV},
+    {6, internal::TransDataParam::ATTENTION_INPUT_MASK}}}};
 
 bool IsAscend310PSoc() {
   const char *soc_name_c = aclrtGetSocName();
@@ -86,7 +86,7 @@ bool IsAscend310PSoc() {
 int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_node, const size_t input_idx) {
   MS_EXCEPTION_IF_NULL(cur_node);
   MS_EXCEPTION_IF_NULL(input_node);
-  int64_t special_format_input = acme::TransDataParam::NORMAL;
+  int64_t special_format_input = internal::TransDataParam::NORMAL;
 
   // cur cnode has special format input
   auto special_format_iter = kSpecialNzFormatOpsList.find(AnfUtils::GetCNodeName(cur_node));
@@ -95,13 +95,13 @@ int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_nod
     if (iter != special_format_iter->second.end()) {
       special_format_input = iter->second;
     } else {
-      special_format_input = acme::TransDataParam::NORMAL;
+      special_format_input = internal::TransDataParam::NORMAL;
     }
   } else if (input_node->isa<CNode>()) {
     // input cnode has special format output: pa & fa output format is nz
     auto special_iter = kSpecialNzFormatOpsList.find(AnfUtils::GetCNodeName(input_node));
     if (special_iter != kSpecialNzFormatOpsList.end()) {
-      special_format_input = acme::TransDataParam::ATTENTION_INPUT_QKV;
+      special_format_input = internal::TransDataParam::ATTENTION_INPUT_QKV;
     }
   }
   return special_format_input;
@@ -167,9 +167,9 @@ KernelModPtr InternalKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
   std::string opname = common::AnfAlgo::GetCNodeName(anf_node);
   // Easy to compare accuracy and performance, later changed to debug
   KernelModPtr kernel_ptr;
-  if (Factory<AcmeKernelMod>::Instance().IsRegistered(opname)) {
-    MS_LOG(INFO) << "Supported by AcmeKernel: " << opname;
-    kernel_ptr = std::static_pointer_cast<KernelMod>(Factory<AcmeKernelMod>::Instance().Create(opname));
+  if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
+    MS_LOG(INFO) << "Supported by InternalKernel: " << opname;
+    kernel_ptr = std::static_pointer_cast<KernelMod>(Factory<InternalKernelMod>::Instance().Create(opname));
   }
 
   if (kernel_ptr == nullptr) {
@@ -203,11 +203,11 @@ bool InternalKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
   std::vector<TypeId> ms_in_dtypes;
   std::vector<TypeId> ms_out_dtypes;
   GetMsTypesList(cnode, &ms_in_dtypes, &ms_out_dtypes);
-  if (Factory<AcmeKernelMod>::Instance().IsRegistered(opname)) {
-    auto acme_op_name = TransAcmeOpName(opname);
-    auto acme_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapAcmeInputDtypes(opname, ms_in_dtypes);
-    auto acme_out_dtypes = InternalKernelModInOutMap::GetInstance()->MapAcmeOutputDtypes(opname, ms_out_dtypes);
-    return acme::IsAcmeKernelDtypesSupported(acme_op_name, acme_in_dtypes, acme_out_dtypes);
+  if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
+    auto internal_op_name = TransInternalOpName(opname);
+    auto internal_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalInputDtypes(opname, ms_in_dtypes);
+    auto internal_out_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalOutputDtypes(opname, ms_out_dtypes);
+    return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_in_dtypes, internal_out_dtypes);
   }
 
   return false;
@@ -239,8 +239,8 @@ bool IsDecodePhase(const std::string &phase) {
   return phase.rfind(kPhaseNameDecode) != std::string::npos || phase.rfind(kPhaseNameIncrement) != std::string::npos;
 }
 
-bool CheckOpSupprtNzFormatOnly(const bool &enable_acme_op, const std::string &op_name) {
-  return !enable_acme_op &&
+bool CheckOpSupprtNzFormatOnly(const bool &enable_internal_op, const std::string &op_name) {
+  return !enable_internal_op &&
          (op_name == kMatMulOpName || op_name == kQuantLinearSparseName || op_name == kQuantBatchMatmulName);
 }
 
@@ -313,7 +313,7 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   if (!special_inputs.empty()) {
     common::AnfAlgo::SetNodeAttr(kAttrAclSpecialInputFormat, MakeValue(special_inputs), node);
     if (std::any_of(special_format_inputs.begin(), special_format_inputs.end(),
-                    [](const int64_t format_type) { return format_type != acme::TransDataParam::NORMAL; })) {
+                    [](const int64_t format_type) { return format_type != internal::TransDataParam::NORMAL; })) {
       common::AnfAlgo::SetNodeAttr(kAttrInternalSepcialFormat, MakeValue(special_format_inputs), node);
     }
   }

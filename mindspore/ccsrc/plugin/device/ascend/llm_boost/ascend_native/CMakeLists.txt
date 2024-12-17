@@ -23,7 +23,7 @@ if(ENABLE_D OR ENABLE_ACL)
         include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
         include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
         include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
-        include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/include)
+        include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel)
 
         find_library(ASCENDCL ascendcl ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
         find_library(MS_KERNELS_LIB ms_kernels_internal $ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/lib)
