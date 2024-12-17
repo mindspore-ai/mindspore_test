@@ -29,7 +29,7 @@ def test_matmul_allreduce_addrmsnorm_forward():
     assert ret == 0
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_matmul_allreduce_addrmsnorm_forward_dynamic_shape():
     """
     Feature: Test MatmulAllReduceAddRmsNorm forward with dynamic shape input
@@ -42,19 +42,17 @@ def test_matmul_allreduce_addrmsnorm_forward_dynamic_shape():
     assert ret == 0
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_matmul_allreduce_addrmsnorm_forward_fusion():
     """
     Feature: Test MatmulAllReduceAddRmsNorm forward ir fusion pass
-    Description: Test in kbk mode with dtype float16 and bfloat16
+    Description: Test in kbk mode
     Expectation: Run success
     """
+    os.environ["MS_ENABLE_INTERNAL_KERNELS"] = "on"
+    os.environ["MS_ENABLE_LCCL"] = "off"
+
     ret = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True --master_port=8223 "
                     "pytest -s --disable-warnings "
                     "matmul_allreduce_add_rmsnorm.py::test_matmul_allreduce_addrmsnorm_forward_fusion")
     assert ret == 0
-
-if __name__ == "__main__":
-    test_matmul_allreduce_addrmsnorm_forward()
-    test_matmul_allreduce_addrmsnorm_forward_dynamic_shape()
-    test_matmul_allreduce_addrmsnorm_forward_fusion()
