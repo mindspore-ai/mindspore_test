@@ -231,7 +231,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async
         >>>
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = comm.comm_func.all_reduce(input_tensor)
+        >>> output, _ = comm.comm_func.all_reduce(input_tensor)
         >>> print(output)
         [[2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]]
@@ -297,7 +297,7 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=F
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = comm.comm_func.all_gather_into_tensor(input_tensor)
+        >>> output, _ = comm.comm_func.all_gather_into_tensor(input_tensor)
         >>> print(output)
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]
@@ -368,7 +368,7 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([8, 8]).astype(np.float32))
-        >>> output = comm.comm_func.reduce_scatter_tensor(input_tensor)
+        >>> output, _ = comm.comm_func.reduce_scatter_tensor(input_tensor)
         >>> print(output)
         [[2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]
@@ -1200,7 +1200,7 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
         >>> if this_rank == 1:
         >>>     send_tensor_list = [ms.Tensor([2, 2.]), ms.Tensor([4, 5, 6, 7.])]
         >>>     recv_tensor_list = [(2, 2), (4,)]
-        >>> output = comm.comm_func.all_to_all_with_output_shape(recv_tensor_list, send_tensor_list)
+        >>> output, _ = comm.comm_func.all_to_all_with_output_shape(recv_tensor_list, send_tensor_list)
         >>> print(output)
         rank 0:
         (Tensor(shape=[], dtype=Float32, value= 1),
@@ -1352,7 +1352,7 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         >>> if this_rank == 1:
         >>>     output_shape = (2, 3)
         >>>     tensor = ms.Tensor([[9, 10., 11], [12, 13, 14]])
-        >>>     result = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor)
+        >>>     result, _ = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor)
         >>> print(result)
         rank 0:
         [[ 0.  1.  2.]
