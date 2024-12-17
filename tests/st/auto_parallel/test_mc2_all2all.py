@@ -16,7 +16,7 @@
 import os
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 def test_mc2_alltoall_allgather_batchmatmul_withoutsilu():
     '''
     Feature: MC2 fusion.
@@ -30,7 +30,7 @@ def test_mc2_alltoall_allgather_batchmatmul_withoutsilu():
     assert ret == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 def test_mc2_alltoall_allgather_batchmatmul_withsilu():
     '''
     Feature: MC2 fusion.
