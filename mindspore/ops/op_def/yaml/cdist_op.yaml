@@ -1,9 +1,9 @@
 #operator cdist
 cdist:
   args:
-    input_x:
+    x1:
       dtype: tensor
-    input_y:
+    x2:
       dtype: tensor
     p:
       dtype: float

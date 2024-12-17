@@ -229,6 +229,13 @@ def get_max_pool3d_grad_with_argmax_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(gen.CdistGrad)
 def get_cdist_grad_vmap_rule(prim, axis_size):
     """VmapRule for `cdist grad` operation."""
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
+    else:
+        batch_rank = 1
+
+    prim = prim.clone()
+    prim.set_label('batch_rank', batch_rank)
 
     def vmap_rule(grad_bdim, x_bdim, y_bdim, cdist_bdim, p_bdim):
         is_all_none, result = vmap_general_preprocess(

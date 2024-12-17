@@ -1969,7 +1969,7 @@ REG_BPROP_BUILDER("Cdist").SetBody(BODYFUNC(ib) {
   auto dy = input_y->need_compute_grad_out()
               ? ib->Emit("CdistGrad", {dout_transpose, input_y, input_x, out_transpose, p})
               : ib->OutZeros(input_y);
-  return {dx, dy};
+  return {dx, dy, ib->OutZeros(p)};
 });
 
 REG_BPROP_BUILDER("LuUnpack").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
