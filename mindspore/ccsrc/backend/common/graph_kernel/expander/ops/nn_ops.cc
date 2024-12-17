@@ -427,9 +427,12 @@ REG_EXPANDER_FUNC("BinaryCrossEntropy").SetBody(BODYFUNC(ib) {
   }
   auto mode = ib->input(kIndex3);
   auto log1 = ib->Log(logits);
-  auto mul1 = ib->Mul(labels, log1);
+  auto threshold = ib->Tensor(-100, logits->GetDtype());
+  auto max1 = ib->Maximum(log1, threshold);
+  auto mul1 = ib->Mul(labels, max1);
   auto log2 = ib->Log(ib->Add(ib->Neg(logits), 1));
-  auto mul2 = ib->Mul(ib->Add(ib->Neg(labels), 1), log2);
+  auto max2 = ib->Maximum(log2, threshold);
+  auto mul2 = ib->Mul(ib->Add(ib->Neg(labels), 1), max2);
   auto ln = ib->Mul(ib->Neg(ib->Add(mul1, mul2)), weight);
   auto mode_num = GetValue<int64_t>(mode->GetValue());
   if (mode_num == 2) {

@@ -64,7 +64,7 @@ TEST_P(TestTransposeMatMulFusion, test_transpose_matmul_fusion) {
   checker.src_pattern_.AddVar("x1").AddVar("x2").AddVar("trans_a").AddVar("trans_b").AddCNode(
     param.op_name, {std::make_shared<Primitive>(param.op_name), "x1", "x2", "trans_a", "trans_b"});
 
-  // check whether the transformation  is success
+  // check whether the transformation is successful
   auto output = c.GetGraph()->output();
   EXPECT_TRUE(checker.build_pattern_map(output));
   auto cnode = output->cast<CNodePtr>();
