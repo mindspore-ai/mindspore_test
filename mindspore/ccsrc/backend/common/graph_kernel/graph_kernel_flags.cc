@@ -315,6 +315,7 @@ void GraphKernelFlags::Refresh() {
   if (!is_enable_runtime_cfg.empty()) {
     std::cout << "graph_kernel_flags = \"" << flags_cache_ << "\"" << std::endl;
   }
+  GraphKernelPassChecker::GetInstance().Init();
 }
 
 void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_map) {
@@ -480,6 +481,11 @@ std::string GraphKernelFlags::DumpAllFlags() const {
 GraphKernelPassChecker &GraphKernelPassChecker::GetInstance() {
   static GraphKernelPassChecker instance;
   return instance;
+}
+
+void GraphKernelPassChecker::Init() {
+  enable_pass_active_ = std::vector<bool>(GraphKernelFlags::GetInstance().enable_pass.size(), false);
+  disable_pass_active_ = std::vector<bool>(GraphKernelFlags::GetInstance().disable_pass.size(), false);
 }
 
 void GraphKernelPassChecker::SetEnablePassActive(size_t index, bool value) {
