@@ -18,7 +18,6 @@ from __future__ import absolute_import
 import os
 import stat
 import time
-import threading
 
 import mindspore.context as context
 from mindspore import log as logger
@@ -42,15 +41,6 @@ from mindspore._c_expression import collect_host_info, get_clock_syscnt
 _cur_dir = os.getcwd()
 SAVE_DIR = _cur_dir
 _info_list = ["epoch_num", "step_num"]
-
-
-def _wait_async_save_ckpt(async_save=False):
-    """Waiting for asynchronous saving of ckpt to complete."""
-    if async_save:
-        thread_list = threading.enumerate()
-        for thread in thread_list:
-            if thread.getName() == "asyn_save_ckpt":
-                thread.join()
 
 
 def _get_dp_tp_from_redundancy(redundancy_tuple):
@@ -139,7 +129,10 @@ class CheckpointConfig:
         integrated_save (bool): Whether to merge and save the split Tensor in the automatic parallel scenario.
             Integrated save function is only supported in automatic parallel scene, not supported
             in manual parallel. Default: ``True`` .
-        async_save (bool): Whether asynchronous execution saves the checkpoint to a file. Default: ``False`` .
+        async_save (Union[bool, str]):Whether to use asynchronous saving of the checkpoint file, if True,
+                                    the asynchronous thread is used by default. If the type is string,
+                                    the method of asynchronous saving, it can be "process" or "thread".
+                                    Default: ``False`` .
         saved_network (Cell): Network to be saved in checkpoint file. If the saved_network has no relation
             with the network in training, the initial value of saved_network will be saved. Default: ``None`` .
         append_info (list): The information save to checkpoint file. Support "epoch_num", "step_num" and
@@ -247,7 +240,7 @@ class CheckpointConfig:
                 self._keep_checkpoint_max = 1
 
         self._integrated_save = Validator.check_bool(integrated_save)
-        self._async_save = Validator.check_bool(async_save)
+        self._async_save = Validator.check_isinstance('async_save', async_save, (bool, str))
         self._saved_network = saved_network
         self._append_dict = self._handle_append_info(append_info)
         self._enc_key = Validator.check_isinstance('enc_key', enc_key, (type(None), bytes))
@@ -313,10 +306,10 @@ class CheckpointConfig:
     @property
     def async_save(self):
         """
-        Get the value of whether asynchronous execution saves the checkpoint to a file.
+        Get the value of whether or how asynchronous execution saves the checkpoint to a file.
 
         Returns:
-            bool, whether asynchronous execution saves the checkpoint to a file.
+            (bool, str), whether or how asynchronous execution saves the checkpoint to a file.
         """
         return self._async_save
 
@@ -607,8 +600,6 @@ class ModelCheckpoint(Callback):
 
         self._save_ckpt(cb_params, _to_save_last_ckpt)
 
-        _wait_async_save_ckpt(self._config.async_save)
-
         destroy_allgather_cell()
 
     def _check_save_ckpt(self, cb_params, force_to_save):
@@ -645,7 +636,6 @@ class ModelCheckpoint(Callback):
         step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
 
         if save_ckpt:
-            _wait_async_save_ckpt(self._config.async_save)
             if self._prefix_func:
                 cur_ckpoint_file = self._prefix + f".{self._config.format}"
             else:
