@@ -975,9 +975,21 @@ py::dict GraphExecutorPy::GetAllreduceFusion(const std::string &phase) {
   return mindspore::parallel::GetAllreduceFusion(graph);
 }
 
+inline pid_t GetCurrentPID() {
+#if defined(_WIN32) || defined(_WIN64)
+  return GetCurrentProcessId();
+#else
+  return getpid();
+#endif
+}
+
 // Not support multi thread, not support nested call too.
 // Here using nested_called flg to avoid nested call.
 void GraphExecutorPy::DelNetRes(const py::object &source, const py::set &id) {
+  // no need to del net res by gc in independent dataset process which is a subprocess forked by main process
+  if (process_id_ != GetCurrentPID()) {
+    return;
+  }
   ClearArgCache(source);
   // Del all graphs by different phase
   for (auto item : id) {
@@ -1025,6 +1037,8 @@ void GraphExecutorPy::ClearInfo() {
     }
   }
 }
+
+void GraphExecutorPy::SetProcessId() { process_id_ = GetCurrentPID(); }
 
 std::string GraphExecutorPy::get_queue_name(const std::string &dataset_phase) {
   return CompileCacheManager::GetCachedDataQueueName(dataset_phase);
