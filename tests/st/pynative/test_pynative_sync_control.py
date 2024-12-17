@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+""" test launch_blocking """
 import numpy as np
 import pytest
 import mindspore.context as context
+import mindspore.runtime as rt
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
-from mindspore.common.api import _pynative_executor
 
-context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+context.set_context(mode=context.PYNATIVE_MODE)
 
 class Net(nn.Cell):
     def __init__(self):
@@ -33,8 +34,13 @@ class Net(nn.Cell):
         x = x + x1
         return x
 
-def test_pynative_synchronize_true():
-    context.set_context(pynative_synchronize=True)
+def test_launch_blocking_true():
+    """
+    Feature: test launch blocking
+    Description: the operation will be sync
+    Expectation: run success
+    """
+    rt.launch_blocking()
     with pytest.raises(RuntimeError) as execinfo:
         x1 = np.random.randn(1, 1).astype(np.float32)
         net = Net()
@@ -42,12 +48,15 @@ def test_pynative_synchronize_true():
         print(output.asnumpy())
     assert "GetNext" in str(execinfo.value)
 
-def test_pynative_synchronize_false():
-    context.set_context(pynative_synchronize=False)
+def test_launch_blocking_false():
+    """
+    Feature: test launch blocking
+    Description: the operation will be async
+    Expectation: run success
+    """
     with pytest.raises(RuntimeError) as execinfo:
         x1 = np.random.randn(1, 1).astype(np.float32)
         net = Net()
         output = net(Tensor(x1))
         print(output.asnumpy())
     assert "Sync stream error" in str(execinfo.value)
-

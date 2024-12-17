@@ -20,6 +20,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import ops, context, mint
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 @test_utils.run_with_cell
@@ -91,9 +92,7 @@ def test_avg_pool1d_dynamic():
     Description: test op AvgPool1D.
     Expectation: expect AvgPool1D result.
     """
-    context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)
     input_case1 = Tensor(np.random.randn(10, 2, 60), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(5, 4, 20), dtype=ms.float32)
     TEST_OP(

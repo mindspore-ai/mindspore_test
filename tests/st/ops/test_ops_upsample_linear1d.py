@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import context, ops
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 def set_mode(mode):
@@ -82,9 +83,7 @@ def test_upsample_linear_1d_size_dynamic():
     Description: test op UpsampleLinear1D and UpsampleLinear1DGrad.
     Expectation: expect UpsampleLinear1D and UpsampleLinear1DGrad result.
     """
-    ms.context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(2, 5, 30), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(4, 3, 10), dtype=ms.float32)
     TEST_OP(
@@ -106,9 +105,7 @@ def test_upsample_linear_1d_scales_dynamic():
     Description: test op UpsampleLinear1D and UpsampleLinear1DGrad.
     Expectation: expect UpsampleLinear1D and UpsampleLinear1DGrad result.
     """
-    ms.context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(2, 5, 30), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(4, 3, 10), dtype=ms.float32)
     TEST_OP(

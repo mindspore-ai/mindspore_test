@@ -15,8 +15,10 @@
 import numpy as np
 import mindspore
 from mindspore import nn, ops, context
+import mindspore.runtime as rt
 
-mindspore.set_context(mode=context.GRAPH_MODE, max_device_memory="0.1GB", device_target="Ascend")
+mindspore.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+rt.set_memory(max_size="0.1GB")
 
 
 class AddNet(nn.Cell):

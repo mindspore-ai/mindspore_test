@@ -19,6 +19,7 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 def silent_check_v3(val, max_val, avg, input_grad, step,
@@ -93,9 +94,7 @@ def test_silent_check_v3_dyn_shape():
     Description: test op SilentCheckV3.
     Expectation: expect correct result.
     """
-    context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     TEST_OP(
         silent_check_v3_forward_func,
         [

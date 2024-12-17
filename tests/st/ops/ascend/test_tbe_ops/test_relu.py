@@ -22,7 +22,6 @@ from mindspore.ops import operations as P
 
 context.set_context(device_target="Ascend", mode=context.GRAPH_MODE, variable_memory_max_size="31GB")
 
-
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
