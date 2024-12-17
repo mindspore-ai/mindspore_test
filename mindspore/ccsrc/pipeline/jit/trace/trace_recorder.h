@@ -49,6 +49,7 @@ class TraceRecorder {
     return trace_recorder;
   }
 
+  FuncGraphPtr InitTopGraph(const DebugInfoPtr &debug_info);
   void BeginGraph(const py::object &func_name, const py::object &phase, const py::list &file_names,
                   const py::list &linenos, const py::args &args);
   void EndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args);
@@ -60,6 +61,9 @@ class TraceRecorder {
 
   void SyncTensorNode(const py::object &old_tensor_obj, const py::object &new_tensor_obj);
   bool BuildingTraceGraph() { return !graph_stack_.empty(); }
+  FuncGraphPtr BuildEndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args,
+                             bool nested = false);
+  py::object InitTraceGraphInputs(const AbstractBasePtr &abs, const AnfNodePtr &param);
 
  private:
   AnfNodePtr GetNode(const py::object &obj, const DebugInfoPtr &debug_info, bool set_abstract = false);

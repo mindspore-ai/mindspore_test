@@ -769,6 +769,9 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
         return std::make_shared<InterpretedObject>(obj);
       }
     }
+    if (py::hasattr(obj, "__trace_func__")) {
+      return prim::kPrimTraceGraph;
+    }
     MS_LOG(DEBUG) << "Convert the obj to func graph, type is " << obj_type;
     FuncGraphPtr func_graph = ConvertToFuncGraph(obj, {}, PYTHON_MOD_GET_PARSE_METHOD, forbid_reuse);
     if (func_graph == nullptr) {

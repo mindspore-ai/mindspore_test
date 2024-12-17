@@ -353,7 +353,8 @@ def test_trace_begin_end_3():
     def bar(x, y, z):
         t = ms.Tensor(2)
         z = z + t
-        jit_begin("__trace__jit_block__3__", x, y, z)  # <-- Start func graph building.
+        # <-- Start func graph building.
+        jit_begin("__trace__jit_block__3__", x, y, z)
         a = z + x
         b = a * y
         return a, b
@@ -369,3 +370,158 @@ def test_trace_begin_end_3():
     assert res == (18, 36)
     res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
     assert res == (18, 36)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_1():
+    """
+    Feature: JIT trace function nested by JIT ast
+    Description: JIT trace function nested by JIT ast
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    def jit_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, x, y, flag):
+            a = ms.Tensor(2)
+            if flag:
+                return trace_func(a, x, y, self.x)
+            return jit_func(a, x, y, self.x)
+
+    net = Net()
+    res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
+    res_jit = net(ms.Tensor(1), ms.Tensor(3), False)
+    assert res_trace == res_jit
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_2():
+    """
+    Feature: JIT trace function nested by JIT ast
+    Description: JIT trace function nested by JIT ast
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return x, y, z
+
+    def jit_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return x, y, z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, x, y, flag):
+            a = ms.Tensor(2)
+            if flag:
+                return trace_func(a, x, y, self.x)
+            return jit_func(a, x, y, self.x)
+
+    net = Net()
+    res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
+    res_jit = net(ms.Tensor(1), ms.Tensor(3), False)
+    assert res_trace == res_jit
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_3():
+    """
+    Feature: JIT trace function nested by JIT ast
+    Description: JIT trace function nested by JIT ast
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def trace_func(inputs):
+        x, y, z = inputs
+        return x, y, z, x + y + z
+
+    def jit_func(inputs):
+        x, y, z = inputs
+        return x, y, z, x + y + z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, inputs, flag):
+            if flag:
+                return trace_func(inputs) + self.x
+            return jit_func(inputs) + self.x
+
+    inputs = ms.mutable([ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)])
+    net = Net()
+    res_trace = net(inputs, True)
+    res_jit = net(inputs, False)
+    assert np.allclose(res_trace.asnumpy(), res_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_side_effect_1():
+    """
+    Feature: JIT trace function nested by JIT ast
+    Description: JIT trace function nested by JIT ast
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def foo(x, y, self_x, a):
+        z = x + a
+        ms.ops.Print()(z)
+        z = z + self_x
+        ms.ops.Print()(z)
+        z = z * y
+        ms.ops.Print()(z)
+        return z
+
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            ms.ops.Print()(a)
+            return foo(x, y, self.x, a)
+
+    trace_net = TraceNet()
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == 12
+
+    cap = Capture()
+    with capture(cap):
+        res = trace_net(ms.Tensor(1), ms.Tensor(3))
+        sys.stdout.flush()
+        time.sleep(0.1)
+    assert res == 12
+    patterns = {'Tensor(shape=[], dtype=Int64, value=2)\n'
+                'Tensor(shape=[], dtype=Int64, value=3)\n'
+                'Tensor(shape=[], dtype=Int64, value=4)\n'
+                'Tensor(shape=[], dtype=Int64, value=12)'}
+    check_output(cap.output, patterns)

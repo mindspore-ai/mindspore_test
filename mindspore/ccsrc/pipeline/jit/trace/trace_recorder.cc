@@ -31,6 +31,8 @@
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "pipeline/jit/ps/parse/resolve.h"
+#include "pipeline/jit/ps/static_analysis/prim.h"
+#include "frontend/operator/ops_front_infer_function.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -126,6 +128,7 @@ void Capture(const py::list &args, py::object *res, std::string class_name) {
 }
 
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py) {
+  // Capture node from trace func.
   auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
   std::string method = "run_op";
   return jit_context.attr(method.c_str())(prim_py, res, *args);
@@ -142,6 +145,16 @@ void TraceRecorder::Clear() {
   phase_.clear();
 }
 
+FuncGraphPtr TraceRecorder::InitTopGraph(const DebugInfoPtr &debug_info) {
+  if (!graph_stack_.empty()) {
+    MS_LOG(EXCEPTION) << "A trace graph is already created, Please check if there are nested trace functions";
+  }
+  auto fg_debug_info = std::make_shared<GraphDebugInfo>(MakeTraceInfo<TraceOpt>(debug_info));
+  const auto new_graph = std::make_shared<FuncGraph>(std::move(fg_debug_info));
+  graph_stack_.push(new_graph);
+  return new_graph;
+}
+
 void TraceRecorder::BeginGraph(const py::object &func_name, const py::object &phase, const py::list &file_names,
                                const py::list &linenos, const py::args &args) {
   phase_ = py::cast<std::string>(phase);
@@ -151,9 +164,7 @@ void TraceRecorder::BeginGraph(const py::object &func_name, const py::object &ph
   std::replace(function_name.begin(), function_name.end(), '.', '_');
   function_name += "__trace_";
   const auto debug_info = GenerateDebugInfos(file_names, linenos, function_name);
-  auto fg_debug_info = std::make_shared<GraphDebugInfo>(MakeTraceInfo<TraceOpt>(debug_info));
-  const auto new_graph = std::make_shared<FuncGraph>(std::move(fg_debug_info));
-  graph_stack_.push(new_graph);
+  const auto new_graph = InitTopGraph(debug_info);
   MS_LOG(DEBUG) << "Start build graph, " << new_graph << "/" << new_graph->ToString() << ", arg size: " << args.size()
                 << ", args: " << py::str(py::cast<py::object>(args)) << ", phase_: " << phase_;
   for (size_t i = 0; i < args.size(); ++i) {
@@ -169,7 +180,8 @@ void TraceRecorder::BeginGraph(const py::object &func_name, const py::object &ph
   }
 }
 
-void TraceRecorder::EndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args) {
+FuncGraphPtr TraceRecorder::BuildEndGraph(const py::list &file_names, const py::list &linenos,
+                                          const py::args &output_args, bool nested) {
   const auto &func_graph = graph_stack_.top();
   MS_LOG(DEBUG) << "End build graph, " << func_graph << "/" << func_graph->ToString()
                 << ", output_args: " << py::str(py::cast<py::object>(output_args)) << ", phase_: " << phase_;
@@ -200,6 +212,15 @@ void TraceRecorder::EndGraph(const py::list &file_names, const py::list &linenos
     DumpIR("jit_trace_" + func_graph->ToString() + ".ir", func_graph);
   }
 #endif
+  if (nested) {
+    graph_stack_.pop();
+    Clear();
+  }
+  return func_graph;
+}
+
+void TraceRecorder::EndGraph(const py::list &file_names, const py::list &linenos, const py::args &output_args) {
+  const auto &func_graph = BuildEndGraph(file_names, linenos, output_args);
   // Run compile pipeline with func graph.
   auto graph_executor = pipeline::GetExecutor();
   (void)graph_executor->CompileInner(func_graph, args_, py::dict(), phase_, true);
@@ -621,6 +642,44 @@ void TraceRecorder::SyncTensorNode(const py::object &old_tensor_obj, const py::o
   MS_LOG(DEBUG) << "Sync node from [" << py::str(old_tensor_obj.get_type()) << "] ptr: " << old_tensor.get() << " to ["
                 << py::str(new_tensor_obj.get_type()) << "] ptr: " << new_tensor.get()
                 << ", node: " << node->DebugString();
+}
+
+py::object TraceRecorder::InitTraceGraphInputs(const AbstractBasePtr &abs, const AnfNodePtr &param) {
+  MS_EXCEPTION_IF_NULL(abs);
+  auto val = abs->BuildValue();
+  bool has_value = val != nullptr && !val->ContainsValueAny();
+  if (abs->isa<abstract::AbstractSequence>()) {
+    param->set_abstract(abs);
+    const auto &abs_seq = abs->cast<abstract::AbstractSequencePtr>()->elements();
+    py::tuple tuple_node(abs_seq.size());
+    for (size_t i = 0; i < abs_seq.size(); ++i) {
+      auto element = param->func_graph()->NewCNodeInOrder(
+        {NewValueNode(prim::kPrimTupleGetItem), param, NewValueNode(SizeToLong(i))});
+      tuple_node[i] = InitTraceGraphInputs(abs_seq[i], element);
+    }
+    return tuple_node;
+  } else if (abs->isa<abstract::AbstractTensor>() || !has_value) {
+    if (!abs->isa<abstract::AbstractTensor>()) {
+      MS_LOG(WARNING) << "Input should be Tensor, but get " << abs->ToString() << ".";
+    }
+    param->set_abstract(abs);
+    auto type_ptr = abs->GetType();
+    MS_EXCEPTION_IF_NULL(type_ptr);
+    auto tensor_type_ptr = type_ptr->cast<TensorTypePtr>();
+    MS_EXCEPTION_IF_NULL(tensor_type_ptr);
+    auto type_id = tensor_type_ptr->element()->type_id();
+    auto shape_ptr = abs->GetShape();
+    MS_EXCEPTION_IF_NULL(shape_ptr);
+    auto shape_vec = shape_ptr->GetShapeVector();
+    auto tensor_ptr = std::make_shared<tensor::Tensor>(type_id, shape_vec);
+    auto py_tensor = py::cast(tensor_ptr);
+    SetNode(py_tensor, param, param->debug_info());
+    return py_tensor;
+  } else {
+    param->set_abstract(abs);
+    auto py_data = ValueToPyData(val);
+    return py_data;
+  }
 }
 
 void RegTraceRecorderPy(const py::module *m) {
