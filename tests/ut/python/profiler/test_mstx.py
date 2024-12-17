@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, Mock
 from mindspore.profiler import mstx
-import mindspore.hal
+import mindspore
 
 
 class TestMstx(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestMstx(unittest.TestCase):
         self.mock_profiler.mstx_range_end = Mock()
 
         # Create mock Stream object
-        self.mock_stream = Mock(spec=mindspore.hal.Stream)
+        self.mock_stream = Mock(spec=mindspore.runtime.Stream)
         self.mock_device_stream = Mock(name='device_stream')
         self.mock_stream.device_stream.return_value = self.mock_device_stream
 
@@ -60,7 +60,7 @@ class TestMstx(unittest.TestCase):
         with patch('mindspore.log.warning') as mock_warning:
             mstx.mark("test_message", "invalid_stream")
             mock_warning.assert_called_once_with(
-                "Invalid stream for mstx.mark func. Expected mindspore.hal.Stream but got <class 'str'>."
+                "Invalid stream for mstx.mark func. Expected mindspore.runtime.Stream but got <class 'str'>."
             )
             self.mock_profiler.mstx_mark.assert_not_called()
 
@@ -79,7 +79,7 @@ class TestMstx(unittest.TestCase):
         with patch('mindspore.log.warning') as mock_warning:
             range_id = mstx.range_start("test_range", "invalid_stream")
             mock_warning.assert_called_once_with(
-                "Invalid stream for mstx.range_start func. Expected mindspore.hal.Stream but got <class 'str'>."
+                "Invalid stream for mstx.range_start func. Expected mindspore.runtime.Stream but got <class 'str'>."
             )
             self.assertEqual(range_id, 0)
             self.mock_profiler.mstx_range_start.assert_not_called()

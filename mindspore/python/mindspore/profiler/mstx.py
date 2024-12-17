@@ -16,7 +16,7 @@
 import mindspore._c_expression as c_expression
 
 from mindspore import log as logging
-from mindspore.hal import Stream
+from mindspore.runtime import Stream
 from mindspore.profiler.common.constant import DeviceTarget
 
 
@@ -34,7 +34,7 @@ class Mstx:
 
         Args:
             message (str): Description for the marker.
-            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream.
+            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.runtime.Stream.
                 Default: ``None``, which means only marking on host side without marking on device stream.
 
         Examples:
@@ -58,7 +58,7 @@ class Mstx:
             ...         yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
             >>>
             >>> def train(net):
-            ...     stream = ms.hal.current_stream()
+            ...     stream = ms.runtime.current_stream()
             ...     optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
             ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
             ...     data = ds.GeneratorDataset(generator, ["data", "label"])
@@ -72,7 +72,8 @@ class Mstx:
             >>> if __name__ == '__main__':
             ...     # Note: mstx only supports Ascend device and cannot be used in mindspore.nn.Cell.construct
             ...     # when in mindspore.GRAPH_MODE
-            ...     ms.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+            ...     ms.set_context(mode=ms.PYNATIVE_MODE)
+            ...     ms.set_device(device_target="Ascend", device_id=0)
             ...     # Init Profiler
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
             ...                   on_trace_ready=tensor_board_trace_handler,
@@ -93,7 +94,7 @@ class Mstx:
                 Mstx.NPU_PROFILER.mstx_mark(message, device_stream)
             else:
                 logging.warning(
-                    f"Invalid stream for mstx.mark func. Expected mindspore.hal.Stream but got {type(stream)}.",
+                    f"Invalid stream for mstx.mark func. Expected mindspore.runtime.Stream but got {type(stream)}.",
                 )
         else:
             Mstx.NPU_PROFILER.mstx_mark(message)
@@ -104,7 +105,7 @@ class Mstx:
 
         Args:
             message (str): Description for the range.
-            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.hal.Stream.
+            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.runtime.Stream.
                 Default: ``None``, which means only starting mstx range on host side without starting on device stream.
 
         Returns:
@@ -131,7 +132,7 @@ class Mstx:
             ...         yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
             >>>
             >>> def train(net):
-            ...     stream = ms.hal.current_stream()
+            ...     stream = ms.runtime.current_stream()
             ...     optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
             ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
             ...     data = ds.GeneratorDataset(generator, ["data", "label"])
@@ -145,7 +146,8 @@ class Mstx:
             >>> if __name__ == '__main__':
             ...     # Note: mstx only supports Ascend device and cannot be used in mindspore.nn.Cell.construct
             ...     # when in mindspore.GRAPH_MODE
-            ...     ms.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+            ...     ms.set_context(mode=ms.PYNATIVE_MODE)
+            ...     ms.set_device(device_target="Ascend", device_id=0)
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
             ...                   on_trace_ready=tensor_board_trace_handler,
             ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
@@ -166,7 +168,8 @@ class Mstx:
                 return Mstx.NPU_PROFILER.mstx_range_start(message, device_stream)
             else:
                 logging.warning(
-                    f"Invalid stream for mstx.range_start func. Expected mindspore.hal.Stream but got {type(stream)}.",
+                    f"Invalid stream for mstx.range_start func. "
+                    f"Expected mindspore.runtime.Stream but got {type(stream)}.",
                 )
                 return 0
         else:
