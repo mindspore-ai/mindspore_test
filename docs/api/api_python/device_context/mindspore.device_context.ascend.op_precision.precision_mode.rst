@@ -1,7 +1,7 @@
 mindspore.device_context.ascend.op_precision.precision_mode
 ===========================================================
 
-.. py:function:: mindspore.device_context.op_precision.precision_mode(mode)
+.. py:function:: mindspore.device_context.ascend.op_precision.precision_mode(mode)
 
     配置混合精度模式。框架默认设置Atlas训练系列产品的默认配置为“allow_fp32_to_fp16”，Atlas A2训练系列产品等其他产品的默认配置为“must_keep_origin_dtype”。
     如果您想了解更多详细信息，

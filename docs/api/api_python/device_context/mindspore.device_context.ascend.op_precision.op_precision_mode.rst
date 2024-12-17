@@ -1,7 +1,7 @@
 mindspore.device_context.ascend.op_precision.op_precision_mode
 ==============================================================
 
-.. py:function:: mindspore.device_context.op_precision.op_precision_mode(path)
+.. py:function:: mindspore.device_context.ascend.op_precision.op_precision_mode(path)
 
     配置算子精度模式配置文件的路径。
     如果您想了解更多详细信息，

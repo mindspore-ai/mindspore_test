@@ -1,7 +1,7 @@
 mindspore.device_context.ascend.op_precision.matmul_allow_hf32
 ==============================================================
 
-.. py:function:: mindspore.device_context.op_precision.matmul_allow_hf32(value)
+.. py:function:: mindspore.device_context.ascend.op_precision.matmul_allow_hf32(value)
 
     是否为Matmul类算子使能FP32转换为HF32。CANN默认不使能Matmul类算子FP32转换为HF32。
     如果您想了解更多详细信息，
