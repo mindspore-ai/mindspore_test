@@ -1675,12 +1675,10 @@ def squeeze(input, dim):
     to (A, B) when :math:`dim=1`, but when :math:`dim=0` or :math:`dim=2`, an error will occur.
 
     Note:
+        - Squeezing a dimension that is not 1 will raise an error.
         - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
           and there is no Tensor data copy process.
         - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
