@@ -6,9 +6,9 @@ moe_compute_expert_tokens:
         expert_tokens_{i} = BinarySearch(sorted_experts, num_expert)
 
     Inputs:
-        - **sorted_experts** (Tensor) : A tensor which represent sorted experts, must be 1D tensor.
+        - **sorted_experts** (Tensor) - A tensor which represent sorted experts, must be 1D tensor.
           Supported type: Int32.
-        - **num_expert** (int): The number of experts, must be greater than 0.
+        - **num_expert** (int) - The number of experts, must be greater than 0.
 
     Outputs:
         Tensor, have the same dtype with sorted_experts.
