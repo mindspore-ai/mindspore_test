@@ -52,7 +52,7 @@ mindspore.runtime
 执行
 ------------
 
-.. msplatformautosummary::
+.. mscnautosummary::
     :toctree: runtime
     :nosignatures:
     :template: classtemplate.rst
