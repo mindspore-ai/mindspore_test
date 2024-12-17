@@ -1,0 +1,81 @@
+From e924e10c79435c0e8b0cec38ad8293d370dd3510 Mon Sep 17 00:00:00 2001
+From: chenyijie6 <chenyijie6@huawei.com>
+Date: Wed, 11 Dec 2024 14:18:03 +0800
+Subject: [PATCH] adapt to py37
+
+---
+ mindformers/__init__.py                          | 2 +-
+ mindformers/dataset/blended_datasets/utils_s3.py | 3 ++-
+ mindformers/models/__init__.py                   | 2 +-
+ mindformers/models/whisper/__init__.py           | 3 ++-
+ mindformers/utils/tensorboard.py                 | 2 +-
+ 5 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/mindformers/__init__.py b/mindformers/__init__.py
+index 609a20de..79153ecf 100644
+--- a/mindformers/__init__.py
++++ b/mindformers/__init__.py
+@@ -316,7 +316,7 @@ from mindformers.models import (
+     ViTProcessor,
+     WhisperConfig,
+     WhisperForConditionalGeneration,
+-    WhisperTokenizer,
++    # WhisperTokenizer,
+     area_from_rle,
+     batch_iterator,
+     batched_mask_to_box,
+diff --git a/mindformers/dataset/blended_datasets/utils_s3.py b/mindformers/dataset/blended_datasets/utils_s3.py
+index d557360a..617804c2 100644
+--- a/mindformers/dataset/blended_datasets/utils_s3.py
++++ b/mindformers/dataset/blended_datasets/utils_s3.py
+@@ -1,6 +1,7 @@
+ # Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+ import os
+-from typing import Any, Dict, NamedTuple, Protocol, Tuple
++from typing import Any, Dict, NamedTuple, Tuple
++from typing_extensions import Protocol
+ 
+ try:
+     import boto3
+diff --git a/mindformers/models/__init__.py b/mindformers/models/__init__.py
+index 260b4d0a..46a1e9e0 100644
+--- a/mindformers/models/__init__.py
++++ b/mindformers/models/__init__.py
+@@ -189,7 +189,7 @@ from .eva02 import (
+ from .whisper import (
+     WhisperConfig,
+     WhisperForConditionalGeneration,
+-    WhisperTokenizer
++    # WhisperTokenizer
+ )
+ from .tokenization_utils import (
+     PreTrainedTokenizer,
+diff --git a/mindformers/models/whisper/__init__.py b/mindformers/models/whisper/__init__.py
+index ab88e0af..8ace777d 100644
+--- a/mindformers/models/whisper/__init__.py
++++ b/mindformers/models/whisper/__init__.py
+@@ -16,6 +16,7 @@
+ 
+ from .configuration_whisper import WhisperConfig
+ from .modeling_whisper import WhisperForConditionalGeneration
+-from .tokenization_whisper import WhisperTokenizer
++
++# from .tokenization_whisper import WhisperTokenizer
+ 
+ __all__ = []
+diff --git a/mindformers/utils/tensorboard.py b/mindformers/utils/tensorboard.py
+index 2cd3f188..3630da95 100644
+--- a/mindformers/utils/tensorboard.py
++++ b/mindformers/utils/tensorboard.py
+@@ -13,7 +13,7 @@
+ # limitations under the License.
+ # ============================================================================
+ """TENSORBOARD Module"""
+-from tensorboardX import SummaryWriter
++# from tensorboardX import SummaryWriter
+ 
+ from mindformers.tools.logger import logger
+ from mindformers.tools.register import MindFormerConfig
+-- 
+2.17.1
+
