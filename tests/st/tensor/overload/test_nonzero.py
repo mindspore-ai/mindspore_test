@@ -38,8 +38,8 @@ def nonzero_forward_func_1(x):
 
 
 @test_utils.run_with_cell
-def nonzero_forward_func_2(x, as_tuple=False):
-    return x.nonzero(as_tuple)
+def nonzero_forward_func_2(x, as_tuple_=False):
+    return x.nonzero(as_tuple=as_tuple_)
 
 
 @test_utils.run_with_cell
@@ -49,12 +49,12 @@ def nonzero_astuple_false_forward_func(x):
 
 @test_utils.run_with_cell
 def nonzero_astuple_false_forward_2_func(x):
-    return x.nonzero(False)
+    return x.nonzero(as_tuple=False)
 
 
 @test_utils.run_with_cell
 def nonzero_astuple_true_forward_func(x):
-    return x.nonzero(True)
+    return x.nonzero(as_tuple=True)
 
 
 @test_utils.run_with_cell
@@ -62,7 +62,7 @@ def nonzero_backward_func(x, as_tuple=False):
     if as_tuple:
         grad_op = ops.GradOperation(get_all=True, get_by_list=False, sens_param=False)
         return grad_op(nonzero_forward_func_2)(x, as_tuple)
-    return ops.grad(nonzero_forward_func_1, (0))(x)
+    return ms.grad(nonzero_forward_func_1, (0))(x)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
@@ -102,6 +102,9 @@ def test_ops_nonzero_normal(context_mode, as_tuple):
         expect_tuple = np.array([[0, 0, 0, 0, 0]])
         for expect, output in zip(expect_tuple, output_tuple):
             np.testing.assert_array_equal(output.asnumpy(), expect)
+
+    with pytest.raises(TypeError):
+        ms.Tensor(x).nonzero(False)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
