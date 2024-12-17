@@ -21,13 +21,11 @@ expand_as:
     Examples:
         >>> import numpy as np
         >>> from mindspore import Tensor
-        >>> from mindspore.ops.function.array_func import expand_as
         >>> x = Tensor(np.array([[1, 2, 3], [1, 2, 3]]).astype(np.float32))
-        >>> other = Tensor(np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]).astype(np.float32))
-        >>> output = expand_as(x, other)
+        >>> other = Tensor(np.array([[1, 1, 1], [1, 1, 1]]).astype(np.float32))
+        >>> output = x.expand_as(other)
         >>> print(output)
         [[1. 2. 3.]
-         [1. 2. 3.]
          [1. 2. 3.]]
 
     .. method:: Tensor.expand_as(x) -> Tensor
@@ -42,13 +40,16 @@ expand_as:
     Returns:
         Tensor, has the same dimension as target tensor.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
     Examples:
         >>> import numpy as np
         >>> from mindspore import Tensor
         >>> from mindspore import dtype as mstype
-        >>> x = Tensor([1, 2, 3], dtype=mstype.float32)
-        >>> y = Tensor(np.ones((2, 3)), dtype=mstype.float32)
-        >>> output = x.expand_as(y)
+        >>> input = Tensor([1, 2, 3], dtype=mstype.float32)
+        >>> x = Tensor(np.ones((2, 3)), dtype=mstype.float32)
+        >>> output = input.expand_as(x=x)
         >>> print(output)
         [[1. 2. 3.]
          [1. 2. 3.]]
