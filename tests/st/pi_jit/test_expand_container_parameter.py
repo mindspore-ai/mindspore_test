@@ -1,9 +1,11 @@
 import pytest
 from mindspore import jit, context, Tensor
 from mindspore.common import dtype as mstype
-from mindspore._c_expression import get_code_extra
-from .share.utils import match_array
+from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
+
+# set feature expand graph input on
+config = { "expand_graph_input": True, }
 
 def run_sequence(s):
     return s[0] + s[1] + s[2] + s[3]
@@ -60,12 +62,6 @@ def run_closure_3(a, b, c, d):
         return s['l'][0] + s['l'][1] + s['t'][0] + s['t'][1]
     return inner
 
-def check_func_compile_state(func):
-    jcr = get_code_extra(func.__wrapped__)
-    assert jcr is not None
-    assert jcr['break_count_'] == 0
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [run_sequence])
 @pytest.mark.parametrize('x1', [Tensor([[1., 2.], [3., 4.]], mstype.float32)])
@@ -80,9 +76,9 @@ def test_list(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [x1, x2, y1, y2]
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s[0] = x1 * 10
@@ -90,7 +86,7 @@ def test_list(func, x1, x2, y1, y2):
     s[2] = y1 * 10
     s[3] = y2 * 10
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -108,9 +104,9 @@ def test_nest_list(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [[x1, x2], [y1, y2]]
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s[0][0] = x1 * 10
@@ -118,7 +114,7 @@ def test_nest_list(func, x1, x2, y1, y2):
     s[1][0] = y1 * 10
     s[1][1] = y2 * 10
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -136,14 +132,14 @@ def test_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = (x1, x2, y1, y2)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s = (x1 * 10, x2 * 10, y1 * 10, y2 * 10)
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -161,14 +157,14 @@ def test_nested_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = ((x1, x2), (y1, y2))
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s = ((x1 * 10, x2 * 10), (y1 * 10, y2 * 10))
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -186,14 +182,14 @@ def test_mix_nested_list_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = ([x1, x2], (y1, y2))
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s = ([x1 * 10, x2 * 10], (y1 * 10, y2 * 10))
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -211,14 +207,14 @@ def test_mix_nested_list_tuple_dict(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [(x1, x2), {'a': y1, 'b': y2}]
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s = [(x1 * 10, x2 * 10), {'a': y1 * 10, 'b': y2 * 10}]
     ms_res = wrapped_func(s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -236,9 +232,9 @@ def test_dict(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     d = {'a': x1, 'b': x2, 'c': y1, 'd':y2}
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(d)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     d['a'] = x1 * 10
@@ -246,7 +242,7 @@ def test_dict(func, x1, x2, y1, y2):
     d['c'] = y1 * 10
     d['d'] = y2 * 10
     ms_res = wrapped_func(d)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -264,9 +260,9 @@ def test_nested_dict(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     d = { 'd1': {'a': x1, 'b': x2}, 'd2': {'c': y1, 'd':y2}}
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(d)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     d['d1']['a'] = x1 * 10
@@ -274,7 +270,7 @@ def test_nested_dict(func, x1, x2, y1, y2):
     d['d2']['c'] = y1 * 10
     d['d2']['d'] = y2 * 10
     ms_res = wrapped_func(d)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -292,14 +288,14 @@ def test_mix_nested_dict_list_tuple(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     d = {'t': (x1, x2), 'l': [y1, y2]}
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(d)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     d = {'t': (x1 * 10, x2 * 10), 'l': [y1 * 10, y2 * 10]}
     ms_res = wrapped_func(d)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -316,13 +312,13 @@ def test_vargs_1(func, x1, x2, y1, y2):
     Expectation: the result match
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(x1, x2, y1, y2)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(x1, x2, y1, y2)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     ms_res = wrapped_func(x1 * 10, x2 * 10, y1 * 10, y2 * 10)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(x1 * 10, x2 * 10, y1 * 10, y2 * 10)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -340,14 +336,14 @@ def test_vargs_2(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = (x2, [y1, y2])
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(x1, s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(x1, s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s = (x2 * 10, [y1 * 10, y2 * 10])
     ms_res = wrapped_func(x1 * 10, s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(x1 * 10, s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -365,14 +361,14 @@ def test_vargs_3(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     s = [{'a': x2}, (y1, y2)]
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(x1, s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(x1, s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     s = [{'a': x2 * 10}, (y1 * 10, y2 * 10)]
     ms_res = wrapped_func(x1 * 10, s)
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(x1 * 10, s)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -389,13 +385,13 @@ def test_kwargs_1(func, x1, x2, y1, y2):
     Expectation: the result match
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(k=x1, s=[x2, y1], d={'a': y2})
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(k=x1, s=[x2, y1], d={'a': y2})
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     ms_res = wrapped_func(k=x1 * 10, s=[x2 * 10, y1 * 10], d={'a': y2 *10})
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(k=x1 * 10, s=[x2 * 10, y1 * 10], d={'a': y2 *10})
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -412,13 +408,13 @@ def test_kwargs_2(func, x1, x2, y1, y2):
     Expectation: the result match
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     ms_res = wrapped_func(k=x1 * 10, s=({'a':[{'b': x2 * 10}]}, [{'c': y1 * 10}]), d={'e': [y2 * 10]})
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(k=x1 * 10, s=({'a':[{'b': x2 * 10}]}, [{'c': y1 * 10}]), d={'e': [y2 * 10]})
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -437,15 +433,15 @@ def test_mix_args_vargs_kwargs(func, x1, x2, y1, y2):
     context.set_context(mode=context.PYNATIVE_MODE)
     d = {'t': (x1, x2), 'l': [y1, y2]}
     s = [{'a': x2}, (y1, y2)]
-    wrapped_func = jit(func, mode='PIJit')
+    wrapped_func = jit(func, mode='PIJit', jit_config=config)
     ms_res = wrapped_func(d, x1, s, k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d, x1, s, k=x1, s=({'a':[{'b': x2}]}, [{'c': y1}]), d={'e': [y2]})
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
     d = {'t': (x1 * 10, x2 * 10), 'l': [y1 * 10, y2 * 10]}
     s = [{'a': x2 * 10}, (y1 * 10, y2 * 10)]
     ms_res = wrapped_func(d, x1 * 10, s, k=x1 * 10, s=({'a':[{'b': x2 * 10}]}, [{'c': y1 * 10}]), d={'e': [y2 * 10]})
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = func(d, x1 * 10, s, k=x1 * 10, s=({'a':[{'b': x2 * 10}]}, [{'c': y1 * 10}]), d={'e': [y2 * 10]})
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -463,9 +459,9 @@ def test_closure_1(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     inner = func(x1, x2, y1, y2)
-    wrapped_func = jit(inner, mode='PIJit')
+    wrapped_func = jit(inner, mode='PIJit', jit_config=config)
     ms_res = wrapped_func()
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = inner()
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -483,9 +479,9 @@ def test_closure_2(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     inner = func(x1, x2, y1, y2)
-    wrapped_func = jit(inner, mode='PIJit')
+    wrapped_func = jit(inner, mode='PIJit', jit_config=config)
     ms_res = wrapped_func()
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = inner()
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
@@ -503,8 +499,8 @@ def test_closure_3(func, x1, x2, y1, y2):
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     inner = func(x1, x2, y1, y2)
-    wrapped_func = jit(inner, mode='PIJit')
+    wrapped_func = jit(inner, mode='PIJit', jit_config=config)
     ms_res = wrapped_func()
-    check_func_compile_state(wrapped_func)
+    assert_executed_by_graph_mode(wrapped_func)
     res = inner()
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
