@@ -583,7 +583,7 @@ static bool SkipGuardInlinedFunc(CallNode *node) {
     return true;
   }
   // Now only guard specialized function and cell
-  if (func_node->GetVobj()->GetType()) {
+  if (func_node->GetVobj()->GetType() == AObject::kTypeCell) {
     return false;
   }
   return node->GetInlineReason() != InlineReason::kInlineFuncSpecialize;
