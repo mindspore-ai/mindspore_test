@@ -668,12 +668,12 @@ def set_op_strategy_config(mode="SAVE", path=""):
           and then load strategy to perform distributed training.
 
     Args:
-        mode (str): The parameter for choosing save or load .json file.
+        mode (str): The parameter for choosing save or load .json file. Default value: ``"SAVE"`` .
         path (str): Path to save or load parallel strategy json, must be an absolute path.
 
     Raises:
-        KeyError: When type is not 'SAVE' or 'LOAD'.
-        KeyError: When path does not end in '.json'.
+        KeyError: When type is not ``"SAVE"`` or ``"LOAD"`` .
+        KeyError: When path does not end in ``".json"`` .
         KeyError: When path is not an absolute path.
     """
     if not os.path.isabs(path):
