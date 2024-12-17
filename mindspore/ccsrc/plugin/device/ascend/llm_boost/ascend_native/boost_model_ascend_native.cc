@@ -22,7 +22,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "kernel/kernel.h"
 #include "include/backend/device_address.h"
-#include "acme/include/llm/llama_impl.h"
+#include "include/llm/llama_impl.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,54 +36,54 @@ bool IsDeviceTensor(mindspore::tensor::TensorPtr tensor) {
   return false;
 }
 
-static acme::TensorDType ToInternalDType(TypeId type) {
+static internal::TensorDType ToInternalDType(TypeId type) {
   switch (type) {
     // float data type
     case kNumberTypeFloat16:
-      return acme::TensorDType::TENSOR_DTYPE_FLOAT16;
+      return internal::TensorDType::TENSOR_DTYPE_FLOAT16;
     case kNumberTypeBFloat16:
-      return acme::TensorDType::TENSOR_DTYPE_BF16;
+      return internal::TensorDType::TENSOR_DTYPE_BF16;
     case kNumberTypeFloat32:
-      return acme::TensorDType::TENSOR_DTYPE_FLOAT;
+      return internal::TensorDType::TENSOR_DTYPE_FLOAT;
     case kNumberTypeDouble:
-      return acme::TensorDType::TENSOR_DTYPE_DOUBLE;
+      return internal::TensorDType::TENSOR_DTYPE_DOUBLE;
 
     // int data type
     case kNumberTypeInt32:
-      return acme::TensorDType::TENSOR_DTYPE_INT32;
+      return internal::TensorDType::TENSOR_DTYPE_INT32;
     case kNumberTypeUInt32:
-      return acme::TensorDType::TENSOR_DTYPE_UINT32;
+      return internal::TensorDType::TENSOR_DTYPE_UINT32;
     case kNumberTypeInt16:
-      return acme::TensorDType::TENSOR_DTYPE_INT16;
+      return internal::TensorDType::TENSOR_DTYPE_INT16;
     case kNumberTypeUInt16:
-      return acme::TensorDType::TENSOR_DTYPE_UINT16;
+      return internal::TensorDType::TENSOR_DTYPE_UINT16;
     case kNumberTypeInt8:
-      return acme::TensorDType::TENSOR_DTYPE_INT8;
+      return internal::TensorDType::TENSOR_DTYPE_INT8;
     case kNumberTypeUInt8:
-      return acme::TensorDType::TENSOR_DTYPE_INT8;
+      return internal::TensorDType::TENSOR_DTYPE_INT8;
     case kNumberTypeInt64:
-      return acme::TensorDType::TENSOR_DTYPE_INT64;
+      return internal::TensorDType::TENSOR_DTYPE_INT64;
     case kNumberTypeUInt64:
-      return acme::TensorDType::TENSOR_DTYPE_UINT64;
+      return internal::TensorDType::TENSOR_DTYPE_UINT64;
 
     // complex data type
     case kNumberTypeComplex64:
-      return acme::TensorDType::TENSOR_DTYPE_COMPLEX64;
+      return internal::TensorDType::TENSOR_DTYPE_COMPLEX64;
     case kNumberTypeComplex128:
-      return acme::TensorDType::TENSOR_DTYPE_COMPLEX128;
+      return internal::TensorDType::TENSOR_DTYPE_COMPLEX128;
 
     // other data type
     case kNumberTypeBool:
-      return acme::TensorDType::TENSOR_DTYPE_BOOL;
+      return internal::TensorDType::TENSOR_DTYPE_BOOL;
     case kObjectTypeString:
-      return acme::TensorDType::TENSOR_DTYPE_STRING;
+      return internal::TensorDType::TENSOR_DTYPE_STRING;
     default:
-      return acme::TensorDType::TENSOR_DTYPE_UNDEFINED;
+      return internal::TensorDType::TENSOR_DTYPE_UNDEFINED;
   }
 }
 
-acme::Tensor *CreateInternalTensor(mindspore::tensor::TensorPtr tensor) {
-  auto btensor = new acme::Tensor();
+internal::Tensor *CreateInternalTensor(mindspore::tensor::TensorPtr tensor) {
+  auto btensor = new internal::Tensor();
   btensor->desc.dtype = ToInternalDType(tensor->data_type());
   for (auto &val : tensor->shape_c()) {
     btensor->desc.dims.push_back(val);
@@ -97,50 +97,50 @@ acme::Tensor *CreateInternalTensor(mindspore::tensor::TensorPtr tensor) {
   return btensor;
 }
 
-TypeId ToMSDType(acme::TensorDType dtype) {
+TypeId ToMSDType(internal::TensorDType dtype) {
   switch (dtype) {
     // float data type
-    case acme::TensorDType::TENSOR_DTYPE_FLOAT16:
+    case internal::TensorDType::TENSOR_DTYPE_FLOAT16:
       return kNumberTypeFloat16;
-    case acme::TensorDType::TENSOR_DTYPE_BF16:
+    case internal::TensorDType::TENSOR_DTYPE_BF16:
       return kNumberTypeBFloat16;
-    case acme::TensorDType::TENSOR_DTYPE_FLOAT:
+    case internal::TensorDType::TENSOR_DTYPE_FLOAT:
       return kNumberTypeFloat32;
-    case acme::TensorDType::TENSOR_DTYPE_DOUBLE:
+    case internal::TensorDType::TENSOR_DTYPE_DOUBLE:
       return kNumberTypeDouble;
     // int data type
-    case acme::TensorDType::TENSOR_DTYPE_INT32:
+    case internal::TensorDType::TENSOR_DTYPE_INT32:
       return kNumberTypeInt32;
-    case acme::TensorDType::TENSOR_DTYPE_UINT32:
+    case internal::TensorDType::TENSOR_DTYPE_UINT32:
       return kNumberTypeUInt32;
-    case acme::TensorDType::TENSOR_DTYPE_INT16:
+    case internal::TensorDType::TENSOR_DTYPE_INT16:
       return kNumberTypeInt16;
-    case acme::TensorDType::TENSOR_DTYPE_UINT16:
+    case internal::TensorDType::TENSOR_DTYPE_UINT16:
       return kNumberTypeUInt16;
-    case acme::TensorDType::TENSOR_DTYPE_INT8:
+    case internal::TensorDType::TENSOR_DTYPE_INT8:
       return kNumberTypeInt8;
-    case acme::TensorDType::TENSOR_DTYPE_UINT8:
+    case internal::TensorDType::TENSOR_DTYPE_UINT8:
       return kNumberTypeUInt8;
-    case acme::TensorDType::TENSOR_DTYPE_INT64:
+    case internal::TensorDType::TENSOR_DTYPE_INT64:
       return kNumberTypeInt64;
-    case acme::TensorDType::TENSOR_DTYPE_UINT64:
+    case internal::TensorDType::TENSOR_DTYPE_UINT64:
       return kNumberTypeUInt64;
     // complex data type
-    case acme::TensorDType::TENSOR_DTYPE_COMPLEX64:
+    case internal::TensorDType::TENSOR_DTYPE_COMPLEX64:
       return kNumberTypeComplex64;
-    case acme::TensorDType::TENSOR_DTYPE_COMPLEX128:
+    case internal::TensorDType::TENSOR_DTYPE_COMPLEX128:
       return kNumberTypeComplex128;
       // other data type
-    case acme::TensorDType::TENSOR_DTYPE_BOOL:
+    case internal::TensorDType::TENSOR_DTYPE_BOOL:
       return kNumberTypeBool;
-    case acme::TensorDType::TENSOR_DTYPE_STRING:
+    case internal::TensorDType::TENSOR_DTYPE_STRING:
       return kObjectTypeString;
     default:
       return kTypeUnknown;
   }
 }
 
-mindspore::tensor::TensorPtr CreateMSTensor(acme::Tensor *tensor) {
+mindspore::tensor::TensorPtr CreateMSTensor(internal::Tensor *tensor) {
   TypeId data_type = ToMSDType(tensor->desc.dtype);
   ShapeVector shape;
   copy(tensor->desc.dims.begin(), tensor->desc.dims.end(), back_inserter(shape));
@@ -152,7 +152,7 @@ mindspore::tensor::TensorPtr CreateMSTensor(acme::Tensor *tensor) {
 }  // namespace
 
 int64_t BoostModelAscendC::InitData(const llm_data &data) {
-  auto param = std::make_shared<acme::OpLlamaModelParam>();
+  auto param = std::make_shared<internal::OpLlamaModelParam>();
   param->hcom_ = NULL;
   param->batch_size_ = data.batch_size;
   param->seq_length_ = data.seq_length;
@@ -166,7 +166,7 @@ int64_t BoostModelAscendC::InitData(const llm_data &data) {
   param->paged_attention_ = False;
   param->page_num_ = data.page_num;
   param->page_size_ = data.page_size;
-  llama_ = std::make_shared<acme::LlamaImpl>(param);
+  llama_ = std::make_shared<internal::LlamaImpl>(param);
 
   return KRET_OK;
 }
@@ -175,7 +175,7 @@ int64_t BoostModelAscendC::Init(const std::string &param) { return KRET_OK; }
 
 std::vector<tensor::TensorPtr> BoostModelAscendC::Forward(const std::vector<tensor::TensorPtr> &vec,
                                                           const std::string &param) {
-  auto llama = std::static_pointer_cast<acme::LlamaImpl>(llama_);
+  auto llama = std::static_pointer_cast<internal::LlamaImpl>(llama_);
   std::vector<mindspore::tensor::TensorPtr> outvec;
   auto &invec = llama->get_inputs();
   if (invec.size() != vec.size()) {
@@ -205,8 +205,8 @@ std::vector<tensor::TensorPtr> BoostModelAscendC::Forward(const std::vector<tens
 }
 
 int64_t BoostModelAscendC::SetWeightMap(const std::map<std::string, mindspore::tensor::TensorPtr> &map) {
-  auto llama = std::static_pointer_cast<acme::LlamaImpl>(llama_);
-  auto converted_map = new std::map<std::string, acme::Tensor *>();
+  auto llama = std::static_pointer_cast<internal::LlamaImpl>(llama_);
+  auto converted_map = new std::map<std::string, internal::Tensor *>();
   for (auto &item : map) {
     auto &name = item.first;
     auto tensor = item.second;
@@ -220,7 +220,7 @@ int64_t BoostModelAscendC::SetWeightMap(const std::map<std::string, mindspore::t
 }
 
 int64_t BoostModelAscendC::AddFlags(bool is_first) {
-  auto llama = std::static_pointer_cast<acme::LlamaImpl>(llama_);
+  auto llama = std::static_pointer_cast<internal::LlamaImpl>(llama_);
   if (llama) {
     llama->SetIsFIrstIter(is_first);
   }
