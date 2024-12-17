@@ -50,7 +50,7 @@ matmul_reduce_scatter:
             RuntimeError: ``bias`` is not None.
             RuntimeError: ``group`` does not exist.
             RuntimeError: ``world_size`` is inconsistent with the actual number of running cards.
-            RuntimeError: ``world_size`` is not equal to ``2`` , ``4`` , ``8`` .
+            RuntimeError: ``world_size`` is not equal to ``2`` , ``4`` , or ``8`` .
             RuntimeError: ``reduce_op`` is not ``'sum'`` .
             RuntimeError: ``trans_input`` is ``True`` .
 
