@@ -359,6 +359,8 @@ class Conv3d(_Conv):
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
 
+    For the detail of limitations of the parameters, please refer to :func:`mindspore.mint.nn.functional.conv3d`.
+
     .. warnings:
         This is an experimental API that is subject to change or deletion.
 

@@ -1100,7 +1100,6 @@ REG_BPROP_BUILDER("Conv3DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
     const auto &padding_neg_pad = ret_shape[kIndex3];
 
     auto zero = ib->EmitValue(MakeValue<int64_t>(0));
-    auto x_new = ib->Emit("ConstantPadND", {b_x, pad_nd, zero});
 
     // // get conv_grad_out
     auto conv2d_grad_out_true = [&](Emitter *e) -> NodePtrList {
