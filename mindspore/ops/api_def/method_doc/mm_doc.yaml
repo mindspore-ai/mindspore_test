@@ -1,5 +1,7 @@
 mm:
   description: |
+    mm(mat2) -> Tensor
+
     Returns the matrix product of two arrays.
     If `self` is a :math:`(n \times m)` Tensor, `mat2` is a
     :math:`(m \times p)` Tensor, `out` will be a :math:`(n \times p)` Tensor.
@@ -29,7 +31,6 @@ mm:
 
     Examples:
         >>> import mindspore as ms
-        >>> from mindspore import ops
         >>> import numpy as np
         >>> x1 = ms.Tensor(np.random.rand(2, 3), ms.float32)
         >>> x2 = ms.Tensor(np.random.rand(3, 4), ms.float32)
