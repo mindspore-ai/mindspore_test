@@ -21,6 +21,7 @@ import pytest
 import mindspore as ms
 from mindspore import ops, nn, Tensor, context, mutable
 import mindspore.ops.functional as F
+from mindspore.device_context.cpu.op_tuning import threads_num
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -124,7 +125,7 @@ def test_concat_dynamic():
     Description: test op concat.
     Expectation: expect correct result.
     """
-    ms.context.set_context(runtime_num_threads=1)  # multi-threads have none-initialized bug now.
+    threads_num(1)
     axis = 1
     inputs_case1, _ = forward_datas_prepare((2, 4), axis=axis, need_expect=False)
     inputs_case2, _ = forward_datas_prepare((2, 2, 2), axis=axis, need_expect=False)

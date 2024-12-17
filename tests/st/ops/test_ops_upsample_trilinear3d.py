@@ -22,6 +22,7 @@ import mindspore as ms
 from mindspore import Tensor
 from mindspore import ops, context
 from mindspore.common.api import _pynative_executor
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 def set_mode(mode):
@@ -95,9 +96,7 @@ def test_upsample_trilinear_3d_size_dynamic():
     Description: test op UpsampleTrillinear3D and UpsampleTrillinear3DGrad.
     Expectation: expect UpsampleTrillinear3D and UpsampleTrillinear3DGrad result.
     """
-    ms.context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(2, 5, 60, 30, 128), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(4, 3, 15, 10, 64), dtype=ms.float32)
     TEST_OP(
@@ -118,9 +117,7 @@ def test_upsample_trilinear_3d_scale_factor_dynamic():
     Description: test op UpsampleTrillinear3D and UpsampleTrillinear3DGrad.
     Expectation: expect UpsampleTrillinear3D and UpsampleTrillinear3DGrad result.
     """
-    ms.context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(2, 5, 60, 30, 128), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(4, 3, 15, 10, 64), dtype=ms.float32)
     TEST_OP(

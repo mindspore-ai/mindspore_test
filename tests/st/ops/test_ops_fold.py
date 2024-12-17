@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import context, mint
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 @test_utils.run_with_cell
@@ -71,9 +72,7 @@ def test_fold_dynamic():
     Description: test op Col2ImExt and Im2ColExt.
     Expectation: expect correct result.
     """
-    ms.context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(8, 30, 3), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(9, 4), dtype=ms.float32)
     TEST_OP(

@@ -19,13 +19,14 @@ import os
 import numpy as np
 import mindspore as ms
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 from mindspore import nn, ops
 from mindspore.communication import init
 from mindspore.common.initializer import initializer
 
 
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_context(max_device_memory="2GB")
+rt.set_memory(max_size="2GB")
 if os.environ.get("MS_SAVE_GRAPHS") == "1":
     ms.set_context(save_graphs=True, save_graphs_path='ms_graphs')
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)

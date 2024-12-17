@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import context, mint
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 @test_utils.run_with_cell
@@ -71,9 +72,7 @@ def test_unfold_dynamic():
     Description: test op Im2ColExt and Col2ImExt.
     Expectation: expect correct result.
     """
-    ms.context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(2, 5, 60, 30), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(1, 3, 15, 10), dtype=ms.float32)
     TEST_OP(

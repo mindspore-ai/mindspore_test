@@ -17,12 +17,13 @@ import mindspore as ms
 from mindspore import nn
 from mindspore.train import Model, LossMonitor
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 from mindspore.common.initializer import Normal
 from mindspore.ops import operations as P
 import numpy as np
 import sys
 
-ms.set_context(max_device_memory="2GB")
+rt.set_memory(max_size="2GB")
 ms.set_seed(1)
 np.random.seed(1)
 

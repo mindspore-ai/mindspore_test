@@ -14,6 +14,8 @@
 # ============================================================================
 import os
 import mindspore as ms
+import mindspore.runtime as rt
+from mindspore.device_context.cpu.op_tuning import threads_num
 from mindspore.communication.management import init
 from src.utils import logger
 from src.utils.local_adapter import get_rank_id, get_device_num, get_local_device_num
@@ -51,10 +53,11 @@ def init_env(cfg):
     enable_modelarts = bool(getattr(cfg, "enable_modelarts", False))
     ms.set_seed(seed)
     # Set Context
-    ms.set_context(mode=ms_mode, device_target=device_target, runtime_num_threads=15)
+    ms.set_context(mode=ms_mode, device_target=device_target)
+    threads_num(15)
     ms.set_recursion_limit(2000)
     if ms_mode == 1:
-        ms.set_context(pynative_synchronize=True)
+        rt.launch_blocking()
     elif ms_mode == 0:
         ms.set_context(jit_config={"jit_level": "O2"})
     if device_target != "CPU":

@@ -16,6 +16,7 @@ import numpy as np
 
 import mindspore.context as context
 import mindspore.nn as nn
+import mindspore.runtime as rt
 from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
@@ -187,7 +188,9 @@ def test_fused_cast_adam_weight_decay_with_memory_optimize():
     Description: Test FusedCastAdamWeightDecay
     Expectation: Run lenet success
     '''
-    context.set_context(mode=context.GRAPH_MODE, memory_optimize_level="O1")
+    context.set_context(mode=context.GRAPH_MODE)
+    rt.set_memory(optimize_level="O1")
+
     data = Tensor(np.ones([32, 3, 32, 32]).astype(np.float32) * 0.01)
     label = Tensor(np.ones([32]).astype(np.int32))
     net = LeNet()

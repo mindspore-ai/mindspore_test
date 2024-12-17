@@ -17,7 +17,7 @@
 
 import os
 from mindspore import log as logger
-from mindspore._c_expression import DeviceManagerConf, DeviceContextManager
+from mindspore._c_expression import DeviceManagerConf, DeviceContextManager, MSContext
 from mindspore._checkparam import args_type_check
 from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 
@@ -60,6 +60,8 @@ def set_device(device_target, device_id=None):
         is_default = True
     if device_id < 0:
         raise ValueError("The device id must bigger than or equal to 0.")
+
+    MSContext.get_instance().set_device_target_inner(device_target)
 
     if DeviceManagerConf.get_instance().is_device_enable():
         old_device_target = DeviceManagerConf.get_instance().get_device_target()

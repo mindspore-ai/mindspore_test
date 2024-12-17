@@ -23,6 +23,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import set_seed
 from mindspore.dataset import GeneratorDataset
+import mindspore.runtime as rt
 
 workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
@@ -127,11 +128,13 @@ def run_llama():
         '--test_mode', default="", type=str, help='test_mode.')
     args = parser.parse_args()
     if args.test_mode == "somas":
-        ms.set_context(jit_config={"jit_level": "O0"}, max_device_memory="15.1GB", memory_optimize_level="O1")
+        ms.set_context(jit_config={"jit_level": "O0"})
+        rt.set_memory(max_size="15.1GB", optimize_level="O1")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p_somas_grad_accu()
     elif args.test_mode == "no_somas":
-        ms.set_context(jit_config={"jit_level": "O0"}, max_device_memory="15.1GB", memory_optimize_level="O0")
+        ms.set_context(jit_config={"jit_level": "O0"})
+        rt.set_memory(max_size="15.1GB", optimize_level="O0")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p_no_somas_grad_accu()
 

@@ -23,9 +23,10 @@ from mindspore.common.initializer import initializer
 from mindspore.train import Model
 from mindspore.parallel.parameter_broadcast import parameter_broadcast
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
+import mindspore.runtime as rt
 
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_context(max_device_memory="28GB")
+rt.set_memory(max_size="28GB")
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
 init()
 ms.set_seed(1)

@@ -16,6 +16,7 @@ from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 import mindspore.nn as nn
+import mindspore.runtime as rt
 from mindspore.ops import operations as P
 from mindspore import Tensor, context
 from mindspore.common.api import _pynative_executor
@@ -54,7 +55,8 @@ def test_assert_op():
     l = Tensor(np.array([True, False]).astype(np.bool))
     context.set_context(mode=context.GRAPH_MODE)
     assert1(True, [a, b, c, d, e, f, g, h, i, j, k, l])
-    context.set_context(mode=context.PYNATIVE_MODE, pynative_synchronize=True)
+    context.set_context(mode=context.PYNATIVE_MODE)
+    rt.launch_blocking()
 
     with pytest.raises(RuntimeError) as info:
         assert1(False, [a, b, c, d, e, f, g, h, i, j, k, l])

@@ -15,10 +15,10 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import os
 
 import mindspore as ms
+import mindspore.runtime as rt
 from mindspore import nn, Tensor
 from mindspore.ops import operations as P
 from mindspore.nn import TrainOneStepCell, WithLossCell
@@ -32,7 +32,8 @@ def test_adam_bporp_with_cache():
     Description: Verify if the loss is converged
     Expectation: success
     """
-    ms.set_context(mode=ms.PYNATIVE_MODE, pynative_synchronize=True)
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+    rt.launch_blocking()
 
     class NetAdam(nn.Cell):
         def __init__(self):

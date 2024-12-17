@@ -29,6 +29,7 @@ from mindspore.ops import operations as P
 from mindspore.train import Callback, Model
 from mindspore.context import ParallelMode
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 
 
 def weight_variable():
@@ -379,7 +380,8 @@ def test_train_feed_ascend():
     Description: Test a shrunk version of ResNet50 with a alternative execution of shard and pynative
     Expectation: Run success
     '''
-    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend", max_device_memory="25GB")
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    rt.set_memory(max_size="25GB")
     context.set_context(device_id=int(os.getenv('DEVICE_ID')))
     init()
     context.set_auto_parallel_context(gradients_mean=True, parallel_mode=ParallelMode.AUTO_PARALLEL,
@@ -412,7 +414,8 @@ def test_train_feed_ascend_graphmode():
     Description: Test a shrunk version of ResNet50 with a alternative execution of shard and Graph
     Expectation: Run success
     '''
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", max_device_memory="25GB")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    rt.set_memory(max_size="25GB")
     context.set_context(device_id=int(os.getenv('DEVICE_ID')))
     init()
     context.set_auto_parallel_context(gradients_mean=True, parallel_mode=ParallelMode.AUTO_PARALLEL,

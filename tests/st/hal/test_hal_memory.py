@@ -16,6 +16,7 @@ import mindspore.context as context
 from mindspore import Tensor
 import mindspore as ms
 import mindspore.nn as nn
+import mindspore.runtime as rt
 from mindspore.ops import operations as P
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
@@ -171,7 +172,8 @@ def test_runtime_reset_max_memory_reserved():
     Expectation: runtime.reset_max_memory_reserved api performs as expected in grad.
     """
     set_device()
-    context.set_context(mode=context.PYNATIVE_MODE, pynative_synchronize=True)
+    context.set_context(mode=context.PYNATIVE_MODE)
+    rt.launch_blocking()
 
     net = Net()
     net(Tensor(2.0))
