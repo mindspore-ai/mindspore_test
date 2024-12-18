@@ -43,6 +43,9 @@ class OpsPrimitiveHGenerator(BaseGenerator):
         self.op_prim_op_def_template = template.Template(K.OP_PRIM_OP_DEF)
         self.op_def_template = template.Template(
             "GVAR_DEF(PrimitivePtr, kPrim${k_name_op}, std::make_shared<Primitive>(ops::kName${k_name_op}))\n")
+        self.op_def_rw_template = template.Template(
+            "GVAR_DEF(PrimitivePtr, kPrim${k_name_op}, std::make_shared<Primitive>(ops::kName${k_name_op}, "
+            "true, kPrimTypeBuiltIn, true))\n")
 
     def generate(self, work_path, op_protos):
         """
@@ -61,6 +64,11 @@ class OpsPrimitiveHGenerator(BaseGenerator):
         ops_prim_gen_list = []
         for op_proto in op_protos:
             k_name_op = pyboost_utils.get_op_name(op_proto.op_name, op_proto.op_class.name)
+            if op_proto.op_args_signature:
+                if op_proto.op_args_signature.rw_write:
+                    ops_prim_gen_list.append(self.op_def_rw_template.replace(k_name_op=k_name_op))
+                    continue
+
             ops_prim_gen_list.append(self.op_def_template.replace(k_name_op=k_name_op))
 
         op_prim_op_def = self.op_prim_op_def_template.replace(auto_gen_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,

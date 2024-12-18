@@ -24,6 +24,7 @@ from mindspore.ops import operations as P
 from mindspore.nn import Cell, BatchNorm2d, Conv2d, ParameterUpdate
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs, GradOfAllParams
+from tests.st.utils import test_utils
 
 
 context.set_context(mode=ms.GRAPH_MODE)
@@ -538,3 +539,38 @@ def test_tensor_inplace_control_flow_grad_param():
         print("output:", output)
     assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
             in str(info.value))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+          card_mark='onecard', essential_mark='unessential')
+def test_tensor_inplace_scatter_grad():
+    """
+    Feature: Support tensor scatter_ method in grad.
+    Description: Support tensor scatter_ method in grad.
+    Expectation: Run success.
+    """
+    class ScatterGrad(nn.Cell):
+        def __init__(self, net: nn.Cell, sens: Tensor):
+            super().__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation(get_all=True, sens_param=True)
+            self.grad_wrt_output = sens
+
+        def construct(self, x, dim, index, src_or_val, reduce):
+            return self.grad_op(self.net)(x, dim, index, src_or_val, reduce, self.grad_wrt_output)
+
+    @test_utils.run_with_cell
+    def scatter_val_with_grad(x, dim, index, value, reduce):
+        return (x * True).scatter_(dim=dim, index=index, value=value,
+                                   **(dict(reduce=reduce) if reduce != 'none' else {}))
+    ## inplace backward
+    context.set_context(jit_level='O0')
+    slf = Tensor([[2] * 4] * 3, dtype=ms.float32)
+    value = np.random.rand() * 10
+    index = Tensor(np.array([list(range(3)) + [2]] * 3, dtype=np.int64))  # slf[:, 3] is reserved
+    grad = Tensor(np.random.rand(3, 4), dtype=ms.float32)
+    grad_np = grad.asnumpy().copy().astype(np.float32)
+    grads = ScatterGrad(scatter_val_with_grad, grad)(slf, 1, index, value, 'none')
+    # only self has grad
+    grad_np[:, :3] = 0
+    assert np.allclose(grads[0].asnumpy().astype(np.float32), grad_np)
