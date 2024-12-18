@@ -1,0 +1,15 @@
+transpose:
+  - op_yaml: transpose_ext_op.yaml
+    py_method: tensor_transpose_ext # callback to python function "def tensor_transpose_ext"
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/transpose_method.yaml
+    py_method: deprecated_tensor_transpose # callback to python function "def deprecated_tensor_transpose"
+    varargs: axes
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
