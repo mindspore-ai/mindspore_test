@@ -7,7 +7,7 @@ mean:
       dtype: tuple[int]
       type_cast: int, list[int], tensor
       default: None
-    keepdims:
+    keep_dims:
       dtype: bool
       default: False
   returns:
