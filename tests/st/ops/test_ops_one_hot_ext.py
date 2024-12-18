@@ -21,6 +21,7 @@ from mindspore import ops
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(num_classes):
@@ -60,7 +61,7 @@ class Net(Cell):
         return self.one_hot(x, num_classes)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_ops_onehot_forward1(mode):
     """
@@ -305,3 +306,72 @@ def test_ops_one_hot_int64(mode):
                      [0, 1, 0],
                      [0, 0, 1]]
     assert np.allclose(output.asnumpy(), expect_output)
+
+
+def ops_one_hot_binary_compare(input_binary_data, output_binary_data, num_classes):
+    output = onehot_forward_func(ms.Tensor(input_binary_data[0]), num_classes)
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((12, 80, 64), np.int64)], output_info=[((12, 80, 64, 33), np.int64)],
+                                extra_info='auto_drive'))
+def ops_one_hot_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_one_hot_binary_compare(input_binary_data, output_binary_data, 33)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 16, 576, 128), np.int64)],
+                                output_info=[((1, 16, 576, 128, 7), np.int64)],
+                                extra_info='auto_drive'))
+def ops_one_hot_binary_case2(input_binary_data=None, output_binary_data=None):
+    ops_one_hot_binary_compare(input_binary_data, output_binary_data, 7)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((4800, 16), np.int64)], output_info=[((4800, 16, 16), np.int64)],
+                                extra_info='auto_drive'))
+def ops_one_hot_binary_case3(input_binary_data=None, output_binary_data=None):
+    ops_one_hot_binary_compare(input_binary_data, output_binary_data, 16)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((8512,), np.int64)], output_info=[((8512, 118528), np.int64)],
+                                extra_info='pg7B'))
+def ops_one_hot_binary_case4(input_binary_data=None, output_binary_data=None):
+    ops_one_hot_binary_compare(input_binary_data, output_binary_data, 118528)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 8192), np.int64)], output_info=[((1, 8192, 8), np.int64)],
+                                extra_info='pgmoe'))
+def ops_one_hot_binary_case5(input_binary_data=None, output_binary_data=None):
+    ops_one_hot_binary_compare(input_binary_data, output_binary_data, 8)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ["pynative", "kbk", "ge"])
+def test_ops_onehot_binary_cases(mode):
+    """
+    Feature: pyboost function.
+    Description: test function onehot forward with binary data.
+    Expectation: expect correct result.
+    """
+    if mode == "kbk":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    elif mode == "ge":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
+    else:
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+
+    ops_one_hot_binary_case1()
+    ops_one_hot_binary_case2()
+    ops_one_hot_binary_case3()
+    ops_one_hot_binary_case5()
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_ops_onehot_huge_binary_cases():
+    """
+    Feature: pyboost function.
+    Description: test function onehot forward with binary data.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+
+    ops_one_hot_binary_case4()

@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import ops
 from mindspore.nn import Cell
 from mindspore.ops import gelu
+from tests.mark_utils import arg_mark
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 rtol = 1e-3
 
@@ -141,7 +140,7 @@ def test_ops_backward(context_mode, approximate):
     # 2 x 2
     x = np.array([[0.1, 0.2], [0.3, 0.4]], np.float32)
 
-    output = ops.grad(gelu_cell, (0))(ms.tensor(x), approximate).asnumpy()
+    output = ms.grad(gelu_cell, (0))(ms.tensor(x), approximate).asnumpy()
     if approximate:
         expect = np.array([[0.5795, 0.6575],
                            [0.7323, 0.8027]])
@@ -150,3 +149,50 @@ def test_ops_backward(context_mode, approximate):
                            [0.7323, 0.8027]])
 
     np.testing.assert_allclose(output, expect, rtol=rtol)
+
+
+def ops_gelu_binary_compare(input_binary_data, output_binary_data, approximate='none', is_bf16=False):
+
+    if is_bf16:
+        inputx = ms.Tensor(input_binary_data[0], ms.bfloat16)
+        loss = 4e-3
+    else:
+        inputx = ms.Tensor(input_binary_data[0])
+        loss = 1e-4
+    output = GeluCell()(inputx, approximate)
+    if is_bf16:
+        assert np.allclose(output.float().asnumpy(), output_binary_data[0], loss, loss)
+    else:
+        assert np.allclose(output.asnumpy(), output_binary_data[0], loss, loss)
+
+    grads = ms.grad(GeluCell(), (0))(inputx, approximate)
+    if is_bf16:
+        assert np.allclose(grads.float().asnumpy(), output_binary_data[1], loss, loss)
+    else:
+        assert np.allclose(grads.asnumpy(), output_binary_data[1], loss, loss)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 1, 1544, 20480), np.float32)],
+                                output_info=[((1, 1, 1544, 20480), np.float32), ((1, 1, 1544, 20480), np.float32)],
+                                extra_info='pgmoe'))
+def ops_gelu_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_gelu_binary_compare(input_binary_data, output_binary_data, 'none', True)
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ['pynative', 'kbk', 'ge'])
+def test_ops_gelu_binary_cases(mode):
+    """
+    Feature: ops test
+    Description: test gelu with binary data
+    Expectation: success
+    """
+    if mode == "kbk":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    elif mode == 'ge':
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
+    else:
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+
+    ops_gelu_binary_case1()

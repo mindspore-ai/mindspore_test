@@ -19,6 +19,8 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import ops
 from mindspore.mint.nn.functional import conv2d
+from tests.st.utils import test_utils
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.device_utils import set_device, get_device
 
@@ -248,3 +250,88 @@ def test_conv2d_vmap(context_mode):
     net_vmap = ops.vmap(net, in_axes=in_axes, out_axes=0)
     out = net_vmap(x, weight, bias, stride, padding, dilation, groups)
     assert out.asnumpy().shape == (3, 2, 2, 4, 4)
+
+
+def ops_conv2d_binary_compare(input_binary_data, output_binary_data, stride, padding, dilation, groups):
+    def _count_unequal_element(data_expected, data_me, rtol, atol):
+        assert data_expected.shape == data_me.shape
+        total_count = len(data_expected.flatten())
+        error = np.abs(data_expected - data_me)
+        greater = np.greater(error, atol + np.abs(data_me) * rtol)
+        loss_count = np.count_nonzero(greater)
+        assert (loss_count / total_count) < rtol, \
+            "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}". \
+                format(data_expected[greater], data_me[greater], error[greater])
+
+    def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
+        if np.any(np.isnan(data_expected)):
+            assert np.allclose(data_expected, data_me, rtol, atol, equal_nan=equal_nan)
+        elif not np.allclose(data_expected, data_me, rtol, atol, equal_nan=equal_nan):
+            _count_unequal_element(data_expected, data_me, rtol, atol)
+        else:
+            assert True
+
+    @test_utils.run_with_cell
+    def conv2d_binary_backward_func(inputx, weight, bias, stride, padding, dilation, groups):
+        if bias is not None:
+            grad_op = ms.grad(Net2d(), (0, 1, 2))
+        else:
+            grad_op = ms.grad(Net2d(), (0, 1))
+        return grad_op(inputx, weight, bias, stride, padding, dilation, groups)
+
+    inputx = ms.Tensor(input_binary_data[0])
+    weight = ms.Tensor(input_binary_data[1])
+    bias = None
+    if len(input_binary_data) == 3:
+        bias = ms.Tensor(input_binary_data[2])
+
+    output = Net2d()(inputx, weight, bias, stride, padding, dilation, groups)
+    allclose_nparray(output.asnumpy(), output_binary_data[0], 6e-03, 6e-03)
+    output = conv2d_binary_backward_func(inputx, weight, bias, stride, padding, dilation, groups)
+    allclose_nparray(output[0].asnumpy(), output_binary_data[1], 6e-03, 6e-03)
+    allclose_nparray(output[1].asnumpy(), output_binary_data[2], 6e-03, 6e-03)
+    if len(output_binary_data) == 4:
+        allclose_nparray(output[2].asnumpy(), output_binary_data[3], 6e-03, 6e-03)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((6, 256, 44, 80), np.float32), ((512, 256, 2, 2), np.float32),
+                                            ((512,), np.float32)],
+                                output_info=[((6, 512, 22, 40), np.float32), ((6, 256, 44, 80), np.float32),
+                                             ((512, 256, 2, 2), np.float32), ((512,), np.float32)],
+                                extra_info='auto_drive'))
+def ops_conv2d_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_conv2d_binary_compare(input_binary_data, output_binary_data, (2, 2), (0, 0), (1, 1), 1)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((12, 128, 80, 64), np.float32), ((128, 128, 1, 1), np.float32)],
+                                output_info=[((12, 128, 40, 32), np.float32), ((12, 128, 80, 64), np.float32),
+                                             ((128, 128, 1, 1), np.float32)],
+                                extra_info='auto_drive'))
+def ops_conv2d_binary_case2(input_binary_data=None, output_binary_data=None):
+    ops_conv2d_binary_compare(input_binary_data, output_binary_data, (2, 2), (0, 0), (1, 1), 1)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((4, 64, 288, 64), np.float32), ((128, 64, 4, 4), np.float32),
+                                            ((128,), np.float32)],
+                                output_info=[((4, 128, 72, 16), np.float32), ((4, 64, 288, 64), np.float32),
+                                             ((128, 64, 4, 4), np.float32), ((128,), np.float32)],
+                                extra_info='auto_drive'))
+def ops_conv2d_binary_case3(input_binary_data=None, output_binary_data=None):
+    ops_conv2d_binary_compare(input_binary_data, output_binary_data, (4, 4), (0, 0), (1, 1), 1)
+
+
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_conv2d_binary_cases(context_mode):
+    """
+    Feature: mint.nn.functional.conv2d.
+    Description: test conv2d op with binary data.
+    Expectation: expect correct result.
+    """
+    ms.set_context(mode=context_mode, jit_level='O0')
+    set_device()
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.conv_allow_hf32(False)
+
+    ops_conv2d_binary_case1()
+    ops_conv2d_binary_case2()
+    ops_conv2d_binary_case3()
