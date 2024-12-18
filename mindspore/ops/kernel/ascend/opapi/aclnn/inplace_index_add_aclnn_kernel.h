@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_INDEX_ADD__ACLNN_KERNEL_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_INDEX_ADD__ACLNN_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_INPLACE_INDEX_ADD_ACLNN_KERNEL_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_INPLACE_INDEX_ADD_ACLNN_KERNEL_H_
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
@@ -41,4 +41,4 @@ class InplaceIndexAddExtAscend : public AclnnKernelMod {
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_INDEX_ADD__ACLNN_KERNEL_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_INPLACE_INDEX_ADD_ACLNN_KERNEL_H_

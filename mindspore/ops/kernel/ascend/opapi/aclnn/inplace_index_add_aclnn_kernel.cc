@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/index_add__aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/inplace_index_add_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 
