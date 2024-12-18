@@ -1514,3 +1514,15 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
         for ax in axis:
             nums *= input.shape[ax]
     return _tensor_div(x_sum, nums - ddof)
+
+def tensor_sub_empty_(input, other, alpha=1):
+    raise ValueError("should not come here for sub_ method.")
+
+def tensor_div_empty_(input, other, rounding_mode=None):
+    raise ValueError("should not come here for div_ method.")
+
+def tensor_subtract(input, other, *, alpha=1):
+    return tensor_sub_ext(input, other, alpha=alpha)
+
+def tensor_true_divide(input, other):
+    return div(input, other)
