@@ -112,6 +112,7 @@ AMP_AUTO_BLACK_LIST = [
     P.Pdist,
     P.Cdist,
     P.Renorm,
+    gen.MSELossExt,
 ]
 
 # Indicates which inputs of primitives need to be converted
