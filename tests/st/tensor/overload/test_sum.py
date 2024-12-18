@@ -28,6 +28,11 @@ class SumPythonNet(nn.Cell):
         return x.sum(axis, dtype, keepdims, initial)
 
 
+class SumPythonKVNet(nn.Cell):
+    def construct(self, x, axis=None, dtype=None, keepdims=False, initial=None):
+        return x.sum(axis=axis, dtype=dtype, keepdims=keepdims, initial=initial)
+
+
 class SumPyboostNet(nn.Cell):
     def construct(self, x, dim=None, keepdim=False, *, dtype=None):
         return x.sum(dim, keepdim, dtype=dtype)
@@ -60,25 +65,26 @@ def test_method_sum_python(mode):
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = SumPythonNet()
+    net1 = SumPythonKVNet()
 
     x = ms.Tensor([[[1, 2, 3], [2, 3, 4]]], ms.float32)
     output = net(x)
     expect_output = 15.0
     assert np.allclose(output.asnumpy(), expect_output)
 
-    output = net(x, axis=[0, 1], keepdims=True)
+    output = net1(x, axis=[0, 1], keepdims=True)
     expect_output = np.array([[[3., 5., 7.]]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
 
-    output = net(x, axis=(2,), keepdims=False)
+    output = net1(x, axis=(2,), keepdims=False)
     expect_output = np.array([[6., 9.]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
 
-    output = net(x, axis=2, keepdims=True)
+    output = net1(x, axis=2, keepdims=True)
     expect_output = np.array([[[6.], [9.]]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
 
-    output = net(x, dtype=ms.bool_, initial=12)
+    output = net1(x, dtype=ms.bool_, initial=12)
     expect_output = True
     assert np.allclose(output.asnumpy(), expect_output)
 
@@ -141,7 +147,7 @@ def test_tensor_sum_dynamic():
     keepdim2 = True
     TEST_OP(sum_ext_forward_func,
             [[ms_data1, dim1, keepdim1], [ms_data2, dim2, keepdim2]], 'sum_ext', disable_mode=['GRAPH_MODE'],
-            disable_input_check=True)
+            disable_yaml_check=True)
 
     ms_data1 = ms.Tensor(generate_random_input((2, 6), np.float32))
     axis1 = 1
