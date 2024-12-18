@@ -1927,7 +1927,7 @@ REG_BPROP_BUILDER("IndexSelect").SetBody(BODYFUNC(ib) {
   auto index = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto zeros = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout))));
-  auto dx = ib->IndexAddExt(zeros, index, dout, axis, ib->Value<int64_t>(1LL));
+  auto dx = ib->Emit("InplaceIndexAddExt", {zeros, axis, index, dout, ib->Value<int64_t>(1LL)});
   return {dx, ib->OutZeros(axis), ib->OutZeros(index)};
 });
 
