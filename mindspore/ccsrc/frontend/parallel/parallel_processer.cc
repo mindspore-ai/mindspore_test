@@ -1354,7 +1354,8 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   MS_EXCEPTION_IF_NULL(manager);
   // In pipeline parallel mode, redistribution is inserted after receive, not send.
   if (IsOneOfPrimitiveCNode(cnode,
-                            {prim::kPrimSend, prim::kPrimMakeTuple, prim::kPrimMakeList, prim::kPrimTensorToScalar})) {
+                            {prim::kPrimSend, prim::kPrimMakeTuple, prim::kPrimMakeList, prim::kPrimTensorToScalar,
+                             prim::kPrimDType, prim::kPrimDtypeToEnum})) {
     return;
   }
   // Find Redistribution next_nodes
