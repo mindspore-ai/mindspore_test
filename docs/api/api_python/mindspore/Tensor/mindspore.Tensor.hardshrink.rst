@@ -15,7 +15,7 @@ mindspore.Tensor.hardshrink
 
     HShrink激活函数图：
 
-    .. image:: ../images/HShrink.png
+    .. image:: ../../images/HShrink.png
         :align: center
 
     .. note::

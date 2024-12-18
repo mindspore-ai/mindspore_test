@@ -16,7 +16,7 @@ hardshrink:
 
         HShrink Activation Function Graph:
 
-        .. image:: ../images/HShrink.png
+        .. image:: ../../images/HShrink.png
             :align: center
 
         .. note::
