@@ -1248,8 +1248,8 @@ REG_BPROP_BUILDER("Select").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex1);
   auto y = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  auto dx = x->need_compute_grad_out() ? ib->Select(cond, dout, ib->ZerosLike(dout)) : nullptr;
-  auto dy = y->need_compute_grad_out() ? ib->Select(cond, ib->ZerosLike(dout), dout) : nullptr;
+  auto dx = x->need_compute_grad_out() ? ib->Select(cond, dout, ib->ZerosLikeExt(dout, ib->EmitValue(kNone))) : nullptr;
+  auto dy = y->need_compute_grad_out() ? ib->Select(cond, ib->ZerosLikeExt(dout, ib->EmitValue(kNone)), dout) : nullptr;
   auto ret = BinopGradSelect(ib, cond, x, y, dout, dx, dy);
   return {ib->OutZeros(cond), ret[kIndex1], ret[kIndex2]};
 });
