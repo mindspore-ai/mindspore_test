@@ -534,7 +534,7 @@ void KernelActor::TraceDynamicMemory() {
       const auto &kernel_tensor = output_kernel_tensors_[i];
       MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
         std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                                 kOutputMem, i),
+                                                 kOutputMem, i, kernel_tensor),
         device_contexts_[0]);
     }
   }
@@ -543,7 +543,7 @@ void KernelActor::TraceDynamicMemory() {
     const auto &kernel_tensor = workspace_kernel_tensors_[i];
     MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
       std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                               kWorkspaceMem, i),
+                                               kWorkspaceMem, i, kernel_tensor),
       device_contexts_[0]);
   }
 }
@@ -1145,7 +1145,6 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     auto ret = LaunchKernelWithDebug(context);
     return ret;
   }
-
   auto multi_stream_controller = device::MultiStreamController::GetInstance();
   bool ret = false;
   if (!ActorDispatcher::enable_async_launch_kernel()) {

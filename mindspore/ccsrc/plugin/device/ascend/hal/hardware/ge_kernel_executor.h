@@ -97,7 +97,7 @@ class GeKernelExecutor : public KernelExecutor {
     const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const;
   // launch
   bool MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
-                       const vector<KernelTensor *> &outputs) const;
+                       const vector<KernelTensor *> &outputs, void *stream) const;
   void DoAsyncCkpt(const CNodePtr &kernel) const;
 
   mutable std::set<CNodePtr> nop_op_to_memcpy_;

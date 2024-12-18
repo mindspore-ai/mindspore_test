@@ -962,6 +962,11 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
           ActorDispatcher::set_enable_trace_dynamic_memory(true);
         } else {
           ActorDispatcher::set_enable_use_trace_memory(true);
+          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
+          }
         }
       }
     }
