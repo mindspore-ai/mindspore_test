@@ -72,7 +72,7 @@ bool IsOutSuit(const AnfNodePtr &node, const mindspore::FuncGraphManagerPtr &man
     }
     // Out is not aclnn kernel: OPAPI_KERNEL
     auto out_name = AnfUtils::GetCNodeName(out);
-    if (out_name != kMatMulOpName) {
+    if (out_name != kMatMulOpName && out_name != "GroupedMatmul") {
       return false;
     }
   }
