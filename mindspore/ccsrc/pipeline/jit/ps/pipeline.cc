@@ -1330,7 +1330,7 @@ void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs)
       abs->set_user_data("backward_hook", hook_fns);
     }
   } else {
-    MS_LOG(WARNING) << "arg: " << py::str(arg) << " is not a Tensor, we only support arg of type Tensor now.";
+    MS_LOG(DEBUG) << "arg: " << py::str(arg) << " is not a Tensor, we only support arg of type Tensor now.";
   }
 }
 }  // namespace
