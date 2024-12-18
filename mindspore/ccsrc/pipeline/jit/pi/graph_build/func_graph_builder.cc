@@ -195,9 +195,7 @@ py::list FuncGraphBuilder::GetRegisterHookList(const py::object &obj) {
   const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
   const auto &backward_hooks = grad_meta_data->backward_hooks();
   for (const auto &[id, hook] : backward_hooks) {
-    auto hook_map = hook->hook_map_;
-    MS_EXCEPTION_IF_CHECK_FAIL(hook_map.size() == kSizeOne, "Tensor hook just work on one tensor value.");
-    auto fn = hook_map.begin()->second;
+    auto fn = hook->hook_;
     if (py::isinstance<py::none>(fn)) {
       MS_LOG(DEBUG) << "Hook of Tensor[" << id << "] is None.";
       continue;
