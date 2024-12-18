@@ -1,7 +1,7 @@
 mindspore.set_op_strategy_config
 ================================
 
-.. py:function:: mindspore.set_op_strategy_config(mode, path)
+.. py:function:: mindspore.set_op_strategy_config(mode="SAVE", path)
 
     自动并行策略传播模式下，通过此接口设置保存或加载算子级策略。
 
@@ -14,10 +14,10 @@ mindspore.set_op_strategy_config
         - 进行分布式训练时，用户可以先用单机dryrun功能保存策略，再使用加载功能进行分布式训练。
 
     参数：
-        - **mode** (str) - 描述模式为保存还是加载， ``"SAVE"`` 时保存算子策略至设置的json文件， ``"LOAD"`` 时从json文件中加载算子策略。
+        - **mode** (str) - 描述模式为保存还是加载， ``"SAVE"`` 时保存算子策略至设置的json文件， ``"LOAD"`` 时从json文件中加载算子策略。默认值： ``"SAVE"`` 。
         - **path** (str) - 描述策略保存或者加载的json文件路径，只支持绝对路径。
 
     异常：
         - **KeyError** - `mode` 不是 ``"SAVE"`` 或 ``"LOAD"`` 。
-        - **KeyError** - `path` 不是以".json"结尾。
+        - **KeyError** - `path` 不是以 ``".json"`` 结尾。
         - **KeyError** - `path` 不是绝对路径。
