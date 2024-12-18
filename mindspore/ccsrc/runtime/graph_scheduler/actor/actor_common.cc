@@ -51,6 +51,8 @@ bool ActorDispatcher::enable_static_shape_ = false;
 bool ActorDispatcher::enable_trace_dynamic_memory_ = false;
 bool ActorDispatcher::enable_use_trace_memory_ = false;
 bool ActorDispatcher::enable_input_optimize_for_cur_actor_set_ = true;
+bool ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set_ = false;
+bool ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_step_ = false;
 
 bool IsSuperKernelActor(const AnfNodePtr &node, const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -317,6 +319,9 @@ void ResetPipelineAndTraceMemoryStatus() {
   ActorDispatcher::set_enable_static_shape(false);
   ActorDispatcher::set_enable_trace_dynamic_memory(false);
   ActorDispatcher::set_enable_use_trace_memory(false);
+
+  ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(false);
+  ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_step(false);
 }
 
 bool EnableKbkSubGraphExecute() {
@@ -384,6 +389,12 @@ bool EnableRuntimePipeline() {
 #endif
 
   return true;
+}
+
+bool EnableParallelDispatchKernel() {
+  static const char kParallelDispatchKernel[] = "parallel_dispatch_kernel";
+  static bool enable_parallel_dispatch_kernel = common::IsEnableRuntimeConfig(kParallelDispatchKernel);
+  return enable_parallel_dispatch_kernel;
 }
 
 size_t GetDefragMemoryStepFreq() {
@@ -714,6 +725,13 @@ void MemoryTraceManager::PickMemoryTrackInfoForGraph(uint32_t graph_id) {
   }
   kernel_to_block_ = graph_to_kernel_blocks_[graph_id];
   MS_EXCEPTION_IF_NULL(kernel_to_block_);
+
+  if (graph_to_kernel_tensor_with_mem_blocks_.find(graph_id) == graph_to_kernel_tensor_with_mem_blocks_.end()) {
+    graph_to_kernel_tensor_with_mem_blocks_.emplace(
+      graph_id, std::make_shared<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>());
+  }
+  kernel_tensor_to_kernel_mem_blocks_ = graph_to_kernel_tensor_with_mem_blocks_[graph_id];
+  MS_EXCEPTION_IF_NULL(kernel_tensor_to_kernel_mem_blocks_);
 }
 
 void MemoryTraceManager::AddKernelMemoryTraceBlock(const KernelMemoryTraceBlockPtr &block,
@@ -732,6 +750,11 @@ const std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlo
 const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>>
   &MemoryTraceManager::GetAllKernelBlocksnfo() {
   return kernel_to_block_;
+}
+
+const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>
+  &MemoryTraceManager::GetKernelTensorToMemBlocksInfo() const {
+  return kernel_tensor_to_kernel_mem_blocks_;
 }
 
 void MemoryTraceManager::MergeBlocks() {
@@ -791,6 +814,9 @@ void MemoryTraceManager::MergeBlocksForSameDeviceContext(
 
     kernel_mem_block->offset_in_memory_trace_block_ = kernel_mem_block->start_ - mem_block->start_;
     (*kernel_to_block_)[kernel_mem_block->kernel_].emplace_back(kernel_mem_block);
+    if (EnableParallelDispatchKernel() && kernel_mem_block->mem_type_ == kOutputMem) {
+      kernel_tensor_to_kernel_mem_blocks_->emplace(kernel_mem_block->kernel_tensor_, kernel_mem_block);
+    }
   }
 }
 
@@ -798,6 +824,9 @@ void MemoryTraceManager::Clear() {
   kernel_memory_trace_blocks_->clear();
   merged_memory_trace_blocks_->clear();
   kernel_to_block_->clear();
+  if (EnableParallelDispatchKernel()) {
+    kernel_tensor_to_kernel_mem_blocks_->clear();
+  }
 }
 
 std::unordered_map<AnfNode *, std::string> actor_ids;
