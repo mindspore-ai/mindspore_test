@@ -18,6 +18,7 @@ import mindspore as ms
 import mindspore.dataset as ds
 import mindspore.nn as nn
 from mindspore.common.initializer import Normal
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 
 
@@ -81,7 +82,9 @@ def test_net_build_then_train_sink_size_1():
     Description: Test sink_size is equal to 1 and epoch is equal to 130, execute model.build first and then model.train
     Expectation: Training completes successfully
     """
-    ms.set_context(mode=ms.GRAPH_MODE, op_timeout=60)
+    ms.set_context(mode=ms.GRAPH_MODE)
+    set_device()
+    ms.device_context.ascend.op_debug.execute_timeout(60)
     trainer = create_model()
     train_dataset = proc_dataset(os.path.join("/home/workspace/mindspore_dataset/mnist", "train"))
     trainer.build(train_dataset, epoch=130, sink_size=1)

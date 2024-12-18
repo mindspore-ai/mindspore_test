@@ -14,12 +14,11 @@
 # ============================================================================
 import pytest
 import numpy as np
-from tests.st.utils import test_utils
+import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops, mint
-
-
-context.set_context(ascend_config={"matmul_allow_hf32": True, "conv_allow_hf32": True})
+from tests.device_utils import set_device
+from tests.st.utils import test_utils
 
 
 @test_utils.run_with_cell
@@ -70,6 +69,9 @@ def test_hf32(mode):
     Expectation: expect correct result.
     """
     set_mode(mode)
+    set_device()
+    ms.device_context.ascend.op_precision.matmul_allow_hf32(True)
+    ms.device_context.ascend.op_precision.conv_allow_hf32(True)
 
     # mint.matmul
     x = np.array([[1.7640524, 0.4001572, 0.978738],
