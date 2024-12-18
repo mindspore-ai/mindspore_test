@@ -30,7 +30,7 @@ from mindspore.common.seed import get_seed
 from mindspore._c_expression import GraphExecutor_
 from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shape_by_layout
 
-SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom"]
+SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom", "Index"]
 
 
 def _get_parallel_mode():

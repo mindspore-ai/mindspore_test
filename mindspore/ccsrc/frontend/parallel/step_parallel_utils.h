@@ -41,12 +41,13 @@ static const std::set<std::string> CANDIDATE_DYNAMIC_VALUE_OPS = {RESHAPE, STRID
 static const std::set<std::string> SPLIT_TENSOR_ONLY_FOR_FIRST_INPUT_OPS = {PAD_V3};
 // the input is tuple or list
 static const std::set<std::string> INPUT_IS_TUPLE_OR_LIST_OPS = {
-  CONCAT, STACK, ADDN, INCRE_FLASH_ATTENTION, MESHGRID, FUSED_INFER_ATTENTION_SCORE, GROUPED_MATMUL, STACK_EXT, CUSTOM};
+  CONCAT,     STACK,     ADDN,  INCRE_FLASH_ATTENTION, MESHGRID, FUSED_INFER_ATTENTION_SCORE, GROUPED_MATMUL,
+  INDEX_INFO, STACK_EXT, CUSTOM};
 // support new shapebase operator
 static const std::set<std::string> SUPPORT_NEW_SHAPEBASE_OPS = {VIRTUAL_DATA_SET, FUSED_INFER_ATTENTION_SCORE,
-                                                                GROUPED_MATMUL};
+                                                                GROUPED_MATMUL, INDEX_INFO};
 // new shapebase operator always run in new logic
-static const std::set<std::string> ALWAYS_NEW_SHAPEBASE_OPS = {CUSTOM};
+static const std::set<std::string> ALWAYS_NEW_SHAPEBASE_OPS = {CUSTOM, INDEX_INFO};
 // op list for allreduce pull down
 static const std::set<std::string> ALLREDUCE_PULL_DOWN_WHITE_LIST = {
   TUPLE_GETITEM_OP, RESHAPE, TRANSPOSE, MIRROR_OPERATOR, ADD, MUL, DIV, GATHERV2};
