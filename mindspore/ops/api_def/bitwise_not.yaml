@@ -1,0 +1,7 @@
+bitwise_not:
+  op_yaml: bitwise_not_op.yaml
+  py_method: tensor_bitwise_not
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor, function

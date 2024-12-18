@@ -4845,5 +4845,6 @@ REG_BPROP_BUILDER("Frac").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex2);
   return {dout};
 });
+REG_BPROP_BUILDER("BitwiseNot").FreeUselessValues_IO({i0}, {}).SetBody(ReturnZeros);
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

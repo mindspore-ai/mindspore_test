@@ -398,6 +398,9 @@ from mindspore.ops.function.math_func import amax_ext as amax
 # 511
 from mindspore.ops.function.math_func import amin_ext as amin
 
+# 521
+from mindspore.ops.functional_overload import bitwise_not
+
 # 526
 from mindspore.ops.auto_generate import dot
 
@@ -2508,6 +2511,10 @@ __all__ = [
 
     # 520
     'bincount',
+
+    # 521
+    'bitwise_not',
+
     # 526
     'dot',
 

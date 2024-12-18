@@ -1,0 +1,27 @@
+bitwise_not:
+  description: |
+    bitwise_not() -> Tensor
+
+    Returns bitwise `not` of `self`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Returns:
+        Tensor, has the same shape and type as `self`.
+
+    Raises:
+        TypeError: If `self` is not a Tensor.
+        RuntimeError: If dtype of `self` is not int or bool.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([True, False, True, False]))
+        >>> output = input.bitwise_not()
+        >>> print(output)
+        [False True False True]
