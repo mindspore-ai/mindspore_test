@@ -12,7 +12,7 @@ mindspore.profiler.mstx
 
         参数：
             - **message** (str) - 标记点的描述信息。
-            - **stream** (Stream, 可选) - 用于异步执行的NPU流，期望类型：mindspore.hal.Stream。默认值： ``None`` ，表示仅在host侧添加标记点，不在device侧的stream上添加标记点。
+            - **stream** (Stream, 可选) - 用于异步执行的NPU流，期望类型：mindspore.runtime.Stream。默认值： ``None`` ，表示仅在host侧添加标记点，不在device侧的stream上添加标记点。
 
     .. py:method:: range_start(message: str, stream: Stream = None)
         :staticmethod:
@@ -21,7 +21,7 @@ mindspore.profiler.mstx
 
         参数：
             - **message** (str) - 区间的描述信息。
-            - **stream** (Stream, 可选) - 用于异步执行的NPU流，期望类型：mindspore.hal.Stream。默认值： ``None`` ，表示仅在host侧开始区间打点，不在device侧的stream上开始区间打点。
+            - **stream** (Stream, 可选) - 用于异步执行的NPU流，期望类型：mindspore.runtime.Stream。默认值： ``None`` ，表示仅在host侧开始区间打点，不在device侧的stream上开始区间打点。
 
         返回：
             int，区间ID，用于range_end方法。
