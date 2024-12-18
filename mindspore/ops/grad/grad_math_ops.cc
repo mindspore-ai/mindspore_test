@@ -958,7 +958,7 @@ REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(
 
 REG_BPROP_BUILDER("InplaceAddsExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
@@ -967,7 +967,11 @@ REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 
   auto dout = ib->GetInput(kIndex4);
   NodePtr dy = nullptr;
+  NodePtr dx = nullptr;
 
+  if (x->need_compute_grad_out()) {
+    dx = dout;
+  }
   if (y->need_compute_grad_out()) {
     dy = dout;
     auto alpha_opt = GetAlpha(alpha);
@@ -985,8 +989,8 @@ REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
     }
   }
 
-  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, nullptr, dy);
-  return {ib->OutZeros(x), ib->Cast(ret[1], y_dtype), ib->OutZeros(alpha)};
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
+  return {ret[0], ret[1], ib->OutZeros(alpha)};
 });
 
 REG_BPROP_BUILDER("SubExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {

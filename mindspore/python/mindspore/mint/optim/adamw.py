@@ -15,7 +15,7 @@
 """adamw"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore.ops import functional as F, composite as C
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.common import dtype as mstype
@@ -169,11 +169,10 @@ class AdamW(Optimizer):
         self.exp_avg_sq = self.parameters.clone(prefix="exp_avg_sq", init='zeros')
         self.state_step = Parameter(Tensor([-1], mstype.float32), "state_step")
         self.increase_tensor = Tensor(1, mstype.float32)
-        self.assignadd = P.AssignAdd()
         self.adamw_opt = gen.AdamW()
 
     def construct(self, gradients):
-        self.assignadd(self.state_step, self.increase_tensor)
+        self.state_step.add_(self.increase_tensor)
         for group_id, group in enumerate(self.param_groups):
             beta1, beta2 = group['betas']
             maximize = group.get("maximize")
