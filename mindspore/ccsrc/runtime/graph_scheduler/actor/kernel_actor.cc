@@ -20,6 +20,7 @@
 #include <algorithm>
 
 #include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/device_address_utils.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
@@ -100,6 +101,11 @@ void KernelActor::Init() {
   InitInputInfo();
   InitOutputInfo();
   InitWorkspaceInfo();
+
+  // Set flag to check input contiguous
+  if (kernel::NeedCheckInputContiguous(kernel_)) {
+    need_check_tensor_contiguous_ = true;
+  }
 
   // Init the output data.
   InitOutputData();
@@ -192,6 +198,7 @@ void KernelActor::InitInputInfo() {
   }
 
   copy_input_device_tensors_.resize(real_input_num_);
+  contiguous_tensors_.resize(real_input_num_);
   input_device_tensors_.resize(real_input_num_);
   input_kernel_tensors_.resize(real_input_num_);
   input_kernel_tensors_for_infer_.resize(real_input_num_);
@@ -325,6 +332,77 @@ void KernelActor::InitShapeDependInfo() {
       // shape depend, no need free this device tensor.
       MS_LOG(INFO) << "only_shape_depend[" << i << "] : " << only_depend_shape[i] << ".";
       depend_shape_input_list_.emplace_back(only_depend_shape[i]);
+    }
+  }
+}
+
+void KernelActor::MakeInputContiguous(OpContext<DeviceTensor> *const context) {
+  auto cur_stream_id = device_contexts_[0]->device_res_manager_->GetCurrentStreamId();
+  auto stream_id = kernel_info_->stream_id();
+  for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
+    if (input_device_tensors_[i] == nullptr) {
+      continue;
+    }
+    if (i >= contiguous_tensors_.size()) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, (*context), " input out of range.");
+    }
+    const auto old_storage_info = input_device_tensors_[i]->GetTensorStorageInfo();
+    if (old_storage_info) {
+      // input addr is contiguous and shape size is equal to origin.
+      if ((SizeOf(old_storage_info->shape) == SizeOf(old_storage_info->ori_shape)) && old_storage_info->is_contiguous) {
+        continue;
+      }
+      if (!launch_ignored_inputs_.empty() && (std::find(launch_ignored_inputs_.begin(), launch_ignored_inputs_.end(),
+                                                        i) != launch_ignored_inputs_.end())) {
+        MS_LOG(DEBUG) << GetAID().Name() << " ignore the input address for input index: " << i;
+        continue;
+      }
+      MS_LOG(INFO) << "Make input [" << i << "] contiguous for kernel " << kernel_->DebugString();
+      if (contiguous_tensors_[i] == nullptr) {
+        // Make new device tensor and run InplaceCopy to make contiguous.
+        MS_EXCEPTION_IF_NULL(old_storage_info);
+        auto address_size =
+          GetTypeByte(TypeIdToType(input_device_tensors_[i]->type_id())) * SizeOf(old_storage_info->shape);
+        auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+          nullptr, address_size, Format::DEFAULT_FORMAT, input_device_tensors_[i]->type_id(), old_storage_info->shape,
+          device_contexts_[0]->device_context_key().device_name_, device_contexts_[0]->device_context_key().device_id_);
+        kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(input_device_tensors_[i]->type_id())));
+        kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(old_storage_info->shape));
+        kernel_tensor->set_stream_id(stream_id);
+
+        auto new_device_address = device_contexts_[0]->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+        MS_EXCEPTION_IF_NULL(new_device_address);
+        new_device_address->set_device_shape(old_storage_info->shape);
+        // Store the temp device address
+        contiguous_tensors_[i] = new_device_address;
+      }
+      auto &new_device_address = contiguous_tensors_[i];
+      if (is_dynamic_shape_) {
+        auto input_tensor = input_device_tensors_[i];
+        MS_EXCEPTION_IF_NULL(input_tensor->kernel_tensor());
+        MS_EXCEPTION_IF_NULL(input_tensor->kernel_tensor()->GetShape());
+        new_device_address->kernel_tensor()->SetShape(input_tensor->kernel_tensor()->GetShape()->Clone());
+        auto address_size = GetTypeByte(TypeIdToType(input_tensor->type_id())) * SizeOf(old_storage_info->shape);
+        new_device_address->kernel_tensor()->set_size(address_size);
+      }
+      new_device_address->set_tensor_storage_info(nullptr);
+      // Launch CopyInplace to make tensor contiguous.
+      if (!device_contexts_[0]->GetKernelExecutor(false)->ExecuteKernelTask(runtime::KernelTaskType::kCONTIGUOUS_TASK,
+                                                                            {input_device_tensors_[i]},
+                                                                            {new_device_address.get()}, stream_id)) {
+        MS_LOG(EXCEPTION) << "Graph mode executeKernelTask Contiguous failed.";
+      }
+      // Store the old tensor storage info , input device tensor and input kernel tensor.
+      // Recover them when launch finished.
+      if (cur_stream_id != stream_id) {
+        cross_stream_addresses_.emplace_back(0, input_device_tensors_[i]->kernel_tensor()->device_ptr());
+        cross_stream_addresses_.emplace_back(0, new_device_address->kernel_tensor()->device_ptr());
+      }
+      storage_store_[i] = old_storage_info;
+      input_device_tensors_store_[i] = input_device_tensors_[i];
+      input_kernel_tensors_store_[i] = input_kernel_tensors_[i];
+      input_device_tensors_[i] = new_device_address.get();
+      input_kernel_tensors_[i] = new_device_address->kernel_tensor().get();
     }
   }
 }
@@ -602,6 +680,12 @@ void KernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
   for (auto &copy_input_device_tensor : copy_input_device_tensors_) {
     if ((copy_input_device_tensor != nullptr) && (copy_input_device_tensor->GetPtr() != nullptr)) {
       device_contexts_[0]->device_res_manager_->FreeMemory(copy_input_device_tensor.get());
+    }
+  }
+  // Free the address that is the temp store for kernel contiguous copy.
+  for (auto &contiguous_device_tensor : contiguous_tensors_) {
+    if ((contiguous_device_tensor != nullptr) && (contiguous_device_tensor->GetPtr() != nullptr)) {
+      device_contexts_[0]->device_res_manager_->FreeMemory(contiguous_device_tensor.get());
     }
   }
 }
@@ -895,8 +979,16 @@ void KernelActor::ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const cont
     MS_LOG(DEBUG) << "Run failed and early stop resize for kernel: " << kernel_->fullname_with_scope();
     return;
   }
+  bool view_input = false;
+  if (!need_check_tensor_contiguous_) {
+    auto it = std::find_if(input_kernel_tensors_.begin(), input_kernel_tensors_.end(),
+                           [](KernelTensor *tensor) { return tensor->tensor_storage_info() != nullptr; });
+    if (it != input_kernel_tensors_.end()) {
+      view_input = true;
+    }
+  }
 
-  if (has_dynamic_) {
+  if (has_dynamic_ || view_input) {
     device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
     ResizeKernelMod();
 
@@ -977,9 +1069,22 @@ void KernelActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context
 }
 
 void KernelActor::InferAndUpdateDeviceTensorSize(OpContext<DeviceTensor> *const context) {
+  // For static shape, aclnn kernel with view input need to get input tensor storage info by resize.
+  bool view_input = false;
+  if (!need_check_tensor_contiguous_) {
+    auto it = std::find_if(input_kernel_tensors_.begin(), input_kernel_tensors_.end(),
+                           [](KernelTensor *tensor) { return tensor->tensor_storage_info() != nullptr; });
+    if (it != input_kernel_tensors_.end()) {
+      view_input = true;
+    }
+  }
   if (has_dynamic_) {
     // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
     InferAndResize(context);
+    FetchOutputDeviceTensor(context);
+    FetchWorkspaceDeviceTensor();
+  } else if (view_input) {
+    ResizeKernelMod();
     FetchOutputDeviceTensor(context);
     FetchWorkspaceDeviceTensor();
   } else {
@@ -1104,6 +1209,24 @@ bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context) 
   return ret;
 }
 
+void KernelActor::RecoverInputs() {
+  if (!input_device_tensors_store_.empty()) {
+    for (const auto &pair : input_device_tensors_store_) {
+      input_device_tensors_[pair.first] = pair.second;
+    }
+  }
+  if (!input_kernel_tensors_store_.empty()) {
+    for (const auto &pair : input_kernel_tensors_store_) {
+      input_kernel_tensors_[pair.first] = pair.second;
+    }
+  }
+  if (!storage_store_.empty()) {
+    for (const auto &info : storage_store_) {
+      input_device_tensors_[info.first]->set_tensor_storage_info(info.second);
+    }
+  }
+}
+
 bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     TrackInputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
@@ -1139,10 +1262,15 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
       return false;
     }
   }
+  // Make tensor contiguous if needed
+  if (need_check_tensor_contiguous_) {
+    MakeInputContiguous(context);
+  }
 
   // Cpu not support stream lock with LaunchKernel.
   if (!ActorDispatcher::enable_multi_stream() || is_multi_stream_process_skipped_) {
     auto ret = LaunchKernelWithDebug(context);
+    RecoverInputs();
     return ret;
   }
 
@@ -1159,6 +1287,7 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     ret = LaunchKernelWithDebug(context);
     ProcessMultiStreamAfterKernelLaunch(context);
   }
+  RecoverInputs();
   return ret;
 }
 
@@ -1203,9 +1332,6 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
                                              memory_stream_id);
     return;
   }
-
-  // Reset cross stream addresses.
-  cross_stream_addresses_.clear();
 
   // Process inputs.
   if (input_kernel_tensors_.empty()) {
@@ -1303,6 +1429,8 @@ void KernelActor::ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *c
       multi_stream_controller->RecordEvent(device_context, *task_id_on_stream_, stream_id, cross_stream_addresses_);
     }
   }
+  // Reset cross stream addresses.
+  cross_stream_addresses_.clear();
 }
 
 void KernelActor::PostLaunchKernel(OpContext<DeviceTensor> *const context) {

@@ -250,7 +250,7 @@ inline aclTensor *ConvertType(const mindspore::kernel::KernelTensor *tensor) {
 
   aclTensor *acl_tensor = nullptr;
   const auto &storage_info = tensor->tensor_storage_info();
-  if (storage_info == nullptr || (storage_info != nullptr && storage_info->is_contiguous)) {
+  if (storage_info == nullptr) {
     // Create strides.
     auto strides = shape;
     if (!strides.empty()) {
@@ -273,7 +273,7 @@ inline aclTensor *ConvertType(const mindspore::kernel::KernelTensor *tensor) {
   return acl_tensor;
 }
 
-inline aclTensor *ConvertType(const device::DeviceAddressPtr &device_address) {
+inline aclTensor *ConvertType(device::DeviceAddress *device_address) {
   static const auto aclCreateTensor = GET_OP_API_FUNC(aclCreateTensor);
   if (aclCreateTensor == nullptr) {
     return nullptr;
@@ -325,6 +325,10 @@ inline aclTensor *ConvertType(const device::DeviceAddressPtr &device_address) {
   return acl_tensor;
 }
 
+inline aclTensor *ConvertType(const device::DeviceAddressPtr &device_address) {
+  return ConvertType(device_address.get());
+}
+
 inline aclTensor *ConvertType(mindspore::kernel::KernelTensor *tensor) {
   return ConvertType(reinterpret_cast<const mindspore::kernel::KernelTensor *>(tensor));
 }
@@ -355,7 +359,7 @@ inline aclTensor *ConvertType(std::pair<mindspore::kernel::KernelTensor *, bool>
   }
   aclTensor *acl_tensor = nullptr;
   const auto &storage_info = tensor->tensor_storage_info();
-  if (storage_info == nullptr || (storage_info != nullptr && storage_info->is_contiguous)) {
+  if (storage_info == nullptr) {
     // Create strides.
     auto strides = shape;
     if (!strides.empty()) {
@@ -612,22 +616,11 @@ inline std::vector<void *> GetAddr(const std::vector<KernelTensor *> tensor_list
 
 inline std::vector<void *> GetAddr(KernelTensor *tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
-  if (tensor->tensor_storage_info() && tensor->tensor_storage_info()->is_contiguous) {
-    auto offset = tensor->tensor_storage_info()->storage_offset;
-    auto type_size = GetTypeByte(TypeIdToType(tensor->dtype_id()));
-    return {reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(tensor->device_ptr()) + offset * type_size)};
-  }
   return {tensor->device_ptr()};
 }
 
 inline std::vector<void *> GetAddr(const std::pair<KernelTensor *, bool> &tensor_pair) {
   MS_EXCEPTION_IF_NULL(tensor_pair.first);
-  if (tensor_pair.first->tensor_storage_info() && tensor_pair.first->tensor_storage_info()->is_contiguous) {
-    auto offset = tensor_pair.first->tensor_storage_info()->storage_offset;
-    auto type_size = GetTypeByte(TypeIdToType(tensor_pair.first->dtype_id()));
-    return {
-      reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(tensor_pair.first->device_ptr()) + offset * type_size)};
-  }
   return {tensor_pair.first->device_ptr()};
 }
 
@@ -648,6 +641,8 @@ inline std::vector<void *> GetAddr(const tensor::BaseTensorPtr &tensor) {
 inline std::vector<void *> GetAddr(const device::DeviceAddressPtr &device_address) {
   return {device_address->GetMutablePtr()};
 }
+
+inline std::vector<void *> GetAddr(device::DeviceAddress *device_address) { return {device_address->GetMutablePtr()}; }
 
 inline std::vector<void *> GetAddr(const std::pair<tensor::BaseTensorPtr, bool> &tensor_pair) {
   MS_EXCEPTION_IF_NULL(tensor_pair.first);

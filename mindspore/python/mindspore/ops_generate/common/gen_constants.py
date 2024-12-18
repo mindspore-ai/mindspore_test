@@ -51,8 +51,8 @@ ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 ADD_MINT_DOCS_PY_PATH = "mindspore/python/mindspore/mint"
 
 # yaml keys def
-OP_KEYS = {'args', 'args_signature', 'returns', 'function',
-           'class', 'view', 'dispatch', 'labels', 'bprop_expander'}
+OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'graph_view', 'dispatch', 'labels',
+           'bprop_expander'}
 ARG_KEYS = {'dtype', 'default', 'prim_init', 'type_cast', 'arg_handler'}
 RETURN_KEYS = {'dtype', 'inplace', 'type_cast'}
 ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}

@@ -1825,11 +1825,10 @@ void MindRTBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef
   }
 }
 
-void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &) {
+void MindRTBackendBase::CreateTensorArgs(const VectorRef &args, const GraphCompilerInfo &) {
   for (const auto &arg : args) {
     if (utils::isa<tensor::BaseTensorPtr>(arg)) {
       auto value = utils::cast<tensor::BaseTensorPtr>(arg);
-      runtime::DeviceAddressUtils::ConvertContiguousTensorSync(value);
       runtime::DeviceAddressUtils::CreateKernelTensor(value);
     } else if (utils::isa<stub::TensorNode>(arg)) {
       auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
@@ -1838,7 +1837,6 @@ void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompile
       MS_EXCEPTION_IF_NULL(value);
       auto tensor = value->cast<tensor::BaseTensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
-      runtime::DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
       runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
     } else if (utils::isa<ValuePtr>(arg)) {
       auto value = utils::cast<ValuePtr>(arg);
@@ -1854,7 +1852,6 @@ void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompile
           continue;
         }
         auto t = v->cast<tensor::BaseTensorPtr>();
-        runtime::DeviceAddressUtils::ConvertContiguousTensorSync(t);
         runtime::DeviceAddressUtils::CreateKernelTensor(t);
       }
     }
@@ -1945,8 +1942,7 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   MS_EXCEPTION_IF_NULL(outputs);
   // There will be more than one kernel graph in heterogeneous scenario in a jit of PyNative Mode.
   if (ms_execution_mode_ == kPynativeMode && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_)) {
-    // The tensor needs to be converted to contiguous before being given to the actors.
-    // After the view feature is supported in the graph mode, the following code will be deleted.
+    CreateTensorArgs(args, graph_compiler_info);
     RunGraphByCondition(actor_info, graph_compiler_info, args, outputs);
     return;
   }
@@ -1958,14 +1954,10 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
   if (graph_compiler_info.exist_flatten_concat_) {
     input_tensors = GetRunGraphInputs(graph_compiler_info, args);
-    // The tensor needs to be converted to contiguous before being given to the actors.
-    // After the view feature is supported in the graph mode, the following code will be deleted.
     // Single ops(run in pynative mode) output to net(context is graph mode) input.
     (void)std::for_each(input_tensors.begin(), input_tensors.end(), [this](const auto &tensor_vec) {
-      (void)std::for_each(tensor_vec.begin(), tensor_vec.end(), [](const tensor::TensorPtr &t) {
-        runtime::DeviceAddressUtils::ConvertContiguousTensorSync(t);
-        runtime::DeviceAddressUtils::CreateKernelTensor(t);
-      });
+      (void)std::for_each(tensor_vec.begin(), tensor_vec.end(),
+                          [](const tensor::TensorPtr &t) { runtime::DeviceAddressUtils::CreateKernelTensor(t); });
     });
   }
   // Release python gil.

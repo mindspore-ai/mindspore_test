@@ -156,6 +156,8 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
       common::AnfAlgo::IsDynamicGraph(graph)) {
     graphkernel::KernelPacketOptimize(graph);
   }
+  // after kernel packet
+  opt::GEBackendOptimizeACLAfterKernelPacket(graph);
   for (auto &child_graph : graph->child_graph_order()) {
     if (child_graph.lock()->has_flag(kFlagGeKernel)) {
       continue;

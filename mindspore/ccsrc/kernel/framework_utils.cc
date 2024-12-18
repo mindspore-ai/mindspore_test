@@ -25,6 +25,7 @@
 #include "kernel/common_utils.h"
 #include "kernel/format_utils.h"
 #include "kernel/oplib/oplib.h"
+#include "kernel/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -1129,6 +1130,16 @@ bool CheckResizeCondition(const CNodePtr &node) {
   }
 
   return true;
+}
+
+// If node is not aclnn or is a Reshape, need convert input into contiguous.
+bool NeedCheckInputContiguous(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto kernel_type = AnfAlgo::GetKernelType(cnode);
+  if (kernel_type != KernelType::OPAPI_KERNEL) {
+    return true;
+  }
+  return false;
 }
 }  // namespace kernel
 }  // namespace mindspore

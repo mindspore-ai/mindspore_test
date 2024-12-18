@@ -148,6 +148,11 @@ class GPUKernelExecutor : public KernelExecutor {
   bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const device::DeviceAddressPtrList &input_addr_list,
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;
 
+  bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                         const std::vector<device::DeviceAddress *> &input_addr_list,
+                         const std::vector<device::DeviceAddress *> &output_addr_list,
+                         const size_t &stream_id) const override;
+
  private:
   // Select the matching backend kernels according to the data type and format of input and output for all
   // execution operators, and set final device data type and format information for backend kernels, device

@@ -19,12 +19,17 @@
 namespace mindspore::ops {
 namespace {
 constexpr auto kBroadcastTo = "BroadcastTo";
+constexpr size_t kInputNum = 3;
 }  // namespace
 
 class BroadcastToFrontendFuncImpl : public OpFrontendFuncImpl {
  public:
   ValuePtr InferValue(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {
-    return InferValueCallback::GetInstance().CallPyInferValue(kBroadcastTo, input_args);
+    std::vector<AbstractBasePtr> input_without_monad = input_args;
+    if (input_args.size() == kInputNum) {
+      input_without_monad.pop_back();
+    }
+    return InferValueCallback::GetInstance().CallPyInferValue(kBroadcastTo, input_without_monad);
   }
 };
 

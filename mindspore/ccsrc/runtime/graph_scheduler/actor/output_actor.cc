@@ -16,6 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "runtime/device/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -84,6 +85,17 @@ void UpdateDynamicSequenceType(const AnfNodePtr &output_node, const kernel::Kern
     return;
   }
   output_kernel_tensor->SetType(std::make_shared<List>(types));
+}
+
+device::DeviceAddressPtr MakeTensorContiguousCallback(const DeviceSyncPtr &address,
+                                                      const TensorStorageInfoPtr &storage) {
+  MS_EXCEPTION_IF_NULL(address);
+  auto dev_address = std::dynamic_pointer_cast<device::DeviceAddress>(address);
+  MS_EXCEPTION_IF_NULL(dev_address);
+  if (storage == nullptr) {
+    return dev_address;
+  }
+  return DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, dev_address, true);
 }
 
 void OutputActor::Init() {
@@ -462,6 +474,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
       device_context->device_context_key().device_id_);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
+    kernel_tensor->set_tensor_storage_info(output_kernel_tensor->tensor_storage_info());
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     // SetShape will calculate a default size by host shape, need to set real device size for special format.
     kernel_tensor->set_size(device_tensor->GetSize());
@@ -476,6 +489,11 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   }
 
   tensor->set_need_release_device_mem(true);
+  if (output_kernel_tensor->tensor_storage_info()) {
+    tensor->set_contiguous_callback([this](const DeviceSyncPtr &address) -> DeviceSyncPtr {
+      return MakeTensorContiguousCallback(address, address->GetTensorStorageInfo());
+    });
+  }
   return tensor;
 }
 

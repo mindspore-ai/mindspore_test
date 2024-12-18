@@ -374,7 +374,8 @@ Status Softmax::CheckInputLayout() {
 
 Status CumOpBase::GetAttrs() {
   std::string op_name = GetPrimNameFromInfoName(this->name_);
-  if (input_value_.size() != ops::GetOpInputsNum(op_name)) {
+  if (input_value_.size() != ops::GetOpInputsNum(op_name) &&
+      input_value_.size() != (ops::GetOpInputsNum(op_name) - 1)) {
     MS_LOG(ERROR) << name_ << ": Invalid inputs size " << input_value_.size()
                   << ", ops::GetOpInputsNum: " << ops::GetOpInputsNum(op_name);
     return FAILED;
@@ -885,6 +886,9 @@ Status CastInfo::InferMirrorOps() {
 }
 
 Status ExpandDimsInfo::GetAttrs() {
+  if (input_value_.size() == EXPANDDIMS_INPUT_SIZE + 1) {
+    input_value_.pop_back();
+  }
   if (input_value_.size() != EXPANDDIMS_INPUT_SIZE) {
     MS_LOG(ERROR) << name_ << ": Invalid inputs size " << input_value_.size();
     return FAILED;

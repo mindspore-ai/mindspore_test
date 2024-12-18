@@ -25,6 +25,7 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph);
 void GEUnifyMindIR(const KernelGraphPtr &kernel_graph);
 void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph);
 void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph);
+void GEBackendOptimizeACLAfterKernelPacket(const KernelGraphPtr &kernel_graph);
 void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph);
 }  // namespace opt
 }  // namespace mindspore

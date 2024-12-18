@@ -217,7 +217,7 @@ void OptimizeNopNode(KernelGraph *graph) {
     // The device address of parameter as input may be not the running used in the heterogeneous or control flow
     // scenarios, and not set the ref node.
     if (origin_pair.first->isa<Parameter>() || origin_pair.first->isa<ValueNode>() ||
-        ref_out_value.find(origin_pair) != ref_out_value.end()) {
+        ref_out_value.find(origin_pair) != ref_out_value.end() || common::AnfAlgo::IsViewNode(origin_pair.first)) {
       continue;
     }
     // The ref node cannot be set for node pairs from different device target(appears in the kernel backoff scene).

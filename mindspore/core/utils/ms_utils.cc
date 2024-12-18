@@ -144,8 +144,7 @@ bool IsDisableAllocConfig(const std::string &alloc_config) {
 static std::set<std::string> view_ops_set;
 bool IsEnableAclnnViewOp(const std::string &op) {
   std::string env_value = GetEnv(kAclnnViewOp);
-  // Temporarily only support Tranpose on default.
-  if (env_value.empty() && (op == "Transpose" || op == "TransposeExt")) {
+  if (env_value.empty()) {
     return true;
   }
   auto existed = view_ops_set.count(op);

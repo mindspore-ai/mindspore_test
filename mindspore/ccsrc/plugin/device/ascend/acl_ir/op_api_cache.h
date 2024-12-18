@@ -82,6 +82,8 @@ inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
 BACKEND_EXPORT void GatherInfo(mindspore::kernel::KernelTensor *);
 BACKEND_EXPORT void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
 BACKEND_EXPORT void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &);
+BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
+BACKEND_EXPORT void GatherInfo(device::DeviceAddress *);
 
 BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
 BACKEND_EXPORT void GatherInfo(const mindspore::tensor::BaseTensorPtr &);
@@ -128,10 +130,17 @@ void GatherInfo(const T &arg, const Args &... args) {
 }
 
 void RefreshAddr(mindspore::kernel::KernelTensor *);
+<<<<<<< HEAD
 inline void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
   RefreshAddr(tensor_and_trans.first);
 }
 
+=======
+void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
+void RefreshAddr(const device::DeviceAddressPtr &device_address);
+void RefreshAddr(device::DeviceAddress *device_address);
+void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor);
+>>>>>>> d95293ef385...  view runtime edit
 inline void RefreshAddr(const std::vector<mindspore::kernel::KernelTensor *> &tensor_list) {
   for (auto tensor : tensor_list) {
     RefreshAddr(tensor);
@@ -225,6 +234,11 @@ bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
 BACKEND_EXPORT void GatherHash(mindspore::kernel::KernelTensor *);
 BACKEND_EXPORT void GatherHash(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
 BACKEND_EXPORT void GatherHash(const std::vector<mindspore::kernel::KernelTensor *> &);
+<<<<<<< HEAD
+=======
+BACKEND_EXPORT void GatherHash(const device::DeviceAddressPtr &);
+BACKEND_EXPORT void GatherHash(device::DeviceAddress *);
+>>>>>>> d95293ef385...  view runtime edit
 
 BACKEND_EXPORT void GatherHash(const device::DeviceAddressPtr &);
 BACKEND_EXPORT void GatherHash(const mindspore::tensor::BaseTensorPtr &);

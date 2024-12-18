@@ -1198,9 +1198,9 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       MS_EXCEPTION_IF_NULL(kernel_mod);
       is_host_reshape_op = kernel_mod->GetKernelModType() == kernel::KernelModType::HostKernelMod;
     }
-    bool is_nop_op = device::ascend::AclHelper::IsNopNode(node);
-    bool is_transpose_nop = (op_name == prim::kPrimTranspose->name() || op_name == prim::kPrimTransposeD->name()) &&
-                            common::AnfAlgo::HasNodeAttr(kAttrNopOp, node);
+    bool is_nop_op = transform::AclHelper::IsNopNode(node);
+    bool is_transpose_nop =
+      (op_name == prim::kPrimTransposeD->name()) && common::AnfAlgo::HasNodeAttr(kAttrNopOp, node);
     if (is_transpose_nop || (is_nop_op && !is_host_reshape_op)) {
       nop_op_to_memcpy_.insert(node);
     }
@@ -1422,5 +1422,14 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
     ret = AscendStreamMng::GetInstance().SyncStream(stream);
   }
   return ret;
+}
+
+bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                         const std::vector<device::DeviceAddress *> &input_addr_list,
+                                         const std::vector<device::DeviceAddress *> &output_addr_list,
+                                         const size_t &stream_id) const {
+  MS_LOG(DEBUG) << "task_type:" << task_type;
+  kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
+  return true;
 }
 }  // namespace mindspore::device::ascend

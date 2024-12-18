@@ -160,9 +160,6 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
     opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
     opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeDirectFusion>());
   }
-  if (!common::IsDisableRuntimeConfig(common::kRuntimeView)) {
-    opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::GraphViewReplacePass>());
-  }
   optimizer->AddPassManager(opt_acl_after_kernel_select_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(GEBackendOptimizeACLAfterKernelSelect);
@@ -174,6 +171,45 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   }
 #endif
   (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACLAfterKernelSelect",
+                                  start_time, profiler::GetClockSyscnt(), 0);
+  MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
+}
+
+void GEBackendOptimizeACLAfterKernelPacket(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (common::IsDisableRuntimeConfig(common::kRuntimeView) || context_ptr->IsEnableInferBoost() ||
+      kernel_graph->is_from_single_op()) {
+    return;
+  }
+
+  MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass after kernel packet. graph id: "
+                << kernel_graph->graph_id();
+  uint64_t start_time = profiler::GetClockSyscnt();
+  PROF_START(GEBackendOptimizeACLAfterKernelPacket);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_d_before_opt_acl_graph_after_kernel_packet_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph, true, kWholeStack);
+  }
+#endif
+  auto optimizer = std::make_shared<GraphOptimizer>();
+  auto opt_acl_after_kernel_packet_pm = std::make_shared<PassManager>("opt_acl_after_kernel_packet");
+  opt_acl_after_kernel_packet_pm->AddPass(std::make_shared<opt::GraphViewReplacePass>());
+  PROF_END(GEBackendOptimizeACLAfterKernelPacket);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name =
+      "hwopt_d_end_opt_acl_graph_after_kernel_packet_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph, true, kWholeStack);
+  }
+#endif
+  optimizer->AddPassManager(opt_acl_after_kernel_packet_pm);
+  (void)optimizer->Optimize(kernel_graph);
+  kernel_graph->SetExecOrderByDefault();
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACLAfterKernelPacket",
                                   start_time, profiler::GetClockSyscnt(), 0);
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
 }

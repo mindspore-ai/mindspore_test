@@ -12,6 +12,9 @@ split_tensor:
     output:
       dtype: tuple[tensor]
   view: True
+  graph_view: True
+  labels:
+    side_effect_mem: True
   dispatch:
     enable: True
     CPU: None

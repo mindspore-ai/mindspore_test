@@ -22,6 +22,30 @@ from mindspore.nn import Cell
 from mindspore.common.api import _cell_graph_executor
 
 
+def convert_inputs(inputs: [tuple, list], cnode_info_dict: dict, expect_inputs: [tuple, list]) -> list:
+    '''
+    Deal the inputs with monad.
+    '''
+    inputs_len = len(inputs)
+    new_inputs = []
+    for i in range(inputs_len):
+        if isinstance(inputs[i], str) and inputs[i].find('Load') != -1:
+            new_inputs.append(cnode_info_dict[inputs[i]]['inputs'][0])
+        elif inputs[i] == 'U':
+            pass
+        else:
+            new_inputs.append(inputs[i])
+    # Load form weight and inplace
+    for i in range(len(expect_inputs)):
+        if isinstance(expect_inputs[i], str) and expect_inputs[i].find('Load') != -1:
+            new_inputs[i] = inputs[i]
+    if len(expect_inputs) != len(new_inputs):
+        if isinstance(new_inputs[-1], str) and new_inputs[-1].find('UpdateState') != -1:
+            new_inputs.pop()
+    
+    return new_inputs
+            
+
 class ParallelValidator:
     """
     Validator for distribute operator.
@@ -113,6 +137,7 @@ class ParallelValidator:
         if node_name not in cnode_info_dict.keys():
             return False
         inputs = cnode_info_dict[node_name]['inputs']
+        inputs = convert_inputs(inputs, cnode_info_dict, expect_inputs)
         if len(inputs) != len(expect_inputs):
             return False
         result = []
@@ -133,6 +158,7 @@ class ParallelValidator:
         if node_name not in cnode_info_dict.keys():
             return False
         inputs = cnode_info_dict[node_name]['inputs']
+        inputs = convert_inputs(inputs, cnode_info_dict, expect_inputs)
         expect_len = len(expect_inputs)
         inputs_len = len(inputs)
         if expect_len != inputs_len:
@@ -161,8 +187,10 @@ class ParallelValidator:
         if node_name not in cnode_info_dict.keys():
             return False
         inputs = cnode_info_dict[node_name]['inputs']
+        inputs = convert_inputs(inputs, cnode_info_dict, expect_inputs)
         expect_len = len(expect_inputs)
         inputs_len = len(inputs)
+       
         if self._is_shape(inputs, expect_inputs):
             return inputs == expect_inputs
         for i in range(expect_len):

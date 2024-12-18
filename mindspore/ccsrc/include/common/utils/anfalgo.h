@@ -302,6 +302,7 @@ class COMMON_EXPORT AnfAlgo {
   // Get the real output node and indexes of get item, make tuple, depend, load.
   static AnfNodePtr GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> *const index_stack);
   static bool IsNopNode(const AnfNodePtr &node);
+  static bool IsViewNode(const AnfNodePtr &node);
   static bool CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode);
   template <typename T>
   static bool CheckAbsType(const AnfNodePtr &node);

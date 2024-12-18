@@ -434,7 +434,7 @@ runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphComp
                                                                  const VectorRef &args, bool no_multi_graph) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
-  ContiguousArgs(args, graph_compiler_info);
+  CreateTensorArgs(args, graph_compiler_info);
   WaitTaskFinish();
   auto graphs = graph_compiler_info.graphs_;
   auto device_contexts = graph_compiler_info.device_contexts_;
@@ -566,7 +566,7 @@ void MindRTBackend::RunActorSet(const ActorInfo &actor_info, runtime::ActorSet *
   if (!first_step_) {
     WaitTaskFinish();
     WaitMultiStream(graph_compiler_info);
-    ContiguousArgs(args, graph_compiler_info);
+    CreateTensorArgs(args, graph_compiler_info);
     WaitTaskFinish();
   } else {
     first_step_ = false;
@@ -627,7 +627,7 @@ void MindRTBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_i
                                        VectorRef *outputs) {
   WaitTaskFinish();
   WaitMultiStream(graph_compiler_info);
-  ContiguousArgs(args, graph_compiler_info);
+  CreateTensorArgs(args, graph_compiler_info);
   WaitTaskFinish();
 
   MS_LOG(INFO) << "Status record: begin run graph by single op";

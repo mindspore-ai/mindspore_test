@@ -54,6 +54,9 @@ Status SliceInfo::GetInput(const ValuePtr &input_value, std::vector<int64_t> *in
 }
 
 Status SliceInfo::GetAttrs() {
+  if (input_value_.size() == SLICE_INPUTS_SIZE + 1) {
+    input_value_.pop_back();
+  }
   if (input_value_.size() != SLICE_INPUTS_SIZE) {
     MS_LOG(ERROR) << name_ << ": The size of input value must be " << SLICE_INPUTS_SIZE << ", but got "
                   << input_value_.size();
@@ -239,6 +242,9 @@ Status SliceExtInfo::GetInput(const ValuePtr &input_value, int64_t *input) {
 }
 
 Status SliceExtInfo::GetAttrs() {
+  if (input_value_.size() == SLICE_EXT_INPUTS_SIZE + 1) {
+    input_value_.pop_back();
+  }
   if (input_value_.size() != SLICE_EXT_INPUTS_SIZE) {
     MS_LOG(ERROR) << name_ << ": The size of input value must be " << SLICE_EXT_INPUTS_SIZE << ", but got "
                   << input_value_.size();

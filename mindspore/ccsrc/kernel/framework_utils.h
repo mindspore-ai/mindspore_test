@@ -125,6 +125,7 @@ BACKEND_EXPORT std::pair<std::string, ExceptionType> KernelObjectTypeNotSupportW
 BACKEND_EXPORT bool IsKernelObjectTypeNotSupportedError(const std::string &error_str);
 BACKEND_EXPORT std::pair<std::vector<DataType>, std::vector<DataType>> GetInOutDataTypesFromKernelAttr(
   const KernelAttr &kernel_attr);
+BACKEND_EXPORT bool NeedCheckInputContiguous(const CNodePtr &cnode);
 }  // namespace kernel
 }  // namespace mindspore
 

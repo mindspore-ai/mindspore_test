@@ -73,7 +73,8 @@ BaseShapePtr SliceFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
   constexpr size_t kSliceInputNum = 3;
-  MS_EXCEPTION_IF_CHECK_FAIL(input_args.size() == kSliceInputNum, "Slice inputs num error");
+  MS_EXCEPTION_IF_CHECK_FAIL((input_args.size() == kSliceInputNum || input_args.size() == kSliceInputNum + 1),
+                             "Slice inputs num error");
   auto input_x_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape());
   auto input_x_shape = input_x_shape_map[kShape];
   auto input_begin = input_args[kInputIndex1];
