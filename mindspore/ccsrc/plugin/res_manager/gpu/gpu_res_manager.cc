@@ -511,7 +511,7 @@ DeviceEventPtr GPUResManager::CreateRuntimeEvent(bool enable_blocking, bool enab
   return std::make_shared<GpuEvent>(flag);
 }
 
-DeviceEventPtr GPUResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
+DeviceEventPtr GPUResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool) {
   uint32_t flag =
     (blocking ? cudaEventBlockingSync : cudaEventDefault) | (enable_timing ? cudaEventDefault : cudaEventDisableTiming);
   auto event = std::make_shared<GpuEvent>(flag);

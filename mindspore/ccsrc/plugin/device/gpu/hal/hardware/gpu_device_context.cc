@@ -824,8 +824,8 @@ DeviceEventPtr GPUDeviceResManager::CreateRuntimeEvent(bool enable_blocking, boo
   return gpu_res_manager_->CreateRuntimeEvent(enable_blocking, enable_record_wait);
 }
 
-DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
-  return gpu_res_manager_->CreateEventWithFlag(enable_timing, blocking);
+DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) {
+  return gpu_res_manager_->CreateEventWithFlag(enable_timing, blocking, use_extensional_api);
 }
 
 bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,

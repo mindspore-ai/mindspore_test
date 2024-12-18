@@ -322,6 +322,10 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   }
 
+  if (EnableParallelDispatchKernel()) {
+    return false;
+  }
+
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     // Do not support any type currently.
@@ -641,6 +645,9 @@ void GraphScheduler::Clear() {
   // Clear global maps.
   actors_.clear();
   ClearAllActors();
+
+  // Clear all cache memory info before process exits.
+  MemoryTraceManager::GetInstance().ClearAllCache();
 }
 
 void GraphScheduler::ClearActorData(const ActorSet *actor_set) {

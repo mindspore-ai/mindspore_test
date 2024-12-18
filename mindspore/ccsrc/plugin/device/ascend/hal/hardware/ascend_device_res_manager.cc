@@ -427,9 +427,10 @@ DeviceEventPtr AscendDeviceResManager::CreateRuntimeEvent(bool enable_blocking, 
   return ascend_res_manager_->CreateRuntimeEvent(enable_blocking, enable_record_wait);
 }
 
-DeviceEventPtr AscendDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
+DeviceEventPtr AscendDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking,
+                                                           bool use_extensional_api) {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->CreateEventWithFlag(enable_timing, blocking);
+  return ascend_res_manager_->CreateEventWithFlag(enable_timing, blocking, use_extensional_api);
 }
 
 void AscendDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,

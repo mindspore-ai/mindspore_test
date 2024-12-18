@@ -25,6 +25,8 @@
 
 namespace mindspore {
 namespace kernel {
+SimpleSpinLock InternalKernelMod::lock_ = SimpleSpinLock();
+
 bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   internal_to_ms_input_indices_mapper_.clear();
   internal_to_ms_output_indices_mapper_.clear();

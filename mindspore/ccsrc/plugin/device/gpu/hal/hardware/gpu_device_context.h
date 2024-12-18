@@ -93,7 +93,7 @@ class GPUDeviceResManager : public DeviceResManager {
   // Create device event for runtime.
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) override;
 
-  DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
+  DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
 
   bool LoadCollectiveCommLib() override;
   mindspore::device::CollectiveCommunicationLib *collective_comm_lib() const override;
