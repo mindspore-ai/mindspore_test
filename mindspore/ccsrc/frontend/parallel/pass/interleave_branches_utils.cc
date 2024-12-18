@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
@@ -69,6 +70,13 @@ inline bool IsForwardNode(const CNodePtr &node) {
   return node->fullname_with_scope().find(kGradFlag) != 0;
 }
 
+inline bool IsNotMatMul(const std::string &node_name) {
+  if (node_name != kMatMulOpName && node_name != kBatchMatMulOpName && node_name != ops::kNameGroupedMatmul) {
+    return true;
+  }
+  return false;
+}
+
 // Branch id propagation to mask split independent branches
 void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePtr &seed_node, size_t branch_id) {
   MS_EXCEPTION_IF_NULL(interleave_scope);
@@ -88,7 +96,12 @@ void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePt
     if (node == interleave_scope->fork_node) {
       continue;
     }
-
+    bool is_branch_node = true;
+    bool is_depend = IsPrimitiveCNode(node, prim::kPrimDepend);
+    if (node->HasAttr(kInterleaveBranchId) &&
+        GetValue<size_t>(node->GetAttr(kInterleaveBranchId)) == kInterleaveSharedBranchId) {
+      is_branch_node = false;
+    }
     for (auto &input : node->inputs()) {
       MS_EXCEPTION_IF_NULL(input);
       if (!input->isa<CNode>()) {
@@ -97,7 +110,11 @@ void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePt
 
       auto input_cnode = input->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(input_cnode);
-      if (is_backward_scope && IsForwardNode(input_cnode)) {
+      if (is_depend && node->input(1) != input) {
+        continue;
+      }
+
+      if (is_backward_scope && common::AnfAlgo::IsRecompute(input_cnode)) {
         continue;
       }
 
@@ -108,14 +125,19 @@ void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePt
       }
 
       if (!input_cnode->HasAttr(kInterleaveBranchId)) {
-        input_cnode->AddAttr(kInterleaveBranchId, branch_id_value);
+        if (is_branch_node) {
+          input_cnode->AddAttr(kInterleaveBranchId, branch_id_value);
+        } else {
+          input_cnode->AddAttr(kInterleaveBranchId, kSharedBranchIdValue);
+        }
         to_visit.emplace(input_cnode);
         continue;
       }
 
       auto input_branch_id = GetValue<size_t>(input_cnode->GetAttr(kInterleaveBranchId));
-      if (input_branch_id != branch_id) {
+      if (input_branch_id != branch_id && input_branch_id != kInterleaveSharedBranchId) {
         input_cnode->AddAttr(kInterleaveBranchId, kSharedBranchIdValue);
+        to_visit.emplace(input_cnode);
       }
     }
   }
@@ -181,7 +203,7 @@ void AppendMatMulGradDwNode(std::vector<CNodePtr> *ordered_nodes_ptr,
   auto node_size = nodes.size();
   for (size_t i = 0; i < node_size; ++i) {
     auto node_name = common::AnfAlgo::GetCNodeName(nodes[i]);
-    if (node_name != kMatMulOpName && node_name != kBatchMatMulOpName) {
+    if (IsNotMatMul(node_name)) {
       continue;
     }
 
@@ -272,9 +294,9 @@ float GetNodeCost(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   static const float kDefaultCost = 0.1f;
   static const std::unordered_map<std::string, float> kBaseCostMap = {
-    {kAllReduceOpName, 8.0f},    {kReduceScatterOpName, 8.0f}, {kAllGatherOpName, 8.0f}, {kAllToAllOpName, 8.0f},
-    {kAlltoAllOpName, 8.0f},     {kAllToAllvOpName, 8.0f},     {kAlltoAllVOpName, 8.0f}, {kReshapeOpName, 0.01f},
-    {kBatchMatMulOpName, 10.0f}, {kMatMulOpName, 10.0f}};
+    {kAllReduceOpName, 8.0f},    {kReduceScatterOpName, 8.0f}, {kAllGatherOpName, 8.0f},        {kAllToAllOpName, 8.0f},
+    {kAlltoAllOpName, 8.0f},     {kAllToAllvOpName, 8.0f},     {kAlltoAllVOpName, 8.0f},        {kReshapeOpName, 0.01f},
+    {kBatchMatMulOpName, 10.0f}, {kMatMulOpName, 10.0f},       {ops::kNameGroupedMatmul, 10.0f}};
   auto node_name = common::AnfAlgo::GetCNodeName(node);
   auto iter = kBaseCostMap.find(node_name);
   if (iter != kBaseCostMap.end()) {
@@ -746,7 +768,7 @@ void UpdateMatMulGradDualMap(const CNodePtr &node, HashMap<std::string, CNodePtr
   MS_EXCEPTION_IF_NULL(matmul_unique_id_map_ptr);
   MS_EXCEPTION_IF_NULL(matmul_grad_dual_map_ptr);
   auto node_name = common::AnfAlgo::GetCNodeName(node);
-  if (node_name != kMatMulOpName && node_name != kBatchMatMulOpName) {
+  if (IsNotMatMul(node_name)) {
     return;
   }
 

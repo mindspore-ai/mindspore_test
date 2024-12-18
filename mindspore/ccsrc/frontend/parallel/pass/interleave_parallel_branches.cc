@@ -178,7 +178,9 @@ void InterleaveParallelBranches(const FuncGraphPtr &graph) {
         optimize_matmul_dw_order = iter_forward->second;
         forward = false;
       }
-
+      if (!AnfUtils::IsRealKernel(node)) {
+        continue;
+      }
       auto current_scope = std::make_shared<InterLeaveScope>();
       current_scope->graph = child_graph;
       current_scope->fork_node = nullptr;

@@ -57,8 +57,20 @@ const AnfNodePtr InsertLoadForAllGather::Process(const FuncGraphPtr &graph, cons
     mng = Manage(kernel_graph, true);
     kernel_graph->set_manager(mng);
   }
-  auto node_users = mng->node_users()[node];
-  if (node_users.size() <= 1) {
+  auto &node_users = mng->node_users()[node];
+  size_t node_user_num = 0;
+  for (const auto &node_user : node_users) {
+    if (!IsPrimitiveCNode(node_user.first, prim::kPrimDepend)) {
+      ++node_user_num;
+      continue;
+    }
+    auto depend_cnode = node_user.first->cast<CNodePtr>();
+    if (depend_cnode != nullptr && depend_cnode->input(1) == node) {
+      ++node_user_num;
+    }
+  }
+
+  if (node_user_num <= 1) {
     MS_LOG(DEBUG) << "Node users size not greater than 1, node: " << node->fullname_with_scope();
     return nullptr;
   }
