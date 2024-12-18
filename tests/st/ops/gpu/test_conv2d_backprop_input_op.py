@@ -17,13 +17,15 @@ import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor, set_device
+from mindspore import Tensor
 from mindspore.common.api import jit
 from mindspore.ops import operations as P
 from mindspore.ops.functional import vmap
 from mindspore.device_context.gpu.op_tuning import conv_dgrad_algo
 from mindspore.device_context.gpu.op_precision import conv_allow_tf32 as gpu_conv_allow_tf32
 from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
+
 
 context.set_context(mode=context.PYNATIVE_MODE, device_target='GPU')
 
@@ -61,7 +63,7 @@ def test_conv2d_backprop_input(algo, mode, conv_allow_tf32):
     Expectation: The value is processed as expected
     """
     context.set_context(mode=mode)
-    set_device("GPU")
+    set_device()
     conv_dgrad_algo(algo)
     gpu_conv_allow_tf32(conv_allow_tf32)
     w = Tensor(np.array([[[[1, 0, -1], [1, 0, -1], [1, 0, -1]]]]).astype(np.float32))

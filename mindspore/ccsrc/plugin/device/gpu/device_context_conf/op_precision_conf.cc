@@ -36,7 +36,7 @@ std::shared_ptr<GPUOpPrecisionConf> GPUOpPrecisionConf::GetInstance() {
 }
 
 bool GPUOpPrecisionConf::matmul_allow_tf32() {
-  if (matmul_allow_tf32_) {
+  if (IsMatmulAllowTf32Configured()) {
     return matmul_allow_tf32_;
   }
   auto ms_context = MsContext::GetInstance();
@@ -46,7 +46,7 @@ bool GPUOpPrecisionConf::matmul_allow_tf32() {
 }
 
 bool GPUOpPrecisionConf::conv_allow_tf32() {
-  if (conv_allow_tf32_) {
+  if (IsConvAllowTf32Configured()) {
     return conv_allow_tf32_;
   }
   auto ms_context = MsContext::GetInstance();
