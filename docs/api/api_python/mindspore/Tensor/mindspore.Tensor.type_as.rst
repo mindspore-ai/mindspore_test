@@ -12,10 +12,10 @@ mindspore.Tensor.type_as
         将复数转换为bool类型的时候，不考虑复数的虚部，只要实部不为零，返回True，否则返回False。
 
     参数：
-        - **tensor** (Tensor) - 数据类型为指定类型的Tensor，其shape为 :math:`(x_0, x_1, ..., x_R)` 。
+        - **other** (Tensor) - 数据类型为指定类型的Tensor，其shape为 :math:`(x_0, x_1, ..., x_R)` 。
 
     返回：
         Tensor，其shape与输入Tensor相同，即 :math:`(x_0, x_1, ..., x_R)` 。
 
     异常：
-        - **TypeError** - `tensor` 不是Tensor。
+        - **TypeError** - `other` 不是Tensor。
