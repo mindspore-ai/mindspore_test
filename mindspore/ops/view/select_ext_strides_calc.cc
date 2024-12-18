@@ -50,9 +50,11 @@ TensorStorageInfoPtrList SelectExtCalc(const PrimitivePtr &prim, const std::vect
   dim = DynamicDimWrap(dim, dim_size);
   auto dim_value = old_shape[dim];
 
-  MS_CHECK_VALUE(index >= -dim_value && index < dim_value,
-                 "For Primitive [SelectExt] start exceed range. start: " + std::to_string(index) +
-                   ", start should be in [" + std::to_string(-dim_value) + ", " + std::to_string(dim_value) + ").");
+  if (index < -dim_value || index >= dim_value) {
+    MS_EXCEPTION(IndexError) << "For Primitive [SelectExt] start exceed range. start: " + std::to_string(index) +
+                                  ", start should be in [" + std::to_string(-dim_value) + ", " +
+                                  std::to_string(dim_value) + ").";
+  }
   index = index < 0 ? index + dim_value : index;
 
   auto new_shape = old_shape;
