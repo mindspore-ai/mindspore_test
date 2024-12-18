@@ -376,7 +376,7 @@ def test_tensordump_all_between_ops():
     tensordump_num = get_tensordump_node_num(validator)
     assert tensordump_num == 2
 
-def test_multiple_output():
+def test_tensordump_all_between_ops_multiple_output():
     """
     Feature: test tensordump between two matmul,
     test tensordump op behavior under insertion of redistribution ops
@@ -414,6 +414,45 @@ def test_multiple_output():
     validator = ParallelValidator(net, phase)
     tensordump_num = get_tensordump_node_num(validator)
     assert tensordump_num == 3
+
+def test_tensordump_in_between_ops_multiple_output():
+    """
+    Feature: test tensordump between two matmul,
+    test tensordump op behavior under insertion of redistribution ops
+    Description: out1 is used in multiple operators, tensordump mode is 'in'
+    Expectation: compile success
+    """
+    class Net(nn.Cell):
+        def __init__(self, strategy1, strategy2, strategy3):
+            super().__init__()
+            self.matmul1 = P.MatMul().shard(strategy1)
+            self.matmul2 = P.MatMul().shard(strategy2)
+            self.matmul3 = P.MatMul().shard(strategy3)
+            self.add = P.Add()
+
+        def construct(self, x, y, b):
+            out1 = self.matmul1(x, y)
+            ops.tensordump('multi_output', out1, 'in')
+            out2 = self.matmul2(out1, b)
+            out3 = self.matmul3(out1, b)
+            out4 = self.add(out2, out3)
+            return out4
+
+    context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True)
+    strategy1 = ((4, 2), (2, 1))
+    strategy2 = ((2, 4), (4, 1))
+    strategy3 = ((2, 2), (2, 2))
+    net = GradWrap(NetWithLoss(Net(strategy1, strategy2, strategy3=strategy3)))
+    context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
+
+    x = Tensor(np.ones([128, 32]), dtype=ms.float32)
+    y = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    b = Tensor(np.ones([64, 64]), dtype=ms.float32)
+
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 2
 
 
 def test_multiple_output_with_full_name():
