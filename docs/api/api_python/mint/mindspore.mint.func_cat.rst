@@ -12,7 +12,7 @@ mindspore.mint.cat
 
     参数：
         - **tensors** (Union[tuple, list]) - 输入为Tensor组成的tuple或list。假设在这个tuple或list中有两个Tensor，即 `t1` 和 `t2` 。要在第0个维度方向上执行 `cat` ，除第 :math:`0` 维度外，其他维度的shape都应相等，即 :math:`t1.shape[1] = t2.shape[1], t1.shape[2] = t2.shape[2], ..., t1.shape[R-1] = t2.shape[R-1]` ，其中 :math:`R` 是Tensor的秩。
-        - **dim** (int) - 表示指定的维度，取值范围是 :math:`[-R, R)` 。默认值： ``0`` 。
+        - **dim** (int, 可选) - 表示指定的维度，取值范围是 :math:`[-R, R)` 。默认值： ``0`` 。
 
     返回：
         Tensor，shape为 :math:`(x_1, x_2, ..., \sum_{i=1}^Nx_{mi}, ..., x_R)` 。数据类型与 `tensors` 相同。

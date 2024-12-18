@@ -8,7 +8,7 @@ mindspore.mint.split
     参数：
         - **tensor** (Tensor) - 要被切分的Tensor。
         - **split_size_or_sections** (Union[int, tuple(int), list(int)]) - 如果 split_size_or_sections 是int类型， tensor将被均匀的切分成块，每块的大小为 split_size_or_sections ，若 tensor.shape[dim] 不能被 split_size_or_sections 整除，最后一块大小将小于 split_size_or_sections 。 如果 split_size_or_sections 是个list类型，tensor 将沿 dim 轴被切分成 len(split_size_or_sections) 块，大小为 split_size_or_sections 。
-        - **dim** (int) - 指定分割轴。默认值： ``0`` 。
+        - **dim** (int，可选) - 指定分割轴。默认值： ``0`` 。
 
     返回：
         元素为Tensor的Tuple。
