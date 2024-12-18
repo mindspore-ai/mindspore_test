@@ -701,7 +701,7 @@ def cat(tensors, dim=0):
             all other dimensions should be equal, that is,
             :math:`t1.shape[1] = t2.shape[1], t1.shape[2] = t2.shape[2], ..., t1.shape[R-1] = t2.shape[R-1]`,
             where :math:`R` represents the rank of tensor.
-        dim (int): The specified dimension, whose value is in range :math:`[-R, R)`. Default: ``0`` .
+        dim (int, optional): The specified dimension, whose value is in range :math:`[-R, R)`. Default: ``0`` .
 
     Returns:
         Tensor, the shape is :math:`(x_1, x_2, ..., \sum_{i=1}^Nx_{mi}, ..., x_R)`.
@@ -1538,7 +1538,7 @@ def ones(size, *, dtype=None):
         Tensor, whose dtype and size are defined by input.
 
     Raises:
-        TypeError: If `size` is neither an int nor an tuple/list/Tensor of int.
+        TypeError: If `size` is neither an int nor a tuple/list/Tensor of int.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1602,7 +1602,7 @@ def split(tensor, split_size_or_sections, dim=0):
             if `tensor.shape[dim]` is not divisible by `split_size_or_sections`.
             If `split_size_or_sections` is a list type, then `tensor` will be split into len(split_size_or_sections)
             chunks with sizes `split_size_or_sections` along the given `dim`.
-        dim (int): The dim along which to split. Default: ``0`` .
+        dim (int, optional): The dim along which to split. Default: ``0`` .
 
     Returns:
         A tuple of sub-tensors.
@@ -1862,7 +1862,7 @@ def zeros(size, *, dtype=None):
         Tensor, whose dtype and size are defined by input.
 
     Raises:
-        TypeError: If `size` is neither an int nor an tuple/list/Tensor of int.
+        TypeError: If `size` is neither an int nor a tuple/list/Tensor of int.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1919,9 +1919,9 @@ def scatter(input, dim, index, src):
 
     Raises:
         TypeError: If `index` is neither int32 nor int64.
-        ValueError: If rank of any of `input` , `index` and `src` less than 1.
+        ValueError: If rank of any of `input` , `index` and `src` is less than 1.
         ValueError: If the rank of `src` is not equal to the rank of `input` .
-        TypeError: If the data type of `input` and `src` have different dtypes.
+        TypeError: If the data types of `input` and `src` have different dtypes.
         RuntimeError: If `index` has negative elements.
 
     Supported Platforms:

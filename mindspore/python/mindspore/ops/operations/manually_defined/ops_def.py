@@ -1791,7 +1791,7 @@ class Ones(Primitive):
         Tensor, whose dtype and size are defined by input.
 
     Raises:
-        TypeError: If `shape` is neither an int nor an tuple/list/Tensor of int.
+        TypeError: If `shape` is neither an int nor a tuple/list/Tensor of int.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1845,7 +1845,7 @@ class Zeros(Primitive):
         Tensor, whose dtype and size are defined by input.
 
     Raises:
-        TypeError: If `shape` is neither an int nor an tuple/list/Tensor of int.
+        TypeError: If `shape` is neither an int nor a tuple/list/Tensor of int.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
