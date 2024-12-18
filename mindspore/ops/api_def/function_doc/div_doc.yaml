@@ -41,7 +41,7 @@ div:
         ValueError: If `rounding_mode` value is not None, "floor" or "trunc".
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
         >>> import mindspore

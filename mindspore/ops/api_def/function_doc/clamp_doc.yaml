@@ -38,7 +38,7 @@ clamp:
         TypeError: If the type of `max` is not in None, Tensor, float or int.
     
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
     
     Examples:
         >>> # case 1: the data type of input is Tensor
