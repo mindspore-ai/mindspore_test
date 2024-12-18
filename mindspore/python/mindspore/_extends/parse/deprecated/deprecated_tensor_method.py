@@ -345,9 +345,11 @@ deprecated_tensor_method_map = {
 
     # 158
 
-    # 159
+    # 159 histc
+    "histc": "tensor_histc",
 
-    # 160
+    # 160 frac
+    "frac": "tensor_frac",
 
     # 161
 

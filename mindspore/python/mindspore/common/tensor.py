@@ -1084,14 +1084,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('select_scatter')(self, src, axis, index)
 
-    def histc(self, bins=100, min=0., max=0.):
-        """
-        For details, please refer to :func:`mindspore.ops.histc`.
-        """
-        validator.check_value_type('min', min, (int, float,), 'Tensor.histc')
-        validator.check_value_type('max', max, (int, float,), 'Tensor.histc')
-        return tensor_operator_registry.get('histc')(self, bins, float(min), float(max))
-
     def geqrf(self):
         """
         For details, please refer to :func:`mindspore.ops.geqrf`.
@@ -2578,12 +2570,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.diff`.
         """
         return tensor_operator_registry.get('diff')(self, n, axis, prepend, append)
-
-    def frac(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.frac`.
-        """
-        return tensor_operator_registry.get('frac')(self)
 
     def argwhere(self):
         r"""

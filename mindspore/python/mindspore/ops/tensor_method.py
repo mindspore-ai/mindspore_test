@@ -362,9 +362,11 @@ from mindspore.ops.auto_generate import isneginf_ext
 
 # 158
 
-# 159
+# 159 histc
+from mindspore.ops.function.math_func import histc
 
-# 160
+# 160 frac
+from mindspore.ops.function.math_func import frac
 
 # 161
 
@@ -1317,9 +1319,13 @@ def tensor_isneginf(input):
 
 # 158
 
-# 159
+# 159 histc
+def tensor_histc(input, bins=100, min=0, max=0):
+    return histc(input, bins, min, max)
 
-# 160
+# 160 frac
+def tensor_frac(input):
+    return frac(input)
 
 # 161
 
