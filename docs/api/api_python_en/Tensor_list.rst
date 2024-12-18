@@ -391,6 +391,21 @@
     :exclude-members: infer_value, infer_shape, infer_dtype, get_bprop
     :members:
 
+{% elif fullname=="mindspore.profiler.DynamicProfilerMonitor" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :inherited-members: step
+    :exclude-members: step_begin, step_end, on_train_end
+    :members:
+
+{% elif fullname in ["mindspore.profiler.schedule", "mindspore.profiler.mstx"] %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: infer_value, infer_shape, infer_dtype
+    :members:
+
 {% elif objname[0].istitle() %}
 {{ fullname | underline }}
 

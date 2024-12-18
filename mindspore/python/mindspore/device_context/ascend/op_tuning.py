@@ -89,7 +89,7 @@ def aoe_job_type(config):
     <https://www.mindspore.cn/docs/en/master/model_train/optimize/aoe.html>`_ .
 
     Args:
-        job_type (str): Choose the tuning type.
+        config (str): Choose the tuning type.
 
             - ``"1"``: Set to subgraph tuning.
             - ``"2"``: Set to operator tuning.
