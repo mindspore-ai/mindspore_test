@@ -271,7 +271,7 @@ from mindspore.ops.function.array_func import tril
 # 114 type
 
 # 115 type_as
-
+from mindspore.ops.auto_generate import type_as_op
 # 116 unbind
 
 # 117 unfold
@@ -1068,7 +1068,12 @@ def tensor_trunc(input):
 # 114 type
 
 # 115 type_as
+def deprecated_tensor_type_as(input, other):
+    return input.astype(other.dtype)
 
+
+def tensor_type_as(input, other):
+    return type_as_op(input, other)
 # 116 unbind
 
 # 117 unfold

@@ -3539,30 +3539,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return str(self.dtype)
         return self.astype(dtype)
 
-    def type_as(self, other):
-        r"""
-        Change the dtype of the Tensor to the dtype of `other`.
-
-        Args:
-            other (Tensor): The return tensor has the same dtype as `other`.
-
-        Returns:
-            Tensor, has the same dtype as `other`.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor([[1, 2], [3, 4]], dtype=mindspore.float32)
-            >>> y = Tensor([[1, 2], [3, 4]], dtype=mindspore.int32)
-            >>> x = x.type_as(y)
-            >>> print(x.dtype)
-            Int32
-        """
-        return self.astype(other.dtype)
-
     def bool(self):
         r"""
         Converts input tensor dtype to `bool`.
