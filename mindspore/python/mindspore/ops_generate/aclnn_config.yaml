@@ -301,6 +301,7 @@ ArgMinExt: 'aclnnArgMin'
 AcosExt: 'aclnnAcos'
 # 152
 AcoshExt: 'aclnnAcosh'
+AdaptiveAvgPool3DGradExt: 'aclnnAdaptiveAvgPool3dBackward'
 # 172
 AsinExt: 'aclnnAsin'
 # 173
