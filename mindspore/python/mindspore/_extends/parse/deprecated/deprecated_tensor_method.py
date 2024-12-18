@@ -30,7 +30,7 @@ deprecated_tensor_method_map = {
     # 6 all
     "all": "tensor_all",
     # 7 allclose
-
+    "allclose": "tensor_allclose",
     # 8 any
     "any": "tensor_any",
     # 9 arctan2
@@ -223,7 +223,7 @@ deprecated_tensor_method_map = {
     # 101 squeeze
 
     # 102 std
-
+    "std": "deprecated_tensor_std",
     # 103 sub
     "sub": "deprecated_tensor_sub",
     # 104 sum
@@ -353,4 +353,8 @@ deprecated_tensor_method_map = {
 
     # 162
 
+    # 501
+    "addbmm": "deprecated_tensor_addbmm",
+    # 502
+    "addmm": "deprecated_tensor_addmm",
 }

@@ -49,6 +49,57 @@ def addbmm_backward_func(input1, batch1, batch2, beta=1, alpha=1):
     return output_grad, b1_grad, b2_grad
 
 
+def addbmm_forward_func_tensor(input1, batch1, batch2, beta=1, alpha=1):
+    return input1.addbmm(batch1, batch2, beta=beta, alpha=alpha)
+
+
+def addbmm_backward_func_tensor(input1, batch1, batch2, beta=1, alpha=1):
+    output_grad, b1_grad, b2_grad = ms.ops.grad(
+        addbmm_forward_func_tensor, (0, 1, 2))(input1, batch1, batch2, beta, alpha)
+    return output_grad, b1_grad, b2_grad
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_addbmm_tensor(mode):
+    """
+    Feature: Ops.
+    Description: test op addbmm tensor.
+    Expectation: expect correct result.
+    """
+    input_shape1 = (4, 5)
+    input_shape2 = (4, 7)
+    batch1_shape = (3, 4, 2)
+    batch2_shape = (3, 2, 5)
+    batch3_shape = (6, 4, 3)
+    batch4_shape = (6, 3, 7)
+    beta = 1
+    alpha = 2.0
+    input1, batch1, batch2 = generate_random_input(
+        input_shape1, batch1_shape, batch2_shape)
+    input2, batch3, batch4 = generate_random_input(
+        input_shape2, batch3_shape, batch4_shape)
+    expect_forward_output1 = generate_expect_forward_output(
+        input1, batch1, batch2)
+    expect_forward_output2 = generate_expect_forward_output(
+        input2, batch3, batch4, beta, alpha)
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+        output_forward1 = addbmm_forward_func_tensor(
+            ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
+        output_forward2 = addbmm_forward_func_tensor(
+            ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
+    else:
+        output_forward1 = (jit(addbmm_forward_func_tensor, jit_config=JitConfig(
+            jit_level="O0")))(ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
+        output_forward2 = (jit(addbmm_forward_func_tensor, jit_config=JitConfig(
+            jit_level="O0")))(ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
+    np.testing.assert_allclose(output_forward1.asnumpy(
+    ), expect_forward_output1.asnumpy(), 3e-3, 3e-3)
+    np.testing.assert_allclose(output_forward2.asnumpy(
+    ), expect_forward_output2.asnumpy(), 3e-3, 3e-3)
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_addbmm_normal(mode):

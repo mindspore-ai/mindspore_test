@@ -1356,18 +1356,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('div')(self, value, rounding_mode=None)
 
-    def addbmm(self, batch1, batch2, *, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addbmm`.
-        """
-        return tensor_operator_registry.get('addbmm')(self, batch1, batch2, beta=beta, alpha=alpha)
-
-    def addmm(self, mat1, mat2, *, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addmm`.
-        """
-        return tensor_operator_registry.get('addmm')(self, mat1, mat2, beta=beta, alpha=alpha)
-
     def addmm_(self, mat1, mat2, *, beta=1, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.addmm`.
@@ -3014,13 +3002,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             for ax in axis:
                 nums *= self.shape[ax]
         return tensor_operator_registry.get('__truediv__')(x_sum, nums - ddof)
-
-    def std(self, axis=None, ddof=0, keepdims=False):
-        """
-        For details, please refer to :func:`mindspore.ops.std`.
-        """
-        x_var = self.var(axis, ddof, keepdims)
-        return tensor_operator_registry.get('__pow__')(x_var, 0.5)
 
     def sum_to_size(self, *size):
         r"""
