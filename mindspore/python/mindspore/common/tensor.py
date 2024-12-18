@@ -1671,13 +1671,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("reverse_sequence")(self, seq_lengths, seq_dim, batch_dim)
 
-    def transpose(self, *axes):
-        r"""
-        For details, please refer to :func:`mindspore.ops.transpose`.
-        """
-        perm = validator.check_transpose_axis(axes, self.ndim)
-        return tensor_operator_registry.get('transpose')(self, perm)
-
     def col2im(self, output_size, kernel_size, dilation, padding_value, stride):
         """
         For details, please refer to :func:`mindspore.ops.col2im`.
