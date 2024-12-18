@@ -3199,6 +3199,62 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_value_type('index', index, (Tensor, Tensor_,), 'Tensor.gather_elements')
         return tensor_operator_registry.get('gather_elements')(self, dim, index)
 
+    def nonzero(self, *, as_tuple=False):
+        r"""
+        Return the positions of all non-zero values.
+
+        Note:
+           The rank of `self` should be greater than or equal to 1.
+
+        Keyword Args:
+            as_tuple (bool, optional): Whether the output is tuple.
+                If ``False`` , return Tensor. Default: ``False`` .
+                If ``True`` , return Tuple of Tensor, only support ``Ascend`` .
+
+        Returns:
+            - If `as_tuple` is ``False``, return the Tensor, a 2-D Tensor whose data type is int64,
+              containing the positions of all non-zero values of the `self` .
+            - If `as_tuple` is ``True``, return the Tuple of Tensor and data type is int64.
+              The Tuple length is the dimension of the `self` tensor,
+              and each element is the 1D tensor of the subscript of all non-zero elements of
+              the `self` tensor in that dimension.
+
+        Raises:
+            TypeError: If `self` is not Tensor.
+            TypeError: If `as_tuple` is not bool.
+            ValueError: If dim of `self` equals to 0.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
+            >>> output = x.nonzero()
+            >>> print(output)
+            [[0 0 0]
+            [0 1 0]]
+            >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
+            >>> output = x.nonzero(as_tuple=False)
+            >>> print(output)
+            [[0]
+            [2]
+            [4]]
+            >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
+            >>> output = x.nonzero(as_tuple=True)
+            >>> print(output)
+            (Tensor(shape=[2], dtype=Int64, value=[0, 0]),
+            Tensor(shape=[2], dtype=Int64, value=[0, 1]),
+            Tensor(shape=[2], dtype=Int64, value=[0, 0]))
+            >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
+            >>> output = x.nonzero(as_tuple=True)
+            >>> print(output)
+            (Tensor(shape=[3], dtype=Int64, value=[0, 2, 4]), )
+        """
+        return tensor_operator_registry.get('nonzero')(self, as_tuple=as_tuple)
+
     def svd(self, full_matrices=False, compute_uv=True):
         """
         For details, please refer to :func:`mindspore.ops.svd`.

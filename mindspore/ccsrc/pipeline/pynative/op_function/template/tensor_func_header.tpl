@@ -25,7 +25,6 @@ namespace py = pybind11;
 namespace mindspore {
 namespace tensor {
 
-py::object TensorMethodNonZero(const py::object &self, const py::args &py_args, const py::kwargs &py_kwargs);
 ${tensor_api_declaration_list}
 
 }  // namespace tensor
