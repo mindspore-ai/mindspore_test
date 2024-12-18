@@ -29,7 +29,14 @@ void RegRuntimeConf(py::module *m) {
     .def("is_op_threads_num_configured", &RuntimeConf::IsOpThreadsNumConfigured, "Is op threads num configured")
     .def("set_memory", &RuntimeConf::set_memory, "Set memory")
     .def("is_memory_configured", &RuntimeConf::IsMemoryConfigured, "Is memory configured")
-    .def("is_launch_blocking", &RuntimeConf::IsSetLaunchBlocking, "Check whether launch blocking configured.");
+    .def("is_launch_blocking", &RuntimeConf::IsSetLaunchBlocking, "Check whether launch blocking configured.")
+    .def("is_thread_bind_core_configured", &RuntimeConf::IsThreadBindCoreConfigured,
+         "Check whether thread_bind_core configured.")
+    .def("set_thread_bind_core_configured", &RuntimeConf::SetThreadBindCoreConfigured,
+         "Set thread_bind_core configured.")
+    .def("thread_bind_core", &RuntimeConf::BindCore, "Bind thread to specific cpus")
+    .def("thread_bind_core_with_policy", &RuntimeConf::BindCoreWithPolicy,
+         "Bind thread to specific cpus with policy generated");
 }
 }  // namespace runtime
 }  // namespace mindspore
