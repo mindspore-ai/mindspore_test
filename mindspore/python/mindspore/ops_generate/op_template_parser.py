@@ -223,7 +223,7 @@ class OpTemplateParser:
         call_args_types = self._parse_call_args_types(self.op_proto.op_args)
         call_args = self.parse_original_call_args(self.op_proto.op_args)
         for type, arg_name in zip(call_args_types, call_args):
-            if type in ("BaseTensorPtr", "std::optional<BaseTensorPtr>"):
+            if type in ("mindspore::tensor::BaseTensorPtr", "std::optional<mindspore::tensor::BaseTensorPtr>"):
                 call_args_tensor.append(arg_name)
         return call_args_tensor
 
@@ -255,8 +255,8 @@ class OpTemplateParser:
         """
         returns_type = []
         type_convert_to_base = {
-            'std::vector<tensor::TensorPtr>': 'std::vector<tensor::BaseTensorPtr>',
-            'tensor::TensorPtr': 'tensor::BaseTensorPtr'
+            'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::BaseTensorPtr>',
+            'mindspore::tensor::TensorPtr': 'mindspore::tensor::BaseTensorPtr'
         }
         for return_obj in self.op_proto.op_returns:
             temp_return = get_return_type(return_obj.arg_dtype)
@@ -290,10 +290,10 @@ class OpTemplateParser:
             returns_type.append(get_return_type(return_obj.arg_dtype))
 
         if len(returns_type) == 1:
-            if returns_type[0] == 'tensor::TensorPtr':
+            if returns_type[0] == 'mindspore::tensor::TensorPtr':
                 op_outputs = 'outputs[0]'
                 call_outputs = 'outputs_[0]'
-            elif returns_type[0] == "std::vector<tensor::TensorPtr>":
+            elif returns_type[0] == "std::vector<mindspore::tensor::TensorPtr>":
                 op_outputs = 'outputs'
                 call_outputs = 'outputs_'
             else:

@@ -37,7 +37,8 @@ class AutoGradRegHeaderGenerator(BaseGenerator):
         """
         self.AUTO_GRAD_REG_H_TEMPLATE = template.AUTO_GRAD_REG_H_TEMPLATE
         self.op_type_enum_template = Template("k${class_name} = ${enum_val},\n")
-        self.op_grad_func_template = Template("using ${class_name}GradFunc = void (*)(${grad_func_args});")
+        self.op_grad_func_template = Template("using ${class_name}GradFunc = std::function<void(${grad_func_args})>;")
+        self.op_grad_func_obj_template = Template("${class_name}GradFunc ${class_name}GradFuncObj;")
         self.op_grad_func_args_template = Template(
             "const kernel::pyboost::OpPtr &, ${input_tensor_prt_args}"
         )
@@ -52,6 +53,7 @@ class AutoGradRegHeaderGenerator(BaseGenerator):
         """
         op_type_enum_list = []
         op_grad_func_list = []
+        op_grad_func_obj_list = []
         index = 0
         for op_proto in op_protos:
             if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
@@ -61,10 +63,12 @@ class AutoGradRegHeaderGenerator(BaseGenerator):
             grad_func_args_with_type_str = self._get_grad_func_args_with_type_str(op_proto)
             op_grad_func_list.append(self.op_grad_func_template.replace(class_name=op_proto.op_class.name,
                                                                         grad_func_args=grad_func_args_with_type_str))
+            op_grad_func_obj_list.append(self.op_grad_func_obj_template.replace(class_name=op_proto.op_class.name))
             index += 1
 
         pyboost_func_h_str = self.AUTO_GRAD_REG_H_TEMPLATE.replace(op_enum=op_type_enum_list,
-                                                                   op_grad_func=op_grad_func_list)
+                                                                   op_grad_func=op_grad_func_list,
+                                                                   op_grad_func_obj=op_grad_func_obj_list)
 
         save_path = os.path.join(work_path, K.MS_OPS_KERNEL_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "auto_grad_op_reg.h"

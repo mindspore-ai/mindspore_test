@@ -21,6 +21,7 @@
 #include "mindspore/ops/kernel/functions/auto_grad_guard.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "pipeline/pynative/grad/grad_utils.h"
+#include "pipeline/pynative/op_function/auto_grad_register.h"
 
 namespace mindspore::pynative {
 namespace {
