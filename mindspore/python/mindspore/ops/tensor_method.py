@@ -953,8 +953,8 @@ def tensor_sin(input):
 # 96 size
 
 # 97 sort
-def deprecated_tensor_sort(input_x, axis=-1, descending=False):
-    return sort(input_x, axis, descending)
+def deprecated_tensor_sort(input, axis=-1, descending=False):
+    return sort(input, axis, descending)
 
 
 def tensor_sort(input, dim=-1, descending=False, stable=False):
