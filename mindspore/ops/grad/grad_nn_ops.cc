@@ -4370,6 +4370,17 @@ REG_BPROP_BUILDER("FakeRemoteLookupUniqued").FreeUselessValues_IO({i2, i4, i6}, 
           dx};
 }));
 
+REG_BPROP_BUILDER("KLDiv").SetUnusedInputs({i4}).SetBody((BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto target = ib->GetInput(kIndex1);
+  auto reduction = ib->GetInput(kIndex2);
+  auto log_target = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto dx = ib->Emit("KLDivGrad", {dout, input, target, reduction, log_target});
+  return {dx, ib->OutZeros(target), ib->OutZeros(reduction), ib->OutZeros(log_target)};
+}));
+
 REG_BPROP_BUILDER("Generator").SetBody(ReturnZeros);
 
 REG_BPROP_BUILDERS_END
