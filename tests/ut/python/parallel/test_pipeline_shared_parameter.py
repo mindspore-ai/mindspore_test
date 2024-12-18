@@ -17,7 +17,6 @@ import os
 import subprocess
 import shutil
 import numpy as np
-import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
@@ -317,7 +316,6 @@ def test_dump_parallel_info():
     os.environ["MA_LOG_DIR"] = ""
 
 
-@pytest.mark.skip(reason='fail in gate')
 def test_pipeline_with_begin_end_inline():
     """
     Feature: parallel subgraph inline
@@ -326,7 +324,7 @@ def test_pipeline_with_begin_end_inline():
     """
     context.set_auto_parallel_context(
         device_num=32, global_rank=0, pipeline_stages=2)
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./pipeline_with_begin_end_inline")
     context.set_context(jit_config={"jit_level": "O2"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     if os.path.exists("./speed_up.json"):
@@ -345,18 +343,18 @@ def test_pipeline_with_begin_end_inline():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./pipeline_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./pipeline_with_begin_end_inline/rank_0")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./rank_0/*validate*.ir"
+    file = "./pipeline_with_begin_end_inline/rank_0/*validate*.ir"
     para = " call @"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "2"
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./pipeline_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./pipeline_with_begin_end_inline/rank_0")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
     context.set_context(save_graphs=False)
@@ -370,7 +368,7 @@ def test_grad_accumulation_with_begin_end_inline():
     """
     context.set_auto_parallel_context(
         device_num=32, global_rank=0, pipeline_stages=2)
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./grad_accumulation_with_begin_end_inline")
     context.set_context(jit_config={"jit_level": "O2"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     if os.path.exists("./speed_up.json"):
@@ -389,18 +387,18 @@ def test_grad_accumulation_with_begin_end_inline():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./grad_accumulation_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./grad_accumulation_with_begin_end_inline/rank_0")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./rank_0/*validate*.ir"
+    file = "./grad_accumulation_with_begin_end_inline/rank_0/*validate*.ir"
     para = " call @"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "2"
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./grad_accumulation_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./grad_accumulation_with_begin_end_inline/rank_0")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
     context.set_context(save_graphs=False)
