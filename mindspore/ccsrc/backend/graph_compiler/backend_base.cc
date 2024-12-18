@@ -991,6 +991,13 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
   }
   return true;
 }
+
+void CheckRunMode(device::RunMode run_mode) {
+  if (run_mode == device::RunMode::kGraphMode || run_mode == device::RunMode::kHybridMode) {
+    MS_LOG(WARNING) << "The subgraph sink and heterogeneous in Jit_level = O2 will be deprecated and removed in a "
+                       "future version, please set jit_level to O0 or O1 and try again.";
+  }
+}
 }  // namespace
 
 FuncGraphPtr MindRTBackendBase::BuildDFGraph(
@@ -1093,12 +1100,13 @@ const ActorInfo MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph)
         pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
       auto actor_info = ge_backend_->CompileGraph(func_graph, device_context);
       is_ge_backend_ = true;
-      MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString()
-                   << ", actor_info: " << actor_info;
+      MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString();
       PROF_END(CompileSubGraph);
       PROF_END(compile_backend_graph);
       return actor_info;
     }
+    CheckRunMode(run_mode);
+
     if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
       ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
     }
