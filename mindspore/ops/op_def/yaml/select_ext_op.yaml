@@ -11,6 +11,9 @@ select_ext:
         output:
             dtype: tensor
     view: True
+    graph_view: True
+    labels:
+        side_effect_mem: True
     class:
         name: SelectExt
     dispatch:

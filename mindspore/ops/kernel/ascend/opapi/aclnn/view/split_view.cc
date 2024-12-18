@@ -31,7 +31,7 @@ void SplitView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs
 
   info_ = ops::SplitProcess(old_info, axis, output_num);
   for (size_t i = 0; i < outputs.size(); i++) {
-    info_[i]->ori_size = inputs[0]->size();
+    info_[i]->ori_size = GetOriginInputSize(inputs[0]);
     outputs[i]->set_tensor_storage_info(info_[i]);
   }
   GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
