@@ -74,7 +74,7 @@ def conv_wgrad_algo(mode):
     For detailed information, please refer to `NVIDA cuDNN <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
-        - mode (str): convolution filter grad algorithm. If not configured, the framework defaults to 'normal'.
+        mode (str): convolution filter grad algorithm. If not configured, the framework defaults to 'normal'.
           The value range is as follows:
 
           - normal: Use the cuDNN's heuristic search algorithm, the appropriate convolution algorithm will be quickly
@@ -119,7 +119,7 @@ def conv_dgrad_algo(mode):
     For detailed information, please refer to `NVIDA cuDNN <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
-        - mode (str): convolution data grad algorithm. If not configured, the framework defaults to 'normal'.
+        mode (str): convolution data grad algorithm. If not configured, the framework defaults to 'normal'.
           The value range is as follows:
 
           - normal: Use the cuDNN's heuristic search algorithm, the appropriate convolution algorithm will be quickly

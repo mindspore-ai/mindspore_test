@@ -28,8 +28,8 @@ def matmul_allow_tf32(value):
     For detailed information, please refer to `CUBLAS_COMPUTE_32F_FAST_TF32 <https://docs.nvidia.com/cuda/cublas/index.html>`_.
 
     Args:
-        - value (bool) : Whether to convert FP32 to TF32 for Matmul operators. If not configured, the framework
-          defaults to ``False``.
+        value (bool): Whether to convert FP32 to TF32 for Matmul operators. If not configured, the framework
+            defaults to ``False``.
 
     Examples:
         >>> import mindspore as ms
@@ -44,8 +44,8 @@ def conv_allow_tf32(value):
     For detailed information, please refer to `CUBLAS_COMPUTE_32F_FAST_TF32 <https://docs.nvidia.com/cuda/cublas/index.html>`_.
 
     Args:
-        - value (bool) : Whether to convert FP32 to HF32 for Conv operators. If not configured, the framework defaults
-          to ``True``.
+        value (bool): Whether to convert FP32 to HF32 for Conv operators. If not configured, the framework defaults
+            to ``True``.
 
     Examples:
         >>> import mindspore as ms

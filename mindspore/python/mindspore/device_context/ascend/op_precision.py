@@ -121,7 +121,7 @@ def matmul_allow_hf32(value):
         - This is an experimental prototype that is subject to change and/or deletion.
 
     Args:
-        value (bool) : Whether to convert FP32 to HF32 for Matmul operators
+        value (bool): Whether to convert FP32 to HF32 for Matmul operators
 
     Examples:
         >>> import mindspore as ms
@@ -150,7 +150,7 @@ def conv_allow_hf32(value):
         - This is an experimental prototype that is subject to change and/or deletion.
 
     Args:
-        value (bool) : Whether to convert FP32 to HF32 for Conv operators.
+        value (bool): Whether to convert FP32 to HF32 for Conv operators.
 
     Examples:
         >>> import mindspore as ms

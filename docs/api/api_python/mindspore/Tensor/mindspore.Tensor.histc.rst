@@ -1,12 +1,12 @@
 mindspore.Tensor.histc
 ======================
 
-.. py:method:: mindspore.Tensor.histc(bins=100, min=0., max=0.)
+.. py:method:: mindspore.Tensor.histc(bins=100, min=0, max=0)
 
     计算 `self` 的直方图。
 
     元素被分类到 `min` 和 `max` 之间的等宽箱中。
-    如果 `min` 和 `max` 均为0，则使用`self`的最小值和最大值。
+    如果 `min` 和 `max` 均为0，则使用 `self` 的最小值和最大值。
 
     低于最小值和高于最大值的元素将被忽略。
 
