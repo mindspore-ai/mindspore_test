@@ -364,11 +364,11 @@ bool ScaleAndTranslateCpuKernelMod::LaunchKernel(const std::vector<kernel::Kerne
                                                  const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kScaleAndTranslateInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kScaleAndTranslateOutputsNum, kernel_name_);
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto input_size = reinterpret_cast<int32_t *>(inputs[1]->device_ptr());
-  auto input_scale = reinterpret_cast<float *>(inputs[2]->device_ptr());
-  auto input_translation = reinterpret_cast<float *>(inputs[3]->device_ptr());
-  auto output = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto input_size = GetDeviceAddress<int32_t>(inputs, kIndex1);
+  auto input_scale = GetDeviceAddress<float>(inputs, kIndex2);
+  auto input_translation = GetDeviceAddress<float>(inputs, kIndex3);
+  auto output = GetDeviceAddress<float>(outputs, kIndex0);
   KernelType sampling_kernel_type = KernelTypeFromString(kernel_type_);
   const int64_t output_height = IntToLong(input_size[0]);
   const int64_t output_width = IntToLong(input_size[1]);

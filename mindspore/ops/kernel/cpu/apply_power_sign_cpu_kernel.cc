@@ -51,13 +51,13 @@ int Sgn(const T &x) {
 template <typename T>
 void ApplyPowerSignCpuKernelMod::LaunchPowerSign(const std::vector<kernel::KernelTensor *> &inputs,
                                                  const std::vector<kernel::KernelTensor *> &) {
-  T *var = reinterpret_cast<T *>(inputs[kIndexVar]->device_ptr());
-  T *m = reinterpret_cast<T *>(inputs[kIndexM]->device_ptr());
-  T *lr = reinterpret_cast<T *>(inputs[kIndexLr]->device_ptr());
-  T *logbase = reinterpret_cast<T *>(inputs[kIndexLogBase]->device_ptr());
-  T *sign_decay = reinterpret_cast<T *>(inputs[kIndexSignDecay]->device_ptr());
-  T *beta = reinterpret_cast<T *>(inputs[kIndexBeta]->device_ptr());
-  T *gradient = reinterpret_cast<T *>(inputs[kIndexGrad]->device_ptr());
+  T *var = GetDeviceAddress<T>(inputs, kIndexVar);
+  T *m = GetDeviceAddress<T>(inputs, kIndexM);
+  T *lr = GetDeviceAddress<T>(inputs, kIndexLr);
+  T *logbase = GetDeviceAddress<T>(inputs, kIndexLogBase);
+  T *sign_decay = GetDeviceAddress<T>(inputs, kIndexSignDecay);
+  T *beta = GetDeviceAddress<T>(inputs, kIndexBeta);
+  T *gradient = GetDeviceAddress<T>(inputs, kIndexGrad);
 
   for (int64_t b = 0; b < batch_size_; b++) {
     // multithreading
@@ -83,7 +83,7 @@ void ApplyPowerSignCpuKernelMod::LaunchPowerSign(const std::vector<kernel::Kerne
 
 bool ApplyPowerSignCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
-  dtype_ = inputs[0]->dtype_id();
+  dtype_ = inputs[kIndex0]->dtype_id();
   batch_rank_ = ops::get_batch_rank(primitive_);
   return true;
 }

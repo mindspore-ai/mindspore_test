@@ -84,8 +84,8 @@ int CoalesceCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 }
 
 void CoalesceCpuKernelMod::Check(const std::vector<kernel::KernelTensor *> &inputs) const {
-  auto x_indices_addr = reinterpret_cast<int64_t *>(inputs[0]->device_ptr());
-  auto x_shape_addr = reinterpret_cast<int64_t *>(inputs[2]->device_ptr());
+  auto x_indices_addr = reinterpret_cast<int64_t *>(inputs[kIndex0]->device_ptr());
+  auto x_shape_addr = reinterpret_cast<int64_t *>(inputs[kIndex2]->device_ptr());
   for (size_t i = 0; i < values_size_; i++) {
     for (size_t j = 0; j < shape_size_; j++) {
       if (x_indices_addr[j * values_size_ + i] < 0) {
@@ -106,12 +106,12 @@ void CoalesceCpuKernelMod::Check(const std::vector<kernel::KernelTensor *> &inpu
 template <typename T>
 void CoalesceCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                         const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_indices_addr = reinterpret_cast<int64_t *>(inputs[0]->device_ptr());
-  auto x_values_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto x_shape_addr = reinterpret_cast<int64_t *>(inputs[2]->device_ptr());
-  auto y_indices_addr = reinterpret_cast<int64_t *>(outputs[0]->device_ptr());
-  auto y_values_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
-  auto y_shape_addr = reinterpret_cast<int64_t *>(outputs[2]->device_ptr());
+  auto x_indices_addr = GetDeviceAddress<int64_t>(inputs, kIndex0);
+  auto x_values_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto x_shape_addr = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  auto y_indices_addr = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto y_values_addr = GetDeviceAddress<T>(outputs, kIndex1);
+  auto y_shape_addr = GetDeviceAddress<int64_t>(outputs, kIndex2);
   Check(inputs);
 
   std::vector<size_t> reorder(values_size_);

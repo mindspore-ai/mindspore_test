@@ -85,10 +85,10 @@ int CTCLossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  probs_shape_ = inputs[0]->GetShapeVector();
-  indices_dims_ = inputs[1]->GetShapeVector();
-  labels_dims_ = inputs[2]->GetShapeVector();
-  dtype_ = inputs[0]->dtype_id();
+  probs_shape_ = inputs[kIndex0]->GetShapeVector();
+  indices_dims_ = inputs[kIndex1]->GetShapeVector();
+  labels_dims_ = inputs[kIndex2]->GetShapeVector();
+  dtype_ = inputs[kIndex0]->dtype_id();
 
   if (probs_shape_.size() != 3) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'probs' must be 3-D, but got " << probs_shape_.size()
@@ -276,12 +276,12 @@ void CTCLossCpuKernelMod::GenLabelWithBlank(const uint32_t *seq_len,
 template <typename T>
 void CTCLossCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) const {
-  const auto *inputs_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  const auto *labels_indices_addr = reinterpret_cast<uint64_t *>(inputs[1]->device_ptr());
-  const auto *labels_values_addr = reinterpret_cast<uint32_t *>(inputs[2]->device_ptr());
-  const auto *sequence_length_addr = reinterpret_cast<uint32_t *>(inputs[3]->device_ptr());
-  auto *loss_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto *gradient_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  const auto *inputs_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *labels_indices_addr = GetDeviceAddress<uint64_t>(inputs, kIndex1);
+  const auto *labels_values_addr = GetDeviceAddress<uint32_t>(inputs, kIndex2);
+  const auto *sequence_length_addr = GetDeviceAddress<uint32_t>(inputs, kIndex3);
+  auto *loss_addr = GetDeviceAddress<T>(outputs, kIndex0);
+  auto *gradient_addr = GetDeviceAddress<T>(outputs, kIndex1);
 
   std::vector<std::vector<uint32_t>> label_batch;
   std::vector<std::vector<uint32_t>> labels_with_blank;

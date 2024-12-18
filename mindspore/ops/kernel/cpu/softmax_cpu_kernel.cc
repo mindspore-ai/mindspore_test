@@ -80,7 +80,7 @@ bool SoftmaxCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const 
   }
   kernel_func_ = func_list_[index].second;
 
-  auto dtype = inputs[0]->dtype_id();
+  auto dtype = inputs[kIndex0]->dtype_id();
   unit_size_ = abstract::TypeIdSize(dtype);
   // for fp16, use acc_T in workspace
   unit_size_ = dtype == kNumberTypeFloat16 ? unit_size_ * 2 : unit_size_;
