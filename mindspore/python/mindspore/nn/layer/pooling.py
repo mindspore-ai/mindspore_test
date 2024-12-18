@@ -1032,16 +1032,11 @@ class AvgPool1dExt(Cell):
         >>> import numpy as np
         >>> from mindspore import Tensor, nn
         >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.arange(1 * 3 * 3 * 4).reshape(3, 3, 4), mstype.float32)
-        >>> m =  nn.AvgPool1dExt(x, kernel_size=2, stride=1)
-        >>> output = m(x)
-        >>> print(output)
-        [[[ 2.5   3.5   4.5]
-           [ 6.5   7.5   8.5]]
-          [[14.5  15.5  16.5]
-           [18.5  19.5  20.5]]
-          [[26.5  27.5  28.5]
-           [30.5  31.5  32.5]]]
+        >>> input = Tensor(np.arange(1 * 3 * 4).reshape(1, 3, 4), mstype.float32)
+        >>> net = nn.AvgPool1dExt(kernel_size=2, stride=1)
+        >>> output = net(input)
+        >>> print(output.shape)
+        (1, 3, 3)
     """
     def __init__(self, kernel_size, stride=None, padding=0, ceil_mode=False,
                  count_include_pad=True):
@@ -1071,16 +1066,11 @@ class AvgPool2dExt(Cell):
         >>> import numpy as np
         >>> from mindspore import Tensor, nn
         >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4), mstype.float32)
-        >>> m =  nn.AvgPool2dExt(x, kernel_size=2, stride=1)
-        >>> output = m(x)
-        >>> print(output)
-        [[[[ 2.5   3.5   4.5]
-           [ 6.5   7.5   8.5]]
-          [[14.5  15.5  16.5]
-           [18.5  19.5  20.5]]
-          [[26.5  27.5  28.5]
-           [30.5  31.5  32.5]]]]
+        >>> input = Tensor(np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4), mstype.float32)
+        >>> net = nn.AvgPool2dExt(kernel_size=2, stride=1)
+        >>> output = net(input)
+        >>> print(output.shape)
+        (1, 3, 2, 3)
     """
     def __init__(self, kernel_size, stride=None, padding=0, ceil_mode=False,
                  count_include_pad=True, divisor_override=None):
