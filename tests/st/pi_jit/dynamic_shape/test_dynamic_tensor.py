@@ -45,7 +45,7 @@ def test_create_new_tensor_from_dynamic_shape_tensor():
     """
 
     def fn(x: Tensor):
-        y = ops.nonzero(x, False)  # it will create a dynamic shape tensor
+        y = ops.nonzero(x, as_tuple=False)  # it will create a dynamic shape tensor
         z = ms.tensor(y)
         return z
 
