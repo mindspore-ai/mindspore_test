@@ -21,13 +21,12 @@
 #include <utility>
 
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
-#include "acme/include/acme.h"
 
 namespace mindspore {
 namespace kernel {
 class AcmeKernelInfoGather : public AcmeKernelInfo {
  public:
-  AcmeKernelInfoGather() : AcmeKernelInfo() {}
+  AcmeKernelInfoGather() : AcmeKernelInfo(std::move("Gather")) {}
   ~AcmeKernelInfoGather() = default;
 
  protected:

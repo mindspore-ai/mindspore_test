@@ -21,12 +21,12 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeReshapeAndCache::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                  const acme::OutputsImmutableInfoList &outputs,
-                                                  const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                  const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+acme::AcmeOpPtr AcmeKernelInfoReshapeAndCache::CreateKernel(const acme::InputsImmutableInfoList &inputs,
+                                                            const acme::OutputsImmutableInfoList &outputs,
+                                                            const std::vector<tensor::BaseTensorPtr> &ms_inputs,
+                                                            const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   return acme::CreateReshapeAndCacheOp(inputs, outputs, acme::kAcmeReshapeAndCacheOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, acme::kAcmeReshapeAndCacheOpName, AcmeReshapeAndCache);
+MS_ACME_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, acme::kAcmeReshapeAndCacheOpName, AcmeKernelInfoReshapeAndCache);
 }  // namespace kernel
 }  // namespace mindspore

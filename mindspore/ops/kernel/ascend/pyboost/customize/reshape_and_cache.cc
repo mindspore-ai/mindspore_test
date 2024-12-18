@@ -21,7 +21,6 @@
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,32 +34,8 @@ tensor::BaseTensorPtr ReshapeAndCacheAscendCustomize(const std::shared_ptr<OpRun
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), key, value, key_cache, value_cache,
                                 slot_mapping);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  const auto &outputs = op->outputs();
   std::vector<BaseTensorPtr> inputs = {key, value, key_cache, value_cache, slot_mapping};
-  std::shared_ptr<AcmeKernelInfo> kernel_info = nullptr;
-  GET_ACMEKERNELINFO(kernel_info, "ReshapeAndCache", inputs, outputs);
-  if (kernel_info == nullptr) {
-    return nullptr;
-  }
-  auto tilingptr = kernel_info->GetOrGenerateTiling(inputs, outputs);
-  if (tilingptr == nullptr) {
-    return nullptr;
-  }
-  // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [kernel_info, tilingptr, op, key, value, key_cache, value_cache, slot_mapping]() {
-      MS_LOG(DEBUG) << "Run device task Add start";
-      auto device_context = op->device_context();
-      const auto &outputs = op->outputs();
-      // Malloc for input tensors
-      PyBoostUtils::MallocOpInputs(device_context, key, value, key_cache, value_cache, slot_mapping);
-      // Malloc for output tensors
-      PyBoostUtils::MallocOpOutputs(device_context, outputs);
-
-      kernel_info->Launch(device_context, tilingptr, {key, value, key_cache, value_cache, slot_mapping}, outputs,
-                          op->stream_id());
-      MS_LOG(DEBUG) << "Run device task Add end";
-    }));
+  AcmeAscendCall(op, inputs, {});
   return op->output(0);
 }
 }  // namespace pyboost

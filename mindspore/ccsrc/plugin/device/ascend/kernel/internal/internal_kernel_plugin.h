@@ -31,6 +31,8 @@ class InternalKernelPlugin : public KernelPlugin {
   bool IsRegisteredKernel(const AnfNodePtr &anf_node) override;
   void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                  std::vector<std::string> *output_formats) override;
+  void AcmeAscendCall(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<tensor::BaseTensorPtr> &inputs,
+                      const std::vector<void *> &params) override;
 };
 }  // namespace mindspore::kernel
 

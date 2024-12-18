@@ -27,6 +27,6 @@ acme::AcmeOpPtr AcmeKernelInfoFastGeLU::CreateKernel(const acme::InputsImmutable
                                                      const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   return acme::CreateFastGeLUOp(inputs, outputs, acme::kAcmeFastGeLUOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(FastGeLU, acme::kAcmeFastGeLUOpName, AcmeFastGeLU);
+MS_ACME_KERNEL_INFO_FACTORY_REG(FastGeLU, acme::kAcmeFastGeLUOpName, AcmeKernelInfoFastGeLU);
 }  // namespace kernel
 }  // namespace mindspore

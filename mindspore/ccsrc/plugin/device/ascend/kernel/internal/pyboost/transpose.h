@@ -21,13 +21,12 @@
 #include <utility>
 
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
-#include "acme/include/acme.h"
 
 namespace mindspore {
 namespace kernel {
 class AcmeKernelInfoTranspose : public AcmeKernelInfo {
  public:
-  AcmeKernelInfoTranspose() : AcmeKernelInfo() {}
+  AcmeKernelInfoTranspose() : AcmeKernelInfo(std::move("Transpose")) {}
   ~AcmeKernelInfoTranspose() = default;
 
  protected:

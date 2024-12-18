@@ -21,13 +21,12 @@
 #include <utility>
 
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
-#include "acme/include/acme.h"
 
 namespace mindspore {
 namespace kernel {
 class AcmeKernelInfoSwiGLU : public AcmeKernelInfo {
  public:
-  AcmeKernelInfoSwiGLU() : AcmeKernelInfo() {}
+  AcmeKernelInfoSwiGLU() : AcmeKernelInfo(std::move("SwiGLU")) {}
   ~AcmeKernelInfoSwiGLU() = default;
 
  protected:

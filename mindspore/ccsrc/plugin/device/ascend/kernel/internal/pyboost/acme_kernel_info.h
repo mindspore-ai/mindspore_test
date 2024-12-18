@@ -22,7 +22,7 @@
 
 #include "kernel/kernel.h"
 #include "acme/include/acme.h"
-#include "acme/tiling_mem_mgr.h"
+//#include "acme/tiling_mem_mgr.h"
 #include "include/common/factory/ms_factory.h"
 
 #include "plugin/device/ascend/kernel/internal/acme/acme_tiling_cache.h"
@@ -30,32 +30,35 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
 #include "include/backend/debug/profiler/profiling.h"
+#include "kernel/common/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
+using BaseTensorPtr = tensor::BaseTensorPtr;
+using OpRunnerPtr = std::shared_ptr<pyboost::OpRunner>;
 // 线程安全
 class AcmeKernelInfo {
  public:
-  AcmeKernelInfo() {}
+  AcmeKernelInfo(std::string &&op_name) : kernel_name_(std::move(op_name)) {}
 
   virtual ~AcmeKernelInfo() = default;
 
-  virtual bool Init(const std::vector<tensor::BaseTensorPtr> &inputs,
-                    const std::vector<tensor::BaseTensorPtr> &outputs);
+  virtual bool Init(const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs);
 
-  virtual TilingCacheItemPtr GetOrGenerateTiling(const std::vector<tensor::BaseTensorPtr> &inputs,
-                                                 const std::vector<tensor::BaseTensorPtr> &outputs);
+  virtual TilingCacheItemPtr GetOrGenerateTiling(const std::vector<BaseTensorPtr> &inputs,
+                                                 const std::vector<BaseTensorPtr> &outputs);
 
   virtual bool Launch(const device::DeviceContext *device_context, const TilingCacheItemPtr tilingptr,
-                      const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
-                      void *stream_ptr);
-  void SetKernelName(const std::string &name) override { kernel_name_ = name; }
+                      const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs,
+                      size_t stream_id);
+  virtual void Call(const OpRunnerPtr &op, const std::vector<BaseTensorPtr> &inputs,
+                    const TilingCacheItemPtr tilingptr);
 
  protected:
   virtual acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
                                        const acme::OutputsImmutableInfoList &outputs,
-                                       const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                       const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+                                       const std::vector<BaseTensorPtr> &ms_inputs,
+                                       const std::vector<BaseTensorPtr> &ms_outputs) {
     return nullptr;
   }
 
@@ -70,50 +73,21 @@ class AcmeKernelInfo {
   std::vector<size_t> workspace_size_list_;
 
  private:
-  void UpdateArgImmutableInfo(ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor);
-  void UpdateArgImmutableInfo(const std::vector<tensor::BaseTensorPtr> &tensorlist,
+  void UpdateArgImmutableInfo(acme::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor);
+  void UpdateArgImmutableInfo(const std::vector<BaseTensorPtr> &tensorlist,
                               std::vector<acme::ArgImmutableInfo> &arginfos);
 
-  void UpdateAddr(const std::vector<tensor::BaseTensorPtr> &tensorlist, acme::InputsAddrList &addrlist);
+  void TransAcmeShapes(const std::vector<BaseTensorPtr> &tensorlist, acme::ShapeInfoList &shapelist);
 
-  void UpdateAddr(const std::vector<tensor::BaseTensorPtr> &inputs, const std::vector<tensor::BaseTensorPtr> &outputs);
+  void UpdateAddr(const std::vector<BaseTensorPtr> &tensorlist, acme::InputsAddrList &addrlist);
 
-  void MallocWorkspace(const device::DeviceContext *device_context);
+  void UpdateAddr(const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs);
+
+  void MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id);
   void FreeWorkspace(const device::DeviceContext *device_context);
   std::string kernel_name_;
   SimpleSpinLock lock_;
 };
-
-std::shared_ptr<AcmeKernelInfo> GetAcmeKernelInfo(
-  const std::string &kernelname, const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-  const std::vector<tensor::BaseTensorPtr> &ms_outputs,
-  std::unordered_map<uint64_t, std::shared_ptr<AcmeKernelInfo>> &hash_map) {
-  std::shared_ptr<AcmeKernelInfo> kernel_info = nullptr;
-  static std::unordered_map < uint64_t, std::shared_ptr<AcmeKernelInfo> hash_map_;
-  auto op_key = CalcAcmeOpApiHash(kernelname, ms_inputs, ms_outputs);
-  auto it = hash_map_.find(op_key);
-  if (it != hash_map_.end()) {
-    kernel_info = it->second;
-  } else {
-    if (Factory<AcmeKernelInfo>::Instance().IsRegistered(kernelname)) {
-      MS_LOG(INFO) << "Supported by Acme Op: " << kernelname;
-      kernel_info = std::static_pointer_cast<AcmeKernelInfo>(Factory<AcmeKernelInfo>::Instance().Create(kernelname));
-    }
-
-    if (kernel_info == nullptr) {
-      MS_LOG(WARNING) << "Acme can't find op[" << kernelname << "]";
-      return nullptr;
-    }
-    kernel_info->SetKernelName(kernelname);
-    auto ret = kernel_info->Init();
-    if (!ret) {
-      return nullptr;
-    }
-    hash_map_[op_key] = kernel_info;
-  }
-
-  return kernel_info;
-}
 
 #define GET_ACMEKERNELINFO(kernel_info, kernelname, ms_inputs, ms_outputs)          \
   do {                                                                              \

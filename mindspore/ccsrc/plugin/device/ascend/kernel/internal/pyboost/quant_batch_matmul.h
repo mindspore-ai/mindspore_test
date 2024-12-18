@@ -20,14 +20,13 @@
 #include <vector>
 #include <utility>
 
-#include "plugin/device/ascend/kernel/internal/acme_kernel_mod.h"
-#include "acme/include/acme.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
 class AcmeKernelInfoQuantBatchMatmul : public AcmeKernelInfo {
  public:
-  AcmeKernelInfoQuantBatchMatmul() : AcmeKernelInfo() {}
+  AcmeKernelInfoQuantBatchMatmul() : AcmeKernelInfo(std::move("QuantBatchMatmul")) {}
   ~AcmeKernelInfoQuantBatchMatmul() = default;
 
  protected:

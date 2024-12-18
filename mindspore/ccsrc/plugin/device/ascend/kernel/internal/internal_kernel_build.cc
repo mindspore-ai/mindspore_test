@@ -76,5 +76,14 @@ void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vect
   }
   return internal_kernel_plugin_ptr->GetValidKernelBuildInfoWithInternalFormat(node, input_formats, output_formats);
 }
+
+void AcmeAscendCall(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<tensor::BaseTensorPtr> &inputs,
+                    const std::vector<void *> &params) {
+  auto internal_kernel_plugin_ptr = GetKernelPLugin();
+  if (internal_kernel_plugin_ptr == nullptr) {
+    return;
+  }
+  return internal_kernel_plugin_ptr->AcmeAscendCall(op, inputs, params);
+}
 }  // namespace kernel
 }  // namespace mindspore

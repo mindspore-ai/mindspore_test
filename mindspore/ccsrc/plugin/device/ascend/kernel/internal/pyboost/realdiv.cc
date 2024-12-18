@@ -29,6 +29,6 @@ acme::AcmeOpPtr AcmeKernelInfoRealDiv::CreateKernel(const acme::InputsImmutableI
                                                     const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   return acme::CreateRealDivOp(inputs, outputs, acme::kAcmeRealDivOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(RealDiv, acme::kAcmeRealDivOpName, AcmeRealDiv);
+MS_ACME_KERNEL_INFO_FACTORY_REG(RealDiv, acme::kAcmeRealDivOpName, AcmeKernelInfoRealDiv);
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,11 +27,11 @@ acme::AcmeOpPtr AcmeKernelInfoMatmul::CreateKernel(const acme::InputsImmutableIn
                                                    const std::vector<tensor::BaseTensorPtr> &ms_inputs,
                                                    const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   acme::MatmulParam param;
-  auto input_len = ms_inputs.size();
+  // auto input_len = ms_inputs.size();
   // param.transpose_a = ms_inputs[input_len - kIndex2]->GetValueWithCheck<bool>();
   // param.transpose_b = ms_inputs[input_len - kIndex1]->GetValueWithCheck<bool>();
   return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(MatMul, acme::kAcmeMatMulOpName, AcmeMatmul);
+MS_ACME_KERNEL_INFO_FACTORY_REG(MatMul, acme::kAcmeMatMulOpName, AcmeKernelInfoMatmul);
 }  // namespace kernel
 }  // namespace mindspore

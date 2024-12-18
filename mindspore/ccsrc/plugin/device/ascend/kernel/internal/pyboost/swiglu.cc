@@ -30,6 +30,6 @@ acme::AcmeOpPtr AcmeKernelInfoSwiGLU::CreateKernel(const acme::InputsImmutableIn
   return acme::CreateSwiGLUOp(inputs, outputs, param, acme::kAcmeSwiGLUOpName);
 }
 
-MS_ACME_KERNEL_INFO_FACTORY_REG(Swiglu, acme::kAcmeSwiGLUOpName, AcmeSwiGLU);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Swiglu, acme::kAcmeSwiGLUOpName, AcmeKernelInfoSwiGLU);
 }  // namespace kernel
 }  // namespace mindspore

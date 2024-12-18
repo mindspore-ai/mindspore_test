@@ -29,6 +29,6 @@ acme::AcmeOpPtr AcmeKernelInfoSub::CreateKernel(const acme::InputsImmutableInfoL
                                                 const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   return acme::CreateSubOp(inputs, outputs, acme::kAcmeSubOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Sub, acme::kAcmeSubOpName, AcmeSub);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Sub, acme::kAcmeSubOpName, AcmeKernelInfoSub);
 }  // namespace kernel
 }  // namespace mindspore
