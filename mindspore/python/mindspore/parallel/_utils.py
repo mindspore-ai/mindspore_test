@@ -127,7 +127,6 @@ class ParallelParamInitProfCtx:
 
 def _slice_parameter(parameter, phase, layout):
     """Slice python parameter obj according to the layout."""
-    # graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
     if getattr(parameter, "init_param", False):
         if layout is None:
             parameter.sliced = True
