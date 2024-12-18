@@ -19,6 +19,7 @@ from tests.st.ops import (
     test_ops_add_layer_norm,
     test_ops_add_rms_norm,
     test_ops_apply_rotary_pos_emb,
+    test_ops_concat,
     test_ops_conv2d,
     test_ops_conv3d_ext,
     test_ops_dropout_ext,
@@ -27,6 +28,7 @@ from tests.st.ops import (
     test_ops_flash_attention_score,
     test_ops_fold,
     test_ops_gcd,
+    test_ops_gelu,
     test_ops_generate_eod_mask_v2,
     test_ops_hardswish,
     test_ops_histc_ext,
@@ -49,8 +51,11 @@ from tests.st.ops import (
     test_ops_var,
 )
 from tests.st.mint import (
+    test_addmv,
+    test_cdist,
     test_diff,
     test_float_power,
+    test_matmul,
     test_multinomial,
     test_nan_to_num,
     test_nn_linear,
@@ -65,7 +70,7 @@ ops_group_cases_registry_level0 = [
     #     memory(int): memory will be used during case running
     #     parameter(tuple(tuple(any))): a parameter list for cases, support muti-parameters
     # '''
-    [test_func_conv2d.test_ops_conv2d_default, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
+    [test_func_conv2d.test_conv2d_binary_cases, ("ascend910b",), 246, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_func_conv2d.test_ops_conv2d_padding_same, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_matmul_conv_hf32.test_hf32, ("ascend910b",), 4, (("KBK", "PYBOOST"),)],
     [test_mint_avg_pool2d.test_avg_pool2d_and_double_backward, ("ascend910b",), 4,
@@ -144,6 +149,9 @@ ops_group_cases_registry_level0 = [
     [test_multinomial.test_multinomial_std, ("ascend910b",), 4, (('pynative', 'KBK',),)],
     [test_nan_to_num.test_nan_to_num_std, ("ascend910b",), 32, (('pynative', 'KBK', 'GE'),)],
     [test_nn_linear.test_mint_nn_linear_binary_cases_910b, ("ascend910b",), 21, (("pynative", "KBK"),)],
+    [test_addmv.test_mint_addmv_normal, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE,),)],
+    [test_cdist.test_mint_cdist_binary_cases, ("ascend910b",), 4, (("KBK", "GRAPH"),)],
+    [test_matmul.test_matmul_binary_cases, ("ascend910b",), 282, (('pynative', 'KBK'),)],
 ]
 
 
@@ -158,9 +166,12 @@ ops_group_cases_registry_level1 = [
     # '''
     [test_dynamic_quant.test_dynamic_quant_f16, ("ascend910b",), 16, (("GE", "KBK"),)],
     [test_dynamic_quant.test_dynamic_quant_bf16, ("ascend910b",), 16, (("GE", "KBK"),)],
+    [test_func_conv2d.test_ops_conv2d_default, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_func_conv2d.test_conv2d_with_bf16, ("ascend910b",), 4, None],
     [test_func_conv2d.test_conv2d_backward, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
     [test_func_conv2d.test_conv2d_vmap, ("ascend910b",), 4, ((ms.GRAPH_MODE, ms.PYNATIVE_MODE),)],
+    [test_ops_concat.test_concat_binary_cases, ("ascend910b",), 1172, (('pynative', 'kbk'),)],
+    [test_ops_gelu.test_ops_gelu_binary_cases, ("ascend910b",), 968, (('pynative', 'kbk', 'ge'),)],
 ]
 
 

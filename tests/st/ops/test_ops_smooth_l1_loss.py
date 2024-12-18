@@ -20,6 +20,7 @@ import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(shape, dtype):
@@ -196,3 +197,42 @@ def test_ops_smooth_l1_loss_dynamic_shape(reduction):
 
     TEST_OP(smooth_l1_loss_forward_func, [[x1, target1, reduction, beta1], [x2, target2, reduction, beta2]],
             "smooth_l1_loss", disable_input_check=True, disable_mode=['GRAPH_MODE'])
+
+
+def ops_smooth_l1_loss_binary_compare(input_binary_data, output_binary_data, reduction="mean", beta=1.0):
+    output = smooth_l1_loss_forward_func(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]), reduction,
+                                         beta)
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-4, 1e-4)
+    grads = smooth_l1_loss_backward_func(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]), reduction,
+                                         beta)
+    np.allclose(grads[0].asnumpy(), output_binary_data[1], 1e-4, 1e-4)
+    np.allclose(grads[1].asnumpy(), output_binary_data[2], 1e-4, 1e-4)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 576, 128, 16, 2), np.float32), ((1, 576, 128, 16, 2), np.float32)],
+                                output_info=[((1, 576, 128, 16, 2), np.float32), ((1, 576, 128, 16, 2), np.float32),
+                                             ((1, 576, 128, 16, 2), np.float32)],
+                                extra_info='auto_drive'))
+def ops_smooth_l1_loss_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_smooth_l1_loss_binary_compare(input_binary_data, output_binary_data, 'none', 1.0)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ["pynative", "kbk", "ge"])
+def test_ops_smooth_l1_loss_binary_cases(mode):
+    """
+    Feature: pyboost function.
+    Description: test function smooth_l1_loss forward and backward with binary data.
+    Expectation: expect correct result.
+    """
+    if mode == "kbk":
+        if ms.context.get_context("device_target") != "Ascend":
+            return
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    elif mode == 'ge':
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
+    else:
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+
+    ops_smooth_l1_loss_binary_case1()

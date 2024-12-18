@@ -33,8 +33,6 @@ def addmv_forward_func(x, mat, vec, beta=1, alpha=1):
     return mint.addmv(x, mat, vec, beta=beta, alpha=alpha)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mint_addmv_normal(mode):
     """
