@@ -53,10 +53,10 @@ class SparseAddGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelH
   int CompareTwoIndices(const T &a_indices, const T &b_indices, const S *backprop_value, int64_t *a_row,
                         const int64_t b_row, const size_t dims, S *dx_value, bool *idx_geq);
 
-  std::vector<size_t> dout_shape_;
-  std::vector<size_t> x1_indices_shape_;
-  std::vector<size_t> x2_indices_shape_;
-  std::vector<size_t> out_indices_shape_;
+  std::vector<size_t> dout_shape_{};
+  std::vector<size_t> x1_indices_shape_{};
+  std::vector<size_t> x2_indices_shape_{};
+  std::vector<size_t> out_indices_shape_{};
   int64_t indices_column_ = 0;
 };
 }  // namespace kernel

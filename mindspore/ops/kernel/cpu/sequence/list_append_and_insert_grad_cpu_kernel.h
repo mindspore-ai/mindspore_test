@@ -49,7 +49,7 @@ class ListAppendAndInsertGradCpuKernelMod : public NativeCpuKernelMod,
   template <typename T, typename S>
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
-  std::vector<int64_t> list_shape_;
+  std::vector<int64_t> list_shape_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -44,9 +44,9 @@ class LowerBoundCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   template <typename I, typename O>
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                     const std::vector<kernel::KernelTensor *> &outputs);
-  std::vector<int64_t> sorted_x_shape_;
-  std::vector<int64_t> values_shape_;
-  std::vector<int64_t> output_shape_;
+  std::vector<int64_t> sorted_x_shape_{};
+  std::vector<int64_t> values_shape_{};
+  std::vector<int64_t> output_shape_{};
   size_t sorted_x_num_;
   size_t values_num_;
   size_t output_num_;

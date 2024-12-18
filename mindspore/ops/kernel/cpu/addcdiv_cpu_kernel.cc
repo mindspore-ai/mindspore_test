@@ -120,11 +120,11 @@ T abs(T num) {
 template <typename T1, typename T2>
 bool AddcdivCpuKernelMod::AddcdivCompute(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  auto *input0 = static_cast<T1 *>(inputs[kInputData]->device_ptr());
-  const auto *input1 = static_cast<T1 *>(inputs[kInputX1]->device_ptr());
-  const auto *input2 = static_cast<T1 *>(inputs[kInputX2]->device_ptr());
-  const auto *input3 = static_cast<T2 *>(inputs[kInputValue]->device_ptr());
-  auto *output = static_cast<T1 *>(outputs[kOutputData]->device_ptr());
+  auto *input0 = GetDeviceAddress<T1>(inputs, kInputData);
+  const auto *input1 = GetDeviceAddress<T1>(inputs, kInputX1);
+  const auto *input2 = GetDeviceAddress<T1>(inputs, kInputX2);
+  const auto *input3 = GetDeviceAddress<T2>(inputs, kInputValue);
+  auto *output = GetDeviceAddress<T1>(outputs, kOutputData);
 
   if ((inputx_shape_size_ + inputy_shape_size_ + value_shape_size_ + data_shape_size_) == 0) {
     auto eps_if_zero = static_cast<T1>(1e-6);

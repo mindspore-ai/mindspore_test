@@ -50,7 +50,7 @@ class ShapeMulGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
                     const std::vector<KernelTensor *> &outputs);
 
  private:
-  ShapeVector input_shape_;
+  ShapeVector input_shape_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

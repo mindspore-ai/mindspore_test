@@ -45,10 +45,10 @@ class BincountCpuKernelMod : public NativeCpuKernelMod {
   std::vector<KernelAttr> GetOpSupport() override;
 
  private:
-  std::vector<int64_t> input_arr_sizes_;
-  std::vector<int64_t> input_weights_sizes_;
-  std::vector<int64_t> input_size_sizes_;
-  std::vector<int64_t> output_sizes_;
+  std::vector<int64_t> input_arr_sizes_{};
+  std::vector<int64_t> input_weights_sizes_{};
+  std::vector<int64_t> input_size_sizes_{};
+  std::vector<int64_t> output_sizes_{};
   TypeId dt_arr_{kTypeUnknown};
   TypeId dt_weights_{kTypeUnknown};
   void SetMap();

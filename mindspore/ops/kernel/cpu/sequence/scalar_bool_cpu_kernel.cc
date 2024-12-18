@@ -49,9 +49,7 @@ bool ScalarBoolCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inp
                                           const std::vector<KernelTensor *> &,
                                           const std::vector<KernelTensor *> &outputs) {
   T *input_x = GetDeviceAddress<T>(inputs, 0);
-  MS_EXCEPTION_IF_NULL(input_x);
   bool *output = GetDeviceAddress<bool>(outputs, 0);
-  MS_EXCEPTION_IF_NULL(output);
   *output = static_cast<bool>(*input_x);
   return true;
 }

@@ -92,7 +92,7 @@ bool PrintCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
 template <typename T>
 void PrintCpuKernelMod::LaunchKernel(size_t index, const std::vector<kernel::KernelTensor *> &inputs) {
   if (input_sizes_[index] == 0) {
-    auto num = reinterpret_cast<T *>(inputs[index]->device_ptr());
+    auto num = GetDeviceAddress<T>(inputs, index);
     if constexpr (std::is_same<T, char>::value) {
       size_t str_len = inputs[index]->size();
       // Avoid memory reuse with dirty data.

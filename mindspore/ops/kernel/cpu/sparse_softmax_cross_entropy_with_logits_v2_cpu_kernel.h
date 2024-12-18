@@ -53,8 +53,8 @@ class SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod : public NativeCpuKernel
   static std::vector<std::pair<KernelAttr, SparseSoftmaxCrossEntropyWithLogitsV2Func>> func_list_;
   SparseSoftmaxCrossEntropyWithLogitsV2Func kernel_func_;
 
-  std::vector<int64_t> features_shape_;
-  std::vector<int64_t> labels_shape_;
+  std::vector<int64_t> features_shape_{};
+  std::vector<int64_t> labels_shape_{};
   size_t unit_size_{0};
   size_t features_length_{0};
   size_t labels_length_{0};

@@ -90,9 +90,7 @@ bool ScalarOneInputCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> 
   MathImplFunc compute_func = iter->second;
 
   T *input_x = GetDeviceAddress<T>(inputs, 0);
-  MS_EXCEPTION_IF_NULL(input_x);
   S *output = GetDeviceAddress<S>(outputs, 0);
-  MS_EXCEPTION_IF_NULL(output);
   compute_func(input_x, output);
   return true;
 }

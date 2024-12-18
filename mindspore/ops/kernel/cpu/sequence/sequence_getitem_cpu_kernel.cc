@@ -86,9 +86,7 @@ bool SequenceGetItemCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
                                                const std::vector<KernelTensor *> &,
                                                const std::vector<KernelTensor *> &outputs) {
   const auto input_addr = GetDeviceAddress<T>(inputs, 0);
-  MS_EXCEPTION_IF_NULL(input_addr);
   auto output_addr = GetDeviceAddress<T>(outputs, 0);
-  MS_EXCEPTION_IF_NULL(output_addr);
   auto output_size = output_size_list_[0];
   auto target_addr_base = reinterpret_cast<char *>(input_addr) + offset_size_;
   auto cp_ret = memcpy_s(output_addr, output_size, target_addr_base, output_size);

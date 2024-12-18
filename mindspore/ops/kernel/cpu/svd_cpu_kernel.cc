@@ -83,10 +83,10 @@ template <typename T>
 bool SvdCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &workspace,
                                         const std::vector<KernelTensor *> &outputs) {
-  auto *input_a = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto *output_s = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
-  auto *output_u = reinterpret_cast<T *>(outputs[kIndex1]->device_ptr());
-  auto *output_v = reinterpret_cast<T *>(outputs[kIndex2]->device_ptr());
+  auto *input_a = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output_s = GetDeviceAddress<T>(outputs, kIndex0);
+  auto *output_u = GetDeviceAddress<T>(outputs, kIndex1);
+  auto *output_v = GetDeviceAddress<T>(outputs, kIndex2);
 
   std::map<bool, std::pair<int, int>> optionMap{{true, {Eigen::ComputeFullU, Eigen::ComputeFullV}},
                                                 {false, {Eigen::ComputeThinU, Eigen::ComputeThinV}}};
@@ -143,10 +143,10 @@ template <typename T>
 bool SvdCpuKernelMod::LaunchKernelComplex(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &workspace,
                                           const std::vector<KernelTensor *> &outputs) {
-  auto *input_a = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto *output_s = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
-  auto *output_u = reinterpret_cast<T *>(outputs[kIndex1]->device_ptr());
-  auto *output_v = reinterpret_cast<T *>(outputs[kIndex2]->device_ptr());
+  auto *input_a = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output_s = GetDeviceAddress<T>(outputs, kIndex0);
+  auto *output_u = GetDeviceAddress<T>(outputs, kIndex1);
+  auto *output_v = GetDeviceAddress<T>(outputs, kIndex2);
 
   std::map<bool, std::pair<int, int>> optionMap{{true, {Eigen::ComputeFullU, Eigen::ComputeFullV}},
                                                 {false, {Eigen::ComputeThinU, Eigen::ComputeThinV}}};
