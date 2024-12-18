@@ -149,11 +149,11 @@ int ApplyProximalGradientDescentCpuKernelMod::Resize(const std::vector<KernelTen
 template <typename T>
 void ApplyProximalGradientDescentCpuKernelMod::LaunchKernelDefault(const std::vector<KernelTensor *> &inputs,
                                                                    const std::vector<KernelTensor *> &) {
-  auto var_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto alpha_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto l1_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto l2_addr = reinterpret_cast<T *>(inputs[3]->device_ptr());
-  auto delta_addr = reinterpret_cast<T *>(inputs[4]->device_ptr());
+  auto var_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto alpha_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto l1_addr = GetDeviceAddress<T>(inputs, kIndex2);
+  auto l2_addr = GetDeviceAddress<T>(inputs, kIndex3);
+  auto delta_addr = GetDeviceAddress<T>(inputs, kIndex4);
   auto task = [this, &var_addr, &alpha_addr, &l1_addr, &l2_addr, &delta_addr](size_t start, size_t end) {
     auto cur_input_elements = end - start;
     for (size_t b = 0; b < static_cast<size_t>(batch_size_); b++) {

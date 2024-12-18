@@ -59,9 +59,9 @@ bool ParallelForAdjustContrastv2(std::int64_t total, std::int64_t per_unit_size,
 template <typename T>
 bool AdjustContrastv2CpuKernelMod::LaunchAdjustContrastv2Kernel(const std::vector<KernelTensor *> &inputs,
                                                                 const std::vector<KernelTensor *> &outputs) {
-  T *input{static_cast<T *>(inputs[0]->device_ptr())};
-  std::float_t *contrast_factor{static_cast<std::float_t *>(inputs[1]->device_ptr())};
-  T *output{static_cast<T *>(outputs[0]->device_ptr())};
+  T *input{static_cast<T *>(inputs[kIndex0]->device_ptr())};
+  std::float_t *contrast_factor{static_cast<std::float_t *>(inputs[kIndex1]->device_ptr())};
+  T *output{static_cast<T *>(outputs[kIndex0]->device_ptr())};
   std::vector<int64_t> x_dim_sizes = images_shape_;
   std::size_t n{x_dim_sizes.size()};
   std::size_t per_batch_elements{LongToSize(x_dim_sizes[n - 1] * x_dim_sizes[n - 2] * x_dim_sizes[n - 3])};

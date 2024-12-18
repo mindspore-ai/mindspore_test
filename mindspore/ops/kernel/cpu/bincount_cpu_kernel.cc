@@ -51,8 +51,8 @@ template <typename T_in, typename T_out>
 void BincountTask(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                   const std::vector<KernelTensor *> &outputs, const std::vector<int64_t> &input_arr_sizes,
                   int32_t num_bins, const std::vector<int64_t> &input_weights_sizes, const std::vector<int64_t> &) {
-  auto bin_array = static_cast<T_in *>(inputs[0]->device_ptr());
-  auto output_data = static_cast<T_out *>(outputs[0]->device_ptr());
+  auto bin_array = static_cast<T_in *>(inputs[kIndex0]->device_ptr());
+  auto output_data = static_cast<T_out *>(outputs[kIndex0]->device_ptr());
   const size_t data_num = SizeOf(input_arr_sizes);
   for (int32_t i = 0; i < num_bins; i++) {
     output_data[i] = 0;
@@ -91,8 +91,8 @@ bool BincountCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
     MS_LOG(EXCEPTION) << "For Bincount, the size of input_weights " << input_weights_sizes_
                       << " need be the same with input_arr " << input_arr_sizes_;
   }
-  MS_EXCEPTION_IF_NULL(inputs[0]->device_ptr());
-  MS_EXCEPTION_IF_NULL(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(inputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(inputs[kIndex1]->device_ptr());
   if (input_size_sizes_.size() != 0) {
     MS_LOG(EXCEPTION) << "For Bincount, input_size should be a scalar, but got rank " << input_size_sizes_.size();
   }
@@ -103,7 +103,7 @@ bool BincountCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   int32_t num_bins = *num_bins_ptr;
 
   // check input_arr nonnegative
-  auto bin_array = static_cast<int32_t *>(inputs[0]->device_ptr());
+  auto bin_array = static_cast<int32_t *>(inputs[kIndex0]->device_ptr());
   for (size_t i = 0; i < array_num; i++) {
     if (bin_array[i] < 0) {
       MS_LOG(EXCEPTION) << "For Bincount, input array should be nonnegative, but got " << bin_array[i];

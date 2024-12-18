@@ -136,10 +136,10 @@ bool SmoothL1LossGradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kernel
                                                 const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSmoothL1LossGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSmoothL1LossGradOutputsNum, kernel_name_);
-  const auto *predict_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  const auto *target_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  const auto *dloss_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto *result_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const auto *predict_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *target_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  const auto *dloss_addr = GetDeviceAddress<T>(inputs, kIndex2);
+  auto *result_addr = GetDeviceAddress<T>(outputs, kIndex0);
   switch (reduction_) {
     case Reduction::NONE:
       return CalNoReduce(predict_addr, target_addr, dloss_addr, result_addr);

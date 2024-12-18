@@ -24,9 +24,9 @@ template <typename T>
 bool EluCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
                                    const std::vector<KernelTensor *> &outputs) {
-  const auto *in = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *out = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  const size_t lens = outputs[0]->size() / sizeof(T);
+  const auto *in = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *out = GetDeviceAddress<T>(outputs, kIndex0);
+  const size_t lens = outputs[kIndex0]->size() / sizeof(T);
   auto alpha = inputs[kIndex1]->GetValueWithCheck<float>();
 
   auto task = [in, out, alpha](size_t start, size_t end) {

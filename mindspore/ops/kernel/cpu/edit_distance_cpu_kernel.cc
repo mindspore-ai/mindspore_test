@@ -65,15 +65,15 @@ bool EditDistanceCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
     MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', output's shape size must be greater than 0.";
   }
 
-  const auto *hypothesis_indices_addr = reinterpret_cast<T1 *>(inputs[0]->device_ptr());
-  const auto *hypothesis_values_addr = reinterpret_cast<T2 *>(inputs[1]->device_ptr());
-  const auto *truth_indices_addr = reinterpret_cast<T1 *>(inputs[3]->device_ptr());
-  const auto *truth_values_addr = reinterpret_cast<T2 *>(inputs[4]->device_ptr());
-  auto *output_addr = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  const auto *hypothesis_indices_addr = GetDeviceAddress<T1>(inputs, kIndex0);
+  const auto *hypothesis_values_addr = GetDeviceAddress<T2>(inputs, kIndex1);
+  const auto *truth_indices_addr = GetDeviceAddress<T1>(inputs, kIndex3);
+  const auto *truth_values_addr = GetDeviceAddress<T2>(inputs, kIndex4);
+  auto *output_addr = GetDeviceAddress<float>(outputs, kIndex0);
 
-  const size_t hypothesis_values_length = inputs[1]->size() / sizeof(T2);
-  const size_t truth_values_length = inputs[4]->size() / sizeof(T2);
-  const size_t output_length = outputs[0]->size() / sizeof(float);
+  const size_t hypothesis_values_length = inputs[kIndex1]->size() / sizeof(T2);
+  const size_t truth_values_length = inputs[kIndex4]->size() / sizeof(T2);
+  const size_t output_length = outputs[kIndex0]->size() / sizeof(float);
 
   std::vector<size_t> output_strides(rank);
   output_strides[rank - 1] = 1;
