@@ -712,7 +712,7 @@ void MoveVirtualConverterEndOutsideCallFunc(const FuncGraphPtr &root) {
   }
 }
 
-bool CheckMonadUsers(const std::vector<std::pair<AnfNodePtr, int>> end_users) {
+bool CheckMonadUsers(const std::vector<std::pair<AnfNodePtr, int>> &end_users) {
   if (end_users.size() == 1 && IsPrimitiveCNode(end_users.front().first, prim::kPrimUpdateState)) {
     return true;
   }

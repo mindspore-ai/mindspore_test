@@ -136,20 +136,6 @@ void GatherInfo(device::DeviceAddress *device_address) {
   RefreshAddr(device_address);
 }
 
-void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
-  auto tensor = tensor_and_trans.first;
-  auto trans = tensor_and_trans.second;
-  GatherInfo(tensor);
-  // trans
-  MemcpyToBuf(&trans, 1);
-}
-
-void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &tensor_list) {
-  for (auto tensor : tensor_list) {
-    GatherInfo(tensor);
-  }
-}
-
 void GatherInfo(const mindspore::tensor::BaseTensorPtr &tensor) {
   Gather(tensor);
   RefreshAddr(tensor);
