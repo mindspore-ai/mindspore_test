@@ -368,7 +368,8 @@ from mindspore.ops.function.math_func import histc
 # 160 frac
 from mindspore.ops.function.math_func import frac
 
-# 161
+# 161 bitwise_not
+from mindspore.ops.auto_generate.gen_ops_prim import bitwise_not_op
 
 # 162
 
@@ -1327,7 +1328,9 @@ def tensor_histc(input, bins=100, min=0, max=0):
 def tensor_frac(input):
     return frac(input)
 
-# 161
+# 161 bitwise_not
+def tensor_bitwise_not(input):
+    return bitwise_not_op(input)
 
 # 162
 
