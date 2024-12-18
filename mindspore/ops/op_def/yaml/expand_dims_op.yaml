@@ -12,6 +12,7 @@ expand_dims:
   view: True
   graph_view: True
   labels:
-    side_effect_mem: True  
+    side_effect_mem: True
+    side_effect_propagate: True
   dispatch:
     enable: True

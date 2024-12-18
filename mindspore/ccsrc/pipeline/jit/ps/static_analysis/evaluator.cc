@@ -168,15 +168,8 @@ AbstractBasePtrList EvaluateArguments(const ConfigPtrList &args_conf_list) {
     MS_EXCEPTION_IF_NULL(result);
     const auto &abs = result->abstract();
     // Check if there's an inplace abstract and use it.
-    AbstractBasePtr real_abs;
     MS_EXCEPTION_IF_NULL(abs);
-    if (abs->inplace_abstract() == nullptr) {
-      real_abs = abs;
-    } else {
-      real_abs = abs->inplace_abstract();
-      MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
-    }
-    (void)args_abs_list.emplace_back(real_abs);
+    (void)args_abs_list.emplace_back(abs);
   }
   return args_abs_list;
 }

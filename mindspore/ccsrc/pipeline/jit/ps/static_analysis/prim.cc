@@ -1409,6 +1409,7 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
 }
 
 AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrList &args) {
+  static const bool enable_view_op = (common::GetEnv("MS_DEV_ENABLE_VIEW_OP") == "1");
   if (op_def_ != nullptr) {
     MS_LOG(DEBUG) << "prim_func_: " << prim_func_->ToString();
     const auto &rw_write_indexes = rw_write_input_indexes();
@@ -1416,8 +1417,12 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
     if (op_def_->func_impl_.GeneralInferRegistered()) {
       auto res = ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
       if (graph_view_prim()) {
-        MS_LOG(DEBUG) << "View prim infer.";
-        return UpdateViewOpsAbstract(res, args);
+        if (enable_view_op) {
+          MS_LOG(DEBUG) << "View prim infer.";
+          return UpdateViewOpsAbstract(res, args);
+        } else {
+          prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue("False"));
+        }
       }
       return inplace_prim() ? AddRefKeyForArgs(res, args, rw_write_indexes, inplace_indexes) : res;
     } else {
@@ -1432,8 +1437,12 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
       auto res = MakeAbstract(shape, type);
       if (graph_view_prim()) {
-        MS_LOG(DEBUG) << "View prim infer.";
-        return UpdateViewOpsAbstract(res, args);
+        if (enable_view_op) {
+          MS_LOG(DEBUG) << "View prim infer.";
+          return UpdateViewOpsAbstract(res, args);
+        } else {
+          prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue("False"));
+        }
       }
       return inplace_prim() ? AddRefKeyForArgs(res, args, rw_write_indexes, inplace_indexes) : res;
     }

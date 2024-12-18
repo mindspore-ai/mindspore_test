@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -440,7 +440,8 @@ void CloneScaledGraph(const std::vector<CNodePtr> &old_cnodes, const AnfNodePtr 
       if (input->isa<CNode>()) {
         auto curr_input_cnode = input->cast<CNodePtr>();
         CNodePtr new_cnode;
-        if (IsPrimitiveCNode(curr_input_cnode, prim::kPrimLoad)) {
+        if (IsPrimitiveCNode(curr_input_cnode, prim::kPrimLoad) ||
+            IsPrimitiveCNode(curr_input_cnode, prim::kPrimUpdateState)) {
           new_cnode = curr_input_cnode;
         } else {
           new_cnode = cnode_map[curr_input_cnode];

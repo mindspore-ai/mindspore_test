@@ -712,6 +712,24 @@ void MoveVirtualConverterEndOutsideCallFunc(const FuncGraphPtr &root) {
   }
 }
 
+bool CheckMonadUsers(const std::vector<std::pair<AnfNodePtr, int>> end_users) {
+  if (end_users.size() == 1 && IsPrimitiveCNode(end_users.front().first, prim::kPrimUpdateState)) {
+    return true;
+  }
+  constexpr size_t monad_user_size = 2;
+  if (end_users.size() == monad_user_size) {
+    const auto &first_user = end_users.front().first;
+    const auto &second_user = end_users.back().first;
+    if (IsPrimitiveCNode(first_user, prim::kPrimUpdateState) && IsPrimitiveCNode(second_user, prim::kPrimLoad)) {
+      return true;
+    }
+    if (IsPrimitiveCNode(second_user, prim::kPrimUpdateState) && IsPrimitiveCNode(first_user, prim::kPrimLoad)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void EraseResVirtualConverterEnd(const FuncGraphPtr &root, bool is_fine_grained) {
   AnfNodePtr new_ret_after = root->get_return();
   auto manager = root->manager();
@@ -724,7 +742,7 @@ void EraseResVirtualConverterEnd(const FuncGraphPtr &root, bool is_fine_grained)
         auto end_users = GetOutputNodesWithFilter(virtual_converter_end_cnode, [&](const AnfNodePtr &anode) {
           return IsPrimitiveCNode(anode, prim::kPrimMakeTuple) || IsPrimitiveCNode(anode, prim::kPrimDepend);
         });
-        if (end_users.size() == 1 && IsPrimitiveCNode(end_users.front().first, prim::kPrimUpdateState)) {
+        if (CheckMonadUsers(end_users)) {
           auto make_tuple_cnode = MakeMakeTupleByCNode(virtual_converter_end_cnode);
           (void)manager->Replace(virtual_converter_end_cnode, make_tuple_cnode);
           continue;

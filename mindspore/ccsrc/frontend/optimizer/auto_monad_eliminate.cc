@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,17 @@ bool IsSpecialNode(const CNodePtr &cnode) {
          cnode->IsApply(prim::kPrimSwitch) || cnode->IsApply(prim::kPrimSwitchLayer);
 }
 
+bool IsViewOps(const CNodePtr &cnode) {
+  auto primitive = GetCNodePrimitive(cnode);
+  if (primitive == nullptr) {
+    return false;
+  }
+  auto op_def = mindspore::ops::GetOpDef(primitive->name());
+  auto graph_view_prim = op_def != nullptr ? op_def->is_graph_view_ : false;
+  MS_LOG(DEBUG) << "The node " << cnode->DebugString() << " is view ops : " << graph_view_prim;
+  return graph_view_prim;
+}
+
 LoadGraphMap GenerateLoadGroups(const FuncGraphPtr &fg, std::vector<AnfNodePtr> *toposet,
                                 std::vector<AnfNodePtr> *need_replace_loads, ParamUserMap *param_users,
                                 std::vector<size_t> *special_op_indexes) {
@@ -128,7 +139,7 @@ LoadGraphMap GenerateLoadGroups(const FuncGraphPtr &fg, std::vector<AnfNodePtr> 
       continue;
     }
     // Record special cnode.
-    if (IsSpecialNode(cnode)) {
+    if (IsSpecialNode(cnode) || IsViewOps(cnode)) {
       (void)special_op_indexes->emplace_back(i);
       continue;
     }
