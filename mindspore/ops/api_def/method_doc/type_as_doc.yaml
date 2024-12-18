@@ -12,7 +12,7 @@ type_as:
         taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
 
     Args:
-        other (Tensor): The shape of tensor is :math:`(x_0, x_1, ..., x_R)`. The tensor whose data type is specified.
+        other (Tensor): The tensor whose data type is specified. The shape of tensor is :math:`(x_0, x_1, ..., x_R)`. 
 
     Returns:
         Tensor, the shape of tensor is the same as `self`, :math:`(x_0, x_1, ..., x_R)`.
