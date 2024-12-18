@@ -165,8 +165,6 @@ class IrBuilder : public BpropBuilder {
       : BpropBuilder(name, infer), func_graph_(func_graph) {}
   NodePtr EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs) override;
   NodePtr EmitValue(const ValuePtr &value) override;
-  NodePtr Conditional(const NodePtr &cond, const BlockFunc &true_case, const BlockFunc &false_case) override;
-  NodePtr While(const NodePtr &cond, const BlockFunc &body, const NodePtrList &init_list) override;
   const FuncGraphPtr &func_graph() { return func_graph_; }
 
  protected:
