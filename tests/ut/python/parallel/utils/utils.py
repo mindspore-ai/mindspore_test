@@ -42,9 +42,7 @@ def convert_inputs(inputs: [tuple, list], cnode_info_dict: dict, expect_inputs: 
     if len(expect_inputs) != len(new_inputs):
         if isinstance(new_inputs[-1], str) and new_inputs[-1].find('UpdateState') != -1:
             new_inputs.pop()
-    
     return new_inputs
-            
 
 class ParallelValidator:
     """
@@ -190,7 +188,6 @@ class ParallelValidator:
         inputs = convert_inputs(inputs, cnode_info_dict, expect_inputs)
         expect_len = len(expect_inputs)
         inputs_len = len(inputs)
-       
         if self._is_shape(inputs, expect_inputs):
             return inputs == expect_inputs
         for i in range(expect_len):
