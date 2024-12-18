@@ -167,9 +167,9 @@ bool AssignCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                       << ", and max size: " << max_size;
   }
 
-  auto input0_addr = reinterpret_cast<int8_t *>(inputs[0]->device_ptr());
-  auto input1_addr = reinterpret_cast<int8_t *>(inputs[1]->device_ptr());
-  auto output_addr = reinterpret_cast<int8_t *>(outputs[0]->device_ptr());
+  auto input0_addr = GetDeviceAddress<int8_t>(inputs, kIndex0);
+  auto input1_addr = GetDeviceAddress<int8_t>(inputs, kIndex1);
+  auto output_addr = GetDeviceAddress<int8_t>(outputs, kIndex0);
   auto task = [&](size_t start, size_t end) {
     int8_t *input0 = input0_addr + start;
     int8_t *input1 = input1_addr + start;

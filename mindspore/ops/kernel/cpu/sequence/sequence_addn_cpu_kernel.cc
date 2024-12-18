@@ -84,15 +84,14 @@ bool SequenceAddNCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
                                             const std::vector<KernelTensor *> &,
                                             const std::vector<KernelTensor *> &outputs) {
   size_t elements_num = outputs[0]->size() / sizeof(T);
-  const auto input_0 = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  MS_EXCEPTION_IF_NULL(input_0);
+  const auto input_0 = GetDeviceAddress<T>(inputs, 0);
   auto input_1 = input_0 + elements_num;
 
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto output = GetDeviceAddress<T>(outputs, 0);
   auto task_0 = std::bind(Add<T>, input_0, input_1, output, std::placeholders::_1, std::placeholders::_2);
   ParallelLaunchAutoSearch(task_0, elements_num, this, &parallel_search_info_);
 
-  for (int64_t index = 2; index < tuple_shape_[0]; ++index) {
+  for (int64_t index = kIndex2; index < tuple_shape_[0]; ++index) {
     input_1 += elements_num;
     auto task = std::bind(Add<T>, input_1, output, output, std::placeholders::_1, std::placeholders::_2);
     ParallelLaunchAutoSearch(task, elements_num, this, &parallel_search_info_);

@@ -51,9 +51,7 @@ bool ResizeLinear1DGradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kern
                                                   const std::vector<KernelTensor *> &workspace,
                                                   const std::vector<kernel::KernelTensor *> &outputs) {
   auto grad_output = GetDeviceAddress<T>(inputs, kIndex0);
-  MS_ERROR_IF_NULL_W_RET_VAL(grad_output, false);
   auto grad_input = GetDeviceAddress<T>(outputs, kIndex0);
-  MS_ERROR_IF_NULL_W_RET_VAL(grad_input, false);
 
   if (output_width_ == input_width_) {
     auto task = [grad_output, grad_input](size_t start, size_t end) {

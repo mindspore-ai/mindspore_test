@@ -104,7 +104,7 @@ bool SequenceUnstackCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
                                                const std::vector<KernelTensor *> &,
                                                const std::vector<KernelTensor *> &outputs) {
   const auto input = GetDeviceAddress<T>(inputs, 0);
-  auto *outputs_host = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *outputs_host = GetDeviceAddress<T>(outputs, 0);
 
   size_t total_size = input_size_ * sizeof(T);
   if (total_size >= kMaxDataSize) {

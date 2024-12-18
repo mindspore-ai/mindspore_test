@@ -134,9 +134,9 @@ bool RandomChoiceWithMaskCpuKernelMod::Launch(const std::vector<kernel::KernelTe
                                               const std::vector<kernel::KernelTensor *> &workspace,
                                               const std::vector<kernel::KernelTensor *> &outputs) {
   auto *input_dim = reinterpret_cast<int *>(workspace[0]->device_ptr());
-  auto *tmp_output = reinterpret_cast<int *>(workspace[1]->device_ptr());
-  auto *mask_dim = reinterpret_cast<int *>(workspace[2]->device_ptr());
-  auto *output = reinterpret_cast<int *>(workspace[3]->device_ptr());
+  auto *tmp_output = reinterpret_cast<int *>(workspace[kIndex1]->device_ptr());
+  auto *mask_dim = reinterpret_cast<int *>(workspace[kIndex2]->device_ptr());
+  auto *output = reinterpret_cast<int *>(workspace[kIndex3]->device_ptr());
   MS_EXCEPTION_IF_NULL(input_dim);
   MS_EXCEPTION_IF_NULL(tmp_output);
   MS_EXCEPTION_IF_NULL(mask_dim);

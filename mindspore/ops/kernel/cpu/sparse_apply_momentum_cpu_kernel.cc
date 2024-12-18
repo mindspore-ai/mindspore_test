@@ -122,7 +122,7 @@ int SparseApplyMomentumCpuKernelMod::Resize(const std::vector<KernelTensor *> &i
   if (!momentum_shape.empty()) {
     MS_LOG(EXCEPTION) << "For SparseApplyMomentum, momentum is not a scalar, got shape: " << momentum_shape << ".";
   }
-  return static_cast<int>(KRET_OK);
+  return KRET_OK;
 }
 
 template <typename I, typename T>
@@ -132,13 +132,13 @@ bool SparseApplyMomentumCpuKernelMod::LaunchKernel(const std::vector<KernelTenso
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSparseApplyMomentumInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSparseApplyMomentumOutputsNum, kernel_name_);
 
-  auto var = static_cast<T *>(inputs[0]->device_ptr());
-  auto accum = static_cast<T *>(inputs[1]->device_ptr());
-  auto grad = static_cast<T *>(inputs[3]->device_ptr());
-  auto indices = static_cast<I *>(inputs[4]->device_ptr());
-  auto lr_scalar = static_cast<T *>(inputs[2]->device_ptr())[0];
-  auto momentum_scalar = static_cast<T *>(inputs[5]->device_ptr())[0];
-  auto output = static_cast<T *>(outputs[0]->device_ptr());
+  auto var = GetDeviceAddress<T>(inputs, 0);
+  auto accum = GetDeviceAddress<T>(inputs, kIndex1);
+  auto grad = GetDeviceAddress<T>(inputs, kIndex3);
+  auto indices = GetDeviceAddress<I>(inputs, kIndex4);
+  auto lr_scalar = GetDeviceAddress<T>(inputs, kIndex2)[0];
+  auto momentum_scalar = GetDeviceAddress<T>(inputs, kIndex5)[0];
+  auto output = GetDeviceAddress<T>(outputs, 0);
 
   for (size_t i = 0; i < indices_size_; ++i) {
     I index = indices[i];

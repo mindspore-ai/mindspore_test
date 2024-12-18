@@ -50,7 +50,7 @@ class MatrixPowerCpuKernelMod : public NativeCpuKernelMod {
   CNodeWeakPtr node_wpt_;
   int64_t power_{0};
   TypeId dtype_{kTypeUnknown};
-  ShapeVector output_shape_;
+  ShapeVector output_shape_{};
   template <typename T>
   void LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };

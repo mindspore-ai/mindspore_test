@@ -54,19 +54,18 @@ int HShrinkCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   if (ret != 0) {
     return ret;
   }
+  MS_EXCEPTION_IF_CHECK_FAIL(unit_size_ != 0, "For HShrink, the value of [unit_size_] must not be 0!");
   input_elements_ = inputs[0]->size() / unit_size_;
   lambd = inputs[kIndex1]->GetValueWithCheck<float>();
-  return static_cast<int>(KRET_OK);
+  return KRET_OK;
 }
 
 bool HShrinkCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                  const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kHShrinkInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kHShrinkOutputsNum, kernel_name_);
-  auto *input = reinterpret_cast<float *>(inputs[kIndex0]->device_ptr());
-  MS_ERROR_IF_NULL_W_RET_VAL(input, false);
-  auto *output = reinterpret_cast<float *>(outputs[kIndex0]->device_ptr());
-  MS_ERROR_IF_NULL_W_RET_VAL(output, false);
+  auto *input = GetDeviceAddress<float>(inputs, kIndex0);
+  auto *output = GetDeviceAddress<float>(outputs, kIndex0);
 
   auto task = [input, output, this](size_t start, size_t end) {
     auto ret = HardShrink(input + start, SizeToInt(end - start), output + start, lambd);

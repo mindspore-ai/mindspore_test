@@ -60,7 +60,7 @@ class CoalesceCpuKernelMod : public NativeCpuKernelMod {
   size_t values_size_{0};
   size_t shape_size_{0};
   size_t jump = 0;
-  ShapeVector y_shape_shape_;
+  ShapeVector y_shape_shape_{};
 };
 }  // namespace kernel
 }  // namespace mindspore
