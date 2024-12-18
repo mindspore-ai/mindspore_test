@@ -553,21 +553,21 @@ def _get_parameter_ids(args, kwargs):
 
 def _get_tensor_hook_key(tensor):
     """Get the hook key of Tensor/Parameter"""
-    return "_".join(map(str, map(id, tensor.hooks())))
+    return ".".join(map(str, map(id, tensor.hooks())))
 
 def _get_hook_key(*args, **kwargs):
     """Get the hook key of Tensors/Parameters"""
     hook_key = ""
     for idx, arg in enumerate(args):
         if idx != 0:
-            hook_key += ","
+            hook_key += "."
         # Only arg of the type Tensor or Parameter is supported now
         if isinstance(arg, (Tensor, Parameter)):
             hook_key += _get_tensor_hook_key(arg)
 
     for idx, value in enumerate(kwargs.values()):
         if idx != 0:
-            hook_key += ","
+            hook_key += "."
         # Only kwarg of the type Tensor or Parameter is supported now
         if isinstance(value, (Tensor, Parameter)):
             hook_key += _get_tensor_hook_key(value)

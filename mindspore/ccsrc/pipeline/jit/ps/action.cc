@@ -159,10 +159,12 @@ void AddHookNodeForParameter(const FuncGraphPtr &func_graph, const ParameterPtr 
   for (auto iter = hook_map->begin(); iter != hook_map->end(); iter++) {
     const auto &hook_fn = iter->second;
     const auto insert_grad_of = CreateInsertGradientOf(hook_fn);
+    auto value_node = NewValueNode(insert_grad_of);
+    value_node->set_abstract(insert_grad_of->ToAbstract());
     const auto node_users = func_graph->manager()->node_users()[param_node];
     for (const auto &node_and_index : node_users) {
       const auto &fg = node_and_index.first->func_graph();
-      auto new_node = fg->NewCNode({NewValueNode(insert_grad_of), param_node});
+      auto new_node = fg->NewCNode({value_node, param_node});
       new_node->set_abstract(param_node->abstract());
       func_graph->manager()->SetEdge(node_and_index.first, node_and_index.second, new_node);
     }

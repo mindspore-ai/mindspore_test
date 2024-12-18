@@ -30,6 +30,9 @@ def hook_double(grad):
 def hook_triple(grad):
     return grad * 3
 
+def hook_mul_5(grad):
+    return grad * 5
+
 def hook_print(grad):
     print("grad:", grad)
 
@@ -108,10 +111,12 @@ class NeedReorderHookStmtNet(nn.Cell):
         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
 
     def construct(self, x):
-        a = x * self.weight0
-        b = a * self.weight1
         x.register_hook(hook_double)
-        return b
+        x = x * self.weight0 + x - x
+        x.register_hook(hook_triple)
+        x = x * self.weight1 - x + x
+        x.register_hook(hook_mul_5)
+        return x
 
 ground_input_x = Tensor(np_input_x, ms.float32)
 ground_net = GroundNet()
@@ -244,9 +249,9 @@ def test_need_reorder_hook_stmt_net():
     output_x_grad = output[0][0].asnumpy()
     output_weight0_grad = output[1][0].asnumpy()
     output_weight1_grad = output[1][1].asnumpy()
-    expected_x_grad = hook_double(ground_output[0][0]).asnumpy()
-    expected_weight0_grad = ground_output[1][0].asnumpy()
-    expected_weight1_grad = ground_output[1][1].asnumpy()
+    expected_x_grad = hook_mul_5(hook_triple(hook_double(ground_output[0][0]))).asnumpy()
+    expected_weight0_grad = hook_mul_5(hook_triple(ground_output[1][0])).asnumpy()
+    expected_weight1_grad = hook_mul_5(ground_output[1][1]).asnumpy()
 
     assert np.allclose(output_x_grad, expected_x_grad)
     assert np.allclose(output_weight0_grad, expected_weight0_grad)
