@@ -126,6 +126,9 @@ BACKEND_COMMON_EXPORT bool IsDynamicParamKernel(const std::string &op_name);
 BACKEND_COMMON_EXPORT std::pair<std::string, ExceptionType> KernelObjectTypeNotSupportWarning(
   const CNodePtr &kernel_node);
 BACKEND_COMMON_EXPORT bool IsKernelObjectTypeNotSupportedError(const std::string &error_str);
+BACKEND_COMMON_EXPORT std::pair<std::vector<DataType>, std::vector<DataType>> GetInOutDataTypesFromKernelAttr(
+  const KernelAttr &kernel_attr);
+BACKEND_COMMON_EXPORT bool NeedCheckInputContiguous(const CNodePtr &cnode);
 }  // namespace kernel
 }  // namespace mindspore
 

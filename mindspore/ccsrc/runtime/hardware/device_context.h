@@ -518,6 +518,13 @@ class BACKEND_COMMON_EXPORT KernelExecutor {
     return false;
   };
 
+  virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                 const std::vector<device::DeviceAddress *> &input_addr_list,
+                                 const std::vector<device::DeviceAddress *> &output_addr_list,
+                                 const size_t &stream_id) const {
+    return false;
+  };
+
   virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
     MS_EXCEPTION_IF_NULL(node);
     auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());

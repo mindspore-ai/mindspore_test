@@ -14,5 +14,8 @@ chunk:
     function:
         disable: True
     view: True
+    graph_view: True
+    labels:
+        side_effect_mem: True
     dispatch:
         enable: True

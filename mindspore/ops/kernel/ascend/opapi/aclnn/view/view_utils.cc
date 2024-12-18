@@ -17,6 +17,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <functional>
 #include "ir/tensor_storage_info.h"
 namespace mindspore {
 namespace kernel {
@@ -32,5 +33,19 @@ ops::OldTensorInfoPtr GetOldTensorInfo(const KernelTensor *tensor) {
                                                 storage_info->ori_strides, storage_info->storage_offset);
   }
 }
+
+size_t GetOriginInputSize(const KernelTensor *tensor) {
+  if (tensor->tensor_storage_info() == nullptr) {
+    return tensor->size();
+  }
+  auto storage_info = tensor->tensor_storage_info();
+  if (storage_info->ori_size != 0) {
+    return storage_info->ori_size;
+  }
+  auto ori_shape = storage_info->ori_shape;
+  auto type_size = GetTypeByte(TypeIdToType(tensor->dtype_id()));
+  return std::accumulate(ori_shape.begin(), ori_shape.end(), type_size, std::multiplies<size_t>());
+}
+
 }  // namespace kernel
 }  // namespace mindspore

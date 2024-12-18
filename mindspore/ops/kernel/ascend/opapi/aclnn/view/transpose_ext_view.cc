@@ -38,7 +38,7 @@ void TransposeExtView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> 
   const auto &dim0 = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   const auto &dim1 = inputs[kIndex2]->GetValueWithCheck<int64_t>();
   info_ = ops::TransposeExtStridesCalc(old_info, dim0, dim1);
-  info_[0]->ori_size = GetOriginInputSize(old_info, inputs[kIndex0]->dtype_id());
+  info_[0]->ori_size = GetOriginInputSize(inputs[0]);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
   GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }

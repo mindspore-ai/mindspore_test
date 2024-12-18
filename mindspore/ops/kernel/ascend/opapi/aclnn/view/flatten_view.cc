@@ -27,7 +27,7 @@ void FlattenView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inpu
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
   std::vector<int64_t> shape = {-1};
   info_ = ops::ReshapeCalcImpl(old_info, shape);
-  info_[0]->ori_size = inputs[0]->size();
+  info_[0]->ori_size = GetOriginInputSize(inputs[0]);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
   GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
