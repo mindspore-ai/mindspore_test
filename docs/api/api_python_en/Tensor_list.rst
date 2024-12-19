@@ -106,6 +106,7 @@
     mindspore.Tensor.chunk
     mindspore.Tensor.clamp
     mindspore.Tensor.clip
+    mindspore.Tensor.clone
     mindspore.Tensor.col2im
     mindspore.Tensor.conj
     mindspore.Tensor.contiguous
