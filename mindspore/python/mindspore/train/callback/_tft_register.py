@@ -134,8 +134,9 @@ def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
     logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
     _stop_device(cb_ctx.device_id)
-    if not cb_ctx._is_params_consistent():    # pylint: disable=W0212
+    if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):    # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
+    cb_ctx.is_uce_rank = False
     logger.info("Finish _tft_stop_callback")
 
 
@@ -261,6 +262,7 @@ class TFTRegister(Callback):
         # let it raise errors if not install mindio_tft package
         from mindio_ttp import framework_ttp as tft
         self.tft = tft
+        self.is_uce_rank = False
         self.global_step = 0
         Validator.check_non_negative_int(ctrl_port)
         self.has_init_replica = False
