@@ -437,6 +437,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
                   << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
                   << ", origin output device tensor: " << output_addr;
 
+    tensor_device_address->set_host_shape(out_tensor->shape());
     out_tensor->set_device_address(tensor_device_address);
     out_tensor->set_need_release_device_mem(true);
     outputs->emplace_back(out_tensor);
