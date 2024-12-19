@@ -85,25 +85,30 @@ bool IsDescendant(const AnfNodePtr &node, const AnfNodePtr &ancestor) {
 
   return false;
 }
+
+void ReplaceNode(const FuncGraphManagerPtr &mng, const AnfNodePtr &hidden_node, const AnfNodePtr &new_node) {
+  if (hidden_node == new_node) {
+    return;
+  }
+
+  for (const auto &[node, idx] : mng->node_users()[hidden_node]) {
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode->input(idx) == hidden_node && !IsDescendant(cnode, new_node)) {
+      MS_LOG(DEBUG) << "Replace the " << idx << "'th input (" << hidden_node->DebugString() << ") of "
+                    << cnode->DebugString() << " with " << new_node->DebugString();
+      cnode->set_input(idx, new_node);
+    }
+  }
+}
 }  // namespace
 
-void FunctionBlock::ReplaceHiddenNode(const AnfNodePtr &hidden_node, const AnfNodePtr &new_node) {
-  for (const auto &var : assigned_vars_) {
-    if (!var.second.first->isa<CNode>()) {
-      continue;
-    }
-
-    auto cnode = var.second.first->cast<CNodePtr>();
-    if (IsDescendant(cnode, new_node)) {
-      MS_LOG(DEBUG) << cnode->DebugString(2) << " is a descendant of " << new_node->DebugString(2) << ", ignore it.";
-      continue;
-    }
-
-    for (size_t idx = 0; idx < cnode->inputs().size(); idx++) {
-      if (cnode->input(idx) == hidden_node) {
-        MS_LOG(DEBUG) << "Replace node " << hidden_node->DebugString(2) << " with " << new_node->DebugString(2);
-        cnode->set_input(idx, new_node);
-      }
+void FunctionBlock::ReplaceNodeWithItsHook() {
+  auto mng = mindspore::Manage(func_graph_, false);
+  for (const auto &assigned_hook : assigned_hook_) {
+    const auto &[name, node2hook] = assigned_hook;
+    MS_LOG(DEBUG) << "Add hook for variable: " << name << ".";
+    for (const auto &[hidden_node, new_node] : node2hook) {
+      ReplaceNode(mng, hidden_node, new_node);
     }
   }
 }
@@ -148,7 +153,7 @@ void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr 
     iter->second = std::make_pair(node, false);
     if (is_used && need_reorder) {
       MS_LOG(DEBUG) << "Replace " << hidden_node->ToString() << " with " << node->ToString();
-      ReplaceHiddenNode(hidden_node, node);
+      assigned_hook_[var_name][hidden_node] = node;
       iter->second = std::make_pair(node, true);
     } else {
       iter->second = std::make_pair(node, false);
