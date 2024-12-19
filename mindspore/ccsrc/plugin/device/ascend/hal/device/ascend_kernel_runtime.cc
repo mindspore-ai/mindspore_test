@@ -345,10 +345,10 @@ bool AscendKernelRuntime::Init() {
       }
     }
     if (op_execute_timeout >= notify_wait_timeout) {
-      MS_LOG(WARNING) << "OpExecuteTimeout should be less than NotifyWaitTimeout, but got OpExecuteTimeout "
-                      << op_execute_timeout << ", notify_wait_timeout " << notify_wait_timeout << "."
-                      << "1. You can set OpExecuteTimeout via mindspore.set_context(op_timeout=int)."
-                      << "2. You can set NotifyWaitTimeout via environment variable HCCL_EXEC_TIMEOUT. ";
+      MS_LOG(INFO) << "OpExecuteTimeout should be less than NotifyWaitTimeout, but got OpExecuteTimeout "
+                   << op_execute_timeout << ", notify_wait_timeout " << notify_wait_timeout << "."
+                   << "1. You can set OpExecuteTimeout via mindspore.set_context(op_timeout=int)."
+                   << "2. You can set NotifyWaitTimeout via environment variable HCCL_EXEC_TIMEOUT. ";
     }
     // 310P does not contain the following interfaces
     if (ms_context->ascend_soc_version() != "ascend310p" && ms_context->ascend_soc_version() != "ascend310b") {

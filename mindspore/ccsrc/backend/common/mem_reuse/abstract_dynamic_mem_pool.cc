@@ -201,7 +201,7 @@ MemBuf *MemBufAllocator::MallocExpandBlock(size_t size) {
     } else {
       (void)eager_free_mem_bufs_.emplace(candidate);
     }
-    MS_LOG(ERROR) << "Candidate size: " << candidate->size_ << " is less than required size : " << size << ".";
+    MS_LOG(WARNING) << "Candidate size: " << candidate->size_ << " is less than required size : " << size << ".";
     return nullptr;
   }
 
@@ -332,13 +332,13 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
 MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
   MemBlock *mem_block = mem_block_expander_(size);
   if (mem_block == nullptr) {
-    MS_LOG(ERROR) << "Expand block failed, expand size : 0, memory is not enough";
+    MS_LOG(WARNING) << "Expand block failed, expand size : 0, memory is not enough.";
     return nullptr;
   }
 
   if (mem_block->size_ < size) {
-    MS_LOG(ERROR) << "Expand block failed, expand size : " << mem_block->size_
-                  << " is less than require size : " << size << ".";
+    MS_LOG(WARNING) << "Expand block failed, expand size : " << mem_block->size_
+                    << " is less than require size : " << size << ".";
   }
 
   (void)mem_blocks_.emplace_back(mem_block);
