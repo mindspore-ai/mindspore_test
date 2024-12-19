@@ -7,8 +7,9 @@ mindspore.Tensor.remainder
 
     支持广播和隐式数据类型提升。
 
-    .. math::
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+    .. code:: python
+
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
     .. note::
         输入不支持复数类型。至少一个输入为tensor，且不能都为布尔型tensor。
@@ -31,8 +32,9 @@ mindspore.Tensor.remainder
 
     `self` 和 `divisor` 的输入遵守隐式类型转换规则，以使数据类型一致。输入必须是两个Tensor或者一个Tensor和一个Scalar。当输入是两个Tensor时，两个dtype都不能是bool类型，shape可以广播。当输入是Tensor和Scalar时，这个Scalar只能是常数。
 
-    .. math::
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+    .. code:: python
+
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
     .. warning::
         - 当输入元素超过2048时，可能会有精度问题。
