@@ -357,6 +357,7 @@ from mindspore.ops.auto_generate import acos_ext, acosh_ext, asin_ext, asinh_ext
 from mindspore.ops.auto_generate import isneginf_ext
 
 # 155
+from mindspore.ops.function.math_func import median
 
 # 156
 
@@ -1328,6 +1329,16 @@ def tensor_isneginf(input):
 
 
 # 155
+def deprecated_tensor_median(input, axis=-1, keepdims=False):
+    return median(input, axis, keepdims)
+
+
+def tensor_median(input):
+    return median(input)
+
+
+def tensor_median_dim(input, dim=-1, keepdim=False):
+    return median(input, dim, keepdim)
 
 # 156
 

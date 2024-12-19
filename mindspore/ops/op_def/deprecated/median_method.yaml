@@ -1,0 +1,17 @@
+#deprecated median
+median:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: int
+      default: -1
+    keepdims:
+      dtype: bool
+      default: False
+  returns:
+    y:
+      dtype: tensor
+    indices:
+      dtype: tensor
+    

@@ -3395,13 +3395,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_bool(sorted, 'sorted')
         return tensor_operator_registry.get("top_k")(self, k, sorted)
 
-    def median(self, axis=-1, keepdims=False):
-        r"""
-        For details, please refer to :func:`mindspore.ops.median`.
-        """
-        validator.check_axis_in_range(axis, self.ndim)
-        return tensor_operator_registry.get('median')(False, axis, keepdims)(self)
-
     def addmv(self, mat, vec, beta=1, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.addmv`.
