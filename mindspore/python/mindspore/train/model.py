@@ -149,6 +149,7 @@ def _handle_tft(func):
                     e_str = str(e)
                     logger.info("uce wrapper caught RuntimeError e_str:{}".format(e_str))
                     if "UCEError" in e_str:
+                        obj.is_uce_rank = True
                         logger.info("uce wrapper report UCEError")
                         tft.tft_report_error(tft.ReportState.RS_UCE.value)
                     elif "ForceStopError" in e_str:
