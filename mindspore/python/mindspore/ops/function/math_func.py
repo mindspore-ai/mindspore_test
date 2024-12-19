@@ -9088,9 +9088,9 @@ def remainder(input, other):
     both dtypes cannot be bool, and the shapes of them could be broadcast. When the inputs are one tensor
     and one scalar, the scalar could only be a constant.
 
-    .. math::
+    .. code:: python
 
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
     .. warning::
         - When the elements of input exceed 2048, there might be accuracy problems.
@@ -9135,9 +9135,10 @@ def remainder_ext(input, other):
 
     Supports broadcasting to a common shape and implicit type promotion.
 
-    .. math::
+    .. code:: python
 
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
+
 
     Note:
         Complex inputs are not supported. At least one input need to be tensor, but not both are bool tensors.
