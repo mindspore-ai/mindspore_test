@@ -217,6 +217,9 @@ class BACKEND_EXPORT GraphParameterStore {
 
   void FillBuffer(size_t idx, const std::vector<TensorPtr> &tensors);
 
+  std::pair<TypePtr, KernelWithIndex> GetReleasePositionInfo(const std::pair<size_t, size_t> &position,
+                                                             DeviceTensorType type);
+
  private:
   // The input args refresh in every step.
   VectorRef *input_args_;
@@ -228,6 +231,7 @@ class BACKEND_EXPORT GraphParameterStore {
   std::vector<std::vector<std::pair<DeviceTensorPtr, size_t>>> heter_device_tensors_;
   // Record non-weight ref max input, so that do not tranverse the store when releasing data.
   std::set<std::pair<size_t, size_t>> non_weight_ref_max_inputs_;
+  std::map<DeviceTensorPosition, std::pair<TypePtr, KernelWithIndex>> release_data_info_;
 
   std::map<AnfNode *, size_t> front_node_to_index_;
   std::map<size_t, AnfNode *> index_to_front_node_;

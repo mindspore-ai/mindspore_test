@@ -461,20 +461,22 @@ void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, Output
   auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(from_kernel.get());
   ParameterInfo parameter_info{kernel_with_index, outer_idx};
   to_actor->InsertParameterIndexs(output_position, parameter_info);
+  graph_parameter_store->SetUserCnt(outer_idx, kernel_with_index.second, SIZE_MAX, device_context->GetDeviceType());
 
   auto device_tensor =
     graph_parameter_store->Fetch(outer_idx, kernel_with_index.second, device_context->GetDeviceType());
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  graph_parameter_store->IncreaseUserCnt(outer_idx, kernel_with_index.second, device_context->GetDeviceType());
-  device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-  // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
-  UpdateRefCount(device_tensor, true);
-  MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
-                << " to actor:" << to_actor->GetAID() << " from kernel"
-                << (from_kernel == nullptr ? "null" : from_kernel->DebugString()) << " device address:" << device_tensor
-                << " original ref count:" << device_tensor->original_ref_count()
-                << " ref count:" << device_tensor->ref_count()
-                << " dynamic ref count:" << device_tensor->dynamic_ref_count();
+  if (device_tensor != nullptr) {
+    device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+    // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
+    UpdateRefCount(device_tensor, true);
+    MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
+                  << " to actor:" << to_actor->GetAID() << " from kernel"
+                  << (from_kernel == nullptr ? "null" : from_kernel->DebugString())
+                  << " device address:" << device_tensor
+                  << " original ref count:" << device_tensor->original_ref_count()
+                  << " ref count:" << device_tensor->ref_count()
+                  << " dynamic ref count:" << device_tensor->dynamic_ref_count();
+  }
 
   // Set the device contexts of to_actor.
   if (output_position >= to_actor->device_contexts_.size()) {

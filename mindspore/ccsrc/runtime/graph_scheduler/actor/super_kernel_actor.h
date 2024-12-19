@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 #include <queue>
+#include <set>
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
@@ -144,6 +145,7 @@ class SuperKernelActor : public DebugAwareActor {
   void TrackInputMemory();
 
   void FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<DeviceTensor> *const context);
+  void FreeInputParamWithoutUser(OpContext<DeviceTensor> *const context);
 
   friend class GraphScheduler;
   KernelGraphPtr graph_;
@@ -168,6 +170,9 @@ class SuperKernelActor : public DebugAwareActor {
 
   // Record the use count of all input nodes(parameter) of graph_, use to correct current ref count in runtime.
   std::vector<size_t> input_params_use_cnt_;
+
+  // Record the graph parameter without user.
+  std::set<std::pair<size_t, ParameterInfo>> input_params_no_user_;
 
   // Record every param first used kernel actor to correct the ref count.
   mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> kernel_actor_to_graph_parameters_map_;

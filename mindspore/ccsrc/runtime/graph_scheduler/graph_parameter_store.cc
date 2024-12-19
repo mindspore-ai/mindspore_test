@@ -179,12 +179,17 @@ void GraphParameterStore::ReleaseData() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kReleaseResource, "GraphParameterStore");
   for (auto index : non_weight_ref_max_inputs_) {
     CheckIndexValid(index.first, index.second);
+    std::pair<size_t, size_t> position{index.first, index.second};
     auto &device_tensor_with_info = parameter_device_tensors_[index.first][index.second];
     auto &device_tensor = device_tensor_with_info.first;
     if (device_tensor != nullptr && device_tensor->original_ref_count() == SIZE_MAX &&
         !device_tensor->is_ptr_persisted()) {
       MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " null, outer idx: " << index.first
                     << ", inner idx: " << index.second;
+      auto kernel_tensor = device_tensor->kernel_tensor();
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      release_data_info_[{position, device_tensor->GetDeviceType()}] = {kernel_tensor->GetType(),
+                                                                        device_tensor->GetNodeIndex()};
       device_tensor_with_info.first = nullptr;
     }
 
@@ -194,6 +199,10 @@ void GraphParameterStore::ReleaseData() {
         !heter_device_tensor->is_ptr_persisted()) {
       MS_LOG(DEBUG) << "Set store heter device tensor: " << heter_device_tensor.get()
                     << " null, outer idx: " << index.first << ", inner idx: " << index.second;
+      auto heter_kernel_tensor = heter_device_tensor->kernel_tensor();
+      MS_EXCEPTION_IF_NULL(heter_kernel_tensor);
+      release_data_info_[{position, heter_device_tensor->GetDeviceType()}] = {heter_kernel_tensor->GetType(),
+                                                                              heter_device_tensor->GetNodeIndex()};
       heter_device_tensor_with_info.first = nullptr;
     }
   }
@@ -223,6 +232,16 @@ void GraphParameterStore::InsertRefDeviceTensors(const DeviceTensorPosition &key
     return;
   }
   ref_device_tensors_[key].insert(value);
+}
+
+std::pair<TypePtr, KernelWithIndex> GraphParameterStore::GetReleasePositionInfo(
+  const std::pair<size_t, size_t> &position, DeviceTensorType type) {
+  const auto &iter = release_data_info_.find({position, type});
+  if (iter == release_data_info_.end()) {
+    MS_LOG(EXCEPTION) << "Can not find type in store, where outer index: " << position.first
+                      << ", inner index: " << position.second << ", type: " << type;
+  }
+  return iter->second;
 }
 
 void GraphParameterStore::RefreshRefDeviceTensor(const DeviceTensorPosition &key) {
