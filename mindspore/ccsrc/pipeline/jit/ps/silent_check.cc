@@ -115,6 +115,14 @@ ParameterPtr GetScaleSense(const FuncGraphPtr &func_graph) {
   return nullptr;
 }
 
+bool IsFloat16Type(const TypePtr &type) {
+  auto tensor_type = type->cast<TensorTypePtr>();
+  if (tensor_type != nullptr && tensor_type->element() != nullptr) {
+    return tensor_type->element()->type_id() == kNumberTypeFloat16;
+  }
+  return type->type_id() == kNumberTypeFloat16;
+}
+
 bool HasFloat16Type(const abstract::AbstractBasePtr &abs_base) {
   MS_EXCEPTION_IF_NULL(abs_base);
   if (abs_base->isa<abstract::AbstractScalar>()) {
@@ -125,6 +133,10 @@ bool HasFloat16Type(const abstract::AbstractBasePtr &abs_base) {
   }
   if (abs_base->isa<abstract::AbstractSequence>()) {
     auto abs_seq = abs_base->cast<abstract::AbstractSequencePtr>();
+    if (abs_seq->dynamic_len()) {
+      return std::any_of(abs_seq->ElementsType().begin(), abs_seq->ElementsType().end(),
+                         [](const TypePtr &type) { return IsFloat16Type(type); });
+    }
     for (size_t i = 0; i < abs_seq->size(); ++i) {
       if (HasFloat16Type((*abs_seq)[i])) {
         return true;
@@ -439,9 +451,12 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
       // add attriute "need_silent_check" to primitive
       auto prim = GetCNodePrimitive(cnode);
       if (prim != nullptr) {
-        MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Add attribute " << silentcheck::kAttrNeedSilentCheck << " to prim "
+        MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Add attribute " << silentcheck::kAttrSilentCheckOpType << " to prim "
                                         << prim->name() << " " << cnode->fullname_with_scope();
-        prim->AddAttr(silentcheck::kAttrNeedSilentCheck, MakeValue<bool>(true));
+        auto silent_check_op_type = common::AnfAlgo::IsCommunicationOp(prim->name())
+                                      ? silentcheck::kSilentCheckGradCommOp
+                                      : silentcheck::kSilentCheckGradLastOp;
+        prim->AddAttr(silentcheck::kAttrSilentCheckOpType, MakeValue<int>(silent_check_op_type));
       }
     }
     return changed;

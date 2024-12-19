@@ -211,8 +211,11 @@ class SilentChecker {
                       const std::vector<KernelTensor *> &outputs, KernelTensor *output_tensor, void *stream_ptr);
 
   void RegisterCheck(const kernel::KernelModPtr &kernel_mod, const kernel::KernelTensor *dout);
+  void ClearCheckHooks() { check_states_.clear(); }
   void ExecuteCheck(const kernel::KernelMod *kernel_mod, const kernel::KernelTensor *dout, void *stream_ptr);
   void UpdateDeviceContext(const DeviceContext *device_context) { device_context_ = device_context; }
+  void SetCommOpInputNotSupport(bool not_support) { comm_op_input_not_support_ = not_support; }
+  bool IsCommOpInputNotSupport() { return comm_op_input_not_support_; }
 
  private:
   explicit SilentChecker(const DeviceContext *device_context);
@@ -233,6 +236,7 @@ class SilentChecker {
 
   std::unordered_map<const kernel::KernelMod *, CheckStatePtr> check_states_;
   const DeviceContext *device_context_ = nullptr;
+  bool comm_op_input_not_support_ = false;
 
   // constants used by aclnnNorm
   KernelTensorPtr p_scalar_ = nullptr;
