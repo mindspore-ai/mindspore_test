@@ -2,4 +2,4 @@ __sub__:
   description: |
     Alias for :func:`mindspore.Tensor.sub`
 
-    For details, please refer to `mindspore.ops.sub()` .
+    For details, please refer to :func:`mindspore.ops.sub` .

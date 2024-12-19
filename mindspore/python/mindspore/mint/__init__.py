@@ -484,7 +484,7 @@ def add(input, other, *, alpha=1):
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default 1.
+        alpha (number.Number): A scaling factor applied to `other`, default: ``1``.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
@@ -1720,7 +1720,7 @@ def split(tensor, split_size_or_sections, dim=0):
         ValueError: If argument `dim` is out of range of :[-tensor.ndim, tensor.ndim).
         TypeError: If each element in `split_size_or_sections` is not integer.
         TypeError: If argument `split_size_or_sections` is not int, tuple(int) or list(int).
-        ValueError: The sum of `split_size_or_sections` is not equal to x.shape[dim].
+        ValueError: The sum of `split_size_or_sections` is not equal to tensor.shape[dim].
 
     Supported Platforms:
         ``Ascend``
