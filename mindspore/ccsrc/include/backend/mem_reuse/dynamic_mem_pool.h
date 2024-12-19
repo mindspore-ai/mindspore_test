@@ -235,6 +235,8 @@ class BACKEND_EXPORT DynamicMemPool {
 
   virtual void SetEnableVmm(bool enable_vmm) {}
 
+  virtual void WaitPipeline() {}
+
   virtual const bool SyncAllStreams() { return false; }
 
   virtual size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) { return 0; }
