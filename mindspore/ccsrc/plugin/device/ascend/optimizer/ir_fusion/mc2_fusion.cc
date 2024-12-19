@@ -56,6 +56,44 @@ bool IsBpropNode(const AnfNodePtr &node) {
   return node->fullname_with_scope().find("Gradients") == 0;
 }
 
+bool IsOnlyOnePathToMatmul(const CNodePtr &all_gather_cnode, const CNodePtr &matmul_cnode,
+                           const FuncGraphPtr &func_graph) {
+  std::unordered_set<CNodePtr> visited;
+  int path_count = 0;
+
+  std::function<void(const CNodePtr &)> dfs = [&](const CNodePtr &current_node) {
+    if (path_count > 1) return;
+
+    if (visited.count(current_node) > 0) {
+      return;
+    }
+    visited.insert(current_node);
+
+    if (current_node == matmul_cnode) {
+      path_count++;
+      return;
+    }
+
+    auto manager = current_node->func_graph()->manager();
+    if (manager != nullptr) {
+      auto node_users = manager->node_users()[current_node];
+      for (const auto &user_pair : node_users) {
+        dfs(user_pair.first->cast<CNodePtr>());
+      }
+    }
+  };
+
+  auto manager = all_gather_cnode->func_graph()->manager();
+  auto all_gather_users = manager->node_users()[all_gather_cnode];
+
+  for (const auto &user_pair : all_gather_users) {
+    visited.clear();
+    dfs(user_pair.first->cast<CNodePtr>());
+  }
+
+  return path_count == 1;
+}
+
 bool IsKbkMode(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
@@ -305,6 +343,10 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   auto all_gather_cnode = matmul_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(all_gather_cnode != nullptr, {});
   MS_CHECK_TRUE_RET(all_gather_cnode->func_graph() == matmul_cnode->func_graph(), {});
+
+  if (!IsOnlyOnePathToMatmul(all_gather_cnode, matmul_cnode, func_graph)) {
+    return nullptr;
+  }
 
   auto input = all_gather_cnode->input(kIndex1);
   auto x2 = matmul_cnode->input(kIndex2);
