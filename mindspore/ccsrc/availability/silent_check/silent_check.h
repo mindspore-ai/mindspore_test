@@ -25,7 +25,8 @@
 
 namespace mindspore {
 namespace silentcheck {
-const char kAttrNeedSilentCheck[] = "need_silent_check";
+const char kAttrSilentCheckOpType[] = "silent_check_type";
+enum SilentCheckOpType : int { kSilentCheckGradLastOp = 0, kSilentCheckGradCommOp = 1 };
 using tensor::BaseTensorPtr;
 
 class BACKEND_EXPORT SilentCheckerBase {

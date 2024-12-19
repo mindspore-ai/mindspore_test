@@ -20,6 +20,8 @@
 #include <deque>
 #include "include/common/utils/parallel_context.h"
 #include "include/common/profiler.h"
+#include "kernel/kernel.h"
+#include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/session/kernel_graph_mgr.h"
@@ -99,7 +101,44 @@ std::string GetKernelTypeStr(const KernelType &kernel_type) {
 
 kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel);
 
-bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
+void RegisterSilentCheckForNode(const CNodePtr &kernel, const kernel::KernelModPtr &kernel_mod_ptr,
+                                const std::string &op_name, KernelType kernel_type) {
+  if (silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport()) {
+    return;
+  }
+  if (kernel_mod_ptr->primitive() == nullptr ||
+      !kernel_mod_ptr->primitive()->HasAttr(silentcheck::kAttrSilentCheckOpType)) {
+    return;
+  }
+  std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
+  if (input_kernel_tensors.empty() || input_kernel_tensors[0]->GetShapeVector().empty() ||
+      input_kernel_tensors[0]->IsDynamicShape()) {
+    return;
+  }
+  auto check_op_type = GetValue<int>(kernel_mod_ptr->primitive()->GetAttr(silentcheck::kAttrSilentCheckOpType));
+  auto tensor_type = input_kernel_tensors[0]->dtype_id();
+  MS_VLOG(VL_ASCEND_SILENT_CHECK) << input_kernel_tensors[0]->GetType()->ToString();
+  if (tensor_type != kNumberTypeFloat32 && tensor_type != kNumberTypeBFloat16) {
+    if (check_op_type == silentcheck::kSilentCheckGradCommOp) {
+      MS_LOG(WARNING)
+        << "Input 0 of node " << kernel->fullname_with_scope() << " is " << input_kernel_tensors[0]->ToString()
+        << ", silent check only support bfloat16 and float32 type, silent check function will be disabled.";
+      silentcheck::ascend::SilentChecker::GetInstance().SetCommOpInputNotSupport(true);
+      silentcheck::ascend::SilentChecker::GetInstance().ClearCheckHooks();
+    } else {
+      MS_LOG(WARNING) << "Input 0 of node " << kernel->fullname_with_scope() << " is "
+                      << input_kernel_tensors[0]->ToString()
+                      << ", silent check only support bfloat16 and float32 type, skip silent check for this node";
+    }
+    return;
+  }
+  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for kernel opname:" << op_name
+                                  << ", kernel type:" << GetKernelTypeStr(kernel_type) << " "
+                                  << kernel->fullname_with_scope();
+  silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr, input_kernel_tensors[0]);
+}
+
+bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *graph_executor = nullptr) {
   for (const auto &kernel : kernels) {
     MS_EXCEPTION_IF_NULL(kernel);
     if (AnfAlgo::GetKernelMod(kernel)) {
@@ -134,17 +173,7 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
     }
     MS_LOG(INFO) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
     MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
-    if (kernel_mod_ptr->primitive() != nullptr &&
-        kernel_mod_ptr->primitive()->HasAttr(silentcheck::kAttrNeedSilentCheck)) {
-      std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
-      if (!input_kernel_tensors.empty() && !input_kernel_tensors[0]->GetShapeVector().empty() &&
-          !input_kernel_tensors[0]->IsDynamicShape()) {
-        MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for kernel opname:" << opname
-                                        << ", kernel type:" << GetKernelTypeStr(kernel_type) << " "
-                                        << kernel->fullname_with_scope();
-        silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr, input_kernel_tensors[0]);
-      }
-    }
+    RegisterSilentCheckForNode(kernel, kernel_mod_ptr, opname, kernel_type);
     AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
   }
   return true;
@@ -1244,7 +1273,8 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
   } else {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
-    if (kernel_mod->primitive() != nullptr && kernel_mod->primitive()->HasAttr(silentcheck::kAttrNeedSilentCheck)) {
+    if (!silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
+        kernel_mod->primitive() != nullptr && kernel_mod->primitive()->HasAttr(silentcheck::kAttrSilentCheckOpType)) {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel_mod->kernel_name();
       silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
     }
