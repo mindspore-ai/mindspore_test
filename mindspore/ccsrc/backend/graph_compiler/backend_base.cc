@@ -1780,7 +1780,7 @@ void MindRTBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_
   for (auto device_context : graph_compiler_info.device_contexts_) {
     MS_EXCEPTION_IF_NULL(device_context);
     if (device_context->device_res_manager_->single_op_multi_stream_enable()) {
-      device_context->device_res_manager_->SyncNotDefaultStreams();
+      device::MultiStreamController::GetInstance()->WaitMultiStream(device_context, kDefaultStreamIndex);
     }
   }
 }
