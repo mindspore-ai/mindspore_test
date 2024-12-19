@@ -28,7 +28,7 @@ IFS=',' read -r -a array <<< "$RANK_LIST"
 export MS_SIMULATION_LEVEL=1
 export RANK_SIZE="$RANK_SIZE"
 export PYTHONPATH=${BASE_PATH}/mindformers:${PYTHONPATH}
-export MS_DEV_DUMP_IR_PASSES="step_parallel,validate"
+export MS_DEV_DUMP_IR_PASSES="step_parallel,validate,hwopt_d_after_inline_graph"
 if [ "$CELL_REUSE" = "pp" ]; then
   echo "enable lazy inline in pp"
   export ENABLE_LAZY_INLINE=1
