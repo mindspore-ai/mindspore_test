@@ -30,6 +30,19 @@
 
 namespace mindspore {
 namespace opt {
+namespace {
+bool UnSupportedType(const AnfNodePtr &node, const AnfNodePtr &rms_norm_node) {
+  auto rms_x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 0);
+  auto rms_gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 1);
+  auto scale_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
+  auto offset_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 2);
+  bool is_unsupported_type = (rms_x_dtype != kNumberTypeFloat16 && rms_x_dtype != kNumberTypeBFloat16) ||
+                             (rms_gamma_dtype != kNumberTypeFloat16 && rms_gamma_dtype != kNumberTypeBFloat16) ||
+                             (scale_dtype != kNumberTypeFloat16 && scale_dtype != kNumberTypeBFloat16) ||
+                             offset_dtype != kNumberTypeInt8;
+  return is_unsupported_type;
+}
+}  // namespace
 std::vector<std::string> AddRmsNormQuantFusion::MustExistPrimitiveName() const {
   std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimAdd->name(), prim::kPrimQuantV2->name()};
   return ret;
@@ -67,14 +80,10 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto tensor_add = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(rms_norm_node), 0);
   auto shape1 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 0);
   auto shape2 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 1);
-  auto rms_x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 0);
-  auto rms_gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 1);
-  auto scale_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
-  auto offset_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 2);
   FuncGraphManagerPtr mng = graph->manager();
   MS_EXCEPTION_IF_NULL(mng);
-  if (shape1 != shape2 || mng->node_users()[tuple_get_item_node].size() != 1 || rms_x_dtype != kNumberTypeFloat16 ||
-      rms_gamma_dtype != kNumberTypeFloat16 || scale_dtype != kNumberTypeFloat16 || offset_dtype != kNumberTypeInt8) {
+  bool is_unsupported_type = UnSupportedType(node, rms_norm_node);
+  if (shape1 != shape2 || mng->node_users()[tuple_get_item_node].size() != 1 || is_unsupported_type) {
     return nullptr;
   }
 
