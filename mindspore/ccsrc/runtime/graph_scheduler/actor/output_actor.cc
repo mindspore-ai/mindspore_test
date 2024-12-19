@@ -340,7 +340,8 @@ void OutputActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<De
     return;
   }
 
-  auto tensor = CreateOutputTensor(node_with_index.first, node_with_index.second, output_position, context);
+  auto tensor = CreateOutputTensor(node_with_index.first, node_with_index.second, output_position, context,
+                                   output_device_tensors_[output_position]);
   if (tensor == nullptr) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Create output tensor failed.");
   }
@@ -358,7 +359,7 @@ void OutputActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<De
 }
 
 TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index, size_t output_position,
-                                          OpContext<DeviceTensor> *const context) {
+                                          OpContext<DeviceTensor> *const context, DeviceTensor *old_device_tensor) {
   MS_EXCEPTION_IF_NULL(output_node);
   bool is_dynamic_shape_output =
     common::AnfAlgo::IsDynamicShape(output_node) || common::AnfAlgo::IsDynamicSequence(output_node);
@@ -383,7 +384,9 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     }
   }
 
-  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, output_index);
+  const auto &output_kernel_tensor = old_device_tensor == nullptr
+                                       ? AnfAlgo::GetOutputKernelTensor(output_node, output_index)
+                                       : old_device_tensor->kernel_tensor();
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   MS_LOG(DEBUG) << "Create output tensor, output node: " << output_node->fullname_with_scope()
                 << " debug string:" << output_node->DebugString() << ", output index: " << output_index
@@ -441,7 +444,10 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   }
   auto &device_context = device_contexts_[output_position];
   MS_EXCEPTION_IF_NULL(device_context);
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(output_node, output_index, false);
+  auto device_tensor = old_device_tensor;
+  if (device_tensor == nullptr) {
+    device_tensor = AnfAlgo::GetMutableOutputAddr(output_node, output_index, false).get();
+  }
   MS_EXCEPTION_IF_NULL(device_tensor);
   device_tensor->set_padding_type(AnfAlgo::GetOutputReshapeType(output_node, output_index));
   if (device_context->GetDeviceType() != device_tensor->GetDeviceType()) {
