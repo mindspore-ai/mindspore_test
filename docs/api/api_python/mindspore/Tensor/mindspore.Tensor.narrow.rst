@@ -7,7 +7,7 @@ mindspore.Tensor.narrow
 
     参数：
         - **dim** (int) - 指定的轴。
-        - **start** (int) - 指定起始位置。
+        - **start** (Union[int, Tensor]) - 指定起始位置。
         - **length** (int) - 指定长度。
 
     返回：
