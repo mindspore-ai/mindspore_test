@@ -6,7 +6,7 @@ narrow:
 
     Args:
         dim (int): the axis along which to narrow.
-        start (int): the starting dimension.
+        start (Union[int, Tensor]): the starting dimension.
         length (int): the distance to the ending dimension.
 
     Returns:
