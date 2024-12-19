@@ -15,7 +15,6 @@
 
 """Op precision interfaces."""
 
-from mindspore.device_manager import _check_device_vaild
 from mindspore._checkparam import args_type_check
 try:
     from mindspore._c_expression import GPUOpPrecisionConf
@@ -36,7 +35,6 @@ def matmul_allow_tf32(value):
         >>> import mindspore as ms
         >>> ms.device_count.gpu.op_precision.matmul_allow_tf32(True)
     """
-    _check_device_vaild()
     GPUOpPrecisionConf.get_instance().matmul_allow_tf32(value)
 
 @args_type_check(value=bool)
@@ -53,5 +51,4 @@ def conv_allow_tf32(value):
         >>> import mindspore as ms
         >>> ms.device_count.gpu.op_precision.conv_allow_tf32(False)
     """
-    _check_device_vaild()
     GPUOpPrecisionConf.get_instance().conv_allow_tf32(value)
