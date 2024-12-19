@@ -1650,7 +1650,7 @@ def set_context(**kwargs):
 
             - ge_options (dict): Set options for CANN. The options are divided into two categories: global and session.
               This is an experimental prototype that is subject to change and/or deletion.
-              For detailed information, please refer to `Ascend community <https://www.hiascend.com/document/detail/zh/canncommercial/70RC1/inferapplicationdev/graphdevg/atlasgeapi_07_0119.html>`_ .
+              For detailed information, please refer to `Ascend community <https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/apiref/ascendgraphapi/atlasgeapi_07_0146.html>`_ .
               The configuration options in `ge_options` may be duplicated with the options in `ascend_config`. If the
               same configuration options are set in both `ascend_config` and `ge_options`, the one set in `ge_options`
               shall prevail.
@@ -1674,11 +1674,11 @@ def set_context(**kwargs):
                 Default: False.
               - enable_grad_comm_opt (bool): Enable overlap between dx ops and data parallel communication ops if True.
                 Currently, do not support
-                `LazyInline <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.lazy_inline.html>`
+                `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`
                 Default: False.
               - enable_opt_shard_comm_opt (bool): Enable overlap between forward ops
                 and optimizer parallel allgather communication if True. Currently, do not support
-                `LazyInline <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.lazy_inline.html>`
+                `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`
                 Default: False.
               - compute_communicate_fusion_level (int): Enable the fusion between compute and communicate.
                 Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
