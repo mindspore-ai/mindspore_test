@@ -98,10 +98,11 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         self.trace_view_container.add_trace_events(fwk_to_fwk_flows)
 
         # Create and add fwk to mstx flows
-        mstx_pool = self.trace_view_container.get_pool_by_name(TimelineLayerName.MSTX.value)
-        if mstx_pool:
-            fwk_to_mstx_flows = self._create_fwk_to_mstx_flow(mstx_pool, fwk_pool)
-            self.trace_view_container.add_trace_events(fwk_to_mstx_flows)
+        for mstx_name in TimelineLayerName.MSTX.value:
+            mstx_pool = self.trace_view_container.get_pool_by_name(mstx_name)
+            if mstx_pool:
+                fwk_to_mstx_flows = self._create_fwk_to_mstx_flow(mstx_pool, fwk_pool)
+                self.trace_view_container.add_trace_events(fwk_to_mstx_flows)
 
         if self._profiler_level == ProfilerLevel.LevelNone.value:
             return

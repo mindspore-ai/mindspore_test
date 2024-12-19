@@ -15,22 +15,35 @@
  */
 
 #include <map>
+#include <memory>
 #include <numeric>
 #include <sstream>
 #include <utility>
 #include <vector>
-#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 #include "include/backend/debug/profiler/profiling.h"
+#include "include/common/profiler.h"
+#include "pipeline/pynative/pynative_utils.h"
+#include "pipeline/pynative/forward/forward_task.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 #include "plugin/device/ascend/hal/profiler/mstx/mstx_symbol.h"
 #include "plugin/device/ascend/hal/hccl_adapter/plugin/hccl_plugin.h"
+#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/op_executor.h"
+#include "runtime/device/kernel_runtime_manager.h"
 #include "transform/symbol/symbol_utils.h"
 
 namespace mindspore {
 namespace profiler {
 namespace ascend {
 
-static std::mutex g_mstxInfoTimeMtx;
+static std::mutex g_mstxRangeIdsMtx;
+static std::unordered_map<uint64_t, uint64_t> g_mstxRangeIds;
 static std::unordered_map<uint64_t, uint64_t> g_mstxInfoTime;
+static std::unordered_map<MstxTaskType, std::string> reportStageNames = {
+  {MstxTaskType::mark, "Mark"},
+  {MstxTaskType::start, "RangeStart"},
+  {MstxTaskType::end, "RangeEnd"},
+};
 
 static std::string RealPath(const std::string &path) {
   if (path.empty() || path.size() > PATH_MAX) {
@@ -43,6 +56,153 @@ static std::string RealPath(const std::string &path) {
   return std::string(realPath);
 }
 
+static void MarkImpl(const char *message, void *stream) {
+  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
+  CALL_MSTX_API(mstxMarkA, message, stream);
+  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
+  mindspore::profiler::CollectHostInfo("Ascend", "Mstx", "Mark", startTime, endTime);
+}
+
+static void RangeStartImpl(const char *message, void *stream, uint64_t msRangeId) {
+  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
+  uint64_t taskId = CALL_MSTX_API(mstxRangeStartA, message, stream);
+  if (taskId == 0) {
+    MS_LOG(WARNING) << "Failed to call mstxRangeStartA func.";
+    return;
+  }
+  std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
+  g_mstxRangeIds.insert(std::make_pair(msRangeId, taskId));
+  g_mstxInfoTime.insert(std::make_pair(msRangeId, startTime));
+}
+
+static void RangeEndImpl(uint64_t msRangeId) {
+  uint64_t taskId = 0;
+  uint64_t startTime = 0;
+  {
+    std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
+    auto iter = g_mstxRangeIds.find(msRangeId);
+    if (iter == g_mstxRangeIds.end()) {
+      MS_LOG(WARNING) << "Failed to find range start id for input range end id " << msRangeId;
+      return;
+    }
+    taskId = iter->second;
+    g_mstxRangeIds.erase(iter);
+    iter = g_mstxInfoTime.find(msRangeId);
+    if (iter == g_mstxInfoTime.end()) {
+      MS_LOG(WARNING) << "Failed to find range start time for input range end id " << msRangeId;
+      return;
+    }
+    startTime = iter->second;
+    g_mstxInfoTime.erase(iter);
+  }
+  CALL_MSTX_API(mstxRangeEnd, taskId);
+  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
+  mindspore::profiler::CollectHostInfo("Ascend", "Mstx", "Range", startTime, endTime);
+}
+
+static void SetStreamForCurrentThread() {
+  // set current context for each pipeline thread, so that stream can be used to launch tx task
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
+  MS_EXCEPTION_IF_NULL(runtime_instance);
+  runtime_instance->SetContext();
+}
+
+static void DispatchFrontendTask(const std::shared_ptr<runtime::AsyncTask> &task) {
+  static bool need_sync = runtime::OpExecutor::NeedSync();
+  if (need_sync && !runtime::OpExecutor::GetInstance().async_for_graph()) {
+    MS_LOG(INFO) << "PyBoost sync run frontend task";
+    runtime::Pipeline::Get().WaitForward();
+    task->Run();
+  } else {
+    runtime::ProfilerAnalyzer::GetInstance().RecordFlowData(task->task_id());
+    runtime::Pipeline::Get().frontend_stage()->Push(task);
+  }
+}
+
+static void DispatchDeviceTask(std::function<void(void)> run_func, MstxTaskType type) {
+  auto deviceTask = std::make_shared<MstxDeviceTask>(run_func, type);
+  MS_EXCEPTION_IF_NULL(deviceTask);
+  runtime::ProfilerAnalyzer::GetInstance().RecordFlowData(deviceTask->task_id());
+  runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(deviceTask);
+}
+
+static void DispatchMarkTask(const char *message, void *stream) {
+  // in case input msg is released before use it, create new message
+  auto msgPtr = std::make_shared<std::string>(message);
+  MS_EXCEPTION_IF_NULL(msgPtr);
+
+  DispatchFrontendTask(std::make_shared<MstxFrontendTask>(
+    [msgPtr, stream]() {
+      auto txTask = [msgPtr, stream]() {
+        runtime::OpExecutor::DispatchLaunchTask([msgPtr, stream]() {
+          SetStreamForCurrentThread();
+          MarkImpl(msgPtr->c_str(), stream);
+        });
+      };
+      if (!runtime::OpExecutor::NeedSync()) {
+        DispatchDeviceTask(txTask, MstxTaskType::mark);
+      } else {
+        txTask();
+      }
+    },
+    MstxTaskType::mark));
+}
+
+static void DispatchRangeStartTask(const char *message, void *stream, uint64_t msRangeId) {
+  // in case input msg is released before use it, create new message
+  auto msgPtr = std::make_shared<std::string>(message);
+  MS_EXCEPTION_IF_NULL(msgPtr);
+
+  DispatchFrontendTask(std::make_shared<MstxFrontendTask>(
+    [msgPtr, stream, msRangeId]() {
+      auto txTask = [msgPtr, stream, msRangeId]() {
+        runtime::OpExecutor::DispatchLaunchTask([msgPtr, stream, msRangeId]() {
+          SetStreamForCurrentThread();
+          RangeStartImpl(msgPtr->c_str(), stream, msRangeId);
+        });
+      };
+      if (!runtime::OpExecutor::NeedSync()) {
+        DispatchDeviceTask(txTask, MstxTaskType::start);
+      } else {
+        txTask();
+      }
+    },
+    MstxTaskType::start));
+}
+
+static void DispatchRangeEndTask(uint64_t msRangeId) {
+  DispatchFrontendTask(std::make_shared<MstxFrontendTask>(
+    [msRangeId]() {
+      auto txTask = [msRangeId]() {
+        runtime::OpExecutor::DispatchLaunchTask([msRangeId]() {
+          SetStreamForCurrentThread();
+          RangeEndImpl(msRangeId);
+        });
+      };
+      if (!runtime::OpExecutor::NeedSync()) {
+        DispatchDeviceTask(txTask, MstxTaskType::end);
+      } else {
+        txTask();
+      }
+    },
+    MstxTaskType::end));
+}
+
+void MstxFrontendTask::Run() {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kOther, runtime::ProfilerEvent::kExecute,
+                                     reportStageNames[type_], false, false, task_id_);
+  run_func_();
+}
+
+void MstxDeviceTask::Run() {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kOther, runtime::ProfilerEvent::kExecute,
+                                     reportStageNames[type_], false, false, task_id_);
+  run_func_();
+}
+
 MstxMgr::MstxMgr() {
   std::string ascend_path = mindspore::transform::GetAscendPath();
   LoadMstxApiSymbol(ascend_path);
@@ -53,10 +213,13 @@ void MstxMgr::Mark(const char *message, void *stream) {
   if (!IsEnable()) {
     return;
   }
-  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
-  CALL_MSTX_API(mstxMarkA, message, stream);
-  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
-  mindspore::profiler::CollectHostInfo("Ascend", "mstx", "mark", startTime, endTime);
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kOther, runtime::ProfilerEvent::kExecute, "Mark", false,
+                                     true);
+  if (stream == nullptr) {
+    MarkImpl(message, stream);
+  } else {
+    DispatchMarkTask(message, stream);
+  }
 }
 
 uint64_t MstxMgr::RangeStart(const char *message, void *stream) {
@@ -64,17 +227,19 @@ uint64_t MstxMgr::RangeStart(const char *message, void *stream) {
   if (!IsEnable()) {
     return 0;
   }
-  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
-  auto id = CALL_MSTX_API(mstxRangeStartA, message, stream);
-  if (id == 0) {
-    return 0;
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kOther, runtime::ProfilerEvent::kExecute, "RangeStart",
+                                     false, true);
+  uint64_t id = msRangeId_++;
+  if (stream == nullptr) {
+    RangeStartImpl(message, stream, id);
   } else {
     {
-      std::lock_guard<std::mutex> lock(g_mstxInfoTimeMtx);
-      g_mstxInfoTime.insert(std::make_pair(id, startTime));
+      std::lock_guard<std::mutex> lock(idStreamsMtx_);
+      msRangeIdsWithStream_.insert(id);
     }
-    return id;
+    DispatchRangeStartTask(message, stream, id);
   }
+  return id;
 }
 
 void MstxMgr::RangeEnd(uint64_t msRangeId) {
@@ -82,19 +247,21 @@ void MstxMgr::RangeEnd(uint64_t msRangeId) {
   if (msRangeId == 0 || !IsEnable()) {
     return;
   }
-  uint64_t startTime = 0;
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kOther, runtime::ProfilerEvent::kExecute, "RangeEnd",
+                                     false, true);
+  bool rangeIdWithStream = false;
   {
-    std::lock_guard<std::mutex> lock(g_mstxInfoTimeMtx);
-    auto timeIter = g_mstxInfoTime.find(msRangeId);
-    if (timeIter == g_mstxInfoTime.end()) {
-      return;
+    std::lock_guard<std::mutex> lock(idStreamsMtx_);
+    if (msRangeIdsWithStream_.find(msRangeId) != msRangeIdsWithStream_.end()) {
+      rangeIdWithStream = true;
+      msRangeIdsWithStream_.erase(msRangeId);
     }
-    startTime = timeIter->second;
-    g_mstxInfoTime.erase(timeIter);
   }
-  CALL_MSTX_API(mstxRangeEnd, msRangeId);
-  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
-  mindspore::profiler::CollectHostInfo("Ascend", "mstx", "range", startTime, endTime);
+  if (!rangeIdWithStream) {
+    RangeEndImpl(msRangeId);
+  } else {
+    DispatchRangeEndTask(msRangeId);
+  }
 }
 
 void MstxMgr::Enable() {
