@@ -1482,12 +1482,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('real')(self)
 
-    def cosh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.cosh`.
-        """
-        return tensor_operator_registry.get('cosh')(self)
-
     def cov(self, *, correction=1, fweights=None, aweights=None):
         r"""
         For details, please refer to :func:`mindspore.ops.cov`.
@@ -1839,12 +1833,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('fmin')(self, other)
 
-    def fmod(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.fmod`.
-        """
-        return tensor_operator_registry.get('fmod')(self, other)
-
     def swapaxes(self, axis0, axis1):
         """
         For details, please refer to :func:`mindspore.ops.swapaxes`.
@@ -1868,14 +1856,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.slogdet`.
         """
         return tensor_operator_registry.get('slogdet')(self)
-
-    def unsqueeze(self, dim):
-        """
-        For details, please refer to :func:`mindspore.ops.unsqueeze`.
-        """
-        validator.check_is_int(dim, 'dim')
-        validator.check_int_range(dim, -self.ndim - 1, self.ndim + 1, validator.INC_LEFT, 'dim')
-        return tensor_operator_registry.get('unsqueeze')(self, dim)
 
     def expand_dims(self, axis):
         """
@@ -4064,18 +4044,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.sgn`.
         """
         return tensor_operator_registry.get('sgn')(self)
-
-    def sinc(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sinc`.
-        """
-        return tensor_operator_registry.get('sinc')(self)
-
-    def sinh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sinh`.
-        """
-        return tensor_operator_registry.get('sinh')(self)
 
     def imag(self):
         r"""

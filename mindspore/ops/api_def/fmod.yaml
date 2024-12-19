@@ -2,13 +2,20 @@ fmod:
   - op_yaml: fmod_scalar_op.yaml
     py_method: fmod_scalar # callback to python function "def fmod_scalar"
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
-    interface: function
+    CPU: py_method
+    GPU: py_method
+    interface: function, tensor
 
   - op_yaml: fmod_tensor_op.yaml
     py_method: fmod_tensor # callback to python function "def fmod_tensor"
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
-    interface: function
+    CPU: py_method
+    GPU: py_method
+    interface: function, tensor
+
+  - op_yaml: deprecated/fmod_method.yaml
+    py_method: deprecated_tensor_fmod # callback to python function "def deprecated_tensor_fmod"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
