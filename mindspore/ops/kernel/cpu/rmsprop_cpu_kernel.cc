@@ -257,9 +257,9 @@ template <typename T>
 bool RMSPropCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                        const std::vector<kernel::KernelTensor *> &,
                                        const std::vector<kernel::KernelTensor *> &) {
-  size_ = inputs[0]->size() / sizeof(T);
+  size_ = inputs[kIndex0]->size() / sizeof(T);
   if (!use_center_) {
-    size_ = inputs[0]->size() / sizeof(float);
+    size_ = inputs[kIndex0]->size() / sizeof(float);
     CHECK_KERNEL_INPUTS_NUM(inputs.size(), kRMSPropInputsNum, kernel_name_);
     float *variable = reinterpret_cast<float *>(inputs[kNumberZero]->device_ptr());
     float *mean_square = reinterpret_cast<float *>(inputs[kNumberOne]->device_ptr());
@@ -270,7 +270,7 @@ bool RMSPropCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
     float *momentum = GetDeviceAddress<float>(inputs, kNumberSix);
     float *epsilon = GetDeviceAddress<float>(inputs, kNumberSeven);
 
-    size_t lens = inputs[0]->size() > 0 ? static_cast<size_t>(inputs[0]->size() / sizeof(float)) : 1;
+    size_t lens = inputs[kIndex0]->size() > 0 ? static_cast<size_t>(inputs[kIndex0]->size() / sizeof(float)) : 1;
     MS_LOG(INFO) << "RMSPropCpuKernelMod lens:" << lens << " size_:" << size_;
     LaunchRMSPropUnuseCenter<float>(variable, mean_square, moment, gradients, learning_rate, decay, momentum, epsilon);
   } else {

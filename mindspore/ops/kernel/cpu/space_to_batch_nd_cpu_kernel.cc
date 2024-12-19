@@ -77,9 +77,9 @@ bool SpaceToBatchNDCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   // check all shapes, blocks and paddings are valid
   CheckParam();
 
-  const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  int ret = memset_s(output, outputs[0]->size(), 0, sizeof(T) * static_cast<size_t>(output_size_));
+  const auto *input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
+  int ret = memset_s(output, outputs[kIndex0]->size(), 0, sizeof(T) * static_cast<size_t>(output_size_));
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s error. Error no: " << ret;
   }
