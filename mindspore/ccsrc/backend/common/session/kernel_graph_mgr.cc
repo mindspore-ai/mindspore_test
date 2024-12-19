@@ -580,8 +580,9 @@ nlohmann::json SaveAnfKernelInfo(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(device_kernel_info);
   nlohmann::json out_in_ref_json;
   const auto &out_in_ref = device_kernel_info->out_in_ref_map();
-  (void)(std::for_each(out_in_ref.begin(), out_in_ref.end(),
-                       [&out_in_ref_json](const auto &iter) { out_in_ref_json[iter.first] = iter.second; }));
+  (void)(std::for_each(out_in_ref.begin(), out_in_ref.end(), [&out_in_ref_json](const auto &iter) {
+    out_in_ref_json[std::to_string(iter.first)] = iter.second;
+  }));
   if (!out_in_ref_json.empty()) {
     single_json[kOutInRef] = out_in_ref_json;
   }
@@ -3111,8 +3112,9 @@ int LoadBackInfoForGraphIds(std::vector<vector<KernelGraphPtr>> *graph_ids_for_r
     MS_LOG(EXCEPTION) << "Load Backinfo json file: " << backinfo_json_path << " error, backinfo json cache missed.";
   }
   json_stream >> data_json;
-  if (!data_json.contains(kControlNodeCache)) {
-    MS_LOG(WARNING) << "No control node info in control cache json file.";
+  if (!data_json.contains(kControlNodeCache) && !data_json.contains(kKernelGraphNum) &&
+      !data_json[kControlNodeCache].contains(kKernelGraphToDeviceContext)) {
+    MS_LOG(EXCEPTION) << "No control node info in control cache json file.";
   }
   int root_graph_num = data_json[kKernelGraphNum].get<int>();
   MS_LOG(INFO) << "Root graph num:" << root_graph_num;
@@ -3128,7 +3130,8 @@ int LoadBackInfoForGraphIds(std::vector<vector<KernelGraphPtr>> *graph_ids_for_r
     MS_LOG(INFO) << "Root graph:" << root_kernel_graph->ToString() << " id:" << root_id
                  << " type:" << root_kernel_graph->type_name();
     auto root_id_str = std::to_string(root_id);
-    if (data_json.contains(kGraphIdsSingleCache) && data_json[kGraphIdsSingleCache].contains(root_id_str)) {
+    if (data_json.contains(kGraphIdsSingleCache) && data_json[kGraphIdsSingleCache].contains(root_id_str) &&
+        !data_json[kGraphIdsSingleCache][root_id_str].is_null()) {
       MS_LOG(INFO) << "Construct subgraphs for single graph compile cache.";
       auto cur_sub_ids_json = data_json[kGraphIdsSingleCache][root_id_str];
       for (auto graph_id : cur_sub_ids_json) {
