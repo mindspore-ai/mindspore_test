@@ -532,6 +532,32 @@ void RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info) {
     }
   }
 }
+
+void CacheGraphOutputNodeToParameterStore(const AnfNodePtr &node, const KernelWithIndex &node_with_index,
+                                          const KernelGraphPtr &graph) {
+  KernelWithIndex front_node_with_idx{nullptr, 0};
+  if (IsInternalParameter(node, graph)) {
+    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node);
+  } else {
+    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node);
+    if (front_node_with_idx.first == nullptr) {
+      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node, *graph), 0};
+    }
+  }
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  (void)graph_parameter_store->CorrectFrontNodeMap(node_with_index, front_node_with_idx);
+}
+
+bool IsInternelParameterInParameterStore(const AnfNodePtr &front_node) {
+  MS_EXCEPTION_IF_NULL(front_node);
+  auto real_front_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({front_node, 0}).first;
+  MS_EXCEPTION_IF_NULL(real_front_node);
+  if (EnableInputOptimize() && real_front_node->isa<Parameter>()) {
+    return true;
+  }
+  return false;
+}
 }  // namespace
 
 GraphScheduler &GraphScheduler::GetInstance() noexcept {
@@ -1420,6 +1446,7 @@ void GraphScheduler::CacheGraphOutputToActor(const GraphCompilerInfo &graph_comp
       if (kernel_type == KernelTransformType::kGraphParameterStore) {
         auto data_prepare_actor_name = ParameterStore::GetInstance().GetChosenGraphName() + kDataPrepareActorNameSuffix;
         output_actor = FetchActor(data_prepare_actor_name);
+        CacheGraphOutputNodeToParameterStore(output_with_index.first, origin_output_with_index, graph);
       }
       // Internal parameter need update the output actor and output kernel through the front node of last graph.
       if (kernel_type == KernelTransformType::kInternalParameter) {
@@ -2628,7 +2655,7 @@ void GraphScheduler::LinkDataArrowForInternalParameter(AbstractActor *const, Abs
   auto real_from_kernel_with_output_idx = from_kernel_with_output_idx;
   AbstractActor *real_from_actor = nullptr;
   KernelTransformType kernel_type;
-  if (EnableInputOptimize() && front_output_node->isa<Parameter>()) {
+  if (IsInternelParameterInParameterStore(front_output_node)) {
     kernel_type = KernelTransformType::kGraphParameterStore;
   } else if (IsPersistentDeviceTensor(front_output_node)) {
     kernel_type = KernelTransformType::kDeviceTensorStore;

@@ -160,6 +160,28 @@ class BACKEND_EXPORT GraphParameterStore {
     return iter->second;
   }
 
+  void CorrectFrontNodeMap(const KernelWithIndex &node_with_index, const KernelWithIndex &real_node_with_index) {
+    MS_EXCEPTION_IF_NULL(node_with_index.first);
+    MS_EXCEPTION_IF_NULL(real_node_with_index.first);
+    const auto &iter = node_to_real_front_node_.find(node_with_index);
+    if (iter != node_to_real_front_node_.end()) {
+      MS_LOG(INFO) << "Node: " << node_with_index.first->DebugString() << ", index: " << node_with_index.second
+                   << ", is already map to real front node: " << real_node_with_index.first->DebugString()
+                   << ", index: " << real_node_with_index.second << " in graph parameter store.";
+      return;
+    }
+    node_to_real_front_node_.emplace(node_with_index, real_node_with_index);
+  }
+  KernelWithIndex GetRealFrontNode(const KernelWithIndex &node_with_index) {
+    MS_EXCEPTION_IF_NULL(node_with_index.first);
+    auto iter = node_to_real_front_node_.find(node_with_index);
+    if (iter == node_to_real_front_node_.end()) {
+      MS_LOG(EXCEPTION) << "Can not find real front node for node " << node_with_index.first->DebugString()
+                        << ", index: " << node_with_index.second << " in graph parameter store.";
+    }
+    return iter->second;
+  }
+
   bool IsFrontNodeInStore(AnfNode *node) {
     auto iter = front_node_to_index_.find(node);
     if (iter == front_node_to_index_.end()) {
@@ -234,6 +256,9 @@ class BACKEND_EXPORT GraphParameterStore {
   std::map<DeviceTensorPosition, std::pair<TypePtr, KernelWithIndex>> release_data_info_;
 
   std::map<AnfNode *, size_t> front_node_to_index_;
+
+  // When front node to index failed, use the map to find real front node.
+  std::map<KernelWithIndex, KernelWithIndex> node_to_real_front_node_;
   std::map<size_t, AnfNode *> index_to_front_node_;
   // Store tensor from args.
   std::vector<std::vector<TensorPtr>> buffers_;
