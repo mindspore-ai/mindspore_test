@@ -2409,6 +2409,9 @@ def inverse(input):
     """
     Compute the inverse of the input matrix.
 
+    Note:
+        The `input` dtype of complex numbers is not supported.
+
     Args:
         input (Tensor): A matrix to be calculated. Input `input` must be at least two dimensions, and the size of
             the last two dimensions must be the same size. And the matrix must be invertible.
