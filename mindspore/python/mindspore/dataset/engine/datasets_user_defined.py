@@ -448,13 +448,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
     def _stop_subprocess(self):
         """Only the main process can call join. All the sub-process / sub-thread will be stopped."""
         if self.need_join is True and self.ppid == os.getpid():
-            # the sub-process / sub-thread will stop by self.eof.set()
-            if hasattr(self, 'eof') and self.eof is not None:
-                try:
-                    self.eof.set()
-                except AttributeError:  # maybe occur "'NoneType' object has no attribute 'maxsize'"
-                    pass
-
             # abort the monitor first
             self._abort_monitor()
             self.need_join = False
@@ -487,6 +480,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         """Deregister workers monitored by the watch dog and join clean process."""
         if get_enable_watchdog():
             cde.deregister_worker_pids(id(self))
+        if hasattr(self, 'eof') and self.eof is not None:
+            self.eof.set()
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
             # let the quit event notify the cleaning process to exit
             self.cleaning_process.join(timeout=5)
@@ -505,10 +500,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
 
     def __deepcopy__(self, memodict, exclude=()):
         self.__init__(self.dataset, self.num_worker, self.multi_process, self.max_rowsize)
-
-
-def _subprocess_handle(eof, signum, frame):
-    threading.Thread(target=eof.set()).start()
 
 
 def _ignore_sigint(is_multiprocessing):
@@ -541,7 +532,6 @@ def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiproces
 
     if is_multiprocessing:
         result_queue.cancel_join_thread()  # Ensure that the process does not hung when exiting
-        signal.signal(signal.SIGTERM, partial(_subprocess_handle, eof))
 
         # init the random seed and np.random seed for the subprocess
         if get_seed() != 5489:
