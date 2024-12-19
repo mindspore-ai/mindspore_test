@@ -26,7 +26,10 @@ Status CondVar::Wait(std::unique_lock<std::mutex> *lck, const std::function<bool
   try {
     if (svc_ != nullptr) {
       // If this cv registers with a global resource tracking, then wait unconditionally.
-      auto f = [this, &pred]() -> bool { return (pred() || this->Interrupted()); };
+      auto f = [this, &pred]() -> bool {
+        std::unique_lock<std::mutex> interrupt_lock(interrupt_mux_);
+        return (pred() || this->Interrupted());
+      };
       cv_.wait(*lck, f);
       // If we are interrupted, override the return value if this is the master thread.
       // Master thread is being interrupted mostly because of some thread is reporting error.
@@ -49,7 +52,10 @@ Status CondVar::WaitFor(std::unique_lock<std::mutex> *lck, int64_t duration) {
   try {
     if (svc_ != nullptr) {
       // If this cv registers with a global resource tracking, then wait unconditionally.
-      auto f = [this]() -> bool { return this->Interrupted(); };
+      auto f = [this]() -> bool {
+        std::unique_lock<std::mutex> interrupt_lock(interrupt_mux_);
+        return this->Interrupted();
+      };
       (void)cv_.wait_for(*lck, std::chrono::milliseconds(duration), f);
       // If we are interrupted, override the return value if this is the master thread.
       // Master thread is being interrupted mostly because of some thread is reporting error.
@@ -96,6 +102,11 @@ Status CondVar::Register(std::shared_ptr<IntrpService> svc) {
 
 void CondVar::Interrupt() {
   IntrpResource::Interrupt();
+  // If we call notify while the thread is executing the pred function in Wait/WaitFor method, it won't respond,
+  // and the interrupt status the thread gets may not have been updated yet, so it won't exit the wait state,
+  // resulting in the thread never being woken up. So we use a lock here to ensure that no thread is executing
+  // the pred function at the time of notify.
+  std::unique_lock<std::mutex> interrupt_lock(interrupt_mux_);
   cv_.notify_all();
 }
 

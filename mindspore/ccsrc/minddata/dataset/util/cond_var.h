@@ -31,7 +31,7 @@ class CondVar : public IntrpResource {
  public:
   CondVar();
 
-  ~CondVar() noexcept;
+  ~CondVar() noexcept override;
 
   Status Wait(std::unique_lock<std::mutex> *lck, const std::function<bool()> &pred);
 
@@ -59,6 +59,7 @@ class CondVar : public IntrpResource {
 
  private:
   std::string my_name_;
+  std::mutex interrupt_mux_;
 };
 }  // namespace dataset
 }  // namespace mindspore
