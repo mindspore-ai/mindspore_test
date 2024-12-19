@@ -6,7 +6,7 @@ ${return_type} ${op_name}(${input_args_with_type}) {
   ${clone_func}
   auto output = op->Call(${input_args});
 
-  static auto ${op_name}_grad_func = AutoGradFactory::Get().GetGradFunction<${class_name}GradFunc>(OpType::k${class_name});
+  static auto ${op_name}_grad_func = AutoGradFactory::Get().ops_auto_grad_registers().${class_name}GradFuncObj;
   ${op_name}_grad_func(op, ${input_args});
   MS_LOG(DEBUG) << "Out ${op_name} function";
   OpRunStatus::Get().SetLastOp(op);

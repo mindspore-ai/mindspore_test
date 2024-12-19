@@ -48,11 +48,14 @@ class BACKEND_EXPORT AutoGradFactory {
     }
   }
 
+  const OpsAutoGradRegisters &ops_auto_grad_registers() const { return ops_auto_grad_registers_; }
+
  private:
   AutoGradFactory() = default;
   ~AutoGradFactory() = default;
   DISABLE_COPY_AND_ASSIGN(AutoGradFactory);
 
+  OpsAutoGradRegisters ops_auto_grad_registers_;
   std::unordered_map<OpType, std::any> auto_grad_functions_{};
 };
 

@@ -30,6 +30,10 @@ enum class OpType {
 };
 
 ${op_grad_func}
+
+struct OpsAutoGradRegisters {
+  ${op_grad_func_obj}
+};
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
