@@ -79,6 +79,9 @@ class SplitWithSizeInfo : public SplitInfo {
       : SplitInfo(operator_name, inputs_shape, outputs_shape, attrs) {}
   ~SplitWithSizeInfo() override = default;
   void ReplaceNodeInputOrAttrs() override;
+
+ protected:
+  Status GetAttrs() override;
 };
 class SplitTensorInfo : public SplitInfo {
  public:
@@ -86,6 +89,9 @@ class SplitTensorInfo : public SplitInfo {
                   const PrimitiveAttrs &attrs)
       : SplitInfo(operator_name, inputs_shape, outputs_shape, attrs) {}
   ~SplitTensorInfo() override = default;
+
+ protected:
+  Status GetAttrs() override;
 };
 }  // namespace parallel
 }  // namespace mindspore

@@ -796,11 +796,11 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr SortExt(const NodePtr &input, const NodePtr &dim, const NodePtr &descending, const NodePtr &stable) {
     return Emit("SortExt", {input, dim, descending, stable});
   }
-  virtual NodePtr SplitTensor(const NodePtr &input_x, const NodePtr &split_int, const NodePtr &axis) {
-    return Emit("SplitTensor", {input_x, split_int, axis});
+  virtual NodePtr SplitTensor(const NodePtr &input, const NodePtr &split_size, const NodePtr &dim) {
+    return Emit("SplitTensor", {input, split_size, dim});
   }
-  virtual NodePtr SplitWithSize(const NodePtr &input_x, const NodePtr &split_sections, const NodePtr &axis) {
-    return Emit("SplitWithSize", {input_x, split_sections, axis});
+  virtual NodePtr SplitWithSize(const NodePtr &input, const NodePtr &split_size, const NodePtr &dim) {
+    return Emit("SplitWithSize", {input, split_size, dim});
   }
   virtual NodePtr Sqrt(const NodePtr &x) { return Emit("Sqrt", {x}); }
   virtual NodePtr Square(const NodePtr &input) { return Emit("Square", {input}); }

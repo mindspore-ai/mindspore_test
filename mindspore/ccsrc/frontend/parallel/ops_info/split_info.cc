@@ -101,6 +101,62 @@ Status SplitVInfo::GetAttrs() {
   return SUCCESS;
 }
 
+Status SplitWithSizeInfo::GetAttrs() {
+  auto dim_opt = GetScalarValueFromInputs<int64_t>(input_value_, name_, DIM);
+  if (!dim_opt.has_value()) {
+    MS_LOG(ERROR) << name_ << ": Cannot get dim value.";
+    return FAILED;
+  }
+  auto dim = dim_opt.value();
+
+  if (inputs_shape_.empty()) {
+    MS_LOG(ERROR) << name_ << ": The inputs shape is empty";
+    return FAILED;
+  }
+  int dim_size = SizeToInt(inputs_shape_[0].size());
+  if (dim < 0) {
+    dim = dim + dim_size;
+  }
+  axis_ = LongToSize(dim);
+
+  inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
+
+  auto prim = GetCNodePrimitive(cnode_);
+  if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
+    skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
+  }
+
+  return SUCCESS;
+}
+
+Status SplitTensorInfo::GetAttrs() {
+  auto dim_opt = GetScalarValueFromInputs<int64_t>(input_value_, name_, DIM);
+  if (!dim_opt.has_value()) {
+    MS_LOG(ERROR) << name_ << ": Cannot get dim value.";
+    return FAILED;
+  }
+  auto dim = dim_opt.value();
+
+  if (inputs_shape_.empty()) {
+    MS_LOG(ERROR) << name_ << ": The inputs shape is empty";
+    return FAILED;
+  }
+  int dim_size = SizeToInt(inputs_shape_[0].size());
+  if (dim < 0) {
+    dim = dim + dim_size;
+  }
+  axis_ = LongToSize(dim);
+
+  inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
+
+  auto prim = GetCNodePrimitive(cnode_);
+  if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
+    skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
+  }
+
+  return SUCCESS;
+}
+
 Status SplitVInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
   GenerateGraph gen_g = GenerateGraph(attrs_);
   if (gen_g.Init(cnode) != SUCCESS) {

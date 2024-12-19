@@ -1050,12 +1050,12 @@ NodePtr FuncBuilder::SortExt(const NodePtr &input, const NodePtr &dim, const Nod
   return NativeFunc::SortExt(input, dim, descending, stable);
 }
 
-NodePtr FuncBuilder::SplitTensor(const NodePtr &input_x, const NodePtr &split_int, const NodePtr &axis) {
-  return NativeFunc::SplitTensor(input_x, split_int, axis);
+NodePtr FuncBuilder::SplitTensor(const NodePtr &input, const NodePtr &split_size, const NodePtr &dim) {
+  return NativeFunc::SplitTensor(input, split_size, dim);
 }
 
-NodePtr FuncBuilder::SplitWithSize(const NodePtr &input_x, const NodePtr &split_sections, const NodePtr &axis) {
-  return NativeFunc::SplitWithSize(input_x, split_sections, axis);
+NodePtr FuncBuilder::SplitWithSize(const NodePtr &input, const NodePtr &split_size, const NodePtr &dim) {
+  return NativeFunc::SplitWithSize(input, split_size, dim);
 }
 
 NodePtr FuncBuilder::Sqrt(const NodePtr &x) { return NativeFunc::Sqrt(x); }

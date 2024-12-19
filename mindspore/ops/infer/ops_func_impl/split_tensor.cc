@@ -39,28 +39,28 @@ BaseShapePtr SplitTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
-  auto axis_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
-  if (MS_UNLIKELY(!axis_value.has_value())) {
+  auto dim_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
+  if (MS_UNLIKELY(!dim_value.has_value())) {
     MS_LOG(EXCEPTION) << "split_size's value is valueany";
   }
 
-  auto axis = axis_value.value();
+  auto dim = dim_value.value();
   std::vector<abstract::BaseShapePtr> output_list;
-  auto split_sections = CaculateSplitSections(input_args[kIndex1]);
+  auto split_size = CaculateSplitSections(input_args[kIndex1]);
   auto rank = SizeToLong(input_shape.size());
 
-  if (axis < 0) {
-    axis += rank;
+  if (dim < 0) {
+    dim += rank;
   }
-  size_t pos = LongToSize(axis);
+  size_t pos = LongToSize(dim);
 
   auto output_shape = input_shape;
-  output_shape[pos] = split_sections;
-  for (int64_t i = 0; i < input_shape[pos] / split_sections; ++i) {
+  output_shape[pos] = split_size;
+  for (int64_t i = 0; i < input_shape[pos] / split_size; ++i) {
     abstract::ShapePtr output = std::make_shared<abstract::Shape>(output_shape);
     (void)output_list.emplace_back(output);
   }
-  int64_t last_size = input_shape[pos] % split_sections;
+  int64_t last_size = input_shape[pos] % split_size;
   if (last_size != 0) {
     auto last_shape = input_shape;
     last_shape[pos] = last_size;
@@ -74,21 +74,21 @@ TypePtr SplitTensorFuncImpl::InferType(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
-  auto axis_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
-  if (MS_UNLIKELY(!axis_value.has_value())) {
-    MS_LOG(EXCEPTION) << "axis's value is valueany";
+  auto dim_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
+  if (MS_UNLIKELY(!dim_value.has_value())) {
+    MS_LOG(EXCEPTION) << "dim's value is valueany";
   }
 
-  auto axis = axis_value.value();
+  auto dim = dim_value.value();
   auto rank = SizeToLong(input_shape.size());
-  if (axis < 0) {
-    axis += rank;
+  if (dim < 0) {
+    dim += rank;
   }
-  size_t pos = LongToSize(axis);
-  auto split_sections = CaculateSplitSections(input_args[kIndex1]);
-  auto output_num = (input_shape[pos] % split_sections) == 0
-                      ? static_cast<size_t>(input_shape[pos] / split_sections)
-                      : static_cast<size_t>(input_shape[pos] / split_sections) + KInputNum;
+  size_t pos = LongToSize(dim);
+  auto split_size = CaculateSplitSections(input_args[kIndex1]);
+  auto output_num = (input_shape[pos] % split_size) == 0
+                      ? static_cast<size_t>(input_shape[pos] / split_size)
+                      : static_cast<size_t>(input_shape[pos] / split_size) + KInputNum;
   auto infer_type = input_args[0]->GetType();
   MS_EXCEPTION_IF_NULL(infer_type);
   static const std::set<TypePtr> valid_types = {kInt8,    kInt16,   kInt32,     kInt64,      kFloat16,
@@ -108,13 +108,13 @@ int32_t SplitTensorFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   auto rank = SizeToLong(input_shape.size());
   MS_CHECK_VALUE(rank > 0,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, KInputNum, primitive));
-  auto axis_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
-  if (MS_UNLIKELY(!axis_value.has_value()) || IsDynamicRank(input_shape)) {
+  auto dim_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
+  if (MS_UNLIKELY(!dim_value.has_value()) || IsDynamicRank(input_shape)) {
     return OP_CHECK_RETRY;
   }
-  auto axis = axis_value.value();
-  MS_CHECK_VALUE(axis >= -rank && axis < rank,
-                 CheckAndConvertUtils::FormatCheckInRangeMsg("axis", axis, kIncludeLeft, {-rank, rank}, primitive));
+  auto dim = dim_value.value();
+  MS_CHECK_VALUE(dim >= -rank && dim < rank,
+                 CheckAndConvertUtils::FormatCheckInRangeMsg("dim", dim, kIncludeLeft, {-rank, rank}, primitive));
   if (!input_args[kInputIndex1]->GetType()->isa<TypeNone>()) {
     auto n_opt = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue());
     if (n_opt.value() <= 0) {

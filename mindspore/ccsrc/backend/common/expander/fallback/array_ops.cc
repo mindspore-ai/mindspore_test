@@ -219,18 +219,18 @@ REG_FALLBACK_BUILDER("FillTensor").SetBody(BODYFUNC(ib) {
   return {out};
 });
 
-NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input, const NodePtr &split_int,
-                                    int64_t axis) {
+NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input, const NodePtr &split_size,
+                                    int64_t dim) {
   constexpr int64_t SPLIT_LOOP_SIZE = 32;
-  auto split_int_val = GetValue<int64_t>(split_int->BuildValue());
+  auto split_size_val = GetValue<int64_t>(split_size->BuildValue());
   const auto &input_shape = input->shape();
-  auto dimSize = input_shape[axis];
-  if (static_cast<int64_t>(split_int_val) == dimSize) {
+  auto dimSize = input_shape[dim];
+  if (static_cast<int64_t>(split_size_val) == dimSize) {
     return {input};
   } else {
-    int64_t numSplit = (split_int_val + dimSize - 1) / split_int_val;
-    int64_t lastSplitSize = split_int_val - (static_cast<int64_t>(split_int_val) * numSplit - dimSize);
-    std::vector<int64_t> splitVector(numSplit, static_cast<int64_t>(split_int_val));
+    int64_t numSplit = (split_size_val + dimSize - 1) / split_size_val;
+    int64_t lastSplitSize = split_size_val - (static_cast<int64_t>(split_size_val) * numSplit - dimSize);
+    std::vector<int64_t> splitVector(numSplit, static_cast<int64_t>(split_size_val));
     splitVector[numSplit - 1] = lastSplitSize;
     // Using loop splitting in the AiCore scene of the SplitV operator or when the number of outputs exceeds 32
     if (splitVector.size() > SPLIT_LOOP_SIZE) {
@@ -268,12 +268,12 @@ NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input,
         // Calculate offset, increasing offset block by block
         std::vector<int64_t> offsetVector(dim, 0);
         offsetVal += sliceIndex == 0 ? 0 : newSplitSize[sliceIndex - 1];
-        offsetVector[static_cast<size_t>(axis)] = offsetVal;
+        offsetVector[static_cast<size_t>(dim)] = offsetVal;
         // Calculate size, which is consistent with the output block size
         std::vector<int64_t> sizeVector;
         for (size_t selfIndex = 0; selfIndex < dim; selfIndex++) {
           int64_t sizeValue =
-            selfIndex == static_cast<size_t>(axis) ? newSplitSize[sliceIndex] : input->shape()[selfIndex];
+            selfIndex == static_cast<size_t>(dim) ? newSplitSize[sliceIndex] : input->shape()[selfIndex];
           sizeVector.emplace_back(sizeValue);
         }
         // Using Slice to process each block
@@ -282,7 +282,7 @@ NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input,
         // Using SPLitV to slice
         auto out = ib->Emit("SplitV", {slice},
                             {{"size_splits", MakeValue(splitList[sliceIndex])},
-                             {"split_dim", MakeValue<int64_t>(axis)},
+                             {"split_dim", MakeValue<int64_t>(dim)},
                              {"num_split", MakeValue<int64_t>(splitList[sliceIndex].size())}});
         for (size_t i = 0; i < splitList[sliceIndex].size(); i++) {
           subTensors.emplace_back(ib->TupleGetItem(out, i));
@@ -292,7 +292,7 @@ NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input,
     } else {
       auto out = ib->Emit("SplitV", {input},
                           {{"size_splits", MakeValue(splitVector)},
-                           {"split_dim", MakeValue<int64_t>(axis)},
+                           {"split_dim", MakeValue<int64_t>(dim)},
                            {"num_split", MakeValue<int64_t>(splitVector.size())}});
       return {out};
     }
@@ -300,7 +300,7 @@ NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input,
 }
 
 NodePtrList SplitWithSizeFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input, const NodePtr &split_size,
-                                      int64_t axis) {
+                                      int64_t dim) {
   constexpr int64_t SPLIT_LOOP_SIZE = 32;
   auto split_size_shape = GetValue<std::vector<int64_t>>(split_size->BuildValue());
   if (split_size_shape.size() == 1) {
@@ -340,12 +340,12 @@ NodePtrList SplitWithSizeFallbackFunc(FallbackIRBuilder *ib, const NodePtr &inpu
       // Calculate offset, increasing offset block by block
       std::vector<int64_t> offsetVector(dim, 0);
       offsetVal += sliceIndex == 0 ? 0 : newSplitSize[sliceIndex - 1];
-      offsetVector[static_cast<size_t>(axis)] = offsetVal;
+      offsetVector[static_cast<size_t>(dim)] = offsetVal;
       // Calculate size, which is consistent with the output block size
       std::vector<int64_t> sizeVector;
       for (size_t selfIndex = 0; selfIndex < dim; selfIndex++) {
         int64_t sizeValue =
-          selfIndex == static_cast<size_t>(axis) ? newSplitSize[sliceIndex] : input->shape()[selfIndex];
+          selfIndex == static_cast<size_t>(dim) ? newSplitSize[sliceIndex] : input->shape()[selfIndex];
         sizeVector.emplace_back(sizeValue);
       }
       // Using Slice to process each block
@@ -353,7 +353,7 @@ NodePtrList SplitWithSizeFallbackFunc(FallbackIRBuilder *ib, const NodePtr &inpu
       // Using SPLitV to slice
       auto out = ib->Emit("SplitV", {slice},
                           {{"size_splits", MakeValue(splitList[sliceIndex])},
-                           {"split_dim", MakeValue<int64_t>(axis)},
+                           {"split_dim", MakeValue<int64_t>(dim)},
                            {"num_split", MakeValue<int64_t>(splitList[sliceIndex].size())}});
       for (size_t i = 0; i < splitList[sliceIndex].size(); i++) {
         subTensors.emplace_back(ib->TupleGetItem(out, i));
@@ -363,7 +363,7 @@ NodePtrList SplitWithSizeFallbackFunc(FallbackIRBuilder *ib, const NodePtr &inpu
   } else {
     auto out = ib->Emit("SplitV", {input},
                         {{"size_splits", MakeValue(split_size->BuildValue())},
-                         {"split_dim", MakeValue<int64_t>(axis)},
+                         {"split_dim", MakeValue<int64_t>(dim)},
                          {"num_split", MakeValue<int64_t>(split_size_shape.size())}});
     return {out};
   }
@@ -371,39 +371,39 @@ NodePtrList SplitWithSizeFallbackFunc(FallbackIRBuilder *ib, const NodePtr &inpu
 
 REG_FALLBACK_BUILDER("SplitTensor").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
-  auto split_int = ib->GetInput(kIndex1);
-  auto axis = ib->GetInput(kIndex2);
-  if (!IsValueKnown(axis->BuildValue()) || !IsValueKnown(split_int->BuildValue())) {
-    MS_EXCEPTION(ValueError) << "For `SplitWithTensor` , the `split_int` and `axis` must currently be a constant!";
+  auto split_size = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  if (!IsValueKnown(dim->BuildValue()) || !IsValueKnown(split_size->BuildValue())) {
+    MS_EXCEPTION(ValueError) << "For `SplitWithTensor` , the `split_size` and `dim` must currently be a constant!";
   }
   const auto &input_shape = input->shape();
-  auto axis_val = GetValue<int64_t>(axis->BuildValue());
+  auto dim_val = GetValue<int64_t>(dim->BuildValue());
   if (IsDynamicRank(input_shape)) {
     MS_EXCEPTION(ValueError)
       << "For `SplitTensor` op, the variable `input` is with dynamic rank, which is unsupported for now!";
   }
-  if (axis_val < 0) {
-    axis_val += SizeToLong(input_shape.size());
+  if (dim_val < 0) {
+    dim_val += SizeToLong(input_shape.size());
   }
-  if (input_shape[axis_val] == abstract::Shape::kShapeDimAny) {
+  if (input_shape[dim_val] == abstract::Shape::kShapeDimAny) {
     MS_EXCEPTION(ValueError)
       << "For `Chunk` op, the target dim of `input` is with dynamic shape, which is unsupported for now!";
   }
-  return SplitTensorFallbackFunc(ib, input, split_int, axis_val);
+  return SplitTensorFallbackFunc(ib, input, split_size, dim_val);
 });
 
 REG_FALLBACK_BUILDER("SplitWithSize").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
-  auto axis = ib->GetInput(kIndex2);
-  if (!IsValueKnown(axis->BuildValue())) {
-    MS_EXCEPTION(ValueError) << "For `SplitWithSize` , the `split_int` and `axis` must currently be a constant!";
+  auto dim = ib->GetInput(kIndex2);
+  if (!IsValueKnown(dim->BuildValue())) {
+    MS_EXCEPTION(ValueError) << "For `SplitWithSize` , the `split_size` and `dim` must currently be a constant!";
   }
   const auto &input_shape = input->shape();
-  auto axis_val = GetValue<int64_t>(axis->BuildValue());
-  if (axis_val < 0 && !IsDynamicRank(input_shape)) {
-    axis_val += SizeToLong(input_shape.size());
+  auto dim_val = GetValue<int64_t>(dim->BuildValue());
+  if (dim_val < 0 && !IsDynamicRank(input_shape)) {
+    dim_val += SizeToLong(input_shape.size());
   }
-  return SplitWithSizeFallbackFunc(ib, input, ib->GetInput(kIndex1), axis_val);
+  return SplitWithSizeFallbackFunc(ib, input, ib->GetInput(kIndex1), dim_val);
 });
 
 REG_FALLBACK_BUILDER("Chunk").SetBody(BODYFUNC(ib) {
