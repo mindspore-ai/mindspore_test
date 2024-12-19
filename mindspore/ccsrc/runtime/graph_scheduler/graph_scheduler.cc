@@ -322,11 +322,6 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   }
 
-  const auto &parser = graph_compiler_info.control_node_parser_;
-  if (parser != nullptr && (parser->IsInited())) {
-    return false;
-  }
-
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     // Do not support any type currently.
@@ -1886,7 +1881,8 @@ void CollectRefDeviceTensorForStore(const GraphCompilerInfo &graph_compiler_info
       MS_EXCEPTION_IF_NULL(front_node_with_index.first);
       if (origin_node_with_index.first->isa<Parameter>() && front_node_with_index.first->isa<Parameter>() &&
           AnfAlgo::OutputAddrExist(pair.first.first, pair.first.second) &&
-          AnfAlgo::OutputAddrExist(origin_node_with_index.first, origin_node_with_index.second)) {
+          AnfAlgo::OutputAddrExist(origin_node_with_index.first, origin_node_with_index.second) &&
+          graph_parameter_store->IsFrontNodeInStore(front_node_with_index.first.get())) {
         auto key = GetDeviceTensorPosition(front_node_with_index, origin_node_with_index, graph);
         auto value = AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false);
         graph_parameter_store->InsertRefDeviceTensors(key, value.get());
@@ -2304,23 +2300,6 @@ DataPrepareActorPtr GraphScheduler::BuildDataPrepareActor(const GraphCompilerInf
   return data_prepare_actor;
 }
 
-bool CheckHasInputForInputOptimize(const AbstractActorPtr &actor) {
-  if (!EnableInputOptimize()) {
-    return false;
-  }
-
-  for (auto &parameter_index : actor->parameter_indexs()) {
-    auto node = parameter_index.second.first.first;
-    MS_EXCEPTION_IF_NULL(node);
-    auto parameter = node->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(parameter);
-    if (!common::AnfAlgo::IsParameterWeight(parameter)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 std::vector<AbstractActorPtr> GraphScheduler::BuildNoInputKernelActor(const ActorSet *actor_set,
                                                                       GraphExecutionStrategy strategy) const {
   MS_EXCEPTION_IF_NULL(actor_set);
@@ -2328,9 +2307,6 @@ std::vector<AbstractActorPtr> GraphScheduler::BuildNoInputKernelActor(const Acto
 
   for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
     MS_EXCEPTION_IF_NULL(super_kernel_actor);
-    if (CheckHasInputForInputOptimize(super_kernel_actor)) {
-      continue;
-    }
 
     if ((super_kernel_actor->input_datas_num_ == 0) && (super_kernel_actor->input_controls_num_ == 0)) {
       (void)no_input_kernel_actors.emplace_back(super_kernel_actor);
@@ -2345,10 +2321,6 @@ std::vector<AbstractActorPtr> GraphScheduler::BuildNoInputKernelActor(const Acto
       continue;
     }
 
-    if (CheckHasInputForInputOptimize(kernel_actor)) {
-      continue;
-    }
-
     if ((kernel_actor->input_datas_num_ == 0) && (kernel_actor->input_controls_num_ == 0)) {
       (void)no_input_kernel_actors.emplace_back(kernel_actor);
     }
@@ -2356,9 +2328,6 @@ std::vector<AbstractActorPtr> GraphScheduler::BuildNoInputKernelActor(const Acto
 
   for (auto &custom_actor : actor_set->custom_actors_) {
     MS_EXCEPTION_IF_NULL(custom_actor);
-    if (CheckHasInputForInputOptimize(custom_actor)) {
-      continue;
-    }
 
     if ((custom_actor->input_datas_num_ == 0) && (custom_actor->input_controls_num_ == 0)) {
       (void)no_input_kernel_actors.emplace_back(custom_actor);

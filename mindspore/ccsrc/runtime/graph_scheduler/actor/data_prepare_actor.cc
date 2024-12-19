@@ -1450,8 +1450,11 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     if (enable_input_optimize_) {
       auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
       MS_EXCEPTION_IF_NULL(graph_parameter_store);
-      auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_parameter.get());
-      (void)FetchParameter(std::make_pair(control_node_parameters[i], outer_idx), context, nullptr, GetAID());
+      const auto &node_with_index_with_context =
+        control_node_parser->FetchBackendParameterWithContextByFrontParameter(control_node_parameters[i]);
+      const auto &device_context = node_with_index_with_context.second;
+      auto outer_index = graph_parameter_store->GetFrontNodeToIndex(front_parameter.get());
+      (void)FetchParameter({control_node_parameters[i], outer_index}, context, device_context, GetAID());
       continue;
     }
 
