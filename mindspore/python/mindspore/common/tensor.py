@@ -1194,33 +1194,33 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return Tensor_.storage_offset(self)
 
-    def register_hook(self, hook_fn):
+    def register_hook(self, hook):
         """
         Registers a backward hook for tensor.
 
         Note:
-            - The `hook_fn` must be defined as the following code. `grad` is the gradient passed to the tensor,
+            - The `hook` must be defined as the following code. `grad` is the gradient passed to the tensor,
               which may be modified by returning a new output gradient.
-            - The `hook_fn` should have the following signature:
-              hook_fn(grad) -> New output gradient, but can not return None or not set return value.
+            - The `hook` should have the following signature:
+              hook(grad) -> New output gradient, but can not return None or not set return value.
             - The following constraints must be met under graph mode:
 
-              - The `hook_fn` must satisfy the syntax constraints of the graph mode.
-              - Registering `hook_fn` for `Parameter` is not supported in the graph (i.e., function `Cell.construct` or
+              - The `hook` must satisfy the syntax constraints of the graph mode.
+              - Registering `hook` for `Parameter` is not supported in the graph (i.e., function `Cell.construct` or
                 function decorated by `@jit`).
-              - It is not supported to delete `hook_fn` inside graph.
+              - It is not supported to delete `hook` inside graph.
 
-              - Register `hook_fn` in the graph will return then `Tensor` it self.
+              - Register `hook` in the graph will return then `Tensor` it self.
 
         Args:
-            hook_fn (function): Python function. Tensor backward hook function.
+            hook (function): Python function. Tensor backward hook function.
 
         Returns:
-            A handle corresponding to the `hook_fn` . The handle can be used to remove the added `hook_fn` by calling
+            A handle corresponding to the `hook` . The handle can be used to remove the added `hook` by calling
             `handle.remove()` .
 
         Raises:
-            TypeError: If the `hook_fn` is not a function of python.
+            TypeError: If the `hook` is not a function of python.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
@@ -1243,10 +1243,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output)
             (Tensor(shape=[], dtype=Float32, value=8), Tensor(shape=[], dtype=Float32, value=6))
         """
-        if not check_hook_fn("register_hook", hook_fn):
+        if not check_hook_fn("register_hook", hook):
             return _TensorHookHandle(self)
         handle = _TensorHookHandle(self)
-        handle.id = Tensor_.register_hook(self, hook_fn)
+        handle.id = Tensor_.register_hook(self, hook)
         return handle
 
     def _remove_hook(self):
