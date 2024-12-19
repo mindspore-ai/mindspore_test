@@ -208,6 +208,22 @@ MemBuf *MemBufAllocator::MallocExpandBlock(size_t size) {
   return MapAndSplitMemBuf(candidate, size);
 }
 
+void MemBufAllocator::Initialize(size_t size) {
+  MS_LOG(INFO) << "Initialize allocator : " << BriefInfo() << " with size : " << size << ".";
+  if (enable_eager_free_) {
+    MS_LOG(INFO) << "Skip initialization of allocator, since vmm is enabled.";
+    return;
+  }
+  MemBlock *mem_block = ExpandBlock(size);
+  if (mem_block == nullptr) {
+    MS_LOG(WARNING) << "Initialize allocator failed, size : " << size << ".";
+    return;
+  }
+  MemBuf *mem_buf =
+    new MemBuf(mem_block->size_, mem_block->addr_, mem_block->stream_id_, mem_block, MemBufStatus::kMemBufIdle);
+  (void)free_mem_bufs_.emplace(mem_buf);
+}
+
 const std::pair<size_t, size_t> MemBufAllocator::FreeIdleMemsByEagerFree() {
   // Free all idle mem bufs.
   size_t eager_free_size = 0;
@@ -316,12 +332,13 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
 MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
   MemBlock *mem_block = mem_block_expander_(size);
   if (mem_block == nullptr) {
-    MS_LOG(ERROR) << "Expand block failed, expand size : 0.";
+    MS_LOG(ERROR) << "Expand block failed, expand size : 0, memory is not enough";
     return nullptr;
   }
 
   if (mem_block->size_ < size) {
-    MS_LOG(ERROR) << "Expand block failed, expand size : " << mem_block->size_ << ".";
+    MS_LOG(ERROR) << "Expand block failed, expand size : " << mem_block->size_
+                  << " is less than require size : " << size << ".";
   }
 
   (void)mem_blocks_.emplace_back(mem_block);
@@ -329,6 +346,26 @@ MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
 }
 
 AbstractDynamicMemPool::AbstractDynamicMemPool() {}
+
+void AbstractDynamicMemPool::Initialize(size_t init_size, size_t increase_size, size_t max_size) {
+  if (init_size == 0) {
+    MS_LOG(INFO) << "Skip initialization of memory pool since init size is not configured.";
+    return;
+  }
+
+  LockGuard lock(lock_);
+  MS_LOG(INFO) << "Initialize dynamic memory pool, init size : " << init_size << ", increase size : " << increase_size
+               << ", max size : " << max_size << ".";
+  init_size_ = init_size >> 1;
+  increase_size_ = increase_size;
+  max_size_ = max_size;
+
+  // Do initialization with init size.
+  auto persistent_allocator = GetMemBufAllocator(init_size_, true, kDefaultStreamIndex);
+  persistent_allocator->Initialize(AlignMemorySize(init_size_));
+  auto common_allocator = GetMemBufAllocator(init_size_, false, kDefaultStreamIndex);
+  common_allocator->Initialize(AlignMemorySize(init_size_));
+}
 
 void AbstractDynamicMemPool::ReleaseDeviceRes() {
   LockGuard lock(lock_);
@@ -784,6 +821,7 @@ bool AbstractDynamicMemPool::DoSyncAllEvents() {
 
 size_t AbstractDynamicMemPool::CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool) {
   auto device_free_mem_size = free_mem_size();
+  // Make sure available mem is enough.
   if (device_free_mem_size < size) {
     MS_LOG(WARNING) << "Memory not enough: current free memory size[" << device_free_mem_size
                     << "] is smaller than required size[" << size << "].";
@@ -794,7 +832,11 @@ size_t AbstractDynamicMemPool::CalMemBlockAllocSize(size_t size, bool from_persi
     MS_LOG(WARNING) << "Device memory size [" << device_free_mem_size << "] is smaller than unit size [" << unit_size
                     << "].";
   }
-  auto alloc_size = std::max(unit_size, size);
+  // Calculate alloc size.
+  size_t alloc_size = unit_size;
+  if (size > unit_size) {
+    alloc_size = ((size + unit_size - 1) / unit_size) * unit_size;
+  }
   return std::min(alloc_size, device_free_mem_size);
 }
 
