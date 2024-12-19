@@ -15,7 +15,7 @@ mindspore.Tensor.var
     参数：
         - **axis** (Union[None, int, tuple(int)]，可选) - 维度，在指定维度上计算方差。其默认值是展开Tensor的方差。默认值： ``None`` 。
         - **ddof** (int，可选) - δ自由度。默认值： ``0`` 。计算中使用的除数是 :math:`N - ddof` ，其中 :math:`N` 表示元素的数量。
-        - **keepdims** (bool，可选) - 默认值： ``False`` 。
+        - **keepdims** (bool，可选) - 是否保留输出Tensor的维度。如果为 ``True`` ，则保留缩小的维度，大小为1。否则移除维度。默认值： ``False`` 。
 
     返回：
         含有方差值的Tensor。

@@ -14,11 +14,12 @@ var:
         Numpy arguments `dtype`, `out` and `where` are not supported.
 
     Args:
-        axis (Union[None, int, tuple(int), optional]): Axis or axes along which the variance is computed.
+        axis (Union[None, int, tuple(int)], optional): Axis or axes along which the variance is computed.
             The default is to compute the variance of the flattened array. Default: ``None`` .
         ddof (int, optional): Means Delta Degrees of Freedom. Default: ``0`` .
             The divisor used in calculations is :math:`N - ddof`, where :math:`N` represents the number of elements.
-        keepdims (bool, optional): Default: ``False`` .
+        keepdims (bool, optional): Whether the output Tensor has dim retained or not. If ``True`` , keep these reduced
+            dimensions and the length is 1. If ``False`` , don't keep these dimensions. Default: ``False`` .
 
     Returns:
         Variance tensor.

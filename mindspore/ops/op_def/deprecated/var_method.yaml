@@ -9,6 +9,7 @@ var:
       default: None
     ddof:
       dtype: int
+      type_cast: bool
       default: 0
     keepdims:
       dtype: bool

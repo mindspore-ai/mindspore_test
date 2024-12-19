@@ -98,6 +98,11 @@ def test_deprecated_tensor_var(mode):
     expect_output = generate_deprecated_expect_forward_output(input_x, axis=axis, ddof=ddof, keepdims=keepdims)
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-4)
 
+    net = VarPythonNet()
+    axis, ddof, keepdims = 0, False, True
+    output = net(input_x, axis=axis, ddof=ddof, keepdims=keepdims)
+    expect_output = generate_deprecated_expect_forward_output(input_x, axis=axis, ddof=ddof, keepdims=keepdims)
+    np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-4)
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
           level_mark='level1',
