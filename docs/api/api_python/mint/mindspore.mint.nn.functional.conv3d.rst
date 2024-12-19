@@ -33,15 +33,15 @@ mindspore.mint.nn.functional.conv3d
 
     以下罗列参数的一些限制条件。
 
-    input -- conv3d的输入. 输入的每个维度大小必须在[1, int32_max]范围内。
-    weight -- shape为 :math:`(C_{out}, C_{in} / groups, kd, kh, kw)` 的滤波器。:math:`kh` 和 :math:`kw` 的值在 [1, 511] 范围内。其余值在 [1, int32_max] 范围内。
-    并且 :math:`kh*kw*k0` 必须小于 65536（其中 k0 为 16。如果数据类型是 float32，则 k0 为 8）。
-    bias -- 形状为 :math:`(C_{out})` 的偏置张量。其形状必须与权重的第一维相等。
-    math:`stride` -- 内核移动的步幅。它可以是一个整数或一个元组（表示为 :math:`(stride_d, stride_h, stride_w)` ）。
-    其中，stride_h 和 stride_w 的范围是 [1, 63]，stride_d 的范围是 [1, 255]。
-    padding -- 如果 padding 是一个整数，则其范围为 [0, 255]。
-    dilation -- 该值的范围是 [1, 255]。
-    groups -- 该值的范围是 [1, 65535]。
+    - input -- conv3d的输入. 输入的每个维度大小必须在[1, int32_max]范围内。
+    - weight -- shape为 :math:`(C_{out}, C_{in} / groups, kd, kh, kw)` 的滤波器。:math:`kh` 和 :math:`kw` 的值在 [1, 511] 范围内。其余值在 [1, int32_max] 范围内。
+      并且 :math:`kh*kw*k0` 必须小于 65536（其中 k0 为 16。如果数据类型是 float32，则 k0 为 8）。
+    - bias -- 形状为 :math:`(C_{out})` 的偏置张量。其形状必须与权重的第一维相等。
+    - math:`stride` -- 内核移动的步幅。它可以是一个整数或一个元组（表示为 :math:`(stride_d, stride_h, stride_w)` ）。
+      其中，stride_h 和 stride_w 的范围是 [1, 63]，stride_d 的范围是 [1, 255]。
+    - padding -- 如果 padding 是一个整数，则其范围为 [0, 255]。
+    - dilation -- 该值的范围是 [1, 255]。
+    - groups -- 该值的范围是 [1, 65535]。
 	
 	属性之间的限制条件:
 
@@ -64,7 +64,7 @@ mindspore.mint.nn.functional.conv3d
     15. 如果 `padding` 为 ``same``, `stride` 必须为 1。
 
     .. warning::
-        该API不支持昇腾910。
+        该API不支持Atlas系列产品。
         这是一个实验性API，后续可能修改或删除。
 
     参数：
