@@ -5485,8 +5485,8 @@ def tril_ext(input, diagonal=0):
 
     Args:
         input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
-          Supporting all number types including bool.
-        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: 0,
+            Supporting all number types including bool.
+        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: ``0``,
             indicating the main diagonal.
 
     Returns:

@@ -10,7 +10,7 @@ stack_ext:
 
         Args:
             tensors (Union[tuple, list]): A Tuple or list of Tensor objects with the same shape and type.
-            dim (int): Dimension to stack. The range is [-(R+1), R+1). Default: ``0`` .
+            dim (int, optional): Dimension to stack. The range is [-(R+1), R+1). Default: ``0`` .
 
         Returns:
             Tensor. A stacked Tensor with the same type as `tensors`.
@@ -18,7 +18,7 @@ stack_ext:
         Raises:
             TypeError: If the data types of elements in `tensors` are not the same.
             ValueError: If `dim` is out of the range [-(R+1), R+1);
-                        or if the shapes of elements in tensors are not the same.
+                        or if the shapes of elements in `tensors` are not the same.
 
         Supported Platforms:
             ``Ascend``

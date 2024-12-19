@@ -1989,7 +1989,6 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
 
     Raises:
         TypeError: If `input` is not a Tensor whose dtype is not in float16, float32, float64 or bfloat16.
-        , 或是shape为(1, 1)的Tensor
         TypeError: If `num_samples` is not an int, a Scalar of int
             or a Tensor with shape[1,] and only one int element.
         RuntimeError: If :math:`\text{num_samples} <= 0`.
