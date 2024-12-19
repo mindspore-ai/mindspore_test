@@ -700,7 +700,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
     The column names and column types of generated dataset depend on Python data defined by users.
 
     Args:
-        source (Union[Callable, Iterable, Random Accessible]): A custom dataset from which to load the data.
+        source (Union[Random Accessible, Iterable]): A custom dataset from which to load the data.
             MindSpore supports the following types of datasets:
 
             - Random-accessible (map-style) datasets: A dataset object that implements the `__getitem__()`

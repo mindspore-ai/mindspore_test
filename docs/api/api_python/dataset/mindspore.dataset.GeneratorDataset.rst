@@ -6,7 +6,7 @@
     自定义Python数据源，通过迭代该数据源构造数据集。生成的数据集的列名和列类型取决于用户定义的Python数据源。
 
     参数：
-        - **source** (Union[Iterable, Random Accessible]) - 自定义数据集，表示从此数据对象加载数据。MindSpore支持两种类型的数据集。
+        - **source** (Union[Random Accessible, Iterable]) - 自定义数据集，表示从此数据对象加载数据。MindSpore支持两种类型的数据集。
 
           - 可随机访问(map-style)数据集：它是一种实现了 `__getitem__()` 和 `__len__()` 方法的数据集对象，记录从索引/键到数据样本的映射。
             例如，使用 `source[idx]` 访问数据集时，可以从磁盘上的文件夹中读取第idx个样本，详情请参阅 `可随机访问数据集样例 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可随机访问数据集>`_ 。
