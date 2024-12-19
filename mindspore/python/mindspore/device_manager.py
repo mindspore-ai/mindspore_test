@@ -119,25 +119,11 @@ def set_deterministic(deterministic):
 def _check_runtime_conf_env_valid():
     """
     Check whether the configuration environment of runtime is valid. If the environment is invalid, throw an exception.
-    The two checks are as follows:
-    1. Check the device must be initialized:
-    The 'mindspore.set_device' is configured to indicate that the device has been initialized.
-    2. Check the runtime cannot be initialized:
+    Check the runtime cannot be initialized:
     The kernel on the device has been executed to indicate that the runtime has been initialized.
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError("The device has not been initialized, please set 'mindspore.set_device' first.")
-
     device_target = DeviceManagerConf.get_instance().get_device_target()
     device_context = DeviceContextManager.get_instance().get_device_context(device_target)
     if device_context is not None and device_context.initialized():
         raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
                            "Suggest setting it as early as possible, but after the 'mindspore.set_device'.")
-
-def _check_device_vaild():
-    '''
-    Check the device must be initialized:
-    The 'mindspore.set_device' is configured to indicate that the device has been initialized.
-    '''
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError("The device has not been initialized, please set 'mindspore.set_device' first.")

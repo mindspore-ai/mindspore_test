@@ -15,7 +15,6 @@
 
 """Op tuning interfaces."""
 
-from mindspore.device_manager import _check_device_vaild
 try:
     from mindspore._c_expression import GPUOpTuningConf
 except ImportError:
@@ -59,7 +58,6 @@ def conv_fprop_algo(mode):
         >>> import mindspore as ms
         >>> ms.device_count.gpu.op_tuning.conv_fprop_algo("performance")
     """
-    _check_device_vaild()
     conv_fprop_algo_mode = ["normal", "performance", "implicit_gemm", "precomp_gemm", "gemm", "direct",
                             "fft", "fft_tiling", "winograd", "winograd_nonfused"]
     if mode in conv_fprop_algo_mode:
@@ -103,7 +101,6 @@ def conv_wgrad_algo(mode):
         >>> import mindspore as ms
         >>> ms.device_count.gpu.op_tuning.conv_wgrad_algo("performance")
     """
-    _check_device_vaild()
     conv_wgrad_algo_mode = ["normal", "performance", "algo_0", "algo_1", "fft", "algo_3",
                             "fft_tiling", "winograd_nonfused"]
 
@@ -149,7 +146,6 @@ def conv_dgrad_algo(mode):
         >>> import mindspore as ms
         >>> ms.device_count.gpu.op_tuning.conv_dgrad_algo("performance")
     """
-    _check_device_vaild()
     conv_dgrad_algo_mode = ["normal", "performance", "algo_0", "algo_1", "fft", "fft_tiling",
                             "winograd", "winograd_nonfused"]
 
