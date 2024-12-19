@@ -13,13 +13,23 @@
 # limitations under the License.
 # ============================================================================
 """CPU platform profiler."""
+import json
+
+import mindspore._c_expression as c_expression
+
 from mindspore import log as logger
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
-import mindspore._c_expression as c_expression
-
+from mindspore.profiler.common.util import print_msg_with_pid
 from mindspore.profiler.common.profiler_context import ProfilerContext
+from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 from mindspore.profiler.platform.base_profiler import BaseProfiler
+from mindspore.profiler.analysis.time_converter import TimeConverter
+from mindspore.profiler.analysis.task_manager import TaskManager
+from mindspore.profiler.analysis.parser.ms_framework_parser import FrameworkParser
+from mindspore.profiler.analysis.parser.framework_cann_relation_parser import FrameworkCannRelationParser
+from mindspore.profiler.analysis.viewer.ms_dataset_viewer import MsDatasetViewer
+from mindspore.profiler.analysis.viewer.ascend_timeline_viewer import AscendTimelineViewer
 
 
 @PROFILERS.register_module(DeviceTarget.CPU.value)
@@ -32,6 +42,8 @@ class CpuProfiler(BaseProfiler):
         super().__init__()
         self._prof_ctx = ProfilerContext()
         self._profiler = c_expression.Profiler.get_instance(DeviceTarget.CPU.value)
+        self._prof_path_mgr = ProfilerPathManager()
+        self._prof_mgr = c_expression.ProfilerManager.get_instance()
 
     def start(self) -> None:
         """Start profiling."""
@@ -53,8 +65,61 @@ class CpuProfiler(BaseProfiler):
 
     def analyse(self, **kwargs) -> None:
         """Analyse profiling data."""
+        if ProfilerContext().device_target_set != {DeviceTarget.CPU.value}:
+            return
         logger.info("CpuProfiler analyse.")
+        CPUProfilerAnalysis.online_analyse()
 
     def finalize(self) -> None:
         """Finalize profiling data."""
         logger.info("CpuProfiler finalize.")
+
+
+class CPUProfilerAnalysis:
+    """
+    CPU profiler analysis interface
+    """
+
+    @classmethod
+    def online_analyse(cls):
+        """
+        Online analysis for CPU
+        """
+        cls._pre_analyse_online()
+        cls._run_tasks(**ProfilerContext().to_dict())
+
+    @classmethod
+    def _pre_analyse_online(cls):
+        """
+        Pre-process for online analysis
+        """
+        ProfilerPathManager().create_output_path()
+        TimeConverter.init_parameters(freq=100.0, cntvct=0, localtime_diff=0)
+
+    @classmethod
+    def _run_tasks(cls, **kwargs) -> None:
+        """
+        Run tasks for online analysis
+        """
+        ascend_ms_dir = kwargs.get("ascend_ms_dir", "")
+        print_msg_with_pid(f"Start parsing profiling data: {ascend_ms_dir}")
+        task_mgr = cls._construct_task_mgr(**kwargs)
+        task_mgr.run({})
+        logger.info(json.dumps(task_mgr.cost_time, indent=4))
+
+    @classmethod
+    def _construct_task_mgr(cls, **kwargs) -> TaskManager:
+        """
+        Construct task manager based on activities and parameters
+        """
+        task_mgr = TaskManager()
+
+        task_mgr.create_flow(
+            FrameworkParser(**kwargs)
+            .register_post_hook(MsDatasetViewer(**kwargs).save),
+            FrameworkCannRelationParser()
+            .register_post_hook(AscendTimelineViewer(**kwargs).save),
+            flow_name="cpu_flow", show_process=True
+        )
+
+        return task_mgr

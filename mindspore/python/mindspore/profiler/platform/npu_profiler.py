@@ -64,7 +64,6 @@ class NpuProfiler(BaseProfiler):
         self._prof_ctx = ProfilerContext()
         self._prof_info = ProfilerInfo()
         self._prof_path_mgr = ProfilerPathManager()
-        self._prof_path_mgr.set_ascend_ms_dir()
 
         self._profiler = c_expression.Profiler.get_instance(DeviceTarget.NPU.value)
         # initialize profiler backend
@@ -92,7 +91,6 @@ class NpuProfiler(BaseProfiler):
     def start(self) -> None:
         """Start profiling."""
         logger.info("NpuProfiler start.")
-        self._prof_path_mgr.create_profiler_paths()
 
         if ProfilerActivity.CPU in self._prof_ctx.activities:
             _framework_profiler_enable_mi()

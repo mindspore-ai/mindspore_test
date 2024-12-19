@@ -33,10 +33,6 @@ class ProfilerPathManager:
 
     def __init__(self):
         self._prof_ctx = ProfilerContext()
-        self._output_path = self._prof_ctx.output_path
-
-        # # initialize ascend_ms_dir
-        # self._prof_ctx.ascend_ms_dir = self._get_ascend_ms_dir()
 
     def clean_analysis_cache(self):
         """

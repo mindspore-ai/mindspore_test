@@ -20,7 +20,7 @@ from typing import List, Dict, Any, Optional
 from mindspore import log as logger
 from mindspore.profiler.common.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.file_manager import FileManager
-from mindspore.profiler.common.constant import ProfilerActivity, FileConstant
+from mindspore.profiler.common.constant import ProfilerActivity, FileConstant, DeviceTarget
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.analysis.parser.timeline_event.fwk_event import FwkFixSizeFormat, OpRangeStructField
 
@@ -38,6 +38,7 @@ class FrameworkParser(BaseParser):
         self._activities = kwargs.get("activities")
         self._step_list = kwargs.get("step_list")
         self._framework_path = kwargs.get("framework_path")
+        self._device_target = kwargs.get("device_target")
         self._op_range_path = os.path.join(
             self._framework_path,
             self._OP_RANGE_FILE_NAME.format(self._rank_id)
@@ -76,6 +77,9 @@ class FrameworkParser(BaseParser):
         Returns:
             List[Dict]: List of parsed MindSpore operation events.
         """
+        if self._device_target == DeviceTarget.CPU.value:
+            return []
+
         if not os.path.exists(self._op_range_path):
             logger.error("Failed to find op_range data. Skipping parse host profiler data.")
             return []
