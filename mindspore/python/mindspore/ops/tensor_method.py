@@ -394,6 +394,10 @@ from mindspore.ops.auto_generate import expm1
 # 220 hardshrink
 from mindspore.ops.auto_generate import hardshrink
 
+# 931
+from mindspore.ops.function.math_func import nansum
+from mindspore.ops.auto_generate import nansum_op
+
 # 244 log1p
 from mindspore.ops.auto_generate import log1p
 
@@ -403,9 +407,12 @@ from mindspore.ops.function.math_func import addbmm
 # 502
 from mindspore.ops.auto_generate import addmm_op
 from mindspore.ops.function.math_func import addmm
+# 880
+from mindspore.ops.auto_generate import lerp, lerp_scalar
 
 # 1028
 from mindspore.ops.function.math_func import var_ext
+
 
 ########################################functions########################################
 unique_dim_ = UniqueDim()
@@ -1423,10 +1430,26 @@ def tensor_expm1(input):
     return expm1(input)
 
 
+# 880
+def tensor_lerp(input, end, weight):
+    return lerp(input, end, weight)
+
+
+def tensor_lerp_scalar(input, end, weight):
+    return lerp_scalar(input, end, weight)
+
+
 # 220 hardshrink
 def tensor_hardshrink(input, lambd=0.5):
     return hardshrink(input, lambd)
 
+# 931
+def deprecated_tensor_nansum(input, axis=(), keepdims=False, *, dtype=None):
+    return nansum(input, axis, keepdims, dtype=dtype)
+
+
+def tensor_nansum(input, dim=None, keepdim=False, *, dtype=None):
+    return nansum_op(input, dim, keepdim, dtype=dtype)
 
 # 244 log1p
 def tensor_log1p(input):

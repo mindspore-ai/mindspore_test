@@ -7,10 +7,11 @@ mindspore.ops.lerp
 
     如果权重参数 `weight` 是一个Tensor，则 `input` 与 `end` 与 `weight` 广播后应有相同shape 。
     如果权重参数 `weight` 是一个浮点数，则 `input` 与 `end` 广播后shape应相同。
+    如果权重参数 `weight` 是一个浮点数并且平台为Ascend, 则 `input` 与 `end` 应为float32。
 
     .. math::
 
-            output_{i} = input_{i} + weight_{i} * (end_{i} - input_{i})
+        output_{i} = input_{i} + weight_{i} * (end_{i} - input_{i})
 
     参数：
         - **input** (Tensor) - 进行线性插值的Tensor开始点，其数据类型必须为float16或者float32。
