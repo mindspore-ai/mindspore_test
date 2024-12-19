@@ -205,7 +205,14 @@ Status ExecutionTree::Launch() {
     // Set the state of the Operator as running. This only matters in Leaf ops, CacheOp and TakeOp
     itr->state_ = DatasetOp::OpState::kDeOpRunning;
     if (!itr->inlined()) {
-      RETURN_IF_NOT_OK(tg_->CreateAsyncTask(itr->NameWithID(), std::ref(*itr), nullptr, itr->id()));
+      Status create_status = tg_->CreateAsyncTask(itr->NameWithID(), std::ref(*itr), nullptr, itr->id());
+      if (create_status.StatusCode() == StatusCode::kMDInterrupted) {
+        // If CreateAsyncTask is interrupted, the pipeline may be already in error,
+        // try to retrieve the error status here
+        RETURN_IF_NOT_OK(TaskManager::GetMasterThreadRc());
+      } else {
+        RETURN_IF_NOT_OK(create_status);
+      }
       // Set if this task group has data queue op
       if (itr->Name() == kDeviceQueueOp) {
         tg_->HasDataQueue(true);

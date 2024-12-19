@@ -325,7 +325,6 @@ Status TaskManager::GetFreeTask(const std::string &my_name, const std::function<
 
 Status TaskGroup::CreateAsyncTask(const std::string &my_name, const std::function<Status()> &f, Task **ppTask,
                                   int32_t operator_id) {
-  auto pMytask = TaskManager::FindMe();
   // We need to block ~TaskGroup coming otherwise we will deadlock. We will grab the
   // stateLock in shared allowing CreateAsyncTask to run concurrently.
   SharedLock state_lck(&state_lock_);
@@ -335,15 +334,6 @@ Status TaskGroup::CreateAsyncTask(const std::string &my_name, const std::functio
   }
   TaskManager &dm = TaskManager::GetInstance();
   Task *pTask = nullptr;
-  // If the group is already in error, early exit too.
-  // We can't hold the rc_mux_ throughout because the thread spawned by CreateAsyncTask may hit error which
-  // will try to shutdown the group and grab the rc_mux_ and we will deadlock.
-  {
-    std::unique_lock<std::mutex> rcLock(rc_mux_);
-    if (rc_.IsError()) {
-      return pMytask->IsMasterThread() ? rc_ : Status(StatusCode::kMDInterrupted);
-    }
-  }
   RETURN_IF_NOT_OK(dm.CreateAsyncTask(my_name, f, this, &pTask, operator_id));
   if (ppTask) {
     *ppTask = pTask;
