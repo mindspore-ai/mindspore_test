@@ -41,7 +41,7 @@ class OpTuningConf {
   bool EnableAoeOffline() const;
   bool IsJitCompileConfigured() const { return !jit_compile_.empty(); }
   bool IsAoeTuneModeConfigured() const { return !aoe_tune_mode_.empty(); }
-  bool IsAoeJobTypeConfigured() const { return !aoe_job_type_.empty(); }
+  bool IsAoeJobTypeConfigured() const { return is_aoe_job_type_configured_; }
 
  private:
   std::string aoe_tune_mode() const;

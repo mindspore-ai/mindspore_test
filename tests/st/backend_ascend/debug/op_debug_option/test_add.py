@@ -19,6 +19,7 @@ import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
 from mindspore import Tensor
+from tests.device_utils import set_device
 
 
 class Net(nn.Cell):
@@ -39,7 +40,9 @@ def test_add():
         ms.set_context(mode=ms.GRAPH_MODE)
     else:
         ms.set_context(mode=ms.PYNATIVE_MODE)
-    ms.set_context(ascend_config={"op_debug_option": "oom"}, device_target="Ascend")
+    ms.set_context(device_target="Ascend")
+    set_device()
+    ms.device_context.ascend.op_debug.debug_option("oom")
     net = Net()
     x = Tensor(np.array([1, 2, 3]).astype(np.float32))
     y = Tensor(np.array([4, 5, 6]).astype(np.float32))
