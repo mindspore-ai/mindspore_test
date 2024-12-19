@@ -209,18 +209,11 @@ STATUS AclMemManager::GetModelWeightMem(void **weight_ptr, std::string model_pat
   return lite::RET_OK;
 }
 
-void AclMemManager::ReleaseDeviceMem() {
-  for (auto &mem_info_pair : work_mem_info_map_) {
-    if (mem_info_pair.second.first.mem_addr != nullptr) {
-      (void)CALL_ASCEND_API(aclrtFree, mem_info_pair.second.first.mem_addr);
-      mem_info_pair.second.first.mem_addr = nullptr;
-    }
-  }
-  if (weight_mem_info_.mem_addr != nullptr) {
-    (void)CALL_ASCEND_API(aclrtFree, weight_mem_info_.mem_addr);
-    weight_mem_info_.mem_addr = nullptr;
-  }
+void AclMemManager::ReleaseDeviceMem(int32_t device_id, std::string model_path) {
   for (auto &device_id_iter : work_mem_thread_info_map_) {
+    if (device_id_iter.first != device_id) {
+      continue;
+    }
     for (auto &thread_id_iter : device_id_iter.second) {
       if (thread_id_iter.second.mem_info.mem_addr != nullptr) {
         (void)CALL_ASCEND_API(aclrtFree, thread_id_iter.second.mem_info.mem_addr);
@@ -229,7 +222,13 @@ void AclMemManager::ReleaseDeviceMem() {
     }
   }
   for (auto &device_id_iter : weight_mem_info_map_) {
+    if (device_id_iter.first != device_id) {
+      continue;
+    }
     for (auto &model_path_iter : device_id_iter.second) {
+      if (model_path_iter.first != model_path) {
+        continue;
+      }
       if (model_path_iter.second.mem_info.mem_addr != nullptr) {
         (void)CALL_ASCEND_API(aclrtFree, model_path_iter.second.mem_info.mem_addr);
         model_path_iter.second.mem_info.mem_addr = nullptr;
