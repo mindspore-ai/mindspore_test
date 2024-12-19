@@ -52,6 +52,40 @@ void SIGINTHandler(int signal, siginfo_t *info, void *context) {
   TaskManager::WakeUpWatchDog();
 }
 
+/// \brief A signal handler for SIGTERM to exit the process.
+/// \details When Python exits, it may terminate the children processes before deleting our runtime.
+///   Then the watch dog has not been aborted, it will report an error and terminate the main process.
+///   So we suppress SIGTERM sent from main process here by _exit(EXIT_SUCCESS).
+/// \param[in] signal The signal that was raised.
+/// \param[in] info The siginfo structure.
+/// \param[in] context The context info.
+void SIGTERMHandler(int signal, siginfo_t *info, void *context) {
+  if (signal != SIGTERM) {
+    MS_LOG(ERROR) << "SIGTERMHandler expects SIGTERM signal, but got: " << strsignal(signal);
+    _exit(EXIT_FAILURE);
+  }
+
+  if (info->si_pid == getppid()) {
+    MS_LOG(INFO) << "Dataset worker process " << std::to_string(getpid())
+                 << " was terminated by parent process: " << std::to_string(info->si_pid)
+                 << ", exits with successful status.";
+    _exit(EXIT_SUCCESS);
+  }
+  // reset the handler to the default
+  struct sigaction term_action {};
+  term_action.sa_handler = SIG_DFL;
+  term_action.sa_flags = 0;
+  if (sigemptyset(&term_action.sa_mask) != 0) {
+    MS_LOG(ERROR) << "Failed to initialise the signal set, " << strerror(errno);
+    _exit(EXIT_FAILURE);
+  }
+  if (sigaction(signal, &term_action, nullptr) != 0) {
+    MS_LOG(ERROR) << "Failed to set handler for " << strsignal(signal) << ", " << strerror(errno);
+    _exit(EXIT_FAILURE);
+  }
+  raise(signal);
+}
+
 /// \brief A signal handler for SIGBUS to retrieve the kill information.
 /// \param[in] signal The signal that was raised.
 /// \param[in] info The siginfo structure.
@@ -83,6 +117,10 @@ void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
   raise(signal);
 }
 
+/// \brief A signal handler for SIGCHLD to clean the rest processes.
+/// \param[in] signal The signal that was raised.
+/// \param[in] info The siginfo structure.
+/// \param[in] context The context info.
 void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
   if (signal != SIGCHLD) {
     MS_LOG(ERROR) << "SIGCHLDHandler expects SIGCHLD signal, but got: " << strsignal(signal);
@@ -99,7 +137,7 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
         continue;
       }
       std::string msg;
-      if (sig_info.si_code == CLD_EXITED) {  // exited unexpected
+      if (sig_info.si_code == CLD_EXITED && sig_info.si_status != EXIT_SUCCESS) {  // exited unexpected
         msg = "Dataset worker process " + std::to_string(sig_info.si_pid) + " exited unexpected with exit code " +
               std::to_string(sig_info.si_status) + ".";
       } else if (sig_info.si_code == CLD_KILLED) {  // killed by signal
@@ -143,6 +181,7 @@ void RegisterMainHandlers() {
 void RegisterWorkerHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
   SetSignalHandler(SIGBUS, &SIGBUSHandler, nullptr);
+  SetSignalHandler(SIGTERM, &SIGTERMHandler, nullptr);
 #endif
 }
 
