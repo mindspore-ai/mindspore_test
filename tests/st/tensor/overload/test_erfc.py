@@ -32,10 +32,8 @@ def erfc_expect_forward_func(x):
     return special.erfc(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level1',
-          card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows',
+                      'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_tensor_erfc(mode):
     """
@@ -48,5 +46,4 @@ def test_tensor_erfc(mode):
     x = generate_numpy_ndarray_by_randn((3, 4, 5, 6), np.float32, 'x')
     outputs = net(ms.Tensor(x))
     expect_output = erfc_expect_forward_func(x)
-    atol = 1e-3
-    assert np.allclose(outputs.asnumpy(), expect_output, atol)
+    assert np.allclose(outputs.asnumpy(), expect_output, rtol=1e-3, atol=1e-3)
