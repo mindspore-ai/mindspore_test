@@ -347,6 +347,7 @@ DeviceMemPtr DynamicMemPoolBestFit::AddMemBlockAndMemBufByEagerFree(size_t size,
   }
 
   MS_LOG(DEBUG) << "Try to eager free memory.";
+  WaitPipelineHelper();
   if (!SyncAllStreams()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
   }
@@ -439,6 +440,20 @@ size_t DynamicMemPoolBestFit::CalMemBlockAllocSize(size_t size, bool from_persis
   return alloc_mem_size;
 }
 
+void DynamicMemPoolBestFit::WaitPipelineHelper() {
+#ifdef __APPLE__
+  spin_lock_.unlock();
+#else
+  mutex_.unlock();
+#endif
+  WaitPipeline();
+#ifdef __APPLE__
+  spin_lock_.lock();
+#else
+  mutex_.unlock();
+#endif
+}
+
 const std::pair<size_t, size_t> DynamicMemPoolBestFit::FreeIdleMemsByEagerFree() {
   eager_free_count_++;
 
@@ -522,6 +537,7 @@ void DynamicMemPoolBestFit::DefragMemory() {
   }
 
   MS_LOG(INFO) << "Try to defrag memory.";
+  WaitPipelineHelper();
   if (!SyncAllStreams()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
   }
@@ -1133,7 +1149,7 @@ bool DynamicMemPoolBestFit::WaitEvent(int64_t task_id_on_stream, uint32_t memory
   return true;
 }
 
-void DynamicMemPoolBestFit::WaitPipeline() {
+void DynamicMemPoolBestFit::WaitPipelineWithCallback() {
   if (wait_callback_ != nullptr) {
     MS_LOG(DEBUG) << "Wait for Pipeline";
     wait_callback_();
@@ -1162,7 +1178,7 @@ bool DynamicMemPoolBestFit::SyncAllEventsInner() {
     }
   }
 
-  WaitPipeline();
+  WaitPipelineWithCallback();
   for (auto &address : carry_event_addresses) {
     if (address->SyncAllEvents() && address->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
       FreeTensorMemInner(address->device_addr_);

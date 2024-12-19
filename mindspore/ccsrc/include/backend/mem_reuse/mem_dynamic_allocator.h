@@ -125,12 +125,13 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle = false) override;
   std::set<DeviceMemPtr> mem_bufs_;
 
+  void WaitPipelineHelper();
+
   // The related interface of device memory eager free.
   const bool IsEnableEagerFree() const override { return false; }
   const bool IsEnableVmm() const override { return enable_vmm_; }
   void SetEnableVmm(bool enable_vmm) { enable_vmm_ = enable_vmm; }
-  void WaitPipeline();
-
+  void WaitPipelineWithCallback();
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 #ifdef WITH_BACKEND
 

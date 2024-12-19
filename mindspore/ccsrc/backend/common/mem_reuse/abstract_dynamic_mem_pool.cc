@@ -386,6 +386,7 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
 
     if (MS_UNLIKELY(mem_buf == nullptr)) {
       if (IsEnableEagerFree() || enable_vmm_) {
+        WaitPipelineHelper();
         if (!SyncAllStreams()) {
           MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
           return std::make_pair(nullptr, nullptr);
@@ -783,6 +784,7 @@ void AbstractDynamicMemPool::DefragMemory() {
   }
 
   MS_LOG(INFO) << "Defrag memory start.";
+  WaitPipelineHelper();
   if (!SyncAllStreams()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
     return;
@@ -791,6 +793,12 @@ void AbstractDynamicMemPool::DefragMemory() {
   MS_LOG(INFO) << "Defrag memory, eager_free_size : " << eager_free_size << ", real_free_size : " << real_free_size
                << ".";
   last_eager_free_count_ = eager_free_count_;
+}
+
+void AbstractDynamicMemPool::WaitPipelineHelper() {
+  lock_.unlock();
+  WaitPipeline();
+  lock_.lock();
 }
 
 namespace {
