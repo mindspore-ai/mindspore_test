@@ -17,6 +17,7 @@ Module for generating C++ operator definition files.
 """
 
 import os
+import math
 
 import gen_constants as K
 import gen_utils
@@ -52,14 +53,16 @@ class OpsDefCcGenerator(BaseGenerator):
             work_path (str): The directory to save the generated files.
             op_protos (list): A list of operator prototypes.
         """
-        gen_cc_code = ""
-        gen_include = ""
+        gen_cc_list = list()
+        gen_include_list = list()
+        gen_deprecated_cc_list = list()
 
         for op_proto in op_protos:
             operator_name = op_proto.op_name
             class_name = op_proto.op_class.name
             if "deprecated" not in operator_name:
-                gen_include += self.include_template.replace(path=K.MS_OPS_FUNC_IMPL_PATH, operator_name=operator_name)
+                gen_include_list.append(self.include_template.replace(path=K.MS_OPS_FUNC_IMPL_PATH,
+                                                                      operator_name=operator_name))
                 func_impl_declaration_str = self.func_impl_declaration_template.replace(class_name=class_name)
             else:
                 func_impl_declaration_str = self.empty_func_impl_declaration_template.replace(class_name=class_name)
@@ -87,19 +90,38 @@ class OpsDefCcGenerator(BaseGenerator):
                                                        is_graph_view=is_graph_view,
                                                        func_impl_declaration=func_impl_declaration_str,
                                                        func_impl_define=func_impl_define)
-            gen_cc_code += op_def_cc
             if op_proto.op_view:
                 view_op_def = op_def_cc.replace(class_name, class_name + "View")
-                gen_cc_code += view_op_def
+                op_def_cc += view_op_def
 
-        cc_ops_def = self.CC_OPS_DEF_TEMPLATE.replace(auto_generate_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
-                                                      gen_include=gen_include,
-                                                      gen_cc_code=gen_cc_code)
+            if "deprecated" not in operator_name:
+                gen_cc_list.append(op_def_cc)
+            else:
+                gen_deprecated_cc_list.append(op_def_cc)
 
+        op_size = len(gen_include_list)
+        max_op_size_in_one_file = 300
         save_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
-        file_name = "gen_ops_def.cc"
-        ops_def_cc_file_str = template.CC_LICENSE_STR + cc_ops_def
-        gen_utils.save_file(save_path, file_name, ops_def_cc_file_str)
+        for numbering in range(math.ceil(op_size / max_op_size_in_one_file)):
+            gen_include = ''.join(
+                gen_include_list[numbering*max_op_size_in_one_file: (numbering+1)*max_op_size_in_one_file])
+            gen_cc = ''.join(
+                gen_cc_list[numbering*max_op_size_in_one_file: (numbering+1)*max_op_size_in_one_file])
+            cc_ops_def = self.CC_OPS_DEF_TEMPLATE.replace(auto_generate_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
+                                                          gen_include=gen_include,
+                                                          gen_cc_code=gen_cc)
+
+            file_name = f"gen_ops_def_{chr(ord('a') + numbering)}.cc"
+            ops_def_cc_file_str = template.CC_LICENSE_STR + cc_ops_def
+            gen_utils.save_file(save_path, file_name, ops_def_cc_file_str)
+
+        deprecated_cc_ops_def = self.CC_OPS_DEF_TEMPLATE.replace(auto_generate_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
+                                                                 gen_include='',
+                                                                 gen_cc_code=''.join(gen_deprecated_cc_list))
+        file_name = "gen_deprecated_ops_def.cc"
+        deprecated_ops_def_cc_file_str = template.CC_LICENSE_STR + deprecated_cc_ops_def
+        gen_utils.save_file(save_path, file_name,
+                            deprecated_ops_def_cc_file_str)
 
     def process_args(self, op_args):
         """
