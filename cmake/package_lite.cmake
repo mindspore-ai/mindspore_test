@@ -240,23 +240,21 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
         if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
             install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
                     DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+            install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
+                    DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         endif()
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
-                        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
+                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${JPEGTURBO_LIB_LIST} DESTINATION ${TURBO_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/securec/src/libsecurec.a
                 DESTINATION ${SECUREC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     elseif(PLATFORM_ARM32)
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
-                        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
+                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${JPEGTURBO_LIB_LIST} DESTINATION ${TURBO_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/securec/src/libsecurec.a
                 DESTINATION ${SECUREC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -264,17 +262,17 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
         if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
                 install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
                         DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
+                        DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         endif()
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
-                        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-                install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.3.0 DESTINATION ${TURBO_DIR}/lib
-                        RENAME libjpeg.so.62 COMPONENT ${RUNTIME_COMPONENT_NAME})
-                install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.2.0 DESTINATION ${TURBO_DIR}/lib
-                        RENAME libturbojpeg.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
+                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.3.0 DESTINATION ${TURBO_DIR}/lib
+                RENAME libjpeg.so.62 COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.2.0 DESTINATION ${TURBO_DIR}/lib
+                RENAME libturbojpeg.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/securec/src/libsecurec.a
                 DESTINATION ${SECUREC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
@@ -288,22 +286,16 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "wrapper")
     install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
             COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h" PATTERN "vision.h" EXCLUDE)
     if(PLATFORM_ARM64)
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${JPEGTURBO_LIB_LIST} DESTINATION ${TURBO_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
     elseif(PLATFORM_ARM32)
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${JPEGTURBO_LIB_LIST} DESTINATION ${TURBO_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
     else()
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.3.0 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.2.0 DESTINATION ${TURBO_DIR}/lib RENAME libturbojpeg.so.0
@@ -315,28 +307,22 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite")
     install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
             COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
     if(PLATFORM_ARM64)
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libjpeg.so DESTINATION ${TURBO_DIR}/lib
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libturbojpeg.so DESTINATION ${TURBO_DIR}/lib
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
     elseif(PLATFORM_ARM32)
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libjpeg.so DESTINATION ${TURBO_DIR}/lib
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libturbojpeg.so DESTINATION ${TURBO_DIR}/lib
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
     else()
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libjpeg.so.62.3.0
                 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62 COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libturbojpeg.so.0.2.0
@@ -348,24 +334,18 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite_cv")
     if(PLATFORM_ARM64)
         install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so
-                        DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so
+                DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     elseif(PLATFORM_ARM32)
         install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
-                ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     else()
         install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
-        if(NOT MSLITE_ENABLE_CLOUD_FUSION_INFERENCE AND NOT MSLITE_ENABLE_CLOUD_INFERENCE)
-                install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
+        install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
                 ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        endif()
     endif()
 endif()
 
