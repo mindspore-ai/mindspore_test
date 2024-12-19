@@ -24,7 +24,7 @@ def test_mc2_alltoall_allgather_batchmatmul_withoutsilu():
     Expectation: Run success
     '''
     ret = os.system(
-        f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True \
+        f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=8129\
             pytest -s mc2_all2all.py::test_mc2_alltoall_allgather_batchmatmul_withoutsilu"
     )
     assert ret == 0
@@ -38,7 +38,7 @@ def test_mc2_alltoall_allgather_batchmatmul_withsilu():
     Expectation: Run success
     '''
     ret = os.system(
-        f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True \
+        f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=8139\
             pytest -s mc2_all2all.py::test_mc2_alltoall_allgather_batchmatmul_withsilu"
     )
     assert ret == 0
