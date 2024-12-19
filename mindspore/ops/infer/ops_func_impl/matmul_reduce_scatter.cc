@@ -86,7 +86,6 @@ std::vector<TypeId> MatmulReduceScatterFuncImpl::InferType(const PrimitivePtr &p
 
   auto input_type = input_infos[kMatmulReduceScatterInputInputIndex]->GetType();
   auto x2_type = input_infos[kMatmulReduceScatterInputX2Index]->GetType();
-
   if (input_type != x2_type) {
     MS_LOG(EXCEPTION) << op_name << ": the dtype of input and the dtype of x2 must be the same, "
                       << "but the dtype of input is " << input_type << " and the dtype of x2 is " << x2_type;
