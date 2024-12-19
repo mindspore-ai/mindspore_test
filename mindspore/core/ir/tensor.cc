@@ -441,7 +441,9 @@ TensorPtrList Tensor::GetFlattenedTensors(const TensorPtrList &tensors) {
 }
 
 bool Tensor::CheckStub() {
-#if defined(ENABLE_TEST)
+#if defined(WITH_BACKEND)
+  return false;
+#else
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string backend_name = context_ptr->backend_policy();
@@ -449,8 +451,6 @@ bool Tensor::CheckStub() {
     return false;
   }
   return true;
-#else
-  return false;
 #endif
 }
 
