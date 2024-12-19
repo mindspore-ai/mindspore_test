@@ -453,18 +453,23 @@ void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, Output
     return;
   }
 
+  auto front_node_with_index = kernel_with_index;
   auto from_kernel = kernel_with_index.first;
   MS_EXCEPTION_IF_NULL(from_kernel);
   MS_EXCEPTION_IF_NULL(device_context);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  if (!graph_parameter_store->IsFrontNodeInStore(from_kernel.get())) {
+    front_node_with_index = graph_parameter_store->GetRealFrontNode(kernel_with_index);
+    from_kernel = front_node_with_index.first;
+  }
   auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(from_kernel.get());
-  ParameterInfo parameter_info{kernel_with_index, outer_idx};
+  ParameterInfo parameter_info{front_node_with_index, outer_idx};
   to_actor->InsertParameterIndexs(output_position, parameter_info);
-  graph_parameter_store->SetUserCnt(outer_idx, kernel_with_index.second, SIZE_MAX, device_context->GetDeviceType());
+  graph_parameter_store->SetUserCnt(outer_idx, front_node_with_index.second, SIZE_MAX, device_context->GetDeviceType());
 
   auto device_tensor =
-    graph_parameter_store->Fetch(outer_idx, kernel_with_index.second, device_context->GetDeviceType());
+    graph_parameter_store->Fetch(outer_idx, front_node_with_index.second, device_context->GetDeviceType());
   if (device_tensor != nullptr) {
     device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
     // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
