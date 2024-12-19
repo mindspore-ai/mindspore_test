@@ -7428,6 +7428,50 @@ def glu(x, axis=-1):
     return x * y
 
 
+def glu_ext(input, dim=-1):
+    r"""
+    Computes GLU (Gated Linear Unit activation function) of the input tensor.
+
+    .. math::
+        {GLU}(a, b)= a \otimes \sigma(b)
+
+    where :math:`a` is the first half of the `input` Tensor after `input` is split and :math:`b` is the second half.
+
+    Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
+    See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor to be calculated. Dtype is floating point and the shape
+            is :math:`(\ast_1, N, \ast_2)` where `*` means, any number of additional dimensions. :math:`N`
+            is required to be an even number, where :math:`N` is the size of `input` on the dimension
+            selected by `dim`.
+        dim (int, optional): The dimension to split the input `input`. The value range is `[-r, r)` where `r`
+            is the number of dimensions of `input`. Default: ``-1`` , the last dimension in `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor or `dim` is not an int.
+        IndexError: If the value of `dim` is out of the range of `[-r, r)`, where `r` is the number
+            of dimensions of `input`.
+        RuntimeError: If dtype of `input` is not supported.
+        RuntimeError: If the length of `input` in the dimension selected by `dim` is not even.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor([[0.1,0.2,0.3,0.4],[0.5,0.6,0.7,0.8]])
+        >>> output = mint.nn.functional.glu(input)
+        >>> print(output)
+        [[0.05744425 0.11973753]
+         [0.33409387 0.41398472]]
+    """
+    return _get_cache_prim(P.GLU)(axis=dim)(input)
+
+
 def multi_margin_loss(input, target, p=1, margin=1, weight=None, reduction='mean'):
     r"""
     Hinge loss for optimizing a multi-class classification.

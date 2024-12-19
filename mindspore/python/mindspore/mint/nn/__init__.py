@@ -268,6 +268,9 @@ from mindspore.mint.nn.layer.basic import Flatten
 # 421
 from mindspore.mint.nn.layer.activation import Tanh
 
+# 536
+from mindspore.mint.nn.layer.activation import GLU
+
 # 674
 from mindspore.mint.nn.layer.normalization import BatchNorm1d
 

@@ -40,9 +40,11 @@ uint32_t GluCpuKernel::CheckAndInitParams(CpuKernelContext &ctx) {
   CUST_KERNEL_CHECK_NULLPTR(ctx, value_shape_ptr, KERNEL_STATUS_PARAM_INVALID, "Get input value shape failed.");
   value_dim_ = value_shape_ptr->GetDims();
   // get Attr axis
-  AttrValue *split_dim_ptr = ctx.GetAttr("axis");
-  if (split_dim_ptr != nullptr) {
-    split_dim_ = split_dim_ptr->GetInt();
+  auto *split_dim_ptr = ctx.Input(1);
+  if ((split_dim_ptr != nullptr) && (split_dim_ptr->GetData() != nullptr)) {
+    CUST_KERNEL_CHECK_FALSE(ctx, (split_dim_ptr->GetDataType() == DT_INT64), KERNEL_STATUS_PARAM_INVALID,
+                            "Data type of axis is not support, axis data type is [%u].", split_dim_ptr->GetDataType());
+    split_dim_ = *static_cast<int64_t *>(split_dim_ptr->GetData());
   } else {
     split_dim_ = -1;
   }

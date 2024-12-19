@@ -33,7 +33,7 @@ from mindspore.ops.primitive import prim_attr_register
 from mindspore.run_check._check_version import AscendEnvChecker
 from mindspore._c_expression import pyboost_all_finite
 from mindspore.common._stub_tensor import _convert_stub
-from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, ReLU, ReLU6, Dense, Tanh,
+from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, GLU, ReLU, ReLU6, Dense, Tanh,
                              Elu, Sigmoid, Softmax, SoftplusExt, HSwish, HSigmoid, AvgPool, BiasAdd,
                              NLLLoss, OneHot, GeLU, FastGeLU, PReLU, RmsNorm, IncreFlashAttention, MSELossExt,
                              GridSampler3D, GridSampler2D, LayerNorm, LayerNormExt, HShrink, AdamWeightDecay, Dropout,
@@ -9103,51 +9103,6 @@ class NuclearNorm(Primitive):
         else:
             self.add_prim_attr('dim', [1000])
         validator.check_value_type("keepdim", keepdim, [bool], self.name)
-
-
-class GLU(Primitive):
-    r"""
-    Computes GLU (Gated Linear Unit activation function) of input tensors.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Refer to :func:`mindspore.ops.glu` for more details.
-
-    Args:
-        axis (int, optional): Axis on which to split the input.
-            The value of `axis` must be an int within range [-rank(`x`), rank(`x`)).
-            Default: ``-1`` , specifying the last dimension.
-
-    Inputs:
-        - **x** (Tensor) - Input tensor. `x.shape[axis]` must be even.
-
-    Outputs:
-        Tensor, has the same data type with `x`.
-
-    Supported Platforms:
-        ``Ascend`` ``CPU``
-
-    Examples:
-        >>> from mindspore import ops, Tensor
-        >>> from mindspore import dtype as mstype
-        >>> import numpy as np
-        >>> axis = 0
-        >>> x = Tensor(np.array([0.3220, 0.9545, 0.7879, 0.0975, 0.3698,
-        ...                            0.5135, 0.5740, 0.3435, 0.1895, 0.8764,
-        ...                            0.4980, 0.9673, 0.9879, 0.6988, 0.9022,
-        ...                            0.9304, 0.1558, 0.0153, 0.1559, 0.9852]).reshape([2, 2, 5]), mstype.float32)
-        >>> glu = ops.GLU(axis=axis)
-        >>> y = glu(x)
-        >>> print(y)
-        [[[0.20028052 0.6916126  0.57412136 0.06512236 0.26307625]
-          [0.3682598  0.3093122  0.17306386 0.10212085 0.63814086]]]
-    """
-
-    @prim_attr_register
-    def __init__(self, axis=-1):
-        """Initialize GLU"""
-        validator.check_value_type("axis", axis, [int], self.name)
 
 
 class FractionalMaxPoolWithFixedKsize(Primitive):
