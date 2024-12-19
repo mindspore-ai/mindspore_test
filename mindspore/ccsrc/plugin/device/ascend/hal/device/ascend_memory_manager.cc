@@ -239,7 +239,7 @@ void EnhancedAscendMemoryManager::Finalize() {
 
   const double cost_high_water = 1800;
   if (median > cost_high_water || mean > cost_high_water) {
-    MS_LOG(ERROR) << "EnhancedAscendMemoryManager check failed, median : " << median << ", mean : " << mean;
+    MS_LOG(WARNING) << "EnhancedAscendMemoryManager check failed, median : " << median << ", mean : " << mean;
   }
 }
 

@@ -417,7 +417,7 @@ bool DefaultEnhancedAscendMemoryPool::SyncAllEvents() {
 }
 
 BestFitAscendMemoryPool::BestFitAscendMemoryPool() {
-  MS_LOG(WARNING) << "BestFitAscendMemoryPool constructed, older memory allocator is enabled.";
+  MS_LOG(INFO) << "BestFitAscendMemoryPool constructed, older memory allocator is enabled.";
   SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
 }
 
