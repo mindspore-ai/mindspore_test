@@ -26,10 +26,13 @@ def RoundUp(val: int, align: int) -> int:
         return 0
     return -(val // -align) * align
 
-def TransformNdToNz(nd_mat: np.ndarray, block_size: tuple = (16, 16), transpose: bool = True) -> np.ndarray:
+def ConvertTensor(nd_mat: np.ndarray, transpose: bool = True, nd2nz: bool = True) -> np.ndarray:
     """ Transforms tensor format from Nd to Nz """
     if transpose:
         nd_mat = np.transpose(nd_mat)
+    if not nd2nz:
+        return nd_mat
+    block_size = (16, 16)
     r = RoundUp(nd_mat.shape[0], block_size[0])
     c = RoundUp(nd_mat.shape[1], block_size[1])
     r_pad = r - nd_mat.shape[0]
@@ -98,7 +101,7 @@ class LlamaBoostAscendNative(LLMBoost):
         self.dictionary[prefix + ".ffn_norm.weight"] = \
             Tensor(self._get_from_dict(l_dict, "ffn_norm"), dtype=dtype.float16)
         if is_last:
-            self.dictionary['lm_head.weight'] = Tensor(TransformNdToNz(ckpt['lm_head.weight'].asnumpy()[:, start:end]))
+            self.dictionary['lm_head.weight'] = Tensor(ConvertTensor(ckpt['lm_head.weight'].asnumpy()[:, start:end]))
 
         if not quant:
             self._pack_attn_weights(l_dict, prefix, start, end, kv_start, kv_end, unite_qkv)
@@ -113,23 +116,20 @@ class LlamaBoostAscendNative(LLMBoost):
         wk = self._get_from_dict(l_dict, "wk")[kv_start:kv_end, :]
         wv = self._get_from_dict(l_dict, "wv")[kv_start:kv_end, :]
         self.dictionary[prefix + ".attention.wo.weight"] = \
-            Tensor(TransformNdToNz(self._get_from_dict(l_dict, "wo")[:, start:end]))
+            Tensor(ConvertTensor(self._get_from_dict(l_dict, "wo")[:, start:end]))
         if unite_qkv:
-            self.dictionary[prefix + ".attention.wqkv.weight"] = \
-                Tensor(TransformNdToNz(np.concatenate((wq, wk, wv))))
+            self.dictionary[prefix + ".attention.wqkv.weight"] = Tensor(ConvertTensor(np.concatenate((wq, wk, wv))))
         else:
-            self.dictionary[prefix + ".attention.wq.weight"] = Tensor(TransformNdToNz(wq))
-            self.dictionary[prefix + ".attention.wkv.weight"] = \
-                Tensor(TransformNdToNz(np.concatenate((wk, wv))))
+            self.dictionary[prefix + ".attention.wq.weight"] = Tensor(ConvertTensor(wq))
+            self.dictionary[prefix + ".attention.wkv.weight"] = Tensor(ConvertTensor(np.concatenate((wk, wv))))
 
     def _pack_ffn_weights(self, l_dict, prefix, ffn_start, ffn_end):
         """ prepares the dictionary of weights of an ffn block """
         self.dictionary[prefix + ".feed_forward.w2.weight"] = \
-            Tensor(TransformNdToNz(self._get_from_dict(l_dict, "w2")[:, ffn_start:ffn_end]))
+            Tensor(ConvertTensor(self._get_from_dict(l_dict, "w2")[:, ffn_start:ffn_end]))
         w1 = self._get_from_dict(l_dict, "w1")[ffn_start:ffn_end, :]
         w3 = self._get_from_dict(l_dict, "w3")[ffn_start:ffn_end, :]
-        self.dictionary[prefix + ".feed_forward.w13.weight"] = \
-            Tensor(TransformNdToNz(np.concatenate((w1, w3))))
+        self.dictionary[prefix + ".feed_forward.w13.weight"] = Tensor(ConvertTensor(np.concatenate((w1, w3))))
 
     def _pack_attn_quant_weights(self, l_dict, prefix, start, end, kv_start, kv_end, unite_qkv):
         """ prepares the dictionary of weights of a quantized attention block """
@@ -137,26 +137,27 @@ class LlamaBoostAscendNative(LLMBoost):
         wk, wk_scale, wk_offset = self._get_quant_triplet_from_dict(l_dict, "wk")
         wv, wv_scale, wv_offset = self._get_quant_triplet_from_dict(l_dict, "wv")
         wo, wo_scale, wo_offset = self._get_quant_triplet_from_dict(l_dict, "wo")
-        self.dictionary[prefix + ".attention.wo.weight"] = Tensor(TransformNdToNz(wo[:, start:end]))
-        self.dictionary[prefix + ".attention.wo.scale"] = Tensor(wo_scale[start:end])
-        self.dictionary[prefix + ".attention.wo.offset"] = Tensor(wo_offset[start:end])
+        self.dictionary[prefix + ".attention.wo.weight"] = Tensor(ConvertTensor(wo[:, start:end], nd2nz=False))
+        self.dictionary[prefix + ".attention.wo.weight.scale"] = Tensor(wo_scale[start:end])
+        self.dictionary[prefix + ".attention.wo.weight.offset"] = Tensor(wo_offset[start:end])
 
         if unite_qkv:
             self.dictionary[prefix + ".attention.wqkv.weight"] = \
-             Tensor(TransformNdToNz(np.concatenate((wq[start:end, :], wk[kv_start:kv_end, :], wv[kv_start:kv_end, :]))))
-            self.dictionary[prefix + ".attention.wqkv.scale"] = \
+             Tensor(ConvertTensor(np.concatenate((wq[start:end, :], wk[kv_start:kv_end, :], wv[kv_start:kv_end, :])),
+                                  nd2nz=False))
+            self.dictionary[prefix + ".attention.wqkv.weight.scale"] = \
                 Tensor(np.concatenate((wq_scale[start:end], wk_scale[kv_start:kv_end], wv_scale[kv_start:kv_end])))
-            self.dictionary[prefix + ".attention.wqkv.offset"] = \
+            self.dictionary[prefix + ".attention.wqkv.weight.offset"] = \
                 Tensor(np.concatenate((wq_offset[start:end], wk_offset[kv_start:kv_end], wv_offset[kv_start:kv_end])))
         else:
-            self.dictionary[prefix + ".attention.wq.weight"] = Tensor(TransformNdToNz(wq[start:end, :]))
-            self.dictionary[prefix + ".attention.wq.scale"] = Tensor(wq_scale[start:end])
-            self.dictionary[prefix + ".attention.wq.offset"] = Tensor(wq_offset[start:end])
+            self.dictionary[prefix + ".attention.wq.weight"] = Tensor(ConvertTensor(wq[start:end, :], nd2nz=False))
+            self.dictionary[prefix + ".attention.wq.weight.scale"] = Tensor(wq_scale[start:end])
+            self.dictionary[prefix + ".attention.wq.weight.offset"] = Tensor(wq_offset[start:end])
             self.dictionary[prefix + ".attention.wkv.weight"] = \
-                Tensor(TransformNdToNz(np.concatenate((wk[kv_start:kv_end, :], wv[kv_start:kv_end, :]))))
-            self.dictionary[prefix + ".attention.wkv.scale"] = \
+                Tensor(ConvertTensor(np.concatenate((wk[kv_start:kv_end, :], wv[kv_start:kv_end, :])), nd2nz=False))
+            self.dictionary[prefix + ".attention.wkv.weight.scale"] = \
                 Tensor(np.concatenate((wk_scale[kv_start:kv_end], wv_scale[kv_start:kv_end])))
-            self.dictionary[prefix + ".attention.wkv.offset"] = \
+            self.dictionary[prefix + ".attention.wkv.weight.offset"] = \
                 Tensor(np.concatenate((wk_offset[kv_start:kv_end], wv_offset[kv_start:kv_end])))
 
     def _pack_ffn_quant_weights(self, l_dict, prefix, ffn_start, ffn_end):
@@ -164,15 +165,16 @@ class LlamaBoostAscendNative(LLMBoost):
         w1, w1_scale, w1_offset = self._get_quant_triplet_from_dict(l_dict, "w1")
         w2, w2_scale, w2_offset = self._get_quant_triplet_from_dict(l_dict, "w2")
         w3, w3_scale, w3_offset = self._get_quant_triplet_from_dict(l_dict, "w3")
-        self.dictionary[prefix + ".feed_forward.w2.weight"] = Tensor(TransformNdToNz(w2[:, ffn_start:ffn_end]))
-        self.dictionary[prefix + ".feed_forward.w2.scale"] = Tensor(w2_scale[ffn_start:ffn_end])
-        self.dictionary[prefix + ".feed_forward.w2.offset"] = Tensor(w2_offset[ffn_start:ffn_end])
+        self.dictionary[prefix + ".feed_forward.w2.weight"] = Tensor(ConvertTensor(w2[:, ffn_start:ffn_end],
+                                                                                   nd2nz=False))
+        self.dictionary[prefix + ".feed_forward.w2.weight.scale"] = Tensor(w2_scale[ffn_start:ffn_end])
+        self.dictionary[prefix + ".feed_forward.w2.weight.offset"] = Tensor(w2_offset[ffn_start:ffn_end])
 
         self.dictionary[prefix + ".feed_forward.w13.weight"] = \
-                Tensor(TransformNdToNz(np.concatenate((w1[ffn_start:ffn_end, :], w3[ffn_start:ffn_end, :]))))
-        self.dictionary[prefix + ".feed_forward.w13.scale"] = \
+                Tensor(ConvertTensor(np.concatenate((w1[ffn_start:ffn_end, :], w3[ffn_start:ffn_end, :])), nd2nz=False))
+        self.dictionary[prefix + ".feed_forward.w13.weight.scale"] = \
                 Tensor(np.concatenate((w1_scale[ffn_start:ffn_end], w3_scale[ffn_start:ffn_end])))
-        self.dictionary[prefix + ".feed_forward.w13.offset"] = \
+        self.dictionary[prefix + ".feed_forward.w13.weight.offset"] = \
             Tensor(np.concatenate((w1_offset[ffn_start:ffn_end], w3_offset[ffn_start:ffn_end])))
 
     def _prepare_cos_sin_arrays(self, config, theta=10000):
