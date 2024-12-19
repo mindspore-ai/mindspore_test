@@ -19,6 +19,7 @@ set_property(SOURCE ${MS_LLM_BOOST_910B} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_LLM_BOOST)
 
 if(ENABLE_D OR ENABLE_ACL)
+        set(LCAL_LPATH ${ORIGIN_PATH}/ms_kernels_internal/lccl/lib)
         set(INTERNAL_LPATH ${ORIGIN_PATH}/ms_kernels_internal/internal_kernel/lib)
         include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
         include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
@@ -28,13 +29,14 @@ if(ENABLE_D OR ENABLE_ACL)
         find_library(ASCENDCL ascendcl ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
         find_library(MS_KERNELS_LIB ms_kernels_internal $ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/lib)
         find_library(LLAMA_OP llama_op $ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/lib)
+        find_library(LCAL_LIB lcal $ENV{MS_INTERNAL_KERNEL_HOME}/lccl/lib)
 
         add_library(ms_ascend_native_boost SHARED ${MS_LLM_BOOST_910B})
         target_link_libraries(ms_ascend_native_boost PRIVATE mindspore_backend mindspore_core mindspore_common)
         target_link_libraries(ms_ascend_native_boost PRIVATE securec d_collective)
         target_link_libraries(ms_ascend_native_boost PRIVATE ${ASCENDCL})
-        target_link_libraries(ms_ascend_native_boost PRIVATE ${LLAMA_OP} ${MS_KERNELS_LIB})
+        target_link_libraries(ms_ascend_native_boost PRIVATE ${LLAMA_OP} ${MS_KERNELS_LIB} ${LCAL_LIB})
         set_target_properties(ms_ascend_native_boost PROPERTIES INSTALL_RPATH
-                              ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${INTERNAL_LPATH})
+                              ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${INTERNAL_LPATH}:${LCAL_LPATH})
 
 endif()
