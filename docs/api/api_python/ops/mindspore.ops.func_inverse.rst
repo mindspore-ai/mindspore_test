@@ -5,6 +5,9 @@ mindspore.ops.inverse
 
     计算输入矩阵的逆。
 
+    .. Note::
+        `input` 不支持复数类型的输入。
+
     参数：
         - **input** (Tensor) - 计算的矩阵。`input` 至少是两维的，最后两个维度大小相同，并且矩阵需要可逆。
 
