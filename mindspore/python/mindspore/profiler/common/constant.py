@@ -136,7 +136,7 @@ class EventConstant:
     CUSTOM_INFO = "custom_info"
     TOP_SCOPE_NAMES = ('Default', 'Gradients', 'recompute_Default')
     KERNEL_LAUNCH_KEYWORDS = ("KernelLaunch", "LaunchTask")
-    MSTX_KEYWORD = "mstx"
+    MSTX_KEYWORD = "Mstx"
 
     FLOW_OP = "flow"
     INVALID_FLOW_ID = 18446744073709551615
@@ -168,7 +168,7 @@ class TimelineLayerName(Enum):
     """Timeline layer types."""
     MINDSPORE = "MindSpore"
     CPU_OP = "CPU OP"
-    MSTX = "python"
+    MSTX = ["python", "python3"]
     CANN = "CANN"
     SCOPER_LAYER = "Scope Layer"
     ASCEND_HARDWARE = "Ascend Hardware"

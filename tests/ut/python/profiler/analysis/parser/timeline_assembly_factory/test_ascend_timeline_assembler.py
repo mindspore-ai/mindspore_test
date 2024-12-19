@@ -101,10 +101,10 @@ class TestAscendTimelineAssembler(unittest.TestCase):
         """Create framework operation data for mstx."""
         return [
             self._create_base_fwk_data(
-                "mstx_mark_op",
+                "Mstx_mark_op",
                 "mstx", 1000000, 2000000, 100),
             self._create_base_fwk_data(
-                "mstx_range_start_op",
+                "Mstx_range_start_op",
                 "mstx", 2500000, 3500000, 100)
         ]
 
@@ -160,7 +160,7 @@ class TestAscendTimelineAssembler(unittest.TestCase):
             "ph": EventConstant.META_EVENT,
             "pid": 100,
             "tid": 0,
-            "args": {"name": TimelineLayerName.MSTX.value}
+            "args": {"name": 'python'}
         }
 
         msprof_meta_data = {
@@ -347,23 +347,23 @@ class TestAscendTimelineAssembler(unittest.TestCase):
         Timeline visualization:
             Framework Layer:
                    ts(1000)                                                          te(2000)
-            tid1    |-------------------- mstx_range_event_1 ---------------------------|
+            tid1    |-------------------- Mstx_range_event_1 ---------------------------|
                                                            ts(1600)            te(1900)
-            tid2                                           |-- mstx_range_event_2 --|
+            tid2                                           |-- Mstx_range_event_2 --|
 
             MSTX Layer:
                         ts(1200)                                                te(1900)
-            tid1        |------------------- mstx_range_event_1 -------------------|
+            tid1        |------------------- Mstx_range_event_1 -------------------|
                                                            ts(1650)        te(1850)
-            tid2                                            |-mstx_range_event_2-|
+            tid2                                            |-Mstx_range_event_2-|
         """
 
         fwk_mstx_event_1 = FwkCompleteEvent(self._create_base_fwk_data(
-            "mstx_range_event_1",
+            "Mstx_range_event_1",
             "mstx", 1000000, 2000000, 100))
 
         mstx_event_1 = MsprofCompleteEvent({
-            "name": "mstx_range_event_1",
+            "name": "Mstx_range_event_1",
             "ph": EventConstant.COMPLETE_EVENT,
             "pid": 100,
             "tid": 100,
@@ -372,11 +372,11 @@ class TestAscendTimelineAssembler(unittest.TestCase):
         })
 
         fwk_mstx_event_2 = FwkCompleteEvent(self._create_base_fwk_data(
-            "mstx_range_event_2",
+            "Mstx_range_event_2",
             "mstx", 1600000, 1900000, 200))
 
         mstx_event_2 = MsprofCompleteEvent({
-            "name": "mstx_range_event_2",
+            "name": "Mstx_range_event_2",
             "ph": EventConstant.COMPLETE_EVENT,
             "pid": 100,
             "tid": 200,
@@ -385,7 +385,7 @@ class TestAscendTimelineAssembler(unittest.TestCase):
         })
 
         # Create and setup MSTX pool
-        mstx_pool = TimelineEventPool(TimelineLayerName.MSTX.value)
+        mstx_pool = TimelineEventPool('python')
         mstx_pool.add_event(mstx_event_1)
         mstx_pool.add_event(mstx_event_2)
 
