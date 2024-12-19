@@ -181,7 +181,7 @@ deprecated_tensor_method_map = {
     # 81 permute
 
     # 82 pow
-
+    "pow": "deprecated_tensor_pow",
     # 83 prod
     "prod": "deprecated_tensor_prod",
     # 84 reciprocal
