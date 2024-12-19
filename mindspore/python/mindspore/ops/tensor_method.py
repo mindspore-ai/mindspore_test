@@ -1163,10 +1163,24 @@ def deprecated_tensor_where(input, condition, y):
 # 123 div_
 
 # 124 fill_
+def tensor_inplace_fill_scalar_empty(input, value):
+    raise ValueError("should not come here for fill_scalar method.")
+
+
+def tensor_inplace_fill_tensor_empty(input, value):
+    raise ValueError("should not come here for fill_tensor method.")
+
 
 # 125 floor_
 
 # 126 masked_fill_
+def tensor_inplace_masked_fill_scalar_empty(input, masked, value):
+    raise ValueError("should not come here for masked_fill_scalar method.")
+
+
+def tensor_inplace_masked_fill_tensor_empty(input, masked, value):
+    raise ValueError("should not come here for masked_fill_tensor method.")
+
 
 # 127 mul_
 
