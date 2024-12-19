@@ -136,6 +136,7 @@ Tensor
     mindspore.mint.exp2
     mindspore.mint.expm1
     mindspore.mint.fix
+    mindspore.mint.float_power
     mindspore.mint.floor
     mindspore.mint.fmod
     mindspore.mint.frac
