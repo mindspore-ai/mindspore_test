@@ -16,29 +16,31 @@
 import os
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_mc2_alltoall_allgather_batchmatmul_withoutsilu():
     '''
     Feature: MC2 fusion.
     Description: Test alltoall-allgather-batchmatmul without silu fusion.
     Expectation: Run success
     '''
+    ret = os.system("sysctl -w net.ipv4.ip_local_reserved_ports=30000-30015")
     ret = os.system(
-        f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=8129\
+        f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8129\
             pytest -s mc2_all2all.py::test_mc2_alltoall_allgather_batchmatmul_withoutsilu"
     )
     assert ret == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_mc2_alltoall_allgather_batchmatmul_withsilu():
     '''
     Feature: MC2 fusion.
     Description: Test Test alltoall-allgather-batchmatmul with silu fusion.
     Expectation: Run success
     '''
+    ret = os.system("sysctl -w net.ipv4.ip_local_reserved_ports=30016-30031")
     ret = os.system(
-        f"msrun --worker_num=8 --local_worker_num=8 --log_dir=msrun_log --join=True --master_port=8139\
+        f"msrun --worker_num=4 --local_worker_num=4 --log_dir=msrun_log --join=True --master_port=8139\
             pytest -s mc2_all2all.py::test_mc2_alltoall_allgather_batchmatmul_withsilu"
     )
     assert ret == 0

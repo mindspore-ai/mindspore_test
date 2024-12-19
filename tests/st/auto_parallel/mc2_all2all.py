@@ -159,8 +159,7 @@ class MoEFFNet(nn.Cell):
         x = self.stride_slice_ep_mp(x, (0, 0, 0, 0, 0), x_shape, (1, 1, 1, 1, 1))
         x = self.stride_slice_dp_ep(x, (0, 0, 0, 0, 0), x_shape, (1, 1, 1, 1, 1))
         hidden = self.mapping(x)
-        hidden0, _ = ops.split(hidden, hidden.shape[0]//2)
-        hidden = ops.silu(hidden0)
+        hidden = ops.silu(hidden)
         return hidden
 
     def construct_batchmatmulreducescatteralltoall(self, x):
@@ -176,9 +175,10 @@ class MoEFFNet(nn.Cell):
 def test_mc2_alltoall_allgather_batchmatmul_withoutsilu():
     ms.set_seed(seed=100)
     os.environ["HCCL_OP_EXPANSION_MODE"] = "HOST"
+    os.environ["HCCL_IF_BASE_PORT"] = "30000"
 
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    context.set_context(jit_config={"jit_level": "O0"}, save_graphs=True) # KBK
+    context.set_context(jit_config={"jit_level": "O0"}) # KBK
     context.set_auto_parallel_context(
         parallel_mode="semi_auto_parallel",
         dataset_strategy="full_batch",
@@ -190,7 +190,7 @@ def test_mc2_alltoall_allgather_batchmatmul_withoutsilu():
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
     expert_num = 16
-    dp = 2
+    dp = 1
     ep = 2
     mp = 2
 
@@ -211,9 +211,10 @@ def test_mc2_alltoall_allgather_batchmatmul_withoutsilu():
 def test_mc2_alltoall_allgather_batchmatmul_withsilu():
     ms.set_seed(seed=100)
     os.environ["HCCL_OP_EXPANSION_MODE"] = "HOST"
+    os.environ["HCCL_IF_BASE_PORT"] = "30016"
 
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    context.set_context(jit_config={"jit_level": "O0"}, save_graphs=True) # KBK
+    context.set_context(jit_config={"jit_level": "O0"}) # KBK
     context.set_auto_parallel_context(
         parallel_mode="semi_auto_parallel",
         dataset_strategy="full_batch",
@@ -225,7 +226,7 @@ def test_mc2_alltoall_allgather_batchmatmul_withsilu():
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
     expert_num = 16
-    dp = 2
+    dp = 1
     ep = 2
     mp = 2
 
