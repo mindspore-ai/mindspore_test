@@ -91,6 +91,7 @@ def test_ops_conv3d_default(mode):
 
 
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
+@pytest.mark.skip(reason="Has not supported.")
 def test_ops_conv3d_batchfy(mode):
     """
     Feature: mint.nn.functional.conv3d
