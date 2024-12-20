@@ -26,6 +26,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
@@ -154,6 +155,8 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
   }
 
   if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
+    // Before calling each hccl operator, we need to wait for communicator to be initialized.
+    distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_);
 #ifdef ENABLE_INTERNAL_KERNELS
     std::unordered_set<std::string> lccl_enabled_groups =
       MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();

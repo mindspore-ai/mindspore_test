@@ -31,7 +31,12 @@ class AscendCommManager : public CommManager {
   ~AscendCommManager() override = default;
 
   bool CreateGroupSync(const string &group, const std::vector<unsigned int> &rank_id_list) const override {
-    return distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(group, rank_id_list);
+    // For this method, its will be used only by auto parallel modules.
+    distributed::collective::CreateGroupConfig config;
+    config.async = false;
+    config.submit_now = false;
+    return distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(group, rank_id_list,
+                                                                                            config);
   }
 
   bool GetRankID(const string &group, unsigned int *rank_id) const override {

@@ -17,6 +17,7 @@
 #include "kernel/ascend/pyboost/customize/comm_common.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/comm_utils.h"
@@ -38,6 +39,8 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   runtime::Pipeline::Get().launch_stage()->Wait();
 
   const auto &group_str = GetValue<std::string>(group);
+  // Before calling each hccl operator, we need to wait for communicator to be initialized.
+  distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_str);
   const auto &hccl_comm = device::ascend::AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_str);
   auto checker = silentcheck::SilentCheckerBase::GetInstance();
   if (checker != nullptr) {
