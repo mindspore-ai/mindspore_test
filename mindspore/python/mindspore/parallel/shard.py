@@ -24,6 +24,9 @@ class Layout:
     """
     Parallel layout describes the detailed sharding information.
 
+    For more detailed information, refer to the file `Higher-order Operator-level Parallelism
+    <https://www.mindspore.cn/docs/en/master/model_train/parallel/advanced_operator_parallel.html>`_.
+
     Note:
         - It is valid only in semi auto parallel or auto parallel mode.
         - The multiplication result of the `device_matrix` must be equal to the device count in a pipeline stage.
