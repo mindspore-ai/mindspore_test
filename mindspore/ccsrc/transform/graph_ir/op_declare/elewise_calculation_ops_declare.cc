@@ -597,6 +597,7 @@ REG_ADPT_DESC(Sign, kNameSign, ADPT_DESC(Sign))
 // Round
 INPUT_MAP(Round) = {{1, INPUT_DESC(x)}};
 ATTR_MAP(Round) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(Round) = {{2, ATTR_DESC(decimals, AnyTraits<int64_t>())}};
 OUTPUT_MAP(Round) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Round, kNameRound, ADPT_DESC(Round))
 
