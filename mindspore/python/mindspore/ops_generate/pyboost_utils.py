@@ -384,6 +384,28 @@ def get_dtypes(op_proto: OpProto):
     return inputs_dtypes, outputs_dtypes, none_tensor_exist
 
 
+def merge_strings_by_chunk_size(string_list, chunk_size=50):
+    """
+    Merges a list of strings into smaller chunks, with each chunk having a specified maximum size.
+
+    Args:
+        string_list (list of str): A list of strings to be merged.
+        chunk_size (int, optional): The maximum size of each merged chunk. Defaults to 50.
+
+    Returns:
+        list of str: A list of merged strings, where each string contains up to `chunk_size` characters.
+
+    Example:
+        >>> strings = ["Hello", "world", "this", "is", "a", "test"]
+        >>> merge_strings_by_chunk_size(strings, chunk_size=2)
+        ['Helloworld', 'thisis', 'atest']
+    """
+    merged_strings = [
+        "".join(string_list[i:i + chunk_size])  # Merge the current grouped string
+        for i in range(0, len(string_list), chunk_size)
+    ]
+    return merged_strings
+
 class AclnnUtils:
     """
     aclnn utils

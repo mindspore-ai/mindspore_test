@@ -113,8 +113,15 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             func_protos_data)
 
         tensor_method_list = self._get_op_enum_name_list(op_protos)
-        self._create_single_op_source_files(work_path, single_op_func_data)
-        self._create_overload_op_source_files(work_path, overload_op_func_data)
+        func_call_body_list = []
+        self._create_single_op_source_files(single_op_func_data, func_call_body_list)
+        self._create_overload_op_source_files(overload_op_func_data, func_call_body_list)
+        merge_func_call_body = pyboost_utils.merge_strings_by_chunk_size(func_call_body_list)
+
+        for i, func_body_chunk_str in enumerate(merge_func_call_body):
+            tensor_api_source = self.TENSOR_API_SOURCE.replace(tenosr_func_call_body=func_body_chunk_str)
+            save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_api_{i}.cc",
+                      tensor_api_source)
 
         func_def_body_list, tensor_cpp_methods_list, tensor_api_declaration_list = self._get_sorted_func_def_body(
             all_op_func_data, alias_func_mapping)
@@ -210,7 +217,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                         tensor_cpp_methods_list.append(alias_func_name)
         return func_def_body_list, tensor_cpp_methods_list, tensor_api_declaration_list
 
-    def _create_single_op_source_files(self, work_path, single_op_func_data):
+    def _create_single_op_source_files(self, single_op_func_data, func_call_body_list):
         """
         Generates the list of call body strings for single operation functions.
 
@@ -238,12 +245,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                               max_args=max_size,
                                                                               self_index=self_index,
                                                                               ut_body=ut_body)
-            tensor_api_source = self.TENSOR_API_SOURCE.replace(tenosr_func_call_body=tensor_func_single_call_body,
-                                                               func_name=func_name)
-            save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_{func_name}.cc",
-                      tensor_api_source)
+            func_call_body_list.append(tensor_func_single_call_body)
 
-    def _create_overload_op_source_files(self, work_path, overload_op_func_data):
+    def _create_overload_op_source_files(self, overload_op_func_data, func_call_body_list):
         """
         Generates the list of call body strings for overloaded operation functions.
 
@@ -255,10 +259,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         for func_api_name, func_protos in overload_op_func_data.items():
             tensor_func_overload_call_body = self._get_overload_func_call_str(func_api_name, func_protos)
-            tensor_api_source = self.TENSOR_API_SOURCE.replace(tenosr_func_call_body=tensor_func_overload_call_body,
-                                                               func_name=func_api_name)
-            save_file(os.path.join(work_path, K.TENSOR_API_PATH), f"tensor_{func_api_name}.cc",
-                      tensor_api_source)
+            func_call_body_list.append(tensor_func_overload_call_body)
 
     def _get_overload_func_call_str(self, func_api_name, func_protos):
         """
