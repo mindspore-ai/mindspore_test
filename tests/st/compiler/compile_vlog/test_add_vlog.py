@@ -37,7 +37,7 @@ def generate_vlog(file_name, vlog_file_name):
     os.remove(vlog_file_name)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_vlog():
     """
     Feature: Add vlog printing logs.
