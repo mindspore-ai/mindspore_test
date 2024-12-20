@@ -19,7 +19,7 @@
 
 namespace mindspore {
 namespace hooker {
-class HookDebugger {
+class BACKEND_EXPORT HookDebugger {
  public:
   HookDebugger() : is_enabled_(IsHookerEnabled()) {
     if (is_enabled_) {
@@ -39,6 +39,8 @@ class HookDebugger {
   bool IsHookerEnabled();
 
   void HookOnStepBegin(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, int step_count, bool is_kbyk);
+
+  void HookOnStepBegin(uint32_t device_id, const KernelGraphPtr &graph, int step_count, bool is_kbyk);
 
   void HookOnStepEnd();
 
