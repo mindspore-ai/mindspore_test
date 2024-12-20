@@ -172,13 +172,12 @@ class _ProcessManager:
         # If sim_rank_id is set, single worker can be started.
         if self.is_simulation and (self.sim_rank_id != -1):
             logger.info(f"Simulation rank id is set to {self.sim_rank_id}, will dryrun a single process.")
-            self.worker_num = 1
             self.local_worker_num = 1
-        if self.is_simulation and self.worker_num > 128:
-            self.worker_num = 1
+        if self.is_simulation and self.local_worker_num > 128:
             self.local_worker_num = 1
-            logger.warning(f"In dryrun case, worker num is set to larger than 128. "
-                           "To avoid a system clash, worker num is set to 1.")
+            self.sim_rank_id = 0
+            logger.warning(f"In dryrun case, local worker num is set to larger than 128. "
+                           "To avoid a system clash, local worker num is set to 1.")
 
         self.cmd = args.task_script
         self.cmd_args = args.task_script_args
@@ -267,6 +266,7 @@ class _ProcessManager:
             if self.is_simulation and (self.sim_rank_id != -1):
                 # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
                 os.environ["RANK_ID"] = str(self.sim_rank_id)
+                logger.warning(f"In dryrun case, RANK_ID is assigned to {self.sim_rank_id}.")
 
             cpu_num = subprocess.getoutput("cat /proc/cpuinfo|grep processor|wc -l")
             if not cpu_num.isdigit():
