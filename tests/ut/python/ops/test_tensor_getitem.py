@@ -41,12 +41,6 @@ class TensorItemByNone(Cell):
         return ret
 
 
-class TensorItemByItem(Cell):
-    def construct(self, tensor, index):
-        ret = tensor.item(index)
-        return ret
-
-
 def test_tensor_fancy_index_integer_list():
     context.set_context(mode=context.GRAPH_MODE)
     index = [0, 2, 1]
@@ -129,12 +123,7 @@ tuple_index_np_1, tuple_index_np_2, tuple_index_np_3, tuple_index_np_4, tuple_in
     (0,), (1, 2), (1, 2, 3), (3, 4, 4), (1, 2, 3, 4)
 
 test_cases = [
-    ('TensorItemByNone', {'block': TensorItemByNone(), 'desc_inputs': [input_1d_ms],}),
-    ('1dTensorItemByInt', {'block': TensorItemByItem(), 'desc_inputs': [input_1d_ms, index_np_1],}),
-    ('3dTensorItemByInt', {'block': TensorItemByItem(), 'desc_inputs': [input_3d_ms, index_np_1],}),
-    ('3dTensorItemByInt2', {'block': TensorItemByItem(), 'desc_inputs': [input_3d_ms, index_np_3],}),
-    ('1dTensorItemByTuple', {'block': TensorItemByItem(), 'desc_inputs': [input_1d_ms, tuple_index_np_1],}),
-    ('3dTensorItemByTuple', {'block': TensorItemByItem(), 'desc_inputs': [input_3d_ms, tuple_index_np_3],}),
+    ('TensorItemByNone', {'block': TensorItemByNone(), 'desc_inputs': [input_1d_ms]})
 ]
 
 
@@ -142,38 +131,6 @@ test_error_cases = [
     ('TensorItemByNoneForMulDimsTensor', {
         'block': (TensorItemByNone(), {'exception': ValueError}),
         'desc_inputs': [input_3d_ms]
-    }),
-    ('TensorItemByFloatError', {
-        'block': (TensorItemByItem(), {'exception': TypeError}),
-        'desc_inputs': [input_1d_ms, index_np_2]
-    }),
-    ('TensorItemByFloatError2', {
-        'block': (TensorItemByItem(), {'exception': TypeError}),
-        'desc_inputs': [input_3d_ms, index_np_2]
-    }),
-    ('TensorItemByIntOverBoundary', {
-        'block': (TensorItemByItem(), {'exception': IndexError}),
-        'desc_inputs': [input_1d_ms, index_np_3]
-    }),
-    ('TensorItemByIntOverBoundary2', {
-        'block': (TensorItemByItem(), {'exception': IndexError}),
-        'desc_inputs': [input_3d_ms, index_np_4]
-    }),
-    ('1dTensorItemBy2dTuple', {
-        'block': (TensorItemByItem(), {'exception': ValueError}),
-        'desc_inputs': [input_1d_ms, tuple_index_np_2]
-    }),
-    ('3dTensorItemBy2dTuple', {
-        'block': (TensorItemByItem(), {'exception': ValueError}),
-        'desc_inputs': [input_3d_ms, tuple_index_np_2]
-    }),
-    ('3dTensorItemBy3dTupleOutOfBoundary', {
-        'block': (TensorItemByItem(), {'exception': IndexError}),
-        'desc_inputs': [input_3d_ms, tuple_index_np_4]
-    }),
-    ('3dTensorItemBy4dTuple', {
-        'block': (TensorItemByItem(), {'exception': ValueError}),
-        'desc_inputs': [input_3d_ms, tuple_index_np_5]
     })
 ]
 

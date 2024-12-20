@@ -2338,9 +2338,9 @@ def setitem(data, index, value):
     return data.__setitem__(index, value)
 
 
-def item(data, *args):
+def item(data):
     """Implementation of `item`."""
-    return compile_utils.tensor_item(data, *args)
+    return compile_utils.tensor_item(data)
 
 
 def itemset(data, *args):
