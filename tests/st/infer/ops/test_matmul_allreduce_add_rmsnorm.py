@@ -23,6 +23,8 @@ def test_matmul_allreduce_addrmsnorm_forward():
     Description: Test in kbk and pynative mode with dtype float16 and bfloat16
     Expectation: Run success
     """
+    os.environ["HCCL_DETERMINISTIC"] = "true"
+
     ret = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True --master_port=8221 "
                     "pytest -s --disable-warnings "
                     "matmul_allreduce_add_rmsnorm.py::test_matmul_allreduce_addrmsnorm_forward")
@@ -36,6 +38,8 @@ def test_matmul_allreduce_addrmsnorm_forward_dynamic_shape():
     Description: Test in kbk and pynative mode with dtype float16 and bfloat16
     Expectation: Run success
     """
+    os.environ["HCCL_DETERMINISTIC"] = "true"
+
     ret = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True --master_port=8222 "
                     "pytest -s --disable-warnings "
                     "matmul_allreduce_add_rmsnorm.py::test_matmul_allreduce_addrmsnorm_forward_dynamic_shape")
@@ -51,6 +55,7 @@ def test_matmul_allreduce_addrmsnorm_forward_fusion():
     """
     os.environ["MS_ENABLE_INTERNAL_KERNELS"] = "on"
     os.environ["MS_ENABLE_LCCL"] = "off"
+    os.environ["HCCL_DETERMINISTIC"] = "true"
 
     ret = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True --master_port=8223 "
                     "pytest -s --disable-warnings "
