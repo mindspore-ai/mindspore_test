@@ -1577,6 +1577,7 @@ def set_context(**kwargs):
             in graph mode, coulde set 'support_binary' to be ``True`` , and run once .py file. It would save the source
             of the interfaces would be compiled by MindSpore to the interfaces definition .py file that should be
             guaranteed to be writable. Then compile the .py file to the .pyc or .so file, and could run in Graph mode.
+            Currently, this config option only support stand_alone.
         memory_optimize_level (str): The memory optimize level.
             On Ascend hardware platform, default: ``O1``, on other hardware platforms, default: ``O0``.
             The value must be in ['O0', 'O1'].
