@@ -23,22 +23,12 @@ mindspore.ops.BatchNorm
         - **data_format** (str) - 输入数据格式，可选值有： ``'NHWC'`` 或 ``'NCHW'`` ， ``'NHWC'`` 仅在GPU上支持。默认值： ``'NCHW'`` 。
 
     输入：
-        如果 `is_training` 为False，则输入为多个Tensor。
-
         - **input_x** (Tensor) - 数据输入，shape为 :math:`(N, C)` 的Tensor，数据类型为float16或float32。
-        - **scale** (Tensor) - 输入Scalar，shape为 :math:`(C,)` 的Tensor，数据类型为float16或float32。
-        - **bias** (Tensor) - 输入偏置项，shape为 :math:`(C,)` 的Tensor，具有与 `scale` 相同的数据类型。
-        - **mean** (Tensor) - 输入均值，shape为 :math:`(C,)` 的Tensor，具有与 `scale` 相同的数据类型。
-        - **variance** (Tensor) - 输入方差，shape为 :math:`(C,)` 的Tensor，具有与 `scale` 相同的数据类型。
+        - **scale** (Union[Parameter, Tensor]) - 输入Scalar，shape为 :math:`(C,)` 的Tensor或Parameter，数据类型为float16或float32。
+        - **bias** (Union[Parameter, Tensor]) - 输入偏置项，shape为 :math:`(C,)` 的Tensor或Parameter，具有与 `scale` 相同的数据类型。
+        - **mean** (Union[Parameter, Tensor]) - 输入均值，shape为 :math:`(C,)` 的Tensor或Parameter，具有与 `scale` 相同的数据类型。
+        - **variance** (Union[Parameter, Tensor]) - 输入方差，shape为 :math:`(C,)` 的TTensor或Parameter，具有与 `scale` 相同的数据类型。
 
-        如果 `is_training` 为True，则 `scale` 、 `bias` 、 `mean` 和 `variance` 是Parameter。
-
-        - **input_x** (Tensor) - 数据输入，shape为 :math:`(N, C)` 的Tensor，数据类型为float16或float32。
-        - **scale** (Parameter) - 输入Scalar，shape为 :math:`(C,)` 的参数，数据类型为float16或float32。
-        - **bias** (Parameter) - 输入偏置项，shape为 :math:`(C,)` 的参数，具有与 `scale` 相同的数据类型。
-        - **mean** (Parameter) - 输入均值，shape为 :math:`(C,)` 的参数，具有与 `scale` 相同的数据类型。
-        - **variance** (Parameter) - 输入方差，shape为 :math:`(C,)` 的参数，具有与 `scale` 相同的数据类型。
- 
     输出：
         5个Tensor组成的tuple、归一化输入和更新的参数。
 

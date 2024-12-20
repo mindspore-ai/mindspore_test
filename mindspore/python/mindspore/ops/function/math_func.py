@@ -1121,8 +1121,8 @@ def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined
     Adds Tensor `updates` to specified axis and indices of Tensor `var` element-wise.
 
     Args:
-        var (Parameter): The input Parameter to add to, with data type uint8, int8, int16, int32,
-            float16, float32, float64.
+        var (Union[Parameter, Tensor]): The input Parameter or Tensor to add to, with data type uint8, int8, int16,
+            int32, float16, float32, float64.
         indices (Tensor): The indies along `axis` to perform the addition. A 1D Tensor
             of shape :math:`(updates.shape[axis],)`, every value of it
             should be in range :math:`[0, var.shape[axis])` with data type int32.
@@ -1134,7 +1134,6 @@ def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined
         Tensor, updated result, has the same shape and dtype as `var`.
 
     Raises:
-        TypeError: If `var` is not a Parameter.
         TypeError: If neither `indices` nor `updates` is a Tensor.
         ValueError: If `axis` is out of valid range.
         ValueError: If `var` rank is not the same as `updates` rank.

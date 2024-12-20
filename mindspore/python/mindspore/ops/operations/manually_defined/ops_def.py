@@ -580,21 +580,15 @@ class BatchNorm(Primitive):
             is only supported in GPU target. Default: ``"NCHW"`` .
 
     Inputs:
-        If `is_training` is ``False`` , inputs are Tensors.
-
         - **input_x** (Tensor) - Tensor of shape :math:`(N, C)`, with float16 or float32 data type.
-        - **scale** (Tensor) - Tensor of shape :math:`(C,)`, with float16 or float32 data type.
-        - **bias** (Tensor) - Tensor of shape :math:`(C,)`, has the same data type with `scale`.
-        - **mean** (Tensor) - Tensor of shape :math:`(C,)`, has the same data type with `scale`.
-        - **variance** (Tensor) - Tensor of shape :math:`(C,)`, has the same data type with `scale`.
-
-        If `is_training` is ``True`` , `scale`, `bias`, `mean` and `variance` are Parameters.
-
-        - **input_x** (Tensor) - Tensor of shape :math:`(N, C)`, with float16 or float32 data type.
-        - **scale** (Parameter) - Parameter of shape :math:`(C,)`, with float16 or float32 data type.
-        - **bias** (Parameter) - Parameter of shape :math:`(C,)`, has the same data type with `scale`.
-        - **mean** (Parameter) - Parameter of shape :math:`(C,)`, has the same data type with `scale`.
-        - **variance** (Parameter) - Parameter of shape :math:`(C,)`, has the same data type with `scale`.
+        - **scale** (Union[Parameter, Tensor]) - Tensor or Parameter of shape :math:`(C,)`,
+          with float16 or float32 data type.
+        - **bias** (Union[Parameter, Tensor]) - Tensor or Parameter of shape :math:`(C,)`,
+          has the same data type with `scale`.
+        - **mean** (Union[Parameter, Tensor]) - Tensor or Parameter of shape :math:`(C,)`,
+          has the same data type with `scale`.
+        - **variance** (Union[Parameter, Tensor]) - Tensor or Parameter of shape :math:`(C,)`,
+          has the same data type with `scale`.
 
     Outputs:
         Tuple of 5 Tensors, the normalized inputs and the updated parameters.

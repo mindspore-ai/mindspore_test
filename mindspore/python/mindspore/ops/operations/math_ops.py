@@ -779,8 +779,8 @@ class InplaceIndexAdd(Primitive):
         axis (int): The dimension along which to index. It should be in range :math:`[0, len(var.dim))`.
 
     Inputs:
-        - **var** (Parameter) - The input Parameter to add to, with data type uint8, int8, int16, int32,
-          float16, float32, float64.
+        - **var** (Union[Parameter, Tensor]) - The input Parameter or Tensor to add to, with data type uint8, int8,
+          int16, int32, float16, float32, float64.
         - **indices** (Tensor) - The indies along `axis` to perform the addition. A 1D Tensor
           of shape :math:`(updates.shape[axis],)`, every value of it
           should be in range :math:`[0, var.shape[axis])` with data type int32.
@@ -3260,7 +3260,7 @@ class IndexAdd(Primitive):
             don't check index boundary. Default: ``True`` .
 
     Inputs:
-        - **x** (Parameter) - The input Parameter to add to.
+        - **x** (Union[Parameter, Tensor]) - The input Parameter or Tensor to add to.
         - **indices** (Tensor) - Add the value of `x` and `y` along the dimension of the `axis` according to the
           specified index value, with data type int32.
           The `indices` must be 1D with the same size as the size of `y` in the `axis` dimension. The values
@@ -3272,7 +3272,6 @@ class IndexAdd(Primitive):
         Tensor, has the same shape and dtype as `x`.
 
     Raises:
-        TypeError: If `x` is not a Parameter.
         TypeError: If neither `indices` nor `y` is a Tensor.
         ValueError: If axis is out of `x` rank's range.
         ValueError: If `x` rank is not the same as `y` rank.

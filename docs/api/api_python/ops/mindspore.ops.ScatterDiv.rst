@@ -19,7 +19,7 @@ mindspore.ops.ScatterDiv
         - **use_locking** (bool) - 是否启用锁保护。默认值： ``False`` 。
 
     输入：
-        - **input_x** (Parameter) - ScatterDiv的输入，任意维度的Parameter。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
+        - **input_x** (Union[Parameter, Tensor]) - ScatterDiv的输入，任意维度的Parameter或Tensor。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
         - **indices** (Tensor) - 指定相除操作的索引，数据类型必须为mindspore.int32或者mindspore.int64。
         - **updates** (Tensor) - 指定与 `input_x` 相除的Tensor，数据类型与 `input_x` 相同，shape为 `indices.shape + input_x.shape[1:]` 。
 
@@ -30,5 +30,5 @@ mindspore.ops.ScatterDiv
         - **TypeError** - `use_locking` 不是bool。
         - **TypeError** - `indices` 不是int32或者int64。
         - **ValueError** - `updates` 的shape不等于 `indices.shape + input_x.shape[1:]` 。
-        - **RuntimeError** - 当 `input_x` 和 `updates` 类型不一致，需要进行类型转换时，如果 `updates` 不支持转成参数 `input_x` 需要的数据类型，就会报错。
+        - **RuntimeError** - 当 `input_x` 和 `updates` 类型不一致，需要进行类型转换时，如果 `updates` 不支持转成 `input_x` 需要的数据类型，就会报错。
         - **RuntimeError** - 在Ascend平台上，输入的 `input_x` ， `indices` 和 `updates` 的数据维度大于八维。
