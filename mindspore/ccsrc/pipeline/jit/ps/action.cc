@@ -2033,6 +2033,8 @@ bool SetMindIRGraphAction(const ResourcePtr &resource) {
 
   if (!is_equal_input_args) {
     // Use InferMindir which will find c++ infer in eval_map and backend_eval_map;
+    ModifyGraphs(resource->func_graph());
+    resource->func_graph()->set_flag("generated_from_mindir_with_prim_func", true);
     (void)InferMindir(resource->func_graph(), args_abs_list, true);
   }
   return true;

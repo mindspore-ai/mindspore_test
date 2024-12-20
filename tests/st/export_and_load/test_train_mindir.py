@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import pytest
 from io import BytesIO
 import numpy as np
 
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, Model
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import TruncatedNormal
 from mindspore.common.parameter import ParameterTuple
@@ -196,10 +197,31 @@ def test_load_mindir_generated_from_old_version():
     Expectation: load successfully
     """
     context.set_context(mode=context.GRAPH_MODE)
-    path = os.path.realpath(os.path.dirname(__file__)) + "/exported_mindir/old_version_mindir.mindir"
+    path = os.path.realpath(os.path.dirname(__file__)) + "/exported_mindir/old_version_mindir_1.mindir"
     graph = load(file_name=path)
     x = Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
     loaded_net = nn.GraphCell(graph)
     output = Tensor([0.01944945, 0.01933849, -0.00446877])
     output_from_load = loaded_net(x)
     assert np.allclose(output.asnumpy(), output_from_load.asnumpy(), rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_load_mindir_generated_from_old_version_with_wrong_dtype():
+    """
+    Feature: Load MindIR generated from old version with wrong dtype
+    Description: Test Load MindIR generated from old version with wrong dtype
+    Expectation: Throw error successfully
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    path = os.path.realpath(os.path.dirname(__file__)) + \
+        "/exported_mindir/old_version_mindir_2.mindir"
+    graph = load(file_name=path)
+    input1 = Tensor(np.ones([1, 9, 10]).astype(np.float32))
+    input2 = Tensor(np.ones([1, 1, 50]).astype(np.float32))
+    input3 = Tensor(np.ones([1, 1, 50]).astype(np.float64))
+    loaded_net = nn.GraphCell(graph)
+    model = Model(loaded_net)
+    with pytest.raises(TypeError) as err:
+        model.predict(input1, input2, input3)
+    assert "Unsupported data type" in str(err.value)
