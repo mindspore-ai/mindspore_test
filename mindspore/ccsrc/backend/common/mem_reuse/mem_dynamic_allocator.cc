@@ -450,7 +450,7 @@ void DynamicMemPoolBestFit::WaitPipelineHelper() {
 #ifdef __APPLE__
   spin_lock_.lock();
 #else
-  mutex_.unlock();
+  mutex_.lock();
 #endif
 }
 
