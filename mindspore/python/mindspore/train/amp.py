@@ -101,6 +101,7 @@ AMP_AUTO_BLACK_LIST = [
     P.LayerNorm,
     gen.LayerNormExt,
     P.BatchNorm,
+    gen.BatchNormExt,
     gen.GroupNorm,
     P.KLDivLoss,
     P.SmoothL1Loss,
