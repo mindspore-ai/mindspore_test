@@ -1,17 +1,15 @@
-#operator mul
+#operator muls
 muls:
     args:
         input:
             dtype: tensor
         other:
             dtype: number
-    args_signature:
-        rw_read: input, other
-        dtype_group: (input, other)
     returns:
         output: 
             dtype: tensor
     dispatch:
         enable: True
+        Ascend: MulsAscend
 
 
