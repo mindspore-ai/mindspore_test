@@ -190,6 +190,9 @@ REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
   auto input1 = ib->input(kIndex0);
   auto input2 = ib->input(kIndex1);
   auto rounding_mode = ib->input(kIndex2);
+  if (rounding_mode->GetDtype() == TypeIdToType(kMetaTypeNone)) {
+    return {ib->Div(input1, input2)};
+  }
   auto rounding_mode_value = GetValue<int64_t>(rounding_mode->GetValue());
   auto f32 = TypeIdToType(kNumberTypeFloat32);
   auto out_type = input1->GetDtype();
