@@ -123,7 +123,8 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
 
   std::string elemwise_type = GetElemwiseType(elemwise_node);
   const std::string bias_add_str = "bias_add";
-  if (elemwise_type == bias_add_str && common::AnfAlgo::GetOutputInferDataType(node, 0) != kFloat16->type_id()) {
+  if (elemwise_type == bias_add_str && (common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1).size() > 1 ||
+                                        common::AnfAlgo::GetOutputInferDataType(node, 0) != kFloat16->type_id())) {
     return nullptr;
   }
   matmul_elemwise_prim->AddAttr("ElemwiseType", MakeValue(elemwise_type));
