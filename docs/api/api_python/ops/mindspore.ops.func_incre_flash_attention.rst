@@ -82,7 +82,7 @@ mindspore.ops.incre_flash_attention
         - **num_heads** (int，可选) - 头的数量。默认值: ``1`` 。
         - **input_layout** (str，可选) - 输入qkv的数据布局，支持 ``'BSH'`` 和 ``'BNSD'`` 。默认值: ``'BSH'`` 。
         - **scale_value** (double，可选) - 表示缩放系数的值，用作计算中的标量。默认值: ``1.0`` 。
-        - **num_key_value_heads** (int，可选) - 用于GQA算法的 `key` / `value` 头数。如果 `key` 和 `value`具有相同的头数，则值为0，使用 `num_heads` 。默认值: ``0`` 。
+        - **num_key_value_heads** (int，可选) - 用于GQA算法的 `key` / `value` 头数。如果 `key` 和 `value` 具有相同的头数，则值为0，使用 `num_heads` 。默认值: ``0`` 。
         - **block_size** (int，可选) - 页注意力中存储在每个KV块中的最大标记数。默认值: ``0`` 。
         - **inner_precise** (int，可选) - 一个 {0, 1} 中的整数，指定计算模式。 ``0`` 为高精度模式（适用于float16 数据类型）， ``1`` 为高性能模式。默认值为 ``1`` 。
         - **kv_padding_size** (Tensor，可选) - Tensor，数据类型为int64。值的范围为 :math:`0\le kv\_padding\_size \le  S-max(actual\_seq\_length)` 。shape为 :math:`()` 或 :math:`(1,)` 。默认值: ``None`` 。

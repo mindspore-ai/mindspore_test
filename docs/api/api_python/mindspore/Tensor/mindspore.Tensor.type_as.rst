@@ -1,7 +1,7 @@
 mindspore.Tensor.type_as
 ========================
 
-.. py:method:: Tensor.type_as(other)
+.. py:method:: mindspore.Tensor.type_as(other)
 
     将第一个输入的Tensor的数据类型转换为第二个输入的Tensor的数据类型。
 
