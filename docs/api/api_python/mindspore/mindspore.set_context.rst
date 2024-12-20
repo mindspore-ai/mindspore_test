@@ -121,8 +121,6 @@ mindspore.set_context
 
           当确定性开启时，模型中的算子将在Ascend中具有确定性。这意味着，如果算子在同一硬件上使用相同的输入运行多次，则每次都会有完全相同的输出。这对于调试模型很有用。
           此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.set_deterministic` 代替。
-        - **enable_dump** (bool) - 此参数已弃用，将在下一版本中删除。
-        - **save_dump_path** (str) - 此参数已弃用，将在下一版本中删除。
         - **print_file_path** (str) - 此参数将被弃用，将在后续版本中删除。
         - **env_config_path** (str) - 此参数将被弃用，将在后续版本中删除。
         - **precompile_only** (bool) - 表示是否仅预编译网络。默认值： ``False`` 。设置为 ``True`` 时，仅编译网络，而不执行网络。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_PRECOMPILE_ONLY` 替代。
