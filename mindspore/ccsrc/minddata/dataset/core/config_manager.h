@@ -332,6 +332,13 @@ class ConfigManager {
   // @return - iterator mode map contains the value of `do_copy` and `parallel_convert`.
   const std::map<std::string, bool> &get_iterator_mode() const { return iterator_mode_; }
 
+  // @param start_method - Set the multiprocessing start method in ['fork', 'spawn']
+  void set_multiprocessing_start_method(std::string start_method) { start_method_ = start_method; }
+
+  // getter function
+  // @return - Indicate the multiprocessing start method
+  std::string get_multiprocessing_start_method() { return start_method_; }
+
  private:
   // Private helper function that takes a nlohmann json format and populates the settings
   // @param j - The json nlohmann json info
@@ -370,6 +377,7 @@ class ConfigManager {
   bool debug_mode_flag_{false};  // Indicator for debug mode
   ErrorSamplesMode error_samples_mode_{ErrorSamplesMode::kReturn};  // The method to process erroneous samples
   std::map<std::string, bool> iterator_mode_;
+  std::string start_method_;  // fork or spawn
 };
 }  // namespace dataset
 }  // namespace mindspore

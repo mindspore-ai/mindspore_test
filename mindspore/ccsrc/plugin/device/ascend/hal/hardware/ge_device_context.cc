@@ -267,10 +267,16 @@ void GeDeviceContext::Initialize() {
     transform::EnableAoeOffline();
   }
   initialized_ = true;
+  pid_ = GetCurrentPID();  // set the pid when first initialize
   MS_LOG(INFO) << "End initializing device context.";
 }
 
 void GeDeviceContext::Destroy() {
+  if (!IsNeedDestroy()) {
+    // The device context is copied from main process by fork
+    MS_LOG(INFO) << "The device context is not initialized by current process, it doesn't need to be destroyed.";
+    return;
+  }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto op_tuning_conf = OpTuningConf::GetInstance();
@@ -279,7 +285,13 @@ void GeDeviceContext::Destroy() {
     transform::DestroyAoeUtil();
   }
   FinalizeDump();
+  if (graph_executor_ == nullptr) {
+    return;
+  }
   dynamic_cast<GeGraphExecutor *>(graph_executor_.get())->Finalize();
+  if (device_res_manager_ == nullptr) {
+    return;
+  }
   // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
   // for ge, has destropy in graph_executor->finalize
   device_res_manager_->Destroy();

@@ -135,6 +135,15 @@ Status GeneratorOp::Launch() {
   return DatasetOp::Launch();
 }
 
+Status GeneratorOp::Terminate() {
+  // Terminate the python multiprocessing
+  if (python_multiprocessing_runtime_) {
+    MS_LOG(INFO) << "Terminate Python Multiprocessing for GeneratorOp: " << id();
+    python_multiprocessing_runtime_->terminate();
+  }
+  return Status::OK();
+}
+
 // Reentrant init method.
 Status GeneratorOp::Init() {
   RETURN_IF_NOT_OK(InitSampler());
