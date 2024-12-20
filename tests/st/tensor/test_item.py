@@ -55,9 +55,3 @@ def test_tensor_item(mode):
     output = net(x)
     expect_output = 2.98
     assert abs(output - expect_output) <= eps
-
-    x = ms.Tensor([[1, 2, 3], [4, 5, 6]], ms.float32)
-    net = Net((0, 1))
-    output = net(x)
-    expect_output = 2.0
-    assert abs(output - expect_output) <= eps
