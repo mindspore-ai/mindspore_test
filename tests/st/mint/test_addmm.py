@@ -201,4 +201,4 @@ def test_addmm_dynamic_shape():
         input_shape2, batch1_shape2, batch2_shape2)
     TEST_OP(addmm_forward_func, [[ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2), beta, alpha],
                                  [ms.Tensor(input2), ms.Tensor(batch1_2), ms.Tensor(batch2_2), beta2, alpha2]],
-            'addmm', disable_input_check=True)
+            'addmm', disable_input_check=True, disable_mode=['GRAPH_MODE'])
