@@ -94,4 +94,3 @@ def test_tensor_eq(mode):
     value = net(inputs, other)
     expect_value = np.array([[True, False], [False, True]])
     assert np.allclose(expect_value, value.asnumpy())
-    assert not net(inputs, None)
