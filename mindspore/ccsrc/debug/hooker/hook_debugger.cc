@@ -58,6 +58,32 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelG
   }
 }
 
+void HookDebugger::HookOnStepBegin(uint32_t device_id, const KernelGraphPtr &graph, int step_count, bool is_kbyk) {
+  if (!is_enabled_) {
+    return;
+  }
+
+  std::vector<std::string> all_kernel_names;
+  auto all_kernels = graph->execution_order();
+  std::for_each(all_kernels.begin(), all_kernels.end(),
+                [&](const auto &k) { all_kernel_names.push_back(k->fullname_with_scope()); });
+
+  auto step_count_num = 0;
+  step_count_num = step_count;
+  if (step_count == 1 && dataset_sink_ == 1) {
+    step_count_num = 0;
+  }
+  dataset_sink_ = graph->IsDatasetGraph();
+
+  auto registered_adapter = hooker::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
+  if (registered_adapter != nullptr) {
+    registered_adapter->AdaptOnStepBegin(device_id, step_count_num, all_kernel_names, is_kbyk);
+  } else {
+    MS_LOG(WARNING) << "Ascend Adapter is not found! Hook Dump not validate!";
+    return;
+  }
+}
+
 void HookDebugger::HookOnStepEnd() {
   if (!is_enabled_) {
     return;
