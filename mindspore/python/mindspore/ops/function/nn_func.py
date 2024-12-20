@@ -7158,17 +7158,17 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
 
     The following lists some of the limitations of the parameters.
 
-    input -- The input to the conv3d. The input must have each dimension size within the range [1, int32_max].
-    weight -- Filters of shape :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`. The value of :math:`kh`
-              and :math:`kw` is in the range [1, 511]. The remaining values are in the range [1, int32_max].
-              And :math:`kh*kw*k0` is less 65536 (k0 is 16. If data type is float32, k0 is 8).
-    bias -- Bias Tensor with shape :math:`(C_{out})`. The shape must equal the first dimension of the weight.
-    math:`stride` -- The distance of kernel moving. It can be an int number or
-    tuple (noted by :math:`(stride_d, stride_h, stride_w)`). stride_h and stride_w are in the range [1, 63].
-    stride_d is in the range [1, 255].
-    padding -- If padding is an int number, it is in the range [0, 255].
-    dilation -- The value is in the range [1, 255].
-    groups -- The value is in the range [1, 65535].
+    - input -- The input to the conv3d. The input must have each dimension size within the range [1, int32_max].
+    - weight -- Filters of shape :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`. The value of :math:`kh`
+      and :math:`kw` is in the range [1, 511]. The remaining values are in the range [1, int32_max].
+      And :math:`kh*kw*k0` is less 65536 (k0 is 16. If data type is float32, k0 is 8).
+    - bias -- Bias Tensor with shape :math:`(C_{out})`. The shape must equal the first dimension of the weight.
+    - math:`stride` -- The distance of kernel moving. It can be an int number or
+      tuple (noted by :math:`(stride_d, stride_h, stride_w)`). stride_h and stride_w are in the range [1, 63].
+      stride_d is in the range [1, 255].
+    - padding -- If padding is an int number, it is in the range [0, 255].
+    - dilation -- The value is in the range [1, 255].
+    - groups -- The value is in the range [1, 65535].
 
     Constraints between attributes:
     1. :math:`C_{in} % groups == 0 && C_{out} % groups == 0` .
@@ -7192,7 +7192,7 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
 
 
     .. warnings:
-        This API is unsupported on Ascend 910.
+        This API does not support Atlas series products.
         This is an experimental API that is subject to change or deletion.
 
     Args:
