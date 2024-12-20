@@ -3004,6 +3004,11 @@ def tanh(x):
     return F.tanh(x)
 
 
+def tanh_(x):
+    """Returns hyperbolic tangent of `x`."""
+    return F.tanh_(x)
+
+
 def cosh(x):
     """
     Computes hyperbolic cosine of `x` element-wise.

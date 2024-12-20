@@ -58,7 +58,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
-from mindspore.ops.auto_generate import tanh
+from mindspore.ops.auto_generate import tanh, tanh_
 from mindspore.nn import layer
 from mindspore._checkparam import check_is_number
 from mindspore import _checkparam as validator
@@ -233,7 +233,6 @@ size_ = P.Size()
 scalar_to_tensor_ = P.ScalarToTensor()
 shape_ = P.Shape()
 sparse_segment_mean_ = SparseSegmentMean()
-tanh_ = P.Tanh()
 tensor_round_ = P.Round()
 tile_ = P.Tile()
 tile_size_ = TileSize()
@@ -11496,7 +11495,7 @@ def tanhshrink(input):
 
     if input.dtype in mstype.int_type + mstype.uint_type:
         input = input.astype(mstype.float32)
-    return input - tanh_(input)
+    return input - tanh(input)
 
 
 def zeta(input, other):
@@ -13203,6 +13202,7 @@ __all__ = [
     'sinh',
     'cosh',
     'tanh',
+    'tanh_',
     'tanhshrink',
     'asinh',
     'arcsinh',

@@ -320,6 +320,7 @@ from .math_func import (
     sinh,
     cosh,
     tanh,
+    tanh_,
     tanhshrink,
     asinh,
     arcsinh,
