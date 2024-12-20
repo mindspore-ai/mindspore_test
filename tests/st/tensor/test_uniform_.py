@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
+from mindspore import mint
 from mindspore import ops, context
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
@@ -8,6 +9,7 @@ from tests.st.utils import test_utils
 
 class Net(ms.nn.Cell):
     def construct(self, input_x, from_, to, generator=None):
+        input_x = mint.add(input_x, 0)
         input_x.uniform_(from_, to, generator=generator)
         return input_x
 

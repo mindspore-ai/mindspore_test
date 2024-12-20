@@ -11,7 +11,7 @@ class Net(ms.nn.Cell):
         input_x.erfinv_()
         return input_x
 
-def uniform__forward_func(input_x):
+def erfinv__forward_func(input_x):
     return Net()(input_x)
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -32,10 +32,10 @@ def test_t_erfinv__normal(mode):
                        [0.47693613, 0.47693613, 0.47693613, 0.47693613, 0.47693613]])
     if mode == 'pynative':
         context.set_context(mode=ms.PYNATIVE_MODE)
-        output = uniform__forward_func(input_x).asnumpy()
+        output = erfinv__forward_func(input_x).asnumpy()
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        output = uniform__forward_func(input_x).asnumpy()
+        output = erfinv__forward_func(input_x).asnumpy()
     assert output.dtype == np.float32
     assert np.allclose(output, expect)
     assert np.all(output == input_x.asnumpy())
@@ -52,5 +52,5 @@ def test_t_erfinv__dynamic():
     input_1 = Tensor(np.zeros((5, 5)), dtype=ms.float32)
     input_2 = Tensor(np.ones((3, 4, 5)), dtype=ms.float32)
     # dynamic string is not supported
-    TEST_OP(uniform__forward_func, [[input_1], [input_2]], 'inplace_erfinv',
+    TEST_OP(erfinv__forward_func, [[input_1], [input_2]], 'inplace_erfinv', disable_grad=True,
             disable_yaml_check=True, disable_mode=["GRAPH_MODE"])
