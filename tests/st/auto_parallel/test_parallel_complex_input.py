@@ -17,7 +17,7 @@ from tests.mark_utils import arg_mark
 
 os.environ['HCCL_IF_BASE_PORT'] = '30000'
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_graph_mode_parallel_complex_input():
     '''
     Feature: Parallel Support for Complex64 input
@@ -37,6 +37,7 @@ def test_graph_mode_parallel_complex_input():
 
     os.system("rm -rf ~/ascend")
     ret = os.system("mpirun -n 8 "
+                    "--timeout 300 "
                     "--allow-run-as-root "
                     "--output-filename log_output "
                     "pytest -s -v parallel_complex_input.py::test_graph_mode")
@@ -48,4 +49,5 @@ def test_graph_mode_parallel_complex_input():
         os.system(f"cp -rf log_output ~/parallel_complex_input_{f}")
         os.system(f"cp -rf ~/ascend/log ~/parallel_complex_input_{f}")
         os.system(f"cp -rf netstat.txt ~/parallel_complex_input_{f}")
+    assert ret != 110, "run parallel_complex_input timeout, please check log"
     assert ret == 0
