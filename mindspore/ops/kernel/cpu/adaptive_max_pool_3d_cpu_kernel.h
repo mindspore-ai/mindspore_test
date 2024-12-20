@@ -52,8 +52,8 @@ class AdaptiveMaxPool3DCpuKernelMod : public NativeCpuKernelMod {
   void AdaptiveMaxPool3DCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   template <typename T>
   void ComputeKernel(T *input_data, T *output_data, int32_t *indices_data, int64_t start_T, int64_t end_T) const;
-  std::vector<int64_t> input_shape_;
-  std::vector<int64_t> output_shape_;
+  std::vector<int64_t> input_shape_{};
+  std::vector<int64_t> output_shape_{};
   const size_t dimB = 0;
   const size_t dimD = 1;
   const size_t dimT = 2;

@@ -56,12 +56,12 @@ class IndexPutCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   void ComputeNospecial(T *x2, size_t x2_nums, std::vector<std::vector<int64_t>> indices_value, T *y, int accumulate);
   template <typename T>
   void ComputeSpecial(T *x2, size_t x2_nums, std::vector<std::vector<int64_t>> indices_value, T *y, int accumulate);
-  std::vector<int64_t> x1_shape_;
-  std::vector<int64_t> x2_shape_;
-  std::vector<std::vector<int64_t>> indices_shape_;
+  std::vector<int64_t> x1_shape_{};
+  std::vector<int64_t> x2_shape_{};
+  std::vector<std::vector<int64_t>> indices_shape_{};
   size_t inputs_nums = 0;
   int64_t accumulate{0};
-  std::vector<TypeId> input_info_;
+  std::vector<TypeId> input_info_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

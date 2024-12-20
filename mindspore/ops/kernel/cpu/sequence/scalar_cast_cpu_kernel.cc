@@ -51,10 +51,8 @@ template <typename T>
 bool ScalarCastCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &,
                                           const std::vector<KernelTensor *> &outputs) {
-  const auto ele_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  MS_EXCEPTION_IF_NULL(ele_addr);
-  const auto input_type_addr = static_cast<TypeId *>(inputs[kIndex1]->device_ptr());
-  MS_EXCEPTION_IF_NULL(input_type_addr);
+  const auto ele_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto input_type_addr = GetDeviceAddress<TypeId>(inputs, kIndex1);
 
   auto output_addr = outputs[kIndex0]->device_ptr();
   MS_EXCEPTION_IF_NULL(output_addr);

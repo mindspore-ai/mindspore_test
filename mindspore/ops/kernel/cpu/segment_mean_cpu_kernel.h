@@ -45,9 +45,9 @@ class SegmentMeanCPUKernelMod : public NativeCpuKernelMod {
   std::vector<KernelAttr> GetOpSupport() override;
 
  private:
-  std::vector<int64_t> input_x_shape_;
-  std::vector<int64_t> segment_ids_shape_;
-  std::vector<int64_t> output_shape_;
+  std::vector<int64_t> input_x_shape_{};
+  std::vector<int64_t> segment_ids_shape_{};
+  std::vector<int64_t> output_shape_{};
   size_t input_x_num_;
   size_t segment_ids_num_;
   size_t output_num_;

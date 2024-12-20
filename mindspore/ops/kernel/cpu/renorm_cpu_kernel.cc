@@ -109,8 +109,8 @@ bool RenormCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
                                       const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kRenormInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kRenormOutputsNum, kernel_name_);
-  auto *x = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto *output = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto *x = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
   CheckAndInitParams();
 
   auto axis_size = axis_size_;      // maximum parallel number

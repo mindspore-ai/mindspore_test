@@ -132,9 +132,9 @@ template <typename T>
 bool KLDivLossGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &,
                                              const std::vector<KernelTensor *> &outputs) {
-  auto *input_grad = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto *input_target = reinterpret_cast<T *>(inputs[kIndex2]->device_ptr());
-  auto *y = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto *input_grad = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *input_target = GetDeviceAddress<T>(inputs, kIndex2);
+  auto *y = GetDeviceAddress<T>(outputs, kIndex0);
 
   Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> array_grad(input_grad, input_grad_shape_size_, 1);
   Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> array_target(input_target, input_target_shape_size_, 1);

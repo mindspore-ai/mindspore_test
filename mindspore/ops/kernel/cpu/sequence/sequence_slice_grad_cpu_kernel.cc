@@ -52,10 +52,10 @@ template <typename T>
 bool SequenceSliceGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &,
                                                  const std::vector<KernelTensor *> &outputs) {
-  const auto dout_addr = GetDeviceAddress<T>(inputs, 0);
-  const auto start_addr = GetDeviceAddress<int64_t>(inputs, 2);
-  const auto stop_addr = GetDeviceAddress<int64_t>(inputs, 3);
-  const auto step_addr = GetDeviceAddress<int64_t>(inputs, 4);
+  const auto dout_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto start_addr = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  const auto stop_addr = GetDeviceAddress<int64_t>(inputs, kIndex3);
+  const auto step_addr = GetDeviceAddress<int64_t>(inputs, kIndex4);
   auto output_addr = GetDeviceAddress<T>(outputs, 0);
   int64_t len = static_cast<int64_t>(inputs[1]->size());
   int64_t start = start_addr[0];

@@ -45,8 +45,8 @@ class GluGradCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   int64_t axis_{1};
-  std::vector<int64_t> grad_shape_;
-  std::vector<int64_t> x_shape_;
+  std::vector<int64_t> grad_shape_{};
+  std::vector<int64_t> x_shape_{};
   TypeId dtype_{kTypeUnknown};
 };
 }  // namespace kernel

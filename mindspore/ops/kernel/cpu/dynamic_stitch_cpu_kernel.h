@@ -54,7 +54,7 @@ class DynamicStitchCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, DynamicStitchFunc>> func_list_;
   DynamicStitchFunc kernel_func_;
   size_t input_tuple_num_{1};
-  ShapeVector result_shape_;
+  ShapeVector result_shape_{};
 };
 }  // namespace kernel
 }  // namespace mindspore
