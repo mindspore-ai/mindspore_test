@@ -75,7 +75,6 @@ class DatasetOp : public std::enable_shared_from_this<DatasetOp> {
  public:
   static constexpr int32_t kInvalidOperatorId = -1;
   static constexpr int32_t kInfiniteRepeat = -1;
-  static bool handler_set;
 
   // Flags that control operator runtime behaviors
   enum OpState { kDeOpRunning = 0, kDeOpIdle = 1, kDeOpTerminated };
