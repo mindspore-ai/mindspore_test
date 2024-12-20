@@ -1776,14 +1776,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         Returns a Scalar of type int that represents the total number of elements in the Tensor.
 
-        Args:
-            input (Tensor): Input Tensor.
-
         Returns:
             int. A scalar representing the total of elements in the Tensor.
-
-        Raises:
-            TypeError: If `input` is not a Tensor.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
@@ -1791,9 +1785,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, ops
+            >>> from mindspore import Tensor
             >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-            >>> print(ops.numel(input_x))
+            >>> print(input_x.numel())
             4
         """
         return self.size
