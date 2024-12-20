@@ -3374,12 +3374,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_bool(sorted, 'sorted')
         return tensor_operator_registry.get("top_k")(self, k, sorted)
 
-    def addmv(self, mat, vec, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addmv`.
-        """
-        return tensor_operator_registry.get('addmv')(self, mat, vec, beta=beta, alpha=alpha)
-
     def bmm(self, mat2):
         r"""
         For details, please refer to :func:`mindspore.ops.bmm`.
