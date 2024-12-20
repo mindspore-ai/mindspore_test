@@ -45,7 +45,7 @@ uint32_t OpDebugConf::execute_timeout() const {
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  uint32_t execute_timeout = ms_context->get_param<uint32_t>(MS_CTX_PRECISION_MODE);
+  uint32_t execute_timeout = ms_context->get_param<uint32_t>(MS_CTX_OP_TIMEOUT);
   return execute_timeout;
 }
 
