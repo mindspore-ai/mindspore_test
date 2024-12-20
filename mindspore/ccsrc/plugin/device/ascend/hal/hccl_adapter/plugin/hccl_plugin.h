@@ -67,6 +67,8 @@ ORIGIN_METHOD(HcclGetCommAsyncError, HcclResult, HcclComm, HcclResult *);
 ORIGIN_METHOD(HcclGetErrorString, const char *, HcclResult);
 ORIGIN_METHOD(HcclCommInitClusterInfo, HcclResult, const char *, uint32_t, HcclComm *);
 ORIGIN_METHOD(HcclCommInitClusterInfoConfig, HcclResult, const char *, uint32_t, HcclCommConfig *, HcclComm *);
+ORIGIN_METHOD(HcclCommInitRootInfoConfig, HcclResult, uint32_t, const HcclRootInfo *, uint32_t, const HcclCommConfig *,
+              HcclComm *);
 ORIGIN_METHOD(HcclCreateSubCommConfig, HcclResult, HcclComm *, uint32_t, uint32_t *, uint64_t, uint32_t,
               HcclCommConfig *, HcclComm *)
 ORIGIN_METHOD(HcclCommDestroy, HcclResult, HcclComm);
