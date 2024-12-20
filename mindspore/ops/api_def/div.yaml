@@ -4,7 +4,7 @@ div:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor, function
+    interface: tensor
 
   - op_yaml: divmod_op.yaml
     py_method: tensor_div
@@ -12,4 +12,4 @@ div:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor, function
+    interface: tensor

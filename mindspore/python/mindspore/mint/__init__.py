@@ -39,7 +39,7 @@ from mindspore.ops.auto_generate import abs
 from mindspore.ops.auto_generate import clone
 from mindspore.ops.function.array_func import full_like_ext as full_like
 # 1
-from mindspore.ops.functional_overload import divide, div
+from mindspore.ops.function.math_func import divide, div
 from mindspore.ops.auto_generate import topk_ext as topk
 from mindspore.ops.function.math_func import roll
 # 2
