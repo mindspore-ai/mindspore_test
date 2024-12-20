@@ -1239,7 +1239,7 @@ def logical_not(input):
 
 
 def logical_or(input, other):
-    """
+    r"""
     Computes the "logical OR" of two tensors element-wise.
 
     Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
@@ -11173,7 +11173,7 @@ def logical_xor(input, other):
 
     Raises:
         TypeError: If the dtype of `input` or `other` is not bool or can not be implicitly converted to bool.
-        ValueError: If the shape of two inputs cannot be broadcast.
+        ValueError: If the shapes of two inputs cannot be broadcast.
 
     Supported Platforms:
         ``Ascend`` ``CPU``
@@ -12940,7 +12940,7 @@ def round(input, *, decimals=0):
         input (Tensor): The input tensor.
 
     Keyword Args:
-        decimals (int, optional): Number of decimal places to round to (default: 0). If decimals is negative,
+        decimals (int, optional): Number of decimal places to round to (default: ``0``). If decimals is negative,
             it specifies the number of positions to the left of the decimal point. It supports converting the
             single-element tensor to an int. When `input` type is int32 or int64, the `decimals` should be 0.
 

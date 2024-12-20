@@ -1844,7 +1844,7 @@ def sub(input, other, *, alpha=1):
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default 1.
+        alpha (number.Number): A scaling factor applied to `other`, default ``1``.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
