@@ -69,7 +69,6 @@ struct FunctionParameter {
   bool optional_{false};
   bool allow_none_{false};
   std::string name_;
-  bool is_any_{false};
   bool allow_vararg_{false};
 };
 

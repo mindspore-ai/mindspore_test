@@ -74,7 +74,7 @@ deprecated_tensor_method_map = {
     # 28 divide
 
     # 29 eq
-    "eq": "deprecated_tensor_eq",
+
     # 30 erf
 
     # 31 exp
