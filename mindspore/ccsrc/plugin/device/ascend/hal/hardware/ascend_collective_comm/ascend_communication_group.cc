@@ -129,8 +129,9 @@ bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint3
                   << ", hcclBufferSize is " << config_.hcclBufferSize << " MB.";
   unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
   HcclCommConfigInit(&config_);
-  if (HcclCommInitRootInfoConfig(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank),
-                                 &config_, &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
+  auto ret = hccl::HcclAdapter::GetInstance().HcclCommInitRootInfoConfig(
+    static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank), &config_, &comm_);
+  if (ret != static_cast<int32_t>(HCCL_SUCCESS)) {
     const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
     MS_LOG(ERROR) << "InitializeByRootInfoConfig failed. " + error_message;
     return false;

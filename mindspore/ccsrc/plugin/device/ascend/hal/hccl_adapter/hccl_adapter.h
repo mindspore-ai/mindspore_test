@@ -64,6 +64,8 @@ class HcclAdapter {
   bool InitHccl(uint32_t device_id, std::string_view rank_id);
   HcclResult HcclCommInitClusterInfoConfig(const char *rank_table, uint32_t rank_id, HcclCommConfig *config,
                                            HcclComm *hccl_comm_);
+  HcclResult HcclCommInitRootInfoConfig(uint32_t n_ranks, const HcclRootInfo *root_info, uint32_t rank,
+                                        const HcclCommConfig *config, HcclComm *hccl_comm_);
   HcclResult HcclCreateSubCommConfig(HcclComm *global_comm, uint32_t rank_size, uint32_t *rank_ids, uint64_t comm_id,
                                      uint32_t rank_id, HcclCommConfig *config, HcclComm *hccl_comm_);
   bool FinalizeHccl();
@@ -147,6 +149,7 @@ class HcclAdapter {
 
   HcclCommInitClusterInfoFunObj init_hccl_comm_ = nullptr;
   HcclCommInitClusterInfoConfigFunObj init_hccl_global_comm_ranktable_ = nullptr;
+  HcclCommInitRootInfoConfigFunObj init_hccl_root_info_config_ = nullptr;
   HcclCreateSubCommConfigFunObj init_hccl_sub_comm_ranktable_ = nullptr;
   HcclCommDestroyFunObj finalize_hccl_comm_ = nullptr;
   HcclBroadcastFunObj launch_hccl_broadcast_ = nullptr;
