@@ -209,9 +209,11 @@ bool CollectiveManager::Initialize() {
     // Step 4: Create global communication group asynchronizely
     MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
     bool async = IsAsyncInitGlobalComm();
+    CreateGroupConfig config = {};
+    config.async = async;
     auto group_name = device_comm_lib_instance_->global_group_name();
     PROF_START(CreateGlobalCommunicationGroup);
-    RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_, async),
+    RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_, config),
                              "Failed to create group " + group_name);
     if (async) {
       SubmitCreateDeviceCommTask(group_name);
@@ -321,10 +323,11 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 }
 
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
-                                                 const std::vector<uint32_t> &group_ranks, bool async) {
+                                                 const std::vector<uint32_t> &group_ranks,
+                                                 const CreateGroupConfig &config) {
   PROF_START(distributed_create_group);
   MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
-                  << ", async: " << async;
+                  << ", async: " << config.async << ", submit_now: " << config.submit_now;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
@@ -370,18 +373,14 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     checker->SetPipelineStage(local_group_rank);
   }
 
-  if (async) {
+  if (config.async) {
     // If this is in async manner, it's user's duty to call SubmitCreateDeviceCommTask and join the result.
     MS_LOG(WARNING) << "This group's communicator is async created " << group_name;
     return true;
   } else {
-    auto global_group_name = device_comm_lib_instance_->global_group_name();
-    if (group_name != global_group_name &&
-        MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-      // When this is graph mode and sub-group, initialize this sub-group in backend_base.cc(lazy).
+    // Normally this key is set to false by step_parallel pass for setting hccl buffer size feature.
+    if (!config.submit_now) {
       CollectHcclInitInfo::GetInstance()->SetInitOrder(group_name);
-      MS_LOG(INFO) << "The communicator on device side is not created yet. It will be initialized during graph "
-                      "compilation. Please use it after compilation is done.";
     } else {
       // To ensure the initialization order of async and sync created communicators, we invoke submit and wait methods
       // for sync ones.
@@ -792,16 +791,19 @@ bool CollectiveManager::IsAsyncInitGlobalComm() {
   // manner.
   // 4.This is NOT simulation.
   // 5.This NOT using mpirun. OpenMPI has hanging issues when invoking its interfaces in multiple threads.
+  // 6.This is Ascend platform. For early version, we only support to create global comm group for Ascend by default.
+  // Otherwise user should control whether using async manner.
   const auto &is_async_str = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeAsyncInitComm);
   bool async_conf = (is_async_str != "false" && is_async_str != "False");
   bool is_graph = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
   bool use_rank_table = !common::GetEnv("RANK_TABLE_FILE").empty();
   bool simulation = !common::GetEnv(kSimulationLevel).empty();
   bool use_mpi = common::UseMPI();
-  bool result = (async_conf && is_graph && !use_rank_table && !simulation && !use_mpi);
+  bool is_ascend = (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
+  bool result = (async_conf && is_graph && !use_rank_table && !simulation && !use_mpi && is_ascend);
   MS_LOG(INFO) << "Async initialize global comm: " << result << ". async_conf: " << async_conf
                << ", is_graph: " << is_graph << ", use_rank_table: " << use_rank_table << ", simulation: " << simulation
-               << ", use_mpi: " << use_mpi;
+               << ", use_mpi: " << use_mpi << ", is_ascend: " << is_ascend;
   return result;
 }
 
