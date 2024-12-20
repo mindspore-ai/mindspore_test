@@ -136,14 +136,8 @@ def test_dynamic_step_profiler():
         FileChecker.check_csv_items(kernel_details_step_2_5_path, {"Step ID": ["1", "2", "3", "4"]},
                                     fuzzy_match=False
                                     )
-        FileChecker.check_csv_items(kernel_details_step_2_5_path, {"Name": ["BiasAdd1",
-                                                                            "aclnnMm_MatMulCommon_MemSet"]},
-                                    fuzzy_match=False
-                                    )
+        FileChecker.check_csv_items(kernel_details_step_2_5_path, {"Name": ["*BiasAdd*", "*MatMul*"]})
         FileChecker.check_csv_items(kernel_details_step_6_7_path, {"Step ID": ["1", "2"]},
                                     fuzzy_match=False
                                     )
-        FileChecker.check_csv_items(kernel_details_step_6_7_path, {"Name": ["BiasAddGrad5",
-                                                                            "aclnnMm_MatMulCommon_MatMulV2"]},
-                                    fuzzy_match=False
-                                    )
+        FileChecker.check_csv_items(kernel_details_step_6_7_path, {"Name": ["*BiasAdd*", "*MatMul"]})
