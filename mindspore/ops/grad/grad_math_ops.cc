@@ -1046,6 +1046,17 @@ REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib
   return BinopGradCommon(ib, x, y, bc_dx, bc_dy);
 });
 
+REG_BPROP_BUILDER("Muls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto alpha = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto x_dtype = ib->GetDtype(x);
+
+  NodePtr bc_dx = nullptr;
+  bc_dx = ib->Emit("Muls", {dout, alpha});
+  return {ib->Cast(bc_dx, x_dtype), ib->OutZeros(alpha)};
+});
+
 REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);

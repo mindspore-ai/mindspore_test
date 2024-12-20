@@ -43,7 +43,7 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, redu
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
-from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
+from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
                                          cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op, std_op,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
@@ -13068,6 +13068,57 @@ def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_thresh
     iou = rotated_iou_op(boxes_cp, query_boxes_cp, trans, mode, is_cross, v_threshold, e_threshold)
     return cast_(iou, origin_dtype)
 
+def mul_ext(input, other):
+    r"""
+    Multiply other value by input Tensor.
+
+    .. math::
+
+        out_{i} = input_{i} \times other_{i}
+
+    Note:
+        - When the two inputs have different shapes, they must be able to broadcast to a common shape.
+        - The two inputs comply with the implicit type conversion rules to make the data types
+          consistent.
+
+    Args:
+        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+
+    Returns:
+        Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
+        and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If the type of `input`, `other` is not one of the following: Tensor, number.Number, bool.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> from mindspore import mint
+        >>> x = Tensor(np.array([2, 6, 9]).astype(np.int32))
+        >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
+        >>> output = mint.mul_ext(x, y)
+        >>> print(output)
+        [8. 30. 54.]
+        >>> # the data type of x is int32, the data type of y is float32,
+        >>> # and the output is the data format of higher precision float32.
+        >>> print(output.dtype)
+        Float32
+    """
+    if isinstance(other, (float, int, bool)) and isinstance(input, Tensor):
+        return muls(input, other)
+    return mul(input, other)
 
 __all__ = [
     'addn',
