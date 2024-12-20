@@ -22,6 +22,7 @@ from mindspore.ops import operations as P
 from mindspore.ops.operations import _infer_ops as infer_ops
 from mindspore import nn, Tensor, context, JitConfig, mutable
 import mindspore.communication.management as D
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 
 def get_empty_tensor(dtype=mstype.float16):
     x = Tensor([1], dtype)
@@ -36,6 +37,13 @@ def generate_expect_output(x1, x2, residual, gamma, epsilon, bias=0):
     rms_y = np.sqrt(np.sum(y ** 2) / d + epsilon)
     norm_out = (y / rms_y) * gamma
     return y, norm_out
+
+def generate_random_input(x1_shape, x2_shape, residual_shape, gamma_shape):
+    x1 = generate_numpy_ndarray_by_randn(x1_shape, np.float32, 'x1', seed=0)
+    x2 = generate_numpy_ndarray_by_randn(x2_shape, np.float32, 'x2', seed=0)
+    residual = generate_numpy_ndarray_by_randn(residual_shape, np.float32, 'residual', seed=0)
+    gamma = generate_numpy_ndarray_by_randn(gamma_shape, np.float32, 'gamma', seed=0)
+    return x1, x2, residual, gamma
 
 class CmpNet(nn.Cell):
     def __init__(self):
@@ -91,11 +99,12 @@ def test_matmul_allreduce_addrmsnorm_forward(mode, tensor_type):
     context.set_context(device_target="Ascend", mode=mode)
     D.init()
 
-    m, k, n = 1024, 2048, 8
-    x1 = np.random.randn(m, k).astype(np.float32)
-    x2 = np.random.randn(k, n).astype(np.float32)
-    residual = np.random.randn(1, m, n).astype(np.float32)
-    gamma = np.random.randn(n,).astype(np.float32)
+    m, k, n = 3, 3, 3
+    x1_shape = (m, k)
+    x2_shape = (k, n)
+    residual_shape = (1, m, n)
+    gamma_shape = (n,)
+    x1, x2, residual, gamma = generate_random_input(x1_shape, x2_shape, residual_shape, gamma_shape)
     epsilon = 0.018457389615739395
     group = D.HCCL_WORLD_COMM_GROUP
 
@@ -134,11 +143,12 @@ def test_matmul_allreduce_addrmsnorm_forward_dynamic_shape(mode, tensor_type):
     context.set_context(device_target="Ascend", mode=mode)
     D.init()
 
-    m, k, n = 1024, 2048, 8
-    x1 = np.random.randn(m, k).astype(np.float32)
-    x2 = np.random.randn(k, n).astype(np.float32)
-    residual = np.random.randn(1, m, n).astype(np.float32)
-    gamma = np.random.randn(n,).astype(np.float32)
+    m, k, n = 3, 3, 3
+    x1_shape = (m, k)
+    x2_shape = (k, n)
+    residual_shape = (1, m, n)
+    gamma_shape = (n,)
+    x1, x2, residual, gamma = generate_random_input(x1_shape, x2_shape, residual_shape, gamma_shape)
     epsilon = 0.018457389615739395
     group = D.HCCL_WORLD_COMM_GROUP
 
