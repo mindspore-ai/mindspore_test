@@ -24,7 +24,8 @@ from mindspore import log as logger
 from mindspore import nn
 from mindspore import _checkparam as Validator
 from mindspore.train._utils import _make_directory
-from mindspore.train.serialization import save_checkpoint, _save_graph
+from mindspore.train.serialization import save_checkpoint, _save_graph, _wait_async_process_save_ckpt, \
+    _wait_async_thread_save_ckpt, _check_async_save
 from mindspore.parallel._cell_wrapper import destroy_allgather_cell
 from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
@@ -64,6 +65,15 @@ def _get_dp_tp_from_layout(parameter_redundancy_dict):
             value_len = len(value)
             dp, tp = _get_dp_tp_from_redundancy(value)
     return dp, tp
+
+
+def _wait_async_save_ckpt(async_save=False):
+    """Waiting for asynchronous saving of ckpt to complete."""
+    if async_save:
+        if async_save == "process":
+            _wait_async_process_save_ckpt()
+        else:
+            _wait_async_thread_save_ckpt()
 
 
 def _chg_ckpt_file_name_if_same_exist(directory, prefix, exception=False):
@@ -240,7 +250,7 @@ class CheckpointConfig:
                 self._keep_checkpoint_max = 1
 
         self._integrated_save = Validator.check_bool(integrated_save)
-        self._async_save = Validator.check_isinstance('async_save', async_save, (bool, str))
+        self._async_save = _check_async_save(async_save)
         self._saved_network = saved_network
         self._append_dict = self._handle_append_info(append_info)
         self._enc_key = Validator.check_isinstance('enc_key', enc_key, (type(None), bytes))
@@ -600,6 +610,8 @@ class ModelCheckpoint(Callback):
 
         self._save_ckpt(cb_params, _to_save_last_ckpt)
 
+        _wait_async_save_ckpt(self._config.async_save)
+
         destroy_allgather_cell()
 
     def _check_save_ckpt(self, cb_params, force_to_save):
@@ -636,6 +648,9 @@ class ModelCheckpoint(Callback):
         step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
 
         if save_ckpt:
+
+            _wait_async_save_ckpt(self._config.async_save)
+
             if self._prefix_func:
                 cur_ckpoint_file = self._prefix + f".{self._config.format}"
             else:
