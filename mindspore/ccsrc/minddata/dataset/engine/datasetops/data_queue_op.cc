@@ -227,7 +227,7 @@ Status DataQueueOp::operator()() {
   }
 #endif
   if (device_type_ == DeviceType::Ascend) {
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
     if (create_data_info_queue_) {
       // This place has a race condition with GetDataInfo, so the first one
       // arrive here will do the initialize work.
@@ -243,7 +243,7 @@ Status DataQueueOp::operator()() {
 
 #endif
   } else if (device_type_ == DeviceType::GPU) {
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
     if (create_data_info_queue_) {
       // This place has a race condition with GetDataInfo, so the first one
       // arrive here will do the initialize work.

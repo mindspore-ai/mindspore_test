@@ -1706,7 +1706,7 @@ void Pipeline::Run() {
       } else if (action.first == last_compile_action) {
         CheckInterpretNodeLineInfos();
         CacheFuncGraph(resource_);
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
         MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
         if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
           const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
@@ -1898,7 +1898,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
       return *ret_val;
     }
   }
-#ifdef ENABLE_TEST
+#ifndef WITH_BACKEND
   if (ms_context->backend_policy() == "ge") {
     // Virtual output constructed for test cases.
     if (!args.empty()) {
@@ -2108,7 +2108,7 @@ bool InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t ba
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   std::string name = ms_context->backend_policy();
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
   if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {kAscendDevice, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
@@ -2121,7 +2121,7 @@ bool InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t ba
 #endif
 
   if (name == kMsConvert || name == kMsVm || name == "ge") {
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
     if (iter_num == -1) {
       iter_num = INT32_MAX;
     }
@@ -2247,7 +2247,7 @@ void InitHccl() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->set_param<bool>(MS_CTX_ENABLE_HCCL, true);
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
   auto backend = ms_context->backend_policy();
   if (backend == "ge") {
     if (!mindspore::distributed::Initialize()) {
@@ -2269,7 +2269,7 @@ void InitHccl() {
 void FinalizeHccl() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
   auto backend = ms_context->backend_policy();
   if (backend == "ge") {
     FinalizeBackend();
@@ -2589,7 +2589,7 @@ void InitPipeline() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   CompileConfigManager::GetInstance().CollectCompileConfig();
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
   auto backend = ms_context->backend_policy();
   auto device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (backend == "ge") {
@@ -2667,7 +2667,7 @@ void ClearResPart1() {
   abstract::ClearPrimEvaluatorMap();
   pipeline::GetMethodMap().clear();
   pipeline::GetAttrMap().clear();
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
   pipeline::GraphExecutorPy::GetInstance()->ClearInfo();
 #endif
   pipeline::GraphExecutorPy::ClearRes();

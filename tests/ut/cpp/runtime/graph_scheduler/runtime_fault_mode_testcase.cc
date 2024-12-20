@@ -594,14 +594,14 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
   kernel_graph->set_execution_order({add_node});
   kernel_graph->CacheGraphOutputToFrontNodeWithIndex({add_node}, {add_node});
 
-  DeviceContextKey device_context_key{"UTCPU", 0};
-  const char device_name[] = "UTCPU";
+  DeviceContextKey device_context_key{"CPU", 0};
+  const char device_name[] = "CPU";
   MS_REGISTER_DEVICE(device_name, TestDeviceContext);
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
   auto device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
-    nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "UTCPU", 0, 0);
+    nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "CPU", 0, 0);
   AnfAlgo::SetOutputAddr(device_tensor, 0, add_node.get());
 
   std::vector<tensor::TensorPtr> tensors;

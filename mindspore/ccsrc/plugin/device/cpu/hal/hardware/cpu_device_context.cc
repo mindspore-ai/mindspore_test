@@ -735,7 +735,7 @@ void CPUKernelExecutor::RebuildKernelSelectBackoffOp(const std::vector<CNodePtr>
 }
 
 MS_REGISTER_DEVICE(kCPUDevice, CPUDeviceContext);
-#ifndef ENABLE_TEST
+#ifdef WITH_BACKEND
 MSCONTEXT_REGISTER_INIT_FUNC(kCPUDevice, [](MsContext *ctx) -> void {
   MS_EXCEPTION_IF_NULL(ctx);
   if (ctx->backend_policy() != "ms") {

@@ -2133,7 +2133,7 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     // Eliminate the virtual mirror node
     (void)actions.emplace_back(std::make_pair(kEliminateSpecialOpNode, EliminateSpecialOpNode));
 
-#if defined(__linux__) && !defined(ENABLE_TEST)
+#if defined(__linux__) && defined(WITH_BACKEND)
     if (!pipeline::IsPhaseExport(phase)) {
       (void)actions.emplace_back(std::make_pair(kDistributedSplit, DistributedSplitAction));
     }
@@ -2165,7 +2165,7 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-#ifdef ENABLE_TEST
+#ifndef WITH_BACKEND
   if (ms_context->backend_policy() != "ge") {
 #endif
     // Phase with "export" prefix need to skip backend compilation.
@@ -2177,7 +2177,7 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
 
     // Execute the graph
     (void)actions.emplace_back(std::make_pair(kExecute, ExecuteAction));
-#ifdef ENABLE_TEST
+#ifndef WITH_BACKEND
   }
 #endif
   return actions;
