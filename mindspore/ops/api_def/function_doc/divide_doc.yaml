@@ -1,8 +1,0 @@
-divide:
-  description: |
-    divide(input, other, *, rounding_mode=None) -> Tensor
-    
-    Alias for :func:`mindspore.mint.div` .
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
