@@ -97,20 +97,6 @@ void check_bprop_input_grads(const py::tuple &py_args, const py::tuple &grads, c
     }
   }
 }
-
-ValueSimpleInfoPtr BuildSimpleInfo(const ValueSequencePtr &seq) {
-  auto simple_info = std::make_shared<ValueSimpleInfo>();
-  simple_info->is_tuple_output_ = true;
-  simple_info->size_ = seq->size();
-  for (size_t i = 0; i < seq->size(); ++i) {
-    const auto &val = seq->value()[i];
-    auto tensor = val->cast<tensor::BaseTensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
-    (void)simple_info->dtype_vector_.emplace_back(tensor->Dtype());
-    (void)simple_info->shape_vector_.emplace_back(tensor->shape());
-  }
-  return simple_info;
-}
 }  // namespace
 py::object BuiltinsToPyData(const Any &value);
 py::object BuiltinsToPyData(const BaseRef &value);
@@ -952,9 +938,9 @@ tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj) {
 }
 
 py::object CTensorToPyStubNodes(const ValuePtr &val) {
-  // We need acquire gil from outer function before call this method.
-  py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
   if (val->isa<tensor::BaseTensor>()) {
+    // We need acquire gil from outer function before call this method.
+    py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
     auto node = stub::MakeTopNode(kTensorType);
     auto tensor = val->cast<tensor::BaseTensorPtr>();
     auto simple_info = std::make_shared<ValueSimpleInfo>();
@@ -965,15 +951,16 @@ py::object CTensorToPyStubNodes(const ValuePtr &val) {
     node.second->SetValue(val);
     return stub_tensor_module.attr("_convert_stub")(node.first);
   } else if (val->isa<ValueSequence>()) {
-    auto tuple_tensor = val->cast<ValueSequencePtr>();
-    py::tuple tuple_grads(tuple_tensor->size());
-    auto node = stub::MakeTopNode(kTuple);
-    // Note we need first set abstract and then set value.
-    node.second->SetValueSimpleInfo(BuildSimpleInfo(tuple_tensor));
-    node.second->SetValue(val);
-    return stub_tensor_module.attr("_convert_stub")(node.first);
+    auto val_seq = val->cast<ValueSequencePtr>();
+    py::tuple tuple_grads(val_seq->size());
+    for (size_t i = 0; i < val_seq->value().size(); ++i) {
+      if (val_seq->value()[i]->isa<tensor::BaseTensor>()) {
+        tuple_grads[i] = CTensorToPyStubNodes(val_seq->value()[i]);
+      }
+    }
+    return std::move(tuple_grads);
   }
-  MS_LOG(EXCEPTION) << "grads should be tensor or tuple tensor, but got " << val->ToString();
+  return py::none();
 }
 
 ValuePtr PyStubNodeCast(const py::handle &obj) {
