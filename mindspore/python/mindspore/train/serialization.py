@@ -2216,7 +2216,7 @@ def _export(net, file_name, file_format, *inputs, **kwargs):
     logger.info("exporting model file:%s format:%s.", file_name, file_format)
     if "obf_config" in kwargs and file_format != "MINDIR":
         raise ValueError(f"Dynamic obfuscation only support for MindIR format, but got {file_format} format.")
-    if "custom_func" in kwargs and file_format != "MINDIR":
+    if "custom_func" in kwargs and file_format != "MINDIR" and kwargs["custom_func"] is not None:
         raise ValueError(f"Currently only support custom_func for MindIR format, but got {file_format} format.")
     if file_format == 'AIR':
         _save_air(net, file_name, *inputs, **kwargs)
