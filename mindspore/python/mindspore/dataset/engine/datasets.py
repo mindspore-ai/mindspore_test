@@ -3388,6 +3388,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             quit_signal: The flag of quit.
         """
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # Initialize C++ side signal handlers
+        cde.register_worker_handlers()
         while _PythonMultiprocessing.is_process_alive(ppid):
             if quit_signal.is_set():
                 return
@@ -3548,10 +3550,14 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         """Deregister workers monitored by the watch dog and join clean process."""
         if get_enable_watchdog():
             cde.deregister_worker_pids(id(self))
+        if hasattr(self, 'eof') and self.eof is not None:
+            self.eof.set()
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
-            if hasattr(self, 'eof') and self.eof is not None and not self.eof.is_set():
-                self.eof.set()
-            _PythonMultiprocessing._terminate_processes([self.cleaning_process])
+            # let the quit event notify the cleaning process to exit
+            self.cleaning_process.join(timeout=5)
+            if self.cleaning_process.is_alive():
+                # if the cleaning process did not exit, it may hang, try to terminate it
+                _PythonMultiprocessing._terminate_processes([self.cleaning_process])
             del self.cleaning_process
 
     def is_running(self):
