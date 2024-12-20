@@ -258,25 +258,17 @@ struct BACKEND_EXPORT AllocatorDebugInfo {
 
 class BACKEND_EXPORT DynamicMemAllocatorDebugInfo {
  public:
-  static AllocatorDebugInfo &GetDebugInfo() noexcept { return debug_info_; }
+  static AllocatorDebugInfo &GetDebugInfo() noexcept;
 
   // Set the debug info when memory alloc.
   static void SetDebugInfo(const std::string &name, AllocatorType type, int input_index = -1, int output_index = -1,
-                           uint8_t run_mode = 0) {
-    debug_info_.name_ = name;
-    debug_info_.type_ = type;
-    debug_info_.input_index_ = input_index;
-    debug_info_.output_index_ = output_index;
-    debug_info_.run_mode_ = run_mode;
-  }
+                           uint8_t run_mode = 0);
 
  private:
   DynamicMemAllocatorDebugInfo() = default;
   virtual ~DynamicMemAllocatorDebugInfo() = default;
   DynamicMemAllocatorDebugInfo(const DynamicMemAllocatorDebugInfo &) = delete;
   DynamicMemAllocatorDebugInfo &operator=(const DynamicMemAllocatorDebugInfo &) = delete;
-
-  static AllocatorDebugInfo debug_info_;
 };
 
 using TaskIdOnStreamEvent = std::pair<int64_t, DeviceEventPtr>;

@@ -27,7 +27,19 @@
 
 namespace mindspore {
 namespace device {
-AllocatorDebugInfo DynamicMemAllocatorDebugInfo::debug_info_;
+static thread_local AllocatorDebugInfo debug_info_;
+
+AllocatorDebugInfo &DynamicMemAllocatorDebugInfo::GetDebugInfo() noexcept { return debug_info_; }
+
+// Set the debug info when memory alloc.
+void DynamicMemAllocatorDebugInfo::SetDebugInfo(const std::string &name, AllocatorType type, int input_index,
+                                                int output_index, uint8_t run_mode) {
+  debug_info_.name_ = name;
+  debug_info_.type_ = type;
+  debug_info_.input_index_ = input_index;
+  debug_info_.output_index_ = output_index;
+  debug_info_.run_mode_ = run_mode;
+}
 
 static const std::map<DynamicMemBufStatus, std::string> kBufStatusString = {
   {DynamicMemBufStatus::kMemBufIdle, "idle"},
