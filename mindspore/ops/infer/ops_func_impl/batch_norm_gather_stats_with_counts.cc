@@ -64,20 +64,10 @@ TypePtr BatchNormGatherStatsWithCountsFuncImpl::InferType(const PrimitivePtr &pr
   (void)CheckAndConvertUtils::CheckTypeValid("invstd", invstd_type, tensor_valid_types, op_name);
   if (!IsOptionalInputNone(input_args[kInputIndex3])) {
     TypePtr running_mean_type = input_args[kInputIndex3]->GetType();
-    if (!input_args[kInputIndex3]->isa<abstract::AbstractRefTensor>()) {
-      MS_LOG(EXCEPTION) << "For '" << op_name
-                        << "', the type of 'running_mean' must be a Parameter[kFloat32, kFloat16, kBFloat16], but get "
-                        << TypeIdToString(running_mean_type->type_id());
-    }
     (void)CheckAndConvertUtils::CheckTypeValid("running_mean", running_mean_type, tensor_valid_types, op_name);
   }
   if (!IsOptionalInputNone(input_args[kInputIndex4])) {
     TypePtr running_var_type = input_args[kInputIndex4]->GetType();
-    if (!input_args[kInputIndex4]->isa<abstract::AbstractRefTensor>()) {
-      MS_LOG(EXCEPTION) << "For '" << op_name
-                        << "', the type of 'running_var' must be a Parameter[kFloat32, kFloat16, kBFloat16], but get "
-                        << TypeIdToString(running_var_type->type_id());
-    }
     (void)CheckAndConvertUtils::CheckTypeValid("running_var", running_var_type, tensor_valid_types, op_name);
   }
   if (!IsOptionalInputNone(input_args[kInputIndex7])) {
