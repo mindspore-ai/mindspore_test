@@ -36,6 +36,10 @@ OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std
   auto dim = GetValue<int64_t>(axis_value_ptr);
 
   auto old_tensor_info = GetOldTensorInfo(tensor);
+  return UnstackStridesCalc(old_tensor_info, dim);
+}
+
+OPS_API TensorStorageInfoPtrList UnstackStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim) {
   auto oldShape = old_tensor_info->old_shape;
   auto oldStrides = old_tensor_info->old_strides;
   auto oldStorageOffset = old_tensor_info->old_offset;
@@ -43,18 +47,18 @@ OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std
 
   (void)CheckAndConvertUtils::CheckInteger("x_rank", SizeToLong(ndims), kGreaterEqual, 1, "Unstack");
   CheckAndConvertUtils::CheckInRange("axis value", dim, kIncludeLeft, {-ndims, ndims}, "Unstack");
-  dim = DynamicDimWrap(dim, ndims);
-  int64_t size = oldShape[dim];
+  auto dim_new = DynamicDimWrap(dim, ndims);
+  int64_t size = oldShape[dim_new];
   (void)CheckAndConvertUtils::CheckInteger("output_num", size, kGreaterEqual, 0, "Unstack");
 
   std::vector<TensorStorageInfoPtr> res_storage_info(size);
   for (int64_t d = 0; d < size; d++) {
     ShapeVector newShape(oldShape.begin(), oldShape.end());
     StridesVecotr newStrides(oldStrides.begin(), oldStrides.end());
-    auto newStorageOffset = oldStorageOffset + LongToSize(d * newStrides[dim]);
+    auto newStorageOffset = oldStorageOffset + LongToSize(d * newStrides[dim_new]);
 
-    newShape.erase(newShape.begin() + dim);
-    newStrides.erase(newStrides.begin() + dim);
+    newShape.erase(newShape.begin() + dim_new);
+    newStrides.erase(newStrides.begin() + dim_new);
     bool is_contiguous = IsContiguous(newShape, newStrides);
 
     auto newStorageInfo = std::make_shared<TensorStorageInfo>(
