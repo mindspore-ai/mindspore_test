@@ -906,7 +906,7 @@ py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracke
   std::vector<std::unique_ptr<Instr>> list = std::move(ld);
   std::move(st.rbegin(), st.rend(), std::back_inserter(list));
   std::vector<std::unique_ptr<Instr>> untracked = CodeGenerator::CopyInstr(GetCFG()->instr_pool(), untracked_bci);
-  int first_line = untracked[0]->bci();
+  int first_line = untracked[0]->line();
   std::move(untracked.begin(), untracked.end(), std::back_inserter(list));
 
   int nlocals = GetCFG()->GetLocalCount();
