@@ -45,8 +45,8 @@ acme::AcmeOpPtr AcmePagedAttention::CreateKernel(const acme::InputsImmutableInfo
   param_.kv_cache_quant_mode = ms_inputs[last_input_index]->GetValueWithCheck<int64_t>();
   has_attn_mask_ = (!(ms_inputs[kIndex7]->GetType()->isa<TypeNone>()));
 
-  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &param_.q_seq_len);
-  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &param_.kv_seq_len);
+  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
+  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
 
   CheckLookahead();
   created_flag_ = true;
@@ -61,8 +61,8 @@ bool AcmePagedAttention::UpdateParam(const std::vector<KernelTensor *> &inputs,
     return true;
   }
 
-  bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &param_.q_seq_len);
-  bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &param_.kv_seq_len);
+  bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
+  bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
   if (q_need_recreate || kv_need_recreate) {
     CheckLookahead();
     auto ret = acme_op_->UpdateParam(&param_);

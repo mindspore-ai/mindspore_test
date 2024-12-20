@@ -36,7 +36,8 @@ bool AcmeFlashAttentionScore::UpdateSeqLen(const std::vector<KernelTensor *> &in
   if (inputs[kIndex9]->type_id() == kObjectTypeTuple) {
     kv_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex9], &param_.kv_seq_len);
   } else {
-    kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &param_.kv_seq_len);
+    kv_need_recreate =
+      GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length", "actual_seq_kvlen"}, &param_.kv_seq_len);
   }
 
   bool q_need_recreate = kv_need_recreate;
@@ -44,10 +45,16 @@ bool AcmeFlashAttentionScore::UpdateSeqLen(const std::vector<KernelTensor *> &in
     q_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &param_.q_seq_len);
   } else {
     auto &llm_manager = LLMManager::GetInstance();
-    auto seq_length_tensor = llm_manager.get_graph_input("q_seq_lens");
-    if (seq_length_tensor != nullptr && seq_length_tensor->size() != 0) {
-      q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &param_.q_seq_len);
-    } else {
+    bool get_from_graph_input = false;
+    for (const auto &tensor_name : {"q_seq_lens", "actual_seq_qlen"}) {
+      auto seq_length_tensor = llm_manager.get_graph_input(tensor_name);
+      if (seq_length_tensor != nullptr && seq_length_tensor->size() != 0) {
+        q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {tensor_name}, &param_.q_seq_len);
+        get_from_graph_input = true;
+        break;
+      }
+    }
+    if (!get_from_graph_input) {
       param_.q_seq_len = param_.kv_seq_len;
     }
   }
