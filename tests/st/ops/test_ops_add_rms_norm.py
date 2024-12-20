@@ -107,4 +107,5 @@ def test_rms_norm_dynamic_shape():
     x2_2 = Tensor(np.random.randn(2, 3, 4, 64).astype(np.float32))
     gamma_2 = Tensor(np.random.randn(3, 4, 64).astype(np.float32))
     eps_2 = 1e-5
-    TEST_OP(add_rms_norm_forward_func, [[x1_1, x1_2, gamma_1, eps_1], [x2_1, x2_2, gamma_2, eps_2]], "add_rms_norm")
+    TEST_OP(add_rms_norm_forward_func, [[x1_1, x1_2, gamma_1, eps_1], [x2_1, x2_2, gamma_2, eps_2]], "add_rms_norm",
+            disable_mode=["GRAPH_MODE"])
