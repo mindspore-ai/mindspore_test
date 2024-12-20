@@ -55,18 +55,18 @@ bool ActorDispatcher::enable_input_optimize_for_cur_actor_set_ = true;
 bool IsRunningFailed(const OpContext<DeviceTensor> *context) {
   if (UCEException::GetInstance().enable_uce()) {
     if (UCEException::GetInstance().get_force_stop_flag()) {
-      if (context->error_info_ != "") {
+      if (context->error_info_.empty()) {
         const_cast<OpContext<DeviceTensor> *>(context)->error_info_ =
           std::string("ForceStopError error occurs when execute.");
+        MS_LOG(EXCEPTION) << "ForceStopError error occurs when execute.";
       }
-      MS_LOG(EXCEPTION) << "ForceStopError error occurs when execute.";
     }
     if (UCEException::GetInstance().get_uce_flag()) {
-      if (context->error_info_ != "") {
+      if (context->error_info_.empty()) {
         const_cast<OpContext<DeviceTensor> *>(context)->error_info_ =
           std::string("UCEError error occurs when execute.");
+        MS_LOG(EXCEPTION) << "UCEError error occurs when execute.";
       }
-      MS_LOG(EXCEPTION) << "UCEError error occurs when execute.";
     }
   }
 
