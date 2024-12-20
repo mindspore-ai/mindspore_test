@@ -20,6 +20,7 @@ from mindspore import jit, JitConfig
 from mindspore.ops.auto_generate import MoeInitRouting
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 moe_init_routing_op = MoeInitRouting()
 
@@ -54,10 +55,7 @@ def moe_init_routing_exec(x, row_idx, expert_idx, active_num):
 def moe_init_routing_forward_func(x, row_idx, expert_idx, active_num):
     return moe_init_routing_op(x, row_idx, expert_idx, active_num)
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 def test_moe_init_routing_case0(mode):
     """
@@ -99,10 +97,7 @@ def test_moe_init_routing_case0(mode):
     np.testing.assert_allclose(expanded_row_idx_ms.asnumpy(), expanded_row_idx, rtol=1e-3)
     np.testing.assert_allclose(expanded_expert_idx_ms.asnumpy(), expanded_expert_idx, rtol=1e-3)
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_dynamic():
     """
     Feature: test moe_init_routing
