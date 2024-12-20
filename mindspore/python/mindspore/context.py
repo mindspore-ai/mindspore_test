@@ -1509,6 +1509,7 @@ def set_context(**kwargs):
             If set to ``True`` , the network will only be compiled, not executed.
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_DEV_PRECOMPILE_ONLY` instead.
+        reserve_class_name_in_scope (bool): This parameter will be deprecated and will be removed in future versions.
         pynative_synchronize (bool): Whether to enable synchronous execution of the device in PyNative mode.
             Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
             device. When an error occurs in the execution of the operator, the specific error script code location
