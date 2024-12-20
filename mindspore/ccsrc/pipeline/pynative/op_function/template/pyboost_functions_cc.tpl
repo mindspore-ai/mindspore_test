@@ -24,7 +24,7 @@
 #include "pipeline/pynative/forward/forward_task.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pybind_api/hal/comm_handle_py.h"
-#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
+#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "mindspore/ops/kernel/functions/auto_grad_guard.h"
 #include "mindspore/ops/kernel/functions/auto_generate/functions.h"

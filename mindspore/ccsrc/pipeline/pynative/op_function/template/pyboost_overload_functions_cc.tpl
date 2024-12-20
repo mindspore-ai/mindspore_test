@@ -15,7 +15,7 @@
  */
 #include "ir/named.h"
 #include "include/common/pybind_api/api_register.h"
-#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
+#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
 #include "pipeline/pynative/op_function/converter.h"
 #include "pybind_api/ir/arg_handler.h"
 #include "pipeline/pynative/op_function/auto_generate/pyboost_functions.h"
