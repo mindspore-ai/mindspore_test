@@ -1,0 +1,14 @@
+sub_:
+  - op_yaml: inplace_sub_ext_op.yaml
+    py_method: tensor_sub_empty_
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: inplace_sub_scalar_op.yaml
+    py_method: tensor_sub_empty_
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor

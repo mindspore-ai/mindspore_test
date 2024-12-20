@@ -1,0 +1,7 @@
+true_divide:
+  - op_yaml: div_op.yaml
+    py_method: tensor_true_divide
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
