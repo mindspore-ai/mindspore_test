@@ -6,7 +6,7 @@ mindspore.set_device
     设置运行环境的设备目标和设备ID。
 
     .. note::
-        - `device_target` 的取值必须在 ["CPU", "GPU", Ascend"] ，没有默认值。
+        - `device_target` 的取值必须在 ["CPU", "GPU", "Ascend"] ，没有默认值。
     
     参数：
         - **device_target** (str) - 要运行的目标设备，仅支持 ``"Ascend"`` 、``"GPU"`` 和 ``"CPU"``。
