@@ -189,6 +189,9 @@ class BACKEND_EXPORT DynamicMemPool {
  protected:
   virtual const bool IsEnableEagerFree() const { return false; }
   virtual const bool IsEnableVmm() const { return false; }
+
+  virtual void WaitPipeline() {}
+
   virtual const bool SyncAllStreams() { return false; }
   virtual size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) { return 0; }
   virtual size_t FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const size_t size) { return 0; }

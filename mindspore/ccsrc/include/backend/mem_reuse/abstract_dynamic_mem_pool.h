@@ -409,6 +409,8 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   void ResetMaxMemAllocated() override;
 
  protected:
+  void WaitPipelineHelper();
+
   MemBufAllocatorPtr GenerateAllocator(bool is_persistent, uint32_t stream_id);
   inline MemBufAllocator *GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id);
 
