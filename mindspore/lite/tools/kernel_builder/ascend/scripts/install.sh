@@ -300,7 +300,7 @@ elif [ "x${ASCEND_OPP_PATH}" != "x" ] && [ -d ${ASCEND_OPP_PATH} ]; then
     config_file=${targetdir}/config.ini
     if [ ! -f ${config_file} ]; then
         touch ${config_file}
-        chmod 750 ${config_file}
+        chmod 755 ${config_file}
         echo "load_priority=$vendor_name" > ${config_file}
         if [ $? -ne 0 ];then
             echo "echo load_priority failed"

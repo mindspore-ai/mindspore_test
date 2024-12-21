@@ -26,7 +26,8 @@
       "Third_Party_Open_Source_Software",
       ".gitattributes",
       ".gitignore",
-      "requirements.txt"
+      "requirements.txt",
+      "mindspore/lite/tools/kernel_builder/ascend/scripts"
     ],
     "ENVIRONMENT": "BASE"
   },
