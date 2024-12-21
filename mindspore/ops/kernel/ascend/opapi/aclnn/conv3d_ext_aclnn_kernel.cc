@@ -100,14 +100,12 @@ void Conv3DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
     SetTensorStorageInfo<std::shared_ptr<KernelTensor>>(input_kernel_tensor_, in_shape);
 
     auto out_shape = outputs[kIndex0]->GetShapeVector();
-    auto out_shape_ori = out_shape;
     ShapeVector expand_out_shape = out_shape;
     expand_out_shape.insert(expand_out_shape.begin(), 1);
     SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], expand_out_shape);
     GetWorkspaceForResize(input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_, padding_, dilation_,
                           transposed_, output_padding_, groups_, outputs[kIndex0],
                           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
-    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], out_shape_ori);
   }
 }
 
