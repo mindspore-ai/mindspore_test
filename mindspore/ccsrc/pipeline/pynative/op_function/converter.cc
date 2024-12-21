@@ -513,6 +513,10 @@ bool CheckArgsAsIntlist(const py::object &obj, bool as_intlist) {
 }
 
 bool FunctionSignature::CheckParamValid(const py::object &obj, const FunctionParameter &param) {
+  if (param.is_any_) {
+    // only when py_method dispatch to skip type check
+    return true;
+  }
   if (py::isinstance<py::none>(obj)) {
     if (!param.allow_none_) {
       return false;
@@ -534,6 +538,7 @@ bool FunctionSignature::Parse(const py::list &args, const py::dict &kwargs, py::
   }
   for (auto &param : params_) {
     bool is_kwd = false;
+    param.is_any_ = param.type_ == OP_DTYPE::DT_ANY;
     py::object obj;
     if (arg_pos < nargs) {
       obj = (args)[arg_pos++];
