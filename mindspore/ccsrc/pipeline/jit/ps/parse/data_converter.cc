@@ -1661,7 +1661,7 @@ ValuePtr ConvertTensorToSequenceAny(const py::object &obj) {
   return std::make_shared<TD>(value_list);
 }
 
-ValuePtr ConvertTensorToInt(const py::object &obj) {
+ValuePtr ConvertTensorToInt64(const py::object &obj) {
   auto tensor = ConvertTensorValue(obj);
   if (tensor == nullptr) {
     return nullptr;
@@ -1674,6 +1674,12 @@ ValuePtr ConvertTensorToInt(const py::object &obj) {
     return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
   } else if (tensor->data_type() == kNumberTypeInt32) {
     return std::make_shared<Int64Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+  } else if (tensor->data_type() == kNumberTypeInt16) {
+    return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
+  } else if (tensor->data_type() == kNumberTypeInt8) {
+    return std::make_shared<Int64Imm>(static_cast<int8_t *>(GetTensorDataPtr(tensor))[0]);
+  } else if (tensor->data_type() == kNumberTypeUInt8) {
+    return std::make_shared<Int64Imm>(static_cast<uint8_t *>(GetTensorDataPtr(tensor))[0]);
   } else {
     MS_LOG(ERROR) << "Can not convert " << tensor->ToString() << " to int";
     return nullptr;
@@ -1865,7 +1871,7 @@ static const std::unordered_map<int32_t, OpDefConvertFunc> kConverters = {
    ConvertTensorToSequenceAny<ValueList>},
 
   // TypeCast5: convert tensor to single element
-  {CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_INT), ConvertTensorToInt},
+  {CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_INT), ConvertTensorToInt64},
   {CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_FLOAT), ConvertTensorToFloat},
   {CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_BOOL), ConvertTensorToBool},
   {CombineTypesForTypeCast(mindspore::ops::DT_TENSOR, mindspore::ops::DT_NUMBER), ConvertTensorToNumber},
