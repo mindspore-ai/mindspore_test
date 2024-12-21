@@ -50,7 +50,7 @@ def test_llama2_dp2mp4pp1_recompute():
     attrs_check_pairs = {"recompute: Bool(1)": 18}
     validate_name = find_graph_file_name(graph_path, "validate")
     check_graph(graph_path, validate_name, attrs_check_pairs)
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%11, %6": "((4, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -167,7 +167,7 @@ def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     ops_check_pairs_0 = {"VirtualAssignAdd": 74}
     validate_name = find_graph_file_name(graph_path[0], "validate")
     step_parallel_end_name = find_graph_file_name(graph_path[0], "step_parallel_end")
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%0, %5": "((4, 1), (2, 1))"}}
     param_opt_shape_check_pairs = {"_model.layers.0.attention.wq.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wk.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wv.weight": "(512, 4096)",
@@ -728,7 +728,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     # dp、mp Gather 切分
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%0, %5": "((4, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     # 梯度累加，检查 virtualassignadd 数量
     parm_virtualassignadd_check_pairs = {'VirtualAssignAdd': '74'}
@@ -832,7 +832,7 @@ def test_llama2_dp4mp4pp1op_recompute_2():
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     # dp Gather 切分
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (4, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%11, %6": "((4, 1), (4, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
 
     check_pair = {"Training Over": 1}
