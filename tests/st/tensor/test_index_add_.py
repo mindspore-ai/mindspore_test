@@ -114,7 +114,7 @@ def test_index_add__dynamic_shape():
     TEST_OP(index_add__forward_func_grad,
             [[tensor_x1, axis1, index1, tensor_source1, alpha1],
              [tensor_x2, axis2, index2, tensor_source2, alpha2]],
-            "index_add_",
+            "inplace_index_add",
             disable_mode=['GRAPH_MODE'],
             disable_input_check=True,
             inplace_update=True)

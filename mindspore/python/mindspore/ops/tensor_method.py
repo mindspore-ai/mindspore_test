@@ -273,7 +273,7 @@ from mindspore.ops.function.array_func import tril
 # 114 type
 
 # 115 type_as
-from mindspore.ops.auto_generate import type_as_op
+
 # 116 unbind
 
 # 117 unfold
@@ -397,7 +397,6 @@ from mindspore.ops.auto_generate import hardshrink
 
 # 931
 from mindspore.ops.function.math_func import nansum
-from mindspore.ops.auto_generate import nansum_op
 
 # 244 log1p
 from mindspore.ops.auto_generate import log1p
@@ -1100,8 +1099,6 @@ def deprecated_tensor_type_as(input, other):
     return input.astype(other.dtype)
 
 
-def tensor_type_as(input, other):
-    return type_as_op(input, other)
 # 116 unbind
 def deprecated_tensor_unbind(input, dim=0):
     r"""
@@ -1477,13 +1474,11 @@ def tensor_lerp_scalar(input, end, weight):
 def tensor_hardshrink(input, lambd=0.5):
     return hardshrink(input, lambd)
 
+
 # 931
 def deprecated_tensor_nansum(input, axis=(), keepdims=False, *, dtype=None):
     return nansum(input, axis, keepdims, dtype=dtype)
 
-
-def tensor_nansum(input, dim=None, keepdim=False, *, dtype=None):
-    return nansum_op(input, dim, keepdim, dtype=dtype)
 
 # 244 log1p
 def tensor_log1p(input):
