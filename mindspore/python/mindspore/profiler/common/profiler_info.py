@@ -284,8 +284,13 @@ class ProfilerInfo:
         if not isinstance(cpu_info, dict):
             raise RuntimeError("cpu_info[0] must be a dictionary")
 
+        freq_str = cpu_info.get("Frequency", self._freq)
+        if not freq_str:
+            logger.warning("Frequency is empty, use default frequency: %s", str(self._freq))
+            return
+
         try:
-            freq = float(cpu_info.get("Frequency", self._freq))
+            freq = float(freq_str)
         except ValueError as e:
             raise ValueError(
                 "Convert frequency to float failed, please check msprof information"
