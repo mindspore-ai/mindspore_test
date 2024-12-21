@@ -219,12 +219,13 @@ OUTPUT_MAP(CombinedNonMaxSuppression) = {{0, OUTPUT_DESC(nmsed_boxes)},
 REG_ADPT_DESC(CombinedNonMaxSuppression, prim::kPrimCombinedNonMaxSuppression->name(),
               ADPT_DESC(CombinedNonMaxSuppression))
 
-std::vector<std::string> interpolation_modes = {"bilinear", "nearest", "bicubic"};
+std::vector<std::string> interpolation_modes = {"bilinear", "nearest"};
+std::vector<std::string> interpolation_modes_2d = {"bilinear", "nearest", "bicubic2d"};
 std::vector<std::string> padding_modes = {"zeros", "border", "reflection"};
 // GridSampler2D
 INPUT_MAP(GridSampler2D) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(grid)}};
 ATTR_MAP(GridSampler2D) = EMPTY_ATTR_MAP;
-INPUT_ATTR_MAP(GridSampler2D) = {{3, ATTR_DESC(interpolation_mode, AnyTraits<GEEnumToStr>(), interpolation_modes)},
+INPUT_ATTR_MAP(GridSampler2D) = {{3, ATTR_DESC(interpolation_mode, AnyTraits<GEEnumToStr>(), interpolation_modes_2d)},
                                  {4, ATTR_DESC(padding_mode, AnyTraits<GEEnumToStr>(), padding_modes)},
                                  {5, ATTR_DESC(align_corners, AnyTraits<bool>())}};
 OUTPUT_MAP(GridSampler2D) = {{0, OUTPUT_DESC(y)}};
