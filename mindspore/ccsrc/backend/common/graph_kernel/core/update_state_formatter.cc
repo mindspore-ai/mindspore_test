@@ -27,6 +27,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/eliminate_redundant_output.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore::graphkernel {
 bool IsUpdateState(const std::pair<AnfNodePtr, int> &user) {
@@ -271,9 +272,9 @@ bool MergeOutputForUpdateState::Run(const FuncGraphPtr &func_graph) {
     for (size_t i = min_input_num; i < cnode->size(); ++i) {
       auto input = cnode->input(i);
       if (IsPrimitiveCNode(input, prim::kPrimTupleGetItem)) {
-        // only keep one GetItem for that link to the same node.
+        // only keep one GetItem for that link to the same graph kernel node.
         auto gt_input = input->cast<CNodePtr>()->input(kRealInputNodeIndexInTupleGetItem);
-        if (node_set.insert(gt_input).second) {
+        if (!common::AnfAlgo::IsGraphKernel(node) || node_set.insert(gt_input).second) {
           inputs.push_back(input);
         }
       } else {
