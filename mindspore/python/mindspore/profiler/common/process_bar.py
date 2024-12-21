@@ -25,6 +25,7 @@ class ProcessBar:
     A progress bar for tracking the progress of an iterable or a process with a known total.
     """
     BLANK_SPACE_NUM = 20
+    FINISH_TEXT = "Done"
 
     def __init__(
             self,
@@ -133,25 +134,35 @@ class ProcessBar:
             raise ValueError("Must provide an iterable")
         try:
             iterator = iter(self.iterable)
+            # 预先获取第一个元素
             try:
                 first_item = next(iterator)
             except StopIteration:
                 return
 
-            # 初始化进度条打印
+            # 初始化显示，显示0/total和第一个元素的名称
+            self.cur_item_name = first_item.__class__.__name__
+            self._print_progress(time.time())
+
+            # 处理第一个元素
+            yield first_item
             self.update(item_name=first_item.__class__.__name__)
             self._print_progress(time.time())
-            yield first_item
 
-            # 继续迭代剩余元素
+            # 处理剩余元素
             for item in iterator:
+                # 先更新当前要处理的元素名称
+                self.cur_item_name = item.__class__.__name__
+                self._print_progress(time.time())
                 yield item
-                self.update(item_name=item.__class__.__name__)
+                self.update()
 
-            # 在迭代结束后确保最后一次更新被显示
+            # 显示完成状态
+            self.cur_item_name = self.FINISH_TEXT
             self._print_progress(time.time())
+            sys.stdout.write("\n")
+
         finally:
             self._stop_refresh = True
             if self._refresh_thread:
                 self._refresh_thread.join()
-            sys.stdout.write("\n")
