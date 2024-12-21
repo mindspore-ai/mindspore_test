@@ -66,7 +66,7 @@ def test_ops_norm_forward(mode, p):
     assert np.allclose(output2.asnumpy(), expect_output2.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('p', [-np.inf, -1.0, 0, 2.0, 4.0, np.inf])
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_norm_backward(p, mode):
