@@ -528,6 +528,19 @@ HcclResult HcclAdapter::HcclCommInitClusterInfoConfig(const char *rank_table, ui
   return init_hccl_global_comm_ranktable_(rank_table, rank_id, config, hccl_comm);
 }
 
+HcclResult HcclAdapter::HcclCommInitRootInfoConfig(uint32_t n_ranks, const HcclRootInfo *root_info, uint32_t rank,
+                                                   const HcclCommConfig *config, HcclComm *hccl_comm_) {
+  if (init_hccl_root_info_config_ == nullptr) {
+    init_hccl_root_info_config_ = DlsymFuncObj(HcclCommInitRootInfoConfig, plugin_handle_);
+    if (init_hccl_root_info_config_ == nullptr) {
+      // new api in CANN C20
+      return HcclCommInitRootInfo(n_ranks, root_info, rank, hccl_comm_);
+    }
+  }
+
+  return init_hccl_root_info_config_(n_ranks, root_info, rank, config, hccl_comm_);
+}
+
 HcclResult HcclAdapter::HcclCreateSubCommConfig(HcclComm *global_comm, uint32_t rank_size, uint32_t *rank_ids,
                                                 uint64_t comm_id, uint32_t rank_id, HcclCommConfig *config,
                                                 HcclComm *hccl_comm) {
