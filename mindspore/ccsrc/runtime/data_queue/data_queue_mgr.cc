@@ -294,10 +294,7 @@ void RetryPeakItemFromDataQueue(const AnfNodePtr &data_kernel, const std::shared
   auto front_ret = DataQueueStatus::TIMEOUT;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  uint32_t op_timeout = device_context->GetExecuteTimeout();
+  uint32_t op_timeout = ms_context->get_param<uint32_t>(MS_CTX_OP_TIMEOUT);
   time_t start_time = time(nullptr);
   while (front_ret == DataQueueStatus::TIMEOUT && ((time(nullptr) - start_time) < op_timeout || op_timeout == 0)) {
     front_ret = data_queue->FrontAsync(data);
