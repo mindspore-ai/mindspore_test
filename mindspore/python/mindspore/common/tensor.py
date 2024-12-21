@@ -3100,12 +3100,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("unique_with_pad")(self, pad_num)
 
-    def diag(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.diag`.
-        """
-        return tensor_operator_registry.get('diag')(self)
-
     def diagflat(self, offset=0):
         r"""
         For details, please refer to :func:`mindspore.ops.diagflat`.

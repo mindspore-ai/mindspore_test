@@ -1660,6 +1660,13 @@ def tensor_log1p(input):
     return log1p(input)
 
 
+def tensor_diag(input, diagonal=0):
+    return F.diag(input)
+
+
+def deprecated_tensor_diag(input):
+    return F.diag(input)
+
 # 1028
 def tensor_var(input, dim=None, *, correction=1, keepdim=False):
     return var_ext(input, dim, correction=correction, keepdim=keepdim)

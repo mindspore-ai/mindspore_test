@@ -615,6 +615,32 @@ inline NodePtr GradDiagonal(Emitter *ib, const NodePtr &dout, const NodePtr &dx_
   return dx;
 }
 
+inline NodePtr GradDiagonalScalarToTensor(Emitter *ib, const NodePtr &dout, const NodePtr &dx_trans_shape,
+                                          const NodePtr &diagonal, std::tuple<int64_t, int64_t, size_t> int_tuple,
+                                          const TypePtr &x_dtype) {
+  auto [dim1, dim2, x_dim] = int_tuple;
+  auto value = ib->Tensor(0, x_dtype);
+  auto dx = ib->Emit("FillV2", {dx_trans_shape, value});
+  auto k = ib->ScalarToTensor(diagonal, kInt32);
+  constexpr int64_t max_length = 200000000;
+  dx = ib->Emit("MatrixSetDiagV3", {dx, dout, k},
+                {{"align", MakeValue("LEFT_RIGHT")}, {"max_length", MakeValue(max_length)}});
+  int64_t dim = 0;
+  ShapeVector perm(x_dim, 0);
+  for (size_t i = 0; i < x_dim; ++i) {
+    if (i == static_cast<size_t>(dim1)) {
+      perm[i] = static_cast<int64_t>(x_dim - i2);
+    } else if (i == static_cast<size_t>(dim2)) {
+      perm[i] = static_cast<int64_t>(x_dim - i1);
+    } else {
+      perm[i] = dim;
+      dim++;
+    }
+  }
+  dx = ib->Transpose(dx, perm);
+  return dx;
+}
+
 inline NodePtr ReduceExtOpGetMask(BpropBuilder *ib, const NodePtr &x, const NodePtr &out) {
   auto out_is_nan = ib->IsNanFunc(out);
   auto input_is_nan = [&x](Emitter *e) -> NodePtrList { return {e->IsNanFunc(x)}; };
@@ -4460,6 +4486,40 @@ REG_BPROP_BUILDER("Diagonal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
     return {dx, ib->OutZeros(offset_node), ib->OutZeros(dim1_node), ib->OutZeros(dim2_node)};
   }
   if (ib->GetSize(out) > 0) {
+    return true_case(ib);
+  } else {
+    return false_case(ib);
+  }
+});
+
+REG_BPROP_BUILDER("DiagExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto diagonal = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex3);
+  auto x_shape = ib->GetShape(x);
+  auto ndimension = x_shape.size();
+  MS_ASSERT(ndimension == 1 || ndimension == 2);
+  if (ndimension == 1 || x_shape[0] == x_shape[1]) {
+    return {ib->Emit("DiagExt", {dout, diagonal}), ib->OutZeros(diagonal)};
+  }
+  auto x_dim = ib->GetRank(x);
+  auto x_dtype = ib->GetDtype(x);
+  auto true_case = [&x, &out, &dout, &x_shape, &x_dtype, &diagonal, x_dim](Emitter *ib) -> NodePtrList {
+    auto dx_trans_shape = ib->ShapeCalc(std::make_shared<DiagonalShapeCalc>(0, 1), {x, out})[0];
+    auto grad_diagonal = GradDiagonalScalarToTensor(ib, dout, dx_trans_shape, diagonal, {0, 1, x_dim}, x_dtype);
+    return {grad_diagonal, ib->ZerosLike(diagonal)};
+  };
+  auto false_case = [&x, &x_dtype, &diagonal](Emitter *ib) -> NodePtrList {
+    return {ib->ZerosLike(x), ib->ZerosLike(diagonal)};
+  };
+  if (IsDynamic(ib->GetShape(x))) {
+    auto x_size = ib->Emit("Size", {x});
+    auto cond = ib->Emit("scalar_eq", {x_size, ib->Value<int64_t>(0)});
+    auto dx = ib->Conditional(cond, false_case, true_case);
+    return {dx, ib->OutZeros(diagonal)};
+  }
+  if (ib->GetSize(x) > 0) {
     return true_case(ib);
   } else {
     return false_case(ib);

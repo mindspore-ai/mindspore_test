@@ -328,6 +328,9 @@ from mindspore.ops.function.math_func import round
 # 182
 from mindspore.ops.function.math_func import bernoulli_ext as bernoulli
 
+# 201
+from mindspore.ops.auto_generate import diag_ext as diag
+
 # 204
 from mindspore.ops.auto_generate import erfc
 # 207
@@ -1954,7 +1957,8 @@ __all__ = [
 
     # 182
     'bernoulli',
-
+    # 201
+    'diag',
     # 207
     'expm1',
     # 204
