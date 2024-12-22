@@ -29,9 +29,6 @@ namespace mindspore::ops {
 TensorStorageInfoPtrList NarrowCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto input_type = input_tensor->Dtype();
-  const std::set<TypePtr> valid_type = {kInt8, kInt32, kInt64, kUInt8, kFloat16, kFloat32, kBool, kBFloat16};
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_type, prim->name());
 
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   MS_EXCEPTION_IF_NULL(old_tensor_info);

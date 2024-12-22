@@ -8,7 +8,7 @@ mindspore.mint.narrow
     参数：
         - **input** (Tensor) - 需要计算的Tensor。
         - **dim** (int) - 指定的轴。
-        - **start** (int) - 指定起始位置。
+        - **start** (Union[int, Tensor[int]]) - 指定起始位置。
         - **length** (int) - 指定长度。
 
     返回：
