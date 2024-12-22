@@ -1,6 +1,6 @@
-to:
+_to:
   description: |
-    to(dtype) -> Tensor
+    _to(dtype) -> Tensor
     
         Returns a tensor with the new specified data type.
 
@@ -27,7 +27,7 @@ to:
             >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
             >>> input = Tensor(input_np)
             >>> dtype = mindspore.int32
-            >>> output = input.to(dtype)
+            >>> output = input._to(dtype)
             >>> print(output.dtype)
             Int32
             >>> print(output.shape)
