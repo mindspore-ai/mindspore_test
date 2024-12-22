@@ -1,4 +1,4 @@
-to:
+_to:
   op_yaml: cast_op.yaml
   py_method: tensor_to
   Ascend: pyboost
