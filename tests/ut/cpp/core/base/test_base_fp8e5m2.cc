@@ -13,74 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <iostream>
-#include <iomanip>
 #include <cmath>
-#include <bitset>
+#include <limits>
+#include "common/common_test.h"
 #define private public
-#define protected public
 #include "base/float8_e5m2.h"
 
-std::string float_to_binary(float f) {
-  union {
-    float f;
-    uint32_t i;
-  } converter;
-  converter.f = f;
-  return std::bitset<32>(converter.i).to_string();
+namespace mindspore {
+
+class TestFloat8e5m2 : public UT::Common {
+ public:
+  TestFloat8e5m2() {}
+};
+
+TEST_F(TestFloat8e5m2, ZeroConversion) {
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(0.0f))), 0.0f);
 }
 
-std::string format_float_binary(const std::string& bin) {
-  return bin.substr(0,1) + " | " +
-         bin.substr(1,8) + " | " +
-         bin.substr(9,23);
+TEST_F(TestFloat8e5m2, OneConversion) {
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 1.0f);
 }
 
-int main() {
-  float test_values[] = {
-    0.0f, 1.0f, -1.0f, 0.5f, -0.5f,
-    3.14f, -2.71f, 100.0f, -100.0f,
-    32768.0f, -32768.0f,
-    std::numeric_limits<float>::infinity(),
-    -std::numeric_limits<float>::infinity(),
-    std::numeric_limits<float>::quiet_NaN()
-  };
-
-  for (float f32 : test_values) {
-    uint8_t float8_bits = Float8_e5m2::FromFloat32(f32);
-    Float8_e5m2 float8 = Float8_e5m2::FromRaw(float8_bits);
-    float f32_converted = Float8_e5m2::ToFloat32(float8);
-    float diff = std::abs(f32 - f32_converted);
-
-    std::cout << "Input float: " << f32 << std::endl;
-    std::cout << "Float32 bits: " << format_float_binary(float_to_binary(f32)) << std::endl;
-    std::cout << "            (S |    E    |           M           )" << std::endl;
-    std::cout << "Float8_e5m2 hex: 0x" << std::hex << std::setw(2) << std::setfill('0')
-              << static_cast<int>(float8_bits) << std::dec << std::endl;
-    std::cout << "Float8_e5m2 bits: " << std::bitset<8>(float8_bits).to_string().substr(0,1)
-              << " | " << std::bitset<8>(float8_bits).to_string().substr(1,5)
-              << " | " << std::bitset<8>(float8_bits).to_string().substr(6,2) << std::endl;
-    std::cout << "               (S |  E   | M )" << std::endl;
-    std::cout << "Output float: " << f32_converted << std::endl;
-    std::cout << "Output bits: " << format_float_binary(float_to_binary(f32_converted)) << std::endl;
-    std::cout << "Delta: " << diff << std::endl;
-
-    const float epsilon = abs(f32)/4.0;
-
-    if (std::isnan(f32) && std::isnan(f32_converted)) {
-      std::cout << "Result: NaN test passed" << std::endl;
-    } else if (std::isinf(f32) && std::isinf(f32_converted) &&
-               std::signbit(f32) == std::signbit(f32_converted)) {
-      std::cout << "Result: Infinity test passed" << std::endl;
-    } else if (diff <= epsilon) {
-      std::cout << "Result: Test passed" << std::endl;
-    } else {
-      std::cout << "Result: Test failed" << std::endl;
-    }
-
-    std::cout << "----------------------------------------" << std::endl;
-  }
-
-  return 0;
+TEST_F(TestFloat8e5m2, NegativeOneConversion) {
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(-1.0f))), -1.0f);
 }
+
+TEST_F(TestFloat8e5m2, NumberConversion) {
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 3.0f);
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), -2.5f);
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 96.0f);
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 32768.0f);
+}
+
+TEST_F(TestFloat8e5m2, InfinityConversion) {
+  float inf = std::numeric_limits<float>::infinity();
+  EXPECT_TRUE(std::isinf(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(inf)))));
+}
+
+TEST_F(TestFloat8e5m2, NaNConversion) {
+  float nan = std::numeric_limits<float>::quiet_NaN();
+  EXPECT_TRUE(std::isnan(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(nan)))));
+}
+
+}  // namespace mindspore
