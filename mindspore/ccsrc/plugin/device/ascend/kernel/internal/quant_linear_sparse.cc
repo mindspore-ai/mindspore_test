@@ -25,9 +25,14 @@ internal::InternalOpPtr InternalQuantLinearSparse::CreateKernel(const internal::
                                                                 const internal::OutputsImmutableInfoList &outputs_ii,
                                                                 const std::vector<KernelTensor *> &ms_inputs,
                                                                 const std::vector<KernelTensor *> &ms_outputs) {
+  output_format_ = outputs_ii[0].GetFormat();
   return internal::CreateQuantLinearSparseOp(inputs_ii, outputs_ii, internal::kInternalQuantLinearSparseOpName);
 }
 
+uint64_t InternalQuantLinearSparse::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, output_format_);
+}
 MS_INTERNAL_KERNEL_FACTORY_REG(QuantLinearSparse, internal::kInternalQuantLinearSparseOpName,
                                InternalQuantLinearSparse);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QuantLinearSparse, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_4, INDEX_2, INDEX_3);

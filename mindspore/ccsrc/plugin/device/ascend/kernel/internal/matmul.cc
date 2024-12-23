@@ -30,7 +30,13 @@ internal::InternalOpPtr InternalMatmul::CreateKernel(const internal::InputsImmut
   auto input_len = ms_inputs.size();
   param.transpose_a = ms_inputs[input_len - kIndex2]->GetValueWithCheck<bool>();
   param.transpose_b = ms_inputs[input_len - kIndex1]->GetValueWithCheck<bool>();
+  output_format_ = outputs[0].GetFormat();
   return internal::CreateMatmulOp(inputs, outputs, param, internal::kInternalMatMulOpName);
+}
+
+uint64_t InternalMatmul::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, output_format_);
 }
 MS_INTERNAL_KERNEL_FACTORY_REG(MatMul, internal::kInternalMatMulOpName, InternalMatmul);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(MatMul, INPUT_NUM_2, INDEX_0, INDEX_1);
