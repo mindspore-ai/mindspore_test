@@ -49,7 +49,7 @@ class BACKEND_EXPORT GEBackend {
   // if param init in device, for refmode
   mindspore::HashMap<ParameterPtr, bool> is_weight_init_;
   // if weight value update in python, it records the tensor
-  mindspore::HashSet<const tensor::Tensor *> weights_need_reprepare_;
+  static mindspore::HashSet<const tensor::Tensor *> weights_need_reprepare_;
   // graph running step
   mindspore::HashMap<KernelGraphPtr, uint32_t> graph_run_iter_;
 
