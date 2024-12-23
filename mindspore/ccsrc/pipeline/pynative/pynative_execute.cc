@@ -221,12 +221,7 @@ void PyNativeExecutor::Init() {
   OpsAutoGradImplRegister();
 }
 
-void PyNativeExecutor::Sync() const {
-  GilReleaseWithCheck release_gil;
-  forward_executor()->Sync();
-  runtime::ProfilerAnalyzer::GetInstance().EndStep();
-  runtime::ProfilerAnalyzer::GetInstance().StartStep();
-}
+void PyNativeExecutor::Sync() const { PyNativeExecutorTry(forward_executor()->SyncData, true); }
 
 bool PyNativeExecutor::grad_flag() const { return grad_executor()->grad_flag(); }
 

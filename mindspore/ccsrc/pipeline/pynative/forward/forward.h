@@ -79,7 +79,8 @@ class ME_EXPORT ForwardExecutor {
     MS_LOG(DEBUG) << "Set mix precision type " << mix_precision_type << ", is push " << is_push;
   }
   void ExecuteLazyTask() const;
-  void Sync();
+  void Sync(const bool &);
+  std::function<void(const bool &)> SyncData = [this](auto &&PH1) { return Sync(std::forward<decltype(PH1)>(PH1)); };
   bool CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_run_info);
   inline InferOperationPtr infer_operation() const {
     MS_EXCEPTION_IF_NULL(infer_operation_);

@@ -867,11 +867,13 @@ std::string ForwardExecutor::GetCurrentDeviceTarget(const PrimitivePtr &op_prim)
   return device_target_;
 }
 
-void ForwardExecutor::Sync() {
+void ForwardExecutor::Sync(const bool &) {
+  GilReleaseWithCheck release_gil;
   ExecuteLazyTask();
-
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kSyncStream);
   device::DeviceContextManager::GetInstance().SyncAllStreams();
+  runtime::ProfilerAnalyzer::GetInstance().EndStep();
+  runtime::ProfilerAnalyzer::GetInstance().StartStep();
 }
 
 ValuePtr ForwardExecutor::RunOpInMs(const FrontendOpRunInfoPtr &op_run_info,
