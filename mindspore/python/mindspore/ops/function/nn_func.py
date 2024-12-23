@@ -32,7 +32,7 @@ from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
-from mindspore._checkparam import twice, triple
+from mindspore._checkparam import twice
 from mindspore.ops.composite.multitype_ops._constexpr_utils import raise_value_error
 from mindspore.ops.operations.nn_ops import MaxUnpool2D, MaxUnpool3D
 from mindspore.ops.operations.nn_ops import FractionalMaxPoolWithFixedKsize, FractionalMaxPool3DWithFixedKsize
@@ -7234,13 +7234,7 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         ``Ascend``
     """
 
-    if isinstance(stride, int):
-        stride = triple(stride)
-    if isinstance(dilation, int):
-        dilation = triple(dilation)
-    if isinstance(padding, int):
-        padding = triple(padding)
-    if isinstance(padding, (tuple, list)):
+    if isinstance(padding, (tuple, list, int)):
         return conv3d_ext_op(input, weight, bias, stride, padding, dilation, groups)
     if isinstance(padding, str):
         return conv3d_padding_op(input, weight, bias, stride, padding, dilation, groups)

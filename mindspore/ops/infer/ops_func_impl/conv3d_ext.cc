@@ -29,17 +29,23 @@ constexpr size_t kConv3dStridePaddingDilationLen = 3;
 int64_t GetOutputHWConv3d(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
                           const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &padding,
                           const ArrayValue<int64_t> &dilation, bool transposed, const ShapeVector &output_padding) {
+  auto i_stride = i % stride.size();
+  auto i_padding = i % padding.size();
+  auto i_dilation = i % dilation.size();
   if (input_shape[shape_pos] == abstract::Shape::kShapeDimAny ||
-      weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || padding.IsValueUnknown(i) ||
-      dilation.IsValueUnknown(i) || stride.IsValueUnknown(i)) {
+      weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || padding.IsValueUnknown(i_padding) ||
+      dilation.IsValueUnknown(i_dilation) || stride.IsValueUnknown(i_stride)) {
     return abstract::Shape::kShapeDimAny;
   }
 
   if (!transposed) {
-    return (input_shape[shape_pos] + 2 * padding[i] - dilation[i] * (weight_shape[shape_pos] - 1) - 1) / stride[i] + 1;
+    return (input_shape[shape_pos] + 2 * padding[i_padding] - dilation[i_dilation] * (weight_shape[shape_pos] - 1) -
+            1) /
+             stride[i_stride] +
+           1;
   } else {
-    return (input_shape[shape_pos] - 1) * stride[i] - 2 * padding[i] + dilation[i] * (weight_shape[shape_pos] - 1) +
-           output_padding[i] + 1;
+    return (input_shape[shape_pos] - 1) * stride[i_stride] - 2 * padding[i_padding] +
+           dilation[i_dilation] * (weight_shape[shape_pos] - 1) + output_padding[i] + 1;
   }
 }
 
@@ -138,10 +144,6 @@ ShapeArray Conv3DExtFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &primiti
     IndicesCheckPositiveVectorConv3d("stride", stride, prim_name, true);
     IndicesCheckPositiveVectorConv3d("padding", padding, prim_name, false);
     IndicesCheckPositiveVectorConv3d("dilation", dilation, prim_name, true);
-    (void)CheckAndConvertUtils::CheckInteger("stride", stride.size(), kGreaterEqual, kConv3dStridePaddingDilationLen);
-    (void)CheckAndConvertUtils::CheckInteger("padding", padding.size(), kGreaterEqual, kConv3dStridePaddingDilationLen);
-    (void)CheckAndConvertUtils::CheckInteger("dilation", dilation.size(), kGreaterEqual,
-                                             kConv3dStridePaddingDilationLen);
 
     auto group_opt = input_infos[kIndex6]->GetScalarValue<int64_t>();
     int64_t groups = group_opt.value();
@@ -157,13 +159,13 @@ ShapeArray Conv3DExtFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &primiti
     (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual, weight_shape[kIndex1]);
     int64_t input_rank = SizeToLong(input_shape.size());
     for (int64_t i = 2; i < input_rank; i++) {
-      input_shape_with_padding.push_back(input_shape[i] + 2 * padding[i - 2]);
-      kernel_shape_with_dilation.push_back(dilation[i - 2] * (weight_shape[i] - 1) + 1);
+      input_shape_with_padding.push_back(input_shape[i] + 2 * padding[(i - 2) % padding.size()]);
+      kernel_shape_with_dilation.push_back(dilation[(i - 2) % dilation.size()] * (weight_shape[i] - 1) + 1);
       if (input_shape_with_padding.back() < kernel_shape_with_dilation.back()) {
         MS_EXCEPTION(ValueError) << "For [Conv3DExt], (Input_shape[i]{" << input_shape[i] << "} + 2 * padding[i-2]{"
-                                 << padding[i - 2] << "})can't be less then "
-                                 << "(delation[i-2]{" << dilation[i - 2] << "} * (weight_shape[i]{" << weight_shape[i]
-                                 << "} - 1) + 1).";
+                                 << padding[(i - 2) % padding.size()] << "})can't be less then "
+                                 << "(delation[i-2]{" << dilation[(i - 2) % dilation.size()] << "} * (weight_shape[i]{"
+                                 << weight_shape[i] << "} - 1) + 1).";
       }
     }
   }
