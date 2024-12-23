@@ -48,7 +48,7 @@ def net2_test(x):
     assert np.allclose(output2.asnumpy(), np.array([[0], [1], [2]]))
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])

@@ -40,7 +40,7 @@ def unique_forward_func_dynamic(x, is_sorted=True, dim=1):
 
 @arg_mark(
     plat_marks=['platform_ascend', 'platform_ascend910b'],
-    level_mark='level0',
+    level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -78,7 +78,7 @@ def test_tensor_unique_forward_dim_None(mode):
 
 @arg_mark(
     plat_marks=['platform_ascend', 'platform_ascend910b'],
-    level_mark='level0',
+    level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

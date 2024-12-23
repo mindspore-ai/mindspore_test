@@ -118,7 +118,7 @@ def generate_expect_backward_output(x, y, alpha):
     return x_grad, y_grad
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 # @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_inplace_sub_backward():
     """
@@ -142,7 +142,7 @@ def test_inplace_sub_backward():
     np.testing.assert_allclose(output_other_grad.asnumpy(), expect_y_grad.asnumpy(), rtol=1e-5)
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 # @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_inplace_sub_backward_other_scalar():
     """
