@@ -562,7 +562,7 @@ void Common::ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph) {
   DumpGraphIR("replace_cnode_with_valuenode.ir", bprop_graph);
 }
 
-ValuePtr StubNodeToValueInner(const ValuePtr &v) {
+ValuePtr Common::StubNodeToValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (utils::isa<stub::StubNode>(v)) {
     auto stub = utils::cast<stub::StubNodePtr>(v);
@@ -576,7 +576,7 @@ ValuePtr StubNodeToValueInner(const ValuePtr &v) {
     }
     ValuePtrList value_list;
     (void)std::transform(values.begin(), values.end(), std::back_inserter(value_list),
-                         [](const ValuePtr &value) { return StubNodeToValueInner(value); });
+                         [](const ValuePtr &value) { return StubNodeToValue(value); });
     if (utils::isa<ValueTuple>(v)) {
       return std::make_shared<ValueTuple>(value_list);
     }
@@ -594,7 +594,7 @@ void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
   auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
   for (size_t i = 0; i < op_run_info->input_size; i++) {
-    op_run_info->op_grad_info->input_value[i] = StubNodeToValueInner(op_run_info->op_grad_info->input_value[i]);
+    op_run_info->op_grad_info->input_value[i] = StubNodeToValue(op_run_info->op_grad_info->input_value[i]);
     if (!op_run_info->is_view_op && !IsVmOp(op_run_info->base_op_run_info.op_name)) {
       op_run_info->op_grad_info->input_value[i] =
         ConvertToContiguousValue(op_run_info->op_grad_info->input_value[i], op_run_info->requires_grad);

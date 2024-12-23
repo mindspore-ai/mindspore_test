@@ -21,6 +21,7 @@
 #include <utility>
 #include <memory>
 #include <vector>
+#include <unordered_set>
 #include "ir/anf.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/expander/core/node.h"
@@ -40,6 +41,8 @@ struct CustomContext {
   ValuePtr output;
   // Input grad type
   std::vector<InputType> input_value_grad_type;
+  // Used inputs
+  std::unordered_set<int64_t> used_inputs;
   // Custom bprop function
   py::function bprop_fn;
   // Python inputs for bprop_fn
@@ -50,6 +53,8 @@ struct CustomContext {
   size_t weight_size{0};
   // Whether the cell is recompute cell
   bool is_recompute;
+  // Whether user set unsed_bprop_inputs
+  bool use_bprop_inputs{false};
   ~CustomContext() {
     py::gil_scoped_acquire gil_acquire;
     bprop_fn = py::object();

@@ -972,6 +972,8 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   /// \return True if tensor memory is contiguous, false otherwise.
   bool is_contiguous() const;
 
+  bool NeedContiguous() const;
+
   /// \brief Get tensor storage stride.
   ///
   /// \return storage stride.

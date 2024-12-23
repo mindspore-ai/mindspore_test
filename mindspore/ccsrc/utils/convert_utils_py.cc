@@ -890,6 +890,32 @@ tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
   return tensor;
 }
 
+py::object CTensorToPyStubNodes(const ValuePtr &val) {
+  if (val->isa<tensor::BaseTensor>()) {
+    // We need acquire gil from outer function before call this method.
+    py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
+    auto node = stub::MakeTopNode(kTensorType);
+    auto tensor = val->cast<tensor::BaseTensorPtr>();
+    auto simple_info = std::make_shared<ValueSimpleInfo>();
+    simple_info->dtype_vector_ = {tensor->Dtype()};
+    simple_info->shape_vector_ = {tensor->shape()};
+    simple_info->size_ = 1;
+    node.second->SetValueSimpleInfo(simple_info);
+    node.second->SetValue(val);
+    return stub_tensor_module.attr("_convert_stub")(node.first);
+  } else if (val->isa<ValueSequence>()) {
+    auto val_seq = val->cast<ValueSequencePtr>();
+    py::tuple tuple_grads(val_seq->size());
+    for (size_t i = 0; i < val_seq->value().size(); ++i) {
+      if (val_seq->value()[i]->isa<tensor::BaseTensor>()) {
+        tuple_grads[i] = CTensorToPyStubNodes(val_seq->value()[i]);
+      }
+    }
+    return std::move(tuple_grads);
+  }
+  return py::none();
+}
+
 ValuePtr PyStubNodeCast(const py::handle &obj) {
   auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
   auto stub = py_stub.cast<stub::StubNodePtr>();

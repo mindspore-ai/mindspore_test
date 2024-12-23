@@ -1049,6 +1049,7 @@ void RegMetaTensor(const py::module *m) {
     .def("data_sync", &Tensor::data_sync)
     .def("wait_pipeline", &Tensor::ExecuteLazyTask)
     .def("is_contiguous", &Tensor::is_contiguous)
+    .def("_need_contiguous", &Tensor::NeedContiguous)
     .def("stride", &Tensor::stride)
     .def("storage_offset", &Tensor::storage_offset)
     .def("register_hook", &RegisterHook::RegisterTensorBackwardHook)
