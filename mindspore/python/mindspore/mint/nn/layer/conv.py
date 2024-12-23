@@ -215,7 +215,7 @@ class Conv2d(_Conv):
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"zeros"`` , ``"reflect"`` ``"circular"`` or ``"replicate"`` . Default: ``"zeros"`` .
-        dilation (Union(int, tuple[int]), optional): Specifies the dilation rate to use for dilated convolution.
+        dilation (Union[int, tuple[int]], optional): Specifies the dilation rate to use for dilated convolution.
             It can be a single int or a tuple of 2 or 4 integers. A single int means the dilation size is the same
             in both the height and width directions. A tuple of two ints represents the dilation size in
             the height and width directions, respectively. For a tuple of four ints, the two ints correspond
@@ -229,7 +229,7 @@ class Conv2d(_Conv):
             divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`,
             this 2D convolution layer also can be called 2D depthwise convolution layer. Default: ``1`` .
         bias (bool, optional): Whether the Conv2d layer has a bias parameter. Default: ``True`` .
-        dtype (mindspore.dtype) – Dtype of Parameters. Default: mstype.float32 .
+        dtype (mindspore.dtype): Dtype of Parameters. Default: mstype.float32 .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` \
@@ -361,7 +361,7 @@ class Conv3d(_Conv):
 
     For the detail of limitations of the parameters, please refer to :func:`mindspore.mint.nn.functional.conv3d`.
 
-    .. warnings:
+    .. warnings::
         This is an experimental API that is subject to change or deletion.
 
     Args:
@@ -392,11 +392,11 @@ class Conv3d(_Conv):
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"zeros"`` , ``"reflect"`` ``"circular"`` or ``"replicate"`` . Default: ``"zeros"`` .
-        dilation (Union(int, tuple[int]), optional): Controlling the space between the kernel points. Default: ``1`` .
+        dilation (Union[int, tuple[int]], optional): Controlling the space between the kernel points. Default: ``1`` .
         groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
             divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`. Default: ``1`` .
         bias (bool, optional): Whether the Conv3d layer has a bias parameter. Default: ``True`` .
-        dtype (mindspore.dtype) – Dtype of Parameters. Default: mstype.float32 .
+        dtype (mindspore.dtype): Dtype of Parameters. Default: mstype.float32 .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` \

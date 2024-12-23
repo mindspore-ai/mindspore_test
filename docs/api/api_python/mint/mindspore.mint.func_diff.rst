@@ -5,7 +5,7 @@ mindspore.mint.diff
 
     计算沿给定维度的第n个正向差。
 
-    第一个正向差通过:math:`out[i] = input[i + 1] - input[i]`计算得到，对于第n个正相差，可以通过递归使用 `torch.diff()` 得到。
+    第一个正向差通过 :math:`out[i] = input[i + 1] - input[i]` 计算得到，对于第n个正相差，可以通过递归使用 `torch.diff()` 得到。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

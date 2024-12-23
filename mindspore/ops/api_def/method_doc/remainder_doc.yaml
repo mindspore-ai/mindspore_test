@@ -81,7 +81,7 @@ remainder:
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([-4.0, 5.0, 6.0]).astype(np.float16))
         >>> y = Tensor(np.array([3.0, 2.0, 3.0]).astype(np.float16))
         >>> output = x.remainder(divisor=y)

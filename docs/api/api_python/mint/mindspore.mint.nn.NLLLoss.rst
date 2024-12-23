@@ -1,7 +1,7 @@
 mindspore.mint.nn.NLLLoss
 ==========================
 
-.. py:function:: mindspore.mint.nn.NLLLoss(weight=None, ignore_index=-100, reduction='mean')
+.. py:class:: mindspore.mint.nn.NLLLoss(weight=None, ignore_index=-100, reduction='mean')
         
     获取预测值和目标值之间的负对数似然损失。
 

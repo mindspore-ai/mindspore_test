@@ -511,7 +511,7 @@ class SyncBatchNorm(_BatchNorm):
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
-        ValueError: If rank_id in `process_groups` is not in range [0, rank_size).
+        ValueError: If rank_id in `process_group` is not in range [0, rank_size).
 
     Supported Platforms:
         ``Ascend``

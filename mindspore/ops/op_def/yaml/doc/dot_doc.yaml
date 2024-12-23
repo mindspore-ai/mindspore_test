@@ -2,11 +2,11 @@ dot:
     description: |
         Computes the dot product of two 1D tensor.
     
-        Inputs:
-            - **input** (Tensor) - The first input in the dot product, must be 1D.
-            - **other** (Tensor) - The second input in the dot product, must be 1D.
+        Args:
+            input (Tensor): The first input in the dot product, must be 1D.
+            other (Tensor): The second input in the dot product, must be 1D.
     
-        Outputs:
+        Returns:
             Tensor, the shape is [] and the data type is same as `input`.
 
         Raises:

@@ -688,7 +688,7 @@ class GRU(_RNNBase):
     are learnable weights between the output and the input in the formula. For instance,
     :math:`W_{ir}, b_{ir}` are the weight and bias used to transform from input :math:`x` to :math:`r`.
     Details can be found in paper
-    `Learning Phrase Representations using RNN Encoder–Decoder for Statistical Machine Translation
+    `Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation
     <https://aclanthology.org/D14-1179.pdf>`_.
 
     Note:

@@ -15,7 +15,7 @@ avg_pool1d:
 
       Args:
           input (Tensor): Tensor of shape :math:`(N, C_{in}, L_{in})`.
-          kernel_size (Union(int, tuple[int]): The size of kernel window used to take the average value.
+          kernel_size (Union(int, tuple[int])): The size of kernel window used to take the average value.
           stride (Union(int, tuple[int]), optional): The distance of kernel moving. `stride` can either be an int
               number or a tuple of one int number. Default: ``None``, the same value as `kernel_size`.
           padding (Union(int, tuple[int]), optional): The pad length to be filled. `padding` can either be an integer

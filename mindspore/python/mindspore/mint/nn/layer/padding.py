@@ -534,6 +534,7 @@ class ReflectionPad3d(ReflectionPadNd_):
 
     Supported Platforms:
         ``Ascend``
+
     Examples:
         >>> import numpy as np
         >>> import mindspore as ms

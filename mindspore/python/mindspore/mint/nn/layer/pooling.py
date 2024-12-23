@@ -230,8 +230,8 @@ class MaxUnpool2d(Cell):
         - **output_size** (tuple[int], optional) - The target output size. Default: ``None`` .
           If output_size == (), then the shape of output computed by `kernel_size`, `stride` and `padding`.
           If output_size != (), then output_size must be :math:`(N, C, H, W)` , :math:`(C, H, W)` or :math:`(H, W)`
-          and output_size must belong to :math:
-          `[(N, C, H_{out} - stride[0], W_{out} - stride[1]), (N, C, H_{out} + stride[0], W_{out} + stride[1])]`.
+          and output_size must belong to
+          :math:`[(N, C, H_{out} - stride[0], W_{out} - stride[1]), (N, C, H_{out} + stride[0], W_{out} + stride[1])]`.
 
     Returns:
         Tensor, with shape :math:`(N, C, H_{out}, W_{out})` or :math:`(C, H_{out}, W_{out})`,

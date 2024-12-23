@@ -1,7 +1,7 @@
 mindspore.mint.nn.ReLU6
 =======================
 
-.. py:class:: mindspore.mint.nn.ReLU6
+.. py:class:: mindspore.mint.nn.ReLU6(inplace=False)
 
     ReLU6激活函数。
 

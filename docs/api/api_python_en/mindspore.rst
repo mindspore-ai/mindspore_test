@@ -177,6 +177,7 @@ Parallel
     mindspore.reshard
     mindspore.shard
     mindspore.sync_pipeline_shared_parameters
+    mindspore.set_op_strategy_config
     
 JIT
 ---

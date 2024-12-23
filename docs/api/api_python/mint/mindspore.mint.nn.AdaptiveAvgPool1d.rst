@@ -12,7 +12,7 @@ mindspore.mint.nn.AdaptiveAvgPool1d
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **output_size** - 目标输出的size :math:`L_{out}` 。
+        - **output_size** (int) - 目标输出的size :math:`L_{out}` 。
 
     输入：
         - **input** (Tensor) - 输入特征的shape为 :math:`(N, C, L_{in})` 或  :math:`(C, L_{in})` 。
