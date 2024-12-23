@@ -22,6 +22,7 @@ import numpy as np
 from mindspore import log as logger
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.constant import ProfilerLevel
 from mindspore.profiler.common.ascend_msprof_exporter import AscendMsprofExporter
 
@@ -31,6 +32,7 @@ class AscendMsprofParser(BaseParser):
 
     _MSPROF_TIMELINE_FILE_PATTERN = ["msprof_[0-9]*.json", "msprof_slice_*.json"]
     _OP_SUMMARY_FILE_PATTERN = "op_summary_*.csv"
+    OVERSIZE_MB = 1024
 
     def __init__(self, next_parser: Optional[BaseParser] = None, **kwargs):
         """Initialize AscendMsprofParser."""
@@ -38,6 +40,12 @@ class AscendMsprofParser(BaseParser):
         self._kwargs = kwargs
         self._msprof_profile_output_path = self._kwargs.get(
             "msprof_profile_output_path"
+        )
+        self._msprof_profile_host_path = self._kwargs.get(
+            "msprof_profile_host_path"
+        )
+        self._msprof_profile_device_path = self._kwargs.get(
+            "msprof_profile_device_path"
         )
         self._profiler_level = kwargs.get("profiler_level")
         self.op_summary = None
@@ -55,6 +63,7 @@ class AscendMsprofParser(BaseParser):
         """
         if data is None:
             data = {}
+        self._check_msprof_data_size()
         AscendMsprofExporter(**self._kwargs).export()
         self._parse_op_summary()
         self._parse_msprof_timeline()
@@ -134,3 +143,17 @@ class AscendMsprofParser(BaseParser):
             logger.error(
                 f"Failed to read file: {file_path}. Error: {str(err)}"
             )
+
+    def _check_msprof_data_size(self) -> None:
+        """Check the size of profiling data."""
+        host_data_size = PathManager.get_directory_size(self._msprof_profile_host_path)
+        device_data_size = PathManager.get_directory_size(self._msprof_profile_device_path)
+        total_size = host_data_size + device_data_size
+
+        if total_size >= self.OVERSIZE_MB:
+            msg = (
+                f"The size of profiling data is too large: {total_size} MB, "
+                "which may spend a lot of time on analysing, you can consider "
+                "reducing the number of collection steps"
+            )
+            logger.warning(msg)

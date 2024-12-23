@@ -72,6 +72,44 @@ class PathManager:
             raise ProfilerPathErrorException(msg)
 
     @classmethod
+    def get_directory_size(cls, directory: str, unit: str = 'MB') -> float:
+        """
+        Function Description:
+            Get the size of the directory
+        Parameter:
+            directory: the directory path
+            unit: the unit of the size, default is MB
+        Return:
+            float: the size of the directory
+        """
+        if not os.path.exists(directory):
+            logger.warning("Get directory size failed, %s not exists", directory)
+            return 0.0
+
+        cls.check_input_directory_path(directory)
+        unit_map = {
+            'B': 1,
+            'KB': 1024,
+            'MB': 1024 * 1024,
+            'GB': 1024 * 1024 * 1024
+        }
+
+        if unit not in unit_map:
+            logger.error("Invalid unit: %s", unit)
+            return 0.0
+
+        total_size = 0
+        for dirpath, _, filenames in os.walk(directory):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                try:
+                    total_size += os.path.getsize(file_path)
+                except (OSError, FileNotFoundError):
+                    continue
+
+        return total_size / unit_map[unit]
+
+    @classmethod
     def check_path_owner_consistent(cls, path: str):
         """
         Function Description:
