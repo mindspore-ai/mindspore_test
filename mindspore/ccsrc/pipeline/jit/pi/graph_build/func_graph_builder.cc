@@ -81,24 +81,57 @@ bool TensorArgMutable(const py::object &obj, const ValuePtr &value) {
   return !py::hasattr(obj, const_arg_attr) || !py::cast<bool>(py::getattr(obj, const_arg_attr));
 }
 
-ValuePtr ConvertPyObjToValue(const py::object &obj) {
-  if (obj.ptr() == nullptr) {
-    return nullptr;
-  }
+ValuePtr ConvertPyObjToValue(const py::handle &handle) {
+  MS_EXCEPTION_IF_NULL(handle.ptr());
+  py::object obj = py::reinterpret_borrow<py::object>(handle);
   ValuePtr ret = nullptr;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
-    if (py::isinstance<Cell>(obj)) {
+
+    PyRecursionScope rec_check(obj);
+
+    // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
+    // identify the function if need parse by ast
+    if (py::isinstance<Cell>(handle) || PyCFunction_Check(handle.ptr())) {
       return std::make_shared<parse::InterpretedObject>(obj);
     }
-    if (!parse::ConvertData(obj, &ret)) {
-      return nullptr;
+    if (py::list::check_(obj) || py::tuple::check_(obj)) {
+      std::vector<ValuePtr> elements;
+      for (const auto &i : obj) {
+        auto v = ConvertPyObjToValue(i);
+        if (v == nullptr) {
+          return nullptr;
+        }
+        elements.push_back(v);
+      }
+      if (py::list::check_(obj)) {
+        return std::make_shared<ValueList>(elements);
+      } else {
+        return std::make_shared<ValueTuple>(elements);
+      }
+    }
+    if (py::dict::check_(obj)) {
+      std::vector<std::pair<ValuePtr, ValuePtr>> elements;
+      for (const auto &i : py::cast<py::dict>(obj)) {
+        auto k = ConvertPyObjToValue(i.first);
+        auto v = ConvertPyObjToValue(i.second);
+        if (k == nullptr || v == nullptr) {
+          return nullptr;
+        }
+        elements.push_back(std::make_pair(k, v));
+      }
+      return std::make_shared<ValueDictionary>(elements);
+    }
+
+    if (parse::ConvertData(obj, &ret)) {
+      return ret;
     }
   } catch (const std::exception &e) {
-    MS_LOG(DEBUG) << "Failed to convert python object << " << py::str(obj) << " to value. The exception:\n" << e.what();
-    return nullptr;
+    MS_LOG(INFO) << e.what();
+    // if ast parser failed, convert to interpret object.
   }
-  return ret;
+  MS_LOG(INFO) << "Failed to convert python object." << py::str(handle);
+  return nullptr;
 }
 
 bool HasTensorWithGradData(const ValuePtr &val) {
@@ -271,12 +304,13 @@ AnfNodePtr FuncGraphBuilder::ConvertObjToNode(const py::object &input_obj) {
     MS_LOG(INFO) << "Failed to convert input object to value, python object is null!";
     return nullptr;
   }
+  // avoid core dump if converted failed
+  ValuePtr val = ConvertPyObjToValue(input_obj);
+  if (val == nullptr) {
+    MS_LOG(INFO) << "Failed to convert input object to value: " << py::str(input_obj);
+    return nullptr;
+  }
   if (!parse::ContainsParameter(input_obj)) {
-    ValuePtr val = ConvertPyObjToValue(input_obj);
-    if (val == nullptr) {
-      MS_LOG(INFO) << "Failed to convert input object to value: " << py::str(input_obj);
-      return nullptr;
-    }
     // Constant value input scene, the object should be converted to value node.
     auto node = NewValueNode(val);
     node->set_abstract(val->ToAbstract());
@@ -482,7 +516,11 @@ AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract
   if (abstract_wrapper == nullptr || abstract_wrapper->abstract() == nullptr) {
     return nullptr;
   }
-  MS_LOG(DEBUG) << "can't find the AnfNode of by wrapper(" << abstract_wrapper.get() << ")";
+  auto abs = abstract_wrapper->abstract();
+  MS_LOG(WARNING) << "can't find the AnfNode of by wrapper(" << abstract_wrapper.get() << ") abstract is: (" << abs
+                  << ") " << abs->ToString();
+  PrintConstantAbstract(abs);
+
   // Build ValueNode for constant abstract.
   // Need to handle tuple/list/dict with FuncGraphAbstractClosure scene later.
   auto abstract = abstract_wrapper->abstract();

@@ -1116,7 +1116,7 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
     // Unfortunately, due to some defectuve side-effect node processing, they do not have
     // This issue must be fixed, just pass-by and reminder here
     // This code will be redundant after the issue fixed.
-    bool is_not_in_top_graph = (func_graph_builder->GetNodeByWrapper(node->abstract_wrapper()) == nullptr);
+    bool is_not_in_top_graph = (func_graph_builder->FindNodeByWrapper(node->abstract_wrapper()) == nullptr);
     // it is top graph node but not find in top func_graph
 
     // Contains data whose type is not supported by the graph, analyze its inputs

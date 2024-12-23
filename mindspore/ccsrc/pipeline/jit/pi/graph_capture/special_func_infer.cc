@@ -31,7 +31,7 @@
 
 namespace mindspore {
 namespace pijit {
-extern ValueNode *GetBoundSelf(CallNode *call_node);
+extern ValueNode *GetBoundSelfHelper(CallNode *call_node, bool *is_method);
 extern void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::string &msg);
 extern AObject *InferFuncResult(const py::object &func, const std::vector<AObject *> &stack_args, int opcode,
                                 const GraphJitConfig &conf, bool clear_guard);
@@ -667,7 +667,8 @@ bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
 }
 
 static bool InferTensorAsType(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  ValueNode *self_node = GetBoundSelf(call_node);
+  bool is_method = false;
+  ValueNode *self_node = GetBoundSelfHelper(call_node, &is_method);
   bool is_not_method = call_node->input(0)->GetVobj()->GetType() != AObject::kTypeBoundMethod;
   ValueNode *dtype_node = call_node->input(1 + is_not_method);
 
