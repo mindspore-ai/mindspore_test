@@ -164,6 +164,8 @@ class TensorPy {
 
   static void SetDeviceAddress(const Tensor &tensor, uintptr_t addr, const ShapeVector &shape, const TypePtr type_ptr);
 
+  static uintptr_t DataPtr(const Tensor &tensor);
+
   struct TensorPyUserData {
     py::object obj;
     ~TensorPyUserData() {
