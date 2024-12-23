@@ -19,10 +19,10 @@ import pytest
 from mindspore import ops
 from mindspore import Tensor
 import mindspore as ms
-from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
+ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
 @test_utils.run_with_cell
 def hsigmoid_forward_func(x):
@@ -50,8 +50,6 @@ def test_hsigmoid_forward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
-    set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_array = np.array([1.0, 2.0, 3.0]).astype('float32')
     x = Tensor(np_array)
     out = hsigmoid_forward_func(x)
@@ -70,8 +68,6 @@ def test_hsigmoid_backward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
-    set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_array = np.array([1.0, 2.0, 3.0]).astype('float32')
     x = Tensor(np_array)
     grads = hsigmoid_backward_func(x)
@@ -90,8 +86,6 @@ def test_hsigmoid_vmap(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
-    set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_array = np.array([[0.5, 0.4, -0.3, -0.2]]).astype('float32')
     x = Tensor(np_array)
     nest_vmap = ops.vmap(ops.vmap(hsigmoid_forward_func, in_axes=0), in_axes=0)
@@ -112,8 +106,6 @@ def test_hsigmoid_dynamic(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
-    set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
     x = ms.Tensor(np.array([[1.0, 2.0, 3.0]]), ms.float32)
     test_cell = test_utils.to_cell_obj(hsigmoid_dyn_shape_func)
@@ -137,8 +129,6 @@ def test_hsigmoid_dynamic_rank(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
-    set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     x = ms.Tensor(np.array([[1.0, 2.0, 3.0]]), ms.float32)
     test_cell = test_utils.to_cell_obj(hsigmoid_dyn_shape_func)
