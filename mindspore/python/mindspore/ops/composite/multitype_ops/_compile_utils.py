@@ -527,31 +527,16 @@ def _check_scalar_tensor_args(args):
         const_utils.raise_value_error("For item, the index of scalar Tensor should not be set.")
 
 
-def tensor_item(data, *args):
-    """Tensor getitem by index whose dtype is int or tuple with int."""
-    # transform a.item(tuple(int)) -> a.item(int1,int2...intN)
+def tensor_item(data):
+    """Tensor getitem which has only one element."""
     if data.ndim == 0:
-        _check_scalar_tensor_args(args)
         return TensorToScalar()(data)
-    if len(args) == 1 and isinstance(args[0], tuple):
-        args = args[0]
-
-    args_types = hyper_map(F.typeof, args)
-    if not args or const_utils.judge_index_type(args_types[0], mstype.type_none):
-        if data.shape == (1,):
-            return TensorToScalar()(data[0])
-        const_utils.raise_value_error("Can only convert an array of size 1 to a Python scalar")
-
-    if not const_utils.judge_indexes_types(args_types, mstype.int64):
-        const_utils.raise_type_error("The index object cannot be interpreted as an integer")
-
-    if len(args) == data.ndim:
-        return tensor_index_by_tuple(data, args)
-    if len(args) > 1:
-        const_utils.raise_value_error("Incorrect number of indices for array")
-    output = _tensor_index_by_integer(F.reshape(data, (-1,)), args[0])
-    return TensorToScalar()(output)
-
+    if data.shape == (1,):
+        return TensorToScalar()(data[0])
+    exp_msg = const_utils.gen_exception_msg("The tensor should have only one element. "
+                                            "But the shape of input tensor is {}.", data.shape)
+    const_utils.raise_value_error(exp_msg)
+    return None
 
 def tensor_itemset(data, *args):
     """Tensor setitem by index and value."""
