@@ -349,7 +349,7 @@ deprecated_tensor_method_map = {
     # 157
 
     # 158
-
+    "unsqueeze": "deprecated_tensor_unsqueeze",
     # 159 histc
     "histc": "tensor_histc",
 

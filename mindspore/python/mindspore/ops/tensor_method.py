@@ -385,6 +385,7 @@ from mindspore.ops.function.array_func import new_zeros
 from mindspore.ops.auto_generate import cosh
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
+from mindspore.ops.function.array_func import unsqueeze
 
 # 204 erfc
 from mindspore.ops.auto_generate import erfc
@@ -1454,6 +1455,10 @@ def tensor_sinc(input):
 
 def tensor_unsqueeze(input, dim):
     return
+
+
+def deprecated_tensor_unsqueeze(input, dim):
+    return unsqueeze(input, dim)
 
 
 # 204 erfc
