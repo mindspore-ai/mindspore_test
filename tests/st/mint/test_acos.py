@@ -85,7 +85,8 @@ def test_acos_bfloat16(mode):
     Description: testcase for acos functional API.
     Expectation: the result match with expected result.
     """
-    x = generate_random_input((2, 3), np.float32)
+    x_bf = generate_random_input((2, 3), np.float32)
+    x = ms.Tensor(x_bf, dtype=ms.bfloat16).asnumpy()
     expect = generate_expect_forward_output(x).astype(np.float32)
     expect_grad = generate_expect_backward_output(x).astype(np.float32)
 
