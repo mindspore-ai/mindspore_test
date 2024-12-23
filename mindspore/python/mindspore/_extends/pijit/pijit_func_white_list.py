@@ -361,6 +361,7 @@ FUNC_KEY_DICT_ITEMS = 22  # dict.items
 FUNC_KEY_PRIMITIVE_ASSIGN = 23  # mindspore.ops.assign, Primitive("Assign")
 FUNC_KEY_TENSOR_SETITEM = 24  # Tensor.__setitem__
 FUNC_KEY_TENSOR_ASSIGN_VALUE = 25  # Tensor.assign_value
+FUNC_KEY_TENSOR_IS_CONTIGUOUS = 26  # Tensor.is_contiguous
 
 # Initialized only once. This map will initialize by c++ when start pijit.
 # key is customer if fuzzy match. (Primitive, constexpr, primexpr, MetaFuncGraph)
@@ -474,7 +475,7 @@ _func_map = {
     function_id(Tensor_.getitem_index_info): FUNC_KEY_BUILTIN_FUNC,
     function_id(Tensor_.get_bytes): FUNC_KEY_BUILTIN_FUNC,
     function_id(Tensor_.is_init): FUNC_KEY_BUILTIN_FUNC,
-    function_id(Tensor_.is_contiguous): FUNC_KEY_BUILTIN_FUNC,
+    function_id(Tensor_.is_contiguous): FUNC_KEY_TENSOR_IS_CONTIGUOUS,
     function_id(Tensor_.stride): FUNC_KEY_BUILTIN_FUNC,
     # Tensor_.asnumpy need real tensor value
 

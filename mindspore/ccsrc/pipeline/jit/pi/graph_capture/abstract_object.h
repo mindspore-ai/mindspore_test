@@ -115,6 +115,7 @@ class AbstractObjectBase {
   static AObject *Convert(PyObject *o) { return MakeAObject(GetPyType(o), o ? Py_TYPE(o) : nullptr, o); }
   static AObject *MakeAObject(Type real_type) { return MakeAObject(real_type, nullptr, nullptr); }
   static auto MakeResource() { return Resource(); }
+  static AObject *TryConvertDynamicLengthSequence(const abstract::AbstractBasePtr &abstract);
 
   static AObject *MakeFunction(const std::vector<AObject *> &args, const py::object &globals, int oparg);
 
