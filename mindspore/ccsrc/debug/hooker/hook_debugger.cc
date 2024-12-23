@@ -32,7 +32,6 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelG
   if (!is_enabled_) {
     return;
   }
-
   std::vector<std::string> all_kernel_names;
   for (const auto &graph : graphs) {
     auto all_kernels = graph->execution_order();
@@ -51,6 +50,9 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelG
   }
   auto registered_adapter = hooker::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
   if (registered_adapter != nullptr) {
+    if (step_count_num == 0) {
+      registered_adapter->Load();
+    }
     registered_adapter->AdaptOnStepBegin(device_id, step_count_num, all_kernel_names, is_kbyk);
   } else {
     MS_LOG(WARNING) << "Ascend Adapter is not found! Hook Dump not validate!";
@@ -77,6 +79,9 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const KernelGraphPtr &gra
 
   auto registered_adapter = hooker::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
   if (registered_adapter != nullptr) {
+    if (step_count_num == 0) {
+      registered_adapter->Load();
+    }
     registered_adapter->AdaptOnStepBegin(device_id, step_count_num, all_kernel_names, is_kbyk);
   } else {
     MS_LOG(WARNING) << "Ascend Adapter is not found! Hook Dump not validate!";

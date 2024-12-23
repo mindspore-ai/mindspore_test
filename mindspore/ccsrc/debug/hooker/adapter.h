@@ -37,6 +37,8 @@ class BACKEND_EXPORT Adapter {
                                 bool is_kbyk) = 0;
 
   virtual void AdaptOnStepEnd() = 0;
+
+  virtual void Load() = 0;
 };
 
 class BACKEND_EXPORT AdapterManager {
