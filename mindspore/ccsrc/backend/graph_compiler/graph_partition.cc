@@ -777,8 +777,10 @@ bool IsNeedInline(const CNodePtr &cnode) {
       MS_EXCEPTION_IF_NULL(graph_out);
       auto partial = graph_out->cast<CNodePtr>()->input(idx + 1);
       MS_EXCEPTION_IF_NULL(partial);
-      MS_EXCEPTION_IF_CHECK_FAIL(IsPrimitiveCNode(partial, prim::kPrimPartial),
-                                 "Partial node is expected, bug get" + partial->ToString());
+      if (!IsPrimitiveCNode(partial, prim::kPrimPartial)) {
+        MS_LOG(EXCEPTION) << "There is no backward graph corresponding to the forward graph. Please remove the "
+                             "@lazy_inline decorator and try again";
+      }
       auto partial_graph = GetValueNode<FuncGraphPtr>(partial->cast<CNodePtr>()->input(1));
       partial_graph->set_flag(FUNC_GRAPH_FLAG_CELL_REUSE, true);
       return true;
