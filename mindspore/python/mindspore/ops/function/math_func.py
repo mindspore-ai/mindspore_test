@@ -5716,7 +5716,7 @@ def bernoulli_ext(input, *, generator=None):
             Default: ``None``, uses the default pseudorandom number generator.
 
     Returns:
-        output (Tensor): The output tensor, with the same shape and dtype as `input`.
+        output (Tensor), The output tensor, with the same shape and dtype as `input`.
 
     Raises:
         TypeError: If dtype of `input` is not one of: float16, float32, float64, bfloat16.
@@ -6514,7 +6514,7 @@ def diff_ext(input, n=1, dim=-1, prepend=None, append=None):
         input (Tensor): the tensor to compute the differences on.
         n (int, optional): the number of times to recursively compute the difference.
             Default: ``1`` .
-        dim (Tensor, optional): the dimension to compute the difference along.
+        dim (int, optional): the dimension to compute the difference along.
             Default is the last dimension. Default: ``0`` .
         prepend (Tensor, optional): values to prepend or append to `input` along `dim`
             before computing the difference. Their dimensions must be equivalent to that of input,
@@ -7239,7 +7239,7 @@ def logsumexp(input, axis, keep_dims=False):
     Args:
         input (Tensor): The input tensor. With float16 or float32 data type.
         axis (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
-        keep_dims (bool): If True, keep these reduced dimensions and the length is 1.
+        keep_dims (bool, optional): If True, keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions.
             Default : ``False`` .
 
@@ -8393,7 +8393,7 @@ def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
             behavior. Default: ``'fro'`` .
         dim (Tuple(int, int), optional): calculate the dimension of the matrix norm.
             Default: ``(-2, -1)`` .
-        keepdims (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+        keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
 
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): When set, `A` will be converted to the specified type,
@@ -10847,7 +10847,7 @@ def cumprod(input, dim, dtype=None):
         y_i = x_1 * x_2 * x_3 * ... * x_i
 
     Args:
-        input (Tensor[Number]): The input tensor.
+        input (Tensor): The input tensor.
             :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
         dim (int): The dimensions to compute the cumulative product. Only constant value is allowed.
         dtype (:class:`mindspore.dtype`, optional): The desired data type of output.

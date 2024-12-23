@@ -645,8 +645,8 @@ def allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
     .. math::
         |input-other| ≤ atol + rtol × |other|
 
-    .. warning:
-            This is an experimental API that is subject to change or deletion.
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): First tensor to compare.
@@ -743,10 +743,10 @@ def cat(tensors, dim=0):
 
 def concat(tensors, dim=0):
     r"""
+    Alias for :func:`mindspore.mint.cat`.
+
     .. warning::
         This is an experimental API that is subject to change or deletion.
-
-    Alias of mint.cat().
     """
     return cat(tensors, dim)
 
@@ -1285,7 +1285,7 @@ def equal(input, other):
     Note:
         `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
 
-    .. warning:
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:

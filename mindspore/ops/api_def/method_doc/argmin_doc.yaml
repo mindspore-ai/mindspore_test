@@ -25,7 +25,7 @@ argmin:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input_x = Tensor(np.array([2.0, 3.1, 1.2]), mindspore.float32)
         >>> index = Tensor.argmin(input_x) # input_x.argmin()
         >>> print(index)
@@ -57,7 +57,7 @@ argmin:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input_x = Tensor(np.array([2.0, 3.1, 1.2]), mindspore.float32)
         >>> index = Tensor.argmin(input_x) # input_x.argmin()
         >>> print(index)

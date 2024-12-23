@@ -424,7 +424,7 @@
 
 .. autoclass:: {{ name }}
     :inherited-members: step
-    :exclude-members: step_begin, step_end, on_train_end
+    :exclude-members: step_begin, step_end, on_train_end, on_eval_step_end, end, on_eval_step_begin, on_train_step_end, on_train_begin, begin, on_eval_begin, on_train_step_begin, on_eval_epoch_begin, on_eval_epoch_end, epoch_end, on_train_epoch_begin, on_train_epoch_end, epoch_begin, on_eval_end
     :members:
 
 {% elif fullname in ["mindspore.profiler.schedule", "mindspore.profiler.mstx"] %}

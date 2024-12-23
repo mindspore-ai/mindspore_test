@@ -15,7 +15,7 @@ inverse:
         ``Ascend`` ``GPU`` ``CPU``
     
     Examples:
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> from mindspore import dtype as mstype
         >>> x = Tensor([[1., 2.], [3., 4.]], mstype.float32)
         >>> print(x.inverse())

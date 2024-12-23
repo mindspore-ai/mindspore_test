@@ -72,7 +72,7 @@ class Schedule:
     of cycles is specified with the ``repeat`` parameter, the zero value means that
     the cycles will continue until the profiling is finished.
 
-    Args:
+    Keyword Args:
         wait (int): The number of steps to wait before starting the warm-up phase.
         active (int): The number of steps to record data during the active phase.
         warm_up (int, optional): The number of steps to perform the warm-up phase. Default: ``0``.

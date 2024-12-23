@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.conv_transpose2d
 =============================================
 
-.. py:class:: mindspore.mint.nn.functional.conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1)
+.. py:function:: mindspore.mint.nn.functional.conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1)
 
     将2D转置卷积运算应用于由多个输入平面组成的输入图像，有时也称为反卷积（尽管它不是实际的反卷积）。
 

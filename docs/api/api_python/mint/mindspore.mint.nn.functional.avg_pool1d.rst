@@ -30,4 +30,4 @@ mindspore.mint.nn.functional.avg_pool1d
         - **TypeError** - `kernel_size` 或 `stride` 不是int。
         - **TypeError** - `ceil_mode` 或 `count_include_pad` 不是bool。
         - **ValueError** - `kernel_size` 或 `stride` 小于1。
-        - **ValueError** - `kernel_size`或 `stride`或 `padding` 不是int或者tuple的长度大于1。
+        - **ValueError** - `kernel_size` 或 `stride` 或 `padding` 不是int或者tuple的长度大于1。

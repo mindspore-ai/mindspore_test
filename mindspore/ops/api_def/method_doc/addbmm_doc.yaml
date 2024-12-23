@@ -32,7 +32,7 @@ addbmm:
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> m = np.ones((3, 3)).astype(np.float32)
         >>> arr1 = np.arange(24).astype(np.float32).reshape((2, 3, 4))
         >>> arr2 = np.arange(24).astype(np.float32).reshape((2, 4, 3))

@@ -23,7 +23,7 @@ mindspore.mint.nn.functional.relu6
         - **inplace** (bool, 可选) - 是否采用原地更新模式，默认值为 ``False``。
 
     返回：
-        Tensor，其shape和数据类型与`input`相同。
+        Tensor，其shape和数据类型与 `input` 相同。
 
     异常：
         - **TypeError** - `input` 不是Tensor。
