@@ -25,7 +25,21 @@
 
 namespace mindspore {
 namespace kernel {
-DECLARE_INTERNAL_KERNEL_MOD(QuantBatchMatmul)
+class InternalQuantBatchMatmul : public InternalKernelMod {
+ public:
+  InternalQuantBatchMatmul() : InternalKernelMod() {}
+  ~InternalQuantBatchMatmul() = default;
+
+ protected:
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs,
+                                       const std::vector<KernelTensor *> &ms_inputs,
+                                       const std::vector<KernelTensor *> &ms_outputs) override;
+  uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
+
+ private:
+  internal::TensorFormat output_format_;
+};
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_QUANT_BATCH_MATMUL_H_

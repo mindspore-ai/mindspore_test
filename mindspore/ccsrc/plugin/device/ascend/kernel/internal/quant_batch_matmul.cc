@@ -31,7 +31,13 @@ internal::InternalOpPtr InternalQuantBatchMatmul::CreateKernel(const internal::I
   param.with_bias = !(ms_inputs[kIndex4]->GetType()->isa<TypeNone>());
   param.enable_shuffle = false;  // the real definition is in internal
   param.enable_dequant = true;
+  output_format_ = outputs[0].GetFormat();
   return internal::CreateMatmulOp(inputs, outputs, param, internal::kInternalMatMulOpName);
+}
+
+uint64_t InternalQuantBatchMatmul::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, output_format_);
 }
 MS_INTERNAL_KERNEL_FACTORY_REG(QuantBatchMatmul, internal::kInternalMatMulOpName, InternalQuantBatchMatmul);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QuantBatchMatmul, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_4, INDEX_2);
