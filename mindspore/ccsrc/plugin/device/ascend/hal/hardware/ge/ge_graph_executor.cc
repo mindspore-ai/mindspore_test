@@ -971,10 +971,9 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
                                     profiler::GetClockSyscnt(), 1);
     InitGEFixMemory(kg, kDefaultStreamIndex);
+    (void)ge_res_manager_->BindDeviceToCurrentThread(true);
     return ret;
   } else {
-    // delete SetCPUMemManager when delete env MS_DISABLE_REF_MODE
-    // ResManager()->SetCPUMemManager();
     std::map<std::string, ShapeVector> origin_shape;
     const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
     (void)BuildGraph(kg, tensor_order_map);
@@ -990,9 +989,9 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     RevertOriginShape(kg, origin_shape);
     (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
                                     profiler::GetClockSyscnt(), 1);
+    (void)ge_res_manager_->BindDeviceToCurrentThread(true);
     return true;
   }
-  (void)ge_res_manager_->BindDeviceToCurrentThread(true);
 }
 
 void GeGraphExecutor::OptimizeBeforeCompileGraph(const KernelGraphPtr &graph) {
