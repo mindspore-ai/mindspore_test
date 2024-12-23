@@ -182,10 +182,6 @@ class BACKEND_EXPORT GraphScheduler {
                                            const KernelWithIndex &from_kernel_with_output_idx,
                                            const KernelWithIndex &to_kernel_with_input_idx,
                                            const KernelGraphPtr &graph);
-  void InsertParameterIndexsForActor(AbstractActor *const to_actor, const KernelWithIndex &front_node_with_idx,
-                                     const KernelWithIndex &from_kernel_with_output_idx,
-                                     const KernelWithIndex &to_kernel_with_input_idx, const KernelGraphPtr &graph);
-
   void LinkDataArrowForHostDSActor(AbstractActor *const from_actor, AbstractActor *const to_actor,
                                    const KernelWithIndex &from_kernel_with_output_idx,
                                    const KernelWithIndex &to_kernel_with_input_idx, const KernelGraphPtr &graph);

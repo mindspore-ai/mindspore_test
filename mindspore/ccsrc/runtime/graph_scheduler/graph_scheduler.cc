@@ -2701,36 +2701,6 @@ void GraphScheduler::LinkDataArrowForInternalParameter(AbstractActor *const, Abs
                                               to_kernel_with_input_idx, graph);
 }
 
-void GraphScheduler::InsertParameterIndexsForActor(AbstractActor *const to_actor,
-                                                   const KernelWithIndex &front_node_with_idx,
-                                                   const KernelWithIndex &from_kernel_with_output_idx,
-                                                   const KernelWithIndex &to_kernel_with_input_idx,
-                                                   const KernelGraphPtr &graph) {
-  // Obtain the corresponding front node from back node.
-  ParameterStore &parameterStore = ParameterStore::GetInstance();
-  auto cur_graph_parameter_store = parameterStore.GetGraphParameterStore();
-  size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_idx.first.get());
-  // The index of the font node is flattened
-  size_t real_inner_idx = front_node_with_idx.second;
-  auto cur_device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, 0, false);
-  MS_EXCEPTION_IF_NULL(cur_device_tensor);
-  // Cal ref count
-  auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({from_kernel_with_output_idx.first, 0}).first;
-  MS_EXCEPTION_IF_NULL(real_node);
-  if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
-    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
-  } else if (graph->IsRefOutputMapValue(from_kernel_with_output_idx)) {
-    MS_LOG(INFO) << "Ref input: " << from_kernel_with_output_idx.first->DebugString()
-                 << ", index: " << from_kernel_with_output_idx.second;
-    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
-  } else {
-    cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx, cur_device_tensor->GetDeviceType());
-  }
-  // Save to_actor info into parameter_index
-  ParameterInfo cur_param_info{front_node_with_idx, real_outer_idx};
-  to_actor->InsertParameterIndexs(to_kernel_with_input_idx.second, cur_param_info);
-}
-
 DeviceContext *GetFromActorDeviceContext(AbstractActor *const from_actor, AbstractActor *const to_actor,
                                          const KernelWithIndex &from_kernel_with_output_idx) {
   DeviceContext *from_device_context = nullptr;
@@ -2916,8 +2886,8 @@ void GraphScheduler::LinkDataArrowForGraphParameterStore(AbstractActor *const, A
     if (copy_actor == nullptr) {
       copy_actor = CreateCopyActor(data_prepare_actor, to_actor, from_kernel_with_output_idx, to_kernel_with_input_idx);
       MS_EXCEPTION_IF_NULL(copy_actor);
-      InsertParameterIndexsForActor(copy_actor, front_node_with_idx, from_kernel_with_output_idx,
-                                    to_kernel_with_input_idx, graph);
+      SchedulerHelper::InsertParameterIndexsForActor(copy_actor, front_node_with_idx, from_kernel_with_output_idx,
+                                                     to_kernel_with_input_idx, graph);
     }
 
     SchedulerHelper::AddDataArrow(copy_actor, to_actor, 0, to_kernel_with_input_idx.second, nullptr);
@@ -2944,8 +2914,8 @@ void GraphScheduler::LinkDataArrowForGraphParameterStore(AbstractActor *const, A
     return;
   }
 
-  InsertParameterIndexsForActor(to_actor, front_node_with_idx, from_kernel_with_output_idx, to_kernel_with_input_idx,
-                                graph);
+  SchedulerHelper::InsertParameterIndexsForActor(to_actor, front_node_with_idx, from_kernel_with_output_idx,
+                                                 to_kernel_with_input_idx, graph);
 }
 
 void GraphScheduler::LinkDataArrowForBaseActor(AbstractActor *const from_actor, AbstractActor *const to_actor,
