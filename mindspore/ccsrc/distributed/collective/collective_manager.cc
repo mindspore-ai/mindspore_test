@@ -863,7 +863,7 @@ void CollectiveManager::SubmitCreateDeviceCommTask(const std::string &group_name
 
 void CollectiveManager::SetCommBuffSize(const std::string &group_name, const int32_t buffsize) {
   auto instance = CollectHcclInitInfo::GetInstance();
-  uint32_t res = 0;
+  uint32_t res = 200;
   if (buffsize > 0) {
     res = buffsize;
   } else {

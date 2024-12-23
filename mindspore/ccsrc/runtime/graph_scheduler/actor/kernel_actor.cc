@@ -34,7 +34,7 @@
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
-
+#include "mindspore/ops/op_def/structure_op_name.h"
 namespace mindspore {
 namespace runtime {
 namespace {
@@ -47,10 +47,10 @@ void CheckDryRun(const CNodePtr &kernel_) {
   static auto enabled_profile = common::GetCompileConfig("COMPILE_PROFILE") == "1";
   if (is_dry_run_mode && !enabled_profile) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_)
-      << "The dry run mode can not support dynamic shape graph which contains value depend kernel:"
+      << "The dry run mode can not support dynamic shape graph which contains value depend or computing depend kernel:"
       << kernel_->fullname_with_scope()
       << ", launch kernel is skipped for dry run mode, which leads to fail to GetValue for infer "
-         "shape of these value depend kernel. You can only simulate compile graph and not do "
+         "shape of these value depend or computing depend kernel. You can only simulate compile graph and not do "
          "InferShape and Resize by `export MS_SIMULATION_LEVEL=0` instead.";
   }
 }
@@ -83,8 +83,13 @@ void KernelActor::Init() {
   }
   is_dynamic_type_ = common::AnfAlgo::IsAnyTypeOutput(kernel_);
   has_dynamic_ = is_dynamic_shape_ || is_dynamic_type_ || is_dynamic_value_;
+  bool is_value_dyn = (is_dynamic_value_ && (is_dynamic_shape_ || is_dynamic_type_));
+  static std::set<std::string> no_dyn_need_update_ops = {kDynamicGetNextV2OpName, kDynamicGetNextAscendOpName,
+                                                         kReceiveOpName};
+  bool is_compute_dyn = kernel_mod_->IsNeedUpdateOutputShapeAndSize() &&
+                        no_dyn_need_update_ops.find(kernel_mod_->kernel_name()) == no_dyn_need_update_ops.end();
 
-  if (is_dynamic_value_ && (is_dynamic_shape_ || is_dynamic_type_)) {
+  if (is_value_dyn || is_compute_dyn) {
     CheckDryRun(kernel_);
   }
 
