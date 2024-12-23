@@ -16,6 +16,7 @@
 import os
 import sys
 import time
+import stat
 import json
 import atexit
 import struct
@@ -30,6 +31,7 @@ from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.profiler_interface import ProfilerInterface
 from mindspore.profiler.common.constant import ProfilerActivity, ProfilerLevel
+from mindspore.profiler.common.util import no_exception_func
 
 
 def get_real_rank():
@@ -237,11 +239,13 @@ class DynamicProfilerMonitorBase(Callback):
         self._stop_step = 0
         self._step_num = 0
 
+        self._check_shm_for_killed()
         self._init_cfg_json()
         self._create_shm()
         self._create_process()
         atexit.register(self._clean_resource)
 
+    @no_exception_func()
     def step_begin(self, run_context):
         """
         Start profile at the begin of step.
@@ -283,6 +287,7 @@ class DynamicProfilerMonitorBase(Callback):
             print_msg(f"Rank {self._rank_id} Dynamic profiler start at step {start_step}, "
                       f"will stop at step {stop_step}")
 
+    @no_exception_func()
     def step_end(self, run_context):
         """
         Stop profile at the end of step.
@@ -313,6 +318,7 @@ class DynamicProfilerMonitorBase(Callback):
                 self._is_started = False
                 print_msg(f"Rank {self._rank_id} Dynamic profiler stop at step {step_num}")
 
+    @no_exception_func()
     def step(self):
         """
         Used for Ascend, distinguish step collection and parsing performance data by dynamic profiler.
@@ -433,6 +439,7 @@ class DynamicProfilerMonitorBase(Callback):
         if self._profiler:
             self._profiler.step()
 
+    @no_exception_func()
     def on_train_end(self, run_context):
         """
         Callback on trian end
@@ -473,6 +480,7 @@ class DynamicProfilerMonitorBase(Callback):
 
         return start_step, stop_step
 
+    @no_exception_func()
     def _init_cfg_json(self):
         """Init config json file"""
         if self._rank_id == 0:
@@ -488,6 +496,7 @@ class DynamicProfilerMonitorBase(Callback):
         """Create a json monitor process based on whether the SharedMemory is successfully created"""
         logger.error("Dynamic profiler _create_shm is not implemented")
 
+    @no_exception_func()
     def _create_process(self):
         """Create json monitor process, one process will be created at one worker"""
         if self._is_create_process:
@@ -501,18 +510,57 @@ class DynamicProfilerMonitorBase(Callback):
             self._process = None
             logger.info("Rank %d no need to create process.", self._rank_id)
 
+    @no_exception_func()
+    def _check_shm_for_killed(self):
+        """
+        User killed process shm can not clean normally, so check this when create shm.
+        """
+        if sys.version_info >= (3, 8):
+            shm_path = os.path.join("/dev/shm", self._shm_name)
+        else:
+            shm_path = self._shm_path
+
+        if not os.path.exists(shm_path):
+            return
+
+        MAX_TIME_DIFF = 30 # seconds
+        time_shm = os.stat(shm_path).st_ctime
+        cur_proc_time = self._get_pid_st_ctime(os.getpid())
+
+        if cur_proc_time and abs(cur_proc_time - time_shm) > MAX_TIME_DIFF:
+            raise RuntimeError("There maybe exist share memory before this task, if you kill last task, "
+                               "dynamic profiler will not valid, please remove %s, and retry." % shm_path)
+
+    def _get_pid_st_ctime(self, pid):
+        """Get pid st_ctime"""
+        try:
+            fd = os.open("/proc/" + str(pid), os.O_RDONLY, stat.S_IRUSR | stat.S_IRGRP)
+            stat_ino = os.fstat(fd)
+            os.close(fd)
+            create_time = stat_ino.st_ctime
+            return create_time
+        except FileNotFoundError:
+            logger.error("Process with PID %d does not exist.", pid)
+        except PermissionError:
+            logger.error("Permission denied when accessing PID %d.", pid)
+        except Exception as ex: # pylint: disable=W0703
+            logger.error("An error occurred while getting creation time for PID %d: %s", pid, str(ex))
+
 
 if sys.version_info >= (3, 8):
+    @no_exception_func()
     def write_bytes(shm, byte_data):
         """Write bytes to shared memory"""
         shm.buf[:DynamicProfilerArgs.SIZE] = byte_data
 else:
+    @no_exception_func()
     def write_bytes(shm, byte_data):
         """Write bytes to shared memory"""
         shm.seek(0)
         shm.write(byte_data)
 
 
+@no_exception_func()
 def worker_func(loop_flag, poll_interval, shm, cfg_path):
     """ Json monitor process worker function python version >= 3.8"""
     last_file_t = None
@@ -634,6 +682,7 @@ if sys.version_info >= (3, 8):
             """ Get prof_args py38"""
             return DynamicProfilerArgs.from_bytes(self._shm.buf[:DynamicProfilerArgs.SIZE])
 
+        @no_exception_func()
         def _clean_resource(self):
             """Clean resource py38"""
             # stop profiler when stop_step over all train step
@@ -660,6 +709,7 @@ if sys.version_info >= (3, 8):
                     logger.warning("Rank %s unlink shm failed, may be removed", self._rank_id)
                 self._shm = None
 
+        @no_exception_func()
         def _create_shm(self):
             """Create a json monitor process based on whether the SharedMemory is successfully created py38"""
             try_times = 10
@@ -688,13 +738,18 @@ if sys.version_info >= (3, 8):
                         logger.warning("Rank %d shared memory create failed, "
                                        "retry times = %d.", self._rank_id, try_times)
                         time.sleep(random.uniform(0, 0.02))  # sleep 0 ~ 20 ms
+                except Exception as e: # pylint: disable=W0703
+                    # shm open failed because of other process create shm not finished
+                    try_times -= 1
+                    logger.warning("Rank %d shared memory open failed, error: %s, retry times = %d",
+                                   self._rank_id, str(e), try_times)
+                    time.sleep(random.uniform(0, 0.02))  # sleep 0 ~ 20 ms
 
             if try_times <= 0:
                 raise RuntimeError(f"Rank {self._rank_id} failed to create shared memory.")
 
 else:
     import mmap
-    import stat
 
 
     class DynamicProfilerMonitor(DynamicProfilerMonitorBase):
@@ -764,6 +819,7 @@ else:
             self._shm.seek(0)
             return DynamicProfilerArgs.from_bytes(self._shm.read(DynamicProfilerArgs.SIZE))
 
+        @no_exception_func()
         def _clean_resource(self):
             """Clean resource py37"""
             # stop profiler when stop_step over all train step
@@ -794,6 +850,7 @@ else:
                     logger.warning("Rank %s unlink shm failed, may be removed", self._rank_id)
                 self._shm = None
 
+        @no_exception_func()
         def _create_shm(self):
             """Create a json monitor process based on whether the SharedMemory is successfully created py37"""
 
