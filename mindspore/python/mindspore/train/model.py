@@ -143,20 +143,22 @@ def _handle_tft(func):
                 except RuntimeError as e:
                     logger.info("uce wrapper caught RuntimeError")
                     if not uce_env:
-                        logger.info("uce wrapper caught RuntimeError uce not enable")
+                        logger.error("uce wrapper caught RuntimeError but uce not enable, enter MindIO TTP process.",
+                                     exc_info=True)
                         tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                         raise e
                     e_str = str(e)
                     logger.info("uce wrapper caught RuntimeError e_str:{}".format(e_str))
                     if "UCEError" in e_str:
                         logger.info("uce wrapper report UCEError")
+                        obj.is_uce_rank = True
                         tft.tft_report_error(tft.ReportState.RS_UCE.value)
                     elif "ForceStopError" in e_str:
                         logger.info("uce wrapper caught RuntimeError ForceStopError")
                         force_stop_err = tft.ReportState.RS_NORMAL.value
                         tft.tft_report_error(force_stop_err)
                     else:
-                        logger.info("uce wrapper caught RuntimeError rankid: {} OTHER ERROR")
+                        logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
                         tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                         raise e
                     ret = tft.tft_wait_next_action()
@@ -191,7 +193,7 @@ def _handle_tft(func):
 initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))
                     continue
                 except BaseException as e:
-                    logger.info("uce wrapper caught BaseException error")
+                    logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
                     tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                     raise e
         else:
