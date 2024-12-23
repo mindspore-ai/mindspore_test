@@ -24,9 +24,9 @@ gcd:
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([7, 8, 9]))
         >>> other = Tensor(np.array([14, 6, 12]))
-        >>> y = ops.gcd(input, other)
+        >>> y = input.gcd(other)
         >>> print(y)
         [7 2 3]
