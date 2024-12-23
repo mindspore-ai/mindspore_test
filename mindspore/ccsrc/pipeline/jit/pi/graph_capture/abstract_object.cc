@@ -281,9 +281,26 @@ AbstractObjectBase::Type AbstractObjectBase::GetMsType(PyTypeObject *tp) {
   return kTypeAnyValue;
 }
 
+AObject *AbstractObjectBase::TryConvertDynamicLengthSequence(const abstract::AbstractBasePtr &abstract) {
+  if (abstract->isa<abstract::AbstractTuple>() && abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
+    auto ret = static_cast<AbstractTuple *>(MakeAObject(kTypeTuple));
+    ret->MarkElementInValid();
+    return ret;
+  }
+  if (abstract->isa<abstract::AbstractList>() && abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
+    auto ret = static_cast<AbstractList *>(MakeAObject(kTypeList));
+    ret->MarkElementInValid();
+    return ret;
+  }
+  return nullptr;
+}
+
 AObject *AbstractObjectBase::Convert(const abstract::AbstractBasePtr &abstract) {
   if (abstract == nullptr) {
     return MakeAObject(kTypeAnyValue, nullptr, nullptr);
+  }
+  if (auto ret = TryConvertDynamicLengthSequence(abstract); ret) {
+    return ret;
   }
   py::object res = AbstractWrapper::ConvertToPyObject(abstract);
   if (res.ptr() != nullptr) {
@@ -1773,6 +1790,9 @@ AbstractTensor::AbstractTensor(const py::object &o, bool is_stub) : AbstractObje
 
 AObject *AbstractTensor::GetAttr(const std::string &name) {
   if (value_.ptr()) {
+    if (is_stub_ && GetTensor(true).ptr()) {
+      return attrs_["tensor"]->GetAttr(name);
+    }
     return this->AbstractObject::GetAttr(name);
   }
 

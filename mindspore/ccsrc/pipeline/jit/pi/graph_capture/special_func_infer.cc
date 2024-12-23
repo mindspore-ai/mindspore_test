@@ -1095,6 +1095,11 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
   return true;
 }
 
+bool InferTensorIsContiguous(CallNode *call_node, GraphBuilder *) {
+  CallNodeReturnConst(call_node, call_node->GetSubGraph(), AObject::Convert(Py_False));
+  return true;
+}
+
 enum FuncKey {
   FUNC_KEY_EMPTY = 0,             // ""
   FUNC_KEY_PIJIT_CONSTEXPR,       // "pijit.constexpr"
@@ -1122,6 +1127,7 @@ enum FuncKey {
   FUNC_KEY_PRIMITIVE_ASSIGN,      // mindspore.ops.assign, Primitive("Assign")
   FUNC_KEY_TENSOR_SETITEM,        // Tensor.__setitem__
   FUNC_KEY_TENSOR_ASSIGN_VALUE,   // Tensor.assign_value
+  FUNC_KEY_TENSOR_IS_CONTIGUOUS,  // Tensor.is_contiguous
   FUNC_KEY_COUNT,
 };
 static FuncKey FindFuncKey(const py::object &callable);
@@ -1151,6 +1157,7 @@ static const std::unordered_map<FuncKey, InferFunc> infer_func_map = {
   {FUNC_KEY_PRIMITIVE_ASSIGN, InferPrimitiveAssign},
   {FUNC_KEY_TENSOR_SETITEM, InferTensorSetItem},
   {FUNC_KEY_TENSOR_ASSIGN_VALUE, InferTensorAssignValue},
+  {FUNC_KEY_TENSOR_IS_CONTIGUOUS, InferTensorIsContiguous},
 };
 
 static const std::unordered_map<FuncKey, InferFunc> mind_infer_func_map = {
@@ -1169,6 +1176,7 @@ static const std::unordered_map<FuncKey, InferFunc> mind_infer_func_map = {
   {FUNC_KEY_PRIMITIVE_ASSIGN, InferPrimitiveAssign},
   {FUNC_KEY_TENSOR_SETITEM, InferTensorSetItem},
   {FUNC_KEY_TENSOR_ASSIGN_VALUE, InferTensorAssignValue},
+  {FUNC_KEY_TENSOR_IS_CONTIGUOUS, InferTensorIsContiguous},
 };
 
 InferFunc FindInferFunc(const py::object &callable, bool trace_flag) {

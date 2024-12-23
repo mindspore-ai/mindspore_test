@@ -1784,7 +1784,18 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
     } else if (arg->GetOpcode() == BUILD_LIST || arg->GetOpcode() == BUILD_TUPLE) {
       build_inputs.insert(build_inputs.end(), arg->getInputs().begin(), arg->getInputs().end());
     } else {
-      return nullptr;
+      int size = GetIterableSize(arg);
+      if (size < 0) {
+        MS_LOG(ERROR) << "Invalid iterable object:" << arg->ToString();
+        return nullptr;
+      }
+      if (size > 0) {
+        push(arg);
+        DoUnpack({UNPACK_SEQUENCE, size});
+        std::vector<ValueNode *> res = {frame_.GetStacks().end() - size, frame_.GetStacks().end()};
+        popn(size);
+        build_inputs.insert(build_inputs.end(), res.rbegin(), res.rend());
+      }
     }
     opcode = BUILD_LIST;
     div = 1;
