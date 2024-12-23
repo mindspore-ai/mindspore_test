@@ -134,8 +134,9 @@ def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
     logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
     _stop_device(cb_ctx.device_id)
-    if not cb_ctx._is_params_consistent():    # pylint: disable=W0212
+    if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):    # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
+    cb_ctx.is_uce_rank = False
     logger.info("Finish _tft_stop_callback")
 
 
@@ -264,6 +265,7 @@ class TFTRegister(Callback):
         self.global_step = 0
         Validator.check_non_negative_int(ctrl_port)
         self.has_init_replica = False
+        self.is_uce_rank = False
         self._controller_ip = ctrl_ip
         self._controller_rank_id = ctrl_rank_id
         self._controller_port = ctrl_port
@@ -348,13 +350,13 @@ class TFTRegister(Callback):
             self._set_tft_optimizer_replica(run_context)
         cb_params = run_context.original_args()
         logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
-        self.tft.tft_end_updating_os(cb_params.cur_step_num)
         if cb_params.optimizer is not None:
             self.global_step = int(cb_params.optimizer.global_step.data)
             self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
         else:
             self.global_step = int(cb_params.network.optimizer.global_step.data)
             self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
+        self.tft.tft_end_updating_os(cb_params.cur_step_num)
         logger.info("END Set optimizer finish step status to TFT.")
 
 
