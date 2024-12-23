@@ -2,6 +2,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch, MagicMock
 
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 
@@ -22,8 +23,13 @@ def global_test_hook(result):
 class TestBaseParser(unittest.TestCase):
     """Test cases for BaseParser."""
 
-    def setUp(self):
+    @patch('mindspore.profiler.analysis.parser.base_parser.ProfilerLogger')
+    def setUp(self, mock_logger):
         """Set up test environment."""
+        # 配置 mock logger
+        self.mock_logger_instance = MagicMock()
+        mock_logger.get_instance.return_value = self.mock_logger_instance
+
         self.parser1 = DummyParser()
         self.parser2 = DummyParser()
         self.parser3 = DummyParser()
@@ -70,6 +76,25 @@ class TestBaseParser(unittest.TestCase):
         """Test register_post_hook method is invalid."""
         with self.assertRaises(ValueError):
             self.parser1.register_post_hook("not callable")
+
+    @patch('mindspore.profiler.analysis.parser.base_parser.ProfilerLogger')
+    def test_parse_should_log_error_when_exception_occurs(self, mock_logger):
+        """Test parse method logs error when exception occurs."""
+        mock_logger_instance = MagicMock()
+        mock_logger.get_instance.return_value = mock_logger_instance
+
+        class ErrorParser(BaseParser):
+            def _parse(self, data):
+                raise Exception("Test error")
+
+        parser = ErrorParser()
+        input_data = "test"
+        result = parser.parse(input_data)
+
+        # 验证错误日志被正确调用
+        mock_logger_instance.error.assert_called_once()
+        # 验证发生异常时返回原始数据
+        self.assertEqual(result, input_data)
 
 if __name__ == '__main__':
     unittest.main()

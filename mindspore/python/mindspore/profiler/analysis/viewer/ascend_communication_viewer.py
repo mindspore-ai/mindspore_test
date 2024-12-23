@@ -20,6 +20,7 @@ from collections import defaultdict
 from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class AscendCommunicationViewer(BaseViewer):
@@ -55,6 +56,9 @@ class AscendCommunicationViewer(BaseViewer):
         self.output_matrix_data = {}
         self._output_path = kwargs.get("ascend_profiler_output_path")
         self._msprof_analyze_output_path = kwargs.get("msprof_analyze_output_path")
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
         self._communication_input_path = os.path.join(
             self._msprof_analyze_output_path,
             self.COMMUNICATION
@@ -76,23 +80,28 @@ class AscendCommunicationViewer(BaseViewer):
         """
         Save ascend integrate data.
         """
+        self._logger.info("AscendCommunicationViewer start")
         try:
             self._generate_communication()
             self._generate_matrix()
             self._save_analyze_data()
         except Exception as e:  # pylint: disable=W0703
-            logger.error("Failed to save ascend communication data, error: %s", e)
+            self._logger.error("Failed to save ascend communication data, error: %s", e, exc_info=True)
+        self._logger.info("AscendCommunicationViewer end")
 
     def _save_analyze_data(self):
         """
         Save analyse data
         """
+        self._logger.info("Save ascend communication data start")
         if not self.output_communication:
             return
         FileManager.create_json_file(self._communication_output_path, self.output_communication)
+        self._logger.info("Save ascend communication data done")
         if not self.output_matrix_data:
             return
         FileManager.create_json_file(self._communication_matrix_output_path, self.output_matrix_data)
+        self._logger.info("Save ascend communication matrix data done")
 
     @staticmethod
     def _combine_size_distribution(op_dict: dict, total_dict: dict):

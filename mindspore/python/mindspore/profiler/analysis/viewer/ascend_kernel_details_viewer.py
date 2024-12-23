@@ -24,6 +24,7 @@ from mindspore.profiler.common.constant import OpSummaryHeaders
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.constant import TimelineLayerName
 from mindspore.profiler.common.constant import ProfilerStepNameConstant, JitLevel, ProfilerLevel
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class AscendKernelDetailsViewer(BaseViewer):
@@ -58,6 +59,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             kwargs.get("ascend_profiler_output_path"),
             self.KERNEL_DETAILS_FILE_NAME
         )
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
         self._is_set_schedule = kwargs.get("is_set_schedule")
         self._jit_level = kwargs.get("jit_level")
         self._profiler_level = kwargs.get("profiler_level")
@@ -65,11 +67,14 @@ class AscendKernelDetailsViewer(BaseViewer):
         self.op_summary = None
         self.trace_container = None
         self.kernel_details_headers = None
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
     def save(self, data):
         """
         Save kernel details to csv file.
         """
+        self._logger.info("AscendKernelDetailsViewer start")
         try:
             if self._profiler_level == ProfilerLevel.LevelNone.value:
                 return
@@ -77,8 +82,10 @@ class AscendKernelDetailsViewer(BaseViewer):
             self._update_kernel_name()
             self._update_headers()
             self._write_data()
+            self._logger.info("Kernel details saved done")
         except Exception as e:  # pylint: disable=W0703
-            logger.warning("Failed to save kernel details: %s", str(e))
+            self._logger.error("Failed to save kernel details: %s", str(e), exc_info=True)
+        self._logger.info("AscendKernelDetailsViewer end")
 
     def _check_input_data(self, data):
         """
@@ -98,12 +105,14 @@ class AscendKernelDetailsViewer(BaseViewer):
         """
         Write data to csv file.
         """
+        self._logger.info("Kernel details saved start")
         PathManager.check_directory_path_writeable(os.path.dirname(self._save_path))
         with open(self._save_path, "w", newline="", encoding="utf-8") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(self.kernel_details_headers)
             for row in self.op_summary:
                 writer.writerow([row[field] for field in self.op_summary_headers])
+        self._logger.info("Kernel details saved done")
 
     def _update_headers(self):
         """
@@ -135,6 +144,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         """
         Update op summary op name to framework launch op name.
         """
+        self._logger.info("Update kernel name start")
         step_id_to_time_dict = _generate_step_id_dict_by_trace_container(self.trace_container)
         dev_kernels = self.trace_container.hardware_op_event
         _generate_hardware_op_event_step_id(dev_kernels, step_id_to_time_dict)
@@ -168,7 +178,7 @@ class AscendKernelDetailsViewer(BaseViewer):
                 step_id = _get_step_id_by_ts(Decimal(dev_kernel_ts), step_id_to_time_dict)
 
             if fwk_langch_op_name is None:
-                logger.info(
+                self._logger.warning(
                     "Can not find fwk launch op for dev kernel %s, ts %s",
                     dev_kernel_name,
                     dev_kernel_ts,
@@ -178,7 +188,7 @@ class AscendKernelDetailsViewer(BaseViewer):
                 launch_ops[index] = f"{fwk_langch_op_name}/{dev_kernel_name}"
 
             if step_id is None and self._is_set_schedule:
-                logger.info(
+                self._logger.warning(
                     "Can not find step id for dev kernel %s, ts %s",
                     dev_kernel_name,
                     dev_kernel_ts,
@@ -193,6 +203,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         if self._is_set_schedule:
             if not self._jit_level == JitLevel.GRAPH_LEVEL:
                 self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
+        self._logger.info("Update kernel name done")
 
 
 def _generate_step_id_dict_by_trace_container(trace_container: TraceViewContainer):

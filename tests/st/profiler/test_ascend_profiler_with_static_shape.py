@@ -18,6 +18,7 @@ import tempfile
 from mindspore import context
 from mindspore import Profiler
 from mindspore.profiler import ProfilerLevel
+from mindspore.profiler.analysis.parser.base_parser import BaseParser
 
 from tests.mark_utils import arg_mark
 from file_check import FileChecker
@@ -36,6 +37,7 @@ def test_ascend_graph_mode_profiler_with_static_shape_all_parameters_on():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O2"})
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(
@@ -67,6 +69,7 @@ def test_ascend_pynative_mode_profiler_with_static_shape_all_parameters_on():
                  in the temporary directory.
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(
@@ -99,6 +102,7 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0"})
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(

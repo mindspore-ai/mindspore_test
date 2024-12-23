@@ -26,6 +26,7 @@ from mindspore.profiler.analysis.parser.timeline_event.fwk_event import (
     OpRangeStructField,
     FwkArgsDecoder
 )
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class MsDatasetViewer(BaseViewer):
@@ -41,21 +42,28 @@ class MsDatasetViewer(BaseViewer):
             kwargs.get("ascend_profiler_output_path"),
             self._DATASET_FILE_NAME
         )
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
     def save(self, data: Dict[str, Any]) -> None:
         """Process and save dataset profiling data."""
+        self._logger.info("MsDatasetViewer start")
         try:
             op_range_list = data.get("mindspore_op_list", [])
             dataset_statistics = self._calculate_data(op_range_list)
             self._save_data(dataset_statistics)
         except Exception as e: # pylint: disable=W0703
-            logger.error("Failed to save dataset.csv: %s", e)
+            self._logger.error("Failed to save dataset.csv: %s", e, exc_info=True)
+        self._logger.info("MsDatasetViewer end")
 
     def _save_data(self, dataset_statistics: List[List[Any]]) -> None:
         """Save dataset statistics to a CSV file."""
         if not dataset_statistics:
             return
+        self._logger.info("Save dataset statistics start")
         FileManager.create_csv_file(self._save_path, dataset_statistics, self._COL_NAMES)
+        self._logger.info("Save dataset statistics done")
 
     def _calculate_data(self, fwk_tlv_data: List[Dict]) -> List[List[Any]]:
         """Calculate statistics for dataset operations."""

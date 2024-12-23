@@ -20,9 +20,9 @@ from enum import Enum
 from typing import Any, Dict, List
 from abc import ABC
 
-from mindspore import log as logger
 from mindspore.profiler.parser.ascend_analysis.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class OpMemoryIndexEnum(Enum):
@@ -202,6 +202,9 @@ class AscendOpMemoryViewer:
         self._enable_profile_memory = kwargs.get("profile_memory", False)
         self._framework_path = kwargs.get("framework_path")
         self._ascend_profiler_output_path = kwargs.get("ascend_profiler_output_path")
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
         self._op_memory_events = None
         self._op_memory_data = []
         self._addr_to_event_map = defaultdict(list)
@@ -210,6 +213,7 @@ class AscendOpMemoryViewer:
         """
         Save step trace time data to csv file
         """
+        self._logger.info("AscendOpMemoryViewer start")
         if not self._enable_profile_memory:
             return
 
@@ -218,24 +222,29 @@ class AscendOpMemoryViewer:
             self._calculate_op_memory_data()
             self._write_data()
         except Exception as e:  # pylint: disable=W0703
-            logger.error(f"Failed to save op memory data: {str(e)}")
+            self._logger.error("Failed to save op memory data: %s", str(e), exc_info=True)
+        self._logger.info("AscendOpMemoryViewer end")
 
     def _read_fwk_binary_file(self):
         """
         Read fwk binary file
         """
+        self._logger.info("Read fwk binary file start")
         op_name_file_path = os.path.join(self._framework_path, self.FWK_BINARY_FILE_NAME)
         raw_bin_data = FileManager.read_file_content(op_name_file_path, mode="rb")
         self._op_memory_events = TLVDecoder.decode(
             raw_bin_data, OpMemoryEvent, OpMemoryEvent.FIX_DATA_SIZE
         )
         self._op_memory_events = sorted(self._op_memory_events, key=lambda x: x.create_at)
+        self._logger.info("Read fwk binary file done, %d events", len(self._op_memory_events))
 
     def _calculate_op_memory_data(self):
         """
         Calculate op memory data
         """
+        self._logger.info("Calculate op memory data start")
         if not self._op_memory_events:
+            self._logger.info("No op memory events")
             return
 
         for event in self._op_memory_events:
@@ -246,13 +255,14 @@ class AscendOpMemoryViewer:
             self._op_memory_data.extend(row_data_list)
 
         self._op_memory_data = sorted(self._op_memory_data, key=lambda x: x[self.ALLOC_TIME_INDEX])
+        self._logger.info("Calculate op memory data done")
 
     def _combine_alloc_and_free_event(self, alloc_event: OpMemoryEvent, free_event=None):
         """
         Combine alloc and free event
         """
         if not alloc_event:
-            logger.error("Alloc event is None")
+            self._logger.error("Alloc event is None")
             return []
 
         return [
@@ -280,7 +290,7 @@ class AscendOpMemoryViewer:
         res = []
 
         if not event_list:
-            logger.error("Event list length is less than 1")
+            self._logger.error("Event list length is less than 1")
             return res
 
         start_index = 0 if event_list[0].is_alloc else 1
@@ -295,7 +305,7 @@ class AscendOpMemoryViewer:
                 res.append(self._combine_alloc_and_free_event(alloc_event, free_event))
                 alloc_event, free_event = None, None
             elif alloc_event is None and free_event:
-                logger.error("Alloc event is None, but free event is not None")
+                self._logger.error("Alloc event is None, but free event is not None")
 
         if alloc_event:
             res.append(self._combine_alloc_and_free_event(alloc_event))
@@ -306,5 +316,7 @@ class AscendOpMemoryViewer:
         """
         Write data to csv file
         """
+        self._logger.info("Write data to csv file start")
         save_path = os.path.join(self._ascend_profiler_output_path, self.OUTPUT_FILE_NAME)
         FileManager.create_csv_file(save_path, self._op_memory_data, self.HEADERS)
+        self._logger.info("Write data to csv file done, %d rows, save path: %s", len(self._op_memory_data), save_path)

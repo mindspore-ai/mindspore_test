@@ -24,6 +24,7 @@ import mindspore as ms
 from mindspore import context
 from mindspore.train import Model
 from mindspore.profiler import DynamicProfilerMonitor
+from mindspore.profiler.analysis.parser.base_parser import BaseParser
 
 
 class StepMonitor(ms.Callback):
@@ -133,6 +134,7 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_level="O0")
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     data_cfg = {
         "start_step": 2,
         "stop_step": 3,
@@ -195,6 +197,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_level="O2")
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     data_cfg = {
         "start_step": 2,
         "stop_step": 3,

@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """GPU platform profiler."""
-from mindspore import log as logger
 import mindspore._c_dataengine as cde
 import mindspore._c_expression as c_expression
 from mindspore.profiler.common.registry import PROFILERS
@@ -21,7 +20,7 @@ from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
 
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
-
+from mindspore.profiler.common.log import ProfilerLogger
 
 @PROFILERS.register_module(DeviceTarget.GPU.value)
 class GpuProfiler(BaseProfiler):
@@ -32,7 +31,8 @@ class GpuProfiler(BaseProfiler):
         super().__init__()
         self._prof_ctx = ProfilerContext()
         self._profiler = c_expression.Profiler.get_instance(DeviceTarget.GPU.value)
-
+        ProfilerLogger.init(self._prof_ctx.ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
         self._profiler.init(self._prof_ctx.output_path)
         self._profiler.sync_enable(self._prof_ctx.sync_enable)
@@ -43,7 +43,7 @@ class GpuProfiler(BaseProfiler):
 
     def start(self) -> None:
         """Start profiling."""
-        logger.info("GpuProfiler start.")
+        self._logger.info("GpuProfiler start.")
 
         if self._prof_ctx.data_process:
             self._profiler.data_process_enable(True)
@@ -57,7 +57,7 @@ class GpuProfiler(BaseProfiler):
 
     def stop(self) -> None:
         """Stop profiling."""
-        logger.info("GpuProfiler stop.")
+        self._logger.info("GpuProfiler stop.")
         self._profiler.stop()
 
         if self._prof_ctx.data_process:
@@ -66,8 +66,8 @@ class GpuProfiler(BaseProfiler):
 
     def analyse(self, **kwargs) -> None:
         """Analyse profiling data."""
-        logger.info("GpuProfiler analyse.")
+        self._logger.info("GpuProfiler analyse.")
 
     def finalize(self) -> None:
         """Finalize profiling data."""
-        logger.info("GpuProfiler finalize.")
+        self._logger.info("GpuProfiler finalize.")

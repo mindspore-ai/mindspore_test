@@ -23,6 +23,7 @@ from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.constant import ProfilerActivity, FileConstant, DeviceTarget
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.analysis.parser.timeline_event.fwk_event import FwkFixSizeFormat, OpRangeStructField
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class FrameworkParser(BaseParser):
@@ -39,6 +40,7 @@ class FrameworkParser(BaseParser):
         self._step_list = kwargs.get("step_list")
         self._framework_path = kwargs.get("framework_path")
         self._device_target = kwargs.get("device_target")
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
         self._op_range_path = os.path.join(
             self._framework_path,
             self._OP_RANGE_FILE_NAME.format(self._rank_id)
@@ -47,6 +49,8 @@ class FrameworkParser(BaseParser):
             self._framework_path,
             self._CPU_OP_TIMESTAMP_FILE_NAME.format(self._rank_id),
         )
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
     def _parse(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse MindSpore framework profiling data.
@@ -62,7 +66,9 @@ class FrameworkParser(BaseParser):
         if ProfilerActivity.CPU.value not in self._activities:
             return data
         mindspore_op_list = self._parse_op_range_data()
+        self._logger.info("FrameworkParser parse op range done.")
         cpu_op_lines = self._parse_cpu_op_data()
+        self._logger.info("FrameworkParser parse cpu op done.")
         data.update(
             {
                 "mindspore_op_list": mindspore_op_list,
@@ -89,6 +95,7 @@ class FrameworkParser(BaseParser):
             op_range_list = TLVDecoder.decode(
                 op_range_bytes, FwkFixSizeFormat.OpRangeStruct, struct.calcsize(FwkFixSizeFormat.OpRangeStruct)
             )
+            self._logger.info("FrameworkParser parse op range done, op_range_list length: %d", len(op_range_list))
             if not op_range_list:
                 logger.error(
                     f"Failed to decode op_range data: empty result from file {self._op_range_path}"

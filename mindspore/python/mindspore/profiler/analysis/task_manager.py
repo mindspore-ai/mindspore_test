@@ -23,6 +23,7 @@ from mindspore import log as logger
 from mindspore.profiler.common.process_bar import ProcessBar
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.analysis.work_flow import WorkFlow
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class TaskManager:
@@ -39,6 +40,7 @@ class TaskManager:
         self.workflows: Dict[str, WorkFlow] = defaultdict(WorkFlow)
         self.show_process: Dict[str, bool] = defaultdict(bool)
         self.flows_cost_time: Dict[str, Dict[str, Any]] = Manager().dict()
+        self._logger = ProfilerLogger.get_instance()
 
     @property
     def cost_time(self) -> Dict[str, Dict[str, Any]]:
@@ -82,11 +84,13 @@ class TaskManager:
         processes = []
         for flow_name, workflow in self.workflows.items():
             p = Process(target=self._run_flow, args=(flow_name, workflow, data))
-            processes.append(p)
+            processes.append((p, flow_name))
             p.start()
+            self._logger.info("TaskManager run flow [%s] [pid: %s] start", flow_name, p.pid)
 
-        for p in processes:
+        for p, flow_name in processes:
             p.join()
+            self._logger.info("TaskManager flow [%s] [pid: %s] join", flow_name, p.pid)
 
     def _run_flow(self, flow_name: str, workflow: WorkFlow, data: Any) -> None:
         """
@@ -116,6 +120,7 @@ class TaskManager:
                 )
         except Exception as e: # pylint: disable=W0703
             logger.error("Parser %s error: %s", parser.__class__.__name__, str(e))
+            self._logger.error("TaskManager run [%s] error: %s", flow_name, str(e), exc_info=True)
 
         end_time = time.perf_counter()
         # Record the cost time of the workflow

@@ -21,12 +21,14 @@ from typing import (
 )
 from multiprocessing import Process
 from mindspore import log as logger
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class BaseParser:
     """
     Base class for all parsers in the workflow.
     """
+    EXEC_HOOK_TIMEOUT = 30 * 60
 
     def __init__(self, next_parser: Optional["BaseParser"] = None):
         """
@@ -37,6 +39,7 @@ class BaseParser:
         """
         self.next_parser: Optional["BaseParser"] = next_parser
         self._post_hooks: List[Callable[[Any], None]] = []
+        self._logger = ProfilerLogger.get_instance()
 
     def set_next(self, next_parser: "BaseParser") -> "BaseParser":
         """
@@ -69,7 +72,8 @@ class BaseParser:
             result = self._parse(data)
             self._execute_post_hooks(result)
         except Exception as e: # pylint: disable=W0703
-            logger.error("Parser %s error: %s", self.__class__.__name__, str(e))
+            logger.error("Parser [%s] error: %s", self.__class__.__name__, str(e))
+            self._logger.error("Parser [%s] error: %s", self.__class__.__name__, str(e), exc_info=True)
             return data
         return result
 
@@ -106,10 +110,33 @@ class BaseParser:
         for hook in self._post_hooks:
             p = Process(target=hook, args=(res,))
             p.start()
-            processes.append(p)
+            hook_class = hook.__self__.__class__.__name__ if hasattr(hook, '__self__') else 'Unknown'
+            hook_name = f"{hook_class}.{hook.__name__}"
+            processes.append((p, hook_name))
+            self._logger.info("Parser [%s] post hook [%s] start", self.__class__.__name__, hook_name)
 
-        for p in processes:
-            p.join()
+        for p, hook_name in processes:
+            try:
+                p.join(timeout=self.EXEC_HOOK_TIMEOUT)
+                if p.is_alive():
+                    logger.error(
+                        "Parser [%s] post hook [%s] timeout after %s seconds, terminating",
+                        self.__class__.__name__, hook_name, self.EXEC_HOOK_TIMEOUT
+                    )
+                    p.terminate()
+                    p.join()
+                else:
+                    self._logger.info(
+                        "Parser [%s] post hook [%s] completed",
+                        self.__class__.__name__, hook_name
+                    )
+            except Exception as e:  # pylint: disable=W0703
+                self._logger.error(
+                    "Parser [%s] post hook [%s] failed: %s",
+                    self.__class__.__name__, hook_name, str(e), exc_info=True
+                )
+                if p.is_alive():
+                    p.terminate()
 
     def _parse(self, data: Any) -> Any:
         """

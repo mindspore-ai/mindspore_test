@@ -19,6 +19,7 @@ from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.analysis.parser.timeline_assembly_factory.ascend_timeline_assembler import (
     AscendTimelineAssembler
 )
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class FrameworkCannRelationParser(BaseParser):
@@ -28,11 +29,16 @@ class FrameworkCannRelationParser(BaseParser):
         """Initialize the AscendTraceAnalyser."""
         super().__init__()
         self.assembler = AscendTimelineAssembler(**kwargs)
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(kwargs.get("ascend_ms_dir"))
+        self._logger = ProfilerLogger.get_instance()
 
     def _parse(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse the relation of framework and cann data."""
         self.assembler.assemble(data)
+        self._logger.info("FrameworkCannRelationParser assemble done")
         trace_view_container = self.assembler.get_trace_view_container()
+        self._logger.info("FrameworkCannRelationParser get trace view container done")
         data.update({
             "trace_view_container": trace_view_container,
         })

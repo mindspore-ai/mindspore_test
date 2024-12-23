@@ -13,11 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """CPU platform profiler."""
-import json
-
 import mindspore._c_expression as c_expression
 
-from mindspore import log as logger
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
 from mindspore.profiler.common.util import print_msg_with_pid
@@ -30,6 +27,7 @@ from mindspore.profiler.analysis.parser.ms_framework_parser import FrameworkPars
 from mindspore.profiler.analysis.parser.framework_cann_relation_parser import FrameworkCannRelationParser
 from mindspore.profiler.analysis.viewer.ms_dataset_viewer import MsDatasetViewer
 from mindspore.profiler.analysis.viewer.ascend_timeline_viewer import AscendTimelineViewer
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 @PROFILERS.register_module(DeviceTarget.CPU.value)
@@ -44,12 +42,14 @@ class CpuProfiler(BaseProfiler):
         self._profiler = c_expression.Profiler.get_instance(DeviceTarget.CPU.value)
         self._prof_path_mgr = ProfilerPathManager()
         self._prof_mgr = c_expression.ProfilerManager.get_instance()
+        ProfilerLogger.init(self._prof_ctx.ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
     def start(self) -> None:
         """Start profiling."""
-        logger.info("CpuProfiler start.")
+        self._logger.info("CpuProfiler start.")
         self._profiler.init(self._prof_ctx.framework_path)
-        logger.info("CpuProfiler framework_path: %s", self._prof_ctx.framework_path)
+        self._logger.info("CpuProfiler framework_path: %s", self._prof_ctx.framework_path)
         self._profiler.step_profiling_enable(True)
 
         if ProfilerActivity.CPU in self._prof_ctx.activities:
@@ -60,19 +60,19 @@ class CpuProfiler(BaseProfiler):
 
     def stop(self) -> None:
         """Stop profiling."""
-        logger.info("CpuProfiler stop.")
+        self._logger.info("CpuProfiler stop.")
         self._profiler.stop()
 
     def analyse(self, **kwargs) -> None:
         """Analyse profiling data."""
         if ProfilerContext().device_target_set != {DeviceTarget.CPU.value}:
             return
-        logger.info("CpuProfiler analyse.")
+        self._logger.info("CpuProfiler analyse.")
         CPUProfilerAnalysis.online_analyse()
 
     def finalize(self) -> None:
         """Finalize profiling data."""
-        logger.info("CpuProfiler finalize.")
+        self._logger.info("CpuProfiler finalize.")
 
 
 class CPUProfilerAnalysis:
@@ -105,7 +105,6 @@ class CPUProfilerAnalysis:
         print_msg_with_pid(f"Start parsing profiling data: {ascend_ms_dir}")
         task_mgr = cls._construct_task_mgr(**kwargs)
         task_mgr.run({})
-        logger.info(json.dumps(task_mgr.cost_time, indent=4))
 
     @classmethod
     def _construct_task_mgr(cls, **kwargs) -> TaskManager:
