@@ -23,6 +23,7 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "transform/acl_ir/op_api_cache.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -105,7 +106,7 @@ TilingCacheItemPtr AcmeKernelInfo::GetOrGenerateTiling(const std::vector<BaseTen
     auto tiling_info = std::make_shared<acme::TilingInfo>(device_addr, nullptr);
     tiling_info->host_run_info_ = host_run_info_ptr;
     tiling_info->host_run_info_->SetWorkSpaceSize(workspace_size_list_);
-    auto tiling_info_ptr = std::make_shared<TilingCacheItem>(tiling_info, host_addr, tiling_size);
+    tiling_info_ptr = std::make_shared<TilingCacheItem>(tiling_info, host_addr, tiling_size);
     if (TilingMemMgr::GetInstance().pool_device_.IsOutOfPoolMem(device_addr)) {
       // tiling mem pool is full, comb out some items which are not recently used with high probability
       auto erased_items = AcmeTilingCache::GetInstance().CombOutSuspectedUselessItems();
@@ -181,6 +182,7 @@ void AcmeKernelInfo::Call(const OpRunnerPtr &op, const std::vector<BaseTensorPtr
     // Malloc for output tensors
     pyboost::PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
+    runtime::Pipeline::Get().launch_stage()->Wait();
     Launch(device_context, tilingptr, inputs, outputs, op->stream_id());
     MS_LOG(DEBUG) << "Run device task Add end";
   }));

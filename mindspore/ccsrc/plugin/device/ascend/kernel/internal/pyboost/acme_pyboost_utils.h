@@ -31,6 +31,8 @@ BACKEND_EXPORT void GatherOpHash(const mindspore::tensor::TensorPtr &);
 BACKEND_EXPORT void GatherOpHash(const std::optional<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherOpHash(const std::vector<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherOpHash(const std::vector<int64_t> &);
+BACKEND_EXPORT void GatherOpHash(const std::string &);
+
 
 BACKEND_EXPORT void GatherTilingHash(const device::DeviceAddressPtr &);
 BACKEND_EXPORT void GatherTilingHash(const mindspore::tensor::BaseTensorPtr &);
@@ -40,6 +42,7 @@ BACKEND_EXPORT void GatherTilingHash(const mindspore::tensor::TensorPtr &);
 BACKEND_EXPORT void GatherTilingHash(const std::optional<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherTilingHash(const std::vector<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherTilingHash(const std::vector<int64_t> &);
+BACKEND_EXPORT void GatherTilingHash(const std::string &);
 
 
 template <typename T>
