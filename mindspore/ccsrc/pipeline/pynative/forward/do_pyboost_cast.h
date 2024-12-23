@@ -74,27 +74,46 @@ class PyBoostCastOperation : public CastBaseOperation {
   void GetTypeIdInfo(const FrontendOpRunInfoPtr &op_run_info, std::vector<TypeId> *args_type_id,
                      std::vector<bool> *args_has_tensor, size_t i, const Item &v) {
     MS_EXCEPTION_IF_NULL(v);
+    MS_LOG(DEBUG) << "Get type info of " << v->ToString();
     if (v->template isa<tensor::BaseTensor>()) {
-      (*args_type_id)[i] = v->template cast<tensor::BaseTensorPtr>()->data_type();
+      args_type_id->push_back(v->template cast<tensor::BaseTensorPtr>()->data_type());
       // Indicate have do type cast
       if (op_run_info->source_type[i] == ops::OP_DTYPE::DT_BEGIN) {
-        (*args_has_tensor)[i] = true;
+        args_has_tensor->push_back(true);
+      } else {
+        args_has_tensor->push_back(false);
       }
     } else if (v->template isa<Scalar>()) {
       const auto type = v->template cast<ScalarPtr>()->type();
       MS_EXCEPTION_IF_NULL(type);
-      (*args_type_id)[i] = type->type_id();
+      args_type_id->push_back(type->type_id());
+      args_has_tensor->push_back(false);
+    } else if (v->template isa<ValueSequence>()) {
+      const auto &value_seq = v->template cast<ValueSequencePtr>();
+      MS_EXCEPTION_IF_NULL(value_seq);
+      const auto &elements = value_seq->value();
+      // Not support tuple(tuple<Tensor>) yet.
+      for (const auto &element : elements) {
+        MS_EXCEPTION_IF_NULL(element);
+        MS_LOG(DEBUG) << "Get tuple element " << element->ToString();
+        if (element->template isa<tensor::BaseTensor>()) {
+          args_type_id->push_back(element->template cast<tensor::BaseTensorPtr>()->data_type());
+          // No tuple[int] to tuple[Tensor] type_cast yet.
+          args_has_tensor->push_back(true);
+        }
+      }
     } else {
       MS_LOG(DEBUG) << "Get value " << v->ToString();
+      args_type_id->push_back(kTypeUnknown);
+      args_has_tensor->push_back(false);
     }
   }
 
   template <typename Item>
   void GetTypeIdInfo(const FrontendOpRunInfoPtr &op_run_info, std::vector<TypeId> *args_type_id,
                      std::vector<bool> *args_has_tensor, size_t i, const std::optional<Item> &t) {
-    if (!t.has_value()) {
-      return;
-    }
+    args_type_id->push_back(kTypeUnknown);
+    args_has_tensor->push_back(false);
   }
 
   template <typename TupleInput, size_t... Index>
@@ -103,8 +122,8 @@ class PyBoostCastOperation : public CastBaseOperation {
                                                                 std::index_sequence<Index...>) {
     std::vector<TypeId> args_type_id;
     std::vector<bool> args_has_tensor;
-    args_type_id.resize(op_run_info->input_size, kTypeUnknown);
-    args_has_tensor.resize(op_run_info->input_size, false);
+    args_type_id.reserve(op_run_info->input_size);
+    args_has_tensor.reserve(op_run_info->input_size);
 
     (GetTypeIdInfo(op_run_info, &args_type_id, &args_has_tensor, Index, std::get<Index>(tuple_input)), ...);
     return {args_type_id, args_has_tensor};
