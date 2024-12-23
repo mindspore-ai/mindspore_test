@@ -24,7 +24,7 @@ from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 __all__ = ['set_device', 'set_deterministic']
 
 @args_type_check(device_target=str, device_id=int)
-def set_device(device_target, device_id=0):
+def set_device(device_target, device_id=None):
     """
     Set device target and device id for running environment.
 
@@ -33,7 +33,12 @@ def set_device(device_target, device_id=0):
 
     Args:
         device_target (str): The target device to run, only support "Ascend", "GPU", and "CPU".
-        device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1], Default: ``0`` .
+        device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1].
+            The frame will set different default behaviours according to the scenario:
+            if it is a single-card scenario, the frame will be set to 0.
+            In a distributed scenario where msrun is started, the framework will
+            automatically negotiate the available device_id values.
+            In a distributed scenario with other startup methods, the frame is set to 0.
             "device_num_per_host" refers to the total number of devices on the host.
 
     Examples:
@@ -126,4 +131,4 @@ def _check_runtime_conf_env_valid():
     device_context = DeviceContextManager.get_instance().get_device_context(device_target)
     if device_context is not None and device_context.initialized():
         raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
-                           "Suggest setting it as early as possible, but after the 'mindspore.set_device'.")
+                           "Suggest setting it as early as possible.")
