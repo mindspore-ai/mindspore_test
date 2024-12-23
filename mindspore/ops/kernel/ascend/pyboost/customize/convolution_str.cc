@@ -24,6 +24,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+}  // namespace
 tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                     const BaseTensorPtr &input_tensor,
                                                     const BaseTensorPtr &weight_tensor,
@@ -34,9 +41,14 @@ tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunn
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, padding_enum, dilation, transposed,
                           output_padding, group);
   // Convert ValueTuple to std::vector
+  const auto &weight_shape = weight_tensor->shape();
+  auto spatial_len = weight_shape.size() - kIndex2;
   std::vector<int64_t> stride_vector = ConvertValueTupleToVector<int64_t>(stride);
+  ExpandParamIfNeeded(&stride_vector, spatial_len);
   std::vector<int64_t> dilation_vector = ConvertValueTupleToVector<int64_t>(dilation);
+  ExpandParamIfNeeded(&dilation_vector, spatial_len);
   std::vector<int64_t> output_padding_vector = ConvertValueTupleToVector<int64_t>(output_padding);
+  ExpandParamIfNeeded(&output_padding_vector, spatial_len);
   // Convert ValuePtr to c++ scalar
   auto transposed_imm = GetValue<bool>(transposed);
   auto group_imm = GetValue<int64_t>(group);

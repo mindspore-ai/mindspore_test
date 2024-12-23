@@ -23,12 +23,47 @@
 namespace mindspore {
 namespace ops {
 namespace {
+void CheckConvPaddingRestrictions(mindspore::PadMode mode, const ShapeVector &input_shape,
+                                  const ShapeVector &weight_shape, const ArrayValue<int64_t> &stride,
+                                  const ArrayValue<int64_t> &dilation) {
+  if (mode == PadMode::VALID) {
+    for (int i = 0; i < 3; i++) {
+      if (!dilation.IsValueUnknown(i % dilation.size())) {
+        if (input_shape[i + 2] - (weight_shape[i + 2] - 1) * dilation[i % dilation.size()] - 1 < 0) {
+          MS_EXCEPTION(ValueError)
+            << "For primitive[Conv3DPadding], (Hin + PadUp + PadDown - (Hk - 1) * DilationH - 1), "
+            << "(Win + PadLeft + PadRight - (Wk - 1) * DilationW - 1) and (Din + PadFront + PadBack - (Dk - 1) * "
+               "DilationD - 1)"
+            << " must greater than 0.";
+        }
+      }
+    }
+    return;
+  }
+  for (int i = 0; i < 3; i++) {
+    if (dilation.IsValueUnknown(i % dilation.size()) || stride.IsValueUnknown(i % stride.size())) {
+      continue;
+    }
+    auto pads = (input_shape[i + 2] - 1) * stride[i % stride.size()] +
+                (weight_shape[i + 2] - 1) * dilation[i % dilation.size()] + 1 - input_shape[i + 2];
+    if (pads / 2 >= weight_shape[i + 2]) {
+      MS_EXCEPTION(ValueError) << "For primitive[Conv3DPadding], pad should be less " << weight_shape[i + 2]
+                               << ", but got " << pads / 2
+                               << ". Taking the H dimension as an example, when pad is filled symmetrically,"
+                               << " the calculation of the pad value can be obtained by "
+                               << "((Hout - 1) * strideH + (Hk - 1) * DilationH + 1 - Hin) / 2";
+    }
+  }
+}
+
 int64_t GetOutputHWPadding(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
                            const ArrayValue<int64_t> &stride, const mindspore::PadMode &padding_enum,
                            const ArrayValue<int64_t> &dilation) {
+  auto i_stride = i % stride.size();
+  auto i_dilation = i % dilation.size();
   if (input_shape[shape_pos] == abstract::Shape::kShapeDimAny ||
-      weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || dilation.IsValueUnknown(i) ||
-      stride.IsValueUnknown(i)) {
+      weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || dilation.IsValueUnknown(i_dilation) ||
+      stride.IsValueUnknown(i_stride)) {
     return abstract::Shape::kShapeDimAny;
   }
   if (padding_enum == PadMode::SAME) {
@@ -38,7 +73,9 @@ int64_t GetOutputHWPadding(const ShapeVector &input_shape, const ShapeVector &we
   }
   int64_t feature_len = SizeToLong(input_shape.size()) - 2;
   std::vector<int64_t> padding(feature_len, 0);
-  return (input_shape[shape_pos] + 2 * padding[i] - dilation[i] * (weight_shape[shape_pos] - 1) - 1) / stride[i] + 1;
+  return (input_shape[shape_pos] + 2 * padding[i] - dilation[i_dilation] * (weight_shape[shape_pos] - 1) - 1) /
+           stride[i_stride] +
+         1;
 }
 
 inline void IndicesCheckPositiveVectorPadding(const string &arg_name, const ArrayValue<int64_t> &array,
@@ -138,21 +175,8 @@ ShapeArray Conv3DPaddingFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &pri
         (void)CheckAndConvertUtils::CheckInteger("out_channels/groups", nd_output_shape[1] % groups, kEqual, 0);
         (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
                                                  weight_shape[kIndex1]);
-
-        if (padding_enum == PadMode::VALID) {
-          for (int i = 0; i < SizeToLong(stride.size()); i++) {
-            if (!dilation.IsValueUnknown(i)) {
-              if (input_shape[i + 2] - (weight_shape[i + 2] - 1) * dilation[i] - 1 < 0) {
-                MS_EXCEPTION(ValueError)
-                  << "For primitive[Conv3DPadding], (Hin + PadUp + PadDown - (Hk - 1) * DilationH - 1), "
-                  << "(Win + PadLeft + PadRight - (Wk - 1) * DilationW - 1) and (Din + PadFront + PadBack - (Dk - 1) * "
-                     "DilationD - 1)"
-                  << " must greater than 0.";
-              }
-            }
-          }
-        }
       }
+      CheckConvPaddingRestrictions(padding_enum, input_shape, weight_shape, stride, dilation);
     }
 
     for (int i = 2; i < nd_output_shape_len; i++) {

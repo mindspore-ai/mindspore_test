@@ -30,12 +30,46 @@
 namespace mindspore {
 namespace ops {
 namespace {
+void CheckConvStrRestrictions(mindspore::PadMode mode, const ShapeVector &input_shape, const ShapeVector &weight_shape,
+                              const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &dilation) {
+  if (mode == PadMode::VALID) {
+    for (int i = 0; i < 3; i++) {
+      if (!dilation.IsValueUnknown(i % dilation.size())) {
+        if (input_shape[i + 2] - (weight_shape[i + 2] - 1) * dilation[i % dilation.size()] - 1 < 0) {
+          MS_EXCEPTION(ValueError)
+            << "For primitive[Conv3DStr], (Hin + PadUp + PadDown - (Hk - 1) * DilationH - 1), "
+            << "(Win + PadLeft + PadRight - (Wk - 1) * DilationW - 1) and (Din + PadFront + PadBack - (Dk - 1) * "
+               "DilationD - 1)"
+            << " must greater than 0.";
+        }
+      }
+    }
+    return;
+  }
+  for (int i = 0; i < 3; i++) {
+    if (dilation.IsValueUnknown(i % dilation.size()) || stride.IsValueUnknown(i % stride.size())) {
+      continue;
+    }
+    auto pads = (input_shape[i + 2] - 1) * stride[i % stride.size()] +
+                (weight_shape[i + 2] - 1) * dilation[i % dilation.size()] + 1 - input_shape[i + 2];
+    if (pads / 2 >= weight_shape[i + 2]) {
+      MS_EXCEPTION(ValueError) << "For primitive[Conv3DStr], pad should be less " << weight_shape[i + 2] << ", but got "
+                               << pads / 2
+                               << ". Taking the H dimension as an example, when pad is filled symmetrically,"
+                               << " the calculation of the pad value can be obtained by "
+                               << "((Hout - 1) * strideH + (Hk - 1) * DilationH + 1 - Hin) / 2";
+    }
+  }
+}
+
 int64_t GetOutputHWConvStr(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
                            const ArrayValue<int64_t> &stride, const mindspore::PadMode &padding_enum,
                            const ArrayValue<int64_t> &dilation) {
+  auto i_stride = i % stride.size();
+  auto i_dilation = i % dilation.size();
   if (input_shape[shape_pos] == abstract::Shape::kShapeDimAny ||
-      weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || dilation.IsValueUnknown(i) ||
-      stride.IsValueUnknown(i)) {
+      weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || dilation.IsValueUnknown(i_dilation) ||
+      stride.IsValueUnknown(i_stride)) {
     return abstract::Shape::kShapeDimAny;
   }
   if (padding_enum == PadMode::SAME) {
@@ -46,7 +80,9 @@ int64_t GetOutputHWConvStr(const ShapeVector &input_shape, const ShapeVector &we
 
   int64_t dim = SizeToLong(weight_shape.size()) - 2;
   std::vector<int64_t> padding = std::vector<int64_t>(dim, 0);
-  return (input_shape[shape_pos] + 2 * padding[i] - dilation[i] * (weight_shape[shape_pos] - 1) - 1) / stride[i] + 1;
+  return (input_shape[shape_pos] + 2 * padding[i] - dilation[i_dilation] * (weight_shape[shape_pos] - 1) - 1) /
+           stride[i_stride] +
+         1;
 }
 
 inline void IndicesCheckPositiveVectorConvStr(const string &arg_name, const ArrayValue<int64_t> &array,
@@ -171,6 +207,8 @@ ShapeArray ConvolutionStrFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                    weight_shape[kIndex0]);
         }
       }
+
+      CheckConvStrRestrictions(padding_enum, input_shape, weight_shape, stride, dilation);
     }
 
     for (int i = 2; i < nd_output_shape_len; i++) {
