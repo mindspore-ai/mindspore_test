@@ -1146,7 +1146,7 @@ FuncGraphPtr ConvertToFuncGraph(const py::object &obj, const ValuePtrList &args_
   return func_graph;
 }
 
-ValuePtr GetArgDefaultValue(const std::string &prim_name, const std::string &arg_name) {
+py::object GetPrimDefaultDict(const std::string &prim_name) {
   py::module mod = py::module::import(PYTHON_MOD_PRIMITIVE_OP_CREATE_INSTANCE_HELPER_MODULE);
   if (!py::hasattr(mod, PYTHON_MOD_PRIMITIVE_OP_DEFAULT_VALUE_DICT)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Can not found " << PYTHON_MOD_PRIMITIVE_OP_DEFAULT_VALUE_DICT << "in "
@@ -1154,13 +1154,18 @@ ValuePtr GetArgDefaultValue(const std::string &prim_name, const std::string &arg
   }
   py::dict op_default_dict = mod.attr(PYTHON_MOD_PRIMITIVE_OP_DEFAULT_VALUE_DICT);
   if (!op_default_dict.contains(py::str(prim_name))) {
+    return py::none();
+  }
+  return op_default_dict[py::str(prim_name)];
+}
+
+ValuePtr GetArgDefaultValue(const std::string &prim_name, const std::string &arg_name) {
+  auto prim_default_dict = GetPrimDefaultDict(prim_name);
+  if (py::isinstance<py::none>(prim_default_dict)) {
     return nullptr;
   }
-  py::dict prim_default_dict = op_default_dict[py::str(prim_name)];
-  if (!prim_default_dict.contains(py::str(arg_name))) {
-    return nullptr;
-  }
-  auto default_value = prim_default_dict[py::str(arg_name)];
+  auto py_dict = prim_default_dict.cast<py::dict>();
+  auto default_value = py_dict[py::str(arg_name)];
   ValuePtr converted_ret = nullptr;
   bool converted = ConvertData(default_value, &converted_ret);
   if (!converted) {

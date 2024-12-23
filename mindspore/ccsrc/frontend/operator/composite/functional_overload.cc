@@ -222,6 +222,20 @@ bool CheckKwargs(const std::string &prim_name, const std::map<std::string, ops::
   return true;
 }
 
+size_t GetPrimDefaultSize(const std::vector<ops::OpInputArg> &op_args, const std::string &prim_name,
+                          size_t varargs_index) {
+  auto default_dict = parse::GetPrimDefaultDict(prim_name);
+  bool has_default = !py::isinstance<py::none>(default_dict);
+  // The default value of vararg is ().
+  bool vararg_non_default = varargs_index != SIZE_MAX &&
+                            ((has_default && !default_dict.contains(op_args[varargs_index].arg_name_)) || !has_default);
+  size_t varargs_count = vararg_non_default ? 1 : 0;
+  if (!has_default) {
+    return varargs_count;
+  }
+  return varargs_count + default_dict.cast<py::dict>().size();
+}
+
 bool CheckPositionArgs(const std::string &prim_name, const std::vector<ops::OP_DTYPE> &position_args_dtype,
                        bool is_method, bool *need_pack) {
   size_t check_position_size = position_args_dtype.size();
@@ -271,14 +285,20 @@ bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &p
                 << ". The number of position args is " << position_args_dtype.size() << " and that of keyword args is "
                 << keyword_args_dtype.size() << ".";
   // If no varargs , check args size
-  if (GetVarargsIndex(prim_name, is_method) == SIZE_MAX &&
-      (position_args_dtype.size() + keyword_args_dtype.size() > op_args.size())) {
+  auto inputs_size = position_args_dtype.size() + keyword_args_dtype.size();
+  size_t varargs_index = GetVarargsIndex(prim_name, is_method);
+  if (varargs_index == SIZE_MAX && inputs_size > op_args.size()) {
     return false;
   }
   if (!CheckKwargs(prim_name, keyword_args_dtype, position_args_dtype)) {
     return false;
   }
   if (!CheckPositionArgs(prim_name, position_args_dtype, is_method, need_pack)) {
+    return false;
+  }
+  // Check the number of arguments.
+  auto least_size = op_args.size() - GetPrimDefaultSize(op_args, prim_name, varargs_index);
+  if (inputs_size < least_size) {
     return false;
   }
   return true;
