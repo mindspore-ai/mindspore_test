@@ -156,6 +156,9 @@ class BACKEND_EXPORT CollectiveManager {
   // Wait specified group's communicator to be initialized.
   bool WaitCommInitDone(const std::string &group_name);
 
+  // Set device id by DeviceManagerConf::set_device.
+  void SetDeviceIDEnvByRuntimeConf();
+
  private:
   CollectiveManager();
 

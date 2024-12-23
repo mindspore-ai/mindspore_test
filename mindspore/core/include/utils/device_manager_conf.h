@@ -32,14 +32,14 @@ class MS_CORE_API DeviceManagerConf {
   DeviceManagerConf &operator=(const DeviceManagerConf &) = delete;
   static std::shared_ptr<DeviceManagerConf> GetInstance();
 
-  void set_device(const std::string &device_target, uint32_t device_id, bool default_device_id) {
+  void set_device(const std::string &device_target, uint32_t device_id, bool is_default_device_id) {
     device_target_ = device_target;
     device_id_ = device_id;
-    default_device_id_ = default_device_id;
+    is_default_device_id_ = is_default_device_id;
   }
   const std::string &device_target() { return device_target_; }
   const uint32_t &device_id() { return device_id_; }
-  bool default_device_id() { return default_device_id_; }
+  bool is_default_device_id() { return is_default_device_id_; }
   bool IsDeviceEnable() { return !device_target_.empty(); }
 
   void set_deterministic(bool deterministic) {
@@ -54,7 +54,7 @@ class MS_CORE_API DeviceManagerConf {
 
   std::string device_target_{""};
   uint32_t device_id_{0};
-  bool default_device_id_{false};
+  bool is_default_device_id_{true};
 
   std::string deterministic_{"OFF"};
 

@@ -26,6 +26,8 @@ from mindspore.dataset.vision import Inter
 from mindspore.train import Model, LossMonitor, Accuracy
 from mindspore.common.initializer import TruncatedNormal
 from mindspore.communication import init, get_rank, get_group_size
+import mindspore.communication.comm_func as comm_func
+from mindspore.mint.distributed.distributed import barrier
 
 parser = argparse.ArgumentParser(description='test_ps_lenet')
 parser.add_argument("--device_target", type=str, default="GPU")
@@ -122,6 +124,9 @@ def create_dataset(data_path, batch_size=32, repeat_size=1,
 
 if __name__ == "__main__":
     init()
+    # Run Barrier in pynative mode.
+    comm_func.barrier()
+    barrier()
     context.set_auto_parallel_context(parallel_mode="data_parallel", gradients_mean=True, device_num=get_group_size())
     network = LeNet5(10)
     net_loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
