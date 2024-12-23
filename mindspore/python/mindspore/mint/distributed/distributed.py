@@ -1584,15 +1584,24 @@ def send(tensor, dst=0, group=None, tag=0):
             This example should be run with 2 devices.
 
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import send
+        >>> from mindspore.mint.distributed import send, recv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
-        >>> init_process_group()
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
         # Launch 2 processes.
-        Process 0 send the array to Process 1
-        >>> send(input_, 1)
+        >>> init_process_group()
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     send(input_, 1)
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     out = recv(x, src=0)
+        >>>     print(x)
+        rank 1:
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For send, the input tensor must be tensor")
@@ -1654,19 +1663,22 @@ def recv(tensor, src=0, group=None, tag=0):
             This example should be run with 2 devices.
 
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import recv
+        >>> from mindspore.mint.distributed import send, recv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
         # Launch 2 processes.
-        Process 0 send the following array to Process 1
-        [[1. 1. 1. 1. 1. 1. 1. 1.]
-         [1. 1. 1. 1. 1. 1. 1. 1.]]
         >>> init_process_group()
-        >>> x = Tensor(np.zeros([2, 8]).astype(np.float32))
-        # Process 1 receive tensor from Process 0.
-        >>> out = recv(x, src=0)
-        >>> print(x)
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     send(input_, 1)
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     out = recv(x, src=0)
+        >>>     print(x)
+        rank 1:
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
@@ -1726,16 +1738,26 @@ def isend(tensor, dst=0, group=None, tag=0):
             This example should be run with 2 devices.
 
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import isend
+        >>> from mindspore.mint.distributed import isend, irecv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
-        >>> init_process_group()
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
         # Launch 2 processes.
-        Process 0 send the array to Process 1
-        >>> handle = isend(input_, 1)
-        >>> handle.wait()
+        >>> init_process_group()
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     handle = isend(input_, 1)
+        >>>     handle.wait()
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     handle = irecv(x, src=0)
+        >>>     handle.wait()
+        >>>     print(x)
+        rank 1:
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For isend, the input tensor must be tensor")
@@ -1798,20 +1820,24 @@ def irecv(tensor, src=0, group=None, tag=0):
             This example should be run with 2 devices.
 
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import irecv
+        >>> from mindspore.mint.distributed import isend, irecv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
         # Launch 2 processes.
-        Process 0 send the following array to Process 1
-        [[1. 1. 1. 1. 1. 1. 1. 1.]
-         [1. 1. 1. 1. 1. 1. 1. 1.]]
         >>> init_process_group()
-        >>> x = Tensor(np.zeros([2, 8]).astype(np.float32))
-        # Process 1 receive tensor from Process 0.
-        >>> handle = irecv(x, src=0)
-        >>> handle.wait()
-        >>> print(x)
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     handle = isend(input_, 1)
+        >>>     handle.wait()
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     handle = irecv(x, src=0)
+        >>>     handle.wait()
+        >>>     print(x)
+        rank 1:
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
