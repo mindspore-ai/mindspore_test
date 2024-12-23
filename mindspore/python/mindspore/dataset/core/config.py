@@ -1157,6 +1157,7 @@ def set_multiprocessing_start_method(start_method='fork'):
     check_valid_str(start_method, ["fork", "spawn"], "start_method")
     _config.set_multiprocessing_start_method(start_method)
 
+
 def get_multiprocessing_start_method():
     """
     Get the global configuration of multiprocessing start method.

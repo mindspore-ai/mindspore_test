@@ -3224,6 +3224,7 @@ class WorkerTarget:
     def __call__(self):
         return _worker_loop(self.operations, self.pipe, self.worker_id)
 
+
 class _MPWorker(multiprocessing.Process):
     """
     Worker process for multiprocessing.
