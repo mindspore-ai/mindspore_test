@@ -7268,6 +7268,107 @@ def gather_ext(input, dim, index):
     return gather_d_op(input, dim, index)
 
 
+def max_ext(input, dim=None, keepdim=False):
+    """
+    Calculates the maximum value along with the given dimension for the input tensor.
+
+    Args:
+        input (Tensor): The input tensor, can be any dimension. Complex tensor is not supported for now.
+        dim (int, optional): The dimension to reduce. Default: ``None`` .
+        keepdim (bool, optional): Whether to reduce dimension, if true, the output will keep same dimension
+            with the input, the output will reduce dimension if false. Default: ``False`` .
+
+    Returns:
+        Tensor if `dim` is the default value ``None`` , the maximum value of input tensor, with the shape :math:`()` ,
+        and same dtype as `input`.
+
+        tuple (Tensor) if `dim` is not the default value ``None`` , tuple of 2 tensors, containing the maximum
+        value of the input tensor along the given dimension `dim` and the corresponding index.
+
+        - **values (Tensor)** - The maximum value of input tensor along the given dimension `dim`, with same dtype as
+          `input`. If `keepdim` is ``True`` , the shape of output tensors is :math:`(input_1, input_2, ...,
+          input_{axis-1}, 1, input_{axis+1}, ..., input_N)` . Otherwise, the shape is :math:`(input_1, input_2, ...,
+          input_{axis-1}, input_{axis+1}, ..., input_N)` .
+        - **index (Tensor)** - The index for the maximum value of the input tensor along the given dimension `dim`, with
+          the same shape as `values`.
+
+    Raises:
+        ValueError: If `dim` is the default value ``None`` and `keepdim` is not ``False`` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> from mindspore.ops.function.array_func import max_ext
+        >>> y = Tensor(np.array([[0.0, 0.3, 0.4, 0.5, 0.1],
+        ...                      [3.2, 0.4, 0.1, 2.9, 4.0]]), mindspore.float32)
+        >>> output, index = max_ext(y, 0, True)
+        >>> print(output, index)
+        [[3.2 0.4 0.4 2.9 4. ]] [[1 1 0 1 1]]
+    """
+    if dim is None:
+        if keepdim is not False:
+            raise ValueError(
+                f"For 'max', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
+        return max_(input)
+    argmax_with_value_op = _get_cache_prim(ArgMaxWithValue)(dim, keepdim)
+    indices, values = argmax_with_value_op(input)
+    return values, indices
+
+
+def min_ext(input, dim=None, keepdim=False):
+    """
+    Calculates the minimum value along with the given dimension for the input tensor.
+
+    Args:
+        input (Tensor): The input tensor, can be any dimension. Complex tensor is not supported for now.
+        dim (int, optional): The dimension to reduce. Default: ``None`` .
+        keepdim (bool, optional): Whether to reduce dimension, if true, the output will keep same dimension
+            with the input, the output will reduce dimension if false. Default: ``False`` .
+
+    Returns:
+        Tensor if `dim` is the default value ``None`` , the minimum value of input tensor, with the shape :math:`()` ,
+        and same dtype as `input`.
+
+        tuple (Tensor) if `dim` is not the default value ``None`` , tuple of 2 tensors, containing the minimum value
+        of the input tensor along the given dimension `dim` and the corresponding index.
+
+        - **values (Tensor)** - The minimum value of input tensor along the given dimension `dim`, with same dtype as
+          `input`. If `keepdim` is ``True`` , the shape of output tensors is :math:`(input_1, input_2, ...,
+          input_{axis-1}, 1, input_{axis+1}, ..., input_N)` . Otherwise, the shape is :math:`(input_1, input_2, ...,
+          input_{axis-1}, input_{axis+1}, ..., input_N)` .
+        - **index (Tensor)** - The index for the minimum value of the input tensor along the given dimension `dim`,
+          with the same shape as `values`.
+
+    Raises:
+        ValueError: If `dim` is the default value ``None`` and `keepdim` is not ``False`` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> from mindspore.ops.function.array_func import min_ext
+        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+        >>> output, index = min_ext(x, 0, keepdim=True)
+        >>> print(output, index)
+        [0.0] [0]
+    """
+    if dim is None:
+        if keepdim is not False:
+            raise ValueError(
+                f"For 'min', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
+        return min_(input)
+    argmin_with_value_op = _get_cache_prim(ArgMinWithValue)(dim, keepdim)
+    indices, values = argmin_with_value_op(input)
+    return values, indices
+
+
 def one_hot_ext(tensor, num_classes):
     r"""
     Computes a one-hot tensor.
