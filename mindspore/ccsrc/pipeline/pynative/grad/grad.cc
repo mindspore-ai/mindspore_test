@@ -452,15 +452,29 @@ FrontendOpRunInfoPtr CustomContext2OpRunInfo(const autograd::CustomContext &cont
   return op_run_info;
 }
 
+ValuePtr GetLastGradTensor(ValuePtr grad) {
+  if (grad == nullptr) {
+    return nullptr;
+  }
+  if (grad->isa<tensor::BaseTensor>()) {
+    return grad;
+  }
+  ValueTuplePtr grads_tuple = grad->cast<ValueTuplePtr>();
+  if (grads_tuple == nullptr || grads_tuple->size() == 0) {
+    return nullptr;
+  }
+  return GetLastGradTensor((*grads_tuple)[0]);
+}
+
 void InsertCheckForLastGrad(ValuePtr grads) {
   auto checker = silentcheck::SilentCheckerBase::GetInstance();
   if (checker == nullptr || !checker->NeedInsertCheckForLastGrad()) {
     return;
   }
-  ValueTuplePtr grads_tuple = grads->cast<ValueTuplePtr>();
-  if (grads_tuple != nullptr && grads_tuple->size() > 0) {
+  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "grads=" << grads->ToString();
+  auto last_grad = GetLastGradTensor(grads);
+  if (last_grad != nullptr) {
     MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for last gradient";
-    auto last_grad = (*grads_tuple)[0];
     kernel::pyboost::PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([checker, last_grad]() {
       auto dout = mindspore::runtime::ValueConverter::ToTensor(last_grad);
       const char kNameLastGradOp[] = "last_gradient";
