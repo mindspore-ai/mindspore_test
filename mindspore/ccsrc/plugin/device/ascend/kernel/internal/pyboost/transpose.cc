@@ -22,14 +22,19 @@
 namespace mindspore {
 namespace kernel {
 acme::AcmeOpPtr AcmeKernelInfoTranspose::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                      const acme::OutputsImmutableInfoList &outputs,
-                                                      const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                      const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+                                                      const acme::OutputsImmutableInfoList &outputs) {
   acme::TransposeParam param;
-  // param.axes = ms_inputs[1]->GetValueWithCheck<std::vector<int64_t>>();
+  // param.axes = axis_;
   return acme::CreateTransposeOp(inputs, outputs, param, acme::kAcmeTransposeOpName);
 }
 
+void AcmeKernelInfoTranspose::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  const auto &input_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
+  // axis_ = GetValueWithCheck<std::vector<int64_t>>(input_values[kIndex1]);
+  const std::vector<BaseTensorPtr> inputs = {input_tensor};
+  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
+  CallAcmeOp(op, inputs, op_key);
+}
 MS_ACME_KERNEL_INFO_FACTORY_REG(Transpose, acme::kAcmeTransposeOpName, AcmeKernelInfoTranspose);
 }  // namespace kernel
 }  // namespace mindspore

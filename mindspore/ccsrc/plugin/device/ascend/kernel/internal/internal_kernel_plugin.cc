@@ -290,42 +290,19 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   }
 }
 
-void InternalKernelPlugin::AcmeAscendCall(const OpRunnerPtr &op, const std::vector<BaseTensorPtr> &inputs,
-                    const std::vector<void *> &params) {
+void InternalKernelPlugin::AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op,
+                                          const ValuePtrList input_values) {
   std::shared_ptr<AcmeKernelInfo> kernel_info = nullptr;
   const std::string kernelname = op->primitive()->name();
-  std::vector<BaseTensorPtr> ms_inputs;
-  ms_inputs.reserve(inputs.size() + params.size());
-  ms_inputs.insert(ms_inputs.end(), inputs.begin(), inputs.end());
-  // TODO: parameters are scalars, not BaseTensor
-  // ms_inputs.insert(ms_inputs.end(), params.begin(), params.end());
-
-  static std::unordered_map<uint64_t, std::shared_ptr<AcmeKernelInfo>> hash_map_;
-  // TODO: only gather hash for input types and params
-  auto op_key = CalcAcmeOpApiHash(kernelname, inputs);
-  auto it = hash_map_.find(op_key);
-  if (it != hash_map_.end()) {
-    kernel_info = it->second;
-  } else {
-    if (Factory<AcmeKernelInfo>::Instance().IsRegistered(kernelname)) {
-      MS_LOG(INFO) << "Supported by Acme Op: " << kernelname;
-      kernel_info = std::static_pointer_cast<AcmeKernelInfo>(Factory<AcmeKernelInfo>::Instance().Create(kernelname));
-    }
-    if (kernel_info == nullptr) {
-      MS_LOG(WARNING) << "Acme can't find op[" << kernelname << "]";
-      return;
-    }
-    auto ret = kernel_info->Init(ms_inputs, op->outputs());
-    if (!ret) {
-      return;
-    }
-    hash_map_[op_key] = kernel_info;
+  if (Factory<AcmeKernelInfo>::Instance().IsRegistered(kernelname)) {
+    MS_LOG(INFO) << "Supported by Acme Op: " << kernelname;
+    kernel_info = std::static_pointer_cast<AcmeKernelInfo>(Factory<AcmeKernelInfo>::Instance().Create(kernelname));
   }
-  auto tiling_info = kernel_info->GetOrGenerateTiling(ms_inputs, op->outputs());
-  if (tiling_info == nullptr) {
+  if (kernel_info == nullptr) {
+    MS_LOG(WARNING) << "Acme can't find op[" << kernelname << "]";
     return;
   }
-  kernel_info->Call(op, ms_inputs, tiling_info);
+  kernel_info->Call(op, input_values);
 }
 
 MS_KERNEL_PLUGIN_FACTORY_REG(InternalKernelPlugin, InternalKernelPlugin);

@@ -23,17 +23,24 @@
 namespace mindspore {
 namespace kernel {
 acme::AcmeOpPtr AcmeKernelInfoApplyRotaryPosEmb::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                              const acme::OutputsImmutableInfoList &outputs,
-                                                              const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                              const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+                                                              const acme::OutputsImmutableInfoList &outputs) {
   acme::ApplyRotaryPosEmbParam param;
-//  auto last_input = ms_inputs.at(kIndex5);
-//  if (last_input->dtype_id() == TypeId::kNumberTypeInt64) {
-//    param.cos_format = static_cast<int32_t>(last_input->GetValue<int64_t>().value());
-//  } else {
-//    MS_LOG(EXCEPTION) << "ApplyRotaryPosEmb input[5] dtype is not kNumberTypeInt64";
-//  }
+  param.cos_format = cos_format_;
   return acme::CreateApplyRotaryPosEmbOp(inputs, outputs, param, acme::kAcmeApplyRotaryPosEmbOpName);
+}
+
+void AcmeKernelInfoApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  const auto &query_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
+  const auto &key_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
+  const auto &cos_tensor = input_values[kIndex2]->cast<BaseTensorPtr>();
+  const auto &sin_tensor = input_values[kIndex3]->cast<BaseTensorPtr>();
+  const auto &position_ids_tensor = input_values[kIndex4]->cast<BaseTensorPtr>();
+  auto cos_format_imm = GetValueWithCheck<int64_t>(input_values[kIndex5]);
+  cos_format_ = static_cast<int32_t>(cos_format_imm);
+  
+  const std::vector<BaseTensorPtr> inputs = {query_tensor, key_tensor, cos_tensor, sin_tensor, position_ids_tensor};
+  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, cos_format_);
+  CallAcmeOp(op, inputs, op_key);
 }
 MS_ACME_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, acme::kAcmeApplyRotaryPosEmbOpName, AcmeKernelInfoApplyRotaryPosEmb);
 }  // namespace kernel

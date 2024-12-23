@@ -22,10 +22,20 @@
 namespace mindspore {
 namespace kernel {
 acme::AcmeOpPtr AcmeKernelInfoReshapeAndCache::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                            const acme::OutputsImmutableInfoList &outputs,
-                                                            const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                            const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+                                                            const acme::OutputsImmutableInfoList &outputs) {
   return acme::CreateReshapeAndCacheOp(inputs, outputs, acme::kAcmeReshapeAndCacheOpName);
+}
+
+void AcmeKernelInfoReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  const auto &key_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
+  const auto &value_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
+  const auto &key_cache_tensor = input_values[kIndex2]->cast<BaseTensorPtr>();
+  const auto &value_cache_tensor = input_values[kIndex3]->cast<BaseTensorPtr>();
+  const auto &slot_mapping_tensor = input_values[kIndex4]->cast<BaseTensorPtr>();
+
+  const std::vector<BaseTensorPtr> inputs = {key_tensor, value_tensor, key_cache_tensor, value_cache_tensor, slot_mapping_tensor};
+  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
+  CallAcmeOp(op, inputs, op_key);
 }
 MS_ACME_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, acme::kAcmeReshapeAndCacheOpName, AcmeKernelInfoReshapeAndCache);
 }  // namespace kernel

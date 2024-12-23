@@ -28,12 +28,12 @@ class AcmeKernelInfoReshapeAndCache : public AcmeKernelInfo {
  public:
   AcmeKernelInfoReshapeAndCache() : AcmeKernelInfo(std::move("ReshapeAndCache")) {}
   ~AcmeKernelInfoReshapeAndCache() = default;
+  
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                               const acme::OutputsImmutableInfoList &outputs,
-                               const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                               const std::vector<tensor::BaseTensorPtr> &ms_outputs) override;
+                               const acme::OutputsImmutableInfoList &outputs) override;
 };
 }  // namespace kernel
 }  // namespace mindspore

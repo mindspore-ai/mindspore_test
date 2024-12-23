@@ -28,12 +28,15 @@ class AcmeKernelInfoTranspose : public AcmeKernelInfo {
  public:
   AcmeKernelInfoTranspose() : AcmeKernelInfo(std::move("Transpose")) {}
   ~AcmeKernelInfoTranspose() = default;
+  
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                               const acme::OutputsImmutableInfoList &outputs,
-                               const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                               const std::vector<tensor::BaseTensorPtr> &ms_outputs) override;
+                               const acme::OutputsImmutableInfoList &outputs) override;
+ 
+ private:
+  std::vector<int> axis_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

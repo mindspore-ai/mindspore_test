@@ -22,10 +22,15 @@
 namespace mindspore {
 namespace kernel {
 acme::AcmeOpPtr AcmeKernelInfoFastGeLU::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                     const acme::OutputsImmutableInfoList &outputs,
-                                                     const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                     const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+                                                     const acme::OutputsImmutableInfoList &outputs) {
   return acme::CreateFastGeLUOp(inputs, outputs, acme::kAcmeFastGeLUOpName);
+}
+
+void AcmeKernelInfoFastGeLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  const auto &x_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
+  const std::vector<BaseTensorPtr> inputs = {x_tensor};
+  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
+  CallAcmeOp(op, inputs, op_key);
 }
 MS_ACME_KERNEL_INFO_FACTORY_REG(FastGeLU, acme::kAcmeFastGeLUOpName, AcmeKernelInfoFastGeLU);
 }  // namespace kernel
