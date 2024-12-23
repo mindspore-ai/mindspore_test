@@ -43,6 +43,8 @@ constexpr size_t kMapTensorKeyIndex = 0;
 constexpr size_t kMapTensorValueIndex = 1;
 constexpr size_t kMapTensorStatusIndex = 2;
 }  // namespace
+mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
+
 std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(device_context);
