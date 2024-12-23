@@ -417,10 +417,9 @@ def test_list_comp_11():
     logits2 = Tensor([0.4, 0.6, 0.])
     logits3 = Tensor([0.33, 0.24, 0.43])
     labels = [Tensor([0., 1., 0.])]
-    o1 = net(logits1, logits2, logits3, labels=labels)
 
-    net.construct = jit(net.construct, mode='PIJit', jit_config=jit_cfg)
-    o2 = net(logits1, logits2, logits3, labels=labels)
+    o1 = net.construct(logits1, logits2, logits3, labels=labels)
+    o2 = jit(net.construct, mode='PIJit', jit_config=jit_cfg)(logits1, logits2, logits3, labels=labels)
 
     assert_equal(o1, o2)
     assert_no_graph_break(net.construct)
@@ -451,10 +450,9 @@ def test_list_comp_12():
 
     net = Net(layers=3, dim=4)
     x = F.randn(2, 4)
-    o1 = net(x)
 
-    net.construct = jit(net.construct, mode='PIJit', jit_config=jit_cfg)
-    o2 = net(x)
+    o1 = net.construct(x)
+    o2 = jit(net.construct, mode='PIJit', jit_config=jit_cfg)(x)
 
     assert_equal(o1, o2)
     assert_no_graph_break(net.construct)
@@ -482,10 +480,9 @@ def test_list_comp_13():
 
     net = Net(4)
     x = {'a': F.arange(0, 8), 'b': F.arange(0, 16), 'c': F.arange(11, 21)}
-    o1 = net(x)
 
-    net.construct = jit(net.construct, mode='PIJit', jit_config=jit_cfg)
-    o2 = net(x)
+    o1 = net.construct(x)
+    o2 = jit(net.construct, mode='PIJit', jit_config=jit_cfg)(x)
 
     assert_equal(o1, o2)
     assert_no_graph_break(net.construct)

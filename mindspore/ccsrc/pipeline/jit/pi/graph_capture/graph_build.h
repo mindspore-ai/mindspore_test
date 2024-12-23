@@ -196,6 +196,7 @@ class GraphBuilder {
 
   // build abstract instance of python class
   virtual ValueNode *HandleCallClass(CallNode *call_node);
+  bool HandleCallTensorClass(CallNode *call_node);
 
   // return false if has unsupported bytecode
   bool DoByteCode(const Instr &instr);
@@ -259,11 +260,13 @@ class GraphBuilder {
   bool DoUnpack(const Instr &instr);
   bool DoBuildWithUnpack(const Instr &instr);
   bool DoBuildMapWithUnpack(const Instr &instr);
+  ValueNode *GetBoundSelf(CallNode *call_node);
   bool DoCall(const Instr &instr);
   bool DoNop(const Instr &instr);
   bool DoReturn(const Instr &instr);
   bool DoLocalAccess(const Instr &instr);
   bool DoCellAccess(const Instr &instr);
+  virtual void DoLoadGlobal(const Instr &instr);
   bool DoGlobalAccess(const Instr &instr);
   bool DoAttrAccess(const Instr &instr);
   virtual ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr);
@@ -330,7 +333,7 @@ class GraphBuilder {
 
   bool IsTopGraph() const { return this == root_; }
 
-  ValueNode *GetCallFunctionNode(ValueNode *node, PyObject *dst_dtype);
+  ValueNode *MakePrimCastNode(ValueNode *node, const py::handle &dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
   bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
@@ -367,6 +370,7 @@ class MindGraphBuilder : public GraphBuilder {
   bool DoCompare(const Instr &instr) override;
   bool DoBuildOp(const Instr &instr) override;
   bool DoLoadConst(const Instr &instr) override;
+  void DoLoadGlobal(const Instr &instr) override;
 
   ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr) override;
   bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;

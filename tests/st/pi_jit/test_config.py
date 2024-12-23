@@ -17,9 +17,8 @@ from mindspore import Tensor, jit
 from .share.utils import assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_config_disable_pijit(func, ms_func, a):
+def test_config_disable_pijit():
     """
     Feature: Jit config
     Description: Jit config
@@ -31,6 +30,6 @@ def test_config_disable_pijit(func, ms_func, a):
 
     for i in range(10):
         a = Tensor([i])
-        b = func(a, a)
+        func(a, a)
 
-    assert_executed_by_graph_mode(func, 2)
+    assert_executed_by_graph_mode(func, call_count=2)
