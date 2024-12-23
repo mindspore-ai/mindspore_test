@@ -24,6 +24,7 @@
 #include <future>
 #include <memory>
 #include "utils/ms_context.h"
+#include "utils/device_manager_conf.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "distributed/persistent/storage/json_utils.h"
@@ -625,6 +626,9 @@ bool CollectiveManager::AssignLocalRank() {
   uint32_t local_group_size = 0;
   RETURN_IF_FALSE_WITH_LOG(GetLocalGroupRankAndSize(world_ranks, &local_rank_id_, &local_group_size),
                            "GetLocalGroupRankAndSize for world group failed.");
+
+  // Need to reset local_rank_id_(device id) if it's set by user.
+  SetDeviceIDEnvByRuntimeConf();
   host_comm_lib_instance_->SetLocalGroupRank(host_comm_lib_instance_->global_group_name(), local_rank_id_);
   host_comm_lib_instance_->SetLocalGroupSize(host_comm_lib_instance_->global_group_name(), local_group_size);
   local_rank_size_ = local_group_size;
@@ -844,15 +848,15 @@ bool CollectiveManager::WaitCommInitDone(const std::string &group_name) {
   }
   lock.unlock();
 
+  MS_LOG(DEBUG) << "Start waiting for communciator of " << group_name << " to be done...";
   std::unique_lock<std::mutex> result_lock(init_result_mutex_);
-  MS_LOG(INFO) << "Start waiting for communciator of " << group_name << " to be done...";
   // This will always unblock because there's timeout window for every device communicator.
   result_blocker_.wait(result_lock, [&]() { return group_name_to_result_.count(group_name) != 0; });
   if (!group_name_to_result_[group_name].first) {
     MS_LOG(EXCEPTION) << "Communicator of group " << group_name
                       << " inited: failed. Result: " << group_name_to_result_[group_name].second;
   }
-  MS_LOG(INFO) << "Communicator of group " << group_name << " inited: success.";
+  MS_LOG(DEBUG) << "Communicator of group " << group_name << " inited: success.";
 
   return true;
 }
@@ -913,16 +917,17 @@ void CollectiveManager::RunInitCommTasks() {
 
     std::string group_name = task_element.first;
     int32_t buffsize = task_element.second;
-    std::unique_lock<std::mutex> result_lock(init_result_mutex_);
     try {
       MS_LOG(INFO) << "Create device communicator in thread for group: " << group_name;
       if (!CreateDeviceCommunicator(group_name, buffsize)) {
         MS_LOG(EXCEPTION) << "Failed to init communicator asynchronizely for group " << group_name
                           << ". Please check ERROR log.";
       }
+      std::unique_lock<std::mutex> result_lock(init_result_mutex_);
       group_name_to_result_[group_name] = std::make_pair(true, "");
       result_blocker_.notify_one();
     } catch (std::exception &e) {
+      std::unique_lock<std::mutex> result_lock(init_result_mutex_);
       std::string err_info = "Init communicator for group " + group_name + " exception info: " + e.what();
       group_name_to_result_[group_name] = std::make_pair(false, err_info);
       result_blocker_.notify_one();
@@ -931,6 +936,15 @@ void CollectiveManager::RunInitCommTasks() {
       stop_init_comm_ = true;
       continue;
     }
+  }
+}
+
+void CollectiveManager::SetDeviceIDEnvByRuntimeConf() {
+  if (!DeviceManagerConf::GetInstance()->is_default_device_id()) {
+    uint32_t device_id = DeviceManagerConf::GetInstance()->device_id();
+    MS_LOG(INFO) << "Runtime config device id is set by mindspore.set_device to " << device_id;
+    local_rank_id_ = device_id;
+    common::SetEnv("DEVICE_ID", std::to_string(device_id).c_str());
   }
 }
 }  // namespace collective

@@ -53,10 +53,10 @@ def set_device(device_target, device_id=None):
         logger.info("Reset device target to CPU when set_device.")
         device_target = "CPU"
 
-    is_config = True
+    is_default = False
     if device_id is None:
         device_id = 0
-        is_config = False
+        is_default = True
     if device_id < 0:
         raise ValueError("The device id must bigger than or equal to 0.")
 
@@ -71,7 +71,7 @@ def set_device(device_target, device_id=None):
     if device_context is not None and device_context.initialized():
         raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
                            "Suggest setting it as early as possible.")
-    DeviceManagerConf.get_instance().set_device(device_target, device_id, is_config)
+    DeviceManagerConf.get_instance().set_device(device_target, device_id, is_default)
 
 @args_type_check(deterministic=bool)
 def set_deterministic(deterministic):
