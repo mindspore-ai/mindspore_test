@@ -115,7 +115,9 @@ void HSVToRGBCpuKernelMod::ConvertOnePixel(T1 h, T1 s, T1 v, T1 *r, T1 *g, T1 *b
 template <typename T1>
 void HSVToRGBCpuKernelMod::ComputeFloat(void *input, void *output, int64_t pixel_num) const {
   T1 *input_ptr = reinterpret_cast<T1 *>(input);
+  MS_EXCEPTION_IF_NULL(input_ptr);
   T1 *output_ptr = reinterpret_cast<T1 *>(output);
+  MS_EXCEPTION_IF_NULL(output_ptr);
   auto shard_hsv_to_rgb = [&input_ptr, &output_ptr, this](size_t start, size_t end) {
     constexpr size_t pixel_stride = 3;
     constexpr size_t first_value = 0;
@@ -136,7 +138,9 @@ void HSVToRGBCpuKernelMod::ComputeFloat(void *input, void *output, int64_t pixel
 
 void HSVToRGBCpuKernelMod::ComputeHalf(void *input, void *output, int64_t pixel_num) const {
   float16 *input_ptr = reinterpret_cast<float16 *>(input);
+  MS_EXCEPTION_IF_NULL(input_ptr);
   float16 *output_ptr = reinterpret_cast<float16 *>(output);
+  MS_EXCEPTION_IF_NULL(output_ptr);
   auto shard_hsv_to_rgb = [&input_ptr, &output_ptr, this](size_t start, size_t end) {
     constexpr size_t pixel_stride = 3;
     constexpr size_t first_value = 0;

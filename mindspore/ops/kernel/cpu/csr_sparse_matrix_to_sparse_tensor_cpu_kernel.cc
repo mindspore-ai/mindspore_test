@@ -133,16 +133,24 @@ template <typename indiceT, typename valueT>
 void CSRSparseMatrixToSparseTensorCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                              const std::vector<kernel::KernelTensor *> &outputs) {
   indiceT *x_dense_shape_ptr = static_cast<indiceT *>(inputs[kInputIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_dense_shape_ptr);
   indiceT *x_batch_pointers_ptr = static_cast<indiceT *>(inputs[kInputIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_batch_pointers_ptr);
   indiceT *x_row_pointers_ptr = static_cast<indiceT *>(inputs[kInputIndex2]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_row_pointers_ptr);
   indiceT *x_col_indices_ptr = static_cast<indiceT *>(inputs[kInputIndex3]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_col_indices_ptr);
   valueT *x_values_ptr = static_cast<valueT *>(inputs[kInputIndex4]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_values_ptr);
   batch_size_ = (rank_ == kRankWithoutBatch) ? kOne : static_cast<size_t>(x_dense_shape_ptr[kZero]);
   const size_t shift = (rank_ == kRankWithoutBatch) ? kZero : kOne;
   num_rows_ = static_cast<size_t>(*(static_cast<indiceT *>(inputs[kInputIndex0]->device_ptr()) + shift));
   indiceT *indices_ptr = static_cast<indiceT *>(outputs[kOutputIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(indices_ptr);
   valueT *values_ptr = static_cast<valueT *>(outputs[kOutputIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(values_ptr);
   indiceT *dense_shape_ptr = static_cast<indiceT *>(outputs[kOutputIndex2]->device_ptr());
+  MS_EXCEPTION_IF_NULL(dense_shape_ptr);
   for (size_t i = kZero; i < rank_; i++) {
     dense_shape_ptr[i] = x_dense_shape_ptr[i];
   }

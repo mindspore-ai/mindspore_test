@@ -66,8 +66,11 @@ template <typename T, typename S>
 bool GatherCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                       const std::vector<kernel::KernelTensor *> &outputs) {
   const auto *input_tensor = reinterpret_cast<int8_t *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_tensor);
   const auto *indices_data = reinterpret_cast<S *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(indices_data);
   auto *output_addr = reinterpret_cast<int8_t *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   auto axis_v = *(reinterpret_cast<int64_t *>(inputs[kIndex2]->device_ptr()));
 
   int dims = SizeToInt(input_shape_.size());

@@ -89,8 +89,11 @@ template <typename T1, typename T2>
 void LstsqCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   auto input_0_addr = reinterpret_cast<T2 *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_0_addr);
   auto input_1_addr = reinterpret_cast<T2 *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_1_addr);
   auto output_addr = reinterpret_cast<T2 *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   size_t m = static_cast<size_t>(input_0_shape_[0]);
   size_t n = static_cast<size_t>(input_0_shape_[1]);
   size_t k = 0;

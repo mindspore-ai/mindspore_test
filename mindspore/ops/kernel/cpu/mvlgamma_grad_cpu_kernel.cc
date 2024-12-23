@@ -123,7 +123,7 @@ T MvlgammaGradCpuKernelMod::Digamma(const T &input) const {
 template <typename T>
 T MvlgammaGradCpuKernelMod::MvlgammaGradSingle(const T &y_grad, const T &x, const int64_t &p) const {
   T output = 0;
-  const T HALF = static_cast<T>(0.5);
+  const T HALF = static_cast<T>(0.5f);
   for (int64_t i = 0; i < p; i++) {
     output += Digamma(x - HALF * static_cast<T>(i));
   }

@@ -163,8 +163,11 @@ bool SegmentMaxMinCPUKernelMod::LaunchKernel(const std::vector<kernel::KernelTen
   }
   T1 init_value = GetInitValue<T1>();
   auto input_x_data_addr = static_cast<T1 *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_x_data_addr);
   auto segment_ids_data_addr = static_cast<T2 *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(segment_ids_data_addr);
   auto output_data_addr = static_cast<T1 *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_data_addr);
   std::vector<int64_t> segments = CPUKernelUtils::CalcSegmentIds(segment_ids_data_addr, segment_ids_num_);
   for (size_t i = 0; i < output_num_; ++i) {
     output_data_addr[i] = init_value;

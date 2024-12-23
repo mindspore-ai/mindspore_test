@@ -73,6 +73,7 @@ bool PackFwdCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), input_num_, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kPackOutputsNum, kernel_name_);
   auto *output = reinterpret_cast<char *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
   std::vector<char *> inputs_host;
   for (size_t i = 0; i < inputs.size(); i++) {
     (void)inputs_host.emplace_back(reinterpret_cast<char *>(inputs[i]->device_ptr()));

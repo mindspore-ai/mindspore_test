@@ -78,7 +78,9 @@ void UniqueWithPadCpuKernelMod::PadOutput(const std::vector<KernelTensor *> &inp
     return;
   }
   auto pad_num_p = static_cast<T *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(pad_num_p);
   auto *out = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(out);
   for (size_t batch_i = 0; batch_i < batch_size_; batch_i++) {
     T pad_num = *pad_num_p;
     for (size_t i = start[batch_i]; i < input_size_; ++i) {

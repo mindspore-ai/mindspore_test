@@ -109,9 +109,13 @@ bool InplaceIndexAddCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
                                                const std::vector<kernel::KernelTensor *> &,
                                                const std::vector<kernel::KernelTensor *> &outputs) {
   auto *x = static_cast<T *>(inputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x);
   auto *indices = static_cast<int32_t *>(inputs[kIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(indices);
   auto *y = static_cast<T *>(inputs[kIndex2]->device_ptr());
+  MS_EXCEPTION_IF_NULL(y);
   auto *output = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
   CheckParams();
   // check indices's value is valid
   auto axis = LongToSize(axis_);

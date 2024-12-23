@@ -137,11 +137,17 @@ bool ApplyProximalAdagradCpuKernelMod::Launch(const std::vector<kernel::KernelTe
                                               const std::vector<kernel::KernelTensor *> &) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kApplyProximalAdagradInputsNum, kernel_name_);
   auto var = reinterpret_cast<float *>(inputs[kVarIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(var);
   auto accum = reinterpret_cast<float *>(inputs[kAccIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(accum);
   auto lr = reinterpret_cast<float *>(inputs[kLRIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(lr);
   auto l1 = reinterpret_cast<float *>(inputs[kL1Index]->device_ptr());
+  MS_EXCEPTION_IF_NULL(l1);
   auto l2 = reinterpret_cast<float *>(inputs[kL2Index]->device_ptr());
+  MS_EXCEPTION_IF_NULL(l2);
   auto grad = reinterpret_cast<float *>(inputs[kGradIndex]->device_ptr());
+  MS_EXCEPTION_IF_NULL(grad);
 
   auto task = [this, &var, &accum, &lr, &l1, &l2, &grad](size_t start, size_t end) {
     auto cur_input_elements = end - start;
