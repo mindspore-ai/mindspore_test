@@ -129,14 +129,10 @@ def run_llama():
     if args.test_mode == "somas":
         ms.set_context(jit_config={"jit_level": "O0"}, max_device_memory="15.1GB", memory_optimize_level="O1")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
-        # pylint: disable=W0612
-        profiler = ms.Profiler(output_path=f"./{args.test_mode}", profile_memory=True)
         run_llama_1p_somas_grad_accu()
     elif args.test_mode == "no_somas":
         ms.set_context(jit_config={"jit_level": "O0"}, max_device_memory="15.1GB", memory_optimize_level="O0")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
-        # pylint: disable=W0612
-        profiler = ms.Profiler(output_path=f"./{args.test_mode}", profile_memory=True)
         run_llama_1p_no_somas_grad_accu()
 
 run_llama()
