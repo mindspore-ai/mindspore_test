@@ -939,6 +939,17 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     MS_EXCEPTION_IF_NULL(device_tensor);
     UpdateDynamicShapeAndSize(tensor, device_tensor);
     graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
+    if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+      MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
+                    << ", inner index: " << inner_index << ", address: " << device_tensor
+                    << " from graph parameter store.";
+      continue;
+    }
+    if (device_tensor->GetSize() == 0) {
+      MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
+                    << ", inner index: " << inner_index << ", address: " << device_tensor << ".";
+      continue;
+    }
 
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device_tensor->device_name(), device_tensor->device_id()});
@@ -965,6 +976,12 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
     MS_EXCEPTION_IF_NULL(device_tensor);
+    if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+      MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
+                    << ", inner index: " << inner_index << ", address: " << device_tensor
+                    << " from graph parameter store.";
+      continue;
+    }
     if (device_tensor == tensor_address.get()) {
       continue;
     }
@@ -1082,6 +1099,7 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         if (device_tensor != nullptr) {
           const auto &node_with_index = device_tensor->GetNodeIndex();
           tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
+          tensor_address->set_flag(device_tensor->flag());
         }
         device_tensor = tensor_address.get();
       }
