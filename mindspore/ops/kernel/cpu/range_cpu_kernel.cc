@@ -44,16 +44,16 @@ bool RangeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
 template <typename T>
 bool RangeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                      const std::vector<KernelTensor *> &outputs) {
-  auto start = reinterpret_cast<T *>(inputs[0]->device_ptr())[0];
-  auto limit = reinterpret_cast<T *>(inputs[1]->device_ptr())[0];
-  auto delta = reinterpret_cast<T *>(inputs[2]->device_ptr())[0];
+  auto start = GetDeviceAddress<T>(inputs, kIndex0)[kIndex0];
+  auto limit = GetDeviceAddress<T>(inputs, kIndex1)[kIndex0];
+  auto delta = GetDeviceAddress<T>(inputs, kIndex2)[kIndex0];
   if (delta == static_cast<T>(0)) {
     MS_LOG(ERROR) << "For " << kernel_name_ << ", the delta can not be 0.";
     return false;
   }
 
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  size_t output_size = outputs[0]->size() / sizeof(T);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
+  size_t output_size = outputs[kIndex0]->size() / sizeof(T);
   if (Sign(delta) * Sign(limit - start) >= 0) {
     for (int index = 0; index < SizeToInt(output_size); index++) {
       output[index] = delta * index + start;

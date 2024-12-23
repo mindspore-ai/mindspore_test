@@ -128,10 +128,10 @@ static inline T ComputeLerpByNearest(T *data, const std::string &nearest_mode) {
 // data[4] = {top_left, top_right, bottom_left, bottom_right}
 template <typename T>
 static inline T ComputeLerpByBiLinear(T *data, float x_lerp, float y_lerp) {
-  float top_left = static_cast<float>(data[0]);
-  float top_right = static_cast<float>(data[1]);
-  float bottom_left = static_cast<float>(data[2]);
-  float bottom_right = static_cast<float>(data[3]);
+  float top_left = static_cast<float>(data[kIndex0]);
+  float top_right = static_cast<float>(data[kIndex1]);
+  float bottom_left = static_cast<float>(data[kIndex2]);
+  float bottom_right = static_cast<float>(data[kIndex3]);
   float top = top_left + (top_right - top_left) * x_lerp;
   float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
   return static_cast<T>(top + (bottom - top) * y_lerp);
@@ -367,8 +367,8 @@ bool ResizeV2CpuKernelMod::LaunchKernelByLinear(const std::vector<kernel::Kernel
 template <typename T>
 bool ResizeV2CpuKernelMod::LaunchKernelByCubic(const std::vector<kernel::KernelTensor *> &inputs,
                                                const std::vector<kernel::KernelTensor *> &outputs) {
-  T *input_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
 
   std::vector<CachedInterpolationCubic> ys(out_height_ + 1);
   std::vector<CachedInterpolationCubic> xs(out_width_ + 1);

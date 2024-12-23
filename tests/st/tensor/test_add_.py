@@ -50,6 +50,7 @@ def test_inplace_add_std():
     y = generate_random_input((2, 3, 4), np.float32)
     z = generate_random_input((2, 3, 1), np.float32)  # broadcast
 
+    expect_x_grad = np.ones_like(x, dtype=np.float32)
     expect_y_grad = np.ones_like(y, dtype=np.float32)
 
     expect_z = z.repeat(4, axis=2)
@@ -63,9 +64,11 @@ def test_inplace_add_std():
     output_z_grad = inplace_add_backward_func(ms.Tensor(x), ms.Tensor(z))
 
     np.allclose(output_y.asnumpy(), y, rtol=1e-5, equal_nan=True)
+    np.allclose(output_y_grad[0].asnumpy(), expect_x_grad, rtol=1e-5, equal_nan=True)
     np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
 
     np.allclose(output_z.asnumpy(), expect_z, rtol=1e-5, equal_nan=True)
+    np.allclose(output_z_grad[0].asnumpy(), expect_x_grad, rtol=1e-5, equal_nan=True)
     np.allclose(output_z_grad[1].asnumpy(), expect_z_grad, rtol=1e-5, equal_nan=True)
 
 
