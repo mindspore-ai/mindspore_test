@@ -1,7 +1,8 @@
-import unittest
-import tempfile
 import os
 import fcntl
+import tempfile
+import unittest
+from unittest.mock import patch, MagicMock
 
 from mindspore.profiler.analysis.task_manager import TaskManager
 from mindspore.profiler.analysis.work_flow import WorkFlow
@@ -44,6 +45,31 @@ class TestTaskManager(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
+        # 创建 ProfilerLogger mock
+        self.logger_patcher = patch('mindspore.profiler.analysis.task_manager.ProfilerLogger')
+        self.mock_logger = self.logger_patcher.start()
+        # 配置 mock logger 的 get_instance 方法返回值
+        self.mock_logger_instance = MagicMock()
+        self.mock_logger.get_instance.return_value = self.mock_logger_instance
+
+        # 确保所有日志方法都被mock
+        self.mock_logger_instance.info = MagicMock()
+        self.mock_logger_instance.error = MagicMock()
+        self.mock_logger_instance.warning = MagicMock()
+        self.mock_logger_instance.debug = MagicMock()
+
+        # 为 BaseParser 也添加 ProfilerLogger mock
+        self.base_logger_patcher = patch('mindspore.profiler.analysis.parser.base_parser.ProfilerLogger')
+        self.mock_base_logger = self.base_logger_patcher.start()
+        self.mock_base_logger_instance = MagicMock()
+        self.mock_base_logger.get_instance.return_value = self.mock_base_logger_instance
+
+        # 确保 BaseParser 的所有日志方法都被mock
+        self.mock_base_logger_instance.info = MagicMock()
+        self.mock_base_logger_instance.error = MagicMock()
+        self.mock_base_logger_instance.warning = MagicMock()
+        self.mock_base_logger_instance.debug = MagicMock()
+
         self.task_manager = TaskManager()
         # 创建临时文件用于验证Parser执行
         self.temp_file = tempfile.NamedTemporaryFile(delete=False)
@@ -53,6 +79,9 @@ class TestTaskManager(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test environment."""
+        # 停止所有 mock
+        self.logger_patcher.stop()
+        self.base_logger_patcher.stop()
         if os.path.exists(self.output_file):
             os.remove(self.output_file)
 
@@ -116,13 +145,11 @@ class TestTaskManager(unittest.TestCase):
         # 验证执行顺序和错误处理
         with open(self.output_file, 'r') as f:
             output = f.read().strip().split('\n')
-            print(f"output: {output}")
 
         self.assertEqual(len(output), 3)
         self.assertEqual(output[0], "parser1:1")
         self.assertEqual(output[1], "parser2:error")
         self.assertEqual(output[2], "parser3:2")
-
 
     def test_run_should_execute_success_when_multiple_flows(self):
         """Test run method with multiple flows."""

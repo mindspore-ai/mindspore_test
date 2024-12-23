@@ -25,6 +25,7 @@ from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.constant import ProfilerLevel
 from mindspore.profiler.common.ascend_msprof_exporter import AscendMsprofExporter
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class AscendMsprofParser(BaseParser):
@@ -47,7 +48,10 @@ class AscendMsprofParser(BaseParser):
         self._msprof_profile_device_path = self._kwargs.get(
             "msprof_profile_device_path"
         )
+        self._ascend_ms_dir = self._kwargs.get("ascend_ms_dir")
         self._profiler_level = kwargs.get("profiler_level")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
         self.op_summary = None
         self.op_summary_headers = None
         self.msprof_timeline = []
@@ -65,8 +69,11 @@ class AscendMsprofParser(BaseParser):
             data = {}
         self._check_msprof_data_size()
         AscendMsprofExporter(**self._kwargs).export()
+        self._logger.info("AscendMsprofExporter export done.")
         self._parse_op_summary()
+        self._logger.info("AscendMsprofParser parse op summary done.")
         self._parse_msprof_timeline()
+        self._logger.info("AscendMsprofParser parse msprof timeline done.")
         data.update(
             {
                 "op_summary": self.op_summary,

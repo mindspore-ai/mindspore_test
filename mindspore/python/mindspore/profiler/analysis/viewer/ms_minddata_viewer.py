@@ -25,7 +25,7 @@ from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.exceptions.exceptions import (
     ProfilerRawFileException,
 )
-
+from mindspore.profiler.common.log import ProfilerLogger
 
 class MindDataPipelineRawViewer(BaseViewer):
     """
@@ -47,6 +47,9 @@ class MindDataPipelineRawViewer(BaseViewer):
             kwargs.get("ascend_profiler_output_path"),
             self._FILE_NAME.format(self._device_id)
         )
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
     def save(self, data: Dict[str, Any]) -> None:
         if not data.get("pipeline_info"):
@@ -54,9 +57,11 @@ class MindDataPipelineRawViewer(BaseViewer):
         try:
             dict_op_id_info, sampling_interval = data["pipeline_info"]
             op_info_list = self._analyse_data(dict_op_id_info, sampling_interval)
+            self._logger.info("Analyse minddata pipeline raw data done")
             self._save_data(op_info_list)
+            self._logger.info("Save minddata pipeline raw data done")
         except Exception as e: # pylint: disable=W0703
-            logger.error("Failed to save minddata %s", e)
+            self._logger.error("Failed to save minddata %s", e, exc_info=True)
 
     def _analyse_data(self, dict_op_id_info: Dict[int, Dict[str, Any]], sample_interval: float) -> List[List[Any]]:
         """
@@ -92,7 +97,13 @@ class MindDataPipelineRawViewer(BaseViewer):
         return op_info_list
 
     def _save_data(self, op_info_list: List[List[Any]]) -> None:
+        self._logger.info("Save minddata pipeline raw data start")
         FileManager.create_csv_file(self._save_path, op_info_list, self._COL_NAMES)
+        self._logger.info(
+            "Save minddata pipeline raw data done, %d rows saved, save path: %s",
+            len(op_info_list),
+            self._save_path,
+        )
 
     @staticmethod
     def _update_child_node(node: Dict[str, Any], dict_op_id_info: Dict[int, Dict[str, Any]]) -> None:
@@ -184,6 +195,9 @@ class MindDataPiplineSummaryViewer(BaseViewer):
             file_type: os.path.join(kwargs.get("ascend_profiler_output_path"), file_name.format(self._device_id))
             for file_type, file_name in self._FILE_NAMES.items()
         }
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir, "MindDataPiplineSummaryViewer")
+        self._logger = ProfilerLogger.get_instance()
 
     def save(self, data: Dict[str, Any]) -> None:
         # If there are errors in the data during the parsing phase, the data will be set to empty
@@ -192,9 +206,11 @@ class MindDataPiplineSummaryViewer(BaseViewer):
         try:
             self._device_queue_file_found = data["device_queue_file_found"]
             summary_dict = self._analyse_data(data)
+            self._logger.info("Analyse minddata pipeline summary data done")
             self._save_data(summary_dict)
+            self._logger.info("Save minddata pipeline summary data done")
         except Exception as e: # pylint: disable=W0703
-            logger.error("Failed to save minddata %s", e)
+            self._logger.error("Failed to save minddata %s", e, exc_info=True)
 
     def _analyse_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -212,11 +228,13 @@ class MindDataPiplineSummaryViewer(BaseViewer):
         return summary_dict
 
     def _save_data(self, summary_dict: Dict[str, Any]) -> None:
+        self._logger.info("Save minddata pipeline summary data start")
         FileManager.create_json_file(self._save_paths['json_file'], summary_dict)
         FileManager.create_csv_file(
             self._save_paths['csv_file'],
             [[key] + value for key, value in summary_dict.items()]
         )
+        self._logger.info("Save minddata pipeline summary data done")
 
     def _check_and_update_summary(self, summary_dict: Dict[str, Any]) -> None:
         """

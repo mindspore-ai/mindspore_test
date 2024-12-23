@@ -51,6 +51,7 @@ from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
     MindDataPiplineSummaryViewer,
 )
 from mindspore.profiler.common.util import print_msg_with_pid
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 @PROFILERS.register_module(DeviceTarget.NPU.value)
@@ -64,6 +65,8 @@ class NpuProfiler(BaseProfiler):
         self._prof_ctx = ProfilerContext()
         self._prof_info = ProfilerInfo()
         self._prof_path_mgr = ProfilerPathManager()
+        ProfilerLogger.init(self._prof_ctx.ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
         self._profiler = c_expression.Profiler.get_instance(DeviceTarget.NPU.value)
         # initialize profiler backend
@@ -72,6 +75,8 @@ class NpuProfiler(BaseProfiler):
             int(self._prof_ctx.device_id),
             json.dumps(self._prof_ctx.npu_profiler_params),
         )
+        self._logger.info("NpuProfiler init profiler backend params %s",
+                          json.dumps(self._prof_ctx.npu_profiler_params, indent=4))
 
         # record original profiler params
         self._prof_info.profiler_parameters = self._prof_ctx.original_params
@@ -84,35 +89,36 @@ class NpuProfiler(BaseProfiler):
         if self._prof_ctx.data_process:
             self._md_profiler = cde.GlobalContext.profiling_manager()
             self._md_profiler.init()
-            logger.info("NpuProfiler init minddata profiler")
+            self._logger.info("NpuProfiler init minddata profiler")
 
         self._prof_mgr = c_expression.ProfilerManager.get_instance()
 
     def start(self) -> None:
         """Start profiling."""
-        logger.info("NpuProfiler start.")
+        self._logger.info("NpuProfiler start.")
 
         if ProfilerActivity.CPU in self._prof_ctx.activities:
             _framework_profiler_enable_mi()
             self._prof_mgr.set_profile_framework("time")
-            logger.info("NpuProfiler start enable framework")
+            self._logger.info("NpuProfiler start enable framework")
 
         if self._profiler:
             self._profiler.start()
 
         if self._prof_ctx.data_process:
             self._md_profiler.start()
+            self._logger.info("NpuProfiler start minddata profiler")
 
     def stop(self) -> None:
         """Stop profiling."""
-        logger.info("NpuProfiler stop.")
+        self._logger.info("NpuProfiler stop.")
         if self._profiler:
             self._profiler.stop()
 
         if ProfilerActivity.CPU in self._prof_ctx.activities:
             _framework_profiler_disable_mi()
             self._prof_mgr.set_profile_framework("NULL")
-            logger.info("NpuProfiler stop disable framework")
+            self._logger.info("NpuProfiler stop disable framework")
 
         if self._prof_ctx.data_process:
             self._md_profiler.stop()
@@ -122,7 +128,7 @@ class NpuProfiler(BaseProfiler):
 
     def analyse(self, **kwargs) -> None:
         """Analyse the profiling data."""
-        logger.info("NpuProfiler analyse.")
+        self._logger.info("NpuProfiler analyse.")
 
         NPUProfilerAnalysis.online_analyse()
         if self._prof_ctx.data_simplification:
@@ -130,7 +136,7 @@ class NpuProfiler(BaseProfiler):
 
     def finalize(self) -> None:
         """Finalize profiling data."""
-        logger.info("NpuProfiler finalize.")
+        self._logger.info("NpuProfiler finalize.")
         if self._profiler:
             self._profiler.finalize()
 
@@ -238,7 +244,7 @@ class NPUProfilerAnalysis:
         print_msg_with_pid(f"Start parsing profiling data: {ascend_ms_dir}")
         task_mgr = cls._construct_task_mgr(**kwargs)
         task_mgr.run({})
-        logger.info(json.dumps(task_mgr.cost_time, indent=4))
+        ProfilerLogger.get_instance().info(json.dumps(task_mgr.cost_time, indent=4))
 
     @classmethod
     def _construct_task_mgr(cls, **kwargs) -> TaskManager:

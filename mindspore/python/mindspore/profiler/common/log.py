@@ -38,7 +38,7 @@ class ProfilerLogger:
         BACKUP_COUNT: Number of backup files to keep
     """
 
-    LOG_FORMAT = "[%(asctime)s] [%(levelname)s] [%(name)s:%(lineno)d] %(message)s"
+    LOG_FORMAT = "[%(asctime)s] [%(levelname)s] [%(filename)s:%(lineno)d] %(message)s"
     DATE_FORMAT = "%Y-%m-%d-%H:%M:%S"
     DEFAULT_LOGGER_NAME = "MindSporeProfiler"
     DEFAULT_LOG_LEVEL = logging.INFO
