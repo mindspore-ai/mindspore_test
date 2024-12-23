@@ -109,16 +109,16 @@ bool AscendMemAdapter::Initialize() {
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size_, &device_hbm_total_size_);
   if (ret != ACL_ERROR_NONE || device_hbm_total_size_ == 0) {
-    MS_LOG(EXCEPTION) << "Internal Error: Get Device HBM memory size failed, ret = " << ret
-                      << ", total HBM size :" << device_hbm_total_size_;
+    MS_LOG(EXCEPTION) << "Internal Error: Get Device MOC memory size failed, ret = " << ret
+                      << ", total MOC size :" << device_hbm_total_size_;
   }
 
   if (device_hbm_free_size_ < LongToSize(DoubleToLong(device_hbm_total_size_ * kHalfRatio))) {
     unsigned int device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     MS_LOG(WARNING) << "Free memory size is less "
                        "than half of total memory size."
-                    << "Device " << device_id << " Device HBM total size:" << device_hbm_total_size_
-                    << " Device HBM free size:" << device_hbm_free_size_
+                    << "Device " << device_id << " Device MOC total size:" << device_hbm_total_size_
+                    << " Device MOC free size:" << device_hbm_free_size_
                     << " may be other processes occupying this card, check as: ps -ef|grep python";
   }
 
@@ -163,12 +163,12 @@ bool AscendMemAdapter::Initialize() {
   auto get_init_info = [this, &reserved_mem_size_for_others, &recommend_mem_size_for_others,
                         &user_define_ms_size]() -> std::string {
     std::ostringstream oss;
-    oss << "Device HBM Size:" << device_hbm_total_size_ / kMBToByte
-        << "M, Device free HBM Size:" << device_hbm_free_size_ / kMBToByte
-        << "M, Reserved HBM size for Other Components(HCCL/rts/etc.):" << reserved_mem_size_for_others / kMBToByte
-        << "M, Recommend Reserved HBM size for Other Components:" << recommend_mem_size_for_others / kMBToByte
-        << "M, User define MindSpore HBM Size:" << user_define_ms_size / kGBToByte
-        << "G, MindSpore Used HBM Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
+    oss << "Device MOC Size:" << device_hbm_total_size_ / kMBToByte
+        << "M, Device free MOC Size:" << device_hbm_free_size_ / kMBToByte
+        << "M, Reserved MOC size for Other Components(HCCL/rts/etc.):" << reserved_mem_size_for_others / kMBToByte
+        << "M, Recommend Reserved MOC size for Other Components:" << recommend_mem_size_for_others / kMBToByte
+        << "M, User define MindSpore MOC Size:" << user_define_ms_size / kGBToByte
+        << "G, MindSpore Used MOC Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
     return oss.str();
   };
 
@@ -197,12 +197,12 @@ void AscendMemAdapter::SimulationInitialize() {
     reserved_mem_size_for_others = device_hbm_total_size_ - user_define_ms_size;
   }
 
-  MS_LOG(INFO) << "Simulation Device HBM Size:" << device_hbm_total_size_ / kMBToByte
-               << "M, Device free HBM Size:" << device_hbm_free_size_ / kMBToByte
-               << "M, Reserved HBM size for Other Components(HCCL/rts/etc.):"
+  MS_LOG(INFO) << "Simulation Device MOC Size:" << device_hbm_total_size_ / kMBToByte
+               << "M, Device free MOC Size:" << device_hbm_free_size_ / kMBToByte
+               << "M, Reserved MOC size for Other Components(HCCL/rts/etc.):"
                << reserved_mem_size_for_others / kMBToByte
-               << "M, User define MindSpore HBM Size:" << user_define_ms_size / kGBToByte
-               << "G, MindSpore Used HBM Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
+               << "M, User define MindSpore MOC Size:" << user_define_ms_size / kGBToByte
+               << "G, MindSpore Used MOC Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
   max_available_ms_hbm_size_ = ms_used_hbm_size_;
   initialized_ = true;
 }
@@ -249,7 +249,7 @@ uint8_t *AscendMemAdapter::MallocFromRts(size_t size) const {
       (void)CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &free, &total);
       MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Malloc device memory failed, size[" << size << "], ret["
                         << ret << "], "
-                        << "Device " << device_id << " Available HBM size:" << total << " free size:" << free
+                        << "Device " << device_id << " Available MOC size:" << total << " free size:" << free
                         << " may be other processes occupying this card, check as: ps -ef|grep python";
     } else {
       MS_EXCEPTION(DeviceProcessError) << "rtMalloc mem size[" << size << "] fail, ret[" << ret << "]";

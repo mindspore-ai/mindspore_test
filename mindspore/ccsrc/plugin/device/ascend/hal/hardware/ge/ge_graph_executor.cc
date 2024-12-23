@@ -1064,13 +1064,13 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
         MS_LOG(WARNING) << "Now Memory Status, graph: " << graph_name
                         << ", max_static_memory_size: " << max_static_memory_size
                         << ", feature_memory_size: " << feature_memory_size
-                        << ", max_hbm_memory_size: " << max_hbm_memory_size;
+                        << ", max_moc_memory_size: " << max_hbm_memory_size;
       }
       if (total_memory_size > max_hbm_memory_size) {
         MS_LOG(EXCEPTION) << "Memory pool not enough, graph: " << graph_name
                           << ", max_static_memory_size: " << max_static_memory_size
                           << ", feature_memory_size: " << feature_memory_size
-                          << ", max_hbm_memory_size: " << max_hbm_memory_size;
+                          << ", max_moc_memory_size: " << max_hbm_memory_size;
       }
     }
   }
