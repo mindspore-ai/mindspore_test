@@ -712,7 +712,7 @@ def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
         "b": 1,
         "sq": 1,
         "skv": 4096,
-        "max_skv": 8192,
+        "max_skv": 4096,
         "nq": 20,
         "nkv": 20,
         "d": 128,
