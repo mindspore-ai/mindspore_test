@@ -26,7 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
-void NanSumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+void NansumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   const auto dim_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
   if (dim_opt.has_value()) {
@@ -40,13 +40,13 @@ void NanSumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   GetWorkspaceForResize(inputs[kIndex0], dim_, keep_dim_, dtype_, outputs[kIndex0]);
 }
 
-bool NanSumAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+bool NansumAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, keep_dim_, dtype_, outputs[kIndex0]);
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(NanSum, NanSumAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(Nansum, NansumAscend);
 }  // namespace kernel
 }  // namespace mindspore

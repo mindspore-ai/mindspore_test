@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NanSumAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+tensor::BaseTensorPtr NansumAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                             const std::optional<ValueTuplePtr> &dim, const BoolImmPtr &keep_dim,
                                             const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, dim, keep_dim, dtype);

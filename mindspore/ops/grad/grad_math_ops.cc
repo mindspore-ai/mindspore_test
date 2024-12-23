@@ -4692,7 +4692,7 @@ REG_BPROP_BUILDER("VarMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   return {var_mean_grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
 
-REG_BPROP_BUILDER("NanSum").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Nansum").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);
