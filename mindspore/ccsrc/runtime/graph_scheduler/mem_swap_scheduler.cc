@@ -190,7 +190,7 @@ std::shared_ptr<device::SwapContext> GetSwapContext() {
   }
   swap_context->cpu_mem_size_ = static_cast<size_t>(cpu_mem_size * offload_context->cpu_ratio());
   swap_context->disk_mem_size_ = offload_context->offload_disk_size();
-  MS_LOG(INFO) << "Hbm size:" << swap_context->hbm_mem_size_ << ", cpu memory size:" << swap_context->cpu_mem_size_
+  MS_LOG(INFO) << "MOC size:" << swap_context->hbm_mem_size_ << ", cpu memory size:" << swap_context->cpu_mem_size_
                << ", disk size:" << swap_context->disk_mem_size_ << " to generate the offload strategy";
   if (!offload_context->auto_offload()) {
     const auto &offload_param = offload_context->offload_param();
