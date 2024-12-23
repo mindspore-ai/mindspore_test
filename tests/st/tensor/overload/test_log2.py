@@ -65,10 +65,10 @@ def test_method_log2(mode):
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
-def test_tensor_min_dynamic():
+def test_tensor_log2_dynamic():
     """
-    Feature: Test min op.
-    Description: Test min dynamic shape.
+    Feature: Test log2 op.
+    Description: Test log2 dynamic shape.
     Expectation: the result match with expected result.
     """
     ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))

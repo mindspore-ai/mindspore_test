@@ -16,6 +16,7 @@
 
 #include "infer/ops_func_impl/min_dim.h"
 #include <memory>
+#include <vector>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"

@@ -45,9 +45,11 @@ from mindspore.ops.function.math_func import roll
 # 2
 from mindspore.ops.function.math_func import sin
 # 3
-from mindspore.ops.functional_overload import clamp, min, max
+from mindspore.ops.functional_overload import clamp
 from mindspore.ops.functional_overload import clip
 from mindspore.ops.functional_overload import fmod
+from mindspore.ops.functional_overload import max
+from mindspore.ops.functional_overload import min
 # 4
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
@@ -1285,8 +1287,7 @@ def einsum(equation, *operands):
 
     for operand in _operands:
         if ops.is_sequence_shape_unknown(operand.shape) or ops.is_sequence_value_unknown(operand.shape):
-            raise ValueError(
-                f"For einsum, the element of 'operands' can't be dynamic shape or dynamic rank.")
+            raise ValueError(f"For einsum, the element of 'operands' can't be dynamic shape or dynamic rank.")
 
     return _einsum(_equation, _operands)
 

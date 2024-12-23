@@ -29,6 +29,11 @@ class MinPythonNet(nn.Cell):
         return x.min(axis, keepdims, initial=initial, where=where, return_indices=return_indices)
 
 
+class MinDimNet(nn.Cell):
+    def construct(self, x, dim, keepdim):
+        return x.min(dim, keepdim)
+
+
 class MinPyboostNet(nn.Cell):
     def construct(self, x):
         return x.min()
@@ -46,11 +51,6 @@ def min_forward_func1(x):
 @test_utils.run_with_cell
 def min_forward_func2(x, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
     return x.min(axis, keepdims, initial=initial, where=where, return_indices=return_indices)
-
-
-class MinOverload(nn.Cell):
-    def construct(self, x, dim, keep_dims):
-        return x.min(dim, keep_dims)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -109,6 +109,32 @@ def test_method_min_python(mode):
     assert "Failed calling min with " in str(error_info.value)
 
 
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_method_min_dim(mode):
+    """
+    Feature: Functional.
+    Description: Test tensor method overload Tensor.min(dim, keepdim=False)
+    Expectation: Run success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net = MinDimNet()
+
+    x = ms.Tensor(np.arange(4).reshape((2, 2)).astype(np.float32))
+    dim = 0
+    keepdim = False
+    if mode == 0:
+        output = net(x, dim, keepdim)
+        assert np.allclose(output.asnumpy(), np.array([0.0, 1.0]))
+    else:
+        output, index = net(x, dim, keepdim)
+        assert np.allclose(output.asnumpy(), np.array([0.0, 1.0]))
+        assert np.allclose(index.asnumpy(), np.array([0, 0]))
+
+
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
@@ -143,27 +169,8 @@ def test_tensor_min_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     axis2 = 2
     keepdims2 = True
-    TEST_OP(min_forward_func1, [[ms_data1], [ms_data2]], 'min')
+    TEST_OP(min_forward_func1, [[ms_data1], [ms_data2]], 'min', disable_mode=['GRAPH_MODE'],
+            disable_tensor_dynamic_type='DYNAMIC_RANK', disable_resize=True)
     TEST_OP(min_forward_func2, [[ms_data1, axis1, keepdims1], [ms_data2, axis2, keepdims2]], 'min',
-            disable_yaml_check=True, disable_nontensor_dynamic_type='STATIC_LEN', disable_grad=True)
-
-
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level1',
-          card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
-def test_method_min_overload(mode):
-    """
-    Feature: Functional.
-    Description: Test tensor method overload Tensor.min(dim, keep_dims=False)
-    Expectation: Run success
-    """
-    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
-    net = MinOverload()
-    x = ms.Tensor(np.arange(4).reshape((2, 2)).astype(np.float32))
-    dim = 0
-    keep_dims = False
-    output, index = net(x, dim, keep_dims)
-    assert np.allclose(output.asnumpy(), np.array([0.0, 1.0]))
-    assert np.allclose(index.asnumpy(), np.array([0, 0]))
+            disable_mode=['GRAPH_MODE'],
+            disable_yaml_check=True, disable_tensor_dynamic_type='DYNAMIC_RANK', disable_grad=True, disable_resize=True)

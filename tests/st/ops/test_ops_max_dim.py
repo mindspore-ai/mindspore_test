@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from mindspore import context, Tensor
-from mindspore.ops import max
+from mindspore.ops import max as max_
 
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.ops.test_ops_min_dim import (
@@ -43,7 +43,7 @@ def test_max(mode):
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    min_max_dim_case(max, np_max)
+    min_max_dim_case(max_, np_max)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -56,7 +56,7 @@ def test_max_dyn(mode):
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    min_max_dim_case_dyn(max, np_max)
+    min_max_dim_case_dyn(max_, np_max)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -69,7 +69,7 @@ def test_max_dyn_rank(mode):
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    min_max_dim_case_dyn(max, np_max, True)
+    min_max_dim_case_dyn(max_, np_max, True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -83,5 +83,5 @@ def test_max_all_dynamic():
     input_case1 = [t1, -1]
     t2 = Tensor(np.array([[[1, 20, 5], [67, 8, 9]], [[130, 24, 15], [16, 64, 32]]], dtype=np.float32))
     input_case2 = [t2, 0]
-    TEST_OP(max, [input_case1, input_case2], '', disable_yaml_check=True,
+    TEST_OP(max_, [input_case1, input_case2], '', disable_yaml_check=True,
             disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])

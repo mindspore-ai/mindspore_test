@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MIN_DIM_H_
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MIN_DIM_H_
 
+#include <vector>
+
 #include "infer/ops_func_impl/argmax_with_value.h"
 
 namespace mindspore {

@@ -13,7 +13,5 @@ min_dim:
       dtype: tensor
     index:
       dtype: tensor
-  function:
-    disable: True
   dispatch:
     enable: True
