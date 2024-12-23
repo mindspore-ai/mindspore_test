@@ -16,7 +16,6 @@
 Test module for parallel training of Llama models using Mindformers at jit_level O2.
 """
 import os
-import shutil
 import subprocess
 import csv
 import re
@@ -24,8 +23,12 @@ from tests.mark_utils import arg_mark
 
 
 def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
-    if os.path.exists(tracker_path):
-        shutil.rmtree(tracker_path)
+    memory_csv_filename = tracker_path + "/memory_block.csv"
+    task_csv_filename = tracker_path + "/task.csv"
+    if os.path.isfile(memory_csv_filename):
+        os.remove(memory_csv_filename)
+    if os.path.isfile(task_csv_filename):
+        os.remove(task_csv_filename)
     if os.path.isfile(log_path):
         os.remove(log_path)
     os.system(cmd)
@@ -75,15 +78,16 @@ def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
 
     print(actual_peak_memory * 1024 * 1024, flush=True)
 
-    csv_filename = tracker_path + "/profiler/memory_block.csv"
-    with open(csv_filename, mode='r', encoding='utf-8') as file:
+    with open(memory_csv_filename, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         for row in reader:
             csv_actual_peak_memory = row['actual_peak_memory']
             assert int(csv_actual_peak_memory) <= actual_peak_memory * 1024 * 1024
 
-    if os.path.exists(tracker_path):
-        shutil.rmtree(tracker_path)
+    if os.path.isfile(memory_csv_filename):
+        os.remove(memory_csv_filename)
+    if os.path.isfile(task_csv_filename):
+        os.remove(task_csv_filename)
     if os.path.isfile(log_path):
         os.remove(log_path)
 
@@ -97,10 +101,10 @@ def test_somas():
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     run_command(f"bash {sh_path}/run_1p.sh somas", f"{sh_path}/somas.log",
-                f"{sh_path}/somas/", 10, True)
+                f"{sh_path}", 10, True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_no_somas():
     """
     Feature: Trainer.train()
@@ -109,4 +113,4 @@ def test_no_somas():
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     run_command(f"bash {sh_path}/run_1p.sh no_somas", f"{sh_path}/no_somas.log",
-                f"{sh_path}/no_somas/", 0, False)
+                f"{sh_path}", 0, False)
