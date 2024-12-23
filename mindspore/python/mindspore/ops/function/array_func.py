@@ -6142,6 +6142,7 @@ def topk(input, k, dim=None, largest=True, sorted=True):
          [3, 0],
          [0, 1]]))
     """
+    validator.check_value_type("largest", largest, [bool], "topk")
     top_k_ = _get_cache_prim(P.TopK)(sorted)
     if not largest:
         input = -input
