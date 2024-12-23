@@ -27,7 +27,7 @@ def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
 @arg_mark(
-    plat_marks=['platform_ascend', 'platform_ascend910b'],
+    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
     level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential')

@@ -1052,8 +1052,10 @@ def deprecated_tensor_sum(input, axis=None, dtype=None, keepdims=False, initial=
 def tensor_t(input):
     return t(input)
 
+
 def deprecated_tensor_t(input):
     return t(input)
+
 
 # 107 tanh
 def tensor_tanh(input):
