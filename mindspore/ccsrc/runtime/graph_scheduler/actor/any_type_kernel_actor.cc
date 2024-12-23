@@ -260,8 +260,10 @@ std::string GenerateIDForGraph(const std::vector<DeviceTensor *> &device_tensors
     } else if (abstract->isa<abstract::AbstractTensor>()) {
       id = id + "Tensor_";
     }
-    device_tensor->kernel_tensor()->SetType(abstract->BuildType());
-    device_tensor->kernel_tensor()->SetShape(abstract->BuildShape());
+    if (abstract->isa<abstract::AbstractSequence>()) {
+      device_tensor->kernel_tensor()->SetType(abstract->BuildType());
+      device_tensor->kernel_tensor()->SetShape(abstract->BuildShape());
+    }
     get_shape_and_type_string(device_tensor->host_shape(), device_tensor->type_id());
   }
   return id;
