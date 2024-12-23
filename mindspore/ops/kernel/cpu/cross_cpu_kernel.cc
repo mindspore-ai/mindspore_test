@@ -40,6 +40,10 @@ int CrossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   }
   input1_shape_ = inputs[kIndex0]->GetDeviceShapeVector();
   input2_shape_ = inputs[kIndex1]->GetDeviceShapeVector();
+  if (input1_shape_.empty() || input2_shape_.empty()) {
+    MS_EXCEPTION(ValueError) << "For cross, each input must have at least one dimension, but got input_1 with dim "
+                             << input1_shape_.size() << ", input_2 with dim " << input2_shape_.size();
+  }
   output_shape_ = outputs[kIndex0]->GetDeviceShapeVector();
   input1_dtype_ = inputs[kIndex0]->dtype_id();
   dim_ = inputs[kIndex2]->GetValueWithCheck<int64_t>();
