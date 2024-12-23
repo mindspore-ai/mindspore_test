@@ -25,10 +25,10 @@
 namespace mindspore {
 namespace kernel {
 
-class NanSumAscend : public AclnnKernelMod {
+class NansumAscend : public AclnnKernelMod {
  public:
-  NanSumAscend() : AclnnKernelMod(std::move("aclnnReduceNansum")) {}
-  ~NanSumAscend() = default;
+  NansumAscend() : AclnnKernelMod(std::move("aclnnReduceNansum")) {}
+  ~NansumAscend() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 

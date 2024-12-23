@@ -26,11 +26,11 @@
 namespace mindspore {
 namespace ops {
 
-ShapeArray NanSumFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+ShapeArray NansumFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   return ReduceGeneralInferShape(primitive, input_infos);
 }
 
-std::vector<TypeId> NanSumFuncImpl::InferType(const PrimitivePtr &primitive,
+std::vector<TypeId> NansumFuncImpl::InferType(const PrimitivePtr &primitive,
                                               const InferInfoPtrList &input_infos) const {
   const auto &dtype = input_infos[kIndex3];
   TypeId output_type;
