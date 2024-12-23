@@ -295,8 +295,9 @@ CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank
   common::AnfAlgo::SetNodeAttr(parallel::GROUP_BACK, MakeValue(group_name), send_node);
   common::AnfAlgo::SetNodeAttr(parallel::SHAPE, MakeValue(send_shape), send_node);
   common::AnfAlgo::SetNodeAttr(parallel::DTYPE, TypeIdToType(type_id), send_node);
+  auto long_rank_list = parallel::g_device_manager->FindRankListByHashName(group_name);
   vector<uint32_t> group_rank_ids;
-  std::transform(rank_list.begin(), rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
+  std::transform(long_rank_list.begin(), long_rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
                  [](int64_t e) -> uint32_t { return static_cast<uint32_t>(e); });
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue(group_rank_ids), send_node);
 
@@ -331,8 +332,9 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
   common::AnfAlgo::SetNodeAttr(parallel::SHAPE, MakeValue(recv_shape), recv_node);
   common::AnfAlgo::SetNodeAttr(parallel::DTYPE, TypeIdToType(type_id), recv_node);
   common::AnfAlgo::SetNodeAttr("flash_tag", MakeValue("True"), recv_node);
+  auto long_rank_list = parallel::g_device_manager->FindRankListByHashName(group_name);
   vector<uint32_t> group_rank_ids;
-  std::transform(rank_list.begin(), rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
+  std::transform(long_rank_list.begin(), long_rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
                  [](int64_t e) -> uint32_t { return static_cast<uint32_t>(e); });
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue(group_rank_ids), recv_node);
 
