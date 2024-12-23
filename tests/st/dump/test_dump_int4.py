@@ -166,7 +166,7 @@ def test_ge_dump_int4():
     run_dump_int4("ge_dump")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_e2e_dump_int4():
     """
@@ -178,7 +178,7 @@ def test_e2e_dump_int4():
     run_dump_int4("e2e_dump")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_e2e_async_dump_int4():
     """

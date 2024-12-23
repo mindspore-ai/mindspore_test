@@ -104,7 +104,7 @@ def test_train_semi_compile():
     run_command_semi_compile(f"bash {sh_path}/dry_compile.sh semi compile", f"{sh_path}/compile.log", 60000, 200000)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_train_auto_compile():
     """
     Feature: refactor sharding propagation when AUTO_PARALLEL.
