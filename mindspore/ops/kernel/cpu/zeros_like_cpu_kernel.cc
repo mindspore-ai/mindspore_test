@@ -50,8 +50,8 @@ bool ZerosLikeCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
                                          const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kZerosLikeInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kZerosLikeOutputsNum, kernel_name_);
-  auto input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   size_t output_size = outputs[0]->size() / sizeof(T);
   auto task = [this, output_addr, input_addr](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {

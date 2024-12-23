@@ -42,16 +42,16 @@ void TopKCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
   if (inputs[1]->size() != sizeof(int)) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'k' must be int, but got " << inputs[1];
   }
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  int k = reinterpret_cast<int *>(inputs[1]->device_ptr())[0];
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  int k = GetDeviceAddress<int>(inputs, kIndex1)[kIndex0];
   size_t *workspace = GetDeviceAddress<size_t>(workspaces, 0);
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto indices = reinterpret_cast<int *>(outputs[1]->device_ptr());
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
+  auto indices = GetDeviceAddress<int>(outputs, kIndex1);
   if (k < 1) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'k' must be greater than 0, but got " << k;
   }
   size_t k_num = IntToSize(std::min<int>(inner_size_, k));
-  if (outputs[0]->size() != outer_size_ * k_num * sizeof(T)) {
+  if (outputs[kIndex0]->size() != outer_size_ * k_num * sizeof(T)) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', address size of output error.";
   }
 

@@ -198,10 +198,10 @@ RgbTuple hsv2rgb(const float h, const float s, const float v) {
 template <typename T>
 bool LaunchAdjustHueKernel(const std::vector<kernel::KernelTensor *> &inputs,
                            const std::vector<kernel::KernelTensor *> &outputs) {
-  auto input_data = static_cast<T *>(inputs[0]->device_ptr());
-  auto output_data = static_cast<T *>(outputs[0]->device_ptr());
-  auto delta_h = static_cast<std::float_t *>(inputs[1]->device_ptr())[0];
-  std::int64_t num_elements = SizeToLong(inputs[0]->size() / sizeof(T));
+  auto input_data = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output_data = GetDeviceAddress<T>(outputs, kIndex0);
+  auto delta_h = GetDeviceAddress<std::float_t>(inputs, kIndex1)[kIndex0];
+  std::int64_t num_elements = SizeToLong(inputs[kIndex0]->size() / sizeof(T));
   constexpr int64_t kChannelSize = 3;
   auto sharder_adjusthue = [input_data, delta_h, output_data, kChannelSize](int64_t start, int64_t end) {
     for (int64_t i = start * kChannelSize; i < end * kChannelSize; i = i + kChannelSize) {
@@ -239,10 +239,10 @@ bool LaunchAdjustHueKernel(const std::vector<kernel::KernelTensor *> &inputs,
 template <typename T>
 bool LaunchAdjustHueKernelHalf(const std::vector<kernel::KernelTensor *> &inputs,
                                const std::vector<kernel::KernelTensor *> &outputs) {
-  auto input_data = static_cast<T *>(inputs[0]->device_ptr());
-  auto output_data = static_cast<T *>(outputs[0]->device_ptr());
-  auto delta_h = static_cast<std::float_t *>(inputs[1]->device_ptr())[0];
-  std::int64_t num_elements = SizeToLong(inputs[0]->size() / sizeof(T));
+  auto input_data = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output_data = GetDeviceAddress<T>(outputs, kIndex0);
+  auto delta_h = GetDeviceAddress<std::float_t>(inputs, kIndex1)[kIndex0];
+  std::int64_t num_elements = SizeToLong(inputs[kIndex0]->size() / sizeof(T));
   constexpr int64_t kChannelSize = 3;
   auto sharder_adjusthue = [input_data, delta_h, output_data, kChannelSize](int64_t start, int64_t end) {
     for (int64_t i = start * kChannelSize; i < end * kChannelSize; i = i + kChannelSize) {

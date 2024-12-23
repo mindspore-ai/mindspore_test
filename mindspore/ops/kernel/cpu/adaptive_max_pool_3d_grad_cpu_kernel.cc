@@ -34,7 +34,7 @@ int AdaptiveMaxPool3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
     return ret;
   }
 
-  input_x_shape_ = inputs[1]->GetShapeVector();
+  input_x_shape_ = inputs[kIndex1]->GetShapeVector();
   output_shape_ = input_x_shape_;
   const size_t dim_num = input_x_shape_.size();
   const size_t kDimNum4 = 4;
@@ -44,7 +44,7 @@ int AdaptiveMaxPool3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
                       << ".";
   }
 
-  input_grad_shape_ = inputs[0]->GetShapeVector();
+  input_grad_shape_ = inputs[kIndex0]->GetShapeVector();
   if (input_grad_shape_.size() != input_x_shape_.size()) {
     MS_LOG(EXCEPTION) << "For AdaptiveMaxPool3DGrad, input grad dimensions should be same as input dimensions, but got "
                       << input_grad_shape_.size() << ".";
@@ -139,9 +139,9 @@ template <typename T1, typename T2>
 bool AdaptiveMaxPool3DGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &workspace,
                                                      const std::vector<KernelTensor *> &outputs) {
-  auto input_grad = reinterpret_cast<T1 *>(inputs[0]->device_ptr());
-  auto input_argmax = reinterpret_cast<int32_t *>(inputs[2]->device_ptr());
-  auto output = reinterpret_cast<T2 *>(outputs[0]->device_ptr());
+  auto input_grad = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto input_argmax = GetDeviceAddress<int32_t>(inputs, kIndex2);
+  auto output = GetDeviceAddress<T2>(outputs, kIndex0);
   const int64_t output_num_data = std::accumulate(output_shape_.begin(), output_shape_.end(), static_cast<size_t>(1),
                                                   [=](size_t a, size_t b) { return a * b; });
   const T2 data_zero = static_cast<T2>(0);
@@ -168,9 +168,9 @@ bool AdaptiveMaxPool3DGradCpuKernelMod::LaunchKernel(const std::vector<KernelTen
 bool AdaptiveMaxPool3DGradCpuKernelMod::LaunchKernelHalf(const std::vector<KernelTensor *> &inputs,
                                                          const std::vector<KernelTensor *> &workspace,
                                                          const std::vector<KernelTensor *> &outputs) {
-  auto input_grad = reinterpret_cast<Eigen::half *>(inputs[0]->device_ptr());
-  auto input_argmax = reinterpret_cast<int32_t *>(inputs[2]->device_ptr());
-  auto output = reinterpret_cast<Eigen::half *>(outputs[0]->device_ptr());
+  auto input_grad = GetDeviceAddress<Eigen::half>(inputs, kIndex0);
+  auto input_argmax = GetDeviceAddress<int32_t>(inputs, kIndex2);
+  auto output = GetDeviceAddress<Eigen::half>(outputs, kIndex0);
   const int64_t output_num_data = std::accumulate(output_shape_.begin(), output_shape_.end(), static_cast<size_t>(1),
                                                   [=](size_t a, size_t b) { return a * b; });
 

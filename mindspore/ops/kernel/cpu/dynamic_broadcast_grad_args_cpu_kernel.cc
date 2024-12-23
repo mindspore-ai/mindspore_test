@@ -100,42 +100,42 @@ template <typename T, typename S>
 bool DynamicBroadcastGradientArgsCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                             const std::vector<kernel::KernelTensor *> &,
                                                             const std::vector<kernel::KernelTensor *> &outputs) {
-  std::vector<size_t> ranks = {inputs[0]->size() / sizeof(T), inputs[1]->size() / sizeof(T)};
+  std::vector<size_t> ranks = {inputs[kIndex0]->size() / sizeof(T), inputs[kIndex1]->size() / sizeof(T)};
   std::vector<std::vector<T>> reverse_shapes(kDynamicBroadcastGradientArgsInputsNum);
   if (!is_null_input0_) {
-    const T *s0_addr = static_cast<T *>(inputs[0]->device_ptr());
-    for (size_t j = 0; j < ranks[0]; j++) {
-      reverse_shapes[0].push_back(s0_addr[ranks[0] - j - 1]);
+    const T *s0_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
+    for (size_t j = 0; j < ranks[kIndex0]; j++) {
+      reverse_shapes[kIndex0].push_back(s0_addr[ranks[kIndex0] - j - 1]);
     }
   } else {
-    ranks[0] = 0;
+    ranks[kIndex0] = 0;
   }
   if (!is_null_input1_) {
-    const T *s1_addr = static_cast<T *>(inputs[1]->device_ptr());
-    for (size_t j = 0; j < ranks[1]; j++) {
-      reverse_shapes[1].push_back(s1_addr[ranks[1] - j - 1]);
+    const T *s1_addr = static_cast<T *>(inputs[kIndex1]->device_ptr());
+    for (size_t j = 0; j < ranks[kIndex1]; j++) {
+      reverse_shapes[kIndex1].push_back(s1_addr[ranks[kIndex1] - j - 1]);
     }
   } else {
-    ranks[1] = 0;
+    ranks[kIndex1] = 0;
   }
-  S *r0_addr = static_cast<S *>(outputs[0]->device_ptr());
-  S *r1_addr = static_cast<S *>(outputs[1]->device_ptr());
+  S *r0_addr = static_cast<S *>(outputs[kIndex0]->device_ptr());
+  S *r1_addr = static_cast<S *>(outputs[kIndex1]->device_ptr());
 
   std::vector<std::vector<T>> grad_reduce_idx(kDynamicBroadcastGradientArgsInputsNum);
-  size_t max_rank = ranks[0] > ranks[1] ? ranks[0] : ranks[1];
-  if (reverse_shapes[0].size() < max_rank) {
-    reverse_shapes[0].resize(max_rank, 1);
+  size_t max_rank = ranks[kIndex0] > ranks[kIndex1] ? ranks[kIndex0] : ranks[kIndex1];
+  if (reverse_shapes[kIndex0].size() < max_rank) {
+    reverse_shapes[kIndex0].resize(max_rank, 1);
   }
-  if (reverse_shapes[1].size() < max_rank) {
-    reverse_shapes[1].resize(max_rank, 1);
+  if (reverse_shapes[kIndex1].size() < max_rank) {
+    reverse_shapes[kIndex1].resize(max_rank, 1);
   }
 
-  if (reverse_shapes[0] != reverse_shapes[1]) {
+  if (reverse_shapes[kIndex0] != reverse_shapes[kIndex1]) {
     grad_reduce_idx = GetGradIndex(reverse_shapes, max_rank);
   }
 
-  r0_size_ = SetOuputValue(r0_addr, grad_reduce_idx[0]);
-  r1_size_ = SetOuputValue(r1_addr, grad_reduce_idx[1]);
+  r0_size_ = SetOuputValue(r0_addr, grad_reduce_idx[kIndex0]);
+  r1_size_ = SetOuputValue(r1_addr, grad_reduce_idx[kIndex1]);
 
   return true;
 }
@@ -162,8 +162,8 @@ int DynamicBroadcastGradientArgsCpuKernelMod::Resize(const std::vector<KernelTen
     MS_LOG(WARNING) << kernel_name_ << " reinit failed.";
     return static_cast<int>(KRET_RESIZE_FAILED);
   }
-  auto input_0_shape = inputs[0]->GetShapeVector();
-  auto input_1_shape = inputs[1]->GetShapeVector();
+  auto input_0_shape = inputs[kIndex0]->GetShapeVector();
+  auto input_1_shape = inputs[kIndex1]->GetShapeVector();
   is_null_input0_ = CHECK_NULL_INPUT(input_0_shape);
   is_null_input1_ = CHECK_NULL_INPUT(input_1_shape);
   return static_cast<int>(KRET_OK);

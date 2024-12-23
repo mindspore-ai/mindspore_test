@@ -100,19 +100,19 @@ bool SparseTensorDenseMatmulCpuKernelMod::LaunchKernel(const std::vector<kernel:
   }
 
   const size_t b_index = 3;
-  const auto *a_indices = static_cast<I *>(inputs[0]->device_ptr());
-  const auto *a_values = static_cast<T *>(inputs[1]->device_ptr());
-  const auto *b = static_cast<T *>(inputs[b_index]->device_ptr());
-  auto *out = static_cast<T *>(outputs[0]->device_ptr());
-  const size_t indices_length = inputs[0]->size() / sizeof(I);
-  const size_t values_length = inputs[1]->size() / sizeof(T);
+  const auto *a_indices = GetDeviceAddress<I>(inputs, kIndex0);
+  const auto *a_values = GetDeviceAddress<T>(inputs, kIndex1);
+  const auto *b = GetDeviceAddress<T>(inputs, b_index);
+  auto *out = GetDeviceAddress<T>(outputs, kIndex0);
+  const size_t indices_length = inputs[kIndex0]->size() / sizeof(I);
+  const size_t values_length = inputs[kIndex1]->size() / sizeof(T);
   const size_t b_length = inputs[b_index]->size() / sizeof(T);
 
   const size_t dim_num = 2;
-  const size_t out_dim_0 = output_shape_[0];
-  const size_t out_dim_1 = output_shape_[1];
-  const size_t b_dim_0 = b_shape_[0];
-  const size_t b_dim_1 = b_shape_[1];
+  const size_t out_dim_0 = output_shape_[kIndex0];
+  const size_t out_dim_1 = output_shape_[kIndex1];
+  const size_t b_dim_0 = b_shape_[kIndex0];
+  const size_t b_dim_1 = b_shape_[kIndex1];
   const size_t same_dim = adj_dt_ ? b_dim_1 : b_dim_0;
 
   for (size_t i = 0; i < values_size_; ++i) {
