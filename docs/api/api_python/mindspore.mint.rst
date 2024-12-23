@@ -279,6 +279,7 @@ BLAS和LAPACK运算
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
     mindspore.mint.tril
+    mindspore.mint.triangular_solve
 
 mindspore.mint.nn
 ------------------

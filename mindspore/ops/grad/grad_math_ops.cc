@@ -4002,6 +4002,89 @@ REG_BPROP_BUILDER("MatrixTriangularSolve").SetUnusedInputs({i1}).SetBody(BODYFUN
   return {grad_matrix, grad_rhs};
 });
 
+REG_BPROP_BUILDER("TriangularSolve").FreeUselessValues_O({i1}).SetBody(BODYFUNC(ib) {
+  auto b = ib->GetInput(kIndex0);
+  auto A = ib->GetInput(kIndex1);
+  auto upper = ib->GetInput(kIndex2);
+  auto transpose = ib->GetInput(kIndex3);
+  auto unitriangular = ib->GetInput(kIndex4);
+  auto out = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(kIndex6);
+  NodePtr grad_b = nullptr;
+  NodePtr grad_A = nullptr;
+  auto grad_x = ib->TupleGetItem(dout, kIndex0);
+  auto grad_m = ib->TupleGetItem(dout, kIndex1);
+  auto x = ib->TupleGetItem(out, kIndex0);
+
+  auto transpose_opt = mindspore::GetScalarValue<bool>(transpose->BuildValue());
+  if (!transpose_opt.has_value()) {
+    auto true_branch = [&](Emitter *e) -> NodePtrList {
+      return {e->TupleGetItem(
+        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(false), unitriangular}), kIndex0)};
+    };
+    auto false_branch = [&](Emitter *e) -> NodePtrList {
+      return {e->TupleGetItem(
+        e->Emit("TriangularSolve", {grad_x, e->Conj(A), upper, e->Value<bool>(true), unitriangular}), kIndex0)};
+    };
+    auto transpose_opt_true = ib->Equal(transpose, ib->Value<bool>(true));
+    grad_b = ib->Conditional(transpose_opt_true, true_branch, false_branch);
+  } else {
+    grad_b = ib->TupleGetItem(
+      ib->Emit("TriangularSolve", {grad_x, ib->Conj(A), upper, ib->Value<bool>(!transpose_opt.value()), unitriangular}),
+      kIndex0);
+  }
+  if (A->need_compute_grad_out()) {
+    if (!transpose_opt.has_value()) {
+      auto true_branch = [&](Emitter *e) -> NodePtrList {
+        return {
+          e->MatMulExt(e->Conj(x), e->Emit("TransposeExt", {grad_b, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+      };
+      auto false_branch = [&](Emitter *e) -> NodePtrList {
+        return {e->MatMulExt(grad_b, e->Emit("TransposeExt", {x, e->Value<int64_t>(-1), e->Value<int64_t>(-2)}))};
+      };
+      auto transpose_opt_true = ib->Equal(transpose, ib->Value<bool>(true));
+      grad_A = ib->Conditional(transpose_opt_true, true_branch, false_branch);
+    } else {
+      grad_A = transpose_opt.value()
+                 ? ib->MatMulExt(ib->Conj(x),
+                                 ib->Emit("TransposeExt", {grad_b, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}))
+                 : ib->MatMulExt(grad_b, ib->Emit("TransposeExt", {x, ib->Value<int64_t>(-1), ib->Value<int64_t>(-2)}));
+    }
+    grad_A = ib->Neg(grad_A);
+    auto unitriangular_opt = mindspore::GetScalarValue<bool>(unitriangular->BuildValue());
+    NodePtr unitriangular_int, unitriangular_int_neg;
+    if (!unitriangular_opt.has_value()) {
+      auto true_branch = [&](Emitter *e) -> NodePtrList { return {e->Value<int64_t>(1)}; };
+      auto false_branch = [&](Emitter *e) -> NodePtrList { return {e->Value<int64_t>(0)}; };
+      auto unitriangular_opt_true = ib->Equal(unitriangular, ib->Value<bool>(true));
+      unitriangular_int = ib->Conditional(unitriangular_opt_true, true_branch, false_branch);
+      unitriangular_int_neg = ib->ScalarNeg(unitriangular_int);
+    } else {
+      unitriangular_int = unitriangular_opt.value() ? ib->Value<int64_t>(1) : ib->Value<int64_t>(0);
+      unitriangular_int_neg = unitriangular_opt.value() ? ib->Value<int64_t>(-1) : ib->Value<int64_t>(0);
+    }
+
+    auto upper_opt = mindspore::GetScalarValue<bool>(upper->BuildValue());
+    if (!upper_opt.has_value()) {
+      auto true_branch = [&](Emitter *e) -> NodePtrList { return {e->Emit("Triu", {grad_A, unitriangular_int})}; };
+      auto false_branch = [&](Emitter *e) -> NodePtrList {
+        return {e->Emit("TrilExt", {grad_A, unitriangular_int_neg})};
+      };
+      auto upper_opt_true = ib->Equal(upper, ib->Value<bool>(true));
+      grad_A = ib->Conditional(upper_opt_true, true_branch, false_branch);
+    } else {
+      grad_A = upper_opt.value() ? ib->Emit("Triu", {grad_A, unitriangular_int})
+                                 : ib->Emit("TrilExt", {grad_A, unitriangular_int_neg});
+    }
+    grad_A = ib->Add(grad_A, grad_m);
+  }
+
+  auto tmp = BinopGradCommon(ib, b, A, grad_b, grad_A, 2);
+  grad_b = tmp[0];
+  grad_A = tmp[1];
+  return {grad_b, grad_A, ib->OutZeros(upper), ib->OutZeros(transpose), ib->OutZeros(unitriangular)};
+});
+
 REG_BPROP_BUILDER("NanToNum").FreeUselessValues_IO({i1, i2, i3}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto nan = ib->GetInput(kIndex1);

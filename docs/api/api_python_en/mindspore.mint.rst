@@ -279,6 +279,7 @@ Other Operations
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
     mindspore.mint.tril
+    mindspore.mint.triangular_solve
 
 mindspore.mint.nn
 ------------------

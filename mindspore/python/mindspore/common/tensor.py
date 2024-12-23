@@ -4268,6 +4268,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         return tensor_operator_registry.get('normal_')(self, mean=mean, std=std, generator=generator)
 
 
+    def triangular_solve(self, A, upper=True, transpose=False, unitriangular=False):
+        r"""
+        For details, please refer to :func:`mindspore.mint.triangular_solve`.
+        """
+        return tensor_operator_registry.get('triangular_solve')(self, A, upper, transpose, unitriangular)
+
 def _vm_compare(*args):
     """Implement `vm_compare` for tensor."""
     if args:

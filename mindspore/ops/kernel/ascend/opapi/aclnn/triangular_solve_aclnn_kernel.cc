@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 namespace mindspore {
 namespace kernel {
 
-void TriangularSolveAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                                     const std::vector<KernelTensor *> &outputs) {
+void TriangularSolveAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                             const std::vector<KernelTensor *> &outputs) {
   upper_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
   transpose_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
   unitriangular_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex4]);
@@ -28,14 +28,15 @@ void TriangularSolveAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTen
                         outputs[kIndex1]);
 }
 
-bool TriangularSolveAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
-                                           const std::vector<KernelTensor *> &workspace,
-                                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool TriangularSolveAscend::Launch(const std::vector<KernelTensor *> &inputs,
+                                   const std::vector<KernelTensor *> &workspace,
+                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], upper_, transpose_, unitriangular_, outputs[kIndex0],
         outputs[kIndex1]);
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(TriangularSolve, TriangularSolveAclnnKernelMod);
+MS_ACLNN_KERNEL_FACTORY_REG(TriangularSolve, TriangularSolveAscend);
 }  // namespace kernel
 }  // namespace mindspore
