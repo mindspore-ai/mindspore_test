@@ -241,7 +241,7 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
                         << " init done in backend phase. Please check ERROR log above.";
     }
   }
-  MS_LOG(WARNING) << "The HBM occupied by HCCL of graph: " << root_graph->ToString() << " is "
+  MS_LOG(WARNING) << "The MOC occupied by HCCL of graph: " << root_graph->ToString() << " is "
                   << instance->GetHcclMemSize() << " MB.";
   // Clear initialization info after this step so new graphs could be compiled and not communicator will be initialized
   // twice.

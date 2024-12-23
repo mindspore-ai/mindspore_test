@@ -173,7 +173,7 @@ std::string AscendTwoPointerMemAdapter::DevMemStatistics() const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   std::ostringstream oss;
-  oss << "\nDevice HBM memory size: " << device_hbm_total_size_ / kMBToByte << "M";
+  oss << "\nDevice MOC memory size: " << device_hbm_total_size_ / kMBToByte << "M";
   oss << "\nMindSpore Used memory size: " << ms_used_hbm_size_ / kMBToByte << "M";
   oss << "\nMindSpore memory base address: " << reinterpret_cast<void *>(device_mem_base_addr_);
   if (!context->IsKByKExecutorMode()) {

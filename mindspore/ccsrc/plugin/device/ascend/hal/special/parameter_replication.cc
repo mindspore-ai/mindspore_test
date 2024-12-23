@@ -266,11 +266,11 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
   size_t device_hbm_total_size;
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size, &device_hbm_total_size);
   if (ret != ACL_ERROR_NONE || device_hbm_total_size == 0) {
-    MS_LOG(EXCEPTION) << "Internal Error: Get Device HBM memory size failed, ret = " << ret
-                      << ", total HBM size :" << device_hbm_total_size;
+    MS_LOG(EXCEPTION) << "Internal Error: Get Device MOC memory size failed, ret = " << ret
+                      << ", total MOC size :" << device_hbm_total_size;
   }
-  MS_LOG(INFO) << "device_hbm_free_size=" << device_hbm_free_size / kMegaByte
-               << "MB, device_hbm_total_size=" << device_hbm_total_size / kMegaByte;
+  MS_LOG(INFO) << "device_moc_free_size=" << device_hbm_free_size / kMegaByte
+               << "MB, device_moc_total_size=" << device_hbm_total_size / kMegaByte;
 
   DataExchangeInfo local_info(params, device_hbm_free_size);
   DataExchangeInfo remote_info(params.size());
