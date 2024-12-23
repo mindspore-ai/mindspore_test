@@ -1879,7 +1879,12 @@ def sub(input, other, *, alpha=1):
 
 def swapaxes(input, axis0, axis1):
     '''
-    Interchange two axes of a tensor, alias for mint.transpose()
+    Alias for :func:`mindspore.mint.transpose` .
+
+    For more details, see :func:`mindspore.mint.transpose` .
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Examples:
         >>> import numpy as np
