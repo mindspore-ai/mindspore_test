@@ -27,7 +27,7 @@
 
 namespace mindspore {
 namespace ops {
-static inline bool IsValidType(TypeId t) {
+static inline bool IsValidGcdType(TypeId t) {
   static const std::set<TypeId> valid_types = {kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
   return valid_types.find(t) != valid_types.end();
 }
@@ -40,7 +40,7 @@ ShapeArray GcdFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInf
 
 std::vector<TypeId> GcdFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   const auto input_type_id = input_infos[0]->GetType();
-  if (!IsValidType(input_type_id)) {
+  if (!IsValidGcdType(input_type_id)) {
     MS_EXCEPTION(TypeError)
       << "For Primitive[Gcd], the type of the input tensor must be [Int16, Int32, Int64], but got "
       << TypeIdToString(input_type_id) << "!";

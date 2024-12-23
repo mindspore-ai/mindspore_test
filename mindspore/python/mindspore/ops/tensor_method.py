@@ -768,12 +768,15 @@ def tensor_max(input):
 
 
 def tensor_maxdim(input, dim, keepdim=False):
-    argmax_with_value_op = P.ArgMaxWithValue()(dim, keepdim)
+    argmax_with_value_op = P.ArgMaxWithValue(dim, keepdim)
     indices, values = argmax_with_value_op(input)
     return values, indices
 
 
 def deprecated_tensor_max(input, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
+    r"""
+    For details, please refer to :func:`mindspore.ops.max`.
+    """
     if isinstance(axis, (list, tuple)):
         reduce_max = P.ReduceMax
         maximum = F.maximum
@@ -811,6 +814,9 @@ def tensor_mindim(input, dim, keepdim=False):
 
 
 def deprecated_tensor_min(input, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
+    r"""
+    For details, please refer to :func:`mindspore.ops.min`.
+    """
     if isinstance(axis, (list, tuple)):
         reduce_min = P.ReduceMin
         minimum = F.minimum

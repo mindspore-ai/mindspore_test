@@ -15,9 +15,9 @@
 import pytest
 import numpy as np
 from mindspore import Tensor, context
-from mindspore.mint import min
+from mindspore.mint import min_
 import mindspore.common.dtype as mstype
-from mindspore import ops
+import mindspore as ms
 
 from tests.st.utils.test_utils import to_cell_obj, compare
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -45,7 +45,7 @@ def min_max_dim_case(op_func, np_func):
     expect = np_func(x_np, axis, keepdims)
     compare(output, expect)
     # backward:
-    output_grad = ops.grad(net)(*input_args)
+    output_grad = ms.grad(net, (0,))(*input_args)
     expect_grad = np_backward_func(x, axis, keepdims, expect,
                                    (np.ones_like(expect[0]), np.ones_like(expect[1])))
     assert np.allclose(output_grad.asnumpy(), expect_grad)
@@ -75,7 +75,7 @@ def min_max_dim_case_dyn(op_func, np_func, dyn_rank=False):
         expect = np_func(input_np, axis, keepdims)
         compare(output, expect)
         # backward:
-        output_grad = ops.grad(net)(input_t)
+        output_grad = ms.grad(net, (0,))(input_t)
         expect_grad = np_backward_func(input_np, axis, keepdims, expect,
                                        (np.ones_like(expect[0]), np.ones_like(expect[1])))
         assert np.allclose(output_grad.asnumpy(), expect_grad)
@@ -100,7 +100,7 @@ def test_min_dim(mode):
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    min_max_dim_case(min, np_min_dim)
+    min_max_dim_case(min_, np_min_dim)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -113,7 +113,7 @@ def test_min_dim_dyn(mode):
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    min_max_dim_case_dyn(min, np_min_dim)
+    min_max_dim_case_dyn(min_, np_min_dim)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -126,7 +126,7 @@ def test_min_dim_dyn_rank(mode):
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    min_max_dim_case_dyn(min, np_min_dim, True)
+    min_max_dim_case_dyn(min_, np_min_dim, True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -140,5 +140,5 @@ def test_min_dim_all_dynamic():
     input_case1 = [t1, -1]
     t2 = Tensor(np.array([[[1, 20, 5], [67, 8, 9]], [[130, 24, 15], [16, 64, 32]]], dtype=np.float32))
     input_case2 = [t2, 0]
-    TEST_OP(min, [input_case1, input_case2], '', disable_yaml_check=True,
+    TEST_OP(min_, [input_case1, input_case2], '', disable_yaml_check=True,
             disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])

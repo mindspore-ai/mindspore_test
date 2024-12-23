@@ -6,6 +6,13 @@ max:
     GPU: pyboost
     interface: tensor, function
 
+  - op_yaml: max_dim_op.yaml
+    py_method: tensor_maxdim
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function
+
   - op_yaml: deprecated/max_method.yaml
     py_method: deprecated_tensor_max
     kwonlyargs: initial, where, return_indices
@@ -13,10 +20,3 @@ max:
     CPU: py_method
     GPU: py_method
     interface: tensor
-
-  - op_yaml: max_dim_op.yaml
-    py_method: tensor_maxdim
-    Ascend: pyboost
-    CPU: py_method
-    GPU: py_method
-    interface: tensor, function

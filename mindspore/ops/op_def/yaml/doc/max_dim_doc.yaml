@@ -4,7 +4,6 @@ max_dim:
         Calculates the maximum value along with the given axis for the input tensor, and returns the maximum values and
         indices.
 
-
         Inputs:
             - **input** (Tensor) - The input tensor, can be any dimension. Set the shape of input tensor as
               :math:`(input_1, input_2, ..., input_N)` .Complex tensor is not supported.

@@ -33,7 +33,7 @@ constexpr size_t kOutputNum = 2;
 
 class ArgMaxAndMinWithValueGpuKernelMod : public NativeGpuKernelMod {
  public:
-  ArgMaxAndMinWithValueGpuKernelMod(size_t index_output_idx = 0, size_t value_output_idx = 1)
+  explicit ArgMaxAndMinWithValueGpuKernelMod(size_t index_output_idx = 0, size_t value_output_idx = 1)
       : index_output_idx(index_output_idx), value_output_idx(value_output_idx) {
     ResetResource();
   }

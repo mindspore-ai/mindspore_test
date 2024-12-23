@@ -33,7 +33,7 @@
 #include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore::ops {
-static inline void IsValidType(const std::string &type_name, const TypeId &t, const TypePtr &type) {
+static inline void IsValidLogAddExpType(const std::string &type_name, const TypeId &t, const TypePtr &type) {
   static const std::set<TypeId> valid_types = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
   if (valid_types.find(t) == valid_types.end()) {
     MS_EXCEPTION(TypeError) << "For primitive[LogAddExp], the input argument [" << type_name
@@ -68,8 +68,8 @@ TypePtrList LogAddExpFuncImpl::InferType(const PrimitivePtr &primitive, const Va
   const auto &other_type = other_tensor->Dtype();
   const auto &input_type_id = input_tensor->Dtype()->type_id();
   const auto &other_type_id = other_tensor->Dtype()->type_id();
-  IsValidType("input", input_type_id, input_type);
-  IsValidType("other", other_type_id, other_type);
+  IsValidLogAddExpType("input", input_type_id, input_type);
+  IsValidLogAddExpType("other", other_type_id, other_type);
   return {input_type};
 }
 
