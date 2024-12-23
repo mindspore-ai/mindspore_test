@@ -887,6 +887,27 @@ KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGrap
   return root_graph;
 }
 
+void BuildStreamForCompileCache(const KernelGraphPtr &kernel_graph, const DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  uint32_t max_stream_id = 0;
+  for (const auto &node : kernel_graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(node);
+    const auto &device_kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+    if (device_kernel_info == nullptr) {
+      MS_LOG(INFO) << "The node " << node->DebugString() << " has no device_kernel_info.";
+      continue;
+    }
+    uint32_t stream_id = device_kernel_info->stream_id();
+    max_stream_id = std::max(stream_id, max_stream_id);
+  }
+  size_t stream_id = 0;
+  while (max_stream_id >= device_context->device_res_manager_->QueryStreamSize()) {
+    device_context->device_res_manager_->CreateStream(&stream_id);
+    MS_LOG(INFO) << "Success to create stream id:" << stream_id << ".";
+  }
+}
+
 void GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) { session_->CacheKernelGraph(graphs); }
 
 bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
@@ -903,6 +924,7 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
   const auto &context = MsContext::GetInstance();
   auto post_compile = [this, device_context, context](const KernelGraphPtr &graph) {
     use_cache_to_compile_graph_ = true;
+    BuildStreamForCompileCache(graph, device_context);
     // Create event before create kernelmod
     device_context->GetKernelExecutor(false)->CreateEventForCache(graph);
     PROF_START(CreateKernel);
