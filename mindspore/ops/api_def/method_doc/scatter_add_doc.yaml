@@ -44,17 +44,17 @@ scatter_add:
     Examples:
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
         >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
-        >>> out = ops.function.array_func.scatter_add_ext(input=input, dim=1, index=index, src=src)
+        >>> out = input.scatter_add(dim=1, index=index, src=src)
         >>> print(out)
         [[1. 2. 11. 4. 13.]]
         >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
         >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
-        >>> out = ops.function.array_func.scatter_add_ext(input=input, dim=0, index=index, src=src)
+        >>> out = input.scatter_add(dim=0, index=index, src=src)
         >>> print(out)
         [[1. 2. 3. 0. 0.]
          [0. 0. 0. 0. 0.]
@@ -64,7 +64,7 @@ scatter_add:
         >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
         >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
-        >>> out = ops.function.array_func.scatter_add_ext(input=input, dim=1, index=index, src=src)
+        >>> out = input.scatter_add(dim=1, index=index, src=src)
         >>> print(out)
         [[1. 0. 2. 0. 3.]
          [4. 0. 5. 0. 6.]
@@ -120,12 +120,11 @@ scatter_add:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, nn
-        >>> from mindspore import ops
+        >>> from mindspore import Tensor
         >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
         >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
         >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
-        >>> output = ops.tensor_scatter_add(input_x, indices, updates)
+        >>> output = input_x.scatter_add(indices, updates)
         >>> print(output)
         [[ 3.1  0.3  3.6]
          [ 0.4  0.5 -3.2]]

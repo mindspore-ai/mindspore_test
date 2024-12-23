@@ -40,17 +40,17 @@ scatter:
     Examples:
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> from mindspore import Tensor, mint
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
         >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
-        >>> out = mint.scatter(input=input, dim=1, index=index, src=src)
+        >>> out = input.scatter(dim=1, index=index, src=src)
         >>> print(out)
         [[1. 2. 8. 4. 8.]]
         >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
         >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
-        >>> out = mint.scatter(input=input, dim=0, index=index, src=src)
+        >>> out = input.scatter(dim=0, index=index, src=src)
         >>> print(out)
         [[1. 2. 3. 0. 0.]
          [0. 0. 0. 0. 0.]
@@ -60,7 +60,7 @@ scatter:
         >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
         >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
-        >>> out = mint.scatter(input=input, dim=1, index=index, src=src)
+        >>> out = input.scatter(dim=1, index=index, src=src)
         >>> print(out)
         [[1. 0. 2. 0. 3.]
          [4. 0. 5. 0. 6.]
@@ -101,17 +101,17 @@ scatter:
     Examples:
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
         >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
-        >>> out = ops.scatter(input=input, axis=1, index=index, src=src)
+        >>> out = input.scatter(axis=1, index=index, src=src)
         >>> print(out)
         [[1. 2. 8. 4. 8.]]
         >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
         >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
-        >>> out = ops.scatter(input=input, axis=0, index=index, src=src)
+        >>> out = input.scatter(axis=0, index=index, src=src)
         >>> print(out)
         [[1. 2. 3. 0. 0.]
          [0. 0. 0. 0. 0.]
@@ -121,7 +121,7 @@ scatter:
         >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
         >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
         >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
-        >>> out = ops.scatter(input=input, axis=1, index=index, src=src)
+        >>> out = input.scatter(axis=1, index=index, src=src)
         >>> print(out)
         [[1. 0. 2. 0. 3.]
          [4. 0. 5. 0. 6.]
