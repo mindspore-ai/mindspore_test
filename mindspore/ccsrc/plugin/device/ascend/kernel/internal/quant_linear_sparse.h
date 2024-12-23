@@ -25,7 +25,21 @@
 
 namespace mindspore {
 namespace kernel {
-DECLARE_INTERNAL_KERNEL_MOD(QuantLinearSparse)
+class InternalQuantLinearSparse : public InternalKernelMod {
+ public:
+  InternalQuantLinearSparse() : InternalKernelMod() {}
+  ~InternalQuantLinearSparse() = default;
+
+ protected:
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs,
+                                       const std::vector<KernelTensor *> &ms_inputs,
+                                       const std::vector<KernelTensor *> &ms_outputs) override;
+  uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
+
+ private:
+  internal::TensorFormat output_format_;
+};
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_QUANT_LINEAR_SPARSE_H_
