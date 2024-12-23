@@ -325,6 +325,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return Tensor_.__repr__(self)
         return ''
 
+    def __eq__(self, other):
+        if not isinstance(other, (int, float, Tensor)):
+            return False
+        return tensor_operator_registry.get('__eq__')(self, other)
+
     def __ne__(self, other):
         if not isinstance(other, (int, float, Tensor)):
             return True
