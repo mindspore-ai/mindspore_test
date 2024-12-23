@@ -122,13 +122,15 @@ bool AscendCommunicationGroup::Finalize() {
 }
 
 bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank) {
+  HcclCommConfigInit(&config_);
   auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
   uint32_t buffsize = instance->GetBuffsize(name_);
-  config_.hcclBufferSize = buffsize;
+  config_.hcclBufferSize = buffsize == 0 ? HCCL_COMM_DEFAULT_BUFFSIZE : buffsize;
+  config_.hcclDeterministic = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? 1 : 0;
   MS_LOG(WARNING) << "Start to initialize communicator by InitializeByRootInfoConfig for " << name_
-                  << ", hcclBufferSize is " << config_.hcclBufferSize << " MB.";
+                  << ", hcclBufferSize is " << config_.hcclBufferSize << " MB."
+                  << " hcclDeterministic is " << config_.hcclDeterministic;
   unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
-  HcclCommConfigInit(&config_);
   auto ret = hccl::HcclAdapter::GetInstance().HcclCommInitRootInfoConfig(
     static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank), &config_, &comm_);
   if (ret != static_cast<int32_t>(HCCL_SUCCESS)) {

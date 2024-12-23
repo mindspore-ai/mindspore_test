@@ -65,6 +65,13 @@ using GroupToResultMap = std::unordered_map<std::string, std::pair<bool, std::st
 // Interval of initializing each communicator in queue is 300 milliseconds.
 const uint32_t kInitCommInterval = 300;
 
+// This the config passed to 'CreateCommunicationGroup' method. It controls initialization mode for communication group.
+struct CreateGroupConfig {
+  bool async = false;      // Whether creating communication group asynchonizely.
+  bool submit_now = true;  // For sync manner, this key means whether submit init task immediately for this group. If
+                           // set to false, caller has to call 'SubmitCreateDeviceCommTask' itself.
+};
+
 // The collective communication API.
 // MindSpore uses OpenMPI on CPU, NCCL on GPU, HCCL on Ascend, to achieve distributed training.
 // Besides, MindSpore also has its own communication library which is implemented on the CPU side.
@@ -82,7 +89,7 @@ class BACKEND_EXPORT CollectiveManager {
 
   // Create communication group.
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                bool async = false);
+                                const CreateGroupConfig &config = {});
 
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
