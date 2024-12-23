@@ -175,8 +175,11 @@ bool SparseSoftmaxCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTen
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset output failed. Error no: " << ret;
   }
   auto *indices_addr = static_cast<I *>(inputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(indices_addr);
   auto *values_addr = static_cast<T *>(inputs[kIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(values_addr);
   auto *output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   const size_t indices_length = inputs[kIndex0]->size() / sizeof(I);
   const size_t values_length = inputs[kIndex1]->size() / sizeof(T);
   std::vector<T> exp_values;

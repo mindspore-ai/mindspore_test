@@ -60,7 +60,9 @@ bool EmbeddingLookUpCommGradCpuKernelMod::Launch(const std::vector<kernel::Kerne
   (void)gettimeofday(&start_time, nullptr);
 #endif
   auto *input_addr = reinterpret_cast<float *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr);
   auto *output_addr = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   if (split_type_ == kNumberTypeInt32) {
     InitSplitNum<int32_t>(inputs);
   } else {

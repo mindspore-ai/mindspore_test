@@ -54,7 +54,9 @@ bool SeluCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &i
   T scale = static_cast<T>(1.05070098);
   T scale_dot_alpha = static_cast<T>(1.67326324 * 1.05070098);
   auto input = reinterpret_cast<T *>(inputs.at(kIndex0)->device_ptr());
+  MS_EXCEPTION_IF_NULL(input);
   auto output = reinterpret_cast<T *>(outputs.at(kIndex0)->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
   auto task = [&input, &output, &scale_dot_alpha, &scale](size_t start, size_t end) {
     T template_zero = static_cast<T>(0);
     for (size_t i = start; i < end; i++) {

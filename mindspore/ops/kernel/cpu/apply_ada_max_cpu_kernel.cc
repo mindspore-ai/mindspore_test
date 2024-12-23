@@ -149,14 +149,23 @@ template <typename T>
 void ApplyAdaMaxCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   T *var = reinterpret_cast<T *>(inputs[kIndexVar]->device_ptr());
+  MS_EXCEPTION_IF_NULL(var);
   T *m = reinterpret_cast<T *>(inputs[kIndexM]->device_ptr());
+  MS_EXCEPTION_IF_NULL(m);
   T *v = reinterpret_cast<T *>(inputs[kIndexV]->device_ptr());
+  MS_EXCEPTION_IF_NULL(v);
   T *beta1_power = reinterpret_cast<T *>(inputs[kIndexBeta1Power]->device_ptr());
+  MS_EXCEPTION_IF_NULL(beta1_power);
   T *lr = reinterpret_cast<T *>(inputs[kIndexLr]->device_ptr());
+  MS_EXCEPTION_IF_NULL(lr);
   T *beta1 = reinterpret_cast<T *>(inputs[kIndexBeta1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(beta1);
   T *beta2 = reinterpret_cast<T *>(inputs[kIndexBeta2]->device_ptr());
+  MS_EXCEPTION_IF_NULL(beta2);
   T *epsilon = reinterpret_cast<T *>(inputs[kIndexEpsilon]->device_ptr());
+  MS_EXCEPTION_IF_NULL(epsilon);
   T *grad = reinterpret_cast<T *>(inputs[kIndexGrad]->device_ptr());
+  MS_EXCEPTION_IF_NULL(grad);
 
   auto one = static_cast<T>(1);
   if (beta1_power[kScalarIndex] == one) {

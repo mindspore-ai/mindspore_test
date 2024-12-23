@@ -80,8 +80,11 @@ template <typename T>
 void GluGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
   const auto *input0 = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input0);
   const auto *input1 = static_cast<T *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input1);
   auto *output = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
   std::vector<int64_t> shape = x_shape_;
   int64_t dim = axis_;
   size_t lens = outputs[0]->size() > 0 ? outputs[0]->size() / sizeof(T) : 1;

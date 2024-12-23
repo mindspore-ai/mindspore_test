@@ -99,6 +99,7 @@ bool ExtractGlimpseCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *
 }
 
 void Necessity(uint64_t un, bool u_n, float *y_d, uint64_t p_y, string no) {
+  MS_EXCEPTION_IF_NULL(y_d);
   if (u_n) {
     y_d[p_y + un] = dis_uniform(gen);
   } else if (no == "zero") {
@@ -145,9 +146,13 @@ bool ExtractGlimpseCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   const size_t kNumber8 = 8;
   const size_t kNumber1024 = 1024;
   float *x_data = static_cast<float *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_data);
   int32_t *ss_data = static_cast<int32_t *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(ss_data);
   float *offsets_data = static_cast<float *>(inputs[kInputIndex3]->device_ptr());
+  MS_EXCEPTION_IF_NULL(offsets_data);
   float *y_data = static_cast<float *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(y_data);
   uint64_t batch_cnt = static_cast<uint64_t>(input_shape_[0]);
   uint64_t image_height = static_cast<uint64_t>(input_shape_[1]);
   uint64_t image_width = static_cast<uint64_t>(input_shape_[kInputIndex3]);

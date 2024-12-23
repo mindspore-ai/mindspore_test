@@ -122,9 +122,11 @@ template <typename ID, typename OD>
 void OneHotCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   const auto *indices = reinterpret_cast<ID *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(indices);
   auto on_value = GetDeviceAddress<OD>(inputs, kIndex2)[0];
   auto off_value = GetDeviceAddress<OD>(inputs, kIndex3)[0];
   auto *output = reinterpret_cast<OD *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
   size_t elem_num = inputs[0]->size() / sizeof(ID);
   auto task = [this, &indices, &on_value, &off_value, &output](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
