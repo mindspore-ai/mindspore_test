@@ -1,15 +1,14 @@
 mindspore.Tensor.item
 =====================
 
-.. py:method:: mindspore.Tensor.item(index=None)
+.. py:method:: mindspore.Tensor.item()
 
-    获取Tensor中指定索引的元素。
+    返回只包含一个元素的Tensor的元素值。
 
-    参数：
-        - **index** (Union[None, int, tuple(int)]) - Tensor的索引。默认值： ``None`` 。
 
     返回：
         标量，类型由Tensor的dtype决定。
 
     异常：
-        - **ValueError** - `index` 的长度不等于Tensor的ndim。
+        - **ValueError** - Tensor的元素个数不止一个。
+        - **TypeError** - 调用item接口的Tensor的元素数据类型不被支持。
