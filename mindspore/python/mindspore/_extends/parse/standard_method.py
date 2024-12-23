@@ -106,12 +106,14 @@ def hypermap_dynamic_list(func, *inputs):
         i = i + 1
     return ret
 
+
 def index_add_(x, dim, index, source, *, alpha=1):
     """
     Accumulate the elements of `alpha` times `source` into the `self` by adding to the indices
     in the order given in `index`.
     """
     return inplace_index_add_op(x, dim, index, source, alpha)
+
 
 def mean(x, axis=None, keep_dims=False):
     """
