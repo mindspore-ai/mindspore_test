@@ -34,6 +34,8 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+constexpr size_t kByteOffset = 8;
+
 DefaultAscendMemoryPool::DefaultAscendMemoryPool() {
   MS_LOG(DEBUG) << "DefaultAscendMemoryPool constructed.";
   SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
@@ -48,18 +50,18 @@ namespace {
 template <typename T>
 void EncodeIntoUInt8(T data, std::vector<uint8_t> *result) {
   for (size_t i = 0; i < sizeof(T); i++) {
-    result->push_back((static_cast<size_t>(data) >> (i * 8)) & 0xff);
+    result->push_back((static_cast<size_t>(data) >> (i * kByteOffset)) & 0xff);
   }
 }
 
 void EncodeStringIntoUInt8(std::string str, std::vector<uint8_t> *result) {
   uint16_t str_type = static_cast<uint16_t>(profiler::ascend::OpRangeDataType::NAME);
   for (size_t i = 0; i < sizeof(uint16_t); ++i) {
-    result->push_back((str_type >> (i * 8)) & 0xff);
+    result->push_back((str_type >> (i * kByteOffset)) & 0xff);
   }
   uint32_t length = str.size();
   for (size_t i = 0; i < sizeof(uint32_t); ++i) {
-    result->push_back((length >> (i * 8)) & 0xff);
+    result->push_back((length >> (i * kByteOffset)) & 0xff);
   }
   result->insert(result->end(), str.begin(), str.end());
 }
@@ -117,11 +119,11 @@ std::vector<uint8_t> AscendMemoryTimeEvent::encode() {
   std::vector<uint8_t> tlv_result;
   uint16_t data_type = static_cast<uint16_t>(profiler::ascend::OpRangeDataType::NAME);
   for (size_t i = 0; i < sizeof(uint16_t); i++) {
-    (void)tlv_result.emplace_back(data_type >> (i * 8) & 0xff);
+    (void)tlv_result.emplace_back(data_type >> (i * kByteOffset) & 0xff);
   }
   uint32_t length = result.size();
   for (size_t i = 0; i < sizeof(uint32_t); i++) {
-    (void)tlv_result.emplace_back(length >> (i * 8) & 0xff);
+    (void)tlv_result.emplace_back(length >> (i * kByteOffset) & 0xff);
   }
   tlv_result.insert(tlv_result.end(), result.cbegin(), result.cend());
   return tlv_result;

@@ -1150,9 +1150,9 @@ MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenAllocateMemoryTimeEvent(co
                                                                               uint32_t stream_id, bool from_persistent,
                                                                               bool is_persistent) {
   auto time_event = std::make_shared<MemoryTimeEvent>();
-  time_event->created_at_ =
+  time_event->created_at_ = static_cast<uint64_t>(
     std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch())
-      .count();
+      .count());
   time_event->addr_ = const_cast<void *>(addr);
   time_event->size_ = size;
   time_event->from_persistent_ = static_cast<uint8_t>(from_persistent);
@@ -1171,9 +1171,9 @@ MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenAllocateMemoryTimeEvent(co
 
 MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenFreeMemoryTimeEvent(const void *addr) {
   auto time_event = std::make_shared<MemoryTimeEvent>();
-  time_event->created_at_ =
+  time_event->created_at_ = static_cast<uint64_t>(
     std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch())
-      .count();
+      .count());
   time_event->addr_ = const_cast<void *>(addr);
   const size_t time_event_free_size = -1;
   time_event->size_ = time_event_free_size;
