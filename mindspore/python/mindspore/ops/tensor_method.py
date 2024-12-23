@@ -1416,12 +1416,15 @@ def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
     """
     return addmm(input, mat1, mat2, beta=beta, alpha=alpha)
 
+
 # 790
 def tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
     return addmv_op(input, mat, vec, beta, alpha)
 
+
 def deprecated_tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
     return addmv_op(input, mat, vec, beta, alpha)
+
 
 def tensor_clone(input):
     return clone(input)
