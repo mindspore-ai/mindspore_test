@@ -548,7 +548,8 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
 
 bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
   MS_LOG(INFO) << "Debug on step begin.";
-  if (ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE &&
+  if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1" &&
+      ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE &&
       ConfigManager::GetInstance().iter_num() != 1) {
     MS_LOG(EXCEPTION) << "When using acl dump in data sink mode, sink size must be 1, but got "
                       << ConfigManager::GetInstance().iter_num() << ".";
