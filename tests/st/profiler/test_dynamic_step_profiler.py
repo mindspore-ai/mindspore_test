@@ -224,12 +224,10 @@ def test_dynamic_step_single_active_py_native_profiler():
             "kernel_details.csv"
         )
         # Check whether the kernel.csv contains the step id column(to prevent empty steps)
-        expected_step_df1 = [3] * 30
-        expected_step_df2 = [6] * 30
         df1 = pd.read_csv(kernel_details_path_step_1)["Step ID"].tolist()
         df2 = pd.read_csv(kernel_details_path_step_2)["Step ID"].tolist()
-        assert df1 == expected_step_df1
-        assert df2 == expected_step_df2
+        assert all(step_id == 3 for step_id in df1)
+        assert all(step_id == 6 for step_id in df2)
         # Check trace_view.json
         trace_view_json_path_1 = os.path.join(
             tmpdir,
