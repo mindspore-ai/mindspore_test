@@ -149,11 +149,11 @@ FUNCTIONAL_OVERLOAD_PY_TEMPLATE = Template.load_from_file(
 TENSOR_FUNC_CC_REG = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_cc_reg.tpl'))
 
-TENSOR_FUNC_HEADER = Template.load_from_file(
-    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_header.tpl'))
+TENSOR_API_HEADER = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_api_header.tpl'))
 
-TENSOR_FUNC_SOURCE = Template.load_from_file(
-    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_source.tpl'))
+TENSOR_API_SOURCE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_api_source.tpl'))
 
 TENSOR_FUNC_UTILS = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_utils_header.tpl'))

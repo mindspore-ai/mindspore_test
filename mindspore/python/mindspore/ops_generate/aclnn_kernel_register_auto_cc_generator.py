@@ -72,7 +72,7 @@ class AclnnKernelRegisterAutoCcGenerator(BaseGenerator):
                                                         aclnn_reg_code=aclnn_reg_code)
         res_str = template.CC_LICENSE_STR + reg_code
 
-        save_path = os.path.join(work_path, f"{K.MS_OPS_KERNEL_PATH}/ascend/opapi/")
+        save_path = os.path.join(work_path, f"{K.MS_OPS_KERNEL_PATH}/ascend/opapi/auto_generate")
         file_name = "aclnn_kernel_register_auto.cc"
         gen_utils.save_file(save_path, file_name, res_str)
 
@@ -87,6 +87,8 @@ def get_registed_ops(file_path=f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/'):
     try:
         for root_path, _, files in os.walk(search_path):
             for file_name in files:
+                if file_name == 'aclnn_kernel_register_auto.cc':
+                    continue
                 with open(os.path.join(root_path, file_name), "r") as f:
                     file_context = f.read()
                     search_re = re.search(r"(?<=KERNEL_FACTORY_REG\()\w+(?=,)", file_context)
