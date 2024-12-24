@@ -921,6 +921,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
             # if user defined sampler, update the self.source_len
             if isinstance(self.sampler, samplers.Sampler) or hasattr(self.sampler, "__iter__"):
+                if self.sampler.child_sampler is not None:
+                    raise RuntimeError("GeneratorDataset does not support user defined sampler with child sampler yet.")
                 if self.sampler.num_samples is not None:
                     self.source_len = self.sampler.num_samples
                 elif hasattr(self.sampler, "__len__"):
