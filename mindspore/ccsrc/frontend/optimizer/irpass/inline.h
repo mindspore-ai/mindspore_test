@@ -169,8 +169,10 @@ class InlinerBase : public AnfVisitor {
       // we move the whole fg nodes.
       auto res_node = InlineForUniqueUse(node, fg, args, inputs);
       if (res_node != nullptr) {
-        if (node->abstract() != nullptr) {
-          res_node->set_abstract(node->abstract());
+        auto node_abs = node->abstract();
+        auto res_node_abs = res_node->abstract();
+        if (node_abs != nullptr && (res_node_abs == nullptr || !res_node_abs->isa<abstract::AbstractRefTensor>())) {
+          res_node->set_abstract(node_abs);
         }
         return res_node;
       }
