@@ -436,9 +436,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __imod__(self, other):
         return self.__mod__(other)
 
-    def __pow__(self, other):
-        return tensor_operator_registry.get('__pow__')(self, other)
-
     def __rpow__(self, other):
         return tensor_operator_registry.get('__rpow__')(self, other)
 
