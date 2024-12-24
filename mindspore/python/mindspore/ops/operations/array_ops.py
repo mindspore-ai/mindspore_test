@@ -4980,7 +4980,7 @@ class Tril(Primitive):
             indicating the main diagonal.
 
     Inputs:
-        - **x** (Tensor) - The input tensor with shape :math:`(M, N, *)`
+        - **x** (Tensor) - The input tensor with shape :math:`(*, M, N)`
           where :math:`*` means any number of additional dimensions.
 
     Outputs:

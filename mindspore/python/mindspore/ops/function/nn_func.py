@@ -8914,7 +8914,7 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
         >>> key = Tensor(np.ones((B, N, S, D), dtype=np.float16))
         >>> value = Tensor(np.ones((B, N, S, D), dtype=np.float16))
         >>> out = ops.prompt_flash_attention(query, key, value, None, None, None, None, None, None, None, None,
-                                             None, N, input_layout='BNSD')
+        ...                                  None, N, input_layout='BNSD')
         >>> print(out.shape)
         (1, 16, 256, 16)
     """
