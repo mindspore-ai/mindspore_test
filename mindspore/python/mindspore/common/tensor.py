@@ -4268,7 +4268,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def _data_ptr(self):
         r"""
         Get the data ptr address of tensor, for CPU is host address, GPU/NPU is device address.
-        User should know how to use the data ptr address
+        User should know how to use the data ptr address.
+        Note: this api is an experimental api, users need understatnd it before use.
 
         Supported Platforms:
             ``CPU/GPU/Ascend``
