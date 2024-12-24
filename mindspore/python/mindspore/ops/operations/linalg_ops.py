@@ -51,9 +51,10 @@ class Svd(Primitive):
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import Tensor, set_context
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
         >>> from mindspore import ops
-        >>> set_context(device_target="CPU")
+        >>> ms.set_device(device_target="CPU")
         >>> svd = ops.Svd(full_matrices=True, compute_uv=True)
         >>> a = Tensor(np.array([[1, 2], [-4, -5], [2, 1]]).astype(np.float32))
         >>> s, u, v = svd(a)

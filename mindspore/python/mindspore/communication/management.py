@@ -316,7 +316,7 @@ def get_local_rank(group=GlobalComm.WORLD_COMM_GROUP):
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_rank, get_local_rank
-        >>> ms.set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> world_rank = get_rank()
@@ -411,7 +411,7 @@ def get_local_rank_size(group=GlobalComm.WORLD_COMM_GROUP):
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_local_rank_size
-        >>> ms.set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> local_rank_size = get_local_rank_size()
@@ -462,7 +462,8 @@ def get_world_rank_from_group_rank(group, group_rank_id):
         >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore.communication import init, create_group, get_world_rank_from_group_rank, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-4"
         >>> rank_ids = [0,4]
@@ -516,7 +517,8 @@ def get_group_rank_from_world_rank(world_rank_id, group):
         >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore.communication import init, create_group, get_group_rank_from_world_rank, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-4"
         >>> rank_ids = [0,4]
@@ -568,7 +570,8 @@ def create_group(group, rank_ids):
         >>> from mindspore import set_context
         >>> from mindspore import ops
         >>> from mindspore.communication import init, create_group, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-7"
         >>> rank_ids = [0,7]
@@ -616,7 +619,8 @@ def destroy_group(group):
         >>> from mindspore import set_context
         >>> from mindspore import ops
         >>> from mindspore.communication import init, create_group, destroy_group, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-2"
         >>> rank_ids = [0,2]

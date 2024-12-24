@@ -284,7 +284,8 @@ class TensorDump(Primitive):
         >>> import mindspore as ms
         >>> import time
         >>> from mindspore import nn, Tensor, ops
-        >>> ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super(Net, self).__init__()
