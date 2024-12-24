@@ -743,9 +743,6 @@ using AbstractTensorPtrList = std::vector<AbstractTensorPtr>;
 class MS_CORE_API AbstractAny : public AbstractTensor {
  public:
   /// \brief Constructor of AbstractAny.
-  ///
-  /// \param[in] element The abstract to be wrapper as a abstract tensor.
-  /// \param[in] shape The dimension of abstract tensor.
   AbstractAny();
 
   /// \brief Destructor of AbstractAny.
@@ -778,17 +775,14 @@ using AbstractAnyPtrList = std::vector<AbstractAnyPtr>;
 /// and should choose other branch in control flow.
 ///
 /// AbstractNegligible is even not a Tensor type, but any type.
-class MS_CORE_API AbstractNegligible : public AbstractAny {
+class MS_CORE_API AbstractNegligible : public AbstractTensor {
  public:
   /// \brief Constructor of AbstractNegligible.
-  ///
-  /// \param[in] element The abstract to be wrapper as a abstract tensor.
-  /// \param[in] shape The dimension of abstract tensor.
-  AbstractNegligible() : AbstractAny() {}
+  AbstractNegligible();
 
   /// \brief Destructor of AbstractNegligible.
   ~AbstractNegligible() override = default;
-  MS_DECLARE_PARENT(AbstractNegligible, AbstractAny)
+  MS_DECLARE_PARENT(AbstractNegligible, AbstractTensor)
 
   AbstractBasePtr Join(const AbstractBasePtr &other) override;
 

@@ -1862,6 +1862,8 @@ TypePtr AbstractAny::BuildType() const {
   return std::make_shared<AnyType>(element_type);
 }
 
+AbstractNegligible::AbstractNegligible() : AbstractTensor(kFloat64, std::make_shared<Shape>(ShapeVector({1}))) {}
+
 AbstractBasePtr AbstractNegligible::Join(const AbstractBasePtr &other) {
   MS_EXCEPTION_IF_NULL(other);
   if (other->isa<AbstractScalar>()) {
