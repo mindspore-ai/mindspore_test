@@ -115,6 +115,8 @@ def get_tensor_op_protos_with_deprecated(func_protos, op_protos):
             op_name = func_proto.op_proto.op_name
             if "deprecated" in func_proto.op_proto.op_name:
                 func_proto.op_proto.op_class.name = ''.join(word.capitalize() for word in op_name.split('_'))
+                if func_proto.op_proto.op_name[-1] == '_':
+                    func_proto.op_proto.op_class.name += '_'
                 tensor_op_protos.append(func_proto.op_proto)
     return tensor_op_protos
 

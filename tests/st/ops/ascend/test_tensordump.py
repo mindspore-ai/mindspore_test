@@ -273,7 +273,7 @@ def test_tensordump_when_graph_pynative_hybrid_rank_step():
     net = Net(path)
     _tensordump_set_step([0, 2])
     for _ in range(3):
-        net(x)
+        net(x.copy())
         step()
     time.sleep(1)
     validate_files(temp_dir.name, "rank0", ["step0", "step2"], {
