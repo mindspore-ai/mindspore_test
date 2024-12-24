@@ -3966,42 +3966,62 @@ def to(input_x, dtype):
     r"""
     Performs tensor dtype conversion.
     """
-    return P.Cast()(input_x, dtype)
+    return F.cast(input_x, dtype)
 
 
 def to_bool(input_x):
     r"""
     Converts input tensor dtype to bool.
     """
-    return P.Cast()(input_x, mstype.bool_)
+    return F.cast(input_x, mstype.bool_)
 
 
 def to_float(input_x):
     r"""
     Converts input tensor dtype to float32.
     """
-    return P.Cast()(input_x, mstype.float32)
+    return F.cast(input_x, mstype.float32)
 
 
 def to_half(input_x):
     r"""
     Converts input tensor dtype to float16.
     """
-    return P.Cast()(input_x, mstype.float16)
+    return F.cast(input_x, mstype.float16)
 
 
 def to_int(input_x):
     r"""
     Converts input tensor dtype to int32.
     """
-    return P.Cast()(input_x, mstype.int32)
+    return F.cast(input_x, mstype.int32)
 
 
 def to_long(input_x):
     r"""
     Converts input tensor dtype to int64.
     """
-    return P.Cast()(input_x, mstype.int64)
+    return F.cast(input_x, mstype.int64)
+
+
+def to_double(input_x):
+    r"""
+    Converts input tensor dtype to float64.
+    """
+    return F.cast(input_x, mstype.float64)
+
+def to_bfloat16(input_x):
+    r"""
+    Converts input tensor dtype to bfloat16.
+    """
+    return F.cast(input_x, mstype.bfloat16)
+
+
+def to_byte(input_x):
+    r"""
+    Converts input tensor dtype to uint8.
+    """
+    return F.cast(input_x, mstype.uint8)
 
 
 def cholesky(input_x, upper=False):

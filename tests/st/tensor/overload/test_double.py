@@ -15,14 +15,19 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
 import mindspore as ms
-import mindspore.nn as nn
 from mindspore import Tensor
 
 
-class Net(nn.Cell):
-    def construct(self, x):
-        return x.double()
+@test_utils.run_with_cell
+def tensor_double_forward_func(input_x):
+    return input_x.double()
+
+
+@test_utils.run_with_cell
+def tensor_double_grad_func(input_x):
+    return ms.grad(tensor_double_forward_func)(input_x)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -37,8 +42,24 @@ def test_tensor_double(mode):
     Expectation: success
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
-    net = Net()
-    x = Tensor(np.ones([2, 2]), ms.float32)
-    output = net(x)
+    x = Tensor(np.ones([2, 2]), ms.int32)
+    output = tensor_double_forward_func(x)
     assert x.shape == output.shape
     assert output.dtype == ms.float64
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_tensor_double_grad(mode):
+    """
+    Feature: tensor.double grad
+    Description: Verify the result of double.
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    x = Tensor(np.ones([2, 2]), ms.int32)
+    output = tensor_double_grad_func(x)
+    assert np.allclose(output.asnumpy(), np.ones([2, 2]))
