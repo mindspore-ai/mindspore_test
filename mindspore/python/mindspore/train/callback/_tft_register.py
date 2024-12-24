@@ -350,13 +350,13 @@ class TFTRegister(Callback):
             self._set_tft_optimizer_replica(run_context)
         cb_params = run_context.original_args()
         logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
-        self.tft.tft_end_updating_os(cb_params.cur_step_num)
         if cb_params.optimizer is not None:
             self.global_step = int(cb_params.optimizer.global_step.data)
             self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
         else:
             self.global_step = int(cb_params.network.optimizer.global_step.data)
             self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
+        self.tft.tft_end_updating_os(cb_params.cur_step_num)
         logger.info("END Set optimizer finish step status to TFT.")
 
 
