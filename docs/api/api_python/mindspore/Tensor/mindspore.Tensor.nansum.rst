@@ -10,7 +10,7 @@ mindspore.Tensor.nansum
         - 这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **dim** (Union[int, tuple(int)], 可选) - 求和的维度。取值范围[-rank(sel`), rank(self))。默认值： ``None`` ，对Tensor中的所有元素求和。
+        - **dim** (Union[int, tuple(int)], 可选) - 求和的维度。取值范围[-rank(self), rank(self))。默认值： ``None`` ，对Tensor中的所有元素求和。
         - **keepdim** (bool, 可选) - 输出Tensor是否保持维度。默认值： ``False`` ，不保留维度。
 
     关键字参数：

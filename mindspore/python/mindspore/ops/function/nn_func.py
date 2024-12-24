@@ -2679,7 +2679,7 @@ def interpolate_ext(input,
     r"""
     Samples the input Tensor to the given size or scale_factor by using one of the interpolate algorithms.
 
-    .. warnings:
+    .. warnings::
         This is an experimental API that is subject to change or deletion.
 
     .. note::
@@ -7163,7 +7163,7 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
       and :math:`kw` is in the range [1, 511]. The remaining values are in the range [1, int32_max].
       And :math:`kh*kw*k0` is less 65536 (k0 is 16. If data type is float32, k0 is 8).
     - bias -- Bias Tensor with shape :math:`(C_{out})`. The shape must equal the first dimension of the weight.
-    - math:`stride` -- The distance of kernel moving. It can be an int number or
+    - stride -- The distance of kernel moving. It can be an int number or
       tuple (noted by :math:`(stride_d, stride_h, stride_w)`). stride_h and stride_w are in the range [1, 63].
       stride_d is in the range [1, 255].
     - padding -- If padding is an int number, it is in the range [0, 255].
@@ -8021,7 +8021,7 @@ def relu_(input):
     .. image:: ../images/ReLU.png
         :align: center
 
-    warning:
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
@@ -8701,10 +8701,9 @@ def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, *, ce
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.nn_func import max_pool2d_ext
         >>> input = Tensor(np.arange(20 * 16 * 50 * 32).reshape((20, 16, 50, 32)), mindspore.float32)
-        >>> output_tensor, argmax = max_pool2d_ext(input, kernel_size=(3, 2), stride=(2, 1),
-                                                          ceil_mode=False, return_indices=True)
+        >>> output_tensor, argmax = ops.function.nn_func.max_pool2d_ext(input, kernel_size=(3, 2), stride=(2, 1),
+                                                                        ceil_mode=False, return_indices=True)
         >>> print(output_tensor.shape)
         (20, 16, 24, 31)
         >>> print(argmax.shape)
@@ -9087,7 +9086,7 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
         >>> query = Tensor(np.random.randn(B, 1, N * D), mstype.float16)
         >>> key = [Tensor(np.random.randn(B, S, kvN * D), mstype.float16)]
         >>> value = [Tensor(np.random.randn(B, S, kvN * D), mstype.float16)]
-        >>> ifa_ms = ops.functional.incre_flash_attention
+        >>> ifa_ms = ops.incre_flash_attention
         >>> attn_out = ifa_ms(query, key, value, num_heads=N, num_key_value_heads=kvN)
         >>> attn_out
         Tensor(shape=[1, 1, 512], dtype=Float16, value=

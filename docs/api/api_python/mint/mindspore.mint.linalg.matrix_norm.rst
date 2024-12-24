@@ -1,7 +1,7 @@
 mindspore.mint.linalg.matrix_norm
 =================================
 
-.. py:function:: mindspore.mint.linalg.matrix_norm(A, ord='fro', axis=(-2, -1), keepdims=False, *, dtype=None)
+.. py:function:: mindspore.mint.linalg.matrix_norm(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None)
 
     返回给定Tensor在指定维度上的矩阵范数。
 

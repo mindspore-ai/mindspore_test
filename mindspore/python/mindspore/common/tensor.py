@@ -1791,9 +1791,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, ops
+            >>> from mindspore import Tensor
             >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
-            >>> print(ops.numel(input_x))
+            >>> print(input_x.numel())
             4
         """
         return self.size

@@ -7257,10 +7257,9 @@ def gather_ext(input, dim, index):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import gather_ext
         >>> input = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
         >>> index = Tensor(np.array([[0, 0], [1, 1]]), mindspore.int32)
-        >>> output = gather_ext(input, 1, index)
+        >>> output = ops.function.array_func.gather_ext(input, 1, index)
         >>> print(output)
         [[-0.1 -0.1]
          [0.5   0.5]]
@@ -7302,10 +7301,9 @@ def max_ext(input, dim=None, keepdim=False):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import max_ext
         >>> y = Tensor(np.array([[0.0, 0.3, 0.4, 0.5, 0.1],
         ...                      [3.2, 0.4, 0.1, 2.9, 4.0]]), mindspore.float32)
-        >>> output, index = max_ext(y, 0, True)
+        >>> output, index = ops.function.array_func.max_ext(y, 0, True)
         >>> print(output, index)
         [[3.2 0.4 0.4 2.9 4. ]] [[1 1 0 1 1]]
     """
@@ -7353,9 +7351,8 @@ def min_ext(input, dim=None, keepdim=False):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import min_ext
         >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output, index = min_ext(x, 0, keepdim=True)
+        >>> output, index = ops.function.array_func.min_ext(x, 0, keepdim=True)
         >>> print(output, index)
         [0.0] [0]
     """

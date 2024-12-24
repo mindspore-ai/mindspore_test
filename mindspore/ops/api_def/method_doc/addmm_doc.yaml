@@ -32,11 +32,11 @@ addmm:
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import Tensor, mint
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.ones([3, 3]).astype(np.float32))
         >>> mat1 = Tensor(np.ones([3, 4]).astype(np.float32))
         >>> mat2 = Tensor(np.ones([4, 3]).astype(np.float32))
-        >>> output =  input.(mat1, mat2)
+        >>> output = input.addmm(mat1, mat2)
         >>> print(output)
         [[5. 5. 5.]
          [5. 5. 5.]

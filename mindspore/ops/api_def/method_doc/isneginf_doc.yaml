@@ -15,7 +15,7 @@ isneginf:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops, Tensor
+        >>> from mindspore import Tensor
         >>> from mindspore import dtype as mstype
         >>> x = Tensor([[-float("inf"), float("inf")], [1, -float("inf")]], mstype.float32)
         >>> output = x.isneginf()

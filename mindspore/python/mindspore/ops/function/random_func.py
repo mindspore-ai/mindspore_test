@@ -1720,10 +1720,11 @@ def randperm_ext(n, *, generator=None, dtype=mstype.int64):
     .. warning::
         - This is an experimental API that is subject to change or deletion.
 
-
     Args:
         n (Union[Tensor, int]): size of the permutation. int or Tensor with shape: () or (1,) and
             data type int64. The value of `n` must be greater than zero.
+
+    Keyword Args:
         generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
             Default: ``None``, uses the default pseudorandom number generator.
         dtype (mindspore.dtype, optional): The type of output. Default: mstype.int64.

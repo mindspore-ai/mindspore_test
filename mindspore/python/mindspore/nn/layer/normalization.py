@@ -794,8 +794,9 @@ class LayerNormExt(Cell):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        normalized_shape (Union(tuple[int], list[int], int)): The normalized shape of `x` for LayerNorm
-        eps (float): A value added to the denominator for numerical stability(:math:`\epsilon`). Default: ``1e-5`` .
+        normalized_shape (Union(tuple[int], list[int], int)): The normalized shape of `x` for LayerNorm.
+        eps (float, optional): A value added to the denominator for numerical stability( :math:`\epsilon` ).
+            Default: ``1e-5`` .
         elementwise_affine (bool): Whether affine transformation is required. When this parameter is set to ``True``,
             the weight parameter is initialized to 1 and the offset is initialized to 0. Default: ``True``.
         bias (bool): If set to ``False``, the layer will not learn an additive bias (only relevant if

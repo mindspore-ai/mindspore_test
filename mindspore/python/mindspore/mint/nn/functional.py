@@ -333,43 +333,43 @@ def relu6(input, inplace=False):
     r"""
     Computes ReLU (Rectified Linear Unit) upper bounded by 6 of input tensors element-wise.
 
-        .. math::
+    .. math::
 
-            \text{ReLU6}(input) = \min(\max(0,input), 6)
+        \text{ReLU6}(input) = \min(\max(0,input), 6)
 
-        It returns :math:`\min(\max(0,input), 6)` element-wise.
+    It returns :math:`\min(\max(0,input), 6)` element-wise.
 
-        ReLU6 Activation Function Graph:
+    ReLU6 Activation Function Graph:
 
-        .. image:: ../images/ReLU6.png
-            :align: center
+    .. image:: ../images/ReLU6.png
+        :align: center
 
-        .. warning::
-            This is an experimental optimizer API that is subject to change.
+    .. warning::
+        This is an experimental optimizer API that is subject to change.
 
-        Args:
-            input (Tensor): input Tensor. Dtype is in int8, int16, int32, int64, uint8, float16, float32, bfloat16.
-            inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+    Args:
+        input (Tensor): input Tensor. Dtype is in int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
 
-        Returns:
-            Tensor, with the same dtype and shape as the `input`.
+    Returns:
+        Tensor, with the same dtype and shape as the `input`.
 
-        Raises:
-            TypeError: If `input` is not a Tensor.
-            TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
 
-        Supported Platforms:
-            ``Ascend``
+    Supported Platforms:
+        ``Ascend``
 
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, mint
-            >>> x = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
-            >>> result = mint.nn.functional.relu6(x)
-            >>> print(result)
-            [[0. 4. 0.]
-             [2. 0. 6.]]
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> result = mint.nn.functional.relu6(x)
+        >>> print(result)
+        [[0. 4. 0.]
+         [2. 0. 6.]]
     """
     if inplace:
         return hardtanh_(input, 0, 6)
@@ -620,10 +620,14 @@ def smooth_l1_loss(input, target, reduction='mean', beta=1.0):
     Args:
         input (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
             Supported dtypes:
-                Ascend: float16, float32, bfloat16.
+
+            - Ascend: float16, float32, bfloat16.
+
         target (Tensor): Ground truth data, tensor of shape :math:`(N, *)`, same shape as the `input`.
             Supported dtypes:
-                Ascend: float16, float32, bfloat16.
+
+            - Ascend: float16, float32, bfloat16.
+
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
 
