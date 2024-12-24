@@ -2229,6 +2229,8 @@ class Cell(Cell_):
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]), Tensor(shape=[1], dtype=Float32,
             value= [ 2.00000000e+00]))
         """
+        if self.has_bprop:
+            return HookHandle()
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
         if not check_hook_fn("register_forward_hook", hook_fn):
