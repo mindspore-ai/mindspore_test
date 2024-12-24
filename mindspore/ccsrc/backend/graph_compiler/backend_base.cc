@@ -160,7 +160,7 @@ int GetHcclBuffsizeFromEnv(const std::string &env_name) {
   std::string hccl_buffer_size_env = common::GetEnv(env_name);
   int hccl_buffer_size = 200;
   if (!hccl_buffer_size_env.empty()) {
-    MS_LOG(WARNING) << "The value of " << env_name << " is: " << hccl_buffer_size_env;
+    MS_LOG(INFO) << "The value of " << env_name << " is: " << hccl_buffer_size_env;
     try {
       hccl_buffer_size = stoi(hccl_buffer_size_env);
     } catch (const std::exception &e) {
@@ -179,12 +179,15 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
   int32_t all2all_size = GetHcclBuffsizeFromEnv("MS_DEV_ALL2ALL_HCCL_BUFFSIZE");
   auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
   auto init_order = instance->GetInitOrder();
+  if (init_order.size() == 0) {
+    return;
+  }
   for (auto group_name : init_order) {
     size_t init_hccl_buffsize = default_size;
     if (comm_ops_group[group_name].size() == 0) {
       init_hccl_buffsize = 200;
-      MS_LOG(WARNING) << "There are no communication ops in the group: " << group_name
-                      << ", HCCL_BUFFSIZE: " << init_hccl_buffsize << " MB.";
+      MS_LOG(INFO) << "There are no communication ops in the group: " << group_name
+                   << ", HCCL_BUFFSIZE: " << init_hccl_buffsize << " MB.";
     } else {
       std::string env_name = "HCCL_BUFFSIZE";
       bool is_dynamic = false;
@@ -193,9 +196,11 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
       for (auto comm_node : comm_ops_group[group_name]) {
         if (common::AnfAlgo::IsDynamicShape(comm_node)) {
           is_dynamic = true;
+          is_p2p = false;
           max_comm_size = 0;
-          MS_LOG(WARNING) << "There are dynamic shape operators in group " << group_name
-                          << ", and you cannot obtain the max communication size";
+          MS_LOG(INFO) << "There are dynamic shape operators in group " << group_name
+                       << ", and you cannot obtain the max communication size";
+          break;
         } else {
           for (size_t idx = 0; idx < common::AnfAlgo::GetInputNum(comm_node); ++idx) {
             size_t type_size =
@@ -223,14 +228,14 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
       }
       if (!is_dynamic) {
         size_t max_size_mb = static_cast<size_t>(static_cast<float>(max_comm_size) / 1024 / 1024) + 1;
-        MS_LOG(WARNING) << "In group: " << group_name << ", the max communication size is " << max_size_mb << " MB.";
+        MS_LOG(INFO) << "In group: " << group_name << ", the max communication size is " << max_size_mb << " MB.";
       }
       if (is_p2p) {
         init_hccl_buffsize = p2p_size;
         env_name = "MS_DEV_P2P_HCCL_BUFFSIZE";
       }
-      MS_LOG(WARNING) << "For group: " << group_name << ", the hccl_buffsize is inited by " << env_name
-                      << ", and the value is " << init_hccl_buffsize << " MB.";
+      MS_LOG(INFO) << "For group: " << group_name << ", the hccl_buffsize is inited by " << env_name
+                   << ", and the value is " << init_hccl_buffsize << " MB.";
     }
     distributed::collective::CollectiveManager::instance()->SubmitCreateDeviceCommTask(group_name, init_hccl_buffsize);
     if (!distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_name)) {
@@ -238,8 +243,8 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
                         << " init done in backend phase. Please check ERROR log above.";
     }
   }
-  MS_LOG(WARNING) << "The MOC occupied by HCCL of graph: " << root_graph->ToString() << " is "
-                  << instance->GetHcclMemSize() << " MB.";
+  MS_LOG(INFO) << "The MOC occupied by HCCL of graph: " << root_graph->ToString() << " is "
+               << instance->GetHcclMemSize() << " MB.";
   // Clear initialization info after this step so new graphs could be compiled and not communicator will be initialized
   // twice.
   instance->Clear();
