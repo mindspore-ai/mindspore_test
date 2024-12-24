@@ -30,7 +30,7 @@ def test_silent_check1():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     py_file = 'silent_check_last_grad1.py'
     ret1 = os.system(f"bash {sh_path}/singlerun_silent_check.sh {sh_path}/{py_file}")
-    ret2 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 == 0
     assert ret2 == 0
     os.system(f'rm -rf ms_graphs log_output ascend_log')

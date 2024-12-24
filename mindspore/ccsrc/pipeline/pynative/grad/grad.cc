@@ -471,7 +471,6 @@ void InsertCheckForLastGrad(ValuePtr grads) {
   if (checker == nullptr || !checker->NeedInsertCheckForLastGrad()) {
     return;
   }
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "grads=" << grads->ToString();
   auto last_grad = GetLastGradTensor(grads);
   if (last_grad != nullptr) {
     MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for last gradient";

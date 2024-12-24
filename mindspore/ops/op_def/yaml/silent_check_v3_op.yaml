@@ -11,12 +11,6 @@ silent_check_v3:
             dtype: tensor
         step:
             dtype: tensor
-        dst_size:
-            dtype: tensor
-        dst_stride:
-            dtype: tensor
-        dst_offset:
-            dtype: tensor
         c_thresh_l1:
             dtype: float
             default: 1000000.

@@ -21,23 +21,19 @@ from mindspore import Tensor, context
 from mindspore import ops
 
 
-def silent_check_v3(val, max_val, avg, input_grad, step, dst_size,
-                    dst_stride, dst_offset, c_thresh_l1=1000000.,
-                    c_thresh_l2=10000., beta1=0., npu_asd_detect=1):
+def silent_check_v3(val, max_val, avg, input_grad, step,
+                    c_thresh_l1=1000000., c_thresh_l2=10000., beta1=0., npu_asd_detect=1):
     op = ops.auto_generate.silent_check_v3_op
-    _, new_input_grad, _, result = op(val, max_val, avg, input_grad, step, dst_size,
-                                      dst_stride, dst_offset, c_thresh_l1,
-                                      c_thresh_l2, beta1, npu_asd_detect)
+    _, new_input_grad, _, result = op(val, max_val, avg, input_grad, step,
+                                      c_thresh_l1, c_thresh_l2, beta1, npu_asd_detect)
     return avg, new_input_grad, step, result
 
 
 @test_utils.run_with_cell
-def silent_check_v3_forward_func(val, max_val, avg, input_grad, step, dst_size,
-                                 dst_stride, dst_offset, c_thresh_l1=1000000.,
-                                 c_thresh_l2=10000., beta1=0., npu_asd_detect=1):
-    return silent_check_v3(val, max_val, avg, input_grad, step, dst_size,
-                           dst_stride, dst_offset, c_thresh_l1,
-                           c_thresh_l2, beta1, npu_asd_detect)
+def silent_check_v3_forward_func(val, max_val, avg, input_grad, step,
+                                 c_thresh_l1=1000000., c_thresh_l2=10000., beta1=0., npu_asd_detect=1):
+    return silent_check_v3(val, max_val, avg, input_grad, step,
+                           c_thresh_l1, c_thresh_l2, beta1, npu_asd_detect)
 
 
 def set_mode(mode):
@@ -59,15 +55,12 @@ def generate_inputs():
     avg = Tensor(np.random.rand(1), ms.float32)
     input_grad = Tensor(np.random.rand(2, 5).astype(np.float32))
     step = Tensor(np.random.randint(1, 10, size=[1]), ms.int64)
-    dst_size = Tensor(np.random.randint(1, 10, size=[2]), ms.int64)
-    dst_stride = Tensor(np.random.randint(1, 10, size=[2]), ms.int64)
-    dst_offset = Tensor(np.random.randint(1, 10, size=[1]), ms.int64)
     c_thresh_l1 = 1000000.
     c_thresh_l2 = 10000.
     beta1 = 0.
     npu_asd_detect = 1
-    return [val, max_val, avg, input_grad, step, dst_size, dst_stride,
-            dst_offset, c_thresh_l1, c_thresh_l2, beta1, npu_asd_detect]
+    return [val, max_val, avg, input_grad, step,
+            c_thresh_l1, c_thresh_l2, beta1, npu_asd_detect]
 
 
 @pytest.mark.skip(reason="Need update CANN.")
