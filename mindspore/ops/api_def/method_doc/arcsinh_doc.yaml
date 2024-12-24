@@ -1,0 +1,5 @@
+arcsinh:
+  description: |
+    arcsinh() -> Tensor
+    
+    Alias for :func:`mindspore.Tensor.asinh`.

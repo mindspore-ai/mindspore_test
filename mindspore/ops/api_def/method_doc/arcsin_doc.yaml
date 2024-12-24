@@ -1,0 +1,5 @@
+arcsin:
+  description: |
+    arcsin() -> Tensor
+    
+    Alias for :func:`mindspore.Tensor.asin`.
