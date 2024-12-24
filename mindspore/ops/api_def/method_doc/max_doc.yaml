@@ -1,6 +1,59 @@
 max:
   description: |
-    max(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> tuple(Tensor)
+    max() -> Tensor
+    
+    Returns the maximum value of all elements in `self` .
+    
+    Returns:
+        Tensor - Returns the maximum value of each row of `self` .
+    
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+        >>> output = x.max()
+        >>> print(output)
+        [0.7]
+
+    .. method:: max(dim, keepdim=False) -> tuple(Tensor)
+        :noindex:
+
+    Calculates the maximum value along with the given dimension for the self tensor.
+
+    Args:
+        dim (int): The dimension to reduce.
+        keepdim (bool, optional): Whether to reduce dimension, if true, the output will keep same dimension
+            with the input, the output will reduce dimension if false. Default: ``False`` .
+
+    Returns:
+        tuple (Tensor) if `dim` is not the default value ``None`` , tuple of 2 tensors, containing the maximum value
+        of the self tensor along the given dimension `dim` and the corresponding index.
+
+        - **values (Tensor)** - The maximum value of self tensor along the given dimension `dim`, with same dtype as
+          `self`. If `keepdim` is ``True`` , the shape of output tensors is :math:`(self_1, self_2, ...,
+          self_{axis-1}, 1, self_{axis+1}, ..., self_N)` . Otherwise, the shape is :math:`(self_1, self_2, ...,
+          self_{axis-1}, self_{axis+1}, ..., self_N)` .
+        - **index (Tensor)** - The index for the maximum value of the self tensor along the given dimension `dim`,
+          with the same shape as `values`.
+
+    Raises:
+        ValueError: If `dim` is the default value ``None`` and `keepdim` is not ``False`` .
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+        >>> output, index = x.max(x, 0, keepdim=True)
+        >>> print(output, index)
+        [0.7] [3]
+
+    .. method:: max(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> tuple(Tensor)
+        :noindex:
     
     Return the maximum of a tensor or maximum along an axis.
 
@@ -30,7 +83,7 @@ max:
             Default: ``False`` . If `axis` is a list or tuple of ints, it must be ``False`` .
 
     Returns:
-        Tensor or scalar, maximum of input tensor. If `axis` is ``None`` , the result is a scalar
+        Tensor or scalar, maximum of self tensor. If `axis` is ``None`` , the result is a scalar
         value. If `axis` is given, the result is a tensor of dimension ``self.ndim - 1``.
 
     Raises:

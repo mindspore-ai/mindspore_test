@@ -97,7 +97,8 @@ NodePtr MinOrMaxGrad(Emitter *ib, const NodePtr &x, const NodePtr &axis, bool ke
                      const NodePtr &dout);
 std::pair<ShapeVector, ShapeVector> SplitShapeIndex(const ShapeVector &input_shape, const ShapeVector &axis);
 NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
-                           const NodePtr &out, const NodePtr &dout, const bool is_max);
+                           const NodePtr &out, const NodePtr &dout, const bool is_max,
+                           const bool is_minmax_dim = false);
 NodePtr MeidanDimGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                       const NodePtr &out, const NodePtr &dout);
 inline NodePtr ReduceCommonOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,

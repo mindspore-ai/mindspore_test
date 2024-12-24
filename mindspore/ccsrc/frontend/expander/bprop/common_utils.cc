@@ -693,10 +693,12 @@ NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, c
 }
 
 NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
-                           const NodePtr &out, const NodePtr &dout, const bool is_max) {
+                           const NodePtr &out, const NodePtr &dout, const bool is_max, const bool is_minmax_dim) {
   auto keep_dims_value = keep_dims->BuildValue();
-  NodePtr dout_value = ib->TupleGetItem(dout, 1);
-  NodePtr indices = ib->TupleGetItem(out, 0);
+  size_t out_index = is_minmax_dim ? 0 : 1;
+  size_t indices_index = is_minmax_dim ? 1 : 0;
+  NodePtr dout_value = ib->TupleGetItem(dout, out_index);
+  NodePtr indices = ib->TupleGetItem(out, indices_index);
   auto input_shape = ib->GetShape(x);
   if (IsValueKnown(keep_dims_value) && !IsDynamicRank(input_shape)) {
     auto is_zero_dim = input_shape.size() == 0;

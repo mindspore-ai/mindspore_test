@@ -33,7 +33,10 @@ constexpr size_t kOutputNum = 2;
 
 class ArgMaxAndMinWithValueGpuKernelMod : public NativeGpuKernelMod {
  public:
-  ArgMaxAndMinWithValueGpuKernelMod() { ResetResource(); }
+  explicit ArgMaxAndMinWithValueGpuKernelMod(size_t index_output_idx = 0, size_t value_output_idx = 1)
+      : index_output_idx(index_output_idx), value_output_idx(value_output_idx) {
+    ResetResource();
+  }
   ~ArgMaxAndMinWithValueGpuKernelMod() override = default;
 
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
@@ -87,6 +90,9 @@ class ArgMaxAndMinWithValueGpuKernelMod : public NativeGpuKernelMod {
                                               const std::vector<KernelTensor *> &, void *)>;
   static std::vector<std::pair<KernelAttr, ArgWithValueFunc>> func_list_;
   ArgWithValueFunc kernel_func_;
+
+  size_t index_output_idx{0};
+  size_t value_output_idx{1};
 };
 }  // namespace kernel
 }  // namespace mindspore
