@@ -19,5 +19,5 @@ mindspore.Tensor.unique
         输出为一个Tensor，或者以下一个或几个Tensor的集合：（`output`，`inverse_indeices`，`counts`）
 
         - **output** (Tensor) - 与 `self` 数据类型相同的Tensor，包含 `self` 中去重后的元素。
-        - **inverse_indeices** (Tensor) - 当 `return_inverse=True` 时返回，表示 `self` 中的元素在输出Tensor中的索引。当 `dim=None` 时，shape和 `self` 一样；当 `dim` 有值的时候，shape是self.shape[dim]。
-        - **counts** (Tensor) - 当 `return_counts=True` 时返回，表示输出Tensor中元素在 `self` 中的数量。当 `dim=None` 时，shape和 `output` 一样；当 `dim` 有值的时候，shape是output.shape[dim]。
+        - **inverse_indeices** (Tensor，可选) - 当 `return_inverse=True` 时返回，表示 `self` 中的元素在输出Tensor中的索引。当 `dim=None` 时，shape和 `self` 一样；当 `dim` 有值的时候，shape是self.shape[dim]。
+        - **counts** (Tensor，可选) - 当 `return_counts=True` 时返回，表示输出Tensor中元素在 `self` 中的数量。当 `dim=None` 时，shape和 `output` 一样；当 `dim` 有值的时候，shape是output.shape[dim]。
