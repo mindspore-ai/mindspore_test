@@ -265,12 +265,13 @@ def _auto_generate_policy(available_devices, available_cpus, affinity_flag, numa
             device_to_cpu_map[device_id].extend(affinity_cpu)
             device_to_cpu_idx[numa_id] = affinity_cpu_start_idx + affinity_cpu_num
             # If the affinity cpu resources are insufficient then use resources from the non-affinity cpu pool.
-            unaffinity_cpu_start_idx = device_to_cpu_idx[-1]
-            unaffinity_cpu_num = cpu_num_per_device - affinity_cpu_num
-            unaffinity_cpu = numa_to_cpu_map[-1][
-                unaffinity_cpu_start_idx:(unaffinity_cpu_start_idx + unaffinity_cpu_num)]
-            device_to_cpu_map[device_id].extend(unaffinity_cpu)
-            device_to_cpu_idx[-1] = unaffinity_cpu_start_idx + unaffinity_cpu_num
+            if -1 in device_to_cpu_idx:
+                unaffinity_cpu_start_idx = device_to_cpu_idx[-1]
+                unaffinity_cpu_num = cpu_num_per_device - affinity_cpu_num
+                unaffinity_cpu = numa_to_cpu_map[-1][
+                    unaffinity_cpu_start_idx:(unaffinity_cpu_start_idx + unaffinity_cpu_num)]
+                device_to_cpu_map[device_id].extend(unaffinity_cpu)
+                device_to_cpu_idx[-1] = unaffinity_cpu_start_idx + unaffinity_cpu_num
     else:
         device_rank = 0
         for device_id in available_devices:
