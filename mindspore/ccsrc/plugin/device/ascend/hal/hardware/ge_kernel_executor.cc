@@ -106,18 +106,17 @@ void RegisterSilentCheckForNode(const CNodePtr &kernel, const kernel::KernelModP
   if (silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport()) {
     return;
   }
-  if (kernel_mod_ptr->primitive() == nullptr ||
-      !kernel_mod_ptr->primitive()->HasAttr(silentcheck::kAttrSilentCheckOpType)) {
+  if (!kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
     return;
   }
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
-  if (input_kernel_tensors.empty() || input_kernel_tensors[0]->GetShapeVector().empty() ||
-      input_kernel_tensors[0]->IsDynamicShape()) {
+  if (input_kernel_tensors.empty() || input_kernel_tensors[0]->IsDynamicShape()) {
     return;
   }
-  auto check_op_type = GetValue<int>(kernel_mod_ptr->primitive()->GetAttr(silentcheck::kAttrSilentCheckOpType));
+  auto check_op_type = GetValue<int>(kernel->GetPrimalAttr(silentcheck::kAttrSilentCheckOpType));
   auto tensor_type = input_kernel_tensors[0]->dtype_id();
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << input_kernel_tensors[0]->GetType()->ToString();
+  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Type of input0 of " << kernel->fullname_with_scope() << " is "
+                                  << input_kernel_tensors[0]->GetType()->ToString();
   if (tensor_type != kNumberTypeFloat32 && tensor_type != kNumberTypeBFloat16) {
     if (check_op_type == silentcheck::kSilentCheckGradCommOp) {
       MS_LOG(WARNING)
@@ -1274,8 +1273,8 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
     if (!silentcheck::ascend::SilentChecker::GetInstance().IsCommOpInputNotSupport() &&
-        kernel_mod->primitive() != nullptr && kernel_mod->primitive()->HasAttr(silentcheck::kAttrSilentCheckOpType)) {
-      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel_mod->kernel_name();
+        kernel->HasPrimalAttr(silentcheck::kAttrSilentCheckOpType)) {
+      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
       silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
     }
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);

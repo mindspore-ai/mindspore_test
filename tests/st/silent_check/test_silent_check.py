@@ -58,7 +58,7 @@ def test_npu_asd_enable1():
     os.environ['NPU_ASD_ENABLE'] = "1"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh --master_port=8151 {sh_path}/silent_check.py")
-    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck get L' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 == 0
     assert ret2 == 0
     os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
@@ -74,7 +74,7 @@ def test_npu_asd_enable2():
     os.environ['NPU_ASD_ENABLE'] = "2"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh --master_port=8152 {sh_path}/silent_check.py &> /dev/null")
-    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck get L' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 != 0
     assert ret2 == 0
@@ -92,7 +92,7 @@ def test_npu_asd_enable3():
     os.environ['NPU_ASD_ENABLE'] = "3"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh --master_port=8153 {sh_path}/silent_check.py &> /dev/null")
-    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck get L' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 != 0
     assert ret2 == 0

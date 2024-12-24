@@ -409,11 +409,8 @@ void SilentCheckV2::GetLastGradNode() {
 
 bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
-  scale_sense_ = GetScaleSense(func_graph);
-  auto manager = func_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
 
-  auto fn_insert_check_node = [this, &func_graph, &manager](const AnfNodePtrList &nodes) -> bool {
+  auto fn_mark_node_need_check = [this](AnfNodePtrList &nodes) -> bool {
     bool changed = false;
     for (auto &node : nodes) {
       MS_EXCEPTION_IF_NULL(node);
@@ -439,24 +436,19 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
       if (!((cnode == last_grad_node_) || NeedCheckCommOperator(cnode->input(ops::kInputIndex0)))) {
         continue;
       }
-      // add attriute "need_silent_check" to primitive
-      auto prim = GetCNodePrimitive(cnode);
-      if (prim != nullptr) {
-        MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Add attribute " << silentcheck::kAttrSilentCheckOpType << " to prim "
-                                        << prim->name() << " " << cnode->fullname_with_scope();
-        auto silent_check_op_type = common::AnfAlgo::IsCommunicationOp(prim->name())
-                                      ? silentcheck::kSilentCheckGradCommOp
-                                      : silentcheck::kSilentCheckGradLastOp;
-        prim->AddAttr(silentcheck::kAttrSilentCheckOpType, MakeValue<int>(silent_check_op_type));
-      }
+      // add attriute "need_silent_check" to cnode
+      auto silent_check_op_type = common::AnfAlgo::IsCommunicationOp(cnode) ? silentcheck::kSilentCheckGradCommOp
+                                                                            : silentcheck::kSilentCheckGradLastOp;
+      cnode->AddPrimalAttr(silentcheck::kAttrSilentCheckOpType, MakeValue<int>(silent_check_op_type));
     }
     return changed;
   };
 
   if (func_graph == root_) {
-    return fn_insert_check_node(GetRootGraphTopoNodes());
+    return fn_mark_node_need_check(GetRootGraphTopoNodes());
   } else {
-    return fn_insert_check_node(TopoSort(func_graph->get_return()));
+    auto graph_nodes = TopoSort(func_graph->get_return());
+    return fn_mark_node_need_check(graph_nodes);
   }
 }
 

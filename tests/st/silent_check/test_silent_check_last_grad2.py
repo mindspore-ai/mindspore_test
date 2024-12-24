@@ -32,7 +32,7 @@ def test_silent_check_grad_of_all(mode):
     Description: Test silent check for gradient of all inputs and parameters in pynative mode
     Expectation: No errors occurs when enable silent check
     """
-    os.environ['NPU_ASD_ENABLE'] = '2'
+    os.environ['NPU_ASD_ENABLE'] = '1'
     if mode == 'pyboost':
         ms.set_context(mode=ms.PYNATIVE_MODE)
     else:

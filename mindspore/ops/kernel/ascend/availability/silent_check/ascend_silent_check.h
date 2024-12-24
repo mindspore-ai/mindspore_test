@@ -68,25 +68,21 @@ class CheckObject {
   void LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
   void LaunchSquare(const BaseTensorPtr &input_grad);
-  void LaunchNeScalar();
-  void LaunchMaskedSelect();
-  void LaunchMedian(const DynamicCheckStatePtr &state);
   void LaunchMax();
+  void LaunchInplaceCopy(const DynamicCheckStatePtr &state);
   void LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
  private:
-  // operators for aclnnSilentCheckV2
+  // operators for aclnnSilentCheck
   std::shared_ptr<OpRunner> norm_op_ = nullptr;
   std::shared_ptr<OpRunner> silent_check_op_ = nullptr;
 
-  // operators for aclnnSilentCheckV3
+  // operators for aclnnSilentCheckV2
   std::shared_ptr<OpRunner> square_op_ = nullptr;
   std::shared_ptr<OpRunner> max_op_ = nullptr;
   std::shared_ptr<OpRunner> silent_check_v3_op_ = nullptr;
-  // operators only used for aclnnSilentCheckV3 first time call
-  std::shared_ptr<OpRunner> ne_scalar_op_ = nullptr;
-  std::shared_ptr<OpRunner> masked_select_op_ = nullptr;
-  std::shared_ptr<OpRunner> median_op_ = nullptr;
+  // operators only used for aclnnSilentCheckV2 first time call
+  std::shared_ptr<OpRunner> inplace_copy_op_ = nullptr;
 };
 using CheckObjPtr = std::shared_ptr<CheckObject>;
 
@@ -141,15 +137,11 @@ class DynamicSilentChecker : public SilentCheckerBase {
 // Square(aclnnMul)                       | Square(aclnnMul)
 //   v                                    |   v
 // Max(aclnnMax)                          | Max(aclnnMax)
-//   |   \   \                            |   |
-//   |    |  Cast(aclnnCast)              |   |
-//   |    |    v                          |   |
-//   |    |  NotEqual(aclnnNeTensor)      |   |
-//   |    v    v                          |   |
-//   |   MaskedSelect(aclnnMaskedSelect)  |   |
+//   |    \                               |   |
+//   |     |                              |   |
 //   |     v                              |   |
-//   |   Median(aclnnMedian)              |   |
-//   v   /                                |   v
+//   |   Copy(aclnnInpalceCopy)           |   |
+//   v    /                               |   v
 // aclnnSilentCheck{step, avg}            | aclnnSilentCheck{step, avg}
 //   v                                    |   v
 // [comm-operator]                        | [comm-operator]
@@ -174,14 +166,7 @@ struct CheckState {
   KernelTensorPtr sfda = nullptr;  // for silent check v2
   KernelTensorPtr avg = nullptr;   // for silent check v3
 
-  KernelTensorPtr dst_size = nullptr;
-  KernelTensorPtr dst_stride = nullptr;
-  KernelTensorPtr dst_offset = nullptr;
-
   KernelTensorPtr square = nullptr;
-  KernelTensorPtr cast = nullptr;
-  KernelTensorPtr ne = nullptr;
-  KernelTensorPtr masked_select = nullptr;
   // In SilentCheckV3, input `val` and `max` are same
   KernelTensorPtr val = nullptr;
   KernelTensorPtr result = nullptr;
@@ -190,10 +175,8 @@ struct CheckState {
   OpExecState kernel_norm = {nullptr, nullptr, nullptr};
   OpExecState kernel_square = {nullptr, nullptr, nullptr};
   OpExecState kernel_max = {nullptr, nullptr, nullptr};
-  OpExecState kernel_cast = {nullptr, nullptr, nullptr};
-  OpExecState kernel_ne = {nullptr, nullptr, nullptr};
-  OpExecState kernel_masked_select = {nullptr, nullptr, nullptr};
-  OpExecState kernel_median = {nullptr, nullptr, nullptr};
+  OpExecState kernel_copy = {nullptr, nullptr, nullptr};
+
   // used by both SilentCheckV2 and SilentCheckV3
   OpExecState kernel_silent_check = {nullptr, nullptr, nullptr};
 };
@@ -225,10 +208,7 @@ class SilentChecker {
 
   void LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchCastAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchNotEqualAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchMaskedSelectAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchMedainAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchInplaceCopyAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchSilentCheckV3Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
 
   KernelTensorPtr GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value = nullptr,
@@ -245,7 +225,7 @@ class SilentChecker {
   // constants used by aclnnNeTensor to find no-zero values
   KernelTensorPtr zero_ = nullptr;
 
-  // constants used by aclnnSilentCheck and aclnnSilentCheckV3
+  // constants used by aclnnSilentCheck and aclnnSilentCheckV2
   KernelTensorPtr c_thresh_l1_ = nullptr;     // for silent check v2 and v3
   KernelTensorPtr c_thresh_l2_ = nullptr;     // for silent check v2 and v3
   KernelTensorPtr npu_asd_detect_ = nullptr;  // for silent check v2 and v3
@@ -255,12 +235,9 @@ class SilentChecker {
   KernelTensorPtr beta1_ = nullptr;           // for silent check v3
 
   // fields for computing
-  DeviceAddrInfo out_val_ = {nullptr, 0};            // norm or max's output
-  DeviceAddrInfo out_square_ = {nullptr, 0};         // square output
-  DeviceAddrInfo out_cast_ = {nullptr, 0};           // cast output
-  DeviceAddrInfo out_ne_ = {nullptr, 0};             // not equal output
-  DeviceAddrInfo out_masked_select_ = {nullptr, 0};  // masked select output
-  DeviceAddrInfo out_result_ = {nullptr, 0};         // silent check result
+  DeviceAddrInfo out_val_ = {nullptr, 0};     // norm or max's output
+  DeviceAddrInfo out_square_ = {nullptr, 0};  // square output
+  DeviceAddrInfo out_result_ = {nullptr, 0};  // silent check result
 
   DeviceAddrInfo workspace_ = {nullptr, 0};  // workspace for silent check related operators
 };
