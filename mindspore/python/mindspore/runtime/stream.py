@@ -19,7 +19,6 @@ from mindspore._c_expression import synchronize as synchronize_
 from mindspore._c_expression import current_stream as current_stream_
 from mindspore._c_expression import default_stream as default_stream_
 from mindspore._c_expression import communication_stream as communication_stream_
-from mindspore._c_expression import DeviceManagerConf
 
 from mindspore import _checkparam as Validator
 from .event import Event
@@ -85,10 +84,6 @@ class Stream(Stream_):
              [5. 5. 5.]
              [5. 5. 5.]]
         """
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         if event is None:
             event = Event()
         if not isinstance(event, Event):
@@ -129,10 +124,6 @@ class Stream(Stream_):
              [5. 5. 5.]
              [5. 5. 5.]]
         """
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         if not isinstance(event, Event):
             raise TypeError(
                 f"For 'wait_event', the argument 'event' should be Event,"
@@ -171,10 +162,6 @@ class Stream(Stream_):
             >>> print(d)
             [[4. 4.]]
         """
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         if not isinstance(stream, Stream):
             raise TypeError(
                 f"For 'wait_stream', the argument 'stream' should be Stream,"
@@ -200,10 +187,6 @@ class Stream(Stream_):
             >>> assert s1.query()
         """
         # pylint: disable=useless-super-delegation
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         super().synchronize()
 
     def query(self):
@@ -227,10 +210,6 @@ class Stream(Stream_):
             >>> assert s1.query()
         """
         # pylint: disable=useless-super-delegation
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         return super().query()
 
     def __eq__(self, other):
@@ -267,10 +246,6 @@ def synchronize():
         >>> ms.runtime.synchronize()
         >>> assert s1.query()
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     synchronize_()
 
 
@@ -296,10 +271,6 @@ def set_cur_stream(stream):
         >>> assert ms.runtime.current_stream() == s1
         >>> ms.runtime.set_cur_stream(ms.runtime.default_stream())
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     if stream is None:
         return
     if not isinstance(stream, Stream):
@@ -323,10 +294,6 @@ def current_stream():
         >>> cur_stream = ms.runtime.current_stream()
         >>> assert cur_stream == ms.runtime.default_stream()
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     return Stream(stream=current_stream_())
 
 
@@ -343,10 +310,6 @@ def default_stream():
         >>> cur_stream = ms.runtime.current_stream()
         >>> assert cur_stream == ms.runtime.default_stream()
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     return Stream(stream=default_stream_())
 
 
@@ -363,10 +326,6 @@ def communication_stream():
         >>> ms.runtime.communication_stream()
         Stream(device_name=Ascend, device_id:0, stream id:1)
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     return Stream(stream=communication_stream_())
 
 
@@ -398,10 +357,6 @@ class StreamCtx:
     """
 
     def __init__(self, ctx_stream):
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         if ctx_stream is not None and not isinstance(ctx_stream, Stream):
             raise TypeError(
                 f"For 'StreamCtx', the argument 'ctx_stream' should be Stream,"

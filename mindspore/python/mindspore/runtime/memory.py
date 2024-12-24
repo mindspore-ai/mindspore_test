@@ -106,10 +106,6 @@ def memory_stats():
         {<capsule object NULL at 0x7f7e8c27b030>: {'block_stream_id': 0, 'block_memory_size': 1073741824}}},
         'persistent_mem_pool_stats': {'block_unit_size': 1073741824, 'block_counts': 0, 'blocks_info': {}}}
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     return _memory_stats(device_target)
 
@@ -135,10 +131,6 @@ def memory_reserved():
         >>> print(ms.runtime.memory_reserved())
         1073741824
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     return _memory_stats(device_target).get("total_reserved_memory", 0)
 
@@ -164,10 +156,6 @@ def max_memory_reserved():
         >>> print(ms.runtime.max_memory_reserved())
         1073741824
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     return _memory_stats(device_target).get("max_reserved_memory", 0)
 
@@ -206,10 +194,6 @@ def reset_peak_memory_stats():
         >>> print(ms.runtime.max_memory_allocated())
         0
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     _reset_max_mem_reserved(device_target)
     _reset_max_mem_allocated(device_target)
@@ -222,10 +206,6 @@ def memory_summary():
     Returns:
         str, readable memory pool status information in tabular form.
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     stats = _memory_stats(device_target)
 
@@ -286,10 +266,6 @@ def memory_allocated():
         >>> print(ms.runtime.memory_allocated())
         1024
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     return _memory_stats(device_target).get("total_allocatd_memory", 0)
 
@@ -315,10 +291,6 @@ def max_memory_allocated():
         >>> print(ms.runtime.max_memory_allocated())
         1536
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     return _memory_stats(device_target).get("max_allocated_memory", 0)
 
@@ -341,10 +313,6 @@ def reset_max_memory_reserved():
         >>> print(ms.runtime.max_memory_reserved())
         0
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     _reset_max_mem_reserved(device_target)
 
@@ -367,9 +335,5 @@ def reset_max_memory_allocated():
         >>> print(ms.runtime.max_memory_allocated())
         0
     """
-    if not DeviceManagerConf.get_instance().is_device_enable():
-        raise RuntimeError(
-            "The device has not been initialized, please set 'mindspore.set_device' first."
-        )
     device_target = DeviceManagerConf.get_instance().get_device_target()
     _reset_max_mem_allocated(device_target)

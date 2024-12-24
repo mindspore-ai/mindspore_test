@@ -16,7 +16,6 @@
 from mindspore._c_expression import Event as Event_
 from mindspore._c_expression import Stream as Stream_
 from mindspore._c_expression import current_stream as current_stream_
-from mindspore._c_expression import DeviceManagerConf
 from mindspore import _checkparam as Validator
 
 
@@ -63,10 +62,6 @@ class Event(Event_):
 
     def __init__(self, enable_timing=False, blocking=False):
         # pylint: disable=useless-super-delegation
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         Validator.check_bool(enable_timing, "enable_timing", "Event")
         Validator.check_bool(blocking, "blocking", "Event")
         super().__init__(enable_timing, blocking)
@@ -85,10 +80,6 @@ class Event(Event_):
         Raises:
             TypeError: If 'stream' is neither a :class:`mindspore.runtime.Stream` nor a ``None``.
         """
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         if stream is None:
             stream = current_stream_()
         if not isinstance(stream, Stream_):
@@ -132,10 +123,6 @@ class Event(Event_):
             [[4. 4.]
              [4. 4.]]
         """
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         if stream is None:
             stream = current_stream_()
         if not isinstance(stream, Stream_):
@@ -153,10 +140,6 @@ class Event(Event_):
         This prevents the CPU thread from proceeding until the event completes.
         """
         # pylint: disable=useless-super-delegation
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         super().synchronize()
 
     def query(self):
@@ -181,10 +164,6 @@ class Event(Event_):
             >>> assert ev.query()
         """
         # pylint: disable=useless-super-delegation
-        if not DeviceManagerConf.get_instance().is_device_enable():
-            raise RuntimeError(
-                "The device has not been initialized, please set 'mindspore.set_device' first."
-            )
         return super().query()
 
     def elapsed_time(self, end_event):
