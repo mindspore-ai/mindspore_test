@@ -1328,7 +1328,7 @@ def _check_context_deprecated(key):
                  op_timeout=int, deterministic=str, ascend_config=dict, jit_syntax_level=int, debug_level=int,
                  jit_enable_inplace_ops=bool, gpu_config=dict, jit_config=dict, enable_compile_cache=bool)
 def set_context(**kwargs):
-    """
+    r"""
     Set context for running environment.
 
     Context should be configured before running your program. If there is no configuration,
@@ -1346,24 +1346,23 @@ def set_context(**kwargs):
     +-------------------------+------------------------------+---------------------------+----------------------------+
     | Function Classification |   Configuration Parameters   |  Hardware Platform Support|   Replacement              |
     +=========================+==============================+===========================+============================+
-    | System Configuration    |   device_id (D)              |  CPU/GPU/Ascend           |   mindspore.set_device     |
+    | System Configuration    |   device_id (D)              |  CPU/GPU/Ascend           |   :func:`~.set_device`     |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |   device_target (D)          |  CPU/GPU/Ascend           |   mindspore.set_device     |
+    |                         |   device_target (D)          |  CPU/GPU/Ascend           |   :func:`~.set_device`     |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  max_device_memory(D)        | GPU/Ascend                |mindspore.runtime.set_memory|
+    |                         |  max_device_memory(D)        | GPU/Ascend                |   :func:`~.set_memory`     |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         | variable_memory_max_size (D) | Ascend                    |mindspore.runtime.set_memory|
+    |                         | variable_memory_max_size (D) | Ascend                    |   :func:`~.set_memory`     |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  mempool_block_size (D)      | GPU/Ascend                |mindspore.runtime.set_memory|
+    |                         |  mempool_block_size (D)      | GPU/Ascend                |   :func:`~.set_memory`     |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  op_timeout (D)              | Ascend                    |mindspore.device_context.asc|
-    |                         |                              |                           |end.op_debug.execute_timeout|
+    |                         |  op_timeout (D)              | Ascend                    | :func:`~.execute_timeout`  |
     +-------------------------+------------------------------+---------------------------+----------------------------+
-    | Debug Configuration     |  save_graphs (D)             | CPU/GPU/Ascend            | MS_DEV_SAVE_GRAPHS         |
+    | Debug Configuration     |  save_graphs (D)             | CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS        |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  save_graphs_path (D)        | CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS_PATH   |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  deterministic (D)           | Ascend                    |mindspore.set_deterministic |
+    |                         |  deterministic (D)           | Ascend                    |:func:`~.set_deterministic` |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  print_file_path             | Ascend                    |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
@@ -1373,8 +1372,7 @@ def set_context(**kwargs):
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  reserve_class_name_in_scope | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  pynative_synchronize (D)    | CPU/GPU/Ascend            | mindspore.runtime.launch_bl|
-    |                         |                              |                           | ocking                     |
+    |                         |  pynative_synchronize (D)    | CPU/GPU/Ascend            | :func:`~.launch_blocking`  |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  debug_level (D)             | CPU/GPU/Ascend            |  NA                        |
     +-------------------------+------------------------------+---------------------------+----------------------------+
@@ -1382,25 +1380,23 @@ def set_context(**kwargs):
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  enable_reduce_precision     | Ascend                    |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  aoe_tune_mode (D)           | Ascend                    |ascend.op_tuning.aoe_tune_mo|
-    |                         |                              |                           |de                          |
+    |                         |  aoe_tune_mode (D)           | Ascend                    | :func:`~.aoe_tune_mode`    |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  aoe_config (D)              | Ascend                    |ascend.op_tuning.aoe_job_typ|
-    |                         |                              |                           |e                           |
+    |                         |  aoe_config (D)              | Ascend                    | :func:`~.aoe_job_type`     |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  check_bprop (D)             | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  max_call_depth (D)          | CPU/GPU/Ascend            |mindspore.set_recursion_limi|
-    |                         |                              |                           |t                           |
+    |                         |  max_call_depth (D)          | CPU/GPU/Ascend            | :func:`~.set_recur\        |
+    |                         |                              |                           | sion_limit`                |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  grad_for_scalar (D)         | CPU/GPU/Ascend            |  derivative                |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  enable_compile_cache (D)    | CPU/GPU/Ascend            |  MS_COMPILER_CACHE_ENABLE  |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  inter_op_parallel_num (D)   | CPU/GPU/Ascend            |mindspore.runtime.dispatch_t|
-    |                         |                              |                           |hreads_num                  |
+    |                         |  inter_op_parallel_num (D)   | CPU/GPU/Ascend            | :func:`~.dispatch\         |
+    |                         |                              |                           | _threads_num`              |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |runtime_num_threads (D)       | CPU/GPU/Ascend            |cpu.op_tuning.threads_num   |
+    |                         |runtime_num_threads (D)       | CPU/GPU/Ascend            | :func:`~.threads_num`      |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  compile_cache_path          | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
@@ -1408,32 +1404,31 @@ def set_context(**kwargs):
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  support_binary              | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  memory_optimize_level (D)    | CPU/GPU/Ascend            |mindspore.runtime.set_memory|
+    |                         |  memory_optimize_level (D)   | CPU/GPU/Ascend            | :func:`~.set_memory`       |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  memory_offload              | GPU/Ascend                |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  ascend_config (D)           | Ascend                    |ascend.op_precision.precisio|
-    |                         |                              |                           |n_mode                      |
-    |                         |                              |                           |ascend.op_precision.op_preci|
-    |                         |                              |                           |sion_mode                   |
-    |                         |                              |                           |ascend.op_precision.matmul_a|
-    |                         |                              |                           |llow_hf32                   |
-    |                         |                              |                           |ascend.op_precision.conv_all|
-    |                         |                              |                           |ow_hf32                     |
-    |                         |                              |                           |ascend.op_tuning.op_compile |
+    |                         |  ascend_config (D)           | Ascend                    | :func:`~.precision_mode`   |
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.op_precision_mode`|
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.matmul_allow_hf32`|
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.conv_allow_hf32`  |
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.op_compile`       |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  jit_syntax_level            | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  gpu_config (D)              | GPU                       |gpu.op_precision.conv_allow_|
-    |                         |                              |                           |tf32                        |
-    |                         |                              |                           |gpu.op_precision.matmul_allo|
-    |                         |                              |                           |w_tf32                      |
-    |                         |                              |                           |gpu.op_precision.conv_fprop_|
-    |                         |                              |                           |algo                        |
-    |                         |                              |                           |gpu.op_precision.conv_wgrad_|
-    |                         |                              |                           |algo                        |
-    |                         |                              |                           |gpu.op_precision.conv_dgrad_|
-    |                         |                              |                           |algo                        |
+    |                         |  gpu_config (D)              | GPU                       | :func:`~.conv_allow_tf32`  |
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.matmul_allow_tf32`|
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.conv_fprop_algo`  |
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.conv_wgrad_algo`  |
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.conv_dgrad_algo`  |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  jit_config                  | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
@@ -1541,7 +1536,7 @@ def set_context(**kwargs):
             of subgraphs is too large. If max_call_depth is set larger than before, the system max stack depth should be
             set larger too, otherwise a `core dumped` exception may be raised because of system stack overflow.
             This parameter will be deprecated and removed in a future version. Please use the api
-            `mindspore.set_recursion_limit()` instead.
+            :func:`mindspore.set_recursion_limit` instead.
         grad_for_scalar (bool):  Whether to get gradient for scalar. Default: ``False`` .
             When grad_for_scalar is set to ``True`` , the function's scalar input can be derived.
             The default value is ``False`` . Because the back-end does not support scaling operations currently,

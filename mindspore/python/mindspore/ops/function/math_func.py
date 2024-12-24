@@ -8301,7 +8301,7 @@ def vector_norm_ext(x, ord=2, dim=None, keepdim=False, *, dtype=None):
     ``-inf``                        :math:`min(abs(x))`
     ``0``                           :math:`sum(x!=0)`
     other ``int`` or ``float``      :math:`sum(abs(x)^{ord})^{(1 / ord)}`
-    ==========================      ===========================================
+    ==========================      ==========================================
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

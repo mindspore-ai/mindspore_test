@@ -2427,8 +2427,8 @@ def interpolate(input,
         >>> input = Tensor([[[1, 2, 3], [4, 5, 6]]], mindspore.float32)
         >>> output = ops.interpolate(input, size=(6,), mode='nearest')
         >>> print(output)
-            [[[1. 1. 2. 2. 3. 3.]
-              [4. 4. 5. 5. 6. 6.]]]
+        [[[1. 1. 2. 2. 3. 3.]
+          [4. 4. 5. 5. 6. 6.]]]
     """
 
     def run_nearest(x, size, align_corners=None, scale_factor=None):
@@ -2787,8 +2787,8 @@ def interpolate_ext(input,
         >>> input = Tensor([[[1, 2, 3], [4, 5, 6]]], mindspore.float32)
         >>> output = mint.interpolate(input, size=(6,), mode='nearest')
         >>> print(output)
-            [[[1. 1. 2. 2. 3. 3.]
-              [4. 4. 5. 5. 6. 6.]]]
+        [[[1. 1. 2. 2. 3. 3.]
+          [4. 4. 5. 5. 6. 6.]]]
     """
 
     def run_nearest(x, size, align_corners=None, scale_factor=None):
@@ -8697,7 +8697,7 @@ def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, *, ce
         >>> from mindspore import Tensor, ops
         >>> input = Tensor(np.arange(20 * 16 * 50 * 32).reshape((20, 16, 50, 32)), mindspore.float32)
         >>> output_tensor, argmax = ops.function.nn_func.max_pool2d_ext(input, kernel_size=(3, 2), stride=(2, 1),
-                                                                        ceil_mode=False, return_indices=True)
+        ...                                                             ceil_mode=False, return_indices=True)
         >>> print(output_tensor.shape)
         (20, 16, 24, 31)
         >>> print(argmax.shape)

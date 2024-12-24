@@ -511,8 +511,8 @@ class ConjugateTranspose(Primitive):
         >>> conjugate_transpose = ops.ConjugateTranspose()
         >>> output = conjugate_transpose(x, perm)
         >>> print(output)
-            [[1.-1.j 3.-3.j]
-            [2.-2.j 4.-4.j]]
+        [[1.-1.j 3.-3.j]
+         [2.-2.j 4.-4.j]]
     """
 
     @prim_attr_register
@@ -5130,7 +5130,7 @@ class IndexPut(Primitive):
         >>> op = ops.IndexPut(accumulate = accumulate)
         >>> output = op(x1, x2, indices)
         >>> print(output)
-         [[4 5 3]
+        [[4 5 3]
          [4 5 6]]
     """
 
