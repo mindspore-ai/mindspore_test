@@ -184,13 +184,16 @@ bool InferenceMatmulSplitFusion::CheckSplitSize(const AnfNodePtr &weight_cnode, 
   auto split_size = split_cnode->input(kIndex2)->cast<ValueNodePtr>();
   auto split_size_shape = GetValue<std::vector<int64_t>>(split_size->value());
   auto weight_shape = BaseShapeToShape(AnfAlgo::GetOutputDetailShape(weight_cnode, 0));
+  auto reshape_cnode = split_cnode->input(kIndex1)->cast<CNodePtr>();
+  auto reshape_shape = common::AnfAlgo::GetOutputInferShape(reshape_cnode, kIndex0);
   unsigned int total_size = 0;
   for (size_t i = 0; i < num_split; i++) {
     total_size += split_size_shape[i];
   }
   const int64_t axis_n = 0;
-  if (weight_shape[axis_n] != total_size) {
-    MS_LOG(DEBUG) << "check split size failed";
+  if (weight_shape[axis_n] != total_size || reshape_shape.size() != kDim3) {
+    MS_LOG(DEBUG) << "check split size failed, weight_shape_n: " << weight_shape[axis_n]
+                  << ", total_size: " << total_size << ", reshape_size: " << reshape_shape.size();
     return false;
   }
   MS_LOG(DEBUG) << "check split size pass";
