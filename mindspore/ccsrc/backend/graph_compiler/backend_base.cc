@@ -173,9 +173,6 @@ int GetHcclBuffsizeFromEnv(const std::string &env_name) {
   return hccl_buffer_size;
 }
 void InitCommGroup(const FuncGraphPtr &root_graph) {
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    return;
-  }
   auto comm_ops_group = CollectCommOps(root_graph);
   int32_t default_size = GetHcclBuffsizeFromEnv("HCCL_BUFFSIZE");
   int32_t p2p_size = GetHcclBuffsizeFromEnv("MS_DEV_P2P_HCCL_BUFFSIZE");
