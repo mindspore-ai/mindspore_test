@@ -8329,7 +8329,8 @@ def vector_norm_ext(x, ord=2, dim=None, keepdim=False, *, dtype=None):
         Tensor, the result of norm calculation on the specified dimension, `dim`.
 
     Raises:
-        TypeError: If `dim` is not an int or tuple.
+        TypeError: If `x` is not a Tensor.
+        TypeError: If `dim` is neither an int nor a list or tuple.
         ValueError: If `ord` is not in [bool, int, float, inf, -inf].
         ValueError: The elements of `dim` are duplicate.
         ValueError: If any elements of `dim` is out of range.

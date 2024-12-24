@@ -31,6 +31,7 @@ mindspore.mint.norm
         Tensor，在指定维度 `dim` 上进行范数计算的结果，与输入 `input` 的数据类型相同。
 
     异常：
+        - **TypeError** - `input` 不是一个Tensor。
         - **ValueError** - `dim` 超出范围。
         - **TypeError** - `dim` 既不是int也不是由int组成的tuple或list。
         - **ValueError** - `dim` 的两个元素在标准化过后取值相同。
