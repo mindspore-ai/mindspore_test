@@ -1,13 +1,37 @@
 argmax_ext:
     description: |
+        argmax(input) -> Tensor
+
+        Return the indices of the maximum values of a tensor.
+
+        Args:
+            input (Tensor): Input tensor.
+
+        Returns:
+            Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> from mindspore import ops
+            >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
+            >>> output = ops.auto_generate.argmax_ext(x)
+            >>> print(output)
+            6
+
+        .. function:: argmax(input, dim, keepdim=False) -> Tensor
+            :noindex:
+
         Return the indices of the maximum values of a tensor across a dimension.
 
         Args:
             input (Tensor): Input tensor.
-            dim (Union[int, None], optional): The dimension to reduce. If `dim` is ``None`` , the indices of the maximum
-                value within the flattened input will be returned. Default: ``None`` .
+            dim (int): The dimension to reduce. 
             keepdim (bool, optional): Whether the output tensor retains the specified
-                dimension. Ignored if `dim` is None. Default: ``False`` .
+                dimension. Default: ``False`` .
 
         Returns:
             Tensor, indices of the maximum values across a dimension.
