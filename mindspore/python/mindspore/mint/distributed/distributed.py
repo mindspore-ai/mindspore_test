@@ -1063,7 +1063,7 @@ class P2POp:
         P2POp Object.
 
     Raises:
-        ValueError: when `op` is not string or function of 'isend' and 'irecv'.
+        TypeError: when `op` is not string or function of 'isend' and 'irecv'.
         TypeError: when `tensor` is not type of Tensor or 'peer' is not int.
         NotImplementedError: when `tag` is not 0.
 
@@ -1095,24 +1095,24 @@ class P2POp:
         if isinstance(op, str):
             op_name = op
             if op_name not in ["isend", "irecv"]:
-                raise ValueError(
-                    f"Expected ``op`` to be of type ``isend`` or ``irecv``, but got {op_name}"
+                raise TypeError(
+                    f"Expected op to be of type isend or irecv, but got {op_name}"
                 )
         else:
             if op not in [isend, irecv]:
-                raise ValueError(
-                    f"Expected ``op`` to be of type ``isend`` or ``irecv``, but got {op}"
+                raise TypeError(
+                    f"Expected op to be of type isend or irecv, but got {op}"
                 )
             op_name = op.__name__
 
         if not isinstance(tensor, (Tensor, Tensor_)):
             raise TypeError(
-                f"Expected ``tensor`` to be Tensor, but got {type(tensor)}."
+                f"Expected tensor to be Tensor, but got {type(tensor)}."
             )
         if not isinstance(peer, int):
             raise TypeError("For P2POp, the peer must be int")
         if tag != 0:
-            raise NotImplementedError("``tag`` not support yet.")
+            raise NotImplementedError("tag is not support yet.")
         return object.__new__(cls)
 
 
