@@ -1,0 +1,31 @@
+dot:
+  description: |
+    dot(other) -> Tensor
+
+    Computes the dot product of two 1D tensor.
+
+    Args:
+        other (Tensor): The input in the dot product, must be 1D.
+
+    Returns:
+        Tensor, the shape is [] and the data type is same as `self`.
+
+    Raises:
+        TypeError: If `other` is not tensor.
+        RuntimeError: If dtypes of `self` and `other` are not same.
+        RuntimeError: If shapes of `self` and `other` are not same.
+        RuntimeError: If shapes of `self` and `other` are not 1D.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> input = Tensor([2.0, 3.0], mindspore.float32)
+        >>> other = Tensor([2.0, 1.0], mindspore.float32)
+        >>> output = Tensor.dot(input, other)  # input.dot(other)
+        >>> print(output)
+        [7.        ]
+        >>> print(output.dtype)
+        Float32
