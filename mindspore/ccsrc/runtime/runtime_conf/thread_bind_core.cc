@@ -40,6 +40,13 @@ constexpr char kMainThread[] = "main";
 constexpr char kPynativeThread[] = "pynative";
 constexpr char kRunTimeThread[] = "runtime";
 constexpr char kDataThread[] = "minddata";
+constexpr int kMainCoreIdx = 0;
+constexpr int kRuntimeCoreIdxStart = 1;
+constexpr int kRuntimeCoreIdxEnd = 6;
+constexpr int kPynativeCoreIdxStart = 1;
+constexpr int kPynativeCoreIdxEnd = 5;
+constexpr int kDataCoreIdxStart = 6;
+constexpr int kMinimumCorePerProcess = 7;
 }  // namespace
 
 int get_device_id() {
@@ -94,7 +101,7 @@ bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module
     uint32_t local_rank_size = distributed::collective::CollectiveManager::instance()->local_rank_size();
     uint32_t local_rank_id = distributed::collective::CollectiveManager::instance()->local_rank_id();
     int core_per_process = cpu_bind_core_policy_.size() / local_rank_size;
-    if (core_per_process < 7) {
+    if (core_per_process < kMinimumCorePerProcess) {
       MS_LOG(WARNING)
         << "CPU can be assigned to each process is less than 7, thread bind core function is not enabled.";
       return false;
@@ -104,13 +111,13 @@ bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module
       std::vector<int>(cpu_bind_core_policy_.begin() + group_start_core_id,
                        cpu_bind_core_policy_.begin() + group_start_core_id + core_per_process);
 
-    thread_bind_core_policy_[kBindCoreModule::kMAIN] = {available_core[0]};
+    thread_bind_core_policy_[kBindCoreModule::kMAIN] = {available_core[kMainCoreIdx]};
     thread_bind_core_policy_[kBindCoreModule::kRUNTIME] =
-      std::vector<int>(available_core.begin() + 1, available_core.begin() + 6);
+      std::vector<int>(available_core.begin() + kRuntimeCoreIdxStart, available_core.begin() + kRuntimeCoreIdxEnd);
     thread_bind_core_policy_[kBindCoreModule::kPYNATIVE] =
-      std::vector<int>(available_core.begin() + 1, available_core.begin() + 5);
+      std::vector<int>(available_core.begin() + kPynativeCoreIdxStart, available_core.begin() + kPynativeCoreIdxEnd);
     thread_bind_core_policy_[kBindCoreModule::kMINDDATA] =
-      std::vector<int>(available_core.begin() + 6, available_core.end());
+      std::vector<int>(available_core.begin() + kDataCoreIdxStart, available_core.end());
   } else {
     if (process_bind_core_policy_.find(device_id) == process_bind_core_policy_.end()) {
       MS_LOG(WARNING) << "Bind core policy does not include the physical device_id of this process, thread bind core "
