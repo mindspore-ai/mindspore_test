@@ -216,6 +216,10 @@ STATUS ReduceFusionMapper::AdjustInput(const CNodePtr &cnode, const PrimitivePtr
     MS_LOG(ERROR) << "Get axes failed! ret:" << ret << "!";
     return ret;
   }
+  if (mode == static_cast<int64_t>(ReduceMode::Reduce_L2) || mode == static_cast<int64_t>(ReduceMode::Reduce_L1)) {
+    prim->AddAttr(ops::kAxis, MakeValue<std::vector<int64_t>>(axes));
+  }
+
   ValueNodePtr value_node = NewValueNode<std::vector<int64_t>>(axes);
   std::vector<int64_t> shape_vec_shape = {};
   auto abstract = std::make_shared<abstract::AbstractTensor>(kInt64, shape_vec_shape);
