@@ -70,6 +70,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
     if (executor_ == nullptr) {
       executor_ = std::shared_ptr<GraphExecutorPy>(new (std::nothrow) GraphExecutorPy());
     }
+    executor_->set_process_id();
     return executor_;
   }
 
@@ -154,6 +155,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   void ParentAfterFork();
   void ChildAfterFork();
   void ClearInfo();
+  void set_process_id();
 
  private:
   GraphExecutorPy() = default;
@@ -192,6 +194,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   bool executor_running_{false};
   int32_t max_call_depth_{-1};
   bool need_recompile_{true};
+  pid_t process_id_;
 };
 using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
 

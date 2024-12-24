@@ -1755,7 +1755,6 @@ class _CellGraphExecutor:
         self._graph_executor = GraphExecutor_.get_instance()
         self._graph_executor.set_py_exe_path(sys.executable)
         self._graph_executor.set_kernel_build_server_dir(os.path.split(kernel_build_server.__file__)[0] + os.sep)
-        self._pid = os.getpid()
 
     def init_dataset(self, queue_name, dataset_size, batch_size, dataset_types, dataset_shapes,
                      input_indexs, phase='dataset', need_run=True):
@@ -1991,9 +1990,7 @@ class _CellGraphExecutor:
 
     def del_net_res(self, obj, net_id):
         """Clear the memory resource of a network."""
-        # no need to del net res by gc in independent dataset process which is a subprocess forked by main process
-        if self._pid == os.getpid():
-            self._graph_executor.del_net_res(obj, net_id)
+        self._graph_executor.del_net_res(obj, net_id)
 
     def _get_branch_control_input(self):
         if ('obf_ratio' not in self.obfuscate_config.keys()) or (
