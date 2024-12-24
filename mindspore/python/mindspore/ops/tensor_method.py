@@ -247,7 +247,7 @@ from mindspore.ops.auto_generate import square
 # 101 squeeze
 
 # 102 std
-from mindspore.ops.function.math_func import std_ext as std
+
 # 103 sub
 from mindspore.ops.auto_generate import sub, sub_ext
 # 104 sum
@@ -403,10 +403,8 @@ from mindspore.ops.function.math_func import nansum
 from mindspore.ops.auto_generate import log1p
 
 # 501
-from mindspore.ops.auto_generate import addbmm_op
 from mindspore.ops.function.math_func import addbmm
 # 502
-from mindspore.ops.auto_generate import addmm_op
 from mindspore.ops.function.math_func import addmm
 # 880
 from mindspore.ops.auto_generate import lerp, lerp_scalar
@@ -1017,8 +1015,9 @@ def tensor_square(input):
 # 101 squeeze
 
 # 102 std
-def tensor_std(input, dim=None, *, correction=1, keepdim=False):
-    return std(input, dim, correction=correction, keepdim=keepdim)
+def tensor_std(input, dim=None, *, correction=0, keepdim=False):
+    x_var = input.var(dim, correction, keepdim)
+    return F.tensor_pow(x_var, 0.5)
 
 
 def deprecated_tensor_std(self, axis=None, ddof=0, keepdims=False):
@@ -1418,7 +1417,7 @@ def tensor_log10(input):
 
 # 501
 def tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
-    return addbmm_op(input, batch1, batch2, beta=beta, alpha=alpha)
+    return addbmm(input, batch1, batch2, beta=beta, alpha=alpha)
 
 
 def deprecated_tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
@@ -1430,7 +1429,7 @@ def deprecated_tensor_addbmm(input, batch1, batch2, *, beta=1, alpha=1):
 
 # 502
 def tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
-    return addmm_op(input, mat1, mat2, beta=beta, alpha=alpha)
+    return addmm(input, mat1, mat2, beta=beta, alpha=alpha)
 
 
 def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):

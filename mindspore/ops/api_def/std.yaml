@@ -3,8 +3,8 @@ std:
     py_method: tensor_std # callback to python function "def tensor_std"
     Ascend: pyboost
     kwonlyargs: correction, keepdim
-    CPU: pyboost
-    GPU: pyboost
+    CPU: py_method
+    GPU: py_method
     interface: tensor
 
   - op_yaml: deprecated/std_method.yaml
