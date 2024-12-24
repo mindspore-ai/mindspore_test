@@ -1108,7 +1108,10 @@ bool DynamicMemPoolBestFit::WaitEvent(int64_t task_id_on_stream, uint32_t user_s
     address->WaitEvent(task_id_on_stream, user_stream_id);
     // Remove event and try to free memory.
     if (address->IsEventNotUsed()) {
-      iter->second.erase(address);
+      // Force clear all mem bufs.
+      for (auto &kv : stream_pair_addresses_) {
+        (void)kv.second.erase(address);
+      }
       if (address->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
         FreeTensorMemInner(address->device_addr_);
       }
@@ -1136,7 +1139,10 @@ bool DynamicMemPoolBestFit::WaitEvent(int64_t task_id_on_stream, uint32_t memory
       address->WaitEvent(task_id_on_stream, user_stream);
       // Remove event and try to free memory.
       if (address->IsEventNotUsed()) {
-        stream_pair_addresses.second.erase(address);
+        // Force clear all mem bufs.
+        for (auto &kv : stream_pair_addresses_) {
+          (void)kv.second.erase(address);
+        }
         if (address->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
           FreeTensorMemInner(address->device_addr_);
         }
