@@ -496,7 +496,7 @@ class SyncBatchNorm(_BatchNorm):
             cell tracks the running mean and variance, and when set to ``False``,
             this cell does not track such statistics. And this cell always uses batch statistics
             in both training and eval modes. Default: ``True`` .
-        process_group (:class:`mindspore.communication._comm_helper.GlobalComm`, optional): synchronization of stats
+        process_group (:class:`mindspore.communication.GlobalComm`, optional): synchronization of stats
             happen within each process group individually. Default behavior is synchronization across the whole world.
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 

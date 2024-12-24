@@ -20,7 +20,7 @@ mindspore.mint.nn.SyncBatchNorm
         - **affine** (bool) - bool类型。设置为True时， :math:`\gamma` 和 :math:`\beta` 为可学习参数。默认值： ``True`` 。
         - **track_running_stats** (bool, 可选) - bool类型。设置为 ``True`` 时，会跟踪运行时的均值和方差。当设置为 ``False`` 时，
           则不会跟踪这些统计信息。且在tran和eval模式下，该cell总是使用batch的统计信息。
-        - **process_group** (:class:`mindspore.communication._comm_helper.GlobalComm`, 可选) - 统计数据的同步在每个进程组
+        - **process_group** (:class:`mindspore.communication.GlobalComm`, 可选) - 统计数据的同步在每个进程组
           内单独进行。默认行为是全球同步。
         - **dtype** (:class:`mindspore.dtype`, 可选) - Parameters的dtype。默认值： ``None`` 。
 
@@ -33,7 +33,6 @@ mindspore.mint.nn.SyncBatchNorm
     异常：
         - **TypeError** - `num_features` 不是int。
         - **TypeError** - `eps` 不是float。
-        - **TypeError** - `process_group` 不是list。
         - **ValueError** - `num_features` 小于1。
         - **ValueError** - `momentum` 不在范围[0, 1]内。
         - **ValueError** - `process_group` 中的rank ID不在[0, rank_size)范围内。
