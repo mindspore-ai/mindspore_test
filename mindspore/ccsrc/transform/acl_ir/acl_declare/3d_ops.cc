@@ -30,6 +30,8 @@ REGISTER_ACL_OP(GridSampler3D).set_is_3d_ops();
 
 REGISTER_ACL_OP(AvgPool3D).set_run_mode(false).set_is_3d_ops();
 
+REGISTER_ACL_OP(AvgPool3DGrad).set_run_mode(false).set_is_3d_ops();
+
 REGISTER_ACL_OP(MaxPool3D).set_is_3d_ops();
 
 REGISTER_ACL_OP(MaxPool3DGrad).set_is_3d_ops();
