@@ -2396,7 +2396,6 @@ REG_BPROP_BUILDER("AvgPool3D").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto x_shape = ib->Shape(x);
   auto dx = ib->Emit("AvgPool3DGrad", {x_shape, dout},
                      {{"kernel_size", ib->GetAttr("kernel_size")},
-                      {"origin_input_shape", MakeValue(ib->GetShape(x))},
                       {"strides", ib->GetAttr("strides")},
                       {"pad_list", ib->GetAttr("pad_list")},
                       {"ceil_mode", ib->GetAttr("ceil_mode")},
