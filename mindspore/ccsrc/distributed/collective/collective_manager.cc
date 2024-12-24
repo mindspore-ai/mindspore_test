@@ -808,6 +808,10 @@ bool CollectiveManager::IsAsyncInitGlobalComm() {
 }
 
 bool CollectiveManager::WaitAllCommInitDone() {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    MS_LOG(INFO) << "This is dry run, no need to wait for communciators init done";
+    return true;
+  }
   // This is a shared lock so the cost is little, but we need to guarantee there's no threa-safe issue.
   // Because WaitCommInitDone also acquires this lock, we just copy this task_list_ and release the lock immediately to
   // avoid dead lock.
@@ -825,6 +829,11 @@ bool CollectiveManager::WaitAllCommInitDone() {
 }
 
 bool CollectiveManager::WaitCommInitDone(const std::string &group_name) {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    MS_LOG(INFO) << "This is dry run, no need to wait for communciator init done for " << group_name;
+    return true;
+  }
+
   std::unique_lock<std::mutex> lock(task_queue_mutex_);
   // If the task is not submitted, throw exception.
   if (!std::any_of(task_list_.begin(), task_list_.end(),
