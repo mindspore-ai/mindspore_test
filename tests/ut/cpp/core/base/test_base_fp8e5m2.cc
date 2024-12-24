@@ -17,7 +17,7 @@
 #include <limits>
 #include "common/common_test.h"
 #define private public
-#include "base/float8_e5m2.h"
+#include "base/fp8_e5m2.h"
 
 namespace mindspore {
 
@@ -26,30 +26,48 @@ class TestFloat8e5m2 : public UT::Common {
   TestFloat8e5m2() {}
 };
 
+/// Feature: Data format conversion in Float8_e5m2.
+/// Description: ZeroConversion between Float8_e5m2 and Float32.
+/// Expectation: No exception.
 TEST_F(TestFloat8e5m2, ZeroConversion) {
   EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(0.0f))), 0.0f);
 }
 
+/// Feature: Data format conversion in Float8_e5m2.
+/// Description: OneConversion between Float8_e5m2 and Float32.
+/// Expectation: No exception.
 TEST_F(TestFloat8e5m2, OneConversion) {
   EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 1.0f);
 }
 
+/// Feature: Data format conversion in Float8_e5m2.
+/// Description: NegativeOneConversion between Float8_e5m2 and Float32.
+/// Expectation: No exception.
 TEST_F(TestFloat8e5m2, NegativeOneConversion) {
   EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(-1.0f))), -1.0f);
 }
 
+/// Feature: Data format conversion in Float8_e5m2.
+/// Description: NumberConversion between Float8_e5m2 and Float32.
+/// Expectation: No exception.
 TEST_F(TestFloat8e5m2, NumberConversion) {
-  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 3.0f);
-  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), -2.5f);
-  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 96.0f);
-  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(1.0f))), 32768.0f);
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(3.0f))), 3.0f);
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(-2.5f))), -2.5f);
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(96.0f))), 96.0f);
+  EXPECT_EQ(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(32768.0f))), 32768.0f);
 }
 
+/// Feature: Data format conversion in Float8_e5m2.
+/// Description: InfinityConversion between Float8_e5m2 and Float32.
+/// Expectation: No exception.
 TEST_F(TestFloat8e5m2, InfinityConversion) {
   float inf = std::numeric_limits<float>::infinity();
   EXPECT_TRUE(std::isinf(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(inf)))));
 }
 
+/// Feature: Data format conversion in Float8_e5m2.
+/// Description: NaNConversion between Float8_e5m2 and Float32.
+/// Expectation: No exception.
 TEST_F(TestFloat8e5m2, NaNConversion) {
   float nan = std::numeric_limits<float>::quiet_NaN();
   EXPECT_TRUE(std::isnan(Float8_e5m2::ToFloat32(Float8_e5m2::FromRaw(Float8_e5m2::FromFloat32(nan)))));
