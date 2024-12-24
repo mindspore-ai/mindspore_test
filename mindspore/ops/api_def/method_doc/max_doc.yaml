@@ -48,7 +48,7 @@ max:
         >>> import numpy as np
         >>> from mindspore import Tensor
         >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output, index = x.max(x, 0, keepdim=True)
+        >>> output, index = x.max(0, keepdim=True)
         >>> print(output, index)
         [0.7] [3]
 
