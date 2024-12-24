@@ -51,15 +51,16 @@ constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
 constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
 
-// unordered_map value vector<vector<size_t>> mean:
-// the first vector is input_idx, the second is output_idx
+// unordered_map vector<vector<vector<size_t>>> represents:
+// list[op_name][0] for phase prefill, list[op_name][1] for phase increment;
+// list[op_name][][0] for input indices, list[op_name][][0] for output indices.
 static const std::unordered_map<std::string, std::vector<std::vector<std::vector<size_t>>>> kNzFormatOpsList = {
-  {kMatMulOpName, {{{0, 1}, {}} /* prefill(default) */, {{1}, {}} /* decode */}},
-  {kQuantLinearSparseName, {{{0}, {}} /* prefill(default) */, {{}, {}} /* decode */}},
-  {kQuantBatchMatmulName, {{{0, 1}, {}} /* prefill(default) */, {{1}, {}} /* decode */}},
-  {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}} /* prefill(default) */, {{0, 1, 2, 7}, {0}} /* decode */}},
-  {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}} /* prefill(default) */, {{0, 1, 2, 6}, {3}} /* decode */}},
-  {kReshapeAndCacheOpName, {{{2, 3}, {}} /* prefill(default) */, {{2, 3}, {}} /* decode */}}};
+  {kMatMulOpName, {{{0, 1}, {}}, {{1}, {}}}},
+  {kQuantLinearSparseName, {{{0}, {}}, {{}, {}}}},
+  {kQuantBatchMatmulName, {{{0, 1}, {}}, {{1}, {}}}},
+  {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}}, {{0, 1, 2, 7}, {0}}}},
+  {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
+  {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
