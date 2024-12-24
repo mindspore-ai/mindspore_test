@@ -601,7 +601,7 @@ py::object TensorPy::Item(const Tensor &tensor) {
     case TypeId::kNumberTypeUInt64:
       return py::cast(*static_cast<uint64_t *>(data));
     case TypeId::kNumberTypeFloat16:
-      return py::cast(*static_cast<float16 *>(data));
+      return py::float_(py::cast(*static_cast<float16 *>(data)));
     case TypeId::kNumberTypeFloat:
     case TypeId::kNumberTypeFloat32:
       return py::cast(*static_cast<float *>(data));
@@ -609,7 +609,7 @@ py::object TensorPy::Item(const Tensor &tensor) {
     case TypeId::kNumberTypeFloat64:
       return py::cast(*static_cast<double *>(data));
     case TypeId::kNumberTypeBFloat16:
-      return py::cast(*static_cast<bfloat16 *>(data));
+      return py::float_(py::cast(*static_cast<bfloat16 *>(data)));
     case TypeId::kNumberTypeBool:
       return py::cast(*static_cast<bool *>(data));
     case TypeId::kNumberTypeComplex64:
