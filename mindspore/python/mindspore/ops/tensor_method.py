@@ -1354,8 +1354,8 @@ def tensor_triu(input, diagonal=0):
 
 # 150 __eq__
 
-# 151 scatter_
 
+# 151 scatter_
 def tensor_inplace_scatter_src(input, dim, index, src):
     return inplace_scatter_src_op(input, dim, index, src)
 
