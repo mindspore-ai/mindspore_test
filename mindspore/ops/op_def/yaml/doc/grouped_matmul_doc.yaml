@@ -88,7 +88,8 @@ grouped_matmul:
         ...         result = self.gmm(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list)
         ...         return result
         ...
-        >>> context.set_context(device_target="Ascend", mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
+        >>> context.set_context(mode=ms.GRAPH_MODE)
         >>> x = [ms.Tensor(np.array([[0, 0, 0, 0],
         ...                          [1, 1, 1, 1],
         ...                          [2, 2, 2, 2],

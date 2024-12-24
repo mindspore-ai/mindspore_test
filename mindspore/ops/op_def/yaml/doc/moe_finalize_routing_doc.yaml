@@ -55,7 +55,8 @@ moe_finalize_routing:
             ...         result = self.moe_finalize_routing(expanded_x, x1, x2, bias, scales, expanded_row_idx, expanded_expert_idx)
             ...         return result
             ...
-            >>> context.set_context(device_target="Ascend", mode=ms.GRAPH_MODE)
+            >>> ms.set_device(device_target="Ascend")
+            >>> context.set_context(mode=ms.GRAPH_MODE)
             >>> # E = 4, K = 2, N = 3, H = 4
             >>> expanded_x = ms.Tensor(np.array([[0.1, 0.1, 0.1, 0.1],
             ...                                  [0.2, 0.2, 0.2, 0.2],

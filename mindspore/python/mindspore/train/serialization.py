@@ -1565,7 +1565,8 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
         >>> from mindspore import context
         >>> from mindspore import load_checkpoint_async
         >>> from mindspore import load_param_into_net
-        >>> context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+        >>> mindspore.set_device(device_target="Ascend")
+        >>> context.set_context(mode=context.GRAPH_MODE)
         >>> # Create the dataset taking MNIST as an example. Refer to
         >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
         >>> dataset = create_dataset()
