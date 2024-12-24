@@ -161,14 +161,11 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
     valid_indexes = GetValidDumpIndex(node, output_size, false, device_context);
   }
   for (size_t j = 0; j < output_size; ++j) {
-    if (!AnfAlgo::OutputAddrExist(node, j) ||
-        (device_context != nullptr &&
+    if ((device_context != nullptr &&
          std::find(valid_indexes.begin(), valid_indexes.end(), j) == valid_indexes.end())) {
       continue;
     }
-    auto addr = AnfAlgo::GetOutputAddr(node, j);
     std::string node_name = GetKernelNodeName(node);
-    MS_EXCEPTION_IF_NULL(addr);
     auto type = common::AnfAlgo::GetOutputInferDataType(node, j);
     std::string op_type = common::AnfAlgo::GetCNodeName(node);
     std::string op_name = *kernel_name;
@@ -187,6 +184,11 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
       if (IsMindRTKernelByKernel()) {
         DumpMemFromTensorLoaderToFile(debugger, file_path, node_name, j);
       } else {
+        if (!AnfAlgo::OutputAddrExist(node, j, true)) {
+          continue;
+        }
+        auto addr = AnfAlgo::GetOutputAddr(node, j);
+        MS_EXCEPTION_IF_NULL(addr);
         ShapeVector int_shapes;
         GetDumpIntShape(node, j, NOT_NULL(&int_shapes), trans_flag);
         DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
