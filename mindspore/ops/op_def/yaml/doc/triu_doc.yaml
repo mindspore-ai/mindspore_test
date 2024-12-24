@@ -7,7 +7,7 @@ triu:
             This is an experimental API that is subject to change or deletion.
 
         Args:
-            input (Tensor): The input tensor with shape :math:`(M, N, *)` where * means any number of additional dimensions.
+            input (Tensor): The input tensor with shape :math:`(*, M, N)` where * means any number of additional dimensions.
             diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: ``0``,
                 indicating the main diagonal.
 
