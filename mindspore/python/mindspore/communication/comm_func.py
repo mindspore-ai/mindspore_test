@@ -1256,17 +1256,17 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
     return (tuple(result), handle)
 
 
-def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group):
+def _get_all_to_all_single_numel_list(tensor_shape, output_shape, output_split_sizes, input_split_sizes, group):
     """get numel list for all_to_all_single."""
     global _GROPU_SIZE_CACHE
     if _is_split_sizes_empty(input_split_sizes):
         if group not in _GROPU_SIZE_CACHE:
             _GROPU_SIZE_CACHE[group] = get_group_size(group)
         _world_size = _GROPU_SIZE_CACHE[group]
-        if tensor.shape[0] % _world_size != 0:
+        if tensor_shape[0] % _world_size != 0:
             raise ValueError("input shape at dim 0 must be divided by world_size, "
-                             f"but got {tensor.shape[0]} and {_world_size}.")
-        _split_size = tensor.shape[0] // _world_size
+                             f"but got {tensor_shape[0]} and {_world_size}.")
+        _split_size = tensor_shape[0] // _world_size
         input_split_sizes = (_split_size,) * _world_size
     if _is_split_sizes_empty(output_split_sizes):
         if group not in _GROPU_SIZE_CACHE:
@@ -1283,7 +1283,7 @@ def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, 
         _split_size = shape_dim_0 // _world_size
         output_split_sizes = (_split_size,) * _world_size
 
-    send_size_without_first_dim = _get_size(tensor.shape[1:])
+    send_size_without_first_dim = _get_size(tensor_shape[1:])
     send_numel_list = [size * send_size_without_first_dim for size in input_split_sizes]
 
     recv_size_without_first_dim = None
@@ -1296,6 +1296,9 @@ def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, 
         recv_size_without_first_dim = _get_size(recv_shape_without_first_dim)
     recv_numel_list = [size * recv_size_without_first_dim for size in output_split_sizes]
     return send_numel_list, recv_numel_list, recv_shape_without_first_dim
+
+
+_ALL_TO_ALL_CACHE = {}
 
 
 def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes=None,
@@ -1378,8 +1381,13 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         group = GlobalComm.WORLD_COMM_GROUP
 
     split_sizes_empty = _is_split_sizes_empty(output_split_sizes) and _is_split_sizes_empty(input_split_sizes)
-    send_numel_list, recv_numel_list, recv_shape_without_first_dim = \
-        _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group)
+    global _ALL_TO_ALL_CACHE
+    tensor_shape = output_shape
+    cache_key = (tensor_shape, output_shape, output_split_sizes, input_split_sizes, group)
+    if cache_key not in _ALL_TO_ALL_CACHE:
+        _ALL_TO_ALL_CACHE[cache_key] = _get_all_to_all_single_numel_list(*cache_key)
+    send_numel_list, recv_numel_list, recv_shape_without_first_dim = _ALL_TO_ALL_CACHE[cache_key]
+
     tensor = _contiguous(tensor)
     _input = tensor.reshape(-1)
     group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
