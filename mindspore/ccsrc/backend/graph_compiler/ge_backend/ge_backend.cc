@@ -43,6 +43,8 @@ constexpr size_t kMapTensorKeyIndex = 0;
 constexpr size_t kMapTensorValueIndex = 1;
 constexpr size_t kMapTensorStatusIndex = 2;
 }  // namespace
+mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
+
 std::string GEBackend::CompileGraph(const FuncGraphPtr &func_graph, const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -546,7 +548,8 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
 
 bool GEBackend::DebugOnStepBegin(const KernelGraphPtr &func_graph) {
   MS_LOG(INFO) << "Debug on step begin.";
-  if (ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE &&
+  if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1" &&
+      ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE &&
       ConfigManager::GetInstance().iter_num() != 1) {
     MS_LOG(EXCEPTION) << "When using acl dump in data sink mode, sink size must be 1, but got "
                       << ConfigManager::GetInstance().iter_num() << ".";
