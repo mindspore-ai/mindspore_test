@@ -2284,7 +2284,7 @@ def scatter_mul(input_x, indices, updates):
     when the data types of parameters need to be converted.
 
     Args:
-        input_x (Parameter): The target tensor to be updated, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor to be updated, with data type of Parameter or Tensor.
             The shape is :math:`(N,*)` where :math:`*` means any number of additional dimensions.
         indices (Tensor): The index to do mul operation whose data type must be int32 or int64.
         updates (Tensor): The tensor doing the mul operation with `input_x`,

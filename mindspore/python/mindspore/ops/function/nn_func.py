@@ -9110,7 +9110,7 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
     Args:
         input (Tensor): The indices used to lookup in the `weight`. The data type must be mindspore.int32 or
             mindspore.int64, and the value should be in range `[0, weight.shape[0])`.
-        weight (Parameter): The matrix where to lookup from. The shape must be 2D.
+        weight (Union[Parameter, Tensor]): The matrix where to lookup from. The shape must be 2D.
         padding_idx (int, optional): If the value is not None, the corresponding row of `weight` will not be updated
             in training. The value should be in range `[-weight.shape[0], weight.shape[0])` if it's not ``None``.
             Default ``None``.
@@ -9127,7 +9127,6 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
     Raises:
         ValueError: If `padding_idx` is out of valid range.
         ValueError: If the shape of `weight` is invalid.
-        TypeError: `weight` is not a :class:`mindspore.Parameter`.
 
     Supported Platforms:
         ``Ascend``
