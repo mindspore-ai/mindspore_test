@@ -1097,7 +1097,7 @@ REG_BPROP_BUILDER("Div").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib
   auto x_dtype_id = ib->GetDtypeId(x);
   bc_dx = ib->Div(dout, y);
   if (y->need_compute_grad_out()) {
-    bc_dy = -(bc_dx * out);
+    bc_dy = -dout * ib->Div(out, y);
   }
   auto result = BinopGradCommon(ib, x, y, bc_dx, bc_dy);
   bool is_complex = (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128);
