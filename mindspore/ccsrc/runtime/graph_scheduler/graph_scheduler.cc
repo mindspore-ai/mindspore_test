@@ -2070,6 +2070,7 @@ std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompiler
     const auto &graph = graph_compiler_info.graphs_[i];
     const auto &device_context = graph_compiler_info.device_contexts_[i];
     MS_EXCEPTION_IF_NULL(graph);
+    graph->CacheRootWeight(root_weights);
     if (graph->is_graph_run_mode() || graph->is_any_type_input() || EnableKbkSubGraphExecute()) {
       continue;
     }
@@ -2081,7 +2082,6 @@ std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompiler
     if (strategy == GraphExecutionStrategy::kStep) {
       strategy = (is_single_op_graph ? strategy : GraphExecutionStrategy::kPipeline);
     }
-    graph->CacheRootWeight(root_weights);
 
     // Stream recv node need task id on stream from send node. Here pass stream send actor to stream recv actor.
     mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> send_recv_nodes;
