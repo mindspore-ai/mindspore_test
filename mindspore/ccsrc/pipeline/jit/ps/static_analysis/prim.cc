@@ -2264,7 +2264,7 @@ EvalResultPtr GetEvaluatedValueForAttrOrMethodNotInMap(const AnalysisEnginePtr &
   const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() == kLax);
   if (!allow_fallback_runtime) {
     MS_EXCEPTION(AttributeError) << "In JIT strict mode, cannot get attributes " << item_name << " or the "
-                                 << data_type->ToString() << " object has no attribute: " << item_name
+                                 << data_type->ToString() << " object has no attribute: '" << item_name
                                  << "'. You can use os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2' "
                                  << "to enable the JIT lax mode to support the current syntax.\n\n"
                                  << trace::GetDebugInfoStr(out_conf->node()->debug_info());
