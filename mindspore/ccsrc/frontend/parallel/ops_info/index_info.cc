@@ -41,23 +41,6 @@ constexpr size_t validShardElementSizeOfIndex = 1;
 // 1.get attr
 Status IndexInfo::GetAttrs() { return SUCCESS; }
 
-Status IndexInfo::InferRepeatedCalcProcess(const NewStrategies &input_dim) {
-  // reprated times: devices size / devices_required_for_one_train
-  auto device_size = SizeToLong(g_device_manager->GetDeviceListInThisStage().size());
-  auto input_data_dim = input_dim[0]->GetAllElements();
-  auto devices_required =
-    std::accumulate(input_data_dim[0].begin(), input_data_dim[0].end(), 1, std::multiplies<int64_t>());
-  if (repeated_num_in_dev_matrix_right_ != true) {
-    MS_LOG(ERROR) << name_ << ": repeated num not supported:" << device_size;
-    return FAILED;
-  }
-  if (devices_required < device_size) {
-    MS_EXCEPTION_IF_ZERO("devices_required", devices_required);
-    repeated_calculation_num_ = device_size / devices_required;  // set the repeat calc num
-  }
-  return SUCCESS;
-}
-
 // two index must have the same size and equals to validSizeOfIndex
 Status IndexInfo::CheckIndex() {
   auto index_shape = inputs_shape_new_.at(kInputIndex);
@@ -132,7 +115,6 @@ Status IndexInfo::CheckStrategy(const StrategyPtr &strategy) {
     // dynamic shape, no need to calc shard_input_data_height_, use calc graph instead
     MS_LOG(INFO) << name_ << ": dynamic shape";
   }
-  InferRepeatedCalcProcess(input_data_shard_dim);
   return SUCCESS;
 }
 
@@ -161,13 +143,10 @@ Status IndexInfo::InferDevMatrixShape() {
   dev_matrix_shape_ = common_shape;
   // should not include repeated num
   origin_dev_matrix_shape_ = dev_matrix_shape_;
-  if (repeated_num_in_dev_matrix_right_ && (repeated_calculation_num_ > 1)) {
-    dev_matrix_shape_.push_back(repeated_calculation_num_);
-    inputs_shape_new_[0]->GetValue().emplace_back(repeated_calculation_num_);
-  }
   // output dev_matrix
   out_dev_matrix_shape_ = dev_matrix_shape_;
   MS_LOG(INFO) << name_ << ":InferDevMatrixShape dev matrix: " << ShapeToString(dev_matrix_shape_);
+  MS_LOG(INFO) << name_ << ":inputs_shape_new_[0]: " << inputs_shape_new_[0]->GetValue();
   return SUCCESS;
 }
 
@@ -212,11 +191,9 @@ Status IndexInfo::InferTensorMap() {
     input_tensor_map_idx.emplace_back(i);
   }
   input_tensor_map_idx.emplace_back(0);
-
   for (size_t i = 0; i < outputs_shape_new_[0]->GetElement(0)->size(); i++) {
     out_tensor_map_idx.emplace_back(-1);
   }
-
   MS_LOG(INFO) << name_ << ":input_tensor_map now: " << input_tensor_map_idx;
   (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(input_tensor_map_idx));  // input tensor map
   (void)outputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(out_tensor_map_idx));   // output tensor map
@@ -274,41 +251,22 @@ Status IndexInfo::InferBias() {
   }
   int64_t rank = g_device_manager->rank_index_in_stage();
   if (input_shape->GetAllElements()[0].size() == validSizeOfInput) {
-    // input (a, b) index: (index_1, index_2)
-    /* example for repeated calc
-      rank == 0 | 4
-        bias_.at(0) 0
-        bias_.at(1) 0
-      rank == 1 | 5
-        bias_.at(0) 0
-        bias_.at(1) 1
-      rank == 2 | 6
-        bias_.at(0) 1
-        bias_.at(1) 0
-      rank == 3 | 7
-        bias_.at(0) 1
-        bias_.at(1) 1
-    */
-    if (repeated_num_in_dev_matrix_right_ == true && repeated_calculation_num_ > 1) {
-      MS_EXCEPTION_IF_ZERO("repeated_calculation_num_", repeated_calculation_num_);
-      MS_LOG(INFO) << name_ << ":rank num: " << rank << " bias_0::" << bias_tmp.at(0) << " bias_1::" << bias_tmp.at(1);
-      MS_LOG(INFO) << name_ << ":repeated calculation num: " << repeated_calculation_num_;
-      MS_LOG(INFO) << name_ << ":inputs_data_shard 1: " << (inputs_data_shard_tmp.at(1));
-      MS_LOG(INFO) << name_ << ":quyu calc vale:" << (rank % (inputs_data_shard_tmp.at(1) * repeated_calculation_num_));
-      // bias_0 = rank % (b * r) % b  = rank / (b * 1 * 1 * r)
-      bias_tmp.at(0) =
-        (rank % ((inputs_data_shard_tmp.at(1)) * repeated_calculation_num_)) % inputs_data_shard_tmp.at(1);
-      // bias_1 = rank % (b * r) / b = rank % (b * 1 * 1 * r) / (1 * 1 * r)
-      bias_tmp.at(1) =
-        ((rank % (inputs_data_shard_tmp.at(1) * repeated_calculation_num_)) / inputs_data_shard_tmp.at(1));
+    if (repeated_calc_num_ > 1) {
+      // bias_0 = rank / (b * r)
+      bias_tmp.at(0) = (rank / (inputs_data_shard_tmp.at(1) * repeated_calc_num_));
+      // bias_1 = rank % (b * r) / r
+      bias_tmp.at(1) = ((rank % (inputs_data_shard_tmp.at(1) * repeated_calc_num_)) / repeated_calc_num_);
     } else {
-      // bias_0 = rank / (b * c * d) = rank / (b * 1 * 1)
-      bias_tmp.at(0) = rank / (inputs_data_shard_tmp.at(1));
+      // bias_0 = rank / (b * c * d) % a = rank / (b * 1 * 1) % a
+      bias_tmp.at(0) = (rank / (inputs_data_shard_tmp.at(1))) % inputs_data_shard_tmp.at(0);
       // bias_1 = rank % (b * c * d) / (c * d) = rank % (b * 1 * 1) / (1 * 1)
       bias_tmp.at(1) = rank % (inputs_data_shard_tmp.at(1));
     }
+
     if (dynamic_shape_flag() == true) {
       // A/B needs to be calculated by graph.
+      bias_.at(0) = (int64_t)bias_tmp.at(0);
+      bias_.at(1) = (int64_t)bias_tmp.at(1);
       return SUCCESS;
     }
     MS_EXCEPTION_IF_ZERO("inputs_data_shard 0", inputs_data_shard_tmp.at(0));
@@ -320,6 +278,12 @@ Status IndexInfo::InferBias() {
     bias_.at(0) = (int64_t)bias_tmp.at(0);
     bias_.at(1) = (int64_t)bias_tmp.at(1);
     MS_LOG(INFO) << name_ << ":rank num: " << rank << " bias_0::" << bias_.at(0) << " bias_1::" << bias_.at(1);
+    MS_LOG(INFO) << name_ << ":rank num: " << rank << " slice_size_0::" << slice_size_.at(0)
+                 << " slice_size_1::" << slice_size_.at(1);
+    MS_LOG(INFO) << name_ << ":rank num: " << rank << " inputs_shape_tmp_0::" << inputs_shape_tmp.at(0)
+                 << " inputs_shape_tmp_1::" << inputs_shape_tmp.at(1);
+    MS_LOG(INFO) << name_ << ":rank num: " << rank << " shard_tmp_0::" << inputs_data_shard_tmp.at(0)
+                 << " shard_tmp_1::" << inputs_data_shard_tmp.at(1);
     return SUCCESS;
   }
   MS_LOG(ERROR) << name_ << ":Only support input_shape size 2. Now:" << input_shape->GetElement(0)->GetValue().size();
@@ -329,10 +293,11 @@ Status IndexInfo::InferBias() {
 Status IndexInfo::SetCostUnderStrategy(const StrategyPtr &strategy) { return SetCostUnderStrategyBase(strategy); }
 RankList IndexInfo::GetAllReduceRankList() {
   RankList reduce_rank_list;
+  RankList reduce_rank_list_test;
   std::vector<int64_t> dims;
   if (!inputs_tensor_map_new_.at(0)->GetAllElements().empty()) {
     // strategy is set.
-    MS_LOG(INFO) << "index input device_arrangement:" << dev_matrix_shape_;  // 2 2 2
+    MS_LOG(INFO) << "index input device_arrangement:" << dev_matrix_shape_;  // 4 1 2
     MS_LOG(INFO) << "index input tensor_map:" << inputs_tensor_map_new_.at(0)->GetAllElements();
     Shape in_tensor_map = inputs_tensor_map_new_.at(0)->GetValue();
 
@@ -349,10 +314,13 @@ RankList IndexInfo::GetAllReduceRankList() {
     for (const auto &element : reduce_rank_list) {
       MS_LOG(INFO) << "index reduce_rank_list ele (current allreduce ele):" << element;
     }
+    for (const auto &element : dev_matrix_shape_) {
+      MS_LOG(INFO) << "index dev_matrix_shape_ ele):" << element;
+    }
+    MS_LOG(INFO) << "repeated_calc_num_:" << repeated_calc_num_;
     return reduce_rank_list;
   }
   MS_LOG(EXCEPTION) << "index input tensor map empty.";
-  return reduce_rank_list;
 }
 
 std::string IndexInfo::InferGroup() {
@@ -370,8 +338,6 @@ ReplaceGraphPtr IndexInfo::ReplaceGraphDynamicShape(const CNodePtr &cnode) {
   if (gen_g.Init(cnode) != SUCCESS) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "GenerateGraph Init failed";
   }
-  auto stra = strategy_->GetInputNewDim();
-  auto input_data_shard = (stra.at(0)->GetAllElements())[0];
   auto tuple_get_item_0 =
     gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), gen_g.virtual_input_node(), CreatInt64Imm(0)});
   auto tuple_get_item_1 =
@@ -380,12 +346,8 @@ ReplaceGraphPtr IndexInfo::ReplaceGraphDynamicShape(const CNodePtr &cnode) {
   auto dtype_input = gen_g.PushBack({gen_g.NewOpInst(DTYPE), tuple_get_item_0});
   auto dtype_id_input = gen_g.PushBack(
     {gen_g.NewOpInst(DTYPETOENUM), CreateStringImm("DtypeToEnum"), CreateStringImm("dtype"), dtype_input});
-  auto shape_of_input_0 = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), shape_of_input, CreatInt64Imm(0)});
-  auto shape_of_input_1 = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), shape_of_input, CreatInt64Imm(1)});
-  auto slice_size_0 =
-    gen_g.PushBack({gen_g.NewOpInst(SCALAR_DIV), shape_of_input_0, CreatInt64Imm(input_data_shard.at(0))});  // A/a
-  auto slice_size_1 =
-    gen_g.PushBack({gen_g.NewOpInst(SCALAR_DIV), shape_of_input_1, CreatInt64Imm(input_data_shard.at(1))});  // B/b
+  auto slice_size_0 = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), shape_of_input, CreatInt64Imm(0)});
+  auto slice_size_1 = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), shape_of_input, CreatInt64Imm(1)});
   auto bias_0 = gen_g.PushBack({gen_g.NewOpInst(SCALAR_MUL), slice_size_0, CreatInt64Imm(bias_.at(0))});
   auto bias_1 = gen_g.PushBack({gen_g.NewOpInst(SCALAR_MUL), slice_size_1, CreatInt64Imm(bias_.at(1))});
   auto bias_0_tensor = gen_g.PushBack({gen_g.NewOpInst(SCALAR_TO_TENSOR), bias_0, dtype_id_input});
@@ -453,16 +415,25 @@ ReplaceGraphPtr IndexInfo::replace_graph(const CNodePtr &cnode) {
   OperatorAttrs keep_alive_attr = {
     std::make_pair(KEEP_ALIVE, MakeValue(true))};  // In sub 0 scenario, keepalive is required.
   MS_LOG(INFO) << name_ << ": The rank is " << g_device_manager->rank_index_in_stage() << ", the bias is " << 0;
-  auto sub_0 =
-    gen_g.PushBack({gen_g.NewOpInst(SUB, keep_alive_attr), tuple_get_item_0, CreateInt32Tensor(bias_.at(0))});
+
+  auto dtype_index_input = gen_g.PushBack({gen_g.NewOpInst(DTYPE), tuple_get_item_0});
+  auto dtype_id_index_input = gen_g.PushBack(
+    {gen_g.NewOpInst(DTYPETOENUM), CreateStringImm("DtypeToEnum"), CreateStringImm("dtype"), dtype_index_input});
+  auto bias_0 = gen_g.PushBack({gen_g.NewOpInst(CAST), CreateInt32Tensor(bias_.at(0), true), dtype_id_index_input});
+  auto bias_1 = gen_g.PushBack({gen_g.NewOpInst(CAST), CreateInt32Tensor(bias_.at(1), true), dtype_id_index_input});
+  auto shard_input_height =
+    gen_g.PushBack({gen_g.NewOpInst(CAST), CreateInt32Tensor(shard_input_data_height_, true), dtype_id_index_input});
+  auto shard_input_weight =
+    gen_g.PushBack({gen_g.NewOpInst(CAST), CreateInt32Tensor(shard_input_data_weight_, true), dtype_id_index_input});
+
+  auto sub_0 = gen_g.PushBack({gen_g.NewOpInst(SUB, keep_alive_attr), tuple_get_item_0, bias_0});
   auto relu_0 = gen_g.PushBack({gen_g.NewOpInst(RELU), sub_0});
-  auto minimum_0 = gen_g.PushBack({gen_g.NewOpInst(MINIMUM), relu_0, CreateInt32Tensor(shard_input_data_height_)});
+  auto minimum_0 = gen_g.PushBack({gen_g.NewOpInst(MINIMUM), relu_0, shard_input_height});
   auto equal_0 = gen_g.PushBack({gen_g.NewOpInst(EQUAL), sub_0, minimum_0});
   // index_1 process, keepalive is required if sub 0.
-  auto sub_1 =
-    gen_g.PushBack({gen_g.NewOpInst(SUB, keep_alive_attr), tuple_get_item_1, CreateInt32Tensor(bias_.at(1))});
+  auto sub_1 = gen_g.PushBack({gen_g.NewOpInst(SUB, keep_alive_attr), tuple_get_item_1, bias_1});
   auto relu_1 = gen_g.PushBack({gen_g.NewOpInst(RELU), sub_1});
-  auto minimum_1 = gen_g.PushBack({gen_g.NewOpInst(MINIMUM), relu_1, CreateInt32Tensor(shard_input_data_weight_)});
+  auto minimum_1 = gen_g.PushBack({gen_g.NewOpInst(MINIMUM), relu_1, shard_input_weight});
   auto equal_1 = gen_g.PushBack({gen_g.NewOpInst(EQUAL), sub_1, minimum_1});
 
   auto index_tuple = gen_g.PushBack({gen_g.NewOpInst(MAKE_TUPLE_OP), minimum_0, minimum_1});

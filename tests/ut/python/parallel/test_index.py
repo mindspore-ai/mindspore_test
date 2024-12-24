@@ -61,7 +61,6 @@ def test_index_shard_basic_0():
     phase = compile_graph(net, 8, "semi_auto_parallel", input_data, indices)
     validator = ParallelValidator(net, phase)
     assert validator.check_node_inputs_has('ReLU-0', ['Sub-0'])
-    assert validator.check_node_inputs_has('Mul-0', ['Index-0', 'Cast-0'])
     assert validator.check_node_inputs_has('LogicalAnd-0', ['Equal-0', 'Equal-1'])
     assert validator.check_node_attrs("Sub-0", {"keep_alive": True})
 
@@ -82,7 +81,6 @@ def test_index_shard_basic_1():
     phase = compile_graph(net, 16, "semi_auto_parallel", input_data, indices)
     validator = ParallelValidator(net, phase)
     assert validator.check_node_inputs_has('ReLU-0', ['Sub-0'])
-    assert validator.check_node_inputs_has('Mul-0', ['Index-0', 'Cast-0'])
     assert validator.check_node_inputs_has('LogicalAnd-0', ['Equal-0', 'Equal-1'])
     assert validator.check_node_attrs("Sub-0", {"keep_alive": True})
 
@@ -105,7 +103,6 @@ def test_index_shard_dynamic_0():
     phase = compile_graph(net, 8, "semi_auto_parallel", input_data, indices)
     validator = ParallelValidator(net, phase)
     assert validator.check_node_inputs_has('ReLU-0', ['Sub-0'])
-    assert validator.check_node_inputs_has('Mul-0', ['Index-0', 'Cast-0'])
     assert validator.check_node_inputs_has('LogicalAnd-0', ['Equal-0', 'Equal-1'])
     assert validator.check_node_attrs("Sub-0", {"keep_alive": True})
 
@@ -128,6 +125,5 @@ def test_index_shard_dynamic_1():
     phase = compile_graph(net, 8, "semi_auto_parallel", input_data, indices)
     validator = ParallelValidator(net, phase)
     assert validator.check_node_inputs_has('ReLU-0', ['Sub-0'])
-    assert validator.check_node_inputs_has('Mul-0', ['Index-0', 'Cast-0'])
     assert validator.check_node_inputs_has('LogicalAnd-0', ['Equal-0', 'Equal-1'])
     assert validator.check_node_attrs("Sub-0", {"keep_alive": True})

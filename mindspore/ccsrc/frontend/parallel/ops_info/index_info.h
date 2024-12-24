@@ -54,9 +54,7 @@ class IndexInfo : public OperatorInfo {
   Group group_;
   Status InferForwardCommunication() override { return SUCCESS; }
   std::vector<int64_t> slice_size_;
-  int64_t repeated_calculation_num_ = 1;
   void SetOptionalInputTensorMap(const size_t &index, size_t *valid_input_index);
-  Status InferRepeatedCalcProcess(const NewStrategies &input_dim);
   ReplaceGraphPtr ReplaceGraphDynamicShape(const CNodePtr &cnode);
 
  private:
