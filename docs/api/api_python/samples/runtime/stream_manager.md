@@ -8,10 +8,10 @@
 
 ``` python
 ...
-s = ms.hal.Stream()  # Create a new stream.
+s = ms.runtime.Stream()  # Create a new stream.
 A = Tensor(np.random.randn(20, 20), ms.float32)
 B = ops.matmul(A, A)
-with ms.hal.StreamCtx(s):
+with ms.runtime.StreamCtx(s):
     # sum() may start execution before matmul() finishes!
     C = ops.sum(B)
 ```
@@ -20,11 +20,11 @@ with ms.hal.StreamCtx(s):
 
 ``` python
 ...
-s = ms.hal.Stream()  # Create a new stream.
+s = ms.runtime.Stream()  # Create a new stream.
 A = Tensor(np.random.randn(20, 20), ms.float32)
 B = ops.matmul(A, A)
-s.wait_stream(ms.hal.current_stream())  # Dispatch wait event to device.
-with ms.hal.StreamCtx(s):
+s.wait_stream(ms.runtime.current_stream())  # Dispatch wait event to device.
+with ms.runtime.StreamCtx(s):
     C = ops.sum(B)
 ```
 
@@ -38,14 +38,14 @@ class Net(nn.Cell):
         ...
 
     def construct(self, x):
-        s1 = ms.hal.Stream()
-        with ms.hal.StreamCtx(s1):
+        s1 = ms.runtime.Stream()
+        with ms.runtime.StreamCtx(s1):
             ...
 
 # The following function formats are not recommended:
 def func(A):
-    s1 = ms.hal.Stream()
-    with ms.hal.StreamCtx(s1):
+    s1 = ms.runtime.Stream()
+    with ms.runtime.StreamCtx(s1):
         ...
 ```
 
@@ -56,35 +56,35 @@ def func(A):
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
-        self.s1 = ms.hal.Stream()
+        self.s1 = ms.runtime.Stream()
         ...
 
     def construct(self, x):
-        with ms.hal.StreamCtx(self.s1):
+        with ms.runtime.StreamCtx(self.s1):
             ...
 
 # The following function formats are recommended:
-s1 = ms.hal.Stream()
+s1 = ms.runtime.Stream()
 def func(A, s1):
-    with ms.hal.StreamCtx(s1):
+    with ms.runtime.StreamCtx(s1):
         ...
 ```
 
 ## 设备事件
 
-设备事件可用于监视设备的进度、精确测量计时以及同步设备流。出于易用性考虑，我们在[Stream](https://www.mindspore.cn/docs/zh-CN/master/api_python/hal/mindspore.hal.Stream.html)类中提供了几个封装接口，比如上面例子中使用的 `wait_stream()` 接口，你可以通过接口文档了解详情。
+设备事件可用于监视设备的进度、精确测量计时以及同步设备流。出于易用性考虑，我们在[Stream](https://www.mindspore.cn/docs/zh-CN/master/api_python/runtime/mindspore.runtime.Stream.html)类中提供了几个封装接口，比如上面例子中使用的 `wait_stream()` 接口，你可以通过接口文档了解详情。
 
-`ms.hal.Event` 最常见的用法是 `record()` 和 `wait()` 的组合，以确保在多流网络中执行序能够满足用户的期望，如下所示：
+`ms.runtime.Event` 最常见的用法是 `record()` 和 `wait()` 的组合，以确保在多流网络中执行序能够满足用户的期望，如下所示：
 
 ``` python
-s = ms.hal.Stream()     # Create a new stream.
-ev1 = ms.hal.Event()    # Create a new event.
-ev2 = ms.hal.Event()    # Create a new event.
+s = ms.runtime.Stream()     # Create a new stream.
+ev1 = ms.runtime.Event()    # Create a new event.
+ev2 = ms.runtime.Event()    # Create a new event.
 
 A = Tensor(np.random.randn(20, 20), ms.float32)
 B = ops.matmul(A, A)
 ev1.record()
-with ms.hal.StreamCtx(s):
+with ms.runtime.StreamCtx(s):
     ev1.wait()  # Ensure 'B = ops.matmul(A, A)' is complete.
     C = ops.sum(B)
     ev2.record()
@@ -101,7 +101,7 @@ import mindspore as ms
 from mindspore import context, Tensor, ops
 
 context.set_context(mode=context.PYNATIVE_MODE)
-s1 = ms.hal.Stream()
+s1 = ms.runtime.Stream()
 
 input_s0 = Tensor(np.random.randn(10, 32, 32, 32), ms.float32)
 weight_s0 = Tensor(np.random.randn(32, 32, 3, 3), ms.float32)
@@ -109,8 +109,8 @@ mess_input = Tensor(np.random.randn(10, 32, 32, 32), ms.float32)
 
 # Use default stream
 add_s0 = input_s0 + 1
-s1.wait_stream(ms.hal.default_stream())
-with ms.hal.StreamCtx(s1):
+s1.wait_stream(ms.runtime.default_stream())
+with ms.runtime.StreamCtx(s1):
   # Use conv2d because this operator takes a long time in device.
   conv_res = ops.conv2d(add_s0, weight_s0)
   add_s1 = add_s0 + 1

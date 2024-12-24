@@ -8,10 +8,10 @@ Operations in each stream are serialized in the order in which they are created,
 
 ```python
 ...
-s = ms.hal.Stream()  # Create a new stream.
+s = ms.runtime.Stream()  # Create a new stream.
 A = Tensor(np.random.randn(20, 20), ms.float32)
 B = ops.matmul(A, A)
-with ms.hal.StreamCtx(s):
+with ms.runtime.StreamCtx(s):
     # sum() may start execution before matmul() finishes!
     C = ops.sum(B)
 
@@ -21,11 +21,11 @@ When the `current stream` is the default stream, it is the user’s responsibili
 
 ```python
 ...
-s = ms.hal.Stream()  # Create a new stream.
+s = ms.runtime.Stream()  # Create a new stream.
 A = Tensor(np.random.randn(20, 20), ms.float32)
 B = ops.matmul(A, A)
-s.wait_stream(ms.hal.current_stream())  # Dispatch wait event to device.
-with ms.hal.StreamCtx(s):
+s.wait_stream(ms.runtime.current_stream())  # Dispatch wait event to device.
+with ms.runtime.StreamCtx(s):
     C = ops.sum(B)
 ```
 
@@ -39,14 +39,14 @@ class Net(nn.Cell):
         ...
 
     def construct(self, x):
-        s1 = ms.hal.Stream()
-        with ms.hal.StreamCtx(s1):
+        s1 = ms.runtime.Stream()
+        with ms.runtime.StreamCtx(s1):
             ...
 
 # The following function formats are not recommended:
 def func(A):
-    s1 = ms.hal.Stream()
-    with ms.hal.StreamCtx(s1):
+    s1 = ms.runtime.Stream()
+    with ms.runtime.StreamCtx(s1):
         ...
 ```
 
@@ -57,35 +57,35 @@ The recommended format is as follows:
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
-        self.s1 = ms.hal.Stream()
+        self.s1 = ms.runtime.Stream()
         ...
 
     def construct(self, x):
-        with ms.hal.StreamCtx(self.s1):
+        with ms.runtime.StreamCtx(self.s1):
             ...
 
 # The following function formats are recommended:
-s1 = ms.hal.Stream()
+s1 = ms.runtime.Stream()
 def func(A, s1):
-    with ms.hal.StreamCtx(s1):
+    with ms.runtime.StreamCtx(s1):
         ...
 ```
 
 ## Device event
 
-Device events can be used to monitor the device’s progress, to accurately measure timing, and to synchronize device streams. For ease of use, we provide several encapsulation interfaces in the [Stream](https://www.mindspore.cn/docs/en/master/api_python/hal/mindspore.hal.Stream.html) class, such as the `wait_stream()` interface used in the above example, you can see the interface documentation for details.
+Device events can be used to monitor the device’s progress, to accurately measure timing, and to synchronize device streams. For ease of use, we provide several encapsulation interfaces in the [Stream](https://www.mindspore.cn/docs/en/master/api_python/runtime/mindspore.runtime.Stream.html) class, such as the `wait_stream()` interface used in the above example, you can see the interface documentation for details.
 
-The most common use of `ms.hal.Event` is the combination of `record()` and `wait()` to ensure that the execution order can meet the user's expectations in a multi-stream network, as follows:
+The most common use of `ms.runtime.Event` is the combination of `record()` and `wait()` to ensure that the execution order can meet the user's expectations in a multi-stream network, as follows:
 
 ```python
-s = ms.hal.Stream()     # Create a new stream.
-ev1 = ms.hal.Event()    # Create a new event.
-ev2 = ms.hal.Event()    # Create a new event.
+s = ms.runtime.Stream()     # Create a new stream.
+ev1 = ms.runtime.Event()    # Create a new event.
+ev2 = ms.runtime.Event()    # Create a new event.
 
 A = Tensor(np.random.randn(20, 20), ms.float32)
 B = ops.matmul(A, A)
 ev1.record()
-with ms.hal.StreamCtx(s):
+with ms.runtime.StreamCtx(s):
     ev1.wait()  # Ensure 'B = ops.matmul(A, A)' is complete.
     C = ops.sum(B)
     ev2.record()
@@ -102,7 +102,7 @@ import mindspore as ms
 from mindspore import context, Tensor, ops
 
 context.set_context(mode=context.PYNATIVE_MODE)
-s1 = ms.hal.Stream()
+s1 = ms.runtime.Stream()
 
 input_s0 = Tensor(np.random.randn(10, 32, 32, 32), ms.float32)
 weight_s0 = Tensor(np.random.randn(32, 32, 3, 3), ms.float32)
@@ -110,8 +110,8 @@ mess_input = Tensor(np.random.randn(10, 32, 32, 32), ms.float32)
 
 # Use default stream
 add_s0 = input_s0 + 1
-s1.wait_stream(ms.hal.default_stream())
-with ms.hal.StreamCtx(s1):
+s1.wait_stream(ms.runtime.default_stream())
+with ms.runtime.StreamCtx(s1):
   # Use conv2d because this operator takes a long time in device.
   conv_res = ops.conv2d(add_s0, weight_s0)
   add_s1 = add_s0 + 1
