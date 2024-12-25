@@ -44,14 +44,18 @@ class Net3(nn.Cell):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['KBK', 'PYNATIVE'])
 def test_median_pyboost(mode):
     """
     Feature: tensor.median
     Description: Verify the result of median in pyboost
     Expectation: success
     """
-    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    else:
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+
     net2 = Net2()
     net3 = Net3()
     x = Tensor(np.array([[1, 3, 4, 2], [0, 2, 4, 1]]).astype(np.float32))
@@ -62,7 +66,7 @@ def test_median_pyboost(mode):
     assert np.allclose(case3_y.asnumpy(), case3_expected_y)
     assert np.allclose(case3_index.asnumpy(), case3_expected_index)
 
-    if mode == ms.PYNATIVE_MODE:
+    if mode == 'PYNATIVE':
         case2_y = net2(x)
         case2_expected_y = np.array(2.0).astype(np.float32)
         assert np.allclose(case2_y.asnumpy(), case2_expected_y)
@@ -72,14 +76,19 @@ def test_median_pyboost(mode):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['KBK', 'GE', 'PYNATIVE'])
 def test_median2_pyboost(mode):
     """
     Feature: tensor.median
     Description: Verify the result of median in pyboost
     Expectation: success
     """
-    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    elif mode == 'GE':
+        ms.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O2"})
+    else:
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     net = Net()
     x = Tensor(np.array([[1, 3, 4, 2], [0, 2, 4, 1]]).astype(np.float32))
 
