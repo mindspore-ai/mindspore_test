@@ -2532,25 +2532,25 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
   auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
   std::string result;
   if (device_address->type_id() == TypeId::kNumberTypeInt32) {
-    for (size_t i = 0; is_vaild_index(i, size / 4); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(int)); ++i) {
       value += std::to_string((reinterpret_cast<int *>(buf))[i]);
       value += ", ";
     }
     result = " type int, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeInt64) {
-    for (size_t i = 0; is_vaild_index(i, size / 8); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(int64_t)); ++i) {
       value += std::to_string((reinterpret_cast<int64_t *>(buf))[i]);
       value += ", ";
     }
     result = " type int64, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeFloat32) {
-    for (size_t i = 0; is_vaild_index(i, size / 4); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(float)); ++i) {
       value += std::to_string(reinterpret_cast<float *>((reinterpret_cast<void *>(buf)))[i]);
       value += ", ";
     }
     result = " type float32, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeFloat64) {
-    for (size_t i = 0; is_vaild_index(i, size / 8); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(double)); ++i) {
       value += std::to_string((reinterpret_cast<double *>(reinterpret_cast<void *>(buf)))[i]);
       value += ", ";
     }
@@ -2562,9 +2562,10 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     }
     result = " type bool, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeFloat16) {
-    for (size_t i = 0; is_vaild_index(i, size / 2); ++i) {
+    constexpr size_t kFloat16TypeSize = 2;
+    for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
       float fp32 = 0;
-      device::HalfToFloat(&fp32, buf + i * 2, 1);
+      device::HalfToFloat(&fp32, buf + i * kFloat16TypeSize, 1);
       value += std::to_string(fp32);
       value += ", ";
     }
