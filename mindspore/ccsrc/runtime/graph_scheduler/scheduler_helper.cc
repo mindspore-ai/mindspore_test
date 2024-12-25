@@ -446,6 +446,41 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
   }
 }
 
+void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_actor,
+                                                    const KernelWithIndex &front_node_with_idx,
+                                                    const KernelWithIndex &from_kernel_with_output_idx,
+                                                    const KernelWithIndex &to_kernel_with_input_idx,
+                                                    const KernelGraphPtr &graph) {
+  // Obtain the corresponding front node from back node.
+  ParameterStore &parameterStore = ParameterStore::GetInstance();
+  auto cur_graph_parameter_store = parameterStore.GetGraphParameterStore();
+  size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_idx.first.get());
+  // The index of the font node is flattened
+  size_t real_inner_idx = front_node_with_idx.second;
+  auto cur_device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, 0, false);
+  MS_EXCEPTION_IF_NULL(cur_device_tensor);
+  // The superkernel actor is linked by input parameter, maybe the not used parameter.
+  if (to_actor->type() != KernelTransformType::kSuperKernelActor) {
+    cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  }
+  // Cal ref count
+  auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({from_kernel_with_output_idx.first, 0}).first;
+  MS_EXCEPTION_IF_NULL(real_node);
+  if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
+    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
+  } else if (graph->IsRefOutputMapValue(from_kernel_with_output_idx)) {
+    MS_LOG(INFO) << "Ref input: " << from_kernel_with_output_idx.first->DebugString()
+                 << ", index: " << from_kernel_with_output_idx.second;
+    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
+  } else {
+    cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx, cur_device_tensor->GetDeviceType());
+  }
+  // Save to_actor info into parameter_index
+  ParameterInfo cur_param_info{front_node_with_idx, real_outer_idx};
+  to_actor->InsertParameterIndexs(to_kernel_with_input_idx.second, cur_param_info);
+  UpdateDataArrowRefCount(to_actor, to_kernel_with_input_idx.second, cur_device_tensor);
+}
+
 void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, OutputActor *const to_actor,
                                          const KernelWithIndex &kernel_with_index, DeviceContext *device_context,
                                          size_t output_position) {

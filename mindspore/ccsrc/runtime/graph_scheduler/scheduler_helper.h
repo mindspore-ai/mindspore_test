@@ -51,6 +51,10 @@ class SchedulerHelper {
   // Add the arrow between from actor and to actor.
   static void AddDataArrow(AbstractActor *const from_actor, AbstractActor *const to_actor, size_t from_output_index,
                            size_t to_input_index, const AnfNodePtr &from_kernel = nullptr);
+  static void InsertParameterIndexsForActor(AbstractActor *const to_actor, const KernelWithIndex &front_node_with_idx,
+                                            const KernelWithIndex &from_kernel_with_output_idx,
+                                            const KernelWithIndex &to_kernel_with_input_idx,
+                                            const KernelGraphPtr &graph);
   static void AddResultParameter(AbstractActor *const from_actor, OutputActor *const to_actor,
                                  const KernelWithIndex &kernel_with_index, DeviceContext *device_context,
                                  size_t output_position);
