@@ -18,6 +18,7 @@
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/leaper_trans.h"
 
 constexpr size_t kFlowNum = 4;
+constexpr size_t kSleepTime = 100;
 constexpr size_t kMaxConnectTime = 3000;
 
 namespace mindspore {
@@ -29,7 +30,9 @@ LeaperTrans::LeaperTrans() {}
 LeaperConnInfo LeaperTrans::Connect(std::string dst_ip, uint16_t src_port, uint16_t dst_port) {
   MS_LOG(WARNING) << "LeaperTrans try to connect to " << dst_ip << ":" << dst_port << ", src_port = " << src_port;
   LeaperConnInfo conn_info;
-  struct sockaddr_in serverAddr, clientAddr, dstAddr;
+  struct sockaddr_in serverAddr;
+  struct sockaddr_in clientAddr;
+  struct sockaddr_in dstAddr;
 
   int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (listen_fd < 0) {
@@ -69,7 +72,7 @@ LeaperConnInfo LeaperTrans::Connect(std::string dst_ip, uint16_t src_port, uint1
       if (err >= 0) {
         break;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::milliseconds(kSleepTime));
     }
     if (err < 0) {
       perror("connect");

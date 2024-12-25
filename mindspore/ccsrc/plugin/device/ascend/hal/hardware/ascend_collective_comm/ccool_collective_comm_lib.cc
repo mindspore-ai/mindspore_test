@@ -35,14 +35,16 @@ constexpr size_t kPtrIndex0 = 0;
 constexpr size_t kPtrIndex1 = 1;
 constexpr size_t kPtrIndex2 = 2;
 constexpr size_t kPtrIndex3 = 3;
+constexpr uint32_t kRankStep = 2;
+constexpr uint32_t kStartPort = 21234;
 
-#define CCOOL_GROUP_CHECK_EMPTY(group)                             \
-  do {                                                             \
-    if ((group).length() == 0) {                                   \
-      MS_LOG(ERROR) << "The length of group name should not be 0"; \
-      return false;                                                \
-    }                                                              \
-  } while (0)
+bool CCOOLGroupCheckNotEmpty(const std::string &group) {
+  if ((group).length() == 0) {
+    MS_LOG(ERROR) << "The length of group name should not be 0";
+    return false;
+  }
+  return true;
+}
 
 CcoolCollectiveCommLib::CcoolCollectiveCommLib() {
   global_group_name_ = kHCCLGlobalGroupName;
@@ -94,12 +96,13 @@ bool CcoolCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_ra
 }
 
 bool CcoolCollectiveCommLib::DestroyDeviceCommunicationGroup(const std::string &group_name) {
-  CCOOL_GROUP_CHECK_EMPTY(group_name);
-  return true;
+  return CCOOLGroupCheckNotEmpty(group_name);
 }
 
 bool CcoolCollectiveCommLib::DestroyCommunicationGroup(const std::string &group_name) {
-  CCOOL_GROUP_CHECK_EMPTY(group_name);
+  if (!CCOOLGroupCheckNotEmpty(group_name)) {
+    return false;
+  }
   CHECK_RET((groups_.count(group_name) != 0), true, "The CCOOL group " + group_name + " does not exist.");
 
   return groups_[group_name]->Finalize();
@@ -107,14 +110,15 @@ bool CcoolCollectiveCommLib::DestroyCommunicationGroup(const std::string &group_
 
 bool CcoolCollectiveCommLib::CreateDeviceCommunicationGroup(const std::string &group_name,
                                                             const std::vector<uint32_t> &group_ranks) {
-  CCOOL_GROUP_CHECK_EMPTY(group_name);
-  return true;
+  return CCOOLGroupCheckNotEmpty(group_name);
 }
 
 bool CcoolCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                       const std::vector<uint32_t> &group_ranks,
                                                       uint32_t local_group_rank, uint32_t local_group_size) {
-  CCOOL_GROUP_CHECK_EMPTY(group_name);
+  if (!CCOOLGroupCheckNotEmpty(group_name)) {
+    return false;
+  }
   CHECK_RET((groups_.count(group_name) == 0), true, "The CCOOL group " + group_name + " has already existed.");
 
   CcoolCommunicationGroupPtr group = std::make_shared<CcoolCommunicationGroup>(group_name, group_ranks, global_rank_id_,
@@ -213,8 +217,12 @@ bool CcoolCollectiveCommLib::InterClusterSimpleAllReduce(void *buff, size_t coun
   constexpr size_t kSendDataSize = 8;
   size_t dtype_size = GetDtypeSize(data_type);
   size_t size = count * dtype_size;
-  void *send_data = nullptr, *recv_data = nullptr, *npu_data = nullptr, *workspace_data = nullptr;
-  AscendEvent event, mem_event;
+  void *send_data = nullptr;
+  void *recv_data = nullptr;
+  void *npu_data = nullptr;
+  void *workspace_data = nullptr;
+  AscendEvent event;
+  AscendEvent mem_event;
   size_t stream_id = AscendStreamMng::GetInstance().GetStreamId(stream_ptr);
   auto acl_ret = CALL_ASCEND_API(aclrtMallocHost, &send_data, size);
   if (acl_ret != ACL_RT_SUCCESS) {
@@ -243,7 +251,6 @@ bool CcoolCollectiveCommLib::InterClusterSimpleAllReduce(void *buff, size_t coun
   }
   mem_event.RecordEvent(stream_id);
   mem_event.SyncEvent();
-  // TODO(CCOOL) print data according to data type&size
   if (size >= kSendDataSize) {
     MS_LOG(WARNING) << "inter cluster sendrecv send_data = " << reinterpret_cast<float *>(send_data)[0] << ", "
                     << reinterpret_cast<float *>(send_data)[1];
@@ -301,8 +308,12 @@ bool CcoolCollectiveCommLib::InterClusterAllReduceCompute(const std::vector<void
                                                           CollectiveOpReduceType reduce_op, TypeId data_type,
                                                           CcoolCommunicationGroupPtr group, const size_t &stream_id,
                                                           void *stream_ptr, AscendEvent *mem_event) {
-  LeaperConnInfo conn_info, conn_info_recv;
-  size_t recv_size, recv_start, send_size, send_start;
+  LeaperConnInfo conn_info;
+  LeaperConnInfo conn_info_recv;
+  size_t recv_size;
+  size_t recv_start;
+  size_t send_size;
+  size_t send_start;
   size_t rank_size = inter_cluster_ranks.size();
   size_t dtype_size = GetDtypeSize(data_type);
   auto iter = std::find(inter_cluster_ranks.begin(), inter_cluster_ranks.end(), global_rank_id_);
@@ -323,7 +334,7 @@ bool CcoolCollectiveCommLib::InterClusterAllReduceCompute(const std::vector<void
   }
 
   // avoid deadlock
-  if (local_rank % 2 == 0) {
+  if (local_rank % kRankStep == 0) {
     conn_info_recv = group->GetConnInfo(inter_cluster_ranks[(local_rank - 1 + rank_size) % rank_size]);
     conn_info = group->GetConnInfo(inter_cluster_ranks[(local_rank + 1) % rank_size]);
   } else {
@@ -394,14 +405,17 @@ bool CcoolCollectiveCommLib::InterClusterAllReduce(void *buff, size_t count, Typ
                                                    void *stream_ptr) {
   const std::vector<uint32_t> inter_cluster_ranks = group->GetInterClusterRanks();
   // Simplify the process by using send recv instead of allreduce in two AZ communication sets.
-  if (inter_cluster_ranks.size() == 2) {
+  if (inter_cluster_ranks.size() == kRankStep) {
     return InterClusterSimpleAllReduce(buff, count, data_type, reduce_op, group, stream_ptr, inter_cluster_ranks);
   }
-  AscendEvent event, mem_event;
+  AscendEvent event;
+  AscendEvent mem_event;
   size_t stream_id = AscendStreamMng::GetInstance().GetStreamId(stream_ptr);
   size_t dtype_size = GetDtypeSize(data_type);
   size_t size = count * dtype_size;
-  void *send_data = nullptr, *npu_data = nullptr, *workspace_data = nullptr;
+  void *send_data = nullptr;
+  void *npu_data = nullptr;
+  void *workspace_data = nullptr;
   auto acl_ret = CALL_ASCEND_API(aclrtMallocHost, &send_data, size);
   if (acl_ret != ACL_RT_SUCCESS) {
     MS_LOG(ERROR) << "InterClusterAllReduce aclrtMallocHost for send_data failed!";
@@ -465,8 +479,10 @@ bool CcoolCollectiveCommLib::InterClusterAllGather(void *send_buff, std::vector<
   uint32_t local_rank = static_cast<uint32_t>(std::distance(inter_cluster_ranks.begin(), iter));
   MS_LOG(INFO) << "inter cluster allgather ranks = " << inter_cluster_ranks
                << ", inter cluster local rank = " << local_rank;
-  AscendEvent event, mem_event;
-  LeaperConnInfo conn_info, conn_info_recv;
+  AscendEvent event;
+  AscendEvent mem_event;
+  LeaperConnInfo conn_info;
+  LeaperConnInfo conn_info_recv;
   size_t stream_id = AscendStreamMng::GetInstance().GetStreamId(stream_ptr);
   auto acl_ret = CALL_ASCEND_API(aclrtMemcpyAsync, recv_buff_list[local_rank], size, send_buff, size,
                                  ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
@@ -474,7 +490,8 @@ bool CcoolCollectiveCommLib::InterClusterAllGather(void *send_buff, std::vector<
     MS_LOG(ERROR) << "InterClusterAllGather aclrtMemcpyAsync device to device failed!";
     return false;
   }
-  void *send_data = nullptr, *recv_data = nullptr;
+  void *send_data = nullptr;
+  void *recv_data = nullptr;
   size_t rank_size = inter_cluster_ranks.size();
   acl_ret = CALL_ASCEND_API(aclrtMallocHost, &send_data, size);
   if (acl_ret != ACL_RT_SUCCESS) {
@@ -494,7 +511,7 @@ bool CcoolCollectiveCommLib::InterClusterAllGather(void *send_buff, std::vector<
   }
   mem_event.RecordEvent(stream_id);
   mem_event.SyncEvent();
-  if (local_rank % 2 == 0) {
+  if (local_rank % kRankStep == 0) {
     conn_info_recv = group->GetConnInfo(inter_cluster_ranks[(local_rank - 1 + rank_size) % rank_size]);
     conn_info = group->GetConnInfo(inter_cluster_ranks[(local_rank + 1) % rank_size]);
   } else {
@@ -545,9 +562,13 @@ bool CcoolCollectiveCommLib::InterClusterReduceScatter(const std::vector<void *>
   size_t stream_id = AscendStreamMng::GetInstance().GetStreamId(stream_ptr);
   MS_LOG(INFO) << "inter cluster reduce scatter ranks = " << inter_cluster_ranks
                << ", inter cluster local rank = " << local_rank << "recv_count = " << recv_count;
-  AscendEvent event, mem_event;
-  LeaperConnInfo conn_info, conn_info_recv;
-  void *send_data = nullptr, *recv_data = nullptr, *npu_data = nullptr;
+  AscendEvent event;
+  AscendEvent mem_event;
+  LeaperConnInfo conn_info;
+  LeaperConnInfo conn_info_recv;
+  void *send_data = nullptr;
+  void *recv_data = nullptr;
+  void *npu_data = nullptr;
   size_t rank_size = inter_cluster_ranks.size();
   size_t dtype_size = GetDtypeSize(data_type);
   size_t size = recv_count * dtype_size;
@@ -568,7 +589,7 @@ bool CcoolCollectiveCommLib::InterClusterReduceScatter(const std::vector<void *>
     return false;
   }
 
-  if (local_rank % 2 == 0) {
+  if (local_rank % kRankStep == 0) {
     conn_info_recv = group->GetConnInfo(inter_cluster_ranks[(local_rank - 1 + rank_size) % rank_size]);
     conn_info = group->GetConnInfo(inter_cluster_ranks[(local_rank + 1) % rank_size]);
   } else {
@@ -608,7 +629,6 @@ bool CcoolCollectiveCommLib::InterClusterReduceScatter(const std::vector<void *>
     mem_event.RecordEvent(stream_id);
     mem_event.SyncEvent();
   }
-
   acl_ret = CALL_ASCEND_API(aclrtMemcpyAsync, recv_buff, size, send_data, size, ACL_MEMCPY_HOST_TO_DEVICE, stream_ptr);
   if (acl_ret != ACL_RT_SUCCESS) {
     MS_LOG(ERROR) << "InterClusterReduceScatter aclrtMemcpyAsync host to device failed!";
@@ -656,8 +676,8 @@ bool CcoolCollectiveCommLib::AllGather(const void *send_buff, void *recv_buff, s
 
   // step1: cross az allgather
   std::vector<void *> data_list;
-  size_t send_size = send_count * GetDtypeSize(data_type),
-         stride_size = send_size * group->GetInnerClusterRanks().size();
+  size_t send_size = send_count * GetDtypeSize(data_type);
+  size_t stride_size = send_size * group->GetInnerClusterRanks().size();
   for (size_t i = 0; i < cluster_count; i++) {
     data_list.push_back(static_cast<uint8_t *>(recv_buff) + i * stride_size);
   }
@@ -697,13 +717,17 @@ bool CcoolCollectiveCommLib::AllReduce(const void *send_buff, void *recv_buff, s
   }
 
   // record on stream, wait on inner_stream
-  AscendEvent event, rs_event, ag_event, mem_event;
+  AscendEvent event;
+  AscendEvent rs_event;
+  AscendEvent ag_event;
+  AscendEvent mem_event;
   size_t stream_id = AscendStreamMng::GetInstance().GetStreamId(stream);
   aclrtStream inner_stream = AscendStreamMng::GetInstance().GetStream(inner_stream_id_);
 
   // Padding for HcclReduceScatter
   size_t hccl_rank_size = group->GetInnerClusterRanks().size();
-  void *send_buff_padding = nullptr, *recv_buff_padding = nullptr;
+  void *send_buff_padding = nullptr;
+  void *recv_buff_padding = nullptr;
   uint64_t count = send_count / hccl_rank_size;
   uint64_t remain = send_count % hccl_rank_size;
   size_t buff_size = send_count * GetDtypeSize(data_type);
@@ -773,7 +797,6 @@ bool CcoolCollectiveCommLib::AllReduce(const void *send_buff, void *recv_buff, s
       return false;
     }
   }
-
   return ret;
 }
 
@@ -818,7 +841,8 @@ bool CcoolCollectiveCommLib::ReduceScatter(const void *send_buff, void *recv_buf
                   << ", recv_count = " << recv_count << ", cluster_count = " << cluster_count;
 
   // Prepare buffer for inner az reduce scatter
-  std::vector<void *> send_data_list, recv_data_list;
+  std::vector<void *> send_data_list;
+  std::vector<void *> recv_data_list;
   size_t recv_size = recv_count * GetDtypeSize(data_type);
   size_t stride_size = recv_size * group->GetInnerClusterRanks().size();
   auto acl_ret = 0;
@@ -900,7 +924,7 @@ bool CcoolCollectiveCommLib::Send(const void *send_buff, size_t count, TypeId da
   }
   mem_event.RecordEvent(stream_id);
   mem_event.SyncEvent();
-  MS_LOG(INFO) << "Ccool Send, src_port = " << 21234 + global_rank_id_ << ", dest_port = " << 21234 + peer;
+  MS_LOG(INFO) << "Ccool Send, src_port = " << kStartPort + global_rank_id_ << ", dest_port = " << kStartPort + peer;
   LeaperConnInfo conn_info = group->GetConnInfo(peer);
 
   LeaperTrans::GetInstance().SendRecv(send_data, nullptr, size, size, conn_info);
@@ -943,7 +967,7 @@ bool CcoolCollectiveCommLib::Recv(void *recv_buff, size_t count, TypeId data_typ
     MS_LOG(ERROR) << "Ccool Recv aclrtMallocHost for recv_data failed!";
     return false;
   }
-  MS_LOG(INFO) << "Ccool Recv, src_port = " << 21234 + global_rank_id_ << ", dest_port = " << 21234 + peer;
+  MS_LOG(INFO) << "Ccool Recv, src_port = " << kStartPort + global_rank_id_ << ", dest_port = " << kStartPort + peer;
   LeaperConnInfo conn_info = group->GetConnInfo(peer);
 
   LeaperTrans::GetInstance().SendRecv(nullptr, recv_data, size, size, conn_info);

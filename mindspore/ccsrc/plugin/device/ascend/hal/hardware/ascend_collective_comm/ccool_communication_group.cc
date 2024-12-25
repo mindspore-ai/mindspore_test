@@ -39,10 +39,7 @@ bool CcoolCommunicationGroup::Initialize(void *root_info) {
   return hccl_group_->Initialize(hccl_root_info_);
 }
 
-bool CcoolCommunicationGroup::Finalize() {
-  // TODO(CCOOL) finalize inter az tcp/tongtu links
-  return true;
-}
+bool CcoolCommunicationGroup::Finalize() { return true; }
 
 void *CcoolCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
   // generate hccl root info and save
