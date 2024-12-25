@@ -240,31 +240,33 @@ Status MapOp::InitResource(const std::vector<std::vector<std::shared_ptr<TensorO
 
   if (dvpp_flag) {
     MS_LOG(INFO) << "Init resource for Ascend910B.";
-    device_context_mutex.lock();
-    auto ms_context = MsContext::GetInstance();
-    if (ms_context == nullptr) {
-      RETURN_STATUS_UNEXPECTED("Get ms context failed by MsContext::GetInstance()");
-    }
-    *device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    if ((*device_context) == nullptr) {
-      RETURN_STATUS_UNEXPECTED("Get device context failed by ms context");
-    }
-    (*device_context)->Initialize();
-    if ((*device_context)->device_res_manager_ == nullptr) {
-      RETURN_STATUS_UNEXPECTED("The device resource manager is null.");
-    }
+    {
+      std::unique_lock<std::mutex> lock(device_context_mutex_);
+      auto ms_context = MsContext::GetInstance();
+      if (ms_context == nullptr) {
+        RETURN_STATUS_UNEXPECTED("Get ms context failed by MsContext::GetInstance()");
+      }
+      *device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+        {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+      if ((*device_context) == nullptr) {
+        RETURN_STATUS_UNEXPECTED("Get device context failed by ms context");
+      }
+      (*device_context)->Initialize();
+      if ((*device_context)->device_res_manager_ == nullptr) {
+        RETURN_STATUS_UNEXPECTED("The device resource manager is null.");
+      }
 
-    std::string soc_version;
-    auto ret = AclAdapter::GetInstance().GetSocName(&soc_version);
-    if (ret != APP_ERR_OK) {
-      RETURN_STATUS_UNEXPECTED("Get Soc Version failed.");
+      std::string soc_version;
+      auto ret = AclAdapter::GetInstance().GetSocName(&soc_version);
+      if (ret != APP_ERR_OK) {
+        RETURN_STATUS_UNEXPECTED("Get Soc Version failed.");
+      }
+      if (soc_version.find("Ascend910B") == std::string::npos &&
+          soc_version.find("Ascend910_93") == std::string::npos) {
+        std::string err_msg = "The SoC: " + soc_version + " is not Ascend910B / Ascend910_93";
+        RETURN_STATUS_UNEXPECTED(err_msg);
+      }
     }
-    if (soc_version.find("Ascend910B") == std::string::npos && soc_version.find("Ascend910_93") == std::string::npos) {
-      std::string err_msg = "The SoC: " + soc_version + " is not Ascend910B / Ascend910_93";
-      RETURN_STATUS_UNEXPECTED(err_msg);
-    }
-    device_context_mutex.unlock();
 
     try {
       if ((*device_context)->device_res_manager_->CreateStream(stream_id) != true) {

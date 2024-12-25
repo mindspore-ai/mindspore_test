@@ -233,7 +233,7 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
   Status ComputeIsDvpp(const std::shared_ptr<TensorOp> tfunc, TensorRow *i_row, TensorRow *o_row,
                        device::DeviceContext *device_context, size_t stream_id);
 
-  std::mutex device_context_mutex;
+  std::mutex device_context_mutex_;
 #endif
 
  protected:
