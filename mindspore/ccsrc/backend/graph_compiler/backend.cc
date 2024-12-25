@@ -496,6 +496,7 @@ runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphComp
     MS_LOG(INFO) << "Actor Multithreading is turned off!";
   }
   runtime::GraphScheduler::GetInstance().Schedule(actor_set);
+  runtime::GraphScheduler::GetInstance().RemoveNodeAddr(graph_compiler_info);
 
   for (size_t i = 0; i < graphs.size(); ++i) {
     pynative::GraphAdapter::ClearForwardOutputValueNodeDeviceAddress(graphs[i], device_contexts[i]);
