@@ -78,8 +78,8 @@ template <typename T>
 bool RandomShuffleCpuKernelMod::ScalarShuffle(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<kernel::KernelTensor *> &outputs,
                                               const std::vector<size_t> &perm) const {
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
   for (size_t i = 0; i < perm.size(); i++) {
     output[i] = input[perm[i]];
   }
@@ -89,8 +89,8 @@ bool RandomShuffleCpuKernelMod::ScalarShuffle(const std::vector<kernel::KernelTe
 template <typename T>
 bool RandomShuffleCpuKernelMod::ScalarShuffleWithBatchRank(const std::vector<kernel::KernelTensor *> &inputs,
                                                            const std::vector<kernel::KernelTensor *> &outputs) {
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
   auto task = [this, input, output](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       std::vector<size_t> perm(shuffle_size_);
@@ -111,8 +111,8 @@ template <typename T>
 bool RandomShuffleCpuKernelMod::TensorShuffle(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<kernel::KernelTensor *> &outputs,
                                               const std::vector<size_t> &perm) {
-  auto input = reinterpret_cast<int8_t *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<int8_t *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<int8_t>(inputs, kIndex0);
+  auto output = GetDeviceAddress<int8_t>(outputs, kIndex0);
   auto task = [this, output, input, perm](size_t start, size_t end) {
     size_t copy_size = inner_size_ * sizeof(T);
     for (size_t i = start; i < end; i++) {
@@ -131,8 +131,8 @@ bool RandomShuffleCpuKernelMod::TensorShuffle(const std::vector<kernel::KernelTe
 template <typename T>
 bool RandomShuffleCpuKernelMod::TensorShuffleWithBatchRank(const std::vector<kernel::KernelTensor *> &inputs,
                                                            const std::vector<kernel::KernelTensor *> &outputs) {
-  auto input = reinterpret_cast<int8_t *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<int8_t *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<int8_t>(inputs, kIndex0);
+  auto output = GetDeviceAddress<int8_t>(outputs, kIndex0);
   auto outer_task = [this, output, input](size_t outer_start, size_t outer_end) {
     size_t copy_size = inner_size_ * sizeof(T);
     for (size_t k = outer_start; k < outer_end; k++) {

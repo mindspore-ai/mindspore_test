@@ -72,8 +72,8 @@ bool DigammaCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputsNum, kernel_name_);
 
-  auto input_x = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output_y = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input_x = GetDeviceAddress<T>(inputs, kInputIndex);
+  auto output_y = GetDeviceAddress<T>(outputs, kOutputIndex);
 
   for (int64_t i = 0; i < input_tensor_size_; i++) {
     *(output_y + i) = CalcDigamma<T>(*(input_x + i));

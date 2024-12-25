@@ -43,11 +43,11 @@ bool check_validation(const std::vector<int64_t> &shape, const int64_t num_befor
   int64_t inputs_size = get_element_num(shape) * static_cast<int64_t>(sizeof(T));
   int64_t output_num = num_before_axis * num_after_axis;
   int64_t output_size = output_num * static_cast<int64_t>(sizeof(S));
-  if (static_cast<int64_t>(inputs[0]->size()) != inputs_size) {
+  if (static_cast<int64_t>(inputs[kIndex0]->size()) != inputs_size) {
     MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of 'input_x' must be equal to " << inputs_size
                       << ", but got the memory size is " << inputs[0]->size();
   }
-  if (static_cast<int64_t>(outputs[0]->size()) != output_size) {
+  if (static_cast<int64_t>(outputs[kIndex0]->size()) != output_size) {
     MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of output must be equal to " << output_size
                       << ", but got the memory size is " << outputs[0]->size();
   }
@@ -60,8 +60,8 @@ bool ArgminCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
                                       const std::vector<kernel::KernelTensor *> &outputs) {
   (void)check_validation<T, S>(shape_, num_before_axis_, num_after_axis_, inputs, outputs);
 
-  const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output = reinterpret_cast<S *>(outputs[0]->device_ptr());
+  const auto *input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output = GetDeviceAddress<S>(outputs, kIndex0);
 
   auto task = [&](size_t start, size_t end) {
     auto num_after_axis = LongToSize(num_after_axis_);

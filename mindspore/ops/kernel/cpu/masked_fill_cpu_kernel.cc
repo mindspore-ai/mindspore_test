@@ -101,10 +101,10 @@ bool MaskedFillCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kMaskedFillInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMaskedFillOutputsNum, kernel_name_);
 
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto mask = reinterpret_cast<bool *>(inputs[1]->device_ptr());
-  auto value = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto mask = GetDeviceAddress<bool>(inputs, kIndex1);
+  auto value = GetDeviceAddress<T>(inputs, kIndex2);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
 
   if (need_broadcast_) {
     auto task = [this, input, mask, output, value](size_t start, size_t end) {

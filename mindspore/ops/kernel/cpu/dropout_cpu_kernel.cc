@@ -87,7 +87,7 @@ int DropoutCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
     return ret;
   }
   tensor_size_ = 1;
-  input_shape_ = inputs[0]->GetShapeVector();
+  input_shape_ = inputs[kIndex0]->GetShapeVector();
   for (const auto &d : input_shape_) {
     tensor_size_ *= LongToSize(d);
   }
@@ -101,9 +101,9 @@ bool DropoutCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kDropoutInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kDropoutOutputsNum, kernel_name_);
 
-  const auto *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto mask_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  const auto *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
+  auto mask_addr = GetDeviceAddress<T>(outputs, kIndex1);
   std::uniform_real_distribution<float> uniform(0.f, 1.f);
   auto task = DoDropOut<T>(input_addr, output_addr, mask_addr, keep_prob_, &uniform, &rng_);
   ParallelLaunchAutoSearch(task, tensor_size_, this, &parallel_search_info_);

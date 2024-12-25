@@ -203,9 +203,9 @@ bool PolygammaCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputsNum, kernel_name_);
 
-  auto input_a = reinterpret_cast<T1 *>(inputs[0]->device_ptr());
-  auto input_x = reinterpret_cast<T2 *>(inputs[1]->device_ptr());
-  auto output_y = reinterpret_cast<T2 *>(outputs[0]->device_ptr());
+  auto input_a = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto input_x = GetDeviceAddress<T2>(inputs, kIndex1);
+  auto output_y = GetDeviceAddress<T2>(outputs, kIndex0);
 
   for (int64_t i = 0; i < x_tensor_size_; i++) {
     *(output_y + i) = ScalarPolygamma<T1, T2>(*input_a, *(input_x + i));
