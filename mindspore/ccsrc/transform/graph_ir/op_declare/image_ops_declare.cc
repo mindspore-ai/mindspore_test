@@ -220,7 +220,7 @@ REG_ADPT_DESC(CombinedNonMaxSuppression, prim::kPrimCombinedNonMaxSuppression->n
               ADPT_DESC(CombinedNonMaxSuppression))
 
 std::vector<std::string> interpolation_modes = {"bilinear", "nearest"};
-std::vector<std::string> interpolation_modes_2d = {"bilinear", "nearest", "bicubic2d"};
+std::vector<std::string> interpolation_modes_2d = {"bilinear", "nearest", "bicubic"};
 std::vector<std::string> padding_modes = {"zeros", "border", "reflection"};
 // GridSampler2D
 INPUT_MAP(GridSampler2D) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(grid)}};
