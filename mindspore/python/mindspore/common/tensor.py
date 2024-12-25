@@ -2114,7 +2114,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Examples:
             >>> import numpy as np
             >>> import mindspore as ms
-            >>> from mindspore import Tensor, ops
+            >>> from mindspore import Tensor
             >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
             >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
             >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
