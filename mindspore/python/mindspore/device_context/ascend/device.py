@@ -22,6 +22,7 @@ try:
 except ImportError:
     pass
 
+
 def device_count():
     """
     Return compute-capable device count of Ascend.
@@ -37,6 +38,7 @@ def device_count():
     if not MSContext.get_instance().is_pkg_support_device("Ascend") or not is_available():
         raise RuntimeError(f"Device Ascend not exist.")
     return ascend_get_device_count()
+
 
 def is_available():
     """

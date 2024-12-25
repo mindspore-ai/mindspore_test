@@ -22,6 +22,7 @@ try:
 except ImportError:
     pass
 
+
 def op_compile(value):
     """
     Whether to select online compilation.The default settings by the framework are online compilation for static

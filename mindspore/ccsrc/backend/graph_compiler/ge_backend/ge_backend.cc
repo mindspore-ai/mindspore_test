@@ -520,7 +520,10 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
       MS_LOG(EXCEPTION) << "Launch graph failed, graph id: " + std::to_string(func_graph->graph_id());
     }
   }
-  device_context->device_res_manager_->SyncAllStreams();
+  auto ret = device_context->device_res_manager_->SyncAllStreams();
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "Sync Stream failed";
+  }
 
   // output ->VectorRef *outputs
   ConstructOutputs(func_graph, outputs, device_context);
