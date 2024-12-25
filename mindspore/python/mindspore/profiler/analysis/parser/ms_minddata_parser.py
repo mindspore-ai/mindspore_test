@@ -23,6 +23,7 @@ from mindspore.profiler.common.exceptions.exceptions import (
     ProfilerPathErrorException,
     ProfilerRawFileException
 )
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class MindDataParser(BaseParser):
@@ -41,6 +42,9 @@ class MindDataParser(BaseParser):
         self._device_id = kwargs.get("rank_id") if (ProfilerActivity.NPU.value in
                                                     kwargs.get("activities")) else kwargs.get("device_id")
         self._output_path = kwargs.get("framework_path")
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
         self._file_paths = self._setup_file_paths()
 
     def _setup_file_paths(self) -> Dict[str, str]:
@@ -60,7 +64,7 @@ class MindDataParser(BaseParser):
         op_id_info, sample_interval = self._parse_pipeline_info_dict()
         cpu_util_info = self._parse_cpu_util_info()
         device_trace_info = self._parse_device_trace()
-
+        self._logger.info("MindDataParser parse done")
         data.update({
             "pipeline_info": (op_id_info, sample_interval),
             "cpu_util_info": cpu_util_info,

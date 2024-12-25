@@ -16,9 +16,9 @@
 import os
 from typing import List, Dict
 
-from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class AscendTimelineViewer(BaseViewer):
@@ -33,18 +33,26 @@ class AscendTimelineViewer(BaseViewer):
             kwargs.get("ascend_profiler_output_path"),
             self._TRACE_VIEW_FILE_NAME
         )
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
 
     def save(self, data: Dict) -> None:
         """Get the input data and save the timeline data."""
+        self._logger.info("AscendTimelineViewer start")
         try:
             trace_view_container = data.get("trace_view_container", None)
             if not trace_view_container:
                 raise RuntimeError("The trace view container is None, Failed to save trace_view.json.")
             trace_view_data = trace_view_container.get_trace_view()
             self._save_data(trace_view_data)
+            self._logger.info("Trace viewer save trace_view.json done")
         except Exception as e: # pylint: disable=W0703
-            logger.error("Failed to save trace_view.json: %s", e)
+            self._logger.error("Failed to save trace_view.json: %s", e, exc_info=True)
+        self._logger.info("AscendTimelineViewer end")
 
     def _save_data(self, timeline_data: List[Dict]) -> None:
         """Save the timeline data to a JSON file."""
+        self._logger.info("Trace view saved start")
         FileManager.create_json_file(self._save_path, timeline_data)
+        self._logger.info("Trace view saved done, save path: %s", self._save_path)

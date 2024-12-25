@@ -16,9 +16,9 @@
 import os
 from decimal import Decimal
 
-from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class MemoryRecordBean:
@@ -166,6 +166,9 @@ class AscendMemoryViewer(BaseViewer):
         self._output_path = kwargs.get("ascend_profiler_output_path")
         self._framework_path = kwargs.get("framework_path")
         self._msprof_profiler_output_path = kwargs.get("msprof_profile_output_path")
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
         self._ge_memory_record = []
         self._ms_memory_record = []
 
@@ -173,13 +176,15 @@ class AscendMemoryViewer(BaseViewer):
         """
         Save memory data
         """
+        self._logger.info("AscendMemoryViewer start")
         if not self._enable_profile_memory:
             return
         try:
             self._copy_npu_module_mem_csv()
             self._parse_memory_record()
         except Exception as e: # pylint: disable=W0703
-            logger.error("Failed to save memory data: %s", e)
+            self._logger.error("Failed to save memory data: %s", e, exc_info=True)
+        self._logger.info("AscendMemoryViewer end")
 
     def _copy_npu_module_mem_csv(self):
         """Generate npu_module_mem.csv"""
@@ -190,7 +195,7 @@ class AscendMemoryViewer(BaseViewer):
             self._output_path, "npu_module_mem.csv"
         )
         FileManager.combine_csv_file(npu_module_mem_file_list, target_file_path)
-        logger.info(f"npu_module_mem.csv saved to {target_file_path}")
+        self._logger.info("npu_module_mem.csv saved to %s", target_file_path)
 
     def _parse_memory_record(self):
         """Generate memory_record.csv"""
@@ -203,7 +208,7 @@ class AscendMemoryViewer(BaseViewer):
         FileManager.create_csv_file(
             target_file_path, combined_memory_data, self.TARGET_MEMORY_RECORD_HEADERS
         )
-        logger.info(f"memory_record.csv saved to {target_file_path}")
+        self._logger.info("memory_record.csv saved to %s", target_file_path)
 
     def _parse_ge_memory_record(self):
         """Parse ge memory record data"""

@@ -34,6 +34,7 @@ from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool impor
 from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import (
     TraceViewContainer,
 )
+from mindspore.profiler.common.log import ProfilerLogger
 
 
 class StepTraceTimeHeaders(Enum):
@@ -78,6 +79,9 @@ class AscendStepTraceTimeViewer(BaseViewer):
             kwargs.get("ascend_profiler_output_path"), self.STEP_TRACE_TIME_FILE_NAME
         )
         self._profiler_level = kwargs.get("profiler_level")
+        self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        ProfilerLogger.init(self._ascend_ms_dir)
+        self._logger = ProfilerLogger.get_instance()
         self.step_trace_time_data = {}
         self.trace_container: TraceViewContainer = None
         self.hccl_pool: TimelineEventPool = None
@@ -101,6 +105,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
         """
         Save step trace time data to csv file
         """
+        self._logger.info("AscendStepTraceTimeViewer start")
         if self._profiler_level == ProfilerLevel.LevelNone.value:
             return
         try:
@@ -108,19 +113,22 @@ class AscendStepTraceTimeViewer(BaseViewer):
             self._convert_events_to_numpy()
             self._calculate_step_trace_time()
             self._write_data()
-        except Exception as e: # pylint: disable=W0703
-            logger.error(f"Failed to save step trace time data: {str(e)}")
+        except Exception as e:  # pylint: disable=W0703
+            self._logger.error("Failed to save step trace time data, error: %s", str(e), exc_info=True)
+        self._logger.info("AscendStepTraceTimeViewer end")
 
     def _write_data(self):
         """
         Write step trace time data to csv file
         """
+        self._logger.info("Write step trace time data start")
         data = [[str(self.step_trace_time_data.get(header, "")) for header in self.STEP_TRACE_TIME_HEADERS]]
         FileManager.create_csv_file(
             self._save_path,
             data,
             self.STEP_TRACE_TIME_HEADERS,
         )
+        self._logger.info("Write step trace time data done, %d rows saved, save path: %s", len(data), self._save_path)
 
     def _check_input_data(self, data: Any):
         """
