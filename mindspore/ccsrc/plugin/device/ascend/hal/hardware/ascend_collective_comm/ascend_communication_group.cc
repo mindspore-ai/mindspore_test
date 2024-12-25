@@ -121,13 +121,17 @@ bool AscendCommunicationGroup::Finalize() {
   return true;
 }
 
-bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank) {
+void AscendCommunicationGroup::InitializeCommConfig() {
   HcclCommConfigInit(&config_);
   auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
   uint32_t buffsize = instance->GetBuffsize(name_);
   config_.hcclBufferSize = buffsize == 0 ? HCCL_COMM_DEFAULT_BUFFSIZE : buffsize;
   config_.hcclDeterministic = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? 1 : 0;
-  MS_LOG(WARNING) << "Start to initialize communicator by InitializeByRootInfoConfig for " << name_
+}
+
+bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank) {
+  InitializeCommConfig();
+  MS_LOG(WARNING) << "Start to initialize communicator by HcclCommInitRootInfoConfig for " << name_
                   << ", hcclBufferSize is " << config_.hcclBufferSize << " MB."
                   << " hcclDeterministic is " << config_.hcclDeterministic;
   unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
@@ -135,18 +139,20 @@ bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint3
     static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank), &config_, &comm_);
   if (ret != static_cast<int32_t>(HCCL_SUCCESS)) {
     const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
-    MS_LOG(ERROR) << "InitializeByRootInfoConfig failed. " + error_message;
+    MS_LOG(ERROR) << "HcclCommInitRootInfoConfig failed. " + error_message;
     return false;
   }
-  MS_LOG(WARNING) << "End to initialize communicator by InitializeByRootInfoConfig for " << name_;
+  MS_LOG(WARNING) << "End to initialize communicator by HcclCommInitRootInfoConfig for " << name_;
   return true;
 }
 
 bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uint32_t group_size, uint32_t group_rank) {
-  HcclCommConfigInit(&config_);
+  InitializeCommConfig();
   if (name_ == kHCCLGlobalGroupName) {
     // Initialize global communicator by 'HcclCommInitClusterInfoConfig'.
-    MS_LOG(INFO) << "Start to initialize communicator by HcclCommInitClusterInfoConfig for " << name_;
+    MS_LOG(WARNING) << "Start to initialize communicator by HcclCommInitClusterInfoConfig for " << name_
+                    << ", hcclBufferSize is " << config_.hcclBufferSize << " MB."
+                    << " hcclDeterministic is " << config_.hcclDeterministic;
     if (hccl::HcclAdapter::GetInstance().HcclCommInitClusterInfoConfig(static_cast<const char *>(rank_table.c_str()),
                                                                        static_cast<uint32_t>(global_rank_), &config_,
                                                                        &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
@@ -154,10 +160,12 @@ bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uin
       MS_LOG(ERROR) << "HcclCommInitClusterInfoConfig failed. " + error_message;
       return false;
     }
-    MS_LOG(INFO) << "End to initialize communicator by HcclCommInitClusterInfoConfig for " << name_;
+    MS_LOG(WARNING) << "End to initialize communicator by HcclCommInitClusterInfoConfig for " << name_;
   } else {
     // split sub communicator from global communicator by 'HcclCreateSubCommConfig'.
-    MS_LOG(INFO) << "Start to initialize communicator by HcclCreateSubCommConfig for " << name_;
+    MS_LOG(WARNING) << "Start to initialize communicator by HcclCreateSubCommConfig for " << name_
+                    << ", hcclBufferSize is " << config_.hcclBufferSize << " MB."
+                    << " hcclDeterministic is " << config_.hcclDeterministic;
     // The HCCL global communicator. This is used as a parameter to segment sub communicator if initializing with
     // 'HcclCreateSubCommConfig'.
     auto global_comm = AscendCollectiveCommLib::GetInstance().HcclCommunicator(kHCCLGlobalGroupName);
@@ -171,7 +179,7 @@ bool AscendCommunicationGroup::InitializeByRankTable(std::string rank_table, uin
       MS_LOG(ERROR) << "HcclCreateSubCommConfig failed. " + error_message;
       return false;
     }
-    MS_LOG(INFO) << "End to initialize communicator by HcclCreateSubCommConfig for " << name_;
+    MS_LOG(WARNING) << "End to initialize communicator by HcclCreateSubCommConfig for " << name_;
   }
   return true;
 }
