@@ -99,6 +99,9 @@ NodePtrList DynBinopGradCommon(BpropBuilder *ib, const NodePtr &x, const NodePtr
     broadcast_axes = ib->BroadcastGradientArgs(inputs[0], inputs[1], shift);
   }
   for (size_t i = 0; i < kDim2; i++) {
+    if (reduce[i] == nullptr) {
+      continue;
+    }
     auto dout_shape = ib->GetShape(reduce[i]);
     if (!need_shapecalc[i] && IsDynamicRank(dout_shape)) {
       MS_LOG(WARNING) << "The dynamic shape inference of" << reduce[i]->ToString() << " is overly generalized.";
