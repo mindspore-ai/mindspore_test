@@ -19,7 +19,7 @@ mindspore.mint.distributed.P2POp
         `P2POp` 对象。
 
     异常：
-        - **ValueError** - 当 `op` 不是与'isend'和'irecv'相关的字符串或函数。
+        - **TypeError** - 当 `op` 不是与'isend'和'irecv'相关的字符串或函数。
         - **TypeError** - 当 `tensor` 不是张量， `peer` 不是int。
         - **NotImplementedError** - 当 `tag` 入参不为0。
 
