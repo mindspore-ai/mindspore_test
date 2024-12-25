@@ -89,7 +89,7 @@ std::vector<CNodePtr> GetCommInputMatMulNode(const AnfNodePtr &node,
 }
 
 void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_i1, const CNodePtr &matmul_i) {
-  int64_t matmul_input_index = kIndex2;
+  int64_t matmul_input_index = kIndex1;
   auto comm_i1_input = comm_i1->input(kIndex1);
   auto matmul_i_input = matmul_i->input(matmul_input_index);
   std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), matmul_i_input, comm_i1_input};
