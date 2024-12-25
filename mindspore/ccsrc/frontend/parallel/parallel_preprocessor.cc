@@ -1258,7 +1258,7 @@ void ParallelPreprocessor::SetOperatorInfo() {
     // print dump IR parallel detail
     char *env_var = std::getenv("MS_DEV_DUMP_IR_PARALLEL_DETAIL");
     if (env_var != nullptr && *env_var == '1') {
-      for (const auto node : all_nodes) {
+      for (const auto &node : all_nodes) {
         if (node->has_user_data<OperatorInfo>()) {
           auto operator_info = node->user_data<OperatorInfo>();
 
