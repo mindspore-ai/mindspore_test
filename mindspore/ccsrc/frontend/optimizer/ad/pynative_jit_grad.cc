@@ -174,6 +174,38 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
   return result;
 }
 
+AnfNodePtrList ProcessParam(const FuncGraphPtr &source_fg, const abstract::AbstractBasePtrList &input_abs,
+                            const std::vector<ValuePtr> &input_values) {
+  MS_EXCEPTION_IF_NULL(source_fg);
+  AnfNodePtrList param_list;
+  if (input_abs.size() != input_values.size()) {
+    MS_LOG(EXCEPTION) << "Got unmatched input abstract and value.";
+  }
+  for (size_t index = 0; index < input_abs.size(); ++index) {
+    auto param = source_fg->add_parameter();
+    param->set_abstract(input_abs[index]);
+    (void)param_list.emplace_back(param);
+    const auto &input_value = input_values[index];
+    MS_EXCEPTION_IF_NULL(input_value);
+    if (!input_value->isa<tensor::BaseTensor>()) {
+      continue;
+    }
+    const auto &tensor = input_value->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    if (!tensor->is_parameter()) {
+      continue;
+    }
+    const auto &param_info = tensor->param_info();
+    if (param_info) {
+      const auto &parameter = param_info->parameter();
+      if (parameter && parameter->has_default()) {
+        param->set_default_param(parameter->default_param());
+      }
+    }
+  }
+  return param_list;
+}
+
 // Helper function to handle forward result
 py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr &forward_fg,
                                const AbstractBasePtr &origin_forward_output_abs,
@@ -309,19 +341,9 @@ std::pair<bool, FuncGraphPtr> GetBpropGraphWithValueNodeReplacement(const pynati
     bprop_builder->debug_info()->set_name("bprop_builder");
 
     // grad_param->fg --> K(func)
-    AnfNodePtrList fprop_app_inputs{NewValueNode(BasicClone(grad_param->fg))};
-    for (size_t index = 0; index < grad_param->op_grad_info->input_abs.size(); ++index) {
-      auto param = bprop_builder->add_parameter();
-      param->set_abstract(grad_param->op_grad_info->input_abs[index]);
-      auto value = grad_param->op_grad_info->input_value[index];
-      if (value->isa<tensor::BaseTensor>()) {
-        const auto &tensor = value->cast<tensor::BaseTensorPtr>();
-        if (tensor->is_parameter()) {
-          param->set_default_param(tensor);
-        }
-      }
-      (void)fprop_app_inputs.emplace_back(param);
-    }
+    auto fprop_app_inputs =
+      ProcessParam(bprop_builder, grad_param->op_grad_info->input_abs, grad_param->op_grad_info->input_value);
+    fprop_app_inputs.insert(fprop_app_inputs.begin(), NewValueNode(BasicClone(grad_param->fg)));
     // (result, bprop) = K(func)(inputs)
     auto fprop_app = bprop_builder->NewCNode(fprop_app_inputs);
     // Get bprop from fprop_fg, it is 2th output of fprop_fg
@@ -389,19 +411,8 @@ void BpropGenerator::Init() {
 
   // Generate bprop function: basic_graph_(inputs, dout) ==> dins
   // (result, bprop) = fprop_graph_(inputs)
-  AnfNodePtrList fprop_app_inputs{NewValueNode(fprop_graph_)};
-  for (size_t index = 0; index < input_abs_.size(); ++index) {
-    auto param = basic_graph_->add_parameter();
-    param->set_abstract(input_abs_[index]);
-    auto value = input_value_[index];
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &tensor = value->cast<tensor::BaseTensorPtr>();
-      if (tensor->is_parameter()) {
-        param->set_default_param(tensor);
-      }
-    }
-    (void)fprop_app_inputs.emplace_back(param);
-  }
+  auto fprop_app_inputs = ProcessParam(basic_graph_, input_abs_, input_value_);
+  fprop_app_inputs.insert(fprop_app_inputs.begin(), NewValueNode(fprop_graph_));
   // Get bprop from fprop_fg, it is 2nd output of fprop_fg
   auto fprop_app = basic_graph_->NewCNode(fprop_app_inputs);
   auto get_bprop = basic_graph_->NewCNode(
@@ -493,18 +504,15 @@ FuncGraphPtr BpropGenerator::GenerateForwardGraph(const FuncGraphPtr &jit_forwar
   // Need modify forward output
   // From {kPrimReturn, original_output} ==> {kPrimReturn, {kPrimMakeTuple, original_output, reused_cnodes}}
   const auto &primal_fg = primal_fg_iter->second.func_graph();
+  MS_EXCEPTION_IF_NULL(primal_fg);
   pynative::PyNativeAlgo::Common::DumpGraphIR("primal_graph.ir", primal_fg);
-
+  const auto &params = primal_fg->parameters();
+  if (params.size() != input_abs_.size()) {
+    MS_LOG(EXCEPTION) << "Unmatched param size for primal_fg: " << primal_fg->ToString();
+  }
   for (size_t index = 0; index < input_abs_.size(); ++index) {
-    auto param = primal_fg->parameters()[index]->cast<ParameterPtr>();
+    auto param = params[index]->cast<ParameterPtr>();
     param->set_abstract(input_abs_[index]);
-    auto value = input_value_[index];
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &tensor = value->cast<tensor::BaseTensorPtr>();
-      if (tensor->is_parameter()) {
-        param->set_default_param(tensor);
-      }
-    }
   }
 
   MS_LOG(INFO) << "Start appending reused nodes to forward graph output.";
