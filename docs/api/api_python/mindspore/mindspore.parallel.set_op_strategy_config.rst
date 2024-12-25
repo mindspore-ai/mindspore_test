@@ -1,7 +1,7 @@
-mindspore.set_op_strategy_config
-================================
+mindspore.parallel.set_op_strategy_config
+=========================================
 
-.. py:function:: mindspore.set_op_strategy_config(mode="SAVE", path)
+.. py:function:: mindspore.parallel.set_op_strategy_config(mode="SAVE", path)
 
     自动并行策略传播模式下，通过此接口设置保存或加载算子级策略。
 
