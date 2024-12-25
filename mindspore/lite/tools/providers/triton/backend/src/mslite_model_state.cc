@@ -246,12 +246,10 @@ TRITONSERVER_Error *ModelInstanceState::ProcessOutputs(TRITONBACKEND_Request **r
 void ModelInstanceState::ProcessRequests(TRITONBACKEND_Request **requests, const uint32_t request_count) {
   LOG_MESSAGE(TRITONSERVER_LOG_INFO,
               (std::string("Begin to process ") + std::to_string(request_count) + std::string(" requests.")).c_str());
-  uint64_t exec_start_ns = 0;
-  SET_TIMESTAMP(exec_start_ns);
+  uint64_t start_ns = 0;
+  SET_TIMESTAMP(start_ns);
 
   for (size_t i = 0; i < request_count; i++) {
-    // If we get a nullptr request then something is badly wrong. Fail
-    // and release all requests.
     if (requests[i] == nullptr) {
       RequestsRespondWithError(
         requests, request_count,
@@ -261,22 +259,17 @@ void ModelInstanceState::ProcessRequests(TRITONBACKEND_Request **requests, const
     }
   }
 
-  // At this point we accept ownership of 'requests', which means that
-  // even if something goes wrong we must still return success from
-  // this function. If something does go wrong in processing a
-  // particular request then we send an error response just for the
-  // specific request.
   std::vector<TRITONBACKEND_Response *> responses;
   responses.reserve(request_count);
   for (size_t i = 0; i < request_count; i++) {
     TRITONBACKEND_Response *response;
-    auto err = TRITONBACKEND_ResponseNew(&response, requests[i]);
-    if (err == nullptr) {
-      responses.emplace_back(response);
-    } else {
+    auto ret = TRITONBACKEND_ResponseNew(&response, requests[i]);
+    if (ret != nullptr) {
       responses.emplace_back(nullptr);
       LOG_MESSAGE(TRITONSERVER_LOG_ERROR, "Fail to create response");
-      TRITONSERVER_ErrorDelete(err);
+      TRITONSERVER_ErrorDelete(ret);
+    } else {
+      responses.emplace_back(response);
     }
   }
 
@@ -324,16 +317,11 @@ void ModelInstanceState::ProcessRequests(TRITONBACKEND_Request **requests, const
 
   RESPOND_ALL_AND_SET_NULL_IF_ERROR(responses, request_count, ProcessOutputs(requests, request_count, &responses));
 
-  uint64_t exec_end_ns = 0;
-  SET_TIMESTAMP(exec_end_ns);
-
-  // Send all the responses that haven't already been sent because of
-  // an earlier error. Note that the responses are not set to nullptr
-  // here as we need that indication below to determine if the request
-  // we successful or not.
-  for (auto &response : responses) {
-    if (response != nullptr) {
-      LOG_IF_ERROR(TRITONBACKEND_ResponseSend(response, TRITONSERVER_RESPONSE_COMPLETE_FINAL, nullptr),
+  uint64_t end_ns = 0;
+  SET_TIMESTAMP(end_ns);
+  for (auto &res : responses) {
+    if (res != nullptr) {
+      LOG_IF_ERROR(TRITONBACKEND_ResponseSend(res, TRITONSERVER_RESPONSE_COMPLETE_FINAL, nullptr),
                    "failed to send MSLite backend response");
     }
   }
@@ -342,25 +330,25 @@ void ModelInstanceState::ProcessRequests(TRITONBACKEND_Request **requests, const
   for (uint32_t r = 0; r < request_count; ++r) {
     auto &request = requests[r];
     LOG_IF_ERROR(TRITONBACKEND_ModelInstanceReportStatistics(TritonModelInstance(), request,
-                                                             (responses[r] != nullptr) /* success */, exec_start_ns,
-                                                             compute_start_ns, compute_end_ns, exec_end_ns),
+                                                             (responses[r] != nullptr) /* success */, start_ns,
+                                                             compute_start_ns, compute_end_ns, end_ns),
                  "failed reporting request statistics");
 
     LOG_IF_ERROR(TRITONBACKEND_RequestRelease(request, TRITONSERVER_REQUEST_RELEASE_ALL), "failed releasing request");
   }
 
   // Report the entire batch statistics.
-  LOG_IF_ERROR(TRITONBACKEND_ModelInstanceReportBatchStatistics(TritonModelInstance(), batched_size_, exec_start_ns,
-                                                                compute_start_ns, compute_end_ns, exec_end_ns),
+  LOG_IF_ERROR(TRITONBACKEND_ModelInstanceReportBatchStatistics(TritonModelInstance(), batched_size_, start_ns,
+                                                                compute_start_ns, compute_end_ns, end_ns),
                "failed reporting batch request statistics");
 
   LOG_MESSAGE(TRITONSERVER_LOG_INFO, (std::string("TRITONBACKEND_ModelExecute: model ") + Name() + " released " +
                                       std::to_string(request_count) + " requests")
                                        .c_str());
 
-  LOG_MESSAGE(TRITONSERVER_LOG_INFO, (std::string("Execute model ") + Name() + " cost " +
-                                      std::to_string((exec_end_ns - exec_start_ns) / 1000) + " us")
-                                       .c_str());
+  LOG_MESSAGE(
+    TRITONSERVER_LOG_INFO,
+    (std::string("Execute model ") + Name() + " cost " + std::to_string((end_ns - start_ns) / 1000) + " us").c_str());
 }
 }  // namespace mslite
 }  // namespace backend
