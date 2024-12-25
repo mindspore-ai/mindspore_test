@@ -39,6 +39,12 @@ class GroupedMatmulInfo : public OperatorInfo {
   Status CheckStrategy(const StrategyPtr &strategy) override;
   std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override { return {}; }
   Status SetCostUnderStrategy(const StrategyPtr &strategy) override { return SetCostUnderStrategyBase(strategy); }
+  Status InferMirrorOpsByLayout();
+  Status InferOperatorVectorValueForShapeValue(const TensorInfoBasePtr &tensor_info, const int64_t &input_idx,
+                                               std::vector<OperatorVectorBasePtr> *mirror_ops_new,
+                                               MirrorOps *mirror_ops, bool *group_is_empty);
+  Status InferOperatorVectorListForShapeList(const TensorInfoBasePtr &tensor_info, const int64_t &input_idx,
+                                             std::vector<OperatorVectorBasePtr> *mirror_ops_new, bool *group_is_empty);
 
  protected:
   Status GetAttrs() override;
