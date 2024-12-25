@@ -23,6 +23,7 @@
 #include "kernel/kernel.h"
 #include "ir/value.h"
 #include "include/internal.h"
+#include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
 #include "include/common/factory/ms_factory.h"
 
 #include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
@@ -49,11 +50,38 @@ class AcmeKernelInfo {
                                          const std::vector<BaseTensorPtr> &outputs);
 
   void Launch(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs,
-              const TilingCacheItemPtr tilingptr);
+              const internal::InternalOpPtr &acme_op, const TilingCacheItemPtr &tilingptr);
 
   void CallAcmeOp(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs, uint64_t key);
 
   virtual void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) = 0;
+
+  static void UpdateAddr(std::vector<internal::RawDeviceAddr> &addrlist, const std::vector<BaseTensorPtr> &tensorlist) {
+    addrlist.resize(tensorlist.size());
+    for (size_t i = 0; i < tensorlist.size(); i++) {
+      addrlist[i] = tensorlist[i]->device_address()->GetMutablePtr();
+    }
+  }
+
+  static void MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id,
+                              const internal::InternalOpPtr &acme_op, internal::WsAddrList &acme_wss_addr) {
+    auto workspace_size_list = acme_op->GetWorkspaceSize();
+    acme_wss_addr.resize(workspace_size_list.size());
+    for (size_t i = 0; i < workspace_size_list.size(); i++) {
+      auto ptr = device_context->device_res_manager_->AllocateMemory(workspace_size_list[i], stream_id);
+      if (ptr == nullptr) {
+        MS_LOG(EXCEPTION) << "Alloc failed, size:" << workspace_size_list[i] << ", stream_id:" << stream_id;
+      }
+      acme_wss_addr[i] = ptr;
+    }
+  }
+
+  static void FreeWorkspace(const device::DeviceContext *device_context, internal::WsAddrList &acme_wss_addr) {
+    for (size_t i = 0; i < acme_wss_addr.size(); i++) {
+      device_context->device_res_manager_->FreeMemory(acme_wss_addr[i]);
+      acme_wss_addr[i] = nullptr;
+    }
+  }
 
  protected:
   virtual internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
@@ -68,20 +96,11 @@ class AcmeKernelInfo {
   internal::ShapeInfoList acme_inputs_shape_;
   internal::ShapeInfoList acme_outputs_shape_;
 
-  internal::InputsAddrList acme_inputs_addr_;
-  internal::OutputsAddrList acme_outputs_addr_;
-  internal::WsAddrList acme_wss_addr_;
-  std::vector<size_t> workspace_size_list_;
-
  private:
   void UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor);
   void UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> &arginfos,
                               const std::vector<BaseTensorPtr> &tensorlist);
   void TransAcmeShapes(internal::ShapeInfoList &shapelist, const std::vector<BaseTensorPtr> &tensorlist);
-  void UpdateAddr(std::vector<internal::RawDeviceAddr> &addrlist,
-                  const std::vector<BaseTensorPtr> &tensorlist);
-  void MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id);
-  void FreeWorkspace(const device::DeviceContext *device_context);
   SimpleSpinLock lock_;
 };
 

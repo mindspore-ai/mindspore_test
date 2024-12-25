@@ -31,6 +31,7 @@ from pyboost_op_cpp_code_generator import (
     PyboostOpHeaderGenerator,
     delete_residual_files,
     PyboostOpRegisterCppCodeGenerator,
+    AcmeOpCppCodeGenerator,
 )
 from pyboost_overload_functions_cpp_generator import PyboostOverloadFunctionsGenerator
 from auto_grad_impl_cc_generator import AutoGradImplGenerator
@@ -122,6 +123,7 @@ def call_pyboost_op_cpp_code_generator(work_path, op_protos):
     call_PyboostCommonOpCppCodeGenerator(work_path, op_protos)
     call_PyboostOpHeaderGenerator(work_path, op_protos)
     call_merge_pyboost_op_cpp_code_generator(work_path, op_protos)
+    delete_residual_files(work_path, op_protos)
     call_PyboostOpRegisterCppCodeGenerator(work_path, op_protos)
 
 

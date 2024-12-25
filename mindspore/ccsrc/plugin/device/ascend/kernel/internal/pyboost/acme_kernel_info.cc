@@ -21,6 +21,7 @@
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "transform/acl_ir/op_api_cache.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 
@@ -55,14 +56,6 @@ bool AcmeKernelInfo::Init(const std::vector<BaseTensorPtr> &inputs, const std::v
     MS_LOG(ERROR) << "Init AcmeKernel failed, kenrel_name: " << kernel_name_;
     return false;
   }
-
-  acme_inputs_shape_.resize(inputs.size());
-  acme_inputs_addr_.resize(inputs.size());
-  acme_outputs_shape_.resize(outputs.size());
-  acme_outputs_addr_.resize(outputs.size());
-
-  workspace_size_list_ = acme_op_->GetWorkspaceSize();
-  acme_wss_addr_.resize(workspace_size_list_.size());
 
   return true;
 }
@@ -102,7 +95,8 @@ TilingCacheItemPtr AcmeKernelInfo::GetOrGenerateTiling(const std::vector<BaseTen
     TilingMemMgr::GetInstance().CopyAsync(host_addr, device_addr, tiling_size);
     auto tiling_info = std::make_shared<internal::TilingInfo>(device_addr, nullptr);
     tiling_info->host_run_info_ = host_run_info_ptr;
-    tiling_info->host_run_info_->SetWorkSpaceSize(workspace_size_list_);
+    auto workspace_size_list = acme_op_->GetWorkspaceSize();
+    tiling_info->host_run_info_->SetWorkSpaceSize(workspace_size_list);
     tiling_info_ptr = std::make_shared<TilingCacheItem>(tiling_info, host_addr, tiling_size);
     if (TilingMemMgr::GetInstance().pool_device_.IsOneOffMem(device_addr)) {
       // tiling mem pool is full, comb out some items which are not recently used with high probability
@@ -123,56 +117,38 @@ TilingCacheItemPtr AcmeKernelInfo::GetOrGenerateTiling(const std::vector<BaseTen
   return tiling_info_ptr;
 }
 
-void AcmeKernelInfo::UpdateAddr(std::vector<internal::RawDeviceAddr> &addrlist,
-                                const std::vector<BaseTensorPtr> &tensorlist) {
-  for (size_t i = 0; i < tensorlist.size(); i++) {
-    addrlist[i] = tensorlist[i]->device_address()->GetMutablePtr();
-  }
-}
-
-void AcmeKernelInfo::MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id) {
-  for (size_t i = 0; i < workspace_size_list_.size(); i++) {
-    auto ptr = device_context->device_res_manager_->AllocateMemory(workspace_size_list_[i], stream_id);
-    if (ptr == nullptr) {
-      MS_LOG(EXCEPTION) << "Alloc failed, size:" << workspace_size_list_[i] << ", stream_id:" << stream_id;
-    }
-    acme_wss_addr_[i] = ptr;
-  }
-}
-
-void AcmeKernelInfo::FreeWorkspace(const device::DeviceContext *device_context) {
-  for (size_t i = 0; i < acme_wss_addr_.size(); i++) {
-    device_context->device_res_manager_->FreeMemory(acme_wss_addr_[i]);
-    acme_wss_addr_[i] = nullptr;
-  }
-}
-
 void AcmeKernelInfo::Launch(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs,
-                            const TilingCacheItemPtr tilingptr) {
-  pyboost::PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([this, op, inputs, tilingptr]() {
-    MS_LOG(DEBUG) << "Launch AcmeKernel " << kernel_name_ << "start";
-    auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
-    // Malloc for input tensors
-    pyboost::PyBoostUtils::MallocOpInputs(device_context, inputs);
-    // Malloc for output tensors
-    pyboost::PyBoostUtils::MallocOpOutputs(device_context, outputs);
-    UpdateAddr(acme_inputs_addr_, inputs);
-    UpdateAddr(acme_outputs_addr_, outputs);
-    runtime::Pipeline::Get().launch_stage()->Wait();
+                            const internal::InternalOpPtr &acme_op, const TilingCacheItemPtr &tilingptr) {
+  const std::string kernel_name = kernel_name_;
+  pyboost::PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, inputs, acme_op, tilingptr, kernel_name]() {
+      MS_LOG(DEBUG) << "Launch AcmeKernel " << kernel_name << " start";
+      auto device_context = op->device_context();
+      const auto &outputs = op->outputs();
+      // Malloc for input tensors
+      pyboost::PyBoostUtils::MallocOpInputs(device_context, inputs);
+      // Malloc for output tensors
+      pyboost::PyBoostUtils::MallocOpOutputs(device_context, outputs);
+      // Update input/output addr for acme kernel
+      internal::InputsAddrList acme_inputs_addr;
+      internal::OutputsAddrList acme_outputs_addr;
+      AcmeKernelInfo::UpdateAddr(acme_inputs_addr, inputs);
+      AcmeKernelInfo::UpdateAddr(acme_outputs_addr, outputs);
+      internal::WsAddrList acme_wss_addr;
+      runtime::Pipeline::Get().launch_stage()->Wait();
 
-    MallocWorkspace(device_context, op->stream_id());
-    acme_op_->SetTilingInfo(tilingptr->tiling_info_);
-    auto stream_ptr = device_context->device_res_manager_->GetStream(op->stream_id());
-    internal::InternalStatus status =
-      acme_op_->Launch(acme_inputs_addr_, acme_outputs_addr_, acme_wss_addr_, stream_ptr, kernel_name_);
-    FreeWorkspace(device_context);
-    InternalTilingCache::GetInstance().Unbind(tilingptr);
-    if (status != internal::InternalStatus::kInternalOk) {
-      MS_LOG(EXCEPTION) << "Launch AcmeKernel failed, kernel_name: " << kernel_name_;
-    }
-    MS_LOG(DEBUG) << "Launch AcmeKernel " << kernel_name_ << "end";
-  }));
+      AcmeKernelInfo::MallocWorkspace(device_context, op->stream_id(), acme_op, acme_wss_addr);
+      acme_op->SetTilingInfo(tilingptr->tiling_info_);
+      auto stream_ptr = device_context->device_res_manager_->GetStream(op->stream_id());
+      internal::InternalStatus status =
+        acme_op->Launch(acme_inputs_addr, acme_outputs_addr, acme_wss_addr, stream_ptr, kernel_name);
+      AcmeKernelInfo::FreeWorkspace(device_context, acme_wss_addr);
+      InternalTilingCache::GetInstance().Unbind(tilingptr);
+      if (status != internal::InternalStatus::kInternalOk) {
+        MS_LOG(EXCEPTION) << "Launch AcmeKernel failed, kernel_name: " << kernel_name;
+      }
+      MS_LOG(DEBUG) << "Launch AcmeKernel " << kernel_name << " end";
+    }));
 }
 
 void AcmeKernelInfo::CallAcmeOp(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs,
@@ -187,11 +163,13 @@ void AcmeKernelInfo::CallAcmeOp(const std::shared_ptr<pyboost::OpRunner> &op, co
     }
     hash_map_[key] = acme_op_;
   }
+  acme_inputs_shape_.resize(inputs.size());
+  acme_outputs_shape_.resize(op->outputs().size());
   auto tiling_info = GetOrGenerateTiling(inputs, op->outputs());
   if (tiling_info == nullptr) {
     return;
   }
-  Launch(op, inputs, tiling_info);
+  Launch(op, inputs, acme_op_, tiling_info);
 }
 
 }  // namespace kernel

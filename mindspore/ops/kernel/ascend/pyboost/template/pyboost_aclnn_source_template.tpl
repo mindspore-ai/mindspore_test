@@ -18,6 +18,8 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/acme_op_set.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 ${merge_op_header}
 
 namespace mindspore {
