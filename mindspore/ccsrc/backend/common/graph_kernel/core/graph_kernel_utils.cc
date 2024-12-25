@@ -382,6 +382,9 @@ inner::LiteGraphPtr GkUtils::AnfGraph2LiteGraph(const FuncGraphPtr &func_graph,
         inputs.push_back(iter->second);
         continue;
       }
+      if (IsValueNode<Monad>(input_i)) {
+        continue;
+      }
       // input is valuenode
       auto input_value_node = input_i->cast<ValueNodePtr>();
       auto input_value = input_value_node->value();

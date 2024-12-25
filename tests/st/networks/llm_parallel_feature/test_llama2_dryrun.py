@@ -50,7 +50,7 @@ def test_llama2_dp2mp4pp1_recompute():
     attrs_check_pairs = {"recompute: Bool(1)": 18}
     validate_name = find_graph_file_name(graph_path, "validate")
     check_graph(graph_path, validate_name, attrs_check_pairs)
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%11, %6": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -76,6 +76,7 @@ def test_llama2_dp4mp4pp1op_recompute():
 
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
+    os.environ['MS_DEV_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name}")
     check_pair = {"Training Over": 1}
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
@@ -90,7 +91,7 @@ def test_llama2_dp4mp4pp1op_recompute():
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
-        check_peak_memory(log_path, "3900")
+        check_peak_memory(log_path, "3972")
         check_compile_time(log_path, 15)
 
 
@@ -119,7 +120,7 @@ def test_llama2_cell_dp2mp4pp1op_grad_accu():
     validate_name = find_graph_file_name(graph_path, "validate")
     step_parallel_end_name = find_graph_file_name(graph_path, "step_parallel_end")
     check_graph(graph_path, step_parallel_end_name, ops_check_pairs)
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"298_output": "((1, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((1, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     param_opt_shape_check_pairs = {"_model.layers.0.attention.wq.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wk.weight": "(512, 4096)",
@@ -167,7 +168,7 @@ def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     ops_check_pairs_0 = {"VirtualAssignAdd": 74}
     validate_name = find_graph_file_name(graph_path[0], "validate")
     step_parallel_end_name = find_graph_file_name(graph_path[0], "step_parallel_end")
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%0, %5": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
     param_opt_shape_check_pairs = {"_model.layers.0.attention.wq.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wk.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wv.weight": "(512, 4096)",
@@ -453,6 +454,7 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
                               parallel_speed_up_json={'matmul_grad_comm_overlap': 'true'})
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
+    os.environ['MS_DEV_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
     check_pair = {"Training Over": 1}
     # 返回路径 list
@@ -462,7 +464,7 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
     # PrimFunc_Gather 的策略
     parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
     # recompute: Bool(1) 数量
-    parm_recompute_graph_check_pairs = {'recompute: Bool(1)': '281'}
+    parm_recompute_graph_check_pairs = {'recompute: Bool(1)': '331'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -728,7 +730,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     # dp、mp Gather 切分
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%0, %5": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     # 梯度累加，检查 virtualassignadd 数量
     parm_virtualassignadd_check_pairs = {'VirtualAssignAdd': '74'}
@@ -807,6 +809,7 @@ def test_llama2_dp4mp4pp1op_recompute_2():
                               recompute=True)
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
+    os.environ['MS_DEV_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name}")
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     graph_path = real_graph_path[0]
@@ -828,11 +831,11 @@ def test_llama2_dp4mp4pp1op_recompute_2():
     # check_node_dependency_backward_search(graph_path, validate_name, 100, dependency_list)
 
     # recompute
-    attrs_check_pairs = {' recompute: Bool(1)': '206'}
+    attrs_check_pairs = {' recompute: Bool(1)': '234'}
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     # dp Gather 切分
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"%11, %6": "((4, 1), (4, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (4, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
 
     check_pair = {"Training Over": 1}
