@@ -695,13 +695,12 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_
     mem_buf->WaitEvent(task_id_on_stream, user_stream_id);
     // Remove event and try to free memory.
     if (mem_buf->IsEventNotUsed()) {
-      (void)iter->second.erase(mem_buf);
+      // Force clear all mem bufs.
+      for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
+        (void)stream_pair_mem_bufs.second.erase(mem_buf);
+      }
       mem_stat_.used_by_event_size_ -= mem_buf->size_;
       if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
-        // Force clear all mem bufs.
-        for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
-          (void)stream_pair_mem_bufs.second.erase(mem_buf);
-        }
         (void)DoFreeTensorMem(mem_buf->addr_);
       }
     }
@@ -723,13 +722,12 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memor
       mem_buf->WaitEvent(task_id_on_stream, user_stream);
       // Remove event and try to free memory.
       if (mem_buf->IsEventNotUsed()) {
-        (void)stream_pair_mem_bufs.second.erase(mem_buf);
+        // Force clear all mem bufs.
+        for (auto &kv : stream_pair_mem_bufs_) {
+          (void)kv.second.erase(mem_buf);
+        }
         mem_stat_.used_by_event_size_ -= mem_buf->size_;
         if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
-          // Force clear all mem bufs.
-          for (auto &kv : stream_pair_mem_bufs_) {
-            (void)kv.second.erase(mem_buf);
-          }
           (void)DoFreeTensorMem(mem_buf->addr_);
         }
       }
