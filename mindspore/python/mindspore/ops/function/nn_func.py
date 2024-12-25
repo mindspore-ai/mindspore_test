@@ -7190,8 +7190,7 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     14. :math:`groups == 1 or groups == C_{in}`.
     15. If `padding` is ``same``, `stride` must be 1.
 
-
-    .. warnings:
+    .. warning::
         This API does not support Atlas series products.
         This is an experimental API that is subject to change or deletion.
 
