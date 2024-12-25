@@ -84,6 +84,9 @@ class BACKEND_EXPORT GraphScheduler {
   // Whether graph scheduler is initialized.
   bool initialized() const { return init_; }
 
+  // Remove non weight parameter device address.
+  void RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info);
+
 #ifdef ENABLE_RPC_ACTOR
   // Returns pointer of RpcNodeScheduler to distributed module.
   RpcNodeScheduler *rpc_node_scheduler() { return rpc_node_scheduler_.get(); }
