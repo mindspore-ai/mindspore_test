@@ -157,7 +157,7 @@ mindspore
     mindspore.reshard
     mindspore.shard
     mindspore.sync_pipeline_shared_parameters
-    mindspore.set_op_strategy_config
+    mindspore.parallel.set_op_strategy_config
 
 即时编译
 --------
