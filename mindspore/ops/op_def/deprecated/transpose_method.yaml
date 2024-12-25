@@ -1,0 +1,13 @@
+#deprecated transpose
+transpose:
+  args:
+    input:
+      dtype: tensor
+    axes:
+      dtype: tuple[int]
+  returns:
+    output:
+      dtype: tensor
+  view: True
+  dispatch:
+    enable: True

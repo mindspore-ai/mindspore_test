@@ -265,7 +265,7 @@ from mindspore.ops.operations.manually_defined import tile
 # 110 topk
 from mindspore.ops.function.array_func import topk
 # 111 transpose
-
+from mindspore.ops.auto_generate import transpose, transpose_ext
 # 112 tril
 from mindspore.ops.function.array_func import tril
 # 113 trunc
@@ -1096,6 +1096,14 @@ def deprecated_tensor_topk(input, k, dim=None, largest=True, sorted=True):
 
 
 # 111 transpose
+def tensor_transpose_ext(input, dim0, dim1):
+    return transpose_ext(input, dim0, dim1)
+
+
+def deprecated_tensor_transpose(input, *axes):
+    perm = validator.check_transpose_axis(axes, input.ndim)
+    return transpose(input, perm)
+
 
 # 112 tril
 def deprecated_tensor_tril(input, diagonal=0):
