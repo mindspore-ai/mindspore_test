@@ -37,8 +37,8 @@ bool GLUCpuKernelMod::SplitWithDimZero(T *input_data_ptr, T *output_data_ptr) {
   int64_t copy_num = shape_value_ / value_shape_vec_[0];
   T *input_copy_ptr = input_data_ptr;
   if (value_shape_vec_[0] % kEvenNum != 0) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', x.shape[0] must be even, but got " << value_shape_vec_[0] << ".";
-    return false;
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', x.shape[0] must be even, but got " << value_shape_vec_[0]
+                      << ".";
   }
   int64_t size_split = value_shape_vec_[0] / kEvenNum;
   int64_t copy_size_per = size_split * copy_num;
@@ -66,9 +66,8 @@ bool GLUCpuKernelMod::SplitCompute(T *input_data_ptr, T *output_data_ptr) {
   }
   int64_t midfix = value_shape_vec_[split_dim_];
   if (midfix % kEvenNum != 0) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', x.shape[" << split_dim_ << "] must be even, but got " << midfix
-                  << ".";
-    return false;
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', x.shape[" << split_dim_ << "] must be even, but got " << midfix
+                      << ".";
   }
   int64_t size_split = midfix / kEvenNum;
   int64_t subfix = 1;
@@ -137,25 +136,31 @@ const std::vector<std::pair<KernelAttr, GLUCpuKernelMod::KernelRunFunc>> &GLUCpu
 }
 
 bool GLUCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  split_dim_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kGLUInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kGLUOutputsNum, kernel_name_);
+  return MatchKernelFunc(kernel_name_, inputs, outputs);
+}
+
+int GLUCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  split_dim_ = inputs.at(kIndex1)->GetValueWithCheck<int64_t>();
   value_shape_vec_ = inputs.at(kIndex0)->GetShapeVector();
   int64_t dim_value = SizeToLong(value_shape_vec_.size());
+  shape_value_ = 1;
   for (auto &k : value_shape_vec_) {
     shape_value_ *= k;
   }
 
   if (split_dim_ < -dim_value || split_dim_ >= dim_value) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'axis' must be in range [" << -dim_value << ", " << dim_value
-                  << "), but got " << split_dim_ << ".";
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'axis' must be in range [" << -dim_value << ", "
+                      << dim_value << "), but got " << split_dim_ << ".";
   }
   if (split_dim_ < 0) {
     split_dim_ += dim_value;
   }
-  if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
-    return false;
-  }
-
-  return true;
+  return KRET_OK;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GLU, GLUCpuKernelMod);
