@@ -1114,13 +1114,9 @@ REG_BPROP_BUILDER("DivMod").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   auto rounding_mode = ib->GetInput(kIndex2);
 
   auto mode_value_ptr = rounding_mode->BuildValue();
-  auto mode_opt = mindspore::GetScalarValue<int64_t>(mode_value_ptr);
-  if (mode_opt.has_value()) {
-    return {ib->OutZeros(x), ib->OutZeros(y), ib->OutZeros(rounding_mode)};
-  }
-
   auto mode_type = rounding_mode->abstract()->BuildType();
   MS_EXCEPTION_IF_NULL(mode_type);
+
   if (mode_type->isa<TypeNone>()) {
     auto out = ib->GetInput(kIndex3);
     auto dout = ib->GetInput(kIndex4);
@@ -1140,7 +1136,7 @@ REG_BPROP_BUILDER("DivMod").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
     result.emplace_back(ib->OutZeros(rounding_mode));
     return result;
   } else {
-    MS_LOG(EXCEPTION) << "DivMod abstract failed.";
+    return {ib->OutZeros(x), ib->OutZeros(y), ib->OutZeros(rounding_mode)};
   }
 });
 
