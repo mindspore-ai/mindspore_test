@@ -59,7 +59,9 @@ void OpExecutor::PushSimpleOpRunTask(const std::shared_ptr<AsyncTask> &op_run_ta
   runtime::Pipeline::Get().backend_stage()->Push(op_run_task);
 }
 
-bool OpExecutor::RunQueueEmpty() { return runtime::Pipeline::Get().backend_stage()->Empty(); }
+bool OpExecutor::RunQueueEmpty() {
+  return runtime::Pipeline::Get().backend_stage()->Empty() && runtime::Pipeline::Get().launch_stage()->Empty();
+}
 
 void OpExecutor::WorkerJoin() {
   GilReleaseWithCheck release_gil;
