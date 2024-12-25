@@ -1295,7 +1295,7 @@ Status ParallelStrategySearch(const std::vector<AnfNodePtr> &all_nodes, const Fu
       MS_LOG(INFO) << op->name() << ": The strategy is: " << s_strategy->ToString();
     }
     // Label the cnodes of the op if they were already created
-    for (const auto cnode : op->cnodes()) {
+    for (const auto &cnode : op->cnodes()) {
       cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
     }
     // Clear strategy if set strategy using layout
