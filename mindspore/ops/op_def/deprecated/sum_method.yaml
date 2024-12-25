@@ -7,7 +7,7 @@ sum:
       dtype: tuple[int]
       type_cast: int, list[int], tensor
       default: None
-    dytpe:
+    dtype:
       dtype: TypeId
       arg_handler: dtype_to_type_id
       default: None
