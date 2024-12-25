@@ -44,7 +44,6 @@ class InternalPagedAttention : public InternalKernelMod {
     param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeNone;
     auto enable_lookahead =
       std::any_of(param_.q_seq_len.begin(), param_.q_seq_len.end(), [](int32_t seq_len) { return seq_len > 1; });
-
     if (enable_lookahead) {
       if (has_attn_mask_) {
         param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead;
