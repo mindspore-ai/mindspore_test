@@ -23,6 +23,7 @@ try:
 except ImportError:
     pass
 
+
 def precision_mode(mode):
     """
     Configure mixed precision mode setting. The framework set the configuration of Atlas training series
@@ -80,6 +81,7 @@ def precision_mode(mode):
         raise ValueError(f"For 'precision_mode', the value of mode {mode} must be one of "
                          f"{supported_modes}, but got {mode}.")
     AscendOpPrecisionConf.get_instance().set_precision_mode(mode)
+
 
 @args_type_check(path=str)
 def op_precision_mode(path):
