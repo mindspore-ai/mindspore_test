@@ -28,7 +28,7 @@ mindspore.set_context
     |                         +------------------------------+----------------------------+----------------------------------------+
     |                         |  op_timeout (D)              |  Ascend                    |  ascend.op_debug.execute_timeout       |
     +-------------------------+------------------------------+----------------------------+----------------------------------------+
-    | 调试配置                |  save_graphs (D)             |  CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS                    | 
+    | 调试配置                |  save_graphs (D)             |  CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS                    |
     |                         +------------------------------+----------------------------+----------------------------------------+
     |                         |  save_graphs_path (D)        |  CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS_PATH               |
     |                         +------------------------------+----------------------------+----------------------------------------+
@@ -149,7 +149,7 @@ mindspore.set_context
 
           - O0: 执行性能优先，关闭 SOMAS (Safe Optimized Memory Allocation Solver) 和一些其他内存优化。
           - O1: 内存性能优先，使能 SOMAS 和一些其他内存优化。
-          
+
           此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
 
         - **memory_offload** (str) - 是否开启Offload功能，在内存不足场景下将空闲数据临时拷贝至Host侧内存。其值必须在['ON', 'OFF']范围中，默认值为 ``'OFF'`` 。
@@ -187,7 +187,7 @@ mindspore.set_context
             - ``oom`` : 涉及从全局内存中读写数据，例如读写算子数据等，该选项开启全局内存访问越界检测，实际执行算子时，若出现内存越界，AscendCL会返回 ``EZ9999`` 错误码。
 
           - **ge_options** (dict): 设置CANN的options配置项，配置项分为 ``global`` 和 ``session`` 二类 。这是一个实验特性，可能会被更改或者删除。
-            详细的配置请查询 `options配置说明 <https://www.hiascend.com/document/detail/zh/canncommercial/70RC1/inferapplicationdev/graphdevg/atlasgeapi_07_0119.html>`_ 。
+            详细的配置请查询 `options配置说明 <https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/apiref/ascendgraphapi/atlasgeapi_07_0146.html>`_ 。
             `ge_options` 中的配置项可能与 `ascend_config` 中的配置项重复，若同时设置了 `ascend_config` 和 `ge_options` 中的相同配置项，则以 `ge_options` 中设置的为准。
 
             - global (dict): 设置global类的选项。

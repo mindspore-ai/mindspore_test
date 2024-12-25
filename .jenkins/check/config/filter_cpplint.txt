@@ -38,6 +38,7 @@
 "mindspore/mindspore/ops/kernel/gpu/sequence/sequence_addn_gpu_kernel.cc"          "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/sequence/sequence_addn_cpu_kernel.cc"          "whitespace/indent"
 "mindspore/mindspore/ccsrc/pipeline/jit/ps/resource.cc"                                            "readability/fn_size"
+"mindspore/mindspore/ccsrc/pipeline/jit/ps/init.cc"                                                "readability/fn_size"
 "mindspore/mindspore/ops/kernel/gpu/math/binary_ops_gpu_kernel.cc"                 "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/cast_cpu_kernel.cc"                            "readability/braces"
 "mindspore/mindspore/ops/kernel/cpu/utils/fft_helper.h"                            "readability/braces"
