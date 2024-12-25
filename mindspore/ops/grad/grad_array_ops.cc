@@ -2728,7 +2728,7 @@ REG_BPROP_BUILDER("MaskedSelect").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto mask = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("MaskedSelectGrad", {x, mask, dout});
-  auto dmask = ib->ZerosLike(mask);
+  auto dmask = ib->ZerosLikeExt(mask, ib->EmitValue(kNone));
   auto x_shape = ib->GetShape(x);
   auto dx_shape = ib->GetShape(dx);
   if (x_shape != dx_shape) {
@@ -3091,7 +3091,7 @@ REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   }
   NodePtr dupdates = nullptr;
   if (updates->need_compute_grad_out()) {
-    dupdates = ib->Cast(ib->Reshape(ib->ZerosLike(updates), {-1}), kFloat32);
+    dupdates = ib->Cast(ib->Reshape(ib->ZerosLikeExt(updates, ib->EmitValue(kNone)), {-1}), kFloat32);
     auto dupdates_val = ib->Cast(ib->Emit("MaskedSelect", {dout, mask}), kFloat32);
     auto length = ib->TupleGetItem(ib->Shape(dupdates_val), LongToSize(0));
     auto scatter_indices = ib->Range(length);
