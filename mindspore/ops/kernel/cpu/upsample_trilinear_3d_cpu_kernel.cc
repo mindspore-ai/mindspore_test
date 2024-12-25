@@ -177,23 +177,23 @@ bool UpsampleTrilinear3DCpuKernelMod::LaunchKernel(const std::vector<kernel::Ker
       for (int64_t ow = 0; ow < output_width; ++ow) {
         w_helper[ow](&iw0, &iw1, &w0lambda, &w1lambda);
         // weights
-        S w000 = weights[0] * w0lambda;
-        S w001 = weights[0] * w1lambda;
-        S w010 = weights[1] * w0lambda;
-        S w011 = weights[1] * w1lambda;
-        S w100 = weights[2] * w0lambda;
-        S w101 = weights[2] * w1lambda;
-        S w110 = weights[3] * w0lambda;
-        S w111 = weights[3] * w1lambda;
+        S w000 = weights[kIndex0] * w0lambda;
+        S w001 = weights[kIndex0] * w1lambda;
+        S w010 = weights[kIndex1] * w0lambda;
+        S w011 = weights[kIndex1] * w1lambda;
+        S w100 = weights[kIndex2] * w0lambda;
+        S w101 = weights[kIndex2] * w1lambda;
+        S w110 = weights[kIndex3] * w0lambda;
+        S w111 = weights[kIndex3] * w1lambda;
         // indices
-        int64_t i000 = indices[0] + iw0;
-        int64_t i001 = indices[0] + iw1;
-        int64_t i010 = indices[1] + iw0;
-        int64_t i011 = indices[1] + iw1;
-        int64_t i100 = indices[2] + iw0;
-        int64_t i101 = indices[2] + iw1;
-        int64_t i110 = indices[3] + iw0;
-        int64_t i111 = indices[3] + iw1;
+        int64_t i000 = indices[kIndex0] + iw0;
+        int64_t i001 = indices[kIndex0] + iw1;
+        int64_t i010 = indices[kIndex1] + iw0;
+        int64_t i011 = indices[kIndex1] + iw1;
+        int64_t i100 = indices[kIndex2] + iw0;
+        int64_t i101 = indices[kIndex2] + iw1;
+        int64_t i110 = indices[kIndex3] + iw0;
+        int64_t i111 = indices[kIndex3] + iw1;
         // get result
         y_ptr[dst_offset + ow] = static_cast<T>(
           w000 * get_value(i000) + w001 * get_value(i001) + w010 * get_value(i010) + w011 * get_value(i011) +

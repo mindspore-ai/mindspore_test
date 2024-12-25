@@ -46,8 +46,11 @@ bool UnravelIndexCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
                                             const std::vector<kernel::KernelTensor *> &,
                                             const std::vector<KernelTensor *> &outputs) const {
   auto *IndicesData = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(IndicesData);
   auto *DimsData = reinterpret_cast<T *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(DimsData);
   auto *OutputData = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(OutputData);
   T DimsMulti = 1;
   for (size_t i = 0; i < (inputs[kIndex1]->size()) / sizeof(T); i++) {
     if (DimsData[i] <= 0) {

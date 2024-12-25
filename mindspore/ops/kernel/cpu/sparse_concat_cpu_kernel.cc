@@ -123,10 +123,14 @@ bool SparseConcatCpuKernelMod::SparseConcat(const std::vector<kernel::KernelTens
                                             const std::vector<kernel::KernelTensor *> &outputs, const size_t shape_size,
                                             const int size) {
   auto output_indices = static_cast<int64_t *>(outputs[kOutputIndicesStart]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_indices);
   auto output_values = static_cast<S *>(outputs[kOutputValuesStart]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_values);
   auto output_shape = static_cast<int64_t *>(outputs[kOutputShapesStart]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_shape);
   auto input_coo_num = input_num_ / kCOOTensorNum;
   const auto &first_shape_ptr = reinterpret_cast<T *>(inputs[kSpInputShapesStart * input_coo_num]->device_ptr());
+  MS_EXCEPTION_IF_NULL(first_shape_ptr);
   std::map<size_t, int64_t> dim_position_map = {};
   int shape_cnt = 0;
   std::vector<int64_t> in_indices = {};

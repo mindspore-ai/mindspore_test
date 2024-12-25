@@ -60,8 +60,11 @@ bool LowerBoundCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
                                           const std::vector<KernelTensor *> &,
                                           const std::vector<kernel::KernelTensor *> &outputs) {
   auto sorted_x_data_addr = static_cast<I *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(sorted_x_data_addr);
   auto values_data_addr = static_cast<I *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(values_data_addr);
   auto output_data_addr = static_cast<O *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_data_addr);
   size_t sorted_x_data_column = static_cast<size_t>(sorted_x_shape_[1]);
   size_t values_data_column = static_cast<size_t>(values_shape_[1]);
   auto task = [this, &values_data_addr, &sorted_x_data_addr, &output_data_addr, &sorted_x_data_column,

@@ -95,8 +95,11 @@ bool UnsortedSegmentArithmeticCpuKernelMod::LaunchKernel(const std::vector<kerne
   T init_value = GetInitValue<T>(kernel_name_);
 
   T *input_src_addr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_src_addr);
   S *ids_src_addr = reinterpret_cast<S *>(inputs[kIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(ids_src_addr);
   T *output_src_addr = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_src_addr);
 
   for (int64_t i = 0; i < batch_size_; i++) {
     T *input_addr = input_src_addr + i * in_stride_;
