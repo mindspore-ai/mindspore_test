@@ -153,6 +153,7 @@ TypePtr ReduceBaseInferType(const PrimitivePtr &prim, const std::vector<abstract
 abstract::ShapePtr ReduceExtInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
 TypePtr ReduceExtInferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args);
 
+void BlockInvalid(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args, ShapeVector out_shape);
 BaseShapePtr SetPadShape(const ShapeVector &x_shape, const ArrayValue<int64_t> &paddings);
 BaseShapePtr PadInferShapeBase(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                                const size_t pad_dim);

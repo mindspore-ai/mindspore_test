@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <functional>
 
 #include "abstract/dshape.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -45,6 +46,7 @@
 #include "utils/shape_utils.h"
 #include "ir/func_graph.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -787,6 +789,29 @@ BaseShapePtr SetPadShape(const ShapeVector &x_shape, const ArrayValue<int64_t> &
   return std::make_shared<abstract::Shape>(out_shape);
 }
 
+void BlockInvalid(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
+                  ShapeVector out_shape) {
+  constexpr int64_t kBlockSize16 = 16;
+  constexpr int64_t kBlockSize32 = 32;
+  constexpr int64_t kKernelSize = 32;
+  std::map<TypeId, int64_t> type_to_blocksize_map = {
+    {kNumberTypeFloat16, kBlockSize16}, {kNumberTypeInt32, kBlockSize32}, {kNumberTypeFloat32, kBlockSize32}};
+  auto x_type = input_args[kInputIndex0]->GetType()->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(x_type);
+  auto x_type_id = x_type->element()->type_id();
+  auto need_block = type_to_blocksize_map.find(x_type_id) != type_to_blocksize_map.end();
+  if (need_block && !IsDynamic(out_shape)) {
+    auto output_size = std::accumulate(out_shape.cbegin(), out_shape.cend(), 1, std::multiplies<int64_t>());
+    auto valid_min_size = type_to_blocksize_map[x_type_id] * kKernelSize;
+    if (output_size < valid_min_size) {
+      MS_EXCEPTION(ValueError)
+        << "For '" << primitive->name()
+        << "', num of input element is too small, which may cause computation error, try another dtype other than "
+           "{float16, float32, int16} or run on Atlas A2 training series to bypass this issue.";
+    }
+  }
+}
+
 BaseShapePtr PadInferShapeBase(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                                const size_t pad_dim) {
   MS_EXCEPTION_IF_NULL(primitive);
@@ -822,6 +847,11 @@ BaseShapePtr PadInferShapeBase(const PrimitivePtr &primitive, const std::vector<
   }
 
   auto out_shape = SetPadShape(x_shape, paddings);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if ((ms_context->ascend_soc_version() == kAscendVersion910) && paddings.size() == 4) {
+    BlockInvalid(primitive, input_args, out_shape->GetShapeVector());
+  }
   return out_shape;
 }
 
