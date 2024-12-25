@@ -901,11 +901,11 @@ def float_power_ext(input, exponent):
     Examples:
         >>> from mindspore import Tensor, ops
         >>> input = Tensor([1, 2, 3])
-        >>> ops.float_power(input, 2)
+        >>> ops.function.math_func.float_power_ext(input, 2)
         Tensor(shape=[3], dtype=Float64, value= [ 1.00000000e+00,  4.00000000e+00,  9.00000000e+00])
         >>>
         >>> exp = Tensor([2, -3, -4])
-        >>> ops.float_power(input, exp)
+        >>> ops.function.math_func.float_power_ext(input, exp)
         Tensor(shape=[3], dtype=Float64, value= [ 1.00000000e+00,  1.25000000e-01,  1.23456790e-02])
     """
     if not (isinstance(input, Tensor) or isinstance(exponent, Tensor)):
