@@ -42,7 +42,6 @@ from ...ops.composite import MultitypeFuncGraph, env_get, hyper_add, \
     zeros_like, ones_like, repeat_elements, multitype_ops
 from ...ops.composite.multitype_ops import _constexpr_utils as const_utils
 from ...ops.composite.multitype_ops import _compile_utils as compile_utils
-from ...ops.operations.math_ops import Median
 from ...ops.operations._inner_ops import Format
 from ...ops.operations import _csr_ops
 from ...ops.operations import _map_tensor_ops
@@ -957,17 +956,11 @@ def argmin_with_value(x, axis=0, keep_dims=False):
     return F.min(x, axis, keep_dims)
 
 
-def median(input, global_median, axis=0, keep_dims=False):
+def median(input, axis=-1, keepdims=False):
     r"""
     Computes the median of input tensor.
-
-    .. warning::
-        When attr `global_median` is True, the second output Tensor value is meaningless.
-
     """
-    check_axis_in_range(axis, input.ndim)
-    median_ = Median(global_median, axis, keep_dims)
-    return median_(input)
+    return F.median(input, axis, keepdims)
 
 
 def msort(x):
