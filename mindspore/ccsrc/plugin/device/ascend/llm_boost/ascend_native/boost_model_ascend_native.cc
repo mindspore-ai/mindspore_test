@@ -163,7 +163,7 @@ int64_t BoostModelAscendC::InitData(const llm_data &data) {
   param->ln_eps_ = data.rms_norm_eps;
   param->vocab_size_ = data.vocab_size;
   param->multiple_of_ = data.multiple_of;
-  param->paged_attention_ = False;
+  param->paged_attention_ = (data.page_num > 0);
   param->page_num_ = data.page_num;
   param->page_size_ = data.page_size;
   llama_ = std::make_shared<internal::LlamaImpl>(param);
