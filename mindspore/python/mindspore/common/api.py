@@ -321,6 +321,7 @@ def _contains_auto_grad_tensor(obj):
                 return True
     return False
 
+
 def _add_mutable_attr(args_list, compile_args, is_grad):
     """Restore the mutable attr for every arg."""
     new_compile_args = ()
@@ -573,6 +574,7 @@ def _get_hook_key(*args, **kwargs):
             hook_key += _get_tensor_hook_key(value)
 
     return hook_key
+
 
 class _MindsporeFunctionExecutor:
     """
