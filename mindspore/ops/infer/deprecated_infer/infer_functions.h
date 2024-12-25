@@ -74,6 +74,8 @@ OPS_API AbstractBasePtr InferImplDictGetValues(const AnalysisEnginePtr &, const 
                                                const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplDictItems(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                            const AbstractBasePtrList &args_abs_list);
+OPS_API AbstractBasePtr InferImplInsertGradientOf(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                                  const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplArrayLen(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                           const AbstractBasePtrList &args_abs_list);
 OPS_API AbstractBasePtr InferImplMutable(const AnalysisEnginePtr &, const PrimitivePtr &primitive,

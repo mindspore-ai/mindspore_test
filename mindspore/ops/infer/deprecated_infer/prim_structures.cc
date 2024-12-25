@@ -359,6 +359,14 @@ AbstractBasePtr InferImplDictItems(const AnalysisEnginePtr &, const PrimitivePtr
   return std::make_shared<AbstractList>(items);
 }
 
+AbstractBasePtr InferImplInsertGradientOf(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const AbstractBasePtrList &args_abs_list) {
+  const std::string op_name = primitive->name();
+  constexpr int args_spec_size = 1;
+  CheckArgsSize(op_name, args_abs_list, args_spec_size);
+  return args_abs_list[0];
+}
+
 namespace {
 void CheckMutableArgAbstract(const AbstractBasePtr &abs) {
   if (abs->isa<AbstractSequence>()) {

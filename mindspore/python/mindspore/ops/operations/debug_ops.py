@@ -398,7 +398,7 @@ class HistogramSummary(Primitive):
         _cache_summary_data(self.name, args[0], args[1])
 
 
-class InsertGradientOf(PrimitiveWithInfer):
+class InsertGradientOf(Primitive):
     """
     Attaches callback to the graph node that will be invoked on the node's gradient.
 
@@ -463,12 +463,6 @@ class InsertGradientOf(PrimitiveWithInfer):
         """Initialize InsertGradientOf."""
         self.add_prim_attr('side_effect_backprop', True)
         self.f = f
-
-    def infer_shape(self, x_shape):
-        return x_shape
-
-    def infer_dtype(self, x_type):
-        return x_type
 
 
 class HookBackward(PrimitiveWithInfer):
