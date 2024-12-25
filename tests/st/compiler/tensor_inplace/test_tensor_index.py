@@ -428,6 +428,25 @@ def test_tensor_select_slice_write():
     assert ms.ops.all(out == ms.Tensor([[2, 2, 1]], dtype=ms.int32))
 
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_tensor_select_slice_write_2():
+    """
+    Feature: Support tensor inplace.
+    Description: Tensor setitem by slice, then use this tensor to do some op.
+    Expectation: Run success.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x: ms.Tensor):
+            x[1:] = 1
+            return x + 1
+
+    net = Net()
+    x = ms.Tensor([[1, 2], [3, 4]])
+    out = net(x)
+    assert ms.ops.all(out == ms.Tensor([[2, 3], [2, 2]]))
+
+
 @pytest.mark.skip(
     reason="RuntimeError: Unsupported op [SelectExt] on GPU, \
                   Please confirm whether the device target setting is correct."
