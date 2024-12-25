@@ -1,6 +1,7 @@
 tan:
   description: |
-    tan(self) ->Tensor
+    tan() ->Tensor
+
     Computes tangent of `self` element-wise.
     
     .. math::
@@ -8,7 +9,7 @@ tan:
         out_i = \tan(input_i)
 
     Returns:
-        Tensor, has the same shape as `self`. The dtype of output is float32 when dtype of `self` is in [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as `self`.
+        Tensor, has the same shape as `self`. The dtype of output is float32 when dtype of `self` is in bool, int8, uint8, int16, int32, int64. Otherwise output has the same dtype as `self`.
     
     Raises:
         TypeError: If `self` is not a Tensor.
