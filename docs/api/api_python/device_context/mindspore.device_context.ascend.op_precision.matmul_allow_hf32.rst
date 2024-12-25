@@ -12,3 +12,6 @@ mindspore.device_context.ascend.op_precision.matmul_allow_hf32
 
     参数：
         - **value** (bool) - 是否为Matmul类算子使能FP32转换为HF32。
+
+    支持平台：
+        ``Ascend``

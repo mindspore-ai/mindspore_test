@@ -19,10 +19,10 @@ import pytest
 from mindspore import ops
 from mindspore import Tensor
 import mindspore as ms
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
-ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
 @test_utils.run_with_cell
 def cosh_forward_func(x):
@@ -45,6 +45,8 @@ def test_cosh_forward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_array = np.array([-1, -0.5, 0, 0.5, 1]).astype('float32')
     x = Tensor(np_array)
     out = cosh_forward_func(x)
@@ -63,6 +65,8 @@ def test_cosh_backward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_array = np.array([1, 0.5, -0.5, 0.3]).astype('float32')
     x = Tensor(np_array)
     grads = cosh_backward_func(x)
@@ -81,6 +85,8 @@ def test_cosh_vmap(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_array = np.array([[0.5, 0.4, -0.3, -0.2]]).astype('float32')
     x = Tensor(np_array)
     nest_vmap = ops.vmap(ops.vmap(cosh_forward_func, in_axes=0), in_axes=0)

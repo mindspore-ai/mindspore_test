@@ -37,6 +37,7 @@ class OpTuningConf {
   void set_aoe_job_type(const std::string &aoe_config);
   std::string jit_compile() const;
   std::string aoe_job_type() const;
+  std::string aoe_tune_mode() const;
   bool EnableAoeOnline() const;
   bool EnableAoeOffline() const;
   bool IsJitCompileConfigured() const { return !jit_compile_.empty(); }
@@ -44,7 +45,6 @@ class OpTuningConf {
   bool IsAoeJobTypeConfigured() const { return is_aoe_job_type_configured_; }
 
  private:
-  std::string aoe_tune_mode() const;
   static std::shared_ptr<OpTuningConf> inst_context_;
   std::string jit_compile_{""};
   std::string aoe_tune_mode_{""};

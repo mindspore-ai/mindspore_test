@@ -23,9 +23,9 @@ from mindspore import Tensor, ops
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 
-ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
 
 def tile_func(x, multiplies):
@@ -52,6 +52,8 @@ def test_tile_forward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_x1 = np.random.rand(3, 4, 5, 6).astype(np.float32)
     x1 = Tensor(np_x1)
     mul1 = (2, 2, 2, 2)
@@ -84,6 +86,8 @@ def test_tile_backward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x1 = Tensor(np.random.rand(3, 4, 5, 6).astype(np.float32))
     mul1 = (2, 2, 2, 2)
     grads1 = tile_backward_func(x1, ms.mutable(mul1))
@@ -113,6 +117,8 @@ def test_tile_vmap(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     in_axes = (-1, None)
     np_x = np.random.rand(2, 3, 4, 5).astype(np.float32)
     mul = (1, 1, 2, 2)
@@ -132,6 +138,8 @@ def test_tile_dynamic():
     Expectation: expect tile result.
     """
     ms.context.set_context(runtime_num_threads=1)  # multi-threads have none-initialized bug now.
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     input_case1 = Tensor(np.random.rand(3, 4, 5, 6).astype(np.float32))
     input_case2 = Tensor(np.random.rand(3, 4).astype(np.float32))
     TEST_OP(tile_func, [[input_case1, (2, 3, 2, 3)], [input_case2, (3, 2, 3, 2)]], 'tile', disable_input_check=True)
@@ -148,6 +156,8 @@ def test_tile_forward_dyn(mode, dyn_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     mul = (1, 1, 2, 2)
     dyn_tensor_shape = [None, None, None, None] if dyn_mode == "dyn_shape" else None
     dyn_x = Tensor(shape=dyn_tensor_shape, dtype=ms.float32)
@@ -180,6 +190,8 @@ def test_tile_backward_dyn(mode, dyn_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     mul = (1, 1, 2, 2)
     dyn_tensor_shape = [None, None, None, None] if dyn_mode == "dyn_shape" else None
     dyn_x = Tensor(shape=dyn_tensor_shape, dtype=ms.float32)
@@ -213,6 +225,8 @@ def test_tile_dynamic_len(mode, is_fwd):
         # ms.context.GRAPH_MODE and backward has runtime heterogeneous bug.
         return
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     np_x = np.random.rand(2, 3, 4, 5).astype(np.float32)
     x = Tensor(np_x)
     mul = (1, 1, 2, 2)
@@ -292,6 +306,8 @@ def test_tile_binary_cases(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
 
     ops_tile_binary_case1()
     ops_tile_binary_case2()

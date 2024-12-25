@@ -39,6 +39,8 @@ def op_compile(value):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_tuning.op_compile(True)
     """
+    if value == AscendOpTuningConf.get_instance().jit_compile():
+        return
     # Check the configuration environment whether valid
     _check_runtime_conf_env_valid()
     if AscendOpTuningConf.get_instance().is_jit_compile_configured():
@@ -67,6 +69,8 @@ def aoe_tune_mode(tune_mode):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_tuning.aoe_tune_mode("online")
     """
+    if tune_mode == AscendOpTuningConf.get_instance().aoe_tune_mode():
+        return
     # Check the configuration environment whether valid
     _check_runtime_conf_env_valid()
     if AscendOpTuningConf.get_instance().is_aoe_tune_mode_configured():
@@ -98,6 +102,8 @@ def aoe_job_type(config):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_tuning.aoe_job_type("1")
     """
+    if config == AscendOpTuningConf.get_instance().aoe_job_type():
+        return
     # Check the configuration environment whether valid
     _check_runtime_conf_env_valid()
     if AscendOpTuningConf.get_instance().is_aoe_job_type_configured():
