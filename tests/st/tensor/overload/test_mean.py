@@ -25,18 +25,18 @@ from mindspore.common.api import _pynative_executor
 
 
 class MeanNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False, *, dtype=None):
-        return x.mean(axis, keep_dims, dtype=dtype)
+    def construct(self, x, dim=None, keepdim=False, *, dtype=None):
+        return x.mean(dim, keepdim, dtype=dtype)
 
 
 class MeanKVNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False, *, dtype=None):
-        return x.mean(axis=axis, keep_dims=keep_dims, dtype=dtype)
+    def construct(self, x, dim=None, keepdim=False, *, dtype=None):
+        return x.mean(dim=dim, keepdim=keepdim, dtype=dtype)
 
 
 class MeanKVDisruptNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False, *, dtype=None):
-        return x.mean(keep_dims=keep_dims, axis=axis, dtype=dtype)
+    def construct(self, x, dim=None, keepdim=False, *, dtype=None):
+        return x.mean(keepdim=keepdim, dim=dim, dtype=dtype)
 
 
 class MeanNetpython(nn.Cell):
@@ -49,8 +49,8 @@ def generate_random_input(shape, dtype):
 
 
 @test_utils.run_with_cell
-def mean_ext_forward_func(x, axis=None, keep_dims=False, *, dtype=None):
-    return x.mean(axis, keep_dims, dtype=dtype)
+def mean_ext_forward_func(x, dim=None, keepdim=False, *, dtype=None):
+    return x.mean(dim, keepdim, dtype=dtype)
 
 
 @test_utils.run_with_cell
@@ -133,7 +133,7 @@ def test_method_mean_pyboost(mode):
 
     # test 3: using k-v args.
     net = MeanKVNet()
-    output = net(x, axis=0, keep_dims=True, dtype=None)
+    output = net(x, dim=0, keepdim=True, dtype=None)
     expected = np.array([[[4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
                           [5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
                           [6.0, 6.0, 6.0, 6.0, 6.0, 6.0]]], dtype=np.float32)
@@ -141,7 +141,7 @@ def test_method_mean_pyboost(mode):
 
     # test 4: using k-v out of order args.
     net = MeanKVDisruptNet()
-    output = net(x, keep_dims=True, axis=1, dtype=None)
+    output = net(x, keepdim=True, dim=1, dtype=None)
     expected = np.array([[[2.0, 2.0, 2.0, 2.0, 2.0, 2.0]],
                          [[5.0, 5.0, 5.0, 5.0, 5.0, 5.0]],
                          [[8.0, 8.0, 8.0, 8.0, 8.0, 8.0]]], dtype=np.float32)
@@ -150,17 +150,17 @@ def test_method_mean_pyboost(mode):
     # test 5: error input
     net = MeanNet()
     with pytest.raises(TypeError) as error_info:
-        net(x, axis=float(2.0), keep_dims=True, dtype=None)
+        net(x, dim=float(2.0), keepdim=True, dtype=None)
         _pynative_executor.sync()
     assert "Failed calling mean with " in str(error_info.value)
 
     with pytest.raises(TypeError) as error_info:
-        net(x, axis=1, keep_dims=1, dtype=None)
+        net(x, dim=1, keepdim=1, dtype=None)
         _pynative_executor.sync()
     assert "Failed calling mean with " in str(error_info.value)
 
     with pytest.raises(TypeError) as error_info:
-        net(x, axis=5, keep_dims=1, dtype=None)
+        net(x, dim=5, keepdim=1, dtype=None)
         _pynative_executor.sync()
     assert "Failed calling mean with " in str(error_info.value)
 
