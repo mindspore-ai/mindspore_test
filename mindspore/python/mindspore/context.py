@@ -938,6 +938,8 @@ def set_auto_parallel_context(**kwargs):
                \                 group_ckpt_save_file
                \                 auto_pipeline
                \                 dump_local_norm
+               \                 dump_local_norm_path
+               \                 dump_device_local_norm
     ===========================  ===========================
 
     Args:
@@ -1092,6 +1094,11 @@ def set_auto_parallel_context(**kwargs):
         dump_local_norm (bool): Whether to dump local_norm value, when the `parallel_mode` is set to
                         ``semi_auto_parallel`` or ``auto_parallel``.
                         Default: ``False`` .
+        dump_local_norm_path (str): The path to save dump files of local_norm value.
+                        Default: ``''`` .
+        dump_device_local_norm (bool): Whether to dump device_local_norm value, when the `parallel_mode` is set to
+                        ``semi_auto_parallel`` or ``auto_parallel``.
+                        Default: ``False`` .
 
     Raises:
         ValueError: If input key is not attribute in auto parallel context.
@@ -1167,8 +1174,10 @@ def reset_auto_parallel_context():
     - pipeline_stages: 1.
     - pipeline_result_broadcast: False.
     - fusion_threshold: 64.
-    - dump_local_norm: False.
     - auto_pipeline: False.
+    - dump_local_norm: False.
+    - dump_local_norm_path: ''.
+    - dump_device_local_norm: False.
 
     Examples:
         >>> import mindspore as ms

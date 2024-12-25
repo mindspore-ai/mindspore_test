@@ -28,7 +28,9 @@ mindspore.set_auto_parallel_context
                \                 strategy_ckpt_config
                \                 group_ckpt_save_file
                \                 auto_pipeline
-                                 dump_local_norm
+               \                 dump_local_norm
+               \                 dump_local_norm_path
+               \                 dump_device_local_norm
     =========================  =========================
 
     参数：
@@ -88,5 +90,7 @@ mindspore.set_auto_parallel_context
           - only_trainable_params(bool)：仅保存/加载可训练参数的策略信息。默认值： ``True`` 。
         - **group_ckpt_save_file** (str) - 在自动/半自动并行场景下，指定图编译过程中所创建group的保存路径。
         - **dump_local_norm** (bool) - 在自动/半自动并行场景下，指定是否打印local norm值。
+        - **dump_local_norm_path** (str) - 在自动/半自动并行场景下，指定local norm值的保存路径。默认值： ``""``。
+        - **dump_device_local_norm** (bool) - 在自动/半自动并行场景下，指定是否打印device local norm值。
     异常：
         - **ValueError** - 输入key不是自动并行上下文中的属性。

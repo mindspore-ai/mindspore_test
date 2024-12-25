@@ -28,7 +28,7 @@ mindspore.set_context
     |                         +------------------------------+----------------------------+----------------------------------------+
     |                         |  op_timeout (D)              |  Ascend                    |  :func:`~.execute_timeout`             |
     +-------------------------+------------------------------+----------------------------+----------------------------------------+
-    | 调试配置                |  save_graphs (D)             |  CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS                    | 
+    | 调试配置                |  save_graphs (D)             |  CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS                    |
     |                         +------------------------------+----------------------------+----------------------------------------+
     |                         |  save_graphs_path (D)        |  CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS_PATH               |
     |                         +------------------------------+----------------------------+----------------------------------------+
@@ -161,7 +161,7 @@ mindspore.set_context
 
           - O0: 执行性能优先，关闭 SOMAS (Safe Optimized Memory Allocation Solver) 和一些其他内存优化。
           - O1: 内存性能优先，使能 SOMAS 和一些其他内存优化。
-          
+
           此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
 
         - **memory_offload** (str) - 是否开启Offload功能，在内存不足场景下将空闲数据临时拷贝至Host侧内存。其值必须在['ON', 'OFF']范围中，默认值为 ``'OFF'`` 。

@@ -97,6 +97,8 @@ void ParallelContext::Reset() {
   pipeline_scheduler_ = kPipeline1F1B;
   auto_pipeline_ = false;
   dump_local_norm_ = false;
+  dump_local_norm_path_ = "";
+  dump_device_local_norm_ = false;
   is_dynamic_shape_parallel_ = false;
   dynamic_shape_parallel_flag_is_set_ = false;
 }
@@ -341,5 +343,13 @@ void ParallelContext::set_stra_file_only_trainable_params(const bool stra_file_o
 void ParallelContext::set_sharding_propagation(const bool stra_pto) { sharding_propagation_ = stra_pto; }
 
 void ParallelContext::set_dump_local_norm(const bool dump_ln) { dump_local_norm_ = dump_ln; }
+
+void ParallelContext::set_dump_local_norm_path(const std::string &dump_local_norm_path) {
+  dump_local_norm_path_ = dump_local_norm_path;
+}
+
+void ParallelContext::set_dump_device_local_norm(const bool dump_device_local_norm) {
+  dump_device_local_norm_ = dump_device_local_norm;
+}
 
 }  // namespace mindspore::parallel
