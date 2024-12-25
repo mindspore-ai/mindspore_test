@@ -1409,9 +1409,9 @@ class PsROIPooling(PrimitiveWithInfer):
         >>>                                  group_size=7)
         >>> out, channel_map = psRoIPooling(features, rois)
         >>> print(out.shape)
-            [4, 21, 7, 7]
+        [4, 21, 7, 7]
         >>> print(channel_map.shape)
-            [4, 21, 7, 7]
+        [4, 21, 7, 7]
     """
 
     @prim_attr_register

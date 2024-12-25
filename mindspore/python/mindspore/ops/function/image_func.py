@@ -252,7 +252,7 @@ def crop_and_resize(image, boxes, box_indices, crop_size, method="bilinear", ext
         >>> crop_size = (24, 24)
         >>> output = ops.crop_and_resize(Tensor(image), Tensor(boxes), Tensor(box_indices), crop_size)
         >>> print(output.shape)
-         (5, 24, 24, 3)
+        (5, 24, 24, 3)
     """
     _crop_and_resize_check(image, boxes, box_indices, crop_size)
     image_shape = image.shape
