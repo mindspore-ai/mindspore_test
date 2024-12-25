@@ -382,9 +382,6 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
     MS_LOG(INFO) << "Get top graph arg input failed.";
     return nullptr;
   }
-  if (py::isinstance<Cell>(object) || PyFunction_Check(object.ptr()) || PyMethod_Check(object.ptr())) {
-    return nullptr;
-  }
   auto abs = BuildAbstractForInputObject(object);
   if (abs == nullptr) {
     MS_LOG(INFO) << "Failed to add input for python object: " << std::string(py::str(object)) << "  " << object.ptr();
