@@ -93,6 +93,7 @@ AbstractBasePtr InferImplDepend(const AnalysisEnginePtr &, const PrimitivePtr &p
       depends_abs->set_value(kValueAny);
     }
   }
+  depends_abs->set_inplace_abstract(depends->inplace_abstract());
   return depends_abs;
 }
 
