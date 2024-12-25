@@ -33,18 +33,18 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
     The framework will set all the args by default as follows.
 
     Args:
-        init_size (str): The init size of memory pool. The format is "xxGB". Default: ``2G`` .
+        init_size (str): The init size of memory pool. The format is "xxGB". Default: ``2GB`` .
         increase_size (str): The increase size of memory pool. When the current memory pool has no
-            enough memory, the memory pool will be expanded by this value. The format is "xxGB". Default: ``2G`` .
+            enough memory, the memory pool will be expanded by this value. The format is "xxGB". Default: ``2GB`` .
         max_size (str): The maximum memory available for memory pool.
             The actual used memory size is the minimum of the available memory of the device and max_device_memory.
-            The format is "xxGB". Default is the maximum available memory of the device, expressed as ``1024G``.
+            The format is "xxGB". Default is the maximum available memory of the device, expressed as ``1024GB``.
         optimize_level (str): The memory optimize level. The value must be in ['O0', 'O1']. Default: ``O0`` .
 
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
-        >>> ms.runtime.set_memory("10G", "2G", "60G", "O1")
+        >>> ms.runtime.set_memory("10GB", "2GB", "60GB", "O1")
     """
     _check_runtime_conf_env_valid()
     if RuntimeConf.get_instance().is_memory_configured():
