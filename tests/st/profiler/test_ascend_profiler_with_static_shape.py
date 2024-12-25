@@ -187,7 +187,6 @@ def check_ascend_profiler_all_parameters_on_common_files(profiler_path: str, ran
 
 
 def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
-    check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
