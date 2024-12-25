@@ -347,6 +347,14 @@ void DataPrepareActor::Init() {
     MS_LOG(EXCEPTION) << "The number of graphs is not equal to the number of device contexts.";
   }
 
+  size_t host_data_size = 0;
+  if (host_data_source_actor_ != nullptr) {
+    host_data_size = host_data_source_actor_->data_nodes().size();
+  }
+  has_parameter_input_ = graph_compiler_info_->inputs_num_ > host_data_size;
+  MS_LOG(INFO) << graph_compiler_info_->name_
+               << " has the parameter input num: " << graph_compiler_info_->inputs_num_ - host_data_size;
+
   for (const auto &graph : graph_compiler_info_->graphs_) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->is_dynamic_shape()) {
