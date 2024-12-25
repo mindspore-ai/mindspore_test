@@ -86,7 +86,7 @@ class Edge {
   void InitIdentityEdgeCost(bool *has_available_cost);
   void InitNotIdentityEdgeCost(bool *has_available_cost);
   std::map<CostPtrKey, CostPtrList> GetCostMap() { return cost_map_; }
-  CostPtr GetCostByStrategyPair(const CostPtrKey &stra_pair);
+  CostPtr GetCostByStrategyPair(const StrategyPtr &output_str, const StrategyPtr &input_str);
   StrategyPtr GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy);
   StrategyPtr GetNextOpStrategyByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra);
   StrategyPtr GetPrevOpStrategyByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra);

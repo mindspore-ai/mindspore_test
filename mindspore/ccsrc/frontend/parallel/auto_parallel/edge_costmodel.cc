@@ -365,19 +365,29 @@ Status Edge::CalculateMemoryCostForInference() {
   return SUCCESS;
 }
 
-CostPtr Edge::GetCostByStrategyPair(const CostPtrKey &stra_pair) {
-  if (cost_map_.find(stra_pair) == cost_map_.end()) {
+CostPtr Edge::GetCostByStrategyPair(const StrategyPtr &output_str, const StrategyPtr &input_str) {
+  CostPtrList cost_vec;
+  if (cost_map_.find({output_str, input_str}) == cost_map_.end()) {
+    for (const auto &key_value : cost_map_) {
+      const StrategyPtr &candidate_output_stra = key_value.first.first;
+      const StrategyPtr &candidate_input_stra = key_value.first.second;
+      const CostPtrList &candidate_cost = key_value.second;
+      if (candidate_output_stra->IsEqual(output_str) && candidate_input_stra->IsEqual(input_str)) {
+        cost_vec = candidate_cost;
+      }
+    }
+  } else {
+    cost_vec = cost_map_[{output_str, input_str}];
+  }
+  if (cost_vec.empty()) {
+    MS_LOG(WARNING) << "output_str: " << output_str->ToString() << ", "
+                    << "input_str: " << input_str->ToString() << ". "
+                    << "No available cost under current strategy pair of the edge: " << edge_name_;
     return nullptr;
   }
-  auto cost_vec = cost_map_[stra_pair];
-  if (cost_vec.empty()) {
-    MS_LOG(EXCEPTION) << "stra_pair.first: " << stra_pair.first->ToString() << ", "
-                      << "stra_pair.second: " << stra_pair.second->ToString() << ". "
-                      << "No available cost under current strategy pair of the edge: " << edge_name_;
-  }
   if (cost_vec.size() > 1) {
-    MS_LOG(INFO) << "stra_pair.first: " << stra_pair.first->ToString() << ", "
-                 << "stra_pair.second: " << stra_pair.second->ToString() << ". "
+    MS_LOG(INFO) << "output_str: " << output_str->ToString() << ", "
+                 << "input_str: " << input_str->ToString() << ". "
                  << "Multiple costs available under the stratey pair of the edge: " << edge_name_;
   }
   return cost_vec[0];
@@ -590,7 +600,7 @@ bool Edge::CheckStrategyConsistency(StrategyPtr prev_stra, StrategyPtr next_stra
   if (next_stra == nullptr) {
     MS_LOG(EXCEPTION) << next_op_->name() << "'s selected strategy is null!";
   }
-  auto cost = GetCostByStrategyPair({prev_stra, next_stra});
+  auto cost = GetCostByStrategyPair(prev_stra, next_stra);
   if (cost == nullptr || cost->communication_cost_ > 0.0) {
     MS_LOG(INFO) << "The edge " << edge_name_ << "'s strategy: prev_stra is " << prev_stra->ToString()
                  << ", next_stra is " << next_stra->ToString();
