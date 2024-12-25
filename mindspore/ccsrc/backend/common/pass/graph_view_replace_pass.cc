@@ -65,7 +65,7 @@ bool IsOutSuit(const AnfNodePtr &node, const mindspore::FuncGraphManagerPtr &man
     return true;
   }
   auto users = manager->node_users()[node];
-  for (const auto user : users) {
+  for (const auto &user : users) {
     auto out = user.first;
     if (!out->cast<CNodePtr>()) {
       return false;

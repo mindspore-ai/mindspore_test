@@ -2666,7 +2666,7 @@ void ConvertLayoutToStrategy(Dimensions *sub_strategy_vec, const std::vector<std
                              const std::vector<int64_t> &device_matrix,
                              const std::vector<std::vector<int64_t>> &tensor_map) {
   const int64_t alias_len = (int64_t)alias_name.size() - 1;
-  for (const auto sub_tensor_map : tensor_map) {
+  for (const auto &sub_tensor_map : tensor_map) {
     auto dim_strategy = 1;
     for (const int64_t tensor_ind : sub_tensor_map) {
       if (tensor_ind == -1) {
