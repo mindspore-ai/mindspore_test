@@ -21,7 +21,7 @@ mindspore.Tensor.min
         tuple(Tensor)，返回两个元素类型为Tensor的tuple，包含输入Tensor沿指定维度 `dim` 的最小值和相应的索引。
 
         - **values** (Tensor) - 输入Tensor沿给定维度的最小值，shape和 `index` 相同，数据类型和 `self` 相同。
-        - **index** (Tensor) - 输入Tensor的沿给定维度的最小值索引，数据类型为 `int64` 。如果 `keepdim` 为 ``True`` ，输出Tensor的shape是 :math:`(self_1, self_2, ...,self_{axis-1}, 1, self_{axis+1}, ..., self_N)` 。否则输出shape为 :math:`(self_1, self_2, ...,self_{axis-1}, self_{axis+1}, ..., self_N)` 。
+        - **index** (Tensor) - 输入Tensor沿给定维度的最小值索引，数据类型为 `int64` 。如果 `keepdim` 为 ``True`` ，输出Tensor的shape是 :math:`(self_1, self_2, ...,self_{dim-1}, 1, self_{dim+1}, ..., self_N)` 。否则输出shape为 :math:`(self_1, self_2, ...,self_{dim-1}, self_{dim+1}, ..., self_N)` 。
 
     异常：
         - **TypeError** - 如果 `keepdim` 不是bool类型。
