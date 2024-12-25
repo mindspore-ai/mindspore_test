@@ -52,6 +52,12 @@ enum JitSyntaxLevel : int {
   kLax,         // JIT Fallback fully enabled.
 };
 
+enum JitStatus : int {
+  kNotJit,        // Not Jit.
+  kJitCompiling,  // Jit Compiling.
+  kJitRunning,    // Jit Running.
+};
+
 enum DebugLevel : int {
   kLevelRelease,  // Used for deployment scenarios, compile performance will be better.
   kLevelDebug,    // For debugging scenarios, compile performance will decrease.
@@ -310,8 +316,8 @@ class MS_CORE_API MsContext {
   void set_not_convert_jit(bool not_convert_jit) { not_convert_jit_ = not_convert_jit; }
   bool not_convert_jit() { return not_convert_jit_; }
 
-  void set_jit_running(bool jit_running) { jit_running_ = jit_running; }
-  bool jit_running() const { return jit_running_; }
+  void set_jit_status(const JitStatus &status) { jit_status_ = status; }
+  enum JitStatus jit_status() const { return jit_status_; }
 
  private:
   void RefreshExecutionMode();
@@ -351,7 +357,7 @@ class MS_CORE_API MsContext {
   static std::map<std::string, std::string> &PluginPathMap();
   enum CellReuseLevel cell_reuse_level_ = CellReuseLevel::kNoCellReuse;
   bool not_convert_jit_{false};
-  bool jit_running_{false};
+  enum JitStatus jit_status_ = JitStatus::kNotJit;
 
   std::optional<bool> enable_infer_boost_ = std::nullopt;
   std::set<std::string> ms_internal_enable_custom_kernel_list_;
