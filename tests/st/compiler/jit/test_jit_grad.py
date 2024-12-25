@@ -16,7 +16,8 @@ import pytest
 import numpy as np
 from mindspore.common import Tensor, Parameter
 from mindspore.common import dtype as mstype
-from mindspore import context, jit, ops
+from mindspore import context, jit, ops, nn
+from mindspore.ops import composite as C
 from mindspore.ops.composite import GradOperation
 from mindspore.nn import Cell
 from tests.mark_utils import arg_mark
@@ -265,6 +266,51 @@ def test_jit_grad_with_grad_tensor_in_sequence_with_kwargs_3():
     b = Tensor([1, 1, 1])
     ret = GradOperation()(func)(a, b)
     assert np.all(ret.asnumpy() == np.array([2, 2, 2]))
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_pyboost_series_highgrad():
+    """
+    Feature: Test grad scene for highgrad with out jit
+    Description: Test grad scene for highgrad with out jit
+    Expectation: Success
+    """
+    class Net(nn.Cell):
+        def __init__(self, num_layer):
+            super().__init__()
+            self.layers = nn.CellList()
+            self.dense = nn.Dense(4, 4)
+            for _ in range(num_layer):
+                self.layers.append(nn.ReLU())
+            self.flatten = nn.Flatten()
+
+        def construct(self, x):
+            out = x
+            out = self.dense(x)
+            for layer in self.layers:
+                out = layer(out)
+            out = self.flatten(out)
+            return out
+
+    class Grad(nn.Cell):
+        def __init__(self, network):
+            super(Grad, self).__init__()
+            self.grad = C.GradOperation(get_all=True, sens_param=False)
+            self.network = network
+
+        def construct(self, x):
+            gout = self.grad(self.network)(x)
+            return gout
+
+    net = Net(100)
+    grad_net = Grad(net)
+    d = Tensor(shape=[None, None], dtype=mstype.float32)
+    grad_net.set_inputs(d)
+
+    x = Tensor(np.random.randn(4, 4).astype(np.float32))
+    ggrad_net = Grad(grad_net)
+    grad = ggrad_net(x)
+    assert np.all(grad[0].asnumpy() == 0)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')

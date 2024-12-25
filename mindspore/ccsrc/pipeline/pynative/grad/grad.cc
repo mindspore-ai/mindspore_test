@@ -1723,6 +1723,8 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   auto resource = std::make_shared<pipeline::Resource>();
   auto opt = opt::Optimizer::MakeEmptyOptimizer(resource);
   opt->set_is_first_order_j(false);
+  resource->set_func_graph(first_grad_fg);
+  first_grad_fg = pipeline::HighGradBpropGraphPass(resource);
   auto grad_graph = ad::Grad(first_grad_fg, opt);
   jit()->set_eliminate_forward(true && common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1");
   MS_EXCEPTION_IF_NULL(grad_graph);
