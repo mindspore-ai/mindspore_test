@@ -41,17 +41,21 @@ TEST_DATA_DIR=${CUR_DIR}/../../../tests/ut/data/dataset/
 cp -fr $TEST_DATA_DIR/testPK ./data
 
 echo 'run common ut tests'
-
+# UT for mindspore lite cloud inference
 if [[ "${MSLITE_ENABLE_CLOUD_FUSION_INFERENCE}" == "on" || "${MSLITE_ENABLE_CLOUD_FUSION_INFERENCE}" == "ON" || "${MSLITE_ENABLE_CLOUD_INFERENCE}" == "ON" || "${MSLITE_ENABLE_CLOUD_INFERENCE}" == "on" ]]; then
   echo 'run MSLITE_ENABLE_CLOUD_FUSION_INFERENCE ut test'
   set +e
   source /usr/local/Ascend/latest/bin/setenv.bash
   export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/Ascend/latest/lib64
   set -e
+
+  # mindspore lite converter
+  ./lite-test-converter --gtest_filter="PassRegistryPositionAscendTest.*"
+  # mapper
   ./lite-test-converter --gtest_filter="ArgminFusionMapperTest.*"
   ./lite-test-converter --gtest_filter="ActivationMapperTest.*"
   ./lite-test-converter --gtest_filter="ClipMapperTest.*"
-  ./lite-test-converter --gtest_filter="PassRegistryPositionAscendTest.*"
+  ./lite-test-converter --gtest_filter="ArithmeticMapperTest.*"
   exit 0
 fi
 
