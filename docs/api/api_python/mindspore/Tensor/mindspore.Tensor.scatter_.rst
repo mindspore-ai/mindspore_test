@@ -73,6 +73,8 @@ mindspore.Tensor.scatter\_
         - **dim** (int) - 要进行操作的轴。取值范围是 `[-r, r)` ，其中 `r` 是 `self` 的秩。
         - **index** (Tensor) - 在 `dim` 指定的目标轴上访问 `self` 时使用的索引，数据类型为int32或int64。如果为空Tensor，则将直接返回，不进行任何操作；否则其rank必须和 `self` 一致，且每个元素取值范围是 `[-s, s)` ，这里的 `s` 是 `self` 在 `dim` 指定轴的大小。
         - **src** (Tensor) - 指定对 `self` 进行更新操作的数据。其rank与dtype必须与 `self` 的相同。
+
+    关键字参数：
         - **reduce** (str) - 进行的规约操作，支持 ``"add"`` ， ``"multiply"`` 。当 `reduce` 设置为 ``"add"`` 时，`src` 将根据 `index` 累加到 `self` 。当 `reduce` 设置为 ``"multiply"`` 时，`src` 将根据 `index` 累乘到 `self` 。
 
     返回：
@@ -156,6 +158,8 @@ mindspore.Tensor.scatter\_
         - **dim** (int) - 要进行操作的轴。取值范围是 `[-r, r)` ，其中 `r` 是 `self` 的秩。
         - **index** (Tensor) - 在 `dim` 指定的目标轴上访问 `self` 时使用的索引，数据类型为int32或int64。如果为空Tensor，则将直接返回，不进行任何操作；否则其rank必须和 `self` 一致，且每个元素取值范围是 `[-s, s)` ，这里的 `s` 是 `self` 在 `dim` 指定轴的大小。
         - **value** (int, float, bool) - 指定对 `self` 进行更新操作的数据。可视为将尝试将其广播为shape及dtype与 `self` 一致的Tensor并视为 `src` 参与运算。
+
+    关键字参数：
         - **reduce** (str) - 进行的规约操作，支持 ``"add"`` ， ``"multiply"`` 。当 `reduce` 设置为 ``"add"`` 时，`src` 将根据 `index` 累加到 `self` 。当 `reduce` 设置为 ``"multiply"`` 时，`src` 将根据 `index` 累乘到 `self` 。
 
     返回：

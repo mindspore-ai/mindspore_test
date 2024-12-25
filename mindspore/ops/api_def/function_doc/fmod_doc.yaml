@@ -11,7 +11,7 @@ fmod:
     Where :math:`n` is :math:`input/other` with its fractional part truncated.
     The returned value has the same sign as `input` and is less than `other` in magnitude.
 
-    .. warning:
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:

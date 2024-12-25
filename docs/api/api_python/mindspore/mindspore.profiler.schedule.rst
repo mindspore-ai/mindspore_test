@@ -1,7 +1,7 @@
 mindspore.profiler.schedule
 ===========================
 
-.. py:class:: mindspore.profiler.schedule(*, wait, active, warm_up=0, repeat=0, skip_first=0)
+.. py:class:: mindspore.profiler.schedule(*, wait: int, active: int, warm_up: int = 0, repeat: int = 0, skip_first: int = 0)
 
     该类用于获取每一步的操作。
     

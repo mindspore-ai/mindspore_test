@@ -43,7 +43,7 @@ mindspore.mint.nn.functional.conv3d
     - dilation -- 该值的范围是 [1, 255]。
     - groups -- 该值的范围是 [1, 65535]。
 
-	属性之间的限制条件:
+    属性之间的限制条件:
 
     1. :math:`C_{in} % groups == 0 && C_{out} % groups == 0` 。
     2. :math:`weight[1] == C_{in} / groups` 。

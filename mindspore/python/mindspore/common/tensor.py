@@ -1286,6 +1286,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def add_(self, other, *, alpha=1):
         """
         inplace update self by following compute:
+
+        .. math::
             self = self + other * alpha.
 
         .. warning::
@@ -2862,7 +2864,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             This is an experimental API that is subject to change or deletion.
 
         Args:
-            from_ (Union[number.Number, Tensor], optional): The lower bound of the uniform distribution, it can be a
+            from\_ (Union[number.Number, Tensor], optional): The lower bound of the uniform distribution, it can be a
                 scalar value or a tensor of any dimension with a single element. Default: ``0``.
             to (Union[number.Number, Tensor], optional): The upper bound of the uniform distribution, it can be a
                 scalar value or a tensor of any dimension with a single element. Default: ``1``.

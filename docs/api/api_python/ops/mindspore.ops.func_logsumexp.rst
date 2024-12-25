@@ -12,7 +12,7 @@ mindspore.ops.logsumexp
     参数：
         - **input** (Tensor) - 任意维度的输入Tensor。数据类型为float16或float32。
         - **axis** (Union[int, tuple(int), list(int)]) - 需要归约的维度，输入为 ``()`` 时归约所有维度。
-        - **keep_dims** (bool) - 是否保留归约的维度。若设为 ``True`` ，则计算后指定的axis的长度为1，否则不保留该维度。默认值： ``False`` 。
+        - **keep_dims** (bool，可选) - 是否保留归约的维度。若设为 ``True`` ，则计算后指定的axis的长度为1，否则不保留该维度。默认值： ``False`` 。
 
     返回：
         Tensor，具有与 `input` 相同的数据类型。
