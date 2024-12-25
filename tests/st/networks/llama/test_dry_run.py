@@ -93,7 +93,7 @@ def run_command_auto_compile(cmd, log_path, sharding_time):
     if os.path.isfile(log_path):
         os.remove(log_path)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_train_semi_compile():
     """
     Feature: Trainer.train()
@@ -104,7 +104,7 @@ def test_train_semi_compile():
     run_command_semi_compile(f"bash {sh_path}/dry_compile.sh semi compile", f"{sh_path}/compile.log", 60000, 200000)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_train_auto_compile():
     """
     Feature: refactor sharding propagation when AUTO_PARALLEL.
@@ -115,7 +115,7 @@ def test_train_auto_compile():
     run_command_auto_compile(f"bash {sh_path}/dry_compile.sh auto compile", f"{sh_path}/compile.log", 11000)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_train_pipeline():
     """
     Feature: Trainer.train()
@@ -127,7 +127,7 @@ def test_train_pipeline():
                 f"{sh_path}/pipeline/rank_0", 4, 2, 10)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_train_grad_accu():
     """
     Feature: Trainer.train()
