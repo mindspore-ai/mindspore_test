@@ -1192,6 +1192,10 @@ void AddHookNodeForArgs(const ResourcePtr &resource, const FuncGraphPtr &new_fg)
   auto forward_graph = GetValueNode<FuncGraphPtr>(j_node->cast<CNodePtr>()->input(1));
   for (const auto &param : forward_graph->parameters()) {
     auto abs = param->abstract();
+    if (abs == nullptr) {
+      MS_LOG(DEBUG) << "Param: " << param->ToString() << " has no abstract.";
+      continue;
+    }
     if (!((abs->isa<abstract::AbstractTensor>() && abs->has_user_data("backward_hook")) ||
           (abs->isa<abstract::AbstractKeywordArg>() &&
            abs->cast<abstract::AbstractKeywordArgPtr>()->get_arg()->has_user_data("backward_hook")))) {
