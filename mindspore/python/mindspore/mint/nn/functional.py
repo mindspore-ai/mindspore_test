@@ -815,6 +815,20 @@ def normalize(input, p=2.0, dim=1, eps=1e-12):
     return input / denom
 
 
+def upsample(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
+    r"""
+    Samples `input` by the given `size` or `scale_factor`.
+
+    .. warnings:
+        This is an experimental API that is subject to change or deletion.
+
+    Refer to :func:`mindspore.mint.nn.functional.interpolate` for more details.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+    return interpolate(input, size, scale_factor, mode, align_corners)
+
 
 def adaptive_avg_pool3d(input, output_size):
     r"""
@@ -913,7 +927,7 @@ __all__ = [
     # 8
     'layer_norm',
     # 9
-
+    'upsample',
     # 10
 
     # 11
