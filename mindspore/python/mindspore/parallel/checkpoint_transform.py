@@ -650,6 +650,7 @@ def load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filte
                                                  dec_mode, specify_prefix, choice_func))
     return parameter_dict
 
+
 def set_op_strategy_config(mode="SAVE", path=""):
     """
     Set strategy json configuration when using sharding propagation.
