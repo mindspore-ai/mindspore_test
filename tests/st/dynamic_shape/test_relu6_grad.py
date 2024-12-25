@@ -18,9 +18,9 @@ import pytest
 import mindspore as ms
 from mindspore import ops
 from tests.st.utils import test_utils
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 
-ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
 @test_utils.run_with_cell
 def relu6_grad_func(dy, x):
@@ -38,6 +38,8 @@ def test_relu6_grad(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     dy = ms.Tensor(np.array([[[[1, 0, 1],
                                [0, 1, 0],
                                [1, 1, 1]]]]).astype(np.float32))
@@ -62,6 +64,8 @@ def test_relu6_grad_vmap(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     axes = (-1, -1)
     dy = ms.Tensor(np.random.uniform(size=(4, 3, 2)).astype(np.float32))
     x = ms.Tensor(np.random.uniform(low=-5, high=10, size=(4, 3, 2)).astype(np.float32))

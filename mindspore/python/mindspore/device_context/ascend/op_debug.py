@@ -40,6 +40,8 @@ def execute_timeout(op_timeout):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_debug.execute_timeout(100)
     """
+    if op_timeout == AscendOpDebugConf.get_instance().execute_timeout():
+        return
     # Check the configuration environment whether valid
     _check_runtime_conf_env_valid()
     if AscendOpDebugConf.get_instance().is_execute_timeout_configured():
@@ -65,6 +67,8 @@ def debug_option(option_value):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_debug.debug_option("oom")
     """
+    if op_timeout == AscendOpDebugConf.get_instance().debug_option():
+        return
     # Check the configuration environment whether valid
     _check_runtime_conf_env_valid()
     if AscendOpDebugConf.get_instance().is_debug_option_configured():

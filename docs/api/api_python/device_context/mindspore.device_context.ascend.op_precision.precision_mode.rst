@@ -23,3 +23,6 @@ mindspore.device_context.ascend.op_precision.precision_mode
           - allow_fp32_to_bf16: 对于矩阵类算子，使用bfloat16。对于矢量类算子，优先保持原图精度，如果网络模型中算子支持float32，则保留原始精度float32，如果网络模型中算子不支持float32，则直接降低精度到bfloat16。
           - allow_mix_precision_fp16: 自动混合精度，针对全网算子，按照内置的优化策略，自动将部分算子的精度降低到float16。
           - allow_mix_precision_bf16: 自动混合精度，针对全网算子，按照内置的优化策略，自动将部分算子的精度降低到bfloat16。
+
+    支持平台：
+        ``Ascend``

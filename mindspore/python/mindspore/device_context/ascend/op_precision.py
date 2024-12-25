@@ -63,6 +63,8 @@ def precision_mode(mode):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_precision.precision_mode("force_fp16")
     """
+    if mode == AscendOpPrecisionConf.get_instance().precision_mode():
+        return
     # Check the configuration environment whether valid
     _check_runtime_conf_env_valid()
     if AscendOpPrecisionConf.get_instance().is_precision_mode_configured():
@@ -98,6 +100,8 @@ def op_precision_mode(path):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_precision.op_precision_mode("./op_precision_config_file")
     """
+    if path == AscendOpPrecisionConf.get_instance().op_precision_mode():
+        return
     # Check the configuration environment whether valid
     _check_runtime_conf_env_valid()
     if AscendOpPrecisionConf.get_instance().is_op_precision_mode_configured():
@@ -127,18 +131,20 @@ def matmul_allow_hf32(value):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_context.ascend.op_precision.matmul_allow_hf32(true)
+        >>> ms.device_context.ascend.op_precision.matmul_allow_hf32(True)
     """
-    # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
-    if AscendOpPrecisionConf.get_instance().is_matmul_allow_hf32_configured():
-        raise RuntimeError("The 'matmul_allow_hf32' can not be set repeatedly.")
     supported_modes = [True, False]
     if value not in supported_modes:
         raise ValueError(f"For 'matmul_allow_hf32', the type of input value must be one of "
                          f"{supported_modes}, but got {value}.")
     is_enable = "1" if value else "0"
-    AscendOpPrecisionConf.get_instance().matmul_allow_hf32(is_enable)
+    if is_enable == AscendOpPrecisionConf.get_instance().matmul_allow_hf32():
+        return
+    # Check the configuration environment whether valid
+    _check_runtime_conf_env_valid()
+    if AscendOpPrecisionConf.get_instance().is_matmul_allow_hf32_configured():
+        raise RuntimeError("The 'matmul_allow_hf32' can not be set repeatedly.")
+    AscendOpPrecisionConf.get_instance().set_matmul_allow_hf32(is_enable)
 
 
 def conv_allow_hf32(value):
@@ -156,15 +162,17 @@ def conv_allow_hf32(value):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_context.ascend.op_precision.conv_allow_hf32(true)
+        >>> ms.device_context.ascend.op_precision.conv_allow_hf32(True)
     """
-    # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
-    if AscendOpPrecisionConf.get_instance().is_conv_allow_hf32_configured():
-        raise RuntimeError("The 'conv_allow_hf32' can not be set repeatedly.")
     supported_modes = [True, False]
     if value not in supported_modes:
         raise ValueError(f"For 'conv_allow_hf32', the type of input value must be one of "
                          f"{supported_modes}, but got {value}.")
     is_enable = "1" if value else "0"
-    AscendOpPrecisionConf.get_instance().conv_allow_hf32(is_enable)
+    if is_enable == AscendOpPrecisionConf.get_instance().conv_allow_hf32():
+        return
+    # Check the configuration environment whether valid
+    _check_runtime_conf_env_valid()
+    if AscendOpPrecisionConf.get_instance().is_conv_allow_hf32_configured():
+        raise RuntimeError("The 'conv_allow_hf32' can not be set repeatedly.")
+    AscendOpPrecisionConf.get_instance().set_conv_allow_hf32(is_enable)

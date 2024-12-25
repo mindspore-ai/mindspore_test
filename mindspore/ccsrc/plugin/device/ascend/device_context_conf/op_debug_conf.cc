@@ -63,7 +63,9 @@ void RegOpDebugConf(py::module *m) {
   (void)py::class_<OpDebugConf, std::shared_ptr<OpDebugConf>>(*m, "AscendOpDebugConf")
     .def_static("get_instance", &OpDebugConf::GetInstance, "Get OpDebugConf instance.")
     .def("set_execute_timeout", &OpDebugConf::set_execute_timeout, "Set Execute Timeout.")
+    .def("execute_timeout", &OpDebugConf::execute_timeout, "Get Execute Timeout.")
     .def("set_debug_option", &OpDebugConf::set_debug_option, "Set Debug Option.")
+    .def("debug_option", &OpDebugConf::debug_option, "Get Debug Option.")
     .def("is_execute_timeout_configured", &OpDebugConf::IsExecuteTimeoutConfigured, "Is Execute Timeout Configured.")
     .def("is_debug_option_configured", &OpDebugConf::IsDebugOptionConfigured, "Is Debug Option Configured.");
 }

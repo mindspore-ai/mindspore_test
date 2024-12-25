@@ -7,3 +7,6 @@ mindspore.device_context.ascend.device_count
 
     返回：
         int，可用的Ascend类型的设备数量。
+
+    支持平台：
+        ``Ascend``

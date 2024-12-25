@@ -33,7 +33,7 @@ def matmul_allow_tf32(value):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_count.gpu.op_precision.matmul_allow_tf32(True)
+        >>> ms.device_context.gpu.op_precision.matmul_allow_tf32(True)
     """
     GPUOpPrecisionConf.get_instance().matmul_allow_tf32(value)
 
@@ -49,6 +49,6 @@ def conv_allow_tf32(value):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_count.gpu.op_precision.conv_allow_tf32(False)
+        >>> ms.device_context.gpu.op_precision.conv_allow_tf32(False)
     """
     GPUOpPrecisionConf.get_instance().conv_allow_tf32(value)

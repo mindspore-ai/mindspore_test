@@ -17,10 +17,10 @@ import pytest
 
 from mindspore import ops
 import mindspore as ms
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
-ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
 @test_utils.run_with_cell
 def hswish_forward_func(x):
@@ -47,6 +47,8 @@ def test_hswish_forward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor(np.array([-1, -2, 0, 2, 1]).astype(np.float32))
     expect_out = np.array([-0.33333334, -0.33333334, 0., 1.6666666, 0.6666667])
     out = hswish_forward_func(x)
@@ -63,6 +65,8 @@ def test_hswish_backward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor(np.array([-1, -2, 0, 2, 1]).astype(np.float32))
     expect_out = np.array([0.16666667, -0.16666667, 0.5, 1.1666666, 0.8333333])
     grads = hswish_backward_func(x)
@@ -79,6 +83,8 @@ def test_hswish_vmap(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     in_axes = -1
     x = ms.Tensor(np.array([[[-1, -2, 0, 2, 1]]]).astype(np.float32))
     expect_out = np.array(
@@ -99,6 +105,8 @@ def test_hswish_dynamic(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
     x = ms.Tensor(np.array([[-1, -2, 0, 2, 1]]).astype(np.float32))
     test_cell = test_utils.to_cell_obj(hswish_dyn_shape_func)
@@ -123,6 +131,8 @@ def test_hswish_dynamic_rank(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
     x = ms.Tensor(np.array([[-1, -2, 0, 2, 1]]).astype(np.float32))
     test_cell = test_utils.to_cell_obj(hswish_dyn_shape_func)

@@ -21,6 +21,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, ops
 
 from tests.st.utils import test_utils
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 
 class Net(nn.Cell):
@@ -63,7 +64,9 @@ def test_conv3d_input_5d():
     Description: Verify the result of Conv3d 5d input.
     Expectation: success
     """
-    ms.set_context(mode=ms.GRAPH_MODE, ascend_config={"precision_mode": "force_fp16"})
+    ms.set_context(mode=ms.GRAPH_MODE)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp16")
     class Network(nn.Cell):
         def __init__(self):
             super().__init__()

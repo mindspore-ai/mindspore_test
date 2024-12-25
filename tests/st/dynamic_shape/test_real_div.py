@@ -14,14 +14,13 @@
 # ============================================================================
 import pytest
 import numpy as np
-
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
-ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
 @test_utils.run_with_cell
 def real_div_forward_func(x, y):
@@ -44,6 +43,8 @@ def test_real_div_forward(mode):
     Expectation: output the right result.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([1.0, 2.0, 3.0]).astype(np.float32))
     y = Tensor(np.array([4.0, 5.0, 6.0]).astype(np.float32))
     output = real_div_forward_func(x, y)
@@ -62,6 +63,8 @@ def test_real_div_backward(mode):
     Expectation: output the right grad.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([1.0, 2.0, 3.0]).astype(np.float32))
     y = Tensor(np.array([4.0, 5.0, 6.0]).astype(np.float32))
     dx, dy = real_div_backward_func(x, y)
@@ -82,6 +85,8 @@ def test_real_div_vmap(mode):
     Expectation: expect right result.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([[[1.0, 2.0, 3.0]]]).astype(np.float32))
     y = Tensor(np.array([[[4.0, 5.0, 6.0]]]).astype(np.float32))
     nest_vmap = ops.vmap(ops.vmap(real_div_forward_func, in_axes=(0, 0)), in_axes=(0, 0))
@@ -100,6 +105,8 @@ def test_real_div_dynamic(mode):
     Expectation: output the right result.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = Tensor(shape=None, dtype=ms.float32)
     y_dyn = Tensor(shape=None, dtype=ms.float32)
     test_cell = test_utils.to_cell_obj(ops.RealDiv())

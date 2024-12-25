@@ -30,6 +30,7 @@ from omegaconf import OmegaConf
 import mindspore as ms
 from mindspore.nn.wrap.loss_scale import DynamicLossScaleUpdateCell, FixedLossScaleUpdateCell
 
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 
 workspace = os.path.dirname(os.path.realpath(__file__))
@@ -68,9 +69,10 @@ def init_env(mode=0, debug=False, seed=42):
     ms.set_context(
         mode=mode,
         device_target="Ascend",
-        device_id=device_id,
-        ascend_config={"precision_mode": "allow_fp32_to_fp16"},  # Only effective on Ascend 901B
+        device_id=device_id,  # Only effective on Ascend 901B
     )
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("allow_fp32_to_fp16")
 
     return device_id, rank_id, device_num
 
