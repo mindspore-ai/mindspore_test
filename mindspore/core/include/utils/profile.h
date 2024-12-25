@@ -271,7 +271,8 @@ class MsProfileStatGuard {
     }
     auto end = GetTime();
     if (EnabledVlog(vlog_)) {
-      DisplayVlog(state_name_, phase_name_, (end - start_) * 1000);
+      constexpr int time_convert_unit = 1000;
+      DisplayVlog(state_name_, phase_name_, (end - start_) * time_convert_unit);
     }
     if (EnabledProfile()) {
       MsProfile::StatTime(state_name_, end - start_);
