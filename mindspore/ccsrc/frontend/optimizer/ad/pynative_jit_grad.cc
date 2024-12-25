@@ -38,7 +38,10 @@ mindspore::HashMap<std::string, FuncGraphPtr> pass_grad_graph_valuenode_;
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
 
 namespace {
-static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {prim::kPrimStopGradient, prim::kPrimUpdateState};
+static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
+  prim::kPrimStopGradient,     prim::kPrimUpdateState, prim::kPrimMirror,
+  prim::kPrimVirtualDiv,       prim::kPrimMutable,     prim::kPrimConvertToAdapterTensor,
+  prim::kPrimConvertToMsTensor};
 
 // Optimizes the forward function graph.
 FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool need_renormalize = false) {
@@ -62,6 +65,7 @@ FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool nee
     manager->AddFuncGraph(new_fg);
   }
   (void)mindspore::opt::RewriterAfterOptA(resource->func_graph(), resource);
+  (void)EliminateSpecialOpOptPass(resource);
   return resource->func_graph();
 }
 
