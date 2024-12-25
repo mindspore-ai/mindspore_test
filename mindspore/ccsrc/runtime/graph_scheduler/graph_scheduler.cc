@@ -1392,7 +1392,6 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
   if (EnableInputOptimize()) {
     BuildGraphParameterStore(graph_compiler_info);
     actor_set->data_prepare_actor_ = BuildDataPrepareActorForGraphParameterStore(graph_compiler_info);
-
   } else {
     auto host_queue = std::make_shared<HostTensorQueue>();
     actor_set->data_source_actors_ = BuildDataSourceActor(graph_compiler_info, host_queue);
@@ -2932,7 +2931,6 @@ void GraphScheduler::LinkDataArrowForBaseActor(AbstractActor *const from_actor, 
 
   auto is_need_copy =
     IsNeedInsertCopyActor(from_actor, to_actor, from_kernel_with_output_idx, to_kernel_with_input_idx);
-
   if (is_need_copy) {
     LinkDataArrowForCopyActor(from_actor, to_actor, from_kernel_with_output_idx, to_kernel_with_input_idx);
   } else {
@@ -3800,6 +3798,36 @@ bool RecordInfoForAutoManadActor(const AnfNodePtr &auto_monad_device_tensor_stor
   return true;
 }
 
+void GraphScheduler::CorrectControlArrowForAutoMonadActor(AbstractActor *const auto_monad_actor,
+                                                          const AbstractActorPtr &copy_actor) {
+  std::vector<AbstractActor *> output_contorl_actors;
+  for (auto &output_contorl : auto_monad_actor->output_control_arrows_) {
+    MS_EXCEPTION_IF_NULL(output_contorl);
+    (void)output_contorl_actors.emplace_back(FetchActor(output_contorl->to_op_id_.Name()));
+  }
+  // Move the control arrows from auto monad actor to auto monad actor users.
+  auto_monad_actor->output_control_arrows_.clear();
+  for (auto &output_contorl_actor : output_contorl_actors) {
+    MS_EXCEPTION_IF_NULL(output_contorl_actor);
+    for (auto iter = output_contorl_actor->input_control_arrow_aids_.begin();
+         iter != output_contorl_actor->input_control_arrow_aids_.end();) {
+      if ((*iter).first.Name() == auto_monad_actor->GetAID().Name()) {
+        iter = output_contorl_actor->input_control_arrow_aids_.erase(iter);
+        output_contorl_actor->input_controls_num_--;
+      } else {
+        ++iter;
+      }
+    }
+  }
+
+  // Link from auto monad actor to copy actor.
+  SchedulerHelper::AddControlArrow(auto_monad_actor, copy_actor.get());
+  // Link from copy actor to auto monad actor users.
+  for (auto &output_contorl_actor : output_contorl_actors) {
+    SchedulerHelper::AddControlArrow(copy_actor.get(), output_contorl_actor);
+  }
+}
+
 void GraphScheduler::LinkDeviceTensorStoreForAutoMonadActor(const std::vector<AbstractActor *> &auto_monad_actors,
                                                             const GraphCompilerInfo &graph_compiler_info) {
   const size_t kNeedUpdateDeviceTensorStoreNum = 2;
@@ -3866,32 +3894,7 @@ void GraphScheduler::LinkDeviceTensorStoreForAutoMonadActor(const std::vector<Ab
       MS_LOG(INFO) << "The auto monad actor:" << auto_monad_actor->GetAID().Name()
                    << " has control arrows number:" << auto_monad_actor->output_control_arrows_.size()
                    << ", add the copy actor for store:" << auto_monad_device_tensor_store->fullname_with_scope();
-      std::vector<AbstractActor *> output_contorl_actors;
-      for (auto &output_contorl : auto_monad_actor->output_control_arrows_) {
-        MS_EXCEPTION_IF_NULL(output_contorl);
-        (void)output_contorl_actors.emplace_back(FetchActor(output_contorl->to_op_id_.Name()));
-      }
-      // Move the control arrows from auto monad actor to auto monad actor users.
-      auto_monad_actor->output_control_arrows_.clear();
-      for (auto &output_contorl_actor : output_contorl_actors) {
-        MS_EXCEPTION_IF_NULL(output_contorl_actor);
-        for (auto iter = output_contorl_actor->input_control_arrow_aids_.begin();
-             iter != output_contorl_actor->input_control_arrow_aids_.end();) {
-          if ((*iter).first.Name() == auto_monad_actor->GetAID().Name()) {
-            iter = output_contorl_actor->input_control_arrow_aids_.erase(iter);
-            output_contorl_actor->input_controls_num_--;
-          } else {
-            ++iter;
-          }
-        }
-      }
-
-      // Link from auto monad actor to copy actor.
-      SchedulerHelper::AddControlArrow(auto_monad_actor, copy_actor.get());
-      // Link from copy actor to auto monad actor users.
-      for (auto &output_contorl_actor : output_contorl_actors) {
-        SchedulerHelper::AddControlArrow(copy_actor.get(), output_contorl_actor);
-      }
+      CorrectControlArrowForAutoMonadActor(auto_monad_actor, copy_actor);
     }
   }
 }

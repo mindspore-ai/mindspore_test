@@ -236,6 +236,7 @@ class BACKEND_EXPORT GraphScheduler {
   void LinkKernelActorsForSubGraphExecute(const ActorSet *actor_set) const;
 
   void LinkControlArrowForNoInputArrowActor(const ActorSet *actor_set);
+  void CorrectControlArrowForAutoMonadActor(AbstractActor *const auto_monad_actor, const AbstractActorPtr &copy_actor);
 
   // Persist device tensors of graph's some nodes(such as weights and value nodes).
   void PersistDeviceTensor(const GraphCompilerInfo &graph_compiler_info) const;
