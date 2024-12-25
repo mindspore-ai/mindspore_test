@@ -76,7 +76,7 @@ def test_llama2_dp4mp4pp1op_recompute():
 
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.environ['MS_DEV_ENABLE_VIEW_OP'] = "1"
+    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name}")
     check_pair = {"Training Over": 1}
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
@@ -93,6 +93,7 @@ def test_llama2_dp4mp4pp1op_recompute():
         check_log(log_path, check_pair)
         check_peak_memory(log_path, "3972")
         check_compile_time(log_path, 15)
+    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
@@ -454,7 +455,7 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
                               parallel_speed_up_json={'matmul_grad_comm_overlap': 'true'})
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.environ['MS_DEV_ENABLE_VIEW_OP'] = "1"
+    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
     check_pair = {"Training Over": 1}
     # 返回路径 list
@@ -477,6 +478,7 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
                 parm_recompute_graph_check_pairs)
     check_peak_memory(real_log_path[0], '8200')
     check_peak_memory(real_log_path[1], '9800')
+    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
@@ -809,7 +811,7 @@ def test_llama2_dp4mp4pp1op_recompute_2():
                               recompute=True)
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.environ['MS_DEV_ENABLE_VIEW_OP'] = "1"
+    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name}")
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     graph_path = real_graph_path[0]
@@ -845,6 +847,7 @@ def test_llama2_dp4mp4pp1op_recompute_2():
         check_log(log_path, check_pair)
     check_peak_memory(log_path, "4100")
     check_compile_time(log_path, 15)
+    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')

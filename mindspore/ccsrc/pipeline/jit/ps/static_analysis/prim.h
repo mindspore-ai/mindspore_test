@@ -63,6 +63,7 @@ class PrimitiveFunctionEvaluator final : public TrivialPrimEvaluator {
 
  private:
   AbstractBasePtr CheckAndInfer(const AbstractBasePtrList &args);
+  AbstractBasePtr ProcessViewInplaceAbstract(const AbstractBasePtrList &args, const AbstractBasePtr &res);
   void CheckArgsSizeAndType(const AbstractBasePtrList &args);
   PrimitivePtr prim_func_;
   mindspore::ops::OpDefPtr op_def_{nullptr};

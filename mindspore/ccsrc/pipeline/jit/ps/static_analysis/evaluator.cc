@@ -672,8 +672,11 @@ EvalResultPtr Evaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args
       }
     }
     for (size_t i = 0; i < args_abs_list.size(); ++i) {
-      if (iter->first[i] != nullptr && iter->first[i]->inplace_abstract() != nullptr && args_abs_list[i] != nullptr) {
-        args_abs_list[i]->set_inplace_abstract(iter->first[i]->inplace_abstract());
+      // Update inputs inplace abstract.
+      const auto &old_arg = iter->first[i];
+      const auto &new_arg = args_abs_list[i];
+      if (old_arg != nullptr && old_arg->inplace_abstract() != nullptr && new_arg != nullptr) {
+        new_arg->set_inplace_abstract(old_arg->inplace_abstract());
       }
     }
   }
