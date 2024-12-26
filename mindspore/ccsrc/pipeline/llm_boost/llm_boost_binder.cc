@@ -112,7 +112,6 @@ int64_t LlmBoostBinder::InitModel(const pybind11::dict &dict) {
     data.kv_head_num = data.num_heads;
   }
   impl_ = builder_->BuildModel(model_name_);
-
   if (impl_ == nullptr) {
     MS_LOG(ERROR) << "LlmBoostBinder::InitModel: boost is not initialized properly";
     return -1;
