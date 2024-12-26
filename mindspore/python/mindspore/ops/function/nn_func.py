@@ -2783,9 +2783,9 @@ def interpolate_ext(input,
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
+        >>> from mindspore import Tensor, ops
         >>> input = Tensor([[[1, 2, 3], [4, 5, 6]]], mindspore.float32)
-        >>> output = mint.interpolate(input, size=(6,), mode='nearest')
+        >>> output = ops.interpolate_ext(input, size=(6,), mode='nearest')
         >>> print(output)
         [[[1. 1. 2. 2. 3. 3.]
           [4. 4. 5. 5. 6. 6.]]]
