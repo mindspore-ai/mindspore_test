@@ -2,6 +2,7 @@ mindspore.ops
 ==============
 
 mindspore.ops provides a large number of function interfaces, including neural network functions, mathematical operation functions, Tensor operation functions, Parameter operation functions, differential functions and so on.
+
 For more information about dynamic shape support status, please refer to `Dynamic Shape Support Status of ops Interface <https://mindspore.cn/docs/en/master/api_python/dynamic_shape_func.html>`_ .
 
 The module import method is as follows:
