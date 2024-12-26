@@ -466,6 +466,53 @@ abstract::AbstractBasePtrList HyperMap::NormalizeArgs(const AbstractBasePtrList 
   return broadened;
 }
 
+FuncGraphPtr PrintGradient::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  size_t inputs_size = args_abs_list.size();
+  std::ostringstream ss;
+  // ▶print_
+  ss << "\u25B8print_" << inputs_size;
+  FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  if (fg->debug_info() != nullptr) {
+    fg->debug_info()->set_name(ss.str());
+  }
+
+  std::vector<AnfNodePtr> params;
+  params.push_back(NewValueNode(prim::kPrimPrint));
+  for (size_t i = 0; i < inputs_size; ++i) {
+    params.push_back(fg->add_parameter());
+  }
+
+  // Make fprop first result, Print's forward result.
+  AnfNodePtr out = fg->NewCNodeInOrder(params);
+
+  // Make fprop second result, Print's backward function.
+  FuncGraphPtr bprop = std::make_shared<FuncGraph>();
+
+  ss.str(std::string());
+  ss.clear();
+  // ◀print_
+  ss << "\u25C2print_" << inputs_size;
+  if (bprop->debug_info() != nullptr) {
+    bprop->debug_info()->set_name(ss.str());
+  }
+  (void)bprop->add_parameter();
+
+  std::vector<AnfNodePtr> grads;
+  grads.push_back(NewValueNode(prim::kPrimMakeTuple));
+  grads.push_back(NewEnviron(bprop));
+  std::transform(params.begin() + 1, params.end(), std::back_inserter(grads), [&bprop](const auto &param) {
+    return bprop->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), param});
+  });
+
+  bprop->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  bprop->set_output(bprop->NewCNodeInOrder(grads));
+
+  fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  fg->set_output(fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), out, NewValueNode(bprop)}));
+  (void)fg->transforms().emplace("primal", FuncGraphTransform(prim::kPrimPrint));
+  return fg;
+}
+
 FuncGraphPtr MakeTupleGradient::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   int64_t tuple_size = SizeToLong(args_abs_list.size());
 

@@ -98,6 +98,14 @@ void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const Fun
     }
   }
 }
+
+bool StopGradientForUpdateState(const CNodePtr &cnode) {
+  if (!cnode->IsApply(prim::kPrimUpdateState)) {
+    return false;
+  }
+  static const bool enable_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "1");
+  return !enable_view_op;
+}
 }  // namespace
 
 DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top)
@@ -678,8 +686,7 @@ AnfNodePtr DFunctor::MapPrimitiveToK(const CNodePtr &primitive_user, size_t inde
   auto value_node = primal->cast<ValueNodePtr>();
   auto prim = GetValueNode<PrimitivePtr>(value_node);
   if ((prim->Hash() == prim::kPrimStopGradient->Hash() && prim->name() == prim::kPrimStopGradient->name()) ||
-      (prim->Hash() == prim::kPrimUpdateState->Hash() && prim->name() == prim::kPrimUpdateState->name()) ||
-      StopGradientForScalar(primitive_user)) {
+      StopGradientForUpdateState(primitive_user) || StopGradientForScalar(primitive_user)) {
     MS_LOG(DEBUG) << "Should stop gradient for " << prim->ToString();
     need_cut_ = true;
   }
@@ -935,7 +942,7 @@ void DFunctor::BroadCastStopFlag() {
       auto cnode = dyn_cast<CNode>(node);
       if (cnode != nullptr && !cnode->stop_gradient()) {
         // Cut off the cnode only when it's not referred any more
-        if (cnode->IsApply(prim::kPrimStopGradient) || cnode->IsApply(prim::kPrimUpdateState) ||
+        if (cnode->IsApply(prim::kPrimStopGradient) || StopGradientForUpdateState(cnode) ||
             AllReferencesStopped(cnode) || StopGradientForScalar(cnode) || cnode->IsApply(prim::kPrimPyExecute)) {
           MS_LOG(DEBUG) << "Set stop gradient flag for " << cnode->ToString() << ".";
           cnode->set_stop_gradient(true);

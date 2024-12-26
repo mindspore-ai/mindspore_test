@@ -288,21 +288,21 @@ def test_same_primal_used_by_multi_j():
 def test_same_primal_used_by_multi_j_with_monad1():
     context.set_context(mode=context.GRAPH_MODE)
 
-    class AdamNet(nn.Cell):
+    class PrintNet(nn.Cell):
         def __init__(self, var, m, v):
-            super(AdamNet, self).__init__()
-            self.apply_adam = P.Adam()
+            super(PrintNet, self).__init__()
+            self.print = P.Print()
             self.var = Parameter(var, name="var")
             self.m = Parameter(m, name="m")
             self.v = Parameter(v, name="v")
 
         def construct(self, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad):
-            self.apply_adam(self.var, self.m, self.v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
+            self.print(self.var, self.m, self.v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
             return self.var
 
-    class AdamGradNet(nn.Cell):
+    class PrintGradNet(nn.Cell):
         def __init__(self, network):
-            super(AdamGradNet, self).__init__()
+            super(PrintGradNet, self).__init__()
             self.grad_fn = ops.GradOperation(sens_param=True)
             self.sens = [Tensor(np.ones([3, 3, 3]).astype(np.float32)), Tensor(np.ones([3, 3, 3]).astype(np.float32))]
             self.network = network
@@ -323,29 +323,29 @@ def test_same_primal_used_by_multi_j_with_monad1():
     beta2 = Tensor(np.array([0.999], dtype=np.float32))
     epsilon = Tensor(np.array([1e-8], dtype=np.float32))
     grad = Tensor(np.random.rand(3, 3, 3).astype(np.float32))
-    net = AdamNet(var, m, v)
-    grad_net = AdamGradNet(net)
+    net = PrintNet(var, m, v)
+    grad_net = PrintGradNet(net)
     grad_net(beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
 
 
 def test_same_primal_used_by_multi_j_with_monad2():
     context.set_context(mode=context.GRAPH_MODE)
 
-    class AdamNet(nn.Cell):
+    class PrintNet(nn.Cell):
         def __init__(self, var, m, v):
-            super(AdamNet, self).__init__()
-            self.apply_adam = P.Adam()
+            super(PrintNet, self).__init__()
+            self.print = P.Print()
             self.var = Parameter(var, name="var")
             self.m = Parameter(m, name="m")
             self.v = Parameter(v, name="v")
 
         def construct(self, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad):
-            self.apply_adam(self.var, self.m, self.v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
+            self.print(self.var, self.m, self.v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
             return self.var
 
-    class AdamGradNet(nn.Cell):
+    class PrintGradNet(nn.Cell):
         def __init__(self, network):
-            super(AdamGradNet, self).__init__()
+            super(PrintGradNet, self).__init__()
             self.grad = ops.GradOperation(sens_param=True)
             self.sens = [Tensor(np.ones([3, 3, 3]).astype(np.float32)), Tensor(np.ones([3, 3, 3]).astype(np.float32))]
             self.network = network
@@ -367,8 +367,8 @@ def test_same_primal_used_by_multi_j_with_monad2():
     beta2 = Tensor(np.array([0.999], dtype=np.float32))
     epsilon = Tensor(np.array([1e-8], dtype=np.float32))
     grad = Tensor(np.random.rand(3, 3, 3).astype(np.float32))
-    net = AdamNet(var, m, v)
-    grad_net = AdamGradNet(net)
+    net = PrintNet(var, m, v)
+    grad_net = PrintGradNet(net)
     grad_net(beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
 
 
@@ -890,6 +890,7 @@ def test_multiple_second_grad_with_same_forward():
     Expectation: Compile successfully
     """
 
+    # pylint: disable=E1102
     @jit
     def f(x):
         return ops.relu(x)

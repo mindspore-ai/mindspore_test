@@ -49,6 +49,8 @@ KPrim g_k_prims;
 
 namespace {
 constexpr char kLiftedUserDataKey[] = "lifted_from_fv";
+constexpr char kUMonadInOutput[] = "u_monad_in_output";
+constexpr char kIOMonadInOutput[] = "io_monad_in_output";
 
 FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resources, const CNodePtr &cnode) {
   // Set a child scope named "grad'PrimitiveName'" for the bprop function,
@@ -163,6 +165,12 @@ MetaFuncGraphPtr KPrim::KMetaFuncGraph(const PrimitivePtr &prim, const AnfNodePt
     return meta;
   }
 
+  if (IsPrimitiveEquals(prim, prim::kPrimPrint)) {
+    MetaFuncGraphPtr meta = std::make_shared<prim::PrintGradient>("PrintGradient");
+    bprop_registry_meta_[prim::kPrimPrint] = meta;
+    return meta;
+  }
+
   MS_LOG_WITH_NODE(EXCEPTION, node) << "Fail to find bprop function for " << prim->name() << ".";
 }
 
@@ -183,15 +191,13 @@ static void AppendMonadOutput(const FuncGraphPtr &bprop_fg, const AnfNodePtr &mo
   const auto &output = bprop_fg->output();
   MS_EXCEPTION_IF_NULL(output);
   auto output_cnode = output->cast<CNodePtr>();
-  constexpr char u_monad_in_output[] = "u_monad_in_output";
-  constexpr char io_monad_in_output[] = "io_monad_in_output";
   if (output_cnode != nullptr) {
-    if (HasAbstractUMonad(monad) && !bprop_fg->has_flag(u_monad_in_output)) {
+    if (HasAbstractUMonad(monad) && !bprop_fg->has_flag(kUMonadInOutput)) {
       AddMonad(bprop_fg, output_cnode, monad);
-      bprop_fg->set_flag(u_monad_in_output, true);
-    } else if (HasAbstractIOMonad(monad) && !bprop_fg->has_flag(io_monad_in_output)) {
+      bprop_fg->set_flag(kUMonadInOutput, true);
+    } else if (HasAbstractIOMonad(monad) && !bprop_fg->has_flag(kIOMonadInOutput)) {
       AddMonad(bprop_fg, output_cnode, monad);
-      bprop_fg->set_flag(io_monad_in_output, true);
+      bprop_fg->set_flag(kIOMonadInOutput, true);
     }
     return;
   }
@@ -199,9 +205,9 @@ static void AppendMonadOutput(const FuncGraphPtr &bprop_fg, const AnfNodePtr &mo
   auto make_tuple = NewValueNode(prim::kPrimMakeTuple);
   output_cnode = bprop_fg->NewCNode({make_tuple, monad});
   if (HasAbstractUMonad(monad)) {
-    bprop_fg->set_flag(u_monad_in_output, true);
+    bprop_fg->set_flag(kUMonadInOutput, true);
   } else if (HasAbstractIOMonad(monad)) {
-    bprop_fg->set_flag(io_monad_in_output, true);
+    bprop_fg->set_flag(kIOMonadInOutput, true);
   }
   bprop_fg->set_output(output_cnode);
 }
@@ -264,7 +270,8 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
     fprop->transforms().emplace("primal", FuncGraphTransform(prim::kPrimSwitchLayer));
     return fprop;
   } else if (IsPrimitiveEquals(prim, prim::kPrimMakeTuple) || IsPrimitiveEquals(prim, prim::kPrimMakeList) ||
-             IsPrimitiveEquals(prim, prim::kPrimMakeDict) || IsPrimitiveEquals(prim, prim::kPrimMutable)) {
+             IsPrimitiveEquals(prim, prim::kPrimMakeDict) || IsPrimitiveEquals(prim, prim::kPrimMutable) ||
+             IsPrimitiveEquals(prim, prim::kPrimPrint)) {
     // Return null to use Meta bprop.
     return nullptr;
   }
@@ -521,6 +528,12 @@ void KPrim::CheckBprop(const FuncGraphPtr &bprop_fg, const string &prim_to_check
   constexpr int brprop_offset_size = 2;
   (void)inputs.insert(inputs.cbegin() + primitive_size, bprop_fg->parameters().cbegin(),
                       bprop_fg->parameters().cend() - brprop_offset_size);
+  if (bprop_fg->has_flag(kUMonadInOutput)) {
+    (void)inputs.emplace_back(NewValueNode(kUMonad));
+  }
+  if (bprop_fg->has_flag(kIOMonadInOutput)) {
+    (void)inputs.emplace_back(NewValueNode(kIOMonad));
+  }
   AnfNodePtr params = bprop_fg->NewCNode(inputs);
 
   inputs.clear();
