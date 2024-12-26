@@ -5,6 +5,7 @@ transpose:
       dtype: tensor
     axes:
       dtype: tuple[int]
+      default: ()
   returns:
     output:
       dtype: tensor
