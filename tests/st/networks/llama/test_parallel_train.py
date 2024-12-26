@@ -49,7 +49,7 @@ def test_train():
     os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"source {sh_path}/env.sh")
-    commands = [(f"export MS_DEV_P2P_HCCL_BUFFSIZE=24 && export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
+    commands = [(f"export GLOG_v=1 && export MS_DEV_P2P_HCCL_BUFFSIZE=24 && export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
                  f"bash {sh_path}/msrun_launch_llama.sh 4 test_train 8128",
                  f"{sh_path}/test_train/worker_0.log"),
                 (f"export ASCEND_RT_VISIBLE_DEVICES=4,5 && "
