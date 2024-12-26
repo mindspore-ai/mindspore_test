@@ -36,7 +36,8 @@ def test_all_gather_matmul_forward():
     with pytest.raises(RuntimeError) as err:
         Net()(x, y, 0)
         _pynative_executor.sync()
-    assert "Sync stream failed" in str(err.value)
+    assert (("SyncStream failed" in str(err.value)) or ("Sync Stream failed" in str(err.value))
+            or ("Sync stream failed" in str(err.value)))
 
 
 @arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="onecard", essential_mark="essential")
