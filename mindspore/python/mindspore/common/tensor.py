@@ -3578,7 +3578,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> input_x = Tensor(np.ones([2,2]), mindspore.float32)
             >>> output = input_x.byte()
             >>> print(output.dtype)
-            uint8
+            UInt8
         """
         return self.to(mstype.uint8)
 
