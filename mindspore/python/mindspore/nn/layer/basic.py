@@ -584,9 +584,6 @@ class Identity(Cell):
     r"""
     A placeholder identity operator that returns the same as input.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         args (Any): Any argument.
         kwargs (Any): Any keyword argument.
