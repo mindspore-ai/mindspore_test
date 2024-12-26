@@ -2229,6 +2229,7 @@ def squeeze(input, axis=None):
         - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
           and there is no Tensor data copy process.
         - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
+        - In GE mode, only support remove dimensions of size 1 from the shape of input tensor.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
