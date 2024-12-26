@@ -5,6 +5,9 @@ mindspore.ops.isposinf
 
     逐元素判断是否是正inf。
 
+    .. warning::
+        该API目前只支持在Atlas A2训练系列产品上使用。
+
     参数：
         - **input** (Tensor) - 输入Tensor。
 
