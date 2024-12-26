@@ -1976,6 +1976,9 @@ bool AnfAlgo::HasMonadInput(const AnfNodePtr &node) {
 
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
+  if (HasNodeAttr("graph_kernel", cnode) && HasNodeAttr("side_effect_mem", cnode)) {
+    return true;
+  }
   const auto &inputs = cnode->inputs();
   for (const auto &input : inputs) {
     MS_EXCEPTION_IF_NULL(input);
