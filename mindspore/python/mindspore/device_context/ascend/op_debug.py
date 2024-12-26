@@ -22,6 +22,7 @@ try:
 except ImportError:
     pass
 
+
 @args_type_check(op_timeout=int)
 def execute_timeout(op_timeout):
     """
