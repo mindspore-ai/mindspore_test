@@ -158,7 +158,8 @@ std::map<std::string, std::vector<CNodePtr>> CollectCommOps(const FuncGraphPtr &
 }
 int GetHcclBuffsizeFromEnv(const std::string &env_name) {
   std::string hccl_buffer_size_env = common::GetEnv(env_name);
-  int hccl_buffer_size = 200;
+  const int DEFAULT_HCCL_BUFFER_SIZE = 200;
+  int hccl_buffer_size = DEFAULT_HCCL_BUFFER_SIZE;
   if (!hccl_buffer_size_env.empty()) {
     MS_LOG(INFO) << "The value of " << env_name << " is: " << hccl_buffer_size_env;
     try {
@@ -183,9 +184,10 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
     return;
   }
   for (auto group_name : init_order) {
-    size_t init_hccl_buffsize = default_size;
+    size_t init_hccl_buffsize = static_cast<size_t>(default_size);
     if (comm_ops_group[group_name].size() == 0) {
-      init_hccl_buffsize = 200;
+      const int DEFAULT_HCCL_BUFFER_SIZE = 200;
+      init_hccl_buffsize = DEFAULT_HCCL_BUFFER_SIZE;
       MS_LOG(INFO) << "There are no communication ops in the group: " << group_name
                    << ", HCCL_BUFFSIZE: " << init_hccl_buffsize << " MB.";
     } else {
@@ -217,12 +219,11 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
           }
         }
         auto node_name = AnfUtils::GetCNodeName(comm_node);
-        if (p2p_size < 0 || (node_name != "Send" && node_name != "Receive")) {
-          is_p2p = false;
-        }
+        bool is_invalid_p2p = (p2p_size < 0 || (node_name != "Send" && node_name != "Receive"));
+        is_p2p = !is_invalid_p2p;
         std::regex all2all("all2all", std::regex_constants::icase);
         if (all2all_size > 0 && std::regex_search(node_name, all2all)) {
-          init_hccl_buffsize = all2all_size;
+          init_hccl_buffsize = static_cast<size_t>(all2all_size);
           env_name = "MS_DEV_ALL2ALL_HCCL_BUFFSIZE";
         }
       }
@@ -231,7 +232,7 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
         MS_LOG(INFO) << "In group: " << group_name << ", the max communication size is " << max_size_mb << " MB.";
       }
       if (is_p2p) {
-        init_hccl_buffsize = p2p_size;
+        init_hccl_buffsize = static_cast<size_t>(p2p_size);
         env_name = "MS_DEV_P2P_HCCL_BUFFSIZE";
       }
       MS_LOG(INFO) << "For group: " << group_name << ", the hccl_buffsize is inited by " << env_name

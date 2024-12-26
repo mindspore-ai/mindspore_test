@@ -21,6 +21,7 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_compl
 from multiprocessing import cpu_count
 from typing import List, Dict, Union, Optional
 import sys
+import mindspore.log as logger
 
 # Set Recursion Depth Limit
 sys.setrecursionlimit(10000)
@@ -180,9 +181,9 @@ class RankFolderParser:
                     if path_result:
                         self.result_map.update(path_result)
                 except FileNotFoundError as e:
-                    print(f"File not found: {e}. Please ensure all required files are present.")
+                    logger.error(f"File not found: {e}. Please ensure all required files are present.")
                 except ValueError as e:
-                    print(f"Value error: {e}. Please check the file contents or paths.")
+                    logger.error(f"Value error: {e}. Please check the file contents or paths.")
 
         return self.result_map
 
@@ -223,9 +224,10 @@ class RankFolderParser:
                     if execute_orders:
                         result[rank_id] = execute_orders
                 except FileNotFoundError as e:
-                    print(f"File not found during parallel processing: {e}. Ensure the required files are present.")
+                    logger.error(f"File not found during parallel processing: {e}. "
+                                 f"Ensure the required files are present.")
                 except ValueError as e:
-                    print(f"Value error during parallel processing: {e}. Check file format or contents.")
+                    logger.error(f"Value error during parallel processing: {e}. Check file format or contents.")
 
         return result
 
@@ -236,7 +238,7 @@ class RankFolderParser:
         execute_order_file = os.path.join(rank_folder_path, "comm_execute_order.csv")
 
         if not os.path.exists(execute_order_file):
-            print(
+            logger.error(
                 f"No execute_order.csv found in {rank_folder_path}. Skipping this folder. "
                 f"Ensure the rank_{rank_id} folder contains a valid comm_execute_order.csv file."
             )
@@ -250,7 +252,7 @@ class RankFolderParser:
 
                 # Validate the header
                 if csv_reader.fieldnames != self.REQUIRED_COLUMNS:
-                    print(
+                    logger.error(
                         f"Invalid header in {execute_order_file}. Skipping this file. "
                         f"Expected columns: {self.REQUIRED_COLUMNS}. "
                         f"Ensure the file contains the correct column names."
@@ -273,7 +275,7 @@ class RankFolderParser:
                     )
                     execute_orders.append(execute_order)
         except FileNotFoundError as e:
-            print(f"File not found: {execute_order_file}. Ensure the file exists and is accessible. Error: {e}")
+            logger.error(f"File not found: {execute_order_file}. Ensure the file exists and is accessible. Error: {e}")
             return rank_id, None
 
         return rank_id, execute_orders
@@ -340,7 +342,7 @@ def parse_and_validate(data: dict, all_rank: bool = True):
                           in the dictionary. If False, only checks intersections.
 
      Returns:
-         None: Prints error messages to the console if validation fails, otherwise completes silently.
+         None: Log error messages to the console if validation fails, otherwise completes silently.
 
      Raises:
          ValueError: Raised indirectly if `parse_elements` encounters malformed input strings.
@@ -354,7 +356,7 @@ def parse_and_validate(data: dict, all_rank: bool = True):
         return {item.strip() for group in limited_groups for item in group.split(',')}
 
     if not isinstance(data, dict):
-        print("ERROR: Input must be a dictionary with string keys and lists of strings as values.")
+        logger.error("Input must be a dictionary with string keys and lists of strings as values.")
         return
 
     key_to_values = {key: set(values) for key, values in data.items() if
@@ -362,27 +364,27 @@ def parse_and_validate(data: dict, all_rank: bool = True):
 
     for key, values in data.items():
         if not isinstance(values, list) or not all(isinstance(v, str) for v in values):
-            print(f"ERROR: Values for key '{key}' must be a list of strings.")
+            logger.error(f"Values for key '{key}' must be a list of strings.")
             continue
 
         for value in values:
             try:
                 elements = parse_elements(value)
             except (ValueError, TypeError, AttributeError) as e:
-                print(f"ERROR: Unable to parse elements from value '{value}' in key '{key}'. Error: {e}")
+                logger.error(f"Unable to parse elements from value '{value}' in key '{key}'. Error: {e}")
                 continue
 
             # Check for missing keys if all_rank is True
             if all_rank:
                 missing_keys = elements - key_to_values.keys()
                 if missing_keys:
-                    print(f"ERROR: The following keys are missing for value '{value}': {missing_keys}")
+                    logger.error(f"The following keys are missing for value '{value}': {missing_keys}")
                     continue
 
             # Check if the value is present in the referenced keys
             for element in elements & key_to_values.keys() if not all_rank else elements:
                 if value not in key_to_values[element]:
-                    print(f"ERROR: Key '{element}' is missing the value '{value}'.")
+                    logger.error(f"Key '{element}' is missing the value '{value}'.")
 
 
 def detect_cycle_in_graph(ranks_map):
@@ -483,13 +485,13 @@ def output_cycle_results(cycle_path, cycle_ranks):
         None: Outputs results to the console.
     """
     if cycle_path:
-        print("Cycle detected:")
-        print(" -> ".join(cycle_path) + f" -> {cycle_path[0]}")  # Close the cycle
-        print("Involving ranks:")
+        logger.warning("Cycle detected:")
+        logger.warning(" -> ".join(cycle_path) + f" -> {cycle_path[0]}")  # Close the cycle
+        logger.warning("Involving ranks:")
         for rank in cycle_ranks:
-            print(rank)
+            logger.warning(rank)
     else:
-        print("Check success.")
+        logger.warning("Check success.")
 
 
 def runtime_execution_order_check(folders_, all_rank=None):
@@ -528,7 +530,7 @@ def runtime_execution_order_check(folders_, all_rank=None):
         all_rank = determine_all_rank(folders_)
 
     if all_rank is None:  # Input validation failed
-        print("ERROR: Invalid input. `folders_` must be a non-empty string or a list with at least one string element.")
+        logger.error("Invalid input. `folders_` must be a non-empty string or a list with at least one string element.")
         return
 
     # Parse folders

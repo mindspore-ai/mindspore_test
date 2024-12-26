@@ -198,7 +198,6 @@ CNodePtr CreateReshapeCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &in
   // Calculate the total number of elements in the input shape and target shape.
   auto from_elements = std::accumulate(from_shape.begin(), from_shape.end(), int64_t{1}, std::multiplies<int64_t>());
   auto to_elements = std::accumulate(to_shape.begin(), to_shape.end(), int64_t{1}, std::multiplies<int64_t>());
-
   // Check whether the total number of elements is consistent.
   if (from_elements != to_elements) {
     MS_LOG(EXCEPTION) << "Failed to insert reshape after " << input_node->fullname_with_scope()
@@ -248,7 +247,6 @@ void PostProcessForOutput(const FuncGraphPtr &func_graph, const CNodePtr &fusion
   MS_EXCEPTION_IF_NULL(output_cnode);
   auto cur_shape = common::AnfAlgo::GetOutputInferShape(output_cnode, kIndex0);
   auto ori_shape = common::AnfAlgo::GetOutputInferShape(origin_cnode, kIndex0);
-
   if (cur_shape != ori_shape) {
     output_cnode = CreateReshapeCNode(func_graph, output_cnode, ori_shape);
   }
@@ -305,7 +303,7 @@ void AllToAllAllGatherBatchMatMulFusion::SetOutputTypeAndShapeForAllToAllAllGath
     shape_3d_all_gather_last = shape_3d_batch_matmul;
   }
 
-  shape_3d_all_gather_last[2] = all_gather_last_shape[all_gather_last_shape.size() - 1];
+  shape_3d_all_gather_last[kIndex2] = all_gather_last_shape[all_gather_last_shape.size() - 1];
 
   // y2_out: The output of allgather_last.
   if (output_y2_flag) {
@@ -336,12 +334,13 @@ CNodePtr AllToAllAllGatherBatchMatMulFusion::PreProcessAndCreateAllToAllAllGathe
   auto group_ep_attr = GetAttrFromCNodePrimitive(alltoall_cnode_, kAttrGroup);
   MS_CHECK_TRUE_RET(group_ep_attr != nullptr, nullptr);
   auto group_ep = GetValue<std::string>(group_ep_attr);
-  MS_CHECK_TRUE_RET(!group_ep.empty() && group_ep.size() < 128, nullptr);
+  constexpr int64_t kMaxGroupEpAndTpSize = 128;
+  MS_CHECK_TRUE_RET(!group_ep.empty() && group_ep.size() < kMaxGroupEpAndTpSize, nullptr);
 
   auto group_tp_attr = GetAttrFromCNodePrimitive(allgather_cnode_, kAttrGroup);
   MS_CHECK_TRUE_RET(group_tp_attr != nullptr, nullptr);
   auto group_tp = GetValue<std::string>(group_tp_attr);
-  MS_CHECK_TRUE_RET(!group_tp.empty() && group_tp.size() < 128, nullptr);
+  MS_CHECK_TRUE_RET(!group_tp.empty() && group_tp.size() < kMaxGroupEpAndTpSize, nullptr);
 
   MS_CHECK_TRUE_RET(ep_world_size_ == kSplitTwo || ep_world_size_ == kSplitFour || ep_world_size_ == kSplitEight ||
                       ep_world_size_ == kSplitSixteen,
@@ -402,22 +401,29 @@ CNodePtr AllToAllAllGatherBatchMatMulFusion::PreProcessAndCreateAllToAllAllGathe
   auto x_reshape = InsertReshapeCNodeBefore(func_graph, alltoall_allgather_batch_matmul_cnode, expect_x_shape);
   MS_EXCEPTION_IF_NULL(x_reshape);
 
-  MS_CHECK_TRUE_RET(expert_size_ >= 2 && expert_size_ <= 2048, nullptr);
+  constexpr int64_t kMinExpertSize = 2;
+  constexpr int64_t kMaxExpertSize = 2048;
+  MS_CHECK_TRUE_RET(expert_size_ >= kMinExpertSize && expert_size_ <= kMaxExpertSize, nullptr);
   MS_CHECK_TRUE_RET(expert_size_ % ep_world_size_ == 0, nullptr);
-
-  MS_CHECK_TRUE_RET(hidden_size_ >= 1 && hidden_size_ <= 65535, nullptr);
+  constexpr int64_t kMinHiddenSize = 1;
+  constexpr int64_t kMaxHiddenSize = 65535;
+  MS_CHECK_TRUE_RET(hidden_size_ >= kMinHiddenSize && hidden_size_ <= kMaxHiddenSize, nullptr);
 
   ShapeVector origin_weight_shape = common::AnfAlgo::GetOutputInferShape(weight, kIndex0);
   if (origin_weight_shape.size() != kSizeThree) {
     MS_LOG(EXCEPTION) << "The weight shape size is not 3";
   }
 
-  auto first_dim_size = origin_weight_shape[0];
-  MS_CHECK_TRUE_RET(first_dim_size > 0, nullptr);
+  auto first_dim_size = origin_weight_shape[kIndex0];
+  constexpr int64_t kMinDimSize = 1;
+  MS_CHECK_TRUE_RET(first_dim_size >= kMinDimSize, nullptr);
   MS_CHECK_TRUE_RET(expert_size_ % first_dim_size == 0, nullptr);
 
-  auto third_dim_size = origin_weight_shape[2];
-  MS_CHECK_TRUE_RET(third_dim_size >= 1 && third_dim_size <= 65535, nullptr);
+  auto third_dim_size = origin_weight_shape[kIndex2];
+
+  constexpr int64_t kMinThirdDimSize = 1;
+  constexpr int64_t kMaxThirdDimSize = 65535;
+  MS_CHECK_TRUE_RET(third_dim_size >= kMinThirdDimSize && third_dim_size <= kMaxThirdDimSize, nullptr);
 
   SetOutputTypeAndShapeForAllToAllAllGatherBatchMatMul(alltoall_allgather_batch_matmul_cnode, output_y2_flag,
                                                        output_y3_flag);
@@ -471,7 +477,7 @@ bool AllToAllAllGatherBatchMatMulFusion::IsValidAllToAll(const AnfNodePtr &node)
   split_dim_ = GetValue<int64_t>(split_dim_attr);
   concat_dim_ = GetValue<int64_t>(concat_dim_attr);
 
-  if (all_to_all_input_dim < 4) {
+  if (all_to_all_input_dim < kSplitFour) {
     return false;
   }
 
@@ -499,7 +505,7 @@ void AllToAllAllGatherBatchMatMulFusion::InferInputDimByAllToAllCNode() {
   ep_world_size_ = GetValue<int64_t>(GetAttrFromCNodePrimitive(alltoall_cnode_, kAttrSplitCount));
 
   // expert_size_ = input_shape[0] * input_shape[1] * ... * input_shape[-3]
-  expert_size_ = std::accumulate(input_shape.begin(), input_shape.end() - 2, 1, std::multiplies<int64_t>());
+  expert_size_ = std::accumulate(input_shape.begin(), input_shape.end() - kSizeTwo, 1, std::multiplies<int64_t>());
 
   // capacity_size_ = input_shape[-2]
   capacity_size_ = input_shape[input_shape.size() - 2];
@@ -733,7 +739,6 @@ bool AllToAllAllGatherBatchMatMulFusion::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(ms_context);
 
   auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
-
   if (mc2_fusion_level == kMC2NotFusion) {
     MS_LOG(DEBUG) << "MC2 fusion level is 0, not enabling AllToAllAllGatherBatchMatMulFusion.";
     return false;
