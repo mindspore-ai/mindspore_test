@@ -29,6 +29,11 @@ class TransposePythonNet(nn.Cell):
         return x.transpose(axes)
 
 
+class TransposePythonNet1(nn.Cell):
+    def construct(self, x):
+        return x.transpose()
+
+
 class TransposePyboostNet(nn.Cell):
     def construct(self, x, dim0, dim1):
         return x.transpose(dim0, dim1)
@@ -94,6 +99,17 @@ def test_method_transpose_python(mode):
         net(x, axes)
         _pynative_executor.sync()
     assert "perms should all be unique dim" in str(error_info.value)
+
+    net1 = TransposePythonNet1()
+    x = ms.Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
+    output = net1(x)
+    expect_output = np.array([[[1., 7.],
+                               [4., 10.]],
+                              [[2., 8.],
+                               [5., 11.]],
+                              [[3., 9.],
+                               [6., 12.]]], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expect_output)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
