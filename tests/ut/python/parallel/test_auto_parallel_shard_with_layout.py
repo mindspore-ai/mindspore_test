@@ -168,3 +168,28 @@ def test_layout_propagation_with_mixed_strategy():
     in_strategy = "in_strategy: ((8, 1))"
     para = "$predict) = PrimFunc_ReLU"
     check_layout_config(para, file, in_strategy)
+
+def test_layout_propagation_with_mixed_strategy2():
+    """
+    Feature: test layout propagation given a matmul in layout ((2, 4), (4, 2)) and the relu strategy ((8, 2), (2, 1))
+    Description: dev_num is 16.
+    Expectation: compile success, step_parallel_end graph should be the same
+    """
+    case_name = "test_layout_propagation_with_mixed_strategy"
+    ir_graph_path = f"./ir/{case_name}"
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
+                                      device_num=16, global_rank=0)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    set_algo_parameters(fully_use_devices=False)
+    layout = Layout((2, 4, 2), ("dp", "mp", "sp"))
+    in_layout1 = (layout("dp", "mp"), layout("mp", "sp"))
+    in_layout2 = ((8, 2), (2, 1))
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    w1 = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    w2 = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    net = GradWrap(NetWithLoss(NetTwoMatMul(w1, w2, in_layout1, in_layout2)))
+    compile_net(net, x)
+    file = f"{ir_graph_path}/rank_0/step_parallel_end_*"
+    in_strategy = "in_strategy: ((8, 1))"
+    para = "$predict) = PrimFunc_ReLU"
+    check_layout_config(para, file, in_strategy)
