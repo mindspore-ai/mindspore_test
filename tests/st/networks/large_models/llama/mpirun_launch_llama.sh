@@ -22,7 +22,7 @@ CONFIG_FILE=$1
 USE_DEVICE_NUM=$2
 TEST_MODE=$3
 TEST_CASE=$4
-MF_PATH=${BASE_PATH}/../mindformers
+MF_PATH=${BASE_PATH}/../../mindformers
 pip install -r ${MF_PATH}/requirements.txt
 
 export PATH=${ASCEND_HOME_PATH}/latest/tools/profiler/bin:$PATH

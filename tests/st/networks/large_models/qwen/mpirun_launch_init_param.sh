@@ -18,7 +18,7 @@ BASE_PATH=$(cd "$(dirname $0)"; pwd)
 CONFIG_FILE=$1
 USE_DEVICE_NUM=$2
 TEST_MODE=$3
-MF_PATH=${BASE_PATH}/../mindformers
+MF_PATH=${BASE_PATH}/../../mindformers
 pip install -r ${MF_PATH}/requirements.txt
 
 export MS_MEMORY_POOL_RECYCLE=1

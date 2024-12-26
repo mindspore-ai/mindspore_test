@@ -21,7 +21,7 @@ import mindspore as ms
 from mindspore import Callback
 from mindspore.communication import get_rank, get_group_size
 
-workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindformers.core.callback.callback import _get_loss_output
 

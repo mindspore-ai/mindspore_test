@@ -18,12 +18,12 @@ BASE_PATH=$(cd "$(dirname $0)"; pwd)
 CONFIG_FILE=$1
 USE_DEVICE_NUM=$2
 TEST_MODE=$3
-MF_PATH=${BASE_PATH}/../mindformers
+MF_PATH=${BASE_PATH}/../../mindformers
 pip install -r ${MF_PATH}/requirements.txt
 
 export MS_MEMORY_POOL_RECYCLE=1
 
 mpirun --allow-run-as-root -n ${USE_DEVICE_NUM} \
-  python ${BASE_PATH}/infer_baichuan.py \
+  python ${BASE_PATH}/infer_qwen.py \
   --yaml_file ${CONFIG_FILE} \
   --test_mode ${TEST_MODE} >${BASE_PATH}/${TEST_MODE}.log 2>&1
