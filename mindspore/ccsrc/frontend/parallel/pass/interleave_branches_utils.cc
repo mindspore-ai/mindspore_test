@@ -587,20 +587,17 @@ std::vector<BranchInterleaveNodePtr> InterleaveTwoBranch(std::vector<std::vector
   return unoverlapped_nodes;
 }
 
-// Interleave two branches nodes to overlap comm/comp using dynamic programming
-// Return unoverlapped nodes
-std::vector<BranchInterleaveNodePtr> InterleaveTwoBranchDP(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr,
-                                                           std::vector<BranchInterleaveNodePtr> *pre_nodes_ptr,
-                                                           std::vector<BranchInterleaveNodePtr> *cur_nodes_ptr,
-                                                           const FuncGraphPtr &graph) {
+void FillBranchDPTraceMap(std::vector<BranchInterleaveNodePtr> *pre_nodes_ptr,
+                          std::vector<BranchInterleaveNodePtr> *cur_nodes_ptr,
+                          std::vector<std::vector<InterleaveNodeTrace>> *trace_map_ptr) {
   MS_EXCEPTION_IF_NULL(pre_nodes_ptr);
   MS_EXCEPTION_IF_NULL(cur_nodes_ptr);
+  MS_EXCEPTION_IF_NULL(trace_map_ptr);
   auto &pre_nodes = *pre_nodes_ptr;
   auto &cur_nodes = *cur_nodes_ptr;
-  std::vector<BranchInterleaveNodePtr> unoverlapped_nodes;
+  auto &trace_map = *trace_map_ptr;
   std::vector<std::vector<float>> cost_map(pre_nodes.size(), std::vector<float>(cur_nodes.size(), 0.0f));
-  std::vector<std::vector<InterleaveNodeTrace>> trace_map(
-    pre_nodes.size(), std::vector<InterleaveNodeTrace>(cur_nodes.size(), InterleaveNodeTrace::kUp));
+
   for (size_t i = 0; i < pre_nodes.size(); ++i) {
     auto &pre_node = pre_nodes[i];
     for (size_t j = 0; j < cur_nodes.size(); ++j) {
@@ -635,7 +632,23 @@ std::vector<BranchInterleaveNodePtr> InterleaveTwoBranchDP(std::vector<std::vect
       }
     }
   }
+}
 
+// Interleave two branches nodes to overlap comm/comp using dynamic programming
+// Return unoverlapped nodes
+std::vector<BranchInterleaveNodePtr> InterleaveTwoBranchDP(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr,
+                                                           std::vector<BranchInterleaveNodePtr> *pre_nodes_ptr,
+                                                           std::vector<BranchInterleaveNodePtr> *cur_nodes_ptr,
+                                                           const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(pre_nodes_ptr);
+  MS_EXCEPTION_IF_NULL(cur_nodes_ptr);
+  auto &pre_nodes = *pre_nodes_ptr;
+  auto &cur_nodes = *cur_nodes_ptr;
+  std::vector<std::vector<InterleaveNodeTrace>> trace_map(
+    pre_nodes.size(), std::vector<InterleaveNodeTrace>(cur_nodes.size(), InterleaveNodeTrace::kUp));
+  FillBranchDPTraceMap(pre_nodes_ptr, cur_nodes_ptr, &trace_map);
+
+  std::vector<BranchInterleaveNodePtr> unoverlapped_nodes;
   auto pre_index = SizeToLong(pre_nodes.size() - 1);
   auto cur_index = SizeToLong(cur_nodes.size() - 1);
   auto pre_last_index = pre_index;

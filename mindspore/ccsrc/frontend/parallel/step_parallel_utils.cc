@@ -3463,14 +3463,13 @@ LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   CNodePtr return_node = func_graph->get_return();
   MS_EXCEPTION_IF_NULL(return_node);
-  if (return_node->size() < 2) {
+  if (return_node->size() <= 1) {
     MS_LOG_WITH_NODE(EXCEPTION, return_node) << "Failure: " << return_node->DebugString() << " size is smaller than 2";
   }
   auto pre_node_pair = GetRealKernelNode(return_node->input(1), -1, nullptr);
   auto pre_node = pre_node_pair.first;
   MS_EXCEPTION_IF_NULL(pre_node);
   auto pre_cnode = pre_node->cast<CNodePtr>();
-
   if (pre_cnode == nullptr || !IsValueNode<Primitive>(pre_cnode->input(0))) {
     return loss_node_info;
   }
@@ -3583,7 +3582,6 @@ void MarkForwardCNode(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(ret);
   auto all_nodes = TopoSort(ret, SuccDeeperSimple);
   auto graph_set = FindForwardGraphByRootNodes(all_nodes);
-
   if (graph_set.empty()) {
     MS_LOG(INFO) << "Can not find the forward graph, so mark the ops in root graph";
     auto fgs = root->manager()->func_graphs();
