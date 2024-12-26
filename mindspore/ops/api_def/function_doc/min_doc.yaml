@@ -32,7 +32,7 @@ min:
         input (Tensor) - The input tensor, can be any dimension. Set the shape of input tensor as
             :math:`(input_1, input_2, ..., input_N)` , Complex tensor is not supported.
         dim (int): The dimension to reduce.
-        keepdim (bool): Whether to reduce dimension, if ``True`` the output will keep the same dimension as the
+        keepdim (bool, optional): Whether to reduce dimension, if ``True`` the output will keep the same dimension as the
             input, the output will reduce dimension if ``false``. Default: ``False``.
 
     Returns:

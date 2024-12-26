@@ -3,7 +3,7 @@ conv_transpose2d:
         Applies a 2D transposed convolution operator over an input image composed of several input planes,
         sometimes also called deconvolution (although it is not an actual deconvolution).
 
-        Refer to :func:`mindspore.mint.nn.ConvTranspose2D` for more details.
+        Refer to :class:`mindspore.mint.nn.ConvTranspose2D` for more details.
 
         .. warning::
             - This is an experimental API that is subject to change or deletion.
@@ -41,7 +41,7 @@ conv_transpose2d:
             ValueError: If the shape of `bias` is not :math:`(out\_channels)` .
             ValueError: If `stride` or `dilation` is less than 1.
             ValueError: If `padding` or `output_padding` is less than 0.
-            VlaueError: If `stride`, `padding`, `output_padding` or `dilation` is a tuple whose length is not equal to 2.
+            ValueError: If `stride`, `padding`, `output_padding` or `dilation` is a tuple whose length is not equal to 2.
 
         Supported Platforms:
             ``Ascend``

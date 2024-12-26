@@ -5,7 +5,7 @@ mindspore.mint.nn.functional.conv_transpose2d
 
     将2D转置卷积运算应用于由多个输入平面组成的输入图像，有时也称为反卷积（尽管它不是实际的反卷积）。
 
-    更多参考详见 :func:`mindspore.mint.nn.ConvTranspose2d`。
+    更多参考详见 :class:`mindspore.mint.nn.ConvTranspose2d`。
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。

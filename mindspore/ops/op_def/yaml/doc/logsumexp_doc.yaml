@@ -12,7 +12,7 @@ logsumexp:
         Args:
             input (Tensor): Input Tensor.
             dim (Union[int, tuple(int), list(int)], optional): The dimension to be reduced (the value should be within `[0, len(input.shape) - 1]`), when the `dim` is `()`, all dimensions are reduced.
-            keepdim (bool): Whether the output tensor retains the dimension `dim`, default: `False`.
+            keepdim (bool, optional): Whether the output tensor retains the dimension `dim`, default: `False`.
 
         Returns:
             Tensor, the dtype changes according to the `input.dtype`, and the shape changes according to the values of `dim` and `keepdim`.

@@ -16,7 +16,7 @@ mindspore.Tensor.uniform\_
         - **to** (Union[number.Number, Tensor], 可选) - 均匀分布的上界，可以是一个标量值或只有单个元素的任意维度的Tensor，默认值： ``1``。
 
     关键字参数：
-        - **generator** (:class: `mindspore.Generator` , 可选) - 伪随机数生成器。默认值： ``None`` ，使用默认伪随机数生成器。
+        - **generator** (:class:`mindspore.Generator`, 可选) - 伪随机数生成器。默认值： ``None`` ，使用默认伪随机数生成器。
 
 
 
