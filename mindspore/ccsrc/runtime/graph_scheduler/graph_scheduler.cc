@@ -1610,7 +1610,11 @@ void GraphScheduler::UpdateDeviceAddressByRefInternalParameter(const GraphCompil
       MS_LOG(DEBUG) << "After increase ref count for device address:" << origin_node_output_addr
                     << " ref count:" << origin_node_output_addr->original_ref_count();
       origin_node_output_addr->ResetRefCount();
-      cur_node_output_addr->set_pointer_ref_count(origin_node_output_addr->pointer_ref_count());
+      const auto &parser = graph_compiler_info.control_node_parser_;
+      if (parser == nullptr || !parser->IsInited() ||
+          parser->IsSameKernelGraphGroup(front_output_with_index.first, graph)) {
+        cur_node_output_addr->set_pointer_ref_count(origin_node_output_addr->pointer_ref_count());
+      }
     }
   }
 }

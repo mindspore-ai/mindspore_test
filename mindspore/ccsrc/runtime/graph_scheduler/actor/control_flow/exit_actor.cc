@@ -331,16 +331,6 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
       continue;
     }
 
-    auto iter = repeat_output_index.find(i);
-    if (iter != repeat_output_index.end()) {
-      if (iter->second >= new_device_tensors.size()) {
-        MS_LOG(EXCEPTION) << "Invalid output index:" << i << " real index:" << iter->second
-                          << " for actor:" << GetAID();
-      }
-      (void)new_device_tensors.emplace_back(new_device_tensors[iter->second]);
-      continue;
-    }
-
     // Update the real used device context by the input data.
     auto &device_context = device_contexts_[i];
     MS_EXCEPTION_IF_NULL(device_context);
@@ -390,6 +380,19 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Sync device to device failed.");
       }
     } else {
+      auto iter = repeat_output_index.find(i);
+      if (iter != repeat_output_index.end()) {
+        if (iter->second >= new_device_tensors.size()) {
+          MS_LOG(EXCEPTION) << "Invalid output index:" << i << " real index:" << iter->second
+                            << " for actor:" << GetAID();
+        }
+        MS_EXCEPTION_IF_NULL(new_device_tensors[iter->second]);
+        new_device_tensor->set_pointer_ref_count(new_device_tensors[iter->second]->pointer_ref_count());
+        MS_LOG(DEBUG) << "Exit actor share the same pointer ref count:"
+                      << new_device_tensors[iter->second]->pointer_ref_count()
+                      << " between device address:" << new_device_tensor << " and:" << new_device_tensors[iter->second];
+        continue;
+      }
       // Move the device ptr from input_device_tensor to new_device_tensor.
       input_device_tensor->Swap(new_device_tensor.get());
       if (new_device_tensor->deleter() == nullptr) {

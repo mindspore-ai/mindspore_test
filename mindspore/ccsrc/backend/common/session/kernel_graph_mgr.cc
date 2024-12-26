@@ -2210,6 +2210,28 @@ void KernelGraphMgr::SetReturnNode(const AnfNodePtr &node, KernelGraph *graph) {
   }
 }
 
+namespace {
+void UpdateRefForCNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (!common::AnfAlgo::HasAbstractRef(cnode)) {
+    return;
+  }
+  const auto &real_node_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode, 0, false);
+  if (real_node_with_index.first == nullptr || real_node_with_index.first == cnode ||
+      real_node_with_index.first->abstract() == nullptr ||
+      !real_node_with_index.first->abstract()->isa<abstract::AbstractTensor>() ||
+      common::AnfAlgo::HasAbstractRef(real_node_with_index.first)) {
+    return;
+  }
+  MS_LOG(INFO) << "Set ref to origin node:" << real_node_with_index.first->DebugString()
+               << " by new cnode:" << cnode->fullname_with_scope();
+  auto ref_key = cnode->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>()->ref_key_value();
+  auto ref_abstract = std::make_shared<abstract::AbstractRefTensor>(
+    real_node_with_index.first->abstract()->cast<abstract::AbstractTensorPtr>(), ref_key);
+  real_node_with_index.first->set_abstract(ref_abstract);
+}
+}  // namespace
+
 KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, const AnfNodePtrList &outputs,
                                                     DeviceType device_target, const JitSetting &jit_setting,
                                                     bool common_opt, bool is_enable_zero_copy) {
@@ -2250,6 +2272,7 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
     new_cnode->set_abstract(cnode->abstract());
     new_cnode->set_scope(cnode->scope());
     new_cnode->set_attrs(cnode->attrs());
+    UpdateRefForCNode(new_cnode);
 
     if (new_cnode->HasAttr(kAttrReplaceRealKernelInBackend)) {
       MS_LOG(DEBUG) << "Erase flag for node: " << new_cnode->DebugString();

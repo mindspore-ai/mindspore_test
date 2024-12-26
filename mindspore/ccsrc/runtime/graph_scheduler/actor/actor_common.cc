@@ -831,17 +831,6 @@ mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::ve
     if (pair.second.size() <= 1) {
       continue;
     }
-    // change for view node with multi-output
-    bool flag = false;
-    for (auto i : pair.second) {
-      if (device_tensors[i]->kernel_tensor()->tensor_storage_info() != nullptr) {
-        flag = true;
-        continue;
-      }
-    }
-    if (flag) {
-      continue;
-    }
     for (size_t i = 1; i < pair.second.size(); ++i) {
       repeat_index[pair.second[i]] = pair.second[0];
     }
