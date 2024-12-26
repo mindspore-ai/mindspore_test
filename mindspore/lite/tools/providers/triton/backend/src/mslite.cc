@@ -84,19 +84,14 @@ TRITONSERVER_Error *TRITONBACKEND_Finalize(TRITONBACKEND_Backend *backend) {
 // should initialize any state that is intended to be shared across
 // all instances of the model.
 TRITONSERVER_Error *TRITONBACKEND_ModelInitialize(TRITONBACKEND_Model *model) {
-  const char *cname;
-  RETURN_IF_ERROR(TRITONBACKEND_ModelName(model, &cname));
-  std::string name(cname);
-
+  const char *const_name;
+  RETURN_IF_ERROR(TRITONBACKEND_ModelName(model, &const_name));
   uint64_t version;
+  std::string name(const_name);
   RETURN_IF_ERROR(TRITONBACKEND_ModelVersion(model, &version));
-
   LOG_MESSAGE(
     TRITONSERVER_LOG_INFO,
-    (std::string("TRITONBACKEND_ModelInitialize: ") + name + " (version " + std::to_string(version) + ")").c_str());
-
-  // With each model we create a ModelState object and associate it
-  // with the TRITONBACKEND_Model.
+    (std::string("TRITONBACKEND_ModelInitialize: ") + name + " ( version " + std::to_string(version) + ")").c_str());
   ModelState *model_state;
   RETURN_IF_ERROR(ModelState::Create(model, &model_state));
   RETURN_IF_ERROR(TRITONBACKEND_ModelSetState(model, reinterpret_cast<void *>(model_state)));
@@ -122,35 +117,28 @@ TRITONSERVER_Error *TRITONBACKEND_ModelFinalize(TRITONBACKEND_Model *model) {
 // Implementing TRITONBACKEND_ModelInstanceInitialize is optional. The
 // backend should initialize any state that is required for a model
 // instance.
-TRITONSERVER_Error *TRITONBACKEND_ModelInstanceInitialize(TRITONBACKEND_ModelInstance *instance) {
-  const char *cname;
-  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceName(instance, &cname));
-  std::string name(cname);
+TRITONSERVER_Error *TRITONBACKEND_ModelInstanceInitialize(TRITONBACKEND_ModelInstance *model_instance) {
+  const char *const_name;
+  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceName(model_instance, &const_name));
+  std::string name(const_name);
 
   int32_t device_id;
-  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceDeviceId(instance, &device_id));
-  TRITONSERVER_InstanceGroupKind kind;
-  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceKind(instance, &kind));
-
+  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceDeviceId(model_instance, &device_id));
+  TRITONSERVER_InstanceGroupKind group_kind;
+  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceKind(model_instance, &group_kind));
   LOG_MESSAGE(TRITONSERVER_LOG_INFO,
               (std::string("TRITONBACKEND_ModelInstanceInitialize: ") + name + " (" +
-               TRITONSERVER_InstanceGroupKindString(kind) + " device " + std::to_string(device_id) + ")")
+               TRITONSERVER_InstanceGroupKindString(group_kind) + " device " + std::to_string(device_id) + ")")
                 .c_str());
+  TRITONBACKEND_Model *triton_backend_model;
+  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceModel(model_instance, &triton_backend_model));
 
-  // The instance can access the corresponding model as well... here
-  // we get the model and from that get the model's state.
-  TRITONBACKEND_Model *model;
-  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceModel(instance, &model));
-
-  void *vmodelstate;
-  RETURN_IF_ERROR(TRITONBACKEND_ModelState(model, &vmodelstate));
-  ModelState *model_state = reinterpret_cast<ModelState *>(vmodelstate);
-
-  // With each instance we create a ModelInstanceState object and
-  // associate it with the TRITONBACKEND_ModelInstance.
+  void *vmodel_state;
+  RETURN_IF_ERROR(TRITONBACKEND_ModelState(triton_backend_model, &vmodel_state));
+  ModelState *model_state = reinterpret_cast<ModelState *>(vmodel_state);
   ModelInstanceState *instance_state;
-  RETURN_IF_ERROR(ModelInstanceState::Create(model_state, instance, &instance_state));
-  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceSetState(instance, reinterpret_cast<void *>(instance_state)));
+  RETURN_IF_ERROR(ModelInstanceState::Create(model_state, model_instance, &instance_state));
+  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceSetState(model_instance, reinterpret_cast<void *>(instance_state)));
 
   LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE, (std::string("TRITONBACKEND_ModelInstanceInitialize: instance "
                                                      "initialization successful ") +
@@ -178,24 +166,16 @@ TRITONSERVER_Error *TRITONBACKEND_ModelInstanceFinalize(TRITONBACKEND_ModelInsta
 // Implementing TRITONBACKEND_ModelInstanceExecute is required.
 TRITONSERVER_Error *TRITONBACKEND_ModelInstanceExecute(TRITONBACKEND_ModelInstance *instance,
                                                        TRITONBACKEND_Request **requests, const uint32_t request_count) {
-  // Triton will not call this function simultaneously for the same
-  // 'instance'. But since this backend could be used by multiple
-  // instances from multiple models the implementation needs to handle
-  // multiple calls to this function at the same time (with different
-  // 'instance' objects). Suggested practice for this is to use only
-  // function-local and model-instance-specific state (obtained from
-  // 'instance'), which is what we do here.
-
-  ModelInstanceState *instance_state;
-  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceState(instance, reinterpret_cast<void **>(&instance_state)));
-  ModelState *model_state = reinterpret_cast<ModelState *>(instance_state->Model());
+  ModelInstanceState *model_instance_state;
+  RETURN_IF_ERROR(TRITONBACKEND_ModelInstanceState(instance, reinterpret_cast<void **>(&model_instance_state)));
+  ModelState *model_state = reinterpret_cast<ModelState *>(model_instance_state->Model());
 
   LOG_MESSAGE(TRITONSERVER_LOG_VERBOSE,
-              (std::string("model ") + model_state->Name() + ", instance " + instance_state->Name() + ", executing " +
-               std::to_string(request_count) + " requests")
+              (std::string("model ") + model_state->Name() + ", instance " + model_instance_state->Name() +
+               ", executing " + std::to_string(request_count) + " requests")
                 .c_str());
 
-  instance_state->ProcessRequests(requests, request_count);
+  model_instance_state->ProcessRequests(requests, request_count);
 
   return nullptr;  // success
 }
