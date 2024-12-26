@@ -51,6 +51,7 @@ def lazy_inline(fn=None, attrs=None, policy=None):
         ``Ascend``
 
     Examples:
+        >>> import os
         >>> import numpy as np
         >>> from mindspore import Tensor
         >>> import mindspore.nn as nn

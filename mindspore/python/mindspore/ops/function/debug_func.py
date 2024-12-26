@@ -132,6 +132,7 @@ def tensordump(file_name, tensor, mode='out'):
             Using msrun command to run below example: msrun --worker_num=2 --local_worker_num=2
             --master_port=11450 --log_dir=msrun_log --join=True --cluster_time_out=300 tensordump_example.py
 
+        >>> import os
         >>> import numpy as np
         >>> import mindspore as ms
         >>> from mindspore import nn, Tensor, ops, context
