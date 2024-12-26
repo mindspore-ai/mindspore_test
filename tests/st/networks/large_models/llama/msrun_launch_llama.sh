@@ -19,6 +19,9 @@ USE_DEVICE_NUM=$1
 TEST_MODE=$2
 PORT=$3
 
+export GLOG_v=1
+source ${BASE_PATH}/env.sh
+
 export MS_MEMORY_POOL_RECYCLE=1
 
 msrun --worker_num=${USE_DEVICE_NUM} --local_worker_num=${USE_DEVICE_NUM}  --master_port=${PORT} --log_dir=${TEST_MODE} --join=True \

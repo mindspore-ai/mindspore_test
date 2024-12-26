@@ -19,7 +19,7 @@ import pandas as pd
 import numpy as np
 from mindspore import set_seed
 
-workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 sys.path.insert(0, os.path.join(workspace, "golden-stick"))
 from mindformers.tools.register import MindFormerConfig

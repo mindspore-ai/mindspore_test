@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 import os
-from tests.st.networks.utils import get_num_from_log
 from tests.mark_utils import arg_mark
 
 os.environ["GLOG_v"] = "1"
@@ -23,21 +22,33 @@ TOELERANCE = 5e-2
 PEAK_MEMORY_NAME = "Actual peak memory usage (with fragments):"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
-def test_llama_predict_4p_bs4():
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_qwen_1p_bs1():
     """
-    Feature: kbk predict
-    Description: test_llama_predict_4p_bs4
+    Feature: Trainer.predict()
+    Description: Test trainer for predict.
     Expectation: AssertionError
     """
-    test_case = "test_llama_4p_bs4"
+    test_case = "test_qwen_1p_bs1"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret = os.system(
-        f"bash {sh_path}/mpirun_launch_llama.sh {sh_path}/configs/predict_llama_70b.yaml 4 predict {test_case}")
+        f"bash {sh_path}/mpirun_launch_init_param.sh {sh_path}/configs/predict_qwen1.5.yaml 1 {test_case}")
     log_path = f"{sh_path}/{test_case}.log"
     os.system(f"cat {log_path}")
     assert ret == 0
 
-    expect_peak_memory = 4177
-    peak_memory = get_num_from_log(f"{log_path}", PEAK_MEMORY_NAME)
-    assert peak_memory <= expect_peak_memory * (1 + TOELERANCE)
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+def test_qwen_4p_bs1():
+    """
+    Feature: Trainer.predict()
+    Description: Test trainer for predict.
+    Expectation: AssertionError
+    """
+    test_case = "test_qwen_4p_bs1"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    ret = os.system(
+        f"bash {sh_path}/mpirun_launch_init_param.sh {sh_path}/configs/predict_qwen1.5.yaml 4 {test_case}")
+    log_path = f"{sh_path}/{test_case}.log"
+    os.system(f"cat {log_path}")
+    assert ret == 0

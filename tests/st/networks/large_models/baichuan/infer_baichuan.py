@@ -18,12 +18,11 @@ import os
 import pandas as pd
 import numpy as np
 
-workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
-from mindformers import LlamaConfig, TransformerOpParallelConfig, LlamaForCausalLM, build_context
-from mindformers.tools.register import MindFormerConfig
 from mindspore import set_seed
-
+from mindformers.tools.register import MindFormerConfig
+from mindformers import LlamaConfig, TransformerOpParallelConfig, LlamaForCausalLM, build_context
 
 TOELERANCE = 5e-2
 
@@ -91,60 +90,64 @@ def build_model(config_path, batch_size=1, model_parallel=1, use_bf16=False):
     return model
 
 
-def run_qwen_1p_bs1(args):
+def run_baichuan_1p_bs1(args):
     model = build_model(args.yaml_file, batch_size=1, model_parallel=1)
-
     inputs_ids = generate_input_ids(1, 10)
-    outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 112013, 58939, 26026,
-                           120500, 90532, 65153, 50947, 91544, 121978, 54324], dtype=np.int32)
-    assert (EXPECT_RES == outputs).all()
+    outputs = model.generate(inputs_ids,
+                             max_length=20,
+                             do_sample=False)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10834, 70913, 98066,
+                           98066, 98066, 49616, 57632, 72154, 83812, 96142], dtype=np.int32)
+    for output in outputs:
+        assert (EXPECT_RES == output).all()
 
     inputs_ids = generate_input_ids(4, 12)
-    outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 44737,
-                           142316, 128759, 137564, 112013, 63376, 10391, 73120], dtype=np.int32)
+    outputs = model.generate(inputs_ids,
+                             max_length=20,
+                             do_sample=False)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 106790,
+                           98066, 59567, 83812, 59567, 70142, 31296, 73598], dtype=np.int32)
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
 
-def run_qwen_1p_bs4(args):
+def run_baichuan_1p_bs4(args):
     model = build_model(args.yaml_file, batch_size=4, model_parallel=1)
 
     inputs_ids = generate_input_ids(4, 10)
     outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 112013, 58939, 26026,
-                           120500, 90532, 65153, 50947, 91544, 121978, 54324], dtype=np.int32)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10834, 70913, 98066,
+                           98066, 98066, 49616, 57632, 72154, 83812, 96142], dtype=np.int32)
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
     inputs_ids = generate_input_ids(8, 12)
     outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 44737,
-                           142316, 128759, 137564, 112013, 63376, 10391, 73120], dtype=np.int32)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 106790,
+                           98066, 59567, 83812, 59567, 70142, 31296, 73598], dtype=np.int32)
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
 
-def run_qwen_4p_bs1(args):
+def run_baichuan_4p_bs1(args):
     model = build_model(args.yaml_file, batch_size=1, model_parallel=4)
 
     inputs_ids = generate_input_ids(4, 10)
     outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 143245, 10093, 110562,
-                           138575, 45809, 8325, 150506, 71002, 126201, 100730], dtype=np.int32)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 87776, 103235, 43223,
+                           37261, 77591, 22591, 117783, 109749, 121313, 33714], dtype=np.int32)
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
     inputs_ids = generate_input_ids(8, 12)
     outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20942,
-                           92522, 26067, 26887, 132151, 80685, 122336, 67935], dtype=np.int32)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 33069,
+                           7065, 94742, 69391, 27691, 50605, 71209, 44256], dtype=np.int32)
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
 
-def run_qwen_4p_bs4_bf16(args):
+def run_baichuan_4p_bs4_bf16(args):
     model = build_model(args.yaml_file, batch_size=4,
                         model_parallel=4, use_bf16=True)
 
@@ -155,20 +158,24 @@ def run_qwen_4p_bs4_bf16(args):
     model.generate(inputs_ids, max_length=20, do_sample=False)
 
 
-def run_qwen_4p_bs4(args):
+def run_baichuan_4p_bs4(args):
     model = build_model(args.yaml_file, batch_size=4, model_parallel=4)
 
     inputs_ids = generate_input_ids(4, 10)
-    outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 143245, 10093, 110562,
-                           138575, 45809, 8325, 150506, 71002, 126201, 100730], dtype=np.int32)
+    outputs = model.generate(inputs_ids,
+                             max_length=20,
+                             do_sample=False)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 87776, 103235, 43223,
+                           37261, 77591, 22591, 117783, 109749, 121313, 33714], dtype=np.int32)
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
     inputs_ids = generate_input_ids(8, 12)
-    outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20942,
-                           92522, 26067, 26887, 132151, 80685, 122336, 67935], dtype=np.int32)
+    outputs = model.generate(inputs_ids,
+                             max_length=20,
+                             do_sample=False)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 33069,
+                           7065, 94742, 69391, 27691, 50605, 71209, 44256], dtype=np.int32)
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
@@ -178,16 +185,16 @@ if __name__ == "__main__":
     parser.add_argument('--yaml_file', default="", type=str,
                         help='predict yaml path')
     parser.add_argument('--test_mode', default='', type=str,
-                        help='test mode.')
+                        help='run test mode.')
     args_ = parser.parse_args()
     test_mode = args_.test_mode
-    if test_mode == "test_qwen_1p_bs1":
-        run_qwen_1p_bs1(args_)
-    if test_mode == "test_qwen_1p_bs4":
-        run_qwen_1p_bs4(args_)
-    if test_mode == "test_qwen_4p_bs1":
-        run_qwen_4p_bs1(args_)
-    if test_mode == "test_qwen_4p_bs4":
-        run_qwen_4p_bs4(args_)
-    if test_mode == "test_qwen_4p_bs4_bf16":
-        run_qwen_4p_bs4_bf16(args_)
+    if test_mode == "test_baichuan_1p_bs1":
+        run_baichuan_1p_bs1(args_)
+    if test_mode == "test_baichuan_1p_bs4":
+        run_baichuan_1p_bs4(args_)
+    if test_mode == "test_baichuan_4p_bs1":
+        run_baichuan_4p_bs1(args_)
+    if test_mode == "test_baichuan_4p_bs4":
+        run_baichuan_4p_bs4(args_)
+    if test_mode == "test_baichuan_4p_bs4_bf16":
+        run_baichuan_4p_bs4_bf16(args_)

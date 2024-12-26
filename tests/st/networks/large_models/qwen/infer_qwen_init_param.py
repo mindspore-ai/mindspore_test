@@ -18,7 +18,7 @@ import os
 import numpy as np
 import time
 
-workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindformers import LlamaConfig, TransformerOpParallelConfig, LlamaForCausalLM, build_context
 from mindformers.tools.register import MindFormerConfig
