@@ -63,21 +63,21 @@ def test_ops_pad_forward_constantND(context_mode):
     """
     ms.context.set_context(mode=context_mode)
     constant_value = 1
-    x = generate_random_input((2, 3), np.float32)
+    x = generate_random_input((2, 3), np.float64)
     padding = (1, 1)
     padding_np = ((0, 0), (1, 1))
     output = pad_forward_func(ms.Tensor(x), padding, "constant", constant_value)
     expect = expect_forward_output_constant(x, padding_np, constant_value)
     np.testing.assert_array_equal(output.asnumpy(), expect)
 
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_random_input((2, 3, 4, 5), np.float64)
     padding = (1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1))
     output = pad_forward_func(ms.Tensor(x), padding, "constant", constant_value)
     expect = expect_forward_output_constant(x, padding_np, constant_value)
     np.testing.assert_array_equal(output.asnumpy(), expect)
 
-    x = generate_random_input((2, 3, 4, 5, 6), np.float32)
+    x = generate_random_input((2, 3, 4, 5, 6), np.float64)
     padding = (1, 1, 1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1), (1, 1))
     output = pad_forward_func(ms.Tensor(x), padding, "constant", constant_value)
@@ -113,7 +113,7 @@ def test_ops_pad_forward_reflect2d(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_random_input((2, 3, 4, 5), np.float64)
     padding = (1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1))
     output = pad_forward_func(ms.Tensor(x), padding, "reflect")
@@ -167,7 +167,7 @@ def test_ops_pad_forward_replicate2d(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_random_input((2, 3, 4, 5), np.float64)
     padding = (1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1))
     output = pad_forward_func(ms.Tensor(x), padding, "replicate")
@@ -288,18 +288,18 @@ def test_ops_pad_reflect2d_forward_dynamic_shape(context_mode):
     """
     ms.context.set_context(mode=context_mode)
 
-    x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float32)
+    x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float64)
     test_cell = test_utils.to_cell_obj(pad_forward_func)
     padding = (1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1))
     test_cell.set_inputs(x_dyn, padding, "reflect")
 
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
+    x1 = generate_random_input((2, 3, 4, 5), np.float64)
     output = test_cell(ms.Tensor(x1), padding, "reflect")
     expect = expect_forward_output(x1, padding_np, "reflect")
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
-    x2 = generate_random_input((2, 3, 4, 6), np.float32)
+    x2 = generate_random_input((2, 3, 4, 6), np.float64)
     output = test_cell(ms.Tensor(x2), padding, "reflect")
     expect = expect_forward_output(x2, padding_np, "reflect")
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
@@ -365,11 +365,11 @@ def test_ops_pad_reflect2d_forward_dynamic_rank(context_mode):
     """
     ms.context.set_context(mode=context_mode)
 
-    x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
+    x_dyn = ms.Tensor(shape=None, dtype=ms.float64)
     test_cell = test_utils.to_cell_obj(pad_forward_func)
     test_cell.set_inputs(x_dyn, (1, 1, 1, 1), "reflect")
 
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
+    x2 = generate_random_input((3, 4, 5, 6), np.float64)
     output = test_cell(ms.Tensor(x2), (1, 1, 1, 1), "reflect")
     expect = expect_forward_output(x2, ((0, 0), (0, 0), (1, 1), (1, 1)), "reflect")
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
@@ -435,18 +435,18 @@ def test_ops_pad_replicate2d_forward_dynamic_shape(context_mode):
     """
     ms.context.set_context(mode=context_mode)
 
-    x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float32)
+    x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float64)
     test_cell = test_utils.to_cell_obj(pad_forward_func)
     padding = (1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1))
     test_cell.set_inputs(x_dyn, padding, "replicate")
 
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
+    x1 = generate_random_input((2, 3, 4, 5), np.float64)
     output = test_cell(ms.Tensor(x1), padding, "replicate")
     expect = expect_forward_output(x1, padding_np, "edge")
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
-    x2 = generate_random_input((2, 3, 4, 6), np.float32)
+    x2 = generate_random_input((2, 3, 4, 6), np.float64)
     output = test_cell(ms.Tensor(x2), padding, "replicate")
     expect = expect_forward_output(x2, padding_np, "edge")
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
@@ -512,11 +512,11 @@ def test_ops_pad_replicate2d_forward_dynamic_rank(context_mode):
     """
     ms.context.set_context(mode=context_mode)
 
-    x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
+    x_dyn = ms.Tensor(shape=None, dtype=ms.float64)
     test_cell = test_utils.to_cell_obj(pad_forward_func)
     test_cell.set_inputs(x_dyn, (1, 1, 1, 1), "replicate")
 
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
+    x2 = generate_random_input((3, 4, 5, 6), np.float64)
     output = test_cell(ms.Tensor(x2), (1, 1, 1, 1), "replicate")
     expect = expect_forward_output(x2, ((0, 0), (0, 0), (1, 1), (1, 1)), "edge")
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
@@ -600,7 +600,7 @@ def test_ops_pad_backward_reflect2d(context_mode):
     ms.context.set_context(mode=context_mode)
     ms.context.set_context(jit_level='O0')
     x_value = [[[[1, 2, 3], [4, 5, 6], [7, 8, 9]]]]
-    x = Tensor(x_value, dtype=ms.float32)
+    x = Tensor(x_value, dtype=ms.float64)
     padding = (1, 2, 1, 2)
     expect = np.array([[[[4., 12., 6.],
                          [24., 45., 18.],
@@ -646,7 +646,7 @@ def test_ops_pad_backward_replicate2d(context_mode):
     ms.context.set_context(mode=context_mode)
     ms.context.set_context(jit_level='O0')
     x_value = [[[[1, 2, 3], [4, 5, 6], [7, 8, 9]]]]
-    x = Tensor(x_value, dtype=ms.float32)
+    x = Tensor(x_value, dtype=ms.float64)
     padding = (1, 2, 1, 2)
     expect = np.array([[[[4., 4., 18.],
                          [8., 5., 18.],

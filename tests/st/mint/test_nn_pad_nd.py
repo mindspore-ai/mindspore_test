@@ -107,7 +107,7 @@ def test_nn_PadNd_normal(context_mode):
         ms.set_context(jit_config={'jit_level': 'O0'})
     ## nn.ConstantPad1d
     constant_value = 1
-    x = generate_random_input((2, 3), np.float32)
+    x = generate_random_input((2, 3), np.float64)
     padding = (1, 1)
     padding_np = ((0, 0), (1, 1))
     output = pad_nd_forward(ms.Tensor(x), padding, constant_value, "constant_1d")
@@ -144,7 +144,7 @@ def test_nn_PadNd_normal(context_mode):
 
     ## nn.ZeroPad1d
     constant_value = 0
-    x = generate_random_input((2, 3), np.float32)
+    x = generate_random_input((2, 3), np.float64)
     padding = (1, 1)
     padding_np = ((0, 0), (1, 1))
     output = pad_nd_forward(ms.Tensor(x), padding, constant_value, "zero_1d")
@@ -193,7 +193,7 @@ def test_nn_PadNd_normal(context_mode):
     np.testing.assert_array_equal(out_backward.asnumpy(), expect_backward)
 
     ## nn.ReflectionPad2d
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_random_input((2, 3, 4, 5), np.float64)
     padding = (1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1))
     output = pad_nd_forward(ms.Tensor(x), padding, constant_value, "reflection_2d")
@@ -231,7 +231,7 @@ def test_nn_PadNd_normal(context_mode):
     np.testing.assert_array_equal(out_backward.asnumpy(), expect_backward)
 
     ## nn.ReplicationPad2d
-    x = generate_random_input((1, 1, 2, 2), np.float32)
+    x = generate_random_input((1, 1, 2, 2), np.float64)
     padding = (1, 1, 1, 1)
     padding_np = ((0, 0), (0, 0), (1, 1), (1, 1))
     output = pad_nd_forward(ms.Tensor(x), padding, constant_value, "replication_2d")
@@ -261,8 +261,8 @@ def test_nn_PadNd_dynamic():
         ReplicationPadNd where N = 1, 2, 3.
     Expectation: expect correct result.
     """
-    input1d_1 = generate_random_input((2, 3, 4, 5), np.float32)
-    input1d_2 = generate_random_input((2, 3, 4), np.float32)
+    input1d_1 = generate_random_input((2, 3, 4, 5, 8, 12), np.float32)
+    input1d_2 = generate_random_input((2, 3, 40, 30), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input1d_1), "constant_1d"], [ms.Tensor(input1d_2), "constant_1d"]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
@@ -276,8 +276,8 @@ def test_nn_PadNd_dynamic():
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input3d_1), "constant_3d"], [ms.Tensor(input3d_2), "constant_3d"]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
-    input_zero_1d_1 = generate_random_input((2, 3, 4, 5), np.float32)
-    input_zero_1d_2 = generate_random_input((2, 3, 4), np.float32)
+    input_zero_1d_1 = generate_random_input((2, 3, 4, 5), np.float64)
+    input_zero_1d_2 = generate_random_input((2, 3, 4), np.float64)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_zero_1d_1), "zero_1d"], [ms.Tensor(input_zero_1d_2), "zero_1d"]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
@@ -297,8 +297,8 @@ def test_nn_PadNd_dynamic():
                                      [ms.Tensor(input_reflection_1d_2), "reflection_1d"]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
-    input_reflection_2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
-    input_reflection_2d_2 = generate_random_input((2, 3, 4), np.float32)
+    input_reflection_2d_1 = generate_random_input((2, 3, 4, 5), np.float64)
+    input_reflection_2d_2 = generate_random_input((2, 3, 4), np.float64)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_reflection_2d_1), "reflection_2d"], \
                                      [ms.Tensor(input_reflection_2d_2), "reflection_2d"]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
@@ -315,8 +315,8 @@ def test_nn_PadNd_dynamic():
                                      [ms.Tensor(input_replication_1d_2), "replication_1d"]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
-    input_replication_2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
-    input_replication_2d_2 = generate_random_input((2, 3, 4), np.float32)
+    input_replication_2d_1 = generate_random_input((2, 3, 4, 5), np.float64)
+    input_replication_2d_2 = generate_random_input((2, 3, 4), np.float64)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input_replication_2d_1), "replication_2d"], \
                                      [ms.Tensor(input_replication_2d_2), "replication_2d"]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
