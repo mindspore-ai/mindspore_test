@@ -333,7 +333,8 @@ static void InsertShapeOp(const CNodePtr &node, const AnfNodePtr &pre_node, cons
   }
   OperatorArgs args = std::make_pair(attrs, params);
   Operator op = std::make_pair(SHAPE_OP, args);
-  InsertNode(op, node, 2, pre_node, root, "shape");
+  static auto const kShapeIndex = 2;
+  InsertNode(op, node, kShapeIndex, pre_node, root, "shape");
 }
 
 static AnfNodePtr FindGrad(const CNodePtr &cnode, size_t curr_depth) {
@@ -524,7 +525,6 @@ static CNodePtr InsertAllGatherAfterCast(const std::pair<AnfNodePtr, int> &node_
   auto input_element_type = node_type->cast<mindspore::TensorTypePtr>()->element();
   MS_EXCEPTION_IF_NULL(input_element_type);
   auto type_id = input_element_type->type_id();
-
   if (type_id != kNumberTypeFloat32) {
     return res;
   } else {
@@ -897,13 +897,104 @@ static void CoverSliceShape(const FuncGraphPtr &root) {
   }
   g_RefMap.clear();
 }
-}  // namespace
 
 // if reshape's output connect to several primitive, return the first layout found
-std::shared_ptr<TensorLayout> ParallelPreprocessor::FindNextLayout(const AnfNodePtr &cnode, bool *next_is_reshape,
-                                                                   mindspore::HashSet<AnfNodePtr> *visit,
-                                                                   int make_tuple_index, int tuple_get_index,
-                                                                   const std::shared_ptr<TensorLayout> &pre_layout) {
+std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, bool *next_is_reshape,
+                                             mindspore::HashSet<AnfNodePtr> *visit, int make_tuple_index,
+                                             int tuple_get_index, const std::shared_ptr<TensorLayout> &pre_layout);
+
+std::shared_ptr<TensorLayout> FindNextLayoutForSpecialNode(const std::pair<AnfNodePtr, int64_t> &node_pair,
+                                                           bool *next_is_reshape, mindspore::HashSet<AnfNodePtr> *visit,
+                                                           int make_tuple_index, int tuple_get_index,
+                                                           const std::shared_ptr<TensorLayout> &pre_layout) {
+  auto use_apply = node_pair.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(use_apply);
+  if (IsValueNode<FuncGraph>(use_apply->input(0))) {
+    auto fg = GetValueNode<FuncGraphPtr>(use_apply->input(0));
+    MS_EXCEPTION_IF_NULL(fg);
+    auto fg_parameters = fg->parameters();
+    auto param = fg_parameters[IntToSize(node_pair.second - 1)];
+    auto next_layout = FindNextLayout(param, next_is_reshape, visit, make_tuple_index, tuple_get_index, pre_layout);
+    if (next_layout != nullptr) {
+      return next_layout;
+    }
+  }
+
+  if (IsPrimitiveCNode(use_apply, prim::kPrimReturn)) {
+    auto fg = use_apply->func_graph();
+    auto fg_map = fg->func_graph_cnodes_index();
+    for (auto &fg_use : fg_map) {
+      auto fg_node = fg_use.first->first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(fg_node);
+      auto next_layout = FindNextLayout(fg_node, next_is_reshape, visit, make_tuple_index, tuple_get_index, pre_layout);
+      if (next_layout != nullptr) {
+        return next_layout;
+      }
+    }
+  }
+
+  if (IsPrimitiveCNode(use_apply, prim::kPrimTupleGetItem)) {
+    auto temp = LongToInt(GetTupleGetItemIndex(use_apply));
+    if (temp != make_tuple_index - 1 && make_tuple_index > 0) {
+      return nullptr;
+    }
+    temp = make_tuple_index > 0 ? -1 : temp;
+    auto next_layout = FindNextLayout(use_apply, next_is_reshape, visit, temp, -1, pre_layout);
+    if (next_layout != nullptr) {
+      return next_layout;
+    }
+  }
+
+  if (IsPrimitiveCNode(use_apply, prim::kPrimMakeTuple)) {
+    auto next_layout = FindNextLayout(use_apply, next_is_reshape, visit, node_pair.second, tuple_get_index, pre_layout);
+    if (next_layout != nullptr) {
+      return next_layout;
+    }
+  }
+  return nullptr;
+}
+
+std::shared_ptr<TensorLayout> FindNextLayoutForParallelCareNode(const std::pair<AnfNodePtr, int64_t> &node_pair,
+                                                                bool *next_is_reshape,
+                                                                mindspore::HashSet<AnfNodePtr> *visit,
+                                                                int make_tuple_index, int tuple_get_index,
+                                                                const std::shared_ptr<TensorLayout> &pre_layout) {
+  auto use_apply = node_pair.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(use_apply);
+  if (!IsParallelCareNode(use_apply) || !use_apply->has_user_data<OperatorInfo>()) {
+    return nullptr;
+  }
+
+  if (IsSupportNewShapeBaseNode(use_apply)) {
+    MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString() << ", in support new shapebase ops";
+    *next_is_reshape = false;
+    auto layout = GetInputLayoutFromCNode(node_pair, make_tuple_index);
+    if (IsPrimitiveCNode(node_pair.first) &&
+        GetCNodePrimitive(node_pair.first)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+      layout.set_fine_grain_block_index(
+        GetValue<int64_t>(GetCNodePrimitive(node_pair.first)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+    }
+    return std::make_shared<TensorLayout>(layout);
+  } else {
+    auto node_pair_new = node_pair;
+    if (make_tuple_index > 0) {
+      node_pair_new.second = make_tuple_index;
+    }
+    MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString();
+    *next_is_reshape = false;
+    auto layout = GetInputLayoutFromCNode(node_pair_new, -1);
+    if (IsPrimitiveCNode(node_pair.first) &&
+        GetCNodePrimitive(node_pair.first)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
+      layout.set_fine_grain_block_index(
+        GetValue<int64_t>(GetCNodePrimitive(node_pair.first)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
+    }
+    return std::make_shared<TensorLayout>(layout);
+  }
+}
+
+std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, bool *next_is_reshape,
+                                             mindspore::HashSet<AnfNodePtr> *visit, int make_tuple_index,
+                                             int tuple_get_index, const std::shared_ptr<TensorLayout> &pre_layout) {
   MS_EXCEPTION_IF_NULL(cnode);
   MS_EXCEPTION_IF_NULL(next_is_reshape);
   MS_EXCEPTION_IF_NULL(visit);
@@ -923,46 +1014,16 @@ std::shared_ptr<TensorLayout> ParallelPreprocessor::FindNextLayout(const AnfNode
       return pre_layout;
     }
 
-    if (IsValueNode<FuncGraph>(use_apply->input(0))) {
-      auto fg = GetValueNode<FuncGraphPtr>(use_apply->input(0));
-      MS_EXCEPTION_IF_NULL(fg);
-      auto fg_parameters = fg->parameters();
-      auto param = fg_parameters[IntToSize(node_pair.second - 1)];
-      auto next_layout = FindNextLayout(param, next_is_reshape, visit, make_tuple_index, tuple_get_index, pre_layout);
-      if (next_layout != nullptr) {
-        return next_layout;
-      }
+    auto next_layout =
+      FindNextLayoutForSpecialNode(node_pair, next_is_reshape, visit, make_tuple_index, tuple_get_index, pre_layout);
+    if (next_layout != nullptr) {
+      return next_layout;
     }
 
-    if (IsPrimitiveCNode(use_apply, prim::kPrimReturn)) {
-      auto fg = use_apply->func_graph();
-      auto fg_map = fg->func_graph_cnodes_index();
-      for (auto &fg_use : fg_map) {
-        auto fg_node = fg_use.first->first->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(fg_node);
-        auto next_layout =
-          FindNextLayout(fg_node, next_is_reshape, visit, make_tuple_index, tuple_get_index, pre_layout);
-        if (next_layout != nullptr) {
-          return next_layout;
-        }
-      }
-    }
-
-    if (IsPrimitiveCNode(use_apply, prim::kPrimTupleGetItem)) {
-      auto temp = LongToInt(GetTupleGetItemIndex(use_apply));
-      if (temp != make_tuple_index - 1 && make_tuple_index > 0) {
-        continue;
-      }
-      temp = make_tuple_index > 0 ? -1 : temp;
-      auto next_layout = FindNextLayout(use_apply, next_is_reshape, visit, temp, -1, pre_layout);
-      if (next_layout != nullptr) {
-        return next_layout;
-      }
-    }
-
-    if (use_apply == nullptr || !IsValueNode<Primitive>(use_apply->input(0))) {
+    if (!IsValueNode<Primitive>(use_apply->input(0))) {
       continue;
     }
+
     if (IsPrimitiveCNode(use_apply, prim::kPrimReshape)) {
       *next_is_reshape = true;
       continue;
@@ -970,40 +1031,13 @@ std::shared_ptr<TensorLayout> ParallelPreprocessor::FindNextLayout(const AnfNode
     if (IsOneOfPrimitiveCNode(use_apply, {prim::kPrimDepend, prim::kPrimUpdateState}) && node_pair.second != 1) {
       continue;
     }
-    if (IsPrimitiveCNode(use_apply, prim::kPrimMakeTuple)) {
-      make_tuple_index = node_pair.second;
-      auto next_layout =
-        FindNextLayout(use_apply, next_is_reshape, visit, make_tuple_index, tuple_get_index, pre_layout);
-      if (next_layout != nullptr) {
-        return next_layout;
-      }
+
+    next_layout = FindNextLayoutForParallelCareNode(node_pair, next_is_reshape, visit, make_tuple_index,
+                                                    tuple_get_index, pre_layout);
+    if (next_layout != nullptr) {
+      return next_layout;
     }
-    if (IsParallelCareNode(use_apply) && use_apply->has_user_data<OperatorInfo>() &&
-        IsSupportNewShapeBaseNode(use_apply)) {
-      MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString() << ", in support new shapebase ops";
-      *next_is_reshape = false;
-      auto layout = GetInputLayoutFromCNode(node_pair, make_tuple_index);
-      if (IsPrimitiveCNode(node_pair.first) &&
-          GetCNodePrimitive(node_pair.first)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-        layout.set_fine_grain_block_index(
-          GetValue<int64_t>(GetCNodePrimitive(node_pair.first)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
-      }
-      return std::make_shared<TensorLayout>(layout);
-    }
-    if (IsParallelCareNode(use_apply) && use_apply->has_user_data<OperatorInfo>()) {
-      if (make_tuple_index > 0) {
-        node_pair.second = make_tuple_index;
-      }
-      MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString();
-      *next_is_reshape = false;
-      auto layout = GetInputLayoutFromCNode(node_pair, -1);
-      if (IsPrimitiveCNode(node_pair.first) &&
-          GetCNodePrimitive(node_pair.first)->HasAttr(kAttrFineGrainedInterleavedBlockIndex)) {
-        layout.set_fine_grain_block_index(
-          GetValue<int64_t>(GetCNodePrimitive(node_pair.first)->GetAttr(kAttrFineGrainedInterleavedBlockIndex)));
-      }
-      return std::make_shared<TensorLayout>(layout);
-    }
+
     MS_LOG(DEBUG) << "FindNextLayout failed node " << use_apply->DebugString() << "  " << IsParallelCareNode(use_apply)
                   << "   " << use_apply->has_user_data<OperatorInfo>();
 
@@ -1014,6 +1048,7 @@ std::shared_ptr<TensorLayout> ParallelPreprocessor::FindNextLayout(const AnfNode
   }
   return nullptr;
 }
+}  // namespace
 
 void ParallelPreprocessor::ReshapeInit(const std::vector<AnfNodePtr> &all_nodes) {
   MS_LOG(DEBUG) << "=============Do ReshapeInit start=============";

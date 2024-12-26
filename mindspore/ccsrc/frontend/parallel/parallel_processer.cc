@@ -797,10 +797,10 @@ static void InsertVirtualDivOp(const VirtualDivOp &virtual_div_op, const CNodePt
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-
+  static auto const kDropoutDoMaskInputNum = 2;
   if (IsSomePrimitive(node, DROPOUT_DO_MASK)) {
     MS_LOG(INFO) << "Handle dropout do mask, only insert the virtual div to input[0]";
-    node_size = 2;
+    node_size = kDropoutDoMaskInputNum;
   }
 
   for (size_t index = 1; index < node_size; ++index) {
