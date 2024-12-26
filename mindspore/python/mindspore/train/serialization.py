@@ -73,7 +73,7 @@ from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices,
     _get_device_num
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
-    _restore_group_info_list, _get_param_list_when_first_dim_sharded
+    _restore_group_info_list
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
@@ -3218,21 +3218,14 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         param_rank = rank_list.get(param.name)[0]
         skip_merge_split = rank_list.get(param.name)[1]
         shard_stride = train_strategy.get(param.name)[4]
-        tensor_map = train_strategy.get(param.name)[1]
-        first_dim_shard_idx = tensor_map[0] if tensor_map else -1
-        device_arrangement = train_strategy.get(param.name)[0]
-        first_dim_shard_size = 1
-        if first_dim_shard_idx >= 0:
-            first_dim_shard_size = device_arrangement[-1 - first_dim_shard_idx]
         if train_strategy.get(param.name)[5]:
-            shard_size = int(ckpt_file_len / shard_stride / train_strategy.get(param.name)[5] / first_dim_shard_size)
+            repeat_size = int(ckpt_file_len / shard_stride / train_strategy.get(param.name)[5])
         else:
-            shard_size = 0
+            repeat_size = 0
         for rank in param_rank:
             param_total_list = list(range(0, ckpt_file_len))
-            if first_dim_shard_size != 1:
-                param_total_list = _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_shard_idx, rank)
-            if shard_size > 0:
+            if repeat_size > 0:
+                shard_size = shard_stride * train_strategy.get(param.name)[5]
                 rank_index = param_total_list.index(rank)
                 start = rank_index // shard_size * shard_size
                 param_total_list = param_total_list[start:start + shard_size]
