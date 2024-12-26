@@ -23,32 +23,7 @@
 namespace aicpu {
 class Group;  // Predeclare Group for GroupIterable.
 
-// ///////////////
-// GroupIterable
-// ///////////////
-//
-// Returned when calling sparse_tensor.group({dim0, dim1, ...}).
-//
-// Please note: the sparse_tensor should already be ordered according
-// to {dim0, dim1, ...}.  Otherwise this iteration will return invalid groups.
-//
-// Allows grouping and iteration of the SparseTensor according to the
-// subset of dimensions provided to the group call.
-//
-// The actual grouping dimensions are stored in the
-// internal vector group_dims_.  Iterators inside the iterable provide
-// the three methods:
-//
-// *  group(): returns a vector with the current group dimension values.
-// *  indices(): a map of index, providing the indices in
-//    this group.
-// *  values(): a map of values, providing the values in
-//    this group.
-//
-// To iterate across GroupIterable, see examples in README.md.
-//
-
-// Forward declaration of SparseTensor
+// Forward Definition of Sparse Tensor
 class GroupIterable {
  public:
   using VarDimArray = std::vector<int64_t>;

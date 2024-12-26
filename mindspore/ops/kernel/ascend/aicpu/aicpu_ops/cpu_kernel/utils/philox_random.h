@@ -117,37 +117,23 @@ class PhiloxRandom {
      * Run the single rounds for ten times. Manually unrolling the loop
      * for better performance.
      */
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
-    counter = ComputeSingleRound(counter, key);
-    RaiseKey(&key);
+    for (int i = 0; i < 9; i++) {
+      counter = ComputeSingleRound(counter, key);
+      RaiseKey(&key);
+    }
     counter = ComputeSingleRound(counter, key);
     SkipOne();
     return counter;
   }
 
  private:
-  // We use the same constants as recommended by the original paper.
+  // constants are adopted by the original paper.
   static constexpr uint32_t kPhiloxW32A = 0x9E3779B9;
   static constexpr uint32_t kPhiloxW32B = 0xBB67AE85;
   static constexpr uint32_t kPhiloxM4x32A = 0xD2511F53;
   static constexpr uint32_t kPhiloxM4x32B = 0xCD9E8D57;
 
-  // Helper function to skip the next sample of 128-bits in the current stream.
+  // A function to help us to skip the next sample, which is 128-bits in the current stream.
   void SkipOne() {
     if (++counter_[kIndex0] == 0) {
       if (++counter_[kIndex1] == 0) {

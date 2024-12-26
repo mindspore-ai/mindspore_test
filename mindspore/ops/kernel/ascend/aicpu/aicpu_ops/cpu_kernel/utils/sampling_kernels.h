@@ -80,21 +80,21 @@ enum SamplingKernelType {
  */
 SamplingKernelType SamplingKernelTypeFromString(const std::string &str);
 
-// A function object for a Lanczos kernel.
+// The function object for a Lanczos kernel.
 struct LanczosKernelFunc {
-  // Pass 1 for Lanczos1 kernel, 3 for Lanczos3 etc.
+  // Pass N for LanczosN kernel.
   explicit LanczosKernelFunc(float _radius) : radius(_radius) {}
   float operator()(float x) const {
-    constexpr float kPI = 3.14159265359;
-    x = std::abs(x);
-    if (x > radius) {
+    constexpr float PI = 3.14159265359;
+    auto y = std::abs(x);
+    if (y > radius) {
       return 0.0;
     }
     // Need to special case the limit case of sin(x) / x when x is zero.
-    if (x <= 1e-3) {
+    if (y <= 1e-3) {
       return 1.0;
     }
-    return radius * std::sin(kPI * x) * std::sin(kPI * x / radius) / (kPI * kPI * x * x);
+    return radius * std::sin(PI * y) * std::sin(PI * y / radius) / (PI * PI * y * y);
   }
   float Radius() const { return radius; }
   const float radius;
@@ -128,36 +128,37 @@ struct BoxKernelFunc {
     x = std::abs(x);
     return x < 0.5f ? 1.f : FloatEqual(x, 0.5f) ? 0.5f : 0.0f;
   }
-  float Radius() const { return 1.f; }
+  float Radius() const { return 1.0f; }
 };
 
+// definition of triangle kernel
 struct TriangleKernelFunc {
-  // https://en.wikipedia.org/wiki/Triangle_function
   float operator()(float x) const {
     x = std::abs(x);
-    return x < 1.0f ? 1.0f - x : 0.0f;
-  }
-  float Radius() const { return 1.f; }
-};
-
-struct KeysCubicKernelFunc {
-  /**
-   * http://ieeexplore.ieee.org/document/1163711/
-   * R. G. Keys. Cubic convolution interpolation for digital image
-   * processing. IEEE Transactions on Acoustics, Speech, and Signal
-   * Processing, 29(6):1153–1160, 1981.
-   */
-  float operator()(float x) const {
-    x = std::abs(x);
-    if (x >= 2.0f) {
-      return 0.0f;
-    } else if (x >= 1.0f) {
-      return ((-0.5f * x + 2.5f) * x - 4.0f) * x + 2.0f;
+    if (x < 1.0f) {
+      return 1.0f - x;
     } else {
-      return ((1.5f * x - 2.5f) * x) * x + 1.0f;
+      return 0.0f;
     }
   }
-  float Radius() const { return 2.f; }
+  float Radius() const { return 1.f; }
+};
+
+// definition of cubic kernel
+struct KeysCubicKernelFunc {
+  float operator()(float x) const {
+    x = std::abs(x);
+    float res = 0.0f;
+    if (x >= 2.0f) {
+      res = 0.0f;
+    } else if (x >= 1.0f) {
+      res = ((-0.5f * x + 2.5f) * x - 4.0f) * x + 2.0f;
+    } else {
+      res = ((1.5f * x - 2.5f) * x) * x + 1.0f;
+    }
+    return res;
+  }
+  float Radius() const { return 2.0f; }
 };
 
 struct MitchellCubicKernelFunc {
