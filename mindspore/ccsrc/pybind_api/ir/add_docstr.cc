@@ -16,6 +16,7 @@
 
 #include <string>
 #include <vector>
+#include "third_party/securec/include/securec.h"
 #include "include/common/pybind_api/api_register.h"
 
 namespace mindspore {
@@ -33,7 +34,12 @@ void assign_docstring(const char **target_doc, py::str doc_str) {
     throw py::error_already_set();
   }
 
-  snprintf(doc_copy, doc_len + 1, "%s", doc_cstr);
+  int result = snprintf_s(doc_copy, doc_len + 1, doc_len, "%s", doc_cstr);
+  if (result < 0 || static_cast<size_t>(result) >= doc_len + 1) {
+    free(doc_copy);
+    PyErr_SetString(PyExc_RuntimeError, "Failed to copy docstring safely");
+    throw py::error_already_set();
+  }
 
   if (*target_doc != nullptr) {
     free(const_cast<char *>(*target_doc));
