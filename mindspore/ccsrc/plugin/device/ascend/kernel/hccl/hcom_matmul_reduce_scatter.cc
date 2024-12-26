@@ -36,10 +36,10 @@ bool HcomMatMulReduceScatterKernel::Init(const std::vector<KernelTensor *> &inpu
     return false;
   }
 
-  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrNameTransposeA, &transpose_a_)) {
+  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrIsTransA, &transpose_a_)) {
     return false;
   }
-  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrNameTransposeB, &transpose_b_)) {
+  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrIsTransB, &transpose_b_)) {
     return false;
   }
 

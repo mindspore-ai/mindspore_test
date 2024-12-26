@@ -28,7 +28,7 @@ bool HcomAllGatherMatMulKernel::Init(const std::vector<KernelTensor *> &inputs,
     MS_LOG(EXCEPTION) << "Input number of AllGatherMatMul should be 2, but got " << inputs.size();
   }
   if (outputs.size() != kAllGatherMatMulOutputNum) {
-    MS_LOG(EXCEPTION) << "Output number of AllGatherMatMul should be 1, but got " << outputs.size();
+    MS_LOG(EXCEPTION) << "Output number of AllGatherMatMul should be 2, but got " << outputs.size();
   }
 
   if (!HcclKernel::Init(inputs, outputs)) {
@@ -36,10 +36,10 @@ bool HcomAllGatherMatMulKernel::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
 
-  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrNameTransposeA, &transpose_a_)) {
+  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrIsTransA, &transpose_a_)) {
     return false;
   }
-  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrNameTransposeB, &transpose_b_)) {
+  if (!HcomUtil::GetHcomAttr<bool>(primitive_, kAttrIsTransB, &transpose_b_)) {
     return false;
   }
 
@@ -107,11 +107,12 @@ bool HcomAllGatherMatMulKernel::Launch(const std::vector<KernelTensor *> &inputs
   MS_EXCEPTION_IF_NULL(inputs[1]);
   MS_EXCEPTION_IF_NULL(workspace[0]);
   MS_EXCEPTION_IF_NULL(outputs[0]);
+  MS_EXCEPTION_IF_NULL(outputs[1]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
   Lcal::CoCInputPkg coc_input_args = {
     inputs[0]->device_ptr(), inputs[1]->device_ptr(), nullptr, nullptr, nullptr, nullptr, nullptr};
-  Lcal::CoCOutputPkg coc_output_args = {outputs[0]->device_ptr(), nullptr};
+  Lcal::CoCOutputPkg coc_output_args = {outputs[0]->device_ptr(), outputs[1]->device_ptr()};
   auto lccl_result =
     all_gather_matmul_func_(lcoc_ptr_, coc_input_args, coc_output_args, workspace[0]->device_ptr(), stream_ptr);
   if (lccl_result != Lcal::LCAL_SUCCESS) {

@@ -57,7 +57,9 @@ bool InsertTensorMoveForCommunication::Run(const FuncGraphPtr &graph) {
   std::vector<CNodePtr> communication_op_list;
   for (auto &node : node_list) {
     if (node == nullptr || !common::AnfAlgo::IsCommunicationOp(node) ||
-        common::AnfAlgo::GetCNodeName(node) == kMatMulAllReduceOpName) {
+        common::AnfAlgo::GetCNodeName(node) == kMatMulAllReduceOpName ||
+        common::AnfAlgo::GetCNodeName(node) == kAllGatherMatmulOpName ||
+        common::AnfAlgo::GetCNodeName(node) == kMatmulReduceScatterOpName) {
       continue;
     }
     auto communication_op = node->cast<CNodePtr>();

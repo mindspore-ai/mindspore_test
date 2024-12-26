@@ -82,7 +82,7 @@ int LowlatencyCollectiveCommLib::MatmulAllReduce(const LcocPtr &lcoc_ptr, const 
 int LowlatencyCollectiveCommLib::AllGatherMatmul(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg,
                                                  const CoCOutputPkg &output_pkg, void *workspace,
                                                  const aclrtStream stream) {
-  return lcoc_ptr->AllGatherMatmul(input_pkg, output_pkg, workspace, stream);
+  return lcoc_ptr->AllGatherMatmulV2(input_pkg, output_pkg, workspace, stream);
 }
 
 int LowlatencyCollectiveCommLib::MatmulReduceScatter(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg,

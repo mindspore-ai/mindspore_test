@@ -25,7 +25,7 @@ namespace mindspore {
 namespace kernel {
 
 constexpr uint32_t kAllGatherMatMulInputNum = 2;
-constexpr uint32_t kAllGatherMatMulOutputNum = 1;
+constexpr uint32_t kAllGatherMatMulOutputNum = 2;
 constexpr char kAttrNameTransposeA[] = "transpose_a";
 constexpr char kAttrNameTransposeB[] = "transpose_b";
 
@@ -45,7 +45,7 @@ class HcomAllGatherMatMulKernel : public HcclKernel {
   bool transpose_b_{false};
 
   Lcal::CoCDataTypeDesc lcoc_dtype_{Lcal::CoCDataTypeDesc::FP16FP16_FP32_FP16};
-  Lcal::LcalType lcoc_type_{Lcal::LcalType::ALL_GATHER_MATMUL};
+  Lcal::LcalType lcoc_type_{Lcal::LcalType::ALL_GATHER_MATMUL_V2};
   Lcal::QuantInfo quant_info_{};
   Lcal::CoCTiling tiling_{};
   Lcal::MatMulInfo matmul_info_{};
@@ -56,7 +56,7 @@ class HcomAllGatherMatMulKernel : public HcclKernel {
   AllGatherMatmulFunPtr all_gather_matmul_func_{nullptr};
 };
 
-MS_HCCL_REG_KERNEL(AllGatherMatMul, HcomAllGatherMatMulKernel);
+MS_HCCL_REG_KERNEL(AllGatherMatmul, HcomAllGatherMatMulKernel);
 }  // namespace kernel
 }  // namespace mindspore
 #endif

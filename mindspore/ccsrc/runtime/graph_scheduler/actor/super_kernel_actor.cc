@@ -1202,7 +1202,9 @@ void SuperKernelActor::BuildKernelActors() {
     kernel_actor->is_launch_skipped_ =
       common::AnfAlgo::IsNopNode(kernel) && graph_->IsInRefOutputMap(std::make_pair(kernel, 0));
     kernel_actor->inputs_continuous_memory_ =
-      (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName) &&
+      (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName &&
+       common::AnfAlgo::GetCNodeName(kernel) != kAllGatherMatmulOpName &&
+       common::AnfAlgo::GetCNodeName(kernel) != kMatmulReduceScatterOpName) &&
       (common::AnfAlgo::GetInputTensorNum(kernel) > 1);
 
     if (SchedulerHelper::IsSkipLaunchShapeRelatedOp(kernel_actor.get())) {

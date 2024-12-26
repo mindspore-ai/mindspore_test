@@ -39,5 +39,5 @@ def test_matmul_reduce_scatter_forward():
     '''
     os.environ['ENABLE_LCCL'] = str(1)
     ret = os.system("msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10969 --join=True "
-                    "pytest -s mc2_fusion.py::test_matmul_reduce_scatter_forward")
+                    "pytest -s mte_fusion.py::test_matmul_reduce_scatter_forward")
     assert ret == 0

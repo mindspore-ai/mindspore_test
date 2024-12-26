@@ -55,7 +55,7 @@ class HcomMatMulReduceScatterKernel : public HcclKernel {
   MatmulReduceScatterFunPtr matmul_reduce_scatter_func_{nullptr};
 };
 
-MS_HCCL_REG_KERNEL(MatMulReduceScatter, HcomMatMulReduceScatterKernel);
+MS_HCCL_REG_KERNEL(MatmulReduceScatter, HcomMatMulReduceScatterKernel);
 }  // namespace kernel
 }  // namespace mindspore
 #endif
