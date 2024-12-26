@@ -524,6 +524,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
     return false;
   }
 
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, GetAID().Name());
   for (const auto &output_index_to_copy_address : kernel_actor->copy_output_device_tensors_) {
     const auto &output_index = output_index_to_copy_address.first;
     const auto &dest_device_address = output_index_to_copy_address.second.first.get();

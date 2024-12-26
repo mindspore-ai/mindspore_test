@@ -891,13 +891,15 @@ bool IsEmptySequenceTensor(tensor::Tensor *tensor) {
   return sequence_shape->size() == 0;
 }
 
-void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *device_tensor) {
+void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *device_tensor, size_t index) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (input_tensor == nullptr || IsEmptySequenceTensor(input_tensor)) {
     return;
   }
 
-  if (!IsDynamic(device_tensor->host_shape()) && !IsDynamic(device_tensor->GetShapeVector())) {
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  if (!IsDynamic(device_tensor->host_shape()) && !graph_parameter_store->IsPositionDynamic(index)) {
     return;
   }
 
@@ -927,7 +929,7 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *devic
 
 void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::Tensor *tensor,
                                 OpContext<DeviceTensor> *const context, const AID &from_aid) {
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, from_aid.Name());
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
   MS_EXCEPTION_IF_NULL(context);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
@@ -937,7 +939,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
     MS_EXCEPTION_IF_NULL(device_tensor);
-    UpdateDynamicShapeAndSize(tensor, device_tensor);
+    UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index);
     graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
       MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
@@ -967,14 +969,19 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
 }
 
 void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, const DeviceTensorPtr &tensor_address,
-                                       OpContext<DeviceTensor> *const context, const AID &from_aid) {
-  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, from_aid.Name());
+                                       tensor::Tensor *tensor, OpContext<DeviceTensor> *const context,
+                                       const AID &from_aid) {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(tensor_address);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
+  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "");
+  }
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
+    UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index);
     MS_EXCEPTION_IF_NULL(device_tensor);
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
       MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
@@ -985,12 +992,6 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
     if (device_tensor == tensor_address.get()) {
       continue;
     }
-    const auto &kernel_tensor = device_tensor->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    const auto &updated_kernel_tensor = tensor_address->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(updated_kernel_tensor);
-    kernel_tensor->SetShape(updated_kernel_tensor->GetShape());
-    device_tensor->SetSize(tensor_address->GetSize());
     UpdateRefCount(device_tensor, true);
 
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
@@ -1008,9 +1009,9 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
   }
 }
 
-DeviceTensor *PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
-                                         const DeviceContext *device_context, OpContext<DeviceTensor> *const context,
-                                         const AID &from_aid) {
+DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
+                                           const DeviceContext *device_context, OpContext<DeviceTensor> *const context,
+                                           const AID &from_aid) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
@@ -1051,7 +1052,7 @@ DeviceTensor *PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t
     tensor->set_device_address(device_tensor);
   }
   graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
-  return device_tensor.get();
+  return device_tensor;
 }
 
 DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
@@ -1061,9 +1062,10 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
-  auto device_tensor = graph_parameter_store->Fetch(outer_index, inner_index, device_context->GetDeviceType());
+  auto device_tensor =
+    graph_parameter_store->FetchMutableAddr(outer_index, inner_index, device_context->GetDeviceType());
   if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
-    return device_tensor;
+    return device_tensor.get();
   }
   auto front_node = parameter_index.first;
   MS_EXCEPTION_IF_NULL(front_node.first);
@@ -1072,7 +1074,6 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
   auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
-
   try {
     // Prepare data if got tensor address.
     if (tensor_address != nullptr) {
@@ -1086,13 +1087,14 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
 
       UpdateRefCount(tensor_address.get(), true);
       graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
-      if (tensor_address.get() == device_tensor) {
+      if (tensor_address == device_tensor) {
         return tensor_address.get();
       }
       // Set tensor address to graph parameter store.
       if (device_tensor == nullptr || tensor_address->GetDeviceType() == device_tensor->GetDeviceType()) {
-        MS_LOG(DEBUG) << "Refresh store device tensor, from: " << tensor_address.get() << ", to: " << device_tensor
-                      << ", outer index: " << outer_index << ", inner index: " << inner_index
+        MS_LOG(DEBUG) << "Refresh store device tensor, from: " << tensor_address.get()
+                      << ", to: " << device_tensor.get() << ", outer index: " << outer_index
+                      << ", inner index: " << inner_index
                       << ", device type: " << device::GetDeviceNameByType(tensor_address->GetDeviceType());
         graph_parameter_store->Push(outer_index, inner_index, tensor_address, tensor_address->GetDeviceType(),
                                     SIZE_MAX);
@@ -1101,9 +1103,13 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
           tensor_address->SetNodeIndex(node_with_index.first, node_with_index.second);
           tensor_address->set_flag(device_tensor->flag());
         }
-        device_tensor = tensor_address.get();
+        device_tensor = tensor_address;
       }
-      SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, context, from_aid);
+      SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
+      if (device_tensor != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
+        tensor->set_device_address(device_tensor);
+        return device_tensor.get();
+      }
 
       return tensor_address.get();
     }
@@ -1120,7 +1126,7 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
     }
     (*context).SetFailed(kFailure);
   }
-  return device_tensor;
+  return device_tensor.get();
 }
 
 DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
