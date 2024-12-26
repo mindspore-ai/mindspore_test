@@ -331,12 +331,13 @@ __global__ void SoftMaxWarpForward(output_t *dst, const input_t *src, int batch_
     mask += idx_offset;
   }
   acc_t elements[WARP_BATCH][WARP_ITERATIONS];
-  for (int i = 0; i < WARP_BATCH; ++i) {
-    int batch_element_count = (i >= local_batches) ? 0 : element_count;
-    for (int it = 0; it < WARP_ITERATIONS; ++it) {
-      int element_index = local_idx + it * WARP_SIZE;
+  for (auto i = 0; i < WARP_BATCH; i++) {
+    auto batch_element_count = (i >= local_batches) ? 0 : element_count;
+    for (auto it = 0; it < WARP_ITERATIONS; it++) {
+      auto element_index = local_idx + it * WARP_SIZE;
       if (element_index < batch_element_count) {
-        elements[i][it] = src[i * element_count + it * WARP_SIZE];
+        auto idx = i * element_count + it * WARP_SIZE;
+        elements[i][it] = src[idx];
       } else {
         elements[i][it] = -std::numeric_limits<acc_t>::infinity();
       }

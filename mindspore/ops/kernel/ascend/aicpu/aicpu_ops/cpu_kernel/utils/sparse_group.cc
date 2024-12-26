@@ -19,11 +19,12 @@
 
 namespace aicpu {
 void GroupIterable::IteratorStep::UpdateEndOfGroup() {
-  ++next_loc_;
+  // firstly added location index
+  next_loc_++;
   const auto &ix_t = iter_->ix_matrix_;
-  const int64_t N = ix_t.dimension(0);
-  while (next_loc_ < N && iter_->GroupMatches(ix_t, loc_, next_loc_)) {
-    ++next_loc_;
+  const int64_t num = ix_t.dimension(0);
+  while (next_loc_ < num && iter_->GroupMatches(ix_t, loc_, next_loc_)) {
+    next_loc_++;
   }
 }
 
