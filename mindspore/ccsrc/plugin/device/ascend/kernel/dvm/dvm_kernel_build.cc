@@ -56,6 +56,7 @@ enum OpType {
   OP_GMM,
   OP_COMM,
   OP_TG,
+  OP_COPY,
   OPTypeEnd
 };
 
@@ -158,16 +159,26 @@ T GetScalarFromNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(valuenode);
   auto value_ptr = valuenode->value();
   if (value_ptr->isa<Scalar>()) {
-    if constexpr (std::is_same_v<T, float16>) {
-      MS_LOG(EXCEPTION) << "The float16 type is not support!";
+    auto input_scalar = value_ptr->cast<ScalarPtr>();
+    MS_EXCEPTION_IF_NULL(input_scalar);
+    if constexpr (std::is_same_v<T, dvm::Float16>) {
+      return T(GetValue<float16>(input_scalar).int_value());
+    } else if constexpr (std::is_same_v<T, dvm::BFloat16>) {
+      return T(GetValue<bfloat16>(input_scalar).int_value());
     } else {
-      auto input_scalar = value_ptr->cast<ScalarPtr>();
       return GetValue<T>(input_scalar);
     }
+  } else {
+    auto input_tensor = value_ptr->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(input_tensor);
+    if constexpr (std::is_same_v<T, dvm::Float16>) {
+      return T(static_cast<float16 *>(input_tensor->data_c())->int_value());
+    } else if constexpr (std::is_same_v<T, dvm::BFloat16>) {
+      return T(static_cast<bfloat16 *>(input_tensor->data_c())->int_value());
+    } else {
+      return *(static_cast<T *>(input_tensor->data_c()));
+    }
   }
-  auto input_tensor = value_ptr->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  return TensorValueToVector<T>(input_tensor)[0];
 }
 
 class OpBuilder {
@@ -193,29 +204,30 @@ class OpBuilder {
     switch (op_type->second.first) {
       case OP_CAST: {
         auto dst_dtype = AnfAlgo::GetOutputDeviceDataType(node, 0);
-        auto op = EmitCast(GetInput(node->input(1)), dst_dtype);
+        auto op = EmitCast(GetInput(node->input(kIndex1)), dst_dtype);
         EmitOp(anf_node, op);
         break;
       }
       case OP_SELECT: {
-        auto op = kernel_->Select(GetInput(node->input(1)), GetInput(node->input(2)), GetInput(node->input(3)));
+        auto op = kernel_->Select(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)),
+                                  GetInput(node->input(kIndex3)));
         EmitOp(anf_node, op);
         break;
       }
       case OP_UNARY: {
-        auto op = kernel_->Unary(op_type->second.second, GetInput(node->input(1)));
+        auto op = kernel_->Unary(op_type->second.second, GetInput(node->input(kIndex1)));
         EmitOp(anf_node, op);
         break;
       }
       case OP_RSQRT: {
-        auto sqrt_op = kernel_->Unary(dvm::UnaryOpType::kSqrt, GetInput(node->input(1)));
+        auto sqrt_op = kernel_->Unary(dvm::UnaryOpType::kSqrt, GetInput(node->input(kIndex1)));
         auto op = kernel_->Unary(dvm::UnaryOpType::kReciprocal, sqrt_op);
         EmitOp(anf_node, op);
         break;
       }
       case OP_RESHAPE: {
-        auto shape_ref = CacheShape(node, 2);
-        auto op = kernel_->Reshape(GetInput(node->input(1)), shape_ref);
+        auto shape_ref = CacheShape(node, kIndex2);
+        auto op = kernel_->Reshape(GetInput(node->input(kIndex1)), shape_ref);
         EmitOp(anf_node, op);
         break;
       }
@@ -225,11 +237,7 @@ class OpBuilder {
         break;
       }
       case OP_BROADCAST: {
-        auto input = node->input(1);
-        auto shape_ref = CacheShape(node, 2);
-        auto op = input->isa<ValueNode>() ? EmitScalarBroadcast(input, shape_ref)
-                                          : kernel_->Broadcast(GetInput(input), shape_ref);
-        EmitOp(anf_node, op);
+        HandlerBroadcastOp(node);
         break;
       }
       case OP_NEG: {
@@ -244,7 +252,7 @@ class OpBuilder {
       }
       case OP_ELEMENY: {
         auto dst_dtype = AnfAlgo::GetOutputDeviceDataType(node, 0);
-        auto op = kernel_->ElemAny(EmitCast(GetInput(node->input(1)), dst_dtype));
+        auto op = kernel_->ElemAny(EmitCast(GetInput(node->input(kIndex1)), dst_dtype));
         EmitOp(anf_node, op);
         break;
       }
@@ -272,14 +280,26 @@ class OpBuilder {
         EmitOp(node, GetInput(node->input(kIndex1)));
         break;
       }
+      case OP_COPY: {
+        EmitOp(anf_node, kernel_->Copy(GetInput(node->input(kIndex1))));
+        break;
+      }
       default:
         MS_LOG(EXCEPTION) << op_type->second << " is unsupported op type.";
         break;
     }
   }
 
+  template <typename T>
+  dvm::NDObject *EmitBinaryScalarOp(const AnfNodePtr &node, const AnfNodePtr &scalar_node, int binary_type,
+                                    const bool rhs_val) {
+    auto scalar = GetScalarFromNode<T>(scalar_node);
+    return rhs_val ? kernel_->Binary(binary_type, GetInput(node), scalar)
+                   : kernel_->Binary(binary_type, scalar, GetInput(node));
+  }
+
   dvm::NDObject *EmitBinaryOp(const CNodePtr &node, int binary_type) {
-    AnfNodePtr inputs[] = {node->input(1), node->input(2)};
+    AnfNodePtr inputs[] = {node->input(kIndex1), node->input(kIndex2)};
     int scalar_index = -1;
     for (int i = 0; i < 2; i++) {
       auto shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(inputs[i]->Shape())[kShape];
@@ -298,20 +318,18 @@ class OpBuilder {
       auto scalar_node = inputs[scalar_index];
       auto common_node = inputs[scalar_index ^ 1];
       auto type_id = GetValueNodeType(scalar_node);
-      if (type_id == kNumberTypeFloat32) {
-        auto scalar = GetScalarFromNode<float>(scalar_node);
-        op = scalar_index ? kernel_->Binary(binary_type, GetInput(common_node), scalar)
-                          : kernel_->Binary(binary_type, scalar, GetInput(common_node));
-      } else if (type_id == kNumberTypeFloat16) {
-        auto scalar = static_cast<float>(GetScalarFromNode<float16>(scalar_node));
-        op = scalar_index ? kernel_->Binary(binary_type, GetInput(common_node), scalar)
-                          : kernel_->Binary(binary_type, scalar, GetInput(common_node));
-      } else if (type_id == kNumberTypeInt32) {
-        auto scalar = GetScalarFromNode<int32_t>(scalar_node);
-        op = scalar_index ? kernel_->Binary(binary_type, GetInput(common_node), scalar)
-                          : kernel_->Binary(binary_type, scalar, GetInput(common_node));
-      } else {
-        MS_LOG(EXCEPTION) << "Some input of node " << node->fullname_with_scope() << " has unsupported dtype";
+      switch (type_id) {
+        case kNumberTypeFloat32:
+          return EmitBinaryScalarOp<float>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        case kNumberTypeFloat16:
+          return EmitBinaryScalarOp<dvm::Float16>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        case kNumberTypeInt32:
+          return EmitBinaryScalarOp<int32_t>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        case kNumberTypeBFloat16:
+          return EmitBinaryScalarOp<dvm::BFloat16>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        default:
+          MS_LOG(EXCEPTION) << "Some input of node " << node->fullname_with_scope() << " has unsupported dtype "
+                            << TypeIdToString(type_id);
       }
     } else {
       op = kernel_->Binary(binary_type, GetInput(inputs[0]), GetInput(inputs[1]));
@@ -354,16 +372,24 @@ class OpBuilder {
     EmitOp(node, op);
   }
 
+  void HandlerBroadcastOp(const CNodePtr &node) {
+    auto input = node->input(kIndex1);
+    auto shape_ref = CacheShape(node, kIndex2);
+    auto op =
+      input->isa<ValueNode>() ? EmitScalarBroadcast(input, shape_ref) : kernel_->Broadcast(GetInput(input), shape_ref);
+    EmitOp(node, op);
+  }
+
   void HandlerSliceOp(const CNodePtr &node, int op_type) {
     auto input = node->input(1);
-    auto start_ref = CacheAxis(node, node->input(2));
+    auto start_ref = CacheAxis(node, node->input(kIndex2));
     if (op_type) {
-      auto end_ref = CacheAxis(node, node->input(3));
-      auto step_ref = CacheAxis(node, node->input(4));
+      auto end_ref = CacheAxis(node, node->input(kIndex3));
+      auto step_ref = CacheAxis(node, node->input(kIndex4));
       auto op = kernel_->Copy(GetInput(input, start_ref, end_ref, step_ref));
       EmitOp(node, op);
     } else {
-      auto size_ref = CacheAxis(node, node->input(3));
+      auto size_ref = CacheAxis(node, node->input(kIndex3));
       auto op = kernel_->Copy(GetInput(input, start_ref, size_ref));
       EmitOp(node, op);
     }
@@ -513,19 +539,26 @@ class OpBuilder {
     auto type_id = GetValueNodeType(node);
     auto v_type_id = ms_type_map[type_id];
     dvm::NDObject *op = nullptr;
-    if (type_id == kNumberTypeFloat32) {
-      auto scalar = GetScalarFromNode<float>(node);
-      op = kernel_->Broadcast(scalar, shape, v_type_id, empty_input_);
-    } else if (type_id == kNumberTypeFloat16) {
-      auto scalar = static_cast<float>(GetScalarFromNode<float16>(node));
-      op = kernel_->Broadcast(scalar, shape, v_type_id, empty_input_);
-    } else if (type_id == kNumberTypeInt32) {
-      auto scalar = GetScalarFromNode<int32_t>(node);
-      op = kernel_->Broadcast(scalar, shape, v_type_id, empty_input_);
-    } else if (type_id == kNumberTypeBFloat16) {
-      auto scalar = GetScalarFromNode<bfloat16>(node);
-      auto fp32_scalar = static_cast<float>(scalar);
-      op = kernel_->Broadcast(fp32_scalar, shape, dvm::DType::kFloat32, empty_input_);
+    switch (type_id) {
+      case kNumberTypeFloat32: {
+        op = kernel_->Broadcast(GetScalarFromNode<float>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      case kNumberTypeFloat16: {
+        op = kernel_->Broadcast(GetScalarFromNode<dvm::Float16>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      case kNumberTypeBFloat16: {
+        op = kernel_->Broadcast(GetScalarFromNode<dvm::BFloat16>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      case kNumberTypeInt32: {
+        op = kernel_->Broadcast(GetScalarFromNode<int32_t>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      default:
+        MS_LOG(EXCEPTION) << "Some input of node " << node->fullname_with_scope() << " has unsupported dtype "
+                          << TypeIdToString(type_id);
     }
     if (empty_input_) {
       empty_input_ = false;  // now we have a fake input
