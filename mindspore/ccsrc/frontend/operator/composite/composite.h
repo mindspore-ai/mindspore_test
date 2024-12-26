@@ -133,6 +133,16 @@ class Tail : public MetaFuncGraph {
 };
 using TailPtr = std::shared_ptr<Tail>;
 
+class PrintGradient : public MetaFuncGraph {
+ public:
+  explicit PrintGradient(const std::string &name) : MetaFuncGraph(name) {}
+  ~PrintGradient() override = default;
+  MS_DECLARE_PARENT(PrintGradient, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const PrintGradient &lhs, const PrintGradient &rhs) { return lhs.name_ == rhs.name_; }
+};
+using PrintGradientPtr = std::shared_ptr<PrintGradient>;
+
 class MakeTupleGradient : public MetaFuncGraph {
  public:
   explicit MakeTupleGradient(const std::string &name) : MetaFuncGraph(name) {}
