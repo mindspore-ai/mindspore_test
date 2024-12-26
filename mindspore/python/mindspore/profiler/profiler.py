@@ -20,7 +20,7 @@ from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from mindspore import log as logger
-from mindspore.profiler.common.constant import ProfilerStepNameConstant
+from mindspore.profiler.common.constant import ProfilerStepNameConstant, DeviceTarget
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.npu_profiler import NPUProfilerAnalysis
 from mindspore.profiler.profiler_action_controller import ProfilerActionController
@@ -546,6 +546,65 @@ class Profiler:
                 logger.warning("The metadata value must be json format string. Skip this metadata")
         else:
             logger.warning("Too many metadata added. Skip this metadata")
+
+    def op_analyse(self, op_name, device_id=None):
+        """
+        Profiler users can use this interface to obtain operator performance data.
+
+        Args:
+            op_name (str or list): The primitive operator name to query.
+            device_id (int, optional): ID of the target device. This parameter is optional during network training or
+                inference, and users can use device_id parameter to specify which card operator performance data to
+                parse. If this interface is used for offline data parsing, the default value is ``None`` .
+
+        Raises:
+            TypeError: If the `op_name` parameter type is incorrect.
+            TypeError: If the `device_id` parameter type is incorrect.
+            RuntimeError: If MindSpore runs on Ascend, this interface cannot be used.
+
+        Supported Platforms:
+            ``GPU`` ``CPU``
+
+        Examples:
+            >>> from mindspore import Profiler
+            >>> from mindspore import nn
+            >>> from mindspore import Model
+            >>> # Profiler init.
+            >>> profiler = Profiler()
+            >>> # Train Model or eval Model, taking LeNet5 as an example.
+            >>> # Refer to https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+            >>> net = LeNet5()
+            >>> optimizer = nn.Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+            >>> loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+            >>> # Create the dataset taking MNIST as an example.
+            >>> # Refer to https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
+            >>> dataloader = create_dataset()
+            >>> model = Model(net, loss, optimizer)
+            >>> model.train(5, dataloader, dataset_sink_mode=False)
+            >>>
+            >>> # Profiler end
+            >>> profiler.analyse()
+            >>>
+            >>> profiler.op_analyse(op_name=["BiasAdd", "Conv2D"])
+        """
+        if self._prof_context.device_target == DeviceTarget.NPU.value:
+            raise RuntimeError("The Interface 'Profiler.op_analyse()' is not supported on Ascend currently.")
+
+        if device_id and not isinstance(device_id, int):
+            raise TypeError(f"For 'Profiler.op_analyse()', the parameter device_id must be int, "
+                            f"but got type {type(device_id)}")
+
+        if not isinstance(op_name, str) and not isinstance(op_name, list):
+            raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name must be str or list, "
+                            f"but got type {type(op_name)}")
+        if not op_name:
+            raise TypeError(f"For 'Profiler.op_analyse()', the parameter op_name cannot be "", '' or [].")
+
+        from mindspore.profiler.parser.framework_parser import GpuFrameWorkParser
+        dev_id = self._prof_context.device_id if device_id is None else device_id
+        parser = GpuFrameWorkParser(self._prof_context.framework_path, dev_id, op_name)
+        op_info = parser.parse()
+        return op_info
 
     def _dump_metadata(self):
         """Dump metadata to file."""
