@@ -15,7 +15,7 @@
  */
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-
+#include <securec.h>
 #define IS_PYTHON_3_11_PLUS (PY_VERSION_HEX >= 0x030B0000)
 #define IS_PYTHON_3_8_PLUS (PY_VERSION_HEX >= 0x03080000)
 
