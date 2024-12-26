@@ -83,6 +83,7 @@ constexpr char kVarNpuAsdSigmaThresh[] = "NPU_ASD_SIGMA_THRESH";
 constexpr char kUpperThreshDefaultVal[] = "1000000,10000";
 constexpr char kSigmaThreshDefaultVal[] = "100000,5000";
 constexpr float kThreshMinimalVal = 3;
+constexpr int64_t kMinSteps = 100;
 
 std::string ltrim(const std::string &str) { return std::regex_replace(str, std::regex("^\\s+"), std::string("")); }
 
@@ -150,7 +151,6 @@ std::vector<float> parse_thresh(const std::string &env_var, const std::string &d
 int GetNpuAsdDetectValue() {
   static auto npu_asd_detect_value = []() -> int {
     auto var_val = common::GetEnv(kNpuAsdEnable);
-
     if (var_val.size() != 1 || var_val[0] < '0' || var_val[0] > '3') {
       if (!var_val.empty()) {
         MS_LOG(WARNING) << "Valid values of " << kNpuAsdEnable << " are 0, 1, 2 and 3, but got " << var_val << ".";
@@ -366,7 +366,6 @@ void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const Dyn
   auto beta = GetValue<pyfloat>(beta_ptr);
   auto npu_asd_detect = GetValue<int64_t>(npu_asd_detect_ptr);
 
-  // op->set_outputs(std::vector<tensor::BaseTensorPtr>{avg, input_grad, step, op->output(kIndex3)});
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, max, avg, input_grad, step, dst_size,
                                 dst_stride, dst_offset);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(),
@@ -547,14 +546,14 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
   p_scalar_ = std::make_shared<KernelTensor>(nullptr, kTypeNone, kNone);
   dim_ = std::make_shared<KernelTensor>(std::make_shared<abstract::TensorShape>(std::vector<int64_t>{}), kInt64,
                                         MakeValue(std::vector<int64_t>{}));
-  // p_scalar_ = GenerateKernelTensor(kNumberTypeFloat32, ShapeVector{}, MakeValue<float>(2.0));
+
   keep_dim_ = std::make_shared<KernelTensor>(nullptr, kBool, MakeValue(false));
   zero_ = GenerateKernelTensor(kNumberTypeInt8, ShapeVector{1}, MakeValue<int8_t>(0), true);
 
   // create constants used by aclnnSilentCheck
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kUpperThreshDefaultVal, kThreshMinimalVal);
   auto sigma_thresh = parse_thresh(kVarNpuAsdSigmaThresh, kSigmaThreshDefaultVal, kThreshMinimalVal);
-  c_min_steps_ = std::make_shared<KernelTensor>(nullptr, kInt64, MakeValue<int64_t>(100));
+  c_min_steps_ = std::make_shared<KernelTensor>(nullptr, kInt64, MakeValue<int64_t>(kMinSteps));
   c_thresh_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(upper_thresh.front()));
   c_coeff_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(sigma_thresh.front()));
   c_thresh_l2_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(upper_thresh.back()));

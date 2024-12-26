@@ -42,6 +42,7 @@ constexpr size_t kMapTensorNum = 3;
 constexpr size_t kMapTensorKeyIndex = 0;
 constexpr size_t kMapTensorValueIndex = 1;
 constexpr size_t kMapTensorStatusIndex = 2;
+constexpr size_t kGraphInfoSavePrefixLen = 5;
 }  // namespace
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
 
@@ -454,8 +455,8 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
   // is_run_save_graph
   std::string graph_name = graph_info;
   bool is_run_save_graph = false;
-  if (graph_info.substr(0, 5) == "save.") {
-    graph_name.erase(0, 5);
+  if (graph_info.substr(0, kGraphInfoSavePrefixLen) == "save.") {
+    graph_name.erase(0, kGraphInfoSavePrefixLen);
     is_run_save_graph = true;
   }
 

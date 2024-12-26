@@ -60,7 +60,6 @@ void GeDeviceResManager::Destroy() {
   if (!initialized_) {
     return;
   }
-  // (void)DestroyAllEvents();
   // release runtime
   if (runtime_instance_ != nullptr) {
     runtime_instance_->ReleaseDeviceRes();

@@ -1302,7 +1302,6 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
                                       profiler::GetClockSyscnt(), 1);
       return false;
     }
-
   } else {
     MS_LOG(INFO) << "GE run graph start, graph: " << graph_name << ".";
     (void)ge_res_manager_->BindDeviceToCurrentThread(false);

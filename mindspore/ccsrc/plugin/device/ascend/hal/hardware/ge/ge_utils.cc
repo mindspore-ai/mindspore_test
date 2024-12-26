@@ -40,6 +40,9 @@ namespace ascend {
 
 namespace {
 constexpr char kGeDumpMode[3][7] = {"all", "input", "output"};
+constexpr uint32_t kDumpModeAicoreOverflow = 1;
+constexpr uint32_t kDumpModeAtomicOverflow = 2;
+constexpr uint32_t kDumpModeAll = 3;
 
 std::string ShapesToString(const ShapeArray &shapes) {
   std::stringstream buffer;
@@ -295,13 +298,13 @@ void SetDumpOptions(std::map<std::string, std::string> *ge_options) {
       (*ge_options)["ge.exec.enableDump"] = "0";
       (*ge_options)["ge.exec.enableDumpDebug"] = "1";
       switch (dump_parser.op_debug_mode()) {
-        case 1:
+        case kDumpModeAicoreOverflow:
           (*ge_options)["ge.exec.dumpDebugMode"] = "aicore_overflow";
           break;
-        case 2:
+        case kDumpModeAtomicOverflow:
           (*ge_options)["ge.exec.dumpDebugMode"] = "atomic_overflow";
           break;
-        case 3:
+        case kDumpModeAll:
           (*ge_options)["ge.exec.dumpDebugMode"] = "all";
           break;
         default:

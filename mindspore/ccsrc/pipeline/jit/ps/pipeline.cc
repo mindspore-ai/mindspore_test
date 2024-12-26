@@ -150,6 +150,7 @@ std::unordered_map<abstract::AbstractBasePtrList, uint64_t, abstract::AbstractBa
 std::unordered_map<PyObject *, abstract::AbstractBasePtrList> kCellArgsMap;
 
 namespace {
+constexpr size_t kPhaseSavePrefixLen = 5;
 #ifdef ENABLE_DUMP_IR
 std::string GetBaseNameForIR(int64_t stage_idx, const std::string &action_name) {
   std::ostringstream oss;
@@ -1899,7 +1900,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
 #ifdef WITH_BACKEND
   if (ms_context->backend_policy() == "ge") {
     if (phase_prefix == "save") {
-      phase.erase(0, 5);
+      phase.erase(0, kPhaseSavePrefixLen);
       compile::VmEvalFuncPtr run = GetVmEvalFunc("train." + phase, kCkptOutput);
       if (run == nullptr) {
         MS_LOG(INTERNAL_EXCEPTION) << "Can't find run graph func for " << phase;
