@@ -35,6 +35,11 @@ bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
       return false;
     }
     MS_LOG(INFO) << "Successfully initialize LCCL group " << name_;
+    if (MsContext::GetInstance()->IsEnableInferBoost() && device::ascend::EnableLccl()) {
+      // Only when this is infer boost and MS_ENABLE_LCCL is set to on, we only use LCCL.
+      MS_LOG(INFO) << "This is infer boost, only initialize group for LCCL.";
+      return true;
+    }
   }
 #endif
   if (!hccl_group_->Initialize(root_info)) {
@@ -64,8 +69,15 @@ bool MultiAscendCommunicationGroup::Finalize() {
 }
 
 void *MultiAscendCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
-  MS_EXCEPTION_IF_NULL(hccl_group_);
-  void *root_info = hccl_group_->GenerateRootInfo(root_info_size);
+  CommunicationGroupPtr group_to_generate_root_info = nullptr;
+  if (MsContext::GetInstance()->IsEnableInferBoost() && device::ascend::EnableLccl()) {
+    // Only when this is infer boost and MS_ENABLE_LCCL is set to on, we only use LCCL.
+    group_to_generate_root_info = lccl_group_;
+  } else {
+    group_to_generate_root_info = hccl_group_;
+  }
+  MS_EXCEPTION_IF_NULL(group_to_generate_root_info);
+  void *root_info = group_to_generate_root_info->GenerateRootInfo(root_info_size);
   return root_info;
 }
 
