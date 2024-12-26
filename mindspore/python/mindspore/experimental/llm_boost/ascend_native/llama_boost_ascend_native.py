@@ -26,6 +26,7 @@ def RoundUp(val: int, align: int) -> int:
         return 0
     return -(val // -align) * align
 
+
 def ConvertTensor(nd_mat: np.ndarray, transpose: bool = True, nd2nz: bool = True) -> np.ndarray:
     """ Transforms tensor format from Nd to Nz """
     if transpose:
@@ -42,6 +43,7 @@ def ConvertTensor(nd_mat: np.ndarray, transpose: bool = True, nd2nz: bool = True
         nd_mat, (r, c // block_size[1], block_size[1])), (1, 0, 2))
     nz_mat = nz_mat.reshape(r, c)
     return nz_mat
+
 
 @LlmBoostRegister.register(LlmBoostType.ASCEND_NATIVE, "Llama")
 class LlamaBoostAscendNative(LLMBoost):
