@@ -1527,7 +1527,15 @@ Dimensions PrepareIncomingOperatorInputStrategy(const std::shared_ptr<OperatorIn
 
 Dimensions GetAxisList(const std::vector<std::shared_ptr<OperatorInfo>> &ops, const int64_t iter_ops) {
   Dimensions axis_list;
-  auto axis_param = ops[LongToSize(iter_ops)]->attrs().find(AXIS)->second;
+  if (ops.size() <= LongToSize(iter_ops)) {
+    MS_LOG(EXCEPTION) << "iter_ops out of range";
+  }
+  MS_LOG(INFO) << "Get axis list from: " << ops[LongToSize(iter_ops)]->name();
+  auto op_input_value = ops[LongToSize(iter_ops)]->input_value();
+  if (op_input_value.size() <= kIndex1) {
+    MS_LOG(EXCEPTION) << "operator has only 1 input";
+  }
+  auto axis_param = op_input_value[kIndex1];
   std::vector<ValuePtr> elements;
   if (axis_param->isa<ValueTuple>()) {
     elements = axis_param->cast<ValueTuplePtr>()->value();
