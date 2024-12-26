@@ -589,11 +589,6 @@ void OutputActor::UpdateOutputDeviceAddress() {
       HandleEmptySequenceOutput(device_tensor, tensor, i, GetAID().Name());
       continue;
     }
-    if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[i] != nullptr) {
-      tensor->set_device_address(outputs_[repeat_index[i]]->device_address());
-      continue;
-    }
-
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.
@@ -650,6 +645,15 @@ void OutputActor::UpdateOutputDeviceAddress() {
       }
       MS_LOG(DEBUG) << "Copy graph output from device address:" << device_tensor << " to:" << tensor_device_address;
     } else {
+      if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
+        const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
+        MS_EXCEPTION_IF_NULL(src_address);
+        tensor_device_address->set_pointer_ref_count(src_address->pointer_ref_count());
+        MS_LOG(DEBUG) << "Output actor share the same pointer ref count:" << src_address->pointer_ref_count()
+                      << " between device address:" << tensor_device_address << " and:" << src_address;
+        continue;
+      }
+
       MS_LOG(DEBUG) << "Swap ptr:" << device_tensor->GetPtr() << " from device tensor:" << device_tensor
                     << " device type:" << device_tensor->GetDeviceType() << " to :" << tensor_device_address
                     << " device type:" << tensor_device_address->GetDeviceType();
