@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,6 @@ void ReuseDataPtr(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, si
 
   // create src device address if null
   if (src->device_address() == nullptr) {
-    // auto device_ptr = device_ctx->device_res_manager_->MallocMemFromMemPool(
-    //         src->Size(), true, false, stream_id);
     auto device_ptr = device_ctx->device_res_manager_->AllocateMemory(src->Size(), stream_id);
     auto src_device_address = device_ctx->device_res_manager_->CreateDeviceAddress(
       reinterpret_cast<void *>(device_ptr), src->Size(), src->shape(), Format::DEFAULT_FORMAT, src->data_type(),
@@ -55,9 +53,8 @@ void ReuseDataPtr(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, si
   }
 
   // create device address with src ptr
-  char *ptr = reinterpret_cast<char *>(src->device_address()->GetMutablePtr());
+  uint8_t *ptr = reinterpret_cast<uint8_t *>(src->device_address()->GetMutablePtr());
   auto offset_size = offset * UnitSizeInBytes(dst->data_type());
-
   if (offset_size >= src->Size()) {
     MS_EXCEPTION(ValueError) << "Offset overflow. Expect offset in bytes less than " << src->Size() << ", got "
                              << offset_size;
