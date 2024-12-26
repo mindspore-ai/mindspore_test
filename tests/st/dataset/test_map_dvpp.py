@@ -1864,6 +1864,23 @@ def test_map_with_dvpp_with_spawn_independent_mode():
     os.environ['MS_INDEPENDENT_DATASET'] = "False"
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_map_with_dvpp_with_910a_exception():
+    """
+    Feature: Map op
+    Description: Test map with dvpp on ascend910a when exception
+    Expectation: The result is equal to the expected
+    """
+    data = np.random.randint(0, 255, size=(1, 100, 100, 3)).astype(np.uint8)
+    numpy_slices_dataset = ds.NumpySlicesDataset(data, ["image"])
+    transforms_list = [vision.Erase(10, 10, 10, 10, (100, 100, 100)).device("Ascend")]
+    numpy_slices_dataset = numpy_slices_dataset.map(operations=transforms_list, input_columns=["image"])
+    with pytest.raises(RuntimeError) as error_info:
+        for _ in numpy_slices_dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+            pass
+    assert "The SoC: Ascend910A is not Ascend910B / Ascend910_93" in str(error_info.value)
+
+
 if __name__ == '__main__':
     test_map_with_pyfunc_with_multi_op_process_mode()
     test_map_with_pyfunc_with_multi_op_thread_mode()
@@ -1877,3 +1894,4 @@ if __name__ == '__main__':
     test_basic_transforms_pipeline()
     test_map_with_dvpp_with_spawn()
     test_map_with_dvpp_with_spawn_independent_mode()
+    test_map_with_dvpp_with_910a_exception()
