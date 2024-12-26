@@ -249,6 +249,12 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
   // twice.
   instance->Clear();
 }
+
+void TransformGraphToActorDAG(const GraphCompilerInfo &graph_compiler_info) {
+  const auto &actor_set = runtime::GraphScheduler::GetInstance().Transform(graph_compiler_info);
+  runtime::GraphScheduler::GetInstance().Schedule(actor_set);
+  runtime::GraphScheduler::GetInstance().RemoveNodeAddr(graph_compiler_info);
+}
 }  // namespace
 
 bool GetTensorFromForwardOutputParameter(const AnfNodePtr &input_node, std::vector<tensor::TensorPtr> *input_tensors) {
@@ -1136,8 +1142,7 @@ const ActorInfo MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph)
     PROF_START(GraphScheduler);
     // Transform graph to actor DAG, and schedule the actor DAG.
     ParseControlNodes(*graph_compiler_info);
-    const auto &actor_set = runtime::GraphScheduler::GetInstance().Transform(*graph_compiler_info);
-    runtime::GraphScheduler::GetInstance().Schedule(actor_set);
+    TransformGraphToActorDAG(*graph_compiler_info);
     PROF_END(GraphScheduler);
   }
 

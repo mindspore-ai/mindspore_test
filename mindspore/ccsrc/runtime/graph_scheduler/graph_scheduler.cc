@@ -511,28 +511,6 @@ void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
   }
 }
 
-void RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info) {
-  if (!EnableInputOptimize()) {
-    return;
-  }
-  // Set device tensor of non weight parameter to null, because it's stored in graph parameter store.
-  // Avoid not free memory if both hold it.
-  for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
-    const auto &graph = graph_compiler_info.graphs_[i];
-    MS_EXCEPTION_IF_NULL(graph);
-    const std::vector<AnfNodePtr> &input_nodes = graph->input_nodes();
-    for (size_t j = 0; j < input_nodes.size(); j++) {
-      const auto &input_node = input_nodes[j];
-      size_t output_num = AnfAlgo::GetOutputTensorNum(input_node);
-      for (size_t index = 0; index < output_num; ++index) {
-        if (AnfAlgo::OutputAddrExist(input_node, index) && !IsPersistentDeviceTensor(input_node)) {
-          AnfAlgo::SetOutputAddr(nullptr, index, input_node.get());
-        }
-      }
-    }
-  }
-}
-
 void CacheGraphOutputNodeToParameterStore(const AnfNodePtr &node, const KernelWithIndex &node_with_index,
                                           const KernelGraphPtr &graph) {
   KernelWithIndex front_node_with_idx{nullptr, 0};
@@ -563,6 +541,28 @@ bool IsInternelParameterInParameterStore(const AnfNodePtr &front_node) {
 GraphScheduler &GraphScheduler::GetInstance() noexcept {
   static GraphScheduler instance{};
   return instance;
+}
+
+void GraphScheduler::RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  // Set device tensor of non weight parameter to null, because it's stored in graph parameter store.
+  // Avoid not free memory if both hold it.
+  for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
+    const auto &graph = graph_compiler_info.graphs_[i];
+    MS_EXCEPTION_IF_NULL(graph);
+    const std::vector<AnfNodePtr> &input_nodes = graph->input_nodes();
+    for (size_t j = 0; j < input_nodes.size(); j++) {
+      const auto &input_node = input_nodes[j];
+      size_t output_num = AnfAlgo::GetOutputTensorNum(input_node);
+      for (size_t index = 0; index < output_num; ++index) {
+        if (AnfAlgo::OutputAddrExist(input_node, index) && !IsPersistentDeviceTensor(input_node)) {
+          AnfAlgo::SetOutputAddr(nullptr, index, input_node.get());
+        }
+      }
+    }
+  }
 }
 
 void GraphScheduler::Clear(const ActorInfo &actor_info, const std::vector<KernelGraphPtr> &graphs,
@@ -927,8 +927,6 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
       break;
     }
   }
-
-  RemoveNodeAddr(graph_compiler_info);
 
   actor_set->all_actors_ = SchedulerHelper::CollectActors(actor_set.get());
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphTransform, start_time_0,
