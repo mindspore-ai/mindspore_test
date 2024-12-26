@@ -36,7 +36,8 @@ class LinearNet(nn.Cell):
         return self.net(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mint_max_and_linear(mode):
     """
@@ -44,6 +45,8 @@ def test_mint_max_and_linear(mode):
     Description: Verify the result of mint function
     Expectation: success
     """
+    if ms.context.get_context('device_target') == 'Ascend':
+        ms.context.set_context(jit_level='O0')
     ms.set_context(mode=mode)
     input0 = Tensor(np.array([[0.0, 0.3, 0.4, 0.5, 0.1], [3.2, 0.4, 0.1, 2.9, 4.0]]), ms.float32)
     input1 = Tensor(np.array([[180, 234, 154], [244, 48, 247]]), ms.float32)
