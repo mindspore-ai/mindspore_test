@@ -397,9 +397,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __radd__(self, other):
         return self.__add__(other)
 
-    def __iadd__(self, other):
-        return self.__add__(other)
-
     def __rsub__(self, other):
         return tensor_operator_registry.get('__sub__')(other, self)
 
@@ -1279,43 +1276,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.addcmul`.
         """
         return tensor_operator_registry.get('addcmul')(self, tensor1, tensor2, value)
-
-    def add_(self, other, *, alpha=1):
-        """
-        inplace update self by following compute:
-
-        .. math::
-            self = self + other * alpha.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-            The `other` tensor must be broadcastable with the `self` tensor. It may be of a different data type.
-
-        Args:
-            other (Tensor): the source tensor Add to self Tensor.
-            alpha (Number): no effect currently.
-
-        Returns:
-            Return self Tensor.
-
-        Supported Platforms:
-            ``Ascend``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> a = Tensor(np.ones((2,3)).astype("float32"))
-            >>> b = Tensor(np.ones((2,3)).astype("float32"))
-            >>> a.add_(b)
-            >>> print(a)
-            [[2. 2. 2.]
-            [2. 2. 2.]]
-        """
-        if isinstance(other, (int, float)):
-            ret = tensor_operator_registry.get("adds_")(self, other, alpha)
-        else:
-            ret = tensor_operator_registry.get("add_")(self, other, alpha)
-        return ret
 
     def addmm_(self, mat1, mat2, *, beta=1, alpha=1):
         r"""

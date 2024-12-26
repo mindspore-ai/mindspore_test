@@ -253,6 +253,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
                     continue
 
                 deprecated_method_name = ''.join(word.capitalize() for word in op_name.split('_'))
+                if func_proto.op_proto.op_name[-1] == '_':
+                    deprecated_method_name += '_'
                 deprecated_method_decl_list.append(
                     self.deprecated_method_decl_template.replace(dep_op_name=deprecated_method_name,
                                                                  op_name=func_api_name))
