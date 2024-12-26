@@ -21,3 +21,7 @@ mindspore.mint.where
         - **TypeError** - 如果 `condition` 不是Tensor。
         - **TypeError** - 如果 `input` 和 `other` 都是常量。
         - **ValueError** - `condition` 、 `input` 和 `other` 不能互相广播。
+
+    .. py:function:: where(condition)
+    
+    与接口 :func:`mindspore.ops.nonzero` 在 `as_tuple` 为True时一致。

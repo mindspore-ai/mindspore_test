@@ -15,6 +15,7 @@
 """Tensor method for overload."""
 
 from mindspore import _checkparam as validator
+from mindspore import log as logger
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
@@ -417,6 +418,10 @@ from mindspore.ops.function.math_func import var_ext
 
 
 ########################################functions########################################
+def place_holder():
+    logger.error(
+        "This is a place holder function and should not be called. Please check the implementation.")
+
 unique_dim_ = UniqueDim()
 unique2_ = Unique2()
 
