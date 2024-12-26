@@ -1888,6 +1888,15 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
         MS_EXCEPTION_IF_NULL(cur_device_tensor);
         size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_index.first.get());
         size_t real_inner_idx = front_node_with_index.second;
+        // Record dynamic shape info.
+        auto input_param = input_node->cast<ParameterPtr>();
+        if (input_param == nullptr) {
+          continue;
+        }
+        if (input_param->has_dynamic_shape()) {
+          cur_graph_parameter_store->SetIsPositionDynamic(real_outer_idx, true);
+        }
+
         auto cur_device_type = cur_device_tensor->GetDeviceType();
         if (front_node_position_temp_map.count(front_node_with_index) > 0 &&
             !cur_graph_parameter_store->CheckDeviceTensorHeter(real_outer_idx, real_inner_idx, cur_device_type)) {
