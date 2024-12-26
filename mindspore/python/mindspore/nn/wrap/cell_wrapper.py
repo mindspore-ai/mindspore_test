@@ -530,6 +530,12 @@ class _VirtualDatasetCell(Cell):
         return self._backbone(*output)
 
 
+def _pipeline_clear_grad(accu_grad, grad):
+    accu_grad = F.depend(accu_grad, grad)
+    zeros = F.zeros_like(accu_grad)
+    return F.assign(accu_grad, zeros)
+
+
 @_primexpr
 def _check_shape_value_on_axis_divided_by_target_value(input_shape, micro_size):
     if F.isconstant(input_shape[0]) is False:
@@ -571,115 +577,6 @@ class _MicroBatch(Cell):
             micro_inputs += (micro_input,)
         return micro_inputs
 
-
-class MicroBatchInterleaved(Cell):
-    """
-    This function splits the input at the 0th into interleave_num pieces and then performs
-    the computation of the wrapped cell. Application scenario: When there is model parallelism in semi-automatic mode
-    and network, if the first slice data is calculating forward, the second slice data will execute the
-    communication operators at the same time, to achieve the performance acceleration of communication and computing
-    concurrency.
-
-    Args:
-        network (Cell): The target network to wrap.
-        interleave_num (int, optional): split num of batch size. Default: ``2`` .
-
-    Inputs:
-        tuple[Tensor]. It's the same with the input of the `network` .
-
-    Outputs:
-        The wrapped input. The output of the input `network` should be a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore.nn as nn
-        >>> # Define the network structure of LeNet5. Refer to
-        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
-        >>> net = LeNet5()
-        >>> net = nn.MicroBatchInterleaved(net, 2)
-    """
-    def __init__(self, network, interleave_num=2):
-        super(MicroBatchInterleaved, self).__init__(auto_prefix=False)
-        if not isinstance(interleave_num, int):
-            raise TypeError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be integer, "
-                            "but got the type : {}.".format(type(interleave_num)))
-        if interleave_num <= 0:
-            raise ValueError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be large than 0, "
-                             "but got {}.".format(interleave_num))
-        self.network = network
-        self.interleave_num = interleave_num
-        self.interleave_inputs = nn.CellList()
-        self.add = P.Add().add_prim_attr("micro_interleaved_add_flag", True)
-        for _ in range(interleave_num):
-            interleave_data = _MicroBatch(interleave_num)
-            interleave_data.strided_slice.add_prim_attr("strided_slice_flag", True)
-            interleave_data.strided_slice.add_prim_attr("interleave_num", interleave_num)
-            self.interleave_inputs.append(interleave_data)
-        self._get_attr_from_cell(network)
-
-    def construct(self, *inputs):
-        output = 0.0
-        for i in range(self.interleave_num):
-            interleave_input = self.interleave_inputs[i](i, *inputs)
-            output = self.add(output, self.network(*interleave_input))
-        return output
-
-
-class PipelineCell(Cell):
-    """
-    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
-
-    Note:
-        micro_size must be greater or equal to pipeline stages.
-
-    Args:
-        network (Cell): The target network to wrap.
-        micro_size (int): MicroBatch size.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore.nn as nn
-        >>> # Define the network structure of LeNet5. Refer to
-        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
-        >>> net = LeNet5()
-        >>> net = nn.PipelineCell(net, 4)
-    """
-    def __init__(self, network, micro_size):
-        super(PipelineCell, self).__init__(auto_prefix=False)
-        self.network = network
-        self.micro_inputs = nn.CellList()
-        self.micro_size = micro_size
-        self.add_list = []
-        if not isinstance(network, Cell):
-            raise TypeError("For 'PipelineCell', the argument 'network' must cell type, "
-                            "but got the type : {}.".format(type(network)))
-        if not isinstance(micro_size, int):
-            raise TypeError("For 'PipelineCell', the argument 'micro_size' must be integer, "
-                            "but got the type : {}.".format(type(micro_size)))
-        if micro_size <= 0:
-            raise ValueError("For 'PipelineCell', the argument 'micro_size' must be large than 0, "
-                             "but got {}.".format(micro_size))
-        for i in range(micro_size):
-            micro_input = _MicroBatch(micro_size)
-            self.micro_inputs.append(micro_input)
-            self.add = P.Add().add_prim_attr("pipeline_end", i)
-            self.add_list.append(self.add)
-        self._get_attr_from_cell(network)
-
-    def construct(self, *inputs):
-        ret = None
-        for i in range(self.micro_size):
-            micro_input = self.micro_inputs[i](i, *inputs)
-            output = self.network(*micro_input)
-            if ret is not None:
-                ret = self.add_list[i](ret, output)
-            else:
-                ret = output
-        return ret
 
 class GradAccumulationCell(Cell):
     """
@@ -732,12 +629,6 @@ class GradAccumulationCell(Cell):
             else:
                 ret = output
         return ret
-
-
-def _pipeline_clear_grad(accu_grad, grad):
-    accu_grad = F.depend(accu_grad, grad)
-    zeros = F.zeros_like(accu_grad)
-    return F.assign(accu_grad, zeros)
 
 
 class _TrainGradAccuStepCell(TrainOneStepCell):

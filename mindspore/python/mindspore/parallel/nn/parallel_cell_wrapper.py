@@ -17,55 +17,12 @@
 from __future__ import absolute_import
 from __future__ import division
 
-from mindspore import  nn
-from mindspore.ops.primitive import _primexpr
-from mindspore.ops import functional as F
+from mindspore import nn
 from mindspore.ops import operations as P
 from mindspore.nn.cell import Cell
+from mindspore.nn.wrap.cell_wrapper import _MicroBatch
 
-__all__ = ['PipelineCell', 'GradAccumulationCell', 'MicroBatchInterleaved']
-
-
-@_primexpr
-def _check_shape_value_on_axis_divided_by_target_value(input_shape, micro_size):
-    if F.isconstant(input_shape[0]) is False:
-        return
-    if input_shape[0] % micro_size != 0:
-        raise ValueError(f"For micro batch initialization, the 0th dimension shape of input({input_shape[0]}) must be "
-                         f"divided by micro size({micro_size})")
-
-
-class _MicroBatch(Cell):
-    """
-    transform mini-batch to micro-batch in pipeline parallel.
-
-    Args:
-       params (micro_size): The number of micro-batch.
-    """
-    def __init__(self, micro_size):
-        super(_MicroBatch, self).__init__()
-        self.shape = P.Shape()
-        self.micro_size = micro_size
-        self.strided_slice = P.StridedSlice()
-
-    def construct(self, i, *inputs):
-        """construct for _MicroBatch."""
-        micro_inputs = ()
-        for each_input in inputs:
-            input_shape = self.shape(each_input)
-            _check_shape_value_on_axis_divided_by_target_value(input_shape, self.micro_size)
-            micro_batch_begin = (input_shape[0] // self.micro_size) * i
-            micro_batch_end = (input_shape[0] // self.micro_size) * (i + 1)
-            strided_slice_begin = (micro_batch_begin,)
-            strided_slice_strides = (1,)
-            for _ in range(len(input_shape) - 1):
-                strided_slice_begin += (0,)
-                strided_slice_strides += (1,)
-            strided_slice_end = (micro_batch_end,)
-            strided_slice_end += input_shape[1:]
-            micro_input = self.strided_slice(each_input, strided_slice_begin, strided_slice_end, strided_slice_strides)
-            micro_inputs += (micro_input,)
-        return micro_inputs
+__all__ = ['PipelineCell', 'MicroBatchInterleaved']
 
 
 class PipelineCell(Cell):
@@ -145,59 +102,6 @@ class PipelineCell(Cell):
                     print(cell_name)
                 raise KeyError("For 'PipelineCell', the argument 'stage_config' : {} is not "
                                "found in 'network' : {}".format(config_dict, network))
-
-    def construct(self, *inputs):
-        ret = None
-        for i in range(self.micro_size):
-            micro_input = self.micro_inputs[i](i, *inputs)
-            output = self.network(*micro_input)
-            if ret is not None:
-                ret = self.add_list[i](ret, output)
-            else:
-                ret = output
-        return ret
-
-
-class GradAccumulationCell(Cell):
-    """
-    Wrap the network with Micro Batch to enable the grad accumulation in semi_auto_parallel/auto_parallel mode.
-
-    Args:
-        network (Cell): The target network to wrap.
-        micro_size (int): MicroBatch size.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore.nn as nn
-        >>> # Define the network structure of LeNet5. Refer to
-        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
-        >>> net = LeNet5()
-        >>> net = nn.GradAccumulationCell(net, 4)
-    """
-    def __init__(self, network, micro_size):
-        super(GradAccumulationCell, self).__init__(auto_prefix=False)
-        self.network = network
-        self.micro_inputs = nn.CellList()
-        self.micro_size = micro_size
-        self.add_list = []
-        if not isinstance(network, Cell):
-            raise TypeError("For 'GradAccumulationCell', the argument 'network' must cell type, "
-                            "but got the type : {}.".format(type(network)))
-        if not isinstance(micro_size, int):
-            raise TypeError("For 'GradAccumulationCell', the argument 'micro_size' must be integer, "
-                            "but got the type : {}.".format(type(micro_size)))
-        if micro_size <= 0:
-            raise ValueError("For 'GradAccumulationCell', the argument 'micro_size' must be large than 0, "
-                             "but got {}.".format(micro_size))
-        for i in range(micro_size):
-            micro_input = _MicroBatch(micro_size)
-            micro_input.strided_slice.add_prim_attr("grad_accu_num", micro_size)
-            self.micro_inputs.append(micro_input)
-            self.add = P.Add().add_prim_attr("forward_end", i)
-            self.add_list.append(self.add)
-        self._get_attr_from_cell(network)
 
     def construct(self, *inputs):
         ret = None

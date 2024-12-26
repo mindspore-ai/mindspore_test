@@ -21,7 +21,8 @@ import mindspore.ops.operations as P
 from mindspore import Tensor, Parameter
 from mindspore.nn.optim import Momentum
 from mindspore import context, lazy_inline
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, _TrainGradAccuStepCell
+from mindspore.nn.wrap.cell_wrapper import _TrainGradAccuStepCell
+from mindspore.nn import PipelineCell
 from parallel.utils.utils import compile_net, ParallelValidator
 
 

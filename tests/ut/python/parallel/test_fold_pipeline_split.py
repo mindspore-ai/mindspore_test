@@ -26,7 +26,8 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, MicroBatchInterleaved, _MicroBatch, Cell
+from mindspore.nn.wrap.cell_wrapper import Cell
+from mindspore.parallel.nn.parallel_cell_wrapper import PipelineCell, MicroBatchInterleaved, _MicroBatch
 
 
 class DatasetLenet():

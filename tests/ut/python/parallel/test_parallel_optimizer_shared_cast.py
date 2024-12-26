@@ -23,7 +23,8 @@ import mindspore.nn as nn
 from mindspore import Tensor, Parameter
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import TrainOneStepCell
-from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell, MicroBatchInterleaved, PipelineCell
+from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell
+from mindspore.nn import MicroBatchInterleaved, PipelineCell
 from mindspore.nn.optim import Momentum
 from mindspore.ops import operations as P
 from mindspore import context

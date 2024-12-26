@@ -22,8 +22,8 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import GradAccumulationCell, MicroBatchInterleaved
 from mindspore.parallel import set_algo_parameters
+from mindspore.nn import GradAccumulationCell, MicroBatchInterleaved
 from .test_pipeline_split import DatasetLenet
 
 
