@@ -103,6 +103,7 @@ constexpr size_t TRANSFER_CONCAT_TENSOR_DIM_INDEX = 0;
 constexpr size_t TRANSFER_CONCAT_DEV_DIM_INDEX = 1;
 constexpr size_t TRANSFER_CONCAT_SPLIT_COUNT_INDEX = 2;
 constexpr size_t TRANSFER_SPLIT_ARGS_SIZE = 3;
+constexpr size_t TUPLE_GETITEM_CNODE_SIZE = 3;
 constexpr size_t TUPLE_GETITEM_INDEX_POS = 2;
 constexpr size_t MATMUL_DDS_INPUTS_SIZE = 4;
 constexpr size_t MATMUL_DDS_OUTPUTS_SIZE = 2;
