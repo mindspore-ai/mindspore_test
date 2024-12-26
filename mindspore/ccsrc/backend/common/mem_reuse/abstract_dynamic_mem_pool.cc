@@ -235,7 +235,8 @@ const std::pair<size_t, size_t> MemBufAllocator::FreeIdleMemsByEagerFree() {
   // Do eager free on eager free mem bufs.
   size_t real_free_size = 0;
   for (auto mem_buf : eager_free_mem_bufs_) {
-    MS_LOG(DEBUG) << "Eager free mem buf : " << mem_buf << ", details : " << mem_buf->ToJson() << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Eager free mem buf : " << mem_buf << ", details : " << mem_buf->ToJson()
+                                         << ".";
     real_free_size += mem_eager_freer_(mem_buf->addr_, mem_buf->size_);
   }
   MS_LOG(INFO) << "Free idle mems by eager free, eager_free_size : " << eager_free_size
@@ -566,7 +567,7 @@ MemBufAllocator *AbstractDynamicMemPool::GetMemBufAllocator(size_t size, bool fr
 void AbstractDynamicMemPool::FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs,
                                                 const std::vector<DeviceMemPtr> &keep_addrs,
                                                 const std::vector<size_t> &keep_addr_sizes) {
-  MS_LOG(DEBUG) << "Free part tensor mems.";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Free part tensor mems.";
   LockGuard lock(lock_);
   (void)DoFreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
 }
@@ -630,7 +631,7 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
       mem_buf->size_ = prev_remain_size;
     }
     (void)mem_bufs.emplace_back(keep_mem_buf);
-    MS_LOG(DEBUG) << "keep_mem_buf : " << keep_mem_buf->ToJson() << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "keep_mem_buf : " << keep_mem_buf->ToJson() << ".";
     // Process last mem buf.
     if (keep_end < base_end) {
       void *last_addr = static_cast<uint8_t *>(keep_mem_buf->addr_) + keep_mem_buf->size_;
@@ -641,7 +642,7 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
       if (candidates.count(last_mem_buf->addr_) > 0) {
         MS_LOG(INFO) << "Duplicate address : " << last_mem_buf->addr_ << ".";
       }
-      MS_LOG(DEBUG) << "last mem buf : " << last_mem_buf->ToJson() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "last mem buf : " << last_mem_buf->ToJson() << ".";
       (void)candidates.emplace(last_mem_buf->addr_, std::make_pair(last_mem_buf, allocator));
     }
   }
@@ -702,7 +703,7 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
     return MmapDeviceMem(size, addr);
   };
   std::function<size_t(void *addr, const size_t size)> mem_eager_freer = [&](void *addr, const size_t size) {
-    MS_LOG(DEBUG) << "Eager free addr : " << addr << ", size : " << size << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Eager free addr : " << addr << ", size : " << size << ".";
     return FreeDeviceMemByEagerFree(addr, size);
   };
 
@@ -714,8 +715,8 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
 bool AbstractDynamicMemPool::RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
                                          const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
                                          const DeviceEventPtr &event) {
-  MS_LOG(DEBUG) << "Record event for task id on stream : " << task_id_on_stream
-                << ", user stream id : " << user_stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Record event for task id on stream : " << task_id_on_stream
+                                       << ", user stream id : " << user_stream_id << ".";
   LockGuard lock(lock_);
   for (auto &[memory_stream_id, addr] : memory_stream_addresses) {
     auto &&it = addr_mem_buf_allocators_.find(addr);
@@ -724,20 +725,21 @@ bool AbstractDynamicMemPool::RecordEvent(int64_t task_id_on_stream, uint32_t use
       if (mem_buf->IsEventNotUsed()) {
         mem_stat_.used_by_event_size_ += mem_buf->size_;
       }
-      MS_LOG(DEBUG) << "Record event for : " << mem_buf->ToJson() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Record event for : " << mem_buf->ToJson() << ".";
       (void)mem_buf->RecordEvent(task_id_on_stream, user_stream_id, event);
       (void)stream_pair_mem_bufs_[std::make_pair(user_stream_id, memory_stream_id)].emplace(mem_buf);
     } else {
       // Output of somas sub graph may be used by somas sub graph inner node, address may not be kept in mem pool.
-      MS_LOG(DEBUG) << "Unknown address : " << addr << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Unknown address : " << addr << ".";
     }
   }
   return true;
 }
 
 bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
-  MS_LOG(DEBUG) << "Wait event for task id on stream : " << task_id_on_stream << ", user stream id : " << user_stream_id
-                << ", memory stream id : " << memory_stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for task id on stream : " << task_id_on_stream
+                                       << ", user stream id : " << user_stream_id
+                                       << ", memory stream id : " << memory_stream_id << ".";
   LockGuard lock(lock_);
   auto key = std::make_pair(user_stream_id, memory_stream_id);
   auto iter = stream_pair_mem_bufs_.find(key);
@@ -764,8 +766,8 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_
 }
 
 bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) {
-  MS_LOG(DEBUG) << "Wait event for task id on stream : " << task_id_on_stream
-                << ", memory stream id : " << memory_stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for task id on stream : " << task_id_on_stream
+                                       << ", memory stream id : " << memory_stream_id << ".";
   LockGuard lock(lock_);
   for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
     const auto &[user_stream, memory_stream] = stream_pair_mem_bufs.first;
@@ -792,7 +794,8 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memor
 }
 
 bool AbstractDynamicMemPool::SyncAllEvents() {
-  MS_LOG(DEBUG) << "Sync all events, stream_pair_addresses_ size : " << stream_pair_mem_bufs_.size() << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Sync all events, stream_pair_addresses_ size : "
+                                       << stream_pair_mem_bufs_.size() << ".";
   LockGuard lock(lock_);
   return DoSyncAllEvents();
 }
@@ -840,20 +843,21 @@ size_t AbstractDynamicMemPool::CalMemBlockAllocSize(size_t size, bool from_persi
 }
 
 void AbstractDynamicMemPool::DefragMemory() {
-  MS_LOG(DEBUG) << "Try to defrag memory.";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Try to defrag memory.";
   LockGuard lock(lock_);
   if (!enable_vmm_) {
-    MS_LOG(DEBUG) << "Skip defrag memory since vmm is not enabled.";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Skip defrag memory since vmm is not enabled.";
     return;
   }
 
   if (eager_free_count_ == 0) {
-    MS_LOG(DEBUG) << "Exit defrag memory since eager free count is 0.";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Exit defrag memory since eager free count is 0.";
     return;
   }
   if (last_eager_free_count_ == eager_free_count_) {
-    MS_LOG(DEBUG) << "Exit defrag memory since last eager free count equals to eager free count : "
-                  << last_eager_free_count_ << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY)
+      << "Exit defrag memory since last eager free count equals to eager free count : " << last_eager_free_count_
+      << ".";
     return;
   }
 

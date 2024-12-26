@@ -91,7 +91,7 @@ int32_t GetDeviceId() {
 void FillTidAndPid(const std::unique_ptr<AscendMemoryTimeEvent> &ascend_mmemory_time_event) {
   ascend_mmemory_time_event->tid_ = GetTid();
   ascend_mmemory_time_event->pid_ = GetPid();
-  MS_LOG(DEBUG) << "after fill time event info : " << ascend_mmemory_time_event->ToJson();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Fill time event info : " << ascend_mmemory_time_event->ToJson() << ".";
 }
 }  // namespace
 
@@ -147,13 +147,13 @@ void DefaultEnhancedAscendMemoryPool::ReleaseDeviceRes() {
 DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool from_persistent_mem, bool need_recycle,
                                                              uint32_t stream_id) {
   size_t align_size = AlignMemorySize(size);
-  MS_LOG(DEBUG) << "Allocate tensor mem, size : " << size << ", align_size : " << align_size
-                << ", from_persistent_mem : " << from_persistent_mem << ", need_recycle : " << need_recycle
-                << ", stream_id : " << stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Allocate tensor mem, size : " << size << ", align_size : " << align_size
+                                       << ", from_persistent_mem : " << from_persistent_mem
+                                       << ", need_recycle : " << need_recycle << ", stream_id : " << stream_id << ".";
   LockGuard lock(instance_->lock());
   const auto [mem_buf, allocator] = instance_->AllocMemBuf(align_size, from_persistent_mem, stream_id);
   if (mem_buf == nullptr) {
-    MS_LOG(DEBUG) << "Allocate tensor mem, return nullptr.";
+    MS_LOG(INFO) << "Allocate tensor mem, return nullptr.";
     // Dump mem pool state info and debug info when alloc tensor failed.
     DumpDynamicMemPoolStateInfo();
     DumpDynamicMemPoolDebugInfo();
@@ -192,14 +192,14 @@ DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool f
     profiler::ascend::ProfilingDataDumper::GetInstance().Report(std::move(ascend_memory_time_event));
   }
 
-  MS_LOG(DEBUG) << "Allocate tensor mem, return : " << mem_buf->ToJson()
-                << ", stat : " << instance_->mem_stat().ToJson() << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Allocate tensor mem, return : " << mem_buf->ToJson()
+                                       << ", stat info : " << instance_->mem_stat().ToJson() << ".";
   return device_addr;
 }
 
 std::vector<DeviceMemPtr> DefaultEnhancedAscendMemoryPool::AllocContinuousTensorMem(
   const std::vector<size_t> &size_list, uint32_t stream_id) {
-  MS_LOG(DEBUG) << "Alloc continuous tensor mem, stream id : " << stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Alloc continuous tensor mem, stream id : " << stream_id << ".";
   const auto &continuous_addrs = instance_->AllocContinuousTensorMem(size_list, stream_id);
   if (continuous_addrs.size() != size_list.size()) {
     return continuous_addrs;
@@ -228,7 +228,7 @@ std::vector<DeviceMemPtr> DefaultEnhancedAscendMemoryPool::AllocContinuousTensor
 }
 
 void DefaultEnhancedAscendMemoryPool::FreeTensorMem(const DeviceMemPtr &device_addr) {
-  MS_LOG(DEBUG) << "Free tensor mem, device addr : " << device_addr << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Free tensor mem, device addr : " << device_addr << ".";
   LockGuard lock(instance_->lock());
   DoFreeTensorMem(device_addr);
 }
@@ -260,14 +260,15 @@ bool DefaultEnhancedAscendMemoryPool::DoFreeTensorMem(const DeviceMemPtr &device
       profiler::ascend::ProfilingDataDumper::GetInstance().Report(std::move(ascend_memory_time_event));
     }
   }
-  MS_LOG(DEBUG) << "Do free tensor mem : " << enhanced_device_addr << ", ret : " << ret << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Do free tensor mem : " << enhanced_device_addr << ", return : " << ret
+                                       << ".";
   return ret;
 }
 
 void DefaultEnhancedAscendMemoryPool::FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs,
                                                          const std::vector<DeviceMemPtr> &keep_addrs,
                                                          const std::vector<size_t> &keep_addr_sizes) {
-  MS_LOG(DEBUG) << "Free part tensor mems.";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Free part tensor mems.";
   LockGuard lock(instance_->lock());
   if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     for (const auto &free_addr : free_addrs) {
