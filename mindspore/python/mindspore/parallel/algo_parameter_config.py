@@ -370,7 +370,7 @@ def get_algo_parameters(attr_key):
     Examples:
         >>> import mindspore as ms
         >>> ms.get_algo_parameters("fully_use_devices")
-        True
+        False
     """
     if attr_key not in get_algo_parameters_config_func_map:
         raise ValueError("Get context keyword %s is not recognized!" % attr_key)
