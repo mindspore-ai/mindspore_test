@@ -37,7 +37,7 @@ class ConstantPadNd_(Cell):
                 msg = f"For '{self.cls_name}', the length of parameter 'padding' with tuple " \
                       f"type must equal to {padding_length}, but got {len(padding)}."
                 raise ValueError(msg)
-            validator.check_positive_int_sequence(self.padding, "padding", self.cls_name)
+            validator.check_non_negative_int_sequence(self.padding, "padding", self.cls_name)
         else:
             msg = f"For '{self.cls_name}', 'padding' must be positive integer or tuple/list of {padding_length}" \
                   f" positive integers, but got {padding}."
@@ -407,7 +407,7 @@ class ReflectionPadNd_(Cell):
                 msg = f"For '{self.cls_name}', the length of parameter 'padding' with tuple type must " \
                       f"equal to {padding_length}, but got {len(padding)}."
                 raise ValueError(msg)
-            validator.check_positive_int_sequence(self.padding, "padding", self.cls_name)
+            validator.check_non_negative_int_sequence(self.padding, "padding", self.cls_name)
         else:
             msg = f"For '{self.cls_name}', 'padding' must be positive integer or tuple/list of {padding_length}" \
                   f" positive integers, but got {padding}."
@@ -581,7 +581,7 @@ class ReplicationPadNd_(Cell):
                 msg = f"For '{self.cls_name}', the length of parameter 'padding' with tuple type must " \
                       f"equal to {padding_length}, but got {len(padding)}."
                 raise ValueError(msg)
-            validator.check_positive_int_sequence(self.padding, "padding", self.cls_name)
+            validator.check_non_negative_int_sequence(self.padding, "padding", self.cls_name)
         else:
             msg = f"For '{self.cls_name}', 'padding' must be positive integer or tuple/list of {padding_length} " \
                   f"positive integers, but got {padding}."

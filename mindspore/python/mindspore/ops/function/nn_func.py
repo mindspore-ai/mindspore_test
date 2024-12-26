@@ -8776,6 +8776,9 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
           - Each element of `actual_seq_lengths` must not exceed q_S and element
             of `actual_seq_lengths_kv` must not exceed kv_S.
 
+    .. warning::
+        Only support on Atlas A2 training series.
+
     Args:
         query (Tensor): The query tensor with data type of int8, float16 or bfloat16.
             The shape is :math:`(B, q_S, q_H)` / `(B, q_N, q_S, q_D)`.
@@ -8986,6 +8989,9 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
         - It needs to be enabled together with the atten_mask parameter and ensure that the meaning of atten_mask is
           correct, that is, it can correctly hide invalid data. Otherwise, it will introduce accuracy issues.
         - `kv_padding_size` does not support page attention scenarios.
+
+    .. warning::
+        Only support on Atlas A2 training series.
 
     Args:
         query (Tensor): The query tensor with data type of float16 or bfloat16.
