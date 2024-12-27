@@ -4555,6 +4555,7 @@ def _getitem(data, index):
 def _setitem(data, index, value):
     return multitype_ops.setitem(data, index, value)
 
+
 def register_hook(x, func):
     if isinstance(x, Parameter):
         raise ValueError("Register hook for Parameter inside graph is not supported.")

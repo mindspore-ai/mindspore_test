@@ -8277,6 +8277,7 @@ def _compute_vector_norm_inf(x, dim, keepdims, norm_func):
             ret_norm = ret_norm.reshape(ret_shape)
     return ret_norm
 
+
 @_primexpr
 def _check_vector_norm_inputs(x, ord):
     """vector_norm inputs check"""
@@ -8286,6 +8287,7 @@ def _check_vector_norm_inputs(x, ord):
     if not isinstance(ord, (bool, int, float)):
         raise ValueError(f"For `vector_norm`, the ord mode must be one of [bool, int, float, inf, -inf], "
                          f"but got {ord}.")
+
 
 def vector_norm_ext(x, ord=2, dim=None, keepdim=False, *, dtype=None):
     r"""
@@ -8452,6 +8454,7 @@ def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
         return ops.amin(vector_norm_ext(A, 1, row_axis, keepdim, dtype=dtype), col_axis, keepdim)
     return ops.amax(vector_norm_ext(A, 1, row_axis, keepdim, dtype=dtype), col_axis, keepdim)
 
+
 @_primexpr
 def _check_linalg_norm_input(dim, ord, ndim):
     """dim check"""
@@ -8471,6 +8474,7 @@ def _check_linalg_norm_input(dim, ord, ndim):
     else:
         raise TypeError(f'For `linalg.norm`, the dim should be int, list of int or tuple of int, but got {type(dim)}')
     return dim, False
+
 
 def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     r"""
@@ -8632,6 +8636,7 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         return matrix_norm_ext(input, p, dim, keepdim, dtype=dtype)
     raise ValueError(f"For `norm_ext`, the value of `p` must be one of [int, float, inf, -inf, 'fro', 'nuc',] "
                      f"but got `{p}`.")
+
 
 def vector_norm(x, ord=2, axis=None, keepdims=False, *, dtype=None):
     r"""
