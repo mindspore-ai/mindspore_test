@@ -941,30 +941,12 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
         # Move get dataset_size by len from parse to here, because self.source will
         # lose attribution of '__len__' after deepcopy.
-        self._calculate_source_length()
+        self.source_len = len(self.source) if hasattr(self.source, "__len__") else -1
 
         self.max_rowsize = max_rowsize if max_rowsize is not None else -1
         self.sample_fn = None
         # Ignore batch_info in the input parameter.
         self.collate_fn = (lambda *args: collate_fn(*args[:-1])) if collate_fn is not None else None
-
-    def _calculate_source_length(self):
-        """Calculate the source length according to the source and sampler."""
-        self.source_len = -1  # unknown
-        if hasattr(self.source, "__len__"):
-            self.source_len = len(self.source)
-
-            # if user defined sampler, update the self.source_len
-            if isinstance(self.sampler, samplers.Sampler) or hasattr(self.sampler, "__iter__"):
-                if self.sampler.child_sampler is not None:
-                    raise RuntimeError("GeneratorDataset does not support user defined sampler with child sampler yet.")
-                if self.sampler.num_samples is not None:
-                    self.source_len = self.sampler.num_samples
-                elif hasattr(self.sampler, "__len__"):
-                    self.source_len = len(self.sampler)
-                else:
-                    # counting on a copied sampler to prevent changing the random state of the original one
-                    self.source_len = len(list(copy.deepcopy(self.sampler)))
 
     def __deepcopy__(self, memodict):
         if id(self) in memodict:

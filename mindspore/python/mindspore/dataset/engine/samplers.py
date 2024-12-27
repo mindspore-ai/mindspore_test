@@ -315,6 +315,8 @@ class Sampler(BuiltinSampler):
         self.dataset_size = 0
         self.child_sampler = None
         self.num_samples = num_samples
+        if self.num_samples is None and hasattr(self, '__len__'):
+            self.num_samples = len(self)
         self.batch_sizes = []
 
     def __iter__(self):
@@ -331,32 +333,30 @@ class Sampler(BuiltinSampler):
 
     # Initialization handshake callback
     # Do not override this method!
-    def _handshake(self, ds_size, num_samples):
+    def _handshake(self, ds_size):
         self.dataset_size = ds_size
-        self.num_samples = num_samples
 
-    # Indices fetcher
-    # Do not override this method!
-    # pylint: disable=missing-docstring
-    def _get_indices(self):
-        sampler_iter = iter(self)
+    def get_indices(self):
+        """
+        Get the indices of the sampler.
+
+        Do not override this method!
+        """
         ret = []
         batch_sizes = []
-        for _ in range(self.num_samples):
-            try:
-                idx = next(sampler_iter)
-                # The idx can be either a number (for sampler) or a list (for batch sampler).
-                # If number, we convert it to list first. So they can be handled in the same way.
-                if isinstance(idx, numbers.Number):
-                    idx = [idx]
-                    # normal sampler does not have batch sizes
-                    batch_sizes.append(0)
-                else:
-                    # Using extend instead of append will flatten the list, so we need to save the
-                    # batch size information here.
-                    batch_sizes.append(len(idx))
-                ret.extend(idx)
-            except StopIteration:
+        for count, idx in enumerate(self):
+            # The idx can be either a number (for sampler) or a list (for batch sampler).
+            # If number, we convert it to list first. So they can be handled in the same way.
+            if isinstance(idx, numbers.Number):
+                idx = [idx]
+                # normal sampler does not have batch sizes
+                batch_sizes.append(0)
+            else:
+                # Using extend instead of append will flatten the list, so we need to save the
+                # batch size information here.
+                batch_sizes.append(len(idx))
+            ret.extend(idx)
+            if self.num_samples is not None and count + 1 >= self.num_samples:
                 break
         self.batch_sizes.append(batch_sizes)
         indices = np.array(ret)
@@ -405,9 +405,12 @@ class Sampler(BuiltinSampler):
         return self.child_sampler.is_sharded()
 
     def get_num_samples(self):
-        if self.num_samples is None:
-            return None
-        return self._get_indices().size
+        if self.num_samples is not None:
+            return self.num_samples
+        # deepcopy self to avoid changing the random state
+        fake_sampler = copy.deepcopy(self)
+        fake_sampler.get_indices()
+        return len(fake_sampler.batch_sizes[-1])
 
 
 class DistributedSampler(BuiltinSampler):
@@ -1052,12 +1055,8 @@ class IterSampler(Sampler):
      """
 
     def __init__(self, sampler, num_samples=None):
-        if num_samples is None:
-            if hasattr(sampler, "__len__"):
-                num_samples = len(sampler)
-            else:
-                # counting on a copied sampler to prevent changing the random state of the original one
-                num_samples = len(list(copy.deepcopy(sampler)))
+        if num_samples is None and hasattr(sampler, '__len__'):
+            num_samples = len(sampler)
         super().__init__(num_samples=num_samples)
         self.sampler = sampler
 

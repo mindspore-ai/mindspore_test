@@ -523,36 +523,93 @@ def test_add_user_defined_sampler_result():
         assert item["data"] == expected_result[i]
 
 
-def test_generator_sampler_chain():
+class StrNumberDataset:
+    def __init__(self):
+        self.data = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def __len__(self):
+        return len(self.data)
+
+
+def test_generator_sampler_chain_of_sequential_and_user_defined():
     """
     Feature: Chain sampler
-    Description: Test using add_child on user defined sampler for GeneratorDataset
-    Expectation: Raise runtime error that it is not supported yet
+    Description: Test adding SequentialSampler on user defined sampler for GeneratorDataset
+    Expectation: The result of dataset is as expected
     """
 
-    class MyDataset:
-        def __init__(self):
-            self.data = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-
-        def __getitem__(self, index):
-            return self.data[index]
-
-        def __len__(self):
-            return len(self.data)
-
-    class MySampler(ds.Sampler):
+    class UDFSampler(ds.Sampler):
         def __iter__(self):
-            for index in range(5, 10):
-                yield index
+            yield from range(5, 10)
 
     # Sequential sampler generates indices from 0 to 9, then user defined sampler selects
     # from the 5th to 9th of them
     sequential_sampler = ds.SequentialSampler(num_samples=10)
-    sampler = MySampler()
-    sampler.add_child(sequential_sampler)
-    with pytest.raises(RuntimeError) as e:
-        _ = ds.GeneratorDataset(MyDataset(), column_names=["data"], sampler=sampler)
-    assert "GeneratorDataset does not support user defined sampler with child sampler yet" in str(e.value)
+    user_defined_sampler = UDFSampler()
+    user_defined_sampler.add_child(sequential_sampler)
+    dataset = ds.GeneratorDataset(StrNumberDataset(), column_names=["data"], sampler=user_defined_sampler)
+    assert dataset.get_dataset_size() == 5
+    expected_result = np.array(['5', '6', '7', '8', '9'])
+    for index, item in enumerate(dataset.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        np.testing.assert_array_equal(item["data"], expected_result[index])
+
+
+def test_generator_sampler_chain_of_user_defined_and_random():
+    """
+    Feature: Chain sampler
+    Description: Test adding user defined sampler on RandomSampler for GeneratorDataset
+    Expectation: The result of dataset is as expected
+    """
+
+    original_seed = ds.config.get_seed()
+    ds.config.set_seed(0)
+
+    class UDFSampler(ds.Sampler):
+        def __iter__(self):
+            yield from range(5, 10)
+
+    # User defined sampler generates indices from 5 to 9, then random sampler shuffles them
+    user_defined_sampler = UDFSampler()
+    random_sampler = ds.RandomSampler()
+    random_sampler.add_child(user_defined_sampler)
+    dataset = ds.GeneratorDataset(StrNumberDataset(), column_names=["data"], sampler=random_sampler)
+    assert dataset.get_dataset_size() == 5
+    expected_result = np.array(['7', '9', '8', '5', '6'])
+    try:
+        for index, item in enumerate(dataset.create_dict_iterator(num_epochs=1, output_numpy=True)):
+            np.testing.assert_array_equal(item["data"], expected_result[index])
+    finally:
+        # Use finally to ensure the seed can be restored even if the test fails
+        ds.config.set_seed(original_seed)
+
+
+def test_generator_sampler_chain_of_user_defined_and_user_defined():
+    """
+    Feature: Chain sampler
+    Description: Test adding user defined sampler on user defined sampler for GeneratorDataset
+    Expectation: The result of dataset is as expected
+    """
+
+    class UDFJumpSampler(ds.Sampler):
+        def __iter__(self):
+            yield from range(0, 10, 2)
+
+    class UDFReverseSampler(ds.Sampler):
+        def __iter__(self):
+            yield from range(4, -1, -1)
+
+    # UDFJumpSampler generates indices from 0 to 9 with step 2, then UDFReverseSampler reverses them
+    udf_jump_sampler = UDFJumpSampler()
+    udf_reverse_sampler = UDFReverseSampler()
+    udf_reverse_sampler.add_child(udf_jump_sampler)
+    dataset = ds.GeneratorDataset(StrNumberDataset(), column_names=["data"], sampler=udf_reverse_sampler)
+    assert dataset.get_dataset_size() == 5
+    expected_result = np.array(['8', '6', '4', '2', '0'])
+    for index, item in enumerate(dataset.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        np.testing.assert_array_equal(item["data"], expected_result[index])
 
 
 if __name__ == '__main__':
@@ -570,3 +627,8 @@ if __name__ == '__main__':
     test_sampler_chain_errors()
     test_manifest_sampler_chain_repeat()
     test_manifest_sampler_chain_batch_repeat()
+    test_add_user_defined_sampler_dataset_size()
+    test_add_user_defined_sampler_result()
+    test_generator_sampler_chain_of_sequential_and_user_defined()
+    test_generator_sampler_chain_of_user_defined_and_random()
+    test_generator_sampler_chain_of_user_defined_and_user_defined()

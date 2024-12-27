@@ -139,7 +139,7 @@ def test_python_sampler():
             # at this stage, self.dataset_size and self.num_samples are not yet known
             self.cnt = 0
 
-        def __iter__(self):  # first epoch, all 0, second epoch all 1, third all 2 etc.. ...
+        def __iter__(self):  # first epoch, all 0, second epoch all 1, third all 2 etc...
             return iter([self.cnt for i in range(self.num_samples)])
 
         def reset(self):
@@ -171,7 +171,7 @@ def test_python_sampler():
 
     # This 2nd case is the one that exhibits the same behavior as the case above without inheritance
     def test_generator_iter_sampler():
-        class MySampler():
+        class MySampler:
             def __iter__(self):
                 for i in range(99, -1, -1):
                     yield i
@@ -225,6 +225,7 @@ def test_subset_sampler():
     Description: Test SubsetSampler op with various indices and num_samples args combinations including invalid ones
     Expectation: Output is equal to the expected output when input is valid, otherwise exception is raised
     """
+
     def test_config(indices, num_samples=None, exception_msg=None):
         def pipeline():
             sampler = ds.SubsetSampler(indices, num_samples)
@@ -403,7 +404,7 @@ def test_sampler_when_less_and_larger_index_ids():
     """
 
     # sampler with less index ids
-    class MySampler():
+    class MySampler:
         def __iter__(self):
             for i in range(0, 10, 2):
                 yield i
@@ -432,7 +433,8 @@ def test_sampler_when_less_and_larger_index_ids():
 
     # sampler with larger index ids
     index = [3, 4, 3, 2, 0, 11, 5, 5, 5, 9, 1, 11, 11, 11, 11, 8]
-    class MySampler2():
+
+    class MySampler2:
         def __iter__(self):
             for i in index:
                 yield i
@@ -466,11 +468,13 @@ def test_sampler_with_getitem_method():
     """
 
     # sampler with equal index ids
-    class MySampler():
+    class MySampler:
         def __init__(self):
             self.index_ids = [3, 8, 7, 2, 0, 9, 11, 4, 5, 1, 6, 10]
+
         def __getitem__(self, index):
             return self.index_ids[index]
+
         def __len__(self):
             return len(self.index_ids)
 
@@ -497,11 +501,13 @@ def test_sampler_with_getitem_method():
         check_result(expected_data, ['d', 'i', 'h', 'c', 'a', 'j', 'l', 'e', 'f', 'b', 'g', 'k'])
 
     # sampler with less index ids
-    class MySampler2():
+    class MySampler2:
         def __init__(self):
             self.index_ids = [0, 2, 4, 6, 8]
+
         def __getitem__(self, index):
             return self.index_ids[index]
+
         def __len__(self):
             return len(self.index_ids)
 
@@ -528,11 +534,13 @@ def test_sampler_with_getitem_method():
         check_result(expected_data, ['a', 'c', 'e', 'g', 'i'])
 
     # sampler with larger index ids
-    class MySampler3():
+    class MySampler3:
         def __init__(self):
             self.index_ids = [3, 4, 3, 2, 0, 11, 5, 5, 5, 9, 1, 11, 11, 11, 11, 8]
+
         def __getitem__(self, index):
             return self.index_ids[index]
+
         def __len__(self):
             return len(self.index_ids)
 
@@ -557,6 +565,159 @@ def test_sampler_with_getitem_method():
         check_result(expected_data, ['d', 'e', 'd', 'c', 'a', 'l', 'f', 'f', 'f', 'j', 'b', 'l', 'l', 'l', 'l', 'i'])
 
 
+@pytest.mark.parametrize("num_shards", (1, 2, 3))
+def test_distributed_sampler_offset(num_shards):
+    """
+    Feature: DistributedSampler
+    Description: Test DistributedSampler with offset
+    Expectation: Result is as expected
+    """
+    dataset_size = 10000
+    for shard_id in range(num_shards):
+        for offset in range(-1, num_shards):
+            distributed_sampler = ds.DistributedSampler(num_shards=num_shards, shard_id=shard_id, offset=offset)
+            dataset = ds.MnistDataset("../data/dataset/testMnistData", sampler=distributed_sampler)
+            if offset == -1 or offset == shard_id:
+                expected_result = (dataset_size -1) // num_shards + 1
+            else:
+                expected_result = dataset_size // num_shards
+            assert dataset.get_dataset_size() == expected_result
+            assert sum([1 for _ in dataset]) == expected_result
+
+
+class StrNumberDataset:
+    def __init__(self):
+        self.data = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def __len__(self):
+        return len(self.data)
+
+
+def test_python_sampler_randomness():
+    """
+    Feature: PythonSampler
+    Description: Test PythonSampler randomness consistency
+    Expectation: Result is as expected
+    """
+
+    class UDFSampler(ds.Sampler):
+        def __init__(self):
+            super().__init__()
+            self.generator = np.random.default_rng(seed=0)
+
+        def __iter__(self):
+            # number of samples is random
+            num_samples = self.generator.integers(1, 11)
+            indices = [i for i in range(num_samples)]
+            # order of samples is random
+            self.generator.shuffle(indices)
+            return iter(indices)
+
+    dataset = ds.GeneratorDataset(StrNumberDataset(), column_names=["data"], sampler=UDFSampler())
+    assert dataset.get_dataset_size() == 9
+
+    num_epochs = 3
+
+    # iterate the sampler to get the data manually
+    fake_sampler = UDFSampler()
+    fake_dataset = StrNumberDataset()
+    expected_data = []
+    for _ in range(num_epochs):
+        for index in fake_sampler:
+            data = fake_dataset[index]
+            expected_data.append(np.array(data))
+
+    # iterate the dataset 2 times to get the data
+    total_result = []
+    for _ in range(2):
+        result = []
+        dataset_iter = dataset.create_dict_iterator(num_epochs=num_epochs, output_numpy=True)
+        for epoch in range(num_epochs):
+            for data in dataset_iter:
+                result.append(data["data"])
+        total_result.append(result)
+
+    assert len(total_result[0]) == len(expected_data)
+    assert len(total_result[1]) == len(expected_data)
+    for data_first_time, data_second_time, data_expect in zip(total_result[0], total_result[1], expected_data):
+        # every iteration should have the same data as expected
+        np.testing.assert_array_equal(data_first_time, data_expect)
+        np.testing.assert_array_equal(data_second_time, data_expect)
+
+
+@pytest.mark.parametrize("num_samples", (None, 5, 10, 15))
+def test_python_sampler_with_num_samples(num_samples):
+    """
+    Feature: PythonSampler
+    Description: Test Python sampler with different num_samples
+    Expectation: Result is as expected
+    """
+
+    class UDFSampler(ds.Sampler):
+        def __iter__(self):
+            yield from range(10)
+
+    sampler = UDFSampler(num_samples)  # specify number of samples
+    dataset = ds.GeneratorDataset(StrNumberDataset(), column_names=["data"], sampler=sampler)
+    expected_num_samples = num_samples if num_samples is not None else 10
+    assert dataset.get_dataset_size() == expected_num_samples
+    if expected_num_samples <= 10:
+        expected_result = np.array([str(i) for i in range(expected_num_samples)])
+        for index, item in enumerate(dataset.create_dict_iterator(num_epochs=1, output_numpy=True)):
+            np.testing.assert_array_equal(item["data"], expected_result[index])
+    else:
+        # num_samples is larger than the actual sampler length
+        with pytest.raises(RuntimeError) as error:
+            for _ in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+                pass
+        assert "The actual amount of data read from generator 10 is different from generator.len 15" in str(error.value)
+
+
+@pytest.mark.parametrize("inherit_sampler", (True, False))
+@pytest.mark.parametrize("length", (5, 10, 15))
+def test_python_sampler_with_length(inherit_sampler, length):
+    """
+    Feature: PythonSampler
+    Description: Test PythonSampler with __len__ method
+    Expectation: Result is as expected
+    """
+
+    if inherit_sampler:
+        # User defined sampler inherits from ds.Sampler
+        class UDFSampler(ds.Sampler):
+            def __iter__(self):
+                yield from range(10)
+
+            def __len__(self):
+                return length
+    else:
+        # User defined sampler does not inherit from ds.Sampler
+        class UDFSampler:
+            def __iter__(self):
+                yield from range(10)
+
+            def __len__(self):
+                return length
+
+    sampler = UDFSampler()
+    dataset = ds.GeneratorDataset(StrNumberDataset(), column_names=["data"], sampler=sampler)
+    assert dataset.get_dataset_size() == length
+
+    if length <= 10:
+        expected_result = np.array([str(i) for i in range(length)])
+        for index, item in enumerate(dataset.create_dict_iterator(num_epochs=1, output_numpy=True)):
+            np.testing.assert_array_equal(item["data"], expected_result[index])
+    else:
+        # length from __len__ is larger than the actual sampler length
+        with pytest.raises(RuntimeError) as error:
+            for _ in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+                pass
+        assert "The actual amount of data read from generator 10 is different from generator.len 15" in str(error.value)
+
+
 if __name__ == '__main__':
     test_sequential_sampler(True)
     test_random_sampler(True)
@@ -571,3 +732,7 @@ if __name__ == '__main__':
     test_sampler_list()
     test_sampler_when_less_and_larger_index_ids()
     test_sampler_with_getitem_method()
+    test_distributed_sampler_offset(num_shards=1)
+    test_python_sampler_randomness()
+    test_python_sampler_with_num_samples(num_samples=None)
+    test_python_sampler_with_length(inherit_sampler=True, length=10)

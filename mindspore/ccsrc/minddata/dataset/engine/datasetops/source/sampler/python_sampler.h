@@ -62,6 +62,11 @@ class PythonSamplerRT : public SamplerRT {
   // @param show_all - bool to show detailed vs summary
   void SamplerPrint(std::ostream &out, bool show_all) const override;
 
+  /// \brief Calculate the number samples.
+  /// \param[in] num_rows The input number indices of this sampler.
+  /// \return Status The status code.
+  int64_t CalculateNumSamples(int64_t num_rows) override;
+
  private:
   bool need_to_reset_;  // Whether Reset() should be called before calling GetNextSample()
 
