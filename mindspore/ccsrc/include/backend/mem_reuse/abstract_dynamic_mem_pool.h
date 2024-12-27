@@ -339,8 +339,8 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
                               uint32_t stream_id = kDefaultStreamIndex) override;
 
   // Alloc mem buf from mem pool, return mem buf and its allocator
-  virtual std::pair<MemBuf *, MemBufAllocator *> AllocMemBuf(size_t align_size, bool from_persistent_mem = false,
-                                                             uint32_t stream_id = kDefaultStreamIndex);
+  std::pair<MemBuf *, MemBufAllocator *> AllocMemBuf(size_t align_size, bool from_persistent_mem = false,
+                                                     uint32_t stream_id = kDefaultStreamIndex);
 
   // The main program entry of continuous memory alloc.
   std::vector<DeviceMemPtr> AllocContinuousTensorMem(const std::vector<size_t> &size_list,
