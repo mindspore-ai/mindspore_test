@@ -99,12 +99,6 @@ class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemor
   DeviceMemPtr AllocTensorMem(size_t size, bool from_persistent_mem = false, bool need_recycle = false,
                               uint32_t stream_id = kDefaultStreamIndex) override;
 
-  // Alloc mem buf from mem pool, return mem buf and its allocator
-  std::pair<MemBuf *, MemBufAllocator *> AllocMemBuf(size_t align_size, bool from_persistent_mem = false,
-                                                     uint32_t stream_id = kDefaultStreamIndex) override {
-    return instance_->AllocMemBuf(align_size, from_persistent_mem, stream_id);
-  }
-
   std::vector<DeviceMemPtr> AllocContinuousTensorMem(const std::vector<size_t> &size_list,
                                                      uint32_t stream_id = kDefaultStreamIndex) override;
 

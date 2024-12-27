@@ -58,13 +58,6 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
     return reinterpret_cast<void *>(1);
   }
 
-  size_t alloc_mem_buf_{0};
-  std::pair<MemBuf *, MemBufAllocator *> AllocMemBuf(size_t align_size, bool from_persistent_mem = false,
-                                                     uint32_t stream_id = kDefaultStreamIndex) override {
-    alloc_mem_buf_++;
-    return std::make_pair(nullptr, nullptr);
-  }
-
   size_t alloc_continuous_tensor_mem_{0};
   std::vector<DeviceMemPtr> AllocContinuousTensorMem(const std::vector<size_t> &size_list,
                                                      uint32_t stream_id = kDefaultStreamIndex) override {
@@ -376,18 +369,16 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->release_device_res_, 0);
   enhanced_pool->ReleaseDeviceRes();
   EXPECT_EQ(pool->release_device_res_, 1);
+  EXPECT_EQ(pool->is_enable_time_event_, 1);
 
   enhanced_pool->AllocTensorMem(0);
   EXPECT_EQ(pool->alloc_tensor_mem_, 0);
-  EXPECT_EQ(pool->alloc_mem_buf_, 1);
-  EXPECT_EQ(pool->dump_dynamic_mem_pool_state_info_, 1);
-  EXPECT_EQ(pool->dump_dynamic_mem_pool_debug_info_, 1);
-  EXPECT_EQ(pool->is_enable_time_event_, 1);
-  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 1);
-
-  enhanced_pool->AllocMemBuf(0);
+  EXPECT_EQ(pool->dump_dynamic_mem_pool_state_info_, 0);
+  EXPECT_EQ(pool->dump_dynamic_mem_pool_debug_info_, 0);
+  EXPECT_EQ(pool->is_enable_time_event_, 2);
+  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
   EXPECT_EQ(pool->align_memory_size_.Get(), 1);
-  EXPECT_EQ(pool->alloc_mem_buf_, 2);
+  EXPECT_EQ(pool->report_memory_pool_info_, 1);
 
   enhanced_pool->AllocContinuousTensorMem({});
   EXPECT_EQ(pool->alloc_continuous_tensor_mem_, 1);
@@ -398,13 +389,13 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
 
   enhanced_pool->DoFreeTensorMem(nullptr);
   EXPECT_EQ(pool->do_free_tensor_mem_, 2);
-  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 1);
+  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
 
   enhanced_pool->FreePartTensorMems({}, {}, {});
   EXPECT_EQ(pool->free_part_tensor_mems_, 0);
-  EXPECT_EQ(pool->is_enable_time_event_, 3);
+  EXPECT_EQ(pool->is_enable_time_event_, 4);
   EXPECT_EQ(pool->do_free_part_tensor_mems_, 1);
-  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 1);
+  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
 
   enhanced_pool->DoFreePartTensorMems({}, {}, {});
   EXPECT_EQ(pool->do_free_part_tensor_mems_, 2);
@@ -425,7 +416,7 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->align_memory_size_.Get(), 2);
 
   enhanced_pool->CalMemBlockAllocSize(0, true);
-  EXPECT_EQ(pool->cal_mem_block_alloc_size_, 1);
+  EXPECT_EQ(pool->cal_mem_block_alloc_size_, 2);
 
   enhanced_pool->SetMemPoolBlockSize(0);
   EXPECT_EQ(pool->set_mem_pool_block_size_, 1);
@@ -440,8 +431,9 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->get_min_using_memory_addr_.Get(), 1);
 
   void *addr;
-  enhanced_pool->AllocDeviceMem(0, &addr);
   EXPECT_EQ(pool->alloc_device_mem_, 1);
+  enhanced_pool->AllocDeviceMem(0, &addr);
+  EXPECT_EQ(pool->alloc_device_mem_, 2);
 
   enhanced_pool->FreeDeviceMem(nullptr);
   EXPECT_EQ(pool->free_device_mem_, 1);
@@ -462,10 +454,10 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->defrag_memory_, 1);
 
   enhanced_pool->DumpDynamicMemPoolStateInfo();
-  EXPECT_EQ(pool->dump_dynamic_mem_pool_state_info_, 2);
+  EXPECT_EQ(pool->dump_dynamic_mem_pool_state_info_, 1);
 
   enhanced_pool->DumpDynamicMemPoolDebugInfo();
-  EXPECT_EQ(pool->dump_dynamic_mem_pool_debug_info_, 2);
+  EXPECT_EQ(pool->dump_dynamic_mem_pool_debug_info_, 1);
 
   enhanced_pool->TotalMemStatistics();
   EXPECT_EQ(pool->total_mem_statistics_.Get(), 1);
@@ -491,9 +483,9 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   enhanced_pool->MaxMemReservedStatistics();
   EXPECT_EQ(pool->max_mem_reserved_statistics_.Get(), 1);
 
-  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 2);
+  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 1);
   enhanced_pool->ActualPeakStatistics();
-  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 3);
+  EXPECT_EQ(pool->actual_peak_statistics_.Get(), 2);
 
   enhanced_pool->BlockCountsStatistics();
   EXPECT_EQ(pool->block_counts_statistics_.Get(), 1);
@@ -514,10 +506,10 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->reset_max_mem_allocated_, 1);
 
   enhanced_pool->IsEnableEagerFree();
-  EXPECT_EQ(pool->is_enable_eager_free_.Get(), 1);
+  EXPECT_EQ(pool->is_enable_eager_free_.Get(), 3);
 
   enhanced_pool->IsEnableVmm();
-  EXPECT_EQ(pool->is_enable_vmm_.Get(), 1);
+  EXPECT_EQ(pool->is_enable_vmm_.Get(), 3);
 
   enhanced_pool->SetEnableVmm(true);
   EXPECT_EQ(pool->set_enable_vmm_, 2);
@@ -537,14 +529,15 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   enhanced_pool->FreeIdleMemsByEagerFree();
   EXPECT_EQ(pool->free_idle_mems_by_eager_free_.Get(), 1);
 
-  enhanced_pool->IsEnableTimeEvent();
   EXPECT_EQ(pool->is_enable_time_event_, 4);
+  enhanced_pool->IsEnableTimeEvent();
+  EXPECT_EQ(pool->is_enable_time_event_, 5);
 
   enhanced_pool->SetEnableTimeEvent(true);
   EXPECT_EQ(pool->set_enable_time_event_, 1);
 
   enhanced_pool->ReportMemoryPoolInfo();
-  EXPECT_EQ(pool->report_memory_pool_info_, 1);
+  EXPECT_EQ(pool->report_memory_pool_info_, 2);
 
   enhanced_pool->GenAllocateMemoryTimeEvent(nullptr, 0, 0, true, true);
   EXPECT_EQ(pool->gen_allocate_memory_time_event_, 1);
