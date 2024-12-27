@@ -109,15 +109,15 @@ def test_tensor_item():
     # ============== dtype of tensor is bfloat16 ===========
     x = ms.Tensor(1.0, ms.bfloat16)
     output = net(x)
-    assert output == x.asnumpy().item()
+    assert output == 1.0
 
     # ============== dtype of tensor is float16 ===========
     x = ms.Tensor(1.0, ms.float16)
     output = net(x)
-    assert output == x.asnumpy().item()
+    assert output == 1.0
     y = ops.abs(x)
     output = net(y)
-    assert output == y.asnumpy().item()
+    assert output == 1.0
 
     # ============== dtype of tensor is bool ===========
     x = ms.Tensor(True)
