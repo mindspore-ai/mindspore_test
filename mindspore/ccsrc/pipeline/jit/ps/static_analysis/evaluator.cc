@@ -915,10 +915,8 @@ AbstractBasePtr GetLogicalViewAbs(const AbstractBasePtr &physical_view_abs, cons
                            }
                            return GetLogicalViewAbs(sub_abs, sub_in_axes, axis_size);
                          });
-    if (physical_view_abs->isa<AbstractList>()) {
-      return std::make_shared<AbstractList>(logical_view_abs_list, physical_view_abs_sequence->sequence_nodes());
-    }
-    return std::make_shared<AbstractTuple>(logical_view_abs_list, physical_view_abs_sequence->sequence_nodes());
+    physical_view_abs_sequence->set_elements(logical_view_abs_list);
+    return physical_view_abs;
   }
   ValuePtr in_axis = in_axes;
   if (in_axis->isa<Int64Imm>()) {
@@ -1007,10 +1005,8 @@ AbstractBasePtr GetPhysicalViewAbs(const AbstractBasePtr &logical_view_abs, cons
         MS_LOG(EXCEPTION) << "The axis in vmap's 'out_axes' should be a None or a scalar of type Int64Imm, but got a "
                           << sub_out_axes->ToString() << ".";
       });
-    if (logical_view_abs->isa<AbstractList>()) {
-      return std::make_shared<AbstractList>(physical_view_abs_list);
-    }
-    return std::make_shared<AbstractTuple>(physical_view_abs_list);
+    logical_view_abs_sequence->set_elements(physical_view_abs_list);
+    return logical_view_abs;
   }
 
   // for the single output case, outputs: A, and out_axes: 1 or (1,).

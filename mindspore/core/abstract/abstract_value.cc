@@ -1306,6 +1306,8 @@ bool AbstractSequence::operator==(const AbstractBase &other) const {
 
 const AbstractBasePtrList &AbstractSequence::elements() const { return elements_; }
 
+void AbstractSequence::set_elements(const AbstractBasePtrList &elements) { elements_ = elements; }
+
 const std::shared_ptr<AnfNodeWeakPtrList> &AbstractSequence::sequence_nodes() const { return sequence_nodes_; }
 
 void AbstractSequence::set_sequence_nodes(const std::shared_ptr<AnfNodeWeakPtrList> &sequence_nodes) {

@@ -244,10 +244,9 @@ AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const Abstra
       }
     }
     std::copy(output_args.begin() + inplace_indexes.size(), output_args.end(), std::back_inserter(output_list));
-    if (output_abs->isa<AbstractTuple>()) {
-      return std::make_shared<abstract::AbstractTuple>(output_list);
-    }
-    return std::make_shared<abstract::AbstractList>(output_list);
+    auto output_sequence_abs = dyn_cast_ptr<AbstractSequence>(output_abs);
+    MS_EXCEPTION_IF_NULL(output_sequence_abs);
+    output_sequence_abs->set_elements(output_list);
   }
   return output_abs;
 }
@@ -1402,7 +1401,10 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
       (void)output_list.emplace_back(new_ele_abs);
       ele->set_inplace_abstract(new_ele_abs);
     }
-    new_res = std::make_shared<abstract::AbstractTuple>(output_list);
+    auto output_sequence_abs = dyn_cast_ptr<AbstractSequence>(res);
+    MS_EXCEPTION_IF_NULL(output_sequence_abs);
+    output_sequence_abs->set_elements(output_list);
+    new_res = res;
   }
   MS_LOG(DEBUG) << "The new abstract of view operation is:" << new_res->ToString();
   return new_res;

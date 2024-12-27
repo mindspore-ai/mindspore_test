@@ -58,6 +58,46 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   }
 }
 
+void SyncInplaceAbstract(const AbstractBasePtr &source_abs, const AbstractBasePtr &target_abs) {
+  // Sync for tensor.
+  if (source_abs->inplace_abstract() != nullptr) {
+    target_abs->set_inplace_abstract(source_abs->inplace_abstract());
+    return;
+  }
+  // Sync for sequence.
+  auto source_sequence_abs = dyn_cast<abstract::AbstractSequence>(source_abs);
+  if (source_sequence_abs == nullptr) {
+    return;
+  }
+  auto target_sequence_abs = dyn_cast<abstract::AbstractSequence>(target_abs);
+  if (target_sequence_abs == nullptr) {
+    return;
+  }
+  if (source_sequence_abs->dynamic_len() || target_sequence_abs->dynamic_len() ||
+      source_sequence_abs->size() != target_sequence_abs->size()) {
+    return;
+  }
+  for (size_t i = 0; i < source_sequence_abs->size(); ++i) {
+    const auto &source_item = source_sequence_abs->elements()[i];
+    MS_EXCEPTION_IF_NULL(source_item);
+    const auto &target_item = target_sequence_abs->elements()[i];
+    MS_EXCEPTION_IF_NULL(target_item);
+    SyncInplaceAbstract(source_item, target_item);
+  }
+}
+
+void SyncInplaceAbstractAtJoint(const EvalResultPtr &eval_result) {
+  MS_EXCEPTION_IF_NULL(eval_result);
+  if (eval_result->joined_abs_list().size() <= 1) {
+    return;
+  }
+  const auto &abs = eval_result->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  for (const auto &item_abs : eval_result->joined_abs_list()) {
+    SyncInplaceAbstract(abs, item_abs);
+  }
+}
+
 AnfNodePtr BuildValueNode(const ValuePtr &v, const AnfNodePtr &origin_node, const AbstractBasePtr &abs_base) {
   MS_EXCEPTION_IF_NULL(abs_base);
   AnfNodePtr value_node = NewValueNode(v);

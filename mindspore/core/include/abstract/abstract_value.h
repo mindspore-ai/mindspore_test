@@ -910,6 +910,11 @@ class MS_CORE_API AbstractSequence : public AbstractBase {
   /// \return A vector of elements.
   const AbstractBasePtrList &elements() const;
 
+  /// \brief Set the stored elements.
+  ///
+  /// \param[in] elements A vector of elements to set.
+  void set_elements(const AbstractBasePtrList &elements);
+
   /// \brief Set the element at index.
   ///
   /// \param[in] index The index where to set.
@@ -1773,10 +1778,13 @@ class EvalResult : public Base {
  public:
   EvalResult(const AbstractBasePtr &abs, const AttrValueMapPtr &attr)
       : abstract_(abs), attribute_(attr), has_side_effect_node_(false) {}
+  EvalResult(const AbstractBasePtr &abs, const AttrValueMapPtr &attr, const AbstractBasePtrList &joined_list)
+      : abstract_(abs), attribute_(attr), joined_abs_list_(joined_list), has_side_effect_node_(false) {}
   ~EvalResult() override = default;
   MS_DECLARE_PARENT(EvalResult, Base);
   const AbstractBasePtr &abstract() const { return abstract_; }
   const AttrValueMapPtr &attribute() const { return attribute_; }
+  const AbstractBasePtrList &joined_abs_list() const { return joined_abs_list_; }
   bool has_side_effect_node() const { return has_side_effect_node_; }
   void set_has_side_effect_node(bool has_side_effect_node) { has_side_effect_node_ = has_side_effect_node; }
 
@@ -1784,7 +1792,7 @@ class EvalResult : public Base {
   AbstractBasePtr abstract_;
   // Attribute related to PrimEvaluator;
   AttrValueMapPtr attribute_;
-
+  AbstractBasePtrList joined_abs_list_;
   bool has_side_effect_node_;
 };
 using EvalResultPtr = std::shared_ptr<EvalResult>;

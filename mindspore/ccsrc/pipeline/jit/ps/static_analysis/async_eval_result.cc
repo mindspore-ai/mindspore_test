@@ -229,12 +229,12 @@ void AsyncAbstract::ClearPossibleResult() {
 
 bool AsyncAbstract::SetPossibleResult(bool first) {
   std::lock_guard<std::mutex> lock(lock_);
-  bool condition = not_copy_from_other_ && switchAbstract_ != nullptr && switchAbstract_->HasResult();
+  bool condition = not_copy_from_other_ && switch_abstract_ != nullptr && switch_abstract_->HasResult();
   if (first && condition) {
-    condition = switchAbstract_->ignore_value_;
+    condition = switch_abstract_->ignore_value_;
   }
   if (condition) {
-    result_ = switchAbstract_->TryGetResult();
+    result_ = switch_abstract_->TryGetResult();
     // Set the result with the other branches abstract
     // when there are not available branches to infer.
     // Just copy the type otherwise the two branches would be optimized to a const value.

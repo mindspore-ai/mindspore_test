@@ -219,7 +219,7 @@ class NormalCache {
 class AsyncAbstract : public std::enable_shared_from_this<AsyncAbstract> {
  public:
   explicit AsyncAbstract(const std::shared_ptr<AsyncAbstract> &switchAbstract = nullptr)
-      : switchAbstract_(switchAbstract) {}
+      : switch_abstract_(switchAbstract) {}
   ~AsyncAbstract() = default;
   AbstractBasePtr GetResult();
   AbstractBasePtr TryGetResult() {
@@ -252,7 +252,7 @@ class AsyncAbstract : public std::enable_shared_from_this<AsyncAbstract> {
   AbstractBasePtr result_{nullptr};
   bool not_copy_from_other_{true};
   bool ignore_value_{false};
-  std::shared_ptr<AsyncAbstract> switchAbstract_;
+  std::shared_ptr<AsyncAbstract> switch_abstract_;
 };
 
 // Wrap AsyncAbstract, so it can work with Join method of AbstractFunction.
