@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """
-Test module for parallel training of Llama models using Mindformers at jit_level O2.
+Test module for parallel training of Llama models using sharding propagation.
 """
 
 import os
@@ -25,16 +25,16 @@ from mindspore import set_seed
 from mindspore.communication import init
 from mindspore.dataset import GeneratorDataset
 
-workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindformers.models.llama.llama_config import LlamaConfig
 from mindformers.models.llama.llama import LlamaForCausalLM
 from mindformers import Trainer, TrainingArguments
 
-ms.set_context(jit_config={"jit_level": "O2"})
+ms.set_context(jit_config={"jit_level": "O1"})
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL,
-                             gradients_mean=True,
+ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.AUTO_PARALLEL,
+                             search_mode="sharding_propagation",
                              full_batch=True,
                              enable_parallel_optimizer=True)
 init()
@@ -42,9 +42,9 @@ init()
 
 def generator_train():
     """train dataset generator"""
-    seq_len = 1025
-    step_num = 10
-    batch_size = 8
+    seq_len = 4097
+    step_num = 5
+    batch_size = 32
     vocab_size = 32000
     input_ids = np.random.randint(low=0, high=vocab_size, size=(
         step_num * batch_size, seq_len,)).astype(np.int32)
@@ -66,13 +66,13 @@ def build_model(test_mode,
     np.random.seed(0)
 
     args = TrainingArguments(
-        batch_size=8, num_train_epochs=1, use_parallel=True)
+        batch_size=32, num_train_epochs=1, use_parallel=True)
 
-    model_config = LlamaConfig(num_layers=2,
-                               hidden_size=1536,
-                               num_heads=12,
-                               seq_length=1024,
-                               batch_size=8,
+    model_config = LlamaConfig(num_layers=80,
+                               hidden_size=8192,
+                               num_heads=64,
+                               seq_length=4096,
+                               batch_size=32,
                                use_flash_attention=True,
                                use_past=False,
                                is_dynamic=is_dynamic,
@@ -90,7 +90,7 @@ def build_model(test_mode,
 
     train_dataset = GeneratorDataset(
         generator_train, column_names=["input_ids"])
-    train_dataset = train_dataset.batch(batch_size=8)
+    train_dataset = train_dataset.batch(batch_size=32)
 
     task_trainer = Trainer(task='text_generation',
                            model=model,
@@ -99,41 +99,23 @@ def build_model(test_mode,
 
     return task_trainer
 
-
-def run_llama_pipeline():
-    """test llama pipeline."""
-    task_trainer = build_model('llama_pipeline', fine_grain_inteleave=2)
-    task_trainer.config.callbacks[1].save_checkpoint_steps = 100
-    task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
-    task_trainer.config.runner_config.epochs = 1
-    task_trainer.config.runner_config.sink_mode = False
-    task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
-    task_trainer.set_parallel_config(data_parallel=1,
-                                     model_parallel=2,
-                                     pipeline_stage=2,
-                                     micro_batch_num=2,
-                                     vocab_emb_dp=False)
-    task_trainer.train()
-    sys.exit(0)
-
-def run_llama_grad_accu():
-    """test llama grad accu."""
-    task_trainer = build_model('llama_grad_accu', gradient_accumulation_steps=4)
+def run_llama_compile():
+    """test llama compile."""
+    task_trainer = build_model('llama_compile', compute_dtype="float16")
     task_trainer.config.callbacks[1].save_checkpoint_steps = 100
     task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
     task_trainer.config.runner_config.epochs = 1
     task_trainer.config.runner_config.sink_mode = False
     task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
     task_trainer.config.parallel.parallel_optimizer_config.optimizer_weight_shard_size = 1
-    task_trainer.config.runner_config.gradient_accumulation_steps = 4
-    task_trainer.set_parallel_config(data_parallel=2,
-                                     model_parallel=2,
+    task_trainer.config.runner_config.gradient_accumulation_steps = 1
+    task_trainer.set_parallel_config(data_parallel=1,
+                                     model_parallel=4,
                                      context_parallel=1,
-                                     pipeline_stage=1,
-                                     micro_batch_num=2)
+                                     pipeline_stage=8,
+                                     micro_batch_num=32)
     task_trainer.train()
     sys.exit(0)
-
 
 def run_llama():
     """
@@ -145,11 +127,8 @@ def run_llama():
     parser.add_argument(
         '--test_mode', default="", type=str, help='test_mode.')
     args = parser.parse_args()
-    ms.set_context(save_graphs=True, save_graphs_path=f"./{args.test_mode}")
-    if args.test_mode == "pipeline":
-        run_llama_pipeline()
-    elif args.test_mode == "grad_accu":
-        run_llama_grad_accu()
+    if args.test_mode == "compile":
+        run_llama_compile()
 
 
 run_llama()

@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """
-Test module for parallel training of Llama models using sharding propagation.
+Test module for parallel training of Llama models using Mindformers at jit_level O0.
 """
 
 import os
@@ -25,16 +25,16 @@ from mindspore import set_seed
 from mindspore.communication import init
 from mindspore.dataset import GeneratorDataset
 
-workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindformers.models.llama.llama_config import LlamaConfig
 from mindformers.models.llama.llama import LlamaForCausalLM
 from mindformers import Trainer, TrainingArguments
 
-ms.set_context(jit_config={"jit_level": "O1"})
+ms.set_context(jit_config={"jit_level": "O0"})
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.AUTO_PARALLEL,
-                             search_mode="sharding_propagation",
+ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL,
+                             gradients_mean=True,
                              full_batch=True,
                              enable_parallel_optimizer=True)
 init()
@@ -108,7 +108,7 @@ def run_llama_compile():
     task_trainer.config.runner_config.sink_mode = False
     task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
     task_trainer.config.parallel.parallel_optimizer_config.optimizer_weight_shard_size = 1
-    task_trainer.config.runner_config.gradient_accumulation_steps = 1
+    task_trainer.config.runner_config.gradient_accumulation_steps = 4
     task_trainer.set_parallel_config(data_parallel=1,
                                      model_parallel=4,
                                      context_parallel=1,
