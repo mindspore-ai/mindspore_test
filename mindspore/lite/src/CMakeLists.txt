@@ -88,17 +88,6 @@ file(GLOB CXX_API_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/litert/cxx_api/graph/*.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/litert/cxx_api/tensor/*.cc
         )
-if(MSLITE_ENABLE_PARALLEL_INFERENCE)
-    set(CXX_API_SRCS
-            ${CXX_API_SRCS}
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/predict_task_queue.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_worker.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_pool.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_parallel_runner.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_parallel_runner_impl.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/resource_manager.cc
-            )
-endif()
 
 file(GLOB C_API_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/litert/c_api/*.cc
