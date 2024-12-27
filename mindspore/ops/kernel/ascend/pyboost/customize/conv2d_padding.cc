@@ -29,6 +29,12 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+
 bool Conv2DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
   const auto dim_count_no_batch = num_spatial_dims + 1;
   const auto dim_count_batch = dim_count_no_batch + 1;
@@ -78,8 +84,12 @@ tensor::BaseTensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunne
                                                    const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, padding_enum, dilation, group);
   // Convert ValueTuple to std::vector
+  const auto &weight_shape = weight_tensor->shape();
+  auto spatial_len = weight_shape.size() - kIndex2;
   std::vector<int64_t> stride_vector = ConvertValueTupleToVector<int64_t>(stride);
+  ExpandParamIfNeeded(&stride_vector, spatial_len);
   std::vector<int64_t> dilation_vector = ConvertValueTupleToVector<int64_t>(dilation);
+  ExpandParamIfNeeded(&dilation_vector, spatial_len);
   // Convert ValuePtr to c++ scalar
   auto padding_enum_imm = GetValue<int64_t>(padding_enum);
   auto input_shape = input_tensor->shape();
@@ -140,7 +150,6 @@ tensor::BaseTensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunne
   } else {
     MS_LOG(EXCEPTION) << "Input padding string must be one of {'same', 'valid'}";
   }
-  // PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor_new, weight_tensor, bias_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_tensor, bias_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 

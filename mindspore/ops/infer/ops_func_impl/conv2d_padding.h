@@ -20,15 +20,24 @@
 #include <memory>
 #include <vector>
 #include "mindapi/base/types.h"
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/conv_padding.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API Conv2DPaddingFuncImpl : public OpFuncImpl {
+class OPS_API Conv2DPaddingFuncImpl final : public ConvPaddingFuncImpl {
  public:
+  Conv2DPaddingFuncImpl() {
+    idxes_.input_idx = 0;
+    idxes_.weight_idx = 1;
+    idxes_.bias_idx = 2;
+    idxes_.stride_idx = 3;
+    idxes_.padding_idx = 4;
+    idxes_.dilation_idx = 5;
+    idxes_.groups_idx = 6;
+  }
+  ~Conv2DPaddingFuncImpl() = default;
+
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace ops
 }  // namespace mindspore

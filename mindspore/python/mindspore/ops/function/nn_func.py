@@ -32,7 +32,6 @@ from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
-from mindspore._checkparam import twice
 from mindspore.ops.composite.multitype_ops._constexpr_utils import raise_value_error
 from mindspore.ops.operations.nn_ops import MaxUnpool2D, MaxUnpool3D
 from mindspore.ops.operations.nn_ops import FractionalMaxPoolWithFixedKsize, FractionalMaxPool3DWithFixedKsize
@@ -6179,8 +6178,6 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     the `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_,
     , :math:`weight` is the convolution kernel value and :math:`X` represents the input feature map.
 
-    Here are the indices' meanings:
-
     - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`,
       where :math:`N` is the batch size of the input.
 
@@ -6207,10 +6204,6 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ and
     `ConvNets <http://cs231n.github.io/convolutional-networks/>`_.
 
-    Note:
-        On Ascend platform, only group convolution in depthwise convolution scenarios is supported.
-        That is, when `groups>1`, condition :math:`C_{in}` = :math:`C_{out}` = `groups` must be satisfied.
-
     Args:
         input (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
         weight (Tensor): Tensor of shape
@@ -6221,26 +6214,31 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         stride (Union(int, tuple[int]), optional): The distance of kernel moving, an int number that represents
             the height and width of movement are both strides, or a tuple of two int numbers that
             represent height and width of movement respectively. Default: ``1`` .
-        padding (Union(int, tuple[int], list[int], str), optional): Implicit paddings on both sides of the input `x`.
-            Can be a string, one integer or a tuple/list with 2 integers.
-            If `padding` is a string, the optional values are ``"same"`` , ``"valid"``.
+        padding (Union[int, tuple[int], str], optional): The number of padding
+            on the height and width directions of the input.
+            The data type is an integer or a tuple of four integers or string {`valid`, `same`}. If `padding` is an
+            integer, then the top, bottom, left, and right padding are all equal to `padding`.
+            If `padding` is a tuple of 4 integers, then the top, bottom, left, and right padding
+            is equal to `padding[0]`, `padding[1]`, `padding[2]`, and `padding[3]` respectively.
+            The value should be greater than or equal to 0. Default: ``0`` .
 
-            - same: Adopts the way of completion. The height and width of the output will be equal to
-              the input `x` divided by stride. The padding will be evenly calculated in top and bottom,
-              left and right possiblily. Otherwise, the last extra padding will be calculated from the bottom
-              and the right side.
+            - ``"same"``: Pad the input around its edges so that the shape of input and output
+              are the same when `stride` is set to ``1``.
+              The amount of padding to is calculated by the operator internally, If the amount is even, it is
+              uniformly distributed around the input, if it is odd, the excess amount goes to the right/bottom side.
+              If this mode is set, `stride` must be 1.
 
-            - valid: Adopts the way of discarding. The possible largest height and width of output will be returned
-              without padding. Extra pixels will be discarded.
+            - ``"valid"``: No padding is applied to the input, and the output returns the maximum
+              possible height and width. Extra pixels that could not complete a full stride will
+              be discarded.
 
-            If `padding` is one integer, the paddings of top, bottom, left and right are the same, equal to padding.
-            If `padding` is a tuple/list with 2 integers, the padding of top adn bottom is padding[0],
-            and the padding of left and right is padding[1]. Default: ``0`` .
         dilation (Union(int, tuple[int]), optional): Gaps between kernel elements.The data type is int or a tuple of
             2 integers. Specifies the dilation rate to use for dilated convolution. If set to be :math:`k > 1`,
             there will be :math:`k - 1` pixels skipped for each sampling location. Its value must
             be greater than or equal to 1 and bounded by the height and width of the input `x`. Default: ``1`` .
         groups (int, optional): Splits `input` into groups. Default: ``1`` .
+            :math:`C_{in} % groups == 0` , :math:`C_{out} % groups == 0` , :math:`C_{out} >= groups` ,
+            :math:` \text{kernel_size[1]} = C_{in} / groups`
 
     Returns:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.
@@ -6254,8 +6252,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         TypeError: If `bias` is not a Tensor.
         ValueError: If  the shape of `bias` is not :math:`(C_{out})` .
         ValueError: If `stride` or `dilation` is less than 1.
-        ValueError: If `pad_mode` is not one of 'same', 'valid' or 'pad'.
-        ValueError: If `padding` is a tuple/list whose length is not equal to 2.
+        ValueError: If `padding` is `same` , but `stride` is not equal 1.
 
     Supported Platforms:
         ``Ascend``
@@ -6270,14 +6267,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         >>> print(output.shape)
         (10, 32, 30, 30)
     """
-
-    if isinstance(stride, int):
-        stride = twice(stride)
-    if isinstance(dilation, int):
-        dilation = twice(dilation)
-    if isinstance(padding, int):
-        padding = twice(padding)
-    if isinstance(padding, (tuple, list)):
+    if isinstance(padding, (int, tuple, list)):
         return conv2d_ext_op(input, weight, bias, stride, padding, dilation, groups)
     if isinstance(padding, str):
         return conv2d_padding_op(input, weight, bias, stride, padding, dilation, groups)

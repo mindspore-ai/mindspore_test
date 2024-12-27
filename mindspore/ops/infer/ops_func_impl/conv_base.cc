@@ -119,6 +119,10 @@ void ConvBaseFunImpl::FetchSpatialDim(const PrimitivePtr &primitive, const Infer
   const auto &stride = stride_opt.value();
   const auto &padding = padding_opt.value();
   const auto &dilation = dilation_opt.value();
+  (void)CheckAndConvertUtils::CheckInteger("stride size", spatial_len, kGreaterEqual, SizeToLong(stride.size()),
+                                           prim_name);
+  (void)CheckAndConvertUtils::CheckInteger("dilation size", spatial_len, kGreaterEqual, SizeToLong(dilation.size()),
+                                           prim_name);
   conv_base::ConvBaseIndicesCheckPositiveVector("stride", stride, prim_name, true, spatial_len);
   conv_base::ConvBaseIndicesCheckPositiveVector("padding", padding, prim_name, false, spatial_len);
   conv_base::ConvBaseIndicesCheckPositiveVector("dilation", dilation, prim_name, true, spatial_len);
