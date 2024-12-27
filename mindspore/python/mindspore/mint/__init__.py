@@ -833,7 +833,7 @@ def not_equal(input, other):
 
 def softmax(input, dim, *, dtype=None):
     r"""
-    Alias of :func:`mindspore.mint.nn.functional.softmax`.
+    Alias for :func:`mindspore.mint.nn.functional.softmax`.
 
     Supported Platforms:
         ``Ascend``

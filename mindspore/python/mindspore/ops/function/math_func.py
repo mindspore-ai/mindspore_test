@@ -8582,7 +8582,7 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
     Args:
         input (Tensor): The input of norm with data type of bfloat16, float16 or float32.
             The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
-        p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
+        p (Union[bool, int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
             behavior. Default: ``fro`` .
         dim (Union[int, List(int), Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
             Default: ``None`` .

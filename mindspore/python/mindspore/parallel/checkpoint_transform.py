@@ -669,7 +669,7 @@ def set_op_strategy_config(mode="SAVE", path=""):
 
     Args:
         mode (str): The parameter for choosing save or load .json file. Default value: ``"SAVE"`` .
-        path (str): Path to save or load parallel strategy json, must be an absolute path.
+        path (str): Path to save or load parallel strategy json, must be an absolute path. Default value: ``""`` .
 
     Raises:
         KeyError: When type is not ``"SAVE"`` or ``"LOAD"`` .
