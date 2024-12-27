@@ -556,6 +556,9 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr GeLUGrad(const NodePtr &dy, const NodePtr &x, const NodePtr &y) {
     return Emit("GeLUGrad", {dy, x, y});
   }
+  virtual NodePtr GeluGradExt(const NodePtr &dy, const NodePtr &x, const NodePtr &approximate) {
+    return Emit("GeluGradExt", {dy, x, approximate});
+  }
   virtual NodePtr GeLU(const NodePtr &input) { return Emit("GeLU", {input}); }
   virtual NodePtr Generator(const NodePtr &cmd, const NodePtr &inputs) { return Emit("Generator", {cmd, inputs}); }
   virtual NodePtr GridSampler2DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,

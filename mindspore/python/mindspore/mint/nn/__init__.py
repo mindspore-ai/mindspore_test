@@ -624,7 +624,7 @@ class GELU(Cell):
         :align: center
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
         >>> import mindspore
@@ -634,16 +634,23 @@ class GELU(Cell):
         >>> gelu = mint.nn.GELU()
         >>> output = gelu(input)
         >>> print(output)
-        [[-1.5880802e-01  3.9999299e+00 -3.1077917e-21]
-         [ 1.9545976e+00 -2.2918017e-07  9.0000000e+00]]
+        [[-1.58655241e-01  3.99987316e+00 -0.00000000e+00]
+         [ 1.95449972e+00 -1.41860323e-06  9.0000000e+00]]
+        >>> gelu = mint.nn.GELU(approximate="tanh")
+        >>> output = gelu(input)
+        >>> print(output)
+        [[-1.58808023e-01  3.99992990e+00 -3.10779147e-21]
+         [ 1.95459759e+00 -2.29180174e-07  9.0000000e+00]]
     """
 
-    def __init__(self):
+    def __init__(self, approximate="none"):
         """Initialize GELU"""
         super(GELU, self).__init__()
+        self.approximate = approximate
 
     def construct(self, input):
-        return F.gelu(input)
+        return F.gelu(input, approximate=self.approximate)
+
 
 
 class Hardtanh(Cell):

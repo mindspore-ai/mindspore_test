@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.gelu
 ====================================
 
-.. py:function:: mindspore.mint.nn.functional.gelu(input, approximate='none')
+.. py:function:: mindspore.mint.nn.functional.gelu(input, *, approximate='none')
 
     高斯误差线性单元激活函数。
 
@@ -25,8 +25,13 @@ mindspore.mint.nn.functional.gelu
     .. image:: ../images/GELU.png
         :align: center
 
+    .. note::
+        在Ascend平台上，当 `input` 为-inf时，其梯度为0，当 `input` 为inf时，其梯度为 `dout` 。
+
     参数：
         - **input** (Tensor) - 用于计算GELU的Tensor。数据类型是float16、float32或float64。
+
+    关键字参数：
         - **approximate** (str，可选) - gelu近似算法。有两种：``'none'`` 和 ``'tanh'`` 。默认值： ``'none'`` 。
 
     返回：

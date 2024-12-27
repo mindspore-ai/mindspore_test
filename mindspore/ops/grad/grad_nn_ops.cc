@@ -3082,6 +3082,14 @@ REG_BPROP_BUILDER("TanhGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("GeLU").SetBody(GeLUBpropExpander);
 REG_BPROP_BUILDER("Gelu").SetBody(GeLUBpropExpander);
 
+REG_BPROP_BUILDER("GeluExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto approximate = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dinput = ib->GeluGradExt(dout, input, approximate);
+  return {dinput, ib->OutZeros(approximate)};
+});
+
 REG_BPROP_BUILDER("FastGeLU").SetUnusedInputs({i1}).SetBody(FastGeLUBpropExpander);
 REG_BPROP_BUILDER("FastGelu").SetUnusedInputs({i1}).SetBody(FastGeLUBpropExpander);
 
