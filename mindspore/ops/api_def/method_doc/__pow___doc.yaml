@@ -2,4 +2,4 @@ __pow__:
   description: |
     __pow__() -> Tensor
     
-    Alias for :func:`Tensor.pow`.
+    Alias for :func:`mindspore.Tensor.pow`.
