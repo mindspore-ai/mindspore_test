@@ -32,8 +32,8 @@ bincount:
         >>> from mindspore import Tensor
         >>> from mindspore import dtype as mstype
         >>> x = Tensor([2, 4, 1, 0, 0], dtype=mstype.int64)
-        >>> print(ops.bincount(x, minlength=7))
-        [2. 1. 1. 0. 1. 0. 0.]
+        >>> print(x.bincount(minlength=7))
+        [2 1 1 0 1 0 0]
         >>> weights = Tensor([0, 0.25, 0.5, 0.75, 1], dtype=mstype.float32)
         >>> print(x.bincount(weights=weights))
         [1.75 0.5  0.   0.   0.25]
