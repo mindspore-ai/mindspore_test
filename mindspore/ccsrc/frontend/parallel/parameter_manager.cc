@@ -619,11 +619,7 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
   }
 }
 
-void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
-  MS_EXCEPTION_IF_NULL(root);
-  auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
-  auto root_params = root->parameters();
-  AnfNodePtrList sub_root_params;
+void GetSubRootParams(const AnfNodePtrList &root_params, AnfNodePtrList *sub_root_params) {
   for (auto &be_cloned_parameter_node : root_params) {
     if (ParallelContext::GetInstance()->get_redundancy_node().count(be_cloned_parameter_node)) {
       continue;
@@ -642,8 +638,17 @@ void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
     if (!param_value_in->be_cloned()) {
       continue;
     }
-    sub_root_params.emplace_back(be_cloned_parameter_node);
+    (*sub_root_params).emplace_back(be_cloned_parameter_node);
   }
+}
+
+void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
+  auto root_params = root->parameters();
+  AnfNodePtrList sub_root_params;
+  GetSubRootParams(root_params, &sub_root_params);
+
   for (auto &cloned_parameter_node : root_params) {
     if (ParallelContext::GetInstance()->get_redundancy_node().count(cloned_parameter_node)) {
       continue;
