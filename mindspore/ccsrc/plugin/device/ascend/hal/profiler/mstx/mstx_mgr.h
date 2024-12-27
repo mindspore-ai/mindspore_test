@@ -22,12 +22,17 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
+#include <utility>
 #include "acl/acl_prof.h"
 #include "hccl/hccl_types.h"
+#include "runtime/pipeline/task/task.h"
 
 namespace mindspore {
 namespace profiler {
 namespace ascend {
+
+enum class MstxTaskType { mark, start, end };
+
 class MstxMgr {
  public:
   MstxMgr();
@@ -53,6 +58,33 @@ class MstxMgr {
 
  private:
   std::atomic<bool> isEnable_{false};
+  std::atomic<uint64_t> msRangeId_{1};
+  std::mutex idStreamsMtx_;
+  std::unordered_set<int> msRangeIdsWithStream_;
+};
+
+class MstxFrontendTask : public runtime::AsyncTask {
+ public:
+  MstxFrontendTask(std::function<void(void)> run_func, MstxTaskType type)
+      : runtime::AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)), type_(type) {}
+  ~MstxFrontendTask() override = default;
+  void Run() override;
+
+ private:
+  std::function<void(void)> run_func_;
+  MstxTaskType type_;
+};
+
+class MstxDeviceTask : public runtime::AsyncTask {
+ public:
+  MstxDeviceTask(std::function<void(void)> run_func, MstxTaskType type)
+      : runtime::AsyncTask(runtime::kDeviceOpTask), run_func_(std::move(run_func)), type_(type) {}
+  ~MstxDeviceTask() override = default;
+  void Run() override;
+
+ private:
+  std::function<void(void)> run_func_;
+  MstxTaskType type_;
 };
 
 std::string GetMstxHcomMsg(const std::string &opName, uint64_t dataCnt, HcclDataType dataType, HcclComm comm);
