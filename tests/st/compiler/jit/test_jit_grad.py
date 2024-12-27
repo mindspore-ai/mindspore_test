@@ -14,10 +14,13 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore.common import Tensor
-from mindspore import context, jit
+from mindspore.common import Tensor, Parameter
+from mindspore.common import dtype as mstype
+from mindspore import context, jit, ops
 from mindspore.ops.composite import GradOperation
+from mindspore.nn import Cell
 from tests.mark_utils import arg_mark
+from tests.st.pynative.utils import GradOfAllInputs
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -310,3 +313,54 @@ def test_jit_grad_with_invalid_input_2():
     with pytest.raises(RuntimeError) as error_info:
         GradOperation()(func)(a, b)
     assert "contains tensor with gradient but can not mutable" in str(error_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_dynamic_shape_change_param():
+    """
+    Feature: Test grad jit scene for dynamic shape change param.
+    Description: Test grad jit scene for dynamic shape change param.
+    Expectation: Success.
+    """
+    class Net_JIT(Cell):
+        def __init__(self):
+            super().__init__()
+            self.num = 2
+
+        @jit
+        def construct(self, x, y):
+            ops.assign_add(x, y)
+            return y * y * self.num
+
+    class Net(Cell):
+        def __init__(self):
+            super().__init__()
+            self.num = 2
+
+        def construct(self, x, y):
+            ops.assign_add(x, y)
+            return y * y * self.num
+
+    def compare_result(grad, grad_jit):
+        for g1, g2 in zip(grad, grad_jit):
+            if g1 is None:
+                assert g2 is None
+                continue
+            assert np.allclose(g1.numpy(), g2.asnumpy(), 0.0001, 0.0001)
+
+    net_jit = Net_JIT()
+    grad_net_jit = GradOfAllInputs(net_jit, False)
+    net = Net()
+    grad_net = GradOfAllInputs(net, False)
+    x1 = Tensor(np.random.rand(2, 3, 4), mstype.float32)
+    x1 = Parameter(x1, name="x1")
+    y1 = Tensor(np.random.rand(2, 3, 4), mstype.float32)
+    grad1 = grad_net(x1, y1)
+    grad1_jit = grad_net_jit(x1, y1)
+    compare_result(grad1, grad1_jit)
+    x2 = Tensor(np.random.rand(3, 3, 4), mstype.float32)
+    x2 = Parameter(x2, name="x2")
+    y2 = Tensor(np.random.rand(3, 3, 4), mstype.float32)
+    grad2 = grad_net(x2, y2)
+    grad2_jit = grad_net_jit(x2, y2)
+    compare_result(grad2, grad2_jit)
