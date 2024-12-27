@@ -18,6 +18,7 @@
 
 #include <utility>
 #include <complex>
+#include "pybind11/complex.h"
 
 #include "include/common/pybind_api/api_register.h"
 #include "abstract/abstract_value.h"
@@ -584,34 +585,34 @@ py::object TensorPy::Item(const Tensor &tensor) {
   auto data = tensor.data_c();
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return py::cast(*static_cast<int8_t *>(data));
+      return py::int_(py::cast(*static_cast<int8_t *>(data)));
     case TypeId::kNumberTypeUInt8:
-      return py::cast(*static_cast<uint8_t *>(data));
+      return py::int_(py::cast(*static_cast<uint8_t *>(data)));
     case TypeId::kNumberTypeInt16:
-      return py::cast(*static_cast<int16_t *>(data));
+      return py::int_(py::cast(*static_cast<int16_t *>(data)));
     case TypeId::kNumberTypeUInt16:
-      return py::cast(*static_cast<uint16_t *>(data));
+      return py::int_(py::cast(*static_cast<uint16_t *>(data)));
     case TypeId::kNumberTypeInt:
     case TypeId::kNumberTypeInt32:
-      return py::cast(*static_cast<int *>(data));
+      return py::int_(py::cast(*static_cast<int *>(data)));
     case TypeId::kNumberTypeUInt32:
-      return py::cast(*static_cast<uint32_t *>(data));
+      return py::int_(py::cast(*static_cast<uint32_t *>(data)));
     case TypeId::kNumberTypeInt64:
-      return py::cast(*static_cast<int64_t *>(data));
+      return py::int_(py::cast(*static_cast<int64_t *>(data)));
     case TypeId::kNumberTypeUInt64:
-      return py::cast(*static_cast<uint64_t *>(data));
+      return py::int_(py::cast(*static_cast<uint64_t *>(data)));
     case TypeId::kNumberTypeFloat16:
       return py::float_(py::cast(*static_cast<float16 *>(data)));
     case TypeId::kNumberTypeFloat:
     case TypeId::kNumberTypeFloat32:
-      return py::cast(*static_cast<float *>(data));
+      return py::float_(py::cast(*static_cast<float *>(data)));
     case TypeId::kNumberTypeDouble:
     case TypeId::kNumberTypeFloat64:
-      return py::cast(*static_cast<double *>(data));
+      return py::float_(py::cast(*static_cast<double *>(data)));
     case TypeId::kNumberTypeBFloat16:
       return py::float_(py::cast(*static_cast<bfloat16 *>(data)));
     case TypeId::kNumberTypeBool:
-      return py::cast(*static_cast<bool *>(data));
+      return py::bool_(py::cast(*static_cast<bool *>(data)));
     case TypeId::kNumberTypeComplex64:
     case TypeId::kNumberTypeComplex:
       return py::cast(std::complex<double>{(*static_cast<float *>(data)), (*(static_cast<float *>(data) + 1))});
