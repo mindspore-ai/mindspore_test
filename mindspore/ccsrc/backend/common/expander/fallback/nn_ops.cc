@@ -858,10 +858,10 @@ REG_FALLBACK_BUILDER("Index").SetBody(BODYFUNC(ib) {
       }
       // The InnerNonZero(input) output shape is (rank) * (non zero number)
       auto nonzero_tensor = ib->Emit("InnerNonZero", {tensor});
-      auto unstack_tensor = ib->Emit("Unstack", {nonzero_tensor}, {{"axis", MakeValue<int64_t>(0LL)}});
-      // The nonzero and unstack will generation tuple[tensor], the tuple size is input's rank
+      auto dim = ib->Value<int64_t>(0);
       for (int64_t j = 0; j < rank; j++) {
-        new_indices.emplace_back(ib->TupleGetItem(unstack_tensor, j));
+        auto select_tensor = ib->Emit("SelectExtView", {nonzero_tensor, dim, ib->Value<int64_t>(j)});
+        new_indices.emplace_back(select_tensor);
       }
     } else {
       new_indices.emplace_back(tensor);
@@ -952,10 +952,10 @@ REG_FALLBACK_BUILDER("InplaceIndexPut").SetBody(BODYFUNC(ib) {
       if (type_id == kNumberTypeUInt8) {
         // The InnerNonZero(input) output shape is (rank) * (non zero number)
         auto nonzero_tensor = ib->Emit("InnerNonZero", {tensor});
-        auto unstack_tensor = ib->Emit("Unstack", {nonzero_tensor}, {{"axis", MakeValue<int64_t>(0LL)}});
-        // The nonzero and unstack will generation tuple[tensor], the tuple size is input's rank
+        auto dim = ib->Value<int64_t>(0);
         for (int64_t j = 0; j < rank; j++) {
-          new_indices.emplace_back(ib->TupleGetItem(unstack_tensor, j));
+          auto select_tensor = ib->Emit("SelectExtView", {nonzero_tensor, dim, ib->Value<int64_t>(j)});
+          new_indices.emplace_back(select_tensor);
         }
       } else {
         new_indices.emplace_back(tensor);
