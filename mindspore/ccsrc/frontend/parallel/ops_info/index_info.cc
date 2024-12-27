@@ -235,7 +235,6 @@ Status IndexInfo::InferBias() {
   auto input_data_shard = (stra.at(0)->GetAllElements())[0];
   std::vector<int64_t> inputs_shape_tmp;
   std::vector<int64_t> inputs_data_shard_tmp;
-  std::vector<float> bias_tmp;
   if (input_shape->GetAllElements()[0].size() != input_data_shard.size()) {
     MS_LOG(ERROR) << name_ << ":input_shape size: " << input_shape->GetAllElements()[0].size()
                   << "not equals to input_data_shard size: " << input_data_shard.size();
@@ -243,7 +242,6 @@ Status IndexInfo::InferBias() {
   }
   for (size_t i = 0; i < input_shape->GetAllElements()[0].size(); i++) {
     bias_.push_back(1);
-    bias_tmp.push_back(0.0);
     slice_size_.push_back(0);
     inputs_shape_tmp.push_back(input_shape->GetAllElements()[0].at(i));
     inputs_data_shard_tmp.push_back(input_data_shard.at(i));
@@ -253,30 +251,26 @@ Status IndexInfo::InferBias() {
   if (input_shape->GetAllElements()[0].size() == validSizeOfInput) {
     if (repeated_calc_num_ > 1) {
       // bias_0 = rank / (b * r)
-      bias_tmp.at(0) = (rank / (inputs_data_shard_tmp.at(1) * repeated_calc_num_));
+      bias_.at(0) = (rank / (inputs_data_shard_tmp.at(1) * repeated_calc_num_));
       // bias_1 = rank % (b * r) / r
-      bias_tmp.at(1) = ((rank % (inputs_data_shard_tmp.at(1) * repeated_calc_num_)) / repeated_calc_num_);
+      bias_.at(1) = ((rank % (inputs_data_shard_tmp.at(1) * repeated_calc_num_)) / repeated_calc_num_);
     } else {
       // bias_0 = rank / (b * c * d) % a = rank / (b * 1 * 1) % a
-      bias_tmp.at(0) = (rank / (inputs_data_shard_tmp.at(1))) % inputs_data_shard_tmp.at(0);
+      bias_.at(0) = (rank / (inputs_data_shard_tmp.at(1))) % inputs_data_shard_tmp.at(0);
       // bias_1 = rank % (b * c * d) / (c * d) = rank % (b * 1 * 1) / (1 * 1)
-      bias_tmp.at(1) = rank % (inputs_data_shard_tmp.at(1));
+      bias_.at(1) = rank % (inputs_data_shard_tmp.at(1));
     }
 
     if (dynamic_shape_flag() == true) {
       // A/B needs to be calculated by graph.
-      bias_.at(0) = (int64_t)bias_tmp.at(0);
-      bias_.at(1) = (int64_t)bias_tmp.at(1);
       return SUCCESS;
     }
     MS_EXCEPTION_IF_ZERO("inputs_data_shard 0", inputs_data_shard_tmp.at(0));
     MS_EXCEPTION_IF_ZERO("inputs_data_shard 1", inputs_data_shard_tmp.at(1));
     slice_size_.at(0) = inputs_shape_tmp.at(0) / (inputs_data_shard_tmp.at(0));  // A/a
     slice_size_.at(1) = inputs_shape_tmp.at(1) / (inputs_data_shard_tmp.at(1));  // B/b
-    bias_tmp.at(0) = bias_tmp.at(0) * slice_size_.at(0);
-    bias_tmp.at(1) = bias_tmp.at(1) * slice_size_.at(1);
-    bias_.at(0) = (int64_t)bias_tmp.at(0);
-    bias_.at(1) = (int64_t)bias_tmp.at(1);
+    bias_.at(0) = bias_.at(0) * slice_size_.at(0);
+    bias_.at(1) = bias_.at(1) * slice_size_.at(1);
     MS_LOG(INFO) << name_ << ":rank num: " << rank << " bias_0::" << bias_.at(0) << " bias_1::" << bias_.at(1);
     MS_LOG(INFO) << name_ << ":rank num: " << rank << " slice_size_0::" << slice_size_.at(0)
                  << " slice_size_1::" << slice_size_.at(1);
