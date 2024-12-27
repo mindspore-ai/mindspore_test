@@ -1836,6 +1836,57 @@ REG_BPROP_BUILDER("IndexFillTensor").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
   return {x_grad, ib->OutZeros(dim), ib->OutZeros(indices), value_grad};
 });
 
+REG_BPROP_BUILDER("InplaceFillScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+  return {ib->ZerosLikeExt(ib->GetInput(kIndex0), ib->EmitValue(kNone)), ib->OutZeros(ib->GetInput(kIndex1))};
+});
+
+REG_BPROP_BUILDER("InplaceFillTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  NodePtr value_grad = nullptr;
+  auto value = ib->GetInput(kIndex1);
+  if (value->need_compute_grad_out()) {
+    value_grad = ib->SumExt(ib->GetInput(kIndex3), ib->EmitValue(kNone), ib->Value(false));
+  } else {
+    value_grad = ib->OutZeros(value);
+  }
+  return {ib->ZerosLikeExt(ib->GetInput(kIndex0), ib->EmitValue(kNone)), value_grad};
+});
+
+REG_BPROP_BUILDER("InplaceMaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mask = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr input_grad = nullptr;
+  if (input->need_compute_grad_out()) {
+    auto dout_clone = ib->Emit("Clone", {dout});
+    input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
+  } else {
+    input_grad = ib->OutZeros(input);
+  }
+  return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2))};
+});
+
+REG_BPROP_BUILDER("InplaceMaskedFillTensor").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mask = ib->GetInput(kIndex1);
+  auto value = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr input_grad = nullptr;
+  NodePtr value_grad = nullptr;
+  if (input->need_compute_grad_out()) {
+    auto dout_clone = ib->Emit("Clone", {dout});
+    input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
+  } else {
+    input_grad = ib->OutZeros(input);
+  }
+  if (value->need_compute_grad_out()) {
+    auto temp = ib->Emit("MaskedSelect", {dout, mask});
+    value_grad = ib->SumExt(temp, ib->EmitValue(kNone), ib->Value(false));
+  } else {
+    value_grad = ib->OutZeros(value);
+  }
+  return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), value_grad};
+});
+
 REG_BPROP_BUILDER("UnsortedSegmentSum").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto segment_ids = ib->GetInput(kIndex1);
   auto num_segments = ib->GetInput(kIndex2);

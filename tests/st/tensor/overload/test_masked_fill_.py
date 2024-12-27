@@ -23,6 +23,7 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
@@ -38,9 +39,11 @@ def _count_unequal_element(data_expected, data_me, rtol, atol):
     error = np.abs(data_expected - data_me)
     greater = np.greater(error, atol + np.abs(data_me) * rtol)
     loss_count = np.count_nonzero(greater)
-    assert (loss_count / total_count) < rtol, \
-        "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}". \
-            format(data_expected[greater], data_me[greater], error[greater])
+    assert (
+        loss_count / total_count
+    ) < rtol, "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}".format(
+        data_expected[greater], data_me[greater], error[greater]
+    )
 
 
 def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
@@ -54,7 +57,18 @@ def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
 
 @run_with_cell
 def masked_fill__forward_func(input_x, mask, value):
-    return input_x.masked_fill_(mask, value)
+    temp = input_x + 0
+    return temp.masked_fill_(mask, value)
+
+
+@run_with_cell
+def masked_fill__backward_func_scalar(input_x, mask, value):
+    return ms.grad(masked_fill__forward_func, (0, 1))(input_x, mask, value)
+
+
+@run_with_cell
+def masked_fill__backward_func_tensor(input_x, mask, value):
+    return ms.grad(masked_fill__forward_func, (0, 1, 2))(input_x, mask, value)
 
 
 @arg_mark(
@@ -63,8 +77,8 @@ def masked_fill__forward_func(input_x, mask, value):
     card_mark="onecard",
     essential_mark="essential",
 )
-@pytest.mark.parametrize("mode", ["pynative"])
-def test_tensor_masked_fill__normal(mode):
+@pytest.mark.parametrize("mode", ["pynative", "KBK"])
+def test_ops_masked_fill__normal(mode):
     """
     Feature: Tensor.masked_fill_
     Description: Verify the result of Tensor.masked_fill_
@@ -78,12 +92,27 @@ def test_tensor_masked_fill__normal(mode):
     mask = Tensor(mask_np)
     except_out = np_masked_fill_forward_func(input_x_np, mask_np, value)
 
-    if mode == 'pynative':
+    if mode == "pynative":
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
-        output1 = masked_fill__forward_func(input_x, mask, value)
-        output2 = masked_fill__forward_func(input_x, mask, Tensor(value))
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+    output1 = masked_fill__forward_func(input_x, mask, value)
+    output2 = masked_fill__forward_func(input_x, mask, Tensor(value))
     allclose_nparray(output1.asnumpy(), except_out, 1e-04, 1e-04)
     allclose_nparray(output2.asnumpy(), except_out, 1e-04, 1e-04)
+
+    input_x1 = ms.Tensor(np.array([1.0, 2.0, 3.0, 4.0]).astype(np.float32))
+    mask = ms.Tensor(np.array([True, True, False, False]).astype(np.bool_))
+    expect_x_grad = np.asarray([0.0, 0.0, 1.0, 1.0]).astype(np.float32)
+    expect_mask_grad = np.asarray([0.0, 0.0, 0.0, 0.0]).astype(np.float32)
+    expect_value_grad = np.asarray(2.0).astype(np.float32)
+    grads_scalar = masked_fill__backward_func_scalar(input_x1, mask, 0.5)
+    grads_tensor = masked_fill__backward_func_tensor(input_x1, mask, Tensor(0.5))
+    allclose_nparray(grads_scalar[0].asnumpy(), expect_x_grad, 1e-04, 1e-04)
+    allclose_nparray(grads_scalar[1].asnumpy(), expect_mask_grad, 1e-04, 1e-04)
+    allclose_nparray(grads_tensor[0].asnumpy(), expect_x_grad, 1e-04, 1e-04)
+    allclose_nparray(grads_tensor[1].asnumpy(), expect_mask_grad, 1e-04, 1e-04)
+    allclose_nparray(grads_tensor[2].asnumpy(), expect_value_grad, 1e-04, 1e-04)
 
 
 @arg_mark(
@@ -106,12 +135,14 @@ def test_tensor_masked_fill_tensor_dynamic():
     y2 = random.random()
     TEST_OP(
         masked_fill__forward_func,
-        [[Tensor(x1), Tensor(mask1), Tensor(y1)], [Tensor(x2), Tensor(mask2), Tensor(y2)]],
+        [
+            [Tensor(x1), Tensor(mask1), Tensor(y1)],
+            [Tensor(x2), Tensor(mask2), Tensor(y2)],
+        ],
         "inplace_masked_fill_tensor",
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE"],
         disable_input_check=True,
-        disable_grad=True,
-        inplace_update=True
+        inplace_update=True,
     )
 
 
@@ -137,8 +168,7 @@ def test_tensor_masked_fill_scalar_dynamic():
         masked_fill__forward_func,
         [[Tensor(x1), Tensor(mask1), y1], [Tensor(x2), Tensor(mask2), y2]],
         "inplace_masked_fill_scalar",
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE"],
         disable_input_check=True,
-        disable_grad=True,
-        inplace_update=True
+        inplace_update=True,
     )
