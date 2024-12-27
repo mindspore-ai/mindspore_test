@@ -8,6 +8,3 @@ mindspore.device_context.gpu.op_precision.conv_allow_tf32
 
     参数：
         - **value** (bool) - 是否开启卷积在cuDNN下的TF32张量核计算。如未配置，框架默认为 ``True`` 。
-
-    支持平台：
-        ``GPU``
