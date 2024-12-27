@@ -18,6 +18,11 @@ from mindspore._c_expression import _memory_stats, _reset_max_mem_reserved, _res
 from mindspore import log as logger
 from .device import _check_inputs_validation, is_initialized
 
+function_memory_status = {'memory_stats': False, 'memory_reserved': False, 'max_memory_reserved': False,
+                          'empty_cache': False, 'reset_peak_memory_stats': False, 'memory_summary': False,
+                          'memory_allocated': False, 'max_memory_allocated': False,
+                          'reset_max_memory_reserved': False, 'reset_max_memory_allocated': False}
+
 
 @_check_inputs_validation
 def memory_stats(device_target=None):
@@ -52,10 +57,12 @@ def memory_stats(device_target=None):
         {<capsule object NULL at 0x7f7e8c27b030>: {'block_stream_id': 0, 'block_memory_size': 1073741824}}},
         'persistent_mem_pool_stats': {'block_unit_size': 1073741824, 'block_counts': 0, 'blocks_info': {}}}
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.memory_stats() is deprecated."
-        " Please use mindspore.runtime.memory_stats()"
-    )
+    if not function_memory_status['memory_stats']:
+        function_memory_status['memory_stats'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.memory_stats() is deprecated."
+            " Please use mindspore.runtime.memory_stats()"
+        )
     if not is_initialized(device_target):
         logger.warning(f"Backend {device_target} is not initialized yet. Return empty dict.")
         return {}
@@ -91,10 +98,12 @@ def memory_reserved(device_target=None):
         >>> print(ms.hal.memory_reserved())
         1073741824
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.memory_reserved() is deprecated."
-        " Please use mindspore.runtime.memory_reserved()"
-    )
+    if not function_memory_status['memory_reserved']:
+        function_memory_status['memory_reserved'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.memory_reserved() is deprecated."
+            " Please use mindspore.runtime.memory_reserved()"
+        )
     return _memory_stats(device_target).get("total_reserved_memory", 0)
 
 
@@ -127,10 +136,12 @@ def max_memory_reserved(device_target=None):
         >>> print(ms.hal.max_memory_reserved())
         1073741824
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.max_memory_reserved() is deprecated."
-        " Please use mindspore.runtime.max_memory_reserved()"
-    )
+    if not function_memory_status['max_memory_reserved']:
+        function_memory_status['max_memory_reserved'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.max_memory_reserved() is deprecated."
+            " Please use mindspore.runtime.max_memory_reserved()"
+        )
     return _memory_stats(device_target).get("max_reserved_memory", 0)
 
 
@@ -147,7 +158,9 @@ def empty_cache():
         Currently, the MindSpore memory pool does not have the function of releasing memory fragments.
         This interface is reserved but implemented as an empty method and prompted in log mode.
     """
-    logger.warning(f"The empty_cache operation is currently not supported.")
+    if not function_memory_status['empty_cache']:
+        function_memory_status['empty_cache'] = True
+        logger.warning(f"The empty_cache operation is currently not supported.")
 
 
 @_check_inputs_validation
@@ -182,10 +195,12 @@ def reset_peak_memory_stats(device_target=None):
         >>> print(ms.hal.max_memory_allocated())
         0
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.reset_peak_memory_stats() is deprecated."
-        " Please use mindspore.runtime.reset_peak_memory_stats()"
-    )
+    if not function_memory_status['reset_peak_memory_stats']:
+        function_memory_status['reset_peak_memory_stats'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.reset_peak_memory_stats() is deprecated."
+            " Please use mindspore.runtime.reset_peak_memory_stats()"
+        )
     _reset_max_mem_reserved(device_target)
     _reset_max_mem_allocated(device_target)
 
@@ -208,10 +223,12 @@ def memory_summary(device_target=None):
     Returns:
         str, readable memory pool status information in tabular form.
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.memory_summary() is deprecated."
-        " Please use mindspore.runtime.memory_summary()"
-    )
+    if not function_memory_status['memory_summary']:
+        function_memory_status['memory_summary'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.memory_summary() is deprecated."
+            " Please use mindspore.runtime.memory_summary()"
+        )
     stats = _memory_stats(device_target)
 
     def _format_size(sz, pref_sz):
@@ -279,10 +296,12 @@ def memory_allocated(device_target=None):
         >>> print(ms.hal.memory_allocated())
         1024
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.memory_allocated() is deprecated."
-        " Please use mindspore.runtime.memory_allocated()"
-    )
+    if not function_memory_status['memory_allocated']:
+        function_memory_status['memory_allocated'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.memory_allocated() is deprecated."
+            " Please use mindspore.runtime.memory_allocated()"
+        )
     return _memory_stats(device_target).get("total_allocatd_memory", 0)
 
 
@@ -315,10 +334,12 @@ def max_memory_allocated(device_target=None):
         >>> print(ms.hal.max_memory_allocated())
         1536
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.max_memory_allocated() is deprecated."
-        " Please use mindspore.runtime.max_memory_allocated()"
-    )
+    if not function_memory_status['max_memory_allocated']:
+        function_memory_status['max_memory_allocated'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.max_memory_allocated() is deprecated."
+            " Please use mindspore.runtime.max_memory_allocated()"
+        )
     return _memory_stats(device_target).get("max_allocated_memory", 0)
 
 
@@ -350,10 +371,12 @@ def reset_max_memory_reserved(device_target=None):
         >>> print(ms.hal.max_memory_reserved())
         0
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.reset_max_memory_reserved() is deprecated."
-        " Please use mindspore.runtime.reset_max_memory_reserved()"
-    )
+    if not function_memory_status['reset_max_memory_reserved']:
+        function_memory_status['reset_max_memory_reserved'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.reset_max_memory_reserved() is deprecated."
+            " Please use mindspore.runtime.reset_max_memory_reserved()"
+        )
     _reset_max_mem_reserved(device_target)
 
 
@@ -385,8 +408,10 @@ def reset_max_memory_allocated(device_target=None):
         >>> print(ms.hal.max_memory_allocated())
         0
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.reset_max_memory_allocated() is deprecated."
-        " Please use mindspore.runtime.reset_max_memory_allocated()"
-    )
+    if not function_memory_status['reset_max_memory_allocated']:
+        function_memory_status['reset_max_memory_allocated'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.reset_max_memory_allocated() is deprecated."
+            " Please use mindspore.runtime.reset_max_memory_allocated()"
+        )
     _reset_max_mem_allocated(device_target)

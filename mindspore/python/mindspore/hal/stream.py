@@ -24,6 +24,10 @@ from mindspore import _checkparam as Validator
 from mindspore import log as logger
 from .event import Event
 
+function_stream_status = {'record_event': False, 'wait_event': False, 'wait_stream': False,
+                          'query': False, 'synchronize': False, 'set_cur_stream': False,
+                          'current_stream': False, 'default_stream': False,
+                          'communication_stream': False, 'StreamCtx': False}
 
 class Stream(Stream_):
     r"""
@@ -89,10 +93,12 @@ class Stream(Stream_):
              [5. 5. 5.]
              [5. 5. 5.]]
         """
-        logger.warning(
-            "WARN_DEPRECATED: The usage of mindspore.hal.Stream().record_event() is deprecated."
-            " Please use mindspore.runtime.Stream().record_event()"
-        )
+        if not function_stream_status['record_event']:
+            function_stream_status['record_event'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Stream().record_event() is deprecated."
+                " Please use mindspore.runtime.Stream().record_event()"
+            )
         if event is None:
             event = Event()
         if not isinstance(event, Event):
@@ -130,10 +136,12 @@ class Stream(Stream_):
              [5. 5. 5.]
              [5. 5. 5.]]
         """
-        logger.warning(
-            "WARN_DEPRECATED: The usage of mindspore.hal.current_stream().wait_event(event) is deprecated."
-            " Please use mindspore.runtime.current_stream().wait_event(event)"
-        )
+        if not function_stream_status['wait_event']:
+            function_stream_status['wait_event'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.current_stream().wait_event(event) is deprecated."
+                " Please use mindspore.runtime.current_stream().wait_event(event)"
+            )
         if not isinstance(event, Event):
             raise TypeError(f"For 'wait_event', the argument 'event' should be Event,"
                             f" but got {type(event)}.")
@@ -169,10 +177,12 @@ class Stream(Stream_):
             >>> print(d)
             [[4. 4.]]
         """
-        logger.warning(
-            "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
-            " Please use mindspore.runtime.Stream()"
-        )
+        if not function_stream_status['wait_stream']:
+            function_stream_status['wait_stream'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
+                " Please use mindspore.runtime.Stream()"
+            )
         if not isinstance(stream, Stream):
             raise TypeError(f"For 'wait_stream', the argument 'stream' should be Stream,"
                             f" but got {type(stream)}.")
@@ -216,10 +226,12 @@ class Stream(Stream_):
             >>> s1.synchronize()
             >>> assert s1.query()
         """
-        logger.warning(
-            "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
-            " Please use mindspore.runtime.Stream()"
-        )
+        if not function_stream_status['query']:
+            function_stream_status['query'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
+                " Please use mindspore.runtime.Stream()"
+            )
         # pylint: disable=useless-super-delegation
         return super().query()
 
@@ -257,10 +269,12 @@ def synchronize():
         >>> ms.hal.synchronize()
         >>> assert s1.query()
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.synchronize() is deprecated."
-        " Please use mindspore.runtime.synchronize()"
-    )
+    if not function_stream_status['synchronize']:
+        function_stream_status['synchronize'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.synchronize() is deprecated."
+            " Please use mindspore.runtime.synchronize()"
+        )
     synchronize_()
 
 
@@ -288,10 +302,12 @@ def set_cur_stream(stream):
         >>> assert ms.hal.current_stream() == s1
         >>> ms.hal.set_cur_stream(ms.hal.default_stream())
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
-        " Please use mindspore.runtime.Stream()"
-    )
+    if not function_stream_status['set_cur_stream']:
+        function_stream_status['set_cur_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
+            " Please use mindspore.runtime.Stream()"
+        )
     if stream is None:
         return
     if not isinstance(stream, Stream):
@@ -315,10 +331,12 @@ def current_stream():
         >>> cur_stream = ms.hal.current_stream()
         >>> assert cur_stream == ms.hal.default_stream()
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.current_stream() is deprecated."
-        " Please use mindspore.runtime.current_stream()"
-    )
+    if not function_stream_status['current_stream']:
+        function_stream_status['current_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.current_stream() is deprecated."
+            " Please use mindspore.runtime.current_stream()"
+        )
     return Stream(stream=current_stream_())
 
 
@@ -337,10 +355,12 @@ def default_stream():
         >>> cur_stream = ms.hal.current_stream()
         >>> assert cur_stream == ms.hal.default_stream()
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.default_stream() is deprecated."
-        " Please use mindspore.runtime.default_stream()"
-    )
+    if not function_stream_status['default_stream']:
+        function_stream_status['default_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.default_stream() is deprecated."
+            " Please use mindspore.runtime.default_stream()"
+        )
     return Stream(stream=default_stream_())
 
 
@@ -359,10 +379,12 @@ def communication_stream():
         >>> ms.hal.communication_stream()
         Stream(device_name=Ascend, device_id:0, stream id:1)
     """
-    logger.warning(
-        "WARN_DEPRECATED: The usage of mindspore.hal.communication_stream() is deprecated."
-        " Please use mindspore.runtime.communication_stream()"
-    )
+    if not function_stream_status['communication_stream']:
+        function_stream_status['communication_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.communication_stream() is deprecated."
+            " Please use mindspore.runtime.communication_stream()"
+        )
     return Stream(stream=communication_stream_())
 
 
@@ -396,10 +418,12 @@ class StreamCtx():
     """
 
     def __init__(self, ctx_stream):
-        logger.warning(
-            "WARN_DEPRECATED: The usage of mindspore.hal.StreamCtx(s1) is deprecated."
-            " Please use mindspore.runtime.StreamCtx(s1)"
-        )
+        if not function_stream_status['StreamCtx']:
+            function_stream_status['StreamCtx'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.StreamCtx(s1) is deprecated."
+                " Please use mindspore.runtime.StreamCtx(s1)"
+            )
         if ctx_stream is not None and not isinstance(ctx_stream, Stream):
             raise TypeError(f"For 'StreamCtx', the argument 'ctx_stream' should be Stream,"
                             f" but got {type(ctx_stream)}.")
