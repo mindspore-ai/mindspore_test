@@ -814,10 +814,10 @@ class Linear(Cell):
     Examples:
         >>> import mindspore
         >>> from mindspore import Tensor
-        >>> from mindspore import nn
+        >>> from mindspore import mint
         >>> import numpy as np
         >>> x = Tensor(np.array([[180, 234, 154], [244, 48, 247]]), mindspore.float32)
-        >>> net = nn.mint.nn.Linear(3, 4)
+        >>> net = mint.nn.Linear(3, 4)
         >>> output = net(x)
         >>> print(output.shape)
         (2, 4)
