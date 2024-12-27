@@ -27,7 +27,7 @@ isinf:
         >>> import numpy as np
         >>> from mindspore import Tensor
         >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
-        >>> output = x.isinf(x)
+        >>> output = x.isinf()
         >>> print(output)
         [False False True]
         >>> x = Tensor(2.1, mindspore.float64)
