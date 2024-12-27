@@ -256,7 +256,7 @@ from mindspore.ops.function.math_func import sum
 # 105 swapaxes
 
 # 106 t
-from mindspore.ops.auto_generate import t_ext as t
+from mindspore.ops.function.math_func import t
 # 107 tanh
 from mindspore.ops.auto_generate import tanh
 # 108 tile
@@ -411,7 +411,7 @@ from mindspore.ops.function.math_func import addmm
 from mindspore.ops.auto_generate import lerp, lerp_scalar
 
 # 790 addmv
-from mindspore.ops.auto_generate import addmv_op
+from mindspore.ops.function.math_func import addmv
 
 # 1028
 from mindspore.ops.function.math_func import var_ext
@@ -1082,6 +1082,9 @@ def tensor_t(input):
 
 
 def deprecated_tensor_t(input):
+    r"""
+    For details, please refer to :func:`mindspore.ops.t`.
+    """
     return t(input)
 
 
@@ -1457,11 +1460,14 @@ def deprecated_tensor_addmm(input, mat1, mat2, *, beta=1, alpha=1):
 
 # 790
 def tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
-    return addmv_op(input, mat, vec, beta, alpha)
+    return addmv(input, mat, vec, beta=beta, alpha=alpha)
 
 
 def deprecated_tensor_addmv(input, mat, vec, *, beta=1, alpha=1):
-    return addmv_op(input, mat, vec, beta, alpha)
+    r"""
+    For details, please refer to :func:`mindspore.ops.addmv`.
+    """
+    return addmv(input, mat, vec, beta=beta, alpha=alpha)
 
 
 def tensor_clone(input):
