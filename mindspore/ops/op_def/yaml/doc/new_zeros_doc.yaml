@@ -26,9 +26,10 @@ new_zeros:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
+            >>> import mindspore
             >>> from mindspore import Tensor, ops
-            >>> x = Tensor([1, 2, 3, 4], mindspore.int32)
-            >>> output = ops.auto_generate.NewZeros()(x, (2, 3))
-            >>> print(output)
-            [[0 0 0]
-             [0 0 0]]
+            >>> x = Tensor((), mindspore.int32)
+            >>> ops.auto_generate.NewZeros()(x, (2, 3))
+            Tensor(shape=[2, 3], dtype=Int32, value=
+            [[0, 0, 0],
+             [0, 0, 0]])
