@@ -73,7 +73,9 @@ AnfNodePtrList TensorIndex::ParseSlice(const AnfNodePtr &index_node, const abstr
       if (IsAnyValue(slice_abs)) {
         auto res_node = res_graph_->NewCNode({NewValueNode(prim::kPrimSliceGetItem), index_node, NewValueNode(str)});
         if (is_need_convert_to_scalar && slice_abs->isa<abstract::AbstractTensor>()) {
-          return res_graph_->NewCNode({NewValueNode(prim::kPrimTensorToScalar), res_node});
+          auto cast_node = res_graph_->NewCNode(
+            {NewValueNode(prim::kPrimCast), res_node, NewValueNode(MakeValue(static_cast<int64_t>(kNumberTypeInt64)))});
+          return res_graph_->NewCNode({NewValueNode(prim::kPrimTensorToScalar), cast_node});
         }
         return res_node;
       }
