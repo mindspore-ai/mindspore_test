@@ -3335,8 +3335,14 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         Performs tensor dtype conversion.
 
+        Note:
+            - If the `self` Tensor already has the correct `mindspore.dtype`, then self is returned.
+              Otherwise, the returned tensor is a copy of `self` with the desired mindspore.dtype.
+            - When converting complex numbers to boolean type, the imaginary part of the complex number is not
+              taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+
         Args:
-            dtype (Number): The valid data type of the output tensor. Only constant value is allowed.
+            dtype (dtype.Number): The valid data type of the output tensor. Only constant value is allowed.
 
         Returns:
             Tensor, converted to the specified `dtype`.
