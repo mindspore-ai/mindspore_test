@@ -92,11 +92,8 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
             std::vector<kernel::KernelObjectType>{kernel::KernelObjectType::SCALAR});
         } else if (value->isa<ValueSequence>()) {
           auto vec = value->cast<ValueSequencePtr>()->value();
-          if (vec.size() > 0) {
-            info_builder->SetOutputsDeviceType(std::vector<TypeId>{vec[0]->type()->type_id()});
-          } else {
-            info_builder->SetOutputsDeviceType(std::vector<TypeId>{TypeId::kNumberTypeInt64});
-          }
+          auto dtype = vec.size() > 0 ? vec[0]->type()->type_id() : TypeId::kNumberTypeInt64;
+          info_builder->SetOutputsDeviceType(std::vector<TypeId>{dtype});
           info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
           info_builder->SetOutputsKernelObjectType(
             std::vector<kernel::KernelObjectType>{kernel::KernelObjectType::TUPLE});
