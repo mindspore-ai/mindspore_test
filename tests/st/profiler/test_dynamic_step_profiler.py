@@ -274,6 +274,7 @@ def _dynamic_step_train_profiler(tmpdir, net, step_num, schedule, context_mode, 
             train(net)
             profiler.step()
     ProfilerInterface.finalize()
+    ProfilerInterface.clear()
 
 
 def _extract_timestamp(folder_name):

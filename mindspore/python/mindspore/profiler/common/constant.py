@@ -187,6 +187,12 @@ class TimelineLayerName(Enum):
     OVERLAP_ANALYSIS = "Overlap Analysis"
 
 
+class AnalysisMode(Enum):
+    """analysis mode"""
+    SYNC_MODE = "sync"
+    ASYNC_MODE = "async"
+
+
 class JitLevel:
     """jit level"""
     KBK_LEVEL = "O0"

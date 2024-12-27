@@ -375,8 +375,17 @@ class Profiler:
             logger.warning("The profiler has schedule. Please use 'on_trace_ready' to analyse data.")
             return
 
-        ProfilerInterface.analyse()
+        if offline_path:
+            logger.warning("The parameter 'offline_path' for Profiler.analyse() is deprecated, "
+                           "please use Profiler.offline_analyse() instead.")
+
+        self._prof_context.pretty = pretty
+        self._prof_context.step_list = step_list
+        self._prof_context.mode = mode
+
         ProfilerInterface.finalize()
+        ProfilerInterface.analyse()
+        ProfilerInterface.clear()
 
     @classmethod
     def offline_analyse(cls, path: str, pretty=False, step_list=None, data_simplification=True) -> None:

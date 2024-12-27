@@ -34,6 +34,7 @@ from mindspore.profiler.common.constant import (
 )
 from mindspore.profiler.common.profiler_output_path import ProfilerOutputPath
 from mindspore.profiler.common.profiler_parameters import ProfilerParameters
+from mindspore.profiler.common.constant import AnalysisMode
 from mindspore.profiler.common.singleton import Singleton
 from mindspore.profiler.schedule import Schedule
 
@@ -55,6 +56,7 @@ class ProfilerContext:
         self._device_target: Optional[str] = None
         self._dynamic_status: Optional[bool] = None
         self._step_list: Optional[int] = None
+        self._mode: str = AnalysisMode.SYNC_MODE.value
         self._pretty: bool = False
         self._profiler_path_mgr: ProfilerOutputPath = None
         self._jit_level: Optional[str] = ""
@@ -87,6 +89,7 @@ class ProfilerContext:
             "device_target": self._device_target,
             "dynamic_status": self._dynamic_status,
             "step_list": self._step_list,
+            "mode": self._mode,
             "jit_level": self._jit_level,
             "context_mode": self._context_mode
         }
@@ -352,6 +355,29 @@ class ProfilerContext:
                            f"but got {type(value)}, reset to False.")
             value = False
         self._pretty = value
+
+    @property
+    def mode(self) -> str:
+        """Get the analysis mode."""
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode: str) -> None:
+        """Set analysis mode value."""
+        if not isinstance(mode, str):
+            logger.warning(f"For Profiler.analyse(), the parameter mode must be str, "
+                           f"but got {type(mode)}, reset to {AnalysisMode.SYNC_MODE.value}.")
+            self._mode = AnalysisMode.SYNC_MODE.value
+            return
+
+        mode_range = [m.value for m in AnalysisMode]
+        if mode not in mode_range:
+            logger.warning(f"For Profiler.analyse(), the parameter mode must be one of {mode_range}, "
+                           f"but got {mode}, reset to {AnalysisMode.SYNC_MODE.value}.")
+            self._mode = AnalysisMode.SYNC_MODE.value
+            return
+
+        self._mode = mode
 
     @property
     def schedule(self) -> Schedule:
