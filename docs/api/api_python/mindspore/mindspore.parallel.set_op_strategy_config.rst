@@ -1,7 +1,7 @@
 mindspore.parallel.set_op_strategy_config
 =========================================
 
-.. py:function:: mindspore.parallel.set_op_strategy_config(mode="SAVE", path)
+.. py:function:: mindspore.parallel.set_op_strategy_config(mode="SAVE", path="")
 
     自动并行策略传播模式下，通过此接口设置保存或加载算子级策略。
 
@@ -15,7 +15,7 @@ mindspore.parallel.set_op_strategy_config
 
     参数：
         - **mode** (str) - 描述模式为保存还是加载， ``"SAVE"`` 时保存算子策略至设置的json文件， ``"LOAD"`` 时从json文件中加载算子策略。默认值： ``"SAVE"`` 。
-        - **path** (str) - 描述策略保存或者加载的json文件路径，只支持绝对路径。
+        - **path** (str) - 描述策略保存或者加载的json文件路径，只支持绝对路径。 默认值： ``""`` 。
 
     异常：
         - **KeyError** - `mode` 不是 ``"SAVE"`` 或 ``"LOAD"`` 。
