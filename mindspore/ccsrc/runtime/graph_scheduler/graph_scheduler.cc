@@ -2775,7 +2775,9 @@ CopyActor *GraphScheduler::CreateCopyActor(AbstractActor *const from_actor, Abst
   MS_EXCEPTION_IF_NULL(to_actor);
   auto from_kernel = from_kernel_with_output_idx.first;
   MS_EXCEPTION_IF_NULL(from_kernel);
-  std::string name = "copy_from:" + from_actor->GetAID().Name() + "_node:" + from_kernel->fullname_with_scope() +
+  std::string name = "copy_from:" + from_actor->GetAID().Name() + "_node:" +
+                     (from_kernel->fullname_with_scope() == "" ? std::to_string((int64_t)(from_kernel.get()))
+                                                               : from_kernel->fullname_with_scope()) +
                      "_output_index:" + std::to_string(from_kernel_with_output_idx.second);
   CopyActor *copy_actor = dynamic_cast<CopyActor *>(FetchActor(name));
   // Link between from actor and copy actor.
@@ -2885,8 +2887,10 @@ void GraphScheduler::LinkDataArrowForGraphParameterStore(AbstractActor *const, A
     auto from_device_context = GetFromActorDeviceContext(data_prepare_actor, to_actor, from_kernel_with_output_idx);
     MS_EXCEPTION_IF_NULL(from_device_context);
     MS_EXCEPTION_IF_NULL(from_kernel_with_output_idx.first);
-    std::string name = "copy_from:" + data_prepare_actor->GetAID().Name() +
-                       "_node:" + from_kernel_with_output_idx.first->fullname_with_scope() +
+    std::string name = "copy_from:" + data_prepare_actor->GetAID().Name() + "_node:" +
+                       (from_kernel_with_output_idx.first->fullname_with_scope() == ""
+                          ? std::to_string((int64_t)(from_kernel_with_output_idx.first.get()))
+                          : from_kernel_with_output_idx.first->fullname_with_scope()) +
                        "_output_index:" + std::to_string(from_kernel_with_output_idx.second);
     CopyActor *copy_actor = dynamic_cast<CopyActor *>(FetchActor(name));
     if (copy_actor == nullptr) {
