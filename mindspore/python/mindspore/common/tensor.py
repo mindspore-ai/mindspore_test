@@ -1728,14 +1728,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         Returns a Scalar of type int that represents the total number of elements in the Tensor.
 
-        Args:
-            input (Tensor): Input Tensor.
-
         Returns:
             int. A scalar representing the total of elements in the Tensor.
-
-        Raises:
-            TypeError: If `input` is not a Tensor.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
