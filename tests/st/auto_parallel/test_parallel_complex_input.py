@@ -27,7 +27,8 @@ def test_graph_mode_parallel_complex_input():
     os.environ['ASCEND_GLOBAL_EVENT_ENABLE'] = '1'
     os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = '1'
     os.environ['ASCEND_SLOG_PRINT_TO_STDOUT'] = '0'
-    os.environ['GLOG_v'] = '1'
+    os.environ['GLOG_v'] = '0'
+    os.environ['MS_SUBMODULE_LOG_v'] = r'{RUNTIME_FRAMEWORK:0}'
 
     # print("netstat")
     # os.system(f"netstat")
