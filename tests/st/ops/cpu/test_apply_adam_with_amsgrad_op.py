@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import math
 import pytest
 import numpy as np
-import mindspore as ms
+from tests.mark_utils import arg_mark
+from tests.st.common.random_generator import set_numpy_random_seed
 import mindspore.nn as nn
 from mindspore.ops import operations as P
 from mindspore import Tensor, context, Parameter
 from mindspore.ops.functional import vmap
-from tests.st.common.random_generator import set_numpy_random_seed
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
