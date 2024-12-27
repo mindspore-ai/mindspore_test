@@ -592,15 +592,15 @@ void DropoutInfo::InferReplaceOps() {
 }
 
 std::vector<StrategyPtr> DropoutExtInfo::GenerateOpStrategies(int64_t stage_id) {
-  // input_shape_ size is 3, since p is float and not be processed here
+  // inputs_shape_ size is 3, since p is float and not be processed here
   if ((inputs_shape_.size() != DROPOUT_EXT_INPUTS_SIZE)) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Inputs shape size should be " << DROPOUT_EXT_INPUTS_SIZE
                                         << ", but get " << inputs_shape_.size();
   }
 
-  Shape input0_split(inputs_shape_[0].size(), 1);  // input
-  Shape input1_split(inputs_shape_[1].size(), 0);  // seed
-  Shape input2_split(inputs_shape_[2].size(), 0);  // offset
+  Shape input0_split(inputs_shape_[kIndex0].size(), 1);  // input
+  Shape input1_split(inputs_shape_[kIndex1].size(), 0);  // seed
+  Shape input2_split(inputs_shape_[kIndex2].size(), 0);  // offset
   Shapes splittable_inputs = {input0_split, input1_split, input2_split};
 
   std::vector<StrategyPtr> sp_vector;
@@ -620,8 +620,8 @@ Status DropoutExtInfo::CheckStrategy(const StrategyPtr &strategy) {
   }
 
   Strategies stra = strategy->GetInputDim();
-  Dimensions seed_strategy = stra[1];
-  Dimensions offset_strategy = stra[2];
+  Dimensions seed_strategy = stra[kIndex1];
+  Dimensions offset_strategy = stra[kIndex2];
   if (!IsUnsplittableStrategy(seed_strategy) || !IsUnsplittableStrategy(offset_strategy)) {
     MS_LOG(ERROR) << name_ << ": Input `seed` and `offset` are not supported to shard, but get strategy"
                   << StrategyToString(stra);
@@ -753,8 +753,9 @@ CNodePtr DropoutExtInfo::GetGeneratorCNode(const CNodePtr &cnode) const {
     return nullptr;
   }
   auto get_item_seed_cnode = get_item_seed->cast<CNodePtr>();
-  if (get_item_seed_cnode->size() != 3) {
-    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode) << "Size should be 3, but get " << get_item_seed_cnode->size();
+  if (get_item_seed_cnode->size() != TUPLE_GETITEM_CNODE_SIZE) {
+    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode)
+      << "Size should be " << TUPLE_GETITEM_CNODE_SIZE << ", but get " << get_item_seed_cnode->size();
   }
 
   // Generator CNode
@@ -810,7 +811,7 @@ ParameterPtr DropoutExtInfo::GetSeedParameter(const CNodePtr &generator_cnode) c
     MS_LOG_WITH_NODE(EXCEPTION, generator_cnode) << "input[2] should be a CNode";
   }
   auto make_tuple_cnode = make_tuple->cast<CNodePtr>();
-  if (make_tuple_cnode->size() != 4) {
+  if (make_tuple_cnode->size() != SIZE_FOUR) {
     MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "Size should be 4, but get " << make_tuple_cnode->size();
   }
 
