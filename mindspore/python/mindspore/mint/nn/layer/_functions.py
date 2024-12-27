@@ -228,23 +228,15 @@ def construct_pynative(input, weight, bias, running_mean, running_var, eps, mome
     combined = all_gather_into_tensor(combined, process_group)
     combined = ops.reshape(combined, [world_size, -1])
     # world_size * (2C + 1) -> world_size * C, world_size * C, world_size * 1
-    mean_all, invstd_all, count_all = mint.split(
+    mean_val_all, invstd_val_all, count_val_all = mint.split(
         combined, num_channels, dim=1)
     # calculate global mean & invstd
-    mean, invstd = mint.batch_norm_gather_stats_with_counts(
-        input,
-        mean_all,
-        invstd_all,
-        running_mean,
-        running_var,
-        momentum,
-        eps,
-        count_all.view(-1)
-    )
+    mean, invstd = mint.batch_norm_gather_stats_with_counts(input, mean_val_all, invstd_val_all, running_mean,
+                                                            running_var, momentum, eps, count_val_all.view(-1))
 
     # apply element-wise normalization
     out = mint.batch_norm_elemt(input, weight, bias, mean, invstd, eps)
-    return (out, mean, invstd, count_all.view(-1))
+    return (out, mean, invstd, count_val_all.view(-1))
 
 
 def construct_kbk(input, weight, bias, running_mean, running_var, eps, momentum, process_group,

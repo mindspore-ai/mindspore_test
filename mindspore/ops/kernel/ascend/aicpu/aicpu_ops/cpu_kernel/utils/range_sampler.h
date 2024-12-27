@@ -50,20 +50,6 @@ class RangeSampler {
   mutable std::mt19937 rng_;
 };
 
-class UniformSampler : public RangeSampler {
- public:
-  explicit UniformSampler(int64_t range);
-
-  ~UniformSampler() override {}
-
-  int64_t Sample(CpuKernelContext &ctx) const override;
-
-  float Probability(int64_t value) const override;
-
- private:
-  const float inv_range_;
-};
-
 class LogUniformSampler : public RangeSampler {
  public:
   explicit LogUniformSampler(int64_t range);
@@ -76,6 +62,20 @@ class LogUniformSampler : public RangeSampler {
 
  private:
   const double log_range_;
+};
+
+class UniformSampler : public RangeSampler {
+ public:
+  explicit UniformSampler(int64_t range);
+
+  ~UniformSampler() override {}
+
+  float Probability(int64_t value) const override;
+
+  int64_t Sample(CpuKernelContext &ctx) const override;
+
+ private:
+  const float inv_range_;
 };
 }  // namespace aicpu
 #endif  // SRC_COMMON_RANGE_SAMPLER_H_

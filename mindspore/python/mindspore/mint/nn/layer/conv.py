@@ -53,36 +53,36 @@ class _Conv(Cell):
         super(_Conv, self).__init__()
         if groups <= 0:
             raise ValueError('groups must be a positive integer.')
-        if in_channels % groups != 0:
+        self.in_channels = in_channels
+        if self.in_channels % groups != 0:
             raise ValueError('in_channels must be divisible by groups.')
-        if out_channels % groups != 0:
+        self.out_channels = out_channels
+        if self.out_channels % groups != 0:
             raise ValueError('out_channels must be divisible by groups.')
         valid_padding_strings = {'same', 'valid'}
-        if isinstance(padding, str):
-            if padding not in valid_padding_strings:
+        self.padding = padding
+        self.stride = stride
+        if isinstance(self.padding, str):
+            if self.padding not in valid_padding_strings:
                 raise ValueError(f"The value of 'padding' must be one of '{valid_padding_strings}', "
-                                 f"but got {padding}.")
-            if padding == 'same' and any(s != 1 for s in stride):
+                                 f"but got {self.padding}.")
+            if self.padding == 'same' and any(s != 1 for s in self.stride):
                 raise ValueError("padding='same' is not supported for strided convolutions")
 
         valid_padding_modes = {'zeros', 'reflect', 'replicate', 'circular'}
         if padding_mode not in valid_padding_modes:
             raise ValueError(f"The value of 'padding_mode' must be one of '{valid_padding_modes}', "
                              f"but got {padding_mode}.")
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
-        self.dilation = dilation
         self.transposed = transposed
-        self.output_padding = output_padding
         self.groups = Validator.check_positive_int(groups)
+        self.output_padding = output_padding
         self.padding_mode = padding_mode
+        self.kernel_size = kernel_size
         for kernel_size_elem in kernel_size:
             Validator.check_positive_int(kernel_size_elem, 'kernel_size item', self.cls_name)
         for stride_elem in stride:
             Validator.check_positive_int(stride_elem, 'stride item', self.cls_name)
+        self.dilation = dilation
         for dilation_elem in dilation:
             Validator.check_positive_int(dilation_elem, 'dilation item', self.cls_name)
         if isinstance(self.padding, str):
