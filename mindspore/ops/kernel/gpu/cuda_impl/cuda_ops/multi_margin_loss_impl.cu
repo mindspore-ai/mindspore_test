@@ -165,15 +165,15 @@ __global__ void MultiMarginLoss_forward_kernel(scalar_t *output, const scalar_t 
   const scalar_t *input_k = input + k * dim;
   scalar_t *output_k = output + k;
   CUDA_KERNEL_ASSERT(target[k] >= 0 && target[k] < dim);
-  int target_k = static_cast<int>(target[k]);
+  auto target_k = static_cast<int>(target[k]);
   scalar_t input_target_k = input_k[target_k];
 
-  int i_start = threadIdx.x;
-  int i_end = dim;
-  int i_step = blockDim.x;
+  auto i_start = threadIdx.x;
+  auto i_end = dim;
+  auto i_step = blockDim.x;
 
   buffer[threadIdx.x] = 0;
-  for (int i = i_start; i < i_end; i += i_step) {
+  for (auto i = i_start; i < i_end; i += i_step) {
     scalar_t z =
       static_cast<scalar_t>(margin) - static_cast<scalar_t>(input_target_k) + static_cast<scalar_t>(input_k[i]);
     if (i == target_k) {

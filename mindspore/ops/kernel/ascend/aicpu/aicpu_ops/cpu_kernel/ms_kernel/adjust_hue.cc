@@ -82,76 +82,73 @@ inline std::uint32_t CheckAdjustHue(CpuKernelContext &ctx, std::uint32_t inputs_
 }
 }  // namespace detail
 
+static void rgb_assign(float x, float y, float z, float *v_min, float *v_mid, float *v_max) {
+  *v_min = x;
+  *v_mid = y;
+  *v_max = z;
+  return;
+}
+
 static void rgb_to_hv_range(float r, float g, float b, float *h, float *v_min, float *v_max) {
   float v_mid;
   int h_category;
-  // According to the figures in:
-  // https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma
-  // For the conditions, we don't care about the case where two components are
-  // equal. It is okay to count it in either side in that case.
   if (r < g) {
     if (b < r) {
       // b < r < g
-      *v_max = g;
-      v_mid = r;
-      *v_min = b;
+      rgb_assign(b, r, g, v_min, &v_mid, v_max);
       h_category = kAdjustHueOne;
     } else if (b > g) {
       // r < g < b
-      *v_max = b;
-      v_mid = g;
-      *v_min = r;
+      rgb_assign(r, g, b, v_min, &v_mid, v_max);
       h_category = kAdjustHueThree;
     } else {
       // r < b < g
-      *v_max = g;
-      v_mid = b;
-      *v_min = r;
+      rgb_assign(r, b, g, v_min, &v_mid, v_max);
       h_category = kAdjustHueTwo;
     }
   } else {
     // g < r
     if (b < g) {
       // b < g < r
-      *v_max = r;
-      v_mid = g;
-      *v_min = b;
+      rgb_assign(b, g, r, v_min, &v_mid, v_max);
       h_category = kAdjustHueZero;
     } else if (b > r) {
       // g < r < b
-      *v_max = b;
-      v_mid = r;
-      *v_min = g;
+      rgb_assign(g, r, b, v_min, &v_mid, v_max);
       h_category = kAdjustHueFour;
     } else {
       // g < b < r
-      *v_max = r;
-      v_mid = b;
-      *v_min = g;
+      rgb_assign(g, b, r, v_min, &v_mid, v_max);
       h_category = kAdjustHueFive;
     }
   }
   if (*v_max == *v_min) {
     *h = 0;
     return;
+  } else {
+    auto min_gap = v_mid - *v_min;
+    auto max_gap = *v_max - *v_min;
+    auto ratio = min_gap / max_gap;
+    bool increase = ((h_category & 0x1) == 0);
+    if (increase) {
+      *h = h_category + ratio;
+    } else {
+      *h = h_category + (1 - ratio);
+    }
+    return;
   }
-  auto ratio = (v_mid - *v_min) / (*v_max - *v_min);
-  bool increase = ((h_category & 0x1) == 0);
-  *h = h_category + (increase ? ratio : (1 - ratio));
 }
 
 // Helper function to convert from H-and-V-range to RGB.
 template <typename T>
 static void hv_range_to_rgb(float h, float v_min, float v_max, T *r, T *g, T *b) {
-  int h_category = static_cast<int>(h);
-  float ratio = h - h_category;
-  bool increase = ((h_category & 0x1) == 0);
+  auto h_category = static_cast<int>(h);
+  auto ratio = h - h_category;
+  auto increase = ((h_category & 0x1) == 0);
   if (!increase) {
     ratio = 1 - ratio;
   }
-  float v_mid = v_min + ratio * (v_max - v_min);
-  // According to the figures in:
-  // https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma
+  auto v_mid = v_min + ratio * (v_max - v_min);
   switch (h_category) {
     case kAdjustHueZero:
       *r = static_cast<T>(v_max);
@@ -256,17 +253,13 @@ uint32_t AdjustHueCpuKernel::DoCompute(CpuKernelContext &ctx, const ComputeOptio
       rgb_to_hv_range(static_cast<float>(*(input_data + i)), static_cast<float>(*(input_data + i + 1)),
                       static_cast<float>(*(input_data + i + 2)), &h, &v_min, &v_max);
 
-      static const int kChannelRange = 6;
-      // Adjust the hue value. And adjust the hue back into the valid
-      // range of [0, 6). It is faster than a fmod by avoiding
-      // a float-point division since h is often very close to this
-      // range.
-      h += delta_h * kChannelRange;
+      static const int kChannelRangeValue = 6;
+      h += delta_h * kChannelRangeValue;
       while (h < 0) {
-        h += kChannelRange;
+        h += kChannelRangeValue;
       }
-      while (h >= kChannelRange) {
-        h -= kChannelRange;
+      while (h >= kChannelRangeValue) {
+        h -= kChannelRangeValue;
       }
 
       hv_range_to_rgb<T>(h, v_min, v_max, &output_data[i], &output_data[i + 1], &output_data[i + 2]);

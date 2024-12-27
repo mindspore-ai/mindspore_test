@@ -209,13 +209,13 @@ template <typename T>
 uint32_t ConcatCpuKernel::ConcatCompute(CpuKernelContext &ctx,
                                         const std::vector<std::shared_ptr<typename TTypes<T>::ConstMatrix>> &inputs,
                                         std::shared_ptr<typename TTypes<T>::Matrix> &output) {
-  size_t num_inputs = inputs.size();
+  auto num_inputs = inputs.size();
   std::vector<ptrdiff_t> sizes;
   sizes.reserve(num_inputs);
-  int64_t row_size = 0;
+  auto row_size = 0;
   for (const auto &input : inputs) {
     sizes.push_back(input->dimension(1));
-    row_size += sizes.back();
+    row_size = row_size + sizes.back();
   }
   uint32_t ret = KERNEL_STATUS_OK;
   auto work = [&row_size, &sizes, &inputs, &output, &num_inputs, &ret, &ctx](int64_t start, int64_t end) {
@@ -223,28 +223,32 @@ uint32_t ConcatCpuKernel::ConcatCompute(CpuKernelContext &ctx,
       ret = KERNEL_STATUS_PARAM_INVALID;
       return;
     }
-    int64_t skipped_rows = start / row_size;
-    T *out = output->data() + skipped_rows * row_size;
-    T *out_start = output->data() + start;
-    T *out_end = output->data() + end;
+    auto skipped_rows = start / row_size;
+    auto skipped_offset = skipped_rows * row_size;
+    T *out = skipped_offset + output->data();
+    T *out_start = start + output->data();
+    T *out_end = end + output->data();
 
     // Handle partial row at start
     if (out < out_start) {
-      for (size_t j = 0; j < num_inputs; ++j) {
+      for (size_t j = 0; j < num_inputs; j++) {
         ptrdiff_t size = sizes[j];
         ptrdiff_t offset = out_start - out;
         if (size <= offset) {
-          out += size;
+          out = out + size;
           continue;
         }
         const T *inp = &(*inputs[j])(skipped_rows, 0);
         if (offset > 0) {
-          out += offset;
-          inp += offset;
-          size -= offset;
+          out = out + offset;
+          inp = inp + offset;
+          size = size - offset;
         }
-        size = std::min(size, out_end - out);
-        if (size <= 0) break;
+        auto out_diff = out_end - out;
+        size = std::min(size, out_diff);
+        if (size <= 0) {
+          break;
+        }
         size_t copy_size = size * sizeof(T);
         error_t ret = memcpy_s(out, copy_size, inp, copy_size);
         if (ret != EOK) {
@@ -254,7 +258,7 @@ uint32_t ConcatCpuKernel::ConcatCompute(CpuKernelContext &ctx,
         }
         out += size;
       }
-      ++skipped_rows;
+      skipped_rows++;
     }
     if (out < out_start || out > out_end) {
       CUST_KERNEL_LOG_ERROR(ctx, "Out[%llx] not in range[%llx, %llx)", out, out_start, out_end);

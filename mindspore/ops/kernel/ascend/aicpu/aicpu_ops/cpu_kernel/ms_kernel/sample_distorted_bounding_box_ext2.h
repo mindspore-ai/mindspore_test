@@ -27,24 +27,24 @@ class Rectangle {
   Rectangle(int xmin, int ymin, int xmax, int ymax) { Set(xmin, ymin, xmax, ymax); }
 
   void Set(int xmin, int ymin, int xmax, int ymax) {
-    min_x_ = xmin;
-    min_y_ = ymin;
     max_x_ = xmax;
     max_y_ = ymax;
+    min_x_ = xmin;
+    min_y_ = ymin;
   }
 
-  bool IsEmpty() const { return min_x_ > max_x_ || min_y_ > max_y_; }
   float Area() const { return static_cast<float>((max_x_ - min_x_) * (max_y_ - min_y_)); }
+  bool IsEmpty() const { return min_x_ > max_x_ || min_y_ > max_y_; }
 
   Rectangle Intersect(const Rectangle &r) const {
-    const int pmin_x = std::max(min_x_, r.min_x_);
-    const int pmin_y = std::max(min_y_, r.min_y_);
-    const int pmax_x = std::min(max_x_, r.max_x_);
-    const int pmax_y = std::min(max_y_, r.max_y_);
-    if (pmin_x > pmax_x || pmin_y > pmax_y) {
+    const int tmax_x = std::min(max_x_, r.max_x_);
+    const int tmax_y = std::min(max_y_, r.max_y_);
+    const int tmin_x = std::max(min_x_, r.min_x_);
+    const int tmin_y = std::max(min_y_, r.min_y_);
+    if (tmin_x > tmax_x || tmin_y > tmax_y) {
       return Rectangle();
     } else {
-      return Rectangle(pmin_x, pmin_y, pmax_x, pmax_y);
+      return Rectangle(tmin_x, tmin_y, tmax_x, tmax_y);
     }
   }
 

@@ -154,36 +154,36 @@ uint32_t CumprodCpuKernel::CumprodCompute(CpuKernelContext &ctx) {
   } else {
     auto shard_cumprod = [&](size_t start, size_t ene) {
       for (size_t outer_index = 0; outer_index < outer; ++outer_index) {
-        size_t outer_index_adj;
-        if (reverse) {
-          outer_index_adj = (outer - 1) - outer_index;
+        size_t outer_index_ad;
+        if (!reverse) {
+          outer_index_ad = outer_index;
         } else {
-          outer_index_adj = outer_index;
+          outer_index_ad = (outer - 1) - outer_index;
         }
-        for (size_t inner_index = 0; inner_index < inner; inner_index++) {
+        for (size_t inner_index = 0; inner_index < inner; ++inner_index) {
           auto multiplier = static_cast<T>(1);
-          size_t inner_index_adj;
-          if (reverse) {
-            inner_index_adj = (inner - 1) - inner_index;
+          size_t inner_index_ad;
+          if (!reverse) {
+            inner_index_ad = inner_index;
           } else {
-            inner_index_adj = inner_index;
+            inner_index_ad = (inner - 1) - inner_index;
           }
-          for (size_t depth_index = 0; depth_index < depth; depth_index++) {
-            size_t depth_index_adj;
-            if (reverse) {
-              depth_index_adj = (depth - 1) - depth_index;
+          for (size_t depth_index = 0; depth_index < depth; ++depth_index) {
+            size_t depth_index_ad;
+            if (!reverse) {
+              depth_index_ad = depth_index;
             } else {
-              depth_index_adj = depth_index;
+              depth_index_ad = (depth - 1) - depth_index;
             }
-            size_t index = outer_index_adj;
-            index += inner_index_adj * depth * outer;
-            index += depth_index_adj * outer;
-            if (exclusive) {
-              output_data[index] = multiplier;
-              multiplier *= input_data[index];
+            auto idx = outer_index_ad;
+            idx += inner_index_ad * depth * outer;
+            idx += depth_index_ad * outer;
+            if (!exclusive) {
+              multiplier *= input_data[idx];
+              output_data[idx] = multiplier;
             } else {
-              multiplier *= input_data[index];
-              output_data[index] = multiplier;
+              output_data[idx] = multiplier;
+              multiplier *= input_data[idx];
             }
           }
         }

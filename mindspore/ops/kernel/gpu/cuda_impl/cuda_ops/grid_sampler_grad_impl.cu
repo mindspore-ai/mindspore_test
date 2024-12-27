@@ -91,14 +91,14 @@ __global__ void GridSampler2DGradKernel(const size_t size, T *grad_addr, T *inpu
 
     if (interpolation_mode == GridSamplerInterpolationMode::BILINEAR) {
       // get NE, NW, SE, SW pixel values from (x, y)
-      int64_t ix_nw = static_cast<int64_t>(::floor(ix));
-      int64_t iy_nw = static_cast<int64_t>(::floor(iy));
-      int64_t ix_ne = ix_nw + 1;
-      int64_t iy_ne = iy_nw;
-      int64_t ix_sw = ix_nw;
-      int64_t iy_sw = iy_nw + 1;
-      int64_t ix_se = ix_nw + 1;
-      int64_t iy_se = iy_nw + 1;
+      auto ix_nw = static_cast<int64_t>(::floor(ix));
+      auto iy_nw = static_cast<int64_t>(::floor(iy));
+      auto ix_ne = ix_nw + 1;
+      auto iy_ne = iy_nw;
+      auto ix_sw = ix_nw;
+      auto iy_sw = iy_nw + 1;
+      auto ix_se = ix_nw + 1;
+      auto iy_se = iy_nw + 1;
 
       // get surfaces to each neighbor:
       ItmType nw = (ix_se - ix) * (iy_se - iy);
@@ -315,37 +315,37 @@ __global__ void GridSampler3DGradKernel(
       // get corner pixel values from (x, y, z)
       // for 4d, we used north-east-south-west
       // for 5d, we add top-bottom
-      int64_t ix_tnw = static_cast<int64_t>(::floor(ix));
-      int64_t iy_tnw = static_cast<int64_t>(::floor(iy));
-      int64_t iz_tnw = static_cast<int64_t>(::floor(iz));
+      auto ix_tnw = static_cast<int64_t>(::floor(ix));
+      auto iy_tnw = static_cast<int64_t>(::floor(iy));
+      auto iz_tnw = static_cast<int64_t>(::floor(iz));
 
-      int64_t ix_tne = ix_tnw + 1;
-      int64_t iy_tne = iy_tnw;
-      int64_t iz_tne = iz_tnw;
+      auto ix_tne = ix_tnw + 1;
+      auto iy_tne = iy_tnw;
+      auto iz_tne = iz_tnw;
 
-      int64_t ix_tsw = ix_tnw;
-      int64_t iy_tsw = iy_tnw + 1;
-      int64_t iz_tsw = iz_tnw;
+      auto ix_tsw = ix_tnw;
+      auto iy_tsw = iy_tnw + 1;
+      auto iz_tsw = iz_tnw;
 
-      int64_t ix_tse = ix_tnw + 1;
-      int64_t iy_tse = iy_tnw + 1;
-      int64_t iz_tse = iz_tnw;
+      auto ix_tse = ix_tnw + 1;
+      auto iy_tse = iy_tnw + 1;
+      auto iz_tse = iz_tnw;
 
-      int64_t ix_bnw = ix_tnw;
-      int64_t iy_bnw = iy_tnw;
-      int64_t iz_bnw = iz_tnw + 1;
+      auto ix_bnw = ix_tnw;
+      auto iy_bnw = iy_tnw;
+      auto iz_bnw = iz_tnw + 1;
 
-      int64_t ix_bne = ix_tnw + 1;
-      int64_t iy_bne = iy_tnw;
-      int64_t iz_bne = iz_tnw + 1;
+      auto ix_bne = ix_tnw + 1;
+      auto iy_bne = iy_tnw;
+      auto iz_bne = iz_tnw + 1;
 
-      int64_t ix_bsw = ix_tnw;
-      int64_t iy_bsw = iy_tnw + 1;
-      int64_t iz_bsw = iz_tnw + 1;
+      auto ix_bsw = ix_tnw;
+      auto iy_bsw = iy_tnw + 1;
+      auto iz_bsw = iz_tnw + 1;
 
-      int64_t ix_bse = ix_tnw + 1;
-      int64_t iy_bse = iy_tnw + 1;
-      int64_t iz_bse = iz_tnw + 1;
+      auto ix_bse = ix_tnw + 1;
+      auto iy_bse = iy_tnw + 1;
+      auto iz_bse = iz_tnw + 1;
 
       // get surfaces to each neighbor:
       ItmType tnw = (ix_bse - ix) * (iy_bse - iy) * (iz_bse - iz);

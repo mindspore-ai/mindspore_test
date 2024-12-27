@@ -37,77 +37,77 @@ class PermutationInputIterator {
   typedef std::random_access_iterator_tag iterator_category;  ///< The iterator category
 
  private:
-  InputIteratorT input_itr;
-  IndexIteratorT index_itr;
+  InputIteratorT input_iterator;
+  IndexIteratorT index_iterator;
 
  public:
   /// Constructor
   __host__ __device__ __forceinline__
-  PermutationInputIterator(InputIteratorT input_itr,  ///< Input iterator to wrap
-                           IndexIteratorT index_itr)  ///< Conversion iterator to warp
-      : input_itr(input_itr), index_itr(index_itr) {}
-
-  /// Postfix increment
-  __host__ __device__ __forceinline__ self_type operator++(int) {
-    self_type retval = *this;
-    index_itr++;
-    return retval;
-  }
+  PermutationInputIterator(InputIteratorT input_iterator,  ///< Input iterator to wrap
+                           IndexIteratorT index_iterator)  ///< Conversion iterator to warp
+      : input_iterator(input_iterator), index_iterator(index_iterator) {}
 
   /// Prefix increment
   __host__ __device__ __forceinline__ self_type operator++() {
-    index_itr++;
+    index_iterator++;
     return *this;
   }
 
-  /// Indirection
-  __host__ __device__ __forceinline__ reference operator*() const { return input_itr[*index_itr]; }
-
-  /// Addition
-  template <typename Distance>
-  __host__ __device__ __forceinline__ self_type operator+(Distance n) const {
-    self_type retval(input_itr, index_itr + n);
-    return retval;
+  /// Postfix increment
+  __host__ __device__ __forceinline__ self_type operator++(int) {
+    self_type ret = *this;
+    index_iterator++;
+    return ret;
   }
+
+  /// Indirection
+  __host__ __device__ __forceinline__ reference operator*() const { return input_iterator[*index_iterator]; }
 
   /// Addition assignment
   template <typename Distance>
   __host__ __device__ __forceinline__ self_type &operator+=(Distance n) {
-    index_itr += n;
+    index_iterator += n;
     return *this;
+  }
+
+  /// Addition
+  template <typename Distance>
+  __host__ __device__ __forceinline__ self_type operator+(Distance n) const {
+    self_type ret(input_iterator, index_iterator + n);
+    return ret;
   }
 
   /// Subtraction
   template <typename Distance>
   __host__ __device__ __forceinline__ self_type operator-(Distance n) const {
-    self_type retval(input_itr, index_itr - n);
+    self_type retval(input_iterator, index_iterator - n);
     return retval;
+  }
+
+  /// Distance
+  __host__ __device__ __forceinline__ difference_type operator-(self_type other) const {
+    return index_iterator - other.index_iterator;
   }
 
   /// Subtraction assignment
   template <typename Distance>
   __host__ __device__ __forceinline__ self_type &operator-=(Distance n) {
-    index_itr -= n;
+    index_iterator -= n;
     return *this;
-  }
-
-  /// Distance
-  __host__ __device__ __forceinline__ difference_type operator-(self_type other) const {
-    return index_itr - other.index_itr;
   }
 
   /// Array subscript
   template <typename Distance>
   __host__ __device__ __forceinline__ reference operator[](Distance n) const {
-    return input_itr[index_itr[n]];
+    return input_iterator[index_iterator[n]];
   }
 
   /// Structure dereference
-  __host__ __device__ __forceinline__ pointer operator->() { return input_itr + *index_itr; }
+  __host__ __device__ __forceinline__ pointer operator->() { return input_iterator + *index_iterator; }
 
   /// Equal to
   __host__ __device__ __forceinline__ bool operator==(const self_type &rhs) {
-    return (index_itr == rhs.index_itr && input_itr == rhs.input_itr);
+    return (index_iterator == rhs.index_iterator && input_iterator == rhs.input_iterator);
   }
 
   /// Not equal to
