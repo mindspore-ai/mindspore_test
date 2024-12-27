@@ -157,7 +157,7 @@ def qbmm_split(m, k, n0=0, n1=0, n2=0, is_dyn=False, profiling=False):
     assert result, "qbmm split compare fail."
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('m', [32])
 @pytest.mark.parametrize('k', [1024, 11264, 128])
@@ -187,7 +187,7 @@ def test_qbmm_qkv_11008_4096_4096(m, k, is_dyn):
     qbmm_split(m, k, 11008, 4096, 4096, is_dyn)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('m', [32, 256])
 @pytest.mark.parametrize('k', [8192])

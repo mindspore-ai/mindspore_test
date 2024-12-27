@@ -183,7 +183,7 @@ def _test_matmul_qkv(m=0, k=0, n0=0, n1=0, n2=0, mstype=ms.float16, is_dyn=False
     assert result, "compare correct."
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('dim_k', [128, 1024, 2048])
@@ -209,7 +209,7 @@ def test_matmul_qkv_out_num_3_with_diff_m(ms_dtype, is_dynamic, dim_m):
     _test_matmul_qkv(dim_m, 2048, 1024, 128, 128, mstype=ms_dtype, is_dyn=is_dynamic)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('dim_m', [32, 1024])
@@ -222,7 +222,7 @@ def test_matmul_qkv_out_num_2_with_diff_m(ms_dtype, is_dynamic, dim_m):
     _test_matmul_qkv(dim_m, 4096, 3584, 3584, mstype=ms_dtype, is_dyn=is_dynamic)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('input_shape', [(16, 8192, 2048, 256, 256),
                                          (32, 4096, 4096, 4096, 4096),
