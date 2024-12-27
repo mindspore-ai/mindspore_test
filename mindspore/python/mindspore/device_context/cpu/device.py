@@ -17,6 +17,7 @@
 from mindspore._c_expression import MSContext
 from mindspore import log as logger
 
+
 def is_available():
     """
     Return whether cpu backend is available.
@@ -41,6 +42,7 @@ def is_available():
             )
         return False
     return True
+
 
 def device_count():
     """

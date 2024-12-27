@@ -23,6 +23,7 @@ from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 
 __all__ = ['set_device', 'set_deterministic']
 
+
 @args_type_check(device_target=str, device_id=int)
 def set_device(device_target, device_id=None):
     """
@@ -73,6 +74,7 @@ def set_device(device_target, device_id=None):
                            "Suggest setting it as early as possible.")
     DeviceManagerConf.get_instance().set_device(device_target, device_id, is_default)
 
+
 @args_type_check(deterministic=bool)
 def set_deterministic(deterministic):
     """
@@ -120,6 +122,7 @@ def set_deterministic(deterministic):
             del os.environ["TE_PARALLEL_COMPILER"]
 
     DeviceManagerConf.get_instance().set_deterministic(deterministic)
+
 
 def _check_runtime_conf_env_valid():
     """

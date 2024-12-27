@@ -19,14 +19,20 @@
 
 namespace mindspore {
 namespace runtime {
+constexpr uint32_t kDefaultDispatchThreadsNum = 5;
+constexpr uint32_t kDefaultOpThreadsNum = 25;
+constexpr float kDefaultMemInitSize = 2.0;
+constexpr float kDefaultMemBlockIncreaseSize = 1.0;
+constexpr float kDefaultMemMaxSize = 1024.0;
+
 std::shared_ptr<RuntimeConf> RuntimeConf::inst_context_ = nullptr;
 RuntimeConf::RuntimeConf()
     : launch_blocking_(false),
-      dispatch_threads_num_(5),
-      op_threads_num_(25),
-      mem_init_size_(2.0),
-      mem_block_increase_size_(1.0),
-      mem_max_size_(1024.0),
+      dispatch_threads_num_(kDefaultDispatchThreadsNum),
+      op_threads_num_(kDefaultOpThreadsNum),
+      mem_init_size_(kDefaultMemInitSize),
+      mem_block_increase_size_(kDefaultMemBlockIncreaseSize),
+      mem_max_size_(kDefaultMemMaxSize),
       mem_optimize_level_(0) {}
 
 RuntimeConf::~RuntimeConf() = default;

@@ -52,6 +52,12 @@ bool ActorDispatcher::enable_trace_dynamic_memory_ = false;
 bool ActorDispatcher::enable_use_trace_memory_ = false;
 bool ActorDispatcher::enable_input_optimize_for_cur_actor_set_ = true;
 
+bool IsSuperKernelActor(const AnfNodePtr &node, const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  return (kernel_graph->is_graph_run_mode() &&
+          ((node == nullptr) || node->isa<CNode>() || kernel_graph->IsChildGraphResult(node)));
+}
+
 bool IsRunningFailed(const OpContext<DeviceTensor> *context) {
   if (UCEException::GetInstance().enable_uce()) {
     if (UCEException::GetInstance().get_force_stop_flag()) {
@@ -543,8 +549,7 @@ KernelTransformType FetchKernelTransformType(const AnfNodePtr &node, const Kerne
   }
   // In sink mode, the data exchange between child graphs is expressed as parameters. These parameters are stored
   // in the graph and should be obtained from the super kernel actor.
-  if (kernel_graph->is_graph_run_mode() &&
-      ((node == nullptr) || node->isa<CNode>() || kernel_graph->IsChildGraphResult(node))) {
+  if (IsSuperKernelActor(node, kernel_graph)) {
     return KernelTransformType::kSuperKernelActor;
   }
 
