@@ -150,6 +150,7 @@ class BaseParser:
         """
         raise NotImplementedError("Subclasses should implement this!")
 
+
 class DummyParser(BaseParser):
     """Dummy parser"""
     def _parse(self, data: Any) -> Any:

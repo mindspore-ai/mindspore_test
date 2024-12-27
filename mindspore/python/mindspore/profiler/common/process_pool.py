@@ -28,9 +28,15 @@ class MultiProcessPool:
         self.porcess_list: List[Process] = []
         atexit.register(self.wait_all_job_finished)
 
-    def add_async_job(self, func):
-        """Add job and run in subprocess"""
-        process = Process(target=func)
+    def add_async_job(self, func, *args, **kwargs):
+        """Add job and run in subprocess.
+
+        Args:
+            func: The function to be executed in subprocess.
+            args: The positional arguments to be passed to the function.
+            kwargs: The keyword arguments to be passed to the function.
+        """
+        process = Process(target=func, args=args, kwargs=kwargs)
         process.start()
         self.porcess_list.append(process)
 

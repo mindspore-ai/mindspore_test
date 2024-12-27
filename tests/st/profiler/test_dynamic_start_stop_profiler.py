@@ -23,7 +23,6 @@ from mindspore import Tensor, context
 import mindspore as ms
 from mindspore.profiler import Profiler
 from mindspore.profiler import ProfilerLevel
-from mindspore.profiler.profiler_interface import ProfilerInterface
 
 from file_check import FileChecker
 from model_zoo import TinyAddNet
@@ -121,4 +120,3 @@ def _dynamic_start_stop_train_profiler(tmpdir, add, context_mode, jit_level=None
                         output_path=tmpdir)
     train(add)
     profiler.analyse()
-    ProfilerInterface.finalize()

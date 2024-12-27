@@ -314,6 +314,7 @@ class DynamicProfilerMonitorBase(Callback):
                     self._profiler.analyse(mode=prof_args.analyse_mode)
                 else:
                     ProfilerInterface.finalize()
+                    ProfilerInterface.clear()
                 self._profiler = None
                 self._is_started = False
                 print_msg(f"Rank {self._rank_id} Dynamic profiler stop at step {step_num}")
@@ -693,6 +694,7 @@ if sys.version_info >= (3, 8):
             if self._profiler:
                 self._profiler.stop()
                 ProfilerInterface.finalize()
+                ProfilerInterface.clear()
                 self._profiler = None
                 logger.warning("Rank %d Dynamic profiler stop at end of training", self._rank_id)
 
@@ -830,6 +832,7 @@ else:
             if self._profiler:
                 self._profiler.stop()
                 ProfilerInterface.finalize()
+                ProfilerInterface.clear()
                 self._profiler = None
                 logger.warning("Rank %d Dynamic profiler stop at end of training", self._rank_id)
 

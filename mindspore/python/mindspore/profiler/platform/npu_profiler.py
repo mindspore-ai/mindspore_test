@@ -25,13 +25,14 @@ import mindspore._c_dataengine as cde
 import mindspore._c_expression as c_expression
 
 from mindspore.profiler.common.registry import PROFILERS
-from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
+from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity, AnalysisMode
 
 from mindspore._c_expression import _framework_profiler_enable_mi, _framework_profiler_disable_mi
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 from mindspore.profiler.common.profiler_info import ProfilerInfo
+from mindspore.profiler.common.process_pool import MultiProcessPool
 from mindspore.profiler.analysis.task_manager import TaskManager
 from mindspore.profiler.analysis.time_converter import TimeConverter
 from mindspore.profiler.analysis.parser.ascend_cann_parser import AscendMsprofParser
@@ -131,8 +132,6 @@ class NpuProfiler(BaseProfiler):
         self._logger.info("NpuProfiler analyse.")
 
         NPUProfilerAnalysis.online_analyse()
-        if self._prof_ctx.data_simplification:
-            self._prof_path_mgr.simplify_data()
 
     def finalize(self) -> None:
         """Finalize profiling data."""
@@ -152,7 +151,10 @@ class NPUProfilerAnalysis:
         Online analysis for NPU
         """
         cls._pre_analyse_online()
-        cls._run_tasks(**ProfilerContext().to_dict())
+        if ProfilerContext().mode == AnalysisMode.SYNC_MODE.value:
+            cls._run_tasks(**ProfilerContext().to_dict())
+        elif ProfilerContext().mode == AnalysisMode.ASYNC_MODE.value:
+            MultiProcessPool().add_async_job(cls._run_tasks, **ProfilerContext().to_dict())
 
     @classmethod
     def offline_analyse(
@@ -163,6 +165,7 @@ class NPUProfilerAnalysis:
             data_simplification: bool,
     ) -> None:
         """Analyze profiling data in offline mode."""
+        ProfilerLogger.init(path)
         cls._pre_analyse_offline(path, pretty, step_list, data_simplification)
         cls._run_tasks(**ProfilerContext().to_dict())
 
@@ -241,10 +244,12 @@ class NPUProfilerAnalysis:
         Run tasks for online analysis
         """
         ascend_ms_dir = kwargs.get("ascend_ms_dir", "")
-        print_msg_with_pid(f"Start parsing profiling data: {ascend_ms_dir}")
+        print_msg_with_pid(f"Start parsing profiling data in {kwargs.get('mode')} mode at: {ascend_ms_dir}")
         task_mgr = cls._construct_task_mgr(**kwargs)
-        task_mgr.run({})
+        task_mgr.run()
         ProfilerLogger.get_instance().info(json.dumps(task_mgr.cost_time, indent=4))
+        if kwargs.get("data_simplification"):
+            ProfilerPathManager().simplify_data()
 
     @classmethod
     def _construct_task_mgr(cls, **kwargs) -> TaskManager:

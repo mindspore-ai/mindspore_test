@@ -123,8 +123,11 @@ class ProfilerActionController:
             ProfilerAction.WARM_UP: [self.prof_interface.start],
             ProfilerAction.RECORD: [],
             ProfilerAction.RECORD_AND_SAVE: [
-                self.prof_interface.stop, self.prof_interface.finalize,
-                self._trace_ready]
+                self.prof_interface.stop,
+                self.prof_interface.finalize,
+                self._trace_ready,
+                self.prof_interface.clear
+            ]
         }
 
     def init_abnormal_action_map(self) -> dict:
@@ -139,17 +142,20 @@ class ProfilerActionController:
                 partial(logger.warning, "Incorrect schedule: WARMUP followed by NONE"),
                 self.prof_interface.start,
                 self.prof_interface.stop,
-                self.prof_interface.finalize
+                self.prof_interface.finalize,
+                self.prof_interface.clear
             ],
             (ProfilerAction.RECORD, ProfilerAction.NONE): [
                 partial(logger.warning, "Incorrect schedule: RECORD followed by NONE"),
                 self.prof_interface.stop,
-                self.prof_interface.finalize
+                self.prof_interface.finalize,
+                self.prof_interface.clear
             ],
             (ProfilerAction.RECORD, ProfilerAction.WARM_UP): [
                 partial(logger.warning, "Incorrect schedule: RECORD followed by WARMUP"),
                 self.prof_interface.stop,
-                self.prof_interface.finalize
+                self.prof_interface.finalize,
+                self.prof_interface.clear
             ],
             # used for exit action
             (ProfilerAction.WARM_UP, None): [
@@ -157,6 +163,7 @@ class ProfilerActionController:
                         "Incorrect schedule: Stop profiler while current state is WARMUP "
                         "which will result in empty parsed data."),
                 self.prof_interface.finalize,
+                self.prof_interface.clear,
                 self.prof_interface.delete_dir
             ],
             (ProfilerAction.RECORD, None): [
@@ -165,7 +172,8 @@ class ProfilerActionController:
                         "which may result in incomplete parsed data."),
                 self.prof_interface.stop,
                 self.prof_interface.finalize,
-                self._trace_ready
+                self._trace_ready,
+                self.prof_interface.clear
             ],
             (ProfilerAction.RECORD_AND_SAVE, None): [
                 partial(logger.warning,
@@ -173,6 +181,7 @@ class ProfilerActionController:
                         "perhaps the scheduling cycle has not yet completed."),
                 self.prof_interface.stop,
                 self.prof_interface.finalize,
-                self._trace_ready
+                self._trace_ready,
+                self.prof_interface.clear
             ]
         }

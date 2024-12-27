@@ -22,6 +22,7 @@ from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.common.log import ProfilerLogger
 
+
 @PROFILERS.register_module(DeviceTarget.GPU.value)
 class GpuProfiler(BaseProfiler):
     """

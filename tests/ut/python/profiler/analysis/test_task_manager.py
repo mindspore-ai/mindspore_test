@@ -22,7 +22,7 @@ class TestParser(BaseParser):
                 f.write(f"{self.name}:{str(data)}\n")
             finally:
                 fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-        return data + 1
+        return {"value": data.get("value", 0) + 1} if isinstance(data, dict) else {"value": 1}
 
 class ErrorParser(BaseParser):
     """Test parser implementation."""
@@ -122,15 +122,15 @@ class TestTaskManager(unittest.TestCase):
 
         # 创建并运行work_flow
         self.task_manager.create_flow(parser1, parser2, flow_name="test_flow")
-        self.task_manager.run(data=1)
+        self.task_manager.run()
 
         # 验证Parser是否按顺序执行
         with open(self.output_file, 'r') as f:
             output = f.read().strip().split('\n')
 
         self.assertEqual(len(output), 2)
-        self.assertEqual(output[0], "parser1:1")
-        self.assertEqual(output[1], "parser2:2")
+        self.assertEqual(output[0], "parser1:{}")
+        self.assertEqual(output[1], "parser2:{'value': 1}")
 
     def test_run_should_handle_error_when_parser_fails(self):
         """Test run method with failing parser."""
@@ -140,16 +140,16 @@ class TestTaskManager(unittest.TestCase):
 
         # 创建并运行work_flow
         self.task_manager.create_flow(parser1, parser2, parser3, flow_name="test_flow")
-        self.task_manager.run(data=1)
+        self.task_manager.run()
 
         # 验证执行顺序和错误处理
         with open(self.output_file, 'r') as f:
             output = f.read().strip().split('\n')
 
         self.assertEqual(len(output), 3)
-        self.assertEqual(output[0], "parser1:1")
+        self.assertEqual(output[0], "parser1:{}")
         self.assertEqual(output[1], "parser2:error")
-        self.assertEqual(output[2], "parser3:2")
+        self.assertEqual(output[2], "parser3:{'value': 1}")
 
     def test_run_should_execute_success_when_multiple_flows(self):
         """Test run method with multiple flows."""
@@ -160,7 +160,7 @@ class TestTaskManager(unittest.TestCase):
         self.task_manager.create_flow(parser1, parser2, flow_name="test_flow1")
         self.task_manager.create_flow(parser3, flow_name="test_flow2")
 
-        self.task_manager.run(data=1)
+        self.task_manager.run()
 
         with open(self.output_file, 'r') as f:
             fcntl.flock(f.fileno(), fcntl.LOCK_EX)
@@ -170,7 +170,7 @@ class TestTaskManager(unittest.TestCase):
                 fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
         self.assertEqual(len(output), 3)
-        expected_outputs = {"parser1:1", "parser2:2", "parser3:1"}
+        expected_outputs = {"parser1:{}", "parser2:{'value': 1}", "parser3:{}"}
         self.assertEqual(set(output), expected_outputs)
 
 
