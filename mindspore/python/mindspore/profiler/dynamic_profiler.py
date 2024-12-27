@@ -235,8 +235,8 @@ class DynamicProfilerMonitorBase(Callback):
         self._last_stop_step = None
         self._is_create_process = None
         self._is_started = False
-        self._start_step = 0
-        self._stop_step = 0
+        self._start_step = -1
+        self._stop_step = -1
         self._step_num = 0
 
         self._check_shm_for_killed()
@@ -421,9 +421,12 @@ class DynamicProfilerMonitorBase(Callback):
             # Update new start_step and stop_step
             self._start_step = prof_args.start_step
             self._stop_step = prof_args.stop_step
-            if self._start_step >= 0 and 0 <= self._start_step < self._stop_step:
+            if self._start_step >= 0 and 0 <= self._start_step <= self._stop_step:
                 prof_path = os.path.join(self._output_path,
                                          f"rank{self._rank_id}_start{self._start_step}_stop{self._stop_step}")
+                print_msg(f"Rank {self._rank_id} create output path {prof_path}")
+                print_msg(f"Rank {self._rank_id} Dynamic profile start at step {self._start_step}, "
+                          f"will stop at step {self._stop_step}")
                 self._profiler = Profiler(output_path=prof_path,
                                           schedule=schedule(wait=0, warm_up=0,
                                                             active=self._stop_step - self._start_step + 1,
@@ -433,8 +436,9 @@ class DynamicProfilerMonitorBase(Callback):
                                           **prof_args.args)
             else:
                 self._profiler = None
-                logger.error("Both stop_step and start_step must be greater than zero, "
-                             "and stop_step must be greater than start_step!")
+                logger.error("Rank %d Dynamic profile start at step %d and stop at step %d in config_json must be "
+                             "greater than or equal to 0, and stop step should not be less than start step",
+                             self._rank_id, self._start_step, self._stop_step)
 
         if self._profiler:
             self._profiler.step()
