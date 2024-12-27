@@ -37,9 +37,23 @@ from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from mindspore.ops.operations import _grad_ops as G
 import mindspore as ms
 
-_device_local_norm = None
-if ms.get_auto_parallel_context("dump_device_local_norm"):
-    _device_local_norm = Parameter(Tensor(0.0, mstype.float32), name="_device_local_norm", requires_grad=False)
+_squared_device_local_norm = None
+
+def get_squared_device_local_norm_param():
+    """
+    Get Parameter `_squared_device_local_norm`.
+    `_squared_device_local_norm` will accumulate squared local norm of each grad in bprop under GRAPH_MODE.
+    User need to reset it to zero after network propagation each step.
+    """
+    global _squared_device_local_norm
+    if _squared_device_local_norm is None:
+        if ms.get_auto_parallel_context("dump_device_local_norm"):
+            _squared_device_local_norm = Parameter(Tensor(0.0, mstype.float32), name="_squared_device_local_norm",
+                                                   requires_grad=False)
+        else:
+            raise ValueError("The parallel config 'dump_device_local_norm' is False.")
+    return _squared_device_local_norm
+
 
 @bprop_getters.register(AllReduce)
 def get_bprop_all_reduce(self):
@@ -221,6 +235,7 @@ def get_bprop_mirror_micro_step_operator(self):
     allgather for sparse feature.
     """
     group = self.group
+    global_rank = get_rank()
     dev_num = self.dev_num
     mean_flag = self.mean_flag
     param_name = " "
@@ -247,18 +262,32 @@ def get_bprop_mirror_micro_step_operator(self):
     out_tensor = Tensor(1.0, mstype.float16)
     opt_shard = _get_enable_parallel_optimizer()
     ln_print = P.Print()
+    tensor_dump = P.TensorDump()
     reduce_sum = P.ReduceSum(keep_dims=False)
     square = P.Square()
+    sqrt = P.Sqrt()
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
+    dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_device_local_norm:
+        # init _squared _squared_device_local_norm
+        squared_device_local_norm = get_squared_device_local_norm_param()
 
     def bprop(x, z, out, dout):
         if dump_local_norm or dump_device_local_norm:
-            _norm = reduce_sum(square((z)))
+            squared_norm = reduce_sum(square((z)))
             if dump_local_norm:
-                z = F.depend(z, ln_print("dump local norm: ", param_name, _norm))
+                if dump_local_norm_path:
+                    # TensorDump doesn't support bfloat16 in r2.4.1
+                    if dtype(z) == mstype.bfloat16:
+                        squared_norm = cast(squared_norm, mstype.float32)
+                    z = F.depend(z, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
+                                                "/local_norm__" + param_name, sqrt(squared_norm)))
+                else:
+                    z = F.depend(z, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
-                z = F.depend(z, F.assign_add(_device_local_norm, cast(_norm, _device_local_norm.dtype)))
+                z = F.depend(z, F.assign_add(squared_device_local_norm,
+                                             cast(squared_norm, squared_device_local_norm.dtype)))
         real_grad = z
         assign_out = dout
         if issubclass_(F.typeof(dout), mstype.tensor_type):
@@ -301,8 +330,42 @@ def get_bprop_all_gather(self):
     if self.rank_size == 0:
         raise ValueError(f"The 'rank_size' can not be zero, but got {self.rank_size}.")
     scale = 1.0 / self.rank_size
+    param_name = ""
+    if 'mirror_user_id' in self.get_attr_dict():
+        param_name = self.get_attr_dict()['mirror_user_id']
+    # monitor local norm
+    dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
+    dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
+    dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if param_name and (dump_local_norm or dump_device_local_norm):
+        global_rank = get_rank()
+        dtype = P.DType()
+        cast = P.Cast()
+        ln_print = P.Print()
+        tensor_dump = P.TensorDump()
+        reduce_sum = P.ReduceSum(keep_dims=False)
+        square = P.Square()
+        sqrt = P.Sqrt()
+    if dump_device_local_norm:
+        # init _squared _squared_device_local_norm
+        squared_device_local_norm = get_squared_device_local_norm_param()
 
     def bprop(x, out, dout):
+        if param_name and (dump_local_norm or dump_device_local_norm):
+            squared_norm = reduce_sum(square((dout)))
+            if dump_local_norm:
+                if dump_local_norm_path:
+                    # TensorDump doesn't support bfloat16 in r2.4.1
+                    if dtype(dout) == mstype.bfloat16:
+                        squared_norm = cast(squared_norm, mstype.float32)
+                    dout = F.depend(dout, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
+                                                      "/local_norm__" + param_name, sqrt(squared_norm)))
+                else:
+                    dout = F.depend(dout, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
+            if dump_device_local_norm:
+                dout = F.depend(dout, F.assign_add(squared_device_local_norm,
+                                                   cast(squared_norm, squared_device_local_norm.dtype)))
+
         dx = reduce_scatter(dout)
         if mean_flag:
             dx = F.tensor_mul(dx, scale)
@@ -373,15 +436,22 @@ def get_bprop_micro_step_all_gather(self):
         if self.instance_name:
             instance_name = "grad_" + self.instance_name
             reduce_scatter.set_prim_instance_name(instance_name)
+    global_rank = get_rank()
     cast = P.Cast()
     dtype = P.DType()
     out_tensor = Tensor(1.0, mstype.float16)
     with_mirror_operator = self.get_attr_dict()["with_mirror_operator"]
     ln_print = P.Print()
+    tensor_dump = P.TensorDump()
     reduce_sum = P.ReduceSum(keep_dims=False)
     square = P.Square()
+    sqrt = P.Sqrt()
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
+    dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_device_local_norm:
+        # init _squared _squared_device_local_norm
+        squared_device_local_norm = get_squared_device_local_norm_param()
 
     def bprop(x, z, out, dout):
         if with_mirror_operator:
@@ -393,11 +463,19 @@ def get_bprop_micro_step_all_gather(self):
             return (real_grad, cast(out_tensor, dtype(z)))
         z = F.depend(z, dout)
         if dump_local_norm or dump_device_local_norm:
-            _norm = reduce_sum(square((z)))
+            squared_norm = reduce_sum(square((z)))
             if dump_local_norm:
-                z = F.depend(z, ln_print("dump local norm: ", param_name, _norm))
+                if dump_local_norm_path:
+                    # TensorDump doesn't support bfloat16 in r2.4.1
+                    if dtype(z) == mstype.bfloat16:
+                        squared_norm = cast(squared_norm, mstype.float32)
+                    z = F.depend(z, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
+                                                "/local_norm__" + param_name, sqrt(squared_norm)))
+                else:
+                    z = F.depend(z, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
-                z = F.depend(z, F.assign_add(_device_local_norm, cast(_norm, _device_local_norm.dtype)))
+                z = F.depend(z, F.assign_add(squared_device_local_norm,
+                                             cast(squared_norm, squared_device_local_norm.dtype)))
         if not do_mirror:
             return (z, cast(out_tensor, dtype(z)))
         real_grad = reduce_scatter(z)
@@ -599,16 +677,24 @@ def get_bprop_mirror_operator(self):
 
     dev_num_r = 1.0
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
+    dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_device_local_norm:
+        # init _squared _squared_device_local_norm
+        squared_device_local_norm = get_squared_device_local_norm_param()
     if dev_num > 1:
+        global_rank = get_rank()
         dev_num_r = 1.0 / dev_num
         all_reduce = AllReduce(group=group)
         all_gather = AllGather(group=group)
         mul = P.Mul()
+        dtype = P.DType()
         cast = P.Cast()
         ln_print = P.Print()
+        tensor_dump = P.TensorDump()
         reduce_sum = P.ReduceSum(keep_dims=False)
         square = P.Square()
+        sqrt = P.Sqrt()
 
         fusion = self.get_attr_dict()["fusion"]
         all_reduce.add_prim_attr("fusion", fusion)
@@ -623,11 +709,19 @@ def get_bprop_mirror_operator(self):
 
     def bprop(x, out, dout):
         if dump_local_norm or dump_device_local_norm:
-            _norm = reduce_sum(square((dout)))
+            squared_norm = reduce_sum(square((dout)))
             if dump_local_norm:
-                dout = F.depend(dout, ln_print("dump local norm: ", param_name, _norm))
+                if dump_local_norm_path:
+                    # TensorDump doesn't support bfloat16 in r2.4.1
+                    if dtype(dout) == mstype.bfloat16:
+                        squared_norm = cast(squared_norm, mstype.float32)
+                    dout = F.depend(dout, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
+                                                      "/local_norm__" + param_name, sqrt(squared_norm)))
+                else:
+                    dout = F.depend(dout, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
-                dout = F.depend(dout, F.assign_add(_device_local_norm, cast(_norm, _device_local_norm.dtype)))
+                dout = F.depend(dout, F.assign_add(squared_device_local_norm,
+                                                   cast(squared_norm, squared_device_local_norm.dtype)))
 
         if dev_num == 1:
             return (dout,)
