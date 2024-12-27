@@ -204,7 +204,7 @@ size_t AscendVmmAdapter::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
   MS_LOG(INFO) << "VMM AllocDeviceMem size:" << size << ", align_size:" << align_size;
   auto ret = CALL_ASCEND_API(aclrtReserveMemAddress, addr, align_size, 0, nullptr, 1);
   if (ret != ACL_ERROR_NONE) {
-    MS_LOG(ERROR) << "Reserve memory address failed.";
+    MS_LOG(WARNING) << "Reserve memory address failed, size : " << size << ".";
     return 0;
   }
   all_reserve_mems_.push_back(*addr);
