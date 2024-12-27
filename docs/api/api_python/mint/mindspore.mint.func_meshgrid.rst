@@ -7,6 +7,9 @@ mindspore.mint.meshgrid
 
     给定N个一维Tensor，对每个Tensor做扩张操作，返回N个N维的Tensor。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **tensors** (Union(tuple[Tensor], list[Tensor])) - 静态图下为N个一维Tensor，输入的Tensor个数应大于1。动态图下为N个零维或一维Tensor，输入的Tensor个数应大于0。数据类型为Number。
 
