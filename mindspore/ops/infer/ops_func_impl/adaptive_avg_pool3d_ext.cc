@@ -50,7 +50,7 @@ ShapeArray AdaptiveAvgPool3DExtFuncImpl::InferShape(const PrimitivePtr &primitiv
   auto output_size_array_value = output_size_opt.value();
 
   if (!output_size_opt.has_value()) {
-    if (input_num_dims == 4) {
+    if (input_num_dims == kDim4) {
       ShapeVector dyn_output{x_shape[kInputIndex0], abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
                              abstract::Shape::kShapeDimAny};
       return {dyn_output};
