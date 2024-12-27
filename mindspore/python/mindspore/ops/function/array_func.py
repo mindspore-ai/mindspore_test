@@ -1413,12 +1413,13 @@ def unique_ext(input, sorted=True, return_inverse=False, return_counts=False, di
 
     Args:
         input (Tensor): The input tensor.
-        sorted(bool): Whether to sort the unique elements in ascending order before returning as output.
+        sorted (bool, optional): Whether to sort the unique elements in ascending order before returning as output.
             Default: ``True`` .
-        return_inverse(bool): Whether to also return the indices for where elements in the original input ended up in
+        return_inverse (bool, optional): Whether to also return the indices for where elements
+            in the original input ended up in
             the returned unique list. Default: ``False`` .
-        return_counts(bool): Whether to also return the counts for each unique element. Default: ``False`` .
-        dim(int): the dimension to operate upon. If ``None``, the unique of the flattened input is returned.
+        return_counts (bool, optional): Whether to also return the counts for each unique element. Default: ``False`` .
+        dim (int, optional): the dimension to operate upon. If ``None``, the unique of the flattened input is returned.
             Otherwise, each of the tensors indexed by the given dimension is treated as one of the elements to apply the
             unique operation upon. Default: ``None`` .
 

@@ -19,6 +19,7 @@ mindspore.mint.logsumexp
 
     返回：
         Tensor，数据类型dtype根据 `input.dtype` 变化，shape根据输入 `dim` 和 `keepdim` 的数值而变化。
+
         - 如果 `input.dtype` 为 [float16, float32, bfloat16]，输出数据类型dtype与输入 `input.dtype` 相同。
         - 如果 `input.dtype` 为整数或布尔类型，输出数据类型dtype为float32。
         - 如果 `dim` 为 `()`，并且 `keepdim` 为 `False`，则输出为一个零维Tensor，表示输入 `input` 中所有元素指数和的对数。
