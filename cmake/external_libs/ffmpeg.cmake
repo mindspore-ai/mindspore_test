@@ -9,7 +9,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         --disable-static
         --enable-shared
         --disable-x86asm
-        --extra-cflags="-D_FORTIFY_SOURCE=2 -fstack-protector-all"
+        --extra-cflags="-fstack-protector-all"
+        --extra-cxxflags="-fstack-protector-all"
+        --extra-cflags="-D_FORTIFY_SOURCE=2"
+        --extra-cxxflags="-D_FORTIFY_SOURCE=2"
         --extra-ldflags="-Wl,-z,relro,-z,now")
 else()
     set(FFMPEG_FLAGS
