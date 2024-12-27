@@ -336,8 +336,6 @@ void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorP
 }
 }  // namespace
 
-mindspore::HashSet<const tensor::Tensor *> DataPrepareActor::tensors_need_reprepare_ = {};
-
 std::atomic<size_t> DataPrepareActor::execution_count_ = 0;
 
 void DataPrepareActor::Init() {
@@ -362,6 +360,7 @@ void DataPrepareActor::Init() {
       break;
     }
   }
+  tensors_need_reprepare_[this] = {};
 }
 
 void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor) const {
@@ -540,7 +539,7 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
       PrepareDataForDeviceTensorStore(input_tensors, args, context);
     }
     PrepareDataForHostTensorQueue(input_tensors, args, context);
-    tensors_need_reprepare_.clear();
+    tensors_need_reprepare_[this].clear();
   } catch (const std::exception &e) {
     std::string error_info = e.what();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -595,7 +594,7 @@ void DataPrepareActor::OnDebugFinish(OpContext<DeviceTensor> *const context) {
 }
 
 TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tensors, size_t tensor_index,
-                                             const VectorRef &args, const KernelWithIndex &front_node) const {
+                                             const VectorRef &args, const KernelWithIndex &front_node) {
   if (!tensors.empty()) {
     MS_EXCEPTION_IF_CHECK_FAIL((tensor_index < tensors.size()), "The tensor index is out of range.");
     auto tensor = tensors[tensor_index];
@@ -617,12 +616,12 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   auto tensor = FetchInputTensorByArg(args, arg_index, front_node);
   // The tensor needs to be updated if modified.
   if (tensor != nullptr && tensor->update_value_callback() == nullptr && tensor->is_parameter()) {
-    static auto callback = [](const tensor::Tensor *tensor) { tensors_need_reprepare_.insert(tensor); };
+    auto callback = [this](const tensor::Tensor *tensor) { tensors_need_reprepare_[this].insert(tensor); };
     tensor->set_update_value_callback(callback);
   }
 
-  if (tensor != nullptr && !tensors_need_reprepare_.empty() && tensor->is_parameter()) {
-    auto erased_num = tensors_need_reprepare_.erase(tensor.get());
+  if (tensor != nullptr && !tensors_need_reprepare_[this].empty() && tensor->is_parameter()) {
+    auto erased_num = tensors_need_reprepare_[this].erase(tensor.get());
     MS_LOG(DEBUG) << "Erase " << erased_num << " tensor which is reprepared.";
   }
 
@@ -1320,7 +1319,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
 void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeParserPtr &control_node_parser,
                                                               const std::vector<TensorPtr> &tensors,
                                                               const VectorRef &args,
-                                                              OpContext<DeviceTensor> *const context) const {
+                                                              OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(control_node_parser);
   if (!control_node_parser->IsInited()) {
     return;
