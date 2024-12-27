@@ -185,6 +185,10 @@ void ReduceMin(const T *in, T *out, size_t start, size_t end, TransposeIterator 
 
 template <typename T>
 void ReduceAll(const T *in, T *out, size_t start, size_t end, TransposeIterator *iter) {
+  if (end == 0) {
+    *out = static_cast<T>(1);
+    return;
+  }
   if (iter != nullptr) {
     for (size_t i = start; i < end; i++) {
       *out = *out && in[iter->GetPos()];
