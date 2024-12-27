@@ -7,6 +7,3 @@ mindspore.device_context.gpu.is_available
 
     返回：
         bool，指示GPU设备是否可用。
-
-    支持平台：
-        ``GPU``
