@@ -910,6 +910,12 @@ class MS_CORE_API AbstractSequence : public AbstractBase {
   /// \return A vector of elements.
   const AbstractBasePtrList &elements() const;
 
+  /// \brief Set the element at index.
+  ///
+  /// \param[in] index The index where to set.
+  /// \param[in] item The abstract to set.
+  void SetElement(std::size_t index, const AbstractBasePtr &item) { elements_[index] = item; }
+
   /// \brief Purify the elements list, and clean unused elements.
   ///
   /// \return A boolean, which indicates whether success.

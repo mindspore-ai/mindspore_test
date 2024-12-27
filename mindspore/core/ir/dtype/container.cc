@@ -52,7 +52,7 @@ static std::string DumpTypeVector(const std::vector<TypePtr> &elements, bool is_
     if (i + 1 < elements.size()) {
       TypePtr next = elements[i + 1];
       MS_EXCEPTION_IF_NULL(next);
-      if (*elem != *next) {
+      if (*elem != *next || elem->tid() != next->tid()) {
         print = true;
       }
     } else {

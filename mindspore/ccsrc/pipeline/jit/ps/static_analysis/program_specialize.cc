@@ -375,6 +375,29 @@ AbstractFunctionPtr ProgramSpecializer::SpecializeAbstractFuncRecursively(const 
   return new_abs;
 }
 
+namespace {
+void UpdateInplaceAbstract(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  const auto &old_abs = node->abstract();
+  MS_EXCEPTION_IF_NULL(old_abs);
+  // Update for inplace abstract.
+  if (old_abs->inplace_abstract() != nullptr) {
+    node->set_abstract(old_abs->inplace_abstract());
+  }
+  // Update for inplace abstract in a sequence.
+  auto sequence_abs = dyn_cast<abstract::AbstractSequence>(old_abs);
+  if (sequence_abs != nullptr) {
+    for (size_t i = 0; i < sequence_abs->elements().size(); ++i) {
+      const auto &item = sequence_abs->elements()[i];
+      MS_EXCEPTION_IF_NULL(item);
+      if (item->inplace_abstract() != nullptr) {
+        sequence_abs->SetElement(i, item->inplace_abstract());
+      }
+    }
+  }
+}
+}  // namespace
+
 void ProgramSpecializer::SpecializeFuncGraph() {
   MS_EXCEPTION_IF_NULL(manager_);
   const auto &all_nodes = manager_->all_nodes();
@@ -384,10 +407,9 @@ void ProgramSpecializer::SpecializeFuncGraph() {
     if (old_abs == nullptr) {
       continue;
     }
-    if (old_abs->inplace_abstract() != nullptr) {
-      // Use inplace abstract.
-      node->set_abstract(old_abs->inplace_abstract());
-    }
+    // Update for inplace abstract.
+    UpdateInplaceAbstract(node);
+
     if (!(old_abs->isa<FuncGraphAbstractClosure>() || old_abs->isa<MetaFuncGraphAbstractClosure>() ||
           old_abs->isa<AbstractFuncUnion>() || old_abs->isa<PartialAbstractClosure>())) {
       continue;
