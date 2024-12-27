@@ -36,6 +36,8 @@ namespace distributed {
 namespace collective {
 namespace {
 // pipeline parallel group name prefix
+const size_t kSizeFour = 4;
+const char kPlatFormMccl[] = "mccl";
 const char kPipelineGroupNamePrefix[] = "pp-";
 }  // namespace
 using recovery::RecoveryContext;
@@ -730,7 +732,7 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
   // Step 1: Generate device information of the root node.
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
-  if (group_name.compare(0, 4, "mccl") == 0 &&
+  if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0 &&
       MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
     group = host_comm_lib_instance_->GetGroup(group_name);
   }
