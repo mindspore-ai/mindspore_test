@@ -8,6 +8,3 @@ mindspore.device_context.ascend.op_debug.execute_timeout
 
     参数：
         - **op_timeout** (int) - 算子的最大执行时间，如果执行时间超过这个值，系统将终止该任务。0意味着使用默认值，AI Core和AICPU算子在不同硬件上的默认值有差异。
-
-    支持平台：
-        ``Ascend``

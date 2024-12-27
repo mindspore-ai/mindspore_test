@@ -12,6 +12,3 @@ mindspore.device_context.ascend.op_tuning.op_compile
 
           - ``True``: 优先选择在线编译。
           - ``False``: 优先选择系统中已经编译好的算子二进制文件，提升编译性能。
-
-    支持平台：
-        ``Ascend``

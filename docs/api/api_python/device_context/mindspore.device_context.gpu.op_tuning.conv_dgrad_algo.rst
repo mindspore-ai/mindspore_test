@@ -18,6 +18,3 @@ mindspore.device_context.gpu.op_tuning.conv_dgrad_algo
           - fft_tiling: 该算法利用快速傅里叶变换完成卷积计算，但是需要对输入进行分块。同样需要额外申请内存空间，保存中间结果，但是对大尺寸的输入，所需内存空间小于 fft 算法。结果是确定的。
           - winograd: 该算法利用Winograd变换完成卷积计算。需要额外申请合理的内存空间，保存中间结果。结果是确定的。
           - winograd_nonfused: 该算法利用Winograd变形算法完成卷积计算。需要额外申请较大的内存空间，保存中间结果。结果是确定的。
-
-    支持平台：
-        ``GPU``
