@@ -46,50 +46,48 @@ class SparseCrossCpuKernel : public CpuKernel {
 template <typename ListType, typename ElementType>
 class OpArgIterator {
  public:
-  using iterator_category = std::forward_iterator_tag;
-  using value_type = ElementType;
-  using pointer = ElementType *;
-  using const_pointer = const ElementType *;
-  using reference = ElementType &;
-  using const_reference = const ElementType &;
-  using difference_type = ptrdiff_t;
+  typedef ElementType *pointer;
+  typedef const ElementType *const_pointer;
+  typedef ElementType &reference;
+  typedef const ElementType &const_reference;
 
-  OpArgIterator(const ListType *list, int i) : list_(list), i_(i) {}
+  OpArgIterator(const ListType *list, int i) : list_(list), idx_(i) {}
 
   bool operator==(const OpArgIterator &rhs) {
     if (list_ == rhs.list_) {
-      return i_ == rhs.i_;
+      return idx_ == rhs.idx_;
     }
     return false;
   }
 
   bool operator!=(const OpArgIterator &rhs) {
     if (list_ == rhs.list_) {
-      return i_ != rhs.i_;
+      return idx_ != rhs.idx_;
     }
     return true;
   }
 
   OpArgIterator operator++() {  // prefix ++it
-    ++i_;
+    ++idx_;
     return *this;
   }
 
+  reference operator*() { return (*list_)[idx_]; }
+
   OpArgIterator operator++(int) {  // postfix it++
     OpArgIterator old_value = *this;
-    ++i_;
+    ++idx_;
     return old_value;
   }
 
-  reference operator*() { return (*list_)[i_]; }
-  pointer operator->() { return &(*list_)[i_]; }
+  pointer operator->() { return &(*list_)[idx_]; }
 
-  const_reference operator*() const { return (*list_)[i_]; }
-  const_pointer operator->() const { return &(*list_)[i_]; }
+  const_reference operator*() const { return (*list_)[idx_]; }
+  const_pointer operator->() const { return &(*list_)[idx_]; }
 
  private:
   const ListType *const list_;
-  int i_;
+  int idx_;
 };
 
 class OpInputList {

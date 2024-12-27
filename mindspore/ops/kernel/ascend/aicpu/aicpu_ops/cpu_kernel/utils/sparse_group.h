@@ -57,7 +57,9 @@ class GroupIterable {
 
   class IteratorStep {
    public:
-    IteratorStep(GroupIterable *iter, int64_t loc) : iter_(iter), loc_(loc), next_loc_(loc_) { UpdateEndOfGroup(); }
+    IteratorStep(GroupIterable *iter, int64_t loc) : iter_(iter), location_(loc), next_loc_(location_) {
+      UpdateEndOfGroup();
+    }
 
     ~IteratorStep() { iter_ = nullptr; }
 
@@ -73,11 +75,11 @@ class GroupIterable {
 
     Group operator*() const;
 
-    int64_t loc() const { return loc_; }
+    int64_t loc() const { return location_; }
 
    private:
     GroupIterable *iter_;
-    int64_t loc_;
+    int64_t location_;
     int64_t next_loc_;
   };
 
