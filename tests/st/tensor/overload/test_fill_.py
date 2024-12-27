@@ -23,8 +23,10 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
+
 
 def _count_unequal_element(data_expected, data_me, rtol, atol):
     assert data_expected.shape == data_me.shape
@@ -32,9 +34,11 @@ def _count_unequal_element(data_expected, data_me, rtol, atol):
     error = np.abs(data_expected - data_me)
     greater = np.greater(error, atol + np.abs(data_me) * rtol)
     loss_count = np.count_nonzero(greater)
-    assert (loss_count / total_count) < rtol, \
-        "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}". \
-            format(data_expected[greater], data_me[greater], error[greater])
+    assert (
+        loss_count / total_count
+    ) < rtol, "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}".format(
+        data_expected[greater], data_me[greater], error[greater]
+    )
 
 
 def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
@@ -48,7 +52,19 @@ def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
 
 @run_with_cell
 def fill__forward_func(input_x, value):
-    return input_x.fill_(value)
+    temp = input_x + 0
+    return temp.fill_(value)
+
+
+def fill__backward_func_scalar(input_x, value):
+    grad_fn = ms.grad(fill__forward_func, grad_position=(0))
+    return grad_fn(input_x, value)
+
+
+@run_with_cell
+def fill__backward_func_tensor(input_x, value):
+    grad_fn = ms.grad(fill__forward_func, grad_position=(0, 1))
+    return grad_fn(input_x, value)
 
 
 @arg_mark(
@@ -57,7 +73,7 @@ def fill__forward_func(input_x, value):
     card_mark="onecard",
     essential_mark="essential",
 )
-@pytest.mark.parametrize("mode", ["pynative"])
+@pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_tensor_fill__normal(mode):
     """
     Feature: Tensor.fill_
@@ -67,13 +83,25 @@ def test_tensor_fill__normal(mode):
     input_x = ops.full((100, 100), 0, dtype=ms.float32)
     value = 10
     except_out = ops.full((100, 100), 10, dtype=ms.float32)
+    except_x_grad = ops.full((100, 100), 0, dtype=ms.float32)
+    except_value_tensor_grad = Tensor(10000, ms.float32)
 
-    if mode == 'pynative':
+    if mode == "pynative":
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
-        output1 = fill__forward_func(input_x, value)
-        output2 = fill__forward_func(input_x, Tensor(value))
-    allclose_nparray(output1.asnumpy(), except_out.asnumpy(), 1e-04, 1e-04)
-    allclose_nparray(output2.asnumpy(), except_out.asnumpy(), 1e-04, 1e-04)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+    output_scalar = fill__forward_func(input_x, value)
+    output_tensor = fill__forward_func(input_x, Tensor(value))
+    allclose_nparray(output_scalar.asnumpy(), except_out.asnumpy(), 1e-04, 1e-04)
+    allclose_nparray(output_tensor.asnumpy(), except_out.asnumpy(), 1e-04, 1e-04)
+
+    grads_scalar = fill__backward_func_scalar(input_x, value)
+    grads_tensor = fill__backward_func_tensor(input_x, Tensor(value))
+    allclose_nparray(grads_scalar[0].asnumpy(), except_x_grad.asnumpy(), 1e-04, 1e-04)
+    allclose_nparray(grads_tensor[0].asnumpy(), except_x_grad.asnumpy(), 1e-04, 1e-04)
+    allclose_nparray(
+        grads_tensor[1].asnumpy(), except_value_tensor_grad.asnumpy(), 1e-04, 1e-04
+    )
 
 
 @arg_mark(
@@ -96,10 +124,9 @@ def test_tensor_fill_tensor_dynamic():
         fill__forward_func,
         [[Tensor(x1), Tensor(y1)], [Tensor(x2), Tensor(y2)]],
         "inplace_fill_tensor",
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE"],
         disable_input_check=True,
-        disable_grad=True,
-        inplace_update=True
+        inplace_update=True,
     )
 
 
@@ -123,8 +150,7 @@ def test_tensor_fill_scalar_dynamic():
         fill__forward_func,
         [[Tensor(x1), y1], [Tensor(x2), y2]],
         "inplace_fill_tensor",
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE"],
         disable_input_check=True,
-        disable_grad=True,
-        inplace_update=True
+        inplace_update=True,
     )

@@ -31,7 +31,7 @@ static inline bool CdistGradIsValidType(TypeId t) {
 }
 
 ShapeArray CdistGradFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  size_t batch_rank = 0;
+  int64_t batch_rank = 0;
   auto prim_name = primitive->name();
   if (primitive->HasAttr(kBatchRank)) {
     auto value_ptr = primitive->GetAttr(kBatchRank);
