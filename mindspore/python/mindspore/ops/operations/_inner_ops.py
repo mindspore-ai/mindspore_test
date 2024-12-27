@@ -2063,6 +2063,8 @@ class CheckBprop(PrimitiveWithInfer):
                              f"which is:{len(yshapes)} but got {len(xshapes)}.")
 
         def shape_equal(shape1, shape2):
+            if -2 in shape1 or -2 in shape2:
+                return True
             if len(shape1) != len(shape2):
                 return False
             for shape_axis1, shape_axis2 in zip(shape1, shape2):

@@ -63,9 +63,9 @@ INSTANTIATE_TEST_CASE_P(
                   SqueezeShapeParams{{3, 4, 1, 5, 1}, kInt64, CreateTuple({I64(-3), I64(-1)}), {3, 4, 5}, kInt64},
                   SqueezeShapeParams{{3, 1, 4, 5}, kInt64, CreateTuple({I64(-3)}), {3, 4, 5}, kInt64},
                   SqueezeShapeParams{{2, 3, 4, 1, 5}, kInt32, CreateTuple({I64(-2)}), {2, 3, 4, 5}, kInt32},
-                  SqueezeShapeParams{{-1, -1, -1, -1}, kUInt64, CreateTuple({I64(2)}), {-1, -1, -1, -1}, kUInt64},
+                  SqueezeShapeParams{{-1, -1, -1, -1}, kUInt64, CreateTuple({I64(2)}), {-2}, kUInt64},
                   SqueezeShapeParams{
-                    {-1, -1, -1, -1}, kFloat32, CreateTuple({I64(0), I64(1), I64(-1)}), {-1, -1, -1, -1}, kFloat32},
+                    {-1, -1, -1, -1}, kFloat32, CreateTuple({I64(0), I64(1), I64(-1)}), {-2}, kFloat32},
                   SqueezeShapeParams{{-2}, kFloat32, CreateTuple({I64(2)}), {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore
