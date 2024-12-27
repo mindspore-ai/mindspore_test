@@ -49,24 +49,24 @@ constexpr int kDataCoreIdxStart = 6;
 constexpr int kMinimumCorePerProcess = 7;
 }  // namespace
 
-int get_device_id() {
-  std::string env_device_id = common::GetEnv("DEVICE_ID", "0");
+uint32_t get_device_id() {
+  uint32_t logical_device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   std::string env_visible_device = common::GetEnv("ASCEND_RT_VISIBLE_DEVICES");
-  int device_id;
+  uint32_t physical_device_id;
   if (env_visible_device.empty()) {
-    device_id = std::stoi(env_device_id);
+    physical_device_id = logical_device_id;
   } else {
-    std::vector<int> list_visible_device;
+    std::vector<uint32_t> list_visible_device;
     std::stringstream ss(env_visible_device);
     std::string item;
     while (std::getline(ss, item, ',')) {
       list_visible_device.push_back(std::stoi(item));
     }
     std::sort(list_visible_device.begin(), list_visible_device.end());
-    device_id = list_visible_device[std::stoi(env_device_id)];
+    physical_device_id = list_visible_device[logical_device_id];
   }
-  MS_LOG(INFO) << "The physical device id for this process to bind thread core is " << device_id;
-  return device_id;
+  MS_LOG(INFO) << "The physical device id for this process to bind thread core is " << physical_device_id;
+  return physical_device_id;
 }
 
 void ThreadBindCore::enable_thread_bind_core(const std::vector<int> &available_cpu_list) {
@@ -91,7 +91,7 @@ void ThreadBindCore::enable_thread_bind_core_with_policy(const BindCorePolicy &b
   is_enable_thread_bind_core_ = true;
 }
 
-bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module_name, int device_id) {
+bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module_name, uint32_t device_id) {
   auto it = thread_bind_core_policy_.find(module_name);
   if (it != thread_bind_core_policy_.end()) {
     return true;
@@ -145,7 +145,7 @@ std::vector<int> ThreadBindCore::get_thread_bind_core_list(const kBindCoreModule
     return thread_bind_core_policy_[module_name];
   }
 
-  int device_id = get_device_id();
+  uint32_t device_id = get_device_id();
   bool res = parse_thread_bind_core_policy(module_name, device_id);
   if (!res) {
     return {};

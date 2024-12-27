@@ -131,12 +131,13 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
-        >>> ms.runtime.set_cpu_affinity(true)
+        >>> ms.runtime.set_cpu_affinity(True)
         >>>
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
-        >>> ms.runtime.set_cpu_affinity(true, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-40"]})
+        >>> ms.runtime.set_cpu_affinity(True, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-40"]})
     """
+    _check_runtime_conf_env_valid()
     if RuntimeConf.get_instance().is_thread_bind_core_configured():
         raise RuntimeError("The 'mindspore.runtime.set_cpu_affinity' cannot be set repeatedly.")
     if enable_affinity:

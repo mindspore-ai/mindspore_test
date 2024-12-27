@@ -40,7 +40,7 @@ class ThreadBindCore {
   }
   void enable_thread_bind_core(const std::vector<int> &available_cpu_list);
   void enable_thread_bind_core_with_policy(const BindCorePolicy &bind_core_policy);
-  bool parse_thread_bind_core_policy(const kBindCoreModule &module_name, int device_id);
+  bool parse_thread_bind_core_policy(const kBindCoreModule &module_name, uint32_t device_id);
   std::vector<int> get_thread_bind_core_list(const kBindCoreModule &module_name);
   void bind_thread_core(const std::vector<int> &cpu_list);
   bool unbind_thread_core(const std::string &thread_name);
