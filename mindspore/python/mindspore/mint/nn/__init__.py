@@ -627,12 +627,6 @@ class GELU(Cell):
         >>> print(output)
         [[-1.5880802e-01  3.9999299e+00 -3.1077917e-21]
          [ 1.9545976e+00 -2.2918017e-07  9.0000000e+00]]
-        >>> gelu = mint.nn.GELU(approximate=False)
-        >>> # CPU not support "approximate=False", using "approximate=True" instead
-        >>> output = gelu(input)
-        >>> print(output)
-        [[-1.5865526e-01  3.9998732e+00 -0.0000000e+00]
-         [ 1.9544997e+00 -1.4901161e-06  9.0000000e+00]]
     """
 
     def __init__(self):

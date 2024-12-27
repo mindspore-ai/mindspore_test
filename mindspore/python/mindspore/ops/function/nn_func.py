@@ -7702,7 +7702,7 @@ def gelu(input, approximate='none'):
         >>> import mindspore
         >>> from mindspore import Tensor, ops
         >>> x = Tensor([1.0, 2.0, 3.0], mindspore.float32)
-        >>> result = ops.gelu(x)
+        >>> result = ops.gelu(x, approximate='none')
         >>> print(result)
         [0.8413447 1.9544997 2.9959505]
     """
