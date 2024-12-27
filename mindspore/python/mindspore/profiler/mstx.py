@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ Mstx class for NPU profiling """
+import mindspore
 import mindspore._c_expression as c_expression
 
 from mindspore import log as logging
@@ -29,13 +30,14 @@ class Mstx:
     NPU_PROFILER = c_expression.Profiler.get_instance(DeviceTarget.NPU.value)
 
     @staticmethod
-    def mark(message: str, stream: Stream = None) -> None:
+    def mark(message: str, stream: mindspore.runtime.Stream = None) -> None:
         """Add a marker point in profiling.
 
         Args:
             message (str): Description for the marker.
-            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.runtime.Stream.
-                Default: ``None``, which means only marking on host side without marking on device stream.
+            stream (mindspore.runtime.Stream, optional): NPU stream for async execution, expected type:
+                mindspore.runtime.Stream. Default: ``None``, which means only marking on host side without
+                marking on device stream.
 
         Examples:
             >>> import numpy as np
@@ -100,13 +102,14 @@ class Mstx:
             Mstx.NPU_PROFILER.mstx_mark(message)
 
     @staticmethod
-    def range_start(message: str, stream: Stream = None) -> int:
+    def range_start(message: str, stream: mindspore.runtime.Stream = None) -> int:
         """Start a profiling range.
 
         Args:
             message (str): Description for the range.
-            stream (Stream, optional): NPU stream for async execution, expected type: mindspore.runtime.Stream.
-                Default: ``None``, which means only starting mstx range on host side without starting on device stream.
+            stream (mindspore.runtime.Stream, optional): NPU stream for async execution, expected type:
+                mindspore.runtime.Stream. Default: ``None``, which means only starting mstx range on
+                host side without starting on device stream.
 
         Returns:
             int, range ID for range_end.

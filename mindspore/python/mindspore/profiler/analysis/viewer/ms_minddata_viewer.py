@@ -22,10 +22,11 @@ from mindspore import log as logger
 from mindspore.profiler.common.constant import ProfilerActivity
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.log import ProfilerLogger
 from mindspore.profiler.common.exceptions.exceptions import (
     ProfilerRawFileException,
 )
-from mindspore.profiler.common.log import ProfilerLogger
+
 
 class MindDataPipelineRawViewer(BaseViewer):
     """
