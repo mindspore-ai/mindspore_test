@@ -58,6 +58,9 @@ class AscendCommunicationGroup : public CommunicationGroup {
   std::string inner_comm_name() const;
 
  private:
+  // Initialpize HCCL config parameters, such as hcclBufferSize and hcclDeterministic.
+  void InitializeCommConfig();
+
   // The HCCL unique id for this group. Used to initialize this group's communicator.
   HcclRootInfo unique_id_;
 
