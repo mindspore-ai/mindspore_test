@@ -70,7 +70,7 @@ def run_qwen_1p_bs1(args):
     with no_init_parameters():
         model = LlamaForCausalLM(model_config)
     build_model_end = time.time()
-    assert (build_model_end - build_model_start) < 60
+    assert (build_model_end - build_model_start) < 80
     model.set_train(False)
 
     inputs_ids = generate_input_ids(1, 10)

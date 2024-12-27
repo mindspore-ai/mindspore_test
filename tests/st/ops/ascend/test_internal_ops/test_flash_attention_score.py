@@ -522,7 +522,7 @@ description = {
 }
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_sd():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -549,7 +549,7 @@ def test_flash_attention_score_sd():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bnsd_64():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -576,7 +576,7 @@ def test_flash_attention_score_bnsd_64():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bsh():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -603,7 +603,7 @@ def test_flash_attention_score_bsh():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bsh_mask():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -630,7 +630,7 @@ def test_flash_attention_score_bsh_mask():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bsh_mask_alibi():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -657,7 +657,7 @@ def test_flash_attention_score_bsh_mask_alibi():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_fa_bsh_small():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -684,7 +684,7 @@ def test_flash_attention_score_fa_bsh_small():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_d256_amask_fp16():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -711,7 +711,7 @@ def test_flash_attention_score_d256_amask_fp16():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_d256_low_tri_bf16():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -738,7 +738,7 @@ def test_flash_attention_score_d256_low_tri_bf16():
     FlashAttentionScoreTest(i_test)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_dynamic():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost

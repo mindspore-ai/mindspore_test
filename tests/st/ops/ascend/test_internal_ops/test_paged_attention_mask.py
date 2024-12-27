@@ -692,7 +692,7 @@ class PagedAttentionMaskTest(PagedAttentionBase):
             self.o_ascend["attention_out"] = net(*tuple(self.i_construct.values()))
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_bnsd():
@@ -722,7 +722,7 @@ def test_paged_attention_bnsd():
     PagedAttentionMaskTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_bsh_256():
@@ -782,7 +782,7 @@ def test_paged_attention_rand0():
     PagedAttentionMaskTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_rand1():
@@ -812,7 +812,7 @@ def test_paged_attention_rand1():
     PagedAttentionMaskTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_fd_long():
@@ -842,7 +842,7 @@ def test_paged_attention_fd_long():
     PagedAttentionMaskTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_fd_bsh_alibi_64():
@@ -932,7 +932,7 @@ def test_paged_attention_mask_quant():
     PagedAttentionMaskTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_paged_attention_quant0():

@@ -96,7 +96,7 @@ def create_np_inputs(dtype=np.float16):
     return key_update, value_update, key_cache, value_cache, slot_map
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('np_dtype', [np.float16, bfloat16, np.int8])
 def test_reshape_and_cache_net(np_dtype):
     """

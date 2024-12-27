@@ -149,7 +149,7 @@ def _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head
     run(net, seq_len, batch_size, num_head, num_head, hidden_dim, max_seq_len, query_dtype, np.int32, ndim, cos_format)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('query_dtype', [np.float16])
 @pytest.mark.parametrize('cos_dtype', [np.float16, np.float32])
 @pytest.mark.parametrize('cos_format', [2])
@@ -165,7 +165,7 @@ def test_rope_float16(query_dtype, cos_dtype, cos_format, batch_size, seq_len, n
     _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('query_dtype', [bfloat16])
 @pytest.mark.parametrize('cos_dtype', [bfloat16, np.float32])
 @pytest.mark.parametrize('cos_format', [2])
