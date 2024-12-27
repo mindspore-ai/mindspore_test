@@ -19,6 +19,8 @@ from mindspore._c_expression import current_stream as current_stream_
 from mindspore import _checkparam as Validator
 from mindspore import log as logger
 
+function_event_status = {'Event': False, 'wait': False}
+
 
 class Event(Event_):
     r"""
@@ -64,9 +66,11 @@ class Event(Event_):
     """
 
     def __init__(self, enable_timing=False, blocking=False):
-        logger.warning(
-            "WARN_DEPRECATED: The usage of mindspore.hal.Event(enable_timing=True) is deprecated."
-            " Please use mindspore.runtime.Event(enable_timing=True)")
+        if not function_event_status['Event']:
+            function_event_status['Event'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Event(enable_timing=True) is deprecated."
+                " Please use mindspore.runtime.Event(enable_timing=True)")
         # pylint: disable=useless-super-delegation
         Validator.check_bool(enable_timing, "enable_timing", "Event")
         Validator.check_bool(blocking, "blocking", "Event")
@@ -126,9 +130,11 @@ class Event(Event_):
             [[4. 4.]
              [4. 4.]]
         """
-        logger.warning(
-            "WARN_DEPRECATED: The usage of mindspore.hal.Event() is deprecated."
-            " Please use mindspore.runtime.Event()")
+        if not function_event_status['wait']:
+            function_event_status['wait'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Event() is deprecated."
+                " Please use mindspore.runtime.Event()")
         if stream is None:
             stream = current_stream_()
         if not isinstance(stream, Stream_):
