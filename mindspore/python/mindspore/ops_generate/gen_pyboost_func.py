@@ -75,6 +75,7 @@ def call_functions_header_generator(work_path, op_protos):
     generator = FunctionsHeaderGenerator()
     generator.generate(work_path, op_protos)
 
+
 def call_functions_cc_generator(work_path, op_protos):
     generator = FunctionsGenerator()
     generator.generate(work_path, op_protos)
