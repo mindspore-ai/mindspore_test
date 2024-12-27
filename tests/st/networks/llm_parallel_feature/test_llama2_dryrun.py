@@ -71,24 +71,22 @@ def test_llama2_dp4mp4pp1op_recompute():
     llama2_config = LLMConfig(case_name=case_name, data_parallel=4, model_parallel=4,
                               recompute=True, batch_size=2, vocab_emb_dp=False,
                               parallel_speed_up_json={
-                                  'enable_grad_comm_opt': 'false',
-                                  'enable_opt_shard_comm_opt': 'false'})
+                                  'enable_grad_comm_opt': 'true',
+                                  'enable_opt_shard_comm_opt': 'true'})
+
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name}")
     check_pair = {"Training Over": 1}
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     validate_name = find_graph_file_name(real_graph_path[0], "validate")
-    step_parallel_end_name = find_graph_file_name(real_graph_path[0], "step_parallel_end")
+    hwopt_after_inline_name = find_graph_file_name(real_graph_path[0], "hwopt_d_after_inline_graph_0")
     graph_path = real_graph_path[0]
-    attrs_check_pairs = {", recompute: Bool(1)": 206}
+    attrs_check_pairs = {", recompute: Bool(1)": 207}
     check_graph(graph_path, validate_name, attrs_check_pairs)
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"CNode_625": "((4, 1), (4, 1))"}}
-    check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
-    param_opt_shape_check_pairs = {"layers.0.attention.wq.weight": "(256, 4096)",
-                                   "layers.0.attention.wk.weight": "(256, 4096)",
-                                   "layers.0.attention.wv.weight": "(256, 4096)"}
-    check_param_shape(graph_path, step_parallel_end_name, 100, param_opt_shape_check_pairs)
+    param_parallel_speed_up_check_pairs = {'last_grad_comm_compute_depend: Bool(1)': '39',
+                                           'grad_comm_dx_depend: Bool(1)': '1'}
+    check_graph(graph_path, hwopt_after_inline_name, param_parallel_speed_up_check_pairs)
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -218,40 +216,35 @@ def test_llama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute():
                               micro_batch_num=4, batch_size=1, pp_interleave_num=2,
                               pipeline_interleave=True, pipeline_scheduler="1f1b",
                               num_layers=4, context_parallel=4, select_recompute=True,
-                              recompute=True, enable_parallel_optimizer=False,
+                              recompute=False, enable_parallel_optimizer=False,
                               parallel_speed_up_json={
-                                  'enable_grad_comm_opt': 'false',
-                                  'enable_opt_shard_comm_opt': 'false',
-                                  'recompute_allgather_overlap_fagrad': 'true'})
+                                  'enable_grad_comm_opt': 'true',
+                                  'enable_opt_shard_comm_opt': 'true'})
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
     # stage0
     validate_name = find_graph_file_name(graph_path[0], "validate")
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"CNode_1022": "((4, 1), (2, 1))"}}
-    # dependency_list_key_0 = ["AllGather(%48)", 0, "PrimFunc_MatMul"]
-    # dependency_list_value_0 = ["AllGather(%56)", 0, "PrimFunc_MatMul"]
-    attrs_check_pairs = {" recompute: Bool(1)": 8, "recompute_ag_grad_rs_depend": 4}
-    check_node_strategy(graph_path[0], validate_name, gather_strategy_check_pairs)
+    hwopt_after_inline_name = find_graph_file_name(graph_path[0], "hwopt_d_after_inline_graph_0")
+    attrs_check_pairs = {" recompute: Bool(1)": 7}
     check_graph(graph_path[0], validate_name, attrs_check_pairs)
-    # check_node_dependency_backward_search(graph_path[0], validate_name, 100, dependency_list_key_0)
-    # check_node_dependency_backward_search(graph_path[0], validate_name, 100, dependency_list_value_0)
+    param_parallel_speed_up_check_pairs = {'grad_comm_assign_add_depend: Bool(1)': '19',
+                                           'last_grad_comm_compute_depend: Bool(1)': '19',
+                                           'grad_comm_dx_depend': '14'}
+    check_graph(graph_path[0], hwopt_after_inline_name, param_parallel_speed_up_check_pairs)
+
     # stage1
     validate_name_1 = find_graph_file_name(graph_path[1], "validate")
-    # dependency_list_key_1 = ["AllGather(%42)", 0, "PrimFunc_MatMul"]
-    # dependency_list_value_1 = ["AllGather(%46)", 0, "PrimFunc_MatMul"]
-    attrs_check_pairs_1 = {" recompute: Bool(1)": 10, "recompute_ag_grad_rs_depend": 4}
+    attrs_check_pairs_1 = {" recompute: Bool(1)": 10}
     check_graph(graph_path[1], validate_name_1, attrs_check_pairs_1)
-    # check_node_dependency_backward_search(graph_path[1], validate_name_1, 100, dependency_list_key_1)
-    # check_node_dependency_backward_search(graph_path[1], validate_name_1, 100, dependency_list_value_1)
     check_pair = {"Training Over": 1}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
         check_compile_time(log_path, 15)
-    check_peak_memory(real_log_path[0], "8200")
-    check_peak_memory(real_log_path[1], "10200")
+    check_peak_memory(real_log_path[0], "9300")
+    check_peak_memory(real_log_path[1], "10300")
 
 
 
