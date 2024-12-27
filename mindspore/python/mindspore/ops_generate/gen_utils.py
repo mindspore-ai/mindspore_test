@@ -21,6 +21,7 @@ import hashlib
 import pathlib
 import re
 import stat
+import logging
 import yaml
 
 
@@ -215,17 +216,17 @@ def get_op_description(operator_name, doc_dict):
                      f"    \n" \
                      f"    \"\"\"\n"
     if doc_dict is None:
-        print(f"Description is None, op_name: {operator_name}")
+        logging.info("Description is None, op_name: %s", operator_name)
         return op_description
 
     description = doc_dict.get(operator_name)
     if description is None:
-        print(f"Description is None, op_name: {operator_name}")
+        logging.info("Description is None, op_name: %s", operator_name)
         return op_description
 
     description = description.get("description")
     if description is None:
-        print(f"Description is None, op_name: {operator_name}")
+        logging.info("Description is None, op_name: %s", operator_name)
         return op_description
 
     op_description = f"    r\"\"\"\n" \
