@@ -20,6 +20,7 @@ from mindspore import _checkparam as Validator
 from mindspore.device_manager import _check_runtime_conf_env_valid
 from mindspore._checkparam import args_type_check
 
+
 @args_type_check(num=int)
 def threads_num(num):
     """
