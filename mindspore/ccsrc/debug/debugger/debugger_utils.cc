@@ -147,6 +147,13 @@ uint32_t GetSampleNum() {
   return DumpJsonParser::GetInstance().sample_num();
 }
 
+size_t ModifySize(const TypeId &host_type, const size_t &host_size) {
+  if (host_type == kNumberTypeInt4) {
+    return host_size / 2;
+  }
+  return host_size;
+}
+
 inline TypeId GetInputKernelType(const AnfNodePtr &input_kernel, bool trans_flag) {
   auto device_type = AnfAlgo::GetOutputDeviceDataType(input_kernel, kParameterOutputIndex);
   auto host_type = common::AnfAlgo::GetOutputInferDataType(input_kernel, kParameterOutputIndex);
@@ -500,9 +507,8 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       std::string file_path = tensor_info_comm.file_path_prefix + '.' + std::to_string(timestamp) + '.' +
                               tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format +
                               "." + type_str;
-
       auto host_shape = tensor_info.host_shape;
-      if (host_type == kNumberTypeInt4) {
+      if (host_type == kNumberTypeInt4 && !GetSampleNum()) {
         host_shape.back() *= 2;
       }
       mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
@@ -516,10 +522,8 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
         MS_LOG(WARNING) << "Dump tensor size is 0 for tensor: " << file_name << ". Skip it";
         continue;
       }
+      host_size = ModifySize(host_type, host_size);
       size_t device_size = tensor_info.device_size;
-      if (host_type == kNumberTypeInt4) {
-        host_size /= 2;
-      }
       if (host_size > device_size) {
         MS_LOG(ERROR) << "Dump host size " << host_size << " greater than device size " << device_size;
         continue;
