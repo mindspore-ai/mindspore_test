@@ -12,3 +12,6 @@ mindspore.device_context.ascend.op_tuning.aoe_tune_mode
 
           - ``"online"``: 启动在线调优。
           - ``"offline"``: 为离线调优保存GE图。
+
+    支持平台：
+        ``Ascend``

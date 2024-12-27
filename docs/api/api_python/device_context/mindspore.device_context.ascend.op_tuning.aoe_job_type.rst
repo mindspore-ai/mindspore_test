@@ -12,3 +12,6 @@ mindspore.device_context.ascend.op_tuning.aoe_job_type
 
           - ``"1"``: 设置为子图调优。
           - ``"2"``: 设置为算子调优。
+
+    支持平台：
+        ``Ascend``

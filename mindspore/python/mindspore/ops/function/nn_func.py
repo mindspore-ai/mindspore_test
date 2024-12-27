@@ -4430,7 +4430,7 @@ def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduct
         smooth_loss = masked_fill_op(smooth_loss, ignore_mask, 0)
         if reduction == "mean":
             true_mask = ~ignore_mask
-            if  weight is not None:
+            if weight is not None:
                 weight_sum = gather_ext(weight, 0, flatten_ext(masked_select(target, true_mask))).sum()
                 if weight_sum == 0:
                     ret = smooth_loss.sum()

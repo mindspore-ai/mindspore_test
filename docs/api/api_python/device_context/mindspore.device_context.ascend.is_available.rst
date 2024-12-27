@@ -7,3 +7,6 @@ mindspore.device_context.ascend.is_available
 
     返回：
         bool，Ascend设备在当前MindSpore包中是否可用。
+
+    支持平台：
+        ``Ascend``

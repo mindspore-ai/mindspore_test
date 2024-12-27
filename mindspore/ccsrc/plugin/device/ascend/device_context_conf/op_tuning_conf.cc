@@ -87,7 +87,10 @@ void RegOpTuningConf(py::module *m) {
     .def("set_aoe_job_type", &OpTuningConf::set_aoe_job_type, "Set Aoe Job Type.")
     .def("is_jit_compile_configured", &OpTuningConf::IsJitCompileConfigured, "Is Jit Compile Configured.")
     .def("is_aoe_tune_mode_configured", &OpTuningConf::IsAoeTuneModeConfigured, "Is Aoe Tune Mode Configured.")
-    .def("is_aoe_job_type_configured", &OpTuningConf::IsAoeJobTypeConfigured, "Is Aoe Job Type Configured.");
+    .def("is_aoe_job_type_configured", &OpTuningConf::IsAoeJobTypeConfigured, "Is Aoe Job Type Configured.")
+    .def("jit_compile", &OpTuningConf::jit_compile, "Get Jit Compile.")
+    .def("aoe_job_type", &OpTuningConf::aoe_job_type, "Get Aoe Tune Mode.")
+    .def("aoe_tune_mode", &OpTuningConf::aoe_tune_mode, "Get Aoe Job Type.");
 }
 }  // namespace ascend
 }  // namespace device

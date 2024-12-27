@@ -14,14 +14,13 @@
 # ============================================================================
 import pytest
 import numpy as np
-
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
-ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
 @test_utils.run_with_cell
 def sinh_forward_func(x):
@@ -44,6 +43,8 @@ def test_sinh_forward(mode):
     Expectation: output the right result.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([0.62, 0.28, 0.43, 0.62]).astype(np.float32))
     output = sinh_forward_func(x)
     expect_output = np.asarray([0.6604918, 0.28367308, 0.44337422, 0.6604918]).astype(np.float32)
@@ -61,6 +62,8 @@ def test_sinh_backward(mode):
     Expectation: output the right grad.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([0.62, 0.28, 0.43, 0.62]).astype(np.float32))
     output = sinh_backward_func(x)
     expect_output = np.asarray([1.1984363, 1.0394568, 1.0938833, 1.1984363]).astype(np.float32)
@@ -78,6 +81,8 @@ def test_sinh_vmap(mode):
     Expectation: expect right result.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([[[0.62, 0.28, 0.43, 0.62]]]).astype(np.float32))
     nest_vmap = ops.vmap(ops.vmap(sinh_forward_func))
     output = nest_vmap(x)
@@ -95,6 +100,8 @@ def test_sinh_dynamic(mode):
     Expectation: output the right result.
     """
     context.set_context(mode=mode)
+    set_device()
+    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     test_cell = test_utils.to_cell_obj(ops.sinh)
     test_cell.set_inputs(x_dyn)
