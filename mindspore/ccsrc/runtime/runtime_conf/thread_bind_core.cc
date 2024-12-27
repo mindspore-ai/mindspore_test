@@ -100,13 +100,13 @@ bool ThreadBindCore::parse_thread_bind_core_policy(const kBindCoreModule &module
   if (!is_enable_with_policy) {
     uint32_t local_rank_size = distributed::collective::CollectiveManager::instance()->local_rank_size();
     uint32_t local_rank_id = distributed::collective::CollectiveManager::instance()->local_rank_id();
-    int core_per_process = cpu_bind_core_policy_.size() / local_rank_size;
+    uint32_t core_per_process = cpu_bind_core_policy_.size() / local_rank_size;
     if (core_per_process < kMinimumCorePerProcess) {
       MS_LOG(WARNING)
         << "CPU can be assigned to each process is less than 7, thread bind core function is not enabled.";
       return false;
     }
-    int group_start_core_id = local_rank_id * core_per_process;
+    uint32_t group_start_core_id = local_rank_id * core_per_process;
     std::vector<int> available_core =
       std::vector<int>(cpu_bind_core_policy_.begin() + group_start_core_id,
                        cpu_bind_core_policy_.begin() + group_start_core_id + core_per_process);
