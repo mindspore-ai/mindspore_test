@@ -7,23 +7,23 @@ where:
     .. math::
         output_i = \begin{cases} input_i,\quad &if\ condition_i \\ other_i,\quad &otherwise \end{cases}
 
-    args:
-        condition (tensor[bool]): If true, yield `input`, otherwise yield `other`.
-        input (union[tensor, scalar]): When `condition` is true, values to select from.
-        other (union[tensor, scalar]): When `condition` is false, values to select from.
+    Args:
+        condition (Tensor[bool]): If true, yield `input`, otherwise yield `other`.
+        input (union[Tensor, Scalar]): When `condition` is true, values to select from.
+        other (union[Tensor, Scalar]): When `condition` is false, values to select from.
 
-    returns:
+    Returns:
         Tensor, elements are selected from `input` and `other`.
 
-    raises:
+    Raises:
         TypeError: If `condition` is not a tensor.
         TypeError: If both `input` and `other` are scalars.
-        ValueErro: If `condition`, `input` and `other` can not broadcast to each other.
+        ValueError: If `condition`, `input` and `other` can not broadcast to each other.
 
-    supported platforms:
+    Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
-    examples:
+    Examples:
         >>> import numpy as np
         >>> from mindspore import tensor, ops
         >>> from mindspore import dtype as mstype
@@ -35,9 +35,7 @@ where:
         [[0. 1.]
          [2. 1.]]
         
-    .. py:function:: where(condition) -> Tensor
-    
-    Identical to :func:`mindspore.ops.nonzero` with `as_tuple` being True.
+    .. function:: where(condition) -> Tensor
+        :noindex:
 
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+    Identical to :func:`mindspore.ops.nonzero` with `as_tuple` being True.
