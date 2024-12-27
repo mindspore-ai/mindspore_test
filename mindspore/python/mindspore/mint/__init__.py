@@ -24,7 +24,7 @@ from mindspore.mint.nn import functional
 from mindspore.mint import linalg
 from mindspore.mint import special
 from mindspore.mint import distributed
-from mindspore.ops import erf, where
+from mindspore.ops import erf
 from mindspore.ops.function.math_func import linspace_ext as linspace
 from mindspore.ops.function.math_func import median_ext as median
 from mindspore.ops.function.array_func import ones_like_ext as ones_like
@@ -45,7 +45,7 @@ from mindspore.ops.function.math_func import roll
 # 2
 from mindspore.ops.function.math_func import sin
 # 3
-from mindspore.ops.functional_overload import clamp
+from mindspore.ops.functional_overload import clamp, where
 from mindspore.ops.functional_overload import clip
 from mindspore.ops.functional_overload import fmod
 from mindspore.ops.functional_overload import max

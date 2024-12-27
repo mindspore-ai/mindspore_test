@@ -9,7 +9,7 @@ mindspore.mint.randint
         这是一个实验性API，后续可能修改或删除
 
     参数：
-        - **low** (int) - 随机区间的起始值。默认值：0。
+        - **low** (int, 可选) - 随机区间的起始值。默认值：``0`` 。
         - **high** (int) - 随机区间的结束值。
         - **size** (Union[tuple(int), list(int)]) - 新Tensor的shape，如 :math:`(2, 3)`。
 
