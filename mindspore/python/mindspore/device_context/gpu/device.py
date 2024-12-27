@@ -21,6 +21,7 @@ try:
 except ImportError:
     pass
 
+
 def device_count():
     """
     Return the number of GPUs available.
@@ -36,6 +37,7 @@ def device_count():
         raise RuntimeError(f"Device_target GPU not exist.")
 
     return gpu_get_device_count()
+
 
 def is_available():
     """

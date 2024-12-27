@@ -20,6 +20,7 @@ try:
 except ImportError:
     pass
 
+
 def conv_fprop_algo(mode):
     """
     Specifies convolution forward algorithm.
@@ -67,6 +68,7 @@ def conv_fprop_algo(mode):
             f"For 'mindspore.device_context.gpu.op_tuning.conv_fprop_algo', the argument must be in "
             f"{conv_fprop_algo_mode} but got {mode}."
         )
+
 
 def conv_wgrad_algo(mode):
     """
