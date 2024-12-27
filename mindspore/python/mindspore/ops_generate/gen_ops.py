@@ -244,7 +244,7 @@ def delete_auto_gen_files(work_path):
                 for dirname in dir_names:
                     if dirname == name.rstrip('/'):
                         folder_path = os.path.join(dir_path, dirname)
-                        print(f"Recursively deleting folder: {folder_path}")
+                        logging.info("Recursively deleting folder: %s", folder_path)
                         shutil.rmtree(folder_path)
             continue
 
@@ -252,13 +252,13 @@ def delete_auto_gen_files(work_path):
         tmp_path = os.path.join(work_path, name)
         if os.path.exists(tmp_path):
             if os.path.isdir(tmp_path):
-                print(f"Deleting folder: {tmp_path}")
+                logging.info("Deleting folder: %s", tmp_path)
                 shutil.rmtree(tmp_path)
             elif os.path.isfile(tmp_path):
-                print(f"Deleting file: {tmp_path}")
+                logging.info("Deleting file: %s", tmp_path)
                 os.remove(tmp_path)
         else:
-            print(f"The path is not exist: {tmp_path}")
+            logging.info("The path is not exist: %s", tmp_path)
 
 
 def get_auto_gen_path_from_gitignore(work_path):
