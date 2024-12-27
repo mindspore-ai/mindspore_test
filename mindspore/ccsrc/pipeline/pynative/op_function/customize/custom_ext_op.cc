@@ -22,9 +22,9 @@
 #include "pipeline/pynative/predict_out_type_map.h"
 #include "pipeline/pynative/forward/forward_task.h"
 #include "op_def/auto_generate/gen_ops_def.h"
-#include "kernel/functions/auto_grad_guard.h"
-#include "mindspore/ops/kernel/functions/base.h"
-#include "mindspore/ops/kernel/common/pyboost/auto_generate/custom_ext.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pyboost/functions/base.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/custom_ext.h"
 
 namespace mindspore::pynative {
 py::object ME_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::list &args) {

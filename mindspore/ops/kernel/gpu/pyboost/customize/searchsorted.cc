@@ -19,7 +19,7 @@
 #include <utility>
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "runtime/runtime_conf/runtime_conf.h"
-#include "mindspore/ops/kernel/common/pyboost/customize/searchsorted.h"
+#include "mindspore/ccsrc/pyboost/customize/searchsorted.h"
 
 namespace mindspore {
 namespace kernel {

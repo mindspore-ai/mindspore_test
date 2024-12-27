@@ -16,14 +16,15 @@
 
 #include "kernel/ascend/pyboost/customize/conv_transpose2d.h"
 #include <memory>
+#include <string>
 #include "ir/scalar.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/auto_generate/convolution.h"
-#include "kernel/common/pyboost/auto_generate/expand_dims.h"
-#include "kernel/common/pyboost/auto_generate/squeeze.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/convolution.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/expand_dims.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/squeeze.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

@@ -23,7 +23,7 @@
 #include <vector>
 #include "kernel/kernel.h"
 #include "runtime/hardware/device_context.h"
-#include "kernel/common/pyboost/pyboost_kernel_extra_func.h"
+#include "mindspore/ccsrc/pyboost/pyboost_kernel_extra_func.h"
 
 namespace mindspore {
 namespace kernel {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/contiguous.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/contiguous.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {

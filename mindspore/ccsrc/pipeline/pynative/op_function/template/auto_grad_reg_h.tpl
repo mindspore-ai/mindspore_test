@@ -20,7 +20,7 @@
 #include <functional>
 #include <any>
 #include <unordered_map>
-#include "mindspore/ops/kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {

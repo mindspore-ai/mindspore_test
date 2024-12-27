@@ -18,12 +18,12 @@
 #include <memory>
 #include <unordered_map>
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
 #include "kernel/common_utils.h"
-#include "kernel/common/pyboost/auto_generate/broadcast_to.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/broadcast_to.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {

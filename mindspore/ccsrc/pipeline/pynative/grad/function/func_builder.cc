@@ -23,14 +23,14 @@
 #include <utility>
 #include <vector>
 #include <set>
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "utils/core_op_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
 #include "frontend/operator/cc_implementations.h"
-#include "kernel/common/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pipeline/pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"
 
 namespace mindspore::pynative::autograd {

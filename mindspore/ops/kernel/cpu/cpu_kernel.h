@@ -317,7 +317,7 @@ class TransposeIterator {
   size_t pos_{0};
 };
 
-ActorThreadPool *GetActorMgrInnerThreadPool();
+BACKEND_EXPORT ActorThreadPool *GetActorMgrInnerThreadPool();
 void ParallelLaunch(const CTask &task, size_t count, float block_size = 128.0, Content content = nullptr,
                     ThreadPool *pool = nullptr);
 void ParallelLaunch(const std::vector<common::Task> &tasks, Content content = nullptr, ThreadPool *pool = nullptr);

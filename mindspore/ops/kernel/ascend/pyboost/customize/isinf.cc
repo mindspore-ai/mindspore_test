@@ -18,8 +18,8 @@
 
 #include "kernel/ascend/pyboost/customize/isinf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "kernel/common/pyboost/auto_generate/abs.h"
-#include "kernel/common/pyboost/auto_generate/equal.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/abs.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/equal.h"
 
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"

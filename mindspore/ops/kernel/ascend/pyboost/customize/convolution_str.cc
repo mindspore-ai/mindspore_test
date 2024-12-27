@@ -18,7 +18,7 @@
 #include <memory>
 #include "kernel/ascend/pyboost/auto_generate/constant_pad_nd.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {

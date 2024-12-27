@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/pyboost/customize/reshape.h"
-#include "kernel/common/pyboost/customize/reshape.h"
+#include "mindspore/ccsrc/pyboost/customize/reshape.h"
 
 namespace mindspore {
 namespace kernel {

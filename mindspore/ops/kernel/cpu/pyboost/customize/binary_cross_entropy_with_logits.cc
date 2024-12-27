@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/binary_cross_entropy_with_logits.h"
-#include "kernel/cpu/pyboost/auto_generate/cast.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/binary_cross_entropy_with_logits.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {

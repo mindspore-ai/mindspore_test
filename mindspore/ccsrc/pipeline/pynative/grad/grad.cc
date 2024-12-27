@@ -42,12 +42,14 @@
 #include "pipeline/jit/ps/pass.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "frontend/optimizer/fallback_rewriter.h"
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 #include "runtime/pynative/op_executor.h"
 #include "pipeline/pynative/grad/custom_function.h"
 #include "availability/silent_check/silent_check.h"
 #include "utils/log_adapter.h"
-#include "runtime/pynative/op_function/value_converter.h"
+#include "backend/graph_compiler/backend.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 
 namespace mindspore {
 namespace pynative {
@@ -518,6 +520,16 @@ void GradExecutor::Init() {
 #endif
   init_ = true;
   config_no_graph_ = (common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE") != "1");
+
+  compile::PyBoostAdapter::SetIsPyBoostRegistered([](const std::string &device_target, const std::string &op_name) {
+    return runtime::PyBoostOpExecute::GetInstance().IsPyBoostOpRegistered(op_name) &&
+           (kernel::pyboost::PyBoostUtils::IsKernelModRegistered(device_target, op_name) ||
+            kernel::pyboost::PyBoostUtils::IsPyBoostCustomRegistered(device_target, op_name));
+  });
+
+  compile::PyBoostAdapter::SetRunPyBoostCallFunc([](runtime::OpRunnerInfo *op_runner_info, VectorRef *op_outputs) {
+    runtime::PyBoostOpExecute::GetInstance().RunPyBoostCall(op_runner_info, op_outputs);
+  });
 }
 
 TopCellInfoPtr GradExecutor::PopTopCellStack() {

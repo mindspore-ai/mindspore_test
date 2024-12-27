@@ -19,7 +19,7 @@
 
 #include <string>
 #include <memory>
-#include "kernel/common/pyboost/comm_handle.h"
+#include "mindspore/ccsrc/pyboost/comm_handle.h"
 
 namespace mindspore {
 namespace hal {

@@ -45,6 +45,13 @@ class BACKEND_EXPORT ViewBackend {
                             bool is_cpu_address_exist) const;
 
   static void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info);
+
+  using ContiguousFunc = std::function<void(const BackendOpRunInfoPtr &)>;
+
+  static void SetContiguousFunc(const ContiguousFunc &contiguous_func) { contiguous_func_ = contiguous_func; }
+
+ private:
+  inline static ContiguousFunc contiguous_func_;
 };
 
 class BACKEND_EXPORT PostRunOp {

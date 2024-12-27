@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/new_ones.h"
-#include "kernel/cpu/pyboost/auto_generate/ones.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/new_ones.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/ones.h"
 
 namespace mindspore {
 namespace kernel {

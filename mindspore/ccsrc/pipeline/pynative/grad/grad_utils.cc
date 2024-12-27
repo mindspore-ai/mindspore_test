@@ -38,11 +38,11 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "include/common/pynative/abstract_converter.h"
-#include "mindspore/ops/kernel/common/pyboost/auto_generate/clone.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/clone.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "mindspore/ops/kernel/functions/auto_generate/functions.h"
-#include "mindspore/ops/kernel/functions/auto_grad_guard.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace pynative {

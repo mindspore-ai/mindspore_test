@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/concat.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/concat.h"
 
 #include <vector>
 #include "ir/scalar.h"
 #include "ir/value.h"
 #include "ir/tensor.h"
 #include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 

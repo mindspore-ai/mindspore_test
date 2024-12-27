@@ -44,7 +44,7 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
     def __init__(self):
         super().__init__()
         self.pyboost_func_include_header_template = Template(
-            f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
+            f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n')
         self.GEN_OPS_DEF_HEADER_TEMPLATE = template.GEN_OPS_DEF_HEADER_TEMPLATE
         self.contiguous_template = Template(
             "convert_$arg_name = runtime::ValueConverter::ContiguousTensorValue($device_target, convert_$arg_name);\n")
@@ -101,7 +101,7 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
             template.PYBOOST_GRAD_HEADER_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
                                                           function_body=pyboost_func_str,
                                                           register_function_body=register_func_str)
-        save_path = os.path.join(work_path, K.RUNTIME_PYBOOST_FUNC_GEN_PATH)
+        save_path = os.path.join(work_path, K.PYBOOST_GRAD_FUNC_GEN_PATH)
         file_name = "pyboost_grad_functions.cc"
         save_file(save_path, file_name, pyboost_func_file)
 

@@ -183,10 +183,10 @@ TENSOR_FUNC_CLASS_REG = Template.load_from_file(
 
 
 PYBOOST_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
-    os.path.join(WORK_PATH, './mindspore/ccsrc/runtime/pynative/op_function/template/pyboost_grad_function.tpl'))
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_grad_function.tpl'))
 
 PYBOOST_GRAD_HEADER_TEMPLATE = Template.load_from_file(
-    os.path.join(WORK_PATH, './mindspore/ccsrc/runtime/pynative/op_function/template/pyboost_grad_function_header.tpl'))
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pyboost/grad_functions/template/pyboost_grad_function_header.tpl'))
 
 PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/grad/function/template/native_grad_function.tpl'))
@@ -203,10 +203,10 @@ GEN_OPS_DEF_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/python/mindspore/ops_generate/gen_ops_def_header.tpl'))
 
 PYBOOST_BASE_OP_DEFINE_TEMPLATE = Template.load_from_file(
-    os.path.join(WORK_PATH, f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_op_header.tpl'))
+    os.path.join(WORK_PATH, f'./{K.MS_PYBOOST_BASE_PATH}/template/pyboost_op_header.tpl'))
 
 PYBOOST_OP_REGISTER_TEMPLATE = Template.load_from_file(
-    os.path.join(WORK_PATH, f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_op_register.tpl'))
+    os.path.join(WORK_PATH, f'./{K.MS_PYBOOST_BASE_PATH}/template/pyboost_op_register.tpl'))
 
 # Ascend op generate
 PYBOOST_ASCEND_OP_HEADER_TEMPLATE = Template.load_from_file(
@@ -231,7 +231,7 @@ PYBOOST_ASCEND_CALL_TEMPLATE = Template.load_from_file(
 
 PYBOOST_ASCEND_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
-                 f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/'
+                 f'./{K.MS_PYBOOST_BASE_PATH}/template/'
                  'pyboost_view_template.tpl'))
 
 PYBOOST_ASCEND_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
@@ -262,7 +262,7 @@ PYBOOST_GPU_CALL_TEMPLATE = Template.load_from_file(
 
 PYBOOST_GPU_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
-                 f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_view_template.tpl'))
+                 f'./{K.MS_PYBOOST_BASE_PATH}/template/pyboost_view_template.tpl'))
 
 PYBOOST_GPU_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
@@ -292,7 +292,7 @@ PYBOOST_CPU_CALL_TEMPLATE = Template.load_from_file(
 
 PYBOOST_CPU_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
-                 f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_view_template.tpl'))
+                 f'./{K.MS_PYBOOST_BASE_PATH}/template/pyboost_view_template.tpl'))
 
 PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,

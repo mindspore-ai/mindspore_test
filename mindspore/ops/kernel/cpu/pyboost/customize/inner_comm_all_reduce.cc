@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/cpu/pyboost/customize/inner_comm_all_reduce.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/inner_comm_all_reduce.h"
 #include <memory>
 #include <utility>
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {

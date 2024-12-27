@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/unique_consecutive.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/unique_consecutive.h"
 
 #include "ir/scalar.h"
 #include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/pipeline/pipeline.h"
 

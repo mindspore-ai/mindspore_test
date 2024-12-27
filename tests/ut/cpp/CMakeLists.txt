@@ -279,7 +279,7 @@ endforeach()
 include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
-target_link_libraries(_ut_obj_static PRIVATE mindspore_backend)
+target_link_libraries(_ut_obj_static PRIVATE mindspore_backend mindspore_pyboost)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
     # ci envs have no enough memory, so make link target sequentially

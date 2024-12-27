@@ -70,7 +70,7 @@ class AutoGradRegHeaderGenerator(BaseGenerator):
                                                                    op_grad_func=op_grad_func_list,
                                                                    op_grad_func_obj=op_grad_func_obj_list)
 
-        save_path = os.path.join(work_path, K.MS_OPS_KERNEL_FUNCTIONS_AUTO_GEN_PATH)
+        save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "auto_grad_op_reg.h"
         save_file(save_path, file_name, pyboost_func_h_str)
 

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/searchsorted.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/searchsorted.h"
 #include <memory>
 #include <utility>
-#include "mindspore/ops/kernel/common/pyboost/customize/searchsorted.h"
+#include "mindspore/ccsrc/pyboost/customize/searchsorted.h"
 
 namespace mindspore {
 namespace kernel {
