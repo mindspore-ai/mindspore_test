@@ -36,5 +36,5 @@ histc:
         >>> from mindspore import Tensor
         >>> input = Tensor(np.array([1., 2., 1.]), mindspore.float32)
         >>> output = input.histc(bins=4, min=0, max=3)
-        >>> print(y)
+        >>> print(output)
         [0. 2. 1. 0.]
