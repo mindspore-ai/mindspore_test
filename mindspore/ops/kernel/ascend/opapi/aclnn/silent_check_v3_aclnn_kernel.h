@@ -15,6 +15,7 @@
  */
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SILENT_CHECK_V3_ACLNN_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SILENT_CHECK_V3_ACLNN_KERNEL_MOD_H_
+#include <cstdint>
 #include <vector>
 #include <utility>
 #include <string>
@@ -28,7 +29,7 @@ namespace kernel {
 
 class SilentCheckV3Ascend : public AclnnKernelMod {
  public:
-  SilentCheckV3Ascend() : AclnnKernelMod(std::move("aclnnSilentCheckV3")) {}
+  SilentCheckV3Ascend() : AclnnKernelMod(std::move("aclnnSilentCheckV2")) {}
   ~SilentCheckV3Ascend() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
@@ -36,13 +37,17 @@ class SilentCheckV3Ascend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnSilentCheckV3, SilentCheckV3)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnSilentCheckV2, SilentCheckV3)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceCopy, InputGradCopy)
 
   pyfloat c_thresh_l1_{1000000.};
   pyfloat c_thresh_l2_{10000.};
   pyfloat beta1_{0.};
   int64_t npu_asd_detect_{1};
+
+  std::vector<int64_t> dst_size_;
+  std::vector<int64_t> dst_stride_;
+  std::vector<int64_t> dst_offset_;
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -18,6 +18,7 @@
 #include <cassert>
 #include <memory>
 #include <vector>
+#include "mindapi/base/shape_vector.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -28,12 +29,10 @@ namespace kernel {
 namespace pyboost {
 std::vector<tensor::BaseTensorPtr> SilentCheckV3AscendCustomize(
   const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &val, const BaseTensorPtr &max, const BaseTensorPtr &avg,
-  const BaseTensorPtr &input_grad, const BaseTensorPtr &step, const BaseTensorPtr &dst_size,
-  const BaseTensorPtr &dst_stride, const BaseTensorPtr &dst_offset, const FloatImmPtr &c_thresh_l1,
+  const BaseTensorPtr &input_grad, const BaseTensorPtr &step, const FloatImmPtr &c_thresh_l1,
   const FloatImmPtr &c_thresh_l2, const FloatImmPtr &beta1, const Int64ImmPtr &npu_asd_detect) {
   MS_LOG(INFO) << op->primitive()->name() << "Call start";
-  OpRunner::InferOpOutput(op, val, max, avg, input_grad, step, dst_size, dst_stride, dst_offset, c_thresh_l1,
-                          c_thresh_l2, beta1, npu_asd_detect);
+  OpRunner::InferOpOutput(op, val, max, avg, input_grad, step, c_thresh_l1, c_thresh_l2, beta1, npu_asd_detect);
 
   auto c_thresh_l1_value = GetValue<pyfloat>(c_thresh_l1);
   auto c_thresh_l2_value = GetValue<pyfloat>(c_thresh_l2);
@@ -41,24 +40,21 @@ std::vector<tensor::BaseTensorPtr> SilentCheckV3AscendCustomize(
   auto npu_asd_detect_value = GetValue<int64_t>(npu_asd_detect);
 
   op->set_outputs(std::vector<tensor::BaseTensorPtr>{avg, input_grad, step, op->output(kIndex3)});
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, max, avg, input_grad, step, dst_size,
-                                dst_stride, dst_offset);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, max, avg, input_grad, step);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(),
                                  std::vector<BaseTensorPtr>{op->output(kIndex3)});
 
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, val, max, avg, input_grad, step, dst_size, dst_stride, dst_offset, c_thresh_l1_value, c_thresh_l2_value,
-     beta1_value, npu_asd_detect_value]() {
+    [op, val, max, avg, input_grad, step, c_thresh_l1_value, c_thresh_l2_value, beta1_value, npu_asd_detect_value]() {
       auto device_context = op->device_context();
       // Malloc for input tensors
-      PyBoostUtils::MallocOpInputs(op->device_context(), val, max, avg, input_grad, step, dst_size, dst_stride,
-                                   dst_offset);
+      PyBoostUtils::MallocOpInputs(op->device_context(), val, max, avg, input_grad, step);
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(op->device_context(), std::vector<BaseTensorPtr>{op->output(kIndex3)});
-      LAUNCH_ACLNN(aclnnSilentCheckV3, device_context, op->stream_id(), val, max, avg, input_grad, step, dst_size,
-                   dst_stride, dst_offset, c_thresh_l1_value, c_thresh_l2_value, beta1_value, npu_asd_detect_value,
-                   op->output(kIndex3));
+      LAUNCH_ACLNN(aclnnSilentCheckV2, device_context, op->stream_id(), val, max, avg, input_grad, step,
+                   input_grad->shape_c(), input_grad->stride(), ShapeVector({input_grad->storage_offset()}),
+                   c_thresh_l1_value, c_thresh_l2_value, beta1_value, npu_asd_detect_value, op->output(kIndex3));
     }));
 
   MS_LOG(INFO) << op->primitive()->name() << " Launch end";
