@@ -35,10 +35,6 @@ class ParallelPreprocessor {
   void Process();
 
   static void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes);
-  static std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, bool *next_is_reshape,
-                                                      mindspore::HashSet<AnfNodePtr> *visit, int make_tuple_index,
-                                                      int tuple_get_index,
-                                                      const std::shared_ptr<TensorLayout> &pre_layout);
   static void ReshapeInit(const std::vector<AnfNodePtr> &all_nodes);
   static void HandleRootReshapeAndSaveStrategy(const std::vector<AnfNodePtr> &all_nodes);
   static void HandleForwardMakeTupleAndMakeList(const std::vector<AnfNodePtr> &all_nodes);
