@@ -38,7 +38,6 @@ from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, \
     unique_consecutive_impl
-from mindspore.ops.functional_overload import where
 from mindspore.ops.operations.array_ops import (
     MatrixDiagV3,
     MatrixDiagPartV3,
@@ -488,6 +487,44 @@ def hamming_window(window_length, periodic=True, alpha=0.54, beta=0.46, *, dtype
     length = Tensor(np.array([window_length]).astype(np.int32))
     out = op(length)
     return out
+
+
+def where(condition, input, other):
+    r"""
+    Selects elements from `input` or `other` based on `condition` and returns a tensor.
+
+    .. math::
+        output_i = \begin{cases} input_i,\quad &if\ condition_i \\ other_i,\quad &otherwise \end{cases}
+
+    Args:
+        condition (Tensor[bool]): If True, yield `input`, otherwise yield `other`.
+        input (Union[Tensor, Scalar]): When `condition` is True, values to select from.
+        other (Union[Tensor, Scalar]): When `condition` is False, values to select from.
+
+    Returns:
+        Tensor, elements are selected from `input` and `other`.
+
+    Raises:
+        TypeError: If `condition` is not a Tensor.
+        TypeError: If both `input` and `other` are scalars.
+        ValueError: If `condition`, `input` and `other` can not broadcast to each other.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> from mindspore import dtype as mstype
+        >>> a = Tensor(np.arange(4).reshape((2, 2)), mstype.float32)
+        >>> b = Tensor(np.ones((2, 2)), mstype.float32)
+        >>> condition = a < 3
+        >>> output = ops.where(condition, a, b)
+        >>> print(output)
+        [[0. 1.]
+         [2. 1.]]
+    """
+    return tensor_select_(condition, input, other)
 
 
 def reverse(x, axis):
