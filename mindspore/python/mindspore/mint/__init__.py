@@ -532,7 +532,7 @@ def any(input, dim=None, keepdim=False):
         input (Tensor): Input Tensor, has the shape :math:`(N, *)` where :math:`*` means,
             any number of additional dimensions.
         dim (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce.
-            Suppose the rank of `input` is r, `dim` must be in the range [-rank(input), rank(input)).
+            Suppose the rank of `input` is r, `dim` must be in the range [-r,r).
             Default: ``None`` , all dimensions are reduced.
         keepdim (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default : ``False`` .
@@ -544,7 +544,7 @@ def any(input, dim=None, keepdim=False):
           the output is a 0-D Tensor representing the "logical OR" of all elements in the input Tensor.
         - If `dim` is int, such as 2, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If `dim` is tuple(int), such as (2, 3), and `keepdim` is ``False`` ,
+        - If `dim` is tuple(int) or list(int), such as (2, 3), and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
         - If `dim` is 1-D Tensor, such as [2, 3], and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
@@ -630,7 +630,7 @@ def all(input, dim=None, keepdim=False):
 
         - If `dim` is int, such as 2, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If `dim` is tuple(int), such as (2, 3), and `keepdim` is ``False`` ,
+        - If `dim` is tuple(int) or list(int), such as (2, 3), and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
         - If `dim` is 1-D Tensor, such as [2, 3], and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.

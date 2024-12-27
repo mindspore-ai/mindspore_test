@@ -11,10 +11,10 @@ mindspore.mint.unique
 
     参数：
         - **input** (Tensor) - 输入Tensor。
-        - **sorted** (bool) - 输出是否需要进行升序排序。默认值： ``True`` 。
-        - **return_inverse** (bool) - 是否输出 `input` 在 `output` 上对应的index。默认值： ``False`` 。
-        - **return_counts** (bool) - 是否输出 `output` 中元素的数量。默认值： ``False`` 。
-        - **dim** (int) - 做去重操作的维度，当设置为 ``None`` 的时候，对展开的输入做去重操作, 否则，将给定维度的Tensor视为一个元素去做去重操作。默认值：``None`` 。
+        - **sorted** (bool，可选) - 输出是否需要进行升序排序。默认值： ``True`` 。
+        - **return_inverse** (bool，可选) - 是否输出 `input` 在 `output` 上对应的index。默认值： ``False`` 。
+        - **return_counts** (bool，可选) - 是否输出 `output` 中元素的数量。默认值： ``False`` 。
+        - **dim** (int，可选) - 做去重操作的维度，当设置为 ``None`` 的时候，对展开的输入做去重操作, 否则，将给定维度的Tensor视为一个元素去做去重操作。默认值：``None`` 。
 
     返回：
         输出为一个Tensor，或者以下一个或几个Tensor的集合：（`output`，`inverse_indeices`，`counts`）

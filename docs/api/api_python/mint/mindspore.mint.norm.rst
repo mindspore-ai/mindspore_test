@@ -22,7 +22,7 @@ mindspore.mint.norm
         - **input** (Tensor) - shape为 :math:`(*)` 或者 :math:`(*, m, n)` 的Tensor，其中*是零个或多个batch维度。
         - **p** (Union[bool, int, float, inf, -inf, 'fro', 'nuc'], 可选) - norm的模式。行为参考上表。默认值： ``'fro'`` 。
         - **dim** (Union[int, List(int), Tuple(int)], 可选) - 计算向量范数或矩阵范数的维度。默认值： ``None`` 。
-        - **keepdim** (bool) - 输出Tensor是否保留原有的维度。默认值： ``False`` 。
+        - **keepdim** (bool, 可选) - 输出Tensor是否保留原有的维度。默认值： ``False`` 。
 
     关键字参数：
         - **dtype** (:class:`mindspore.dtype`, 可选) - 如果设置此参数，则会在执行之前将 `input` 转换为指定的类型，返回的Tensor类型也将为指定类型 `dtype`。默认值： ``None`` 。
