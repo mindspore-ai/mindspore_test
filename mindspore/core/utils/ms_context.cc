@@ -757,10 +757,6 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 }
 
 bool MsContext::IsEnableInferBoost() {
-  if (enable_infer_boost_.has_value()) {
-    return enable_infer_boost_.value();
-  }
-
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
   auto iter = jit_config.find("infer_boost");
   if (iter != jit_config.end() && iter->second == "on") {
