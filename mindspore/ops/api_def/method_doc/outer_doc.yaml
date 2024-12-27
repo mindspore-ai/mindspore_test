@@ -24,7 +24,7 @@ outer:
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([7, 8, 9]), mindspore.int32)
+        >>> x = Tensor(np.array([7, 8, 9]), mindspore.int32)
         >>> vec2 = Tensor(np.array([7, 10, 11]), mindspore.int32)
         >>> out = x.outer(vec2)
         >>> print(out)
