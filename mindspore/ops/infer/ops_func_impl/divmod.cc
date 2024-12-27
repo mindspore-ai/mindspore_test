@@ -41,7 +41,6 @@ TypePtr DivModFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
   auto y_dtype = input_args[kIndex1]->GetType();
 
   auto mode = input_args[kIndex2]->GetValue();
-
   if (mode != mindspore::kNone) {
     return x_dtype;
   } else {
