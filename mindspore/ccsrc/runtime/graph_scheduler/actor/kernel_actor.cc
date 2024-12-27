@@ -84,12 +84,8 @@ void KernelActor::Init() {
   is_dynamic_type_ = common::AnfAlgo::IsAnyTypeOutput(kernel_);
   has_dynamic_ = is_dynamic_shape_ || is_dynamic_type_ || is_dynamic_value_;
   bool is_value_dyn = (is_dynamic_value_ && (is_dynamic_shape_ || is_dynamic_type_));
-  static std::set<std::string> no_dyn_need_update_ops = {kDynamicGetNextV2OpName, kDynamicGetNextAscendOpName,
-                                                         kReceiveOpName};
-  bool is_compute_dyn = kernel_mod_->IsNeedUpdateOutputShapeAndSize() &&
-                        no_dyn_need_update_ops.find(kernel_mod_->kernel_name()) == no_dyn_need_update_ops.end();
-
-  if (is_value_dyn || is_compute_dyn) {
+  if (is_value_dyn || (kernel_mod_->IsNeedUpdateOutputShapeAndSize() &&
+                       no_dyn_need_update_ops.find(kernel_mod_->kernel_name()) == no_dyn_need_update_ops.end())) {
     CheckDryRun(kernel_);
   }
 
