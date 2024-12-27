@@ -762,13 +762,13 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         aiturbo.save_ckpt(ckpt_name, global_step_num, data_list_np, crc_check)
     elif async_save:
         if async_save == "process":
-            _wait_async_process_save_ckpt()
-            ctx = mp.get_context("fork")
             if sys.platform.startswith("win"):
                 logger.warining("The Win platform currently does not support asynchronous process saving of ckpt, "
                                 "so serial saving of ckpt is used now.")
                 _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
             else:
+                _wait_async_process_save_ckpt()
+                ctx = mp.get_context("fork")
                 cond = ctx.Condition()
                 process_flag = True
                 while process_flag:
