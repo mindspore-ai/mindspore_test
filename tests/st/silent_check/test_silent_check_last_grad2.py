@@ -49,7 +49,7 @@ def test_silent_check_grad_of_all(mode):
     assert grads[0][0].asnumpy().shape == (32, 2048)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", ["pyboost"])
 def test_avg_pool_grad(mode):
     """
@@ -79,7 +79,7 @@ def test_avg_pool_grad(mode):
     assert len(grads) == 1
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_mutable():
     """
     Feature: Test silent check for mutalbe input

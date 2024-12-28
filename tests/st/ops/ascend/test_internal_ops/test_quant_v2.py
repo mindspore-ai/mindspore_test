@@ -95,7 +95,7 @@ def run(shape, shape1, is_dyn=False, in_dtype=np.float16):
             net.golden_compare(res.asnumpy(), golden)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize("is_dynamic", [False])
