@@ -537,7 +537,7 @@ Status MatMul::CheckNDTPInputLayout(const TensorLayout &a_in_layout, const Tenso
     }
     if (ndtp_reduce_scatter_axis_ == -1) {
       // if ndtp_reduce_scatter_axis is not set, set it to the last axis of the output tensor for 2DTP.
-      ndtp_reduce_scatter_axis_ = a_in_layout.tensor_shape_before().array().size() - kIndex1;
+      ndtp_reduce_scatter_axis_ = SizeToLong(a_in_layout.tensor_shape_before().array().size() - kIndex1);
     }
     MS_LOG(INFO) << "2D TP inputLayout check pass, it is activated.";
     return SUCCESS;
@@ -578,7 +578,7 @@ Status MatMul::Check3DTPInputLayout(const TensorLayout &a_in_layout, const Tenso
   three_d_tp_ = true;
   if (ndtp_reduce_scatter_axis_ == -1) {
     // if ndtp_reduce_scatter_axis is not set, set it to the second last axis of the output tensor for 3DTP.
-    ndtp_reduce_scatter_axis_ = a_in_layout.tensor_shape_before().array().size() - kIndex2;
+    ndtp_reduce_scatter_axis_ = SizeToLong(a_in_layout.tensor_shape_before().array().size() - kIndex2);
   }
   MS_LOG(INFO) << "3D TP inputLayout check pass, it is activated.";
   return SUCCESS;
