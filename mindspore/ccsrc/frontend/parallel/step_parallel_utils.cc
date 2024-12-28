@@ -2899,7 +2899,8 @@ static bool IsCohesiveNode(const CNodePtr &cnode) {
          IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimAllGather) ||
          IsPrimitiveCNode(cnode, prim::kPrimMiniStepAllGather) || IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) ||
          IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather) || IsPrimitiveCNode(cnode, prim::kPrimMirror) ||
-         IsPrimitiveCNode(cnode, prim::kPrimMirrorMiniStep) || IsPrimitiveCNode(cnode, prim::kPrimVirtualDiv);
+         IsPrimitiveCNode(cnode, prim::kPrimMirrorMiniStep) || IsPrimitiveCNode(cnode, prim::kPrimVirtualDiv) ||
+         IsPrimitiveCNode(cnode, prim::kPrimInsertGradientOf);
 }
 
 ParameterMap NodeParameterName(const CNodePtr &node, int64_t index, size_t curr_depth) {
