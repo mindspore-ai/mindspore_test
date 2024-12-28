@@ -2339,10 +2339,10 @@ SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &kernel_graph,
       while (getline(s, field, ',')) {
         fields.push_back(field);
       }
-      if (fields[0] == "short_name") {
+      if (fields[kIndex0] == "short_name") {
         continue;
       }
-      profiling_map[fields[1]] = stoi(fields[2]);
+      profiling_map[fields[kIndex1]] = stoi(fields[kIndex2]);
     }
   }
 
@@ -2638,6 +2638,7 @@ void UpdateExecutionOrder(const KernelGraphPtr &kernel_graph, const SchedulingOu
             [](Interval x, Interval y) { return x.start < y.start || (x.start == y.start && x.end < y.end); });
   std::vector<CNodePtr> new_order;
   new_order.push_back(task_times[0].task->cnode());
+  constexpr size_t kNumber2 = 2;
   for (size_t j = 1; j < task_times.size();) {
     if (j == task_times.size() - 1) {
       new_order.push_back(task_times[j].task->cnode());
@@ -2666,7 +2667,7 @@ void UpdateExecutionOrder(const KernelGraphPtr &kernel_graph, const SchedulingOu
         new_order.push_back(task_times[j].task->cnode());
         new_order.push_back(task_times[j + 1].task->cnode());
       }
-      j = j + 2;
+      j = j + kNumber2;
     }
   }
   kernel_graph->set_execution_order(new_order);
