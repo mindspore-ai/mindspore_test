@@ -31,4 +31,4 @@ mindspore.mint.nansum
         - **TypeError** - `input` 不是一个Tensor。
         - **TypeError** - `keepdim` 不是bool类型。
         - **TypeError** - `input` 的数据类型或 `dtype` 是complex类型。
-        - **ValueError** - `dim` 不在[-rank(`input`), rank(`input`))。
+        - **ValueError** - `dim` 不在[-rank(input), rank(input))。

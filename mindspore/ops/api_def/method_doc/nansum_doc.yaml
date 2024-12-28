@@ -12,7 +12,7 @@ nansum:
     Args:
         dim (Union[int, tuple(int)], optional): The dimensions to sum.
             Dim must be in the range [-rank(self), rank(self)). Default: ``None``, which indicates the sum of all elements in a tensor.
-        keepdim (bool, optional): Whether the output Tensor keeps dimensions or not. Default: ``False``, indicating the output Tensor doesn't keep dimensions.
+        keepdim (bool, optional): Whether the output Tensor keeps dimensions or not. Default: ``False``, indicating that no dimension is kept.
 
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): The dtype of output Tensor. Default: ``None``.
@@ -30,7 +30,7 @@ nansum:
     Raises:
         TypeError: If `keepdim` is not a bool.
         TypeError: If the dtype of `self` or `dtype` is complex type.
-        ValueError: If `dim` not in [-rank(self), rank(self)).
+        ValueError: If `dim` is not in [-rank(self), rank(self)).
 
     Supported Platforms:
         ``Ascend``
