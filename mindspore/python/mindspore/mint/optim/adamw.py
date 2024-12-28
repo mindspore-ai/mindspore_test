@@ -71,22 +71,22 @@ class AdamW(Optimizer):
             &\textbf{initialize} : m_0 \leftarrow 0 \text{ (first moment)}, v_0 \leftarrow 0
                 \text{ ( second moment)}, \: \widehat{v_0}^{max}\leftarrow 0              \\[-1.ex]
             &\textbf{for} \: t=1 \: \textbf{to} \: \ldots \: \textbf{do}                         \\
-            &\hspace{5mm}\textbf{if} \: \textit{maximize}:                                       \\
-            &\hspace{10mm}g_t           \leftarrow   -\nabla_{\theta} f_t (\theta_{t-1})          \\
-            &\hspace{5mm}\textbf{else}                                                           \\
-            &\hspace{10mm}g_t           \leftarrow   \nabla_{\theta} f_t (\theta_{t-1})           \\
-            &\hspace{5mm} \theta_t \leftarrow \theta_{t-1} - \gamma \lambda \theta_{t-1}         \\
-            &\hspace{5mm}m_t           \leftarrow   \beta_1 m_{t-1} + (1 - \beta_1) g_t          \\
-            &\hspace{5mm}v_t           \leftarrow   \beta_2 v_{t-1} + (1-\beta_2) g^2_t          \\
-            &\hspace{5mm}\widehat{m_t} \leftarrow   m_t/\big(1-\beta_1^t \big)                   \\
-            &\hspace{5mm}\widehat{v_t} \leftarrow   v_t/\big(1-\beta_2^t \big)                   \\
-            &\hspace{5mm}\textbf{if} \: amsgrad                                                  \\
-            &\hspace{10mm}\widehat{v_t}^{max} \leftarrow \mathrm{max}(\widehat{v_t}^{max},
+            &\hspace{6mm}\textbf{if} \: \textit{maximize}:                                       \\
+            &\hspace{11mm}g_t           \leftarrow   -\nabla_{\theta} f_t (\theta_{t-1})          \\
+            &\hspace{6mm}\textbf{else}                                                           \\
+            &\hspace{11mm}g_t           \leftarrow   \nabla_{\theta} f_t (\theta_{t-1})           \\
+            &\hspace{6mm} \theta_t \leftarrow \theta_{t-1} - \gamma \lambda \theta_{t-1}         \\
+            &\hspace{6mm}m_t           \leftarrow   \beta_1 m_{t-1} + (1 - \beta_1) g_t          \\
+            &\hspace{6mm}v_t           \leftarrow   \beta_2 v_{t-1} + (1-\beta_2) g^2_t          \\
+            &\hspace{6mm}\widehat{m_t} \leftarrow   m_t/\big(1-\beta_1^t \big)                   \\
+            &\hspace{6mm}\widehat{v_t} \leftarrow   v_t/\big(1-\beta_2^t \big)                   \\
+            &\hspace{6mm}\textbf{if} \: amsgrad                                                  \\
+            &\hspace{11mm}\widehat{v_t}^{max} \leftarrow \mathrm{max}(\widehat{v_t}^{max},
                 \widehat{v_t})                                                                   \\
-            &\hspace{10mm}\theta_t \leftarrow \theta_t - \gamma \widehat{m_t}/
+            &\hspace{11mm}\theta_t \leftarrow \theta_t - \gamma \widehat{m_t}/
                 \big(\sqrt{\widehat{v_t}^{max}} + \epsilon \big)                                 \\
-            &\hspace{5mm}\textbf{else}                                                           \\
-            &\hspace{10mm}\theta_t \leftarrow \theta_t - \gamma \widehat{m_t}/
+            &\hspace{6mm}\textbf{else}                                                           \\
+            &\hspace{11mm}\theta_t \leftarrow \theta_t - \gamma \widehat{m_t}/
                 \big(\sqrt{\widehat{v_t}} + \epsilon \big)                                       \\
             &\bf{return} \:  \theta_t                                                     \\[-1.ex]
        \end{aligned}
