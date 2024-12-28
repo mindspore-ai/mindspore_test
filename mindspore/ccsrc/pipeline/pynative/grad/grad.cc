@@ -1120,7 +1120,7 @@ void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, 
 
     // If top cell is pipeline ir top cell and finish backward, skip the first ir top cell
     auto begin = is_pipeline_top_cell && !t.second.empty() && !t.second.front()->use_dynamic_shape_process() &&
-                     t.second.front()->is_finish_backward() && t.second.front()->is_ir_grad()
+                     t.second.front()->is_finish_backward()
                    ? t.second.begin() + 1
                    : t.second.begin();
     auto input_args_id_with_top_cell = std::find_if(
