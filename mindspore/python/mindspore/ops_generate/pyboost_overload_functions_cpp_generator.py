@@ -114,10 +114,17 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         mint_classes_def_list = []
 
         _, single_mint_func_data, overload_mint_func_data = op_api_proto.categorize_func_data(mint_func_protos_data)
+        single_func_call_body_list, single_cpp_class_name_list = (
+            self._get_single_func_call_body_list(single_mint_func_data))
+        overload_func_call_body_list, overload_cpp_class_name_list = (
+            self._get_overload_func_call_body_list(overload_mint_func_data))
 
-        mint_classes_def_list.extend(self._get_single_func_call_body_list(single_mint_func_data))
-        mint_classes_def_list.extend(self._get_overload_func_call_body_list(overload_mint_func_data))
-        mint_classes_reg_list = self._get_mint_func_reg_list(mint_func_protos_data)
+        mint_classes_def_list.extend(single_func_call_body_list)
+        mint_classes_def_list.extend(overload_func_call_body_list)
+
+        cpp_class_name_list = single_cpp_class_name_list + overload_cpp_class_name_list
+        mint_classes_reg_list = (
+            self._get_mint_func_reg_list(single_mint_func_data, overload_mint_func_data, cpp_class_name_list))
 
         pyboost_overload_file_str = (
             self.PYBOOST_OVERLOAD_FUNCTIONS_TEMPLATE.replace(mint_func_classes_def=mint_classes_def_list,
@@ -134,9 +141,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
 
         Returns:
-            list: Updated str list for generating C++ function call bodies.
+            func_call_body_list (list): Updated str list for generating C++ function call bodies.
+            cpp_class_name_list (list): The list of non-overloaded c++ functional classes' names.
         """
-        func_call_body_list = []
+        func_call_body_list, cpp_class_name_list = [], []
         for _, func_proto in single_op_func_data.items():
             func_name = func_proto.func_name
             class_name = func_proto.op_proto.op_class.name
@@ -152,7 +160,8 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
                 signatures=signature_str,
                 max_args=max_size,
                 ut_body=ut_body))
-        return func_call_body_list
+            cpp_class_name_list.append(class_name)
+        return func_call_body_list, cpp_class_name_list
 
     def _get_overload_func_call_body_list(self, overload_op_func_data):
         """
@@ -162,14 +171,16 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
 
         Returns:
-            list: Updated str list for generating C++ function call bodies.
+            func_call_body_list (list): Updated str list for generating C++ function call bodies.
+            cpp_class_name_list (list): The list of overloaded c++ functional classes' names.
         """
-        func_call_body_list = []
+        func_call_body_list, cpp_class_name_list = [], []
         for func_api_name, func_protos in overload_op_func_data.items():
-            func_call_body_list.append(self._get_overload_func_call_str(func_api_name, func_protos))
-        return func_call_body_list
+            func_call_body_list.append(
+                self._get_overload_func_call_str(func_api_name, func_protos, cpp_class_name_list))
+        return func_call_body_list, cpp_class_name_list
 
-    def _get_overload_func_call_str(self, func_api_name, func_protos):
+    def _get_overload_func_call_str(self, func_api_name, func_protos, cpp_class_name_list):
         """
         Generates C++ call body string for overloaded tensor functions.
 
@@ -191,6 +202,7 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
         cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
+        cpp_class_name_list.append(cpp_func_name)
         overload_func_call_str = self.PYBOOST_OVERLOAD_MINT_CLASS_DEF.replace(cpp_func_name=cpp_func_name,
                                                                               func_name=func_api_name,
                                                                               signatures=signatures_str,
@@ -309,23 +321,23 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         op_parser = OpTemplateParser(op_proto)
         return op_parser.get_arg_handler_processor(func_name, op_proto, is_tensor_api=False)
 
-    def _get_mint_func_reg_list(self, mint_func_protos_data):
+    def _get_mint_func_reg_list(self, single_mint_func_data, overload_mint_func_data, cpp_class_names):
         """
         Generates the list of pybind definition strings for mint functions.
 
         Args:
-            mint_func_protos_data (dict): Dictionary of tensor function prototypes with only one definition.
+            single_mint_func_data (dict): Dictionary of single mint function data.
+            overload_mint_func_data (dict): Dictionary of overload mint function data.
+            cpp_class_names (list): List of C++ class names.
 
         Returns:
             list: list of strs for generating pybind definitions of mint functions' API.
         """
+        # the order of single_mint_func_data/overload_mint_func_data matters
+        mint_func_names = list(single_mint_func_data.keys()) + list(overload_mint_func_data.keys())
+
         mint_func_reg_list = []
-        for func_name in mint_func_protos_data.keys():
-            api_def_list = mint_func_protos_data[func_name]
-            if len(api_def_list) == 1:
-                cpp_func_name = pyboost_utils.format_func_api_name(mint_func_protos_data[func_name][0].func_name)
-            elif len(api_def_list) > 1:
-                cpp_func_name = pyboost_utils.format_func_api_name(func_name)
-            mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=func_name,
+        for mint_func_name, cpp_func_name in zip(mint_func_names, cpp_class_names):
+            mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=mint_func_name,
                                                                             cpp_func_name=cpp_func_name))
         return mint_func_reg_list
