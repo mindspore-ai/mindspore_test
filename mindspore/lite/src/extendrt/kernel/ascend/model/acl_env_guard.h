@@ -50,6 +50,8 @@ class AclEnvGuard {
   static std::shared_ptr<AclEnvGuard> GetAclEnv();
   static std::shared_ptr<AclEnvGuard> GetAclEnv(std::string_view cfg_file);
   static void AddModel(const std::shared_ptr<ModelInfer> &model_infer);
+  static void DeleteModel(const std::shared_ptr<ModelInfer> &model_infer);
+  static int32_t GetModelNum();
   static bool Finalize();
 
  private:
