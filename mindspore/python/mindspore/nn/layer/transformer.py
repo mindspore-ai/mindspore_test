@@ -31,6 +31,7 @@ from .basic import Dense, Dropout
 from .activation import ReLU, GELU
 from .normalization import LayerNorm
 from .container import CellList
+
 __all__ = ['MultiheadAttention', 'TransformerEncoderLayer', 'TransformerDecoderLayer',
            'TransformerEncoder', 'TransformerDecoder', 'Transformer']
 
@@ -327,7 +328,7 @@ class TransformerEncoderLayer(Cell):
         self.activation1 = activation
 
         if not isinstance(activation, str) and not isinstance(activation, Cell) \
-            and not callable(activation):
+                and not callable(activation):
             raise ValueError(f"The argument 'activation' must be str, callable or Cell instance,"
                              f" but get {activation}.")
         if isinstance(activation, Cell) and (not isinstance(activation, ReLU) and \
@@ -359,15 +360,23 @@ class TransformerEncoderLayer(Cell):
                 raise AssertionError(
                     "only bool and floating types of key_padding_mask are supported")
 
-        x = src
-        if self.norm_first:
-            x = x + self._sa_block(self.norm1(x), src_mask, src_key_padding_mask)
-            x = x + self._ff_block(self.norm2(x))
-        else:
-            x = self.norm1(x + self._sa_block(x, src_mask, src_key_padding_mask))
-            x = self.norm2(x + self._ff_block(x))
+        input_data = src
 
-        return x
+        if self.norm_first:
+            normed_input = self.norm1(input_data)
+            sa_block_result = self._sa_block(normed_input, src_mask, src_key_padding_mask)
+            input_data = input_data + sa_block_result
+            normed_updated_input = self.norm2(input_data)
+            ff_block_result = self._ff_block(normed_updated_input)
+            input_data = input_data + ff_block_result
+        else:
+            sa_block_result = self._sa_block(input_data, src_mask, src_key_padding_mask)
+            normed_sa_result = self.norm1(input_data + sa_block_result)
+            input_data = normed_sa_result
+            ff_block_result = self._ff_block(input_data)
+            input_data = self.norm2(input_data + ff_block_result)
+
+        return input_data
 
     def _sa_block(self, x, attn_mask, key_padding_mask):
         x = self.self_attn(x, x, x,
@@ -479,7 +488,7 @@ class TransformerDecoderLayer(Cell):
         self.activation1 = activation
 
         if not isinstance(activation, str) and not isinstance(activation, Cell) \
-            and not callable(activation):
+                and not callable(activation):
             raise ValueError(f"The argument 'activation' must be str, callable or Cell instance,"
                              f" but get {activation}.")
         if isinstance(activation, Cell) and (not isinstance(activation, ReLU) and \
@@ -506,17 +515,29 @@ class TransformerDecoderLayer(Cell):
     def construct(self, tgt: Tensor, memory: Tensor, tgt_mask: Optional[Tensor] = None,
                   memory_mask: Optional[Tensor] = None, tgt_key_padding_mask: Optional[Tensor] = None,
                   memory_key_padding_mask: Optional[Tensor] = None):
-        x = tgt
-        if self.norm_first:
-            x = x + self._sa_block(self.norm1(x), tgt_mask, tgt_key_padding_mask)
-            x = x + self._mha_block(self.norm2(x), memory, memory_mask, memory_key_padding_mask)
-            x = x + self._ff_block(self.norm3(x))
-        else:
-            x = self.norm1(x + self._sa_block(x, tgt_mask, tgt_key_padding_mask))
-            x = self.norm2(x + self._mha_block(x, memory, memory_mask, memory_key_padding_mask))
-            x = self.norm3(x + self._ff_block(x))
+        input_data = tgt
 
-        return x
+        if self.norm_first:
+            normed_input = self.norm1(input_data)
+            sa_block_result = self._sa_block(normed_input, tgt_mask, tgt_key_padding_mask)
+            input_data = input_data + sa_block_result
+            normed_updated_input_1 = self.norm2(input_data)
+            mha_block_result = self._mha_block(normed_updated_input_1, memory, memory_mask, memory_key_padding_mask)
+            input_data = input_data + mha_block_result
+            normed_updated_input_2 = self.norm3(input_data)
+            ff_block_result = self._ff_block(normed_updated_input_2)
+            input_data = input_data + ff_block_result
+        else:
+            sa_block_result = self._sa_block(input_data, tgt_mask, tgt_key_padding_mask)
+            normed_sa_result = self.norm1(input_data + sa_block_result)
+            input_data = normed_sa_result
+            mha_block_result = self._mha_block(input_data, memory, memory_mask, memory_key_padding_mask)
+            normed_mha_result = self.norm2(input_data + mha_block_result)
+            input_data = normed_mha_result
+            ff_block_result = self._ff_block(input_data)
+            input_data = self.norm3(input_data + ff_block_result)
+
+        return input_data
 
     def _sa_block(self, x, attn_mask, key_padding_mask):
         x = self.self_attn(x, x, x,
@@ -669,17 +690,19 @@ class TransformerDecoder(Cell):
     def construct(self, tgt: Tensor, memory: Tensor, tgt_mask: Optional[Tensor] = None,
                   memory_mask: Optional[Tensor] = None, tgt_key_padding_mask: Optional[Tensor] = None,
                   memory_key_padding_mask: Optional[Tensor] = None):
-        output = tgt
+        processed_output = tgt
         for mod in self.layers:
-            output = mod(output, memory, tgt_mask=tgt_mask,
-                         memory_mask=memory_mask,
-                         tgt_key_padding_mask=tgt_key_padding_mask,
-                         memory_key_padding_mask=memory_key_padding_mask)
+            layer_output = mod(processed_output, memory,
+                               tgt_mask=tgt_mask,
+                               memory_mask=memory_mask,
+                               tgt_key_padding_mask=tgt_key_padding_mask,
+                               memory_key_padding_mask=memory_key_padding_mask)
+            processed_output = layer_output
 
         if self.norm is not None:
-            output = self.norm(output)
+            processed_output = self.norm(processed_output)
 
-        return output
+        return processed_output
 
 
 class Transformer(Cell):
