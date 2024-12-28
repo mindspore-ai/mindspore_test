@@ -636,6 +636,7 @@ class GELU(Cell):
     def construct(self, input):
         return F.gelu(input)
 
+
 class Hardtanh(Cell):
     r"""
     Activation function Hardtanh.
