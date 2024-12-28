@@ -31,16 +31,13 @@ class PythonObjPointer {
 
   T *get() { return ptr; }
   const T *get() const { return ptr; }
+  operator T *() { return ptr; }
+  T *operator->() { return ptr; }
+  explicit operator bool() const { return ptr != nullptr; }
   T *release() {
     T *tmp = ptr;
     ptr = nullptr;
     return tmp;
-  }
-  operator T *() { return ptr; }
-  PythonObjPointer &operator=(T *new_ptr) noexcept {
-    free();
-    ptr = new_ptr;
-    return *this;
   }
   PythonObjPointer &operator=(PythonObjPointer &&p) noexcept {
     free();
@@ -48,8 +45,11 @@ class PythonObjPointer {
     p.ptr = nullptr;
     return *this;
   }
-  T *operator->() { return ptr; }
-  explicit operator bool() const { return ptr != nullptr; }
+  PythonObjPointer &operator=(T *new_ptr) noexcept {
+    free();
+    ptr = new_ptr;
+    return *this;
+  }
 
  private:
   void free();
