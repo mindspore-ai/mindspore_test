@@ -148,5 +148,7 @@ void RegTFT(py::module *m) {
   (void)m->def("_get_uce_mem_info", &mindspore::GetMemUceInfo, "Get UCE mem info.");
   (void)m->def(
     "_tft_sem_post", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
+  (void)m->def(
+    "_tft_sem_enable", []() { mindspore::debug::tft::TFTWaitSem::Enable(); }, "TFT enable sem feature");
 }
 }  // namespace mindspore
