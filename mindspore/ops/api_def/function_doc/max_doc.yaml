@@ -60,3 +60,8 @@ max:
         >>> output, index = mint.max(x, 0, keepdim=True)
         >>> print(output, index)
         [0.7] [3]
+
+    .. function:: max(input, other) -> Tensor
+        :noindex:
+
+    For details, please refer to :func:`mindspore.mint.maximum`.
