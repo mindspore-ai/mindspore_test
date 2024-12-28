@@ -62,6 +62,8 @@ constexpr size_t gmmTensor2D = 2;
 constexpr size_t gmmTensor3D = 3;
 constexpr size_t gmmTensor4D = 4;
 
+constexpr size_t grouplist_dp_idx = 2;
+
 Status GroupedMatmulInfo::InferMirrorOpsByLayout() {
   mirror_ops_.clear();
   if (inputs_shape_new_.empty()) {
@@ -367,7 +369,7 @@ Status GroupedMatmulInfo::InferTensorMap() {
   if (input_value_[kInputGroupList] != nullptr && input_value_[kInputGroupList]->isa<None>()) {
     grouplist_tensor_map_idx.emplace_back(-1);
   } else {
-    grouplist_tensor_map_idx.emplace_back(2);
+    grouplist_tensor_map_idx.emplace_back(grouplist_dp_idx);
   }
 
   inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(grouplist_tensor_map_idx));
