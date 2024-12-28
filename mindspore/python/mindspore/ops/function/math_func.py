@@ -3923,7 +3923,7 @@ def median_ext(input, dim=None, keepdim=False):
     Raises:
         TypeError: If dtype of ``input`` is not one of the following: uint8, int16, int32, int64, float16 or float32.
         TypeError: If input ``input`` is not a Tensor.
-        TypeError: If ``dim`` is not a int.
+        TypeError: If ``dim`` is not an int.
         TypeError: If ``keepdim`` is not a bool.
         ValueError: If ``dim`` is not in range of [-x.dim, x.dim-1].
 
@@ -8584,13 +8584,13 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): The input of norm with data type of bfloat16, float16 or float32.
-            The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
+        input (Tensor): The shape is :math:`(*)` or :math:`(*, m, n)`
+            where :math:`*` means, any number of additional dimensions.
         p (Union[bool, int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
             behavior. Default: ``fro`` .
         dim (Union[int, List(int), Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
             Default: ``None`` .
-        keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+        keepdim (bool, optional): whether the output Tensor retains the original dimension. Default: ``False`` .
 
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): When set, `input` will be converted to the specified type,
