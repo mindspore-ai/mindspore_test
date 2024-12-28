@@ -17,7 +17,7 @@ import pytest
 
 from mindspore import ops
 import mindspore as ms
-from tests.device_utils import set_device
+from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
@@ -43,7 +43,8 @@ def test_hswish_grad_forward(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor(np.array([-1, -2, 0, 2, 1]).astype(np.float32))
     y_grad = ms.Tensor(np.array(
         [0.16666667, -0.16666667, 0.5, 1.1666666, 0.8333333]).astype(np.float32))
@@ -63,7 +64,8 @@ def test_hswish_grad_vmap(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     in_axes = -1
     x = ms.Tensor(np.array([[-1, -2, 0, 2, 1]]).astype(np.float32))
     y_grad = ms.Tensor(np.array(
@@ -87,7 +89,8 @@ def test_hswish_grad_dynamic(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
     y_grad_dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
     x = ms.Tensor(np.array([[-1, -2, 0, 2, 1]]).astype(np.float32))
@@ -118,7 +121,8 @@ def test_hswish_grad_dynamic_rank(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     y_grad_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     x = ms.Tensor(np.array([[-1, -2, 0, 2, 1]]).astype(np.float32))

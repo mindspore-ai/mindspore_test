@@ -18,7 +18,7 @@ import pytest
 import mindspore as ms
 from mindspore import ops
 from tests.st.utils import test_utils
-from tests.device_utils import set_device
+from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 
 
@@ -39,7 +39,8 @@ def test_rsqrt_grad(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     dy = ms.Tensor(np.array([[[[-1, 1, 10],
                                [5.9, 6.1, 6],
                                [10, 1, -1]]]]).astype(np.float32))
@@ -65,7 +66,8 @@ def test_rsqrt_grad_dyn_rank(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     dy_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     test_cell = test_utils.to_cell_obj(rsqrt_grad_func)
@@ -99,7 +101,8 @@ def test_rsqrt_grad_vmap(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     axes = (-1, -1)
     dy = ms.Tensor(np.random.rand(4, 3, 2).astype(np.float32))
     x = ms.Tensor(np.random.rand(4, 3, 2).astype(np.float32))
