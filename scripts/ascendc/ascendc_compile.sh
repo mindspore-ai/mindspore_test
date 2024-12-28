@@ -27,6 +27,8 @@ sed -i 's/\blogger.info\b/print/g' setup.py
 sed -i 's/\blogger.error\b/print/g' setup.py
 sed -i 's/\blogger.warning\b/print/g' setup.py
 
+unset CMAKE_INSTALL_MODE
+
 vendor_name="custom_ascendc_910b"
 if [ ! -d "${ascendc_path}/${vendor_name}" ]; then
   python setup.py -o ${op_host_path} -k ${op_kernel_path} \
