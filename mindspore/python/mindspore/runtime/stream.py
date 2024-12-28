@@ -35,6 +35,9 @@ class Stream(Stream_):
         priority (int, optional): priority of the stream, lower numbers represent higher priorities.
             By default, streams have priority ``0``.
         kwargs (dict): keyword arguments.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
     """
 
     def __init__(self, priority=0, **kwargs):
@@ -63,6 +66,9 @@ class Stream(Stream_):
 
         Raises:
             TypeError: If 'event' is neither a :class:`mindspore.runtime.Event` nor a ``None``.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU``
 
         Examples:
             >>> import mindspore as ms
@@ -104,6 +110,9 @@ class Stream(Stream_):
         Raises:
             TypeError: If 'event' is not a :class:`mindspore.runtime.Event`.
 
+        Supported Platforms:
+            ``Ascend`` ``GPU``
+
         Examples:
             >>> import mindspore as ms
             >>> import numpy as np
@@ -144,6 +153,9 @@ class Stream(Stream_):
         Raises:
             TypeError: If 'stream' is not a :class:`mindspore.runtime.Stream`.
 
+        Supported Platforms:
+            ``Ascend`` ``GPU``
+
         Examples:
             >>> import mindspore as ms
             >>> import numpy as np
@@ -173,6 +185,9 @@ class Stream(Stream_):
         r"""
         Wait for all the kernels in this stream to complete.
 
+        Supported Platforms:
+            ``Ascend`` ``GPU``
+
         Examples:
             >>> import mindspore as ms
             >>> import numpy as np
@@ -195,6 +210,9 @@ class Stream(Stream_):
 
         Returns:
             A boolean indicating if all kernels in this stream are completed.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU``
 
         Examples:
             >>> import mindspore as ms
@@ -233,6 +251,9 @@ def synchronize():
     r"""
     Synchronize all streams on current device.(Each MindSpore process only occupies one device)
 
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -261,6 +282,9 @@ def set_cur_stream(stream):
     Raises:
         TypeError: If 'stream' is neither a :class:`mindspore.runtime.Stream` nor a ``None``.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 0)
@@ -288,6 +312,9 @@ def current_stream():
     Returns:
         stream (Stream), current stream.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 0)
@@ -304,6 +331,9 @@ def default_stream():
     Returns:
         stream (Stream), default stream.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 0)
@@ -319,6 +349,9 @@ def communication_stream():
 
     Returns:
         stream (Stream), communication stream.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
 
     Examples:
         >>> import mindspore as ms
@@ -341,6 +374,9 @@ class StreamCtx:
 
     Raises:
         TypeError: If 'stream' is neither a :class:`mindspore.runtime.Stream` nor a ``None``.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
 
     Examples:
         >>> import mindspore as ms

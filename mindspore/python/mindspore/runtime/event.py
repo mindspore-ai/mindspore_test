@@ -32,6 +32,9 @@ class Event(Event_):
         enable_timing (bool, optional): indicates if the event should measure time (default: ``False``)
         blocking (bool, optional): if ``True``, `wait` will be blocking (default: ``False``)
 
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -103,6 +106,9 @@ class Event(Event_):
         Raises:
             TypeError: If 'stream' is neither a :class:`mindspore.runtime.Stream` nor a ``None``.
 
+        Supported Platforms:
+            ``Ascend`` ``GPU``
+
         Examples:
             >>> import mindspore as ms
             >>> import numpy as np
@@ -148,6 +154,9 @@ class Event(Event_):
 
         Returns:
             A boolean indicating if all work currently captured by event has completed.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU``
 
         Examples:
             >>> import mindspore as ms
