@@ -17,8 +17,8 @@ nansum:
     returns:
         output: 
             dtype: tensor
-    class:
-        name: NanSum
+    function:
+        disable: True
     dispatch:
         enable: True
-        Ascend: NanSumAscend
+        Ascend: NansumAscend

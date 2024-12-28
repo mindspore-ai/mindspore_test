@@ -3750,7 +3750,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> import numpy as np
             >>> import mindspore
             >>> from mindspore import Tensor
-            >>> from mindspore import ops
             >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
             >>> index = Tensor(np.array([0, 2]), mindspore.int32)
             >>> y = Tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)

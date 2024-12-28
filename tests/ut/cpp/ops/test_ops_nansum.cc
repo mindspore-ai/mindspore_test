@@ -203,5 +203,5 @@ std::vector<GeneralInferParam> prepare_params() {
   return generator.Generate();
 }
 }  // namespace
-INSTANTIATE_TEST_CASE_P(NanSum, GeneralInferTest, testing::ValuesIn(prepare_params()));
+INSTANTIATE_TEST_CASE_P(Nansum, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops

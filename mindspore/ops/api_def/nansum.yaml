@@ -5,7 +5,7 @@ nansum:
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: tensor
+    interface: tensor, function
 
   - op_yaml: deprecated/nansum_method.yaml
     py_method: deprecated_tensor_nansum

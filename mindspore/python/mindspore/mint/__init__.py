@@ -431,7 +431,7 @@ from mindspore.ops.function.math_func import var_mean_ext as var_mean
 from mindspore.ops.function.math_func import nan_to_num
 
 # 613
-from mindspore.ops.auto_generate import nansum
+from mindspore.ops.functional_overload import nansum
 
 # 664
 from mindspore.ops.function.array_func import meshgrid_ext as meshgrid
