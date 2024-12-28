@@ -188,6 +188,8 @@ def _handle_tft(func):
                         cb_initial_step = initial_step
 
                     kwargs["initial_step"] = cb_initial_step
+                    # reset all accu grads to zero
+                    obj._reset_acc_grads()
 
                     logger.info("uce wrapper repair complete  \
 initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))

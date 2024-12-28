@@ -28,6 +28,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_exception.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "include/common/utils/convert_utils.h"
@@ -905,7 +906,7 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
     return;
   }
 
-  if (!first_step_) {
+  if (!(first_step_ || UCEException::GetInstance().get_uce_flag())) {
     return;
   }
 
@@ -914,6 +915,9 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->IsPtrValid()) {
     CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+    if (UCEException::GetInstance().get_uce_flag()) {
+      SyncTensorData(tensor, device_tensor, node, device_context, context, real_strategy_);
+    }
     return;
   }
 
@@ -1025,10 +1029,29 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
 
   const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, index, false);
   MS_EXCEPTION_IF_NULL(device_tensor);
+  // Copy data from value to device.
+  auto copy_to_device = [&node_value, &device_tensor, this, &node, &context]() {
+    auto value = GetValue<std::string>(node_value);
+    size_t tensor_size = value.size();
+    ShapeVector shape = {1, SizeToLong(tensor_size)};
+    // account '\0' to string size, keep consistent with method `CreateDeviceAddressForScalarAndString` defined in
+    // `device_address_utils.cc`
+    size_t string_tensor_size = tensor_size + 1;
+    const auto &kernel_tensor = device_tensor->kernel_tensor();
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    if (!device_tensor->SyncHostToDevice(shape, string_tensor_size, kObjectTypeString, kernel_tensor->GetValuePtr())) {
+      std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
+    }
+  };
+
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->GetPtr() != nullptr) {
-    if (first_step_) {
+    if (first_step_ || UCEException::GetInstance().get_uce_flag()) {
       CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+    }
+    if (UCEException::GetInstance().get_uce_flag()) {
+      copy_to_device();
     }
     return;
   }
@@ -1053,19 +1076,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
                     << ", device address addr: " << device_tensor->GetPtr();
   }
 
-  // Copy data from value to device.
-  auto value = GetValue<std::string>(node_value);
-  size_t tensor_size = value.size();
-  ShapeVector shape = {1, SizeToLong(tensor_size)};
-  // account '\0' to string size, keep consistent with method `CreateDeviceAddressForScalarAndString` defined in
-  // `device_address_utils.cc`
-  size_t string_tensor_size = tensor_size + 1;
-  const auto &kernel_tensor = device_tensor->kernel_tensor();
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  if (!device_tensor->SyncHostToDevice(shape, string_tensor_size, kObjectTypeString, kernel_tensor->GetValuePtr())) {
-    std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
-  }
+  copy_to_device();
   CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
 }
 
@@ -1073,7 +1084,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
                                                             const AnfNodePtr &front_node,
                                                             const DeviceContext *device_context,
                                                             OpContext<DeviceTensor> *const context) const {
-  if (!first_step_) {
+  if (!(first_step_ || UCEException::GetInstance().get_uce_flag())) {
     return;
   }
   MS_EXCEPTION_IF_NULL(node);
@@ -1092,9 +1103,21 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
 
   const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, index, false);
   MS_EXCEPTION_IF_NULL(device_tensor);
+  auto copy_to_device = [&device_tensor, &node, this, &context]() {
+    const auto &kernel_tensor = device_tensor->kernel_tensor();
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
+                                         kernel_tensor->dtype_id(), kernel_tensor->GetValuePtr())) {
+      std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
+    }
+  };
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->GetPtr() != nullptr) {
     CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
+    if (UCEException::GetInstance().get_uce_flag()) {
+      copy_to_device();
+    }
     return;
   }
 
@@ -1122,13 +1145,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   }
 
   // 2. Sync copy data from host to device.
-  const auto &kernel_tensor = device_tensor->kernel_tensor();
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
-                                       kernel_tensor->dtype_id(), kernel_tensor->GetValuePtr())) {
-    std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
-  }
+  copy_to_device();
 
   // 3. Handle heterogeneous scene.
   CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
