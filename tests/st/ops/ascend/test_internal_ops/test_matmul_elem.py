@@ -221,7 +221,7 @@ def matmul_unary(m, k, n, trans_a=False, trans_b=False, mstype=ms.float16,
     assert np.allclose(output_np, expect, 0.01, 0.01)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_matmul_biasadd_1024_1024_1024_False_False_float16():
@@ -247,7 +247,7 @@ def test_matmul_biasadd_m_4096_4096_False_True_float16(m, is_dyn):
     matmul_biasadd(m, 4096, 4096, trans_a=False, trans_b=True, mstype=ms.float16, is_dyn=is_dyn)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('elemtype', ["relu", "gelu"])

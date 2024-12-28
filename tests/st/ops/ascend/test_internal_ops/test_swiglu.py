@@ -80,7 +80,7 @@ def _test_swiglu(shape, dim, np_dtype, is_dyn):
     np.testing.assert_array_almost_equal(output_np, expected, decimal=2)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('shape', [(1, 6144), (16, 5504)])
 @pytest.mark.parametrize('dim', [-1])

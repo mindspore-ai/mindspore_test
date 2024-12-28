@@ -154,7 +154,7 @@ def _test_matmul_qkv(m=0, k=0, n0=0, n1=0, n2=0, mstype=ms.float16, is_dyn=False
     assert result, "compare correct."
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('m', [32])
 @pytest.mark.parametrize('k', [1024, 2048, 128])
@@ -186,7 +186,7 @@ def test_matmul_qkv_11008_4096_4096(m, k, mstype, is_dyn):
     _test_matmul_qkv(m, k, 11008, 4096, 4096, mstype, is_dyn)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('m', [32, 256])
 @pytest.mark.parametrize('k', [8192])
