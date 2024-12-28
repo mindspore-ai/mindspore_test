@@ -1192,15 +1192,6 @@ void GeKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) c
   AclStreamAssign::GetInstance().CreateEvent(NOT_NULL(kernel_graph));
 }
 
-bool GeKernelExecutor::PySyncRuning(void *stream) const {
-  MS_EXCEPTION_IF_NULL(res_manager_);
-  auto isSync = mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking();
-  if ((isSync) && !AscendStreamMng::GetInstance().SyncStream(stream)) {
-    return false;
-  }
-  return true;
-}
-
 bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
                                        const vector<KernelTensor *> &outputs) const {
   MS_EXCEPTION_IF_NULL(node);
@@ -1297,14 +1288,15 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
     }
   }
   // for PyNative and KBK Sync Run mode
-  auto ret = PySyncRuning(stream);
-  if (!ret) {
-    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Sync run failed, detail: " << CALL_ASCEND_API(aclGetRecentErrMsg)
-                                        << trace::DumpSourceLines(kernel);
+  if (mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking()) {
+    if (!AscendStreamMng::GetInstance().SyncStream(stream)) {
+      MS_LOG_WITH_NODE(EXCEPTION, kernel)
+        << "Sync run failed, detail: " << CALL_ASCEND_API(aclGetRecentErrMsg) << trace::DumpSourceLines(kernel);
+    }
   }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
                kernel->fullname_with_scope(), false);
-  return ret;
+  return true;
 }
 
 void AclrtLaunchCallback(void *user_data) {
@@ -1369,7 +1361,10 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
 
   auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   // for PyNative and KBK Sync Run mode
-  auto ret = PySyncRuning(stream);
+  bool ret = true;
+  if (mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking()) {
+    ret = AscendStreamMng::GetInstance().SyncStream(stream);
+  }
   return ret;
 }
 }  // namespace mindspore::device::ascend
