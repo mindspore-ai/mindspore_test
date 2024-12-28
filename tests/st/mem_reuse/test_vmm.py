@@ -40,13 +40,13 @@ def test_pynative_multi_stream_vmm():
     s1 = ms.runtime.Stream()
     with ms.runtime.StreamCtx(s1):
         o0 = ops.broadcast_to(x, (12, 256, 1024, 1024))
-        o0 += 1
+        o0 = o0 + 1
         del o0
         ev = s1.record_event()
 
     ev.wait()
     o1 = ops.broadcast_to(x, (12, 256, 1024, 1024))
-    o1 += 1
+    o1 = o1 + 1
     ms.runtime.synchronize()
 
 
@@ -75,5 +75,5 @@ def test_pynative_single_stream_vmm():
     ms.runtime.synchronize()
 
     o3 = ops.broadcast_to(x, (12, 256, 1024, 1024))
-    o3 += 1
+    o3 = o3 + 1
     ms.runtime.synchronize()
