@@ -1212,7 +1212,8 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
   }
   ShapeVector corrected_host_shape = host_shape;
   if (host_type == kNumberTypeInt4 && !corrected_host_shape.empty()) {
-    corrected_host_shape.back() *= 2;
+    constexpr int64_t kNumber2 = 2;
+    corrected_host_shape.back() *= kNumber2;
   }
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, corrected_host_shape);
   MS_EXCEPTION_IF_NULL(out_tensor);
@@ -1222,7 +1223,7 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
     return true;
   }
   if (host_type == kNumberTypeInt4) {
-    int int4_nums_per_byte = 2;
+    const int int4_nums_per_byte = 2;
     host_size = out_tensor->DataSize() / int4_nums_per_byte;
   }
   bool ret_sync = false;
