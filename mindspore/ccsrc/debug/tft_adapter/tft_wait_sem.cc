@@ -22,6 +22,7 @@
 namespace mindspore {
 namespace debug {
 namespace tft {
+bool TFTWaitSem::isEnable_ = false;
 TFTWaitSem &TFTWaitSem::GetInstance() {
   static TFTWaitSem instance;
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
@@ -42,19 +43,14 @@ void TFTWaitSem::Clear() {}
 #endif
 TFTWaitSem::TFTWaitSem() {}
 TFTWaitSem::~TFTWaitSem() {}
+void TFTWaitSem::Enable() { isEnable_ = true; }
 bool TFTWaitSem::IsEnable() {
   auto msContext = MsContext::GetInstance();
   if (msContext->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode ||
       msContext->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
     return false;
   }
-  auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
-  constexpr std::string_view optUCE = "UCE:1";
-  constexpr std::string_view optTTP = "TTP:1";
-  if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos || tftEnv.find(optTTP) != std::string::npos)) {
-    return true;
-  }
-  return false;
+  return isEnable_;
 }
 }  // namespace tft
 }  // namespace debug
