@@ -447,6 +447,8 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   size_t increase_size_{kDynamicMemAllocUnitSize};
   // Not enable currently.
   size_t max_size_{0};
+
+  bool enable_dump_memory_{false};
 };
 
 class BACKEND_EXPORT AbstractEnhancedDynamicMemPool : public AbstractDynamicMemPool {
