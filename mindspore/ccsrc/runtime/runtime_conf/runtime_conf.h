@@ -49,9 +49,8 @@ class BACKEND_EXPORT RuntimeConf {
   }
   bool launch_blocking() {
     auto ms_context = MsContext::GetInstance();
-    static bool sync_stream = common::IsEnableRuntimeConfig(common::kRuntimeSynchronize);
     MS_EXCEPTION_IF_NULL(ms_context);
-    return launch_blocking_ || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) || sync_stream;
+    return launch_blocking_ || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
   }
   bool IsSetLaunchBlocking() { return conf_status_.count(kLaunchBlocking); }
 

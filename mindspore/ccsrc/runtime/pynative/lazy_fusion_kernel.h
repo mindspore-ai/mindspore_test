@@ -25,6 +25,7 @@
 #include <functional>
 #include "include/backend/visible.h"
 #include "runtime/hardware/device_context.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "runtime/pynative/lazy_fusion_flags.h"
 
 namespace mindspore {
@@ -115,8 +116,7 @@ extern BACKEND_EXPORT LazyFusionManager g_lazy_fusion_manager;
 // before run/push current task, should generate dvm device task first
 static inline void FlushLazyFusion() { g_lazy_fusion_manager.Flush(); }
 static inline void LazyFusionInit() {
-  if (LazyFusionFlags::GetInstance().opt_level < OptLevel_1 ||
-      MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||
+  if (LazyFusionFlags::GetInstance().opt_level < OptLevel_1 || runtime::RuntimeConf::GetInstance()->launch_blocking() ||
       MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON") {
     return;
   }

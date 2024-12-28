@@ -98,7 +98,6 @@ const char kRuntimeThreadLoadCache[] = "multi_thread_load_cache";
 const char kRuntimeAsyncInitComm[] = "async_init_comm";
 const char kRuntimeInputOptimize[] = "input_optimize";
 // Runtime debug config.
-const char kRuntimeSynchronize[] = "synchronize";
 const char kRuntimeMemoryTrack[] = "memory_track";
 const char kRuntimeMemoryStat[] = "memory_statistics";
 const char kRuntimeCompileStat[] = "compile_statistics";
