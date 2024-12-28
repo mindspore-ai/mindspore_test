@@ -121,24 +121,27 @@ uint32_t CumprodCpuKernel::CumprodCompute(CpuKernelContext &ctx) {
   if (data_size <= paralled_data_size) {
     for (size_t outer_index = 0; outer_index < outer; ++outer_index) {
       size_t outer_index_adj;
-      if (reverse)
-        outer_index_adj = (outer - 1) - outer_index;
-      else
+      if (!reverse) {
         outer_index_adj = outer_index;
+      } else {
+        outer_index_adj = (outer - 1) - outer_index;
+      }
       for (size_t inner_index = 0; inner_index < inner; inner_index++) {
         auto multiplier = static_cast<T>(1);
         size_t inner_index_adj;
-        if (reverse)
-          inner_index_adj = (inner - 1) - inner_index;
-        else
+        if (!reverse) {
           inner_index_adj = inner_index;
+        } else {
+          inner_index_adj = (inner - 1) - inner_index;
+        }
         for (size_t depth_index = 0; depth_index < depth; depth_index++) {
           size_t depth_index_adj;
-          if (reverse)
+          if (!reverse) {
             depth_index_adj = (depth - 1) - depth_index;
-          else
+          } else {
             depth_index_adj = depth_index;
-          size_t index = outer_index_adj;
+          }
+          auto index = outer_index_adj;
           index += inner_index_adj * depth * outer;
           index += depth_index_adj * outer;
           if (exclusive) {

@@ -458,16 +458,16 @@ class SparseTensor {
         std::sort(reorder.begin(), reorder.end(), sorter);
       }
     }
-    std::vector<size_t> permutation(reorder.size());
+    std::vector<size_t> permutation_vec(reorder.size());
     for (std::size_t n = 0; n < reorder.size(); ++n) {
-      permutation[reorder[n]] = n;
+      permutation_vec[reorder[n]] = n;
     }
-    for (std::size_t n = 0; n + 1 < permutation.size(); ++n) {
-      while (n != permutation[n]) {
-        std::size_t r = permutation[n];
+    for (std::size_t n = 0; n + 1 < permutation_vec.size(); ++n) {
+      while (n != permutation_vec[n]) {
+        std::size_t r = permutation_vec[n];
         std::swap_ranges(&(ix_t(n, 0)), &(ix_t(n + 1, 0)), &(ix_t(r, 0)));
         std::swap(vals_t(n), vals_t(r));
-        std::swap(permutation[n], permutation[r]);
+        std::swap(permutation_vec[n], permutation_vec[r]);
       }
     }
     return KERNEL_STATUS_OK;
