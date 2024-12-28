@@ -624,6 +624,8 @@ void GradExecutor::InitResourceAndDfBuilder(const InputArgsInfoPtr &input_args_i
     MakeNewTopCell(input_args_info);
   } else if (input_args_info->is_high_order_top_cell) {
     MS_LOG(DEBUG) << "Nested grad graph existed in construct";
+    // High order need wait bprop, because back-up grad info may conflict with first grad.
+    WaitBpropTask();
     top_cell_->set_inner_has_high_order(true);
     // High-order inputs are uplevel top cell ops output, so need back up meta-grad info too.
     for (auto &item : input_args_info->input_arg_value_vec) {
