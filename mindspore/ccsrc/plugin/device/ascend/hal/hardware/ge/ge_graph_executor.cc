@@ -777,28 +777,47 @@ void GeGraphExecutor::FreeInputOutputMemory(const KernelGraphPtr &graph) const {
 
   // input, free memory not weight
   std::vector<DeviceAddress *> input_datas;
+  std::vector<std::pair<AnfNodeWeakPtr, size_t>> need_update_input;
   auto in_iter = input_datas_.find(graph.get());
   if (in_iter != input_datas_.end()) {
     input_datas = in_iter->second.device_addrs;
+    need_update_input = in_iter->second.need_update_input;
   }
 
   for (size_t i = 0; i < input_datas.size(); ++i) {
+    // is_ptr_persisted may reset in actors compile
+    if (need_update_input[i].first.lock()->isa<Parameter>() &&
+        need_update_input[i].first.lock()->cast<ParameterPtr>()->has_default()) {
+      MS_LOG(DEBUG) << "The input[" << i << "] is a weight, skip free memory.";
+      continue;
+    }
     auto input_address = input_datas[i];
     if (input_address->GetPtr() != nullptr && !input_address->is_ptr_persisted()) {
+      MS_LOG(DEBUG) << "Free the memory of input[" << i << "], deivce_address: " << input_address
+                    << ", ptr: " << input_address->GetPtr();
       ge_res_manager_->FreeMemory(input_address);
     }
   }
 
   // output, free memory not persist(same address as input weight)
   std::vector<DeviceAddress *> output_datas;
+  std::vector<std::pair<AnfNodeWeakPtr, size_t>> graph_outputs;
   auto out_iter = output_datas_.find(graph.get());
   if (out_iter != output_datas_.end()) {
     output_datas = out_iter->second.device_addrs;
+    graph_outputs = out_iter->second.graph_outputs;
   }
 
   for (size_t i = 0; i < output_datas.size(); ++i) {
+    if (graph_outputs[i].first.lock()->isa<Parameter>() &&
+        graph_outputs[i].first.lock()->cast<ParameterPtr>()->has_default()) {
+      MS_LOG(DEBUG) << "The output[" << i << "] is a weight, skip free memory.";
+      continue;
+    }
     auto output_address = output_datas[i];
     if (output_address->GetPtr() != nullptr && !output_address->is_ptr_persisted()) {
+      MS_LOG(DEBUG) << "Free the memory of output[" << i << "], deivce_address: " << output_address
+                    << ", ptr: " << output_address->GetPtr();
       ge_res_manager_->FreeMemory(output_address);
     }
   }
