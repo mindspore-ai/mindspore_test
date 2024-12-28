@@ -956,8 +956,6 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
 
     if (is_need_infer) {
       if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
-        static std::set<std::string> no_dyn_need_update_ops = {kDynamicGetNextV2OpName, kDynamicGetNextAscendOpName,
-                                                               kReceiveOpName};
         if (!no_simu && no_dyn_need_update_ops.find(kernel_mod->kernel_name()) == no_dyn_need_update_ops.end()) {
           MS_LOG(EXCEPTION) << "For " << kernel->fullname_with_scope()
                             << ", the output shape depends on the actual execution, and it will affect the accuracy of "

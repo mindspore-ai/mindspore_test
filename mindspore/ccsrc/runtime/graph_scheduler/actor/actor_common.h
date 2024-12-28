@@ -37,7 +37,8 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/common/profiler.h"
-
+#include "mindspore/ops/op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::session::KernelWithIndex;
@@ -63,7 +64,8 @@ static const std::map<GraphExecutionStrategy, std::string> kGraphExecutionStrate
   {GraphExecutionStrategy::kStep, "step"},
   {GraphExecutionStrategy::kPipelineWithExecutionOrder, "pipeline_with_execution_order"},
 };
-
+static const std::set<std::string> no_dyn_need_update_ops = {kDynamicGetNextV2OpName, kDynamicGetNextAscendOpName,
+                                                             kGetNextOpName, kGetNextFromQueueOpName, kReceiveOpName};
 const char kDataPrepareActorNameSuffix[] = "_DataPrepareActor";
 const char kHostDSActorNameSuffix[] = "_HostDSActor";
 const char kDeviceDSActorNameSuffix[] = "_DeviceDSActor";
