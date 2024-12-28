@@ -103,8 +103,8 @@ uint32_t TileCpuKernel::Compute(CpuKernelContext &ctx) {
 template <typename T, typename M>
 void TileCpuKernel::CopyMultipleTimes(const T *in_data, int64_t in_size, M multiplier, T *out_data) {
   for (M i = 0; i < multiplier; ++i) {
-    const T *in_end = in_data + in_size;
-    T *new_out_data = std::copy(in_data, in_end, out_data);
+    const T *in_end_size = in_data + in_size;
+    T *new_out_data = std::copy(in_data, in_end_size, out_data);
     in_data = out_data;
     out_data = new_out_data;
   }
