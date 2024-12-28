@@ -25,7 +25,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
-from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post
+from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv
 from mindspore._c_expression import CollectiveManager
@@ -161,13 +161,23 @@ class TFTRegister(Callback):
         ModuleNotFoundError: Mindio TFT whl package is not installed.
 
     Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            It's recommended to use the msrun startup method.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 4 devices.
+
         >>> import numpy as np
         >>> import os
         >>> import math
         >>> import mindspore as ms
         >>> import mindspore.dataset as ds
         >>> from mindspore import nn, ops, Parameter, train
-        >>> from mindspore.communication import init
+        >>> from mindspore.communication import init, get_rank
         >>> from mindspore.common.initializer import initializer, HeUniform
         >>> from mindspore.train import Model, TFTRegister
         >>> from mindspore import dataset as ds
@@ -176,7 +186,7 @@ class TFTRegister(Callback):
         >>> init()
         >>> ms.set_seed(1)
         >>> ms.set_auto_parallel_context(strategy_ckpt_config={"save_file":
-        >>>                             "./src_pipeline_strategys/src_strategy_{}.ckpt".format(get_rank())})
+        ...                             "./src_pipeline_strategys/src_strategy_{}.ckpt".format(get_rank())})
         >>> class MatMulCell(nn.Cell):
         ...     def __init__(self, param=None, shape=None):
         ...         super().__init__()
@@ -234,7 +244,7 @@ class TFTRegister(Callback):
         ...     dataset = dataset.batch(batch_size)
         ...     return dataset
         >>>
-        >>> data_set = create_dataset(32)
+        >>> dataset = create_dataset(32)
         >>>
         >>> optimizer = nn.SGD(net.trainable_params(), 1e-2)
         >>> optimizer_wrapper = nn.OptTFTWrapper(optimizer)
@@ -242,8 +252,8 @@ class TFTRegister(Callback):
         >>>
         >>> net_with_loss = nn.PipelineCell(nn.WithLossCell(net, loss_fn), 4)
         >>> net_with_loss.set_train()
-        >>> model = Model(net_with_loss, optimizer=optimizer)
-        >>> tft_cb = TFTRegister("192.168.0.1", 2000, "./tft_checkpoint/")
+        >>> model = Model(net_with_loss, optimizer=optimizer_wrapper)
+        >>> tft_cb = TFTRegister(0, "192.168.0.1", 2000, "./tft_checkpoint/")
         >>> loss_cb = train.LossMonitor(1)
         >>> model.train(1, dataset, callbacks=[tft_cb, loss_cb])
     """
@@ -276,6 +286,7 @@ class TFTRegister(Callback):
         self.assign = mindspore.ops.Assign()
         self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
         self.s1 = mindspore.hal.Stream()
+        _tft_sem_enable()
 
     def _is_params_consistent(self):
         for key, param in self.cb_params.train_network.parameters_and_names():

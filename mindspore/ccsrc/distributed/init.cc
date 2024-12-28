@@ -101,9 +101,9 @@ bool InitializeCluster() {
   auto callback = std::make_shared<std::function<void(void)>>([]() {
     MS_LOG(INFO) << "Callback on exception is called.";
     if (TFTWaitSem::IsEnable()) {
-      MS_LOG(DEBUG) << "Start waiting for TFT.";
+      MS_LOG(INFO) << "Start waiting for TFT.";
       TFTWaitSem::GetInstance().Wait();
-      MS_LOG(DEBUG) << "End waiting for TFT.";
+      MS_LOG(INFO) << "End waiting for TFT.";
     }
 
     MS_LOG(DEBUG) << "Start finalizing CollectiveManager in abnormal callback.";

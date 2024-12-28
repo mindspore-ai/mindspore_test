@@ -34,6 +34,7 @@ class BACKEND_EXPORT TFTWaitSem {
   void Wait();
   void Post();
   void Clear();
+  static void Enable();
   static bool IsEnable();
 
  private:
@@ -41,6 +42,7 @@ class BACKEND_EXPORT TFTWaitSem {
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
   sem_t waitSem_;
 #endif
+  static bool isEnable_;
 };
 }  // namespace tft
 }  // namespace debug
