@@ -353,6 +353,7 @@ bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint3
 
   auto mem_bufs_ = iter->second;
   for (const auto &mem_buf : mem_bufs_) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << mem_buf->ToJson() << ".";
     mem_buf->WaitEvent(task_id_on_stream, user_stream_id);
     // Remove event and try to free memory.
     if (mem_buf->IsEventNotUsed()) {
@@ -378,6 +379,7 @@ bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint3
     }
     auto mem_bufs = stream_pair_mem_bufs.second;
     for (const auto &mem_buf : mem_bufs) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << mem_buf->ToJson() << ".";
       mem_buf->WaitEvent(task_id_on_stream, user_stream);
       // Remove event and try to free memory.
       if (mem_buf->IsEventNotUsed()) {
