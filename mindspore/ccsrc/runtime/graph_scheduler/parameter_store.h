@@ -60,6 +60,19 @@ class BACKEND_EXPORT ParameterStore {
       graph_parameter_store->Clear();
     }
     graph_parameter_stores_.clear();
+    chosen_graph_parameter_store_ = nullptr;
+  }
+
+  void Clear(const string &graph_name) {
+    const auto &iter = graph_parameter_stores_.find(graph_name);
+    if (iter == graph_parameter_stores_.end()) {
+      MS_LOG(DEBUG) << "Graph " << graph_name << " has already clear.";
+      return;
+    }
+    auto graph_parameter_store = iter->second;
+    MS_EXCEPTION_IF_NULL(graph_parameter_store);
+    graph_parameter_store->Clear();
+    graph_parameter_stores_.erase(graph_name);
   }
 
   void SetChosenGraphName(const std::string &graph_name) {

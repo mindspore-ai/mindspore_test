@@ -242,6 +242,11 @@ class BACKEND_EXPORT GraphParameterStore {
     std::unique_lock<std::shared_mutex> lock(param_mutex_);
     parameter_device_tensors_.clear();
     heter_device_tensors_.clear();
+    release_data_info_.clear();
+    front_node_to_index_.clear();
+    node_to_real_front_node_.clear();
+    index_to_front_node_.clear();
+    ref_device_tensors_.clear();
     for (auto &buffer : buffers_) {
       buffer.clear();
     }
