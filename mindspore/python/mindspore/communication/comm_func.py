@@ -1373,6 +1373,10 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         group = GlobalComm.WORLD_COMM_GROUP
 
     split_sizes_empty = _is_split_sizes_empty(output_split_sizes) and _is_split_sizes_empty(input_split_sizes)
+    if isinstance(output_split_sizes, list):
+        output_split_sizes = tuple(output_split_sizes)
+    if isinstance(input_split_sizes, list):
+        input_split_sizes = tuple(input_split_sizes)
     global _ALL_TO_ALL_CACHE
     tensor_shape = output_shape
     cache_key = (tensor_shape, output_shape, output_split_sizes, input_split_sizes, group)

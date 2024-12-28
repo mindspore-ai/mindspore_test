@@ -35,7 +35,7 @@ namespace {
 constexpr char kAccuGradsPrefix[] = "accu_grads.";
 typedef struct GradReduceUser {
  public:
-  GradReduceUser() {}
+  GradReduceUser() : latest_dw_execute_order(0) {}
   GradReduceUser(const std::string &param_name_, const CNodePtrList &assign_add_list_,
                  const CNodePtrList &grad_reduce_list_, const AnfNodePtrList &latest_dw_compute_nodes_,
                  const AnfNodePtrList &latest_assign_add_nodes_, size_t latest_execute_order_)
@@ -213,7 +213,7 @@ AnfNodePtrList UpperSearchWithFilter(const AnfNodePtrList &node_list, size_t inp
     auto iter = std::find_if(func_graph_inputs.begin(), func_graph_inputs.end(),
                              [&cur_node](const AnfNodePtr &node) { return node == cur_node; });
     if (iter != func_graph_inputs.end()) {
-      input_index = iter - func_graph_inputs.begin() + 1;
+      input_index = LongToSize(iter - func_graph_inputs.begin() + 1);
       continue;
     }
     break;
