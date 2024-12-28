@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import math
 import pytest
 import numpy as np
-import mindspore as ms
+from tests.mark_utils import arg_mark
+from tests.st.common.random_generator import set_numpy_random_seed
 import mindspore.nn as nn
 from mindspore.ops import operations as P
 from mindspore import Tensor, context, Parameter
 from mindspore.ops.functional import vmap
 
-ms.set_seed(2022)
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
 
@@ -62,6 +61,7 @@ def test_apply_adam_with_amsgrad_op(data_type):
     Description: test the ApplyAdamWithAmsgrad.
     Expectation: match to np benchmark.
     """
+    set_numpy_random_seed(seed=2022)
     shape = (8, 9, 6, 10, 5)
     amsgrad = ApplyAdamWithAmsgradTEST()
     error = 1e-4
@@ -106,6 +106,7 @@ def test_apply_adam_witm_amsgrad_op_vmap():
     Description: test the ApplyAdamWithAmsgrad vmap.
     Expectation: match to np benchmark.
     """
+    set_numpy_random_seed(seed=2022)
     shape = (8, 9, 6, 10, 5)
 
     def cal_amsgrad(var, m, v, vhat, beta1_power, beta2_power, lr, grad):
@@ -153,6 +154,7 @@ def test_apply_adam_with_amsgrad_grad_op_vmap2():
     Description: test the ApplyAdamWithAmsgrad vmap.
     Expectation: match to np benchmark.
     """
+    set_numpy_random_seed(seed=2022)
     shape = (8, 9, 6, 10, 5)
 
     def cal_amsgrad(var, m, v, vhat, beta1_power, beta2_power, lr, grad):
