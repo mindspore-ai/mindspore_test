@@ -75,6 +75,8 @@
 namespace mindspore {
 namespace parallel {
 namespace {
+constexpr auto kDumpIrParallelDetail = "1";
+
 static void RecordFlopsOriginShape(const FuncGraphManagerPtr &mng) {
   for (const auto &each_graph : mng->func_graphs()) {
     std::list<CNodePtr> graph_orders = each_graph->GetOrderedCnodes();
@@ -1291,8 +1293,8 @@ void ParallelPreprocessor::SetOperatorInfo() {
     ExtractInformation(all_nodes);
 
     // print dump IR parallel detail
-    char *env_var = std::getenv("MS_DEV_DUMP_IR_PARALLEL_DETAIL");
-    if (env_var != nullptr && *env_var == '1') {
+    std::string env_var = common::GetEnv("MS_DEV_DUMP_IR_PARALLEL_DETAIL");
+    if (!env_var.empty() && env_var == kDumpIrParallelDetail) {
       for (const auto &node : all_nodes) {
         if (node->has_user_data<OperatorInfo>()) {
           auto operator_info = node->user_data<OperatorInfo>();
