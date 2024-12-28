@@ -42,11 +42,11 @@ def test_ops_pad_constant_dynamic():
     Description: dynamic test for mint.nn.functional.pad. mode = "constant".
     Expectation: expect correct result.
     """
-    input1 = generate_random_input((2, 3), np.float32)
+    input1 = generate_random_input((2, 3), np.float64)
     padding1 = (1, 1)
     value1 = 0
 
-    input2 = generate_random_input((2, 3, 4), np.float32)
+    input2 = generate_random_input((2, 3, 4), np.float64)
     padding2 = (1, 2)
     value2 = 1
 
@@ -80,10 +80,10 @@ def test_ops_pad_reflect_2d_dynamic():
     Description: dynamic test for mint.nn.functional.pad. reflection_pad_2d.
     Expectation: expect correct result.
     """
-    input1 = generate_random_input((2, 4, 3), np.float32)
+    input1 = generate_random_input((2, 4, 3), np.float64)
     padding1 = (1, 1, 1, 2)
 
-    input2 = generate_random_input((2, 3, 4, 4), np.float32)
+    input2 = generate_random_input((2, 3, 4, 4), np.float64)
     padding2 = (1, 2, 1, 1)
 
     TEST_OP(pad_reflect_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
@@ -134,10 +134,10 @@ def test_ops_pad_replicate_2d_dynamic():
     Description: dynamic test for mint.nn.functional.pad. replication_pad_2d.
     Expectation: expect correct result.
     """
-    input1 = generate_random_input((2, 4, 3), np.float32)
+    input1 = generate_random_input((2, 4, 3), np.float64)
     padding1 = (1, 1, 1, 2)
 
-    input2 = generate_random_input((2, 3, 4, 4), np.float32)
+    input2 = generate_random_input((2, 3, 4, 4), np.float64)
     padding2 = (1, 2, 1, 1)
 
     TEST_OP(pad_replicate_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
