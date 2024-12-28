@@ -8,8 +8,8 @@ mindspore.mint.isfinite
     .. math::
 
         out_i = \begin{cases}
-          & \text{ if } x_{i} = \text{Finite},\ \ True \\
-          & \text{ if } x_{i} \ne \text{Finite},\ \ False
+          & \text{ if } input_{i} = \text{Finite},\ \ True \\
+          & \text{ if } input_{i} \ne \text{Finite},\ \ False
         \end{cases}
 
     参数：
