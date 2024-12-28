@@ -159,7 +159,7 @@ void TrackerOperator::ValidateMemoryUsage(const std::vector<std::vector<size_t>>
       MS_LOG(WARNING) << "Valid failed: Output tensor " << outputs[i]->ToString() << " is not valid for operator "
                       << name() << ", task info: " << task_info->time_stamp;
     }
-    outputs[i]->mem_block->last_write_time_stamp = task_info->time_stamp;
+    outputs[i]->mem_block->last_write_time_stamp = static_cast<size_t>(task_info->time_stamp);
     outputs[i]->mem_block->last_write_stream_id = stream_id;
   }
 }
@@ -241,7 +241,7 @@ void GraphTracker::Dump(const std::string &graph_path) {
   if (!IsPyNative()) {
     return;
   }
-  MS_LOG(WARNING) << "Dump graph to file:" << graph_path;
+  MS_LOG(WARNING) << "Dump graph to file: " << graph_path;
   ChangeFileMode(graph_path, S_IWUSR | S_IRUSR);
   std::ofstream graph_file(graph_path);
   InitStreamSize();

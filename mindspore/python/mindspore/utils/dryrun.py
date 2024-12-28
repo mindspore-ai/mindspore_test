@@ -22,12 +22,14 @@ from mindspore.common._stub_tensor import StubTensor
 from mindspore.common import dtype as mstype
 from mindspore._checkparam import is_stub_tensor
 
+
 class TraceBack():
     """
     traceback warning logs in dryrun mode
     """
     def __init__(self):
         self.stack_str_set = set()
+
     def inject(self, method):
         """
         inject warning logs in dryrun mode
@@ -41,6 +43,7 @@ class TraceBack():
                                stack_list)
             return method(*args, **kwargs)
         return new_method
+
 
 def no_inject_traceback_for_print(self):
     if is_stub_tensor(self):

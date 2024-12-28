@@ -33,6 +33,8 @@
 namespace mindspore {
 
 namespace {
+using ShapeAndType = std::tuple<std::string, std::string, std::string, std::string, size_t, size_t>;
+
 template <typename T>
 void WriteCsvFile(const std::string &real_path, const std::vector<T> &data_list,
                   const std::vector<std::pair<std::string, std::function<std::string(const T &)>>> &csv_columns) {
@@ -132,7 +134,6 @@ void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
     auto prim = GetCNodePrimitive(cnode);
     MS_EXCEPTION_IF_NULL(prim);
     auto group_value = prim->GetAttr(kAttrGroup);
-
     if (group_value == nullptr) {
       MS_LOG(EXCEPTION) << "Group value is nullptr, node: " << cnode->fullname_with_scope();
     }
@@ -249,8 +250,7 @@ std::tuple<std::string, std::string, std::string> ExecuteOrderTracker::GetCommun
   return {src_rank, dest_rank, root_rank};
 }
 
-std::tuple<std::string, std::string, std::string, std::string, size_t, size_t>
-ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
+ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
   MS_EXCEPTION_IF_NULL(cnode);
 
   auto GetShapeAndType = [](AbstractBasePtr &abs) {
@@ -297,7 +297,6 @@ ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
     MS_EXCEPTION_IF_NULL(dtype);
     auto type_id = dtype->type_id();
     auto type_size = abstract::TypeIdSize(type_id);
-
     if (type_size == 0) {
       return 0;
     }
@@ -306,7 +305,6 @@ ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
 
   auto input_abs = cnode->input(1)->abstract();
   auto output_abs = cnode->abstract();
-
   if (!input_abs || !output_abs) {
     return std::make_tuple("UnknownShape", "UnknownType", "UnknownShape", "UnknownType", 0, 0);
   }
