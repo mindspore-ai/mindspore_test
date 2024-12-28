@@ -271,7 +271,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         Returns:
             str: Generated call body string for the overloaded functions.
         """
-        signatures_str = self._generate_func_signatures_str(func_protos)
+        signatures_str = self._generate_func_signatures_list_str(func_protos)
         dispatch_cases = self._get_dispatch_cases(func_protos)
         ut_dispatch_cases = self._get_ut_dispatch_cases(func_protos)
         ut_overload_body = self.TENSOR_FUNC_UT_OVERLOAD_BODY.replace(ut_dispatch_cases=ut_dispatch_cases)
@@ -293,7 +293,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                              ut_overload_body=ut_overload_body)
         return overload_func_call_str
 
-    def _generate_func_signatures_str(self, func_protos) -> str:
+    def _generate_func_signatures_list_str(self, func_protos) -> str:
         """
         Generates function signatures as a string from the given prototypes.
 
