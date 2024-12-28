@@ -223,8 +223,10 @@ class Conv2d(_Conv):
         groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
             divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`,
             this 2D convolution layer also can be called 2D depthwise convolution layer. Default: ``1`` .
-            :math:`C_{in} % groups == 0` , :math:`C_{out} % groups == 0` , :math:`C_{out} >= groups` ,
-            :math:`\text{kernel_size[1]} = C_{in} / groups`
+
+            - :math:`(C_{in} \text{ % } \text{groups} == 0)` , :math:`(C_{out} \text{ % } \text{groups} == 0)` ,
+              :math:`(C_{out} >= \text{groups})` , :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})`
+
         bias (bool, optional): Whether the Conv2d layer has a bias parameter. Default: ``True`` .
         dtype (mindspore.dtype, optional): Dtype of Parameters. Default: mstype.float32 .
 
@@ -254,11 +256,18 @@ class Conv2d(_Conv):
             \end{array}
 
     Raises:
+        ValueError: Args and size of the input feature map should satisfy the output formula to ensure that the size of
+            the output feature map is positive; otherwise, an error will be reported.
+        RuntimeError: On Ascend, due to the limitation of the L1 cache size of different NPU chip, if input size or
+            kernel size is too large, it may trigger an error.
         TypeError: If `in_channels`, `out_channels` or `groups` is not an int.
         TypeError: If `kernel_size`, `stride`, `padding` or `dilation` is neither an int not a tuple.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
         ValueError: If `padding` is `same` , but `stride` is not equal 1.
+        ValueError: The input parameters do not satisfy the convolution output formula.
+        ValueError: The KernelSize cannot exceed the size of the input feature map.
+        ValueError: The value of padding cannot cause the calculation area to exceed the input size.
 
     Supported Platforms:
         ``Ascend``

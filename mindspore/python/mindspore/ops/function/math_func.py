@@ -10541,7 +10541,7 @@ def cholesky(input_x, upper=False):
     Args:
         input_x (Tensor): Tensor of shape :math:`(*, N, N)`, where :math:`*` is zero or more batch dimensions
             consisting of symmetric positive-definite matrices, with float32 or float64 data type.
-        upper (bool): If `upper` is `True`, returns an upper-triangular matrix. If `upper` is `False`, returns
+        upper (bool, optional): If `upper` is `True`, returns an upper-triangular matrix. If `upper` is `False`, returns
             a lower-triangular matrix. Default: ``False`` .
 
     Returns:

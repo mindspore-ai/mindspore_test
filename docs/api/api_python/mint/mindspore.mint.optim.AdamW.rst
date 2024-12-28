@@ -6,7 +6,9 @@ mindspore.mint.optim.AdamW
     Adaptive Moment Estimation Weight Decay(AdamW)算法的实现。
 
     .. math::
-        \begin{aligned}
+        \begin{array}{l}
+                &\newline
+                &\hline \\
                 &\textbf{input}      : \gamma \text{(lr)}, \: \beta_1, \beta_2
                     \text{(betas)}, \: \theta_0 \text{(params)}, \: f(\theta) \text{(objective)},
                     \: \epsilon \text{ (epsilon)}                                                    \\
@@ -14,6 +16,8 @@ mindspore.mint.optim.AdamW
                     \: \textit{maximize}                                                             \\
                 &\textbf{initialize} : m_0 \leftarrow 0 \text{ (first moment)}, v_0 \leftarrow 0
                     \text{ ( second moment)}, \: \widehat{v_0}^{max}\leftarrow 0              \\[-1.ex]
+                &\newline
+                &\hline \\
                 &\textbf{for} \: t=1 \: \textbf{to} \: \ldots \: \textbf{do}                         \\
                 &\hspace{6mm}\textbf{if} \: \textit{maximize}:                                       \\
                 &\hspace{11mm}g_t           \leftarrow   -\nabla_{\theta} f_t (\theta_{t-1})          \\
@@ -32,8 +36,12 @@ mindspore.mint.optim.AdamW
                 &\hspace{6mm}\textbf{else}                                                           \\
                 &\hspace{11mm}\theta_t \leftarrow \theta_t - \gamma \widehat{m_t}/
                     \big(\sqrt{\widehat{v_t}} + \epsilon \big)                                       \\
+                &\newline
+                &\hline \\[-1.ex]
                 &\bf{return} \:  \theta_t                                                     \\[-1.ex]
-        \end{aligned}
+                &\newline
+                &\hline \\[-1.ex]
+        \end{array}
 
     .. warning::
         - 这是一个实验性的优化器接口，需要和 `LRScheduler <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.experimental.html#lrscheduler%E7%B1%BB>`_ 下的动态学习率接口配合使用。

@@ -46,7 +46,9 @@ mindspore.mint.nn.Conv2d
         - **dilation** (Union[int, tuple[int]]，可选) - 卷积核膨胀尺寸。可以为单个int，或者由两个/四个int组成的tuple。单个int表示在高度和宽度方向的膨胀尺寸均为该值。两个int组成的tuple分别表示在高度和宽度方向的膨胀尺寸。若为四个int，N、C两维度int默认为1，H、W两维度分别对应高度和宽度上的膨胀尺寸。
           假设 :math:`dilation=(d0, d1)`, 则卷积核在高度方向间隔 :math:`d0-1` 个元素进行采样，在宽度方向间隔 :math:`d1-1` 个元素进行采样。高度和宽度上取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
         - **groups** (int，可选) - 将过滤器拆分为组， `in_channels` 和 `out_channels` 必须可被 `groups` 整除。如果组数等于 `in_channels` 和 `out_channels` ，这个二维卷积层也被称为二维深度卷积层。默认值： ``1`` 。
-          - :math:`C_{in} % groups == 0` ， :math:`C_{out} % groups == 0` ， :math:`C_{out} >= groups` ， :math:`\text{kernel_size[1]} = C_{in} / groups` 
+
+          - :math:`(C_{in} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} >= \text{groups})` ， :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})` 
+
         - **bias** (bool，可选) - Conv2d层是否添加偏置参数。默认值： ``True`` 。
         
         - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``None``。
@@ -86,8 +88,13 @@ mindspore.mint.nn.Conv2d
             \end{array}
 
     异常：
+        - **ValueError** - 输入特征图的大小与参数应满足输出公式，以确保输出特征图大小为正，否则会报错。
+        - **RuntimeError** - Ascend上受不同型号NPU芯片上L1缓存大小限制，用例尺寸或Kernel Size过大。
         - **TypeError** - 如果 `in_channels` ， `out_channels` 或者 `groups` 不是整数。
         - **TypeError** - 如果 `kernel_size` ， `stride`， 或者 `dilation` 既不是整数也不是tuple。
         - **ValueError** - 如果 `in_channels` ， `out_channels`， `kernel_size` ， `stride` 或者 `dilation` 小于1。
         - **ValueError** - 如果 `padding` 小于0。
         - **ValueError** - 如果 `padding` 是 ``"same"`` ， 但是 `stride` 不等于1。
+        - **ValueError** - 输入参数不满足卷积输出公式。
+        - **ValueError** - `KernelSize` 不能超过输入特征图的大小。
+        - **ValueError** - `padding` 值不能导致计算区域超出输入大小。
