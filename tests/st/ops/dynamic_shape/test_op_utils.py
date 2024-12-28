@@ -34,9 +34,10 @@ LIST = 4
 JIT_CONFIG = None
 ENABLE_DEBUG_INFO = False
 DEBUG_STATUS_INFO = ""
+DEBUG_INFOS_LEVEL = 0
 
 
-class HelpNet(nn.Cell):
+class ResizeNet(nn.Cell):
     def __init__(self, prim):
         super().__init__()
         self.op = prim
@@ -88,31 +89,41 @@ class GradNet(nn.Cell):
         self.grad_func = ops.GradOperation(get_all=True)
 
     def construct(self, *args):
-        func = self.grad_func(self.net)
-        forward_out = self.net(*args)
-        grad_out = func(*args)
-        return forward_out, grad_out
+        return self.grad_func(self.net)(*args)
 
 
-class GradNetInplace(nn.Cell):
-    def __init__(self, net):
-        super().__init__()
-        self.net = net
-        self.grad_func = ops.GradOperation(get_all=True)
+class OpNetHelper:
+    def __init__(self, prim, grad, inplace_update, resize, jit_config):
+        if isinstance(prim, ops.Primitive):
+            net_class = OpNet
+        else:
+            net_class = OpFunctionNet
+        if resize:
+            net_class = ResizeNet
+        self.forward_net = net_class(prim)
+        self.backward_net = None
+        if grad:
+            self.backward_net = GradNet(net_class(prim))
+        self.grad = grad
+        self.inplace_update = inplace_update
+        if jit_config:
+            self.forward_net.set_jit_config(jit_config)
+            if grad:
+                self.backward_net.set_jit_config(jit_config)
 
-    def construct(self, *args):
+    def set_inputs(self, *compile_args):
+        self.forward_net.set_inputs(*compile_args)
+        if self.grad:
+            self.backward_net.set_inputs(*compile_args)
 
-        def clone_grad_inputs(args):
-            def clone_func(arg):
-                if isinstance(arg, (Tensor, Parameter)):
-                    return arg.copy()
-                return arg
-            return tuple(clone_func(arg) for arg in args)
-
-        func = self.grad_func(self.net)
-        forward_out = self.net(*args)
-        grad_out = func(*clone_grad_inputs(args))
-        return forward_out, grad_out
+    def run(self, *run_args):
+        forward_args = clone_inputs(run_args, self.inplace_update)
+        backward_args = clone_inputs(run_args, self.inplace_update)
+        forward_out = self.forward_net(*forward_args)
+        if self.grad:
+            backward_out = self.backward_net(*backward_args)
+            return forward_out, backward_out
+        return forward_out
 
 
 def set_debug_status_info(mode_name, tensor_dynamic_type='', notensor_dynamic_type=''):
@@ -160,12 +171,19 @@ def error_status_log():
     print("For more information, set dump_ir=True or debug_info=True to get ir graphs.")
 
 
-def debug_log_args(args, tag='', print_tensor=False):
+def debug_log_args(args, tag='', is_runargs=True):
+    print_tensor = False
+
+    global DEBUG_INFOS_LEVEL
+    if DEBUG_INFOS_LEVEL >= 1:
+        print_tensor = True
+        print_tensor &= is_runargs
+
     if isinstance(args, (list, tuple)):
         debug_log(f"{tag} is a {type(args)}")
         for i, item in enumerate(args):
             new_tag = tag + f"[{i}]"
-            debug_log_args(item, tag=new_tag, print_tensor=print_tensor)
+            debug_log_args(item, tag=new_tag, is_runargs=is_runargs)
     else:
         if isinstance(args, Tensor):
             if print_tensor:
@@ -236,9 +254,8 @@ def compare_result(expect, actual, stage='', index=None, ignore_output_index=Non
     else:
         if isinstance(expect, Tensor):
             result = np.allclose(expect.asnumpy(), actual.asnumpy(), rtol=1e-03, atol=1e-03, equal_nan=True)
-            print_tensor = not result
-            debug_log_args(expect, tag=f"compare_result Tensor expect", print_tensor=print_tensor)
-            debug_log_args(actual, tag=f"compare_result Tensor actual", print_tensor=print_tensor)
+            debug_log_args(expect, tag=f"compare_result Tensor expect")
+            debug_log_args(actual, tag=f"compare_result Tensor actual")
         else:
             result = np.allclose(expect, actual, rtol=1e-03, atol=1e-03, equal_nan=True)
             debug_log_args(expect, tag=f"compare_result Scalar expect")
@@ -356,18 +373,15 @@ def check_inputs_seq(inputs_seq, disable_input_check):
 def run_in_dynamic_env(prim, inputs, dump_ir, ir_path, dynamic_type, grad, inplace_update):
     """set dynamic env before execute"""
     out_actual = None
-    global JIT_CONFIG
     compile_inputs = convert_tensor_to_dynamic(inputs, dynamic_type)
-    debug_log_args(compile_inputs, tag=f"run_in_dynamic_env compile_inputs")
+    debug_log_args(compile_inputs, tag=f"run_in_dynamic_env compile_inputs", is_runargs=False)
     if dump_ir:
         context.set_context(save_graphs=IR_LEVEL, save_graphs_path=ir_path)
 
     dynamic_net = create_net(prim, grad, inplace_update)
     dynamic_net.set_inputs(*compile_inputs)
-    if JIT_CONFIG:
-        dynamic_net.set_jit_config(JIT_CONFIG)
     debug_log_args(inputs, tag=f"run_in_dynamic_env run_inputs")
-    out_actual = dynamic_net(*clone_inputs(inputs, inplace_update))
+    out_actual = dynamic_net.run(*inputs)
     debug_log_args(out_actual, tag=f"run_in_dynamic_env out_actual")
 
     return out_actual
@@ -475,7 +489,6 @@ def run_with_dynamic_resize(prim, inputs_seq, mode_name, dump_ir, ir_path, expec
     """test resize"""
     print(f"Start testing with [{mode_name}] [Resize]...")
     out_actual = None
-    global JIT_CONFIG
     if dump_ir:
         context.set_context(save_graphs=IR_LEVEL, save_graphs_path=ir_path)
 
@@ -488,27 +501,25 @@ def run_with_dynamic_resize(prim, inputs_seq, mode_name, dump_ir, ir_path, expec
     run_inputs = replace_nontensor_with_help_tensor(inputs_seq[0])
     run_inputs = convert_sequence_of_tensor_to_mutable(run_inputs)
 
-    debug_log_args(compile_inputs, tag="run_with_dynamic_resize compile_inputs")
+    debug_log_args(compile_inputs, tag="run_with_dynamic_resize compile_inputs", is_runargs=False)
     debug_log_args(run_inputs, tag="run_with_dynamic_resize first run_inputs")
 
-    dynamic_net = HelpNet(prim)
-    if JIT_CONFIG:
-        dynamic_net.set_jit_config(JIT_CONFIG)
+    dynamic_net = create_net(prim, False, inplace_update, True)
     dynamic_net.set_inputs(*compile_inputs)
-    dynamic_net(*clone_inputs(run_inputs, inplace_update))
+    dynamic_net.run(*run_inputs)
 
     re_compile_inputs, need_reset_inputs = replace_diff_len_tuple_from_run_inputs(inputs_seq[0], inputs_seq[1])
     if need_reset_inputs:
         re_compile_inputs = convert_tensor_to_dynamic(re_compile_inputs, 'DYNAMIC_RANK')
         re_compile_inputs = replace_nontensor_with_help_tensor(re_compile_inputs)
         re_compile_inputs = convert_sequence_of_tensor_to_mutable(re_compile_inputs)
-        debug_log_args(re_compile_inputs, tag="run_with_dynamic_resize re_compile_inputs")
+        debug_log_args(re_compile_inputs, tag="run_with_dynamic_resize re_compile_inputs", is_runargs=False)
         dynamic_net.set_inputs(*re_compile_inputs)
 
     run_inputs = replace_nontensor_with_help_tensor(inputs_seq[1])
     run_inputs = convert_sequence_of_tensor_to_mutable(run_inputs)
     debug_log_args(run_inputs, tag="run_with_dynamic_resize secend run_inputs")
-    out_actual = dynamic_net(*clone_inputs(run_inputs, inplace_update))
+    out_actual = dynamic_net.run(*run_inputs)
 
     compare_result(expect_resize, out_actual, 'Resize', None, ignore_output_index)
     print("End")
@@ -656,20 +667,6 @@ def get_name_by_op(prim):
     return "ir_" + name
 
 
-def create_net(prim, grad, inplace_update):
-    if isinstance(prim, ops.Primitive):
-        net_class = OpNet
-    else:
-        net_class = OpFunctionNet
-
-    if grad:
-        if inplace_update:
-            return GradNetInplace(net_class(prim))
-        return GradNet(net_class(prim))
-
-    return net_class(prim)
-
-
 def clone_inputs(args, inplace_update=False):
     def clone_func(arg):
         if isinstance(arg, (Tensor, Parameter)):
@@ -681,10 +678,15 @@ def clone_inputs(args, inplace_update=False):
     return [clone_func(arg) for arg in args]
 
 
+def create_net(prim, grad, inplace_update, resize=False):
+    global JIT_CONFIG
+    return OpNetHelper(prim, grad, inplace_update, resize, JIT_CONFIG)
+
+
 def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yaml_check=False, disable_mode=[],
             disable_tensor_dynamic_type=None, disable_nontensor_dynamic_type=None, disable_grad=False,
             disable_resize=False, ignore_output_index=None, dump_ir=False, custom_flag='', debug_info=False,
-            inplace_update=False):
+            inplace_update=False, debug_level=0):
     """
     This function creates several dynamic cases by converting Tensor/tuple/list/scalar inputs to dynamic shape to test
     the correctness of the op's dynamic inputs process. Both Primitive and Functional API are supported.
@@ -749,13 +751,16 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
             Default: ``False`` .
         ignore_output_index (int): Ignore `index` output compare. Default None.
         dump_ir (bool): Whether to save the ir_graphs during test.
-           If ``False`` , no ir_graphs will be generated.
-           If ``True`` , `save_graphs` will be set and save_graphs_path is generated by Primitive's name and dynamic
-           type.
-           Default: ``False`` .
+            If ``False`` , no ir_graphs will be generated.
+            If ``True`` , `save_graphs` will be set and save_graphs_path is generated by Primitive's name and dynamic
+            type.
+            Default: ``False`` .
         custom_flag (str): Some log and ir path is distinguished by Primitive's name. Default '' .
         debug_info (bool): Whether to print more debug information. Default ``False`` .
         inplace_update (bool): Whether the op updates its inputs. Default ``False`` .
+        debug_level (int): Set the level for debug infos, level should be in [0, 1].
+            If ``0`` , print shape and dtype of Tensor args.
+            If ``1`` , print shape, dtype and actual values of Tensor args.
 
     Outputs:
         None
@@ -789,7 +794,9 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
 
     global JIT_CONFIG
     global ENABLE_DEBUG_INFO
+    global DEBUG_INFOS_LEVEL
     ENABLE_DEBUG_INFO = debug_info
+    DEBUG_INFOS_LEVEL = debug_level
 
     check_inputs_seq(inputs_seq, disable_input_check)
     check_inputs_with_yaml(inputs_seq, yaml_name, disable_yaml_check)
@@ -810,15 +817,9 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
             if device_target != "Ascend":
                 warning_log(f"GRAPH_MODE_O0 is skipped, because device_target is not 'Ascend', but {device_target}")
                 continue
-            if inplace_update:
-                JIT_CONFIG = JitConfig(jit_level="O0", jit_syntax_level="LAX")
-            else:
-                JIT_CONFIG = JitConfig(jit_level="O0")
+            JIT_CONFIG = JitConfig(jit_level="O0")
         elif mode_name == 'GRAPH_MODE':
-            if inplace_update:
-                JIT_CONFIG = JitConfig(jit_level="O2", jit_syntax_level="LAX")
-            else:
-                JIT_CONFIG = JitConfig(jit_level="O2")
+            JIT_CONFIG = JitConfig(jit_level="O2")
             os.environ['MS_ALLOC_CONF'] = "enable_vmm:False"
         else:
             JIT_CONFIG = None
@@ -848,10 +849,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
 
         try:
             static_net = create_net(op, grad, inplace_update)
-            if JIT_CONFIG:
-                static_net.set_jit_config(JIT_CONFIG)
-            out_expect = static_net(
-                *clone_inputs(inputs_seq[0], inplace_update))
+            out_expect = static_net.run(*inputs_seq[0])
             debug_log_args(out_expect, tag="out_expect")
             print("End")
 
@@ -864,10 +862,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
                     context.set_context(save_graphs=IR_LEVEL, save_graphs_path=ir_path)
 
                 static_net_second = create_net(op, grad, inplace_update)
-                if JIT_CONFIG:
-                    static_net_second.set_jit_config(JIT_CONFIG)
-                out_expect_second = static_net_second(
-                    *clone_inputs(inputs_seq[1], inplace_update))
+                out_expect_second = static_net_second.run(*inputs_seq[1])
                 debug_log_args(out_expect_second, tag="out_expect_second")
                 print("End")
             else:
