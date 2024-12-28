@@ -65,7 +65,7 @@ from mindspore.ops._utils.utils import ms_arrange
 
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
-    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, \
+    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, \
     expand_as, unstack_ext_op, full_like_op, \
     index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
@@ -125,6 +125,7 @@ tensor_shape_ = P.TensorShape()
 tensor_slice = slice_op
 tile_ = P.Tile()
 transpose_ = P.Transpose()
+type_as_ = P.TypeAs()
 tuple_to_array_ = P.TupleToArray()
 tuple_to_tensor_ = TupleToTensor()
 unique_ = P.Unique()
@@ -7394,6 +7395,51 @@ def from_numpy(array):
         [1 2]
     """
     return Tensor.from_numpy(array)
+
+
+def type_as(input, other):
+    r"""
+    Returns input cast to the type of the with the other.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Note:
+        When converting complex numbers to boolean type, the imaginary part of the complex number is not
+        taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+
+    Args:
+        input (Tensor): The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+            The tensor whose data type is to be converted.
+        other (Tensor): The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+            The tensor whose data type is specified.
+
+    Returns:
+        Tensor, the shape of tensor is the same as `input`, :math:`(x_0, x_1, ..., x_R)`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `other` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        >>> input = Tensor(input_np)
+        >>> other_np = np.random.randn(2, 3, 4).astype(np.int32)
+        >>> other = Tensor(other_np)
+        >>> output = ops.type_as(input, other)
+        >>> print(output.dtype)
+        Int32
+        >>> print(output.shape)
+        (2, 3, 4, 5)
+    """
+    return type_as_(input, other)
+
 
 __all__ = [
     'unique',
