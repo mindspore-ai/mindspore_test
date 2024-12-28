@@ -62,7 +62,7 @@ from mindspore.ops.auto_generate import softshrink
 from mindspore.ops.auto_generate import adaptive_avg_pool2d_ext_op
 from mindspore.ops.auto_generate.pyboost_inner_prim import nllloss_impl
 from mindspore.ops.function.array_func import gather_ext
-from mindspore.ops.operations.manually_defined import flash_attention_score
+from mindspore.ops.operations.manually_defined import flash_attention_score, fused_infer_attention_score
 
 abs_ = P.Abs()
 add_ = P.Add()
@@ -9205,6 +9205,7 @@ __all__ = [
     'incre_flash_attention',
     'prompt_flash_attention',
     'flash_attention_score',
+    'fused_infer_attention_score',
     'flip',
     'fliplr',
     'flipud',
