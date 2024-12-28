@@ -52,6 +52,8 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
       MS_EXCEPTION(TypeError)
         << "For 'InplaceIndexPut', tensors used as indices must be long, int, uint8, or bool tensors";
     }
+    // For aclnnIndexPutImpl op, the indices element dtype supports bool and uint8, so there is no need to convert to
+    // int64 by nonzero conversion.
     if (type_id == kNumberTypeBool || type_id == kNumberTypeUInt8) {
       auto shape = tensor->shape();
       auto rank = SizeToLong(shape.size());
@@ -63,14 +65,19 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
                                    << input_shape << " at index " << srcIdx;
         }
       }
-      auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device_name);
-      auto nonzero_tensor = nonzero_op->Call(tensor);
-      for (int64_t j = 0; j < rank; j++) {
-        const auto dim = std::make_shared<Int64Imm>(kIndex0);
-        const auto index = std::make_shared<Int64Imm>(j);
-        auto select_op = CREATE_PYBOOST_OP(SelectExt, device_name);
-        auto select_tensor = select_op->Call(nonzero_tensor, dim, index);
-        result.emplace_back(select_tensor);
+      // For aclnnIndexPutImpl op, the indices element dtype supports bool.
+      if (type_id == kNumberTypeUInt8) {
+        auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device_name);
+        auto nonzero_tensor = nonzero_op->Call(tensor);
+        for (int64_t j = 0; j < rank; j++) {
+          const auto dim = std::make_shared<Int64Imm>(kIndex0);
+          const auto index = std::make_shared<Int64Imm>(j);
+          auto select_op = CREATE_PYBOOST_OP(SelectExt, device_name);
+          auto select_tensor = select_op->Call(nonzero_tensor, dim, index);
+          result.emplace_back(select_tensor);
+        }
+      } else {
+        result.emplace_back(tensor);
       }
     } else {
       result.emplace_back(tensor);
