@@ -422,6 +422,7 @@ def place_holder():
     logger.error(
         "This is a place holder function and should not be called. Please check the implementation.")
 
+
 unique_dim_ = UniqueDim()
 unique2_ = Unique2()
 
@@ -888,8 +889,10 @@ def deprecated_tensor_outer(input, vec2):
 def tensor_pow_tensor_tensor(input, exponent):
     return pow(input, exponent)
 
+
 def deprecated_tensor_pow(input, exponent):
     return pow(input, exponent)
+
 
 # 83 prod
 def tensor_prod(input, axis=None, keep_dims=False, dtype=None):
@@ -1246,6 +1249,7 @@ def tensor_inplace_masked_fill_tensor_empty(input, masked, value):
 def tensor_bincount(input, weights=None, minlength=0):
     return bincount(input, weights, minlength)
 
+
 # 134 diff
 
 # 135 double
@@ -1293,6 +1297,7 @@ def tensor_gcd(input, other):
 # 147 isinf
 def tensor_isinf():
     return isinf()
+
 
 # 148 not_equal
 def tensor_not_equal(input, other):
@@ -1411,6 +1416,7 @@ def tensor_median(input):
 def tensor_median_dim(input, dim=-1, keepdim=False):
     return median(input, dim, keepdim)
 
+
 # 156
 
 # 157
@@ -1421,13 +1427,16 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 def tensor_histc(input, bins=100, min=0, max=0):
     return histc(input, bins, min, max)
 
+
 # 160 frac
 def tensor_frac(input):
     return frac(input)
 
+
 # 161 bitwise_not
 def tensor_bitwise_not(input):
     return bitwise_not_op(input)
+
 
 # 162
 def tensor_log10(input):
@@ -1570,14 +1579,18 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
             nums *= input.shape[ax]
     return _tensor_div(x_sum, nums - ddof)
 
+
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
+
 
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")
 
+
 def tensor_subtract(input, other, *, alpha=1):
     return tensor_sub_ext(input, other, alpha=alpha)
+
 
 def tensor_true_divide(input, other):
     return div(input, other)
