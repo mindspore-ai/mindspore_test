@@ -315,7 +315,7 @@ class OpTemplateParser:
             res = True
         return res
 
-    def generate_signature_str(self, kw_only_args, varargs=None, *, is_tensor_api=False) -> str:
+    def generate_signature_str(self, kw_only_args=None, varargs=None, *, is_tensor_api: bool) -> str:
         """
         Generates a single function signature string for the given operation prototype.
 
@@ -335,10 +335,10 @@ class OpTemplateParser:
         first_arg = True
         kw_args_init_flag = False
 
-        for _, arg in enumerate(self.op_proto.op_args):
+        arg_index = 0
+        for arg in self.op_proto.op_args:
             arg_name = arg.arg_name
 
-            # Tensor场景中跳过输入参数
             if is_tensor_api and self._is_input_arg(arg_name, op_name):
                 continue
 
@@ -346,7 +346,6 @@ class OpTemplateParser:
             if not first_arg:
                 single_arg = ', '
 
-            # 参数类型处理
             arg_handler = arg.arg_handler
             if arg_handler:
                 if arg_handler in K.ARG_HANDLER_MAP:
@@ -359,23 +358,23 @@ class OpTemplateParser:
                 for cast_type in arg.type_cast:
                     arg_dtype += f'|{cast_type}'
 
-            # Tensor api 需要考虑 varargs
-            if is_tensor_api and varargs is not None:
+            # handle varargs params
+            if varargs and arg_name in varargs and arg_index == 0:
                 single_arg += f"{arg_dtype} *{arg_name}"
             else:
                 single_arg += f"{arg_dtype} {arg_name}"
 
-            # 默认值处理
             if arg.as_init_arg:
                 single_arg += f"={arg.default}"
 
-            # 处理 keyword-only 参数
+            # handle keyword-only params
             if kw_only_args and not kw_args_init_flag and arg_name == kw_only_args[0]:
                 single_arg = ("*, " if first_arg else ", *") + single_arg
                 kw_args_init_flag = True
 
             args_str += single_arg
             first_arg = False
+            arg_index += 1
 
         return args_str + ')"'
 
