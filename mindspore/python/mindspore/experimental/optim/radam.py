@@ -55,36 +55,39 @@ class RAdam(Optimizer):
     Implements RAdam algorithm.
 
     .. math::
-        \begin{aligned}
-            &\rule{110mm}{0.4pt}                                                                 \\
-            &\textbf{input}      : \gamma \text{ (lr)}, \: \beta_1, \beta_2
-                \text{ (betas)}, \: \theta_0 \text{ (params)}, \:f(\theta) \text{ (objective)}, \:
-                \lambda \text{ (weightdecay)},                                                   \\
-            &\hspace{13mm} \epsilon \text{ (epsilon)}                                            \\
-            &\textbf{initialize} :  m_0 \leftarrow 0 \text{ ( first moment)},
-                v_0 \leftarrow 0 \text{ ( second moment)},                                       \\
-            &\hspace{18mm} \rho_{\infty} \leftarrow 2/(1-\beta_2) -1                      \\[-1.ex]
-            &\rule{110mm}{0.4pt}  \\
-            &\textbf{for} \: t=1 \: \textbf{to} \: \ldots \: \textbf{do}                         \\
-            &\hspace{6mm}g_t           \leftarrow   \nabla_{\theta} f_t (\theta_{t-1})           \\
-            &\hspace{5mm} \textbf{if} \: \lambda \neq 0                                          \\
-            &\hspace{10mm} g_t \leftarrow g_t + \lambda \theta_{t-1}                             \\
-            &\hspace{6mm}m_t           \leftarrow   \beta_1 m_{t-1} + (1 - \beta_1) g_t          \\
-            &\hspace{6mm}v_t           \leftarrow   \beta_2 v_{t-1} + (1-\beta_2) g^2_t          \\
-            &\hspace{6mm}\widehat{m_t} \leftarrow   m_t/\big(1-\beta_1^t \big)                   \\
-            &\hspace{6mm}\rho_t \leftarrow \rho_{\infty} -
-                2 t \beta^t_2 /\big(1-\beta_2^t \big)                                     \\[-1.ex]
-            &\hspace{6mm}\textbf{if} \: \rho_t > 5                                               \\
-            &\hspace{12mm} l_t \leftarrow \frac{\sqrt{ (1-\beta^t_2) }}{ \sqrt{v_t} +\epsilon  } \\
-            &\hspace{12mm} r_t \leftarrow
-                \sqrt{\frac{(\rho_t-4)(\rho_t-2)\rho_{\infty}}{(\rho_{\infty}-4)(\rho_{\infty}-2) \rho_t}} \\
-            &\hspace{12mm}\theta_t \leftarrow \theta_{t-1} - \gamma \widehat{m_t} r_t l_t        \\
-            &\hspace{6mm}\textbf{else}                                                           \\
-            &\hspace{12mm}\theta_t \leftarrow \theta_{t-1} - \gamma \widehat{m_t}                \\
-            &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
-            &\bf{return} \:  \theta_t                                                     \\[-1.ex]
-            &\rule{110mm}{0.4pt}                                                          \\[-1.ex]
-        \end{aligned}
+        \begin{align*}
+            &\rule{110mm}{0.4pt} \\
+            &\textbf{Input}:
+                \gamma \text{ (lr)}, \: \beta_1, \beta_2 \text{ (betas)}, \: \theta_0 \text{ (params)}, \:f(\theta)
+                \text{ (objective)}, \:
+                \lambda \text{ (weightdecay)}, \: \epsilon \text{ (epsilon)} \\
+            &\textbf{Initialize}:
+                \begin{cases}
+                    m_0 \leftarrow 0 \text{ (first moment)} \\
+                    v_0 \leftarrow 0 \text{ (second moment)} \\
+                    \rho_{\infty} \xleftarrow{\text{def}} \dfrac{2}{1 - \beta_2} - 1
+                \end{cases} \\
+            &\rule{110mm}{0.4pt} \\
+            &\textbf{For } t = 1 \text{ to } \ldots \text{ do}: \\
+            &\quad g_t \leftarrow \nabla_{\theta} f_t(\theta_{t - 1}) \\
+            &\quad \text{If } \lambda \neq 0: \\
+            &\quad\quad g_t \leftarrow g_t + \lambda \theta_{t - 1} \\
+            &\quad m_t \leftarrow \beta_1 m_{t - 1} + (1 - \beta_1) g_t \\
+            &\quad v_t \leftarrow \beta_2 v_{t - 1} + (1 - \beta_2) g_t^2 \\
+            &\quad \widehat{m_t} \leftarrow \dfrac{m_t}{1 - \beta_1^t} \\
+            &\quad \text{Let } \rho_t' = 2 t \beta_2^t /(1 - \beta_2^t) \quad \text{(auxiliary variable)} \\
+            &\quad \rho_t \leftarrow \rho_{\infty} - \rho_t' \\
+            &\quad \text{If } \rho_t > 5: \\
+            &\quad\quad l_t \leftarrow \dfrac{\sqrt{1 - \beta_2^t}}{\sqrt{v_t} + \epsilon} \\
+            &\quad\quad r_t \leftarrow \sqrt{\dfrac{(\rho_t - 4)(\rho_t - 2)\rho_{\infty}}{(\rho_{\infty} - 4)
+            (\rho_{\infty} - 2) \rho_t}} \\
+            &\quad\quad \theta_t \leftarrow \theta_{t - 1} - \gamma \widehat{m_t} r_t l_t \\
+            &\quad \text{Else}: \\
+            &\quad\quad \theta_t \leftarrow \theta_{t - 1} - \gamma \widehat{m_t} \\
+            &\rule{110mm}{0.4pt} \\
+            &\bf{Return}: \theta_t \\
+            &\rule{110mm}{0.4pt}
+        \end{align*}
 
     .. warning::
         This is an experimental optimizer API that is subject to change.
