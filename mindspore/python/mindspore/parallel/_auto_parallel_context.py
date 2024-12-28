@@ -187,6 +187,25 @@ class _AutoParallelContext:
         self.check_context_handle()
         return self._context_handle.get_dump_local_norm()
 
+    def set_dump_local_norm_path(self, dump_local_norm_path):
+        """
+        Set dump local norm path for auto parallel.
+
+        Args:
+            dump_local_norm_path (str): User need to specify the path to save dump files
+                                        if he want to dump local norm.  Default: ''
+
+        Raises:
+            KeyError: When the value of dump_local_norm_path is not a str value.
+        """
+        self.check_context_handle()
+        self._context_handle.set_dump_local_norm_path(dump_local_norm_path)
+
+    def get_dump_local_norm_path(self):
+        """Get dump local norm path."""
+        self.check_context_handle()
+        return self._context_handle.get_dump_local_norm_path()
+
     def set_dump_device_local_norm(self, dump_device_local_norm):
         """
         Set dump device local norm for auto parallel.
@@ -195,7 +214,7 @@ class _AutoParallelContext:
             dump_device_local_norm (bool): User need to specify if he want to dump device local norm.  Default: False
 
         Raises:
-            ValueError: If the dump_device_local_norm in not a bool value.
+            ValueError: If the dump_device_local_norm is not a bool value.
         """
         self.check_context_handle()
         self._context_handle.set_dump_device_local_norm(dump_device_local_norm)
@@ -1307,6 +1326,7 @@ _set_auto_parallel_context_func_map = {
     "strategy_ckpt_config": auto_parallel_context().set_strategy_ckpt_config,
     "comm_fusion": auto_parallel_context().set_comm_fusion,
     "dump_local_norm": auto_parallel_context().set_dump_local_norm,
+    "dump_local_norm_path": auto_parallel_context().set_dump_local_norm_path,
     "dump_device_local_norm": auto_parallel_context().set_dump_device_local_norm}
 
 _get_auto_parallel_context_func_map = {
@@ -1341,6 +1361,7 @@ _get_auto_parallel_context_func_map = {
     "strategy_ckpt_config": auto_parallel_context().get_strategy_ckpt_config,
     "full_batch_is_set": auto_parallel_context().get_full_batch_is_set,
     "dump_local_norm": auto_parallel_context().get_dump_local_norm,
+    "dump_local_norm_path": auto_parallel_context().get_dump_local_norm_path,
     "dump_device_local_norm": auto_parallel_context().get_dump_device_local_norm}
 
 
