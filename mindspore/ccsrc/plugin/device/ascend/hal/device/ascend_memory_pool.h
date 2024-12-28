@@ -94,6 +94,10 @@ class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemor
   ~DefaultEnhancedAscendMemoryPool() override = default;
 
   // Wrap enhanced function.
+  void Initialize(size_t init_size, size_t increase_size, size_t max_size) override {
+    instance_->Initialize(init_size, increase_size, max_size);
+  }
+
   void ReleaseDeviceRes() override;
 
   DeviceMemPtr AllocTensorMem(size_t size, bool from_persistent_mem = false, bool need_recycle = false,
