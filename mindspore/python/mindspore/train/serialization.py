@@ -1304,7 +1304,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                     cal_crc_num = binascii.crc32(bytes(f.get_tensor(k)), cal_crc_num)
                 if choice_func is not None and not choice_func(k):
                     continue
-                parameter_dict[k] = Parameter(f.get_tensor(k))
+                parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
             sf_load_time_end = time.time()
             cost_time = sf_load_time_end - sf_load_time_start
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load safetensors cost time:{cost_time}.")
