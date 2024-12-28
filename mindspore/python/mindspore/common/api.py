@@ -275,7 +275,9 @@ def __get_compile_cache_dep_files(file_path, compile_cache_dep_files, pkg):
             else:
                 whole_module = module_name
                 if n.name is not None:
-                    whole_module += "." + n.name
+                    if not whole_module.endswith("."):
+                        whole_module += "."
+                    whole_module += n.name
             try:
                 module_spec = importlib.util.find_spec(whole_module, pkg)
             except (ModuleNotFoundError, ValueError):
