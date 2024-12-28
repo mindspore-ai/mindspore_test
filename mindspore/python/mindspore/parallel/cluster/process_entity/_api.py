@@ -291,8 +291,14 @@ class _ProcessManager:
         If there's any process does not exit normally, logs will be analyzed
         so that understandable root cause of exception could be returned.
         """
+        def signal_handler(sig, frame):
+            logger.warning("msrun process received SIGNIN (Ctrl+C), terminating all workers.")
+            self.kill_all_processes()
+            sys.exit(0)
+
         has_exception = False
         success_cgn_processes = set()
+        signal.signal(signal.SIGINT, signal_handler)
         while True:
             # Traversal all workers and kill immediately if any exception happens.
             for p in self.cgn_processes:
@@ -309,22 +315,13 @@ class _ProcessManager:
 
             if has_exception:
                 logger.warning("There's worker exits with exception, kill all other workers.")
-                for p in self.cgn_processes:
-                    if p.poll() is None:
-                        os.killpg(os.getpgid(p.pid), signal.SIGKILL)
-                for p_tail in self.tail_cgn_processes:
-                    if p_tail is not None:
-                        logger.debug("There's worker exits with exception, kill tail process:{p_tail.pid}.")
-                        p_tail.kill()
+                self.kill_worker_processes()
+                self.kill_tail_log_processes()
                 break
             elif len(success_cgn_processes) == len(self.cgn_processes):
                 logger.info("All workers successfully exit!")
-                for p_tail in self.tail_cgn_processes:
-                    if p_tail is not None:
-                        logger.debug("Tial worker log process:{p_tail.pid} successfully exit!.")
-                        p_tail.kill()
+                self.kill_tail_log_processes()
                 break
-
 
         if self.msn_process:
             self.msn_process.wait()
@@ -337,6 +334,35 @@ class _ProcessManager:
             self._analyze_log()
             raise RuntimeError("Distributed job exited with exception. Please check logs in "
                                f"directory: {self.log_dir}.")
+
+    def kill_tail_log_processes(self):
+        """
+        Kills all tail worker log processes.
+
+        """
+        for p_tail in self.tail_cgn_processes:
+            if p_tail is not None:
+                logger.debug("Tail worker log process:{p_tail.pid} has been killed!")
+                p_tail.kill()
+
+    def kill_worker_processes(self):
+        """
+        Kills all worker processes.
+
+        """
+        for p in self.cgn_processes:
+            if p.poll() is None:
+                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+
+    def kill_all_processes(self):
+        """
+        Kills all running processes, including scheduler, worker and tail log.
+
+        """
+        self.kill_worker_processes()
+        self.kill_tail_log_processes()
+        if self.msn_process.poll() is None:
+            self.msn_process.kill()
 
     def stop_processes(self):
         """
@@ -360,6 +386,7 @@ class _ProcessManager:
         if self.is_master:
             self.start_scheduler()
         self.start_workers()
+
 
     def _get_node_id_and_log_path(self, index):
         """
