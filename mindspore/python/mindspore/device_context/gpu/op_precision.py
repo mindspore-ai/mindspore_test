@@ -21,6 +21,7 @@ try:
 except ImportError:
     pass
 
+
 @args_type_check(value=bool)
 def matmul_allow_tf32(value):
     """
@@ -36,6 +37,7 @@ def matmul_allow_tf32(value):
         >>> ms.device_context.gpu.op_precision.matmul_allow_tf32(True)
     """
     GPUOpPrecisionConf.get_instance().matmul_allow_tf32(value)
+
 
 @args_type_check(value=bool)
 def conv_allow_tf32(value):
