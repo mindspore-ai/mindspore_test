@@ -126,7 +126,13 @@ void AscendCommunicationGroup::InitializeCommConfig() {
   auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
   uint32_t buffsize = instance->GetBuffsize(name_);
   config_.hcclBufferSize = buffsize == 0 ? HCCL_COMM_DEFAULT_BUFFSIZE : buffsize;
-  config_.hcclDeterministic = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? 1 : 0;
+  // The hcclDeterministic configured for the communicator is preferentially based on the parameter in the context,
+  // or if this parameter is not configured, hcclDeterministic is configured based on the environment variable
+  // 'HCCL_DETERMINISTIC'.
+  std::string env_hccl_deterministic = common::GetEnv("HCCL_DETERMINISTIC");
+  config_.hcclDeterministic = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON"
+                                ? 1
+                                : (env_hccl_deterministic == "true" ? 1 : 0);
 }
 
 bool AscendCommunicationGroup::InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank) {
