@@ -1911,8 +1911,8 @@ def polar(abs, angle):  # pylint: disable=redefined-outer-name
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> abs = Tensor(np.array([1, 2]), mindspore.float64)
-        >>> angle = Tensor(np.array([np.pi / 2, 5 * np.pi / 4]), mindspore.float64)
+        >>> abs = Tensor(np.array([1, 2]), mindspore.float32)
+        >>> angle = Tensor(np.array([np.pi / 2, 5 * np.pi / 4]), mindspore.float32)
         >>> output = ops.polar(abs, angle)
         >>> print(output)
         [ 6.12323400e-17+1.j         -1.41421356e+00-1.41421356j]
@@ -11109,6 +11109,9 @@ def isposinf(input):
     """
     Tests element-wise for positive infinity.
 
+    .. warning::
+        For Ascend, it is only supported on platforms above Atlas A2.
+
     Args:
         input (Tensor): Input values.
 
@@ -11136,6 +11139,9 @@ def isposinf(input):
 def isneginf(input):
     """
     Tests element-wise for negative infinity.
+
+    .. warning::
+        For Ascend, it is only supported on platforms above Atlas A2.
 
     Args:
         input (Tensor): Input Tensor.
