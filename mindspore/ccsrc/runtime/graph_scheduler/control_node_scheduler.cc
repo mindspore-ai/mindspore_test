@@ -2734,7 +2734,7 @@ void GetNameForExitActor(AbstractActor *const actor, DataArrow *const dst_arrow,
   if (exit_actor->node() != nullptr) {
     return;
   }
-  size_t input_index = dst_arrow->to_input_index_;
+  size_t input_index = IntToSize(dst_arrow->to_input_index_);
   if (input_index >= exit_actor->formal_parameters().size()) {
     MS_LOG(EXCEPTION) << "Invalid input index:" << input_index << " for actor:" << exit_actor->GetAID();
   }
@@ -2762,7 +2762,7 @@ void GetInputNameForControlActor(AbstractActor *const actor, std::map<size_t, In
   MS_EXCEPTION_IF_NULL(control_actor);
   for (const auto &pair : control_actor->input_partial_arrow_aids()) {
     MS_EXCEPTION_IF_NULL(pair.second);
-    size_t input_index = pair.second->to_input_index_;
+    size_t input_index = IntToSize(pair.second->to_input_index_);
     (*input_aids)[input_index] = {pair.first.Name(), IntToSize(pair.second->from_output_index_)};
     *max_index = (*max_index > input_index ? *max_index : input_index);
   }
@@ -2792,7 +2792,7 @@ void GetAllInputByArrow(AbstractActor *const actor,
   MS_EXCEPTION_IF_NULL(max_index);
   for (const auto &pair : actor->input_data_arrow_aids()) {
     MS_EXCEPTION_IF_NULL(pair.second);
-    size_t input_index = pair.second->to_input_index_;
+    size_t input_index = IntToSize(pair.second->to_input_index_);
     std::string name = pair.first.Name();
     size_t index = IntToSize(pair.second->from_output_index_);
     if (actor->type() == KernelTransformType::kExitActor) {
