@@ -467,3 +467,36 @@ def test_inplace_net_backward_hook():
     handle.remove()
     assert len(grad) == 1
     assert np.allclose(grad[0].asnumpy(), np.ones([2, 2, 2, 2]).astype(np.float32) * 10, 0.000001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_backward_hook_pack_and_unpack():
+    """
+    Feature: PyNative backward hook function.
+    Description: Pack and Unpack error-prone case for PyNative hook function.
+    Expectation: The calculation result is correct.
+    """
+    class UnpackAndPackNet(nn.Cell):
+        def construct(self, x):
+            return x
+
+    def backward_pre_hook(cell, grad_output):
+        pass
+
+    def backward_hook(cell, grad_input, grad_output):
+        pass
+
+    net = UnpackAndPackNet()
+    net.register_backward_pre_hook(backward_pre_hook)
+    net.register_backward_hook(backward_hook)
+
+    input_x = (Tensor(1.0),)
+    out = net(input_x)
+    assert isinstance(out, tuple) and isinstance(out[0], Tensor)
+
+    input_x = ((Tensor(1.0),),)
+    out = net(input_x)
+    assert isinstance(out, tuple) and isinstance(out[0], tuple) and isinstance(out[0][0], Tensor)
