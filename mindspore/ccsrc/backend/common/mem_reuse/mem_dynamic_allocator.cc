@@ -1315,6 +1315,7 @@ bool DynamicMemPoolBestFit::RecordEvent(int64_t task_id_on_stream, uint32_t user
       continue;
     }
     auto mem_buf = (std::get<1>(mem_buf_tuple))->second;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Record event for : " << mem_buf->device_addr_ << ".";
     (void)mem_buf->RecordEvent(task_id_on_stream, user_stream_id, event);
     (void)stream_pair_addresses_[std::make_pair(user_stream_id, memory_stream_id)].emplace(mem_buf);
   }
@@ -1335,6 +1336,7 @@ bool DynamicMemPoolBestFit::WaitEvent(int64_t task_id_on_stream, uint32_t user_s
 
   auto addresses = iter->second;
   for (const auto &address : addresses) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << address->device_addr_ << ".";
     address->WaitEvent(task_id_on_stream, user_stream_id);
     // Remove event and try to free memory.
     if (address->IsEventNotUsed()) {
@@ -1366,6 +1368,7 @@ bool DynamicMemPoolBestFit::WaitEvent(int64_t task_id_on_stream, uint32_t memory
     }
     auto addresses = stream_pair_addresses.second;
     for (const auto &address : addresses) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << address->device_addr_ << ".";
       address->WaitEvent(task_id_on_stream, user_stream);
       // Remove event and try to free memory.
       if (address->IsEventNotUsed()) {
