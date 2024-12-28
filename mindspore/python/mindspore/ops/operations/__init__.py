@@ -49,7 +49,7 @@ from .array_ops import (ArgMaxWithValue, ArgMinWithValue, Argmax, Argmin, BatchT
                         FillDiagonal, Fills, ResizeNearestNeighborV2, RightShift, ScatterAddWithAxis,
                         ScatterNdMul, SegmentMean, SegmentProd, SegmentSum, SegmentMax, SegmentMin, Tril, Triu,
                         UniqueConsecutive, UnravelIndex, FillV2, CountNonZero, TensorScatterElements, IndexPut,
-                        MaskedScatter)
+                        MaskedScatter, TypeAs)
 from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborExchangeV2, AlltoAll, _AllSwap,
                        Broadcast, CollectiveGather, CollectiveScatter, Barrier, Send, Receive, BatchISendIRecv,
                        _MirrorOperator, _MirrorMiniStepOperator, _MiniStepAllGather, ReduceOp, _VirtualDataset,

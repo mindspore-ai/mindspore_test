@@ -28,7 +28,7 @@ from mindspore.common import Tensor, CSRTensor, COOTensor
 from mindspore.common._stub_tensor import _convert_stub
 from mindspore._c_expression import typing
 from mindspore._c_expression import Tensor as Tensor_
-from mindspore._c_expression import pyboost_cast, pyboost_tile, pyboost_zeros, pyboost_ones
+from mindspore._c_expression import pyboost_cast, pyboost_tile, pyboost_zeros, pyboost_ones, pyboost_type_as
 from mindspore.common import dtype as mstype
 from mindspore.common._utils import is_shape_unknown
 from mindspore import _checkparam as validator
@@ -1181,6 +1181,59 @@ class Cast(Primitive):
         if should_elim:
             return output
         return _convert_stub(pyboost_cast(self, [input_x, dtype_to_type_id('Cast', 'dtype', dtype)]))
+
+
+class TypeAs(Primitive):
+    """
+    Returns first input tensor cast to the type of the with the second input tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Note:
+        When converting complex numbers to boolean type, the imaginary part of the complex number is not
+        taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+
+    Inputs:
+        - **input** (Tensor) -  The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+          The tensor whose data type is to be converted.
+        - **other ** (Tensor) - The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+          The tensor whose data type is specified.
+
+    Outputs:
+        Tensor, the shape of tensor is the same as `input`, :math:`(x_0, x_1, ..., x_R)`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `other` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        >>> input = Tensor(input_np)
+        >>> other_np = np.random.randn(2, 3, 4).astype(np.int32)
+        >>> other = Tensor(other_np)
+        >>> type_as = ops.TypeAs()
+        >>> output = type_as(input, other)
+        >>> print(output.dtype)
+        Int32
+        >>> print(output.shape)
+        (2, 3, 4, 5)
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        pass
+
+    def __call__(self, input, other):
+        if input.dtype == other.dtype:
+            return input
+        return _convert_stub(pyboost_type_as(self, [input, other]))
 
 
 def to_sequence(val):

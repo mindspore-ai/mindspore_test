@@ -30,7 +30,7 @@ type_as:
             >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
             >>> input = Tensor(input_np)
             >>> other_np = np.random.randn(2, 3, 4).astype(np.int32)
-            >>> other = Tensor(input_np)
+            >>> other = Tensor(other_np)
             >>> output = ops.type_as(input, other)
             >>> print(output.dtype)
             Int32
