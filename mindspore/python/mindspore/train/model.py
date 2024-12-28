@@ -1667,6 +1667,9 @@ class Model:
             cb_params.eval_results.update({"eval_loss": eval_loss})
         list_callback.on_eval_end(run_context)
 
+        dataset_helper.stop_send()
+        dataset_helper.release()
+
         return metrics
 
     def _eval_process(self, valid_dataset, list_callback=None, cb_params=None, add_eval_loss=False):
