@@ -41,6 +41,9 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
             The format is "xxGB". Default is the maximum available memory of the device, expressed as ``1024GB``.
         optimize_level (str): The memory optimize level. The value must be in ['O0', 'O1']. Default: ``O0`` .
 
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
@@ -91,6 +94,9 @@ def memory_stats():
     Returns:
         dict, the queried memory information.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -120,6 +126,9 @@ def memory_reserved():
     Returns:
         int, in Byte.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -144,6 +153,9 @@ def max_memory_reserved():
 
     Returns:
         int, in Byte.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore as ms
@@ -176,6 +188,9 @@ def reset_peak_memory_stats():
     """
     Reset the "peak" stats tracked by memory manager.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -205,6 +220,9 @@ def memory_summary():
 
     Returns:
         str, readable memory pool status information in tabular form.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
     """
     device_target = DeviceManagerConf.get_instance().get_device_target()
     stats = _memory_stats(device_target)
@@ -255,6 +273,9 @@ def memory_allocated():
     Returns:
         int, in Byte.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -280,6 +301,9 @@ def max_memory_allocated():
     Returns:
         int, in Byte.
 
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -298,6 +322,9 @@ def max_memory_allocated():
 def reset_max_memory_reserved():
     """
     Reset the peak memory size managed by the memory pool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore as ms
@@ -320,6 +347,9 @@ def reset_max_memory_reserved():
 def reset_max_memory_allocated():
     """
     Reset the peak memory size of the memory pool actually occupied by Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore as ms
