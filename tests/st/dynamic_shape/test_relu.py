@@ -18,7 +18,7 @@ import pytest
 from mindspore import ops
 import mindspore as ms
 from tests.st.utils import test_utils
-from tests.device_utils import set_device
+from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 
 
@@ -44,7 +44,8 @@ def test_relu(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor(np.array([[[[-1, 1, 10],
                               [1, -1, 1],
                               [10, 1, -1]]]]).astype(np.float32))
@@ -73,7 +74,8 @@ def test_relu_vmap(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     axes = -1
     x = ms.Tensor(np.random.uniform(low=-1, high=1, size=(4, 3, 2)).astype(np.float32))
     net_vmap = ops.vmap(ops.vmap(relu_forward_func, in_axes=axes, out_axes=axes), in_axes=axes, out_axes=axes)
