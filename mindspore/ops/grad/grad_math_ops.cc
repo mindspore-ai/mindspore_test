@@ -1597,8 +1597,8 @@ REG_BPROP_BUILDER("PowTensorScalar").FreeUselessValues_O({}).SetBody(BODYFUNC(ib
     return {zero_tensor, ib->OutZeros(exponent)};
   }
 
-  auto grad_input = ib->Mul(dout, ib->Mul(ib->ScalarToTensor(exponent),
-                                          ib->Emit("PowTensorScalar", {input_x, ib->Value<float>(exp_value - 1)})));
+  auto grad_input = ib->Mul(
+    dout, ib->Emit("Muls", {ib->Emit("PowTensorScalar", {input_x, ib->Value<float>(exp_value - 1)}), exponent}));
   return {grad_input, ib->OutZeros(exponent)};
 });
 
