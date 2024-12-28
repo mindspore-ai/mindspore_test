@@ -431,6 +431,31 @@ inner::NodePtr PatternTree::AlterGraph(const std::shared_ptr<ParaMap> &para_to_r
   return alter_graph.back();
 }
 
+// Add(A,Neg(A))=BroadcastTo(0,B)
+class NegAddPatternTree : public PatternTree {
+ public:
+  explicit NegAddPatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
+  ~NegAddPatternTree() override = default;
+
+ protected:
+  std::shared_ptr<ParaMap> UpdateParameters(const inner::NodePtr &origin_root,
+                                            const std::shared_ptr<ParaMap> &para_to_ref) const override {
+    MS_EXCEPTION_IF_NULL(para_to_ref);
+    inner::GraphBuilder gb("");
+    auto shape_node = gb.Tensor(origin_root->shape);
+    (*para_to_ref)['B'] = shape_node;
+    (void)para_to_ref->erase('A');
+    return para_to_ref;
+  }
+  bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
+    auto input_shape = origin_root->input(0)->shape;
+    if (IsDynamic(input_shape)) {
+      return false;
+    }
+    return true;
+  }
+};
+
 // Reduce(Reduce(A,B),C) = Reduce(A,D)
 class ExtraReduce1PatternTree : public PatternTree {
  public:
@@ -993,7 +1018,7 @@ static std::vector<Expression> expressions = {
   {"Add(A,0)=A", EXPR_PATTERN(PatternTree)},
   {"Add(Mul(A,C),Mul(A,B))=Mul(A,Add(B,C))", EXPR_PATTERN(PatternTree)},
   {"Add(Add(A,const1),const2)=Add(A,Add(const1,const2))", EXPR_PATTERN(PatternTree)},
-  {"Add(A,Neg(A))=0", EXPR_PATTERN(PatternTree)},
+  {"Add(A,Neg(A))=BroadcastTo(0,B)", EXPR_PATTERN(NegAddPatternTree)},
   {"Add(Add(A,B),Neg(A))=B", EXPR_PATTERN(PatternTree)},
   {"Add(Add(A,B),Add(Neg(A),C))=Add(B,C)", EXPR_PATTERN(PatternTree)},
   // sub
