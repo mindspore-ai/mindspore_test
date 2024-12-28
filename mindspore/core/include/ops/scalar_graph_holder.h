@@ -45,7 +45,7 @@ struct ScalarNode {
       : type_(type), in_index_(std::move(index)), value_(value) {}
 };
 
-class OPS_API ScalarGraphHolder : public Value {
+class MS_CORE_API ScalarGraphHolder : public Value {
  public:
   ScalarGraphHolder() = default;
 
@@ -74,6 +74,8 @@ class OPS_API ScalarGraphHolder : public Value {
   }
 
   size_t GetNodeSize() { return nodes_.size(); }
+
+  void SetScalarNodes(const std::vector<std::shared_ptr<ScalarNode>> &nodes) { nodes_ = nodes; }
 
   const std::shared_ptr<ScalarNode> &GetScalarNode(const size_t &index) { return nodes_[index]; }
 

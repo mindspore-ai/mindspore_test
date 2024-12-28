@@ -5,6 +5,7 @@ enum Version {
   IR_VERSION_START = 0;
   IR_VERSION = 1;
   IR_VERSION_WITH_PRIM_FUNCTION=2;
+  IR_VERSION_WITH_SCALAR_GRAPH_HOLDER=3;
 }
 
 message AttributeProto {
@@ -49,6 +50,7 @@ message AttributeProto {
     MAP_TENSOR = 37;
     FUNCTOR = 38;
     SCALAR = 39;
+    SCALAR_GRAPH_HOLDER = 40;
   }
   message SeqInfoProto{
     optional bool is_dyn_len = 1;                 // store if tuple is dynamic length
@@ -73,6 +75,7 @@ message AttributeProto {
   repeated AttributeProto values = 17;          // tuple, list, dict of value
   optional SeqInfoProto seq_info = 18;       // tuple, list, structural info
   optional FunctorProto functor = 19;
+  optional ScalarGraphHolderProto graph_holder = 20;
 }
 
 message FunctorProto {
@@ -251,4 +254,15 @@ message PrimitiveProto {
   repeated AttributeProto attribute = 3;
   optional string instance_name = 4;
   optional PrimType prim_type = 5;
+}
+
+message ScalarNodeProto {
+  optional int64 scalar_op_type = 1;
+  repeated int64 in_index = 2;
+  repeated int64 value = 3;
+}
+
+message ScalarGraphHolderProto {
+  repeated ScalarNodeProto scalar_node = 1;
+  repeated uint64 input_shape_index = 2;
 }

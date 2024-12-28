@@ -46,6 +46,7 @@
 #include "utils/file_utils.h"
 #include "utils/system/env.h"
 #include "ir/functor.h"
+#include "ops/scalar_graph_holder.h"
 
 namespace mindspore {
 using FloatPtr = std::shared_ptr<Float>;
@@ -177,6 +178,8 @@ class IrExportBuilder {
   bool SetQuantizationParamToAttrProto(const std::shared_ptr<QuantizationParam> &quantization_param,
                                        mind_ir::TensorProto_QuantParamProto *const quant_param_proto);
   bool SetFunctorToAttrProto(const FunctorPtr &value, mind_ir::AttributeProto *const attr_proto);
+  bool SetScalarGraphHolderToAttrProto(const ops::ScalarGraphHolderPtr &value,
+                                       mind_ir::AttributeProto *const attr_proto);
   bool SetTensorTypeToAttributeProto(const ValuePtr &value, mind_ir::TensorProto *tensor_proto);
   bool SetFuncGraphToAttrProto(const FuncGraphPtr &value, mind_ir::AttributeProto *const attr_proto);
 

@@ -46,6 +46,7 @@
 #include "proto/mind_ir.pb.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "utils/ms_context.h"
+#include "ops/scalar_graph_holder.h"
 
 using std::string;
 using std::vector;
@@ -427,6 +428,7 @@ class MSANFModelParser {
     const mind_ir::TensorProto &attr_tensor);
   ValuePtr GenerateFunctorValue(const mind_ir::FunctorProto &functor_proto);
   FuncGraphPtr GenerateFuncGraphValue(const mind_ir::GraphProto &graph_proto);
+  ValuePtr GenerateScalarGraphHolderValue(const mind_ir::ScalarGraphHolderProto &graph_holder_proto);
   bool little_endian() const { return little_endian_; }
   mindspore::HashMap<std::string, abstract::AbstractBasePtr> GetAbstractForNode(
     const mind_ir::AttributeProto &attr_proto);
@@ -519,6 +521,9 @@ ValuePtr MSANFModelParser::GetValueFromAttributeProto(const mind_ir::AttributePr
       }
       return graph_value;
     }
+    case mind_ir::AttributeProto_AttributeType_SCALAR_GRAPH_HOLDER: {
+      return GenerateScalarGraphHolderValue(attr_proto.graph_holder());
+    }
     default: {
       ValuePtr value = ObtainCNodeAttrInSingleScalarForm(attr_proto);
       if (value == nullptr) {
@@ -560,6 +565,33 @@ ValuePtr MSANFModelParser::GenerateFunctorValue(const mind_ir::FunctorProto &fun
   }
   MS_LOG(INFO) << "Unknown functor type: " << type;
   return kValueAny;
+}
+
+ValuePtr MSANFModelParser::GenerateScalarGraphHolderValue(const mind_ir::ScalarGraphHolderProto &graph_holder_proto) {
+  auto scalar_graph_holder = std::make_shared<ops::ScalarGraphHolder>();
+  std::vector<size_t> input_shape_index;
+  for (int i = 0; i < graph_holder_proto.input_shape_index_size(); ++i) {
+    (void)input_shape_index.emplace_back(graph_holder_proto.input_shape_index(i));
+  }
+  scalar_graph_holder->SetShapeIndex(input_shape_index);
+
+  std::vector<std::shared_ptr<ops::ScalarNode>> scalar_nodes;
+  for (int i = 0; i < graph_holder_proto.scalar_node_size(); ++i) {
+    const mind_ir::ScalarNodeProto &scalar_node_proto = graph_holder_proto.scalar_node(i);
+    auto scalar_op_type = static_cast<ops::ScalarOpType>(scalar_node_proto.scalar_op_type());
+    std::vector<int64_t> input_index;
+    for (int idx = 0; idx < scalar_node_proto.in_index_size(); ++idx) {
+      (void)input_index.emplace_back(scalar_node_proto.in_index(idx));
+    }
+    std::vector<int64_t> value;
+    for (int idx = 0; idx < scalar_node_proto.value_size(); ++idx) {
+      (void)value.emplace_back(scalar_node_proto.value(idx));
+    }
+    auto scalar_node = std::make_shared<ops::ScalarNode>(scalar_op_type, input_index, value);
+    scalar_nodes.emplace_back(scalar_node);
+  }
+  scalar_graph_holder->SetScalarNodes(scalar_nodes);
+  return scalar_graph_holder;
 }
 
 tensor::TensorPtr MSANFModelParser::GenerateTensorPtrFromTensorProto(const mind_ir::TensorProto &attr_tensor) {

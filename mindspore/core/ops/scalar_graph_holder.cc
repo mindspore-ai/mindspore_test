@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/scalar_graph_holder.h"
+#include "ops/scalar_graph_holder.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 

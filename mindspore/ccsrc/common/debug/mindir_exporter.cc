@@ -33,8 +33,11 @@ using mindspore::CNodePtr;
 using mindspore::FileUtils;
 using mindspore::FuncGraph;
 using mindspore::FuncGraphPtr;
+using mindspore::IOMonad;
+using mindspore::UMonad;
 using mindspore::ValueNode;
 using mindspore::ValueNodePtr;
+using mindspore::ValuePtr;
 
 void GetAllFuncGraphs(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *all_func_graphs) {
   MS_ASSERT(all_func_graphs != nullptr);
@@ -101,6 +104,18 @@ bool DeleteDirRecursively(const std::string &dir_name) {
     }
   }
   (void)(closedir(dir));
+  return true;
+}
+
+bool SetMonadType(const ValuePtr &value, mind_ir::AttributeProto *const attr_proto) {
+  if (value->isa<UMonad>()) {
+    attr_proto->set_type(mind_ir::AttributeProto_AttributeType_UMONAD);
+  } else if (value->isa<IOMonad>()) {
+    attr_proto->set_type(mind_ir::AttributeProto_AttributeType_IOMONAD);
+  } else {
+    MS_LOG(ERROR) << "Unsupported Monad type: " << value->type_name();
+    return false;
+  }
   return true;
 }
 };  // namespace
@@ -566,6 +581,27 @@ bool IrExportBuilder::SetFunctorToAttrProto(const FunctorPtr &func, mind_ir::Att
   }
   if (!SetValueToAttributeProto(values, functor_proto->add_values())) {
     return false;
+  }
+  return true;
+}
+
+bool IrExportBuilder::SetScalarGraphHolderToAttrProto(const ops::ScalarGraphHolderPtr &scalar_graph_holder,
+                                                      mind_ir::AttributeProto *const attr_proto) {
+  auto *graph_holder_proto = attr_proto->mutable_graph_holder();
+  attr_proto->set_type(mind_ir::AttributeProto_AttributeType_SCALAR_GRAPH_HOLDER);
+  for (size_t i = 0; i < scalar_graph_holder->GetNodeSize(); i++) {
+    auto scalar_node = scalar_graph_holder->GetScalarNode(i);
+    MS_EXCEPTION_IF_NULL(scalar_node);
+    auto *scalar_node_proto = graph_holder_proto->add_scalar_node();
+    scalar_node_proto->set_scalar_op_type(static_cast<int>(scalar_node->type_));
+
+    (void)std::for_each(scalar_node->in_index_.begin(), scalar_node->in_index_.end(),
+                        [&scalar_node_proto](int64_t idx) { scalar_node_proto->add_in_index(idx); });
+    (void)std::for_each(scalar_node->value_.begin(), scalar_node->value_.end(),
+                        [&scalar_node_proto](int64_t value) { scalar_node_proto->add_value(value); });
+  }
+  for (auto idx : scalar_graph_holder->GetShapeIndex()) {
+    graph_holder_proto->add_input_shape_index(idx);
   }
   return true;
 }
@@ -1464,14 +1500,7 @@ bool IrExportBuilder::SetValueToAttributeProto(const ValuePtr &value, mind_ir::A
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_TYPE_NULL);
     MS_LOG(DEBUG) << "Attr string: " << value->type_name();
   } else if (value->isa<Monad>()) {
-    if (value->isa<UMonad>()) {
-      attr_proto->set_type(mind_ir::AttributeProto_AttributeType_UMONAD);
-    } else if (value->isa<IOMonad>()) {
-      attr_proto->set_type(mind_ir::AttributeProto_AttributeType_IOMONAD);
-    } else {
-      MS_LOG(ERROR) << "Unsupported Monad type: " << value->type_name();
-      return false;
-    }
+    return SetMonadType(value, attr_proto);
   } else if (value->isa<QuantizationParam>()) {
     auto quantization_param = value->cast<std::shared_ptr<QuantizationParam>>();
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_TENSORS);
@@ -1483,6 +1512,8 @@ bool IrExportBuilder::SetValueToAttributeProto(const ValuePtr &value, mind_ir::A
     return SetFunctorToAttrProto(value->cast<FunctorPtr>(), attr_proto);
   } else if (value->isa<FuncGraph>()) {
     return SetFuncGraphToAttrProto(value->cast<FuncGraphPtr>(), attr_proto);
+  } else if (value->isa<ops::ScalarGraphHolder>()) {
+    return SetScalarGraphHolderToAttrProto(value->cast<ops::ScalarGraphHolderPtr>(), attr_proto);
   } else {
     MS_LOG(ERROR) << "Unsupported type: " << value->type_name();
     return false;
