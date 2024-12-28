@@ -13,8 +13,6 @@ mindspore.ops.Custom
     .. note::
         不同自定义算子的函数类型（func_type）支持的平台类型不同。每种类型支持的平台如下：
 
-        - "hybrid": ["GPU", "CPU"].
-        - "akg": ["GPU", "CPU"].
         - "aot": ["GPU", "CPU"，"Ascend"].
         - "pyfunc": ["CPU"].
         - "julia": ["CPU"].
@@ -22,11 +20,7 @@ mindspore.ops.Custom
     参数：
         - **func** (Union[function, str]) - 自定义算子的函数表达。
 
-          - function：如果 `func` 是函数类型，那么 `func` 应该是一个Python函数，它描述了用户定义的操作符的计算逻辑。该函数可以是以下之一：
-            
-            1. AKG操作符实现函数，可以使用ir builder/tvm compute/hybrid语法。
-            2. 纯Python函数。
-            3. 使用Hybrid DSL编写的带有装饰器的内核函数。
+          - function：如果 `func` 是函数类型，那么 `func` 应该是一个Python函数，它描述了用户定义的操作符的计算逻辑。
 
           - 字符串：如果 `func` 是字符串类型，那么 `str` 应该是包含函数名的文件路径。当 `func_type` 是"aot"或"julia"时，可以使用这种方式。
 
@@ -98,7 +92,7 @@ mindspore.ops.Custom
                  例如：Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia")
         - **out_shape** (Union[function, list, tuple]) - 自定义算子的输入的形状或者输出形状的推导函数。默认值： ``None`` 。
         - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]]) - 自定义算子的输入的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
-        - **func_type** (str) - 自定义算子的函数类型，必须是[ ``"hybrid"`` , ``"akg"`` , ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。默认值： ``"hybrid"`` 。
+        - **func_type** (str) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。
         - **bprop** (function) - 自定义算子的反向函数。默认值： ``None``。
         - **reg_info** (Union[str, dict, list, tuple]) - 自定义算子的算子注册信息。默认值： ``None`` 。
 
