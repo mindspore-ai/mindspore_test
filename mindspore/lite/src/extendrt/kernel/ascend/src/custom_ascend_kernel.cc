@@ -33,11 +33,17 @@ bool SaveOM(const void *model, size_t length, const std::string &file_path) { re
 
 namespace mindspore::kernel {
 namespace acl {
+namespace {
+std::mutex g_mem_mutex;
+}
 CustomAscendKernelMod::CustomAscendKernelMod()
     : load_model_(false), acl_options_(nullptr), model_infer_(nullptr), input_data_idx_(0) {}
 
 CustomAscendKernelMod::~CustomAscendKernelMod() {
+  std::unique_lock<std::mutex> lock(g_mem_mutex);
   if (load_model_ || is_multi_model_sharing_mem_prepare_) {
+    MS_LOG(INFO) << "Delete model from AclEnvGuard!";
+    AclEnvGuard::DeleteModel(model_infer_);
     if (!model_infer_->Finalize()) {
       MS_LOG(ERROR) << "Model finalize failed.";
     }
@@ -129,6 +135,7 @@ AclModelOptionsPtr CustomAscendKernelMod::GenAclOptions() {
 
 bool CustomAscendKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
+  std::unique_lock<std::mutex> lock(g_mem_mutex);
   inputs_ = inputs;
   outputs_ = outputs;
   if (load_model_) {
@@ -177,6 +184,7 @@ bool CustomAscendKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   UpdateOutputKernelTensorInfo();
   MS_LOG(INFO) << "Load om data success.";
   load_model_ = true;
+  MS_LOG(INFO) << "Add model to AclEnvGuard!";
   AclEnvGuard::AddModel(model_infer_);
   return true;
 }

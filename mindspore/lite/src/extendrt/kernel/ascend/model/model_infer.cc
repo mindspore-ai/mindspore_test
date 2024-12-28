@@ -105,7 +105,7 @@ bool ModelInfer::Init() {
   return true;
 }
 
-bool ModelInfer::Finalize() {
+bool ModelInfer::Finalize(bool process_ends) {
   std::lock_guard<std::mutex> lock(g_context_mutex);
   if (!init_flag_) {
     MS_LOG(INFO) << "Init is not ok, no need to finalize.";
@@ -137,13 +137,15 @@ bool ModelInfer::Finalize() {
     MS_LOG(INFO) << "use default context, not destroy context";
   }
   MS_LOG(INFO) << "End to destroy context.";
-  AclMemManager::GetInstance().ReleaseDeviceMem(options_->device_id, options_->model_path);
-
+  if (process_ends || AclEnvGuard::GetModelNum() == 0) {
+    AclMemManager::GetInstance().ReleaseDeviceMem(options_->device_id, options_->model_path);
+  }
   rt_ret = CALL_ASCEND_API(aclrtResetDevice, options_->device_id);
   if (rt_ret != ACL_ERROR_NONE) {
     MS_LOG(ERROR) << "Reset device " << options_->device_id << " failed.";
   }
   MS_LOG(INFO) << "End to reset device " << options_->device_id;
+
   acl_env_ = nullptr;
   init_flag_ = false;
   return true;
