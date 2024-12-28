@@ -19,6 +19,7 @@ for different devices (Ascend, CPU, GPU) and manages residual files associated w
 """
 
 import os
+import re
 
 from pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size
 import template
@@ -604,6 +605,9 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         ascend_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(ascend_merge_op_header, chunk_size=120)
         ascend_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(ascend_merge_op_function, chunk_size=120)
 
+        new_gen_num = len(ascend_op_header_merge_by_chunk_size)
+        self._delete_residual_merged_ops_files(os.path.join(work_path, self.ascend_gen_path), new_gen_num)
+
         for i, op_header, op_function in zip(range(len(ascend_op_header_merge_by_chunk_size)),
                                              ascend_op_header_merge_by_chunk_size,
                                              ascend_op_function_merge_by_chunk_size):
@@ -628,6 +632,9 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         self.cpu_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, cpu_merge_op_header, cpu_merge_op_function)
         cpu_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(cpu_merge_op_header, chunk_size=120)
         cpu_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(cpu_merge_op_function, chunk_size=120)
+
+        new_gen_num = len(cpu_op_header_merge_by_chunk_size)
+        self._delete_residual_merged_ops_files(os.path.join(work_path, self.cpu_gen_path), new_gen_num)
 
         for i, op_header, op_function in zip(range(len(cpu_op_header_merge_by_chunk_size)),
                                              cpu_op_header_merge_by_chunk_size,
@@ -654,6 +661,9 @@ class PyboostOpFunctionGenerator(BaseGenerator):
         gpu_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(gpu_merge_op_header, chunk_size=120)
         gpu_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(gpu_merge_op_function, chunk_size=120)
 
+        new_gen_num = len(gpu_op_header_merge_by_chunk_size)
+        self._delete_residual_merged_ops_files(os.path.join(work_path, self.gpu_gen_path), new_gen_num)
+
         for i, op_header, op_function in zip(range(len(gpu_op_header_merge_by_chunk_size)),
                                              gpu_op_header_merge_by_chunk_size,
                                              gpu_op_function_merge_by_chunk_size):
@@ -661,6 +671,31 @@ class PyboostOpFunctionGenerator(BaseGenerator):
                 merge_op_header=op_header, merge_op_function=op_function)
             save_file(os.path.join(work_path, self.gpu_gen_path), f"pyboost_gpu_ops_{i}.cc",
                       gpu_pyboost_op_source)
+
+    def _delete_residual_merged_ops_files(self, files_path, new_gen_num):
+        """
+        Deletes residual merged operation files in the specified directory if the number of
+        newly generated files does not match the number of existing ones.
+
+        This method first lists all files in the specified directory, then filters out the files
+        that match the pattern `pyboost_.*_ops_.*.cc` (i.e., files related to pyboost ops). It compares
+        the number of such files (`old_files_num`) with the `new_gen_num` argument, which represents
+        the expected number of new pyboost ops files. If the counts do not match, the method will
+        delete all the existing pyboost ops files in the directory before any new ones can be generated.
+
+        Args:
+            files_path (str): The path to the directory containing the files to be checked and deleted.
+            new_gen_num (int): The number of newly generated pyboost ops files expected to be in the directory.
+
+        Returns:
+            None
+        """
+        all_files = os.listdir(files_path)
+        old_pyboost_ops_files = [file for file in all_files if re.match(r'pyboost_.*_ops_.*\.cc', file)]
+        old_files_num = len(old_pyboost_ops_files)
+        if new_gen_num != old_files_num:
+            for file in old_pyboost_ops_files:
+                os.remove(os.path.join(files_path, file))
 
 
 def _generate_cpp_func_return(op_proto):
@@ -737,21 +772,23 @@ def delete_residual_files(work_path, op_protos):
                                ["ascend", "gpu", "cpu"]]
     code_generate_path_list.append(f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
     for code_generate_path in code_generate_path_list:
-        all_files_name = []
+        filter_files = []
         code_generate_path = os.path.join(work_path, code_generate_path)
         if os.path.exists(code_generate_path):
-            all_files_name = os.listdir(code_generate_path)
-        all_registered_op = set(item.split(".")[0] for item in all_files_name)
-        need_clean_op = all_registered_op - set(all_operator_name)
-        for file in all_files_name:
-            if file == "op_register.cc":
-                continue
-            for clean_name in need_clean_op:
-                judge_file = file.split(".")[0]
-                if judge_file == clean_name:
-                    file_path = os.path.join(code_generate_path, file)
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
+            all_files = os.listdir(code_generate_path)
+            # No need to delete pyboost_.*_ops_.*.cc files and op_register.cc.
+            # These residual files will be deleted before new files generate.
+            filter_files = [file for file in all_files if
+                            not re.match(r'pyboost_.*_ops_.*\.cc', file) and file != "op_register.cc"]
+        registered_op_name = set(item.split(".")[0] for item in filter_files)
+        need_clean_op = registered_op_name - set(all_operator_name)
+
+        for file in filter_files:
+            file_name = file.split(".")[0]
+            if file_name in need_clean_op:
+                file_path = os.path.join(code_generate_path, file)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
 
 
 class PyboostOpRegisterCppCodeGenerator:
