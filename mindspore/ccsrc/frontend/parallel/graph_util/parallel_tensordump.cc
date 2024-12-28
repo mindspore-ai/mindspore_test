@@ -40,7 +40,6 @@ ParallelTensorDumpHandler::ParallelTensorDumpHandler(
     }
     AnfNodePtr parent = node->input(pos);
     MS_EXCEPTION_IF_NULL(parent);
-    MS_LOG(INFO) << "node input(pos) is: " << node->input(pos)->DebugString();
     parent_to_successors_[parent].push_back(node_info.first);
   }
 }
@@ -59,14 +58,14 @@ void ParallelTensorDumpHandler::HandleParallelTensorDump() {
       AnfNodePtr node = node_pair.first;
       CNodePtr cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
-      size_t index = node_pair.second;
+      size_t index = IntToSize(node_pair.second);
       if (parent == cnode->input(index)) {
         MS_LOG(INFO) << "No Redistribution Operators Insert.";
       }
       AnfNodePtr last_inserted_redistribution_op = cnode->input(index);
       MS_EXCEPTION_IF_NULL(last_inserted_redistribution_op);
-      MS_LOG(INFO) << "Last Insert Redistribution: " << last_inserted_redistribution_op->DebugString();
-      (void)ProcessTensorDumps(dumps, cnode, index, last_inserted_redistribution_op, func_graph, parent->scope());
+      MS_LOG(WARNING) << "Last Insert Redistribution: " << last_inserted_redistribution_op->DebugString();
+      (void)ProcessTensorDumps(dumps, cnode, index, last_inserted_redistribution_op, func_graph, cnode->scope());
     }
     for (auto &dump_node : dumps) {
       auto prim = GetCNodePrimitive(dump_node);
@@ -92,7 +91,7 @@ AnfNodePtrList ParallelTensorDumpHandler::CollectSuccessorDumpNodes(const AnfNod
     AnfNodePtr anf_node = node_pair.first;
     CNodePtr cnode = anf_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    MS_LOG(INFO) << "Target Node's successor: " << cnode->DebugString();
+    MS_LOG(INFO) << "Parent node's successor: " << cnode->DebugString();
     if (IsPrimitiveCNode(cnode, prim::kPrimTensorDump)) {
       dumps.push_back(anf_node);
     }
@@ -109,6 +108,13 @@ void ParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr &dump_cnode,
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  MS_EXCEPTION_IF_NULL(dump_cnode->scope());
+  MS_EXCEPTION_IF_NULL(node->scope());
+  if (node->scope()->name().find(dump_cnode->scope()->name()) == std::string::npos) {
+    // If TensorDump node's scope is not prefix of node scope,
+    // Don't insert new TensorDump Node as successor of last_insert_redistribution_op.
+    return;
+  }
   ValuePtr v = GetValueNode(dump_cnode->input(1));
   auto dump_cnode_filepath = GetValue<std::string>(v);
   size_t p = dump_cnode_filepath.rfind(".npy");
@@ -129,8 +135,10 @@ void ParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr &dump_cnode,
   MS_EXCEPTION_IF_NULL(new_dump_prim);
   new_dump_prim->set_instance_name(name + "_new_generate");
   new_dump_prim->AddAttr("side_effect_io", MakeValue(true));
-  new_dump_prim->AddAttr("input_output", MakeValue(dump_mode));
+  new_dump_prim->AddAttr("input_output", MakeValue(dump_mode + "_inserted"));
   new_dump_prim->AddAttr("channel_name", MakeValue("ms_tensor_dump"));
+  // Avoid CSE optimization
+  new_dump_prim->AddAttr("side_effect_hidden", MakeValue(true));
   new_dump_node->set_scope(scope);
   new_dump_node->input(0)->set_scope(scope);
   MS_LOG(INFO) << "New Dump Node: " << new_dump_node->DebugString();
