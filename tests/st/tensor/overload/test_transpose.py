@@ -78,6 +78,17 @@ def test_method_transpose_python(mode):
                                [9., 12.]]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
 
+    axes = [0, 2, 1]
+    output = net(x, axes)
+    assert np.allclose(output.asnumpy(), expect_output)
+
+    x = ms.Tensor(np.array([1, 2, 3, 4, 5, 6]), ms.float32)
+    axes = -1
+    output = net(x, axes)
+    expect_output = np.array([1, 2, 3, 4, 5, 6], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expect_output)
+
+    x = ms.Tensor(np.array([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]), ms.float32)
     # out of range [-rank(input), rank(input))
     with pytest.raises(ValueError) as error_info:
         axes = (0, 3, 4)
@@ -129,6 +140,10 @@ def test_method_transpose_pyboost(mode):
     x = ms.Tensor(np.ones((2, 3, 4), dtype=np.float32))
     output = net(x, 0, 2)
     expect_output = (4, 3, 2)
+    assert np.allclose(output.shape, expect_output)
+
+    output = net(x, 0, 0)
+    expect_output = (2, 3, 4)
     assert np.allclose(output.shape, expect_output)
 
     with pytest.raises(ValueError) as error_info:
