@@ -314,6 +314,20 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   return graph_opt->step(func_graph, false);
 }
 
+FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource) {
+  opt::irpass::OptimizeIRPassLib irpass;
+  opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
+    irpass.pynative_gradjit_primitivepy_eliminate_,
+  });
+  OptPassGroupMap map({
+    {"grad_graph_opt", grad_graph_opt},
+  });
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  auto graph_opt = opt::Optimizer::MakeOptimizer("high_grad_bprop_graph_opt", resource, map);
+  return graph_opt->step(func_graph, false);
+}
+
 FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_flow) {
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();

@@ -690,6 +690,26 @@ class FloatDependGCall : public AnfVisitor {
     return nullptr;
   }
 };
+
+class PynativeGradjitPrimitivePyEliminater : public OptimizerCaller {
+ public:
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
+    MS_EXCEPTION_IF_NULL(node);
+    MS_LOG(DEBUG) << "Start eliminate PrimitvePy for node: " << node->DebugString();
+    const auto &cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    const auto &prim = GetCNodePrimitive(cnode);
+    if (!prim || !prim->isa<PrimitivePy>()) {
+      MS_LOG(EXCEPTION) << "Node is not a primitivepy, mismatch: " << node->DebugString();
+    }
+    std::vector<AnfNodePtr> args = {NewValueNode(std::make_shared<Primitive>(*prim))};
+    const auto &inputs = cnode->inputs();
+    (void)std::copy(inputs.cbegin() + 1, inputs.cend(), std::back_inserter(args));
+    const auto &func_graph = node->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    return func_graph->NewCNode(args);
+  }
+};
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

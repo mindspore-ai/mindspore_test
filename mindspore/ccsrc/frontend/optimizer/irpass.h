@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/optimizer/anf_visitor.h"
+#include "ops/op_def.h"
 
 namespace mindspore {
 namespace opt {
@@ -176,6 +177,9 @@ class OptimizeIRPassLib {
   // Pynative Eliminate
   SubstitutionPtr pynative_eliminate_;
 
+  // Pynative Gradjit PrimitivePy Eliminate
+  SubstitutionPtr pynative_gradjit_primitivepy_eliminate_;
+
   // Pynative no need grad eliminate
   SubstitutionPtr pynative_no_grad_eliminate_;
 
@@ -274,6 +278,16 @@ inline bool IsCNodeDoSignature(const AnfNodePtr &node) {
     return false;
   }
   return IsValueNode<prim::DoSignaturePrimitive>(cnode->input(0));
+}
+
+// Check if CNode Input 0 is PrimitivePy
+inline bool IsCNodePrimitivePy(const AnfNodePtr &node) {
+  if (node == nullptr || !node->isa<CNode>()) {
+    return false;
+  }
+  auto inp0 = node->cast<CNodePtr>()->input(0);
+  const auto &prim = GetValueNode<PrimitivePyPtr>(inp0);
+  return prim != nullptr && mindspore::ops::IsPrimitiveFunction(prim->name());
 }
 }  // namespace irpass
 }  // namespace opt
