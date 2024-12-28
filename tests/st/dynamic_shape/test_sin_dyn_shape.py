@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
-from tests.device_utils import set_device
+from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
@@ -44,7 +44,8 @@ def test_sin_forward(mode):
     """
     context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([0.62, 0.28, 0.43, 0.62]).astype(np.float32))
     output = sin_forward_func(x)
     expect_output = np.asarray([0.5810352, 0.27635565, 0.41687083, 0.5810352]).astype(np.float32)
@@ -63,7 +64,8 @@ def test_sin_backward(mode):
     """
     context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([0.62, 0.28, 0.43, 0.62]).astype(np.float32))
     output = sin_backward_func(x)
     expect_output = np.asarray([0.8138785, 0.96105546, 0.90896577, 0.8138785]).astype(np.float32)
@@ -82,7 +84,8 @@ def test_sin_vmap(mode):
     """
     context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = Tensor(np.array([[[0.62, 0.28, 0.43, 0.62]]]).astype(np.float32))
     nest_vmap = ops.vmap(ops.vmap(sin_forward_func))
     output = nest_vmap(x)
@@ -101,7 +104,8 @@ def test_sin_dynamic(mode):
     """
     context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     test_cell = test_utils.to_cell_obj(ops.sin)
     test_cell.set_inputs(x_dyn)

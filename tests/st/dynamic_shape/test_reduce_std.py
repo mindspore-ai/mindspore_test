@@ -18,7 +18,7 @@ import pytest
 
 from mindspore import ops
 import mindspore as ms
-from tests.device_utils import set_device
+from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
@@ -45,7 +45,8 @@ def test_reduce_std(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor(np.array([[0.392192, 1.484581, 1.111067],
                             [1.614102, 0.676057, 3.279313]]).astype(np.float32))
     out = reduce_std_forward_func(x)
@@ -72,7 +73,8 @@ def test_reduce_std_vmap(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     in_axes = -1
     x = ms.Tensor(np.random.uniform(low=-1, high=1, size=(4, 3, 2, 2)).astype(np.float32))
     nest_vmap = ops.vmap(ops.vmap(reduce_std_forward_func, in_axes=in_axes, out_axes=-1), in_axes=in_axes, out_axes=-1)

@@ -8,3 +8,8 @@ def set_device():
         ms.set_device(devcie_target)
     else:
         ms.set_device(devcie_target, int(device_id))
+
+
+def get_device():
+    devcie_target = os.getenv("DEVICE_TARGET")
+    return devcie_target

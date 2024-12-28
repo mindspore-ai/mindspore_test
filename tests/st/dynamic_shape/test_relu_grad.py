@@ -18,7 +18,7 @@ import pytest
 import mindspore as ms
 from mindspore import ops
 from tests.st.utils import test_utils
-from tests.device_utils import set_device
+from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 
 
@@ -39,7 +39,8 @@ def test_relu_grad(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     dy = ms.Tensor(np.array([[[[1, 0, 1],
                                [0, 1, 0],
                                [1, 1, 1]]]]).astype(np.float32))
@@ -65,7 +66,8 @@ def test_relu_grad_vmap(mode):
     """
     ms.context.set_context(mode=mode)
     set_device()
-    ms.device_context.ascend.op_precision.precision_mode("force_fp32")
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     axes = (-1, -1)
     dy = ms.Tensor(np.random.rand(4, 3, 2).astype(np.float32))
     x = ms.Tensor(np.random.uniform(low=-1, high=1, size=(4, 3, 2)).astype(np.float32))

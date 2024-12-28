@@ -17,7 +17,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
-from tests.device_utils import set_device
+from tests.device_utils import set_device, get_device
 from tests.mark_utils import arg_mark
 
 
@@ -38,7 +38,7 @@ def test_ops_dense(mode):
     """
     ms.set_context(mode=mode)
     set_device()
-    if mode == ms.GRAPH_MODE:
+    if mode == ms.GRAPH_MODE and get_device() == "Ascend":
         ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor([[[195, 41, 17],
                     [-15, 26, 160],
