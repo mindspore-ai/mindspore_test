@@ -29,7 +29,7 @@ mindspore.Tensor.nansum
     异常：
         - **TypeError** - `keepdim` 不是bool类型。
         - **TypeError** - `self` 的数据类型或 `dtype` 是complex类型。
-        - **ValueError** - `dim` 不在[-rank(`self`), rank(`self`))。
+        - **ValueError** - `dim` 不在[-rank(self), rank(self))。
 
     .. py:method:: mindspore.Tensor.nansum(axis=None, keepdims=False, *, dtype=None)
         :noindex:
