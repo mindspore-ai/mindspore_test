@@ -50,7 +50,7 @@ def test_llama2_dp2mp4pp1_recompute():
     attrs_check_pairs = {"recompute: Bool(1)": 18}
     validate_name = find_graph_file_name(graph_path, "validate")
     check_graph(graph_path, validate_name, attrs_check_pairs)
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"CNode_625": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -167,7 +167,7 @@ def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     ops_check_pairs_0 = {"VirtualAssignAdd": 74}
     validate_name = find_graph_file_name(graph_path[0], "validate")
     step_parallel_end_name = find_graph_file_name(graph_path[0], "step_parallel_end")
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"CNode_1671": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
     param_opt_shape_check_pairs = {"_model.layers.0.attention.wq.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wk.weight": "(512, 4096)",
                                    "_model.layers.0.attention.wv.weight": "(512, 4096)",
@@ -335,7 +335,7 @@ def test_llama2_cell_dp2mp1pp2vpp2cpulysse_1f1b_select_recompute():
     # 返回 step_parallel_end.ir 的 graph_name
     parallel_end_ir_graph_name = find_graph_file_name(graph_path[0],
                                                       'step_parallel_end')
-    parm_dpmp_node_strategy_check_pairs = {'PrimFunc_Gather': {'CNode_1004': '((4, 1), (2, 1))',}}
+    parm_dpmp_node_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
     parm_recompute_graph_check_pairs = {'recompute: Bool(1)': '7'}
     parm_opt_shape_check_pairs = {'_model.layers.0.attention.wq.weight': '(512, 4096)',
                                   '_model.layers.0.attention.wk.weight': '(512, 4096)',
@@ -397,7 +397,7 @@ def test_llama2_cell_dp2mp4pp2_fgi():
     # 返回 validate.ir 的 graph_name
     validate_ir_graph_name = find_graph_file_name(graph_path[0], 'validate')
     # PrimFunc_Gather 的策略
-    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'CNode_600': '((4, 1), (2, 1))',}}
+    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
     # micro_interleaved_depend_begin 个数
     parm_micro_interleaved_depend_begin_check_pairs = {
         'micro_interleaved_depend_begin: Bool(1)': '4'}
@@ -460,7 +460,7 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
     # 返回 validate.ir 的 graph_name
     validate_ir_graph_name = find_graph_file_name(graph_path[0], 'validate')
     # PrimFunc_Gather 的策略
-    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'CNode_649': '((4, 1), (2, 1))',}}
+    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
     # recompute: Bool(1) 数量
     parm_recompute_graph_check_pairs = {'recompute: Bool(1)': '281'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
@@ -508,7 +508,7 @@ def test_llama2_cell_dp2mp2pp1opcp2_fgi_grad_accu():
     parallel_end_ir_graph_name = find_graph_file_name(graph_path[0],
                                                       'step_parallel_end')
     # PrimFunc_Gather 的策略
-    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'CNode_1039': '((4, 1), (2, 1))',}}
+    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
     # 控制边数量 micro_interleaved_depend_begin
     parm_micro_interleaved_depend_begin_check_pairs = {
         'micro_interleaved_depend_begin: Bool(1)': '6'}
@@ -594,7 +594,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b_grad_accu():
                                                       'step_parallel_end')
 
     # PrimFunc_Gather 的策略
-    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'CNode_1753': '((4, 1), (2, 1))',}}
+    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
     # virtualassignadd 数量
     parm_virtualassignadd_check_pairs = {'VirtualAssignAdd': '74'}
     # 反向掩盖控制边个数
@@ -728,7 +728,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     # dp、mp Gather 切分
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"CNode_2700": "((4, 1), (2, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (2, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
     # 梯度累加，检查 virtualassignadd 数量
     parm_virtualassignadd_check_pairs = {'VirtualAssignAdd': '74'}
@@ -832,7 +832,7 @@ def test_llama2_dp4mp4pp1op_recompute_2():
     check_graph(graph_path, validate_name, attrs_check_pairs)
 
     # dp Gather 切分
-    gather_strategy_check_pairs = {"PrimFunc_Gather": {"CNode_625": "((4, 1), (4, 1))"}}
+    gather_strategy_check_pairs = {"PrimFunc_Gather": {"": "((4, 1), (4, 1))"}}
     check_node_strategy(graph_path, validate_name, gather_strategy_check_pairs)
 
     check_pair = {"Training Over": 1}
