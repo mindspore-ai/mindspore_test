@@ -2863,8 +2863,8 @@ void AddNotCutAttrCompileCache(const nlohmann::json &model_json) {
   if (!model_json.contains(kIncludeNotCutAttrAnf)) {
     return;
   }
+  auto &context = CompileCacheContext::GetInstance();
   for (const auto &front_node_name : model_json[kIncludeNotCutAttrAnf]) {
-    auto &context = CompileCacheContext::GetInstance();
     auto front_node = context.FindFrontNodeByFrontName(front_node_name);
     if (front_node == nullptr || (!front_node->isa<CNode>())) {
       MS_LOG(DEBUG) << "The frontend node is nullptr, its unique name is " << front_node_name;
@@ -2872,6 +2872,24 @@ void AddNotCutAttrCompileCache(const nlohmann::json &model_json) {
     }
     front_node->cast<CNodePtr>()->AddPrimalAttr(kAttrNotCut, MakeValue(true));
     MS_LOG(INFO) << "Add not cut attr for front node:" << front_node->DebugString();
+  }
+}
+
+void AddRealBackendAttrCompileCache(const nlohmann::json &model_json) {
+  auto &context = CompileCacheContext::GetInstance();
+  auto func_graph = context.FrontGraph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  if (model_json.contains(kIncludeRealBackendAttrAnf)) {
+    for (const auto &front_node_name : model_json[kIncludeRealBackendAttrAnf]) {
+      auto front_node = context.FindFrontNodeByFrontName(front_node_name);
+      if (front_node == nullptr || (!front_node->isa<CNode>())) {
+        MS_LOG(DEBUG) << "The frontend node is nullptr, its unique name is " << front_node_name
+                      << " in graph:" << func_graph->ToString();
+        continue;
+      }
+      front_node->cast<CNodePtr>()->AddAttr(kAttrReplaceRealKernelInBackend, MakeValue(true));
+      MS_LOG(INFO) << "Add replace real kernel attr for front node:" << front_node->DebugString();
+    }
   }
 }
 
@@ -2943,18 +2961,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructMultiKernelGraphByCache(
   }
 
   AddNotCutAttrCompileCache(model_json);
-  if (model_json.contains(kIncludeRealBackendAttrAnf)) {
-    for (const auto &front_node_name : model_json[kIncludeRealBackendAttrAnf]) {
-      auto front_node = context.FindFrontNodeByFrontName(front_node_name);
-      if (front_node == nullptr || (!front_node->isa<CNode>())) {
-        MS_LOG(DEBUG) << "The frontend node is nullptr, its unique name is " << front_node_name
-                      << " in graph:" << func_graph->ToString();
-        continue;
-      }
-      front_node->cast<CNodePtr>()->AddAttr(kAttrReplaceRealKernelInBackend, MakeValue(true));
-      MS_LOG(INFO) << "Add replace real kernel attr for front node:" << front_node->DebugString();
-    }
-  }
+  AddRealBackendAttrCompileCache(model_json);
 
 #ifdef ENABLE_DUMP_IR
   auto ms_context = MsContext::GetInstance();
@@ -3103,13 +3110,18 @@ int LoadBackInfoForGraphIds(std::vector<vector<KernelGraphPtr>> *graph_ids_for_r
   auto func_graph = context.FrontGraph();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto cache_path = context.GetBackendGraphCachePath(func_graph);
-  const std::string &backinfo_json_path = cache_path + "_backinfo.json";
-  MS_LOG(INFO) << "Backinfo Json path: " << backinfo_json_path;
+  auto backinfo_json_path = cache_path + "_backinfo.json";
+  auto backinfo_json_real_path = Common::CreatePrefixPath(backinfo_json_path, true);
+  if (!CheckPath(backinfo_json_real_path)) {
+    MS_LOG(EXCEPTION) << "Invalid json path:" << backinfo_json_real_path.value();
+  }
+  MS_LOG(INFO) << "Backinfo Json path: " << backinfo_json_real_path.value();
 
   nlohmann::json data_json;
-  std::ifstream json_stream(backinfo_json_path);
+  std::ifstream json_stream(backinfo_json_real_path.value());
   if (!json_stream.is_open()) {
-    MS_LOG(EXCEPTION) << "Load Backinfo json file: " << backinfo_json_path << " error, backinfo json cache missed.";
+    MS_LOG(EXCEPTION) << "Load Backinfo json file: " << backinfo_json_real_path.value()
+                      << " error, backinfo json cache missed.";
   }
   json_stream >> data_json;
   if (!data_json.contains(kControlNodeCache) && !data_json.contains(kKernelGraphNum) &&

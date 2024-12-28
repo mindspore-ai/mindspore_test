@@ -109,7 +109,7 @@ class _ComputeGraphNode(_Node):
         """
         Output worker log file to console.
         """
-        return subprocess.Popen(['tail', '-f', self.output_file])
+        return subprocess.Popen(['/usr/bin/tail', '-f', self.output_file])
 
     def enable_tail_worker_log(self):
         tail_worker_log_list = []

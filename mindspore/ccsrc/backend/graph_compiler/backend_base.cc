@@ -690,18 +690,24 @@ bool MindRTBackendBase::DumpBackendInfo() {
 
   auto cache_path = context.GetBackendGraphCachePath(func_graph);
   auto backinfo_json_path = cache_path + kControlNodeJsonSuffix;
-  MS_LOG(DEBUG) << "Json path:" << backinfo_json_path;
-  std::ifstream backinfo_json_stream(backinfo_json_path);
+  auto backinfo_json_real_path = Common::CreatePrefixPath(backinfo_json_path, true);
+  if (!backinfo_json_real_path.has_value()) {
+    MS_LOG(ERROR) << "Invalid backinfo json path:" << backinfo_json_real_path.value();
+  }
+  MS_LOG(DEBUG) << "Backinfo Json path:" << backinfo_json_real_path.value();
+  std::ifstream backinfo_json_stream(backinfo_json_real_path.value());
   nlohmann::json backinfo_json;
   if (!backinfo_json_stream.good()) {
-    MS_LOG(INFO) << "Backinfo json: " << backinfo_json_path << " does not exist. So make new Backinfo json file.";
+    MS_LOG(INFO) << "Backinfo json: " << backinfo_json_real_path.value()
+                 << " does not exist. So make new Backinfo json file.";
   } else {
     if (!backinfo_json_stream.is_open()) {
-      MS_LOG(ERROR) << "Load backinfo json file: " << backinfo_json_path << " error, backend graph cache missed.";
+      MS_LOG(ERROR) << "Load backinfo json file: " << backinfo_json_real_path.value()
+                    << " error, backend graph cache missed.";
       return false;
     }
     backinfo_json_stream >> backinfo_json;
-    MS_LOG(INFO) << "Load backinfo json file: " << backinfo_json_path << " succeed.";
+    MS_LOG(INFO) << "Load backinfo json file: " << backinfo_json_real_path.value() << " succeed.";
     backinfo_json_stream.close();
   }
   nlohmann::json new_data_json;
@@ -777,8 +783,8 @@ bool MindRTBackendBase::DumpBackendInfo() {
   new_data_json[kMsExcutionMode] = ms_execution_mode_;
   backinfo_json[kControlNodeCache] = new_data_json;
   context.Clear();
-  MS_LOG(DEBUG) << "Dump backinfo json to " << backinfo_json_path << ".";
-  return Common::SaveStringToFile(backinfo_json_path, backinfo_json.dump());
+  MS_LOG(DEBUG) << "Dump backinfo json to " << backinfo_json_real_path.value() << ".";
+  return Common::SaveStringToFile(backinfo_json_real_path.value(), backinfo_json.dump());
 }
 
 bool MindRTBackendBase::LoadBackendInfo() {
