@@ -112,7 +112,7 @@ def test_train_auto_compile():
     Expectation: Throw AssertionError when parallel_strategy_search time > 11000 ms
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    run_command_auto_compile(f"bash {sh_path}/dry_compile.sh auto compile", f"{sh_path}/compile.log", 11000)
+    run_command_auto_compile(f"bash {sh_path}/dry_compile.sh auto compile", f"{sh_path}/compile_auto.log", 11000)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
