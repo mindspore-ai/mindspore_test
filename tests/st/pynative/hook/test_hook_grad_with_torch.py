@@ -165,6 +165,29 @@ class MENet2(nn.Cell):
         return output
 
 
+class SelfDefineNoneNet(nn.Cell):
+    def __init__(self):
+        super(SelfDefineNoneNet, self).__init__()
+        self.f = MEMul()
+
+    def construct(self, x):
+        out = self.f(x)
+        return out, None
+
+    def bprop(self, *args):
+        return args[-1]
+
+
+class TestNoneNet(nn.Cell):
+    def __init__(self):
+        super(TestNoneNet, self).__init__()
+        self.define_net = SelfDefineNoneNet()
+
+    def construct(self, x):
+        out, _ = self.define_net(x)
+        return out
+
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -294,3 +317,21 @@ def test_bprop_nested():
     grad_net = GradOfFirstInput(net)
     input_grad = grad_net(input1, output)
     assert np.allclose(input_grad.asnumpy(), np.array([10], dtype=np.float32), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_with_none():
+    """
+    Feature: Test custom bprop with none
+    Description: Test custom bprop with none
+    Expectation: Success
+    """
+    input1 = Tensor([5.0])
+    output = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = TestNoneNet()
+    grad_net = GradOfFirstInput(net)
+    input_grad = grad_net(input1, output)
+    assert np.allclose(input_grad.asnumpy(), np.array([1], dtype=np.float32), 0.0001, 0.0001)
