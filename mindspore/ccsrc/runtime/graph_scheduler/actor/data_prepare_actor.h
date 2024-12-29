@@ -83,7 +83,7 @@ class DataPrepareActor : public DebugAwareActor {
 
   // Fetch the input info.
   TensorPtr FetchInputTensor(const std::vector<TensorPtr> &tensors, size_t tensor_index, const VectorRef &args,
-                             const KernelWithIndex &front_node) const;
+                             const KernelWithIndex &front_node);
 
   void PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
                                        OpContext<DeviceTensor> *const context);
@@ -112,7 +112,7 @@ class DataPrepareActor : public DebugAwareActor {
   // by the kernel graph, and addresses need to be specially allocated for these parameters.
   void PrepareDeviceTensorStoreForControlNode(const ControlNodeParserPtr &control_node_parser,
                                               const std::vector<TensorPtr> &tensors, const VectorRef &args,
-                                              OpContext<DeviceTensor> *const context) const;
+                                              OpContext<DeviceTensor> *const context);
   void PrepareHostTensorQueueForControlNode(const std::vector<TensorPtr> &tensors,
                                             std::vector<TensorPtr> *const host_tensors,
                                             OpContext<DeviceTensor> *const context);
@@ -140,7 +140,7 @@ class DataPrepareActor : public DebugAwareActor {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-    return !tensors_need_reprepare_.empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_ ||
+    return !tensors_need_reprepare_[this].empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_ ||
            has_heter_weights_;
   }
 
@@ -161,7 +161,7 @@ class DataPrepareActor : public DebugAwareActor {
   // The tensor of parameter(weight) maybe update host value by Python phase and need re-prepare to sync new host value
   // to device side. 'tensors_need_reprepare_' records all tensors whose host value has updated, this HashSet will be
   // update by update value callback of tensors.
-  static mindspore::HashSet<const tensor::Tensor *> tensors_need_reprepare_;
+  std::map<const DataPrepareActor *, mindspore::HashSet<const tensor::Tensor *>> tensors_need_reprepare_;
   // The ref relationship of device address.
   std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
 
