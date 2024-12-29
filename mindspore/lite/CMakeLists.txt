@@ -75,7 +75,6 @@ option(MSLITE_ENABLE_W_NO_ERROR "enable W_NO_ERROR" off)
 set(MSLITE_GPU_BACKEND "" CACHE STRING "enable gpu backend, \
     opencl only support arm64 and x86_64 , tensorrt only support x86_64, opencl/cuda/tensorrt/off")
 option(MSLITE_ENABLE_COREML "enable coreML, only apple ios devices support" off)
-option(MSLITE_ENABLE_NNAPI "enable nnapi, only android with arm64 or arm32" off)
 option(MSLITE_ENABLE_NPU "enable npu, only arm64 or arm32 support" off)
 
 # runtime
@@ -140,9 +139,6 @@ if(DEFINED ENV{MSLITE_ENABLE_NPU})
 endif()
 if(DEFINED ENV{MSLITE_ENABLE_COREML})
     set(MSLITE_ENABLE_COREML $ENV{MSLITE_ENABLE_COREML})
-endif()
-if(DEFINED ENV{MSLITE_ENABLE_NNAPI})
-    set(MSLITE_ENABLE_NNAPI $ENV{MSLITE_ENABLE_NNAPI})
 endif()
 if(DEFINED ENV{MSLITE_ENABLE_TRAIN})
     set(MSLITE_ENABLE_TRAIN $ENV{MSLITE_ENABLE_TRAIN})
@@ -516,13 +512,6 @@ if(MSLITE_ENABLE_NPU AND NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENA
     endif()
 endif()
 
-if(MSLITE_ENABLE_NNAPI)
-    set(SUPPORT_NNAPI on)
-    if(NOT PLATFORM_ARM OR TARGET_HIMIX OR TARGET_OHOS_LITE)
-        message(FATAL_ERROR "NNAPI only support platform arm with android.")
-    endif()
-endif()
-
 if(TARGET_HIMIX OR TARGET_OHOS_LITE)
   set(MSLITE_ENABLE_MINDRT off)
 endif()
@@ -581,7 +570,6 @@ message(STATUS "\tMSLITE_GPU_BACKEND                         = \t${MSLITE_GPU_BA
 message(STATUS "\tMSLITE_REGISTRY_DEVICE                     = \t${MSLITE_REGISTRY_DEVICE}")
 message(STATUS "\tMSLITE_ENABLE_NPU                          = \t${MSLITE_ENABLE_NPU}")
 message(STATUS "\tMSLITE_ENABLE_COREML                       = \t${MSLITE_ENABLE_COREML}")
-message(STATUS "\tMSLITE_ENABLE_NNAPI                        = \t${MSLITE_ENABLE_NNAPI}")
 message(STATUS "\tMSLITE_ENABLE_TRAIN                        = \t${MSLITE_ENABLE_TRAIN}")
 message(STATUS "\tMSLITE_MICRO_PLATFORM                      = \t${MSLITE_MICRO_PLATFORM}")
 message(STATUS "\tMSLITE_ENABLE_SSE                          = \t${MSLITE_ENABLE_SSE}")
@@ -651,10 +639,10 @@ else()
     endif()
 endif()
 
-if(((MSLITE_GPU_BACKEND STREQUAL tensorrt) OR MSLITE_ENABLE_NPU OR MSLITE_ENABLE_COREML OR MSLITE_ENABLE_NNAPI) AND (
+if(((MSLITE_GPU_BACKEND STREQUAL tensorrt) OR MSLITE_ENABLE_NPU OR MSLITE_ENABLE_COREML) AND (
         NOT MSLITE_ENABLE_DELEGATE))
     message(FATAL_ERROR "If MSLITE_ENABLE_DELEGATE use is configured as off, MSLITE_ENABLE_NPU and MSLITE_ENABLE_COREML
-    and MSLITE_ENABLE_NNAPI must also be configured as off and MSLITE_GPU_BACKEND can not be configured as tensorrt.")
+    must also be configured as off and MSLITE_GPU_BACKEND can not be configured as tensorrt.")
 endif()
 
 if(MSLITE_ENABLE_HIGH_PERFORMANCE)

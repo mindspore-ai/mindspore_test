@@ -477,12 +477,6 @@ while IFS='' read -r line; do npu_files+=("$line"); done < <(ls mindspore/lite/s
 npu_others_files=("mindspore/lite/src/litert/delegate/delegate_utils.cc")
 npu_files=("${npu_files[@]}" "${npu_others_files[@]}")
 
-# support for nnapi
-while IFS='' read -r line; do npu_files+=("$line"); done < <(ls mindspore/lite/src/litert/delegate/nnapi/*.cc)
-while IFS='' read -r line; do npu_files+=("$line"); done < <(ls mindspore/lite/src/litert/delegate/nnapi/op/*.cc)
-nnapi_others_files=("mindspore/ops/kernel/cpu/nnacl/fp32/transpose_fp32.c")
-npu_files=("${npu_files[@]}" "${nnapi_others_files[@]}")
-
 # shellcheck disable=SC2068
 for file in ${npu_files[@]}; do
   file=$(echo ${file} | awk -F '/' '{print $NF}')

@@ -504,8 +504,6 @@ int BenchmarkUnifiedApi::InitMSContext(const std::shared_ptr<mindspore::Context>
 #ifndef ENABLE_CLOUD_FUSION_INFERENCE
   if (flags_->delegate_mode_ == "CoreML") {
     context->SetBuiltInDelegate(kCoreML);
-  } else if (flags_->delegate_mode_ == "NNAPI") {
-    context->SetBuiltInDelegate(kNNAPI);
   }
   context->SetEnableParallel(flags_->enable_parallel_);
 #endif
