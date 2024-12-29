@@ -69,8 +69,8 @@ bool AllGatherCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().AllGather(inputs[0]->device_ptr(), outputs[0]->device_ptr(),
-                                                          data_size / sizeof(float), input_dtype_, "AllGather");
+  bool ret = MsCollectiveCommLib::GetInstance().AllGather(
+    inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size / sizeof(float), input_dtype_, kMCCLGlobalGroupName);
   if (!ret) {
     MS_LOG(ERROR) << "AllGatherCPUKernelMod launch failed.";
   }
