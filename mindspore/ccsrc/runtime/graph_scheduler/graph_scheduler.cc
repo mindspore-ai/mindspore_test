@@ -607,6 +607,10 @@ void GraphScheduler::Clear(const ActorInfo &actor_info, const std::vector<Kernel
     DeviceTensorStore::GetInstance().Remove(root_graph_parameter.get());
   }
 
+  if (EnableInputOptimize()) {
+    ParameterStore::GetInstance().Clear(actor_info);
+  }
+
   // Clear global maps of actor info.
   (void)actors_.erase(actor_info);
 }

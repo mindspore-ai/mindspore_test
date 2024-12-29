@@ -22,6 +22,7 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
+#include "runtime/device/multi_stream_controller.h"
 #include "async/async.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
@@ -650,6 +651,14 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
                     << ", device tensor: " << kernel_actor->input_device_tensors_[actor_input_idx]
                     << ", ptr: " << kernel_actor->input_device_tensors_[actor_input_idx]->GetPtr()
                     << ", ref cnt: " << kernel_actor->input_device_tensors_[actor_input_idx]->ref_count();
+    }
+    // Insert record wait pair to ensure first used parameter async copy end before launch.
+    auto stream_id = kernel_actor->kernel_info_->stream_id();
+    if (stream_id != kDefaultStreamIndex) {
+      auto multi_stream_controller = device::MultiStreamController::GetInstance();
+      MS_EXCEPTION_IF_NULL(multi_stream_controller);
+      multi_stream_controller->DispatchRecordWaitEvent(kernel_actor->device_contexts_[0], stream_id,
+                                                       kDefaultStreamIndex);
     }
   }
 
