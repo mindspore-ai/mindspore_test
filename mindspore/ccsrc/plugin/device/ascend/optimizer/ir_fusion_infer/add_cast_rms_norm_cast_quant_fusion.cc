@@ -60,7 +60,7 @@ const AnfNodePtr AddCastRmsNormCastQuantFusion::Process(const FuncGraphPtr &grap
     return nullptr;
   }
 
-  const std::string fusion_op_name = "AddRmsNormQuantV2";
+  const std::string fusion_op_name = "AddCastRmsNormCastQuantV2";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_add_rmsnorm =
     (std::find(enable_op_list.begin(), enable_op_list.end(), fusion_op_name) != enable_op_list.end());
