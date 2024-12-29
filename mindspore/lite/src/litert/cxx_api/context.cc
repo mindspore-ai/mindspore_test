@@ -189,7 +189,7 @@ void Context::SetBuiltInDelegate(DelegateMode mode) {
     MS_LOG(ERROR) << "Invalid context.";
     return;
   }
-  if (mode < kCoreML || mode > kNNAPI) {
+  if (mode < kCoreML) {
     MS_LOG(WARNING) << "Invalid built-in delegate mode: " << mode << ", do not enable any delegate.";
     data_->delegate_mode_ = kNoDelegate;
     return;

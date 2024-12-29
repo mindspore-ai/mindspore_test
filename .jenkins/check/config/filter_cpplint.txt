@@ -127,8 +127,6 @@
 "mindspore/mindspore/core/mindrt/include/async/try.h"                                              "runtime/explicit"
 "mindspore/mindspore/core/mindrt/include/async/failure.h"                                          "runtime/explicit"
 "mindspore/mindspore/core/mindrt/include/async/defer.h"                                            "runtime/explicit"
-"mindspore/mindspore/lite/src/litert/delegate/nnapi/nnapi_implementation.h"                        "build/include_order"
-"mindspore/mindspore/lite/src/litert/delegate/nnapi/nnapi_implementation.cc"                       "build/include_order"
 "mindspore/mindspore/lite/src/extendrt/cxx_api/model/model_impl.cc"                                "whitespace/parens"
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/gemm_mask_avx512/" "runtime/int"
 "mindspore/mindspore/lite/python/src/lite_infer_pybind.cc"                                         "runtime/references"
