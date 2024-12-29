@@ -421,7 +421,10 @@ CNodePtr CloneReshapeNode(const AnfNodePtr &input_node, mindspore::HashMap<CNode
   for (size_t j = 0; j < value_ptr_vec.size(); j++) {
     auto shape_value = GetValue<int64_t>(value_ptr_vec[j]);
     if (j == scale_dim) {
-      shape_value /= SizeToLong(scale_factor);
+      auto shape_change = shape_value / SizeToLong(scale_factor);
+      if (shape_change > 0) {
+        shape_value = shape_change;
+      }
     }
     new_shape.push_back(shape_value);
   }
@@ -432,7 +435,10 @@ CNodePtr CloneReshapeNode(const AnfNodePtr &input_node, mindspore::HashMap<CNode
 
   std::vector<TypeId> dtypes = {common::AnfAlgo::GetOutputInferDataType(input_cnode, 0)};
   auto shape = common::AnfAlgo::GetOutputInferShape(input_cnode, 0);
-  shape[scale_dim] /= SizeToLong(scale_factor);
+  auto shape_change = shape[scale_dim] / SizeToLong(scale_factor);
+  if (shape_change > 0) {
+    shape[scale_dim] = shape_change;
+  }
   std::vector<ShapeVector> shapes(1, shape);
   common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, reshape_cnode.get());
   reshape_cnode->set_scope(input_cnode->scope());
