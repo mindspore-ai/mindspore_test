@@ -120,7 +120,7 @@
 
 #include "pybind_api/ir/log_adapter_py.h"  // Only include one-time in the whole project.
 #include "pybind_api/ir/py_execute_py.h"   // Only include one-time in the whole project.
-#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
+#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
 #include "include/common/utils/compile_cache_context.h"
 
 namespace mindspore {

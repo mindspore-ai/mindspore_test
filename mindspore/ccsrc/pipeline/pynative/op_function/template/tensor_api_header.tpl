@@ -16,9 +16,6 @@
 
 #ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_API_H_
 #define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_API_H_
-#include <memory>
-#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
-#include "utils/ms_context.h"
 #include "pybind11/pybind11.h"
 
 namespace py = pybind11;

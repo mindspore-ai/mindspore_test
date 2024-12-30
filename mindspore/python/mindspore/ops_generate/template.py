@@ -217,6 +217,14 @@ PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_source_template.tpl'))
 
+PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_op_header_template.tpl'))
+
+PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_op_source_template.tpl'))
+
 PYBOOST_ASCEND_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_ascend_call_template.tpl'))
@@ -240,6 +248,14 @@ PYBOOST_GPU_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_source_template.tpl'))
 
+PYBOOST_GPU_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_single_op_header_template.tpl'))
+
+PYBOOST_GPU_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_single_op_source_template.tpl'))
+
 PYBOOST_GPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_call_template.tpl'))
@@ -261,6 +277,14 @@ PYBOOST_CPU_OP_HEADER_TEMPLATE = Template.load_from_file(
 PYBOOST_CPU_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_source_template.tpl'))
+
+PYBOOST_CPU_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_single_op_header_template.tpl'))
+
+PYBOOST_CPU_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_single_op_source_template.tpl'))
 
 PYBOOST_CPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
