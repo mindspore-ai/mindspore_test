@@ -36,3 +36,5 @@ all_gather_matmul:
     Ascend: AllGatherMatmulAscend
     CPU: None
     GPU: None
+  function:
+    disable: True

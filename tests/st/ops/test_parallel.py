@@ -88,7 +88,7 @@ def run_test(
             pytest -vra --disable-warnings -k '{filter_}' {test_script}::{test_name}
     ''')
     if status != 0:
-        raise RuntimeError(f'Test failed with status {status}')
+        raise RuntimeError(f'Test failed with status {status}, please check {log_dir.as_posix()} for more details.')
 
 
 def run_all_gather_matmul_test(test_script: str, test_name: str, devices: str, filter_: str, hccl_port: str) -> None:

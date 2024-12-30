@@ -51,7 +51,16 @@ def fusion_ops_func(
         trans_x2: bool,
     ) -> tuple_annotation[ms.Tensor]:
     return ms.ops.all_gather_matmul(
-        input_, x2, group, world_size, bias, gather_index, gather_output, comm_turn, trans_input, trans_x2
+        input_,
+        x2,
+        group,
+        world_size,
+        bias=bias,
+        gather_index=gather_index,
+        gather_output=gather_output,
+        comm_turn=comm_turn,
+        trans_input=trans_input,
+        trans_x2=trans_x2,
     )
 
 
@@ -103,7 +112,16 @@ def get_dynamic_func(group: str, world_size: int) \
             trans_x2: bool,
         ) -> tuple_annotation[ms.Tensor]:
         return ms.ops.all_gather_matmul(
-            input_, x2, group, world_size, bias, gather_index, gather_output, comm_turn, trans_input, trans_x2
+            input_,
+            x2,
+            group,
+            world_size,
+            bias=bias,
+            gather_index=gather_index,
+            gather_output=gather_output,
+            comm_turn=comm_turn,
+            trans_input=trans_input,
+            trans_x2=trans_x2,
         )
     return func
 

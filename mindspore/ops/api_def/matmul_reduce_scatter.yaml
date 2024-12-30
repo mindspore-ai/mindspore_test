@@ -1,0 +1,8 @@
+matmul_reduce_scatter:
+  op_yaml: matmul_reduce_scatter_op.yaml
+  py_method: matmul_reduce_scatter
+  kwonlyargs: reduce_op, bias, comm_turn, trans_input, trans_x2
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: function

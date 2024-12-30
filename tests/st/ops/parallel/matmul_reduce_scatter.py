@@ -49,7 +49,15 @@ def fusion_ops_func(
         trans_x2: bool,
     ) -> Union[ms.Tensor, tuple_annotation[ms.Tensor]]:
     return ms.ops.matmul_reduce_scatter(
-        input_, x2, group, world_size, reduce_op, bias, comm_turn, trans_input, trans_x2
+        input_,
+        x2,
+        group,
+        world_size,
+        reduce_op=reduce_op,
+        bias=bias,
+        comm_turn=comm_turn,
+        trans_input=trans_input,
+        trans_x2=trans_x2,
     )
 
 
@@ -96,7 +104,15 @@ def get_dynamic_func(group: str, world_size: int) \
             trans_x2: bool,
         ) -> tuple_annotation[ms.Tensor]:
         return ms.ops.matmul_reduce_scatter(
-            input_, x2, group, world_size, reduce_op, bias, comm_turn, trans_input, trans_x2
+            input_,
+            x2,
+            group,
+            world_size,
+            reduce_op=reduce_op,
+            bias=bias,
+            comm_turn=comm_turn,
+            trans_input=trans_input,
+            trans_x2=trans_x2,
         )
     return func
 

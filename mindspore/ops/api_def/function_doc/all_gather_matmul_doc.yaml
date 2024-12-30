@@ -1,10 +1,14 @@
-matmul_reduce_scatter:
+all_gather_matmul:
     description: |
-        In the TP segmentation scenario, matmul and reducescatter are fused, and communication and computational
-        pipelines are parallelized within the fusion operator.
+        all_gather_matmul(input, x2, group, world_size, *, bias=None, gather_index=0, gather_output=True, comm_turn=0, trans_input=False, trans_x2=False) -> Tensor
+
+        In the TP segmentation scenario, allgather and matmul are fused, and communication and computational pipelines
+        are parallelized within the fusion operator.
 
         .. math::
-            output = reducescatter(input@x2)
+            output = allgather(input)@x2
+
+            gather\_out = allgather(input)
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
@@ -20,9 +24,10 @@ matmul_reduce_scatter:
                 of devices actually running, supporting ``2`` , ``4`` , and ``8`` .
 
         Keyword Args:
-            reduce_op (str, optional) The reduce operation type. Currently only ``'sum'`` is supported. Default:
-                ``'sum'`` .
             bias (Tensor, optional): Currently only ``None`` is supported. Default: ``None`` .
+            gather_index (int, optional): Indicates the allgather operation object, ``0`` means gather ``input`` ,
+                ``1`` means gather ``x2`` . Currently only ``0`` is supported. Default: ``0`` .
+            gather_output (bool, optional): Indicates whether gather output is required. Default: ``True`` .
             comm_turn (int, optional): Indicates the granularity of communication between ranks. Currently only ``0``
                 is supported. Default: ``0`` .
             trans_input (bool, optional): Indicates whether ``input`` is transposed. Currently only ``False`` is
@@ -31,13 +36,15 @@ matmul_reduce_scatter:
 
         Returns:
             - output (Tensor) - The result of allgather and matmul fusion calculations.
+            - gather_out (Tensor) - The result of allgather. If gather_output is ``False`` , ``gather_out`` returns a
+              tensor with shape 0.
 
         Note:
             - When using this interface, please ensure that the driver firmware package and CANN package are both the
               matching 8.0.RC2 version or a higher version, otherwise an error will be reported, such as BUS ERROR.
             - The shape of ``input`` is (m, k), the shape of ``x2`` is (k, n), k is required to be equal, and the value
-              range of k is [256, 65535), and m is required to be an integer multiple of ``world_size`` . The shape of
-              ``output`` is (m * world_size, n).
+              range of k is [256, 65535). The shape of ``output`` is (m * world_size, n), and the shape of
+              ``gather_out`` is (m * world_size, k).
             - The common fusion operators in a model only support the same communication group.
 
         Raises:
@@ -51,7 +58,7 @@ matmul_reduce_scatter:
             RuntimeError: ``group`` does not exist.
             RuntimeError: ``world_size`` is inconsistent with the actual number of running cards.
             RuntimeError: ``world_size`` is not equal to ``2`` , ``4`` , or ``8`` .
-            RuntimeError: ``reduce_op`` is not ``'sum'`` .
+            RuntimeError: ``gather_index`` is not ``0`` .
             RuntimeError: ``trans_input`` is ``True`` .
 
         Supported Platforms:
@@ -69,16 +76,29 @@ matmul_reduce_scatter:
 
             >>> import mindspore as ms
             >>> import numpy as np
+            >>> from mindspore import ops
             >>> ms.communication.init()
             >>> ms.set_context(mode=ms.PYNATIVE_MODE)
             >>> ms.set_device(device_target="Ascend")
             >>> rank = ms.communication.get_rank()
             >>> np.random.seed(rank)
-            >>> input = ms.Tensor(np.random.randn(1024, 256).astype(np.float32), dtype=ms.float16)
+            >>> input = ms.Tensor(np.random.randn(128, 256).astype(np.float32), dtype=ms.float16)
             >>> x2 = ms.Tensor(np.random.randn(256, 512).astype(np.float32), dtype=ms.float16)
             >>> group = ms.communication.GlobalComm.WORLD_COMM_GROUP
             >>> world_size = ms.communication.get_group_size()
-            >>> reduce_op = ms.ops.ReduceOp.SUM
-            >>> output = ms.ops.matmul_reduce_scatter(input, x2, group, world_size, reduce_op, None, 0, False, False)
+            >>> output, gather_out = ops.all_gather_matmul(
+            ...    input,
+            ...    x2,
+            ...    group,
+            ...    world_size,
+            ...    bias=None,
+            ...    gather_index=0,
+            ...    gather_output=True,
+            ...    comm_turn=0,
+            ...    trans_input=False,
+            ...    trans_x2=False,
+            ... )
             >>> print(output.shape)
-            (512, 512)
+            (256, 512)
+            >>> print(gather_out.shape)
+            (256, 256)

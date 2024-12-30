@@ -16,6 +16,7 @@
 
 from mindspore import _checkparam as validator
 from mindspore import log as logger
+from mindspore import ops
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
@@ -1583,3 +1584,40 @@ def tensor_subtract(input, other, *, alpha=1):
 
 def tensor_true_divide(input, other):
     return div(input, other)
+
+
+def all_gather_matmul(
+        input,
+        x2,
+        group,
+        world_size,
+        *,
+        bias=None,
+        gather_index=0,
+        gather_output=True,
+        comm_turn=0,
+        trans_input=False,
+        trans_x2=False,
+    ):
+    """
+    For details, please refer to :func:`mindspore.ops.all_gather_matmul`.
+    """
+    raise NotImplementedError('all_gather_matmul only supports Ascend.')
+
+
+def matmul_reduce_scatter(
+        input,
+        x2,
+        group,
+        world_size,
+        *,
+        reduce_op=ops.ReduceOp.SUM,
+        bias=None,
+        comm_turn=0,
+        trans_input=False,
+        trans_x2=False,
+    ):
+    """
+    For details, please refer to :func:`mindspore.ops.matmul_reduce_scatter`.
+    """
+    raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
