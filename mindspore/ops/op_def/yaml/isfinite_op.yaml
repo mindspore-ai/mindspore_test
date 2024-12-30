@@ -1,7 +1,7 @@
 #operator isfinite
 isfinite:
   args:
-    x:
+    input:
       dtype: tensor
   returns:
     output:
