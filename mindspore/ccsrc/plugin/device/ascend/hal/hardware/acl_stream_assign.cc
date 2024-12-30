@@ -115,6 +115,10 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     return;
   }
   std::set<uint32_t> stream_ids;
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto ms_context_exec_order = ms_context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  const std::string kExecOrderGpto = "gpto";
   for (const auto &node : kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(node)) {
       continue;
@@ -137,7 +141,8 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     }
     auto parallel_context = parallel::ParallelContext::GetInstance();
     MS_EXCEPTION_IF_NULL(parallel_context);
-    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+    // gpto not support multi_stream of communication group now.
+    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream) || ms_context_exec_order == kExecOrderGpto) {
       // multi_stream:true, all communication op use the same communication stream.
       MS_LOG(INFO) << "Set stream id by no group for node " << node->fullname_with_scope();
       if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
