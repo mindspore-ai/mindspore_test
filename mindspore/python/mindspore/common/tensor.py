@@ -3395,6 +3395,50 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return str(self.dtype)
         return self.astype(dtype)
 
+
+    def type_as(self, other):
+        r"""
+        Returns self tensor cast to the type of the with the input other tensor.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Note:
+            When converting complex numbers to boolean type, the imaginary part of the complex number is not
+            taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+
+        Args:
+            other (Tensor): The tensor whose data type is specified.
+            The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+
+        Returns:
+            Tensor, the shape of tensor is the same as `self`, :math:`(x_0, x_1, ..., x_R)`.
+
+        Raises:
+            TypeError: If `other` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+            >>> self = Tensor(input_np)
+            >>> other_np = np.random.randn(2, 3, 4).astype(np.int32)
+            >>> other = Tensor(other_np)
+            >>> output = self.type_as(other)
+            >>> print(output.dtype)
+            Int32
+            >>> print(output.shape)
+            (2, 3, 4, 5)
+        """
+        if self.dtype == other.dtype:
+            return self
+        return Tensor_.type_as(self, other)
+
+
     def bool(self):
         r"""
         Converts input tensor dtype to `bool`.
