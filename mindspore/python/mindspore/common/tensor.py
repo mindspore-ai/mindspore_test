@@ -940,6 +940,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         Raises:
             ValueError: If the count of value in tensor is more than one.
+            TypeError: The type of element in tensor is not supported.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
