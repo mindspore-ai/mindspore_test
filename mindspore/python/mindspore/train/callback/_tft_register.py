@@ -90,6 +90,7 @@ def _tft_exit_cb(ctx):
     _tft_sem_post()
     os._exit(1)   # pylint: disable=W0212
 
+
 def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_ctx):
     """ Callback used for TFT repair function."""
     logger.info("Enter _tft_repair_callback repair type: {}".format(repair_info["repair_type"]))
