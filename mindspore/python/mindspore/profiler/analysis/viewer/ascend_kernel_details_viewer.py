@@ -149,8 +149,11 @@ class AscendKernelDetailsViewer(BaseViewer):
         dev_kernels = self.trace_container.hardware_op_event
         _generate_hardware_op_event_step_id(dev_kernels, step_id_to_time_dict)
 
-        if dev_kernels is None or not dev_kernels:
-            logger.warning("device kernels is empty")
+        if not dev_kernels:
+            logger.warning(
+                "Cannot find the device kernels with MindSpore framework launch op, "
+                "Please verify if it's in graph mode."
+            )
             return
 
         # build device kernel to framework launch op map

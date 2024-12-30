@@ -21,7 +21,6 @@ import os
 import time
 from functools import wraps
 from typing import Any, Callable, Type, Tuple, Union
-# one sys count takes 10 ns, 1 ms has 100000 system count
 import re
 import shutil
 import stat
@@ -53,7 +52,7 @@ def no_exception_func(
             return a / b
     """
     def decorator(func: Callable) -> Callable:
-        wraps(func)
+        @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 return func(*args, **kwargs)

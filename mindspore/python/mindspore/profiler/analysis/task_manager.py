@@ -74,7 +74,7 @@ class TaskManager:
         self.workflows[flow_name] = workflow
         self.show_process[flow_name] = show_process
 
-    def run(self, data: Any = None) -> None:
+    def run(self) -> None:
         """
         Run all workflows with the given data using a ProcessPoolExecutor.
 
@@ -83,7 +83,7 @@ class TaskManager:
         """
         processes = []
         for flow_name, workflow in self.workflows.items():
-            p = Process(target=self._run_flow, args=(flow_name, workflow, data))
+            p = Process(target=self._run_flow, args=(flow_name, workflow))
             processes.append((p, flow_name))
             p.start()
             self._logger.info("TaskManager run flow [%s] [pid: %s] start", flow_name, p.pid)
@@ -92,7 +92,7 @@ class TaskManager:
             p.join()
             self._logger.info("TaskManager flow [%s] [pid: %s] join", flow_name, p.pid)
 
-    def _run_flow(self, flow_name: str, workflow: WorkFlow, data: Any) -> None:
+    def _run_flow(self, flow_name: str, workflow: WorkFlow) -> None:
         """
         Run a single workflow with the given data.
 
@@ -111,6 +111,7 @@ class TaskManager:
         )
 
         try:
+            data = {}
             for parser in parsers:
                 parser_start_time = time.perf_counter()
                 data = parser.parse(data)

@@ -84,6 +84,7 @@ class TestProfiler(unittest.TestCase):
                 ProfilerInterface.stop,
                 ProfilerInterface.finalize,
                 prof_action_controller._trace_ready,
+                ProfilerInterface.clear
             ])
         self.assertEqual(prof_action_controller.on_trace_ready, mock_tensor_board_trace_handler)
         prof_action_controller._trace_ready()
