@@ -66,6 +66,104 @@ class BACKEND_EXPORT LockGuard {
 BACKEND_EXPORT std::string MemTypeToStr(MemType mem_type);
 
 std::string GeneratePath(size_t rank_id, const std::string &file_name, const std::string &suffix);
+
+constexpr size_t kPoolGrowSize = 1 << 20;
+
+template <class T>
+class ObjectPool {
+  struct Block {
+    Block *next_;
+  };
+
+  class Buffer {
+    static const std::size_t bucket_size = sizeof(T) > sizeof(Block) ? sizeof(T) : sizeof(Block);
+    static const std::size_t kDataBucketSize = bucket_size * kPoolGrowSize;
+
+   public:
+    explicit Buffer(Buffer *next) : next_(next) {}
+
+    T *GetBlock(std::size_t index) {
+      if (index >= kPoolGrowSize) {
+        throw std::bad_alloc();
+      }
+      return reinterpret_cast<T *>(&data_[bucket_size * index]);
+    }
+
+    Buffer *const next_;
+
+   private:
+    uint8_t data_[kDataBucketSize];
+  };
+
+  Block *free_list_ = nullptr;
+  Buffer *buffer_head_ = nullptr;
+  std::size_t buffer_index_ = kPoolGrowSize;
+
+ public:
+  ObjectPool() = default;
+  ObjectPool(ObjectPool &&object_pool) = delete;
+  ObjectPool(const ObjectPool &object_pool) = delete;
+  ObjectPool operator=(const ObjectPool &object_pool) = delete;
+  ObjectPool operator=(ObjectPool &&object_pool) = delete;
+
+  ~ObjectPool() {
+    while (buffer_head_ != nullptr) {
+      Buffer *buffer = buffer_head_;
+      buffer_head_ = buffer->next_;
+      delete buffer;
+    }
+  }
+
+  T *Borrow() {
+    if (free_list_ != nullptr) {
+      Block *block = free_list_;
+      free_list_ = block->next_;
+      return reinterpret_cast<T *>(block);
+    }
+
+    if (buffer_index_ >= kPoolGrowSize) {
+      buffer_head_ = new Buffer(buffer_head_);
+      buffer_index_ = 0;
+    }
+
+    return buffer_head_->GetBlock(buffer_index_++);
+  }
+
+  void Return(T *obj) {
+    Block *block = reinterpret_cast<Block *>(obj);
+    block->next_ = free_list_;
+    free_list_ = block;
+  }
+};
+
+// Not support older windows version.
+template <class T>
+class PooledAllocator : private ObjectPool<T> {
+ public:
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
+  typedef T *pointer;
+  typedef const T *const_pointer;
+  typedef T &reference;
+  typedef const T &const_reference;
+  typedef T value_type;
+
+  template <class U>
+  struct rebind {
+    typedef PooledAllocator<U> other;
+  };
+
+  pointer allocate(size_type n, const void *hint = 0) {
+    if (n != 1 || hint) throw std::bad_alloc();
+    return ObjectPool<T>::Borrow();
+  }
+
+  void deallocate(pointer p, size_type n) { ObjectPool<T>::Return(p); }
+
+  void construct(pointer p, const_reference val) { new (p) T(val); }
+
+  void destroy(pointer p) { p->~T(); }
+};
 }  // namespace mem_pool
 }  // namespace memory
 }  // namespace mindspore
