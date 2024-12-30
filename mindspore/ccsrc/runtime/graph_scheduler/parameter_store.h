@@ -70,7 +70,9 @@ class BACKEND_EXPORT ParameterStore {
       return;
     }
     auto graph_parameter_store = iter->second;
-    MS_EXCEPTION_IF_NULL(graph_parameter_store);
+    if (graph_parameter_store == nullptr) {
+      return;
+    }
     graph_parameter_store->Clear();
     graph_parameter_stores_.erase(graph_name);
   }

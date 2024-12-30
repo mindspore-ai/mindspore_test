@@ -896,7 +896,8 @@ bool IsEmptySequenceTensor(tensor::Tensor *tensor) {
   return sequence_shape->size() == 0;
 }
 
-void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *device_tensor, size_t index) {
+void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *device_tensor, size_t outer_index,
+                               size_t inner_index) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (input_tensor == nullptr || IsEmptySequenceTensor(input_tensor)) {
     return;
@@ -904,7 +905,11 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *devic
 
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
-  if (!IsDynamic(device_tensor->host_shape()) && !graph_parameter_store->IsPositionDynamic(index)) {
+  if (!IsDynamic(device_tensor->host_shape()) && !graph_parameter_store->IsPositionDynamic(outer_index, inner_index)) {
+    MS_LOG(DEBUG) << "No need to update dynamic shape and size, host shape dynamic is "
+                  << IsDynamic(device_tensor->host_shape()) << ", graph parameter store outer index: " << outer_index
+                  << ", inner index: " << inner_index << ", dynamic is "
+                  << graph_parameter_store->IsPositionDynamic(outer_index, inner_index);
     return;
   }
 
@@ -913,9 +918,13 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *devic
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
     output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());
+    MS_LOG(DEBUG) << "Kernel tensor: " << output_kernel_tensor.get() << ", shape is "
+                  << output_kernel_tensor->GetShapeVector();
     return;
   }
   output_kernel_tensor->SetShape(input_tensor->base_shape_ptr());
+  MS_LOG(DEBUG) << "Kernel tensor: " << output_kernel_tensor.get() << ", shape is "
+                << output_kernel_tensor->GetShapeVector();
 
   // Update size.
   auto device_format = device_tensor->format();
@@ -944,7 +953,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
     MS_EXCEPTION_IF_NULL(device_tensor);
-    UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index);
+    UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index, inner_index);
     graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
       MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
@@ -986,7 +995,7 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
   }
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
-    UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index);
+    UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index, inner_index);
     MS_EXCEPTION_IF_NULL(device_tensor);
     if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
       MS_LOG(DEBUG) << from_aid.Name() << " do not use input outer index: " << outer_index
@@ -1041,6 +1050,7 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
                   << ", outer index: " << outer_index << ", inner index: " << inner_index
                   << ", device type: " << device::GetDeviceNameByType(new_device_tensor->GetDeviceType());
     new_device_tensor->SetNodeIndex(old_addr_info.second.first, old_addr_info.second.second);
+    new_device_tensor->set_from_persistent_mem(true);
     graph_parameter_store->Push(outer_index, inner_index, new_device_tensor, device_context->GetDeviceType(), SIZE_MAX);
     device_tensor = new_device_tensor;
   }

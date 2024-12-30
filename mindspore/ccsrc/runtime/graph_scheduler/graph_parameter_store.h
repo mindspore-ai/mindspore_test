@@ -49,7 +49,7 @@ class BACKEND_EXPORT GraphParameterStore {
   void Resize(size_t front_parameter_size) {
     parameter_device_tensors_.resize(front_parameter_size);
     heter_device_tensors_.resize(front_parameter_size);
-    is_dynamic_.resize(front_parameter_size, false);
+    is_dynamic_.resize(front_parameter_size);
   }
 
   void ResizePosition(size_t outer_index, size_t tuple_unfold_length) {
@@ -58,6 +58,7 @@ class BACKEND_EXPORT GraphParameterStore {
     }
     parameter_device_tensors_[outer_index].resize(tuple_unfold_length);
     heter_device_tensors_[outer_index].resize(tuple_unfold_length);
+    is_dynamic_[outer_index].resize(tuple_unfold_length, false);
   }
 
   void CheckIndexValid(size_t outer_index, size_t inner_index) {
@@ -191,18 +192,14 @@ class BACKEND_EXPORT GraphParameterStore {
     return true;
   }
 
-  void SetIsPositionDynamic(size_t index, bool is_dynamic) {
-    if (index >= is_dynamic_.size()) {
-      MS_LOG(EXCEPTION) << "Index " << index << " is out of range " << is_dynamic_.size();
-    }
-    is_dynamic_[index] = is_dynamic;
+  void SetIsPositionDynamic(size_t outer_index, size_t inner_index, bool is_dynamic) {
+    CheckIndexValid(outer_index, inner_index);
+    is_dynamic_[outer_index][inner_index] = is_dynamic;
   }
 
-  bool IsPositionDynamic(size_t index) {
-    if (index >= is_dynamic_.size()) {
-      MS_LOG(EXCEPTION) << "Index " << index << " is out of range " << is_dynamic_.size();
-    }
-    return is_dynamic_[index];
+  bool IsPositionDynamic(size_t outer_index, size_t inner_index) {
+    CheckIndexValid(outer_index, inner_index);
+    return is_dynamic_[outer_index][inner_index];
   }
 
   void InsertNonWeightRefMaxInputs(size_t outer_index, size_t inner_index) {
@@ -282,7 +279,8 @@ class BACKEND_EXPORT GraphParameterStore {
   std::map<size_t, AnfNode *> index_to_front_node_;
   // Store tensor from args.
   std::vector<std::vector<TensorPtr>> buffers_;
-  std::vector<bool> is_dynamic_;
+  // Record the dynamic shape for each position.
+  std::vector<std::vector<bool>> is_dynamic_;
   // Record the ref map of device tensor in store.
   std::map<DeviceTensorPosition, std::set<DeviceTensor *>> ref_device_tensors_;
   // Read/Write lock for map.
