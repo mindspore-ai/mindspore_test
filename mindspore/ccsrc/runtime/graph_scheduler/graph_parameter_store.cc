@@ -179,12 +179,51 @@ Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithInde
     tensor = FetchInputTensorByArg(*input_args_, args_index, node);
   }
   MS_EXCEPTION_IF_NULL(tensor);
-  static const bool enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
-  if (enable_infer_boost && EnableKbkSubGraphExecute()) {
-    auto &llm_manager = LLMManager::GetInstance();
-    llm_manager.add_graph_input(node.first->fullname_with_scope(), tensor->data_ptr());
-  }
   return tensor.get();
+}
+
+bool GraphParameterStore::RecordGraphInputsAndIsDyn() {
+  bool isDyn = false;
+  auto &llm_manager = LLMManager::GetInstance();
+  auto buffer_outer_size = buffers_.size();
+  auto tensor_shape_outer_size = host_tensors_shape_.size();
+  if (buffer_outer_size != tensor_shape_outer_size) {
+    MS_LOG(EXCEPTION) << "Buffer size " << buffer_outer_size << " is not same as host tensor size "
+                      << tensor_shape_outer_size;
+  }
+  for (size_t i = 0; i < buffer_outer_size; ++i) {
+    const auto &iter = index_to_front_node_.find(i);
+    if (iter == index_to_front_node_.end()) {
+      MS_LOG(INFO) << "Not found origin parameter in store by index " << i;
+      continue;
+    }
+    const auto &origin_parameter = iter->second;
+    MS_EXCEPTION_IF_NULL(origin_parameter);
+    if (origin_parameter->isa<Parameter>() &&
+        common::AnfAlgo::IsParameterWeight(origin_parameter->cast<ParameterPtr>())) {
+      MS_LOG(DEBUG) << "Skip the prepare host data for parameter in store: " << origin_parameter->fullname_with_scope();
+      continue;
+    }
+    auto buffer_inner_size = buffers_[i].size();
+    // List tensor input do not compare shape.
+    if (buffer_inner_size != 1) {
+      continue;
+    }
+    const auto &input_tensor = buffers_[i][0];
+    if (input_tensor == nullptr) {
+      MS_LOG(ERROR) << "The input tensor is nullptr for arg outer index: " << i;
+      continue;
+    }
+    if (!isDyn) {
+      if (host_tensors_shape_[i] != input_tensor->shape() || input_tensor->shape().empty()) {
+        isDyn = true;
+      }
+    }
+    host_tensors_shape_[i] = input_tensor->shape();
+    input_tensor->set_name(origin_parameter->fullname_with_scope());
+    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor->data_ptr());
+  }
+  return isDyn;
 }
 
 void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback,

@@ -95,6 +95,7 @@ class BACKEND_EXPORT GraphParameterStore {
   void SetInputArgs(const VectorRef &args) {
     input_args_ = const_cast<VectorRef *>(&args);
     buffers_.resize(args.size());
+    host_tensors_shape_.resize(args.size());
   }
   VectorRef *GetInputArgs() const { return input_args_; }
 
@@ -230,6 +231,9 @@ class BACKEND_EXPORT GraphParameterStore {
   // Fetch Tensor with index from input_args_.
   Tensor *FetchTensor(size_t args_index, const KernelWithIndex &node) const;
 
+  // Record graph inputs and return whether is dynamic.
+  bool RecordGraphInputsAndIsDyn();
+
   // Release input data at the end of run graph.
   void ReleaseData();
 
@@ -295,6 +299,8 @@ class BACKEND_EXPORT GraphParameterStore {
   std::vector<std::vector<bool>> is_dynamic_;
   // Record the ref map of device tensor in store.
   std::map<DeviceTensorPosition, std::set<DeviceTensor *>> ref_device_tensors_;
+  // Record the tensor shape for inference.
+  std::vector<ShapeVector> host_tensors_shape_;
   // Read/Write lock for map.
   mutable std::shared_mutex param_mutex_;
 };
