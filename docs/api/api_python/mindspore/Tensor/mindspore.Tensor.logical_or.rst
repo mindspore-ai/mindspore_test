@@ -6,7 +6,7 @@ mindspore.Tensor.logical_or
     逐元素计算两个Tensor的逻辑或运算。
 
     .. math::
-        out_{i} = self_{i} \\vee other_{i}
+        out_{i} = self_{i} \vee other_{i}
 
     .. note::
         - `self` 和 `other` 的输入遵循隐式类型转换规则，使数据类型一致。
