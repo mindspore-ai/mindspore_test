@@ -965,9 +965,7 @@ py::object CTensorToPyStubNodes(const ValuePtr &val) {
     auto val_seq = val->cast<ValueSequencePtr>();
     py::tuple tuple_grads(val_seq->size());
     for (size_t i = 0; i < val_seq->value().size(); ++i) {
-      if (val_seq->value()[i]->isa<tensor::BaseTensor>()) {
-        tuple_grads[i] = CTensorToPyStubNodes(val_seq->value()[i]);
-      }
+      tuple_grads[i] = CTensorToPyStubNodes(val_seq->value()[i]);
     }
     return std::move(tuple_grads);
   }
