@@ -219,7 +219,6 @@ bool ForwardHasDynamicShape(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(ret);
   auto all_nodes = TopoSort(ret, SuccDeeperSimple);
   auto graph_set = FindForwardGraphByRootNodes(all_nodes);
-
   if (graph_set.empty()) {
     MS_LOG(INFO) << "Can not find the forward graph, so find the ops in root graph";
     auto fgs = root->manager()->func_graphs();
