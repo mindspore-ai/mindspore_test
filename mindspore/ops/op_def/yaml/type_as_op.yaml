@@ -9,7 +9,7 @@ type_as:
         output: 
             dtype: tensor
     class:
-        name: TypeAs
+        disable: True
     dispatch:
         enable: True
         Ascend: TypeAsAscend
