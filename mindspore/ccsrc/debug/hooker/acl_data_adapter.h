@@ -37,7 +37,9 @@ class AclDataAdapter : public Adapter {
 
   void AdaptOnStepEnd() override;
 
-  AclDataAdapter();
+  void Load() override;
+
+  AclDataAdapter() {}
 
   ~AclDataAdapter() {}
 

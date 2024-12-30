@@ -61,8 +61,8 @@ void AclDataAdapter::AdaptOnStepEnd() {
   }
 }
 
-AclDataAdapter::AclDataAdapter() {
-  if (common::GetEnv(kMSHookEnable) != kEnable) {
+void AclDataAdapter::Load() {
+  if (common::GetEnv(kMSHookEnable) != kEnable || isLoaded) {
     return;
   }
   auto &loader = HookDynamicLoader::GetInstance();
