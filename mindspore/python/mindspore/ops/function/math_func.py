@@ -1251,7 +1251,7 @@ def logical_or(input, other):
 
     .. math::
 
-        out_{i} = input_{i} \\vee other_{i}
+        out_{i} = input_{i} \vee other_{i}
 
     Note:
         logical_or supports broadcasting.
