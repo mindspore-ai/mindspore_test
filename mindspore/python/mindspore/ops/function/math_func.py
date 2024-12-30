@@ -13117,10 +13117,10 @@ def mul_ext(input, other):
         >>> import numpy as np
         >>> import mindspore
         >>> from mindspore import Tensor
-        >>> from mindspore import mint
+        >>> from mindspore import ops
         >>> x = Tensor(np.array([2, 6, 9]).astype(np.int32))
         >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
-        >>> output = mint.mul_ext(x, y)
+        >>> output = ops.mul_ext(x, y)
         >>> print(output)
         [8. 30. 54.]
         >>> # the data type of x is int32, the data type of y is float32,
