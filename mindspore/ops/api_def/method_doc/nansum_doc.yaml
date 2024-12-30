@@ -47,7 +47,7 @@ nansum:
         >>> print(output2)
         [[1. 4. 3.]]
 
-    .. method:: Tensor.nansum(axis=None, keepdims=False,* , dtype=None) -> Tensor
+    .. method:: Tensor.nansum(axis=None, keepdims=False, *, dtype=None) -> Tensor
         :noindex:
 
     Computes sum of `input` over a given dimension, treating NaNs as zero.
