@@ -198,7 +198,8 @@ def bprop_kbk(input_x, weight, bias, running_mean, running_var, eps, momentum,
 
 def construct_pynative(input, weight, bias, running_mean, running_var, eps, momentum, process_group,
                        world_size, self_num_features, self_world_size):
-    assert self_world_size == world_size
+    if self_world_size != world_size:
+        raise ValueError('World Size Error')
     if not input.is_contiguous():
         input = input.contiguous()
     if weight is not None:
@@ -217,7 +218,8 @@ def construct_pynative(input, weight, bias, running_mean, running_var, eps, mome
                       input_shape[1], dtype=mean.dtype)
 
     num_channels = input_shape[1]
-    assert self_num_features == num_channels
+    if self_num_features != num_channels:
+        raise ValueError('Features Error')
     # C, C, 1 -> (2C + 1)
     combined = mint.cat([mean, invstd, count], dim=0)
     # Use allgather instead of allreduce because count could be different across
@@ -241,8 +243,8 @@ def construct_pynative(input, weight, bias, running_mean, running_var, eps, mome
 
 def construct_kbk(input, weight, bias, running_mean, running_var, eps, momentum, process_group,
                   world_size, self_num_features, self_world_size):
-    assert self_world_size == world_size
-    # if not input.is_contiguous():
+    if self_world_size != world_size:
+        raise ValueError('World Size Error')
     input = input.contiguous()
     if weight is not None:
         weight = weight.contiguous()
@@ -260,7 +262,8 @@ def construct_kbk(input, weight, bias, running_mean, running_var, eps, momentum,
                       input_shape[1], dtype=mean.dtype)
 
     num_channels = input_shape[1]
-    assert self_num_features == num_channels
+    if self_num_features != num_channels:
+        raise ValueError('Features Error')
     # C, C, 1 -> (2C + 1)
     combined = mint.cat([mean, invstd, count], dim=0)
     # Use allgather instead of allreduce because count could be different across

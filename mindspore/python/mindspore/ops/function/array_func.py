@@ -3670,6 +3670,7 @@ def scatter(input, axis, index, src):
         return scatter_prim(input, axis, index, src)
     return scatter_value_(input, axis, index, src)
 
+
 def scatter_add_ext(input, dim, index, src):
     """
     Add all elements in `src` to the index specified by `index` to `input` along dimension specified by `dim`.
@@ -4239,6 +4240,7 @@ def matrix_set_diag(x, diagonal, k=0, align="RIGHT_LEFT"):  # pylint: disable=re
         k = cast_(k, mstype.int32)
     return matrix_set_diag_v3_op(x, diagonal, k)
 
+
 def meshgrid_ext(*tensors, indexing='ij'):
     """
     Generates coordinate matrices from given coordinate tensors.
@@ -4325,6 +4327,7 @@ def meshgrid_ext(*tensors, indexing='ij'):
     if indexing is None:
         indexing = 'ij'
     return meshgrid_impl(tensors, indexing)
+
 
 def meshgrid(*inputs, indexing='xy'):
     """

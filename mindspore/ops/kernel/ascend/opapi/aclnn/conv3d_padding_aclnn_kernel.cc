@@ -150,7 +150,6 @@ void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
     std::vector<int64_t> padding_l;
     std::vector<int64_t> padding_r;
     bool symmetric_padding = CalcPaddingMode(padding_l, padding_r, input_sizes, weight_sizes, stride_, dilation_);
-
     if (symmetric_padding) {
       MS_LOG(INFO) << "Conv3DPaddingAscend: symmetric padding.";
       pad_vector_ = padding_l;
