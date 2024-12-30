@@ -13,7 +13,7 @@ where:
     GPU: py_method
     interface: tensor
 
-  - op_yaml: non_zero_op.yaml
+  - op_yaml: non_zero_ext_op.yaml
     py_method: place_holder
     Ascend: pyboost
     CPU: pyboost
