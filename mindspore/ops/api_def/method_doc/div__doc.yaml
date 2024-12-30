@@ -1,3 +1,5 @@
 div_:
     description: |
+        div_(other, *, rounding_mode=None) -> Tensor
+
         For details, please refer to :func:`mindspore.mint.div`.

@@ -11,13 +11,13 @@ isfinite:
             \end{cases}
 
         Args:
-          x (Tensor): The input tensor.
+          input (Tensor): The input tensor.
 
         Returns:
             Tensor, has the same shape of input, and the dtype is bool.
 
         Raises:
-            TypeError: If x is not a Tensor.
+            TypeError: If `input` is not a Tensor.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
