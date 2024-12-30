@@ -1225,8 +1225,7 @@ def rand_ext(*size, generator=None, dtype=None):
         the interval :math:`[0, 1)`.
 
     Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
-        ValueError: If `size` contains negative number.
+        ValueError: If `size` contains negative numbers.
 
     Supported Platforms:
         ``Ascend``
@@ -1303,7 +1302,7 @@ def randn_ext(*size, generator=None, dtype=None):
         the interval :math:`[0, 1)`.
 
     Raises:
-        ValueError: If `size` contains negative number.
+        ValueError: If `size` contains negative numbers.
 
     Supported Platforms:
         ``Ascend``
@@ -1372,7 +1371,7 @@ def randint_ext(*args, generator=None, dtype=None):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        low (int): the lower bound of the generated random number. Default: 0.
+        low (int, optional): the lower bound of the generated random number. Default: ``0``.
         high (int): the upper bound of the generated random number
         size (Union[tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)`.
 
