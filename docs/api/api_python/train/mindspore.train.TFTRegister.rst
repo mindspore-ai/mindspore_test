@@ -18,6 +18,13 @@ mindspore.train.TFTRegister
         - **Exception** - TTP 初始化失败，会对外抛Exception异常。
         - **ModuleNotFoundError** - Mindio TTP whl 包未安装。
 
+    样例：
+
+    .. note::
+        在运行TFTRegister的用例之前，需要配置相应的环境变量。推荐使用msrun进行分布式的启动，
+        参考 `msrun启动方式 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_。
+        用例应该在4张卡上运行。
+
     .. py:method:: on_train_step_end(run_context)
 
         每个step完成时进行MindIO TTP的上报。
