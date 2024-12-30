@@ -679,6 +679,9 @@ class ReLU6(Cell):
     r"""
     Activation function ReLU6.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Refer to :func:`mindspore.mint.nn.functional.relu6` for more details.
 
     ReLU6 Activation Function Graph:

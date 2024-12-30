@@ -9,4 +9,7 @@ mindspore.mint.nn.Dropout2d
 
     `Dropout2d` 可以提高通道特征映射之间的独立性。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+    
     更多参考详见 :func:`mindspore.mint.nn.functional.dropout2d`。

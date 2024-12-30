@@ -442,6 +442,9 @@ class Dropout3d(Cell):
 
 class Upsample(Cell):
     r"""
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     For details, please refer to :func:`mindspore.ops.interpolate`.
 
     Supported Platforms:
@@ -583,6 +586,9 @@ class Flatten(Cell):
 class Identity(Cell):
     r"""
     A placeholder identity operator that returns the same as input.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         args (Any): Any argument.
