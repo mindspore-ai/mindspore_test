@@ -1918,7 +1918,7 @@ Status CostGraph::InitReshapeStrategy() {
 Status CostGraph::InitSelectedStrategy() {
   for (auto &op : ops_) {
     MS_EXCEPTION_IF_NULL(op);
-    if (op->IsReshape() || op->is_config_by_layout()) {
+    if (op->IsReshape()) {
       continue;
     }
     StrategyPtr out_strategy = nullptr;
@@ -1930,7 +1930,8 @@ Status CostGraph::InitSelectedStrategy() {
       return result_op;
     }
   }
-  return SUCCESS;
+  auto result = InitReshapeStrategy();
+  return result;
 }
 
 Status CostGraph::ComputeOpsAndEdgesParameterInvolved() {
