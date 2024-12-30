@@ -1,3 +1,5 @@
 subtract:
     description: |
-        For details, please refer to :func:`mindspore.mint.subtract`.
+        subtract(other, *, alpha=1) -> Tensor
+
+        For details, please refer to :func:`mindspore.ops.subtract`.

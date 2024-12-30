@@ -13,10 +13,10 @@ mindspore.mint.isfinite
         \end{cases}
 
     参数：
-        - **x** (Tensor) - IsFinite的输入。
+        - **input** (Tensor) - IsFinite的输入。
 
     返回：
         Tensor，输出的shape与输入相同，数据类型为bool。
 
     异常：
-        - **TypeError** - `x` 不是Tensor。
+        - **TypeError** - `input` 不是Tensor。
