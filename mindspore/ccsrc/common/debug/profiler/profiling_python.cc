@@ -41,20 +41,21 @@ void PythonTracer::start(size_t max_threads, uint32_t rank_id) {
   rank_id_ = rank_id;
   tid_ = LongToUlong(syscall(SYS_gettid));
   py::gil_scoped_acquire gil;
-  std::vector<PyThreadState *> thread_states{PyThreadState_Get()};
+  std::vector<PyThreadState *> thread_states;
+  thread_states.reserve(max_threads);  // 预分配空间以提高性能
+  thread_states.push_back(PyThreadState_Get());
 
   if (max_threads > 1) {
-    auto thread_state = thread_states[0];
-    while (thread_state != nullptr) {
+    for (auto thread_state = thread_states[0]; thread_state != nullptr && thread_states.size() < max_threads;
+         thread_state = PyThreadState_Next(thread_state)) {
       if (thread_state != thread_states[0]) {
         thread_states.push_back(thread_state);
       }
-      thread_state = PyThreadState_Next(thread_state);
     }
-    if (thread_states.size() > max_threads) {
-      MS_LOG(WARNING) << "can only trace " << max_threads << " thread. " << thread_states.size()
-                      << " are currently active.";
-      thread_states.resize(max_threads);
+
+    if (thread_states.size() == max_threads && PyThreadState_Next(thread_states.back()) != nullptr) {
+      MS_LOG(WARNING) << "Only tracing first " << max_threads
+                      << " threads. Total active threads: " << thread_states.size();
     }
   }
 
@@ -194,22 +195,22 @@ void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObjec
 int PythonTracer::pyProfileFn(PyObject *obj, PyFrameObject *frame, int what, PyObject *arg) {
   auto ctx = reinterpret_cast<TraceContext *>(obj);
   switch (what) {
-    case PyTrace_CALL:
-      PythonTracer::singleton().recordPyCall(ctx, frame);
-      break;
-
     case PyTrace_C_CALL:
       PythonTracer::singleton().recordCCall(ctx, frame, arg);
       break;
 
-    case PyTrace_EXCEPTION:
-    case PyTrace_RETURN:
-      PythonTracer::singleton().recordReturn(ctx, frame, arg, TraceTag::kPy_Return);
+    case PyTrace_CALL:
+      PythonTracer::singleton().recordPyCall(ctx, frame);
       break;
 
     case PyTrace_C_EXCEPTION:
     case PyTrace_C_RETURN:
       PythonTracer::singleton().recordReturn(ctx, frame, arg, TraceTag::kC_Return);
+      break;
+
+    case PyTrace_EXCEPTION:
+    case PyTrace_RETURN:
+      PythonTracer::singleton().recordReturn(ctx, frame, arg, TraceTag::kPy_Return);
       break;
 
     default:
@@ -221,12 +222,12 @@ int PythonTracer::pyProfileFn(PyObject *obj, PyFrameObject *frame, int what, PyO
 void PythonTracer::call(Command cmd, uint32_t rank_id) {
   MS_LOG(INFO) << "PythonTracer Command: " << cmd;
   switch (cmd) {
-    case Command::kStartOne:
-      PythonTracer::singleton().start(1, rank_id);
-      break;
-
     case Command::kStartAll:
       PythonTracer::singleton().start();
+      break;
+
+    case Command::kStartOne:
+      PythonTracer::singleton().start(1, rank_id);
       break;
 
     case Command::kStop:
