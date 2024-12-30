@@ -64,7 +64,7 @@ void ParallelTensorDumpHandler::HandleParallelTensorDump() {
       }
       AnfNodePtr last_inserted_redistribution_op = cnode->input(index);
       MS_EXCEPTION_IF_NULL(last_inserted_redistribution_op);
-      MS_LOG(WARNING) << "Last Insert Redistribution: " << last_inserted_redistribution_op->DebugString();
+      MS_LOG(INFO) << "Last Insert Redistribution: " << last_inserted_redistribution_op->DebugString();
       (void)ProcessTensorDumps(dumps, cnode, index, last_inserted_redistribution_op, func_graph, cnode->scope());
     }
     for (auto &dump_node : dumps) {
