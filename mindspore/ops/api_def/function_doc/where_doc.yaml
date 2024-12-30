@@ -9,8 +9,8 @@ where:
 
     Args:
         condition (Tensor[bool]): If true, yield `input`, otherwise yield `other`.
-        input (union[Tensor, Scalar]): When `condition` is true, values to select from.
-        other (union[Tensor, Scalar]): When `condition` is false, values to select from.
+        input (Union[Tensor, Scalar]): When `condition` is true, values to select from.
+        other (Union[Tensor, Scalar]): When `condition` is false, values to select from.
 
     Returns:
         Tensor, elements are selected from `input` and `other`.

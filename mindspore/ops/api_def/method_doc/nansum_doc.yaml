@@ -81,7 +81,7 @@ nansum:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([[float("nan"), 2, 3], [1, 2, float("nan")]]), mindspore.float32)
         >>> output1 = x.nansum(axis=0, keepdims=False, dtype=mindspore.float32)
         >>> output2 = x.nansum(axis=0, keepdims=True, dtype=mindspore.float32)
