@@ -203,6 +203,7 @@ constexpr char IDENTITY_INFO[] = "identity_info";
 constexpr char DIVISOR[] = "divisor";
 constexpr char NONE[] = "None";
 constexpr char DEPEND[] = "Depend";
+constexpr char INSERTGRADIENTOF[] = "InsertGradientOf";
 constexpr char BATCH_PARALLEL[] = "BatchParallel";
 constexpr char STAND_ALONE[] = "StandAlone";
 constexpr char SELF_DEFINE_SHARD_OP[] = "SelfDefineShard";

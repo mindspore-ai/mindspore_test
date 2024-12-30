@@ -920,7 +920,9 @@ std::pair<AnfNodePtr, bool> FindParameter(const AnfNodePtr &node, const FuncGrap
   for (size_t index = 0; index < cnode->size(); ++index) {
     PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(prim);
-    if ((prim->name() == DEPEND || prim->name() == LOAD || IsInAllGatherNodeList(cnode)) && index != 1) {
+    if ((prim->name() == DEPEND || prim->name() == LOAD || prim->name() == INSERTGRADIENTOF ||
+         IsInAllGatherNodeList(cnode)) &&
+        index != 1) {
       continue;
     }
     auto res = FindParameter(cnode->input(index), func_graph);
