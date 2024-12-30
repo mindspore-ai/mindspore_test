@@ -40,6 +40,7 @@
 #include "proto/debug_graph.pb.h"
 
 constexpr int kFailure = 1;
+constexpr int kQint4ShapeModify = 2;
 constexpr auto kInput = "input";
 constexpr auto kOutput = "output";
 
@@ -141,7 +142,7 @@ uint32_t GetSampleMode() {
 uint32_t GetSampleNum() {
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
-  if (IsDeviceTargetGPU()) {
+  if (IsDeviceTargetGPU() || !GetSampleMode()) {
     return 0;
   }
   return DumpJsonParser::GetInstance().sample_num();
@@ -149,7 +150,7 @@ uint32_t GetSampleNum() {
 
 size_t ModifySize(const TypeId &host_type, const size_t &host_size) {
   if (host_type == kNumberTypeInt4) {
-    return host_size / 2;
+    return host_size / kQint4ShapeModify;
   }
   return host_size;
 }
