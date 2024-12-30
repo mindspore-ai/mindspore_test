@@ -691,7 +691,7 @@ bool AclHelper::IsNopNode(const CNodePtr &node) {
                                                       prim::kPrimSqueeze->name(), prim::kPrimFlatten->name(),
                                                       prim::kPrimFlattenGrad->name()};
   auto op_name = common::AnfAlgo::GetCNodeName(node);
-  bool is_view_node = common::AnfAlgo::IsViewNode(node);
+  bool is_view_node = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "1") && common::AnfAlgo::IsViewNode(node);
   return (nop_nodes.find(op_name) != nop_nodes.end()) && !is_view_node;
 }
 

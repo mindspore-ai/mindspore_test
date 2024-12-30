@@ -336,7 +336,7 @@ void KernelActor::InitShapeDependInfo() {
   }
 }
 
-void KernelActor::MakeInputContiguous(OpContext<DeviceTensor> *const context) {
+void KernelActor::ConvertInputContiguous(OpContext<DeviceTensor> *const context) {
   auto cur_stream_id = device_contexts_[0]->device_res_manager_->GetCurrentStreamId();
   auto stream_id = kernel_info_->stream_id();
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
@@ -399,8 +399,8 @@ void KernelActor::MakeInputContiguous(OpContext<DeviceTensor> *const context) {
         cross_stream_addresses_.emplace_back(0, new_device_address->kernel_tensor()->device_ptr());
       }
       storage_store_[i] = old_storage_info;
-      input_device_tensors_store_[i] = input_device_tensors_[i];
-      input_kernel_tensors_store_[i] = input_kernel_tensors_[i];
+      temp_input_device_tensors_[i] = input_device_tensors_[i];
+      temp_input_kernel_tensors_[i] = input_kernel_tensors_[i];
       input_device_tensors_[i] = new_device_address.get();
       input_kernel_tensors_[i] = new_device_address->kernel_tensor().get();
     }
@@ -1210,13 +1210,13 @@ bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context) 
 }
 
 void KernelActor::RecoverInputs() {
-  if (!input_device_tensors_store_.empty()) {
-    for (const auto &pair : input_device_tensors_store_) {
+  if (!temp_input_device_tensors_.empty()) {
+    for (const auto &pair : temp_input_device_tensors_) {
       input_device_tensors_[pair.first] = pair.second;
     }
   }
-  if (!input_kernel_tensors_store_.empty()) {
-    for (const auto &pair : input_kernel_tensors_store_) {
+  if (!temp_input_kernel_tensors_.empty()) {
+    for (const auto &pair : temp_input_kernel_tensors_) {
       input_kernel_tensors_[pair.first] = pair.second;
     }
   }
@@ -1264,7 +1264,7 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
   }
   // Make tensor contiguous if needed
   if (need_check_tensor_contiguous_) {
-    MakeInputContiguous(context);
+    ConvertInputContiguous(context);
   }
 
   // Cpu not support stream lock with LaunchKernel.
