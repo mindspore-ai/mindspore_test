@@ -36,8 +36,6 @@ class Stream(Stream_):
     A device stream is a linear sequence of execution that belongs to a specific device,
     independent from other streams.
 
-    For a quick start of using Stream, please refer to `Illustration of stream management <https://www.mindspore.cn/docs/en/master/api_python/samples/hal/stream_manager.html>`_ .
-
     Note:
         - The api will be deprecated, please use the api :class:`mindspore.runtime.Stream`.
 
