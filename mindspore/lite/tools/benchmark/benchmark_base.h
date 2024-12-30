@@ -169,7 +169,7 @@ class MS_API BenchmarkFlags : public virtual FlagParser {
     AddFlag(&BenchmarkFlags::inter_op_parallel_num_, "interOpParallelNum", "parallel number of operators in predict",
             1);
     AddFlag(&BenchmarkFlags::enable_gl_texture_, "enableGLTexture", "Enable GlTexture2D", false);
-    AddFlag(&BenchmarkFlags::delegate_mode_, "delegateMode", "set the delegate mode: CoreML | NNAPI", "");
+    AddFlag(&BenchmarkFlags::delegate_mode_, "delegateMode", "set the delegate mode: CoreML", "");
     AddFlag(&BenchmarkFlags::enable_shared_thread_pool_, "enableSharedThreadPool", "Enable shared thread pool", false);
     AddFlag(&BenchmarkFlags::thread_num_limit_per_worker_, "threadNumLimitPerWorker", "thread num limit per worker ",
             "");
