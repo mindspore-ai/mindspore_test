@@ -673,7 +673,10 @@ struct ComputeLocation<T, GridSamplerPadding::Reflection, align_corners> : Compu
   }
 
   inline std::pair<Vec, Vec> ApplyGetGrad(const Vec &in) const {
-    Vec result, grad_refl, grad_clip, grad(scaling_factor);
+    Vec result;
+    Vec grad_refl;
+    Vec grad_clip;
+    Vec grad(scaling_factor);
     std::tie(result, grad_refl) = reflect_coordinates_get_grad(unnormalize(in));
     grad = grad_refl * grad;
     std::tie(result, grad_clip) = clip_coordinates_get_grad(result);

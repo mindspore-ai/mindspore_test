@@ -73,8 +73,9 @@ BaseShapePtr ConstantPadNDFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   auto ms_context = MsContext::GetInstance();
+  constexpr int kSize2 = 2;
   MS_EXCEPTION_IF_NULL(ms_context);
-  if ((ms_context->ascend_soc_version() == kAscendVersion910) && paddings.size() == 2) {
+  if ((ms_context->ascend_soc_version() == kAscendVersion910) && paddings.size() == kSize2) {
     ops::BlockInvalid(primitive, input_args, out_shape);
   }
   return std::make_shared<abstract::Shape>(out_shape);

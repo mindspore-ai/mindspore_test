@@ -6448,6 +6448,7 @@ def diff(x, n=1, axis=-1, prepend=None, append=None):
     a2 = x.gather(TupleToTensor()(a[1:], mstype.int64), axis)
     return a2 - a1
 
+
 def _diff_is_scalar_or_scalar_tensor(value):
     """judge the value"""
     if isinstance(value, int):
@@ -6457,6 +6458,7 @@ def _diff_is_scalar_or_scalar_tensor(value):
         return True
 
     return False
+
 
 def _diff_check(input, n, dim):
     """judge the input n and dim"""
@@ -6471,6 +6473,7 @@ def _diff_check(input, n, dim):
 
     if input.dtype in (mstype.complex64, mstype.complex128, mstype.float64, mstype.int16):
         raise TypeError("For 'diff', 'input' do not support complex64/complex128/float64/int16")
+
 
 def _diff_helper(input, n, dim):
     """calculate the forward difference"""
@@ -6490,6 +6493,7 @@ def _diff_helper(input, n, dim):
 
     return result
 
+
 def _diff_prepend_append_on_dim(input, prepend, append, dim):
     """append tensor on dim"""
     if prepend is not None and append is None:
@@ -6499,6 +6503,7 @@ def _diff_prepend_append_on_dim(input, prepend, append, dim):
         return cat((input, append), dim)
 
     return cat((prepend, input, append), dim)
+
 
 def diff_ext(input, n=1, dim=-1, prepend=None, append=None):
     r"""
@@ -12981,6 +12986,7 @@ def round(input, *, decimals=0):
     """
     return round_op(input, decimals)
 
+
 def isnan_ext(tensor):
     r"""
     Returns a new tensor with boolean elements representing if each element of input is :math:`Nan` or not.
@@ -13008,6 +13014,7 @@ def isnan_ext(tensor):
         [ True  False  False  False]
     """
     return not_equal_op(tensor, tensor)
+
 
 def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0):
     r"""
@@ -13079,6 +13086,7 @@ def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_thresh
 
     iou = rotated_iou_op(boxes_cp, query_boxes_cp, trans, mode, is_cross, v_threshold, e_threshold)
     return cast_(iou, origin_dtype)
+
 
 def mul_ext(input, other):
     r"""

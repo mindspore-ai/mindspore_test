@@ -70,8 +70,12 @@ namespace aicpu {
 namespace {
 template <typename T>
 inline const T &Clamp(const T &low, const T &high, const T &val) {
-  if (high < val) return high;
-  if (val < low) return low;
+  if (high < val) {
+    return high;
+  }
+  if (val < low) {
+    return low;
+  }
   return val;
 }
 

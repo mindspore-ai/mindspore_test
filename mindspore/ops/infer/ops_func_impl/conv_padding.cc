@@ -27,6 +27,8 @@
 
 namespace mindspore {
 namespace ops {
+constexpr auto kConvPaddingGap2 = 2;
+
 std::pair<ShapeVector, bool> ConvPaddingFuncImpl::Batchify(const ShapeVector &input_shape, int64_t num_spatial_dims,
                                                            const std::string &prim_name) const {
   if (MS_UNLIKELY(IsDynamicRank(input_shape))) {
@@ -93,7 +95,7 @@ ShapeArray ConvPaddingFuncImpl::ConvNdPaddingCommonInferShape(const PrimitivePtr
     if (!stride_opt.has_value() || !dilation_opt.has_value()) {
       if (padding_enum == PadMode::SAME) {
         for (int i = 0; i < feature_len; i++) {
-          nd_output_shape[i + 2] = input_shape[i + 2];
+          nd_output_shape[i + kConvPaddingGap2] = input_shape[i + kConvPaddingGap2];
         }
       }
       return {nd_output_shape};
@@ -129,7 +131,8 @@ ShapeArray ConvPaddingFuncImpl::ConvNdPaddingCommonInferShape(const PrimitivePtr
       }
     }
     for (int i = 0; i < feature_len; i++) {
-      nd_output_shape[i + 2] = GetOutputHWPadding(input_shape, weight_shape, i + 2, i, stride, padding_enum, dilation);
+      nd_output_shape[i + kConvPaddingGap2] =
+        GetOutputHWPadding(input_shape, weight_shape, i + kConvPaddingGap2, i, stride, padding_enum, dilation);
     }
   }
   return {nd_output_shape};

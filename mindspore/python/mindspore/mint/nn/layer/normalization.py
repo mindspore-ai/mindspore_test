@@ -560,7 +560,6 @@ class SyncBatchNorm(_BatchNorm):
             exponential_average_factor = self.momentum
 
         if self.training and self.track_running_stats:
-            assert self.num_batches_tracked is not None
             one_tensor = Tensor(1, dtype=ms.float32)
             ops.assign_add(self.num_batches_tracked, one_tensor)
             if self.momentum is None:  # use cumulative moving average
@@ -618,7 +617,6 @@ class SyncBatchNorm(_BatchNorm):
                               exponential_average_factor,
                               self.eps)
         else:
-            assert bn_training
             output = self.sync_batch_norm(input,
                                           self.weight,
                                           self.bias,

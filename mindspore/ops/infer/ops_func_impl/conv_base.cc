@@ -29,6 +29,11 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+constexpr auto kConvGap2 = 2;
+constexpr auto kConvSize3 = 3;
+constexpr auto kConvSize5 = 5;
+}  // namespace
 namespace conv_base {
 int64_t ConvBaseGetOutputSpatialDim(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos,
                                     size_t i, const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &padding,
@@ -132,8 +137,8 @@ void ConvBaseFunImpl::FetchSpatialDim(const PrimitivePtr &primitive, const Infer
   }
 
   for (size_t i = 0; i < spatial_len; i++) {
-    (*nd_output_shape)[i + 2] = conv_base::ConvBaseGetOutputSpatialDim(
-      input_shape, weight_shape, i + 2, i, stride, padding, dilation, transposed, output_padding_opt);
+    (*nd_output_shape)[i + kConvGap2] = conv_base::ConvBaseGetOutputSpatialDim(
+      input_shape, weight_shape, i + kConvGap2, i, stride, padding, dilation, transposed, output_padding_opt);
   }
 }
 
@@ -171,11 +176,12 @@ ShapeVector ConvBaseFunImpl::FetchBatchDim(const PrimitivePtr &primitive, const 
 
   std::vector<int64_t> nd_output_shape;
   if (MS_LIKELY(!is_weight_dyn_rank)) {
-    conv_base::ConvBaseCheckRange("weight rank", SizeToLong(weight_shape.size()), 5, 3, "Convolution");
+    conv_base::ConvBaseCheckRange("weight rank", SizeToLong(weight_shape.size()), kConvSize5, kConvSize3,
+                                  "Convolution");
     nd_output_shape.resize(weight_shape.size(), abstract::Shape::kShapeDimAny);
   }
   if (MS_LIKELY(!is_input_dyn_rank)) {
-    conv_base::ConvBaseCheckRange("input rank", SizeToLong(input_shape.size()), 5, 3, "Convolution");
+    conv_base::ConvBaseCheckRange("input rank", SizeToLong(input_shape.size()), kConvSize5, kConvSize3, "Convolution");
     if (nd_output_shape.empty()) {
       nd_output_shape.resize(input_shape.size(), abstract::Shape::kShapeDimAny);
     }

@@ -188,7 +188,6 @@ ShapeArray Conv3DExtFuncImpl::InferShape(const PrimitivePtr &primitive, const In
   auto &weight_tensor = input_infos[kIndex1];
   auto input_shape = input_tensor->GetShape();
   auto weight_shape = weight_tensor->GetShape();
-
   if (IsDynamicRank(input_shape) || IsDynamicRank(weight_shape)) {
     return InferDynamicRank(input_shape, weight_shape);
   }

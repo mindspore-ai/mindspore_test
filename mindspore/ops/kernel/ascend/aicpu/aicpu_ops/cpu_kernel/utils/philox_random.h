@@ -117,7 +117,8 @@ class PhiloxRandom {
      * Run the single rounds for ten times. Manually unrolling the loop
      * for better performance.
      */
-    for (int i = 0; i < 9; i++) {
+    constexpr auto kTimes9 = 9;
+    for (int i = 0; i < kTimes9; i++) {
       counter = ComputeSingleRound(counter, key);
       RaiseKey(&key);
     }
