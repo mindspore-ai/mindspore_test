@@ -1,0 +1,8 @@
+all_gather_matmul:
+  op_yaml: all_gather_matmul_op.yaml
+  py_method: all_gather_matmul
+  kwonlyargs: bias, gather_index, gather_output, comm_turn, trans_input, trans_x2
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: function
