@@ -53,6 +53,9 @@ class ConstantPad1d(ConstantPadNd_):
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
         value (Union[int, float]): Specifies padding value.
@@ -118,6 +121,9 @@ class ConstantPad2d(ConstantPadNd_):
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
         value (Union[int, float]): Specifies padding value.
@@ -169,6 +175,9 @@ class ConstantPad3d(ConstantPadNd_):
     Pad the last 3 dimension of `input` tensor using `padding` and `value`.
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
@@ -234,6 +243,9 @@ class ZeroPad1d(ZeroPadNd_):
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
 
@@ -295,6 +307,9 @@ class ZeroPad2d(ZeroPadNd_):
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
 
@@ -343,6 +358,9 @@ class ZeroPad3d(ZeroPadNd_):
     Pad the last 3 dimension of `input` tensor with 0 using `padding`.
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
@@ -423,6 +441,9 @@ class ReflectionPad1d(ReflectionPadNd_):
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
 
@@ -466,6 +487,9 @@ class ReflectionPad2d(ReflectionPadNd_):
     Pad the last 2 dimension of `input` tensor using the reflection of the input boundary.
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
@@ -515,6 +539,9 @@ class ReflectionPad3d(ReflectionPadNd_):
     Pad the last 3 dimension of `input` tensor using the reflection of the input boundary.
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
@@ -597,6 +624,9 @@ class ReplicationPad1d(ReplicationPadNd_):
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
 
@@ -642,6 +672,9 @@ class ReplicationPad2d(ReplicationPadNd_):
     Pad the last 2 dimension of `input` tensor using the replication of the input boundary.
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.
@@ -698,6 +731,9 @@ class ReplicationPad3d(ReplicationPadNd_):
     Pad the last 3 dimension of `input` tensor using the replication of the input boundary.
 
     For more information, please refer to :func:`mindspore.mint.nn.functional.pad`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         padding (Union[int, tuple, list]): Specifies padding size.

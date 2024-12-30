@@ -6204,6 +6204,9 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ and
     `ConvNets <http://cs231n.github.io/convolutional-networks/>`_.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         input (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
         weight (Tensor): Tensor of shape
