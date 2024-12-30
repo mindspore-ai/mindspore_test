@@ -13,6 +13,13 @@ min:
     GPU: pyboost
     interface: tensor, function
 
+  - op_yaml: minimum_op.yaml
+    py_method: tensor_minimum
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function
+
   - op_yaml: deprecated/min_method.yaml
     py_method: deprecated_tensor_min # callback to python function "def deprecated_tensor_min"
     kwonlyargs: initial, where, return_indices

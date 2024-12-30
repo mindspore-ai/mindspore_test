@@ -32,10 +32,15 @@ class MinDimNet(nn.Cell):
         return mint.min(x, dim, keepdim)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+class MinimumNet(nn.Cell):
+    def construct(self, x, other):
+        return mint.min(x, other)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_min(mode):
     """
@@ -58,10 +63,10 @@ def test_min(mode):
     assert "Failed calling min with " in str(error_info.value)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_min_dim(mode):
     """
@@ -99,3 +104,24 @@ def test_min_dim(mode):
         net(x_np, dim=-1, keepdim=-1)
         _pynative_executor.sync()
     assert "Failed calling min with " in str(error_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_minimum(mode):
+    """
+    Feature: test mint.min
+    Description: Verify the result of mint.min(input, other)
+    Expectation: expect correct forward result
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net = MinimumNet()
+
+    x = Tensor(np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]), ms.float32)
+    other = Tensor(np.array([[2., 26., 4., 1.], [3., 41., 16., 1.]]), ms.float32)
+    output = net(x, other)
+    expect_output = np.array([[1., 25., 4., 1.], [3., 11., 6., 1.]], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expect_output)

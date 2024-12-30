@@ -31,3 +31,8 @@ mindspore.mint.max
         - **TypeError** - 如果 `input` 不是tensor。
         - **TypeError** - 如果 `keepdim` 不是bool类型。
         - **TypeError** - 如果 `dim` 不是int类型。
+
+    .. py:function:: mindspore.mint.max(input, other)
+        :noindex:
+
+    详情请参考 :func:`mindspore.mint.maximum`。
