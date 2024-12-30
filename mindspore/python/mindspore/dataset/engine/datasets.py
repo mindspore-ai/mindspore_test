@@ -3505,10 +3505,6 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                 worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
                 worker.start()
                 self.workers.append(worker)
-            for worker_id in range(self.num_parallel_workers):
-                worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
-                worker.start()
-                self.workers.append(worker)
         else:
             multiprocessing.set_start_method(self.start_method, True)
 
