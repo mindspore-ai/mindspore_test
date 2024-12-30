@@ -35,7 +35,7 @@ class Mstx:
 
         Args:
             message (str): Description for the marker.
-            stream (mindspore.runtime.Stream, optional): NPU stream for async execution, expected type:
+            stream (:class:`~.runtime.Stream`, optional): NPU stream for async execution, expected type:
                 mindspore.runtime.Stream. Default: ``None``, which means only marking on host side without
                 marking on device stream.
 
@@ -107,7 +107,7 @@ class Mstx:
 
         Args:
             message (str): Description for the range.
-            stream (mindspore.runtime.Stream, optional): NPU stream for async execution, expected type:
+            stream (:class:`~.runtime.Stream`, optional): NPU stream for async execution, expected type:
                 mindspore.runtime.Stream. Default: ``None``, which means only starting mstx range on
                 host side without starting on device stream.
 

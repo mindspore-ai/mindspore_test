@@ -3,7 +3,7 @@ conv_transpose2d:
         Applies a 2D transposed convolution operator over an input image composed of several input planes,
         sometimes also called deconvolution (although it is not an actual deconvolution).
 
-        Refer to :class:`mindspore.mint.nn.ConvTranspose2D` for more details.
+        Refer to :class:`mindspore.mint.nn.ConvTranspose2d` for more details.
 
         .. warning::
             - This is an experimental API that is subject to change or deletion.
