@@ -159,6 +159,8 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
       }
       MS_LOG(ERROR) << msg << " Main process will be terminated.";
       kill(getpid(), SIGTERM);
+      // In case the signal is not responded, return here
+      return;
     }
   }
 }

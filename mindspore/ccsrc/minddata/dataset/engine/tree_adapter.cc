@@ -718,9 +718,6 @@ Status TreeAdapter::Launch() {
     GilAcquireWithCheck gil_acquire_with_check;
     PyOS_BeforeFork();
 
-    // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
-    signal(SIGCHLD, SIG_IGN);
-
     // launch the sub-process to detach dataset with send
     pid_t fpid = fork();
     if (fpid < 0) {  // fork sub-process failed
@@ -812,6 +809,14 @@ Status TreeAdapter::Launch() {
 #endif
 
   RETURN_IF_NOT_OK(tree_->Launch());
+
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+  if (independent_dataset_) {
+    // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
+    signal(SIGCHLD, SIG_IGN);
+  }
+#endif
+
   launched_ = true;
   return Status::OK();
 }
