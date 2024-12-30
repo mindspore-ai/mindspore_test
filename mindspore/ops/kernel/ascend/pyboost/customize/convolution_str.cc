@@ -111,7 +111,6 @@ tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunn
       input_tensor_new =
         constant_pad_nd_op->Call(input_tensor, std::make_shared<ValueTuple>(pad_nd), zero);  // 注意是否可用
 
-      // auto output_padding(static_cast<size_t>(dim));
       pad_vector = padding_l;
     }
   } else if (padding_enum_imm == PadMode::VALID) {

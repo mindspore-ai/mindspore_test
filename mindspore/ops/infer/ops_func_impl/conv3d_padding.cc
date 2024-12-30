@@ -23,13 +23,19 @@
 namespace mindspore {
 namespace ops {
 namespace {
+constexpr auto kConv3dPaddingGap2 = 2;
+constexpr auto kConv3dPaddingSize3 = 3;
+constexpr auto kConv3dPaddingSize5 = 5;
+
 void CheckConvPaddingRestrictions(mindspore::PadMode mode, const ShapeVector &input_shape,
                                   const ShapeVector &weight_shape, const ArrayValue<int64_t> &stride,
                                   const ArrayValue<int64_t> &dilation) {
   if (mode == PadMode::VALID) {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < kConv3dPaddingSize3; i++) {
       if (!dilation.IsValueUnknown(i % dilation.size())) {
-        if (input_shape[i + 2] - (weight_shape[i + 2] - 1) * dilation[i % dilation.size()] - 1 < 0) {
+        if (input_shape[i + kConv3dPaddingGap2] -
+              (weight_shape[i + kConv3dPaddingGap2] - 1) * dilation[i % dilation.size()] - 1 <
+            0) {
           MS_EXCEPTION(ValueError)
             << "For primitive[Conv3DPadding], (Hin + PadUp + PadDown - (Hk - 1) * DilationH - 1), "
             << "(Win + PadLeft + PadRight - (Wk - 1) * DilationW - 1) and (Din + PadFront + PadBack - (Dk - 1) * "
@@ -40,15 +46,16 @@ void CheckConvPaddingRestrictions(mindspore::PadMode mode, const ShapeVector &in
     }
     return;
   }
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < kConv3dPaddingSize3; i++) {
     if (dilation.IsValueUnknown(i % dilation.size()) || stride.IsValueUnknown(i % stride.size())) {
       continue;
     }
-    auto pads = (input_shape[i + 2] - 1) * stride[i % stride.size()] +
-                (weight_shape[i + 2] - 1) * dilation[i % dilation.size()] + 1 - input_shape[i + 2];
-    if (pads / 2 >= weight_shape[i + 2]) {
-      MS_EXCEPTION(ValueError) << "For primitive[Conv3DPadding], pad should be less " << weight_shape[i + 2]
-                               << ", but got " << pads / 2
+    auto pads = (input_shape[i + kConv3dPaddingGap2] - 1) * stride[i % stride.size()] +
+                (weight_shape[i + kConv3dPaddingGap2] - 1) * dilation[i % dilation.size()] + 1 -
+                input_shape[i + kConv3dPaddingGap2];
+    if (pads / 2 >= weight_shape[i + kConv3dPaddingGap2]) {
+      MS_EXCEPTION(ValueError) << "For primitive[Conv3DPadding], pad should be less "
+                               << weight_shape[i + kConv3dPaddingGap2] << ", but got " << pads / 2
                                << ". Taking the H dimension as an example, when pad is filled symmetrically,"
                                << " the calculation of the pad value can be obtained by "
                                << "((Hout - 1) * strideH + (Hk - 1) * DilationH + 1 - Hin) / 2";
@@ -108,7 +115,7 @@ ShapeArray Conv3DPaddingFuncImpl::InferDynamicRank(const ShapeVector &input_shap
                                                    const ShapeVector &weight_shape) const {
   if (!IsDynamicRank(weight_shape)) {
     auto weight_shape_size = SizeToLong(weight_shape.size());
-    CheckRangePadding("weight rank", weight_shape_size, 5, 3, "Conv3dPadding");
+    CheckRangePadding("weight rank", weight_shape_size, kConv3dPaddingSize5, kConv3dPaddingSize3, "Conv3dPadding");
     auto output_shape = ShapeVector(weight_shape_size, abstract::Shape::kShapeDimAny);
     output_shape[1] = weight_shape[0];
     return {output_shape};
@@ -216,7 +223,6 @@ ShapeArray Conv3DPaddingFuncImpl::ConvNdInferShape(const PrimitivePtr &primitive
 ShapeArray Conv3DPaddingFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   const auto input_shape = input_infos[kIndex0]->GetShape();
   const auto weight_shape = input_infos[kIndex1]->GetShape();
-
   if (IsDynamicRank(input_shape) || IsDynamicRank(weight_shape)) {
     return InferDynamicRank(input_shape, weight_shape);
   }

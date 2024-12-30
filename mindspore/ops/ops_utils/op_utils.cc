@@ -644,8 +644,9 @@ BaseShapePtr PadInferShapeBase(const PrimitivePtr &primitive, const std::vector<
 
   auto out_shape = SetPadShape(x_shape, paddings);
   auto ms_context = MsContext::GetInstance();
+  constexpr auto kSize4 = 4;
   MS_EXCEPTION_IF_NULL(ms_context);
-  if ((ms_context->ascend_soc_version() == kAscendVersion910) && paddings.size() == 4) {
+  if ((ms_context->ascend_soc_version() == kAscendVersion910) && paddings.size() == kSize4) {
     BlockInvalid(primitive, input_args, out_shape->GetShapeVector());
   }
   return out_shape;
