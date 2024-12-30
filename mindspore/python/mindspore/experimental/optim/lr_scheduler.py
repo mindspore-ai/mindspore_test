@@ -299,7 +299,7 @@ class LinearLR(LRScheduler):
             return [lr * 1. for lr in self._last_lr]
 
         factor = 1. + (self.end_factor - self.start_factor) / \
-            (self.total_iters * self.start_factor + (self.last_epoch - 1) * (self.end_factor - self.start_factor))
+                 (self.total_iters * self.start_factor + (self.last_epoch - 1) * (self.end_factor - self.start_factor))
         return [lr * factor for lr in self._last_lr]
 
     def _get_closed_form_lr(self):
@@ -539,13 +539,14 @@ class MultiplicativeLR(LRScheduler):
     """
 
     def __init__(self, optimizer, lr_lambda, last_epoch=-1):
-        if not isinstance(lr_lambda, list) and not isinstance(lr_lambda, tuple):
-            self.lr_lambdas = [lr_lambda] * len(optimizer.param_groups)
-        else:
-            if len(lr_lambda) != len(optimizer.param_groups):
+        if isinstance(lr_lambda, (list, tuple)):
+            if len(lr_lambda) == len(optimizer.param_groups):
+                self.lr_lambdas = list(lr_lambda)
+            else:
                 raise ValueError("Expected {} lr_lambdas, but got {}".format(
                     len(optimizer.param_groups), len(lr_lambda)))
-            self.lr_lambdas = list(lr_lambda)
+        else:
+            self.lr_lambdas = [lr_lambda] * len(optimizer.param_groups)
         super(MultiplicativeLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
@@ -1137,11 +1138,11 @@ class CyclicLR(LRScheduler):
     def _triangular_scale_fn(self, x):
         return 1.
 
-    def _triangular2_scale_fn(self, x):
-        return 1 / (2. ** (x - 1))
-
     def _exp_range_scale_fn(self, x):
         return self.gamma ** (x)
+
+    def _triangular2_scale_fn(self, x):
+        return 1 / (2. ** (x - 1))
 
     def get_lr(self):
         cycle = self.floor(1 + self.last_epoch / self.total_step_size)
@@ -1153,13 +1154,9 @@ class CyclicLR(LRScheduler):
         lrs = []
         for base_lr, max_lr in zip(self.base_lrs, self.max_lrs):
             base_height = (max_lr - base_lr) * scale_factor
-
-            if self.scale_mode == 'cycle':
-                lr = base_lr + base_height * self.scale_fn(cycle)
-            else:
-                lr = base_lr + base_height * self.scale_fn(self.last_epoch)
+            cycle_or_epoch = cycle if self.scale_mode == 'cycle' else self.last_epoch
+            lr = base_lr + base_height * self.scale_fn(cycle_or_epoch)
             lrs.append(lr)
-
         return lrs
 
 
