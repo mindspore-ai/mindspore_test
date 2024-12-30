@@ -47,7 +47,7 @@ nansum:
         >>> print(output2)
         [[1. 4. 3.]]
 
-    .. method:: Tensor.nansum(axis=None, keepdims=False,* , dtype=None) -> Tensor
+    .. method:: Tensor.nansum(axis=None, keepdims=False, *, dtype=None) -> Tensor
         :noindex:
 
     Computes sum of `input` over a given dimension, treating NaNs as zero.
@@ -81,7 +81,7 @@ nansum:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([[float("nan"), 2, 3], [1, 2, float("nan")]]), mindspore.float32)
         >>> output1 = x.nansum(axis=0, keepdims=False, dtype=mindspore.float32)
         >>> output2 = x.nansum(axis=0, keepdims=True, dtype=mindspore.float32)
