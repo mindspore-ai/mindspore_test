@@ -1417,6 +1417,8 @@ def set_context(**kwargs):
     |                         |                              |                           | :func:`~.conv_allow_hf32`  |
     |                         |                              |                           |                            |
     |                         |                              |                           | :func:`~.op_compile`       |
+    |                         |                              |                           |                            |
+    |                         |                              |                           | :func:`~.op_debug_option`  |
     |                         +------------------------------+---------------------------+----------------------------+
     |                         |  jit_syntax_level            | CPU/GPU/Ascend            |  NA                        |
     |                         +------------------------------+---------------------------+----------------------------+
@@ -1465,6 +1467,8 @@ def set_context(**kwargs):
             please refer to `Ascend Community document about aclrtSetOpExecuteTimeOut
             <https://www.hiascend.com/document/detail/en/CANNCommunityEdition/600alphaX/infacldevg/aclcppdevg/aclcppdevg_03_0069.html>`_.
             Default: ``900`` .
+            This parameter will be deprecated and will be removed in future versions. Please use the
+            api :func:`mindspore.device_context.ascend.op_debug.execute_timeout` instead.
         save_graphs (bool or int): Whether to save intermediate compilation graphs. Default: ``0`` .
             Available values are:
 
@@ -1521,12 +1525,17 @@ def set_context(**kwargs):
         aoe_tune_mode (str): AOE tuning mode setting, which is not set by default.
             When set to ``"online"`` , the tuning in online function is turned on.
             When set to ``"offline"`` , ge graph will be save for offline tuning.
+            This parameter will be deprecated and will be removed in future versions. Please use the
+            api :func:`mindspore.device_context.ascend.op_tuning.aoe_tune_mode` instead.
         aoe_config (dict): Set the parameters specific to Ascend Optimization Engine. It is not set by default.
 
             - job_type (str): Mode type setting, default value is ``"2"``.
 
               - ``"1"``: subgraph tuning;
               - ``"2"``: operator tuning.
+
+            This parameter will be deprecated and will be removed in future versions. Please use the
+            api :func:`mindspore.device_context.ascend.op_tuning.aoe_job_type` instead.
 
         check_bprop (bool): Whether to check back propagation nodes. The checking ensures that the shape and dtype
             of back propagation node outputs is the same as input parameters. Default: ``False`` .
@@ -1618,10 +1627,15 @@ def set_context(**kwargs):
               - allow_mix_precision_bf16: Automatic mixing precision, facing the whole network operator, according to
                 the built-in optimization strategy, automatically reduces the precision of some operators to bfloat16.
 
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.ascend.op_precision.precision_mode` instead.
+
             - jit_compile (bool): Whether to select online compilation. When set to 'True', online compilation is
               prioritized. When set to 'False', compiled operator binary files are prioritized to improve compilation
               performance. The default settings are online compilation for static shape, and compiled operator binary
               files for dynamic shape.
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.ascend.op_tuning.op_compile` instead.
             - atomic_clean_policy (int): The policy for cleaning memory occupied by atomic operators in the network.
               Default: ``1`` .
 
@@ -1632,9 +1646,13 @@ def set_context(**kwargs):
             - matmul_allow_hf32 (bool): Whether to convert FP32 to HF32 for Matmul operators. Default value: ``False``.
               This is an experimental prototype that is subject to change and/or deletion.
               For detailed information, please refer to `Ascend community <https://www.hiascend.com/>`_ .
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.ascend.op_precision.matmul_allow_hf32` instead.
             - conv_allow_hf32 (bool): Whether to convert FP32 to HF32 for Conv operators. Default value: ``True``.
               This is an experimental prototype that is subject to change and/or deletion.
               For detailed information, please refer to `Ascend community <https://www.hiascend.com/>`_ .
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.ascend.op_precision.conv_allow_hf32` instead.
             - exception_dump (str): Enable exception dump for Ascend operators, providing the input and output data for
               failing Ascend operators. The value can be ``"0"`` , ``"1"`` and ``"2"``. For ``"0"`` , exception dump is
               turned off; for ``"1"``, all inputs and outputs will be dumped for AICore exception operators;
@@ -1642,11 +1660,16 @@ def set_context(**kwargs):
               but improving performance. Default: ``"2"`` .
             - op_precision_mode (str): Path to config file of op precision mode. For detailed information, please refer
               to `Ascend community <https://www.hiascend.com/>`_ .
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.ascend.op_precision.op_precision_mode` instead.
             - op_debug_option (str): Enable debugging options for Ascend operators, default not enabled.
               The value currently only supports being set to ``"oom"``.
 
               - ``"oom"``: When there is a memory out of bounds during the execution of an operator,
                 AscendCL will return an error code of ``EZ9999``.
+
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.ascend.op_debug.debug_option` instead.
 
             - ge_options (dict): Set options for CANN. The options are divided into two categories: global and session.
               This is an experimental prototype that is subject to change and/or deletion.
@@ -1765,6 +1788,10 @@ def set_context(**kwargs):
                 sized workspace is needed to store intermediate results.
               - winograd_nonfused: This algorithm uses the Winograd Transform approach to compute the convolution. A
                 significant workspace may be needed to store intermediate results.
+
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.gpu.op_tuning.conv_fprop_algo` instead.
+
             - conv_dgrad_algo (str): Specifies convolution data grad algorithm and the default value is 'normal',
               The value range is as follows:
 
@@ -1784,6 +1811,10 @@ def set_context(**kwargs):
                 sized workspace is needed to store intermediate results. The results are deterministic.
               - winograd_nonfused: This algorithm uses the Winograd Transform approach to compute the convolution.
                 A significant workspace may be needed to store intermediate results. The results are deterministic.
+
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.gpu.op_tuning.conv_dgrad_algo` instead.
+
             - conv_wgrad_algo (str): Specifies convolution filter grad algorithm and the default value is 'normal',
               The value range is as follows:
 
@@ -1803,10 +1834,18 @@ def set_context(**kwargs):
               - fft_tiling: This algorithm uses the Fast-Fourier Transform approach but splits the inputs into tiles.
                 A significant memory workspace is needed to store intermediate results but less than fft for large size
                 images. The results are deterministic.
+
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.gpu.op_tuning.conv_wgrad_algo` instead.
+
             - conv_allow_tf32 (bool): The flag below controls to allow Tensor core TF32 computation on CUDNN and the
               default value is ``True``.
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.gpu.op_precision.conv_allow_tf32` instead.
             - matmul_allow_tf32 (bool): The flag below controls to allow Tensor core TF32 computation on CUBLAS and the
               default value is ``False``.
+              This parameter will be deprecated and will be removed in future versions. Please use the
+              api :func:`mindspore.device_context.gpu.op_precision.matmul_allow_tf32` instead.
 
         jit_config (dict): Set the global jit config for compile, take effect in network defined in Cell or jit
             decorators. It is not set by default.

@@ -85,6 +85,8 @@ mindspore.set_context
     |                         |                              |                            |  :func:`~.conv_allow_hf32`             |
     |                         |                              |                            |                                        |
     |                         |                              |                            |  :func:`~.op_compile`                  |
+    |                         |                              |                            |                                        |
+    |                         |                              |                            |  :func:`~.op_debug_option`             |
     |                         +------------------------------+----------------------------+----------------------------------------+
     |                         |  jit_syntax_level            |  CPU/GPU/Ascend            |  NA                                    |
     |                         +------------------------------+----------------------------+----------------------------------------+
@@ -109,7 +111,7 @@ mindspore.set_context
         - **max_device_memory** (str) - 设置设备可用的最大内存。格式为"xxGB"。默认值： ``1024GB`` 。实际使用的内存大小是设备的可用内存和 `max_device_memory` 值中的最小值。 `max_device_memory` 需要在程序运行之前设置。当使能虚拟内存时，过小的 `max_device_memory` 会导致频繁的碎片整理，影响性能。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **variable_memory_max_size** (str) - 此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
         - **mempool_block_size** (str) - 关闭虚拟内存下生效，设置设备内存池的块大小。格式为"xxGB"。默认值： ``1GB`` 。最小值是1GB。实际使用的内存池块大小是设备的可用内存和 `mempool_block_size` 值中的最小值。当内存足够时，将按照此值扩展内存。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.set_memory` 代替。
-        - **op_timeout** (int) - 设置一个算子的最大执行时间，以秒为单位。如果执行时间超过这个值，系统将终止该任务。0意味着使用默认值，AI Core和AICPU算子在不同硬件上的默认值有差异，详细信息请查看 `昇腾社区关于aclrtSetOpExecuteTimeOut文档说明 <https://www.hiascend.com/en/document/detail/zh/CANNCommunityEdition/80RC1alpha003/apiref/appdevgapi/aclcppdevg_03_0228.html>`_。MindSpore默认设置值： ``900`` 。
+        - **op_timeout** (int) - 设置一个算子的最大执行时间，以秒为单位。如果执行时间超过这个值，系统将终止该任务。0意味着使用默认值，AI Core和AICPU算子在不同硬件上的默认值有差异，详细信息请查看 `昇腾社区关于aclrtSetOpExecuteTimeOut文档说明 <https://www.hiascend.com/en/document/detail/zh/CANNCommunityEdition/80RC1alpha003/apiref/appdevgapi/aclcppdevg_03_0228.html>`_。MindSpore默认设置值： ``900`` 。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_debug.execute_timeout` 代替。
         - **save_graphs** (bool 或 int) - 表示是否保存中间编译图。默认值： ``0`` 。可用的选项为：
 
           - False或0：不保存中间编译图。
@@ -136,13 +138,15 @@ mindspore.set_context
         - **pynative_synchronize** (bool) - 表示是否在PyNative模式下启动设备同步执行。默认值： ``False`` 。设置为 ``False`` 时，将在设备上异步执行算子。当算子执行出错时，将无法定位特定错误脚本代码的位置。当设置为 ``True`` 时，将在设备上同步执行算子。这将降低程序的执行性能。此时，当算子执行出错时，可以根据错误的调用栈来定位错误脚本代码的位置。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.runtime.launch_blocking` 代替。
         - **mode** (int) - 表示在GRAPH_MODE(0)或PYNATIVE_MODE(1)模式中运行，两种模式都支持所有后端。默认值： ``PYNATIVE_MODE`` 。
         - **enable_reduce_precision** (bool) - 表示是否开启降低精度计算。默认值： ``True`` 。设置为 ``True`` 时，不支持用户指定的精度，且精度将自动更改。设置为 ``False`` 时，如果未指定用例的精度，则会报错并退出。
-        - **aoe_tune_mode** (str) - 表示启动AOE调优，默认不设置。设置为 ``online`` 时，将启动在线调优，设置为 ``offline`` 时，将为离线调优保存GE图 。
+        - **aoe_tune_mode** (str) - 表示启动AOE调优，默认不设置。设置为 ``online`` 时，将启动在线调优，设置为 ``offline`` 时，将为离线调优保存GE图 。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_tuning.aoe_tune_mode` 代替。
         - **aoe_config** (dict) - 设置aoe工具专用的参数，默认不设置。
 
           - **job_type** (str): 设置调优类型，有算子调优和子图调优。默认为算子调优。
 
             - ``"1"``: 设置为子图调优。
             - ``"2"``: 设置为算子调优。
+
+          此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_tuning.aoe_job_type` 代替。
 
         - **check_bprop** (bool) - 表示是否检查反向传播节点，以确保反向传播节点输出的shape和数据类型与输入参数相同。默认值： ``False`` 。此参数将被弃用，将在后续版本中删除。
         - **max_call_depth** (int) - 指定函数调用的最大深度。其值必须为正整数。默认值： ``1000`` 。当嵌套Cell太深或子图数量太多时，需要设置 `max_call_depth` 参数。系统最大堆栈深度应随着 `max_call_depth` 的调整而设置为更大的值，否则可能会因为系统堆栈溢出而引发 "core dumped" 异常。此参数将被弃用，将在后续版本中删除，请使用 :func:`mindspore.set_recursion_limit` 接口替代。
@@ -178,21 +182,25 @@ mindspore.set_context
             - allow_mix_precision_fp16: 自动混合精度，针对全网算子，按照内置的优化策略，自动将部分算子的精度降低到float16。
             - allow_mix_precision_bf16: 自动混合精度，针对全网算子，按照内置的优化策略，自动将部分算子的精度降低到bfloat16。
 
-          - **jit_compile** (bool): 表示是否选择在线编译。当设置为 ``True`` 时，优先选择在线编译，当设置为 ``False`` 时，优先选择系统中已经编译好的算子二进制文件，提升编译性能。默认设置为静态shape选择在线编译，动态shape选择算子二进制文件。
+            此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_precision.precision_mode` 代替。
+
+          - **jit_compile** (bool): 表示是否选择在线编译。当设置为 ``True`` 时，优先选择在线编译，当设置为 ``False`` 时，优先选择系统中已经编译好的算子二进制文件，提升编译性能。默认设置为静态shape选择在线编译，动态shape选择算子二进制文件。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_tuning.op_compile` 代替。
           - **atomic_clean_policy** (int): 表示清理网络中atomic算子占用的内存的策略。默认值： ``1`` 。
 
             - 0：集中清理网络中所有atomic算子占用的内存。
             - 1：不集中清理内存，对网络中每一个atomic算子进行单独清零。当网络中内存超限时，可以尝试此种清理方式，但可能会导致一定的性能损耗。
 
           - **matmul_allow_hf32** (bool): 是否为Matmul类算子使能FP32转换为HF32。默认值： ``False``。这是一个实验特性，可能会被更改或者删除。如果您想了解更多详细信息，
-            请查询 `昇腾社区 <https://www.hiascend.com/>`_ 了解。
+            请查询 `昇腾社区 <https://www.hiascend.com/>`_ 了解。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_precision.matmul_allow_hf32` 代替。
           - **conv_allow_hf32** (bool): 是否为Conv类算子使能FP32转换为HF32。默认值： ``True``。这是一个实验特性，可能会被更改或者删除。如果您想了解更多详细信息，
-            请查询 `昇腾社区 <https://www.hiascend.com/>`_ 了解。
+            请查询 `昇腾社区 <https://www.hiascend.com/>`_ 了解。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_precision.conv_allow_hf32` 代替。
           - **exception_dump** (str): 开启Ascend算子异常dump，提供计算异常时候的输入输出信息。可以为 ``"0"``，``"1"``，``"2"``。为 ``"0"`` 时关闭异常dump；为 ``"1"`` 时dump出AICore异常算子输入输出数据；为 ``"2"`` 时dump出AICore异常算子输入数据，保存信息减少，但可提升性能。默认值： ``"2"``。
-          - **op_precision_mode** (str): 算子精度模式配置文件的所在路径。如果您想了解更多详细信息, 请查询 `昇腾社区 <https://www.hiascend.com/>`_ 了解。
+          - **op_precision_mode** (str): 算子精度模式配置文件的所在路径。如果您想了解更多详细信息, 请查询 `昇腾社区 <https://www.hiascend.com/>`_ 了解。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_precision.op_precision_mode` 代替。
           - **op_debug_option** (str): 表示Ascend算子调试配置，默认不开启，当前只支持内存访问越界检测，可配置为 ``oom`` 。
 
             - ``oom`` : 涉及从全局内存中读写数据，例如读写算子数据等，该选项开启全局内存访问越界检测，实际执行算子时，若出现内存越界，AscendCL会返回 ``EZ9999`` 错误码。
+
+            此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.ascend.op_debug.debug_option` 代替。
 
           - **ge_options** (dict): 设置CANN的options配置项，配置项分为 ``global`` 和 ``session`` 二类 。这是一个实验特性，可能会被更改或者删除。
             详细的配置请查询 `options配置说明 <https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/apiref/ascendgraphapi/atlasgeapi_07_0146.html>`_ 。
@@ -263,6 +271,9 @@ mindspore.set_context
             - fft_tiling: 该算法利用快速傅里叶变换完成卷积计算，但是需要对输入进行分块。同样需要额外申请内存空间，保存中间结果，但是对大尺寸的输入，所需内存空间小于 ``fft`` 算法。
             - winograd: 该算法利用Winograd变换完成卷积计算。需要额外申请内存空间，保存中间结果。
             - winograd_nonfused: 该算法利用Winograd变形算法完成卷积计算。需要额外申请内存空间，保存中间结果。
+
+            此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.gpu.op_tuning.conv_fprop_algo` 代替。
+
           - **conv_dgrad_algo** (str): 指定cuDNN的卷积输入数据的反向算法。默认值： ``normal`` 。其值范围如下：
 
             - normal:使用cuDNN自带的启发式搜索算法，会根据卷积形状和类型快速选择合适的卷积算法。该参数不保证性能最优。
@@ -273,6 +284,8 @@ mindspore.set_context
             - fft_tiling: 该算法利用快速傅里叶变换完成卷积计算，但是需要对输入进行分块。同样需要额外申请内存空间，保存中间结果，但是对大尺寸的输入，所需内存空间小于 ``fft`` 算法。结果是确定的。
             - winograd: 该算法利用Winograd变换完成卷积计算。需要额外申请内存空间，保存中间结果。结果是确定的。
             - winograd_nonfused: 该算法利用Winograd变形算法完成卷积计算。需要额外申请内存空间，保存中间结果。结果是确定的。
+
+            此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.gpu.op_tuning.conv_dgrad_algo` 代替。
 
           - **conv_wgrad_algo** (str): 指定cuDNN的卷积输入卷积核的反向算法。默认值： ``normal`` 。其值范围如下：
 
@@ -285,9 +298,11 @@ mindspore.set_context
             - fft_tiling: 该算法利用快速傅里叶变换完成卷积计算，但是需要对输入进行分块。同样需要额外申请内存空间，保存中间结果，但是对大尺寸的输入，所需内存空间小于 ``fft`` 算法。结果是确定的。
             - winograd_nonfused: 该算法利用Winograd变形算法完成卷积计算。需要额外申请内存空间，保存中间结果。结果是确定的。
 
-          - **conv_allow_tf32** (bool): 该标志表示是否开启卷积在cuDNN下的TF32张量核计算。默认值： ``True`` 。
+            此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.gpu.op_tuning.conv_wgrad_algo` 代替。
 
-          - **matmul_allow_tf32** (bool): 该标志表示是否开启矩阵乘在CUBLAS下的TF32张量核计算。默认值： ``False`` 。
+          - **conv_allow_tf32** (bool): 该标志表示是否开启卷积在cuDNN下的TF32张量核计算。默认值： ``True`` 。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.gpu.op_precision.conv_allow_tf32` 代替。
+
+          - **matmul_allow_tf32** (bool): 该标志表示是否开启矩阵乘在CUBLAS下的TF32张量核计算。默认值： ``False`` 。此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.device_context.gpu.op_precision.matmul_allow_tf32` 代替。
 
         - **jit_config** (dict) - 设置全局编译选项的配置，只在使用Cell或者jit装饰器定义的网络中生效，默认不设置。
           context设置全局jit config，而JitConfig设置局部网络的jit config，二者同时存在时，全局jit config不会覆盖局部网络的jit config。
