@@ -27,7 +27,7 @@ from tests.st.networks.llm_parallel_feature.utils import prepare_testcase_env, c
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp2mp4pp1_recompute():
     """
     Feature: test llama2 dp2mp4pp1 full_recompute
@@ -58,7 +58,7 @@ def test_llama2_dp2mp4pp1_recompute():
         check_compile_time(log_path, 15)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp4mp4pp1op_recompute():
     """
     Feature: test llama2 dp4mp4pp1op full_recompute
@@ -96,7 +96,7 @@ def test_llama2_dp4mp4pp1op_recompute():
     os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp4pp1op_grad_accu():
     """
     Feature: test llama2 cell_dp2mp4pp1op_grad_accu
@@ -144,7 +144,7 @@ def test_llama2_cell_dp2mp4pp1op_grad_accu():
         check_compile_time(log_path, 15)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     """
     Feature: test llama2_cell_dp2mp4pp2vpp4op_1f1b
@@ -204,7 +204,7 @@ def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     check_peak_memory(real_log_path[1], "8200")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute():
     """
     Feature: test lama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute
@@ -251,7 +251,7 @@ def test_llama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute():
 
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2vpp2cpring_1f1b_recompute():
     """
     Feature: test llama2 cell_dp2mp1pp2vpp2cpring_1f1b_recompute
@@ -306,7 +306,7 @@ def test_llama2_cell_dp2mp1pp2vpp2cpring_1f1b_recompute():
 
 
 @pytest.mark.skip(reason="has bug need fix")
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2vpp2cpulysse_1f1b_select_recompute():
     """
     Feature: test llama2 cell_dp2mp1pp2vpp2cpulysse_1f1b_select_recompute
@@ -376,7 +376,7 @@ def test_llama2_cell_dp2mp1pp2vpp2cpulysse_1f1b_select_recompute():
     #                                       parm2_dependency_list)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp4pp2_fgi():
     """
     Feature: test llama2 cell_dp2mp4pp2_fgi
@@ -439,7 +439,7 @@ def test_llama2_cell_dp2mp4pp2_fgi():
                 parm_parallel_speed_up_check_pairs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
     """
     Feature: test llama2 cell_dp2mp4pp2_fgi
@@ -481,7 +481,7 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
     os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 @pytest.mark.skip(reason="Scalar")
 def test_llama2_cell_dp2mp2pp1opcp2_fgi_grad_accu():
     """
@@ -560,7 +560,7 @@ def test_llama2_cell_dp2mp2pp1opcp2_fgi_grad_accu():
     # check_node_dependency_backward_search(graph_path[0], parallel_end_ir_graph_name, 200, parm2_dependency_list)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 @pytest.mark.skip(reason="Scalar")
 def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b_grad_accu():
     """
@@ -640,7 +640,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b_grad_accu():
     # check_node_dependency_backward_search(graph_path[0], parallel_end_ir_graph_name, 100, parm2_dependency_list)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 @pytest.mark.skip(reason="Scalar")
 def test_llama2_dp2mp2pp2opcp2_fgi_grad_accu_select_recompute():
     """
@@ -673,7 +673,7 @@ def test_llama2_dp2mp2pp2opcp2_fgi_grad_accu_select_recompute():
         check_log(log_path, check_pair)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
     """
     Feature: test llama2 cell_dp2mp2pp2vpp4opcp2_1f1b
@@ -758,7 +758,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
 
 
 @pytest.mark.skip(reason="has bug")
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp2mp2pp2cp2_fgi_grad_accu():
     """
     Feature: test llama2 cell_dp2mp2pp2vpp4opcp2_1f1b
@@ -790,7 +790,7 @@ def test_llama2_dp2mp2pp2cp2_fgi_grad_accu():
         check_log(log_path, check_pair)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp4mp4pp1op_recompute_2():
     """
     Feature: test llama2 dp4mp4pp1op_recompute_2
@@ -850,7 +850,7 @@ def test_llama2_dp4mp4pp1op_recompute_2():
     os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp8mp1pp1op():
     """
     Feature: test llama2 dp8mp1pp1op
