@@ -81,6 +81,8 @@ class BACKEND_EXPORT AsyncRQueue {
   // Call once before all ChildAfterFork
   static void ChildAfterForkPre();
 
+  bool Spin() { return tasks_queue_.spin(); }
+
   void SetSpin(bool spin);
 
  protected:
