@@ -2,6 +2,9 @@ minimum:
     description: |
         Computes the minimum of input tensors element-wise.
 
+        .. math::
+            output_i = \min(input_i, other_i)
+
         Note:
             - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
               consistent.
@@ -9,10 +12,7 @@ minimum:
             - When the inputs are one tensor and one scalar, the scalar could only be a constant.
             - Shapes of them are supposed to be broadcast.
             - If one of the elements being compared is a NaN, then that element is returned.
-    
-        .. math::
-            output_i = \min(input_i, other_i)
-    
+
         Args:
             input (Union[Tensor, Number, bool]): The first input is a number or
                 a bool or a tensor whose data type is number or bool.
