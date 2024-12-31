@@ -3104,8 +3104,8 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructSingleKernelGraphByCache(
   return {all_out_graph->front()};
 }
 
-int LoadBackInfoForGraphIds(std::vector<vector<KernelGraphPtr>> *graph_ids_for_root) {
-  MS_LOG(INFO) << "Use compile cache to load kernel graph ids from backInfo json.";
+int LoadGraphForCompileCache(std::vector<vector<KernelGraphPtr>> *graph_ids_for_root) {
+  MS_LOG(INFO) << "Use compile cache to load kernel graph ids from backinfo json.";
   auto &context = CompileCacheContext::GetInstance();
   auto func_graph = context.FrontGraph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -3193,7 +3193,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructKernelGraph(std::vector<Ker
     }
   } else {
     MS_LOG(INFO) << "Use thread to load mindir and json for backend compile cache,be ware of correctness risks.";
-    auto root_graph_num = LoadBackInfoForGraphIds(&root_sub_graphs);
+    auto root_graph_num = LoadGraphForCompileCache(&root_sub_graphs);
     PROF_START(Cache_thread_load_mindir);
     // Thread for load mindir and json
     std::thread loadmindir([cache_path, &root_sub_graphs, &graph_ids_node_name, &root_graph_num]() {
