@@ -394,6 +394,9 @@ REG_EXPANDER_FUNC("HSigmoid").SetBody(BODYFUNC(ib) {
 
 REG_EXPANDER_FUNC("HSwish").SetBody(BODYFUNC(ib) {
   auto input = ib->input(kIndex0);
+  if (input->GetDtype()->type_id() == kNumberTypeBool) {
+    return {};
+  }
   auto f32 = TypeIdToType(kNumberTypeFloat32);
   auto need_cast = input->GetDtype() != f32;
   auto cast_1 = need_cast ? ib->Cast(input, f32) : input;
