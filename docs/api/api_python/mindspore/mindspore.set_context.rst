@@ -221,7 +221,7 @@ mindspore.set_context
             - ``oom`` : 涉及从全局内存中读写数据，例如读写算子数据等，该选项开启全局内存访问越界检测，实际执行算子时，若出现内存越界，AscendCL会返回 ``EZ9999`` 错误码。
 
           - **ge_options** (dict): 设置CANN的options配置项，配置项分为 ``global`` 和 ``session`` 二类 。这是一个实验特性，可能会被更改或者删除。
-            详细的配置请查询 `options配置说明 <https://www.hiascend.com/document/detail/zh/canncommercial/70RC1/inferapplicationdev/graphdevg/atlasgeapi_07_0119.html>`_ 。
+            详细的配置请查询 `options配置说明 <https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/apiref/ascendgraphapi/atlasgeapi_07_0146.html>`_ 。
             `ge_options` 中的配置项可能与 `ascend_config` 中的配置项重复，若同时设置了 `ascend_config` 和 `ge_options` 中的相同配置项，则以 `ge_options` 中设置的为准。
 
             - global (dict): 设置global类的选项。
