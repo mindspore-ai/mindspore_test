@@ -31,6 +31,7 @@ def get_bprop_raise(self):
 
     return bprop
 
+
 @bprop_getters.register(inner.ParallelResizeBilinear)
 def get_bprop_parallel_resize_bilinear(self):
     """Grad definition for `ParallelResizeBilinear` operation."""
