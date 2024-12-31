@@ -1898,7 +1898,7 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
           continue;
         }
         if (input_param->has_dynamic_shape()) {
-          cur_graph_parameter_store->SetIsPositionDynamic(real_outer_idx, true);
+          cur_graph_parameter_store->SetIsPositionDynamic(real_outer_idx, real_inner_idx, true);
         }
 
         auto cur_device_type = cur_device_tensor->GetDeviceType();
@@ -4015,6 +4015,29 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
   if (IsPersistentDeviceTensor(parameter) || device_tensor->is_ptr_persisted()) {
     device_tensor->SetNodeIndex(parameter, 0);
     SchedulerHelper::AddDeviceTensorStore(front_node, device_tensor);
+  }
+
+  if (EnableInputOptimize()) {
+    auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+    MS_EXCEPTION_IF_NULL(graph_parameter_store);
+    if (graph_parameter_store->IsFrontNodeInStore(front_node.get())) {
+      auto outer_index = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
+      if (graph_parameter_store->Fetch(outer_index, 0, device_context->GetDeviceType()) == nullptr) {
+        MS_LOG(INFO) << "Fetch no device tensor store by:" << front_node->fullname_with_scope()
+                     << ", type:" << device_context->GetDeviceType();
+        const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+          {parameter, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
+          device_tensor->host_shape(), device_context->device_context_key().device_name_,
+          device_context->device_context_key().device_id_);
+        kernel_tensor->set_stream_id(device_tensor->stream_id());
+        auto other_type_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+        other_type_device_tensor->SetNodeIndex(parameter, 0);
+        other_type_device_tensor->set_from_persistent_mem(true);
+        MS_LOG(DEBUG) << "Create device tensor:" << other_type_device_tensor
+                      << " type:" << other_type_device_tensor->type_id();
+        SchedulerHelper::AddDeviceTensorStore(front_node, other_type_device_tensor);
+      }
+    }
     return;
   }
 
