@@ -24,5 +24,5 @@ mindspore.mint.where
 
     .. py:function:: where(condition)
         :noindex:
-
-    与接口 :func:`mindspore.ops.nonzero` 在 `as_tuple` 为True时一致。
+    
+    与接口 :func:`mindspore.ops.nonzero` 在输入为 `condition` 且 `as_tuple` 为True时一致。
