@@ -1070,6 +1070,16 @@ DeviceTensorPtr PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size
   return device_tensor;
 }
 
+bool IsNeedSync(Tensor *tensor) {
+  if (tensor == nullptr) {
+    return false;
+  }
+  // Sub data need sync each step
+  auto data_ptr = tensor->data_ptr();
+  auto sync_flag = (data_ptr != nullptr && data_ptr->is_sub_data());
+  return sync_flag;
+}
+
 DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                                const DeviceContext *device_context, OpContext<DeviceTensor> *const context,
                                const AID &from_aid) {
@@ -1098,6 +1108,12 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
       }
       if (tensor_address->GetPtr() == nullptr) {
         MS_LOG(EXCEPTION) << "Tensor address is not null, but got device ptr null.";
+      }
+      if (IsNeedSync(tensor)) {
+        if (!tensor_address->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(),
+                                               tensor->data_ptr(), tensor->device_info().host_format_)) {
+          MS_LOG(EXCEPTION) << "Sync tensor host to device failed.";
+        }
       }
 
       UpdateRefCount(tensor_address.get(), true);
