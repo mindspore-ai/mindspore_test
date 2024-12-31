@@ -1425,7 +1425,6 @@ void FindParamNodes(std::unordered_map<string, AnfNodePtr> *root_params_map_1,
     }
     auto param = param_node->cast<ParameterPtr>();
     std::string param_name = param->name();
-
     if ((param_name.substr(0, kPreLenFifteen) == exp_row_name ||
          param_name.substr(0, kPreLenFifteen) == exp_col_name) &&
         ((*root_params_map_1).count(param_name.substr(kPreLenFifteen)) != 0)) {
