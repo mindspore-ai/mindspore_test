@@ -18,12 +18,9 @@
 
 #include <functional>
 #include <utility>
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
-#include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "transform/acl_ir/op_api_cache.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
-#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,14 +28,13 @@ void AcmeKernelInfo::UpdateArgImmutableInfo(acme::ArgImmutableInfo *arginfo, con
   arginfo->SetDtype(TransAcmeDataType(tensor->data_type()));
   auto device_sync = tensor->device_address();
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
-  auto format = TransAcmeFormat(device_address->GetFormat());
-  arginfo->SetFormat(format);
+  arginfo->SetFormat(TransAcmeFormat(device_address->GetFormat()));
 }
 
-void AcmeKernelInfo::UpdateArgImmutableInfo(const std::vector<BaseTensorPtr> &tensorlist,
-                                            std::vector<acme::ArgImmutableInfo> &arginfos) {
+void AcmeKernelInfo::UpdateArgImmutableInfo(std::vector<acme::ArgImmutableInfo> &arginfos,
+                                            const std::vector<BaseTensorPtr> &tensorlist) {
   arginfos.resize(tensorlist.size());
-  for (size_t i = 0; i < tensorlist.size(); i++) {
+  for (size_t i = 0; i < tensorlist.size(); ++i) {
     UpdateArgImmutableInfo(&(arginfos[i]), tensorlist[i]);
   }
 }
@@ -46,11 +42,11 @@ void AcmeKernelInfo::UpdateArgImmutableInfo(const std::vector<BaseTensorPtr> &te
 bool AcmeKernelInfo::Init(const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs) {
   acme::InputsImmutableInfoList inputs_ii;
   acme::OutputsImmutableInfoList outputs_ii;
-  UpdateArgImmutableInfo(inputs, inputs_ii);
-  UpdateArgImmutableInfo(outputs, outputs_ii);
-
-  acme_op_ = CreateKernel(inputs_ii, outputs_ii, inputs, outputs);
+  UpdateArgImmutableInfo(inputs_ii, inputs);
+  UpdateArgImmutableInfo(outputs_ii, outputs);
+  acme_op_ = CreateKernel(inputs_ii, outputs_ii);
   MS_EXCEPTION_IF_NULL(acme_op_);
+
   auto status = acme_op_->Init();
   if (status != acme::kAcmeOk) {
     acme_op_ = nullptr;
@@ -69,7 +65,7 @@ bool AcmeKernelInfo::Init(const std::vector<BaseTensorPtr> &inputs, const std::v
   return true;
 }
 
-void AcmeKernelInfo::TransAcmeShapes(const std::vector<BaseTensorPtr> &tensorlist, acme::ShapeInfoList &shapelist) {
+void AcmeKernelInfo::TransAcmeShapes(acme::ShapeInfoList &shapelist, const std::vector<BaseTensorPtr> &tensorlist) {
   for (size_t i = 0; i < tensorlist.size(); i++) {
     auto shape =
       tensorlist[i]->data_type() != kMetaTypeNone ? TransAcmeShape(tensorlist[i]->shape()) : acme::ShapeInfo{};
@@ -79,17 +75,16 @@ void AcmeKernelInfo::TransAcmeShapes(const std::vector<BaseTensorPtr> &tensorlis
 
 TilingCacheItemPtr AcmeKernelInfo::GetOrGenerateTiling(const std::vector<BaseTensorPtr> &inputs,
                                                        const std::vector<BaseTensorPtr> &outputs) {
-  TransAcmeShapes(inputs, acme_inputs_shape_);
-  TransAcmeShapes(outputs, acme_outputs_shape_);
-
+  TransAcmeShapes(acme_inputs_shape_, inputs);
+  TransAcmeShapes(acme_outputs_shape_, outputs);
   auto acme_ret = acme_op_->UpdateShape(acme_inputs_shape_, acme_outputs_shape_);
   if (acme_ret != acme::kAcmeOk) {
     MS_LOG(ERROR) << "AcmeKernel UpdateShape failed, kernel_name: " << kernel_name_;
     return nullptr;
   }
 
-  auto key = CalcAcmeOpTilingHash(kernel_name_, inputs);
   std::lock_guard<SimpleSpinLock> lock(lock_);
+  auto key = CalcAcmeOpTilingHash(kernel_name_, inputs);
   auto tiling_info_ptr = AcmeTilingCache::GetInstance().Bind(key);
   if (tiling_info_ptr == nullptr) {
     auto tiling_size = acme_op_->GetTilingSize();
@@ -126,17 +121,11 @@ TilingCacheItemPtr AcmeKernelInfo::GetOrGenerateTiling(const std::vector<BaseTen
   return tiling_info_ptr;
 }
 
-void AcmeKernelInfo::UpdateAddr(const std::vector<BaseTensorPtr> &tensorlist, acme::InputsAddrList &addrlist) {
+void AcmeKernelInfo::UpdateAddr(std::vector<acme::RawDeviceAddr> &addrlist,
+                                const std::vector<BaseTensorPtr> &tensorlist) {
   for (size_t i = 0; i < tensorlist.size(); i++) {
-    auto device_sync = tensorlist[i]->device_address();
-    auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
-    addrlist[i] = device_address->GetMutablePtr();
+    addrlist[i] = tensorlist[i]->device_address()->GetMutablePtr();
   }
-}
-
-void AcmeKernelInfo::UpdateAddr(const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs) {
-  UpdateAddr(inputs, acme_inputs_addr_);
-  UpdateAddr(outputs, acme_outputs_addr_);
 }
 
 void AcmeKernelInfo::MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id) {
@@ -156,36 +145,52 @@ void AcmeKernelInfo::FreeWorkspace(const device::DeviceContext *device_context) 
   }
 }
 
-bool AcmeKernelInfo::Launch(const device::DeviceContext *device_context, const TilingCacheItemPtr tilingptr,
-                            const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs,
-                            size_t stream_id) {
-  UpdateAddr(inputs, outputs);
-  MallocWorkspace(device_context, stream_id);
-  acme_op_->SetTilingInfo(tilingptr->tiling_info_);
-  auto stream_ptr = device_context->device_res_manager_->GetStream(stream_id);
-  acme::AcmeStatus status =
-    acme_op_->Launch(acme_inputs_addr_, acme_outputs_addr_, acme_wss_addr_, stream_ptr, kernel_name_);
-  FreeWorkspace(device_context);
-  AcmeTilingCache::GetInstance().Unbind(tilingptr);
-  return (status == acme::AcmeStatus::kAcmeOk);
-}
-
-void AcmeKernelInfo::Call(const OpRunnerPtr &op, const std::vector<BaseTensorPtr> &inputs,
-                          const TilingCacheItemPtr tilingptr) {
-  // Async
+void AcmeKernelInfo::Launch(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs,
+                            const TilingCacheItemPtr tilingptr) {
   pyboost::PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([this, op, inputs, tilingptr]() {
-    MS_LOG(DEBUG) << "Run device task Add start";
+    MS_LOG(DEBUG) << "Launch AcmeKernel " << kernel_name_ << "start";
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
     // Malloc for input tensors
     pyboost::PyBoostUtils::MallocOpInputs(device_context, inputs);
     // Malloc for output tensors
     pyboost::PyBoostUtils::MallocOpOutputs(device_context, outputs);
-
+    UpdateAddr(acme_inputs_addr_, inputs);
+    UpdateAddr(acme_outputs_addr_, outputs);
     runtime::Pipeline::Get().launch_stage()->Wait();
-    Launch(device_context, tilingptr, inputs, outputs, op->stream_id());
-    MS_LOG(DEBUG) << "Run device task Add end";
+
+    MallocWorkspace(device_context, op->stream_id());
+    acme_op_->SetTilingInfo(tilingptr->tiling_info_);
+    auto stream_ptr = device_context->device_res_manager_->GetStream(op->stream_id());
+    acme::AcmeStatus status =
+      acme_op_->Launch(acme_inputs_addr_, acme_outputs_addr_, acme_wss_addr_, stream_ptr, kernel_name_);
+    FreeWorkspace(device_context);
+    AcmeTilingCache::GetInstance().Unbind(tilingptr);
+    if (status != acme::AcmeStatus::kAcmeOk) {
+      MS_LOG(EXCEPTION) << "Launch AcmeKernel failed, kernel_name: " << kernel_name_;
+    }
+    MS_LOG(DEBUG) << "Launch AcmeKernel " << kernel_name_ << "end";
   }));
 }
+
+void AcmeKernelInfo::CallAcmeOp(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs,
+                                uint64_t key) {
+  auto it = hash_map_.find(key);
+  if (it != hash_map_.end()) {
+    acme_op_ = it->second;
+  } else {
+    auto ret = Init(inputs, op->outputs());
+    if (!ret) {
+      return;
+    }
+    hash_map_[key] = acme_op_;
+  }
+  auto tiling_info = GetOrGenerateTiling(inputs, op->outputs());
+  if (tiling_info == nullptr) {
+    return;
+  }
+  Launch(op, inputs, tiling_info);
+}
+
 }  // namespace kernel
 }  // namespace mindspore

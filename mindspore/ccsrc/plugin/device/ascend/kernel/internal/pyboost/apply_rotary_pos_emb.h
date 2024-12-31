@@ -28,12 +28,15 @@ class AcmeKernelInfoApplyRotaryPosEmb : public AcmeKernelInfo {
  public:
   AcmeKernelInfoApplyRotaryPosEmb() : AcmeKernelInfo(std::move("ApplyRotaryPosEmb")) {}
   ~AcmeKernelInfoApplyRotaryPosEmb() = default;
+  
+  void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                               const acme::OutputsImmutableInfoList &outputs,
-                               const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                               const std::vector<tensor::BaseTensorPtr> &ms_outputs) override;
+                               const acme::OutputsImmutableInfoList &outputs) override;
+ 
+ private:
+  int32_t cos_format_ = 0;
 };
 }  // namespace kernel
 }  // namespace mindspore

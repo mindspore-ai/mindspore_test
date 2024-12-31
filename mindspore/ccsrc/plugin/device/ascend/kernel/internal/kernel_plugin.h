@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include "kernel/kernel.h"
+#include "ir/value.h"
 #include "kernel/common/pyboost/op_runner.h"
 #include "runtime/hardware/device_context.h"
 #include "include/common/factory/ms_factory.h"
@@ -34,9 +35,7 @@ class KernelPlugin {
   virtual void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node,
                                                          std::vector<std::string> *input_formats,
                                                          std::vector<std::string> *output_formats) = 0;
-  virtual void AcmeAscendCall(const std::shared_ptr<pyboost::OpRunner> &op,
-                              const std::vector<tensor::BaseTensorPtr> &inputs,
-                              const std::vector<void *> &params) = 0;
+  virtual void AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) = 0;
 };
 
 #define MS_PLUGIN_FACTORY_REG(BASE, NAME, DERIVE)                                              \

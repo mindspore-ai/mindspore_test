@@ -21,9 +21,7 @@
 #include <vector>
 
 #include "kernel/kernel.h"
-#include "ir/tensor.h"
 #include "kernel/common/pyboost/op_runner.h"
-#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,8 +29,28 @@ KernelModPtr InternalKernelBuild(const AnfNodePtr &anf_node);
 bool IsRegisteredInternalKernel(const AnfNodePtr &anf_node);
 void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                std::vector<std::string> *output_formats);
-void AcmeAscendCall(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<tensor::BaseTensorPtr> &inputs,
-                    const std::vector<void *> &params);
+void AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values);
+
+template <typename T>
+ValuePtr ConvertValue(const std::optional<T> &t) {
+  if (t.has_value()) {
+    return t.value();
+  }
+  return mindspore::kNone;
+}
+
+template <typename T>
+ValuePtr ConvertValue(const T &t) {
+  return t;
+}
+
+template <typename... Args>
+void AcmeAscendCall(const std::shared_ptr<pyboost::OpRunner> &op, const Args &... args) {
+  ValuePtrList input_values;
+  input_values.reserve(sizeof...(args));
+  (input_values.emplace_back(ConvertValue(args)), ...);
+  return AcmeKernelCall(op, input_values);
+}
 }  // namespace kernel
 }  // namespace mindspore
 

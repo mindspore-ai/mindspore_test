@@ -23,14 +23,22 @@
 namespace mindspore {
 namespace kernel {
 acme::AcmeOpPtr AcmeKernelInfoMatmul::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                   const acme::OutputsImmutableInfoList &outputs,
-                                                   const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                   const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+                                                   const acme::OutputsImmutableInfoList &outputs) {
   acme::MatmulParam param;
-  // auto input_len = ms_inputs.size();
-  // param.transpose_a = ms_inputs[input_len - kIndex2]->GetValueWithCheck<bool>();
-  // param.transpose_b = ms_inputs[input_len - kIndex1]->GetValueWithCheck<bool>();
+  param.transpose_a = transpose_a_;
+  param.transpose_b = transpose_b_;
   return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
+}
+
+void AcmeKernelInfoMatmul::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  const auto &input_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
+  const auto &weight_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
+  transpose_a_ = GetValueWithCheck<bool>(input_values[kIndex2]);
+  transpose_b_ = GetValueWithCheck<bool>(input_values[kIndex3]);
+
+  const std::vector<BaseTensorPtr> inputs = {input_tensor, weight_tensor};
+  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, transpose_a_, transpose_b_);
+  CallAcmeOp(op, inputs, op_key);
 }
 MS_ACME_KERNEL_INFO_FACTORY_REG(MatMul, acme::kAcmeMatMulOpName, AcmeKernelInfoMatmul);
 }  // namespace kernel

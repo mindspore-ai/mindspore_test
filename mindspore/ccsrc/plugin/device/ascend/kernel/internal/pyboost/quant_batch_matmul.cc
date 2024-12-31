@@ -22,16 +22,30 @@
 namespace mindspore {
 namespace kernel {
 acme::AcmeOpPtr AcmeKernelInfoQuantBatchMatmul::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                             const acme::OutputsImmutableInfoList &outputs,
-                                                             const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                             const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+                                                             const acme::OutputsImmutableInfoList &outputs) {
   acme::MatmulParam param;
-  // param.transpose_a = ms_inputs[kIndex6]->GetValueWithCheck<bool>();
-  // param.transpose_b = ms_inputs[kIndex7]->GetValueWithCheck<bool>();
-  // param.with_bias = !(ms_inputs[kIndex4]->GetType()->isa<TypeNone>());
+  param.transpose_a = transpose_a_;
+  param.transpose_b = transpose_b_;
+  param.with_bias = has_bias_;
   param.enable_shuffle = false;  // the real definition is in acme
   param.enable_dequant = true;
   return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
+}
+
+void AcmeKernelInfoQuantBatchMatmul::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  const BaseTensorPtr &x1_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
+  const BaseTensorPtr &x2_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
+  const BaseTensorPtr &scale_tensor = input_values[kIndex2]->cast<BaseTensorPtr>();
+  const BaseTensorPtr &offset_tensor = input_values[kIndex3] == mindspore::kNone ? nullptr : input_values[kIndex3]->cast<BaseTensorPtr>();
+  const BaseTensorPtr &bias_tensor = input_values[kIndex4] == mindspore::kNone ? nullptr : input_values[kIndex4]->cast<BaseTensorPtr>();
+  const BaseTensorPtr &per_token_scale_tensor = input_values[kIndex5] == mindspore::kNone ? nullptr : input_values[kIndex5]->cast<BaseTensorPtr>();
+  transpose_a_ = GetValueWithCheck<bool>(input_values[kIndex6]);
+  transpose_b_ = GetValueWithCheck<bool>(input_values[kIndex7]);
+  has_bias_ = input_values[kIndex4] != mindspore::kNone;
+  
+  const std::vector<BaseTensorPtr> inputs = {x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor, per_token_scale_tensor};
+  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, transpose_a_, transpose_b_, has_bias_);
+  CallAcmeOp(op, inputs, op_key);
 }
 MS_ACME_KERNEL_INFO_FACTORY_REG(QuantBatchMatmul, acme::kAcmeMatMulOpName, AcmeKernelInfoQuantBatchMatmul);
 }  // namespace kernel

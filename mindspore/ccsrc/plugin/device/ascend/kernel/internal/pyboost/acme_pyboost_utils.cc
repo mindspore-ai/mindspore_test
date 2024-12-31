@@ -17,43 +17,6 @@
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
 namespace mindspore::kernel {
 namespace {
-
-void GatherType(const device::DeviceAddressPtr &device_address) {
-  if (device_address == nullptr) {
-    transform::MemcpyToBuf("None", kSizeFive);
-    return;
-  }
-
-  // data type
-  auto dtype = device_address->type_id();
-  transform::MemcpyToBuf(&dtype, sizeof(int));
-}
-
-void GatherShape(const device::DeviceAddressPtr &device_address) {
-  if (device_address == nullptr) {
-    return;
-  }
-
-  const auto &shape = device_address->GetShapeVector();
-  const auto shape_size = shape.size();
-  // view shape
-  if (!shape.empty()) {
-    transform::MemcpyToBuf(shape.data(), static_cast<int64_t>(shape_size * sizeof(int64_t)));
-  }
-
-  const auto &storage_info = device_address->address_common()->tensor_storage_info_;
-  if (storage_info != nullptr) {
-    // strides
-    transform::MemcpyToBuf(storage_info->strides.data(), static_cast<int64_t>(storage_info->strides.size() * sizeof(int64_t)));
-
-    // offset
-    transform::MemcpyToBuf(&storage_info->storage_offset, sizeof(int64_t));
-
-    // origin shape
-    transform::MemcpyToBuf(storage_info->ori_shape.data(), static_cast<int64_t>(storage_info->ori_shape.size()) * sizeof(int64_t));
-  }
-}
-
 void GatherType(const mindspore::tensor::BaseTensorPtr &tensor) {
   if (tensor == nullptr) {
     return;
@@ -87,21 +50,18 @@ void GatherShape(const mindspore::tensor::BaseTensorPtr &tensor) {
   auto storage_info = tensor->storage_info();
   if (storage_info != nullptr) {
     // strides
-    transform::MemcpyToBuf(storage_info->strides.data(), static_cast<int64_t>(storage_info->strides.size() * sizeof(int64_t)));
+    transform::MemcpyToBuf(storage_info->strides.data(),
+                           static_cast<int64_t>(storage_info->strides.size() * sizeof(int64_t)));
 
     // offset
     transform::MemcpyToBuf(&storage_info->storage_offset, sizeof(int64_t));
 
     // origin shape
-    transform::MemcpyToBuf(storage_info->ori_shape.data(), static_cast<int64_t>(storage_info->ori_shape.size()) * sizeof(int64_t));
+    transform::MemcpyToBuf(storage_info->ori_shape.data(),
+                           static_cast<int64_t>(storage_info->ori_shape.size()) * sizeof(int64_t));
   }
 }
-
 }  // namespace
-
-void GatherOpHash(const device::DeviceAddressPtr &device_address) { GatherType(device_address); }
-
-void GatherTilingHash(const device::DeviceAddressPtr &device_address) { GatherShape(device_address); }
 
 void GatherOpHash(const mindspore::tensor::BaseTensorPtr &tensor) { GatherType(tensor); }
 

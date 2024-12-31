@@ -21,6 +21,7 @@
 #include <string>
 
 #include "kernel/kernel.h"
+#include "ir/value.h"
 #include "acme/include/acme.h"
 //#include "acme/tiling_mem_mgr.h"
 #include "include/common/factory/ms_factory.h"
@@ -28,14 +29,14 @@
 #include "plugin/device/ascend/kernel/internal/acme/acme_tiling_cache.h"
 #include "plugin/device/ascend/kernel/internal/acme/acme_spinlock.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "kernel/common/pyboost/op_runner.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
 using BaseTensorPtr = tensor::BaseTensorPtr;
-using OpRunnerPtr = std::shared_ptr<pyboost::OpRunner>;
 // 线程安全
 class AcmeKernelInfo {
  public:
@@ -43,26 +44,27 @@ class AcmeKernelInfo {
 
   virtual ~AcmeKernelInfo() = default;
 
-  virtual bool Init(const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs);
+  bool Init(const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs);
 
-  virtual TilingCacheItemPtr GetOrGenerateTiling(const std::vector<BaseTensorPtr> &inputs,
-                                                 const std::vector<BaseTensorPtr> &outputs);
+  TilingCacheItemPtr GetOrGenerateTiling(const std::vector<BaseTensorPtr> &inputs,
+                                         const std::vector<BaseTensorPtr> &outputs);
 
-  virtual bool Launch(const device::DeviceContext *device_context, const TilingCacheItemPtr tilingptr,
-                      const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs,
-                      size_t stream_id);
-  virtual void Call(const OpRunnerPtr &op, const std::vector<BaseTensorPtr> &inputs,
-                    const TilingCacheItemPtr tilingptr);
+  void Launch(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs,
+              const TilingCacheItemPtr tilingptr);
+
+  void CallAcmeOp(const std::shared_ptr<pyboost::OpRunner> &op, const std::vector<BaseTensorPtr> &inputs, uint64_t key);
+
+  virtual void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) = 0;
 
  protected:
   virtual acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                       const acme::OutputsImmutableInfoList &outputs,
-                                       const std::vector<BaseTensorPtr> &ms_inputs,
-                                       const std::vector<BaseTensorPtr> &ms_outputs) {
+                                       const acme::OutputsImmutableInfoList &outputs) {
     return nullptr;
   }
 
+  std::string kernel_name_;
   acme::AcmeOpPtr acme_op_{nullptr};
+  inline static std::unordered_map<uint64_t, acme::AcmeOpPtr> hash_map_;
   // resize by create
   acme::ShapeInfoList acme_inputs_shape_;
   acme::ShapeInfoList acme_outputs_shape_;
@@ -74,31 +76,19 @@ class AcmeKernelInfo {
 
  private:
   void UpdateArgImmutableInfo(acme::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor);
-  void UpdateArgImmutableInfo(const std::vector<BaseTensorPtr> &tensorlist,
-                              std::vector<acme::ArgImmutableInfo> &arginfos);
-
-  void TransAcmeShapes(const std::vector<BaseTensorPtr> &tensorlist, acme::ShapeInfoList &shapelist);
-
-  void UpdateAddr(const std::vector<BaseTensorPtr> &tensorlist, acme::InputsAddrList &addrlist);
-
-  void UpdateAddr(const std::vector<BaseTensorPtr> &inputs, const std::vector<BaseTensorPtr> &outputs);
-
+  void UpdateArgImmutableInfo(std::vector<acme::ArgImmutableInfo> &arginfos,
+                              const std::vector<BaseTensorPtr> &tensorlist);
+  void TransAcmeShapes(acme::ShapeInfoList &shapelist, const std::vector<BaseTensorPtr> &tensorlist);
+  void UpdateAddr(std::vector<acme::RawDeviceAddr> &addrlist,
+                  const std::vector<BaseTensorPtr> &tensorlist);
   void MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id);
   void FreeWorkspace(const device::DeviceContext *device_context);
-  std::string kernel_name_;
   SimpleSpinLock lock_;
 };
-
-#define GET_ACMEKERNELINFO(kernel_info, kernelname, ms_inputs, ms_outputs)          \
-  do {                                                                              \
-    static std::unordered_map<uint64_t, std::shared_ptr<AcmeKernelInfo>> hash_map_; \
-    kernel_info = GetAcmeKernelInfo(kernelname, ms_inputs, ms_outputs, hash_map_);  \
-  } while (false)
 
 #define MS_ACME_KERNEL_INFO_FACTORY_REG(PRIM_NAME_STR, ACME_NAME_VAR, DERIVE) \
   MS_KERNEL_FACTORY_REG(AcmeKernelInfo, PRIM_NAME_STR, DERIVE);               \
   static const NameMappingRegistrar g_##PRIM_NAME_STR##_ms_to_acme_pyboost_mapper(#PRIM_NAME_STR, ACME_NAME_VAR);
-
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACME_KERNEL_MOD_H_
