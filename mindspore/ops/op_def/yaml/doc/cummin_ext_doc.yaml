@@ -7,7 +7,10 @@ cummin_ext:
             \begin{array}{ll} \\
                 y_{i} = \min(x_{1}, x_{2}, ... , x_{i})
             \end{array}
-        
+
+        .. note::
+            O2 mode is not supported in Ascend.
+
         Args:
             input (Tensor): The input Tensor, The dimension must be greater than 0.
             dim (int): Operation dimension. The value of `dim` must be in the range `[-input.ndim, input.ndim - 1]`.
@@ -21,9 +24,6 @@ cummin_ext:
             TypeError: If `input` is a Tensor, but the type is complex or bool.
             TypeError: If `dim` is not an int.
             ValueError: If `dim` is out the range of `[-input.ndim, input.ndim - 1]`.
-
-        .. note::
-            O2 mode is not supported in Ascend.
 
         Supported Platforms:
             ``Ascend``

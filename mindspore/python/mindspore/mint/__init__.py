@@ -783,6 +783,9 @@ def cummax(input, dim):
             y_{i} = \max(x_{1}, x_{2}, ... , x_{i})
         \end{array}
 
+    .. note::
+        O2 mode is not supported in Ascend.
+
     Args:
         input (Tensor): The input Tensor. Rank of `input` must be greater than 0.
         dim (int): The dimension to do the operation over. The value of `dim` must be in the range
@@ -796,9 +799,6 @@ def cummax(input, dim):
         TypeError: If `input` is not a Tensor.
         TypeError: If `dim` is not an int.
         ValueError: If `dim` is out the range of `[-input.ndim, input.ndim - 1]`.
-
-    .. note::
-        O2 mode is not supported in Ascend.
 
     Supported Platforms:
         ``Ascend``
