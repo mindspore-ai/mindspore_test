@@ -10,29 +10,29 @@ mindspore.Profiler
         - **output_path** (str, 可选) - 表示输出数据的路径。默认值： ``"./data"`` 。
         - **profiler_level** (ProfilerLevel, 可选) -（仅限Ascend）表示采集性能数据级别。默认值：``ProfilerLevel.Level0`` 。
 
-          - ProfilerLevel.Level0: 最精简的采集性能数据级别，采集计算类算子的耗时数据和通信类大算子的基础数据。
-          - ProfilerLevel.Level1: 在Level0的基础上额外采集CANN层中AscendCL数据、AICORE性能数据以及通信类小算子数据。
-          - ProfilerLevel.Level2: 在Level1的基础上额外采集CANN层中GE和Runtime数据。
+          - ProfilerLevel.Level0：最精简的采集性能数据级别，采集计算类算子的耗时数据和通信类大算子的基础数据。
+          - ProfilerLevel.Level1：在Level0的基础上额外采集CANN层中AscendCL数据、AICORE性能数据以及通信类小算子数据。
+          - ProfilerLevel.Level2：在Level1的基础上额外采集CANN层中GE和Runtime数据。
 
         - **activities** (list, 可选) - 表示需要收集的性能数据类型。默认值： ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。
 
-          - ProfilerActivity.CPU: 收集MindSpore框架数据。
-          - ProfilerActivity.NPU: 收集CANN软件栈和NPU数据。
-          - ProfilerActivity.GPU: 收集GPU数据。
+          - ProfilerActivity.CPU：收集MindSpore框架数据。
+          - ProfilerActivity.NPU：收集CANN软件栈和NPU数据。
+          - ProfilerActivity.GPU：收集GPU数据。
 
         - **schedule** (schedule, 可选) - 设置采集的动作策略，由schedule类定义，需要配合step接口使用，默认值： ``None`` 。
         - **on_trace_ready** (Callable, 可选) - 设置当性能数据采集完成时，执行的回调函数。默认值： ``None`` 。
         - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `activities` 必须设置为 ``[ProfilerActivity.CPU, ProfilerActivity.NPU]`` 。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` 。
         - **aicore_metrics** (AicoreMetrics, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `activities` 必须包含 ``ProfilerActivity.NPU`` ，且值必须包含在AicoreMetrics枚举值中，默认值： ``AicoreMetrics.AiCoreNone`` ，每种类型包含的数据项如下：
 
-          - AicoreMetrics.AiCoreNone: 不收集任何AICORE数据。
-          - AicoreMetrics.ArithmeticUtilization: 包含mac_fp16/int8_ratio、vec_fp32/fp16/int32_ratio、vec_misc_ratio等。
-          - AicoreMetrics.PipeUtilization: 包含vec_ratio、mac_ratio、scalar_ratio、mte1/mte2/mte3_ratio、icache_miss_rate等。
-          - AicoreMetrics.Memory: 包含ub\_read/write_bw、l1_read/write_bw、l2_read/write_bw、main_mem_read/write_bw等。
-          - AicoreMetrics.MemoryL0: 包含l0a_read/write_bw、l0b_read/write_bw、l0c_read/write_bw等。
-          - AicoreMetrics.ResourceConflictRatio: 包含vec_bankgroup/bank/resc_cflt_ratio等。
-          - AicoreMetrics.MemoryUB: 包含ub\_read/write_bw_mte、 ub\_read/write_bw_vector、 ub\_/write_bw_scalar等。
-          - AicoreMetrics.L2Cache: 包含write_cache_hit、 write_cache_miss_allocate、 r0_read_cache_hit、 r1_read_cache_hit等。本功能仅支持Atlas A2 训练系列产品。
+          - AicoreMetrics.AiCoreNone：不收集任何AICORE数据。
+          - AicoreMetrics.ArithmeticUtilization：包含mac_fp16/int8_ratio、vec_fp32/fp16/int32_ratio、vec_misc_ratio等。
+          - AicoreMetrics.PipeUtilization：包含vec_ratio、mac_ratio、scalar_ratio、mte1/mte2/mte3_ratio、icache_miss_rate等。
+          - AicoreMetrics.Memory：包含ub\_read/write_bw、l1_read/write_bw、l2_read/write_bw、main_mem_read/write_bw等。
+          - AicoreMetrics.MemoryL0：包含l0a_read/write_bw、l0b_read/write_bw、l0c_read/write_bw等。
+          - AicoreMetrics.ResourceConflictRatio：包含vec_bankgroup/bank/resc_cflt_ratio等。
+          - AicoreMetrics.MemoryUB：包含ub\_read/write_bw_mte、 ub\_read/write_bw_vector、 ub\_/write_bw_scalar等。
+          - AicoreMetrics.L2Cache：包含write_cache_hit、 write_cache_miss_allocate、 r0_read_cache_hit、 r1_read_cache_hit等。本功能仅支持Atlas A2 训练系列产品。
 
         - **with_stack** (bool, 可选) - （Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用此参数时， `activities` 必须包含 ``ProfilerActivity.CPU`` 。默认值： ``False`` 。
         - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
@@ -43,8 +43,8 @@ mindspore.Profiler
         - **parallel_strategy** (bool, 可选) -（仅限Ascend）表示是否收集并行策略性能数据，默认值： ``False`` 。
         - **sync_enable** (bool, 可选) -（仅限GPU）Profiler是否用同步的方式收集算子耗时，默认值： ``True`` 。
 
-          - True: 同步方式，在把算子发送到GPU之前，在CPU端记录开始时间戳。然后在算子执行完毕返回到CPU端后，再记录结束时间戳。算子耗时为两个时间戳的差值。
-          - False: 异步方式，算子耗时为从CPU发送到GPU的耗时。这种方式能减少因增加Profiler对整体训练时间的影响。
+          - True：同步方式，在把算子发送到GPU之前，在CPU端记录开始时间戳。然后在算子执行完毕返回到CPU端后，再记录结束时间戳。算子耗时为两个时间戳的差值。
+          - False：异步方式，算子耗时为从CPU发送到GPU的耗时。这种方式能减少因增加Profiler对整体训练时间的影响。
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，生成的ascend_job_id目录结构MindSpore无法解析。
 
@@ -74,8 +74,8 @@ mindspore.Profiler
             - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。此参数默认值为 ``None``，即进行全解析。
             - **mode** (str, 可选) - 解析模式，同步解析或异步解析，可选参数为["sync", "async"], 默认值为 ``"sync"``。
 
-              - "sync": 同步模式解析性能数据，会阻塞当前进程。
-              - "async": 异步模式，另起一个子进程解析性能数据，不会阻塞当前进程。由于解析进程会额外占用CPU资源，请根据实际资源情况开启该模式。
+              - "sync"：同步模式解析性能数据，会阻塞当前进程。
+              - "async"：异步模式，另起一个子进程解析性能数据，不会阻塞当前进程。由于解析进程会额外占用CPU资源，请根据实际资源情况开启该模式。
 
     .. py:method:: offline_analyse(path: str, pretty=False, step_list=None, data_simplification=True)
         :classmethod:

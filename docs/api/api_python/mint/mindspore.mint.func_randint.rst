@@ -6,7 +6,7 @@ mindspore.mint.randint
     返回一个Tensor，shape和dtype由输入决定，其元素为 [ `low` , `high` ) 区间的随机整数。
 
     .. warning::
-        这是一个实验性API，后续可能修改或删除
+        这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **low** (int, 可选) - 随机区间的起始值。默认值：``0`` 。

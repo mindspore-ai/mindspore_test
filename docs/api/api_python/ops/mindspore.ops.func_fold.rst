@@ -24,7 +24,7 @@ mindspore.ops.fold
         - 输出是四维Tensor，其shape为 :math:`(N, C, output\_size[0], output\_size[1], ...)` 。
 
     参数：
-        - **input** (Tensor) - 三维Tensor，支持的数据类型: float16、float32、float64、complex64和complex128。
+        - **input** (Tensor) - 三维Tensor，支持的数据类型： float16、float32、float64、complex64和complex128。
         - **output_size** (Tensor) - 包含两个int元素的一维Tensor。
         - **kernel_size** (Union[int, tuple[int], list[int]]) - 滑动窗口的大小。如果类型为tuple或者list，则存在两个int元素分别对应kernel的高度与宽度；如果类型为int，则kernel的高度与宽度均为该值。
         - **dilation** (Union[int, tuple[int], list[int]]，可选) - 窗口的空洞卷积的扩充率。如果类型为tuple或者list，则存在两个int元素分别作用于滑窗的高度和宽度；如果类型为int，则这个值作用于滑窗的高度和宽度。默认值： ``1`` 。
