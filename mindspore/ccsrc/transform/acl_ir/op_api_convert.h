@@ -94,7 +94,7 @@ inline void *GetOpApiLibHandler(const std::string &lib_path) {
 }
 
 inline void *GetOpApiFunc(const char *api_name) {
-  static std::unordered_map<std::string, void *> opapi_cache;
+  static thread_local std::unordered_map<std::string, void *> opapi_cache;
   auto res = opapi_cache.find(std::string(api_name));
   if (res != opapi_cache.end()) {
     MS_LOG(DEBUG) << "OpApi " << api_name << " hit cache.";

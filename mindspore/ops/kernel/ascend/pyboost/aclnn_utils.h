@@ -108,6 +108,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
         if (hash_cache_.size() > capacity_) {                                                     \
           hash_map_.erase(std::get<0>(hash_cache_.back()));                                       \
           auto release_func = std::get<2>(hash_cache_.back());                                    \
+          runtime::Pipeline::Get().launch_stage()->Wait();                                        \
           release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});               \
           hash_cache_.pop_back();                                                                 \
         }                                                                                         \
