@@ -15,3 +15,5 @@ flatten_ext:
   dispatch: 
     enable: True
     Ascend: FlattenExtAscend
+    CPU: None
+    GPU: None

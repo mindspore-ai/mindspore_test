@@ -39,3 +39,5 @@ silent_check_v3:
     dispatch:
         enable: true
         Ascend: SilentCheckV3Ascend
+        CPU: None
+        GPU: None

@@ -23,3 +23,5 @@ addbmm:
   dispatch:
     enable: True
     Ascend: AddbmmAscend
+    CPU: None
+    GPU: None

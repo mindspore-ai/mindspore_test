@@ -20,3 +20,5 @@ add_rms_norm:
   dispatch:
     enable: True
     Ascend: AddRmsNormAscend
+    CPU: None
+    GPU: None

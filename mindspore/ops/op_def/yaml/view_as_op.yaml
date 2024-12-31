@@ -13,3 +13,5 @@ view_as:
   dispatch:
     enable: True
     Ascend: ViewAsAscend
+    CPU: None
+    GPU: None

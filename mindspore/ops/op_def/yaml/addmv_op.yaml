@@ -21,3 +21,5 @@ addmv:
   dispatch:
     enable: True
     Ascend: AddmvAscend
+    CPU: None
+    GPU: None

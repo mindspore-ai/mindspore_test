@@ -12,5 +12,7 @@ index_select:
             dtype: tensor
     dispatch:
         enable: True
+        CPU: None
+        GPU: None
     function:
         name: index_select_ext

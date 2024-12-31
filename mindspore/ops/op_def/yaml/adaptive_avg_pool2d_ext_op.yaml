@@ -16,4 +16,5 @@ adaptive_avg_pool2d_ext:
       name: AdaptiveAvgPool2DExt
   dispatch:
     enable: True
-
+    CPU: None
+    GPU: None

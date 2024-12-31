@@ -93,6 +93,7 @@ class PyboostOpHeaderGenerator(BaseGenerator):
             raise ValueError(f"Device must be ascend, gpu, or cpu, {device} is not supported")
         self.PYBOOST_OP_HEADER_TEMPLATE = template_dict[device]
         self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/"
+        self.device = device
 
     def generate(self, work_path, op_protos):
         """
@@ -107,6 +108,8 @@ class PyboostOpHeaderGenerator(BaseGenerator):
         """
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_name_str = op_proto.op_class.name
@@ -182,6 +185,8 @@ class PyboostOpCppGenerator:
             if op_proto.op_dispatch is None:
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'default':
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
             op_parser = OpTemplateParser(op_proto)
             call_args = op_parser.parse_original_call_args(op_proto.op_args)
@@ -293,6 +298,8 @@ class PyboostViewOpCppGenerator:
                 continue
             if getattr(op_proto.op_dispatch, self.device) != 'default':
                 continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
+                continue
             if not op_proto.op_view:
                 continue
 
@@ -384,6 +391,8 @@ class AclnnOpCppCodeGenerator:
             if op_proto.op_dispatch is None:
                 continue
             if getattr(op_proto.op_dispatch, self.device) != 'default':
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
             if op_proto.op_view:
                 continue

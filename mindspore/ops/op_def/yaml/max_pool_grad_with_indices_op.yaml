@@ -43,3 +43,5 @@ max_pool_grad_with_indices:
   dispatch:
     enable: True
     Ascend: MaxPoolGradWithIndicesAscend
+    CPU: None
+    GPU: None

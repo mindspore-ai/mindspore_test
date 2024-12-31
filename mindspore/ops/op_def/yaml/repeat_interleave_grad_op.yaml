@@ -15,3 +15,5 @@ repeat_interleave_grad:
   dispatch:
     enable: True
     Ascend: RepeatInterleaveGradAscend
+    CPU: None
+    GPU: None

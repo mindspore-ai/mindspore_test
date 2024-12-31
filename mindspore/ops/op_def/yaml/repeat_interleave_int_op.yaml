@@ -19,3 +19,5 @@ repeat_interleave_int:
   dispatch:
     enable: True
     Ascend: RepeatInterleaveIntAscend
+    CPU: None
+    GPU: None

@@ -19,3 +19,5 @@ rand_like_ext:
     dispatch:
         enable: True
         Ascend: RandLikeExtAscend
+        CPU: None
+        GPU: None
