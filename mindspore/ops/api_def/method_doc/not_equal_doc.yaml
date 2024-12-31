@@ -3,20 +3,20 @@ not_equal:
     not_equal(other) -> Tensor
     
     Computes the non-equivalence of two tensors element-wise.
-    
-    Note:
-        - The `self` and the `other` comply with the implicit type conversion rules to 
-          make the data types consistent.
-        - When the `other` is a tensor, the shapes of them could be broadcast.
-        - When the `other` is a scalar, it could only be a constant.
-        - Broadcasting is supported.
-    
+
     .. math::
     
         out_{i} =\begin{cases}
         & \text{True,    if } input_{i} \ne other_{i} \\
         & \text{False,   if } input_{i} = other_{i}
         \end{cases}
+
+    Note:
+        - The `self` and the `other` comply with the implicit type conversion rules to 
+          make the data types consistent.
+        - When the `other` is a tensor, the shapes of them could be broadcast.
+        - When the `other` is a scalar, it could only be a constant.
+        - Broadcasting is supported.
     
     Args:
         other (Union[Tensor, number.Number, bool]): `other` is a number.Number or

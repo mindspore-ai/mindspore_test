@@ -3568,19 +3568,19 @@ def ne(input, other):
     r"""
     Computes the non-equivalence of two tensors element-wise.
 
-    Note:
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
-        - When the inputs are two tensors, the shapes of them could be broadcast.
-        - When the inputs are one tensor and one scalar, the scalar could only be a constant.
-        - Broadcasting is supported.
-
     .. math::
 
         out_{i} =\begin{cases}
         & \text{True,    if } input_{i} \ne other_{i} \\
         & \text{False,   if } input_{i} = other_{i}
         \end{cases}
+
+    Note:
+        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
+          consistent.
+        - When the inputs are two tensors, the shapes of them could be broadcast.
+        - When the inputs are one tensor and one scalar, the scalar could only be a constant.
+        - Broadcasting is supported.
 
     Args:
         input (Union[Tensor, Number, bool]): The first input is a number or
