@@ -189,7 +189,8 @@ class WaitedDSCallback(Callback, DSCallback):
         >>> import mindspore.nn as nn
         >>> from mindspore.dataset import WaitedDSCallback
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE, device_target="CPU")
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="CPU")
         >>>
         >>> # custom callback class for data synchronization in data pipeline
         >>> class MyWaitedCallback(WaitedDSCallback):

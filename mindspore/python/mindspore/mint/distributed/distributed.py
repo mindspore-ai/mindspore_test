@@ -171,9 +171,8 @@ def init_process_group(backend="hccl",
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, destroy_process_group
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> destroy_process_group()
     """
@@ -236,9 +235,8 @@ def destroy_process_group(group=None):
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, destroy_process_group
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> destroy_process_group()
     """
@@ -286,9 +284,9 @@ def get_rank(group=None):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-        >>> from mindspore import set_context
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_rank
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> rank_id = get_rank()
         >>> print(rank_id)
@@ -342,9 +340,8 @@ def get_world_size(group=None):
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_world_size
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> group_size = get_world_size()
         >>> print("group_size is: ", group_size)
@@ -408,9 +405,9 @@ def new_group(ranks=None,
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-        >>> from mindspore import set_context
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, new_group
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> group = new_group()
         >>> print("group is: ", group)
@@ -466,9 +463,9 @@ def get_backend(group=None):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-        >>> from mindspore import set_context
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_backend
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> backend = get_backend()
         >>> print("backend is: ", backend)
@@ -526,9 +523,9 @@ def get_global_rank(group, group_rank):
 
             This example should be run with 8 devices.
 
-        >>> from mindspore import set_context
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_global_rank, new_group, get_rank
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> # Launch 8 processes.
         >>> init_process_group()
         >>> rank_ids = [0,4]
@@ -591,9 +588,9 @@ def get_group_rank(group, global_rank):
 
             This example should be run with 8 devices.
 
-        >>> from mindspore import set_context
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, new_group, get_group_rank, get_rank
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> # Launch 8 processes.
         >>> init_process_group()
         >>> rank_ids = [0,4]
@@ -652,10 +649,10 @@ def get_process_group_ranks(group=None):
 
             This example should be run with 4 devices.
 
-        >>> from mindspore import set_context
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_process_group_ranks
         >>> # Launch 4 processes.
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> output = get_process_group_ranks()
         >>> print(output)
@@ -830,7 +827,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
         >>> from mindspore.mint.distributed import all_gather_into_tensor
         >>> from mindspore import Tensor
         >>>
-        >>> ms.set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> out_tensor = Tensor(np.zeros([4, 8]).astype(np.float32))
@@ -916,7 +913,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
         >>> from mindspore.mint.distributed import reduce_scatter_tensor
         >>> import numpy as np
         >>>
-        >>> ms.set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([8, 8]).astype(np.float32))
         >>> output_tensor = Tensor(np.ones([4, 8]).astype(np.float32))

@@ -29,7 +29,7 @@ sign:
           >>> print(output)
           [[-1  0  1  1  1]
            [ 1  1  1 -1  0]]
-          >>> ms.set_context(device_target="CPU")
+          >>> ms.set_device(device_target="CPU")
           >>> x = ms.Tensor([[-1, 0, float('inf'), 4, float('nan')], [2, 3, float('-inf'), -6, 0]])
           >>> output = ops.sign(x)
           >>> print(output)
