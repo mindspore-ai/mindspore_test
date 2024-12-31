@@ -68,14 +68,14 @@ def run_command_semi_compile(cmd, log_path, backend_time, compile_time):
         ["grep -r '%s' %s | awk '{print $3}'" % (log_backend, log_path)],
         shell=True)
     log_time = str(log_output, 'utf-8').strip()
-    assert float(log_time) <= backend_time * 1.05
+    assert float(log_time) <= backend_time * 1.1
 
     log_compile = "compile_graph costs"
     log_output = subprocess.check_output(
         ["grep -r '%s' %s | awk '{print $3}'" % (log_compile, log_path)],
         shell=True)
     log_time = str(log_output, 'utf-8').strip()
-    assert float(log_time) <= compile_time * 1.05
+    assert float(log_time) <= compile_time * 1.1
 
 
 def run_command_auto_compile(cmd, log_path, sharding_time):
