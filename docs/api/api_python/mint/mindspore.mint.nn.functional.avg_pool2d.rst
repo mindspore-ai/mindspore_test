@@ -6,13 +6,13 @@ mindspore.mint.nn.functional.avg_pool2d
     在输入Tensor上应用2D平均池化，输入Tensor可以看作是由一系列2D平面组成的。
 
     一般地，输入的shape为 :math:`(N, C, H_{in}, W_{in})` ，输出 :math:`(H_{in}, W_{in})` 维度的区域平均值。给定 `kernel_size` 为 :math:`(kH, kW)` 和 `stride` ，运算如下：
-    
-    .. note::
-        在Atlas平台上，计算输入时，精度会从float32降到float16。
 
     .. math::
         \text{output}(N_i, C_j, h, w) = \frac{1}{kH * kW} \sum_{m=0}^{kH-1} \sum_{n=0}^{kW-1}
             \text{input}(N_i, C_j, stride[0] \times h + m, stride[1] \times w + n)
+
+    .. note::
+        在Atlas平台上，计算输入时，精度会从float32降到float16。
 
     参数：
         - **input** (Tensor) - shape为 :math:`(N, C, H_{in}, W_{in})` 或 :math:`(C, H_{in}, W_{in})` 的Tensor。
