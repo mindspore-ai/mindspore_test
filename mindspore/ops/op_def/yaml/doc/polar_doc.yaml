@@ -36,9 +36,9 @@ polar:
             >>> op_polar = ops.Polar()
             >>> output = op_polar(x1, x2)
             >>> print(output)
-            [-0.9899925 +0.14112001j -1.30728724-1.51360499j]
+            [-0.9899925 +0.14112002j -1.3072872-1.5136049j]
             >>> x1 = Tensor(2.1, mindspore.float32)
             >>> x2 = Tensor(2.1, mindspore.float32)
             >>> output = op_polar(x1, x2)
             >>> print(output)
-            (-1.0601766+1.8127397j)
+            (-1.0601765+1.8127397j)
