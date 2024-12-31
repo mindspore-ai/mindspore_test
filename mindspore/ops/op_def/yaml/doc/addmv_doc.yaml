@@ -6,7 +6,7 @@ addmv:
         broadcastable with a 1-D tensor of size :math:`N` . In this case, `output` is a 1-D Tensor of size :math:`N` .
 
         .. math::
-            output = \beta input + \alpha (mat @ vec)
+            output = \\beta input + \\alpha (mat @ vec)
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
