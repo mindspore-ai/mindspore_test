@@ -406,6 +406,7 @@ def merge_strings_by_chunk_size(string_list, chunk_size=50):
     ]
     return merged_strings
 
+
 class AclnnUtils:
     """
     aclnn utils
