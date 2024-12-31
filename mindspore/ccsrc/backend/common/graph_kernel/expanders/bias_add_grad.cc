@@ -62,7 +62,7 @@ class BiasAddGrad : public OpDesc {
       reduce_axis = {-2, -3};
     } else {  // kOpFormat_Default
       if (input_x->shape.size() == kTwoDims) {
-        reduce_axis = {1};
+        reduce_axis = {0};
       } else if (input_x->shape.size() == kThreeDims) {
         reduce_axis = {0, 2};
       } else {
