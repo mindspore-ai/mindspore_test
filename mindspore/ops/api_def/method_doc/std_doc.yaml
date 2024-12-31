@@ -4,7 +4,7 @@ std:
 
     For details, please refer to :func:`mindspore.ops.std`.
 
-    .. method:: Tensor.std(dim, *, correction=1, keepdim=False) -> Tensor
+    .. method:: Tensor.std(dim=None, *, correction=1, keepdim=False) -> Tensor
         :noindex:
 
     Calculates the standard deviation over the dimensions specified by `dim`. `dim` can be a single dimension, list of
