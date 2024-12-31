@@ -88,9 +88,11 @@ def test_ops_where_overload(mode):
     """
     context.set_context(mode=mode, jit_level="O0")
     x = Tensor([[0, 1], [2, 3]], dtype=ms.float32)
-    output = where_overload_forward_func(x)
-    expected = np.array([[0, 1], [1, 0], [1, 1]], dtype=np.float32)
-    assert np.allclose(output.asnumpy(), expected)
+    indices1, indices2 = where_overload_forward_func(x)
+    expected_indices1 = np.array([0, 1, 1], dtype=np.int64)
+    expected_indices2 = np.array([1, 0, 1], dtype=np.int64)
+    assert np.allclose(indices1.asnumpy(), expected_indices1)
+    assert np.allclose(indices2.asnumpy(), expected_indices2)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
