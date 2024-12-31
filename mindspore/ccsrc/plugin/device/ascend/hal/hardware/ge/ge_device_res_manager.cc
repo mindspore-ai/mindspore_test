@@ -218,7 +218,7 @@ void *GeDeviceResManager::GetCopyDataStream() const {
 }
 
 bool GeDeviceResManager::SyncCopyStream() const {
-  auto copy_stream = AscendStreamMng::GetInstance().GetCopyStream();
+  auto copy_stream = GetCopyDataStream();
   MS_EXCEPTION_IF_NULL(copy_stream);
   return AscendStreamMng::GetInstance().SyncStream(copy_stream);
 }
