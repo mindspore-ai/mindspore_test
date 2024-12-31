@@ -769,6 +769,9 @@ def concat(tensors, dim=0):
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
     """
     return cat(tensors, dim)
 

@@ -9,7 +9,7 @@ isinf:
               & \ False,\ \text{ if } x_{i} \ne  \text{Inf}
             \end{cases}
 
-        where :math:`Inf` means value is infinite.
+        where Inf means value is infinite.
 
         .. warning::
             - This is an experimental API that is subject to change.
