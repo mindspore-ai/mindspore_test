@@ -1314,9 +1314,6 @@ def rand_like_ext(input, *, dtype=None):
         Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
         the interval :math:`[0, 1)`.
 
-    Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
-
     Supported Platforms:
         ``Ascend``
 
@@ -1393,9 +1390,6 @@ def randn_like_ext(input, *, dtype=None):
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the normal distribution on
         the interval :math:`[0, 1)`.
-
-    Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
 
     Supported Platforms:
         ``Ascend``

@@ -38,4 +38,7 @@ where:
     .. function:: where(condition) -> Tensor
         :noindex:
 
-    Identical to :func:`mindspore.ops.nonzero` with `as_tuple` being True.
+    Identical to :func:`mindspore.ops.nonzero` with input `condition` and `as_tuple` being True.
+
+    Supported Platforms:
+        ``Ascend``
