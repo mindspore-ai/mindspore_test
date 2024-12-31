@@ -10,6 +10,9 @@ mindspore.mint.cummin
             y_{i} = \min(x_{1}, x_{2}, ... , x_{i})
         \end{array}
 
+    .. note::
+        Ascend不支持O2模式。
+
     参数：
         - **input** (Tensor) - 输入Tensor，要求维度大于0。
         - **dim** (int) - 算子操作的维度，维度的大小范围是[-input.ndim, input.ndim - 1]。
@@ -22,6 +25,3 @@ mindspore.mint.cummin
         - **TypeError** - 如果 `input` 的Tensor类型是复数或bool。
         - **TypeError** - 如果 `dim` 不是int。
         - **ValueError** - 如果 `dim` 不在范围[-input.ndim, input.ndim - 1]内。
-
-    .. note::
-        Ascend不支持O2模式。
