@@ -762,6 +762,9 @@ void CreateParameterWhenLazyInline(const FuncGraphPtr &fwd_graph, const FuncGrap
         outputs->emplace_back(new_parameter);
       }
       auto new_call_cnode = call_cnode->func_graph()->NewCNode(call_inputs);
+      MS_EXCEPTION_IF_NULL(new_call_cnode);
+      new_call_cnode->set_scope(call_cnode->scope());
+      new_call_cnode->set_abstract(call_cnode->abstract()->Clone());
       (void)manager->Replace(call_cnode, new_call_cnode);
       sub_func_graph->set_parameters(new_user_graph_parameters);
     }
