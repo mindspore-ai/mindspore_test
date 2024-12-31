@@ -457,17 +457,6 @@ def deprecated_tensor_add(input, other):
     return add(input, other)
 
 
-def deprecated_tensor_add_(input, other, *, alpha=1):
-    if isinstance(other, COOTensor):
-        # SparseTensor can't multiply a scalar.
-        if alpha != 1:
-            raise ValueError("If other is SparseTensor, alpha must be equal to 1.")
-        return other + input
-    if isinstance(other, (tuple, list)):
-        other = sequence_to_tensor(other, F.dtype(input))
-    return add_ext(input, other, alpha=alpha)
-
-
 # 6 all
 def tensor_all(x, axis=None, keep_dims=False):
     return all(x, axis, keep_dims)

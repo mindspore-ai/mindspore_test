@@ -85,7 +85,7 @@ def test_copy_dynamic_shape():
     tensor_y2 = ms.Tensor(generate_random_input((1, 1, 5), np.float32))  # broadcast
 
     TEST_OP(inplace_add_forward_func, [[tensor_x1, tensor_y1, 1.0], [tensor_x2, tensor_y2, 2.0]], 'inplace_add_ext',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE'], disable_resize=True, inplace_update=True)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

@@ -48,6 +48,30 @@ REG_FALLBACK_BUILDER("AddExt").SetBody(BODYFUNC(ib) {
   return {x + y * alpha_tensor};
 });
 
+REG_FALLBACK_BUILDER("InplaceAddExt").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  if (x->dtype()->type_id() == kNumberTypeBool) {
+    return {};
+  }
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  auto y_cast = ib->Cast(y, x->dtype());
+  return {x + y_cast * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceAddsExt").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  if (x->dtype()->type_id() == kNumberTypeBool) {
+    return {};
+  }
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  return {x + other_tensor * alpha_tensor};
+});
+
 REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);

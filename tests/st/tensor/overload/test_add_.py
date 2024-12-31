@@ -51,14 +51,6 @@ def check_add(input_x, input_y, input_a, input_b, inplace):
     if inplace:
         _assert(res1[1].asnumpy(), expect)
 
-    # test deprecated add_
-    if isinstance(input_y, ms.Tensor):
-        res2 = net(input_x.copy(), input_b.tolist())
-        res3 = net(input_x.copy(), tuple(input_b.tolist()))
-        _assert(res2[0].asnumpy(), expect)
-        _assert(res3[0].asnumpy(), expect)
-
-
 def check_add_with_alpha(input_x, input_y, input_a, input_b, inplace):
     net = InplaceAddNet()
     res = net(input_x, input_y)
@@ -73,13 +65,6 @@ def check_buildin_add(input_x, input_y, input_a, input_b):
     res1 = net(input_x.copy(), input_y)
     expect = input_a + input_b
     _assert(res1.asnumpy(), expect)
-
-    # test deprecated add_
-    if isinstance(input_y, ms.Tensor):
-        res2 = net(input_x.copy(), input_b.tolist())
-        res3 = net(input_x.copy(), tuple(input_b.tolist()))
-        _assert(res2.asnumpy(), expect)
-        _assert(res3.asnumpy(), expect)
 
 
 def tensor_factory(nptype, mstype):
