@@ -5,7 +5,7 @@ log10:
     Returns the logarithm to the base 10 of a tensor element-wise.
 
     .. math::
-        y_i = \log_10(x_i)
+        y_i = \log_{10}(x_i)
 
     .. warning::
         - This is an experimental API that is subject ot change or deletion.

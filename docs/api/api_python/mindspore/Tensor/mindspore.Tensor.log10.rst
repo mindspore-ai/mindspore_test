@@ -6,7 +6,7 @@ mindspore.Tensor.log10
     逐元素返回Tensor以10为底的对数。
 
     .. math::
-        y_i = \log_10(x_i)
+        y_i = \log_{10}(x_i)
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
