@@ -68,6 +68,8 @@ class RingQueue {
 
   bool IsEmpty() const { return head_.load(std::memory_order_acquire) == tail_.load(std::memory_order_acquire); }
 
+  bool spin() { return spin_; }
+
   void set_spin(bool spin) { spin_ = spin; }
 
  private:

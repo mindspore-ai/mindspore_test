@@ -244,6 +244,9 @@ void AsyncRQueue::ChildAfterFork() {
   MS_LOG(DEBUG) << "AsyncQueue " << name_ << " reinitialize after fork done.";
 }
 
-void AsyncRQueue::SetSpin(bool spin) { tasks_queue_.set_spin(spin); }
+void AsyncRQueue::SetSpin(bool spin) {
+  tasks_queue_.set_spin(spin);
+  MS_LOG(INFO) << "Thread " << name_ << " is set spin to " << spin;
+}
 }  // namespace runtime
 }  // namespace mindspore
