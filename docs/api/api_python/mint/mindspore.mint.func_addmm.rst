@@ -19,7 +19,7 @@ mindspore.mint.addmm
 
     关键字参数：
         - **beta** (Union[float, int], 可选) - 输入的乘数。默认值： ``1`` 。
-        - **alpha** (Union[float, int]，可选) - :math:`mat1 @ mat2` 的系数，默认值： ``1`` 。
+        - **alpha** (Union[float, int]，可选) - mat1 @ mat2的系数，默认值： ``1`` 。
 
     返回：
         Tensor，其数据类型与 `input` 相同, 其shape和mat1 @ mat2相同。

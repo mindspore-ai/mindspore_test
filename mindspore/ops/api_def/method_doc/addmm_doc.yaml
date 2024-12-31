@@ -22,7 +22,7 @@ addmm:
 
     Keyword Args:
         beta (Union[float, int], optional): multiplier for input. Default: ``1`` .
-        alpha (Union[float, int], optional): multiplier for :math:`mat1 @ mat2`. Default: ``1`` .
+        alpha (Union[float, int], optional): multiplier for mat1 @ mat2. Default: ``1`` .
 
     Returns:
         Tensor, with the same dtype as `self` and the same shape as mat1 @ mat2.
