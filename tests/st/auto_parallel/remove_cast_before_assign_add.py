@@ -20,9 +20,10 @@ import mindspore as ms
 from mindspore import Tensor, ops, nn
 from mindspore.communication import init
 from mindspore.common.initializer import initializer
+import mindspore.runtime as rt
 
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_context(max_device_memory="28GB")
+rt.set_memory(max_size="28GB")
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
 ms.set_auto_parallel_context(full_batch=True)
 

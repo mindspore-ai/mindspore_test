@@ -16,13 +16,15 @@
 """Memory interfaces."""
 
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
-    _reset_max_mem_reserved, _reset_max_mem_allocated
+    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager
 from mindspore import _checkparam as Validator
 from mindspore.device_manager import _check_runtime_conf_env_valid
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
+import mindspore as ms
 
 _MEMORY_PATTERN = r'[1-9][0-9]*(\.)?[0-9]*GB|0\.[0-9]*GB'
+_device_context_mgr = DeviceContextManager.get_instance()
 
 
 @args_type_check(init_size=str, increase_size=str, max_size=str, optimize_level=str)
@@ -83,6 +85,14 @@ def _check_memory_conf_valid(memory_size):
     if memory_size == "0G" or memory_size == "0.0G":
         raise ValueError("The memory value should not be \"0GB\".")
 
+def _is_initialized(device_target):
+    """
+    Returns whether specified backend is initialized.
+    """
+    _device_context = _device_context_mgr.get_device_context(device_target)
+    if _device_context is None:
+        return False
+    return _device_context.initialized()
 
 def memory_stats():
     """
@@ -112,7 +122,10 @@ def memory_stats():
         {<capsule object NULL at 0x7f7e8c27b030>: {'block_stream_id': 0, 'block_memory_size': 1073741824}}},
         'persistent_mem_pool_stats': {'block_unit_size': 1073741824, 'block_counts': 0, 'blocks_info': {}}}
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet. Return empty dict.")
+        return {}
     return _memory_stats(device_target)
 
 
@@ -140,7 +153,10 @@ def memory_reserved():
         >>> print(ms.runtime.memory_reserved())
         1073741824
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
+        return 0
     return _memory_stats(device_target).get("total_reserved_memory", 0)
 
 
@@ -168,7 +184,10 @@ def max_memory_reserved():
         >>> print(ms.runtime.max_memory_reserved())
         1073741824
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
+        return 0
     return _memory_stats(device_target).get("max_reserved_memory", 0)
 
 
@@ -209,7 +228,7 @@ def reset_peak_memory_stats():
         >>> print(ms.runtime.max_memory_allocated())
         0
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
     _reset_max_mem_reserved(device_target)
     _reset_max_mem_allocated(device_target)
 
@@ -287,7 +306,10 @@ def memory_allocated():
         >>> print(ms.runtime.memory_allocated())
         1024
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
+        return 0
     return _memory_stats(device_target).get("total_allocatd_memory", 0)
 
 
@@ -315,7 +337,10 @@ def max_memory_allocated():
         >>> print(ms.runtime.max_memory_allocated())
         1536
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
+    if not _is_initialized(device_target):
+        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
+        return 0
     return _memory_stats(device_target).get("max_allocated_memory", 0)
 
 
@@ -340,7 +365,7 @@ def reset_max_memory_reserved():
         >>> print(ms.runtime.max_memory_reserved())
         0
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
     _reset_max_mem_reserved(device_target)
 
 
@@ -365,5 +390,5 @@ def reset_max_memory_allocated():
         >>> print(ms.runtime.max_memory_allocated())
         0
     """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_target = ms.context.get_context("device_target")
     _reset_max_mem_allocated(device_target)

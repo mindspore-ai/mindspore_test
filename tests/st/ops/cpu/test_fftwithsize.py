@@ -18,6 +18,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.context as context
+import mindspore.runtime as rt
 from mindspore import Tensor, ops
 from mindspore.common.api import _pynative_executor
 from tests.st.utils import test_utils
@@ -186,7 +187,7 @@ def test_fftwithsize_exception():
     inverse = True
     real = True
     x = Tensor(np.random.uniform(-10, 10, size=[2, 1])).astype(ms.complex64)
-    ms.context.set_context(pynative_synchronize=True)
+    rt.launch_blocking()
     with pytest.raises(ValueError, match="For 'FFTWithSize', the last dimension of the input cannot be 1"):
         fft_forward_func(x, signal_ndim, inverse, real)
         _pynative_executor.sync()

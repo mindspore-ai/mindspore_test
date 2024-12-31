@@ -14,6 +14,7 @@
 # ============================================================================
 import mindspore as ms
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 from mindspore import nn, ops
 from mindspore.communication import init, get_rank
 from mindspore.common.initializer import initializer
@@ -22,7 +23,7 @@ from mindspore.train import Model, CheckpointConfig, ModelCheckpoint
 from mindspore.train._utils import get_parameter_redundancy
 
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_context(max_device_memory="28GB")
+rt.set_memory(max_size="28GB")
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
 init()
 ms.set_seed(1)

@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import mint
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 @test_utils.run_with_cell
@@ -98,9 +99,7 @@ def test_conv_transpose2d_dynamic():
     Description: test op conv_transpose2d dynamic shape
     Expectation: expect correct result.
     """
-    context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)
     # test case 1
     x = Tensor(np.random.randn(1, 4, 5, 5), dtype=ms.float32)
     w = Tensor(np.random.randn(4, 8, 3, 3), dtype=ms.float32)

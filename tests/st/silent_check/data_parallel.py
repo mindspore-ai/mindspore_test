@@ -17,13 +17,14 @@ import sys
 import numpy as np
 import mindspore as ms
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 from mindspore import nn, amp
 from mindspore.train import Model
 from mindspore.common.initializer import Normal
 from mindspore.ops import operations as P
 from mindspore.communication import init, get_rank, get_group_size
 
-ms.set_context(max_device_memory="2GB")
+rt.set_memory(max_size="2GB")
 ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
 ms.set_context(save_graphs=True, save_graphs_path='ms_graphs')
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)

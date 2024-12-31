@@ -18,6 +18,7 @@ import mindspore.nn as nn
 import mindspore.ops as ops
 import mindspore.communication as comm
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 
 
 class GPTONetDataset:
@@ -68,11 +69,11 @@ def test_gpto_net():
     """
     ms.set_context(
         jit_config={"jit_level": "O0"},
-        memory_optimize_level="O1",
         device_target="Ascend",
         mode=ms.GRAPH_MODE,
         exec_order="gpto",
     )
+    rt.set_memory(optimize_level="O1")
     comm.init()
     network = GPTONet()
     x = ms.Tensor(np.random.randn(512, 512), dtype=ms.float32)

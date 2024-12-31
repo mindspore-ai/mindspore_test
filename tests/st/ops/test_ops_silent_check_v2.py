@@ -20,6 +20,7 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 def silent_check_v2(val, input_grad, sfda, step, c_min_steps=7, c_thresh_l1=1000000.,
@@ -86,9 +87,7 @@ def test_silent_check_v2_dyn_shape():
     Description: test op SilentCheckV2.
     Expectation: expect correct result.
     """
-    context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     val, input_grad, sfda, step = generate_input_tensors()
     input_case1 = [val, input_grad, sfda, step, 7, 1000000., 100000., 10000., 5000., 1]
     val, input_grad, sfda, step = generate_input_tensors()

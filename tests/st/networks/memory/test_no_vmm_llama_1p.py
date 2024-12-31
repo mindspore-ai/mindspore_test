@@ -23,6 +23,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import set_seed
 from mindspore.dataset import GeneratorDataset
+import mindspore.runtime as rt
 
 workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
@@ -113,24 +114,28 @@ def run_llama():
         '--test_mode', default="", type=str, help='test_mode.')
     args = parser.parse_args()
     if args.test_mode == "no_vmm_kbk":
-        ms.set_context(jit_config={"jit_level": "O0"}, max_device_memory="30GB", memory_optimize_level="O0")
+        ms.set_context(jit_config={"jit_level": "O0"})
+        rt.set_memory(max_size="30GB")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p()
     elif args.test_mode == "no_vmm_ge":
-        ms.set_context(jit_config={"jit_level": "O2"}, max_device_memory="30GB", memory_optimize_level="O0")
+        ms.set_context(jit_config={"jit_level": "O2"})
+        rt.set_memory(max_size="30GB")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p()
     elif args.test_mode == "no_vmm_ge_two_pointer":
-        ms.set_context(jit_config={"jit_level": "O2"}, max_device_memory="30GB", memory_optimize_level="O0")
+        ms.set_context(jit_config={"jit_level": "O2"})
+        rt.set_memory(max_size="30GB")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p()
     elif args.test_mode == "no_vmm_kbk_mempool_block":
-        ms.set_context(jit_config={"jit_level": "O0"}, max_device_memory="30GB",
-                       mempool_block_size="4GB", memory_optimize_level="O0")
+        ms.set_context(jit_config={"jit_level": "O0"})
+        rt.set_memory(max_size="30GB")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p()
     elif args.test_mode == "no_vmm_kbk_oom":
-        ms.set_context(jit_config={"jit_level": "O0"}, max_device_memory="10GB", memory_optimize_level="O0")
+        ms.set_context(jit_config={"jit_level": "O0"})
+        rt.set_memory(max_size="30GB")
         ms.set_context(mode=ms.GRAPH_MODE, save_graphs=False)
         run_llama_1p()
 

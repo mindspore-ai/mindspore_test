@@ -103,8 +103,7 @@ def test_hal_device_cpu():
     Expectation: hal.device api performs as expected.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
-    assert not is_initialized("CPU")
-    assert is_available("CPU")
+    assert ms.device_context.cpu.is_available()
     net = Net()
     net(Tensor(2.0))
     assert is_initialized("CPU")
