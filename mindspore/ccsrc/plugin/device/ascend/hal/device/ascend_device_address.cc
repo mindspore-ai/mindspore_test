@@ -792,7 +792,7 @@ bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tens
     return SyncHostToDeviceImpl(GetShapeVector(), size, type, tensor_data->data(), host_format, tensor_data);
   }
 
-  return AsyncHostToDevice(size, type, tensor_data->data());
+  return AsyncHostToDevice(size, tensor_data->data());
 }
 
 bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const {
