@@ -7,9 +7,9 @@ argsort:
 
         Args:
             input(Tensor): The input tensor to sort.
-            dim (int): The dim to sort along. Default: ``-1`` , means the last dimension.
+            dim (int, optional): The dim to sort along. Default: ``-1`` , means the last dimension.
                 The Ascend backend only supports sorting the last dimension.
-            descending (bool): The sort order. If `descending` is ``True`` then the elements
+            descending (bool, optional): The sort order. If `descending` is ``True`` then the elements
                 are sorted in descending order by value. Otherwise sort in ascending order. Default: ``False`` .
 
         Returns:

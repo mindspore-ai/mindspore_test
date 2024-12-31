@@ -33,6 +33,6 @@ mindspore.mint.add
         数据类型是两个输入和 alpha 中精度更高或位数更多的类型。
 
     异常：
-        - **TypeError** - 如果 `input`、 `other` 不是以下之一：Tensor、number.Number、bool。
+        - **TypeError** - 如果 `input`、 `other`、 `alpha` 不是以下之一：Tensor、number.Number、bool。
         - **TypeError** - 如果 `alpha` 是 float 类型，但是 `input`、 `other` 不是 float 类型。
         - **TypeError** - 如果 `alpha` 是 bool 类型，但是 `input`、 `other` 不是 bool 类型。
