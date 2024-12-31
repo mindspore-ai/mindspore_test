@@ -108,7 +108,11 @@ ShapeArray ConvPaddingFuncImpl::ConvNdPaddingCommonInferShape(const PrimitivePtr
     MS_CHECK_VALUE(feature_len >= SizeToLong(dilation.size()),
                    CheckAndConvertUtils::CheckInteger("dilation size", feature_len, kGreaterEqual,
                                                       SizeToLong(dilation.size()), prim_name));
-    IndicesCheckPositiveVec("stride", stride, prim_name, true, true);
+    if (padding_enum == PadMode::SAME) {
+      IndicesCheckPositiveVec("stride", stride, prim_name, true, true);
+    } else {
+      IndicesCheckPositiveVec("stride", stride, prim_name, true, false);
+    }
     IndicesCheckPositiveVec("dilation", dilation, prim_name, true, false);
 
     if (!input_infos[idxes_.input_idx]->IsDynamic() && !input_infos[idxes_.weight_idx]->IsDynamic()) {

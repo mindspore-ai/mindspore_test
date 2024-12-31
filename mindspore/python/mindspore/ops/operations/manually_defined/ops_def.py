@@ -1170,7 +1170,6 @@ class Cast(Primitive):
             if data.dtype == dtype:
                 return (True, x)
         if isinstance(x, Tensor) and x.dtype == dtype:
-            x.set_cast_dtype()
             return (True, x)
         if isinstance(x, numbers.Number):
             return (True, Tensor(x, dtype=dtype))
