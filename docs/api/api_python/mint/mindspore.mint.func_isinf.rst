@@ -12,7 +12,7 @@ mindspore.mint.isinf
           & \ False,\ \text{ if } x_{i} \ne  \text{Inf}
         \end{cases}
 
-    其中 :math:`Inf` 表示无穷大。
+    其中Inf表示无穷大。
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
