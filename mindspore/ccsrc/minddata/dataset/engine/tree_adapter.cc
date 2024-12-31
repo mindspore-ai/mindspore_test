@@ -559,12 +559,18 @@ void TreeAdapter::SubprocessExit(int exit_code) {
       }
     }
   }
+  MS_LOG(INFO) << "[Independent Dataset Process] The child processes of the independent process have all exited.";
 
   // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
   ret = shared_memmory_queue.ReleaseCurrentShm();
   if (ret != Status::OK()) {
     MS_LOG(ERROR) << ret.ToString();
   }
+
+  MS_LOG(INFO) << "[Independent Dataset Process] The shared memory had been released.";
+
+  // need acquire gil before destroy device
+  GilAcquireWithCheck gil_acquire_with_check;
 
 #if !defined(BUILD_LITE) && defined(ENABLE_D)
   // If the main process has exited, the independent dataset process does not need to release the device.
@@ -584,6 +590,9 @@ void TreeAdapter::SubprocessExit(int exit_code) {
     MS_LOG(ERROR) << "Get ms context failed by MsContext::GetInstance()";
   }
 #endif
+
+  // release the gil
+  py::gil_scoped_release release;
 
   // independent will exit
   _exit(exit_code);
