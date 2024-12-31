@@ -5,7 +5,7 @@ logical_or:
     Computes the "logical OR" of two tensors element-wise.
 
     .. math::
-        out_{i} = self_{i} \\vee other_{i}
+        out_{i} = self_{i} \vee other_{i}
 
     .. note::
         - Inputs of `self` and `other` comply with the implicit type conversion rules to make the data types
