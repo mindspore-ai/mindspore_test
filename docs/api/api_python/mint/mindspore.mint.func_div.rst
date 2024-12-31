@@ -20,9 +20,9 @@ mindspore.mint.div
     关键字参数：
         - **rounding_mode** (str, 可选) - 应用于结果的舍入类型。三种类型被定义为 ``None`` 、 ``"floor"`` 和 ``"trunc"`` 。默认值： ``None`` 。
 
-          - **None**: 默认行为。相当于Python中的 `true division` 或NumPy中的 `true_divide` 。
-          - **"floor"**: 将除法的结果向下舍入。相当于Python中的 `floor division` 或NumPy中的 `floor_divide` 。
-          - **"trunc"**: 将除法的结果舍入到零。相当于C语言风格的整数除法。
+          - **None**：默认行为。相当于Python中的 `true division` 或NumPy中的 `true_divide` 。
+          - **"floor"**：将除法的结果向下舍入。相当于Python中的 `floor division` 或NumPy中的 `floor_divide` 。
+          - **"trunc"**：将除法的结果舍入到零。相当于C语言风格的整数除法。
 
     返回：
         Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或数字较高的。

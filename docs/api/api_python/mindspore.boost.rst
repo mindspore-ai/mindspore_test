@@ -422,8 +422,8 @@ Boost能够自动加速网络，如减少BN/梯度冻结/累加梯度等。
 
     其中：
 
-    - pca_mat (array): PCA矩阵，维度 :math:`(k*n)`，k是 `n_components` 的大小，n是权重的大小。
-    - bk (array): 维度 :math:`(k*k)`，bk是拟牛顿法中的对称正定矩阵。
+    - pca_mat (array)：PCA矩阵，维度 :math:`(k*n)`，k是 `n_components` 的大小，n是权重的大小。
+    - bk (array)：维度 :math:`(k*k)`，bk是拟牛顿法中的对称正定矩阵。
 
     我们需要找到满足以下条件的m：
 
