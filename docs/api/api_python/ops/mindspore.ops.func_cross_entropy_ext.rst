@@ -52,7 +52,7 @@
         这是一个实验性API，后续可能修改或删除。
 
     .. note::
-        动态shape，动态rank和可变常量输入不支持在 `严格图模式(jit_syntax_level=mindspore.STRICT)
+        动态shape、动态rank和可变常量输入不支持在 `严格图模式(jit_syntax_level=mindspore.STRICT)
         <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 下执行。
 
     参数：
