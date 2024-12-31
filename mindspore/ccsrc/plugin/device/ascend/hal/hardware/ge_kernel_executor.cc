@@ -71,6 +71,7 @@
 #include "utils/anf_utils.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
+#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -1236,14 +1237,15 @@ void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
   MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
                 << ", last_triggered_step:" << last_triggered_step;
   if (cur_step >= (last_triggered_step + save_steps) && kg != nullptr) {
+    AscendDeviceResManager *ascend_res_manager = dynamic_cast<AscendDeviceResManager *>(res_manager_);
     if (SkipOrResetCopyAction()) {
       MS_LOG(INFO) << "Enable async d2h copy";
-      SavePrevStepWeight(kg->GetRootWeights(), AscendStreamMng::GetInstance().GetCopyStream());
+      SavePrevStepWeight(kg->GetRootWeights(), ascend_res_manager->GetCopyDataStream());
     }
     if (common::AnfAlgo::HasNodeAttr(kFromRefGraph, kernel) &&
         common::AnfAlgo::GetNodeAttr<bool>(kernel, kFromRefGraph) && SkipOrResetSyncAction()) {
       MS_LOG(INFO) << "Ref op sync once action";
-      AscendStreamMng::GetInstance().SyncStream(AscendStreamMng::GetInstance().GetCopyStream());
+      AscendStreamMng::GetInstance().SyncStream(ascend_res_manager->GetCopyDataStream());
     }
   }
 }
