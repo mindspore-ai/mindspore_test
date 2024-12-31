@@ -228,7 +228,7 @@ enum MsCtxParam : unsigned {
 class MS_CORE_API MsContext {
  public:
   MsContext(const std::string &policy, const std::string &target);
-  ~MsContext() = default;
+  ~MsContext();
   MsContext(const MsContext &) = delete;
   MsContext &operator=(const MsContext &) = delete;
   using DeviceSeter = void (*)(const std::string &device_target);
