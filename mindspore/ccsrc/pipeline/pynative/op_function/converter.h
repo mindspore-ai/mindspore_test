@@ -58,7 +58,7 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_not_in_yaml_str_map =
 
 // information of single parameter
 struct FunctionParameter {
-  explicit FunctionParameter(const std::string &fmt);
+  explicit FunctionParameter(const std::string &fmt, bool is_kw_only);
   bool Check(const py::object &obj) const;
   void SetDefaultObj(const std::string &str);
   const py::object &GetDefaultValue() { return default_obj_; }
@@ -68,6 +68,7 @@ struct FunctionParameter {
   py::object default_obj_;
   bool optional_{false};
   bool allow_none_{false};
+  bool kw_only_{false};
   std::string name_;
   bool is_any_{false};
   bool allow_vararg_{false};

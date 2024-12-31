@@ -542,6 +542,9 @@ bool FunctionSignature::Parse(const py::list &args, const py::dict &kwargs, py::
     py::object obj;
     if (arg_pos < nargs) {
       obj = (args)[arg_pos++];
+      if (param.kw_only_) {
+        return false;
+      }
     } else if (kwargs) {
       is_kwd = true;
       py::str key_object(param.name_);
@@ -550,7 +553,7 @@ bool FunctionSignature::Parse(const py::list &args, const py::dict &kwargs, py::
         nkwargs--;
       }
     }
-    bool check_arg_as_intlist = !is_kwd && (arg_pos == kIndex1) && allow_int_as_list_;
+    bool check_arg_as_intlist = !is_kwd && (arg_pos == kIndex1) && param.allow_vararg_;
     if (!obj) {
       if (!param.optional_) {
         return false;
@@ -579,7 +582,7 @@ FunctionSignature::FunctionSignature(const std::string &fmt, int index)
 
   auto last_offset = open_paren + 1;
   bool done = false;
-  bool has_kwonlyargs = false;
+  bool is_kwonlyargs = false;
   while (!done) {
     auto offset = fmt.find(", ", last_offset);
     auto next_offset = offset + 2;
@@ -599,13 +602,13 @@ FunctionSignature::FunctionSignature(const std::string &fmt, int index)
 
     auto param_str = fmt.substr(last_offset, offset - last_offset);
     if (param_str.compare("*") != 0) {
-      if (!has_kwonlyargs) {
+      if (!is_kwonlyargs) {
         max_args_++;
       }
-      params_.emplace_back(param_str);
+      params_.emplace_back(param_str, is_kwonlyargs);
       allow_int_as_list_ |= params_.back().allow_vararg_;
     } else {
-      has_kwonlyargs = true;
+      is_kwonlyargs = true;
     }
     last_offset = next_offset;
   }
@@ -622,7 +625,8 @@ ops::OP_DTYPE GetOpDtype(const std::string &type_str) {
   return it->second;
 }
 
-FunctionParameter::FunctionParameter(const std::string &fmt) {
+FunctionParameter::FunctionParameter(const std::string &fmt, bool is_kw_only) {
+  kw_only_ = is_kw_only;
   auto space = fmt.find(' ');
   if (space == std::string::npos) {
     MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << fmt;
