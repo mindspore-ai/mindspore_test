@@ -314,6 +314,9 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Disable custom actor in scheduler.
   bool is_enable_custom_actor{false};
+
+  bool is_bind_core_{false};
+  bool is_shut_spin_{false};
 };
 }  // namespace runtime
 }  // namespace mindspore

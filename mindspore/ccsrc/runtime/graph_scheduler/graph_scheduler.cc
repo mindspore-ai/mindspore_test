@@ -37,6 +37,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 #include "runtime/runtime_conf/thread_bind_core.h"
+#include "runtime/pipeline/pipeline.h"
 #include "include/common/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
@@ -686,11 +687,6 @@ void GraphScheduler::Initialize() {
   }
   init_ = true;
 
-  auto &bind_core_manager = ThreadBindCore::GetInstance();
-  if (bind_core_manager.is_enable_thread_bind_core_) {
-    numa_cpus_ = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kRUNTIME);
-  }
-
   BindNumaNode();
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kGraphParameterStore,
                                       &GraphScheduler::LinkDataArrowForGraphParameterStore);
@@ -717,6 +713,20 @@ void GraphScheduler::Initialize() {
   auto actor_manager = ActorMgr::GetActorMgrRef();
   MS_EXCEPTION_IF_NULL(actor_manager);
   size_t actor_queue_size = 81920;
+
+  // Thread bind core for Runtime module
+  auto &bind_core_manager = ThreadBindCore::GetInstance();
+  if (bind_core_manager.is_enable_thread_bind_core_) {
+    if (actor_thread_num > 5) {
+      MS_LOG(WARNING)
+        << "Enabling thread bind core with a dispatch_threads_num value greater than 5 may result in performance "
+           "degradation of the Runtime module. Will not enable thread bind core feature to Runtime module.";
+    } else {
+      numa_cpus_ = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kRUNTIME);
+      is_bind_core_ = true;
+    }
+  }
+
   auto ret =
     actor_manager->Initialize(true, actor_thread_num, actor_and_kernel_thread_num, actor_queue_size, numa_cpus_);
   if (ret != MINDRT_OK) {
@@ -1176,6 +1186,11 @@ void RefreshGraphParameterStore(ActorSet *const actor_set, const VectorRef &args
 
 void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vector<TensorPtr>> &input_tensors,
                          const VectorRef &args, GraphExecutionStrategy strategy) {
+  // If spin is turned on in the configuration, it will be turned off when entering RunGraph.
+  if (runtime::Pipeline::Get().frontend_stage()->Spin() && !is_shut_spin_ && is_bind_core_) {
+    runtime::Pipeline::Get().SetSpin(false);
+    is_shut_spin_ = true;
+  }
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
@@ -1269,6 +1284,11 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
 #if defined(__linux__) && defined(WITH_BACKEND)
   DoDisasterRecovery(actor_set->name_);
 #endif
+  // If spin is turned on in the configuration, it will be turned on when exiting RunGraph.
+  if (is_shut_spin_ && is_bind_core_) {
+    runtime::Pipeline::Get().SetSpin(true);
+    is_shut_spin_ = false;
+  }
 }
 
 void GraphScheduler::ChildAfterFork() {

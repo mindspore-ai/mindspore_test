@@ -384,7 +384,7 @@ def _get_cpu_affinity_policy(affinity_cpu_list=None):
             try:
                 device_to_cpu_map = _auto_generate_policy(available_devices, available_cpus, affinity_flag,
                                                           numa_to_cpu_map, device_to_numa_map)
-            except RuntimeError as e:
+            except (RuntimeError, ZeroDivisionError) as e:
                 logger.warning(f"Failed to auto generate bind core policy, error: {e}. "
                                "Will not enable bind core feature.")
                 return {}, False
@@ -397,5 +397,5 @@ def _get_cpu_affinity_policy(affinity_cpu_list=None):
         device_to_cpu_map = _customize_generate_policy(affinity_cpu_list, available_cpus)
         module_bind_core_policy = _assign_cpu_to_module(device_to_cpu_map)
         bind_policy_flag = True
-    logger.info(f"Module bind core policy generated: {module_bind_core_policy}.")
+    logger.warning(f"Module bind core policy generated: {module_bind_core_policy}.")
     return module_bind_core_policy, bind_policy_flag
