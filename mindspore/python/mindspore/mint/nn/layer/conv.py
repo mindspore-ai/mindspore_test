@@ -641,7 +641,7 @@ class ConvTranspose2d(_ConvTranspose):
     Supported Platforms:
         ``Ascend``
 
-    Examples::
+    Examples:
         >>> import mindspore as ms
         >>> from mindspore import mint
         >>> # With square kernels and equal stride

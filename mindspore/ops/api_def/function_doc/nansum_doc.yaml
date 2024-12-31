@@ -1,6 +1,6 @@
 nansum:
   description: |
-    nansum(input, dim=None, keepdim=None, *, dtype=None) -> Tensor
+    nansum(input, dim=None, keepdim=False, *, dtype=None) -> Tensor
 
     Computes sum of `input` over a given dimension, treating NaNs as zero.
 

@@ -1,7 +1,7 @@
 mindspore.mint.isfinite
 =======================
 
-.. py:function:: mindspore.mint.isfinite(x)
+.. py:function:: mindspore.mint.isfinite(input)
 
     判断输入数据每个位置上的元素是否是有限数。如果某位置的元素不是 ``NaN`` ， ``-INF`` ， ``INF`` ，则该位置的元素被认为是有限数。
 
