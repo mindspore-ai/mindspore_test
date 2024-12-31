@@ -42,6 +42,7 @@ constexpr size_t validShardElementSizeOfIndex = 1;
 Status IndexInfo::GetAttrs() { return SUCCESS; }
 
 // two index must have the same size and equals to validSizeOfIndex
+// The value of indices must be within a valid range. eg:[0, shape_of_input)
 Status IndexInfo::CheckIndex() {
   auto index_shape = inputs_shape_new_.at(kInputIndex);
   MS_EXCEPTION_IF_NULL(index_shape);
