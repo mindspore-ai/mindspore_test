@@ -29,7 +29,7 @@ from common.gen_utils import save_file
 from common.op_proto import OpProto
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
-from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, is_op_multi_output
+from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, is_op_multi_output, get_input_args_type_str
 
 from .op_template_parser import OpTemplateParser
 
@@ -60,6 +60,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
             'op_run_info->requires_grad);\n'
         )
         self.convert_template = Template("auto $arg_name = converter.${convert_func}(args, $arg_index);\n")
+        self.input_args_template = Template(" const ${arg_type}& ${arg_name},")
         self.PYBOOST_FUNCTION_TEMPLATE = template.PYBOOST_FUNCTION_TEMPLATE
         self.PYBOOST_COMM_FUNCTION_TEMPLATE = template.PYBOOST_COMM_FUNCTION_TEMPLATE
         self.REGISTER_DEFINE_TEMPLATE = template.REGISTER_DEFINE_TEMPLATE
@@ -102,6 +103,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
             grad_args_str = self._get_grad_args_str(op_proto)
             cast_args_str = self._get_cast_to_value_str(op_proto)
             view_arg_str = self._get_first_str(op_proto.op_view, grad_args_str)
+            op_input_args_str = self._get_input_args_str(op_proto)
             view_arg_str = ", " + view_arg_str if view_arg_str else ''
             multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
             # communication operators have different func template
@@ -111,6 +113,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
                                                      op_def_name=op_def_name_str,
                                                      type_num=type_num,
                                                      same_type=same_type,
+                                                     input_args=op_input_args_str,
                                                      parser_body=parser_body_str,
                                                      op_name=op_proto.op_class.name,
                                                      class_name=op_proto.op_class.name,
@@ -194,6 +197,28 @@ class PyboostFunctionsGenerator(BaseGenerator):
             parser_func_str += self.convert_template.replace(arg_name=op_arg.arg_name, convert_func=convert_type_str,
                                                              arg_index=pyboost_utils.get_index(index))
         return parser_func_str
+
+
+    def _get_input_args_str(self, op_proto: OpProto) -> str:
+        """
+        Generates the input arguments list for the pyboost operator.
+
+        Args:
+            op_proto (OpProto): The operator prototype containing the argument information.
+
+        Returns:
+            str: The generated input arguments list as a string.
+        """
+        parser_func_str = ''
+        for _, op_arg in enumerate(op_proto.op_args):
+            is_optional = is_optional_param(op_arg)
+            if op_arg.is_type_id:
+                arg_type_str = get_input_args_type_str('type', is_optional)
+            else:
+                arg_type_str = get_input_args_type_str(op_arg.arg_dtype, is_optional)
+            parser_func_str += self.input_args_template.replace(arg_name=op_arg.arg_name, arg_type=arg_type_str)
+        return parser_func_str[:-1]
+
 
     def _get_convert_stub_str(self, op_proto: OpProto):
         """

@@ -18,9 +18,11 @@
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "pynative/op_function/converter.h"
 #include "frontend/ir/arg_handler.h"
+#include "pipeline/jit/trace/trace_recorder.h"
 #include "pynative/op_function/auto_generate/pyboost_functions.h"
 #include "pynative/op_function/customize/direct_ops.h"
 ${ops_inc}
+
 
 namespace mindspore::pynative {
 ${mint_func_classes_def}

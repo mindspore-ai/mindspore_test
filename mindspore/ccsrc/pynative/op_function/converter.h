@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include "pynative/base.h"
 #include "pynative/pynative_execute.h"
+#include "include/common/utils/tensor_py.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/primfunc_utils.h"
 #include "ops/op_def.h"
@@ -29,6 +30,9 @@
 
 namespace mindspore {
 namespace pynative {
+using ConvertPair = std::pair<ops::OP_DTYPE, ops::OP_DTYPE>;
+struct ParserArgs;
+
 static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"int", ops::OP_DTYPE::DT_INT},
   {"float", ops::OP_DTYPE::DT_FLOAT},
@@ -90,7 +94,8 @@ class ParserDefaultObjects {
 // information of single parameter
 struct FunctionParameter {
   explicit FunctionParameter(const std::string &fmt, bool is_kw_only);
-  bool Check(const py::object &obj) const;
+  bool Check(const py::object &obj, ConvertPair &convert_type, int &error_idx) const;
+  void SetDefaultObj(const std::string &str);
   const py::object &GetDefaultValue() { return ParserDefaultObjects::GetInstance().Get(default_str_); }
 
   ops::OP_DTYPE type_{ops::OP_DTYPE::DT_END};
@@ -106,41 +111,102 @@ struct FunctionParameter {
 
 // single overload
 struct PYNATIVE_EXPORT FunctionSignature {
-  explicit FunctionSignature(const std::string &fmt, int index);
-  bool CheckParamValid(const py::object &obj, const FunctionParameter &param);
-  bool Parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
+  explicit FunctionSignature(const std::string &fmt, int index, const std::string &name);
+  bool CheckParamValid(const py::object &obj, const FunctionParameter &param, bool raise_error,
+                       std::string *out_error_msg, ConvertPair &convert_type, int &error_idx);
+  bool Parse(const py::list &args, const py::dict &kwargs, ParserArgs &parser_args, bool raise_error = false,
+             std::string *out_error_msg = nullptr);
+  bool RaiseParseKeywordArgsError(size_t nkwargs, bool raise_error, std::string *out_error_msg, size_t nargs,
+                                  const py::dict &kwargs);
+  std::string ToString();
 
   std::string name_;
   std::vector<FunctionParameter> params_;
+  size_t max_pos_args_;
   size_t max_args_;
+  size_t min_args_;
   // e.g. allow input.reshape(1, 2, 3) parse as input.reshape((1, 2, 3))
   bool allow_int_as_list_;
   int index_;
+};
+using FunctionSignaturePtr = std::shared_ptr<FunctionSignature>;
+
+struct PYNATIVE_EXPORT ParserArgs {
+ public:
+  explicit ParserArgs(const FunctionSignaturePtr &signature) : signature_(signature) {
+    arg_list_.resize(signature->params_.size());
+    src_types_.resize(signature->params_.size());
+    dst_types_.resize(signature->params_.size());
+  }
+  ValuePtr ConvertByParseDtype(const py::object &input, const ops::OP_DTYPE &src, const ops::OP_DTYPE &dst);
+  void SetArg(const py::object &arg, const ConvertPair &convert_type, size_t index);
+  void ClearArgs();
+  const int &GetOvertLoadIndex() { return signature_->index_; }
+  void PrintConvertError(size_t index);
+
+  template <typename T>
+  std::shared_ptr<T> Convert(size_t index) {
+    if (index >= arg_list_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid index" << index << "for argument convert.";
+    }
+    auto convert = ConvertByParseDtype(arg_list_[index], src_types_[index], dst_types_[index]);
+    if (convert != nullptr && convert->isa<T>()) {
+      return convert->cast<std::shared_ptr<T>>();
+    }
+    PrintConvertError(index);
+    return nullptr;
+  }
+
+  template <typename T>
+  std::optional<std::shared_ptr<T>> ConvertOptional(size_t index) {
+    if (index >= arg_list_.size()) {
+      MS_LOG(EXCEPTION) << "Invalid index" << index << "for argument convert.";
+    }
+    const py::object &obj = arg_list_[index];
+    if (py::isinstance<py::none>(obj)) {
+      return std::nullopt;
+    }
+    return std::make_optional(Convert<T>(index));
+  }
+
+  FunctionSignaturePtr signature_;
+  std::vector<py::object> arg_list_;
+  // {src_type , dst_type} for convert
+  std::vector<ops::OP_DTYPE> src_types_;
+  std::vector<ops::OP_DTYPE> dst_types_;
+  int64_t input_index_ = -1;
 };
 
 // parser util
 struct PYNATIVE_EXPORT PythonArgParser {
   explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
-  inline const FunctionSignature &Parse(const py::list &args, const py::dict &kwargs, py::list *python_args,
-                                        const bool &is_method);
-  std::string ParseError(const py::list &args, const py::dict &kwargs, const bool &is_method);
+  inline const ParserArgs Parse(const py::list &args, const py::dict &kwargs, const bool &is_method);
+  const std::vector<std::string> GetParseTypeListString(const py::list &args, const py::dict &kwargs);
+  std::string PrintParseError(const py::list &args, const py::dict &kwargs, const bool &is_method);
 
  private:
-  std::vector<FunctionSignature> signatures_;
+  std::vector<FunctionSignaturePtr> signatures_;
   std::string function_name_;
   size_t max_args_;
 };
 
-inline const FunctionSignature &PythonArgParser::Parse(const py::list &args, const py::dict &kwargs,
-                                                       py::list *python_args, const bool &is_method) {
+inline const ParserArgs PythonArgParser::Parse(const py::list &args, const py::dict &kwargs, const bool &is_method) {
+  if (signatures_.size() == 1) {
+    ParserArgs parser_args(signatures_[0]);
+    signatures_[0]->Parse(args, kwargs, parser_args, true);
+    return parser_args;
+  }
+
   for (auto &signature : signatures_) {
-    python_args->attr("clear")();
-    if (signature.Parse(args, kwargs, python_args)) {
-      return signature;
+    ParserArgs parser_args(signature);
+    if (signature->Parse(args, kwargs, parser_args, false)) {
+      return parser_args;
     }
   }
-  MS_EXCEPTION(TypeError) << ParseError(args, kwargs, is_method);
+  MS_EXCEPTION(TypeError) << PrintParseError(args, kwargs, is_method);
 }
+
+PYNATIVE_EXPORT ValuePtr UnpackTensor(const py::object &input, const std::string &func_name);
 
 class PYNATIVE_EXPORT Converter {
  public:

@@ -21,6 +21,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <vector>
 #include <unordered_map>
 
 #include "pybind11/pybind11.h"
@@ -32,7 +33,8 @@
 namespace mindspore {
 namespace trace {
 FRONTEND_EXPORT void Capture(const py::args &args, py::object *res);
-FRONTEND_EXPORT void Capture(const py::list &args, py::object *res, std::string class_name);
+FRONTEND_EXPORT void Capture(const py::list &args, const std::string &class_name, py::object *res);
+FRONTEND_EXPORT void Capture(const std::vector<py::object> &args_vec, const std::string &class_name, py::object *res);
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
 bool IsTracing();
 class TraceRecorder {

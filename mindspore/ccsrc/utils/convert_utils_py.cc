@@ -923,7 +923,10 @@ py::object MakeCOOTensor(const VectorRef &value_list) {
   return ret[0];
 }
 
-bool IsStubTensor(const py::handle &obj) { return py::hasattr(obj, stub::PY_ATTR_STUB); }
+bool IsStubTensor(const py::handle &obj) {
+  static PyObject *attr_stub = PyUnicode_FromString(stub::PY_ATTR_STUB);
+  return PyObject_HasAttr(obj.ptr(), attr_stub);
+}
 
 tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
   auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);

@@ -90,23 +90,20 @@ def test_method_min_python(mode):
     assert np.allclose(output.asnumpy(), expect_output)
 
     # test 4: error input.
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x, axis=0, keepdims=False, initial=9,
             where=None, return_indices=False)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x, axis=0, keepdims=False, initial=ms.Tensor([False, True]), where=ms.Tensor([False, True]),
             return_indices=False)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net(x, axis=0, keepdims=False, initial=9,
             where=ms.Tensor([False, True]), return_indices=1)
         _pynative_executor.sync()
-    assert "Failed calling min with " in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend'],

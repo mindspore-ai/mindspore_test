@@ -50,6 +50,8 @@ std::map<size_t, std::pair<ValuePtr, bool>> &GetFunctionalConvertCache();
 std::string BuildArgsTypeString(const TypePtr &arg_abs);
 FRONTEND_EXPORT std::string BuildFunctionalErrorMsg(const std::string &function_name,
                                                     const std::vector<std::string> &arg_info_list, bool is_method);
+FRONTEND_EXPORT std::stringstream BuildApiInputInfo(const std::string &function_name,
+                                                    const std::vector<std::string> &arg_info_list);
 AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, const AnfNodePtrList &inputs_list,
                                         const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode,
                                         const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,

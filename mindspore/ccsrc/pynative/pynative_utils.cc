@@ -1312,7 +1312,7 @@ ValuePtrList DataConvert::TensorListToValueList(const tensor::BaseTensorPtrList 
   return output_values;
 }
 
-FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &args) {
+FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim) {
   const auto &pynative_executor = Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();
   const auto &op_run_info = std::make_shared<FrontendOpRunInfo>();

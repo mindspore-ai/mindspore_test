@@ -385,14 +385,19 @@ std::string BuildArgsTypeString(const TypePtr &arg_type) {
   return BuildOtherTypeString(arg_type);
 }
 
-std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list,
-                                    bool is_method) {
+std::stringstream BuildApiInputInfo(const std::string &function_name, const std::vector<std::string> &arg_info_list) {
+  std::stringstream ss;
   std::string result = std::accumulate(
     arg_info_list.begin(), arg_info_list.end(), std::string(),
     [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
-  std::stringstream ss;
   ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
   ss << "The valid calling should be:\n";
+  return ss;
+}
+
+std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list,
+                                    bool is_method) {
+  std::stringstream ss = BuildApiInputInfo(function_name, arg_info_list);
   const auto &signature_map =
     is_method ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
   auto it = signature_map.find(function_name);

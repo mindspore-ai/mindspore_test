@@ -79,8 +79,11 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.pyboost_return_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
-            'return ToPython(TensorPyboostMethodRegister::'
-            'GetOp(tensor::TensorPyboostMethod::k${class_name}Reg)(arg_list));\n'
+            'auto res = ToPython(mindspore::pynative::'
+            '${pyboost_function}(mindspore::prim::kPrim${class_name}, parse_args.src_types_, ${convert_args}));\n'
+            'parse_args.arg_list_.insert(parse_args.arg_list_.begin() + ${self_index}, self);\n'
+            'trace::Capture(parse_args.arg_list_, "${class_name}", &res);\n'
+            'return res;\n'
         )
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
@@ -252,7 +255,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             )
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
-            self_index = self._get_input_tensor_index(func_proto)
             ut_body = self.TENSOR_FUNC_UT_BODY.replace(
                 py_method=func_proto.py_method)
             tensor_func_single_call_body = self.TENSOR_FUNC_CALL_BODY.replace(cpp_func_name=cpp_func_name,
@@ -260,7 +262,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                               device_dispatcher=device_dispatcher_str,
                                                                               signatures=signature_str,
                                                                               max_args=max_size,
-                                                                              self_index=self_index,
                                                                               ut_body=ut_body)
             func_call_body_list.append(tensor_func_single_call_body)
 
@@ -297,19 +298,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             ut_dispatch_cases=ut_dispatch_cases)
 
         max_size = 0
-        self_index = 0
         for tensor_proto in func_protos:
             op_proto = tensor_proto.op_proto
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
-            self_index = self._get_input_tensor_index(tensor_proto)
         cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(cpp_func_name=cpp_func_name,
                                                                              func_name=func_api_name,
                                                                              signatures=signatures_str,
                                                                              dispatch_cases=dispatch_cases,
                                                                              max_args=max_size,
-                                                                             self_index=self_index,
                                                                              ut_overload_body=ut_overload_body)
         return overload_func_call_str
 
@@ -337,29 +335,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
     def _generate_single_signature_str(self, op_proto: OpProto, kw_only_args, varargs) -> str:
         op_parser = OpTemplateParser(op_proto)
         return op_parser.generate_signature_str(kw_only_args, varargs, is_tensor_api=True)
-
-    def _get_input_tensor_index(self, func_proto):
-        """
-        Get index of input.
-
-        Args:
-            func_proto (TensorFuncProto): Function prototype to generate dispatch strings for.
-
-        Returns:
-            int: Index of input.
-        """
-        op_name = func_proto.op_proto.op_class.name
-        op_args = func_proto.op_proto.op_args
-        if op_name in K.INPUT_NAME_MAP:
-            self_index = [i for i in range(
-                len(op_args)) if op_args[i].arg_name == K.INPUT_NAME_MAP[op_name]]
-        else:
-            self_index = [i for i in range(
-                len(op_args)) if op_args[i].arg_name in K.INPUT_ARGS_NAME]
-        if len(self_index) != 1:
-            raise ValueError(
-                f'There must be only one field named \'input\'. But got {len(self_index)} in {op_name}')
-        return self_index
 
     def _get_dispatch_cases(self, func_protos):
         """
@@ -435,10 +410,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         func_proto_device = getattr(func_proto, device)
         if func_proto_device == 'pyboost':
-            arg_handler_processor_str = self._get_arg_handler_processor(
-                func_proto.func_name, func_proto.op_proto)
+            arg_handler_processor_str = self._get_arg_handler_processor(func_proto.func_name, func_proto.op_proto)
+            op_parser = OpTemplateParser(func_proto.op_proto)
+            op_pyboost_func_name = op_parser.get_pyboost_func_name() + "_OP"
+            convert_args_str = op_parser.get_convert_args_str(func_proto.op_proto, is_tensor_api=True)
+            self_index = op_parser.get_input_tensor_index(func_proto.op_proto)
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
-                                                        class_name=func_proto.op_proto.op_class.name)
+                                                        class_name=func_proto.op_proto.op_class.name,
+                                                        pyboost_function=op_pyboost_func_name,
+                                                        self_index=self_index,
+                                                        convert_args=convert_args_str)
 
         if func_proto_device == 'py_method':
             return self.callback_python_template.replace(py_method=func_proto.py_method)
