@@ -1485,6 +1485,8 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
   /// \return A point to the RefKey.
   ValuePtr ref_key_value() const;
 
+  void set_ref_key_value(const ValuePtr &ref_key_value) { ref_key_value_ = ref_key_value; }
+
   AbstractBasePtr Broaden() const override;
 
   virtual AbstractBasePtr Join(const std::shared_ptr<AbstractRefTensor> &other);
