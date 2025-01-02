@@ -105,6 +105,8 @@ static const size_t kInterval = 3;
 static constexpr size_t kAsyncLaunchThreadNum = 1;
 static constexpr size_t kMultiPipelineThreadNum = 3;
 
+static constexpr size_t kMaxBindCoreThreadNum = 5;
+
 bool GetNeedSyncStream(const GraphCompilerInfo &graph_compiler_info) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -717,7 +719,7 @@ void GraphScheduler::Initialize() {
   // Thread bind core for Runtime module
   auto &bind_core_manager = ThreadBindCore::GetInstance();
   if (bind_core_manager.is_enable_thread_bind_core_) {
-    if (actor_thread_num > 5) {
+    if (actor_thread_num > kMaxBindCoreThreadNum) {
       MS_LOG(WARNING)
         << "Enabling thread bind core with a dispatch_threads_num value greater than 5 may result in performance "
            "degradation of the Runtime module. Will not enable thread bind core feature to Runtime module.";
