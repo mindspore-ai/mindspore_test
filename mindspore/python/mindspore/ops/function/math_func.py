@@ -1915,7 +1915,7 @@ def polar(abs, angle):  # pylint: disable=redefined-outer-name
         >>> angle = Tensor(np.array([np.pi / 2, 5 * np.pi / 4]), mindspore.float32)
         >>> output = ops.polar(abs, angle)
         >>> print(output)
-        [ 6.12323400e-17+1.j         -1.41421356e+00-1.41421356j]
+        [ -4.3711388e-08+1.j         -1.4142137e+00-1.4142134j]
     """
     return polar_(abs, angle)
 
