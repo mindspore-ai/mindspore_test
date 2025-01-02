@@ -17,5 +17,3 @@ log_softmax_grad:
     dispatch:
         enable: True
         Ascend: LogSoftmaxGradAscend
-        CPU: None
-        GPU: None
