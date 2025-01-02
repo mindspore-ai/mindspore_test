@@ -23,7 +23,7 @@ mindspore.mint.linspace
         - **dtype** (:class:`mindspore.dtype`, 可选) - 期望输出Tensor的类型。默认值： ``None`` ，则输出类型为float32。
 
     返回：
-        Tensor，具有与 `start` 相同的dtype，shape为 :math:`(steps)` ，数据类型由 `dtype` 指定。
+        Tensor，具有与 `start` 相同的dtype，shape为 :math:`(steps,)` ，数据类型由 `dtype` 指定。
 
     异常：
         - **TypeError** - `start` 或 `end` 的数据类型不支持。
