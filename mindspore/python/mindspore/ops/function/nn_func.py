@@ -2678,7 +2678,7 @@ def interpolate_ext(input,
     r"""
     Samples the input Tensor to the given size or scale_factor by using one of the interpolate algorithms.
 
-    .. warnings::
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     .. note::

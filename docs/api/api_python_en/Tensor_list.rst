@@ -442,7 +442,7 @@
     :members:
 
 {% else %}
-{{ fullname | underline }}
+{{ fullname | escape | underline }}
 
 .. autofunction:: {{ fullname }}
 
