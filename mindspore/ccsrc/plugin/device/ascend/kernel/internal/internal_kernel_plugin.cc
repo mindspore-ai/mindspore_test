@@ -41,7 +41,6 @@
 
 namespace mindspore::kernel {
 namespace {
-static const char k310PKey[] = "Ascend310P";
 constexpr auto kPhaseNameDecode = "decode";
 constexpr auto kPhaseNameIncrement = "increment";
 constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
@@ -54,7 +53,7 @@ constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
 // unordered_map vector<vector<vector<size_t>>> represents:
 // list[op_name][0] for phase prefill, list[op_name][1] for phase increment;
 // list[op_name][][0] for input indices, list[op_name][][0] for output indices.
-static const std::unordered_map<std::string, std::vector<std::vector<std::vector<size_t>>>> kNzFormatOpsList = {
+static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_t>>>> kNzFormatOpsList = {
   {kMatMulOpName, {{{0, 1}, {}}, {{1}, {}}}},
   {kQuantLinearSparseName, {{{0}, {}}, {{}, {}}}},
   {kQuantBatchMatmulName, {{{0, 1}, {}}, {{1}, {}}}},
@@ -73,18 +72,6 @@ static const std::unordered_map<std::string, std::unordered_map<size_t, int64_t>
     {1, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {2, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {6, internal::TransDataParam::ATTENTION_INPUT_MASK}}}};
-
-bool IsAscend310PSoc() {
-  const char *soc_name_c = aclrtGetSocName();
-  if (soc_name_c == nullptr) {
-    return false;
-  }
-  std::string soc_name(soc_name_c);
-  if (soc_name.find(k310PKey) != std::string::npos) {
-    return true;
-  }
-  return false;
-}
 
 int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_node, const size_t input_idx) {
   MS_EXCEPTION_IF_NULL(cur_node);
@@ -160,6 +147,23 @@ void GetMsTypesList(const CNodePtr &kernel, std::vector<TypeId> *ms_in_dtypes, s
     (void)ms_out_dtypes->push_back(common::AnfAlgo::GetOutputInferDataType(kernel, i));
   }
   return;
+}
+
+void UpdateNzFormatOpsList(const AnfNodePtr &node) {
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmul->name() &&
+      common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, cnode)) {
+    auto dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(cnode, kAttrDynInputSizes);
+    if (!dyn_input_sizes.empty()) {
+      auto weight_num = static_cast<size_t>(dyn_input_sizes[0]);
+      std::vector<size_t> input_idx;
+      for (size_t i = weight_num; i < weight_num * 2; ++i) {
+        input_idx.emplace_back(i);
+      }
+      kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {{input_idx, {}}, {input_idx, {}}};
+    }
+  }
 }
 }  // namespace
 
@@ -254,12 +258,9 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   MS_EXCEPTION_IF_NULL(input_formats);
   MS_EXCEPTION_IF_NULL(output_formats);
 
-  bool is_310p = IsAscend310PSoc();
-  if (!is_310p) {
-    return;
-  }
-
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
+  UpdateNzFormatOpsList(node);
+
   auto phase = PhaseManager::GetInstance().phase();
   auto phase_idx = static_cast<size_t>(IsDecodePhase(phase));
   auto op_name = AnfUtils::GetCNodeName(node);
