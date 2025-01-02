@@ -84,8 +84,6 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
     {prim::kPrimInsertGradientOf, prim::kPrimHookBackward, prim::kPrimCellBackwardHook, prim::kPrimPrintShapeType});
   mutable_op_eliminate_ =
     MakeSubstitution(std::make_shared<MutableEliminater>(), "mutable_eliminate", prim::kPrimMutable);
-  stop_gradient_eliminate_ =
-    MakeSubstitution(std::make_shared<SpecialOpEliminater>(), "stop_gradient_eliminate", prim::kPrimStopGradient);
   ad_related_special_op_eliminate_ =
     MakeSubstitution(std::make_shared<SpecialOpEliminater>(), "ad_related_special_op_eliminate",
                      {prim::kPrimMirror, prim::kPrimVirtualDiv, prim::kPrimStopGradient});

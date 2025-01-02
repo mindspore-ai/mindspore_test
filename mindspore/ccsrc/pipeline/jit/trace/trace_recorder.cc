@@ -230,7 +230,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
                         << jit_fg->parameters().size()
                         << ". Please make sure all of the inputs were used in trace block.";
     }
-    executor->GradJit(res, args);
+    executor->GradJit(args);
     // Update forward graph with fprop graph.
     FuncGraphPtr grad_jit_fg = graph_executor->GetJitGradGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(grad_jit_fg);

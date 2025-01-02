@@ -19,6 +19,7 @@ from mindspore import context, jit
 from mindspore.ops.composite import GradOperation
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -30,7 +31,7 @@ def test_jit_grad_with_grad_tensor_in_tuple():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(x, y):
         return 2 * x[0] + y
 
@@ -57,7 +58,7 @@ def test_jit_grad_with_grad_tensor_in_tuple_2():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(m):
         return 2 * m[0][0] + m[1]
 
@@ -84,7 +85,7 @@ def test_jit_grad_with_grad_tensor_in_list():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(x, y):
         return 2 * x[0] + y
 
@@ -111,7 +112,7 @@ def test_jit_grad_with_grad_tensor_in_list_2():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(m):
         return 2 * m[0][0] + m[1]
 
@@ -138,7 +139,7 @@ def test_jit_grad_with_grad_tensor_in_dict():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(m):
         return 2 * m["x"] + m["y"]
 
@@ -165,7 +166,7 @@ def test_jit_grad_with_grad_tensor_in_dict_2():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(m):
         return 2 * m["x"][0] + m["y"]
 
@@ -192,7 +193,7 @@ def test_jit_grad_with_grad_tensor_in_sequence_with_vargs():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(*args):
         return 2 * args[0][0] + args[1]
 
@@ -219,7 +220,7 @@ def test_jit_grad_with_grad_tensor_in_sequence_with_vargs_2():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(*args):
         return 2 * args[0][0][0] + args[1]
 
@@ -246,7 +247,7 @@ def test_jit_grad_with_grad_tensor_in_sequence_with_kwargs():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(**kwargs):
         return 2 * kwargs["m"][0] + kwargs["n"]
 
@@ -273,7 +274,7 @@ def test_jit_grad_with_grad_tensor_in_sequence_with_kwargs_2():
     """
     cfg = {"compile_with_try": False}
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def inner_func(**kwargs):
         return 2 * kwargs["m"][0][0] + kwargs["n"]
 

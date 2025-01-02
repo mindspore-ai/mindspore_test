@@ -90,10 +90,10 @@ def test_addbmm_tensor(mode):
         output_forward2 = addbmm_forward_func_tensor(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     else:
-        output_forward1 = (jit(addbmm_forward_func_tensor, jit_config=JitConfig(
-            jit_level="O0")))(ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
-        output_forward2 = (jit(addbmm_forward_func_tensor, jit_config=JitConfig(
-            jit_level="O0")))(ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
+        output_forward1 = (jit(addbmm_forward_func_tensor, jit_level="O0"))(ms.Tensor(input1), ms.Tensor(batch1),
+                                                                            ms.Tensor(batch2))
+        output_forward2 = (jit(addbmm_forward_func_tensor, jit_level="O0"))(ms.Tensor(input2), ms.Tensor(batch3),
+                                                                            ms.Tensor(batch4), beta, alpha)
     np.testing.assert_allclose(output_forward1.asnumpy(
     ), expect_forward_output1.asnumpy(), 3e-3, 3e-3)
     np.testing.assert_allclose(output_forward2.asnumpy(

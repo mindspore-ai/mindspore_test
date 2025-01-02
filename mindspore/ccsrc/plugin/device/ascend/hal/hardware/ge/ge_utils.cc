@@ -464,7 +464,7 @@ void GetGeSessionOptions(transform::SessionOptions *options) {
   (*options)["ge.graphRunMode"] = "1";
 }
 
-void GetGeOptions(std::map<std::string, std::string> *ge_options) {
+void GetGeGlobalOptions(std::map<std::string, std::string> *ge_options) {
   MS_EXCEPTION_IF_NULL(ge_options);
   auto ms_context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context_ptr);

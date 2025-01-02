@@ -116,9 +116,7 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
   // If enable compile cache, get the compile cache resource.
   void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);
   void InitCompileCacheResource(const ResourcePtr &resource, const std::string &phase);
-#ifdef WITH_BACKEND
-  void GeFirstInitParams();
-#endif
+  void set_process_id();
 
   std::map<std::string, ExecutorInfoPtr> info_;
   std::string phase_;
@@ -130,7 +128,6 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
  private:
   void ClearCurConvertInput();
   void ReleaseResourceOnException(const py::object &phase);
-  bool InitParams(const py::dict &init_params, const std::string &phase) const;
 
   std::string queue_name_;
   py::list compile_cache_dep_files_;
@@ -138,6 +135,7 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
   bool executor_running_{false};
   bool compile_cache_consistent_{true};
   int32_t max_call_depth_{-1};
+  pid_t process_id_{0};
 };
 using ExecutorPyPtr = std::shared_ptr<ExecutorPy>;
 
@@ -190,7 +188,6 @@ class GraphExecutorPy : public ExecutorPy {
   void ParentBeforeFork();
   void ParentAfterFork();
   void ChildAfterFork();
-  void set_process_id();
 
   void CleanCompileRes(const ResourcePtr &resource) override;
 
@@ -215,9 +212,20 @@ class GraphExecutorPy : public ExecutorPy {
   static std::mutex instance_lock_;
   std::map<std::string, py::dict> stra_dict_;
   std::map<std::string, size_t> phase_to_num_op_info_;
-  pid_t process_id_;
 };
 using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
+
+class JitCompilingScope {
+ public:
+  JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kJitCompiling); }
+  ~JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
+
+class JitRunningScope {
+ public:
+  JitRunningScope() { MsContext::GetInstance()->set_jit_status(kJitRunning); }
+  ~JitRunningScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
 
 std::string GetJitLevel();
 
@@ -282,6 +290,7 @@ void RecordIR(const size_t action_index, const size_t action_size, const std::st
 AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden = false);
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
 void CheckInterpretNodeLineInfos();
+void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
 }  // namespace pipeline
 }  // namespace mindspore
 

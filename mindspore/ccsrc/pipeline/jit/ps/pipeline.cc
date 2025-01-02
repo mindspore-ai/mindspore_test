@@ -456,18 +456,6 @@ void CheckAbstractConsistency(const AbstractBasePtrList &compile_abstracts, cons
   }
 }
 
-class JitCompilingScope {
- public:
-  JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kJitCompiling); }
-  ~JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
-};
-
-class JitRunningScope {
- public:
-  JitRunningScope() { MsContext::GetInstance()->set_jit_status(kJitRunning); }
-  ~JitRunningScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
-};
-
 inline pid_t GetCurrentPID() {
 #if defined(_WIN32) || defined(_WIN64)
   return GetCurrentProcessId();
@@ -476,30 +464,6 @@ inline pid_t GetCurrentPID() {
 #endif
 }
 }  // namespace
-
-py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs) {
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kGraphExecutorPy, runtime::ProfilerEvent::kOutputProcess,
-                                     "BaseRefToPyData");
-  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
-  if (!allow_fallback_runtime) {
-    return BaseRefToPyData(value, abs);
-  }
-  if (utils::isa<ValuePtr>(value)) {
-    // Do not use abs as input to BaseRefToPyData, since the res need to be a tensor to get user data.
-    auto res = BaseRefToPyData(value);
-    MS_LOG(DEBUG) << "res: " << py::str(res);
-    const auto user_data = GetUserDataFromAddress(res);
-    if (user_data != nullptr) {
-      return user_data->obj;
-    } else {
-      MS_LOG(DEBUG) << "user data is empty";
-    }
-  } else if (utils::isa<VectorRef>(value)) {
-    auto vec_ref = utils::cast<VectorRef>(value);
-    return GetVectorRefPyData(vec_ref, abs);
-  }
-  return BaseRefToPyData(value, abs);
-}
 
 void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments) {
   auto manager = resource->manager();
@@ -1350,7 +1314,6 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   return true;
 }
 
-namespace {
 void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs) {
   if (py::isinstance<Tensor>(arg)) {
     auto tensor = arg.cast<std::shared_ptr<Tensor>>();
@@ -1367,7 +1330,6 @@ void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs)
     MS_LOG(DEBUG) << "arg: " << py::str(arg) << " is not a Tensor, we only support arg of type Tensor now.";
   }
 }
-}  // namespace
 
 void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
                                   abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments) {
