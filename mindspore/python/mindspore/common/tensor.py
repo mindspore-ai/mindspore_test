@@ -3999,7 +3999,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                 the tensor will have the same dtype as `self`. Default ``None``.
             device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
                 `device = None`, the tensor will have the same device as `self` and if the device of `self` is not
-                defined, `mindspore.context.device_target` will be used. Default ``None``.
+                defined, the value set by `mindspore.set_device` will be used. Default ``None``.
 
         Returns:
             Tensor, the shape, dtype and device is defined above but with uninitialized data (May be a random value).
