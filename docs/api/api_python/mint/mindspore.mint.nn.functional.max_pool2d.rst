@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.max_pool2d
 ========================================
 
-.. py:function:: mindspore.mint.nn.functional.max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1, *, ceil_mode=False, return_indices=False)
+.. py:function:: mindspore.mint.nn.functional.max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)
 
     二维最大值池化。
 
@@ -22,8 +22,6 @@ mindspore.mint.nn.functional.max_pool2d
         - **stride** (Union[int, tuple[int], None]) - 池化操作的移动步长。可以是一个整数表示在高度和宽度方向的移动步长，或者包含两个整数的tuple，分别表示在高度和宽度方向的移动步长。默认值： ``None`` ，表示移动步长为 `kernel_size` 。
         - **padding** (Union[int, tuple[int]]) - 池化填充长度。可以是一个整数表示在高度和宽度方向的填充长度，或者包含两个整数的tuple，分别表示在高度和宽度方向的填充长度。默认为 ``0``。
         - **dilation** (Union[int, tuple[int]]) - 控制池化核内元素的间距。默认为 ``1``。
-
-    关键字参数：
         - **ceil_mode** (bool) - 是否是用ceil代替floor来计算输出的shape。默认为 ``False``。
         - **return_indices** (bool) - 是否输出最大值的索引。默认为 ``False``。
 
