@@ -1832,6 +1832,7 @@ def squeeze(input, dim):
         - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
           and there is no Tensor data copy process.
         - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
+        - In GE mode, only support remove dimensions of size 1 from the shape of input tensor.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -1926,7 +1927,8 @@ def sub(input, other, *, alpha=1):
 
 def swapaxes(input, axis0, axis1):
     '''
-    Alias for :func:`mindspore.mint.transpose` .
+    Alias for :func:`mindspore.mint.transpose` . The `input` corresponds to the `input` in the reference interface,
+    and the parameters `axis0` and `axis1` correspond to `dim0` and `dim1` in the reference interface respectively.
 
     For more details, see :func:`mindspore.mint.transpose` .
 

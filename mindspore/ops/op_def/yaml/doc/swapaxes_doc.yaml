@@ -1,6 +1,7 @@
     swapaxes:
     description: |
-        Alias for :func:`mindspore.mint.transpose` .
+        Alias for :func:`mindspore.mint.transpose` . The `input` corresponds to the `input` in the reference interface,
+        and the parameters `axis0` and `axis1` correspond to `dim0` and `dim1` in the reference interface respectively.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
