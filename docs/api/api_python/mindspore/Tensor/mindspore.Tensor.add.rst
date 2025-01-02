@@ -24,7 +24,7 @@ mindspore.Tensor.add
     异常：
         - **TypeError** - `other` 不是Tensor、number.Number或bool。
 
-    .. py:method:: mindspore.Tensor.add(other, alpha=1)
+    .. py:method:: mindspore.Tensor.add(other, *, alpha=1)
         :noindex:
 
     对 `other` 缩放后与 `self` 相加。

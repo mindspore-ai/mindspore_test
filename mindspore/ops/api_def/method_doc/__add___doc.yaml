@@ -2,9 +2,9 @@ __add__:
   description: |
     __add__(other) -> Tensor
     
-    Alias for :func:`Tensor.add`.
+    Alias for :func:`mindspore.Tensor.add`.
     
-    .. method:: Tensor.__add__(other, alpha=1) -> Tensor
+    .. method:: Tensor.__add__(other, *, alpha=1) -> Tensor
         :noindex:
     
-    Alias for :func:`Tensor.add`.
+    Alias for overload function of :func:`mindspore.Tensor.add`.
