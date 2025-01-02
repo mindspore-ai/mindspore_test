@@ -310,5 +310,5 @@ def test_train_32k_8p(batch_size=32, num_classes=32768):
             assert v[0][0] == dev_num
         elif re.search('MatMul-op', k) is not None:
             assert v == [[dev_num, 1], [1, 1]]
-        elif re.search('ReduceSum-op', k) is not None:
+        elif re.search('ReduceSum-op0', k) is not None:
             assert v == [[dev_num, 1]]

@@ -182,7 +182,12 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_LOG(INFO) << "Now entering step auto parallel";
   TOTAL_OPS = 0;
   AnfNodePtr ret = root->get_return();
-  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  std::vector<AnfNodePtr> all_nodes;
+  if (CheckShardingPropagation()) {
+    all_nodes = TopoSort(ret, SuccDeeperSimple);
+  } else {
+    all_nodes = DeepScopedGraphSearch(ret);
+  }
 
   // insert Virtual Dataset if not exist
   if (ParallelInit() != SUCCESS) {
@@ -192,7 +197,11 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     mindspore::pipeline::InsertVirtualDataset(root, all_nodes);
   }
   // redo deepscoped search again to connected the Virtual Dataset into the graph
-  all_nodes = DeepScopedGraphSearch(ret);
+  if (CheckShardingPropagation()) {
+    all_nodes = TopoSort(ret, SuccDeeperSimple);
+  } else {
+    all_nodes = DeepScopedGraphSearch(ret);
+  }
 
   if (strategy_search_mode == kRecursiveProgramming &&
       ((g_device_manager->DeviceNum() & (g_device_manager->DeviceNum() - 1)) != 0)) {

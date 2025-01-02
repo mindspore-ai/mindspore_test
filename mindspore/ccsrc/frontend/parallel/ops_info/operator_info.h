@@ -402,9 +402,16 @@ class OperatorInfo {
   bool IsConcat() const;
   bool IsStandAlone() const;
   bool IsTmpIdentity() const;
+  bool IsMultiInput() const;
+  bool AllInputsVisited() const;
+  void AddVisitedEdge(const std::shared_ptr<Edge> &e) { visited_edges_.push_back(e); }
+  void ClearVisitedEdges() { visited_edges_.clear(); }
+  std::shared_ptr<StrategyWithCost> GetStrategyByVisitedEdges();
 
   void set_swc_index(int64_t swc, int64_t depth);
   int64_t swc_index() const { return swc_index_; }
+  void set_topo_index(int64_t index) { topo_index_ = index; }
+  int64_t get_topo_index() { return topo_index_; }
   // Approximate the list of available strategies
   void ApproximateStrategies();
   // Make the list of available strategies exact and re-init the related edges incident to this operator
@@ -434,6 +441,7 @@ class OperatorInfo {
   bool is_alive() const { return is_alive_; }
   void SetNotAlive() { is_alive_ = false; }
   std::vector<bool> split_flag_list() const { return split_flag_list_; }
+  std::vector<std::shared_ptr<Edge>> &get_visited_edges() { return visited_edges_; }
   StrategyPtr strategy() const { return strategy_; }
   StrategyPtr out_strategy() const { return out_strategy_; }
   void set_out_strategy(const StrategyPtr &strategy) { out_strategy_ = strategy; }
@@ -541,7 +549,6 @@ class OperatorInfo {
   virtual Status InferMirrorOps();
   virtual Status InferTensorInfo();
   virtual Status InferTensorInfoNew();
-
   virtual void InferReplaceOps() {}
   virtual void UpdateOutputTensorInfoForInterleaved();
   virtual Status CheckOutputStrategy(const StrategyPtr &out_strategy);
@@ -670,8 +677,10 @@ class OperatorInfo {
   std::vector<size_t> outputs_type_lengths_;
   std::vector<std::shared_ptr<Edge>> prev_edges_;
   std::vector<std::shared_ptr<Edge>> succ_edges_;
+  std::vector<std::shared_ptr<Edge>> visited_edges_;
   StrategyPtr selected_strategy_;
   int64_t selected_strategy_depth_ = -1;
+  int64_t topo_index_ = -1;
   // Used in DP algorithm
   bool is_alive_;
   CostPtr selected_cost_;

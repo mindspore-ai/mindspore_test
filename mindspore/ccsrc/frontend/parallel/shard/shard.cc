@@ -34,6 +34,8 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "utils/ms_context.h"
+#include "ir/tensor.h"
+#include "ir/anf.h"
 
 namespace mindspore {
 namespace parallel {
@@ -80,7 +82,9 @@ static void GetInputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr
     if (parameter->abstract()->isa<abstract::AbstractMonad>()) {
       continue;
     }
-    input_nodes->push_back(parameter);
+    if (IsValueNode<mindspore::tensor::Tensor>(parameter) || parameter->isa<Parameter>()) {
+      input_nodes->push_back(parameter);
+    }
   }
 }
 

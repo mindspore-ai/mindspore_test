@@ -1363,6 +1363,11 @@ OperatorInfoPtr OperatorInstanceByName(const std::string &name, const PrimitiveA
   }
   std::string origin_name = op_info->name();
   op_info->set_name(origin_name + std::to_string(TOTAL_OPS));
+  if (origin_name.find("VirtualDataset") != std::string::npos) {
+    op_info->set_topo_index(TOTAL_OPS_MAX);
+  } else {
+    op_info->set_topo_index(TOTAL_OPS);
+  }
   MS_LOG(INFO) << "Successfully created operator " << origin_name;
   ++TOTAL_OPS;
   return op_info;
