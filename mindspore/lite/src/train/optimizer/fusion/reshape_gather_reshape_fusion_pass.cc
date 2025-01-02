@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include "securec/include/securec.h"
 #include "schema/inner/model_generated.h"
 #include "tools/common/meta_graph_utils.h"
 #include "src/train/optimizer/common/fusion_utils.h"
@@ -118,7 +119,8 @@ STATUS ReshapeGatherReshapeFusionPass::DoFusion(
   if (data.empty()) {
     gather_axis = 0;
   } else {
-    memcpy(&gather_axis, &data[0], data.size());
+    auto res = memcpy_s(&gather_axis, sizeof(gather_axis), &data[0], data.size());
+    MS_CHECK_TRUE_MSG(res == EOK, RET_ERROR, "memcpy_s failed");
   }
   if (gather_axis < 0) {
     gather_axis += gather_shape1.size();

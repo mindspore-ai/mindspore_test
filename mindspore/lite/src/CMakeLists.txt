@@ -498,7 +498,7 @@ if(SUPPORT_TRAIN)
   add_dependencies(lite_train_src_mid lite_src_train_common_mid fbs_src fbs_inner_src)
 
   add_library(mindspore-lite-train SHARED $<TARGET_OBJECTS:lite_train_src_mid>)
-  target_link_libraries(mindspore-lite-train lite_src_train_common_mid)
+  target_link_libraries(mindspore-lite-train lite_src_train_common_mid securec)
   set_target_properties(mindspore-lite-train PROPERTIES OUTPUT_NAME "mindspore-lite-train")
   set_target_properties(mindspore-lite-train PROPERTIES CLEAN_DIRECT_OUTPUT 1)
   if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
