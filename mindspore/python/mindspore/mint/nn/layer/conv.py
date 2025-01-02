@@ -358,7 +358,7 @@ class Conv3d(_Conv):
 
     For the detail of limitations of the parameters, please refer to :func:`mindspore.mint.nn.functional.conv3d`.
 
-    .. warnings::
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
