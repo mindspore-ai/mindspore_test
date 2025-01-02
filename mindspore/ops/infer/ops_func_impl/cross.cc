@@ -41,6 +41,11 @@ void CheckCrossDim(const std::string &prim_name, const ShapeVector &input_shape,
                                << -static_cast<int64_t>(input_shape.size()) << " and "
                                << static_cast<int64_t>(input_shape.size()) - 1 << " , but got " << dim_value << ".";
     }
+    auto dim_index = dim_value < 0 ? dim_value + shape_size : dim_value;
+    if (input_shape[dim_index] != dim_size_value) {
+      MS_EXCEPTION(ValueError) << "For '" << prim_name << "', dimension " << dim_value << " must be 3, but got "
+                               << input_shape[dim_index] << ".";
+    }
   }
 }
 }  // namespace
