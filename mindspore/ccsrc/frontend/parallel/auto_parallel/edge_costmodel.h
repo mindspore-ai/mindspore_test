@@ -39,7 +39,9 @@ using CostCacheKey = std::pair<std::pair<Arrangement, Map>, std::pair<Arrangemen
 using EdgePtr = std::shared_ptr<mindspore::parallel::Edge>;
 
 struct OpsPtrCompare {
-  bool operator()(const OperatorInfoPtr &a, const OperatorInfoPtr &b) const { return a->name().compare(b->name()) < 0; }
+  bool operator()(const OperatorInfoPtr &a, const OperatorInfoPtr &b) const {
+    return a->get_topo_index() < b->get_topo_index();
+  }
 };
 
 class Edge {
@@ -93,6 +95,9 @@ class Edge {
   StrategyPtr GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy);
   std::shared_ptr<StrategyWithCost> GetNextOpSwcByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra);
   std::shared_ptr<StrategyWithCost> GetPrevOpSwcByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra);
+  std::shared_ptr<StrategyWithCost> GetNextOpStrategyByCurMultiInput(
+    const StrategyPtr &cur_op_stra, std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> *waitting_list,
+    int64_t curr_depth, bool *exist_candidates);
   int64_t GetReshapeSWCIndexByNextOpStrategy(const StrategyPtr &next_op_stra);
   int64_t GetReshapeSWCIndexByPrevOpStrategy(const StrategyPtr &prev_op_stra);
   StrategyPtr GetPrevOpStrategyByReshapeSWCIndex(int64_t swc_index);

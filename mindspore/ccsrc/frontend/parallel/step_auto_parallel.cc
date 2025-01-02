@@ -134,6 +134,22 @@ bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_se
   return false;
 }
 
+void SetTagFuncGraphRhs(const std::vector<AnfNodePtr> &all_nodes) {
+  for (auto &node : all_nodes) {
+    if (node->isa<CNode>() && IsValueNode<FuncGraph>(node->cast<CNodePtr>()->input(0))) {
+      node->cast<CNodePtr>()->AddAttr(kAttrTopoSortRhsFirst, MakeValue(true));
+    }
+  }
+}
+
+void UnsetTagFuncGraphRhs(const std::vector<AnfNodePtr> &all_nodes) {
+  for (auto &node : all_nodes) {
+    if (node->isa<CNode>() && IsValueNode<FuncGraph>(node->cast<CNodePtr>()->input(0))) {
+      node->cast<CNodePtr>()->EraseAttr(kAttrTopoSortRhsFirst);
+    }
+  }
+}
+
 bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MSLogTime msTime;
   msTime.Start();
@@ -182,7 +198,14 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_LOG(INFO) << "Now entering step auto parallel";
   TOTAL_OPS = 0;
   AnfNodePtr ret = root->get_return();
-  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  std::vector<AnfNodePtr> all_nodes;
+  if (CheckShardingPropagation()) {
+    all_nodes = TopoSort(ret, SuccDeeperSimple);
+    SetTagFuncGraphRhs(all_nodes);
+    all_nodes = TopoSort(ret, SuccDeeperSimple);
+  } else {
+    all_nodes = DeepScopedGraphSearch(ret);
+  }
 
   // insert Virtual Dataset if not exist
   if (ParallelInit() != SUCCESS) {
@@ -192,7 +215,12 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     mindspore::pipeline::InsertVirtualDataset(root, all_nodes);
   }
   // redo deepscoped search again to connected the Virtual Dataset into the graph
-  all_nodes = DeepScopedGraphSearch(ret);
+  if (CheckShardingPropagation()) {
+    all_nodes = TopoSort(ret, SuccDeeperSimple);
+    UnsetTagFuncGraphRhs(all_nodes);
+  } else {
+    all_nodes = DeepScopedGraphSearch(ret);
+  }
 
   if (strategy_search_mode == kRecursiveProgramming &&
       ((g_device_manager->DeviceNum() & (g_device_manager->DeviceNum() - 1)) != 0)) {

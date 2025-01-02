@@ -53,7 +53,7 @@ class CostGraph {
   void RemoveOperator(const OperatorInfoPtr &op);
   bool IsOperatorInCostGraph(const OperatorInfoPtr &op);
   void StrategyPropagate(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &);
-  void BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra);
+  void BFS(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare>::const_iterator &configured_ops_it);
   void ProcessDiffStraParams() const;
   void ParamPropagation(const OperatorInfoPtr &curr_op, const std::shared_ptr<Edge> edge) const;
   // the edge is in the form: u --> v
@@ -225,6 +225,7 @@ class CostGraph {
 
   std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> configured_ops;
   std::map<OperatorInfoPtr, bool> visited;
+  std::map<OperatorInfoPtr, int64_t, OpsPtrCompare> waitting_list_;
   std::queue<std::pair<std::pair<OperatorInfoPtr, std::pair<StrategyPtr, int64_t>>, int64_t>> next_level;
   void BFSNextNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
   void BFSPrevNode(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
@@ -232,6 +233,11 @@ class CostGraph {
   void BFSNextNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
   void BFSPrevNodeIfPrevIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
   void BFSPrevNodeIfCurrIsReshape(const std::shared_ptr<Edge> &edge, int64_t curr_depth);
+  bool ExistPrevConfiguredOps(
+    const OperatorInfoPtr &cur_op,
+    const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare>::const_iterator &configured_ops_it);
+  bool CheckBFSNextNode(const std::shared_ptr<Edge> &edge, const OperatorInfoPtr &curr_op,
+                        const OperatorInfoPtr &next_op, int64_t curr_depth);
 
   bool CheckVisitedEdgeConsistency(const EdgePtr &edge) const;
   bool CheckConfiguredSuccEdgeConsistency(const EdgePtr &edge) const;
