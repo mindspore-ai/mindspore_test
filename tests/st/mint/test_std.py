@@ -71,10 +71,8 @@ def test_mint_std_tensor(mode):
         output = std_forward_tensor(x, dim=0, correction=1, keepdim=True)
         input_grad = std_backward_tensor(x, dim=0, correction=1, keepdim=True)
     elif mode == ms.GRAPH_MODE:
-        output = (jit(std_forward_tensor, jit_config=JitConfig(jit_level="O0")))(
-            x, dim=0, correction=1, keepdim=True)
-        input_grad = (jit(std_backward_tensor, jit_config=JitConfig(jit_level="O0")))(
-            x, dim=0, correction=1, keepdim=True)
+        output = (jit(std_forward_tensor, jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
+        input_grad = (jit(std_backward_tensor, jit_level="O0"))(x, dim=0, correction=1, keepdim=True)
     assert input_grad.asnumpy().dtype == np.float32
     assert np.allclose(output.asnumpy(), expect_output)
 

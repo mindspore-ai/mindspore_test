@@ -19,6 +19,7 @@ from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 import mindspore
 from mindspore import nn, ops, jit, Tensor, _no_grad, context, Parameter
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 
 @pytest.fixture(autouse=True)
@@ -46,7 +47,7 @@ class GradNetJit(nn.Cell):
         self.w = Parameter(Tensor([5.0], mindspore.float32), name='w')
         self.b = Parameter(Tensor([5.0], mindspore.float32), name='b')
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def construct(self, x):
         y = self.w * x + self.b
         with _no_grad():

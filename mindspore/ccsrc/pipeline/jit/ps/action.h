@@ -40,6 +40,7 @@ bool TypeInferenceAction(const ResourcePtr &resource);
 bool VmOptimizeAction(const ResourcePtr &resource);
 bool OrderEnforceAction(const ResourcePtr &resource);
 bool GetJitBpropGraph(const ResourcePtr &resource);
+bool EliminateSpecialOpNode(const ResourcePtr &resource);
 bool TaskEmitAction(const ResourcePtr &resource);
 bool ExecuteAction(const ResourcePtr &resource);
 bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &passes);

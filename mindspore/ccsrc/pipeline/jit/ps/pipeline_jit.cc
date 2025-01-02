@@ -131,6 +131,7 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     (void)jit_passes.emplace_back(kAutoMonadReorder, OrderEnforceAction);
     (void)jit_passes.emplace_back(kGetJitBpropGraph, GetJitBpropGraph);
     (void)jit_passes.emplace_back(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop);
+    (void)jit_passes.emplace_back(kEliminateSpecialOpNode, EliminateSpecialOpNode);
     (void)jit_passes.emplace_back(kValidate, ValidatePass);
   }
 
@@ -144,7 +145,7 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     return jit_passes;
   }
 
-#ifdef ENABLE_TEST
+#ifndef WITH_BACKEND
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->backend_policy() != "ge") {
@@ -154,7 +155,7 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
 
     // Execute the graph.
     (void)jit_passes.emplace_back(kExecute, ExecuteAction);
-#ifdef ENABLE_TEST
+#ifndef WITH_BACKEND
   }
 #endif
 
@@ -174,12 +175,6 @@ void DoOptimize(const ResourcePtr &resource, bool build_top_graph = true) {
   }
   Optimize(resource, jit_passes);
 }
-
-class JitRunningScope {
- public:
-  JitRunningScope() { MsContext::GetInstance()->set_jit_running(true); }
-  ~JitRunningScope() { MsContext::GetInstance()->set_jit_running(false); }
-};
 }  // namespace
 
 bool JitExecutorPy::SetSource(const py::object &source) {
@@ -205,7 +200,7 @@ bool JitExecutorPy::SetPhase(const py::object &phase) {
 
 bool JitExecutorPy::CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
                                  const py::object &phase) {
-  JitRunningScope jit_running_scope;
+  JitCompilingScope jit_compiling_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);
@@ -292,6 +287,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     if (iter != cur_convert_input_.end()) {
       (void)arguments.emplace_back(iter->second.first);
       (void)args_abs.emplace_back(iter->second.second);
+      SetHookForArgAbstract(args[i], iter->second.second);
       continue;
     }
     ValuePtr converted = nullptr;
@@ -303,12 +299,15 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     (void)arguments.emplace_back(converted);
     auto args_abstract_item = ArgsToAbstract(args[i], converted, enable_tuple_broaden_);
     (void)args_abs.emplace_back(args_abstract_item);
+    SetHookForArgAbstract(args[i], args_abstract_item);
   }
   for (const auto &item : kwargs) {
     auto iter = cur_convert_input_.find(item.first.ptr());
     if (iter != cur_convert_input_.end()) {
       (void)arguments.emplace_back(iter->second.first);
       (void)args_abs.emplace_back(iter->second.second);
+      auto keyword_arg_abs = iter->second.second->cast<abstract::AbstractKeywordArgPtr>();
+      SetHookForArgAbstract(py::cast<py::object>(item.second), keyword_arg_abs->get_arg());
       continue;
     }
     ValuePtr key = nullptr;
@@ -323,6 +322,7 @@ void JitExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, c
     auto keyword_arg_abs = std::make_shared<abstract::AbstractKeywordArg>(GetValue<std::string>(key), value_abs);
     (void)arguments.emplace_back(value);
     (void)args_abs.emplace_back(keyword_arg_abs);
+    SetHookForArgAbstract(py::cast<py::object>(item.second), value_abs);
   }
   AddManagerForFuncGraphArgs(resource, arguments);
   resource->set_arguments(arguments);
@@ -354,20 +354,13 @@ py::object JitExecutorPy::RunInner(const py::tuple &args, const py::object &phas
   if (enable_infer_boost) {
     PhaseManager::GetInstance().set_phase(phase);
   }
-#ifdef WITH_BACKEND
-  if (ms_context->backend_policy() == "ge") {
-    if (!IsEnableRefMode()) {
-      GeFirstInitParams();
-    }
-  }
-#endif
   auto ret_val = std::make_shared<py::object>();
   if (info_.count(phase) != 0 && info_[phase]->func_graph != nullptr) {
     if (IsGraphOutputValueNodeOrParameter(info_[phase]->func_graph->output(), args, ret_val)) {
       return *ret_val;
     }
   }
-#ifdef ENABLE_TEST
+#ifndef WITH_BACKEND
   if (ms_context->backend_policy() == "ge") {
     // Virtual output constructed for test cases.
     if (!args.empty()) {

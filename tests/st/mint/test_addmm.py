@@ -99,13 +99,13 @@ def test_addmm_tensor(mode):
         output_grad2, b1_grad2, b2_grad2 = addmm_backward_func_tensor(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     else:
-        output_forward = (jit(addmm_forward_func_tensor, jit_config=JitConfig(jit_level="O0")))(
+        output_forward = (jit(addmm_forward_func_tensor, jit_level="O0"))(
             ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
-        output_forward2 = (jit(addmm_forward_func_tensor, jit_config=JitConfig(jit_level="O0")))(
+        output_forward2 = (jit(addmm_forward_func_tensor, jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
-        output_grad, b1_grad, b2_grad = (jit(addmm_backward_func_tensor, jit_config=JitConfig(jit_level="O0")))(
+        output_grad, b1_grad, b2_grad = (jit(addmm_backward_func_tensor, jit_level="O0"))(
             ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
-        output_grad2, b1_grad2, b2_grad2 = (jit(addmm_backward_func_tensor, jit_config=JitConfig(jit_level="O0")))(
+        output_grad2, b1_grad2, b2_grad2 = (jit(addmm_backward_func_tensor, jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch3), ms.Tensor(batch4), beta, alpha)
     np.testing.assert_allclose(
         output_forward.asnumpy(), expect_forward, 4e-2, 4e-2)

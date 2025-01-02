@@ -686,6 +686,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"replace_old_param", opt::OptPassConfig({irpass.replace_old_param_})},
      {"inline_without_move", opt::OptPassConfig({irpass.inline_without_move_})},
+     {"special_op_eliminate", opt::OptPassConfig({irpass.special_op_eliminate_})},
      {"renormalize", opt::OptPassConfig::Renormalize()},
      {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
      {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
@@ -882,9 +883,6 @@ OptPassGroupMap GetSymbolEngineOptPass(const opt::irpass::OptimizeIRPassLib &irp
 
 OptPassGroupMap GetJitOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
   opt::OptPassConfig frontend_op_eliminate = opt::OptPassConfig({
-    irpass.stop_gradient_eliminate_,
-    irpass.mutable_op_eliminate_,
-    irpass.convert_tensor_all_eliminate_,
     irpass.check_bprop_eliminate_,
     irpass.special_op_eliminate_,
     irpass.row_tensor_eliminate_,

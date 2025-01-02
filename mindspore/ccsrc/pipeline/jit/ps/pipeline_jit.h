@@ -31,6 +31,7 @@ class JitExecutorPy : public ExecutorPy {
     if (executor_ == nullptr) {
       executor_ = std::shared_ptr<JitExecutorPy>(new (std::nothrow) JitExecutorPy());
     }
+    executor_->set_process_id();
     return executor_;
   }
 
