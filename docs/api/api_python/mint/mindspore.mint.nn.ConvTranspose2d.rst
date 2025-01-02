@@ -9,8 +9,8 @@ mindspore.mint.nn.ConvTranspose2d
 
     所有参数中的 `kernel_size`， `stride`， `padding`， `output_padding` 可以为：
 
-    - 单个整数 -- 在这种情况下，H和W维度使用相同的值
-    - 一个由两个整数组成的tuple —— 在这种情况下，第一个整数用于H维度，第二个整数用于W维度。
+    - 单个整数 -- 在这种情况下，该值同时被用于H和W维度
+    - 一个由两个整数组成的tuple -- 在这种情况下，第一个整数用于H维度，第二个整数用于W维度。
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。

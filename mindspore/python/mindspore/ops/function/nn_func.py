@@ -626,12 +626,12 @@ def avg_pool2d_ext(input, kernel_size, stride=None, padding=0, ceil_mode=False, 
         outputs regional average in the :math:`(H_{in}, W_{in})` -dimension.
         Given kernel size :math:`(kH, kW)` and `stride` , the operation is as follows.
 
-        .. note::
-            On the Atlas platform, when calculating the input, the precision is degraded from float32 to float16.
-
         .. math::
             \text{output}(N_i, C_j, h, w) = \frac{1}{kH * kW} \sum_{m=0}^{kH-1} \sum_{n=0}^{kW-1}
             \text{input}(N_i, C_j, stride[0] \times h + m, stride[1] \times w + n)
+
+        .. note::
+            On the Atlas platform, when calculating the input, the precision is degraded from float32 to float16.
 
         Args:
             input (Tensor): Tensor of shape :math:`(N, C, H_{in}, W_{in})` or :math:`(C, H_{in}, W_{in})`.
