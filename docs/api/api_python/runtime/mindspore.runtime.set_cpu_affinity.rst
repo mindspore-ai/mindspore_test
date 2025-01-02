@@ -14,7 +14,7 @@ mindspore.runtime.set_cpu_affinity
 
           1. `cat /sys/fs/cgroup/cpuset/cpuset.cpus`，获取环境上可用的CPU资源；若执行该命令失败，绑核功能不会生效。
           2. `npu-smi info -m`，获取环境上可用的NPU资源；若执行该命令失败，仅根据可用CPU资源去生成绑核策略，不考虑设备亲和性。
-          3. `npu-smi -t board -i {NPU_ID} -c {CHIP_ID}`，根据设备逻辑ID去获取NPU的详细信息；若执行该命令失败，仅根据可用CPU资源去生成绑核策略，不考虑设备亲和性。
+          3. `npu-smi info -t board -i {NPU_ID} -c {CHIP_ID}`，根据设备逻辑ID去获取NPU的详细信息；若执行该命令失败，仅根据可用CPU资源去生成绑核策略，不考虑设备亲和性。
           4. `lspci -s {PCIe_No} -vvv`，获取环境上设备的硬件信息；若执行该命令失败，仅根据可用CPU资源去生成绑核策略，不考虑设备亲和性。
           5. `lscpu`，获取环境上CPU与NUMA节点的信息；若执行该命令失败，仅根据可用CPU资源去生成绑核策略，不考虑设备亲和性。
 
