@@ -53,6 +53,11 @@
 #include "minddata/dataset/util/gil_scoped.h"
 #include "minddata/dataset/util/ftok_key.h"
 #endif
+#ifdef WITH_BACKEND
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "utils/ms_context.h"
+#endif
 
 namespace mindspore {
 namespace dataset {
@@ -581,7 +586,8 @@ void TreeAdapter::SubprocessExit(int exit_code) {
     auto device_context = device::DeviceContextManager::GetInstance().GetDeviceContext(device_context_key.device_name_);
 
     // destroy the device context when independent dataset exit
-    if (device_context && device_context->initialized()) {
+    if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && device_context &&
+        device_context->initialized()) {
       // Destroy the device context
       device_context->Destroy();
     }
