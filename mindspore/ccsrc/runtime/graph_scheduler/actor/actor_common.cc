@@ -975,8 +975,9 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
       MemoryManagerActor::GetInstance()->AllocateMemory(&allocate_list, device_context, context, from_aid);
     }
 
-    if (!device_tensor->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(), tensor->data_ptr(),
-                                          tensor->device_info().host_format_)) {
+    auto tensor_size = LongToSize(tensor->data().nbytes());
+    if (tensor_size > 0 && !device_tensor->AsyncHostToDevice(tensor_size, tensor->data_type(), tensor->data_ptr(),
+                                                             tensor->device_info().host_format_)) {
       MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
     }
   }
