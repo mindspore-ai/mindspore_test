@@ -514,23 +514,7 @@ void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
   }
 }
 
-void CacheGraphOutputNodeToParameterStore(const AnfNodePtr &node, const KernelWithIndex &node_with_index,
-                                          const KernelGraphPtr &graph) {
-  KernelWithIndex front_node_with_idx{nullptr, 0};
-  if (IsInternalParameter(node, graph)) {
-    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node);
-  } else {
-    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node);
-    if (front_node_with_idx.first == nullptr) {
-      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node, *graph), 0};
-    }
-  }
-  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-  MS_EXCEPTION_IF_NULL(graph_parameter_store);
-  (void)graph_parameter_store->CorrectFrontNodeMap(node_with_index, front_node_with_idx);
-}
-
-bool IsInternelParameterInParameterStore(const AnfNodePtr &front_node) {
+bool IsInternalParameterInParameterStore(const AnfNodePtr &front_node) {
   MS_EXCEPTION_IF_NULL(front_node);
   auto real_front_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({front_node, 0}).first;
   MS_EXCEPTION_IF_NULL(real_front_node);
@@ -538,6 +522,22 @@ bool IsInternelParameterInParameterStore(const AnfNodePtr &front_node) {
     return true;
   }
   return false;
+}
+
+KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(node_with_index.first);
+  auto real_node_with_index = common::AnfAlgo::FetchRealNodeSkipMonadControl(node_with_index);
+  MS_EXCEPTION_IF_NULL(real_node_with_index.first);
+  KernelWithIndex front_node_with_idx{nullptr, 0};
+  if (IsInternalParameter(node_with_index.first, graph)) {
+    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node_with_index.first);
+  } else {
+    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node_with_index.first);
+    if (front_node_with_idx.first == nullptr) {
+      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node_with_index.first, *graph), 0};
+    }
+  }
+  return front_node_with_idx;
 }
 }  // namespace
 
@@ -1466,10 +1466,17 @@ void GraphScheduler::CacheGraphOutputToActor(const GraphCompilerInfo &graph_comp
 
       auto kernel_type = FetchKernelTransformType(output_kernel, graph, graph_compiler_info.origin_parameters_order_);
       auto output_actor = FetchActor(kernel_type, graph_compiler_info.name_, output_kernel, graph);
-      if (kernel_type == KernelTransformType::kGraphParameterStore) {
-        auto data_prepare_actor_name = ParameterStore::GetInstance().GetChosenGraphName() + kDataPrepareActorNameSuffix;
-        output_actor = FetchActor(data_prepare_actor_name);
-        CacheGraphOutputNodeToParameterStore(output_with_index.first, origin_output_with_index, graph);
+      if (EnableInputOptimize()) {
+        auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+        MS_EXCEPTION_IF_NULL(graph_parameter_store);
+        const auto &front_node_with_idx = FetchRealFrontNode(output_with_index, graph);
+        if (kernel_type == KernelTransformType::kGraphParameterStore ||
+            (front_node_with_idx.first != nullptr && front_node_with_idx.first->isa<Parameter>())) {
+          auto data_prepare_actor_name =
+            ParameterStore::GetInstance().GetChosenGraphName() + kDataPrepareActorNameSuffix;
+          output_actor = FetchActor(data_prepare_actor_name);
+          (void)graph_parameter_store->CorrectFrontNodeMap(origin_output_with_index, front_node_with_idx);
+        }
       }
       // Internal parameter need update the output actor and output kernel through the front node of last graph.
       if (kernel_type == KernelTransformType::kInternalParameter) {
@@ -2687,7 +2694,7 @@ void GraphScheduler::LinkDataArrowForInternalParameter(AbstractActor *const, Abs
   auto real_from_kernel_with_output_idx = from_kernel_with_output_idx;
   AbstractActor *real_from_actor = nullptr;
   KernelTransformType kernel_type;
-  if (IsInternelParameterInParameterStore(front_output_node)) {
+  if (IsInternalParameterInParameterStore(front_output_node)) {
     kernel_type = KernelTransformType::kGraphParameterStore;
   } else if (IsPersistentDeviceTensor(front_output_node)) {
     kernel_type = KernelTransformType::kDeviceTensorStore;
@@ -2893,13 +2900,15 @@ void GraphScheduler::LinkDataArrowForGraphParameterStore(AbstractActor *const, A
                                                          const KernelGraphPtr &graph) {
   // Obtain the corresponding front node from back node.
   MS_EXCEPTION_IF_NULL(from_kernel_with_output_idx.first);
+  auto real_from_kernel_with_idx = common::AnfAlgo::FetchRealNodeSkipMonadControl(from_kernel_with_output_idx);
+  MS_EXCEPTION_IF_NULL(real_from_kernel_with_idx.first);
   KernelWithIndex front_node_with_idx{nullptr, 0};
-  if (IsInternalParameter(from_kernel_with_output_idx.first, graph)) {
-    front_node_with_idx = graph->GetFrontNodeByInternalParameter(from_kernel_with_output_idx.first);
+  if (IsInternalParameter(real_from_kernel_with_idx.first, graph)) {
+    front_node_with_idx = graph->GetFrontNodeByInternalParameter(real_from_kernel_with_idx.first);
   } else {
-    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(from_kernel_with_output_idx.first);
+    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(real_from_kernel_with_idx.first);
     if (front_node_with_idx.first == nullptr) {
-      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(from_kernel_with_output_idx.first, *graph), 0};
+      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(real_from_kernel_with_idx.first, *graph), 0};
     }
   }
 
@@ -2908,21 +2917,21 @@ void GraphScheduler::LinkDataArrowForGraphParameterStore(AbstractActor *const, A
   auto data_prepare_actor = FetchActor(data_prepare_actor_name);
   MS_EXCEPTION_IF_NULL(data_prepare_actor);
   auto is_need_copy_actor =
-    IsNeedInsertCopyActor(data_prepare_actor, to_actor, from_kernel_with_output_idx, to_kernel_with_input_idx);
+    IsNeedInsertCopyActor(data_prepare_actor, to_actor, real_from_kernel_with_idx, to_kernel_with_input_idx);
   if (is_need_copy_actor) {
-    auto from_device_context = GetFromActorDeviceContext(data_prepare_actor, to_actor, from_kernel_with_output_idx);
+    auto from_device_context = GetFromActorDeviceContext(data_prepare_actor, to_actor, real_from_kernel_with_idx);
     MS_EXCEPTION_IF_NULL(from_device_context);
-    MS_EXCEPTION_IF_NULL(from_kernel_with_output_idx.first);
+    MS_EXCEPTION_IF_NULL(real_from_kernel_with_idx.first);
     std::string name = "copy_from:" + data_prepare_actor->GetAID().Name() + "_node:" +
-                       (from_kernel_with_output_idx.first->fullname_with_scope() == ""
-                          ? std::to_string((int64_t)(from_kernel_with_output_idx.first.get()))
-                          : from_kernel_with_output_idx.first->fullname_with_scope()) +
-                       "_output_index:" + std::to_string(from_kernel_with_output_idx.second);
+                       (real_from_kernel_with_idx.first->fullname_with_scope() == ""
+                          ? std::to_string((int64_t)(real_from_kernel_with_idx.first.get()))
+                          : real_from_kernel_with_idx.first->fullname_with_scope()) +
+                       "_output_index:" + std::to_string(real_from_kernel_with_idx.second);
     CopyActor *copy_actor = dynamic_cast<CopyActor *>(FetchActor(name));
     if (copy_actor == nullptr) {
-      copy_actor = CreateCopyActor(data_prepare_actor, to_actor, from_kernel_with_output_idx, to_kernel_with_input_idx);
+      copy_actor = CreateCopyActor(data_prepare_actor, to_actor, real_from_kernel_with_idx, to_kernel_with_input_idx);
       MS_EXCEPTION_IF_NULL(copy_actor);
-      SchedulerHelper::InsertParameterIndexsForActor(copy_actor, front_node_with_idx, from_kernel_with_output_idx,
+      SchedulerHelper::InsertParameterIndexsForActor(copy_actor, front_node_with_idx, real_from_kernel_with_idx,
                                                      to_kernel_with_input_idx, graph);
     }
 
@@ -2931,10 +2940,9 @@ void GraphScheduler::LinkDataArrowForGraphParameterStore(AbstractActor *const, A
     if (!EnableKbkSubGraphExecute() && (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
                                         to_actor->type_ == KernelTransformType::kAnyTypeKernelActor)) {
       UpdateRefCount(copy_actor->output_.get(), true);
-    } else if (IsRefNode(from_kernel_with_output_idx, to_kernel_with_input_idx)) {
+    } else if (IsRefNode(real_from_kernel_with_idx, to_kernel_with_input_idx)) {
       MS_LOG(DEBUG) << "Set ref count to max for ref output of kernel:"
-                    << from_kernel_with_output_idx.first->DebugString()
-                    << " index:" << from_kernel_with_output_idx.second;
+                    << real_from_kernel_with_idx.first->DebugString() << " index:" << real_from_kernel_with_idx.second;
       UpdateRefCount(copy_actor->output_.get(), true);
       const auto &pre_device_tensor = !to_kernel_with_input_idx.first->isa<CNode>()
                                         ? AnfAlgo::GetMutableOutputAddr(to_kernel_with_input_idx.first, 0, false)
@@ -2950,7 +2958,7 @@ void GraphScheduler::LinkDataArrowForGraphParameterStore(AbstractActor *const, A
     return;
   }
 
-  SchedulerHelper::InsertParameterIndexsForActor(to_actor, front_node_with_idx, from_kernel_with_output_idx,
+  SchedulerHelper::InsertParameterIndexsForActor(to_actor, front_node_with_idx, real_from_kernel_with_idx,
                                                  to_kernel_with_input_idx, graph);
 }
 

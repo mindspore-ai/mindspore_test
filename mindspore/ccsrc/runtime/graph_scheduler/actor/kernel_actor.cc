@@ -723,7 +723,7 @@ void KernelActor::CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t inpu
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, "The input index is of range.");
   }
   if (copy_input_device_tensors_[input_index] == nullptr) {
-    const auto &pre_kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel_, input_index);
+    const auto &pre_kernel_tensor = device_tensor->kernel_tensor();
     MS_EXCEPTION_IF_NULL(pre_kernel_tensor);
     auto new_kernel_tensor = std::make_shared<kernel::KernelTensor>(
       pre_kernel_tensor->GetShape(), pre_kernel_tensor->GetType(), pre_kernel_tensor->GetValueTrack(), nullptr,
