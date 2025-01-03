@@ -6022,9 +6022,6 @@ def aminmax(input, *, axis=0, keepdims=False):
     argmax_with_value_op = _get_cache_prim(ArgMaxWithValue)(axis, keepdims)
     _, output0 = argmin_with_value_op(input)
     _, output1 = argmax_with_value_op(input)
-    if keepdims is True and input.ndim == 0:
-        output0 = ops.reshape(output0, [1])
-        output1 = ops.reshape(output1, [1])
     return output0, output1
 
 
