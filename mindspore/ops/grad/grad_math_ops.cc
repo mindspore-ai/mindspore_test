@@ -672,6 +672,20 @@ void FreeTensorsOfMul(const PynativeCallback &cb) {
   }
 }
 
+void FreeTensorsOfBaddbmm(const PynativeCallback &cb) {
+  cb.FreeOutputDeviceAddress();
+  auto &inputs = *cb.GetInputs();
+  cb.FreeDeviceAddress(&inputs[kIndex0]);
+  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex2]->isa<tensor::BaseTensor>()) {
+    cb.FreeDeviceAddress(&inputs[kIndex2]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[2] of " << cb.opname();
+  }
+  if (cb.IsNotRequiresGrad(kIndex2) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
+    cb.FreeDeviceAddress(&inputs[kIndex1]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
+  }
+}
+
 void FreeTensorsOfDiv(const PynativeCallback &cb) {
   cb.FreeInputDeviceAddress({kIndex0});
   // For operators like Div, the dy does not rely on output node, so if y is a valuenode, we can free output.
@@ -3855,7 +3869,7 @@ REG_BPROP_BUILDER("Addbmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   return {input_grad, batch1_grad, batch2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
 
-REG_BPROP_BUILDER("Baddbmm").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Baddbmm").FreeUselessValues(FreeTensorsOfBaddbmm).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto batch1 = ib->GetInput(kIndex1);
   auto batch2 = ib->GetInput(kIndex2);
