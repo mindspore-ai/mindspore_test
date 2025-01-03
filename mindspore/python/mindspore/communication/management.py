@@ -100,10 +100,9 @@ def _set_envs():
     This takes compatibility into account because user scripts may get 'DEVICE_ID' or 'RANK_ID' envs.
     """
     os.environ["RANK_ID"] = str(get_rank())
+    os.environ["DEVICE_ID"] = str(context.get_context("device_id"))
     if os.getenv("RANK_SIZE") is None:
         os.environ["RANK_SIZE"] = str(get_group_size())
-    if os.getenv("DEVICE_ID") is None:
-        os.environ["DEVICE_ID"] = str(get_local_rank())
 
 
 def init(backend_name=None):
