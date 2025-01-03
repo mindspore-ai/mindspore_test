@@ -3,10 +3,10 @@ mindspore.Tensor.min
 
 .. py:method:: mindspore.Tensor.min()
 
-    计算输入Tensor最小的值。
+    返回输入Tensor的最小值。
 
     返回：
-        输入Tensor的最小值，类型与 `input` 相同。
+        Tensor，值为输入Tensor的最小值，类型与 `input` 相同。
 
     .. py:method:: mindspore.Tensor.min(dim, keepdim=False)
         :noindex:

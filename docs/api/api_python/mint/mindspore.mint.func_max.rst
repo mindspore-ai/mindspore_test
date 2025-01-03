@@ -9,7 +9,7 @@ mindspore.mint.max
         - **input** (Tensor) - 输入的Tensor。
 
     返回：
-        输入Tensor的最大值，类型与 `input` 相同。
+        Tensor，值为输入Tensor的最大值，类型与 `input` 相同。
 
     .. py:function:: mindspore.mint.max(input, dim, keepdim=False)
         :noindex:
