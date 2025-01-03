@@ -24,6 +24,7 @@
 #include "ir/tensor.h"
 #include "pynative/base.h"
 #include "pynative/grad/ir/bprop_tensor_replace.h"
+#include "pynative/grad/top_cell.h"
 #include "pipeline/jit/ps/resource.h"
 #include "include/common/visible.h"
 
@@ -49,6 +50,7 @@ class PYNATIVE_EXPORT Jit {
   void ProcessCnodeFromAdGrad(const CNodePtr &k_app, const CNodePtr &cnode_morph);
   inline bool eliminate_forward() const { return eliminate_forward_; }
   inline void set_eliminate_forward(bool eliminate_forward) { eliminate_forward_ = eliminate_forward; }
+  static void ClearAutoGradCache();
 
  private:
   void GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,

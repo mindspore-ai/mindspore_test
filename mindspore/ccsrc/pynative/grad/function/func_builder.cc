@@ -229,7 +229,7 @@ NodePtr FuncBuilder::EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs)
   }
   // Set abstract to tensor cache
   if (op_runner_info.output_value_simple_info != nullptr) {
-    PyNativeAlgo::AutoGradUtil::CacheOutputAbstract(value_result, op_runner_info.output_abs);
+    AutoGradUtil::CacheOutputAbstract(value_result, op_runner_info.output_abs);
   }
   auto result = NewFuncNode(value_result, op_runner_info.output_abs, InputType::kOpOutput);
   return result;

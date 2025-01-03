@@ -15,8 +15,10 @@
 
 import pytest
 import numpy as np
+import mindspore
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, Parameter
+from mindspore import ops
 from mindspore.ops import operations as P
 from mindspore import jit
 from mindspore.common.api import _pynative_executor
@@ -65,6 +67,232 @@ class TwoInputBprop(nn.Cell):
 
     def bprop(self, x, y, out, dout):
         return x * 5, y * 8
+
+
+class NestedNet(nn.Cell):
+    def construct(self, x):
+        y = x * x
+        return y
+
+
+class HighGradNet1(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.nested_net = NestedNet()
+
+    def construct(self, x):
+        x = x + x
+        dx = mindspore.grad(self.nested_net)(x)
+        z = dx * dx
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_nested_highgrad_net1():
+    """
+    Feature: Test nest high grad feature
+    Description: high grad, nest grad
+    Expectation: Success
+    """
+
+    net = HighGradNet1()
+    x = Tensor(np.array([2]).astype(np.float32))
+    dx = mindspore.grad(net)(x)
+    assert (dx.asnumpy() == np.array([64.]).astype(np.float32)).all()
+
+
+class NestedNetWithBprop(nn.Cell):
+    def construct(self, x):
+        y = x * x
+        return y
+
+    def bprop(self, x, out, dout):
+        return 2 * x * dout
+
+
+class HighGradNet2(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.nested_net = NestedNetWithBprop()
+
+    def construct(self, x):
+        x = x + x
+        dx = mindspore.grad(self.nested_net)(x)
+        z = dx * dx
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_nested_highgrad_net2():
+    """
+    Feature: Test nest high grad feature
+    Description: high grad, nest grad
+    Expectation: Success
+    """
+
+    net = HighGradNet2()
+    x = Tensor(np.array([2]).astype(np.float32))
+    dx = mindspore.grad(net)(x)
+    assert (dx.asnumpy() == np.array([64.]).astype(np.float32)).all()
+
+
+class OpsNet(nn.Cell):
+    def construct(self, x):
+        bessel_io = ops.BesselI0()
+        y = bessel_io(x)
+        return y
+
+
+class HighGradNet3(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.nested_net = OpsNet()
+
+    def construct(self, x):
+        x = x + x
+        dx = mindspore.grad(self.nested_net)(x)
+        z = dx * dx
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_nested_highgrad_net3():
+    """
+    Feature: Test nest high grad feature
+    Description: high grad, nest grad
+    Expectation: Success
+    """
+
+    net = HighGradNet3()
+    x = Tensor(np.array([2]).astype(np.float32))
+    dx = mindspore.grad(net)(x)
+    assert (dx.asnumpy() == np.array([345.9557]).astype(np.float32)).all()
+
+
+class NestedNetJit(nn.Cell):
+    @jit
+    def construct(self, x):
+        y = x * x
+        return y
+
+
+class HighGradNetJit(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.nested_net = NestedNetJit()
+
+    def construct(self, x):
+        x = x + x
+        dx = mindspore.grad(self.nested_net)(x)
+        z = dx * dx
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_nested_highgrad_jit_net():
+    """
+    Feature: Test nest high grad feature
+    Description: high grad, nest grad
+    Expectation: Success
+    """
+
+    net = HighGradNetJit()
+    x = Tensor(np.array([2]).astype(np.float32))
+    dx = mindspore.grad(net)(x)
+    assert (dx.asnumpy() == np.array([64.]).astype(np.float32)).all()
+
+
+class NestedNetJitWithParam(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.p1 = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
+
+    @jit
+    def construct(self, x):
+        y = self.p1 * self.p1
+        y = y * x
+        return y
+
+
+class HighGradNetJitWithParam(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.nested_net = NestedNetJitWithParam()
+
+    def construct(self, x):
+        x = x + x
+        grads = mindspore.grad(self.nested_net, weights=self.nested_net.trainable_params())(x)
+        z = grads[1][0] * grads[1][0]
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_nested_highgrad_jit_net_param():
+    """
+    Feature: Test nest high grad feature
+    Description: high grad, nest grad
+    Expectation: Success
+    """
+
+    net = HighGradNetJitWithParam()
+    x = Tensor(np.array([2]).astype(np.float32))
+    dx = mindspore.grad(net)(x)
+    assert (dx.asnumpy() == np.array([64.]).astype(np.float32)).all()
+
+
+class NetWithInplace(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.p1 = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
+
+    def construct(self, x):
+        y = self.p1 * self.p1
+        y *= x
+        return y
+
+
+class HighGradNetWithInplace(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.nested_net = NetWithInplace()
+
+    def construct(self, x):
+        x = x + x
+        grads = mindspore.grad(self.nested_net, weights=self.nested_net.trainable_params())(x)
+        z = grads[1][0] * grads[1][0]
+        return z
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_nested_highgrad_with_inplace():
+    """
+    Feature: Test nest high grad feature
+    Description: high grad with inplace
+    Expectation: Success
+    """
+
+    net = HighGradNetWithInplace()
+    x = Tensor(np.array([2]).astype(np.float32))
+    dx = mindspore.grad(net)(x)
+    assert (dx.asnumpy() == np.array([64.]).astype(np.float32)).all()
 
 
 @arg_mark(plat_marks=['cpu_linux'],

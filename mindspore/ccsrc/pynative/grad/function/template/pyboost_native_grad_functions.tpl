@@ -25,6 +25,8 @@
 #include "pynative/grad/grad_utils.h"
 #include "pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_generate/functions.h"
+#include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
 ${ops_inc}
 ${include_op_header}
 
@@ -78,7 +80,7 @@ NodePtr NativeFunc::RunOpDeprecated(const PrimitivePtr &prim, const NodePtrList 
   }
   // Set abstract to tensor cache
   if (op_runner_info.output_value_simple_info != nullptr) {
-    PyNativeAlgo::AutoGradUtil::CacheOutputAbstract(value_result, op_runner_info.output_abs);
+    AutoGradUtil::CacheOutputAbstract(value_result, op_runner_info.output_abs);
   }
   auto result = std::make_shared<expander::FuncNode>(value_result, op_runner_info.output_abs, InputType::kOpOutput, inputs[0]->emitter());
   return result;

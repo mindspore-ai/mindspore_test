@@ -712,6 +712,7 @@ def test_setitem_grad():
                 Tensor(np.ones([4, 4, 5]), dtype=mstype.float32), "b1", requires_grad=True)
 
         def construct(self, a, b):
+            a = a * 1
             a[1:3:1, ::] = b
             c = a + self.weight
             return c

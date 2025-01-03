@@ -47,10 +47,9 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
           ${optional_to_value}
 
           // Create output value
-          PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(op_run_info->op_grad_info, op);
+          AutoGradUtil::SetInferOutputToGrad(op_run_info->op_grad_info, op);
           // Create output value
-          auto real_output = PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(op_run_info->requires_grad, op,
-                                                                               op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index() : 0${view_arg});
+          auto real_output = AutoGradUtil::Make${is_multi}Output(op_run_info->requires_grad, op${view_arg});
           // Do auto grad
           if (op_run_info->requires_grad) {
             // Refresh op prim, otherwish the size of inputs will be incorrect.

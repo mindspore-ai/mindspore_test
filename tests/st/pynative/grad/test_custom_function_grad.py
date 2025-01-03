@@ -781,3 +781,37 @@ def test_custom_function_not_materialize_grad():
     net = CustomFunctionNotMaterializeGradsWrap()
     grad_net = C.GradOperation(get_all=True)
     grad_net(net)(x, y)
+
+
+class CustomFunctionWithAttr(_Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        x2 = x*x
+        z = x2+1
+        x.tensor = x2
+        ctx.set_materialize_grads(False)
+        ctx.save_for_backward(x)
+        return z, x2
+
+    @staticmethod
+    def backward(ctx, grad_output, grad_output1):
+        x, = ctx.saved_tensors
+        x2 = x.tensor
+        return grad_output, x2
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_custom_function_with_attr():
+    """
+    Feature: Custom autograd function.
+    Description: None output grad tensors with attr.
+    Expectation: success.
+    """
+    x = Tensor([2, 2], mindspore.float32)
+    y = Tensor([3, 3], mindspore.float32)
+    net = CustomFunctionWithAttr()
+    grad_net = C.GradOperation(get_all=True)
+    grad_net(net.apply)(x, y)

@@ -24,15 +24,17 @@
 #include <set>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include "include/common/pynative/grad_state.h"
 #include "pynative/base.h"
 #include "pynative/grad/top_cell.h"
 #include "pynative/grad/jit/jit_grad.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pynative/grad/bprop_task.h"
-#include "pynative/grad/ir/dynamic_shape.h"
-#include "pynative/grad/variable.h"
+#include "include/common/pynative/variable.h"
 #include "pipeline/jit/ps/resource.h"
+#include "pynative/grad/custom_function.h"
+
 namespace mindspore {
 namespace pynative {
 namespace py = pybind11;
@@ -41,17 +43,13 @@ using ForwardExecutorPtr = std::shared_ptr<ForwardExecutor>;
 using ForwardExecutorWeakPtr = std::weak_ptr<ForwardExecutor>;
 
 class PYNATIVE_EXPORT GradExecutor {
-  // key: already run cell id, value: all already run top cell
-  using TopCellIdWithTopCell = std::map<std::string, TopCellInfoPtr>;
-  // key: already run cell id, value: pipeline top cell
-  using PipelineTopCellMap = std::map<std::string, std::vector<TopCellInfoPtr>>;
+  // key: ready run cell id, value: all ready run top cell
+  using TopCellIdWithTopCell = std::unordered_multimap<std::string, TopCellInfoPtr>;
 
  public:
   ~GradExecutor() = default;
   explicit GradExecutor(const ForwardExecutorPtr &forward_executor = nullptr)
-      : forward_executor_(ForwardExecutorWeakPtr(forward_executor)),
-        jit_(std::make_shared<Jit>()),
-        dynamic_shape_(std::make_shared<DynamicShape>()) {}
+      : forward_executor_(ForwardExecutorWeakPtr(forward_executor)), jit_(std::make_shared<Jit>()) {}
 
   void Init();
   std::function<void(const py::object &, const py::args &)> InitGraph = [this](auto &&PH1, auto &&PH2) {
@@ -81,78 +79,43 @@ class PYNATIVE_EXPORT GradExecutor {
     MS_EXCEPTION_IF_NULL(top_cell_);
     return top_cell_;
   }
-  inline DynamicShapePtr dynamic_shape() const {
-    MS_EXCEPTION_IF_NULL(dynamic_shape_);
-    return dynamic_shape_;
-  }
   inline JitPtr jit() const {
     MS_EXCEPTION_IF_NULL(jit_);
     return jit_;
   }
-  TopCellInfo *pre_top_cell() const { return pre_top_cell_.get(); }
-  inline bool TopCellHasNotBeenCreate() const { return top_cell_ == nullptr; }
   inline void set_top_cell(TopCellInfoPtr top_cell) { top_cell_ = std::move(top_cell); }
   inline void set_is_run_recompute(bool is_run_recompute) { is_run_recompute_ = is_run_recompute; }
   // Construct grad graph for jit
   inline size_t custom_bprop_cell_count() const { return custom_bprop_cell_count_; }
-  TopCellIdWithTopCell &already_run_top_cell() { return already_run_top_cell_; }
+  TopCellIdWithTopCell &already_run_top_cell() { return ready_run_top_cell_; }
   py::object RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                      const py::object &grad_position, const py::object &has_aux, const py::args &args);
   py::object RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
-                         const std::vector<size_t> &p_args, bool has_aux);
-  py::object RunGradGraph();
+                         const std::vector<size_t> &p_args, bool has_aux, bool collect_default_weights);
   CNodePtr ConstructForwardGraph(const OpGradInfoPtr &grad_info, const std::vector<std::string> &input_value_id) const;
   void RecordForwardGraph(const OpGradInfoPtr &grad_info) const;
   void RecordCustomBprop(const autograd::CustomContext &context) const;
-  void RecordForwardGraphForInput(const ValuePtr &value, const string &input_id,
-                                  const abstract::AbstractBasePtr &param_abs);
-  void RecordNestedGraph(const FuncGraphPtr &first_grad_fg, const GraphInfoPtr &inner_graph_info,
-                         const std::vector<ValuePtr> &forward_args, const ValuePtr &out);
+  void RecordForwardGraphForInput(const ValuePtr &value, const string &input_id);
   py::object CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                              const py::object &grad_position, const py::args &args);
-  TopCellInfoPtr GetAlreadyRunTopCell(const std::string &already_run_cell_id) const;
-  TopCellInfoPtr GetPipelineRunTopCell(const std::string &already_run_cell_id) const;
-  TopCellInfoPtr GetPipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
-                                    bool is_reverse_match) const;
-  void ErasePipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
-                            bool is_pipeline_top_cell);
+  TopCellInfoPtr GetReadyRunTopCell(const std::string &ready_run_cell_id) const;
   void GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr &grad, const py::object &obj,
                                         const py::args &args);
-  bool ReplacePipelineTopCellForwardOutput();
   void ProcessOpGradInfo(const OpGradInfoPtr &op_run_info) const;
   void CallCustomBprop(const py::object &obj, const py::object out, const py::args &args);
   AnfNodePtr GetInput(const ValuePtr &v, const string &obj_id) const;
   AnfNodePtr GetParamInput(const ValuePtr &v, const std::string &id) const;
   void ClearRes();
-  void AsyncClearTopCell();
-  void AsyncClearAutoGradCell(const TopCellInfoPtr &top_cell);
   void WorkerJoin();
   void WaitBpropTask() const;
   void SaveDynamicInputsCells(const py::object &obj, const py::args &args);
-  void SetTopCellDynamicAttr(const py::object &cell);
-  bool use_dynamic_shape_process() const {
-    if (top_cell_ == nullptr) {
-      return false;
-    }
-    return top_cell()->use_dynamic_shape_process();
-  }
-
-  void set_use_dynamic_shape_process(bool use_dynamic_shape_process) {
-    if (top_cell_ == nullptr) {
-      return;
-    }
-    return top_cell()->set_use_dynamic_shape_process(use_dynamic_shape_process);
-  }
 
   inline bool forward_use_dynamic_shape_process() const { return forward_use_dynamic_shape_process_; }
   inline void set_forward_use_dynamic_shape_process(bool forward_use_dynamic_shape_process) {
     forward_use_dynamic_shape_process_ = forward_use_dynamic_shape_process;
   }
-  inline bool config_no_graph() const { return config_no_graph_; }
-  const std::string &hook_cell_id() { return hook_cell_id_; }
-  inline void set_hook_cell_id(const std::string &hook_cell_id) { hook_cell_id_ = hook_cell_id; }
 
-  std::string GetAlreadyRunCellId(const std::string &obj_id) const;
+  std::string GetReadyRunCellId(const std::string &obj_id, const std::string &input_args_id) const;
 
   inline bool is_high_order_top_cell() const { return top_cell_ != nullptr && top_cell_->is_high_order_top_cell(); }
   void ChildAfterFork();
@@ -163,7 +126,11 @@ class PYNATIVE_EXPORT GradExecutor {
 
  private:
   ForwardExecutorPtr forward() const;
-  inline FuncGraphPtr curr_g() const { return top_cell()->fg(); }
+  inline FuncGraphPtr curr_g() const {
+    MS_EXCEPTION_IF_NULL(top_cell()->fg());
+    return top_cell()->fg();
+  }
+  void ClearForwardGraph() { top_cell()->ClearForwardGraph(); }
   inline void PushTopCellStack(const TopCellInfoPtr &top_cell) {
     top_cell_stack_.push(top_cell);
     MS_LOG(DEBUG) << "Push top cell " << top_cell << " on top cell stack";
@@ -175,7 +142,6 @@ class PYNATIVE_EXPORT GradExecutor {
   void SetBpropGraphJitLevel(const py::object &obj) const;
   void ClearGlobalRes() const;
   void ClearGradRes();
-  void ClearPipelineTopCellRes();
 
   // Higher derivative
   inline bool IsNestedGrad() const { return grad_order_ > 1; }
@@ -189,62 +155,35 @@ class PYNATIVE_EXPORT GradExecutor {
     }
     MS_LOG(DEBUG) << "Decrease grad order, current grad_order is " << grad_order_;
   }
-  uint32_t kernel_graph_id_for_control_flow() { return --kernel_graph_id_for_control_flow_; }
-  void ClearPreTopCell(const TopCellInfoPtr &new_top_cell, bool is_need_clear_device_mem);
-  bool GetTopCellDynamicFlag(const InputArgsInfoPtr &input_args_info, const std::string &obj_id_with_grad_order);
-  void SwitchTopCell();
   TopCellInfoPtr GetTopCell(const std::string &already_run_cell_id, const std::string &input_args_id);
-  void DoParameterReplace(const FuncGraphPtr &first_grad_fg, const GraphInfoPtr &inner_graph_info,
-                          const std::vector<ValuePtr> &forward_args, AnfNodePtrList *inputs);
-  void MakeNestedCnode(bool has_custom_bprop, const std::vector<ValuePtr> &forward_args,
-                       const FuncGraphPtr &cur_run_bprop_graph, const BaseRef &out);
   TopCellInfoPtr PopTopCellStack();
   void PushInputArgsInfoStack(const InputArgsInfoPtr &input_args_info);
   void PopInputArgsInfoStack();
   void HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_info);
-  bool IsNewCellId();
-  void InitResourceAndDfBuilder(const InputArgsInfoPtr &cell_info, bool is_bprop_need_get_forward_graph);
-  bool IsCreateIrGrad();
+  void InitResourceAndDfBuilder(const InputArgsInfoPtr &cell_info);
   void MakeNewTopCell(const InputArgsInfoPtr &input_args_info);
-  bool NewTopCellIsPipelineTopCell(const InputArgsInfoPtr &input_args_info);
 
   // Manage resource when run grad process.
   void NewGraphInner(const py::object &obj, const py::args &args);
-  InputArgsInfoPtr GetInputArgsInfo(const py::object &obj, const py::args &args, bool is_bprop_need_get_forward_graph);
+  InputArgsInfoPtr GetInputArgsInfo(const py::object &obj, const py::args &args);
   void EndGraphInner(const py::object &obj, const py::object &out, const py::args &args);
   void EndGraphImpl(const InputArgsInfoPtr &input_args_info);
-  void SetForwardLastNodeInfo(const ValuePtr &v) const;
-  void GetCustomBpropPrim(const py::object &obj, const py::args &args, const InputArgsInfoPtr &input_args_info);
-  void DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const;
-  void CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info);
-  void GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
-                    const std::vector<size_t> &p_args, bool has_aux);
-  FuncGraphPtr GetBpropGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::TensorPtr> &w_args,
-                             const std::vector<size_t> &p_args, bool has_aux);
-  std::vector<tensor::TensorPtr> GetWeightsArgs(const py::object &weights, bool *weight_param_is_tuple) const;
-  std::vector<tensor::TensorPtr> GetDefaultWeights() const;
-  void CheckParamShapeAndType(const ParameterPtr &param_node, const abstract::AbstractBasePtr &input_abs,
-                              const abstract::AbstractBasePtr &ir_abs) const;
-  void UpdateParamAbsByArgs(const std::vector<ValuePtr> &input_args, const FuncGraphPtr &bprop_graph) const;
+  void SetForwardLastNodeInfo(const InputArgsInfoPtr &input_args_info) const;
+  std::vector<tensor::TensorPtr> GetWeightsArgs(const py::object &weights, bool *weight_param_is_tuple,
+                                                bool *collect_default_weights) const;
   std::vector<size_t> GetGradPositionArgs(const py::object &grad_position, bool get_by_position) const;
   // Manage resource for construct forward graph.
   AnfNodePtr GetOutputNodeAsInput(const std::string &obj_id) const;
   AnfNodePtr GetValueSequenceInput(const ValuePtr &v) const;
   AnfNodePtr CreateTupleGetItemNode(const std::string &obj_id,
                                     const std::pair<AnfNodePtr, std::vector<int64_t>> &out) const;
-  void ResetMetaGradInfoForNewTopCell(const InputArgsInfoPtr &input_args_info) const;
-  void ClearBpropTask() const;
   std::string SizeofContainer() const;
 
   bool init_{false};
   bool is_run_recompute_{false};
   bool save_graphs_{false};
   bool forward_use_dynamic_shape_process_{false};
-  bool config_no_graph_{true};
-  // Cell which register hook
-  std::string hook_cell_id_;
 
-  uint32_t kernel_graph_id_for_control_flow_{UINT32_MAX};
   size_t custom_bprop_cell_count_{0};
 
   // If grad_order=1, indicate first derivative; grad_order=2, indicate second derivative; ...
@@ -254,7 +193,6 @@ class PYNATIVE_EXPORT GradExecutor {
 
   // Used for auto grad map reserve
   size_t op_num_in_bprop_graph_{kDefaultContainerSize};
-  std::string grad_operation_;
 
   TopCellInfoPtr top_cell_{nullptr};
   InputArgsInfoPtr top_input_args_info_{nullptr};
@@ -264,22 +202,17 @@ class PYNATIVE_EXPORT GradExecutor {
 
   // For top cell nested top cell, import for high-order grad
   std::stack<TopCellInfoPtr> top_cell_stack_;
-  std::stack<TopCellInfoPtr> running_top_cell_;
-  // If is not ir_grad top cell, no need find every time
-  TopCellInfoPtr pre_top_cell_;
+
   // Used for set grad scenario. If top cell set in CheckAlreadyRun, no need find again in RunGrad;
   TopCellInfoPtr finded_top_cell_;
   // Record all top cells that have been run
-  TopCellIdWithTopCell already_run_top_cell_;
+  TopCellIdWithTopCell ready_run_top_cell_;
   // Record pipeline top cells.
-  PipelineTopCellMap pipeline_top_cell_map_;
 
   std::set<std::string> dynamic_inputs_cells_;
-  std::vector<TopCellInfoPtr> need_gc_top_cell_list_;
 
   ForwardExecutorWeakPtr forward_executor_;
   JitPtr jit_;
-  DynamicShapePtr dynamic_shape_{nullptr};
 };
 }  // namespace pynative
 }  // namespace mindspore

@@ -41,6 +41,18 @@ class COMMON_EXPORT GradState {
   bool grad_flag_{false};
   bool enable_grad_{true};
 };
+
+class COMMON_EXPORT GradFlagGuard {
+ public:
+  explicit GradFlagGuard(bool grad_flag) {
+    prev_grad_flag_ = GradState::Get().grad_flag();
+    GradState::Get().set_grad_flag(grad_flag);
+  }
+  ~GradFlagGuard() { GradState::Get().set_grad_flag(prev_grad_flag_); }
+
+ private:
+  bool prev_grad_flag_{false};
+};
 }  // namespace pynative
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_INCLUDE_COMMON_PYNATIVE_GRAD_STATE_H_

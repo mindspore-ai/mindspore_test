@@ -35,7 +35,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "frontend/ir/primitive_py.h"
-#include "pynative/grad/variable.h"
+#include "include/common/pynative/variable.h"
 #include "frontend/operator/composite/auto_generate/functional_map.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

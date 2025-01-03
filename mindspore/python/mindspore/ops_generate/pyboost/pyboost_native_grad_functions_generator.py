@@ -78,7 +78,7 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         pyboost_func_include_headers_str = ''
         ops_inc_head_set = set()
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None:
+            if op_proto.op_dispatch is None or op_proto.op_dispatch.is_comm_op:
                 continue
             if not op_proto.op_dispatch.enable:
                 continue
@@ -100,7 +100,8 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
                                                                        call_args=call_args_str,
                                                                        call_args_with_type=call_args_with_type,
                                                                        first_var_name=first_var_name,
-                                                                       output_expr=output_expr)
+                                                                       output_expr=output_expr,
+                                                                       operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE
             pyboost_func_include_headers_str += (
                 self.native_include_header_template.replace(operator_name=op_proto.op_name))

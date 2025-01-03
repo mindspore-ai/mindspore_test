@@ -17,7 +17,6 @@
 #include "pynative/pynative_execute.h"
 #include "availability/silent_check/silent_check.h"
 #include "pynative/pynative_utils.h"
-#include "pynative/grad/ir/ir_bprop.h"
 #include "pynative/grad/function_py.h"
 #include "pynative/predict_out_type_map.h"
 #include "pynative/op_function/auto_grad_register.h"
@@ -162,7 +161,7 @@ void PyNativeExecutor::ClearRes() const {
   // Clear forward tasks before clear op graphs cache.
   pynative::OpCompiler::GetInstance().ClearAllCache();
   kernel::KernelModCache::GetInstance().ClearAllCache();
-  pynative::autograd::ClearAutoGradCache();
+  grad_executor()->jit()->ClearAutoGradCache();
   PyNativeAlgo::Common::ClearRes();
   autograd::RegisterHook::ClearHookMap();
 
@@ -272,18 +271,9 @@ void PyNativeExecutor::set_forward_use_dynamic_shape_process(bool flag) const {
 
 void PyNativeExecutor::SetDynamicInput(const py::object &obj, const py::args &args) const {
   grad_executor()->SaveDynamicInputsCells(obj, args);
-  if (grad_executor()->dynamic_shape()->enable_unknown_shape()) {
-    grad_executor()->dynamic_shape()->SetDynamicInput(obj, args);
-  }
 }
 
-py::object PyNativeExecutor::GetDynamicInput(const py::object &actual_input) const {
-  if (grad_executor()->dynamic_shape()->enable_unknown_shape()) {
-    MS_LOG(DEBUG) << "Get dynamic shape for jit";
-    return grad_executor()->dynamic_shape()->GetDynamicInput(actual_input);
-  }
-  return actual_input;
-}
+py::object PyNativeExecutor::GetDynamicInput(const py::object &actual_input) const { return actual_input; }
 
 void PyNativeExecutor::ParentBeforeFork() {
   MS_LOG(DEBUG) << "PyNativeExecutor prepare before fork.";

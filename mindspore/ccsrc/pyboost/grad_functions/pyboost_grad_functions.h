@@ -28,6 +28,9 @@
 
 namespace mindspore::runtime {
 using Func = std::function<void(OpRunnerInfo *, VectorRef *)>;
+using DoGradFunc = void (*)(OpRunnerInfo *op_runner_info, VectorRef *op_outputs);
+
+void COMMON_EXPORT RegisterDoGradFunc(const DoGradFunc &clone_func);
 
 class PyBoostOpExecute {
  public:

@@ -582,7 +582,7 @@ class CustomNet(nn.Cell):
         super().__init__()
         self.p1 = Parameter(Tensor(np.array([1.0], np.float32)), name='p1')
         self.p2 = Parameter(Tensor(np.array([1.0], np.float32)), name='p2')
-        self.p3 = Parameter(Tensor(np.array([1.0], np.float32)), name='p2')
+        self.p3 = Parameter(Tensor(np.array([1.0], np.float32)), name='p3')
         self.p1.requires_grad = False
         self.p2.requires_grad = False
         self.p3.requires_grad = True
@@ -645,9 +645,8 @@ def test_pynative_requires_grad_without_params():
     x = Tensor([1], ms.float32)
     net = CustomNet()
     output = GradOperation(get_all=True, get_by_list=True)(net)(x)
-    assert (output[1][0].asnumpy() == np.array([0.0], dtype=np.float32)).all()
-    assert (output[1][1].asnumpy() == np.array([0.0], dtype=np.float32)).all()
-    assert (output[1][2].asnumpy() == np.array([1.0], dtype=np.float32)).all()
+    assert len(output[1]) == 1
+    assert (output[1][0].asnumpy() == np.array([1.0], dtype=np.float32)).all()
 
 
 @arg_mark(plat_marks=['cpu_linux'],

@@ -25,10 +25,19 @@
 #include "utils/ms_context.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/tensor_py.h"
+#include "mindspore/ccsrc/runtime/pipeline/pipeline.h"
+#include "include/common/pynative/variable.h"
 
 namespace mindspore {
 namespace pynative {
 namespace py = pybind11;
+std::function<void(void)> wait_bprop_callback = nullptr;
+void RegisterWaitBpropFunc(const std::function<void(void)> &wait_func) { wait_bprop_callback = wait_func; }
+
+std::function<void(void)> GetWaitBpropFunc() {
+  MS_EXCEPTION_IF_NULL(wait_bprop_callback);
+  return wait_bprop_callback;
+}
 
 namespace {
 void PlantTupleParam(const FuncGraphPtr &bprop_graph, const abstract::AbstractSequencePtr &abs_seq,
@@ -273,11 +282,25 @@ AbstractBasePtr CommonUtils::SetAbstractValueToAnyValue(const AbstractBasePtr &a
   return abs;
 }
 
+ValuePtrList CommonUtils::FlattenOnlyTensor(const ValuePtr &v) {
+  MS_EXCEPTION_IF_NULL(v);
+  ValuePtrList outputs;
+  CommonUtils::FlattenValueSeqArg(v, false, true, &outputs);
+  return outputs;
+}
+
 ValuePtrList CommonUtils::FlattenTensorSeqInValueSeq(const ValuePtrList &v, bool only_flatten_tensor) {
   ValuePtrList outputs;
   for (const auto &item : v) {
     FlattenValueSeqArg(item, only_flatten_tensor, false, &outputs);
   }
+  return outputs;
+}
+
+ValuePtrList CommonUtils::FlattenTensorSeqInValue(const ValuePtr &v) {
+  MS_EXCEPTION_IF_NULL(v);
+  ValuePtrList outputs;
+  FlattenValueSeqArg(v, true, false, &outputs);
   return outputs;
 }
 
@@ -312,6 +335,25 @@ void CommonUtils::FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_ten
     MS_LOG(DEBUG) << "Get not tensor value: " << v->ToString();
     (void)flatten_v->emplace_back(v);
   }
+}
+
+ValuePtr CommonUtils::ShallowCopyAndDetach(const ValuePtr &value) {
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
+    auto copy_tensor = std::make_shared<tensor::Tensor>(*tensor);
+    copy_tensor->set_storage_info(tensor->storage_info());
+    copy_tensor->set_auto_grad_meta_data(nullptr);
+    return copy_tensor;
+  } else if (value->isa<ValueSequence>()) {
+    auto val_seq = value->cast<ValueSequencePtr>();
+    std::vector<ValuePtr> res;
+    res.reserve(val_seq->size());
+    for (const auto &val : val_seq->value()) {
+      (void)res.emplace_back(ShallowCopyAndDetach(val));
+    }
+    return std::make_shared<ValueTuple>(res);
+  }
+  return value;
 }
 
 tensor::TensorPtr CastUtils::TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) {
@@ -366,10 +408,15 @@ bool HookUtils::HasRegisterHook(const py::object &obj) {
   }
   auto tensor = tensor::ConvertToTensor(obj);
   const auto &grad_meta_data = tensor->auto_grad_meta_data();
-  if (grad_meta_data == nullptr || !grad_meta_data->is_register_hook()) {
+  if (grad_meta_data == nullptr) {
     return false;
   }
-  return !grad_meta_data->backward_hooks().empty();
+  pynative::GetWaitBpropFunc()();
+  const auto &grad_node = grad_meta_data->UnsafeGetGradNodeImpl();
+  if (grad_node == nullptr) {
+    return false;
+  }
+  return !grad_node->backward_hooks().empty();
 }
 
 py::list HookUtils::GetRegisterHookList(const py::object &obj) {
@@ -379,7 +426,9 @@ py::list HookUtils::GetRegisterHookList(const py::object &obj) {
   py::list hook_fn_list;
   auto tensor = tensor::ConvertToTensor(obj);
   const auto &grad_meta_data = tensor->auto_grad_meta_data();
-  const auto &backward_hooks = grad_meta_data->backward_hooks();
+  MS_EXCEPTION_IF_NULL(grad_meta_data);
+  const auto &grad_node = grad_meta_data->UnsafeGetGradNodeImpl();
+  const auto &backward_hooks = grad_node->backward_hooks();
   for (const auto &[id, hook] : backward_hooks) {
     auto fn = hook->hook_;
     if (py::isinstance<py::none>(fn)) {

@@ -27,8 +27,7 @@
 #include "pynative/forward/forward_task.h"
 #include "pynative/grad/function/func_builder.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "pynative/grad/variable.h"
-#include "pynative/grad/auto_grad.h"
+#include "include/common/pynative/variable.h"
 
 namespace mindspore {
 namespace pynative {
@@ -52,25 +51,22 @@ class BpropCallback final : public expander::bprop::PynativeCallback {
   ValuePtr *output_;
 };
 
-namespace PyNativeAlgo {
 struct AutoGradUtil {
   // Common grad function
   static InputType SetValueGradInfo(const ValuePtr &value, InputType grad_type);
   static InputType SetTensorGradInfo(const tensor::TensorPtr &tensor);
-  static ValuePtr BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence, size_t op_index = 0);
-  static ValuePtr VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence,
-                                   size_t op_index = 0);
+  static ValuePtr BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence);
+  static ValuePtr VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence);
   static void BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &output,
-                                    size_t op_index, autograd::CreationType creation_type);
+                                    autograd::CreationType creation_type, bool requires_grad);
   static void SetInferOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
   static void SetInferMultiOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op);
-  static ValuePtr MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+  static ValuePtr MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op,
                              const tensor::TensorPtr &base_view = nullptr);
-  static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+  static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op,
                                   const tensor::TensorPtr &view_base = nullptr);
   // Multi inputs and multi outputs view op enter here, temp code need discard.
-  static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
-                                  const ValueTuplePtr &base_view);
+  static ValuePtr MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, const ValueTuplePtr &base_view);
   static void BumpVersion(const ValuePtr &value);
 
   static bool IsPrimNeedGrad(const PrimitivePtr &prim);
@@ -84,10 +80,8 @@ struct AutoGradUtil {
                                      const abstract::AbstractBasePtr &abs, const SpecialType &type);
   static AnfNodePtr BuildSparseTensorNode(const KernelGraphPtr &tape, const ValuePtr &sparse_value,
                                           const AnfNodePtr &dout_value_node);
-  static void SetGradMetaData(const ValuePtr &value, const VariablePtr &variable, const ParameterPtr &param = nullptr);
-  static void SetGradInfoForInputs(const ValuePtr &value, const VariablePtr &variable,
-                                   autograd::MetaGradInfoList *param_meta_grad_info,
-                                   const ParameterPtr &param = nullptr);
+  static void SetGradInfoForInputs(const ValuePtr &value, const BackwardNodePtr &node,
+                                   OrderedMap<tensor::TensorPtr, autograd::AutoGradMetaDataPtr> *param_meta_grad_info);
   static inline bool IsParam(InputType grad_type) {
     return grad_type == InputType::kParameter || grad_type == InputType::kInput;
   }
@@ -98,6 +92,8 @@ struct AutoGradUtil {
   static void BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodePtr> *outputs);
   static CallBackFn CreateGraphCallBack(const FuncGraphPtr &call_graph, const std::string &cache_key,
                                         const GraphCallCondition &graph_call_condition);
+  static void CreateHighOrderGraph(const FuncGraphPtr &first_grad_fg, const VectorRef &input_args, const VectorRef &out,
+                                   const std::string &cache_key);
   static PrimitivePyPtr BuildBpropCutPrim(const PrimitivePtr &prim, bool is_need_recompute = false);
   static void CheckRecomputeInputs(const ValuePtrList &inputs, bool is_need_recompute);
   static void ClearAutoGradStaticCache();
@@ -105,8 +101,8 @@ struct AutoGradUtil {
   static void CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs);
   static void CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inplace_op, const PrimitivePtr &prim,
                                         const std::string &device_target, ValuePtrList &&inputs);
+  static ValuePtr ShallowCopyAndDetach(const ValuePtr &value);
 };
-};  // namespace PyNativeAlgo
 }  // namespace pynative
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_PYNATIVE_GRAD_GRAD_UTILS_H_

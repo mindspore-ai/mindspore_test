@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/expander/core/node.h"
-#include "pynative/grad/variable.h"
+#include "include/common/pynative/variable.h"
 #include "pybind11/pybind11.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
@@ -44,8 +44,6 @@ struct CustomContext {
   py::function bprop_fn;
   // Python inputs for bprop_fn
   py::object original_inputs;
-  // Python output
-  py::object original_output;
   // Recompute weight size
   size_t weight_size{0};
   // Whether the cell is recompute cell
@@ -54,17 +52,17 @@ struct CustomContext {
     py::gil_scoped_acquire gil_acquire;
     bprop_fn = py::object();
     original_inputs = py::object();
-    original_output = py::object();
   }
 };
 
 class CustomBackward : public BackwardNode {
  public:
-  CustomBackward(string name, py::function bprop_fn, py::list bprop_inputs, abstract::AbstractBasePtr out_abstract,
-                 bool is_recompute = false, size_t output_size = 1)
+  CustomBackward(string name, py::function bprop_fn, py::list bprop_inputs, SavedNodePtr saved_output,
+                 abstract::AbstractBasePtr out_abstract, bool is_recompute = false, size_t output_size = 1)
       : BackwardNode(std::move(name), output_size),
         bprop_fn_(std::move(bprop_fn)),
         bprop_inputs_(std::move(bprop_inputs)),
+        saved_output_(std::move(saved_output)),
         out_abstract_(std::move(out_abstract)),
         is_recompute_(is_recompute) {}
   ~CustomBackward() override;
@@ -74,6 +72,7 @@ class CustomBackward : public BackwardNode {
  private:
   py::function bprop_fn_;
   py::object bprop_inputs_;
+  SavedNodePtr saved_output_;
   abstract::AbstractBasePtr out_abstract_;
   bool is_recompute_{false};
 };

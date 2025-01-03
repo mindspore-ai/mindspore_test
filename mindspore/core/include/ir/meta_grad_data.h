@@ -40,32 +40,23 @@ enum class InputType {
 };
 
 namespace pynative::autograd {
-class Variable;
+class BackwardNode;
 }  // namespace pynative::autograd
 
 class TensorBackwardHook;
 using TensorBackwardHookPtr = std::shared_ptr<TensorBackwardHook>;
-using VariablePtr = std::shared_ptr<pynative::autograd::Variable>;
-using VariableWeakPtr = std::weak_ptr<pynative::autograd::Variable>;
+using BackwardNodePtr = std::shared_ptr<pynative::autograd::BackwardNode>;
 
 class AutoGradMetaInterface {
  public:
-  [[nodiscard]] virtual VariablePtr UnsafeGetVariableImpl() const = 0;
-  virtual void set_variable(const VariablePtr &variable) = 0;
-  [[nodiscard]] virtual ParameterPtr parameter() const = 0;
-  virtual void set_parameter(const ParameterPtr &parameter) = 0;
-  virtual void set_k_node(const AnfNodePtr &k_node) = 0;
-  [[nodiscard]] virtual AnfNodePtr k_node() const = 0;
+  [[nodiscard]] virtual BackwardNodePtr UnsafeGetGradNodeImpl() const = 0;
+  virtual void set_grad_node(const BackwardNodePtr &variable) = 0;
   [[nodiscard]] virtual InputType input_type() const = 0;
   virtual void set_input_type(InputType input_type) = 0;
-  [[nodiscard]] virtual size_t op_index() const = 0;
-  virtual void set_op_index(size_t op_index) = 0;
   [[nodiscard]] virtual size_t output_index() const = 0;
   virtual void set_output_index(size_t output_index) = 0;
   virtual void Reset() = 0;
   virtual ~AutoGradMetaInterface() = default;
-  virtual const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() = 0;
-  virtual bool is_register_hook() const = 0;
 };
 using AutoGradMetaInterfacePtr = std::shared_ptr<AutoGradMetaInterface>;
 }  // namespace mindspore

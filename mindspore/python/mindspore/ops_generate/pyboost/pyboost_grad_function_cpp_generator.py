@@ -69,7 +69,8 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
         pyboost_func_reg_def = ''
         pyboost_func_include_headers_str = ''
         for op_proto in op_protos:
-            if (op_proto.op_dispatch is None) or (not op_proto.op_dispatch.enable):
+            if (op_proto.op_dispatch is None) or (not op_proto.op_dispatch.enable) \
+                    or op_proto.op_dispatch.is_comm_op:
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_pyboost_func_name = op_parser.get_pyboost_func_name()
@@ -89,7 +90,8 @@ class PyboostGradFunctionsGenerator(BaseGenerator):
                 op_name=op_name_str,
                 op_args=op_args_str,
                 convert_body=convert_value_type_str,
-                call_args=call_args_str)
+                call_args=call_args_str,
+                operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE
             pyboost_func_reg_def += template.REGISTER_PYBOOST_GRAD_DEFINE_TEMPLATE.replace(
                 pyboost_op_name=op_proto.op_class.name,

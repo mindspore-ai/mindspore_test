@@ -69,37 +69,25 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   // Python grad func can not process None, we need to convert None to zero tensor.
   auto func_builder = FuncBuilder(name_, device_target, nullptr);
   auto filled_zeros_grad = func_builder.FillZeros(gradient, out_abstract_);
-
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
   py::object py_tensor_grad = CValueToPybindObj(filled_zeros_grad);
   py::list list_inputs = bprop_inputs_.cast<py::list>();
-  list_inputs.append(py_tensor_grad);
-  size_t non_inp_args_size = is_recompute_ ? kSizeOne : kSizeTwo;
-  auto inp_args_size = list_inputs.size() - non_inp_args_size;
-  py::tuple input_args(inp_args_size);
-  for (size_t i = 0; i < inp_args_size; ++i) {
-    input_args[i] = list_inputs[i];
-  }
-  py::tuple fn_args(list_inputs.size());
-  for (size_t i = 0; i < fn_args.size(); ++i) {
+  size_t fn_size = is_recompute_ ? list_inputs.size() + kSizeOne : list_inputs.size() + kSizeTwo;
+  py::tuple fn_args(fn_size);
+  for (size_t i = 0; i < list_inputs.size(); ++i) {
     fn_args[i] = list_inputs[i];
   }
-  const auto &inst = pynative::PyNativeExecutor::GetInstance();
-  if (inst->grad_flag()) {
-    inst->NewGraph(bprop_fn_, input_args.cast<py::args>());
+  if (!is_recompute_) {
+    auto out = saved_output_->Unwrap(shared_from_this());
+    py::object py_out = CValueToPybindObj(out);
+    fn_args[list_inputs.size()] = py_out;
+    fn_args[list_inputs.size() + kSizeOne] = py_tensor_grad;
+  } else {
+    fn_args[list_inputs.size()] = py_tensor_grad;
   }
   py::object grads_obj = bprop_fn_(*fn_args);
   py::tuple input_grads = CheckBpropOut(grads_obj, fn_args, name());
-  py::object out = grads_obj;
-  // If grads.size() > inp_args_size, that means exist weights.
-  if (input_grads.size() > inp_args_size) {
-    MS_LOG(DEBUG) << "Get grads size " << input_grads.size();
-    out = py::cast<py::tuple>(grads_obj)[0];
-  }
-  if (inst->grad_flag()) {
-    inst->EndGraph(bprop_fn_, out, input_args.cast<py::args>());
-  }
   MS_LOG(DEBUG) << "Run cell custom bprop function end.";
   ValuePtrList gradient_values;
   ConvertPyObjectToCTensor(input_grads, &gradient_values, true);
@@ -113,6 +101,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
 }
 
 void CustomBackward::Release() {
+  saved_output_ = nullptr;
   py::gil_scoped_acquire gil_acquire;
   bprop_fn_ = py::object();
   bprop_inputs_ = py::object();

@@ -20,10 +20,11 @@
 #include "utils/log_adapter.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/grad/grad_utils.h"
-#include "pynative/grad/grad.h"
+#include "pynative/grad/function/func_grad.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/pynative/grad_state.h"
+#include "include/common/pynative/common_utils.h"
 
 namespace mindspore {
 namespace pynative {
@@ -214,14 +215,42 @@ void ConstructContextAfterForward(const std::shared_ptr<FunctionContext> &contex
     const auto &input_value = context->inputs[i];
     if (!input_value->isa<None>()) {
       (void)context->input_value_grad_type.emplace_back(
-        PyNativeAlgo::AutoGradUtil::SetValueGradInfo(input_value, InputType::kConstant));
+        AutoGradUtil::SetValueGradInfo(input_value, InputType::kConstant));
       auto base_tensor = input_value->cast<tensor::TensorPtr>();
       input_base_tensors.insert(base_tensor);
     }
   }
   context->input_base_tensors = input_base_tensors;
-  (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(context->outputs, InputType::kOpOutput);
-  context->flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(context->outputs);
+  (void)AutoGradUtil::SetValueGradInfo(context->outputs, InputType::kOpOutput);
+  context->flatten_outputs = CommonUtils::FlattenTensorSeqInValue(context->outputs);
+}
+
+py::object FunctionBase::saved_tensors() const {
+  if (!saved_tensors_) {
+    return py::tuple();
+  }
+  if (saved_nodes_.empty()) {
+    return py::cast<py::tuple>(saved_tensors_);
+  }
+  auto tensors = py::cast<py::list>(saved_tensors_);
+  py::tuple saved_tensors(tensors.size());
+  auto grad_node = weak_grad_node_.lock();
+  MS_EXCEPTION_IF_NULL(grad_node);
+  for (size_t i = 0; i < tensors.size(); ++i) {
+    auto iter = saved_nodes_.find(i);
+    if (iter == saved_nodes_.end()) {
+      saved_tensors[i] = tensors[i];
+      continue;
+    }
+    const auto &saved_node = iter->second;
+    const auto tensor = saved_node->Unwrap(grad_node)->cast<tensor::TensorPtr>();
+    if (tensor == nullptr) {
+      saved_tensors[i] = py::none();
+    } else {
+      saved_tensors[i] = py::reinterpret_steal<py::object>(tensor::PackTensor(tensor));
+    }
+  }
+  return std::move(saved_tensors);
 }
 
 py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
@@ -245,7 +274,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
     if (base_tensor != nullptr) {
       (void)is_tensor_input.emplace_back(true);
       base_tensor->set_need_pipeline_sync(true);
-      need_grad_input[i] = PyNativeAlgo::AutoGradUtil::NeedGrad(base_tensor) ? py::bool_(true) : py::bool_(false);
+      need_grad_input[i] = AutoGradUtil::NeedGrad(base_tensor) ? py::bool_(true) : py::bool_(false);
       (void)context->inputs.emplace_back(base_tensor);
     } else {
       (void)is_tensor_input.emplace_back(false);
@@ -279,18 +308,15 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   TensorPtrSet non_diff_tensors = context->non_diff_tensors;
   // Clean device address to reduce the occupation of resources.
   CleanBackwardUnusedTensorDeviceAddress(context);
-
+  // Generate saved nodes， and clear saved tensor.
+  ctx->GenerateSavedNodes(context);
   const auto &forward_executor = pynative_executor->forward_executor();
   runtime::Pipeline::Get().WaitFrontend();
   if (forward_executor->enable_async()) {
-    auto auto_grad_cell_ptr = grad_executor->top_cell()->auto_grad_cell_ptr();
-    auto task = [auto_grad_cell_ptr, new_context = std::move(context)]() mutable {
-      (void)auto_grad_cell_ptr->CallCustomFunction(new_context);
-    };
+    auto task = [new_context = std::move(context)]() mutable { (void)CallCustomPyFunction(new_context); };
     grad_executor->DispatchGradQueueTask(std::move(task));
   } else {
-    auto auto_grad_cell_ptr = grad_executor->top_cell()->auto_grad_cell_ptr();
-    (void)auto_grad_cell_ptr->CallCustomFunction(context);
+    (void)CallCustomPyFunction(context);
   }
   size_t num_output = (py::cast<py::tuple>(outputs)).size();
   py::tuple output_ret(num_output);
@@ -316,6 +342,36 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
     return output_ret[0];
   } else {
     return output_ret;
+  }
+}
+
+void FunctionBase::GenerateSavedNodes(const std::shared_ptr<FunctionContext> &ctx) {
+  if (!saved_tensors_) {
+    return;
+  }
+  py::list tensors = py::cast<py::list>(saved_tensors_);
+  if (!tensors) {
+    MS_LOG(EXCEPTION) << "save tensor should be tuple!";
+  }
+  auto check_is_output = [&ctx](const ValuePtr &val) {
+    return std::any_of(ctx->flatten_outputs.begin(), ctx->flatten_outputs.end(),
+                       [&val](const ValuePtr &output) { return val.get() == output.get(); });
+  };
+  saved_nodes_.reserve(tensors.size());
+  for (size_t i = 0; i < tensors.size(); ++i) {
+    const auto &obj = tensors[i];
+    if (tensor::IsTensorPy(obj)) {
+      auto tensor = tensor::ConvertToTensor(obj);
+      // Now custom function not support high order, this need to do later.
+      if (check_is_output(tensor)) {
+        saved_nodes_[i] = std::make_shared<SavedNode>(CommonUtils::ShallowCopyAndDetach(tensor), nullptr, false, true);
+        tensors[i] = py::object();
+      }
+    } else if (!py::isinstance<py::none>(obj)) {
+      MS_LOG(EXCEPTION)
+        << "Please check your custom function, that save_for_backward() only support None and tensor, but got "
+        << py::str(obj);
+    }
   }
 }
 

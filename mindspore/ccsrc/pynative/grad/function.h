@@ -28,7 +28,7 @@
 #include <unordered_set>
 #include "abstract/abstract_value.h"
 #include "mindspore/ccsrc/pyboost/functions/auto_grad_guard.h"
-#include "pynative/grad/variable.h"
+#include "include/common/pynative/variable.h"
 
 namespace mindspore::pynative::autograd {
 using TensorPtr = tensor::TensorPtr;
@@ -87,7 +87,7 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// `SaveForBackward` method. These tensors can be used in the backward pass.
   ///
   /// \return The list of saved tensors.
-  const TensorPtrList &GetSavedTensors() { return to_save_; }
+  const TensorPtrList GetSavedTensors() const;
 
   /// \brief Mark input tensors as "dirty".
   ///
@@ -144,6 +144,8 @@ struct PYNATIVE_EXPORT AutogradContext {
   /// computation. The data is stored as key-value pairs.
   std::unordered_map<std::string, ValuePtr> saved_data;
 
+  void GenerateSavedNodes();
+
   friend PYNATIVE_EXPORT void CppFunctionDoGrad(AutogradContext *context, const TensorPtrList &inputs,
                                                 TensorPtrList *outputs);
 
@@ -152,6 +154,8 @@ struct PYNATIVE_EXPORT AutogradContext {
   std::unordered_set<TensorPtr> non_differentiable_;
   std::unordered_set<TensorPtr> dirty_inputs_;
   bool materialize_grads_{true};
+  // This is used for avoid cycle reference.
+  std::vector<SavedNodePtr> saved_nodes_;
   std::weak_ptr<BackwardNode> node_;
 
   template <class T>
@@ -240,6 +244,7 @@ template <class T>
 void CppFunctionNode<T>::Release() {
   context_.to_save_.clear();
   context_.saved_data.clear();
+  context_.saved_nodes_.clear();
 }
 }  // namespace mindspore::pynative::autograd
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_FUNCTION_H_

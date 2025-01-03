@@ -83,19 +83,12 @@ struct OpGradInfo {
   }
   bool run_in_vm = false;
   bool is_need_recompute{false};
-  // Mark op output value whether used in bprop graph
-  bool used_in_bprop_graph{false};
-  // If op output value used in bprop grad and not in first step or dynamic process, need to do output value replace in
-  // bprop graph
-  bool need_do_forward_output_replace{true};
   // Mark op type
   OperatorType operator_type{OperatorType::kDefault};
   // If recompute, we record weight_size.
   size_t weight_size{0};
-  // op index
   size_t op_index{0};
   std::string op_info;
-
   PrimitivePtr op_prim{nullptr};
   abstract::AbstractBasePtrList input_abs{};
   abstract::AbstractBasePtr out_abs{nullptr};
@@ -109,20 +102,16 @@ struct OpGradInfo {
 using OpGradInfoPtr = std::shared_ptr<OpGradInfo>;
 
 struct GradParam {
-  GradParam(const OpGradInfoPtr &op_grad_info, bool use_dynamic_shape_process)
-      : op_grad_info(op_grad_info), use_dynamic_shape_process(use_dynamic_shape_process) {
+  explicit GradParam(const OpGradInfoPtr &op_grad_info) : op_grad_info(op_grad_info) {
     input_size = op_grad_info->input_value.size();
   }
 
   OpGradInfoPtr op_grad_info;
 
-  // Dynamic shape or dynamic structure
-  bool use_dynamic_shape_process{false};
-
   // For other used
   bool out_used_in_bporp_graph{true};
   bool is_control_flow{false};
-  bool is_func_grad{false};
+  bool is_high_order{false};
   size_t input_size{0};
 
   // For jit domain
@@ -188,11 +177,9 @@ struct InputArgsInfo {
   bool is_need_recompute{false};
   bool has_custom_bprop{false};
   SensType sens_type{SensType::kNormal};
-  PrimitivePyPtr custom_bprop_prim{nullptr};
   ValuePtr out_value{nullptr};
-  std::string obj_id;
   std::string cell_id;
-  std::string already_run_cell_id;
+  std::string ready_run_cell_id;
   std::string input_args_id;
   size_t input_size = 0;
   std::vector<std::string> input_arg_id_vec;
@@ -202,7 +189,6 @@ struct InputArgsInfo {
 
   // Free memory
   void Reset() {
-    custom_bprop_prim = nullptr;
     out_value = nullptr;
     input_arg_value_vec.clear();
   }
@@ -238,17 +224,14 @@ struct SliceOpInfo {
 using SliceOpInfoPtr = std::shared_ptr<SliceOpInfo>;
 
 struct GraphCallCondition {
-  GraphCallCondition(bool is_control_flow, bool is_jit_graph, bool is_dynamic_shape_process, bool jit_out_has_dict,
-                     bool is_func_grad)
+  GraphCallCondition(bool is_control_flow, bool is_jit_graph, bool jit_out_has_dict, bool is_func_grad)
       : is_control_flow_(is_control_flow),
         is_jit_graph_(is_jit_graph),
-        is_dynamic_shape_process_(is_dynamic_shape_process),
         jit_out_has_dict_(jit_out_has_dict),
         is_func_grad_(is_func_grad) {}
 
   bool is_control_flow_;
   bool is_jit_graph_;
-  bool is_dynamic_shape_process_;
   bool jit_out_has_dict_;
   bool is_func_grad_;
 };

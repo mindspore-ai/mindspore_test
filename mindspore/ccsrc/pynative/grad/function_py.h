@@ -20,8 +20,10 @@
 #include <memory>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
+#include <utility>
 #include "pybind11/pybind11.h"
-#include "pynative/grad/variable.h"
+#include "include/common/pynative/variable.h"
 #include "mindspore/ccsrc/include/common/visible.h"
 
 namespace mindspore::pynative::autograd {
@@ -85,9 +87,9 @@ class PYNATIVE_EXPORT FunctionBase {
 
   void set_needs_input_grad(const py::object &needs_input_grad) { needs_input_grad_ = needs_input_grad; }
 
-  py::object saved_tensors() const { return saved_tensors_; }
+  py::object saved_tensors() const;
 
-  void set_saved_tensors(const py::object &saved_tensors) { saved_tensors_ = saved_tensors; }
+  void set_saved_tensors(const py::object &saved_tensors) { saved_tensors_ = py::cast<py::list>(saved_tensors); }
 
   py::object non_differentiable() { return non_differentiable_; }
 
@@ -108,7 +110,10 @@ class PYNATIVE_EXPORT FunctionBase {
 
   std::vector<bool> is_tensor_input() { return is_tensor_input_; }
 
+  void set_weak_grad_node(const BackwardNodePtr &grad_node) { weak_grad_node_ = grad_node; }
+
   void set_is_tensor_input(const std::vector<bool> &is_tensor_input) { is_tensor_input_ = is_tensor_input; }
+  void GenerateSavedNodes(const std::shared_ptr<FunctionContext> &ctx);
 
  private:
   // A python tuple return to use to indicate whether inputs need grad.
@@ -129,6 +134,12 @@ class PYNATIVE_EXPORT FunctionBase {
 
   // True is the input is tensor
   std::vector<bool> is_tensor_input_;
+
+  // This is used for avoid cycle reference.
+  std::unordered_map<size_t, SavedNodePtr> saved_nodes_;
+
+  // This is used for unpack saved tensors.
+  std::weak_ptr<BackwardNode> weak_grad_node_;
 };
 
 using FunctionPtr = std::shared_ptr<FunctionBase>;
