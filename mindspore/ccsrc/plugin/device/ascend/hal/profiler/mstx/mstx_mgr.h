@@ -47,9 +47,15 @@ class MstxMgr {
   uint64_t RangeStart(const char *message, void *stream);
   void RangeEnd(uint64_t id);
 
+  static void MarkImpl(const char *message, void *stream);
+  static void RangeStartImpl(const char *message, void *stream, uint64_t msRangeId);
+  static void RangeEndImpl(uint64_t msRangeId);
+
   void Enable();
   void Disable();
   bool IsEnable();
+
+  inline bool GetRangeId() { return msRangeId_++; }
 
  private:
   bool IsProfEnable();
@@ -89,20 +95,21 @@ class MstxDeviceTask : public runtime::AsyncTask {
 
 std::string GetMstxHcomMsg(const std::string &opName, uint64_t dataCnt, HcclDataType dataType, HcclComm comm);
 
-#define MSTX_START(rangeId, opName, dataType, dataCnt, comm, stream)                                   \
-  do {                                                                                                 \
-    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) {                              \
-      rangeId = mindspore::profiler::ascend::MstxMgr::GetInstance().RangeStart(                        \
-        mindspore::profiler::ascend::GetMstxHcomMsg(opName, dataCnt, dataType, comm).c_str(), stream); \
-    }                                                                                                  \
+#define MSTX_START(rangeId, opName, dataType, dataCnt, comm, stream)                                            \
+  do {                                                                                                          \
+    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) {                                       \
+      rangeId = mindspore::profiler::ascend::MstxMgr::GetInstance().GetRangeId();                               \
+      mindspore::profiler::ascend::MstxMgr::RangeStartImpl(                                                     \
+        mindspore::profiler::ascend::GetMstxHcomMsg(opName, dataCnt, dataType, comm).c_str(), stream, rangeId); \
+    }                                                                                                           \
   } while (0);
 
 // Match MSRX_START to use.
-#define MSTX_END(rangeId)                                                    \
-  do {                                                                       \
-    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) {    \
-      mindspore::profiler::ascend::MstxMgr::GetInstance().RangeEnd(rangeId); \
-    }                                                                        \
+#define MSTX_END(rangeId)                                                 \
+  do {                                                                    \
+    if (mindspore::profiler::ascend::MstxMgr::GetInstance().IsEnable()) { \
+      mindspore::profiler::ascend::MstxMgr::RangeEndImpl(rangeId);        \
+    }                                                                     \
   } while (0);
 
 }  // namespace ascend

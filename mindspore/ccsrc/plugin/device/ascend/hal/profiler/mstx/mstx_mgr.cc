@@ -56,50 +56,6 @@ static std::string RealPath(const std::string &path) {
   return std::string(realPath);
 }
 
-static void MarkImpl(const char *message, void *stream) {
-  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
-  CALL_MSTX_API(mstxMarkA, message, stream);
-  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
-  mindspore::profiler::CollectHostInfo("Ascend", "Mstx", "Mark", startTime, endTime);
-}
-
-static void RangeStartImpl(const char *message, void *stream, uint64_t msRangeId) {
-  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
-  uint64_t taskId = CALL_MSTX_API(mstxRangeStartA, message, stream);
-  if (taskId == 0) {
-    MS_LOG(WARNING) << "Failed to call mstxRangeStartA func.";
-    return;
-  }
-  std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
-  g_mstxRangeIds.insert(std::make_pair(msRangeId, taskId));
-  g_mstxInfoTime.insert(std::make_pair(msRangeId, startTime));
-}
-
-static void RangeEndImpl(uint64_t msRangeId) {
-  uint64_t taskId = 0;
-  uint64_t startTime = 0;
-  {
-    std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
-    auto iter = g_mstxRangeIds.find(msRangeId);
-    if (iter == g_mstxRangeIds.end()) {
-      MS_LOG(WARNING) << "Failed to find range start id for input range end id " << msRangeId;
-      return;
-    }
-    taskId = iter->second;
-    g_mstxRangeIds.erase(iter);
-    iter = g_mstxInfoTime.find(msRangeId);
-    if (iter == g_mstxInfoTime.end()) {
-      MS_LOG(WARNING) << "Failed to find range start time for input range end id " << msRangeId;
-      return;
-    }
-    startTime = iter->second;
-    g_mstxInfoTime.erase(iter);
-  }
-  CALL_MSTX_API(mstxRangeEnd, taskId);
-  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
-  mindspore::profiler::CollectHostInfo("Ascend", "Mstx", "Range", startTime, endTime);
-}
-
 static void SetStreamForCurrentThread() {
   // set current context for each pipeline thread, so that stream can be used to launch tx task
   auto ms_context = MsContext::GetInstance();
@@ -139,7 +95,7 @@ static void DispatchMarkTask(const char *message, void *stream) {
       auto txTask = [msgPtr, stream]() {
         runtime::OpExecutor::DispatchLaunchTask([msgPtr, stream]() {
           SetStreamForCurrentThread();
-          MarkImpl(msgPtr->c_str(), stream);
+          MstxMgr::MarkImpl(msgPtr->c_str(), stream);
         });
       };
       if (!runtime::OpExecutor::NeedSync()) {
@@ -161,7 +117,7 @@ static void DispatchRangeStartTask(const char *message, void *stream, uint64_t m
       auto txTask = [msgPtr, stream, msRangeId]() {
         runtime::OpExecutor::DispatchLaunchTask([msgPtr, stream, msRangeId]() {
           SetStreamForCurrentThread();
-          RangeStartImpl(msgPtr->c_str(), stream, msRangeId);
+          MstxMgr::RangeStartImpl(msgPtr->c_str(), stream, msRangeId);
         });
       };
       if (!runtime::OpExecutor::NeedSync()) {
@@ -179,7 +135,7 @@ static void DispatchRangeEndTask(uint64_t msRangeId) {
       auto txTask = [msRangeId]() {
         runtime::OpExecutor::DispatchLaunchTask([msRangeId]() {
           SetStreamForCurrentThread();
-          RangeEndImpl(msRangeId);
+          MstxMgr::RangeEndImpl(msRangeId);
         });
       };
       if (!runtime::OpExecutor::NeedSync()) {
@@ -206,6 +162,50 @@ void MstxDeviceTask::Run() {
 MstxMgr::MstxMgr() {
   std::string ascend_path = mindspore::transform::GetAscendPath();
   LoadMstxApiSymbol(ascend_path);
+}
+
+void MstxMgr::MarkImpl(const char *message, void *stream) {
+  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
+  CALL_MSTX_API(mstxMarkA, message, stream);
+  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
+  mindspore::profiler::CollectHostInfo("Ascend", "Mstx", "Mark", startTime, endTime);
+}
+
+void MstxMgr::RangeStartImpl(const char *message, void *stream, uint64_t msRangeId) {
+  uint64_t startTime = mindspore::profiler::GetClockSyscnt();
+  uint64_t taskId = CALL_MSTX_API(mstxRangeStartA, message, stream);
+  if (taskId == 0) {
+    MS_LOG(WARNING) << "Failed to call mstxRangeStartA func.";
+    return;
+  }
+  std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
+  g_mstxRangeIds.insert(std::make_pair(msRangeId, taskId));
+  g_mstxInfoTime.insert(std::make_pair(msRangeId, startTime));
+}
+
+void MstxMgr::RangeEndImpl(uint64_t msRangeId) {
+  uint64_t taskId = 0;
+  uint64_t startTime = 0;
+  {
+    std::lock_guard<std::mutex> lock(g_mstxRangeIdsMtx);
+    auto iter = g_mstxRangeIds.find(msRangeId);
+    if (iter == g_mstxRangeIds.end()) {
+      MS_LOG(WARNING) << "Failed to find range start id for input range end id " << msRangeId;
+      return;
+    }
+    taskId = iter->second;
+    g_mstxRangeIds.erase(iter);
+    iter = g_mstxInfoTime.find(msRangeId);
+    if (iter == g_mstxInfoTime.end()) {
+      MS_LOG(WARNING) << "Failed to find range start time for input range end id " << msRangeId;
+      return;
+    }
+    startTime = iter->second;
+    g_mstxInfoTime.erase(iter);
+  }
+  CALL_MSTX_API(mstxRangeEnd, taskId);
+  uint64_t endTime = mindspore::profiler::GetClockSyscnt();
+  mindspore::profiler::CollectHostInfo("Ascend", "Mstx", "Range", startTime, endTime);
 }
 
 void MstxMgr::Mark(const char *message, void *stream) {
