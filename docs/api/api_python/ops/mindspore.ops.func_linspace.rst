@@ -17,7 +17,7 @@ mindspore.ops.linspace
         - **steps** (Union[Tensor, int]) - 间隔中的包含的数值数量，包括区间端点。必须为正数。
 
     返回：
-        Tensor，具有与 `start` 相同的dtype，shape为 :math:`(steps)` 。
+        Tensor，具有与 `start` 相同的dtype，shape为 :math:`(steps,)` 。
 
     异常：
         - **TypeError** - `start` 或 `end` 不是Tensor。

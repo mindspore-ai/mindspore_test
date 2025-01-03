@@ -9003,7 +9003,7 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
         attn_mask (Tensor, optional): The attention mask tensor with data type of bool or int8 or uint8.
             The shape is :math:`(B, S)` / :math:`(B, 1, S)` / :math:`(B, 1, 1, S)`. Default: ``None``.
         actual_seq_lengths (Union[Tensor, tuple[int], list[int]], optional): Describe actual sequence length of each
-            input with data type of int32 or int64. The shape is :math:`(B, )`. Default: ``None``.
+            input with data type of int64. The shape is :math:`(B, )`. Default: ``None``.
         pse_shift (Tensor, optional): The position encoding tensor with data type of float16 or bfloat16. Input tensor
             of shape :math:`(1, N, 1, S)` / :math:`(B, N, 1, S)`. Default: ``None``.
         dequant_scale1 (Tensor, optional): Quantitative parametor, the tensor with data type of uint64 or float32. It

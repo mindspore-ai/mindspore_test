@@ -2891,7 +2891,7 @@ def linspace(start, end, steps):
             Must be positive int number or 0D int32/int64 Tensor.
 
     Returns:
-        Tensor, has the same dtype as `start`, and the shape of :math:`(steps)`.
+        Tensor, has the same dtype as `start`, and the shape of :math:`(steps,)`.
 
     Raises:
         TypeError: If `start` or `end` is not a Tensor.
