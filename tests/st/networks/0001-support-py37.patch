@@ -1,0 +1,361 @@
+From f65c7010566c751c0e2fcdfac39216693a8f6635 Mon Sep 17 00:00:00 2001
+From: twc <tanweicheng@huawei.com>
+Date: Thu, 9 Jan 2025 12:19:36 +0800
+Subject: [PATCH] support py37
+
+---
+ mindformers/__init__.py                       | 73 +--------------
+ .../dataset/blended_datasets/utils_s3.py      |  4 +-
+ mindformers/models/__init__.py                | 89 +------------------
+ mindformers/pipeline/__init__.py              |  4 +-
+ mindformers/tools/check_rules.py              |  8 +-
+ mindformers/utils/tensorboard.py              |  2 +-
+ 6 files changed, 13 insertions(+), 167 deletions(-)
+
+diff --git a/mindformers/__init__.py b/mindformers/__init__.py
+index 800c273cd..3d4fc6fd1 100644
+--- a/mindformers/__init__.py
++++ b/mindformers/__init__.py
+@@ -32,7 +32,7 @@ from mindformers.pipeline import (
+     ImageClassificationPipeline,
+     ImageToTextPipeline,
+     MaskedImageModelingPipeline,
+-    MultiModalToTextPipeline,
++    # MultiModalToTextPipeline,
+     Pipeline,
+     QuestionAnsweringPipeline,
+     SegmentAnythingPipeline,
+@@ -199,13 +199,9 @@ from mindformers.models import (
+     BaseAudioProcessor,
+     BaseConfig,
+     BaseImageProcessor,
+-    BaseImageToTextImageProcessor,
++    # BaseImageToTextImageProcessor,
+     BaseModel,
+     BaseProcessor,
+-    BaseTextContentBuilder,
+-    BaseXModalToTextModel,
+-    BaseXModalToTextProcessor,
+-    BaseXModalToTextTransform,
+     BasicTokenizer,
+     BertConfig,
+     BertForMultipleChoice,
+@@ -232,28 +228,6 @@ from mindformers.models import (
+     CLIPVisionConfig,
+     CONFIG_MAPPING,
+     CONFIG_MAPPING_NAMES,
+-    ChatGLM2Config,
+-    ChatGLM2ForConditionalGeneration,
+-    ChatGLM2Model,
+-    ChatGLM2Tokenizer,
+-    ChatGLM2WithPtuning2,
+-    ChatGLM3Tokenizer,
+-    ChatGLM4Tokenizer,
+-    ChatGLMTokenizer,
+-    CogVLM2Config,
+-    CogVLM2ContentTransformTemplate,
+-    CogVLM2ForCausalLM,
+-    CogVLM2ImageContentTransformTemplate,
+-    CogVLM2ImageForCausalLM,
+-    CogVLM2Tokenizer,
+-    CogVLM2VideoLM,
+-    CogVLM2VideoLMModel,
+-    EVA02Config,
+-    EVAModel,
+-    GLMChatModel,
+-    GLMConfig,
+-    GLMForPreTraining,
+-    GLMProcessor,
+     GPT2Config,
+     GPT2ForSequenceClassification,
+     GPT2LMHeadModel,
+@@ -262,23 +236,14 @@ from mindformers.models import (
+     GPT2Tokenizer,
+     GPT2TokenizerFast,
+     IMAGE_PROCESSOR_MAPPING,
+-    ImageEncoderConfig,
+     ImageProcessingMixin,
+     LlamaConfig,
+     LlamaForCausalLM,
+-    LlamaForCausalLMForCogVLM2Image,
+     LlamaModel,
+     LlamaProcessor,
+     LlamaTokenizer,
+     LlamaTokenizerFast,
+-    MllamaConfig,
+-    MllamaTextModel,
+-    MllamaProcessor,
+-    MllamaTokenizer,
+-    MllamaForConditionalGeneration,
+     MT5ForConditionalGeneration,
+-    MaskData,
+-    ModalContentTransformTemplate,
+     PanguAlphaConfig,
+     PanguAlphaHeadModel,
+     PanguAlphaModel,
+@@ -290,13 +255,6 @@ from mindformers.models import (
+     PreTrainedTokenizerBase,
+     PreTrainedTokenizerFast,
+     PretrainedConfig,
+-    SamConfig,
+-    SamImageEncoder,
+-    SamImageProcessor,
+-    SamMaskDecoder,
+-    SamModel,
+-    SamProcessor,
+-    SamPromptEncoder,
+     SwinConfig,
+     SwinForImageClassification,
+     SwinImageProcessor,
+@@ -313,33 +271,8 @@ from mindformers.models import (
+     ViTConfig,
+     ViTForImageClassification,
+     ViTImageProcessor,
+-    ViTMAEConfig,
+-    ViTMAEForPreTraining,
+-    ViTMAEImageProcessor,
+-    ViTMAEModel,
+-    ViTMAEProcessor,
+     ViTModel,
+     ViTProcessor,
+-    WhisperConfig,
+-    WhisperForConditionalGeneration,
+-    WhisperTokenizer,
+-    area_from_rle,
+-    batch_iterator,
+-    batched_mask_to_box,
+-    box_area,
+-    box_xyxy_to_xywh,
+-    build_all_layer_point_grids,
+-    calculate_stability_score,
+-    coco_encode_rle,
+-    generate_crop_boxes,
+-    is_box_near_crop_edge,
+-    mask_to_rle,
+-    nms,
+-    remove_small_regions,
+-    rle_to_mask,
+-    uncrop_boxes_xyxy,
+-    uncrop_masks,
+-    uncrop_points
+ )
+ from mindformers.modules import (
+     AlibiTensor,
+@@ -426,7 +359,7 @@ from mindformers.model_runner import (
+ from mindformers.run_check import run_check
+ from mindformers.mindformer_book import MindFormerBook
+ 
+-__all__ = ['ModelRunner', 'run_check', 'pipeline', 'MultiModalToTextPipeline']
++__all__ = ['ModelRunner', 'run_check', 'pipeline']
+ __all__.extend(core.__all__)
+ __all__.extend(dataset.__all__)
+ __all__.extend(generation.__all__)
+diff --git a/mindformers/dataset/blended_datasets/utils_s3.py b/mindformers/dataset/blended_datasets/utils_s3.py
+index d557360a1..bd84cf0a0 100644
+--- a/mindformers/dataset/blended_datasets/utils_s3.py
++++ b/mindformers/dataset/blended_datasets/utils_s3.py
+@@ -1,6 +1,6 @@
+ # Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+ import os
+-from typing import Any, Dict, NamedTuple, Protocol, Tuple
++from typing import Any, Dict, NamedTuple, Tuple
+ 
+ try:
+     import boto3
+@@ -32,7 +32,7 @@ class S3Config(NamedTuple):
+     bin_chunk_nbytes: int = 256 * 1024 * 1024
+ 
+ 
+-class S3Client(Protocol):
++class S3Client:
+     """The protocol which all s3 clients should abide by"""
+ 
+     def download_file(self, Bucket: str, Key: str, Filename: str) -> None: ...
+diff --git a/mindformers/models/__init__.py b/mindformers/models/__init__.py
+index 754a0c774..2e649d369 100644
+--- a/mindformers/models/__init__.py
++++ b/mindformers/models/__init__.py
+@@ -53,13 +53,6 @@ from .bert import (
+     BertTokenizer,
+     BertTokenizerFast
+ )
+-from .mae import (
+-    ViTMAEConfig,
+-    ViTMAEForPreTraining,
+-    ViTMAEImageProcessor,
+-    ViTMAEModel,
+-    ViTMAEProcessor
+-)
+ from .vit import (
+     ViTConfig,
+     ViTForImageClassification,
+@@ -101,22 +94,6 @@ from .gpt2 import (
+     GPT2Tokenizer,
+     GPT2TokenizerFast
+ )
+-from .glm import (
+-    ChatGLMTokenizer,
+-    GLMChatModel,
+-    GLMConfig,
+-    GLMForPreTraining,
+-    GLMProcessor
+-)
+-from .glm2 import (
+-    ChatGLM2Config,
+-    ChatGLM2ForConditionalGeneration,
+-    ChatGLM2Model,
+-    ChatGLM2Tokenizer,
+-    ChatGLM2WithPtuning2,
+-    ChatGLM3Tokenizer,
+-    ChatGLM4Tokenizer
+-)
+ from .llama import (
+     LlamaConfig,
+     LlamaForCausalLM,
+@@ -125,13 +102,6 @@ from .llama import (
+     LlamaTokenizer,
+     LlamaTokenizerFast
+ )
+-from .mllama import (
+-    MllamaConfig,
+-    MllamaTextModel,
+-    MllamaProcessor,
+-    MllamaTokenizer,
+-    MllamaForConditionalGeneration
+-)
+ from .pangualpha import (
+     PanguAlphaConfig,
+     PanguAlphaHeadModel,
+@@ -150,68 +120,13 @@ from .bloom import (
+     BloomTokenizerFast,
+     VHead
+ )
+-from .sam import (
+-    ImageEncoderConfig,
+-    MaskData,
+-    SamConfig,
+-    SamImageEncoder,
+-    SamImageProcessor,
+-    SamMaskDecoder,
+-    SamModel,
+-    SamProcessor,
+-    SamPromptEncoder,
+-    area_from_rle,
+-    batch_iterator,
+-    batched_mask_to_box,
+-    box_area,
+-    box_xyxy_to_xywh,
+-    build_all_layer_point_grids,
+-    calculate_stability_score,
+-    coco_encode_rle,
+-    generate_crop_boxes,
+-    is_box_near_crop_edge,
+-    mask_to_rle,
+-    nms,
+-    remove_small_regions,
+-    rle_to_mask,
+-    uncrop_boxes_xyxy,
+-    uncrop_masks,
+-    uncrop_points
+-)
+-from .cogvlm2 import (
+-    CogVLM2Config,
+-    CogVLM2ContentTransformTemplate,
+-    CogVLM2ForCausalLM,
+-    CogVLM2ImageContentTransformTemplate,
+-    CogVLM2ImageForCausalLM,
+-    CogVLM2Tokenizer,
+-    CogVLM2VideoLM,
+-    CogVLM2VideoLMModel,
+-    LlamaForCausalLMForCogVLM2Image
+-)
+-from .eva02 import (
+-    EVA02Config,
+-    EVAModel
+-)
+-from .whisper import (
+-    WhisperConfig,
+-    WhisperForConditionalGeneration,
+-    WhisperTokenizer
+-)
+ from .tokenization_utils import (
+     PreTrainedTokenizer,
+     PreTrainedTokenizerBase
+ )
+ from .tokenization_utils_fast import PreTrainedTokenizerFast
+ from .modeling_utils import PreTrainedModel
+-from .multi_modal import (
+-    BaseImageToTextImageProcessor,
+-    BaseTextContentBuilder,
+-    BaseXModalToTextModel,
+-    BaseXModalToTextProcessor,
+-    BaseXModalToTextTransform,
+-    ModalContentTransformTemplate
+-)
++
+ from .configuration_utils import PretrainedConfig
+ from .base_config import BaseConfig
+ from .base_model import BaseModel
+@@ -238,8 +153,6 @@ from .utils import (
+ 
+ __all__ = ['PreTrainedTokenizer', 'PreTrainedTokenizerFast']
+ __all__.extend(auto.__all__)
+-__all__.extend(glm2.__all__)
+ __all__.extend(llama.__all__)
+-__all__.extend(multi_modal.__all__)
+ __all__.extend(configuration_utils.__all__)
+ __all__.extend(modeling_utils.__all__)
+diff --git a/mindformers/pipeline/__init__.py b/mindformers/pipeline/__init__.py
+index 4d9a0a368..816327c9a 100644
+--- a/mindformers/pipeline/__init__.py
++++ b/mindformers/pipeline/__init__.py
+@@ -19,7 +19,7 @@ from .base_pipeline import Pipeline
+ from .image_classification_pipeline import ImageClassificationPipeline
+ from .zero_shot_image_classification_pipeline import ZeroShotImageClassificationPipeline
+ from .image_to_text_generation_pipeline import ImageToTextPipeline
+-from .multi_modal_to_text_generation_pipeline import MultiModalToTextPipeline
++# from .multi_modal_to_text_generation_pipeline import MultiModalToTextPipeline
+ from .translation_pipeline import TranslationPipeline
+ from .fill_mask_pipeline import FillMaskPipeline
+ from .text_classification_pipeline import TextClassificationPipeline
+@@ -30,4 +30,4 @@ from .masked_image_modeling_pipeline import MaskedImageModelingPipeline
+ from .segment_anything_pipeline import SegmentAnythingPipeline
+ 
+ __all__ = ['pipeline']
+-__all__.extend(multi_modal_to_text_generation_pipeline.__all__)
++# __all__.extend(multi_modal_to_text_generation_pipeline.__all__)
+diff --git a/mindformers/tools/check_rules.py b/mindformers/tools/check_rules.py
+index 059204f69..dba904905 100644
+--- a/mindformers/tools/check_rules.py
++++ b/mindformers/tools/check_rules.py
+@@ -153,10 +153,10 @@ def _check_parallel(config):
+                                f" = {config.model.model_config.hidden_size % device_num} != 0, which "
+                                f"may cause the optimizer parallel of the relevant parameters to fail")
+ 
+-        if cp > 1 and not config.model.model_config.use_flash_attention:
+-            raise ValueError(f"context_parallel is only available for flash attention for now, but got "
+-                             f"use_flash_attention {config.model.model_config.use_flash_attention}, please "
+-                             f"set use_flash_attention=True")
++        # if cp > 1 and not config.model.model_config.use_flash_attention:
++        #     raise ValueError(f"context_parallel is only available for flash attention for now, but got "
++        #                      f"use_flash_attention {config.model.model_config.use_flash_attention}, please "
++        #                      f"set use_flash_attention=True")
+ 
+ 
+ def _check_keyword_gen_dataset(config, mode, **kwargs):
+diff --git a/mindformers/utils/tensorboard.py b/mindformers/utils/tensorboard.py
+index 2cd3f1888..3630da959 100644
+--- a/mindformers/utils/tensorboard.py
++++ b/mindformers/utils/tensorboard.py
+@@ -13,7 +13,7 @@
+ # limitations under the License.
+ # ============================================================================
+ """TENSORBOARD Module"""
+-from tensorboardX import SummaryWriter
++# from tensorboardX import SummaryWriter
+ 
+ from mindformers.tools.logger import logger
+ from mindformers.tools.register import MindFormerConfig
+-- 
+2.36.1.windows.1
+
