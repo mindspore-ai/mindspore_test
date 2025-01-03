@@ -820,7 +820,7 @@ def upsample(input, size=None, scale_factor=None, mode="nearest", align_corners=
     r"""
     Samples `input` by the given `size` or `scale_factor`.
 
-    .. warnings:
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Refer to :func:`mindspore.mint.nn.functional.interpolate` for more details.

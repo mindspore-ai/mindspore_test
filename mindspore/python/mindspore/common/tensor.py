@@ -3411,7 +3411,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         Args:
             other (Tensor): The tensor whose data type is specified.
-            The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+                The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
 
         Returns:
             Tensor, the shape of tensor is the same as `self`, :math:`(x_0, x_1, ..., x_R)`.
