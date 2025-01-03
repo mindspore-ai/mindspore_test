@@ -93,6 +93,8 @@ class MS_CORE_API Primitive : public Named {
   ///
   /// \param[in] prim The input primitive.
   Primitive(const Primitive &prim);
+
+  void SetSideEffectFlag(const std::string &name, bool inplace_prim);
   /// \brief The copy assignment operator for Primitive.
   ///
   /// \param[in] other An existing Primitive object.
@@ -317,10 +319,21 @@ class MS_CORE_API Primitive : public Named {
   ///
   /// \return Return true if primitive is a inplace primitive, else return false.
   bool inplace_prim() const { return inplace_prim_; }
+
   /// \brief Set primitive inplace flag.
   ///
   /// \param inplace_prim The flag of primitive to be set.
   void set_inplace_prim(bool inplace_prim) { inplace_prim_ = inplace_prim; }
+
+  /// \brief Check whether the primitive is graph view primitive.
+  ///
+  /// \return Return true if primitive is a graph view primitive, else return false.
+  bool graph_view_prim() const { return graph_view_prim_; }
+
+  /// \brief Set primitive graph view flag.
+  ///
+  /// \param graph_view_prim The flag of primitive to be set.
+  void set_graph_view_prim(bool graph_view_prim) { graph_view_prim_ = graph_view_prim; }
 
   /// \brief Set rw_write input index for primitive.
   ///
@@ -361,6 +374,7 @@ class MS_CORE_API Primitive : public Named {
   bool record_evaluate_add_attr_;
   bool const_prim_;
   bool inplace_prim_;
+  bool graph_view_prim_;
   std::vector<size_t> const_input_indexes_;
   std::vector<size_t> rw_write_input_indexes_;
   uint64_t id_{0};
