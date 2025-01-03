@@ -75,6 +75,7 @@ Indexing, Slicing, Joining, Mutating Operations
     mindspore.mint.triu
     mindspore.mint.unbind
     mindspore.mint.unique_consecutive
+    mindspore.mint.unsqueeze
     mindspore.mint.where
 
 Random Sampling
@@ -299,6 +300,7 @@ Convolution Layers
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.Conv2d
     mindspore.mint.nn.Conv3d
     mindspore.mint.nn.ConvTranspose2d
     mindspore.mint.nn.Fold
@@ -385,6 +387,7 @@ Pooling Layers
 
     mindspore.mint.nn.AdaptiveAvgPool1d
     mindspore.mint.nn.AdaptiveAvgPool2d
+    mindspore.mint.nn.AdaptiveAvgPool3d
     mindspore.mint.nn.AvgPool2d
     mindspore.mint.nn.MaxUnpool2d
 
@@ -453,6 +456,7 @@ Convolution functions
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.functional.conv2d
     mindspore.mint.nn.functional.conv3d
     mindspore.mint.nn.functional.conv_transpose2d
     mindspore.mint.nn.functional.fold
