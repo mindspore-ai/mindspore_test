@@ -404,7 +404,7 @@ class Profiler:
             >>> from mindspore import Profiler
             >>> Profiler.offline_analyse("./profiling_path")
         """
-        real_path = PathManager.get_abs_path(path)
+        real_path = PathManager.get_real_path(path)
         PathManager.check_input_directory_path(real_path)
         ascend_ms_path_list = PathManager.get_ascend_ms_path_list(real_path)
 
