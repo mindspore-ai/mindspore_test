@@ -16,13 +16,23 @@
 #include "runtime/graph_scheduler/graph_parameter_store.h"
 
 #include <algorithm>
+#include <string>
 #include "runtime/graph_scheduler/device_tensor_copy_store.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "utils/llm_manager.h"
 
 namespace mindspore {
 namespace runtime {
+void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data) {
+  tensor_data_in_callback_.push_back(tensor_data);
+}
+
+void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceTensorPtr &device_tensor) {
+  device_tensor_in_callback_.push_back(device_tensor);
+}
+
 void GraphParameterStore::ResetPrepareState() {
   for (size_t i = 0; i < parameter_device_tensors_.size(); ++i) {
     auto &device_tensors = parameter_device_tensors_[i];
@@ -30,6 +40,8 @@ void GraphParameterStore::ResetPrepareState() {
       device_tensors[j].second.second = false;
     }
   }
+  tensor_data_in_callback_.reserve(buffer_size_);
+  device_tensor_in_callback_.reserve(buffer_size_);
 }
 
 void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_index, DeviceTensorType value_type) {
@@ -175,8 +187,29 @@ Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithInde
   return tensor.get();
 }
 
+void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback,
+                         const std::vector<DeviceTensorPtr> &device_tensor_in_callback) {
+  device::CallbackFunc callback_func = [tensor_data_in_callback, device_tensor_in_callback]() {
+    // Clear buffer automatically.
+  };
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device::DeviceContextKey device_key = {device_name, device_id};
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);
+  MS_EXCEPTION_IF_NULL(device_context);
+  auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, kDefaultStreamIndex);
+  if (!callback_ret) {
+    MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
+  }
+}
+
 void GraphParameterStore::ReleaseData() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kReleaseResource, "GraphParameterStore");
+  // Add copy data callback to avoid release data before async copy finished.
+  AddCopyDataCallBack(tensor_data_in_callback_, device_tensor_in_callback_);
+  tensor_data_in_callback_.clear();
+  device_tensor_in_callback_.clear();
+
   for (auto index : non_weight_ref_max_inputs_) {
     CheckIndexValid(index.first, index.second);
     std::pair<size_t, size_t> position{index.first, index.second};
