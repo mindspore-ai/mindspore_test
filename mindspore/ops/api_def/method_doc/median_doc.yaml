@@ -71,7 +71,7 @@ median:
         - indices (Tensor) - The index of the median. Shape is consistent with ``y`` , with a data type of int64.
 
     Raises:
-        TypeError: If ``dim`` is not a int.
+        TypeError: If ``dim`` is not an int.
         TypeError: If ``keepdim`` is not a bool.
         ValueError: If ``dim`` is not in range of [-x.dim, x.dim-1].
 

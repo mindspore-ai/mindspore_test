@@ -7005,7 +7005,7 @@ def _check_rank_range(x_rank, limit, arg_name, op_name):
 
 def repeat_interleave(input, repeats, axis=None):
     """
-    Repeat elements of a tensor along an axis, like `numpy.repeat`.
+    Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat`.
 
     Args:
         input (Tensor): The tensor to repeat values for. Must be of type: float16,
@@ -7045,7 +7045,7 @@ def repeat_interleave(input, repeats, axis=None):
 
 def repeat_interleave_ext(input, repeats, dim=None, output_size=None):
     r"""
-    Repeat elements of a tensor along an axis, like `numpy.repeat`.
+    Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat`.
 
     .. warning::
         Only support on Atlas A2 training series.
@@ -7086,7 +7086,7 @@ def repeat_interleave_ext(input, repeats, dim=None, output_size=None):
 
 def repeat_elements(x, rep, axis=0):
     """
-    Repeat elements of a tensor along an axis, like `numpy.repeat` .
+    Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat` .
 
     Note:
         It is recommended to use :func:'mindspore.mint.repeat_interleave', the dimension of input 'x' can support

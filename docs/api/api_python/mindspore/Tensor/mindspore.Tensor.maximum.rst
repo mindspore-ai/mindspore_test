@@ -17,7 +17,7 @@ mindspore.Tensor.maximum
         - 如果一个元素和NaN比较，则返回NaN。
 
     .. warning::
-        如果所有输入都为标量int类型，在GRAPH模式下，输出为int32类型的Tensor，在PYNATIVE模式下，输出为int64类型的Tensor。
+        如果所有输入都为标量int类型，在Graph模式下，输出为int32类型的Tensor，在PyNative模式下，输出为int64类型的Tensor。
 
     参数：
         - **other** (Union[Tensor, Number, bool]) - 输入可以是Number或bool，也可以是数据类型为Number或bool的Tensor。

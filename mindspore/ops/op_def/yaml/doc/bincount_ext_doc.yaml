@@ -15,8 +15,8 @@ bincount_ext:
 
     Args:
         input (Tensor): A one-dimensional Tensor.
-        weights (Tensor, optional): Weights with the same shape as the input. Default: `None`.
-        minlength (int, optional): The minimum length of output Tensor. Should be non-negative. Default: `0`.
+        weights (Tensor, optional): Weights with the same shape as the input. Default: ``None``.
+        minlength (int, optional): The minimum length of output Tensor. Should be non-negative. Default: ``0``.
 
     Returns:
         Tensor, If input is non-empty, the output shape is :math:`(max(max(input)+1, minlength), )`,
