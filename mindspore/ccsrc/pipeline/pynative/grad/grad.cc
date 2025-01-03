@@ -1242,9 +1242,13 @@ void GradExecutor::GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr
                                                     const py::args &args) {
   auto reset_flag = [this]() {
     if (finded_top_cell_->is_pipeline_top_cell()) {
+      if (top_cell_ != nullptr) {
+        top_cell_->ResetMetaGradInfo();
+      }
       top_cell_ = finded_top_cell_;
     } else if (top_cell_ != nullptr &&
-               finded_top_cell_->already_run_cell_id().find(top_cell_->already_run_cell_id()) == std::string::npos) {
+               (finded_top_cell_->already_run_cell_id().find(top_cell_->already_run_cell_id()) == std::string::npos ||
+                top_cell_->is_finish_backward())) {
       // NetA.set_grad, NetB.set_grad
       // then, run NetA(input), NetB(input) for get loss, and then run grad(NetA)(input), grad(NetB)(input).
       // But, when run grad(NetA)(input), finded_top_cell_ is grad of NetA, but top cell is grad(NetB)(input), which is
