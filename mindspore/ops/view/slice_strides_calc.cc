@@ -36,7 +36,7 @@ void SliceInputsCheck(const PrimitivePtr &prim, const std::vector<int64_t> &tens
                                            "Slice");
 
   for (size_t idx = 0; idx < tensor_shape.size(); idx++) {
-    if (begin[idx] < 0 || begin[idx] >= tensor_shape[idx]) {
+    if (begin[idx] < 0 || begin[idx] > tensor_shape[idx]) {
       MS_EXCEPTION(ValueError) << "For Slice, the begin is invalid.";
     }
     if (size[idx] == -1) {
