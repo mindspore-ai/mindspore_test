@@ -1360,7 +1360,7 @@ class Cell(Cell_):
         def _updata(param):
             if param in replace:
                 return replace.get(param)
-            new_p = param.init_data(None, set_sliced=False)
+            new_p = param.init_data(None, set_sliced=param.sliced)
             replace[param] = new_p
             return new_p
 

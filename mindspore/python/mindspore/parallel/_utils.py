@@ -135,6 +135,9 @@ def _slice_parameter(parameter, phase, layout):
             rank = get_rank()
             new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
             parameter.shape = new_tensor_shape
+            if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
+                parameter.init_mode.shape = new_tensor_shape
+            parameter.sliced = True
     else:
         graph_executor = GraphExecutor_.get_instance()
         new_param = parameter.init_data(layout, set_sliced=True)
