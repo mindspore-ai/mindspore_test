@@ -46,7 +46,6 @@ tensor::BaseTensorPtr Conv2DExtAscendCustomize(const std::shared_ptr<OpRunner> &
                                                const std::optional<BaseTensorPtr> &bias_tensor,
                                                const ValueTuplePtr &stride, const ValueTuplePtr &pad,
                                                const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
-  OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, pad, dilation, group);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_tensor, bias_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   auto input_shape = input_tensor->shape();

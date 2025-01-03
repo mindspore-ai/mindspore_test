@@ -82,7 +82,6 @@ tensor::BaseTensorPtr Conv2DPaddingAscendCustomize(const std::shared_ptr<OpRunne
                                                    const std::optional<BaseTensorPtr> &bias_tensor,
                                                    const ValueTuplePtr &stride, const Int64ImmPtr &padding_enum,
                                                    const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
-  OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, padding_enum, dilation, group);
   // Convert ValueTuple to std::vector
   const auto &weight_shape = weight_tensor->shape();
   auto spatial_len = weight_shape.size() - kIndex2;

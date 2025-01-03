@@ -134,6 +134,31 @@ void ConvBaseFunImpl::FetchSpatialDim(const PrimitivePtr &primitive, const Infer
   if (transposed) {
     conv_base::ConvBaseIndicesCheckPositiveVector("output_padding", output_padding_opt.value(), prim_name, false,
                                                   spatial_len);
+  } else if (MS_UNLIKELY(!input_infos[idxes_.input_idx]->IsDynamic() && !input_infos[idxes_.weight_idx]->IsDynamic())) {
+    auto groups_opt = input_infos[idxes_.groups_idx]->GetScalarValue<int64_t>();
+    if (groups_opt.has_value()) {
+      std::vector<int64_t> input_shape_with_padding;
+      std::vector<int64_t> kernel_shape_with_dilation;
+      auto in_channels = input_shape[kIndex1];
+      int64_t groups = groups_opt.value();
+      (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
+                                               weight_shape[kIndex1]);
+      int64_t input_rank = SizeToLong(input_shape.size());
+      for (int64_t i = 2; i < input_rank; i++) {
+        if (dilation.IsValueUnknown(i - 2) || padding.IsValueUnknown(i - 2)) {
+          break;
+        }
+        input_shape_with_padding.push_back(input_shape[i] + 2 * padding[(i - 2) % padding.size()]);
+        kernel_shape_with_dilation.push_back(dilation[(i - 2) % dilation.size()] * (weight_shape[i] - 1) + 1);
+        if (input_shape_with_padding.back() < kernel_shape_with_dilation.back()) {
+          MS_EXCEPTION(ValueError) << "For [" << prim_name << "], (Input_shape[i]{" << input_shape[i]
+                                   << "} + 2 * padding[i-2]{" << padding[(i - 2) % padding.size()]
+                                   << "})can't be less then "
+                                   << "(delation[i-2]{" << dilation[(i - 2) % dilation.size()]
+                                   << "} * (weight_shape[i]{" << weight_shape[i] << "} - 1) + 1).";
+        }
+      }
+    }
   }
 
   for (size_t i = 0; i < spatial_len; i++) {
