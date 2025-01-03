@@ -16,5 +16,4 @@
 
 BASE_PATH=$(cd "$(dirname $0)"; pwd)
 bash $BASE_PATH/run_resnet50_imagenet_4p.sh &
-bash $BASE_PATH/run_resnet_thor_imagenet_4p.sh &
 wait
