@@ -30,6 +30,7 @@ namespace mindspore {
 namespace runtime {
 using mindspore::tensor::Tensor;
 using TensorPtr = std::shared_ptr<Tensor>;
+using TensorDataPtr = std::shared_ptr<mindspore::tensor::TensorData>;
 using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorType = mindspore::device::DeviceType;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
@@ -59,6 +60,7 @@ class BACKEND_EXPORT GraphParameterStore {
     parameter_device_tensors_[outer_index].resize(tuple_unfold_length);
     heter_device_tensors_[outer_index].resize(tuple_unfold_length);
     is_dynamic_[outer_index].resize(tuple_unfold_length, false);
+    buffer_size_ += tuple_unfold_length;
   }
 
   void CheckIndexValid(size_t outer_index, size_t inner_index) {
@@ -235,6 +237,10 @@ class BACKEND_EXPORT GraphParameterStore {
   void InsertRefDeviceTensors(const DeviceTensorPosition &key, DeviceTensor *value);
   void RefreshRefDeviceTensor(const DeviceTensorPosition &key);
 
+  // Insert host tensor data and src device tensor into callback to avoid release before async copy finished.
+  void InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data);
+  void InsertDeviceTensorIntoCallback(const DeviceTensorPtr &device_tensor);
+
   void Clear() {
     std::unique_lock<std::shared_mutex> lock(param_mutex_);
     parameter_device_tensors_.clear();
@@ -244,6 +250,8 @@ class BACKEND_EXPORT GraphParameterStore {
     node_to_real_front_node_.clear();
     index_to_front_node_.clear();
     ref_device_tensors_.clear();
+    tensor_data_in_callback_.clear();
+    device_tensor_in_callback_.clear();
     for (auto &buffer : buffers_) {
       buffer.clear();
     }
@@ -279,6 +287,10 @@ class BACKEND_EXPORT GraphParameterStore {
   std::map<size_t, AnfNode *> index_to_front_node_;
   // Store tensor from args.
   std::vector<std::vector<TensorPtr>> buffers_;
+  size_t buffer_size_{0};
+  // Protect async copy finished before release.
+  std::vector<TensorDataPtr> tensor_data_in_callback_;
+  std::vector<DeviceTensorPtr> device_tensor_in_callback_;
   // Record the dynamic shape for each position.
   std::vector<std::vector<bool>> is_dynamic_;
   // Record the ref map of device tensor in store.

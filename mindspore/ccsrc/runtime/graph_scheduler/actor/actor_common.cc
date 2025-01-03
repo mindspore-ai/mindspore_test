@@ -950,6 +950,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "");
   }
+  bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
     MS_EXCEPTION_IF_NULL(device_tensor);
@@ -980,6 +981,10 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
                                                              tensor->device_info().host_format_)) {
       MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
     }
+    if (!in_callback) {
+      graph_parameter_store->InsertTensorDataIntoCallback(tensor->data_ptr());
+      in_callback = true;
+    }
   }
 }
 
@@ -994,6 +999,7 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "");
   }
+  bool in_callback = false;
   for (const auto device_tensor : device_tensors) {
     // Update dynamic shape and size.
     UpdateDynamicShapeAndSize(tensor, device_tensor, outer_index, inner_index);
@@ -1020,6 +1026,10 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
     if (!AsyncCopy(device_tensor, tensor_address.get())) {
       MS_LOG(EXCEPTION) << "Sync src addr: " << tensor_address.get() << ", to dst addr: " << device_tensor
                         << " failed.";
+    }
+    if (!in_callback) {
+      graph_parameter_store->InsertDeviceTensorIntoCallback(tensor_address);
+      in_callback = true;
     }
   }
 }
