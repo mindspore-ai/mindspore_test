@@ -45,7 +45,7 @@ using OptimizeGraphFunc = std::function<bool(const FuncGraphPtr &func_graph, con
 
 class OptPassConfig {
  public:
-  explicit OptPassConfig(const OptimizeGraphFunc &func) : func_(func) {}
+  explicit OptPassConfig(const OptimizeGraphFunc &func, bool is_once = false) : func_(func), is_once_(is_once) {}
   explicit OptPassConfig(const std::vector<SubstitutionPtr> &list, bool is_once = false, bool global_sensitive = false)
       : list_(list), is_once_(is_once), global_sensitive_(global_sensitive) {}
   OptPassConfig(const std::initializer_list<SubstitutionPtr> &list, bool is_once = false, bool global_sensitive = false)
@@ -82,29 +82,46 @@ class OptPassConfig {
 
 class OptPass {
  public:
-  explicit OptPass(const OptimizeGraphFunc &func) : pass_func_(func) {}
+  explicit OptPass(const OptimizeGraphFunc &func, const std::string &jump_to = "")
+      : pass_func_(func), jump_to_(jump_to) {}
   ~OptPass() = default;
 
   bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) const {
     return pass_func_(func_graph, optimizer);
   }
 
-  static OptPass Renormalize(bool is_once = false) { return OptPass(is_once); }
+  static OptPass Renormalize(bool is_once = false, const std::string &jump_to = "") {
+    return OptPass(is_once, jump_to);
+  }
   const bool is_renormalize() const { return is_renormalize_; }
 
   bool is_once() const { return is_once_; }
   bool alreay_run() const { return alreay_run_; }
   void set_alreay_run(bool alreay_run) { alreay_run_ = alreay_run; }
+  const std::string jump_to() const { return jump_to_; }
 
  private:
-  explicit OptPass(bool is_once) : is_renormalize_(true), is_once_(is_once) {}
+  explicit OptPass(bool is_once, const std::string &jump_to = "")
+      : is_renormalize_(true), is_once_(is_once), jump_to_(jump_to) {}
 
   OptimizeGraphFunc pass_func_;
   bool is_renormalize_{false};
   bool is_once_{false};
   bool alreay_run_{false};
+  std::string jump_to_{""};
 };
-using OptPassGroupMap = std::vector<std::pair<std::string, OptPassConfig>>;
+
+struct OptPassItem {
+  std::string name;
+  OptPassConfig config;
+  std::string jump_to;
+  OptPassItem(const std::string &name, const OptPassConfig &config) : name(name), config(config) {}
+  OptPassItem(const std::string &name, const OptPassConfig &config, const std::string &jump_to)
+      : name(name), config(config), jump_to(jump_to) {}
+};
+
+using OptPassGroupMap = std::vector<OptPassItem>;
+
 class Optimizer : public std::enable_shared_from_this<Optimizer> {
  public:
   Optimizer(const std::string &name, const pipeline::ResourceBasePtr &resource, bool traverse_nodes_first = true)
@@ -140,26 +157,30 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
     is_on_debug_ = IS_OUTPUT_ON(mindspore::kDebug);
 
     for (auto &iter : passes) {
-      const OptPassConfig &config = iter.second;
+      const OptPassConfig &config = iter.config;
       if (config.disabled()) {
         continue;
       }
 
-      const std::string &name = iter.first;
+      const std::string &name = iter.name;
       pass_names_.push_back(name);
+      auto res = pass_name_idx.emplace(name, pass_names_.size() - 1);
+      if (!res.second) {
+        MS_LOG(INTERNAL_EXCEPTION) << "duplicate pass name: " << name << " in Optimizer " << name_;
+      }
 
       if (config.is_renormalize()) {
-        passes_.push_back(OptPass::Renormalize(config.is_once()));
+        passes_.push_back(OptPass::Renormalize(config.is_once(), iter.jump_to));
         continue;
       }
 
       if (config.list().size() > 0) {
         OptimizeGraphFunc func = SubstitutionList(config.list(), config.is_once(), config.global_sensitive());
-        passes_.push_back(OptPass(func));
+        (void)passes_.emplace_back(func, iter.jump_to);
         continue;
       }
 
-      passes_.push_back(OptPass(config.func()));
+      (void)passes_.emplace_back(config.func(), iter.jump_to);
     }
 
     if (passes_.size() == 1) {
@@ -184,16 +205,17 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
     return optimizer;
   }
 
-  void DumpStep(FuncGraphPtr func_graph, const int counter, const int index) {
+  void DumpStep(FuncGraphPtr func_graph, int counter, int index, int jump_counter) {
     static const auto enable_dump_pass = GetDumpConfig().enable_dump_pass_ir;
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     static const auto input_name = common::GetEnv("MS_DEV_DUMP_IR_PASSES");
     auto enable_dump_pass_ir = (input_name.size() != 0) || enable_dump_pass;
     if ((enable_dump_pass_ir && context->CanDump(kIntroductory)) || context->CanDump(kFully)) {
-      auto fg_name = "opt_substep_" + name_ + "_r" + std::to_string(counter) + "_" + std::to_string(index) + "_" +
-                     pass_names_[index];
-      MS_LOG(DEBUG) << "The opt " << name_ << " round " << counter << " OptPass " << pass_names_[index] << " end.";
+      auto fg_name = "opt_substep_" + name_ + "_r" + std::to_string(counter) + "_j" + std::to_string(jump_counter) +
+                     "_" + std::to_string(index) + "_" + pass_names_[index];
+      MS_LOG(DEBUG) << "The opt " << name_ << " round " << counter << " jump " << jump_counter << " OptPass "
+                    << pass_names_[index] << " end.";
       static const auto switch_order = (common::GetEnv("MS_DEV_SAVE_GRAPHS_SORT_MODE") == "1");
       if (switch_order) {
         ExportIR(fg_name + ".ir", func_graph);
@@ -227,30 +249,44 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
     while (changes_) {
       changes_ = false;
       auto run_runc = [&counter, use_profile, this]() {
-        for (size_t i = 0; i < passes_.size(); ++i) {
+        size_t i = 0;
+        size_t jump_counter = 0;
+        while (i < passes_.size()) {
           OptPass &opt = passes_[i];
           current_pass_ = {counter, pass_names_[i]};
           auto opt_func = std::bind(&Optimizer::OptProcess, this, &opt);
-          auto profiler_pass_name = name_ + ".r" + std::to_string(counter) + "." + pass_names_[i];
+          auto profiler_pass_name =
+            name_ + ".r" + std::to_string(counter) + ".j" + std::to_string(jump_counter) + "." + pass_names_[i];
           if (FilterPass(profiler_pass_name)) {
+            ++i;
             continue;
           }
 
           uint64_t start_time = profiler::GetClockSyscnt();
-          MS_LOG(INFO) << "Start " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
+          MS_LOG(INFO) << "Start " << profiler_pass_name;
           auto last_version = FuncGraphManager::version();
           use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
           auto current_changed = (FuncGraphManager::version() != last_version);
-          MS_LOG(INFO) << "End " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i]
-                       << (current_changed ? ".changed" : ".unchanged");
+          MS_LOG(INFO) << "End " << profiler_pass_name << (current_changed ? ".changed" : ".unchanged");
           (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, start_time,
                                           profiler::GetClockSyscnt(), 0);
           if (current_changed) {
             UpdateRunningPasses(profiler_pass_name);
           }
 #ifdef ENABLE_DUMP_IR
-          DumpStep(func_graph_, counter, i);
+          DumpStep(func_graph_, counter, i, jump_counter);
 #endif
+          if (current_changed && !opt.jump_to().empty()) {
+            auto iter = pass_name_idx.find(opt.jump_to());
+            if (iter == pass_name_idx.end()) {
+              MS_LOG(INTERNAL_EXCEPTION) << "Jump failed, pass `" << opt.jump_to() << "` is not in optimizer " << name_;
+            }
+            MS_LOG(DEBUG) << "Jump from " << pass_names_[i] << " to " << iter->second << "in optimizer " << name_;
+            i = iter->second;
+            ++jump_counter;
+          } else {
+            ++i;
+          }
         }
       };
       use_profile ? (ProfileExecute(MsProfile::GetProfile()->Lap(counter), run_runc)) : run_runc();
@@ -336,6 +372,7 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
   pipeline::ResourceBasePtr resource_;
   std::vector<OptPass> passes_;
   std::vector<std::string> pass_names_;
+  mindspore::HashMap<std::string, size_t> pass_name_idx;
   bool run_only_once_;
   bool is_watch_renormalize_;
   bool is_enable_;

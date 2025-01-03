@@ -193,6 +193,9 @@ class OptimizeIRPassLib {
   SubstitutionPtr opt_reshape_;
   SubstitutionPtr fold_const_symbol_;
   SubstitutionPtr fold_same_value_;
+
+  // Transform prim to funcgraph
+  SubstitutionPtr meta_morphosis_;
 };
 
 // the collection of irpass for resolve action
@@ -288,6 +291,11 @@ inline bool IsCNodePrimitivePy(const AnfNodePtr &node) {
   auto inp0 = node->cast<CNodePtr>()->input(0);
   const auto &prim = GetValueNode<PrimitivePyPtr>(inp0);
   return prim != nullptr && mindspore::ops::IsPrimitiveFunction(prim->name());
+}
+
+inline bool IsMetamorphosisCNode(const AnfNodePtr &node) {
+  const auto &prim = GetCNodePrimitive(node);
+  return (prim != nullptr && prim->HasAttr("__metamorphosis__"));
 }
 }  // namespace irpass
 }  // namespace opt

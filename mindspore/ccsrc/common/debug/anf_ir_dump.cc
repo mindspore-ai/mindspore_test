@@ -162,7 +162,7 @@ void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostrings
 void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
   if (!prim->instance_name().empty()) {
     oss << " {";
-    oss << "instance name" << ": ";
+    oss << "instance name: ";
     oss << prim->instance_name();
     oss << "}";
   }
@@ -178,7 +178,7 @@ void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
     auto &func = do_signature->function();
     if (func->isa<Primitive>()) {
       auto sig_prim = dyn_cast<Primitive>(func);
-      oss << sig_prim->GetAttrsText();
+      oss << func->ToString() << sig_prim->GetAttrsText();
     } else {
       oss << func->ToString();
     }
@@ -740,7 +740,7 @@ void DumpOperateAttrs(const AnfNodePtr &op, const std::shared_ptr<SubGraphIRInfo
     PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
     if (!primitive->instance_name().empty()) {
       gsub->buffer << " {";
-      gsub->buffer << "instance name" << ": ";
+      gsub->buffer << "instance name: ";
       gsub->buffer << primitive->instance_name();
       gsub->buffer << "}";
     }
@@ -980,7 +980,7 @@ void DumpCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph, const Ordere
 
   // Print node's name.
   if (node != sub_graph->get_return()) {
-    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ")" << " = ";
+    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ") = ";
     gsub->local_var_map[node] = gsub->local_var++;
   } else {
     gsub->buffer << "  ";

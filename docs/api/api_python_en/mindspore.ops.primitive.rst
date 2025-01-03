@@ -673,6 +673,7 @@ Frame Operators
     mindspore.ops.HookBackward
     mindspore.ops.HyperMap
     mindspore.ops.InsertGradientOf
+    mindspore.ops.Morph
     mindspore.ops.Map
     mindspore.ops.MultitypeFuncGraph
     mindspore.ops.Partial

@@ -314,7 +314,7 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
     {"zeros_like", fill_zeros_like},
   });
   if (need_renormalize) {
-    (void)map.emplace_back(std::make_pair("renormalize", opt::OptPassConfig::Renormalize()));
+    (void)map.emplace_back("renormalize", opt::OptPassConfig::Renormalize());
   }
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
@@ -361,7 +361,7 @@ FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_f
       irpass.environ_get_depend_swap_,
       irpass.environ_add_const_eliminate_,
     });
-    (void)map.emplace_back(std::make_pair("env_eliminate", env_eliminate));
+    (void)map.emplace_back("env_eliminate", env_eliminate);
   }
   auto graph_opt = opt::Optimizer::MakeOptimizer("final_bprop_graph_opt", resource, map);
   return graph_opt->step(func_graph, false);
@@ -384,6 +384,34 @@ bool parallel_mode() {
   return (parallel_mode == parallel::kAutoParallel) || (parallel_mode == parallel::kSemiAutoParallel);
 }
 
+bool HasMetaMorphosisCNode(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  FuncGraphPtr func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto mng = resource->manager();
+  MS_EXCEPTION_IF_NULL(mng);
+
+  const auto &all_nodes = mng->all_nodes();
+  return std::any_of(all_nodes.begin(), all_nodes.end(),
+                     [](const auto &node) { return opt::irpass::IsMetamorphosisCNode(node); });
+}
+
+void AddMetaMorphosis(const ResourcePtr &resource, const std::string &add_before, const std::string &jump_to,
+                      opt::OptPassGroupMap *map_a) {
+  if (HasMetaMorphosisCNode(resource)) {
+    auto it =
+      find_if(map_a->begin(), map_a->end(), [&add_before](const auto &item) { return item.name == add_before; });
+    if (it != map_a->end()) {
+      opt::irpass::OptimizeIRPassLib irpass;
+      opt::OptPassGroupMap map_meta_morph(
+        {{"meta_morphosis", opt::OptPassConfig({irpass.meta_morphosis_}, true)},
+         {"meta_morphosis_renormalize", opt::OptPassConfig::Renormalize(true)},
+         {"meta_morphosis_auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper, true), jump_to}});
+      (void)map_a->insert(it, map_meta_morph.begin(), map_meta_morph.end());
+    }
+  }
+}
+
 void AddParallelRenormalize(OptPassGroupMap *map_a) {
   auto update_top_fg = [](const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     parse::Parser::UpdateTopFuncGraph(root);
@@ -391,7 +419,7 @@ void AddParallelRenormalize(OptPassGroupMap *map_a) {
   };
   if (parallel_mode()) {
     auto parallel_end_opt =
-      find_if(map_a->begin(), map_a->end(), [](auto opt_pair) { return opt_pair.first == "meta_fg_expand"; });
+      find_if(map_a->begin(), map_a->end(), [](const auto &opt_pair) { return opt_pair.name == kMetaFgExpandFlag; });
     if (parallel_end_opt != map_a->end()) {
       opt::irpass::OptimizeIRPassLib irpass;
       opt::OptPassConfig cast_eliminate_pass = opt::OptPassConfig({irpass.cast_eliminate_});
@@ -517,7 +545,7 @@ opt::OptPassConfig GetOptPassA3(const opt::irpass::OptimizeIRPassLib &irpass) {
     false, true);
 }
 
-OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
+OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource) {
   opt::OptPassConfig a_1 = GetOptPassA1(irpass);
   opt::OptPassConfig a_2 = GetOptPassA2(irpass);
 
@@ -550,7 +578,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
   // Before adjusting map_a, check GetA1A2() and GetOptPynativeGradEpiloguePhases().
   OptPassGroupMap map_a(
     {{kExpandDumpFlag, opt::OptPassConfig(opt::irpass::ExpandDumpFlag())},
-     {"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
+     {kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", a_1},
      {"recompute_prepare", recompute_prepare},
@@ -580,7 +608,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},
      {"inplace_validation", opt::OptPassConfig(InplaceValidationWrapper)},
-     {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
+     {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"flash_sp_send_recv_attached", opt::OptPassConfig(parallel::FlashSPSendRecvNodeAttach)},
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
@@ -593,6 +621,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},
      {"cse", opt::OptPassConfig(opt::CSEPass(false))},
      {"a_3", a_3}});
+  AddMetaMorphosis(resource, kMetaFgExpandFlag, kExpandDumpFlag, &map_a);
   AddParallelRenormalize(&map_a);
   return map_a;
 }
@@ -662,9 +691,9 @@ opt::OptPassConfig GetJitOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass)
   });
 }
 
-OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
+OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource) {
   OptPassGroupMap map_a(
-    {{"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
+    {{kSwitchSimplifyFlag, opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", GetJitOptPassA1(irpass)},
      {"recompute_prepare", opt::OptPassConfig({irpass.set_cell_output_no_recompute_})},
@@ -682,7 +711,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
       opt::OptPassConfig({irpass.remove_not_recompute_node_}, false, true)},
      {"j_node_and_user_rematch", opt::OptPassConfig({irpass.j_node_and_user_rematch_})},
      {"inplace_validation", opt::OptPassConfig(InplaceValidationWrapper)},
-     {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
+     {kMetaFgExpandFlag, opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"replace_old_param", opt::OptPassConfig({irpass.replace_old_param_})},
      {"inline_without_move", opt::OptPassConfig({irpass.inline_without_move_})},
@@ -693,12 +722,14 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},
      {"cse", opt::OptPassConfig(opt::CSEPass(false))},
      {"replace_applicator", opt::OptPassConfig({irpass.replace_applicator_})}});
+  AddMetaMorphosis(resource, kMetaFgExpandFlag, kSwitchSimplifyFlag, &map_a);
   return map_a;
 }
 
-OptPassGroupMap GetA1A2(const opt::irpass::OptimizeIRPassLib &irpass) {
-  auto opt_a = GetOptPassesA(irpass);
-  constexpr auto a1_a2_len = 11;
+OptPassGroupMap GetA1A2(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource) {
+  auto opt_a = GetOptPassesA(irpass, resource);
+  auto iter = std::find_if(opt_a.begin(), opt_a.end(), [](const auto &item) { return item.name == "a_2"; });
+  auto a1_a2_len = std::distance(opt_a.begin(), iter) + 1;
   OptPassGroupMap a1_a2(opt_a.begin(), opt_a.begin() + a1_a2_len);
   opt::irpass::OptimizeIRPassLib irpass_inline;
   opt::OptPassConfig inline_pass = opt::OptPassConfig({irpass_inline.inline_});
@@ -838,8 +869,9 @@ OptPassGroupMap GetOptPassesC(const opt::irpass::OptimizeIRPassLib &) {
   return OptPassGroupMap({{"renormalize", opt::OptPassConfig::Renormalize()}});
 }
 
-OptPassGroupMap GetOptPynativeGradEpiloguePhases(const opt::irpass::OptimizeIRPassLib &irpass) {
-  auto opt_a = GetOptPassesA(irpass);
+OptPassGroupMap GetOptPynativeGradEpiloguePhases(const opt::irpass::OptimizeIRPassLib &irpass,
+                                                 const ResourcePtr &resource) {
+  auto opt_a = GetOptPassesA(irpass, resource);
   auto a3 = opt_a[opt_a.size() - 1];
   OptPassGroupMap map({
     {"renormalize", opt::OptPassConfig::Renormalize()},
@@ -907,22 +939,22 @@ static mindspore::HashMap<std::string, std::shared_ptr<Optimizer>> g_pass_opts =
 void InitOpt(const ResourcePtr &resource) {
   if (g_pass_opts.size() == 0) {
     opt::irpass::OptimizeIRPassLib irpass;
-    g_pass_opts["a1a2"] = Optimizer::MakeOptimizer("a1a2", resource, GetA1A2(irpass));
-    g_pass_opts["opt_a"] = Optimizer::MakeOptimizer("opt_a", resource, GetOptPassesA(irpass));
+    g_pass_opts["a1a2"] = Optimizer::MakeOptimizer("a1a2", resource, GetA1A2(irpass, resource));
+    g_pass_opts["opt_a"] = Optimizer::MakeOptimizer("opt_a", resource, GetOptPassesA(irpass, resource));
     g_pass_opts["opt_b"] = Optimizer::MakeOptimizer("opt_b", resource, GetOptPassesB(irpass), false, true);
     g_pass_opts["opt_after_cconv"] =
       Optimizer::MakeOptimizer("opt_after_cconv", resource, GetOptPassesAfterCconv(irpass), false, true);
     g_pass_opts["opt_trans_graph"] =
       Optimizer::MakeOptimizer("opt_trans_graph", resource, GetOptPassesTransformGraph(irpass), true, true);
     g_pass_opts["renormal"] = Optimizer::MakeOptimizer("renormal", resource, GetOptPassesC(irpass));
-    g_pass_opts["opt_grad_epilogue"] =
-      Optimizer::MakeOptimizer("opt_grad_epilogue", resource, GetOptPynativeGradEpiloguePhases(irpass), true, false);
+    g_pass_opts["opt_grad_epilogue"] = Optimizer::MakeOptimizer(
+      "opt_grad_epilogue", resource, GetOptPynativeGradEpiloguePhases(irpass, resource), true, false);
     g_pass_opts["opt_prepare"] = Optimizer::MakeOptimizer("opt_prepare", resource, GetPreparePhases(irpass));
     g_pass_opts["opt_after_recompute"] =
       Optimizer::MakeOptimizer("opt_after_recompute", resource, GetAfterRecomputePass(irpass));
     g_pass_opts["symbol_engine_opt"] =
       Optimizer::MakeOptimizer("symbol_engine_opt", resource, GetSymbolEngineOptPass(irpass), true, true);
-    g_pass_opts["jit_opt_a"] = Optimizer::MakeOptimizer("jit_opt_a", resource, GetJitOptPassesA(irpass));
+    g_pass_opts["jit_opt_a"] = Optimizer::MakeOptimizer("jit_opt_a", resource, GetJitOptPassesA(irpass, resource));
     g_pass_opts["jit_opt_b"] = Optimizer::MakeOptimizer("jit_opt_b", resource, GetJitOptPassesB(irpass));
     g_pass_opts["jit_opt_after_cconv"] =
       Optimizer::MakeOptimizer("jit_opt_after_cconv", resource, GetJitOptPassesAfterCconv(irpass), false, true);

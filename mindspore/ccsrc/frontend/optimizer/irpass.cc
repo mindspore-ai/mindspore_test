@@ -71,6 +71,7 @@
 #include "frontend/optimizer/irpass/slice_to_tuple.h"
 #include "frontend/optimizer/irpass/j_node_and_user_rematch.h"
 #include "frontend/optimizer/irpass/loop_unroll.h"
+#include "frontend/optimizer/irpass/morph.h"
 
 namespace mindspore {
 namespace opt {
@@ -324,6 +325,9 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   opt_reshape_ = MakeSubstitution(std::make_shared<OptReshape>(), "opt_reshape", prim::kPrimReshape);
   fold_const_symbol_ = MakeSubstitution(std::make_shared<FoldConstSymbol>(), "fold_const_symbol", IsCNode);
   fold_same_value_ = MakeSubstitution(std::make_shared<FoldSameValue>(), "fold_same_value", prim::kPrimShape);
+
+  // Transform prim to funcgraph
+  meta_morphosis_ = MakeSubstitution(std::make_shared<Morph>(), "meta_morphosis", IsMetamorphosisCNode);
 }
 
 ResolveIRPassLib::ResolveIRPassLib() {
