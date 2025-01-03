@@ -21,6 +21,7 @@
 #include <string>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/common/utils/anfalgo.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace opt {
@@ -63,8 +64,14 @@ bool ReduceAxisUpdate::IsReduce(const BaseRef &ref) {
     if (IsPrimitive(node, prim::kPrimReduceMin) || IsPrimitive(node, prim::kPrimReduceMax) ||
         IsPrimitive(node, prim::kPrimReduceMean) || IsPrimitive(node, prim::kPrimReduceSum) ||
         IsPrimitive(node, prim::kPrimReduceProd) || IsPrimitive(node, prim::kPrimReduceAll) ||
-        IsPrimitive(node, prim::kPrimReduceAny) || IsPrimitive(node, prim::kPrimMeanExt) ||
-        IsPrimitive(node, prim::kPrimSumExt) || IsPrimitive(node, prim::kPrimProdExt)) {
+        IsPrimitive(node, prim::kPrimReduceAny)) {
+      return true;
+    }
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    if (ms_context->GetJitLevel() == kAttrJitLevelO2 &&
+        (IsPrimitive(node, prim::kPrimMeanExt) || IsPrimitive(node, prim::kPrimSumExt) ||
+         IsPrimitive(node, prim::kPrimProdExt))) {
       return true;
     }
   }
