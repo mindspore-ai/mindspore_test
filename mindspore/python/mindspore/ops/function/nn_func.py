@@ -3642,7 +3642,7 @@ def _replication_pad(input, pad):
     return out
 
 
-def pad_ext(input, pad, mode='constant', value=0.0):
+def pad_ext(input, pad, mode='constant', value=None):
     r"""
     Pads the input tensor according to the pad.
 
@@ -3690,7 +3690,7 @@ def pad_ext(input, pad, mode='constant', value=0.0):
 
         value (Union[int, float, None], optional): Valid only in ``'constant'`` mode.
             Set the padding value in ``'constant'`` mode. If the value is None, 0 is used as the default padding value.
-            Default: ``0.0`` .
+            Default: ``None`` .
 
     Returns:
         Tensor, the tensor after padding.
@@ -3700,7 +3700,7 @@ def pad_ext(input, pad, mode='constant', value=0.0):
         TypeError: If `input` is not a Tensor.
         ValueError: If length of `pad` is not even.
         ValueError: If length of `pad` is greater than 6.
-        ValueError: If `mode` is not ``'constant'`` and `value` not ``None``.
+        ValueError: If `mode` is not ``'constant'`` and `value` is neither ``None`` nor 0.
 
     Supported Platforms:
         ``Ascend``
@@ -3728,7 +3728,7 @@ def pad_ext(input, pad, mode='constant', value=0.0):
         value = 0 if value is None else value
         out = constant_pad_nd_op(input, pad, value)
     else:
-        if value != 0.0:
+        if value is not None and value != 0:
             raise ValueError(f"Padding mode {mode} doesn\'t take in value argument.")
         if mode == "circular":
             out = _circular_pad(input, pad)
