@@ -1,7 +1,7 @@
 gcd:
     description: |
         Computes greatest common divisor of input tensors element-wise.
-        The shape of two inputs should be broadcastable, and data types should be one of: int16 (supported when using the Ascend backend, GRAPH mode is only supported when the graph compilation level is O0), int32, int64.
+        The shape of two inputs should be broadcastable, and data types should be one of: int16 (supported when using the Ascend backend, Graph mode is only supported when the graph compilation level is O0), int32, int64.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.

@@ -6,7 +6,7 @@ mindspore.mint.distributed.scatter_object_list
     对输入Python对象列表进行均匀散射到通信域的卡上。
 
     .. note::
-        - 类似 `mindspore.mint.distributed.scatter` 方法，只支持Python对象列表输入。
+        - 类似 :func:`mindspore.mint.distributed.scatter` 方法，只支持Python对象列表输入。
         - 只有源为src的进程(全局的进程编号)才会将输入张量作为散射源。
         - 当前支持PyNative模式，不支持Graph模式。
 

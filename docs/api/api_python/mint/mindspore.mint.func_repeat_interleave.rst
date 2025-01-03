@@ -3,7 +3,7 @@ mindspore.mint.repeat_interleave
 
 .. py:function:: mindspore.mint.repeat_interleave(input, repeats, dim=None, *, output_size=None)
 
-    沿着轴重复Tensor的元素，类似 `numpy.repeat`。
+    沿着轴重复Tensor的元素，类似 :func:`mindspore.numpy.repeat`。
 
     .. warning::
         仅Atlas A2训练系列产品支持。

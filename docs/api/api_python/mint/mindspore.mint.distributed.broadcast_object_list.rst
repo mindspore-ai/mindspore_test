@@ -6,7 +6,7 @@ mindspore.mint.distributed.broadcast_object_list
     对输入Python对象进行整组广播。
 
     .. note::
-        - 类似 `mindspore.mint.distributed.broadcast` 方法，传入的参数为Python对象。
+        - 类似 :func:`mindspore.mint.distributed.broadcast` 方法，传入的参数为Python对象。
         - 当前支持PyNative模式，不支持Graph模式。
 
     参数：

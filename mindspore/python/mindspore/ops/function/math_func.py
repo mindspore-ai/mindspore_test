@@ -3969,7 +3969,7 @@ def median(input, axis=-1, keepdims=False):
     Raises:
         TypeError: If dtype of `input` is not one of the following: int16, int32, int64, float32, float64.
         TypeError: If input `input` is not a Tensor.
-        TypeError: If `axis` is not a int.
+        TypeError: If `axis` is not an int.
         TypeError: If `keepdims` is not a bool.
         ValueError: If `axis` is not in range of [-x.dim, x.dim-1].
 
@@ -10488,7 +10488,7 @@ def trapz(y, x=None, *, dx=1.0, dim=-1):
         TypeError: If `y` is not a Tensor.
         TypeError: If `x` is not None and is not a Tensor.
         TypeError: If `dx` is not a float number.
-        TypeError: If `dim` is not a Integer.
+        TypeError: If `dim` is not an integer.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

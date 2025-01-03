@@ -6,7 +6,7 @@ mindspore.mint.distributed.all_gather_object
     汇聚指定的通信组中的Python对象。
 
     .. note::
-        类似 `mindspore.mint.distributed.all_gather` 方法，传入的参数为Python对象。
+        类似 :func:`mindspore.mint.distributed.all_gather` 方法，传入的参数为Python对象。
 
     参数：
         - **object_list** (list[Any]) - 输出汇聚的Python对象列表。

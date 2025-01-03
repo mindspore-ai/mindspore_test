@@ -964,7 +964,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Args:
             args (Union[(numbers.Number), (int/tuple(int), numbers.Number)]): The arguments that
                 specify the index and value. If `args` contain one argument (a scalar),
-                it is only used in case tensor is of size 1. If `args` contain two
+                it is only used in case tensor is of size 1. If `args` contains two
                 arguments, the last argument is the value to be set and must be a
                 scalar, the first argument specifies a single tensor element location.
                 It is either an int or a tuple.
