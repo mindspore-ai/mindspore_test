@@ -146,10 +146,6 @@ static ValueNodePtr MakeExpandDimsNode() {
   const std::vector<std::string> &input_names = {"x", "axis"};
   const std::vector<std::string> &output_names = {"output"};
   expand_dim_prims->SetAttrs({{kAttrInputNames, MakeValue(input_names)}, {kAttrOutputNames, MakeValue(output_names)}});
-  static const bool enable_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "1");
-  if (enable_view_op) {
-    expand_dim_prims->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
-  }
   return NewValueNode(expand_dim_prims);
 }
 
