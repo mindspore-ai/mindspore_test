@@ -24,7 +24,8 @@ namespace mindspore {
 namespace pynative {
 void FrontendTask::Run() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
-                                     op_run_info_->base_op_run_info.op_name, false, false, task_id_);
+                                     op_run_info_ != nullptr ? op_run_info_->base_op_run_info.op_name : "Others", false,
+                                     false, task_id_);
   run_func_(op_run_info_);
   op_run_info_ = nullptr;
 }
