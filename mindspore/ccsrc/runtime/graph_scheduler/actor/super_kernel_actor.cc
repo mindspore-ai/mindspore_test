@@ -87,19 +87,48 @@ bool IsOnlyDependShape(const CNodePtr &kernel, size_t input_index) {
   return false;
 }
 
-void SetParamFirstUsedKernelActors(size_t graph_input_index, size_t actor_input_index, KernelActorPtr *kernel_actor,
-                                   std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors) {
+void SetParamFirstUsedKernelActors(
+  size_t graph_input_index, size_t actor_input_index, KernelActorPtr *kernel_actor,
+  std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors,
+  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelActorPtr>> *param_first_used_actors_on_stream) {
   if (!EnableInputOptimize()) {
     return;
   }
-
   if (graph_input_index >= (*param_first_used_kernel_actors).size()) {
     MS_LOG(EXCEPTION) << "Index " << graph_input_index << " is out of range size "
                       << (*param_first_used_kernel_actors).size();
   }
+  // Record non default stream first used graph parameters.
+  if (kernel_actor != nullptr && (*kernel_actor) != nullptr && (*kernel_actor)->get_stream() != kDefaultStreamIndex) {
+    const auto &iter = (*param_first_used_actors_on_stream).find(graph_input_index);
+    if (iter == (*param_first_used_actors_on_stream).end()) {
+      (*param_first_used_actors_on_stream)[graph_input_index].emplace((*kernel_actor)->get_stream(), (*kernel_actor));
+    } else {
+      const auto &actor_sets_with_stream = iter->second;
+      const auto &actor_set_iter = actor_sets_with_stream.find((*kernel_actor)->get_stream());
+      if (actor_set_iter == actor_sets_with_stream.end()) {
+        (*param_first_used_actors_on_stream)[graph_input_index].emplace((*kernel_actor)->get_stream(), (*kernel_actor));
+      }
+    }
+  }
+
   if ((*param_first_used_kernel_actors)[graph_input_index].first == nullptr) {
     (*param_first_used_kernel_actors)[graph_input_index].first = *kernel_actor;
     (*param_first_used_kernel_actors)[graph_input_index].second = actor_input_index;
+  }
+}
+
+void CollectStreamFirstUsedParamKernelActors(
+  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelActorPtr>> *param_first_used_actors_on_stream,
+  mindspore::HashSet<KernelActor *> *kernel_actors_insert_event) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  for (const auto &iter : *param_first_used_actors_on_stream) {
+    const auto &stream_with_kernel_actors = iter.second;
+    for (const auto &stream_with_actor_iter : stream_with_kernel_actors) {
+      (*kernel_actors_insert_event).insert(stream_with_actor_iter.second.get());
+    }
   }
 }
 
@@ -652,7 +681,11 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
                     << ", ptr: " << kernel_actor->input_device_tensors_[actor_input_idx]->GetPtr()
                     << ", ref cnt: " << kernel_actor->input_device_tensors_[actor_input_idx]->ref_count();
     }
-    // Insert record wait pair to ensure first used parameter async copy end before launch.
+  }
+
+  // Insert record wait pair to ensure first used parameter async copy end before launch.
+  const auto &insert_event_iter = kernel_actors_insert_event_.find(kernel_actor.get());
+  if (insert_event_iter != kernel_actors_insert_event_.end()) {
     auto stream_id = kernel_actor->kernel_info_->stream_id();
     if (stream_id != kDefaultStreamIndex) {
       auto multi_stream_controller = device::MultiStreamController::GetInstance();
@@ -1306,6 +1339,7 @@ void SuperKernelActor::AnalyseNodesDependence(
   const HashMap<AnfNodePtr, std::vector<size_t>> &output_node_to_actor_output_index,
   std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors) {
   const auto &execution_order = graph_->execution_order();
+  mindspore::HashMap<size_t, mindspore::HashMap<size_t, KernelActorPtr>> param_first_used_actors_on_stream;
   size_t kernel_num = execution_order.size();
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel = execution_order[i];
@@ -1359,7 +1393,8 @@ void SuperKernelActor::AnalyseNodesDependence(
           auto &kernel_actor = kernel_actors_[i];
           MS_EXCEPTION_IF_NULL(kernel_actor);
           (void)kernel_actor->parameter_indexs_.emplace_back(j, parameter_index_iter->second);
-          SetParamFirstUsedKernelActors(input_node_idx, j, &kernel_actors_[i], param_first_used_kernel_actors);
+          SetParamFirstUsedKernelActors(input_node_idx, j, &kernel_actors_[i], param_first_used_kernel_actors,
+                                        &param_first_used_actors_on_stream);
         }
 
         if (enable_input_optimize_) {
@@ -1380,6 +1415,7 @@ void SuperKernelActor::AnalyseNodesDependence(
       }
     }
   }
+  CollectStreamFirstUsedParamKernelActors(&param_first_used_actors_on_stream, &kernel_actors_insert_event_);
   ParamFirstUsedKernelActorsToMap(*param_first_used_kernel_actors, &kernel_actor_to_graph_parameters_map_);
   RecordInputParamsWithoutUser(graph_, parameter_indexs_map, input_params_use_cnt_, &input_params_no_user_);
 }

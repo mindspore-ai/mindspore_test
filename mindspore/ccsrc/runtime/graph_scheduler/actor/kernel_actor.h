@@ -123,6 +123,7 @@ class KernelActor : public DebugAwareActor {
   bool inputs_continuous_memory() const { return inputs_continuous_memory_; }
   SomasInfo *somas_info() const { return somas_info_; }
   const std::set<size_t> &somas_graph_output_indexes() const { return somas_graph_output_indexes_; }
+  size_t get_stream() const { return kernel_info_->stream_id(); }
 
   void set_enable_async_infer(bool enable_async_infer) { enable_async_infer_ = enable_async_infer; }
 
