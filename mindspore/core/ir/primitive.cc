@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include <utility>
 #include "abstract/abstract_function.h"
 #include "utils/ms_utils.h"
+#include "utils/flags.h"
 #include "ops/op_def.h"
 
 namespace mindspore {
@@ -26,6 +27,16 @@ static uint64_t MakeId() {
   // Use atomic to make id generator thread safe.
   static std::atomic<uint64_t> last_id{1};
   return last_id.fetch_add(1, std::memory_order_relaxed);
+}
+
+void Primitive::SetSideEffectFlag(const std::string &name, bool inplace_prim) {
+  static const bool enable_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "1");
+  const auto &op_def = mindspore::ops::GetOpDef(name);
+  const auto &graph_view_prim = op_def != nullptr ? op_def->is_graph_view_ : false;
+  graph_view_prim_ = graph_view_prim;
+  if ((graph_view_prim_ && enable_view_op) || inplace_prim) {
+    set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
+  }
 }
 
 Primitive::Primitive(const std::string &name, bool is_base, const PrimType prim_type, bool inplace_prim)
@@ -36,7 +47,9 @@ Primitive::Primitive(const std::string &name, bool is_base, const PrimType prim_
       record_evaluate_add_attr_(false),
       const_prim_(false),
       inplace_prim_(inplace_prim),
-      id_(MakeId()) {}
+      id_(MakeId()) {
+  SetSideEffectFlag(name, inplace_prim);
+}
 
 Primitive::Primitive(const std::string &name, const mindspore::HashMap<std::string, ValuePtr> &attrs, bool inplace_prim)
     : Named(name),
@@ -47,7 +60,9 @@ Primitive::Primitive(const std::string &name, const mindspore::HashMap<std::stri
       record_evaluate_add_attr_(false),
       const_prim_(false),
       inplace_prim_(inplace_prim),
-      id_(MakeId()) {}
+      id_(MakeId()) {
+  SetSideEffectFlag(name, inplace_prim);
+}
 
 Primitive::Primitive(const Primitive &prim)
     : Named(prim),
@@ -63,7 +78,9 @@ Primitive::Primitive(const Primitive &prim)
       inplace_prim_(prim.inplace_prim_),
       const_input_indexes_(prim.const_input_indexes_),
       rw_write_input_indexes_(prim.rw_write_input_indexes_),
-      id_(prim.id_) {}
+      id_(prim.id_) {
+  SetSideEffectFlag(prim.name(), prim.inplace_prim_);
+}
 
 Primitive &Primitive::operator=(const Primitive &other) {
   if (this == &other) {
