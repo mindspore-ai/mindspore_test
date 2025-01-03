@@ -7189,7 +7189,7 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
 
     Args:
         input (Tensor): Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`.
-        weight (Tensor): Set size of kernel is :math:`(kd, kd,
+        weight (Tensor): Set size of kernel is :math:`(kd, kh,
             kw)`, then the shape is :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`.
         bias (Tensor, optional): Bias Tensor with shape :math:`(C_{out})`.
             When bias is ``None`` , zeros will be used. Default: ``None`` .
