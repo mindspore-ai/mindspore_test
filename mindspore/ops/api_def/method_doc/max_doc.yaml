@@ -2,10 +2,10 @@ max:
   description: |
     max() -> Tensor
     
-    Returns the maximum value of all elements in `self` .
+    Returns the maximum value of the self tensor.
     
     Returns:
-        Tensor - Returns the maximum value of each row of `self` .
+        Scalar Tensor with the same dtype as `input`, the maximum value of the input.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

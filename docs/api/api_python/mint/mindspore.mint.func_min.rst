@@ -9,7 +9,7 @@ mindspore.mint.min
         - **input** (Tensor) - 输入的Tensor。
 
     返回：
-        输入Tensor的最小值，类型与 `input` 相同。
+        Tensor，值为输入Tensor的最小值，类型与 `input` 相同。
 
     .. py:function:: mindspore.mint.min(input, dim, keepdim=False)
         :noindex:
