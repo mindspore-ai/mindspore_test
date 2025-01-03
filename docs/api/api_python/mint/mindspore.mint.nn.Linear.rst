@@ -13,7 +13,7 @@ mindspore.mint.nn.Linear
     其中  :math:`X` 是输入Tensor， :math:`\text{kernel}` 是一个权重矩阵，其数据类型与 :math:`X` 相同， :math:`\text{bias}` 是一个偏置向量，其数据类型与 :math:`X` 相同（仅当has_bias为True时）。
 
     .. warning::
-        在PYNATIVE模式下，如果 `bias` 为 ``False``， `x` 不可以大于6D。
+        在PyNative模式下，如果 `bias` 为 ``False``， `x` 不可以大于6D。
 
     参数：
         - **in_features** (int) - Linear层输入Tensor的空间维度。
@@ -35,4 +35,4 @@ mindspore.mint.nn.Linear
         - **TypeError** - `bias` 不是bool值。
         - **ValueError** - `weight_init` 的shape长度不等于2，`weight_init` 的shape[0]不等于 `out_features`，或者 `weight_init` 的shape[1]不等于 `in_features`。
         - **ValueError** - `bias_init` 的shape长度不等于1或 `bias_init` 的shape[0]不等于 `out_features`。
-        - **RuntimeError** - 在PYNATIVE模式下， `bias` 为 ``False`` 且 `x` 大于6D。
+        - **RuntimeError** - 在PyNative模式下， `bias` 为 ``False`` 且 `x` 大于6D。

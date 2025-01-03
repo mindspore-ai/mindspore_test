@@ -210,11 +210,11 @@ def destroy_process_group(group=None):
 
     Note:
         - This method isn't supported in GPU and CPU versions of MindSpore.
-        - This method should be used after init_process_group().
+        - This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Raises:
@@ -257,11 +257,11 @@ def get_rank(group=None):
     Get the rank ID for the current device in the specified collective communication group.
 
     Note:
-        This method should be used after mindspore.mint.distributed.init_process_group.
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Returns:
@@ -312,11 +312,11 @@ def get_world_size(group=None):
     Get the rank size of the specified collective communication group.
 
     Note:
-        This method should be used after mindspore.mint.distributed.init_process_group.
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Returns:
@@ -373,7 +373,7 @@ def new_group(ranks=None,
     Create a new distributed group.
 
     Note:
-        This method should be used after init_process_group().
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         ranks (list[int], optional): List of ranks of group members. If ``None``,
@@ -442,7 +442,7 @@ def get_backend(group=None):
 
     Args:
         group (str, optional): The communication group to work on.
-            Normally, the group should be created by `mindspore.mint.distributed.new_group`, If ``None``,
+            Normally, the group should be created by :func:`mindspore.mint.distributed.new_group`, If ``None``,
             which means ``"hccl_world_group"`` in Ascend. Default: ``None``.
 
     Returns:
@@ -491,11 +491,11 @@ def get_global_rank(group, group_rank):
     rank which id is 'group_rank' in the user group.
 
     Note:
-        This method should be used after init_process_group().
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str): The communication group to work on. Normally, the group should
-            be created by `mindspore.mint.distributed.new_group`. If ``None``, which
+            be created by :func:`mindspore.mint.distributed.new_group`. If ``None``, which
             means ``"hccl_world_group"`` in Ascend.
         group_rank (int): Group rank to query.
 
@@ -558,11 +558,11 @@ def get_group_rank(group, global_rank):
     the rank ID in the world communication group.
 
     Note:
-        This method should be used after mindspore.mint.distributed.init_process_group.
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str): The communication group to work on. Normally, the group should be
-            created by `mindspore.mint.distributed.new_group`. If ``None``, which means
+            created by :func:`mindspore.mint.distributed.new_group`. If ``None``, which means
             ``"hccl_world_group"`` in Ascend.
         global_rank (int): A rank ID in the world communication group.
 
@@ -623,7 +623,7 @@ def get_process_group_ranks(group=None):
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Returns:

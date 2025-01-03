@@ -207,7 +207,7 @@ class BatchNorm1d(_BatchNorm):
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        TypeError: If `num_features` is not a int number.
+        TypeError: If `num_features` is not an int number.
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
 
@@ -274,7 +274,7 @@ class BatchNorm2d(_BatchNorm):
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        TypeError: If `num_features` is not a int number.
+        TypeError: If `num_features` is not an int number.
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
 
@@ -344,7 +344,7 @@ class BatchNorm3d(_BatchNorm):
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        TypeError: If `num_features` is not a int number.
+        TypeError: If `num_features` is not an int number.
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
 

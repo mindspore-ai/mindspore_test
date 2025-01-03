@@ -6,7 +6,7 @@ mindspore.mint.distributed.gather_object
     对通信组的输入Python对象进行聚合。
 
     .. note::
-        - 类似 `mindspore.mint.distributed.gather` 方法，传入的参数为Python对象。
+        - 类似 :func:`mindspore.mint.distributed.gather` 方法，传入的参数为Python对象。
         - 当前支持PyNative模式，不支持Graph模式。
 
     参数：
