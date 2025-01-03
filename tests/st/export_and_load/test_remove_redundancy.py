@@ -24,6 +24,7 @@ from mindspore import Parameter, Tensor, save_checkpoint
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindspore.train import CheckpointConfig
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
+from tests.mark_utils import arg_mark
 
 
 def is_port_free(port):
@@ -87,10 +88,7 @@ parameter_layout_dict = {
 }
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_1_1(mode):
     '''
@@ -108,10 +106,7 @@ def test_remove_redundancy_1_1(mode):
         shutil.rmtree(f"device{i}_redundancy11")
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_1_0(mode):
     '''
@@ -129,10 +124,7 @@ def test_remove_redundancy_1_0(mode):
         shutil.rmtree(f"device{i}_redundancy10")
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_0_0(mode):
     '''
@@ -150,10 +142,7 @@ def test_remove_redundancy_0_0(mode):
         shutil.rmtree(f"device{i}_redundancy00")
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_save_remove_redundancy_error(mode):
     '''
@@ -165,10 +154,7 @@ def test_save_remove_redundancy_error(mode):
         CheckpointConfig(remove_redundancy="string")
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_load_remove_redundancy_error(mode):
     '''
@@ -186,10 +172,7 @@ def test_load_remove_redundancy_error(mode):
         load_param_into_net(net, param_dict, remove_redundancy="string")
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_1_1_dp(mode):
     '''
@@ -207,10 +190,7 @@ def test_remove_redundancy_1_1_dp(mode):
         shutil.rmtree(f"device{i}_redundancy11dp")
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_get_strategy_redundancy(mode):
     '''
@@ -228,10 +208,7 @@ def test_get_strategy_redundancy(mode):
         shutil.rmtree(f"device{i}_get_redundancy")
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_algorithm(mode):
     """
@@ -331,3 +308,21 @@ def test_remove_redundancy_algorithm(mode):
              'accu_grads.backbone.blocks.16.attention.dense2.weight',
              'accu_grads.backbone.blocks.16.attention.projection.weight'}}
     assert single_parameter == expect_dict
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_no_init_parameters_without_load_param(mode):
+    '''
+    Feature: no_init_parameters.
+    Description: no_init_parameters with init_parameters_data.
+    Expectation: success.
+    '''
+    for i in range(8):
+        os.mkdir(f"device{i}_no_init_parameters")
+    set_port()
+    ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
+                    "pytest -s remove_redundancy.py::test_no_init_parameters")
+    assert ret == 0
+    for i in range(8):
+        shutil.rmtree(f"device{i}_no_init_parameters")
