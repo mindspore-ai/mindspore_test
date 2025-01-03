@@ -99,7 +99,6 @@ def mint_cdist_binary_case1(input_binary_data=None, output_binary_data=None, los
 @arg_mark(
     plat_marks=[
         "platform_ascend",
-        "platform_ascend910b",
         "cpu_linux",
         "cpu_windows",
         "cpu_macos",

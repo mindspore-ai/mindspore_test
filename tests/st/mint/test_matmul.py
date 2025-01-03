@@ -20,7 +20,6 @@ import pytest
 import mindspore as ms
 from mindspore import nn, mint
 from mindspore.ops.composite import GradOperation
-from tests.mark_utils import arg_mark
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
@@ -91,7 +90,6 @@ def mint_matmul_binary_case2(input_binary_data=None, output_binary_data=None):
     mint_matmul_binary_compare(input_binary_data, output_binary_data, loss=4e-3, is_bfloat16=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_matmul_binary_cases(mode):
     """
