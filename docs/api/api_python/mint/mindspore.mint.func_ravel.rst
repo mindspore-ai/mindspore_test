@@ -5,9 +5,6 @@ mindspore.mint.ravel
 
     沿着0轴方向，将多维Tensor展开成一维。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 要展开的Tensor。
 
