@@ -1307,12 +1307,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('angle')(self)
 
-    def baddbmm(self, batch1, batch2, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.baddbmm`.
-        """
-        return tensor_operator_registry.get('baddbmm')(self, batch1, batch2, beta=beta, alpha=alpha)
-
     def view(self, *shape):
         """
         Reshape the tensor according to the input shape. It's the same as :func:`mindspore.Tensor.reshape`,
@@ -1341,24 +1335,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                 raise ValueError(f"Only one tuple is needed, but got {shape}")
             shape = shape[0]
         return tensor_operator_registry.get('reshape')(self, shape)
-
-    def bitwise_and(self, other):
-        """
-        For details, please refer to :func:`mindspore.ops.bitwise_and`.
-        """
-        return tensor_operator_registry.get('bitwise_and')(self, other)
-
-    def bitwise_or(self, other):
-        """
-        For details, please refer to :func:`mindspore.ops.bitwise_or`.
-        """
-        return tensor_operator_registry.get('bitwise_or')(self, other)
-
-    def bitwise_xor(self, other):
-        """
-        For details, please refer to :func:`mindspore.ops.bitwise_xor`.
-        """
-        return tensor_operator_registry.get('bitwise_xor')(self, other)
 
     def bitwise_left_shift(self, other):
         """
@@ -3824,12 +3800,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             False
         """
         return self.dtype in mstype.signed_type
-
-    def logical_xor(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logical_xor`.
-        """
-        return tensor_operator_registry.get('logical_xor')(self, other)
 
     def lstsq(self, A):
         r"""

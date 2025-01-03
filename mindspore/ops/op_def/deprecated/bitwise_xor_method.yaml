@@ -1,0 +1,10 @@
+#deprecated bitwise_xor
+bitwise_xor:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
