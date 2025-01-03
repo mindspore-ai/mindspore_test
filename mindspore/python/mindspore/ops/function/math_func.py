@@ -1715,7 +1715,7 @@ def xlogy_ext(input, other):
 
     .. math::
 
-        out_i = input_{i}\log{other_{i}}
+        out_i = input_{i} * \log({other_{i}})
 
     Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
     The inputs must be two tensors or one tensor and one scalar.
