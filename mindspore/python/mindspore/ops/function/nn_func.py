@@ -7727,7 +7727,8 @@ def gelu(input, approximate='none'):
 def channel_shuffle(x, groups):
     r"""
     Divide the channels in a tensor of shape :math:`(*, C, H, W)` into :math:`g` groups and
-    rearrange them as :math:`(*, \frac{C}{g}, g, H*W)`, while keeping the original tensor shapes.
+    rearrange them as :math:`(*, \frac{C}{g}, g, H*W)`, while retaining the original tensor
+    shape in the final output.
 
     Args:
         x (Tensor): Tensor to be divided, it has shape :math:`(*, C, H, W)`,
