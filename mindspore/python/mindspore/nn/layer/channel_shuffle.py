@@ -21,9 +21,9 @@ __all__ = ['ChannelShuffle']
 
 class ChannelShuffle(Cell):
     r"""
-    Divide the channels of Tensor whose shape is :math:`(*, C, H, W)` into :math:`g` groups to obtain a Tensor with
-    shape :math:`(*, C \frac g, g, H, W)`, and transpose along the corresponding axis of :math:`C`,
-    :math:`\frac{g}{}` and :math:`g` to restore Tensor to the original shape.
+    Divide the channels in a tensor of shape :math:`(*, C, H, W)` into :math:`g` group and
+    rearrange them as :math:`(*, \frac{C}{g}, g, H*W)`, while retaining the original tensor
+    shape in the final output.
 
     Args:
         groups (int): Number of groups to divide channels in, must be greater than 0.
