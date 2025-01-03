@@ -39,6 +39,7 @@ import mindspore as ms
 
 _squared_device_local_norm = None
 
+
 def get_squared_device_local_norm_param():
     """
     Get Parameter `_squared_device_local_norm`.
