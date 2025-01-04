@@ -24,6 +24,7 @@ import numpy as np
 
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import MSContext, ms_ctx_param
 from mindspore.common.dtype import dtype_to_nptype, pytype_to_dtype
 from mindspore.common import dtype as mstype
 from mindspore import context
@@ -63,6 +64,10 @@ def _get_types_and_shapes(dataset):
     dataset_shapes = dataset.output_shapes()
     return dataset_types, dataset_shapes
 
+def enable_data_broadcast():
+    """Get status to indicate if enable dataset broadcast."""
+    return MSContext.get_instance().get_param(ms_ctx_param.dataset_broadcast_opt_level) > 0
+
 
 def _exec_datagraph(exec_dataset, dataset_size, phase='dataset', create_data_info_queue=False):
     """Initialize and execute the dataset graph."""
@@ -76,15 +81,12 @@ def _exec_datagraph(exec_dataset, dataset_size, phase='dataset', create_data_inf
     if queue_name is None:
         queue_name = str("")
 
+    # Don't enable dynamic shape(multi-subgraph) feature in pp/data_broadcast mode,
+    # otherwise get_data_info will stuck since some rank do not consume data.
     use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+    data_broadcast = enable_data_broadcast()
 
-    # temp env to disable dynamic feature of sink size 1
-    dynamic_sink1_env = os.getenv("MS_DEV_DYNAMIC_SINK1", None)
-    dynamic_sink1 = True
-    if dynamic_sink1_env and dynamic_sink1_env.strip() in ['False', 'false']:
-        dynamic_sink1 = False
-
-    if use_pipeline_parallel or not dynamic_sink1:
+    if use_pipeline_parallel or data_broadcast:
         create_data_info_queue = False
 
     exec_dataset = exec_dataset.device_que(send_epoch_end=send_epoch_end,
