@@ -115,6 +115,13 @@ if(ENABLE_CACHE)
     target_link_libraries(dataset-cache mindspore::glog)
   endif()
 
+  if(NOT MSVC)
+    target_compile_options(dataset-cache PRIVATE -fPIE)
+    target_link_options(dataset-cache PRIVATE -pie)
+    target_compile_options(dataset-cache-server PRIVATE -fPIE)
+    target_link_options(dataset-cache-server PRIVATE -pie)
+  endif()
+
   add_dependencies(engine-cache-server generated_engine_files)
 
   set_target_properties(dataset-cache PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/../..:${ORIGIN_PATH}/../../lib)
