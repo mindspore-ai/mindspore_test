@@ -1370,6 +1370,13 @@ bool GraphBuilder::DoAttrAccess(const Instr &instr) {
 bool GraphBuilder::DoGetItem(const Instr &instr) {
   auto r = pop();
   auto l = pop();
+  AObject::Type type = l->GetVobj()->GetType();
+  if (type == AObject::kTypeTensor) {
+    push(l);
+    DoAttrAccess({LOAD_ATTR, 0, "__getitem__"});
+    push(r);
+    return DoCall({CALL_FUNCTION, 1});
+  }
   auto node = BuildMultiOpValueNode(instr, {l, r});
   if (node == nullptr) {
     return false;

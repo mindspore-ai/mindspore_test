@@ -1096,7 +1096,10 @@ py::object FuncGraphBuilder::ConvertMethod(const py::object &obj) {
   if (is_tensor_method) {
     class_name = "Tensor";
   }
+  return ConvertMethod(class_name, method_name);
+}
 
+py::object FuncGraphBuilder::ConvertMethod(const std::string &class_name, const std::string &method_name) {
   auto type_id = GetTypeIdFromClassName(class_name);
   MS_LOG(DEBUG) << "type_id: " << type_id << ", method_name: " << method_name;
   Any require = pipeline::Resource::GetMethodPtr(type_id, method_name);

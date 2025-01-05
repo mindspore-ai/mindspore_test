@@ -2490,7 +2490,7 @@ FuncGraphPtr DictFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
   const std::string func_name = "dict_func";
   py::function fn = python_adapter::GetPyFn(module, func_name);
   FuncGraphPtr prim_func = parse::ParsePythonCode(fn);
-  auto ret = fg->NewCNode({NewValueNode(prim_func), input});
+  auto ret = fg->NewCNodeInOrder({NewValueNode(prim_func), input});
   fg->set_output(ret);
   return fg;
 }
