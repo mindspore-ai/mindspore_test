@@ -1,0 +1,35 @@
+#operator conv1d_padding
+conv1d_padding:
+  args:
+    input:
+      dtype: tensor
+    weight:
+      dtype: tensor
+    bias:
+      dtype: tensor
+      default: None
+    stride:
+      dtype: tuple[int]
+      default: 1
+      type_cast: int, list[int]
+    padding:
+      dtype: int
+      default: "'valid'"
+      arg_handler: str_to_enum
+    dilation:
+      dtype: tuple[int]
+      default: 1
+      type_cast: int, list[int]
+    groups:
+      dtype: int
+      default: 1
+  returns:
+    output:
+      dtype: tensor
+  class:
+      name: Conv1DPadding
+  function:
+      disable: True
+  dispatch:
+    enable: True
+    Ascend: Conv1DPaddingAscend
