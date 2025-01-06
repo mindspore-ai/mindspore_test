@@ -1,8 +1,11 @@
 mindspore.Tensor.__sub\_\_
 ==========================
 
-.. py:method:: mindspore.Tensor.__sub__()
+.. py:method:: mindspore.Tensor.__sub__(other, *, alpha=1)
 
-    :func:`mindspore.Tensor.sub` 的别名。
+    :func:`mindspore.Tensor.sub` 中 `mindspore.Tensor.sub(other, *, alpha=1)` 的别名。
 
-    详情请参考 :func:`mindspore.ops.sub` 。
+    .. py:method:: mindspore.Tensor.__sub__(y)
+        :noindex:
+
+    :func:`mindspore.Tensor.sub` 中 `mindspore.Tensor.sub(y)` 的别名。

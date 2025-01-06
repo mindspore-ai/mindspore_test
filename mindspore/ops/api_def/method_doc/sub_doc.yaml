@@ -53,4 +53,4 @@ sub:
     .. method:: Tensor.sub(y) -> Tensor
         :noindex:
 
-    For details, please refer to `mindspore.ops.sub()` .
+    For details, please refer to :func:`mindspore.ops.sub` .
