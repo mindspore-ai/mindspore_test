@@ -106,4 +106,7 @@ parse_device()
     echo "Enable MS Internal Kernels for UT."
     source ${BASEPATH}/scripts/build/check_and_build_ms_kernels_internal.sh
   fi
+  if [[ "X$ENABLE_D" == "Xon" ]]; then
+    source ${BASEPATH}/scripts/ascendc/custom_ascendc_prebuild.sh
+  fi
 }
