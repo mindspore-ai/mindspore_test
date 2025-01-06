@@ -39,7 +39,7 @@ MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计�
   （`vision类 <https://mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#视觉>`_ ，
   `nlp类 <https://mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#文本>`_ ，
   `audio类 <https://mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#音频>`_ ）
-  添加到map操作中执行，数据预处理过程中可以定义多个map操作，用于执行不同增强操作，数据增强操作也可以是
+  添加到map操作中执行，数据预处理过程中可以定义多个map操作，用于执行不同增强操作，数据增强操作也可以是\
   用户自定义增强的 `PyFunc` ；
 - 批（batch）：用户在样本完成增强后，使用 `.batch` 操作将多个样本组织成batch，也可以通过batch的参数 `per_batch_map`
   来自定义batch逻辑；

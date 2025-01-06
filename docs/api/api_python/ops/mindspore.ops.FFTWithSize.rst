@@ -53,7 +53,7 @@ mindspore.ops.FFTWithSize
           - "forward"，正向变换按 :math:`1/n` 缩放，逆变换不缩放。
   
         - **onesided** (bool，可选) - 控制输入是否减半以避免冗余。默认值： ``True`` 。
-        - **signal_sizes** (tuple，可选) - 原始信号的大小（RFFT变换之前的信号，不包含batch这一维），只有在IRFFT模式下和设置 `onesided` 为True时需要该参数，需要满足
+        - **signal_sizes** (tuple，可选) - 原始信号的大小（RFFT变换之前的信号，不包含batch这一维），只有在IRFFT模式下和设置 `onesided` 为True时需要该参数，需要满足\
           以下条件。默认值： ``()`` 。
 
           - `signal_sizes` 的长度等于IRFFT的 `signal_ndim` ： :math:`len(signal\_sizes)=signal\_ndim` 。

@@ -17,7 +17,7 @@ mindspore.ops.CollectiveScatter
         - **input_x** (Tensor) - 输入待散射的Tensor。Tensor的shape为 :math:`(x_1, x_2, ..., x_R)` 。
 
     输出：
-        Tensor，Tensor第0维等于散射源输入第0维除以 `src_rank` ，其他shape维度相同
+        Tensor，Tensor第0维等于散射源输入第0维除以 `src_rank` ，其他shape维度相同\
         即 :math:`(x_1/src\_rank, x_2, ..., x_R)` 。
 
     异常：

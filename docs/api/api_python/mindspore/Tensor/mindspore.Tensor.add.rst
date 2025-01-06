@@ -36,7 +36,7 @@ mindspore.Tensor.add
     .. note::
         - 当 `self` 和 `other` 的shape不同时，
           它们必须能够广播到一个共同的shape。
-        - `self`、 `other` 和 `alpha` 遵守隐式类型转换规则以使数据类型
+        - `self`、 `other` 和 `alpha` 遵守隐式类型转换规则以使数据类型\
           保持一致。
 
     参数：

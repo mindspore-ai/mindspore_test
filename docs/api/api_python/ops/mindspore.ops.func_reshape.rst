@@ -14,7 +14,7 @@ mindspore.ops.reshape
           兼容支持list和Tensor类型输入，但是不推荐使用。
 
     返回：
-        Tensor，若给定的 `shape` 中不包含-1, 则输出 `shape` 为 :math:`(y_1, y_2, ..., y_S)` 。若给定的 `shape` 中第 `k` 个位置
+        Tensor，若给定的 `shape` 中不包含-1, 则输出 `shape` 为 :math:`(y_1, y_2, ..., y_S)` 。若给定的 `shape` 中第 `k` 个位置\
         为-1，则输出 `shape` 为 :math:`(y_1, ..., y_{k-1}, \frac{\prod_{i=1}^{R}x_{i}}{y_1\times ...\times y_{k-1}\times
         y_{k+1}\times...\times y_S} , y_{k+1},..., y_S)`。
 

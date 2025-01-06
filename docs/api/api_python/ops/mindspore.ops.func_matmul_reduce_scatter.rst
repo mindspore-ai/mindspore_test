@@ -31,7 +31,7 @@ mindspore.ops.matmul_reduce_scatter
 
     .. note::
         - 使用该接口时，请确保驱动固件包和 CANN 包都为配套的 8.0.RC2 版本或者配套的更高版本，否则将会引发报错，比如 BUS ERROR 等。
-        - ``input`` 的 shape 为 (m, k)， ``x2`` 的 shape 为 (k, n)，要求 k 相等，且 k 的取值范围为 [256, 65535)，要求 m 是 ``world_size`` 的
+        - ``input`` 的 shape 为 (m, k)， ``x2`` 的 shape 为 (k, n)，要求 k 相等，且 k 的取值范围为 [256, 65535)，要求 m 是 ``world_size`` 的\
           整数倍。 ``output`` 的 shape 为 (m * world_size, n)。
         - 一个模型中的通算融合算子仅支持相同通信组。
 

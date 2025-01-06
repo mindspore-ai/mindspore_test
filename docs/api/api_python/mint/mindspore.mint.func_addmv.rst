@@ -5,7 +5,7 @@ mindspore.mint.addmv
 
     `mat` 和 `vec` 矩阵向量相乘，且将输入向量 `input` 加到最终结果中。
 
-    如果 `mat` 是一个大小为 :math:`(N, M)` Tensor， `vec` 是一个大小为 :math:`M` 的一维Tensor，那么 `input` 必须
+    如果 `mat` 是一个大小为 :math:`(N, M)` Tensor， `vec` 是一个大小为 :math:`M` 的一维Tensor，那么 `input` 必须\
     可广播到一个大小为 :math:`N` 的一维Tensor。这种情况下 `output` 是一个大小为 :math:`N` 的一维Tensor。
 
     .. math::

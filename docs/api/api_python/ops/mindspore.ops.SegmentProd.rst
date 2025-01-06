@@ -5,7 +5,7 @@ mindspore.ops.SegmentProd
 
     计算Tensor中每个分段所有元素的累积。
 
-    具体来说，生成一个新的Tensor `output` ，满足 :math:`output_i = \prod_j input\_x_j` ，其
+    具体来说，生成一个新的Tensor `output` ，满足 :math:`output_i = \prod_j input\_x_j` ，其\
     中累积是满足 :math:`segment\_ids[j] == i` 这个条件的所有的 :math:`j` 对应的元素相乘的结果。
     如果一个分段中没有元素 :math:`i` ，则输出Tensor中相应的元素将被设置为1：:math:`output[i] = 1`。
 
