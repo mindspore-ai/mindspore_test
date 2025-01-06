@@ -152,7 +152,7 @@ int HcomReceiveKernel::Resize(const std::vector<KernelTensor *> &inputs, const s
 
     return KRET_OK;
   }
-  static auto simu = common::SimulateCompile();
+  static auto simu = common::IsCompileSimulation();
   if (simu) {
     MS_LOG(EXCEPTION) << "For " << kernel_name_
                       << ", the output shape depends on the actual execution, and it will affect the accuracy of "
