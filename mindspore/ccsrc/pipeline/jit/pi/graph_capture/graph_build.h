@@ -332,6 +332,7 @@ class GraphBuilder {
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
 
   bool IsTopGraph() const { return this == root_; }
+  LocationPtr GetLocation(const Instr &instr) const;
 
   ValueNode *MakePrimCastNode(ValueNode *node, const py::handle &dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
@@ -355,7 +356,6 @@ class MindGraphBuilder : public GraphBuilder {
                                 const GraphBuilderPtr &subgraph) override;
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
 
-  LocationPtr GetLocation(CallNode *call_node) const;
   AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
   void GuardAttribute(ValueNode *attr_node);
 
