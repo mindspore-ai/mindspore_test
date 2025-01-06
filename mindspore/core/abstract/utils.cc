@@ -267,7 +267,7 @@ AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId &type) {
   return std::make_shared<abstract::AbstractTensor>(TypeIdToType(type), std::make_shared<Shape>(shape));
 }
 
-AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId> &types) {
+AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId> &types, bool is_tuple_output) {
   if (shapes.size() == 0 && types.size() == 0) {
     return std::make_shared<abstract::AbstractNone>();
   }
@@ -276,7 +276,7 @@ AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId>
   for (size_t i = 0; i < shapes.size(); ++i) {
     abstracts.push_back(MakeAbstract(shapes[i], types[i]));
   }
-  if (abstracts.size() == 1) {
+  if (!is_tuple_output && abstracts.size() == 1) {
     return abstracts[0];
   } else {
     ValuePtrList values;
