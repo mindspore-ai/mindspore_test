@@ -8,7 +8,7 @@ sort:
         Currently, the data types of float16, uint8, int8, int16, int32, int64 are well supported.
         If use float32, it may cause loss of accuracy.
 
-    Keyword Args:
+    Args:
         dim (int, optional): The dimension to sort along. Default: ``-1``, means the last dimension.
         descending (bool, optional): Controls the sort order. If `descending` is True, the elements
             are sorted in descending order, or else sorted in ascending order. Default: ``False`` .
