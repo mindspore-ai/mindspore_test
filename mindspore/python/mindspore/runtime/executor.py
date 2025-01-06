@@ -96,8 +96,8 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
           2. `npu-smi info -m`, get the available NPU resources on the environment; if the execution of this command
              fails, the bind-core policy will be generated only based on the available CPU resources,
              without considering the device affinity.
-          3. `npu-smi -t board -i {NPU_ID} -c {CHIP_ID}`, get NPU details based on the logical ID of the device; if
-             the execution of this command fails, the bind-core policy is generated based on the available CPU
+          3. `npu-smi info -t board -i {NPU_ID} -c {CHIP_ID}`, get NPU details based on the logical ID of the device;
+             if the execution of this command fails, the bind-core policy is generated based on the available CPU
              resources only, regardless of device affinity.
           4. `lspci -s {PCIe_No} -vvv`, get the hardware information of the device on the environment; if the execution
              of this command fails, the bind-core policy is generated only based on the available CPU resources,
@@ -135,7 +135,7 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
         >>>
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
-        >>> ms.runtime.set_cpu_affinity(True, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-40"]})
+        >>> ms.runtime.set_cpu_affinity(True, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-45"]})
     """
     _check_runtime_conf_env_valid()
     if RuntimeConf.get_instance().is_thread_bind_core_configured():
