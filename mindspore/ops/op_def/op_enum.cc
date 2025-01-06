@@ -207,6 +207,10 @@ REG_STRING_TO_ENUM_COMMON(driver_name, StrToEnumMap{{"GELS", DriverName::GELS},
 REG_STRING_TO_ENUM_COMMON(kv_cache_quant_mode, StrToEnumMap{{"DEFAULT", PagedAttentionKVCacheQuantMode::DEFAULT},
                                                             {"PERTOKEN", PagedAttentionKVCacheQuantMode::PERTOKEN}})
 
+// PagedAttentionMaskMode
+REG_STRING_TO_ENUM_COMMON(mask_mode, StrToEnumMap{{"MASK_DEFAULT", PagedAttentionMaskMode::MASK_DEFAULT},
+                                                  {"TRAPEZOIDAL", PagedAttentionMaskMode::TRAPEZOIDAL}})
+
 // ErrorMode
 REG_STRING_TO_ENUM_SPECIAL(error_mode, StrToEnumMap{{"CYCLE", ErrorMode::CYCLE}, {"SPECIFIC", ErrorMode::SPECIFIC}});
 
