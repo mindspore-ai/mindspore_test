@@ -20,8 +20,7 @@ mindspore.mint.nn.SyncBatchNorm
         - **affine** (bool) - bool类型。设置为True时， :math:`\gamma` 和 :math:`\beta` 为可学习参数。默认值： ``True`` 。
         - **track_running_stats** (bool, 可选) - bool类型。设置为 ``True`` 时，会跟踪运行时的均值和方差。当设置为 ``False`` 时，
           则不会跟踪这些统计信息。且在tran和eval模式下，该cell总是使用batch的统计信息。
-        - **process_group** (:class:`mindspore.communication.GlobalComm`, 可选) - 统计数据的同步在每个进程组
-          内单独进行。默认行为是全球同步。
+        - **process_group** (str, 可选) - 统计数据的同步在每个进程组内单独进行。默认行为是全局同步。默认值： ``None`` 。
         - **dtype** (:class:`mindspore.dtype`, 可选) - Parameters的dtype。默认值： ``None`` 。
 
     输入：
@@ -36,3 +35,16 @@ mindspore.mint.nn.SyncBatchNorm
         - **ValueError** - `num_features` 小于1。
         - **ValueError** - `momentum` 不在范围[0, 1]内。
         - **ValueError** - `process_group` 中的rank ID不在[0, rank_size)范围内。
+
+    样例：
+
+    .. note::
+        在运行以下示例之前，您需要配置通信环境变量。
+
+        对于Ascend设备，用户需要准备rank table，设置rank_id和device_id。
+        这里，示例使用msrun通过单个命令跨节点拉取多进程分布式任务行指令。
+        请参阅 `Ascend教程
+        <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+        了解更多详情。
+
+        此示例应在多个设备上运行。
