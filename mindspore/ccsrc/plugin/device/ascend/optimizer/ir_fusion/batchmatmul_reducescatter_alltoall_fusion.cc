@@ -397,6 +397,10 @@ bool BatchMatMulReduceScatterAllToAllFusion::Run(const FuncGraphPtr &func_graph)
       MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
       return false;
     }
+
+    if (common::IsExecuteSimulation()) {
+      MS_LOG(EXCEPTION) << "Not support compute_communication_fusion_level when MS_SIMULATION_LEVEL=3.";
+    }
     return NodePass::Run(func_graph);
   }
   return false;

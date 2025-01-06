@@ -201,6 +201,36 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
   return matmul_allreduce_cnode;
 }
 
+bool IsSupportFusion(const mindspore::AnfNodePtr &node) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
+  if (mc2_fusion_level != kMC2NotFusion && mc2_fusion_level != kMC2FusionForward &&
+      mc2_fusion_level != kMC2FusionBackward && mc2_fusion_level != kMC2FusionFull) {
+    MS_LOG(DEBUG) << "In KBK mode MC2 fusion level is " << mc2_fusion_level << ", only support 0, 1, 2, 3.";
+    return false;
+  }
+  if (mc2_fusion_level == kMC2NotFusion) {
+    MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
+    return false;
+  }
+
+  if (mc2_fusion_level == kMC2FusionForward && !IsForwardNode(node)) {
+    MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionForward << ", only apply to forward node. Skip node "
+                  << node->fullname_with_scope();
+    return false;
+  }
+  if (mc2_fusion_level == kMC2FusionBackward && !(IsBpropNode(node) || IsRecomputeNode(node))) {
+    MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionBackward << ", only apply to backward node. Skip node "
+                  << node->fullname_with_scope();
+    return false;
+  }
+  if (common::IsExecuteSimulation()) {
+    MS_LOG(EXCEPTION) << "Not support compute_communication_fusion_level when MS_SIMULATION_LEVEL=3.";
+  }
+  return true;
+}
+
 const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &func_graph,
                                                 const mindspore::AnfNodePtr &node,
                                                 const mindspore::EquivPtr &equiv) const {
@@ -208,33 +238,17 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   if (IsKbkAclnnMode(kernel_graph)) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
-    if (mc2_fusion_level != kMC2NotFusion && mc2_fusion_level != kMC2FusionForward &&
-        mc2_fusion_level != kMC2FusionBackward && mc2_fusion_level != kMC2FusionFull) {
-      MS_LOG(DEBUG) << "In KBK mode MC2 fusion level is " << mc2_fusion_level << ", only support 0, 1, 2, 3.";
-      return nullptr;
-    }
-    if (mc2_fusion_level == kMC2NotFusion) {
-      MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
-      return nullptr;
-    }
-
-    if (mc2_fusion_level == kMC2FusionForward && !IsForwardNode(node)) {
-      MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionForward << ", only apply to forward node. Skip node "
-                    << node->fullname_with_scope();
-      return nullptr;
-    }
-    if (mc2_fusion_level == kMC2FusionBackward && !(IsBpropNode(node) || IsRecomputeNode(node))) {
-      MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionBackward << ", only apply to backward node. Skip node "
-                    << node->fullname_with_scope();
+    if (!IsSupportFusion(node)) {
       return nullptr;
     }
   } else {
 #ifndef ENABLE_INTERNAL_KERNELS
     return nullptr;
 #else
+    if (common::IsExecuteSimulation()) {
+      MS_LOG(INFO) << "Not support MatMulAllReduceFusion when MS_SIMULATION_LEVEL=3.";
+      return nullptr;
+    }
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     if (!ms_context->IsEnableInferBoost()) {
