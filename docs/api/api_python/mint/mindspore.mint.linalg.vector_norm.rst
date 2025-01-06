@@ -5,12 +5,12 @@ mindspore.mint.linalg.vector_norm
 
     返回给定Tensor在指定维度上的向量范数。
 
-    `ord` 为norm的计算模式。支持下列norm模式。
+    `ord` 为范数的计算模式。支持下列范数模式。
 
     =================   ==============================================
     `ord`                向量范数
     =================   ==============================================
-    ``2`` (默认值)        ``2`` -norm (参考最下方公式)
+    ``2`` (默认值)        ``2`` -范数 (参考最下方公式)
     ``inf``              :math:`max(abs(x))`
     ``-inf``             :math:`min(abs(x))`
     ``0``                :math:`sum(x != 0)`
@@ -22,7 +22,7 @@ mindspore.mint.linalg.vector_norm
 
     参数：
         - **x** (Tensor) - shape为 :math:`(*)` 的Tensor，其中*是零个或多个batch维度。
-        - **ord** (Union[bool, int, float, inf, -inf], 可选) - norm的模式。行为参考上表。默认值： ``2`` 。
+        - **ord** (Union[bool, int, float, inf, -inf], 可选) - 范数的计算模式。行为参考上表。默认值： ``2`` 。
         - **dim** (Union[int, List(int), Tuple(int)], 可选) - 计算向量范数的维度。默认值： ``None`` 。
 
           当 `dim` 是int,list或者tuple时，会在指定的维度上计算范数，而剩余的维度会被作为batch维度。

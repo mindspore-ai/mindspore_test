@@ -84,7 +84,7 @@ class LogSigmoid(Cell):
     Logsigmoid is defined as:
 
     .. math::
-        \text{logsigmoid}(x_{i}) = \log(\frac{1}{1 + \exp(-x_i)}),
+        \text{LogSigmoid}(x_{i}) = \log(\frac{1}{1 + \exp(-x_i)}),
 
     where :math:`x_{i}` is the element of the input.
 
