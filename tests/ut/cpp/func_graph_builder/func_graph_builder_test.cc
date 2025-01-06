@@ -139,7 +139,7 @@ TEST_F(TestFuncGraphBuilder, DISABLED_TestAddNodeConstantInput) {
 // Description: Use the func_graph_builder api to add cnode with an uncallable object.
 // Expectation: Failed to add the node.
 TEST_F(TestFuncGraphBuilder, TestAddNodeUnCallable) {
-  FuncGraphBuilder func_graph_builder;
+  FuncGraphBuilder func_graph_builder(true);
   py::int_ int_v1 = 1;
   auto v1_wrapper = func_graph_builder.AddLocalVariable(int_v1);
   auto input1 = func_graph_builder.AddSubGraphInput(v1_wrapper);
@@ -160,7 +160,7 @@ TEST_F(TestFuncGraphBuilder, TestAddNodeUnCallable) {
 // Description: Use the func_graph_builder api to add cnode with constant input.
 // Expectation: The expected graph is constructed.
 TEST_F(TestFuncGraphBuilder, DISABLED_TestAddMultiNode) {
-  FuncGraphBuilder func_graph_builder;
+  FuncGraphBuilder func_graph_builder(true);
   py::int_ int_v1 = 1;
   auto v1_wrapper = func_graph_builder.AddLocalVariable(int_v1);
   auto input1 = func_graph_builder.AddSubGraphInput(v1_wrapper);
@@ -181,7 +181,7 @@ TEST_F(TestFuncGraphBuilder, DISABLED_TestAddMultiNode) {
 // Description: Use the func_graph_builder api to add func_graph called node.
 // Expectation: The expected graph is constructed.
 TEST_F(TestFuncGraphBuilder, DISABLED_TestAddFgCallNodeSingleOutput) {
-  FuncGraphBuilder func_graph_builder1;
+  FuncGraphBuilder func_graph_builder1(true);
   py::int_ int_v1 = 1;
   auto v1_wrapper = func_graph_builder1.AddLocalVariable(int_v1);
   auto input1 = func_graph_builder1.AddSubGraphInput(v1_wrapper);
@@ -201,7 +201,7 @@ TEST_F(TestFuncGraphBuilder, DISABLED_TestAddFgCallNodeSingleOutput) {
   auto graph1 = func_graph_builder1.graph();
   ASSERT_NE(graph1, nullptr);
 
-  FuncGraphBuilder func_graph_builder2;
+  FuncGraphBuilder func_graph_builder2(true);
   v1_wrapper = func_graph_builder2.AddLocalVariable(int_v1);
   input1 = func_graph_builder2.AddSubGraphInput(v1_wrapper);
   ASSERT_NE(input1, nullptr);
@@ -221,7 +221,7 @@ TEST_F(TestFuncGraphBuilder, DISABLED_TestAddFgCallNodeSingleOutput) {
 // Description: Use the func_graph_builder api to add func_graph called node.
 // Expectation: The expected graph is constructed.
 TEST_F(TestFuncGraphBuilder, DISABLED_TestAddFgCallNodeMultiOutput) {
-  FuncGraphBuilder func_graph_builder1;
+  FuncGraphBuilder func_graph_builder1(true);
   py::int_ int_v1 = 1;
   auto v1_wrapper = func_graph_builder1.AddLocalVariable(int_v1);
   auto input1 = func_graph_builder1.AddSubGraphInput(v1_wrapper);
@@ -244,7 +244,7 @@ TEST_F(TestFuncGraphBuilder, DISABLED_TestAddFgCallNodeMultiOutput) {
   auto graph1 = func_graph_builder1.graph();
   ASSERT_NE(graph1, nullptr);
 
-  FuncGraphBuilder func_graph_builder2;
+  FuncGraphBuilder func_graph_builder2(true);
   v1_wrapper = func_graph_builder2.AddLocalVariable(int_v1);
   input1 = func_graph_builder2.AddSubGraphInput(v1_wrapper);
   ASSERT_NE(input1, nullptr);
