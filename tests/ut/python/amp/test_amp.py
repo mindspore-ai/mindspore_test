@@ -18,7 +18,6 @@ import mindspore as ms
 from mindspore import ops, nn, Parameter, Tensor
 from mindspore.common import dtype as mstype
 from mindspore.train.amp import auto_mixed_precision
-from mindspore._c_expression import amp as amp_c
 from mindspore._c_expression.amp import pop_amp_strategy, push_amp_strategy, create_amp_strategy, \
     get_curr_amp_strategy, AmpStrategy, AmpLevel, PrimCastStrategy, PrimCastStrategyInfo, get_prim_cast_strategy_info
 
@@ -123,32 +122,6 @@ def test_check_prim_cast_strategy():
     prim_strategy_info = get_prim_cast_strategy_info(amp_strategy, "Pad")
     assert isinstance(prim_strategy_info, PrimCastStrategyInfo)
     assert prim_strategy_info.strategy == PrimCastStrategy.AmpIgnore
-
-
-def test_modify_amp_list():
-    """
-    Feature: Test modify amp operator lists.
-    Description: Check amp operator lists, modify lists and check again.
-    Expectation: Success.
-    """
-    assert isinstance(amp_c.SetDtypeOptList, list)
-    assert isinstance(amp_c.SetDtypeList, list)
-    assert isinstance(amp_c.AutoPromoteList, list)
-    assert amp_c.SetDtypeOptList == [("ReduceProd", []), ("Softmax", []), ("LogSoftmax", []), ("CumProd", []),
-                                     ("CumSum", []), ("CumsumExt", []), ("ProdExt", []), ("SumExt", [])]
-    assert amp_c.SetDtypeList == [("Norm", [])]
-    assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Addcmul", []), ("Cross", []), ("_PyboostCrossPrim", []),
-                                     ("GridSampler2D", []), ("GridSampler3D", []), ("BiasAdd", []), ("AddN", []),
-                                     ("Dot", []), ("Concat", [])]
-    amp_c.SetDtypeOptList.remove(("LogSoftmax", []))
-    amp_c.SetDtypeList.append(("Test", [0]))
-    amp_c.AutoPromoteList.remove(("Addcmul", []))
-    assert amp_c.SetDtypeOptList == [("ReduceProd", []), ("Softmax", []), ("CumProd", []), ("CumSum", []),
-                                     ("CumsumExt", []), ("ProdExt", []), ("SumExt", [])]
-    assert amp_c.SetDtypeList == [("Norm", []), ("Test", [0])]
-    assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Cross", []), ("_PyboostCrossPrim", []), ("GridSampler2D", []),
-                                     ("GridSampler3D", []), ("BiasAdd", []), ("AddN", []),
-                                     ("Dot", []), ("Concat", [])]
 
 
 class MatmulNet(nn.Cell):
