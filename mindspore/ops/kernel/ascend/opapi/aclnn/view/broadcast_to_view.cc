@@ -28,10 +28,7 @@ void BroadcastToView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &
   auto shape = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
 
   info_ = ops::BroadCastToStrideCalc(old_info, shape);
-  info_[0]->ori_size = GetOriginInputSize(inputs[0]);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
-
-  GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
 void BroadcastToView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
