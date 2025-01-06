@@ -27,6 +27,15 @@ install(
         COMPONENT mindspore
 )
 
+if(ENABLE_CPU)
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
+
 if(ENABLE_D)
     install(
         TARGETS mindspore_ascend

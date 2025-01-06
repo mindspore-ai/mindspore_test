@@ -61,6 +61,12 @@ if(ENABLE_CPU AND NOT WIN32)
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
     )
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
 endif()
 
 if(MS_BUILD_GRPC)

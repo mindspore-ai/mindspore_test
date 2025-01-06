@@ -22,7 +22,7 @@
 #include "mindspore/ops/infer/fmin.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "kernel/cpu/utils/cpu_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

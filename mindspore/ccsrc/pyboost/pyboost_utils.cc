@@ -28,7 +28,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "mindspore/ops/kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/cast.h"
 #include "mindspore/ops/op_def/array_ops.h"
 

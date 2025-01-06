@@ -20,7 +20,7 @@
 #include <map>
 #include <utility>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/infer/tile_size.h"
 #include "include/common/factory/ms_factory.h"
 

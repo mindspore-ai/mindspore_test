@@ -15,7 +15,7 @@
  */
 
 #include "mindspore/ops/kernel/cpu/pyboost/customize/dense.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/transpose.h"
 #include "mindspore/ops/kernel/cpu/pyboost/auto_generate/contiguous.h"

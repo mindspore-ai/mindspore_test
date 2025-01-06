@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ADJUST_HUE_CPU_KERNEL_H_
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 
 namespace mindspore {

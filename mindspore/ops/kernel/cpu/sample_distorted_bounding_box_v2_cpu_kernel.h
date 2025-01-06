@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <map>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/philox_random.h"
 #include "include/common/factory/ms_factory.h"
 

@@ -17,7 +17,7 @@
 #include "src/extendrt/kernel/default/default_kernel_lib.h"
 #include "src/extendrt/kernel/default/kernel_mod_kernel.h"
 #include "include/common/factory/ms_factory.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "src/infer/graph_compiler.h"
 
 namespace mindspore::kernel {

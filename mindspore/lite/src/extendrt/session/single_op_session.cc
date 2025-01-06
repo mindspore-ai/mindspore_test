@@ -28,7 +28,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/common_utils.h"
-#include "kernel/cpu/cpu_kernel_mod.h"
+#include "plugin/device/cpu/kernel/cpu_kernel_mod.h"
 #include "src/extendrt/utils/kernel_build_utils.h"
 #include "src/extendrt/kernel/ascend/plugin/ascend_kernel_plugin.h"
 #include "src/common/common.h"

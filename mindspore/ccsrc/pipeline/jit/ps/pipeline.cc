@@ -88,7 +88,7 @@
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/common/utils/dynamic_obfuscation/dynamic_obfuscation.h"
 #include "include/common/utils/dynamic_obfuscation/registry_opaque_predicate.h"
-#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "include/backend/distributed/init.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"

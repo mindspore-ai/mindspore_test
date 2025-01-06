@@ -34,7 +34,7 @@
 #include "ops/op_def.h"
 #include "utils/ms_context.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "include/common/profiler.h"
 #include "ir/anf.h"
 #include "ir/functor.h"

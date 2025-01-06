@@ -126,6 +126,7 @@ set(BACKEND_SUB_COMP
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/hal/profiler
         plugin/device/cpu/optimizer
+        plugin/device/cpu/kernel
         )
 
 foreach(_comp ${BACKEND_SUB_COMP})
@@ -141,7 +142,6 @@ foreach(_comp ${BACKEND_SUB_COMP})
 endforeach()
 
 
-list(APPEND BACKEND_SUB_OBJECTS_SRC ${OPS_HOST_OBJECTS})
 set_property(SOURCE ${BACKEND_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_backend SHARED ${BACKEND_SUB_OBJECTS_SRC})
 

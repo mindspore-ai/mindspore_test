@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <complex>
 
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "base/float16.h"
 
 namespace mindspore {

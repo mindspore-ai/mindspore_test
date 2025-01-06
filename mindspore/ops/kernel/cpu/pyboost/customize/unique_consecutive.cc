@@ -17,7 +17,7 @@
 #include "mindspore/ops/kernel/cpu/pyboost/customize/unique_consecutive.h"
 
 #include "ir/scalar.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/device_address_utils.h"

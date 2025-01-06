@@ -8,14 +8,6 @@ file(GLOB_RECURSE _PYBOOST_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "grad_functions/auto_generate/*.cc"
 )
 
-if(NOT ENABLE_TESTCASES)
-    file(GLOB_RECURSE _PYBOOST_CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-            "../../ops/kernel/cpu/pyboost/*.cc"
-            "../../ops/kernel/cpu/pyboost/auto_generate/*.cc"
-            "../../ops/kernel/cpu/pyboost/customize/*.cc"
-    )
-endif()
-
 list(APPEND _PYBOOST_SRC_LIST ${_PYBOOST_CPU_SRC_LIST})
 
 set_property(SOURCE ${_PYBOOST_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PYNATIVE)

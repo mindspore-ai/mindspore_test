@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 #include "mindspore/ops/infer/grad/fractional_max_pool_grad_with_fixed_ksize.h"
 

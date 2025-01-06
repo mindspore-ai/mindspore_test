@@ -27,13 +27,12 @@ foreach(number RANGE 1 ${CPU_KERNEL_OBJECT_COUNT})
 endforeach()
 set(OPS_HOST_OBJECTS ${CPU_KERNEL_OBJECTS} PARENT_SCOPE)
 
-# if((NOT ENABLE_CPU) AND BUILD_LITE)
-#     add_library(mindspore_ops_host INTERFACE)
-# else()
-#     add_library(mindspore_ops_host OBJECT
-#                     ${PYBOOST_SRC}
-#                     ${CPU_KERNEL_OBJECTS})
-#     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-#         target_compile_definitions(mindspore_ops_host PRIVATE BACKEND_DLL)
-#     endif()
-# endif()
+if((NOT ENABLE_CPU) OR (BUILD_LITE OR ENABLE_TESTCASES))
+    add_library(mindspore_ops_host INTERFACE)
+else()
+    add_library(mindspore_ops_host SHARED ${CPU_KERNEL_OBJECTS})
+    target_link_libraries(mindspore_ops_host PRIVATE mindspore_core mindspore_ops
+        mindspore_common mindspore_backend mindspore_pyboost nnacl)
+    set_target_properties(mindspore_ops_host PROPERTIES INSTALL_RPATH
+            "$ORIGIN/..")
+endif()
