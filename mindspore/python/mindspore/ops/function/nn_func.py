@@ -6241,7 +6241,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
             be greater than or equal to 1 and bounded by the height and width of the input `x`. Default: ``1`` .
         groups (int, optional): Splits `input` into groups. Default: ``1`` .
             :math:`C_{in} % groups == 0` , :math:`C_{out} % groups == 0` , :math:`C_{out} >= groups` ,
-            :math:` \text{kernel_size[1]} = C_{in} / groups`
+            :math:`\text{kernel_size[1]} = C_{in} / groups`
 
     Returns:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.

@@ -307,7 +307,6 @@ Dropout层
     mindspore.nn.RMSProp
     mindspore.nn.Rprop
     mindspore.nn.SGD
-    mindspore.nn.thor
 
 动态学习率
 -----------

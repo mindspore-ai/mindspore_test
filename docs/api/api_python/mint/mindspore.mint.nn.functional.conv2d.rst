@@ -44,7 +44,7 @@ mindspore.mint.nn.functional.conv2d
           - ``"valid"``：不对输入进行填充，返回输出可能的最大高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。
 
         - **dilation** (Union(int, tuple[int])，可选) - 卷积核元素间的间隔。数据类型为int或由2个int组成的tuple。若 :math:`k > 1` ，则卷积核间隔 `k` 个元素进行采样。垂直和水平方向上的 `k` ，其取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
-        - **groups** (int，可选) - 将过滤器拆分为组。 :math:`C_{in} % groups == 0` ， :math:`C_{out} % groups == 0` ， :math:`C_{out} >= groups` ， :math:` \text{kernel_size[1]} = C_{in} / groups` 。默认值： ``1`` 。
+        - **groups** (int，可选) - 将过滤器拆分为组。 :math:`C_{in} % groups == 0` ， :math:`C_{out} % groups == 0` ， :math:`C_{out} >= groups` ， :math:`\text{kernel_size[1]} = C_{in} / groups` 。默认值： ``1`` 。
 
     返回：
         Tensor，卷积后的值。shape为 :math:`(N, C_{out}, H_{out}, W_{out})` 。

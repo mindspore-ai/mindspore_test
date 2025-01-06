@@ -224,7 +224,7 @@ class Conv2d(_Conv):
             divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`,
             this 2D convolution layer also can be called 2D depthwise convolution layer. Default: ``1`` .
             :math:`C_{in} % groups == 0` , :math:`C_{out} % groups == 0` , :math:`C_{out} >= groups` ,
-            :math:` \text{kernel_size[1]} = C_{in} / groups`
+            :math:`\text{kernel_size[1]} = C_{in} / groups`
         bias (bool, optional): Whether the Conv2d layer has a bias parameter. Default: ``True`` .
         dtype (mindspore.dtype, optional): Dtype of Parameters. Default: mstype.float32 .
 
