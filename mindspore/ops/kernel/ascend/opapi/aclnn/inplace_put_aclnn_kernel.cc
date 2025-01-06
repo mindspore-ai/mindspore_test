@@ -20,14 +20,14 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
 
 void InplacePutAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
-  accumulate_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  accumulate_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], accumulate_);
 }

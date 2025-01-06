@@ -22,7 +22,7 @@ namespace kernel {
 
 void DiagExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  diagonal_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  diagonal_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
   diagonal_ = diagonal_ < 0 ? diagonal_ + SizeToLong(input_shape.size()) : diagonal_;
   GetWorkspaceForResize(inputs[kIndex0], diagonal_, outputs[kIndex0]);

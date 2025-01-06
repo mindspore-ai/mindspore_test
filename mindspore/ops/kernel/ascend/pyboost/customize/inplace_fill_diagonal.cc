@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/take.h"
+#include "kernel/ascend/pyboost/customize/inplace_fill_diagonal.h"
 
 #include <memory>
 
@@ -25,23 +25,22 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr TakeAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                          const BaseTensorPtr &index) {
-  MS_LOG(DEBUG) << "Call Take start";
-  OpRunner::InferOpOutput(op, input_tensor, index);
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, index);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+tensor::BaseTensorPtr InplaceFillDiagonalAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                         const BaseTensorPtr &input, const ScalarPtr &fill_value,
+                                                         const BoolImmPtr &wrap) {
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
+  auto wrap_imm = GetValue<bool>(wrap);
+  op->set_outputs({input});
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, index]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, fill_value, wrap_imm]() {
     auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
     // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, input_tensor, index);
-    // Malloc for output tensors
-    PyBoostUtils::MallocOpOutputs(device_context, outputs);
+    PyBoostUtils::MallocOpInputs(device_context, input);
+
     // Inplace output need be front
-    LAUNCH_ACLNN(aclnnTake, device_context, op->stream_id(), input_tensor, index, outputs[0]);
-    MS_LOG(DEBUG) << "Launch Take end";
+    MS_LOG(DEBUG) << "Call FillDiagonal start";
+    LAUNCH_ACLNN(aclnnInplaceFillDiagonal, device_context, op->stream_id(), input, fill_value, wrap_imm);
+    MS_LOG(DEBUG) << "Launch FillDiagonal end";
   }));
   return op->output(0);
 }

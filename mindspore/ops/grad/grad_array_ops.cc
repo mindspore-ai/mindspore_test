@@ -3451,5 +3451,14 @@ REG_BPROP_BUILDER("InplacePut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   auto index_grad = ib->OutZeros(index);
   return {grad, index_grad, source_grad, ib->OutZeros(accumulate)};
 });
+
+REG_BPROP_BUILDER("InplaceFillDiagonal").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto fill_value = ib->GetInput(kIndex1);
+  auto wrap = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto grad = ib->Emit("InplaceFillDiagonal", {dout, ib->Value<float>(0), ib->Value<bool>(false)});
+  return {grad, ib->OutZeros(fill_value), ib->OutZeros(wrap)};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

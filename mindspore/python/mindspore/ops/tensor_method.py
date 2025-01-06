@@ -1252,6 +1252,10 @@ def tensor_inplace_fill_tensor_empty(input, value):
     raise ValueError("should not come here for fill_tensor method.")
 
 
+def tensor_inplace_fill_diagonal(input, fill_value, wrap=False):
+    raise ValueError("should not come here for fill_diagonal method.")
+
+
 # 125 floor_
 
 # 126 masked_fill_

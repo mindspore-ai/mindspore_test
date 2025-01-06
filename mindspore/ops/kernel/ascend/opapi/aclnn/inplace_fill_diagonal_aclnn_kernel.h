@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_TAKE_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_TAKE_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_FILL_DIAGONAL_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_FILL_DIAGONAL_ACLNN_KERNEL_MOD_H_
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
@@ -24,18 +24,21 @@
 namespace mindspore {
 namespace kernel {
 
-class TakeAscend : public AclnnKernelMod {
+class InplaceFillDiagonalAclnnKernelMod : public AclnnKernelMod {
  public:
-  TakeAscend() : AclnnKernelMod(std::move("aclnnTake")) {}
-  ~TakeAscend() = default;
+  InplaceFillDiagonalAclnnKernelMod() : AclnnKernelMod("aclnnInplaceFillDiagonal") {}
+  ~InplaceFillDiagonalAclnnKernelMod() = default;
+
+  void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
-  void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  ScalarPtr fill_value_{nullptr};
+  bool wrap_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_TAKE_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_FILL_DIAGONAL_ACLNN_KERNEL_MOD_H_

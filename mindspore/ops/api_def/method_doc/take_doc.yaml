@@ -1,6 +1,6 @@
 take:
   description: |
-    take(self, indices, axis=None, mode='clip') -> Tensor
+    take(indices, axis=None, mode='clip') -> Tensor
 
     Takes elements from a tensor along an axis.
 
