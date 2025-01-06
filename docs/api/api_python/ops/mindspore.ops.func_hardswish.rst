@@ -15,9 +15,9 @@ mindspore.ops.hardswish
         input*(input + 3)/6, & \text{ otherwise }
         \end{cases}
 
-    HSwish函数图：
+    HardSwish函数图：
 
-    .. image:: ../images/HSwish.png
+    .. image:: ../images/HardSwish.png
         :align: center
 
     参数：

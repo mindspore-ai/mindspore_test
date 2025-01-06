@@ -13,9 +13,9 @@ mindspore.mint.nn.Hardshrink
         0, & \text{ otherwise }
         \end{cases}
 
-    HShrink函数图：
+    HardShrink函数图：
 
-    .. image:: ../images/HShrink.png
+    .. image:: ../images/HardShrink.png
         :align: center
 
     参数：

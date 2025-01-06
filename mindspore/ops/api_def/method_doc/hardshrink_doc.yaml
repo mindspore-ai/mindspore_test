@@ -14,9 +14,9 @@ hardshrink:
             0, & \text{ otherwise }
             \end{cases}
 
-        HShrink Activation Function Graph:
+        HardShrink Activation Function Graph:
 
-        .. image:: ../../images/HShrink.png
+        .. image:: ../../images/HardShrink.png
             :align: center
 
         .. note::
