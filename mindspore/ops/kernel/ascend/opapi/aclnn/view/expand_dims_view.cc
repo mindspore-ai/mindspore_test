@@ -28,10 +28,7 @@ void ExpandDimsView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &i
   auto axis = inputs[kIndex1]->GetValueWithCheck<int64_t>();
 
   info_ = ops::ExpandDimsStrideCalc(old_info, axis);
-  info_[0]->ori_size = GetOriginInputSize(inputs[0]);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
-
-  GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
 void ExpandDimsView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

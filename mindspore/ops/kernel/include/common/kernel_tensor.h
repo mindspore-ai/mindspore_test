@@ -28,9 +28,19 @@
 #include <variant>
 #include <vector>
 #include <algorithm>
-
+#include <functional>
 #include "abstract/abstract_value.h"
 #include "mindapi/base/format.h"
+#include "abstract/dshape.h"
+#include "abstract/ops/primitive_infer_map.h"
+#include "include/api/format.h"
+#include "include/backend/visible.h"
+#include "include/common/utils/utils.h"
+#include "include/common/utils/convert_utils.h"
+#include "include/backend/device_synchronizer.h"
+#include "ir/anf.h"
+#include "ir/dtype.h"
+#include "ir/tensor.h"
 #include "ir/kernel_tensor_value.h"
 #include "mindspore/ccsrc/include/backend/device_synchronizer.h"
 #include "common/kernel_visible.h"
@@ -660,6 +670,12 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   const TensorStorageInfoPtr tensor_storage_info() const { return address_common_->tensor_storage_info_; }
   void set_tensor_storage_info(const TensorStorageInfoPtr &storage_info) {
+    if (storage_info) {
+      auto ori_shape = storage_info->ori_shape;
+      auto type_size = GetTypeByte(TypeIdToType(dtype_id()));
+      storage_info->ori_size =
+        std::accumulate(ori_shape.begin(), ori_shape.end(), type_size, std::multiplies<size_t>());
+    }
     address_common_->tensor_storage_info_ = storage_info;
   }
 

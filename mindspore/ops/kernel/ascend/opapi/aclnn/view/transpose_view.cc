@@ -33,9 +33,7 @@ void TransposeView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &in
     MS_LOG(EXCEPTION) << "DIMS should be same with shape size which is " << dims << " ,and shape " << shape;
   }
   info_ = ops::TransposeStridesCalc(old_info, dims);
-  info_[0]->ori_size = GetOriginInputSize(inputs[0]);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
-  GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
 void TransposeView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
