@@ -30,3 +30,7 @@ matmul_reduce_scatter:
   dispatch:
     enable: True
     Ascend: MatmulReduceScatterAscend
+    CPU: None
+    GPU: None
+  function:
+    disable: True
