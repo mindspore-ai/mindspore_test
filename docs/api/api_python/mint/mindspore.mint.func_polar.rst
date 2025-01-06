@@ -11,8 +11,6 @@ mindspore.mint.polar
 
         y_{i} =  abs_{i} * \cos(angle_{i}) + abs_{i} * \sin(angle_{i}) * j
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **abs** (Tensor, float) - 极径。其输入shape可以是任意维度，数据类型须为：float32。
