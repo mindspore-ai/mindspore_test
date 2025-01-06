@@ -393,10 +393,10 @@ class Custom(ops.PrimitiveWithInfer):
         >>> input_y = Tensor(np.ones([16, 16]).astype(np.float32))
         >>>
         >>> # Example, func_type = "pyfunc"
-        >>> def func_multi_output(x1, x2):
-        ...     return (x1 + x2), (x1 - x2)
+        >>> def func_pyfunc(x1, x2):
+        ...     return x1 + x2
         >>>
-        >>> test_pyfunc = ops.Custom(func_multi_output, lambda x, _: (x, x), lambda x, _: (x, x), "pyfunc")
+        >>> test_pyfunc = ops.Custom(func_pyfunc, lambda x, _: x, lambda x, _: x, "pyfunc")
         >>> output = test_pyfunc(input_x, input_y)
         >>> print(output.shape)
         (16, 16)
