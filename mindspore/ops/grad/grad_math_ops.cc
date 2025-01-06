@@ -1805,6 +1805,18 @@ REG_BPROP_BUILDER("Exp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("InplaceExp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto g = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  TypeId exp_type = ib->GetDtypeId(g);
+  if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
+    g = ib->Conj(g);
+  }
+  auto dx = ib->Mul(dout, g);
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
