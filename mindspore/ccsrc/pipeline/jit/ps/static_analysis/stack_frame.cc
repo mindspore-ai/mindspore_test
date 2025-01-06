@@ -81,17 +81,11 @@ StackFramePtr StackFrame::DoJump(const AnalysisEnginePtr &engine, const CNodePtr
     MS_EXCEPTION_IF_NULL(current_context_);
     MS_LOG(DEBUG) << "Eval before, current_node: " << current_cnode->DebugString()
                   << ", current_context_: " << current_context_->ToString() << ", args: " << args_abs_list;
-    // Update inputs sequence nodes info, if matched in cache.
     for (size_t i = 0; i < args_abs_list.size(); ++i) {
-      auto new_sequence = dyn_cast<AbstractSequence>(args_abs_list[i]);
-      auto old_sequence = dyn_cast<AbstractSequence>(iter->first[i]);
-      if (old_sequence != nullptr && new_sequence != nullptr) {
-        MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-        SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-        MS_LOG(DEBUG) << "After synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-      }
+      const auto &old_arg = iter->first[i];
+      const auto &new_arg = args_abs_list[i];
+      // Update inputs abstract, if matched in cache.
+      SynchronizeSuccessiveInputs(old_arg, new_arg);
     }
     return nullptr;
   }
@@ -165,13 +159,9 @@ StackFramePtr StackFrame::Jump(const AnalysisEnginePtr &engine) {
       MS_EXCEPTION_IF_NULL(abstract);
       MS_LOG(DEBUG) << "No need to jump as found result from cache for node_config: " << call_node_conf->ToString()
                     << ", result: " << abstract->ToString();
-
-      static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-      if (enable_eliminate_unused_element) {
-        const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
-        SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, current_context_->func_graph(), cnode,
-                                                            abs_func_graph, current_context_);
-      }
+      const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
+      SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, current_context_->func_graph(), cnode, abs_func_graph,
+                                                          current_context_);
       return nullptr;
     }
   }

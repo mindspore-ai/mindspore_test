@@ -2910,5 +2910,25 @@ std::string GetRefKeyFromAbstract(const AbstractBasePtr &abs) {
   }
   return ref_key->value();
 }
+
+void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg) {
+  // Update inputs inplace abstract.
+  if (old_arg != nullptr && old_arg->inplace_abstract() != nullptr && new_arg != nullptr) {
+    new_arg->set_inplace_abstract(old_arg->inplace_abstract());
+  }
+  // Update sequence nodes info, if matched.
+  static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
+  if (enable_eliminate_unused_element) {
+    auto new_sequence = dyn_cast<AbstractSequence>(new_arg);
+    auto old_sequence = dyn_cast<AbstractSequence>(old_arg);
+    if (old_sequence != nullptr && new_sequence != nullptr) {
+      MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
+                    << ", new_sequence: " << new_sequence->ToString();
+      SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
+      MS_LOG(DEBUG) << "After synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
+                    << ", new_sequence: " << new_sequence->ToString();
+    }
+  }
+}
 }  // namespace abstract
 }  // namespace mindspore

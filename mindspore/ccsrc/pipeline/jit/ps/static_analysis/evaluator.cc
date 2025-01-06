@@ -329,19 +329,15 @@ AbstractBasePtr BaseFuncGraphEvaluator::LaunchRecursiveEval(const AnalysisEngine
     } else {
       node_eval_result = ObtainEvalResultFromCache(node_conf);
       if (node_eval_result != nullptr) {
-        static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-        if (enable_eliminate_unused_element) {
-          const auto &cnode = node->cast<CNodePtr>();
-          MS_EXCEPTION_IF_NULL(cnode);
-          const auto &maybe_func = engine->GetCNodeOperatorAbstract(cnode, context, fg);
-          if (maybe_func->isa<MetaFuncGraphAbstractClosure>() || maybe_func->isa<FuncGraphAbstractClosure>()) {
-            const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
-            SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, fg, cnode, abs_func_graph, context);
-          }
+        const auto &cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        const auto &maybe_func = engine->GetCNodeOperatorAbstract(cnode, context, fg);
+        if (maybe_func->isa<MetaFuncGraphAbstractClosure>() || maybe_func->isa<FuncGraphAbstractClosure>()) {
+          const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
+          SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, fg, cnode, abs_func_graph, context);
         }
+
         if (engine->check_side_effect() && node_eval_result->has_side_effect_node()) {
-          auto cnode = dyn_cast_ptr<CNode>(node);
-          MS_EXCEPTION_IF_NULL(cnode);
           MS_LOG(DEBUG) << "Found side-effect, cnode: " << cnode->DebugString() << ", func_graph: " << fg->ToString();
           cnode->set_has_side_effect_node(true);
           fg->set_has_side_effect_node(true);
@@ -654,30 +650,11 @@ EvalResultPtr Evaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args
     MS_EXCEPTION_IF_NULL(eval_result->abstract());
     MS_LOG(DEBUG) << "[" << this << "/" << evaluator_name
                   << "] cache hit. result: " << eval_result->abstract()->ToString() << ", args: " << args_abs_list;
-    // Update inputs sequence nodes info, if matched in cache.
-    static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-    if (enable_eliminate_unused_element) {
-      for (size_t i = 0; i < args_abs_list.size(); ++i) {
-        auto new_sequence = dyn_cast<AbstractSequence>(args_abs_list[i]);
-        auto old_sequence = dyn_cast<AbstractSequence>(iter->first[i]);
-        if (old_sequence != nullptr && new_sequence != nullptr) {
-          MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags for NodeConfig: "
-                        << (out_conf ? out_conf->ToString() : "NULL") << "old_sequence: " << old_sequence->ToString()
-                        << ", new_sequence: " << new_sequence->ToString();
-          SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-          MS_LOG(DEBUG) << "After synchronize sequence nodes use flags for NodeConfig: "
-                        << (out_conf ? out_conf->ToString() : "NULL") << ", old_sequence: " << old_sequence->ToString()
-                        << ", new_sequence: " << new_sequence->ToString();
-        }
-      }
-    }
     for (size_t i = 0; i < args_abs_list.size(); ++i) {
-      // Update inputs inplace abstract.
       const auto &old_arg = iter->first[i];
       const auto &new_arg = args_abs_list[i];
-      if (old_arg != nullptr && old_arg->inplace_abstract() != nullptr && new_arg != nullptr) {
-        new_arg->set_inplace_abstract(old_arg->inplace_abstract());
-      }
+      // Update inputs abstract, if matched in cache.
+      SynchronizeSuccessiveInputs(old_arg, new_arg);
     }
   }
   return eval_result;

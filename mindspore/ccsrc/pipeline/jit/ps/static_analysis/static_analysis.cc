@@ -684,21 +684,10 @@ void AnalysisEngine::SaveEvalResultInCache(const AnfNodeConfigPtr &conf, const E
     MS_EXCEPTION_IF_NULL(iter->second->abstract());
     MS_LOG(DEBUG) << "Found previous result for NodeConfig: " << conf->ToString()
                   << ", result: " << iter->second->abstract().get() << "/" << iter->second->abstract()->ToString();
-    // Update sequence nodes info, if matched in cache.
-    static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-    if (enable_eliminate_unused_element) {
-      auto new_sequence = dyn_cast<AbstractSequence>(result->abstract());
-      auto old_sequence = dyn_cast<AbstractSequence>(iter->second->abstract());
-      if (old_sequence != nullptr && new_sequence != nullptr) {
-        MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags for NodeConfig: " << conf->ToString()
-                      << ", old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-        SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-        MS_LOG(DEBUG) << "After synchronize sequence nodes use flags for NodeConfig: " << conf->ToString()
-                      << ", old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-      }
-    }
+    const auto &old_arg = iter->second->abstract();
+    const auto &new_arg = result->abstract();
+    // Update inputs abstract, if matched in cache.
+    SynchronizeSuccessiveInputs(old_arg, new_arg);
   }
   MS_EXCEPTION_IF_NULL(result->abstract());
   MS_LOG(DEBUG) << "Save result for NodeConfig: " << conf->ToString() << ", result: " << result->abstract().get() << "/"
@@ -731,17 +720,11 @@ void SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(const AnalysisEnginePtr
     MS_EXCEPTION_IF_NULL(fg_context);
     MS_LOG(DEBUG) << "Eval before, current_node: " << cnode->DebugString() << ", context: " << fg_context->ToString()
                   << ", args: " << args_abs_list;
-    // Update inputs sequence nodes info, if matched in cache.
     for (std::size_t i = 0; i < args_abs_list.size(); ++i) {
-      auto new_sequence = dyn_cast<AbstractSequence>(args_abs_list[i]);
-      auto old_sequence = dyn_cast<AbstractSequence>(iter->first[i]);
-      if (old_sequence != nullptr && new_sequence != nullptr) {
-        MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-        SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-        MS_LOG(DEBUG) << "After synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-      }
+      const auto &old_arg = iter->first[i];
+      const auto &new_arg = args_abs_list[i];
+      // Update inputs abstract, if matched in cache.
+      SynchronizeSuccessiveInputs(old_arg, new_arg);
     }
   }
 }
