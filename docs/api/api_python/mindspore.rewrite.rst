@@ -13,7 +13,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
     节点可以表达前向计算过程的Cell调用语句、Primitive调用语句、算术运算语句、返回语句等。
 
     参数：
-        - **node** (NodeImpl) - `Node` 的内部实现实例。建议调用Node下的指定方法来创建Node，例如 `create_call_cell` ，而不直接
+        - **node** (NodeImpl) - `Node` 的内部实现实例。建议调用Node下的指定方法来创建Node，例如 `create_call_cell` ，而不直接\
           调用Node的构造函数。不需关心NodeImpl是什么，只需作为句柄看待。
 
     .. py:method:: mindspore.rewrite.Node.create_call_cell(cell: Cell, targets: List[Union[ScopedValue, str]], args: List[ScopedValue] = None, kwargs: Dict[str, ScopedValue] = None, name: str = "", is_sub_net: bool = False)
@@ -253,7 +253,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
     并得到修改后的网络代码及网络实例。
 
     参数：
-        - **handler** (SymbolTreeImpl) - SymbolTree内部实现实例。建议调用SymbolTree下的 `create` 方法来创建SymbolTree，而不直接
+        - **handler** (SymbolTreeImpl) - SymbolTree内部实现实例。建议调用SymbolTree下的 `create` 方法来创建SymbolTree，而不直接\
           调用SymbolTree的构造函数。不需关心SymbolTreeImpl是什么，只需作为句柄看待。
 
     .. py:method:: mindspore.rewrite.SymbolTree.after(node: Union[Node, str])
@@ -297,7 +297,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
         6. 将rewrite节点保存到SymbolTree里，同时更新和维护节点间的拓扑连接关系
         7. 返回网络实例对应的SymbolTree对象
 
-        如果网络的前向计算过程里调用了类型为 :class:`mindspore.nn.Cell` 的用户自定义网络，rewrite会为对应语句生成类型
+        如果网络的前向计算过程里调用了类型为 :class:`mindspore.nn.Cell` 的用户自定义网络，rewrite会为对应语句生成类型\
         为 `NodeType.Tree` 的节点，这类节点内部保存了一个新的SymbolTree，这个SymbolTree解析并维护着自定义网络的节点信息。
 
         如果网络的前向计算过程里调用了以下类型的语句，rewrite会将该语句所对应的内部语句进行解析，并生成对应节点：
@@ -398,7 +398,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
         返回当前SymbolTree里节点的生成器，该接口用于遍历SymbolTree里的节点。
 
         参数：
-            - **all_nodes** (bool) - 获取所有节点，包括在 `CallFunction` 节点、 `CellContainer` 节点和
+            - **all_nodes** (bool) - 获取所有节点，包括在 `CallFunction` 节点、 `CellContainer` 节点和\
               子SymbolTree里面的节点。默认值： ``False`` 。
 
         返回：
@@ -420,7 +420,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
         - **target users** (Dict[int, List[Tuple[str, int]]])： 格式为 `{[idx, [(n, k)]]}` ，代表该节点的第 `idx` 个输出被用作节点 `n` 的第 `k` 个参数。
 
         参数：
-            - **all_nodes** (bool) - 打印所有节点的信息，包括在 `CallFunction` 节点、 `CellContainer` 节点和
+            - **all_nodes** (bool) - 打印所有节点的信息，包括在 `CallFunction` 节点、 `CellContainer` 节点和\
               子SymbolTree里面的节点。默认值： ``False`` 。
 
         异常：

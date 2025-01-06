@@ -12,7 +12,7 @@ mindspore.mint.empty_like
         - **input** (Tensor) - 任意维度的Tensor。
 
     关键字参数：
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 用来描述所创建的Tensor的 `dtype` 。如果为 ``None`` ，那么将会使
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 用来描述所创建的Tensor的 `dtype` 。如果为 ``None`` ，那么将会使\
           用 `input` 的dtype。默认值： ``None`` 。
         - **device** (string, 可选) - 指定Tensor使用的内存来源。当前支持 ``CPU`` 和 ``Ascend`` 。如果为 ``None`` ，
           那么将会使用 ``input`` 的内存来源，如果 ``input`` 没有申请内存，将会使用 `mindspore.context.device_target` 。

@@ -22,7 +22,7 @@ mindspore.ops.MatrixTriangularSolve
     异常：
         - **TypeError** - 如果 `matrix` 或 `rhs` 不是Tensor。
         - **TypeError** - 如果 `lower` 或 `adjoint` 不是bool型。
-        - **ValueError** - 如果在GPU平台上， `matrix` 和 `rhs` 的batch大小不满足广播条件或者在
+        - **ValueError** - 如果在GPU平台上， `matrix` 和 `rhs` 的batch大小不满足广播条件或者在\
           其他平台上 `matrix` 和 `rhs` 的batch大小不相等。
         - **ValueError** - 如果 `matrix` 的最内两维不相等。
         - **ValueError** - 如果 `matrix` 和 `rhs` 的倒数第二维不相等。

@@ -12,7 +12,7 @@ mindspore.ops.Eig
         - **compute_v** (bool，可选) - 如果为 ``True`` ，同时计算特征值和特征向量，如果为 ``False`` ，只计算特征值，默认值： ``False`` 。
 
     输入：
-        - **x** (Tensor) - 方阵。shape为 :math:`(*, N, N)`，数据类型支持
+        - **x** (Tensor) - 方阵。shape为 :math:`(*, N, N)`，数据类型支持\
           float32、float64、complex64、complex128。
 
     输出：

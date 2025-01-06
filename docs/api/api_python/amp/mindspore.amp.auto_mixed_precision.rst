@@ -36,8 +36,8 @@ mindspore.amp.auto_mixed_precision
 
     .. note::
         - 重复调用混合精度接口，如 `custom_mixed_precision` 和 `auto_mixed_precision` ，可能导致网络层数增大，性能降低。
-        - 如果使用 :class:`mindspore.train.Model` 和 :func:`mindspore.amp.build_train_network` 等接口来训练经
-          过 `custom_mixed_precision` 和 `auto_mixed_precision` 等混合精度接口转换后的网络，则需要将 `amp_level` 配置
+        - 如果使用 :class:`mindspore.train.Model` 和 :func:`mindspore.amp.build_train_network` 等接口来训练经\
+          过 `custom_mixed_precision` 和 `auto_mixed_precision` 等混合精度接口转换后的网络，则需要将 `amp_level` 配置\
           为 ``O0`` 以避免重复的精度转换。
         - 当 `amp_level` 配置为 ``auto`` 时，网络输出的类型可能是低精度类型，此时可能需要手动转换类型以避免loss函数出现类型不一致的报错。
         - 当 `amp_level` 配置为 ``auto`` ，而网络里的Cell配置了 `to_float` 时， `to_float` 指定的精度优先生效。

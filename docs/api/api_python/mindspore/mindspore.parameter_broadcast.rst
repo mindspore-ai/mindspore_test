@@ -10,7 +10,7 @@ mindspore.parameter_broadcast
 
     参数：
         - **net** (Cell) - 参数将被广播的网络。
-        - **layout** (Dict) - 参数排布字典。 来自 :func:`mindspore.nn.Cell.parameter_layout_dict` 或
+        - **layout** (Dict) - 参数排布字典。 来自 :func:`mindspore.nn.Cell.parameter_layout_dict` 或\
           从文件中读取(如: 通过 :func:`mindspore.set_auto_parallel_context` 接口的 `strategy_ckpt_config`
           参数保存的"strategy.ckpt"文件)。key为参数名， value为该参数的layout。
         - **cur_rank** (int，可选) - 当前卡的rank id。默认值: ``0``。

@@ -5,7 +5,7 @@ mindspore.ops.SegmentMean
 
     计算Tensor中每个分段的均值。
 
-    具体来说，生成一个新的Tensor `output` ，满足 :math:`output_i=mean_j(input\_x_j)` ，其
+    具体来说，生成一个新的Tensor `output` ，满足 :math:`output_i=mean_j(input\_x_j)` ，其\
     中均值在满足 :math:`segment\_ids[j] == i` 这个条件的所有的 :math:`j` 对应的元素中取得。
     如果一个分段中没有元素 :math:`i` ，则输出Tensor中相应的元素将被设置为零：:math:`output[i] = 0`。
 

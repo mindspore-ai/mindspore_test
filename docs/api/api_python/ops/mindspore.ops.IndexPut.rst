@@ -25,9 +25,9 @@ mindspore.ops.IndexPut
         - **TypeError** - 如果 `indices` 中的tensor的dtype是不一致的。
         - **TypeError** - 如果 `accumulate` 的dtype不是int。
         - **ValueError** - 如果 `x2` 的秩不是1-D。
-        - **ValueError** - 当 `x1` 的rank与 `indices` 的size相等时，如果 `x2` 的size不为1
+        - **ValueError** - 当 `x1` 的rank与 `indices` 的size相等时，如果 `x2` 的size不为1\
           或者不为 `indices` 中Tensor的最大size。
-        - **ValueError** - 当 `x1` 的rank大于 `indices` 的size时，如果 `x2` 的size不为1
+        - **ValueError** - 当 `x1` 的rank大于 `indices` 的size时，如果 `x2` 的size不为1\
           或者不为 `x1` 的最后一维的shape。
         - **ValueError** - 如果 `indices` 中的tensor的秩不是1-D。
         - **ValueError** - 如果 `indices` 中的tensor不是可广播的。

@@ -8,7 +8,7 @@ mindspore.train.Callback
 
     Callback类的每个方法对应了训练或推理过程的不同阶段，这些方法有相同的入参 `run_context`，用于保存训练或推理过程中模型的相关信息。定义Callback子类或自定义Callback时，请根据需要重写名称前缀为"on_train"或"on_eval"的方法，否则自定义的Callback在 `model.fit` 中使用时会产生错误。
 
-    自定义Callback场景下，在类方法中通过 `RunContext.original_args()` 方法可以获取模型训练或推理过程中已有
+    自定义Callback场景下，在类方法中通过 `RunContext.original_args()` 方法可以获取模型训练或推理过程中已有\
     的上下文信息，此信息为一个存储了已有属性的字典型变量。用户也可以在此信息中添加其他的自定义属性。此外，
     通过调用 `request_stop` 方法来停止训练过程。有关自定义Callback的具体用法，请查看
     `回调机制Callback <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/model/callback.html#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%9B%9E%E8%B0%83%E6%9C%BA%E5%88%B6>`_。

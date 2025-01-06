@@ -7,7 +7,7 @@ mindspore.dataset.text.JiebaTokenizer
 
     .. note::
         隐式马尔可夫模型（Hidden Markov Model）分词和最大概率法（Max Probability）分词所使用的词典文件可通过
-        `cppjieba开源仓 <https://github.com/yanyiwu/cppjieba/tree/master/dict>`_ 获取，请保证文件的有效性与
+        `cppjieba开源仓 <https://github.com/yanyiwu/cppjieba/tree/master/dict>`_ 获取，请保证文件的有效性与\
         完整性。
 
     参数：
@@ -32,7 +32,7 @@ mindspore.dataset.text.JiebaTokenizer
 
         参数：
             - **user_dict** (Union[str, dict[str, int]]) - 待添加到Vocab中的词映射。
-              若输入类型为str，表示存储待添加词映射的文件路径，文件的每一行需包含两个字段，间隔一个空格，其中第一个
+              若输入类型为str，表示存储待添加词映射的文件路径，文件的每一行需包含两个字段，间隔一个空格，其中第一个\
               字段表示词本身，第二个字段需为数字，表示词频。无效的行将被忽略，且不返回错误或告警。
               若输入类型为dict[str, int]，表示存储待添加词映射的字典，其中键名为词本身，键值为词频。
 
