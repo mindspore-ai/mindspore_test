@@ -529,12 +529,12 @@ KernelWithIndex FetchRealFrontNode(const KernelWithIndex &node_with_index, const
   auto real_node_with_index = common::AnfAlgo::FetchRealNodeSkipMonadControl(node_with_index);
   MS_EXCEPTION_IF_NULL(real_node_with_index.first);
   KernelWithIndex front_node_with_idx{nullptr, 0};
-  if (IsInternalParameter(node_with_index.first, graph)) {
-    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node_with_index.first);
+  if (IsInternalParameter(real_node_with_index.first, graph)) {
+    front_node_with_idx = graph->GetFrontNodeByInternalParameter(real_node_with_index.first);
   } else {
-    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node_with_index.first);
+    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(real_node_with_index.first);
     if (front_node_with_idx.first == nullptr) {
-      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node_with_index.first, *graph), 0};
+      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(real_node_with_index.first, *graph), 0};
     }
   }
   return front_node_with_idx;
