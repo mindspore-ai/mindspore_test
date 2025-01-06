@@ -253,11 +253,11 @@ def adaptive_avg_pool2d_ext(input, output_size):
     .. math::
 
         out\_shape = \begin{cases}
-        input\_shape[-2] + output\_size[1], & \text{if } output\_size text{ is (None, w);}\\
-        output\_size[0] + input\_shape[-1], & \text{if } output\_size text{ is (h, None);}\\
-        input\_shape[-2:], & \text{if } output\_size text{ is (None, None);}\\
-        (h, h), & \text{if } output\_size text{ is h;}\\
-        (h, w), & \text{if } output\_size text{ is (h, w)}
+        input\_shape[-2] + output\_size[1], & \text{if } output\_size \text{ is (None, w);}\\
+        output\_size[0] + input\_shape[-1], & \text{if } output\_size \text{ is (h, None);}\\
+        input\_shape[-2:], & \text{if } output\_size \text{ is (None, None);}\\
+        (h, h), & \text{if } output\_size \text{ is h;}\\
+        (h, w), & \text{if } output\_size \text{ is (h, w)}
         \end{cases}
 
     Raises:
@@ -7162,26 +7162,26 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     - padding -- If padding is an int number, it is in the range [0, 255].
     - dilation -- The value is in the range [1, 255].
     - groups -- The value is in the range [1, 65535].
-
-    Constraints between attributes:
-    1. :math:`C_{in} % groups == 0 && C_{out} % groups == 0` .
-    2. :math:`weight[1] == C_{in} / groups` .
-    3. :math:`H_{in} + PadUp + PadDown >= (kh - 1) * DilationH + 1` .
-    4. :math:`W_{in} + PadLeft + PadRight >= (kw - 1) * DilationW + 1` .
-    5. :math:`D_{in} + PadFront + PadBack >= (kd - 1) * DilationD + 1` .
-    6. :math:`H_{out} = (H_{in} + PadUp + PadDown - ((kh - 1) * DilationH + 1)) / StrideH + 1` .
-    7. :math:`W_{out} = (W_{in} + PadLeft + PadRight - ((kw - 1) * DilationW + 1)) / StrideW + 1` .
-    8. :math:`D_{out} = (D_{in} + PadFront + PadBack - ((kd - 1) * DilationD + 1)) / StrideD + 1` .
-    9. :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) % StrideD <= PadBack` .
-    10. :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) % StrideH <= PadDown` .
-    11. :math:`stride_d <= kernel_d` .
-    12. :math:`pad < kernel` . When padding='valid', `pad` is zeros. When padding='same', pad can be calculated by
-    :math:`floor(((H_{out}-1) * strideH + (kh - 1) * DilationH + 1 - H_{in}) / 2)` for high dimension.
-    It is similar way to calculate the padding for depth and width dimension.
-    13. :math:`((kh - 1) * dilation_h - pad_up)` should be in [0, 255]. It is the same constraint for depth
-    and width dimension.
-    14. :math:`groups == 1 or groups == C_{in}`.
-    15. If `padding` is ``same``, `stride` must be 1.
+    - :math:`C_{in} \% \text{groups} == 0 \quad \text{and} \quad C_{out} \% \text{groups} == 0` .
+    - :math:`weight[1] == C_{in} / groups` .
+    - :math:`H_{in} + PadUp + PadDown >= (kh - 1) * DilationH + 1` .
+    - :math:`W_{in} + PadLeft + PadRight >= (kw - 1) * DilationW + 1` .
+    - :math:`D_{in} + PadFront + PadBack >= (kd - 1) * DilationD + 1` .
+    - :math:`H_{out} = (H_{in} + PadUp + PadDown - ((kh - 1) * DilationH + 1)) / StrideH + 1` .
+    - :math:`W_{out} = (W_{in} + PadLeft + PadRight - ((kw - 1) * DilationW + 1)) / StrideW + 1` .
+    - :math:`D_{out} = (D_{in} + PadFront + PadBack - ((kd - 1) * DilationD + 1)) / StrideD + 1` .
+    - :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) % StrideD <= PadBack` .
+    - :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) % StrideH <= PadDown` .
+    - :math:`stride_d <= kernel_d` .
+    - :math:`PadUp < kh` and :math:`PadDown < kh` . When padding='valid', both `PadUp` and `PadDown` are zeros.
+      When padding='same', pad can be calculated by
+      :math:`floor(((H_{out}-1) * strideH + (kh - 1) * DilationH + 1 - H_{in}) / 2)` for high dimension.
+      It is similar way to calculate the padding for depth and width dimension. And the depth and width
+      dimensions also have the same constraints.
+    - :math:`((kh - 1) * DilationH - PadUp)` should be in [0, 255]. It is the same constraint for depth
+      and width dimension.
+    - :math:`groups == 1 \quad \text{or} \quad groups == C_{in}`.
+    - If `padding` is ``same``, `stride` must be 1.
 
     .. warning::
         This API does not support Atlas series products.
