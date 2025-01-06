@@ -104,7 +104,7 @@ class CPUProfilerAnalysis:
         ascend_ms_dir = kwargs.get("ascend_ms_dir", "")
         print_msg_with_pid(f"Start parsing profiling data: {ascend_ms_dir}")
         task_mgr = cls._construct_task_mgr(**kwargs)
-        task_mgr.run({})
+        task_mgr.run()
 
     @classmethod
     def _construct_task_mgr(cls, **kwargs) -> TaskManager:

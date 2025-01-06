@@ -339,5 +339,5 @@ class PathManager:
         return ""
 
     @classmethod
-    def get_abs_path(cls, path: str):
-        return os.path.abspath(path)
+    def get_real_path(cls, path: str):
+        return os.path.realpath(path)
