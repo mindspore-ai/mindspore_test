@@ -93,11 +93,13 @@ def test_itemsize():
             self.value2 = Tensor(np.random.random(
                 (2, 3, 4, 5)), dtype=mstype.int32)
             self.value3 = Tensor(np.random.random(
+                (2, 3, 4, 5)), dtype=mstype.bfloat16)
+            self.value4 = Tensor(np.random.random(
                 (2, 3, 4, 5)), dtype=mstype.bool_)
 
         def construct(self):
-            return (self.value1.itemsize, self.value2.itemsize, self.value3.itemsize)
+            return (self.value1.itemsize, self.value2.itemsize, self.value3.itemsize, self.value4.itemsize)
 
     net = Net()
     res = net()
-    assert res == (8, 4, 1)
+    assert res == (8, 4, 2, 1)

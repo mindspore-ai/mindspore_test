@@ -68,7 +68,8 @@ _csr_mm = _csr_ops.CSRMM()
 itemsize_map = {mstype.bool_: 1, mstype.int8: 1, mstype.uint8: 1,
                 mstype.float16: 2, mstype.int16: 2, mstype.uint16: 2,
                 mstype.float32: 4, mstype.int32: 4, mstype.uint32: 4,
-                mstype.float64: 8, mstype.int64: 8, mstype.uint64: 8}
+                mstype.float64: 8, mstype.int64: 8, mstype.uint64: 8,
+                mstype.bfloat16: 2}
 
 nan_tensor = Tensor(float('nan'), dtype=mstype.float32)
 
