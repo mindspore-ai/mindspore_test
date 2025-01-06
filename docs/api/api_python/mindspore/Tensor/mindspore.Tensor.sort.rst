@@ -8,7 +8,7 @@ mindspore.Tensor.sort
     .. warning::
         目前能良好支持的数据类型有：float16、uint8、int8、int16、int32、int64。如果使用float32，可能产生精度误差。
 
-    关键字参数：
+    参数：
         - **dim** (int，可选) - 指定排序的维。默认值： ``-1`` ，表示指定最后一维。
         - **descending** (bool，可选) - 按降序还是升序。如果为 ``True`` ，则元素按降序排列，否则按升序排列。默认值： ``False`` 。
 
