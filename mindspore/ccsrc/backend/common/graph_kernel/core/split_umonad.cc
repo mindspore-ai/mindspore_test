@@ -21,17 +21,76 @@
 #include "include/backend/kernel_info.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "include/common/utils/anfalgo.h"
+#include "ops/op_def.h"
 
 namespace mindspore::graphkernel {
-const BaseRef SplitAssign::DefinePattern() const {
-  VarPtr v = std::make_shared<Var>();
-  VarPtr Xs = std::make_shared<Var>();
-  VarPtr Us = std::make_shared<Var>();
-  VarPtr UMonad = std::make_shared<Var>();
-  return VectorRef({v, Xs, Us, UMonad});
+namespace {
+bool IsUMonad(const BaseRef &n) {
+  MS_EXCEPTION_IF_NULL(n);
+  if (utils::isa<AnfNodePtr>(n)) {
+    auto node = utils::cast<AnfNodePtr>(n);
+    MS_EXCEPTION_IF_NULL(node);
+    return HasAbstractUMonad(node);
+  }
+  return false;
 }
 
-const bool SplitAssign::CanSplit(const AnfNodePtr &node) const { return IsPrimitiveCNode(node, prim::kPrimAssign); }
+bool UsedByInplace(const AnfNodePtr &node, const FuncGraphManagerPtr &mng) {
+  auto &users = mng->node_users()[node];
+  for (auto &user : users) {
+    if (IsPrimitiveCNode(user.first, prim::kPrimDepend)) {
+      if (user.second == kRealInputIndexInDepend && UsedByInplace(user.first, mng)) {
+        return true;
+      }
+    } else if (user.first->isa<CNode>() &&
+               common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, user.first->cast<CNodePtr>())) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
+
+const BaseRef SplitUMonad::DefinePattern() const {
+  VarPtr v = std::make_shared<Var>();
+  VarPtr Xs = std::make_shared<SeqVar>();
+  VarPtr U = std::make_shared<CondVar>(IsUMonad);
+  return VectorRef({v, Xs, U});
+}
+
+const bool SplitUMonad::CanSplit(const AnfNodePtr &node) const {
+  if (IsPrimitiveCNode(node, prim::kPrimAssign)) {
+    return true;
+  }
+  if (!node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (!IsValueNode<Primitive>(cnode->input(0))) {
+    return false;
+  }
+  auto prim = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  const auto &op_name = prim->name();
+  auto op_def = ops::GetOpDef(op_name);
+  if (op_def == nullptr || !op_def->is_view_) {
+    return false;
+  }
+  auto func_graph = node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto mng = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(mng);
+  // view op is used by inplace op, which may modify data of view device address
+  if (UsedByInplace(node, mng)) {
+    MS_LOG(DEBUG) << "node [" << node->fullname_with_scope() << "] is used by inplace op";
+    // keep basic op can not be expanded or cluster
+    cnode->AddAttr("keep_basic", MakeValue(true));
+    return false;
+  }
+  return true;
+}
 
 AnfNodePtr ProcessNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node, size_t input_idx) {
   MS_EXCEPTION_IF_NULL(node);
