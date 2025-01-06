@@ -1,0 +1,10 @@
+approvers:
+- yuchaojie #
+- jjfeing
+- liujunzhu
+- reku1997
+
+reviewers:
+
+options:
+    no_parent_owners: true
