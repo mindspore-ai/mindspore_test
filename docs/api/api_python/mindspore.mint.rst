@@ -60,6 +60,7 @@ Tensor
     mindspore.mint.index_select
     mindspore.mint.masked_select
     mindspore.mint.permute
+    mindspore.mint.reshape
     mindspore.mint.scatter
     mindspore.mint.scatter_add
     mindspore.mint.split
@@ -404,6 +405,8 @@ Dropout层
     mindspore.mint.nn.ReflectionPad2d
     mindspore.mint.nn.ReflectionPad3d
     mindspore.mint.nn.ReplicationPad1d
+    mindspore.mint.nn.ReplicationPad2d
+    mindspore.mint.nn.ReplicationPad3d
     mindspore.mint.nn.ZeroPad1d
     mindspore.mint.nn.ZeroPad2d
     mindspore.mint.nn.ZeroPad3d

@@ -649,6 +649,9 @@ class SmoothL1Loss(LossBase):
           often leads to faster convergence but it is less
           robust to outliers, and the loss function has better robustness.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         beta (number, optional): The loss function calculates the threshold of the transformation
             between L1Loss and L2Loss. Default: ``1.0`` .

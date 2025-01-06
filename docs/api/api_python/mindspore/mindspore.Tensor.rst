@@ -100,6 +100,7 @@ mindspore.Tensor
     mindspore.Tensor.choose
     mindspore.Tensor.chunk
     mindspore.Tensor.clamp
+    mindspore.Tensor.clamp_
     mindspore.Tensor.clip
     mindspore.Tensor.clone
     mindspore.Tensor.col2im

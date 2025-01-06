@@ -7,6 +7,9 @@ mindspore.mint.nn.ConstantPad3d
 
     更多参考详见 :func:`mindspore.mint.nn.functional.pad`。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+    
     参数：
         - **padding** (Union[int, tuple, list]) - 指定填充的大小。
         - **value** (Union[int, float]) - 指定填充值。

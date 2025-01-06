@@ -34,6 +34,9 @@ class Dropout2d(Cell):
 
     `Dropout2d` can improve the independence between channel feature maps.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Refer to :func:`mindspore.mint.nn.functional.dropout2d` for more details.
 
     Supported Platforms:
