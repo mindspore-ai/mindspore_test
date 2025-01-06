@@ -154,7 +154,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
       DISPATCH_LAUNCH_KERNEL_NO_WS(device_context, aclnn_name, executor_handle, stream_ptr, release_function,     \
                                    update_function);                                                              \
     } else {                                                                                                      \
-      auto work_ptr = std::make_shared<MemBlock>(device_context, ws_size, stream_id);                             \
+      auto work_ptr = std::make_shared<kernel::pyboost::MemBlock>(device_context, ws_size, stream_id);            \
       DISPATCH_LAUNCH_KERNEL(device_context, aclnn_name, work_ptr->ptr_, ws_size, executor_handle, stream_ptr,    \
                              release_function, update_function);                                                  \
     }                                                                                                             \

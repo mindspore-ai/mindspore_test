@@ -26,6 +26,7 @@
 #include <variant>
 #include <vector>
 #include <algorithm>
+#include <functional>
 #include "abstract/dshape.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/api/format.h"
@@ -734,6 +735,12 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
 
   const TensorStorageInfoPtr tensor_storage_info() const { return address_common_->tensor_storage_info_; }
   void set_tensor_storage_info(const TensorStorageInfoPtr &storage_info) {
+    if (storage_info) {
+      auto ori_shape = storage_info->ori_shape;
+      auto type_size = GetTypeByte(TypeIdToType(dtype_id()));
+      storage_info->ori_size =
+        std::accumulate(ori_shape.begin(), ori_shape.end(), type_size, std::multiplies<size_t>());
+    }
     address_common_->tensor_storage_info_ = storage_info;
   }
 

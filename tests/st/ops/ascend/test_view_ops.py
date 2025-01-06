@@ -133,7 +133,7 @@ class ViewOut(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_graph_view_out():
     """
     Feature: Runtime view graph mode.
@@ -149,7 +149,7 @@ def test_graph_view_out():
     assert np.allclose(out_graph.asnumpy(), out_pynative.asnumpy(), rtol=10e-4, atol=10e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pynative_view_to_graph():
     """
     Feature: Runtime view graph mode.
@@ -180,7 +180,7 @@ class MakeContiguous(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_graph_view_to_aclop():
     """
     Feature: Runtime view graph mode.

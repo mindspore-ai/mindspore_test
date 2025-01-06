@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <utility>
 #include <mutex>
+#include <functional>
 #include "ir/tensor.h"
 #include "ir/dtype.h"
 #include "ir/device_sync.h"
@@ -292,6 +293,12 @@ class DeviceAddress : public mindspore::DeviceSync {
     return address_common_->tensor_storage_info_;
   }
   void set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info) {
+    if (tensor_storage_info) {
+      auto ori_shape = tensor_storage_info->ori_shape;
+      auto type_size = GetTypeByte(TypeIdToType(type_id()));
+      tensor_storage_info->ori_size =
+        std::accumulate(ori_shape.begin(), ori_shape.end(), type_size, std::multiplies<size_t>());
+    }
     address_common_->tensor_storage_info_ = tensor_storage_info;
   }
 

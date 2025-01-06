@@ -31,10 +31,8 @@ void SplitWithSizeView::UpdateOutputTensorInfo(const std::vector<KernelTensor *>
 
   info_ = ops::SplitWithSizeStridesCalc(old_info, split_size, dim);
   for (size_t i = 0; i < outputs.size(); i++) {
-    info_[i]->ori_size = GetOriginInputSize(inputs[0]);
     outputs[i]->set_tensor_storage_info(info_[i]);
   }
-  GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
 void SplitWithSizeView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

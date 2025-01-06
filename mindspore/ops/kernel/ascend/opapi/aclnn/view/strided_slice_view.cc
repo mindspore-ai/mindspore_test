@@ -36,9 +36,7 @@ void StridedSliceView::UpdateTensorInfo(const std::vector<KernelTensor *> &input
   auto shape = inputs[kIndex0]->GetShapeVector();
   auto size = shape.size();
   info_ = ops::StridedSliceStridesCalc(old_info, size, &shape, &begin, &end, &step);
-  info_[0]->ori_size = GetOriginInputSize(inputs[0]);
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
-  GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
 void StridedSliceView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

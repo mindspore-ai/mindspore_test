@@ -38,7 +38,6 @@
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
-#include "mindspore/ops/kernel/ascend/pyboost/customize/customize_copy.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
@@ -49,6 +48,11 @@
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
 #endif
 
+#include "kernel/common/pyboost/pyboost_utils.h"
+#include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "runtime/pipeline/pipeline.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "kernel/common/pyboost/op_runner.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
@@ -1386,6 +1390,51 @@ bool GeKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t stream_
   return true;
 }
 
+void CustomizeCopyAscendInner(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
+                              const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
+  // The input_addr_list address is malloc before
+  // Malloc for output tensors
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+                                                 output_addr->GetSize(), output_addr.get());
+  if (output_addr->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(output_addr.get())) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed";
+    }
+  }
+  const auto &input_storage_info = input_addr->address_common()->tensor_storage_info_;
+  const auto &output_storage_info = output_addr->address_common()->tensor_storage_info_;
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
+                << ", input address size:" << input_addr->GetSize()
+                << ", output address size:" << output_addr->GetSize();
+
+  // Inplace output need be front
+  LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_addr, input_addr);
+  MS_LOG(DEBUG) << "Launch end";
+}
+
+// Unconventional pyboost writing. Please do not refer to this to implement other operators!
+void CustomizeCopyAscend(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
+                         const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
+  MS_LOG(DEBUG) << "Call start";
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+
+  if (runtime::Pipeline::Get().backend_stage()->CanPush()) {
+    MS_LOG(DEBUG) << "Dispatch inplacecopy to backend queue";
+    kernel::pyboost::PyBoostUtils::DispatchRun(
+      std::make_shared<runtime::PyBoostDeviceTask>([device_context, input_addr, output_addr, stream_id]() {
+        CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+      }));
+    return;
+  }
+
+  runtime::Pipeline::Get().WaitForward();
+  CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+  MS_LOG(DEBUG) << "Launch end";
+}
+
 bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                          const device::DeviceAddressPtrList &input_addr_list,
                                          const device::DeviceAddressPtrList &output_addr_list,
@@ -1399,7 +1448,7 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
     if (input_addr_list.size() != kCopyTaskInputsNum) {
       MS_LOG(EXCEPTION) << "input_addr_list.size() is invalid, input_addr_list.size():" << input_addr_list.size();
     }
-    kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[1], input_addr_list[0], stream_id);
+    CustomizeCopyAscend(device_context_, input_addr_list[1], input_addr_list[0], stream_id);
   } else {
     // For contiguous task, there must be at least one input and one output.
     if (input_addr_list.empty() || output_addr_list.empty()) {
@@ -1411,7 +1460,7 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
       // for unrefmode, the output is on host, just copy the device ptr
       output_addr_list[0]->set_ptr(input_addr_list[0]->GetMutablePtr());
     } else {
-      kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
+      CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
     }
   }
 
@@ -1424,12 +1473,45 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
   return ret;
 }
 
+// Task for graph mode, which receive pointers as input, it is used for convert input contiguous by aclnnInplaceCopy.
 bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                          const std::vector<device::DeviceAddress *> &input_addr_list,
                                          const std::vector<device::DeviceAddress *> &output_addr_list,
                                          const size_t &stream_id) const {
   MS_LOG(DEBUG) << "task_type:" << task_type;
-  kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
+  MS_LOG(DEBUG) << "Graph call contiguous start";
+  auto input_addr = input_addr_list[0];
+  auto output_addr = output_addr_list[0];
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kPyNativeOutput,
+                                                 output_addr->GetSize(), output_addr);
+  if (output_addr->GetPtr() == nullptr) {
+    if (!device_context_->device_res_manager_->AllocateMemory(output_addr)) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed";
+    }
+  }
+  const auto &input_storage_info = input_addr->address_common()->tensor_storage_info_;
+  const auto &output_storage_info = output_addr->address_common()->tensor_storage_info_;
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
+                << ", input address size:" << input_addr->GetSize()
+                << ", output address size:" << output_addr->GetSize();
+  auto stream_ptr = device_context_->device_res_manager_->GetStream(stream_id);
+  auto res = GEN_EXECUTOR_FOR_RESIZE(std::string("aclnnInplaceCopy"), output_addr, input_addr);
+  auto workspace_size = std::get<0>(res);
+  auto executor = std::get<1>(res);
+  std::function<void()> release_func{nullptr};
+  if (workspace_size == 0) {
+    RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), nullptr, 0, executor, stream_ptr, release_func);
+  } else {
+    auto workspace_addr = device_context_->device_res_manager_->AllocateMemory(workspace_size);
+    RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), workspace_addr, workspace_size, executor, stream_ptr,
+                     release_func);
+    device_context_->device_res_manager_->FreeMemory(workspace_addr);
+  }
+  MS_LOG(DEBUG) << "Graph call contiguous end";
   return true;
 }
 }  // namespace mindspore::device::ascend
