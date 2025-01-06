@@ -8,7 +8,7 @@ mindspore.ops.dstack
     1-D Tensor :math:`(N,)` 重新排列为 :math:`(1,N,1)` ，2-D Tensor :math:`(M,N)` 重新排列为 :math:`(M,N,1)` 。
 
     参数：
-        - **tensors** (Union(List[Tensor], Tuple[Tensor])) - 一个Tensor序列。除了第三个轴外，所有的
+        - **tensors** (Union(List[Tensor], Tuple[Tensor])) - 一个Tensor序列。除了第三个轴外，所有的\
           Tensor必须有相同的shape。如果是1-D或2-D的Tensor，则它们的shape必须相同。
 
     返回：

@@ -9,7 +9,7 @@ mindspore.ops.vstack
     1-D Tensor :math:`(N,)` 重新排列为 :math:`(1, N)` ，然后沿着第一个轴进行拼接。
 
     参数：
-        - **inputs** (Union(List[tensor], Tuple[tensor])) - 一个1-D或2-D Tensor序列。除了第一个轴外，所有的
+        - **inputs** (Union(List[tensor], Tuple[tensor])) - 一个1-D或2-D Tensor序列。除了第一个轴外，所有的\
           Tensor必须有相同的shape。如果是1-DTensor，则它们的shape必须相同。
 
     返回：

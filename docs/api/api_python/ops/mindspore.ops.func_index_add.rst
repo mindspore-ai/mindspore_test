@@ -3,13 +3,13 @@ mindspore.ops.index_add
 
 .. py:function:: mindspore.ops.index_add(x, indices, y, axis, use_lock=True, check_index_bound=True)
 
-    将Tensor `y` 加到Parameter或Tensor `x` 的指定 `axis` 轴的指定 `indices` 位置。要求 `axis` 轴的取值范围
+    将Tensor `y` 加到Parameter或Tensor `x` 的指定 `axis` 轴的指定 `indices` 位置。要求 `axis` 轴的取值范围\
     为[0, len(x.dim) - 1]， `indices` 中元素的取值范围为[0, x.shape[axis] - 1]。
 
     参数：
         - **x** (Union[Parameter, Tensor]) - 被加的Parameter或Tensor。
         - **indices** (Tensor) - 指定Tensor `y` 加到 `x` 的 `axis` 轴的指定下标位置，要求数据类型为int32。
-          要求 `indices` shape的维度为一维，并且 `indices` shape的大小与 `y` shape在 `axis` 轴上的大小一致。 `indices` 中元素
+          要求 `indices` shape的维度为一维，并且 `indices` shape的大小与 `y` shape在 `axis` 轴上的大小一致。 `indices` 中元素\
           取值范围为[0, b)，其中b的值为 `x` shape在 `axis` 轴上的大小。
         - **y** (Tensor) - 与 `x` 加的Tensor。
         - **axis** (int) - 指定沿哪根轴相加。

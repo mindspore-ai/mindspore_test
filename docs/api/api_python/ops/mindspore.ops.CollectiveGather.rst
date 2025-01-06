@@ -17,7 +17,7 @@ mindspore.ops.CollectiveGather
         - **input_x** (Tensor) - 输入待聚合的Tensor，Tensor的shape为 :math:`(x_1, x_2, ..., x_R)` 。
 
     输出：
-        Tensor，Tensor第0维等于各输入数据第0维的累加，其他shape维度相同
+        Tensor，Tensor第0维等于各输入数据第0维的累加，其他shape维度相同\
         即 :math:`(\sum x_1, x_2, ..., x_R)` 。
 
     异常：
