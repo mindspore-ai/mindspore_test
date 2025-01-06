@@ -6,7 +6,7 @@ mindspore.nn.HShrink
     逐元素计算Hard Shrink激活函数。公式定义如下：
 
     .. math::
-        \text{HardShrink}(x) =
+        \text{HShrink}(x) =
         \begin{cases}
         x, & \text{ if } x > \lambda \\
         x, & \text{ if } x < -\lambda \\

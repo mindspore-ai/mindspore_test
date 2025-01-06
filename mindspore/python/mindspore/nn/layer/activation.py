@@ -1320,7 +1320,7 @@ class HSwish(Cell):
     Hard swish is defined as:
 
     .. math::
-        \text{Hardswish}(input) =
+        \text{HSwish}(input) =
         \begin{cases}
         0, & \text{ if } input \leq -3, \\
         input, & \text{ if } input \geq +3, \\
@@ -1372,7 +1372,7 @@ class HSigmoid(Cell):
     Hard Sigmoid is defined as:
 
     .. math::
-        \text{Hardsigmoid}(input) =
+        \text{HSigmoid}(input) =
         \begin{cases}
         0, & \text{ if } input \leq -3, \\
         1, & \text{ if } input \geq +3, \\
@@ -1578,7 +1578,7 @@ class HShrink(Cell):
     The formula is defined as follows:
 
     .. math::
-        \text{HardShrink}(x) =
+        \text{HShrink}(x) =
         \begin{cases}
         x, & \text{ if } x > \lambda \\
         x, & \text{ if } x < -\lambda \\

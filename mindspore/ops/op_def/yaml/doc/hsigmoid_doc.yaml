@@ -5,16 +5,16 @@ hsigmoid:
         Hard Sigmoid is defined as:
 
         .. math::
-            \text{Hardswish}(input) =
+            \text{HardSigmoid}(input) =
             \begin{cases}
             0, & \text{ if } input \leq -3, \\
             1, & \text{ if } input \geq +3, \\
             input/6 + 1/2, & \text{ otherwise }
             \end{cases}
 
-        HSigmoid Activation Function Graph:
+        HardSigmoid Activation Function Graph:
 
-        .. image:: ../images/HSigmoid.png
+        .. image:: ../images/HardSigmoid.png
             :align: center
 
         Args:
