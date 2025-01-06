@@ -171,41 +171,75 @@ class FunctionalMapCppGenerator(BaseGenerator):
         op_name = tensor_proto.op_proto.op_class.name
         args_str = f'"Tensor.{func_api_name}(' if is_tensor_method else f'"{func_api_name}('
         first_arg = True
-        kw_args_init_flag = False
+        is_kw_args_init = False
         arg_valid_types = []
         for _, arg in enumerate(op_proto.op_args):
             arg_name = arg.arg_name
             if is_tensor_method and self._is_input_arg(arg_name, op_name):
                 continue
-            arg_handler = arg.arg_handler
-            if arg_handler != '':
-                if arg_handler in self.arg_handler_map:
-                    arg_valid_types.extend(self.arg_handler_map[arg_handler])
-                else:
-                    raise ValueError("Generate failed. Check if {} is registered in TensorFuncRegCppGenerator."
-                                     .format(arg_handler))
-            else:
-                arg_valid_types.append(arg.arg_dtype)
-                for cast_type in arg.type_cast:
-                    arg_valid_types.append(cast_type)
-            if arg.as_init_arg and str(arg.default) == 'None':
-                arg_valid_types.append('None')
-            arg_valid_types = self._parse_arg_type_list(func_api_name, arg_name, arg_valid_types)
+
+            arg_valid_types = self._handle_arg_valid_types(arg, arg_name, arg_valid_types, func_api_name)
             single_arg = f'{arg_name}=<' + ','.join(arg_valid_types) + '>'
-            if first_arg:
-                if tensor_proto.kw_only_args and not kw_args_init_flag and arg_name == tensor_proto.kw_only_args[0]:
-                    args_str += "*, " + single_arg
-                else:
-                    args_str += single_arg
-                first_arg = False
-            else:
-                if tensor_proto.kw_only_args and not kw_args_init_flag and arg_name == tensor_proto.kw_only_args[0]:
-                    args_str += ", *, " + single_arg
-                    kw_args_init_flag = True
-                else:
-                    args_str += ", " + single_arg
+            prefix, is_kw_args_init, first_arg = self._build_prefix(arg_name, first_arg, is_kw_args_init, tensor_proto)
+            args_str += prefix + single_arg
             arg_valid_types = []
         return args_str + ')"'
+
+    def _build_prefix(self, arg_name, first_arg, is_kw_args_init, tensor_proto):
+        """
+        Build and return the prefix for the current argument, handling insertion of kw-only args if needed.
+
+        Args:
+            arg_name (str): Name of the current argument.
+            first_arg (bool): Indicates whether this is the first argument.
+            is_kw_args_init (bool): Indicates whether kw-only args prefix has been inserted.
+            tensor_proto: Contains information about kw_only_args.
+
+        Returns:
+            tuple:
+                prefix (str): Generated prefix (possibly including '*, ').
+                is_kw_args_init (bool): Updated kw-only args insertion status.
+                first_arg (bool): Updated first-argument status.
+        """
+        prefix = "" if first_arg else ", "
+        if tensor_proto.kw_only_args and not is_kw_args_init and arg_name == tensor_proto.kw_only_args[0]:
+            prefix += "*, "
+            is_kw_args_init = True
+        if first_arg:
+            first_arg = False
+        return prefix, is_kw_args_init, first_arg
+
+    def _handle_arg_valid_types(self, arg, arg_name, arg_valid_types, func_api_name):
+        """
+        Collect and return valid argument types based on the arg handler, defaults, and casts.
+
+        Args:
+            arg: Argument object containing handler, dtype, and cast info.
+            arg_name (str): Name of the current argument.
+            arg_valid_types (list): Existing valid types to be extended.
+            func_api_name (str): Name of the current API function.
+
+        Returns:
+            list: Sorted list of valid argument types (descending order).
+        """
+        arg_handler = arg.arg_handler
+        if arg_handler != '':
+            if arg_handler in self.arg_handler_map:
+                arg_valid_types.extend(self.arg_handler_map[arg_handler])
+            else:
+                raise ValueError("Generate failed. Check if {} is registered in TensorFuncRegCppGenerator."
+                                 .format(arg_handler))
+        else:
+            arg_valid_types.append(arg.arg_dtype)
+            for cast_type in arg.type_cast:
+                arg_valid_types.append(cast_type)
+
+        if arg.as_init_arg and str(arg.default) == 'None':
+            arg_valid_types.append('None')
+
+        arg_valid_types = self._parse_arg_type_list(func_api_name, arg_name, arg_valid_types)
+
+        return sorted(arg_valid_types, reverse=True)
 
     def _parse_arg_type_list(self, func_api_name, arg_name, arg_valid_types):
         """
