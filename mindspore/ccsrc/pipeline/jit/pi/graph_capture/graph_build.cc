@@ -1932,7 +1932,11 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
     return false;
   }
   MS_LOG(DEBUG) << "Do bytecode " << instr.ToString();
-  auto infer_succ = (this->*(func_iter->second))(instr);
+  bool infer_succ = false;
+  {
+    TraceGuard trace_guard(GetLocation(instr));
+    infer_succ = (this->*(func_iter->second))(instr);
+  }
 
   const auto &nodes = graph_->GetTracedNodes();
   for (auto i = nodes.rbegin(); i != nodes.rend() && (*i)->GetBlock() == nullptr; ++i) {
@@ -2571,15 +2575,9 @@ bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) 
 }
 
 MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f), side_effect_outputs_() {
-  std::vector<std::string> comments;
   auto co = f.GetCode();
   const char *name = co.Name();
-  const char *file = co.FileName();
   int first_line = co.FirstLine();
-
-  auto location = std::make_shared<Location>(file, first_line, 0, first_line, 0, "", std::move(comments));
-  MS_EXCEPTION_IF_NULL(location);
-  TraceGuard trace_guard(location);
   auto fg_builder = std::make_shared<FuncGraphBuilder>(true);
   fg_builder->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
   co_name_ = name;
@@ -2601,12 +2599,6 @@ MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f), s
 
 MindGraphBuilder::MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
     : GraphBuilder(r, p, co, globals), side_effect_outputs_() {
-  std::vector<std::string> comments;
-  auto location = co ? std::make_shared<Location>(py::cast<std::string>(co->co_filename), co->co_firstlineno, 0,
-                                                  co->co_firstlineno, 0, "", std::move(comments))
-                     : std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::move(comments));
-  MS_EXCEPTION_IF_NULL(location);
-  TraceGuard trace_guard(location);
   auto fg_builder = std::make_shared<FuncGraphBuilder>();
   graph_->set_func_graph_builder(fg_builder);
 }
@@ -2781,7 +2773,6 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
       MS_LOG(INFO) << "Constant fold call node " << call_node->ToString() << " to wrapper " << ret_wrapper->ToString();
     }
   } else {
-    TraceGuard trace_guard(GetLocation(call_node));
     sg->FGBuilder()->SetGraphName(GetFuncGraphName(func, sg));
 
     const FuncGraphPtr &sub_graph = BuildSubFuncGraph(sg, args, call_node);
@@ -3978,6 +3969,16 @@ bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
   return true;
 }
 
+LocationPtr GraphBuilder::GetLocation(const Instr &instr) const {
+  if (graph_ == nullptr || graph_->GetCodeObj() == nullptr) {
+    return std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::vector<std::string>());
+  }
+  auto file_name = PyCodeWrapper(graph_->GetCodeObj()).FileName();
+  auto line_no = instr.line();
+  std::vector<std::string> comments;
+  return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));
+}
+
 bool GraphBuilder::TraceRunForIter(const Instr &instr) {
   MS_EXCEPTION_IF_NULL(instr.extra_jump());
   // check for iter
@@ -4369,16 +4370,6 @@ static void SetGradFuncInfo(CallNode *call_node) {
 
 void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str()); }
 
-LocationPtr MindGraphBuilder::GetLocation(CallNode *call_node) const {
-  if (graph_ == nullptr || graph_->GetCodeObj() == nullptr) {
-    return std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::vector<std::string>());
-  }
-  auto file_name = py::cast<std::string>(graph_->GetCodeObj()->co_filename);
-  auto line_no = call_node->GetLineNo();
-  std::vector<std::string> comments;
-  return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));
-}
-
 void MindGraphBuilder::AddInput(ValueNode *node) {
   auto obj = node->GetVobj()->GetPyObject();
   // tuple list is expand, this branch always false
@@ -4602,7 +4593,6 @@ bool MindGraphBuilder::FGAddSideEffectOutput() {
 void MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_info,
                                  const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << py::str(callable_info);
-  TraceGuard trace_guard(GetLocation(call_node));
   AbstractWrapperPtr res;
   if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
     res = FGBuilder()->AddNodeCallFunctionKw(callable_info, args);
@@ -4617,7 +4607,6 @@ void MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable
 void MindGraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_value,
                                  const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << callable_value->ToString();
-  TraceGuard trace_guard(GetLocation(call_node));
   AbstractWrapperPtr res;
   if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
     res = FGBuilder()->AddNodeCallFunctionKw(callable_value, args);
