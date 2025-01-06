@@ -641,7 +641,7 @@ void LaunchKernels(const KernelGraphPtr &graph, const device::DeviceContext *dev
     auto kernel_mod = AnfAlgo::GetKernelMod(node);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
     auto stream = device_context->device_res_manager_->GetStream(stream_id);
-    static auto no_simu = !common::SimulateCompile();
+    static auto no_simu = !common::IsCompileSimulation();
     TrackerACLMemory(inputs, outputs);
     if (no_simu && !device_context->GetKernelExecutor(false)->LaunchKernel(node, inputs, workspaces, outputs,
                                                                            kernel_mod, stream)) {
@@ -831,7 +831,7 @@ void OpRunner::LaunchKernelTask(const runtime::KernelTaskType &task_type, Device
                                 const device::DeviceAddressPtrList &output_addr_list, size_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(DEBUG) << "Start, task_type:" << task_type;
-  static auto no_simu = !common::SimulateCompile();
+  static auto no_simu = !common::IsCompileSimulation();
   if (no_simu && !device_context->GetKernelExecutor(false)->ExecuteKernelTask(task_type, input_addr_list,
                                                                               output_addr_list, stream_id)) {
     MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << task_type;
@@ -907,7 +907,7 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     const auto &output_kernel_tensors = GetOutputKernelTensors(output_edges, device_context);
 
     BaseShapePtr out_shape;
-    static auto no_simu = !common::SimulateCompile();
+    static auto no_simu = !common::IsCompileSimulation();
     if (is_need_infer) {
       if (!no_simu) {
         bool is_dyn_shape = common::AnfAlgo::IsDynamicShape(kernel) || common::AnfAlgo::IsDynamicSequence(kernel);
