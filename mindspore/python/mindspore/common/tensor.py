@@ -1565,7 +1565,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def i0(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.i0`.
+        For details, please refer to :func:`mindspore.ops.bessel_i0`.
         """
         return tensor_operator_registry.get('i0')(self)
 

@@ -1016,7 +1016,7 @@ def logdet(input):
 
 def i0(input):
     r"""
-    Alias for :func:`mindspore.ops.bessel_i0` .
+    For details, please refer to :func:`mindspore.ops.bessel_i0`.
 
     Supported Platforms:
         ``GPU`` ``CPU``
