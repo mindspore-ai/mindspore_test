@@ -483,14 +483,14 @@ std::unique_ptr<Byte[]> Encrypt(size_t *encrypt_len, const Byte *plain_data, siz
 
   size_t offset = 0;
   *encrypt_len = 0;
+  if (!SetRandomSeed()) {
+    MS_LOG(ERROR) << "Failed to set secure random seed.";
+    return nullptr;
+  }
   while (offset < plain_len) {
     size_t cur_block_size = std::min(MAX_BLOCK_SIZE, plain_len - offset);
     block_buf.assign(plain_data + offset, plain_data + offset + cur_block_size);
     unsigned char tag[Byte16];
-    if (!SetRandomSeed()) {
-      MS_LOG(ERROR) << "Failed to set secure random seed.";
-      return nullptr;
-    }
     if (!BlockEncrypt(block_enc_buf.data(), &block_enc_buf_len, block_buf, key, static_cast<int32_t>(key_len), enc_mode,
                       tag)) {
       MS_LOG(ERROR)
