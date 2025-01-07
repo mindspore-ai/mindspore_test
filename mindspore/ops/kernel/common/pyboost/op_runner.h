@@ -69,6 +69,8 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   void set_stream_id(size_t stream_id) { stream_id_ = stream_id; }
   void set_clone_tensor(const tensor::BaseTensorPtr &clone_tensor) { clone_tensor_ = clone_tensor; }
   const tensor::BaseTensorPtr &clone_tensor() { return clone_tensor_; }
+  virtual bool output_is_tuple() const { return false; }
+
   void set_comm_handle(const CommHandlePtr &comm_handle) { comm_handle_ = comm_handle; }
   CommHandlePtr comm_handle() const { return comm_handle_; }
 
@@ -198,12 +200,13 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
     std::static_pointer_cast<device::DeviceAddress>(tensor->device_address())->address_common()->shape_vector_ = shape;
   }
 
-  void CreateOutputSimpleInfoForView() {
+  void CreateOutputSimpleInfo() {
     if (output_value_simple_info_ != nullptr) {
       MS_LOG(DEBUG) << "op:" << primitive_->name() << ", already have simple-info";
       return;
     }
     output_value_simple_info_ = std::make_shared<ValueSimpleInfo>();
+    output_value_simple_info_->is_tuple_output_ = output_is_tuple();
     output_value_simple_info_->size_ = outputs_.size();
     for (size_t i = 0; i < outputs_.size(); ++i) {
       output_value_simple_info_->shape_vector_.emplace_back(outputs_[i]->shape());

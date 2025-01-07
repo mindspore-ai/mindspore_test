@@ -22,6 +22,6 @@
   } else {
     MS_LOG_EXCEPTION << "View unsupported:" << primitive_->name() <<" or input ERROR";
   }
-  get_op()->CreateOutputSimpleInfoForView();
+  get_op()->CreateOutputSimpleInfo();
   MS_LOG(DEBUG) << "View ${op_name} Call end";
   return ${return_values};
