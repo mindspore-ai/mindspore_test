@@ -913,7 +913,7 @@ inline ShapeVector UpdateOutputShape(const aclTensor *tensor) {
     MS_LOG(EXCEPTION) << "aclGetViewShape failed!";
   }
   ShapeVector output_shape(view_dims, view_dims + view_dim_num);
-  delete view_dims;
+  delete[] view_dims;
   view_dims = nullptr;
   return output_shape;
 }
