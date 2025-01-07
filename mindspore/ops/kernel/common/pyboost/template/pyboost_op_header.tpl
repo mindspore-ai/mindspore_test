@@ -30,7 +30,6 @@ class BACKEND_EXPORT ${op_name} : public pyboost::OpRunner {
   ~${op_name}() override = default;
 
   virtual ${return_type} Call(${call_args}) = 0;
-  ${output_is_tuple}
 
  protected:
   static const std::string &op_name() {return op_name_;}

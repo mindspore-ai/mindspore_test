@@ -31,7 +31,7 @@ void DistCommIsendAscendCustomize(const std::shared_ptr<OpRunner> &op, const Bas
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
 
   op->set_outputs({input_tensor});
-  op->CreateOutputSimpleInfo();
+  op->CreateOutputSimpleInfoForView();
 
   auto run_func = [op, input_tensor, dst, group]() {
     auto device_context = op->device_context();

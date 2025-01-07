@@ -43,7 +43,7 @@ if (kernel_attr_pair.first || op_name() == "Cast") {
   ProfileTrackerInput(${call_args});
   ProfileTrackerOutput(${return_values});
   MS_LOG(DEBUG) << op_name() << " call end";
-  get_op()->CreateOutputSimpleInfo();
+  get_op()->CreateOutputSimpleInfoForView();
   return ${return_values};
 }
 ${cast_input_code}
@@ -55,6 +55,6 @@ for (auto &tensor : outputs()) {
 }
 const auto &real_output = PyBoostUtils::CastTensor(op->outputs(), output_types, "CPU");
 set_outputs(real_output);
-get_op()->CreateOutputSimpleInfo();
+get_op()->CreateOutputSimpleInfoForView();
 return ${return_values};
 
