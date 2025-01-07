@@ -15,13 +15,61 @@
  */
 
 #include "plugin/device/ascend/kernel/hccl/hcom_barrier.h"
+
+#include <string>
+#include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
+#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {
 namespace kernel {
+// We use 4 bytes data for AllReduce operator as barrier.
+constexpr size_t kBarrierDataSize = 4;
+bool HcomBarrierKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  if (!HcclKernel::Init(inputs, outputs)) {
+    MS_LOG(ERROR) << "Call HcclKernel::Init failed.";
+    return false;
+  }
+
+#ifdef ENABLE_INTERNAL_KERNELS
+  if (use_lccl_) {
+    MS_LOG(INFO) << "Use LCCL AllReduce as Barrier.";
+    // If using LCCL, use AllReduce to attain barrier semantics.
+    lccl_all_reduce_func_ = DlsymFuncObj(AllReduce, lowlatency_comm_lib_handle_);
+    MS_EXCEPTION_IF_NULL(lccl_all_reduce_func_);
+
+    auto context_ptr = mindspore::MsContext::GetInstance();
+    uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    std::string device_name = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    auto device_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
+    lccl_barrier_data_ = device_context->device_res_manager_->AllocateMemory(kBarrierDataSize);
+    MS_EXCEPTION_IF_NULL(lccl_barrier_data_);
+    // Set buffer value to all 0.
+    auto ret = aclrtMemset(lccl_barrier_data_, kBarrierDataSize, 0x00, kBarrierDataSize);
+    if (ret != ACL_RT_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Failed to memset 0x00 for barrier data, ret = " << ret;
+    }
+  }
+#endif
+  return true;
+}
+
 bool HcomBarrierKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
                                const std::vector<KernelTensor *> &, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+#ifdef ENABLE_INTERNAL_KERNELS
+  if (use_lccl_) {
+    auto lccl_result =
+      lccl_all_reduce_func_(lccl_ptr_, lccl_barrier_data_, lccl_barrier_data_, kBarrierDataSize / sizeof(int),
+                            HCCL_DATA_TYPE_INT32, HcclReduceOp::HCCL_REDUCE_SUM, stream_ptr);
+    if (lccl_result != Lcal::LCAL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "LCCL AllReduce as Barrier failed.";
+    }
+    return true;
+  }
+#endif
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBarrier(stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {
     MS_LOG(ERROR) << "HcclBarrier failed, ret:" << hccl_result;
