@@ -44,10 +44,6 @@ def launch_blocking():
         >>> ms.runtime.launch_blocking()
     """
     _check_runtime_conf_env_valid()
-    if RuntimeConf.get_instance().is_launch_blocking():
-        raise RuntimeError(
-            "The 'mindspore.runtime.launch_blocking()' cannot be set repeatedly."
-        )
     return RuntimeConf.get_instance().set_launch_blocking()
 
 
