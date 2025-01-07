@@ -13,9 +13,9 @@ mindspore.Tensor.hardshrink
         0, & \text{ otherwise }
         \end{cases}
 
-    HShrink激活函数图：
+    HardShrink激活函数图：
 
-    .. image:: ../../images/HShrink.png
+    .. image:: ../../images/HardShrink.png
         :align: center
 
     .. note::

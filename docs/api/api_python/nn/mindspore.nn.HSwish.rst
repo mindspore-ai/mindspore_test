@@ -8,7 +8,7 @@ mindspore.nn.HSwish
     Hard Swish定义如下：
 
     .. math::
-        \text{Hardswish}(input) =
+        \text{HSwish}(input) =
         \begin{cases}
         0, & \text{ if } input \leq -3, \\
         input, & \text{ if } input \geq +3, \\
