@@ -340,7 +340,7 @@ def merge_ops_yaml(work_path):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--clear_auto_gen', default=True, help='clear all auto gen files')
+    parser.add_argument('--clear_auto_gen', default=False, help='clear all auto gen files')
     return parser.parse_args()
 
 
