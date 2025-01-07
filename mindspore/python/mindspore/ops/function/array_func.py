@@ -5590,7 +5590,7 @@ def tensor_split(input, indices_or_sections, axis=0):
               and :math:`axis=0` , the input tensor will be split into sections :math:`input[:1]` ,
               :math:`input[1:4]` , and :math:`input[4:]` .
 
-        axis (int): The axis along which to split. Default: ``0`` .
+        axis (int, optional): The axis along which to split. Default: ``0`` .
 
     Returns:
         A tuple of sub-tensors.
