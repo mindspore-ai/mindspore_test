@@ -23,6 +23,8 @@ namespace mindspore {
 namespace ops {
 
 OPS_API TensorStorageInfoPtrList TransposeExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList TransposeExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim0,
+                                                         const int64_t &dim1);
 
 }  // namespace ops
 }  // namespace mindspore

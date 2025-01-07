@@ -145,7 +145,7 @@ static std::set<std::string> view_ops_set;
 bool IsEnableAclnnViewOp(const std::string &op) {
   std::string env_value = GetEnv(kAclnnViewOp);
   // Temporarily only support Tranpose on default.
-  if (env_value.empty() && op == "Transpose") {
+  if (env_value.empty() && (op == "Transpose" || op == "TransposeExt")) {
     return true;
   }
   auto existed = view_ops_set.count(op);
