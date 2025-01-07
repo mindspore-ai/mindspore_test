@@ -8,16 +8,16 @@ mindspore.mint.nn.functional.hardsigmoid
     Hard Sigmoid定义为：
 
     .. math::
-        \text{Hardswish}(input) =
+        \text{HardSigmoid}(input) =
         \begin{cases}
         0, & \text{ if } input \leq -3, \\
         1, & \text{ if } input \geq +3, \\
         input/6 + 1/2, & \text{ otherwise }
         \end{cases}
 
-    HSigmoid函数图：
+    HardSigmoid函数图：
 
-    .. image:: ../images/HSigmoid.png
+    .. image:: ../images/HardSigmoid.png
         :align: center
 
     参数：
