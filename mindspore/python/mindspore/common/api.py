@@ -622,6 +622,8 @@ class _JitExecutor:
 
     @_wrap_func
     def __call__(self, *args, **kwargs):
+        if jit_context() and jit_context().is_nested():
+            return jit_context().run_graph("", None, *())
         args_list = args
         if self.obj is not None:
             args_list = args_list[1:]

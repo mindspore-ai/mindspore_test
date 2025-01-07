@@ -5491,8 +5491,12 @@ class TraceGraphEvaluator : public TransitionPrimEvaluator {
     const auto &obj_value = GetValueNode<parse::InterpretedObjectPtr>(obj_value_node);
     MS_EXCEPTION_IF_NULL(obj_value);
     const py::object &func_obj = obj_value->obj();
-    const py::tuple &output =
-      python_adapter::CallPyFn("mindspore.common.jit_trace", "nested_run", func_obj, *py_inputs);
+    py::tuple output;
+    try {
+      output = python_adapter::CallPyFn("mindspore.common.jit_trace", "nested_run", func_obj, *py_inputs);
+    } catch (const std::exception &e) {
+      MS_LOG(EXCEPTION) << "Encounter error: " << e.what() << " When compiling nested trace graph.";
+    }
     const py::list &file_names = output[0];
     const py::list &linenos = output[1];
     const py::tuple &output_args = output[2];

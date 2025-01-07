@@ -20,7 +20,7 @@ import re
 from functools import wraps
 from mindspore import log as logger
 from mindspore import context
-from mindspore.common.jit_context import JitContext, set_jit_context
+from mindspore.common.jit_context import JitContext, set_jit_context, jit_context
 from mindspore.common.tensor import Tensor as PythonTensor
 from mindspore._checkparam import is_stub_tensor
 from mindspore._c_expression import TraceRecorder as tr
@@ -34,8 +34,16 @@ class TraceJitContext(JitContext):
 
     def __init__(self):
         JitContext.__init__(self)
+        self._is_nested = False
+
+    def set_is_nested(self, status):
+        self._is_nested = status
+
+    def is_nested(self):
+        return self._is_nested
 
     def run_op(self, prim, prim_res, *args):
+        """Capture op"""
         logger.debug(f'prim: {prim}, args: {args}, prim_res: {prim_res}')
         if isinstance(prim_res, TensorNode):
             prim_res = prim_res.get_value()
@@ -46,13 +54,14 @@ class TraceJitContext(JitContext):
         return prim_res
 
     def run_graph(self, phase, prim_res, *args):
+        """Capture func_graph generated from ast"""
         logger.debug(f'phase: {phase}, args: {args}, prim_res: {prim_res}')
         if isinstance(prim_res, TensorNode):
             prim_res = prim_res.get_value()
         prim_res = _sync_stub_tensor(prim_res)
         args = tuple(_sync_stub_tensor(arg) for arg in args)
         file_names, linenos = _get_caller_lines()
-        tr.get_instance().new_fg_node(phase, prim_res, file_names, linenos, *args)
+        tr.get_instance().new_fg_node((phase, prim_res, file_names, linenos, self._is_nested), *args)
         return prim_res
 
 
@@ -85,11 +94,13 @@ def _sync_stub_tensor(stub):
 def nested_run(fn, *args):
     """Start a trace process nested in ast."""
     set_jit_context(_trace_jit_context)
+    _trace_jit_context.set_is_nested(True)
     args = args[0]
     res = fn.__wrapped__(*args)
     if res is not tuple:
         res = (res,)
     file_names, linenos = _get_caller_lines()
+    res = _sync_stub_tensor(res)
     set_jit_context(None)
     return file_names, linenos, res
 
@@ -130,6 +141,9 @@ def _jit_trace(fn):
 
     @wraps(fn)
     def jit_trace_wrap(*args, **kwargs):
+        # If a trace graph is already built, keep going without building a new trace graph.
+        if jit_context():
+            return fn(*args, **kwargs)
         # Start trace process.
         if kwargs:
             bound_arguments = inspect.signature(fn).bind(*args, **kwargs)
@@ -234,6 +248,7 @@ def _jit_trace_begin(fn_name, *args):
             "Should not use jit_block and jit_trace at the same time.")
     _using_trace = True
     logger.debug(f'_jit_trace_begin, args: {args}')
+    _trace_jit_context.set_is_nested(False)
     set_jit_context(_trace_jit_context)
     args = tuple(_sync_stub_tensor(arg) for arg in args)
     for arg in args:

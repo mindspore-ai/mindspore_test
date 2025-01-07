@@ -147,7 +147,10 @@ void TraceRecorder::Clear() {
 
 FuncGraphPtr TraceRecorder::InitTopGraph(const DebugInfoPtr &debug_info) {
   if (!graph_stack_.empty()) {
-    MS_LOG(EXCEPTION) << "A trace graph is already created, Please check if there are nested trace functions";
+    Clear();
+    (void)python_adapter::CallPyFn("mindspore.common.jit_context", "set_jit_context", py::none());
+    MS_LOG(EXCEPTION) << "The maximum nesting level for using the jit trace and jit ast decorators is one."
+                      << " Please check the current code for its nesting usage.";
   }
   auto fg_debug_info = std::make_shared<GraphDebugInfo>(MakeTraceInfo<TraceOpt>(debug_info));
   const auto new_graph = std::make_shared<FuncGraph>(std::move(fg_debug_info));
@@ -295,8 +298,18 @@ AnfNodePtr TraceRecorder::ConvertParameterObj(const py::object &input_obj) {
   MS_LOG(DEBUG) << "Created a new weight parameter for " << top_func_graph->ToString() << ", param: " << param_name;
   return top_func_graph->AddFvParameter(param_name, value);
 }
-void TraceRecorder::NewFuncGraphNode(const py::object &phase, const py::object &prim_res, const py::list &file_names,
-                                     const py::list &linenos, const py::args &inputs) {
+void TraceRecorder::NewFuncGraphNode(const py::tuple &info, const py::args &inputs) {
+  const py::bool_ &is_nested = info[4];
+  if (is_nested) {
+    Clear();
+    (void)python_adapter::CallPyFn("mindspore.common.jit_context", "set_jit_context", py::none());
+    MS_LOG(EXCEPTION) << "The maximum nesting level for using the jit trace and jit ast decorators is one."
+                      << " Please check the current code for its nesting usage.";
+  }
+  const py::object &phase = info[0];
+  const py::object &prim_res = info[1];
+  const py::list &file_names = info[2];
+  const py::list &linenos = info[3];
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   FuncGraphPtr jit_fg = graph_executor->GetFuncGraph(py::cast<std::string>(phase));
