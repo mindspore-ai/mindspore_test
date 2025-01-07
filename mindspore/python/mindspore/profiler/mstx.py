@@ -80,7 +80,7 @@ class Mstx:
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
             ...                   on_trace_ready=tensor_board_trace_handler,
             ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-            ...                   schedule=schedule(wait=0, warm_up=0, active=3, repeat=1, skip_first=0),
+            ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
             ...                   mstx=True) as profiler:
             ...         net = Net()
             ...         for i in range(5):
@@ -154,7 +154,7 @@ class Mstx:
             ...     with Profiler(profiler_level=ProfilerLevel.LevelNone,
             ...                   on_trace_ready=tensor_board_trace_handler,
             ...                   activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-            ...                   schedule=schedule(wait=0, warm_up=0, active=3, repeat=1, skip_first=0),
+            ...                   schedule=schedule(wait=0, warmup=0, active=3, repeat=1, skip_first=0),
             ...                   mstx=True) as profiler:
             ...         net = Net()
             ...         for i in range(5):

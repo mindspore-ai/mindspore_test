@@ -69,7 +69,7 @@ def test_dynamic_step_single_active_kbk_profiler():
     """
     step_num = 15
     with tempfile.TemporaryDirectory(suffix="_step_profiler_1") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warm_up=1, active=1, repeat=2, skip_first=1)
+        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
         add = TinyAddNet()
         _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, ms.GRAPH_MODE, "O0")
         # Check whether the number of generated files is the same as the data collected by the step
@@ -131,7 +131,7 @@ def test_dynamic_step_multi_active_kbk_profiler():
     """
     step_num = 10
     with tempfile.TemporaryDirectory(suffix="_step_profiler_2") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warm_up=1, active=2, repeat=2, skip_first=1)
+        schedule = ms.profiler.schedule(wait=1, warmup=1, active=2, repeat=2, skip_first=1)
         add = TinyAddNet()
         _dynamic_step_train_profiler(tmpdir, add, step_num, schedule, ms.GRAPH_MODE, "O0")
         # Check whether the number of generated files is the same as the data collected by the step
@@ -195,7 +195,7 @@ def test_dynamic_step_single_active_py_native_profiler():
     """
     step_num = 8
     with tempfile.TemporaryDirectory(suffix="_step_profiler_1") as tmpdir:
-        schedule = ms.profiler.schedule(wait=1, warm_up=1, active=1, repeat=2, skip_first=1)
+        schedule = ms.profiler.schedule(wait=1, warmup=1, active=1, repeat=2, skip_first=1)
         net = Net()
         context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
         profiler = Profiler(profiler_level=ProfilerLevel.Level2,

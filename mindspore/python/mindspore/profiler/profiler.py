@@ -68,7 +68,7 @@ def tensor_board_trace_handler():
         ...     net = Net()
         ...     STEP_NUM = 15
         ...
-        ...     with Profiler(schedule=schedule(wait=1, warm_up=1, active=2, repeat=1, skip_first=2),
+        ...     with Profiler(schedule=schedule(wait=1, warmup=1, active=2, repeat=1, skip_first=2),
         ...                   on_trace_ready=tensor_board_trace_handler) as prof:
         ...         for i in range(STEP_NUM):
         ...             train(net)
@@ -472,7 +472,7 @@ class Profiler:
             ...     net = Net()
             ...     STEP_NUM = 15
             ...
-            ...     with Profiler(schedule=schedule(wait=1, warm_up=1, active=2, repeat=1, skip_first=2),
+            ...     with Profiler(schedule=schedule(wait=1, warmup=1, active=2, repeat=1, skip_first=2),
             ...                   on_trace_ready=tensor_board_trace_handler) as prof:
             ...         for i in range(STEP_NUM):
             ...             train(net)
