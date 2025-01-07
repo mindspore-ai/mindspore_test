@@ -194,7 +194,7 @@ from mindspore.ops.functional import less_equal, le
 # 70
 from mindspore.ops.functional import negative, neg
 # 71
-from mindspore.ops.functional import isfinite
+
 # 72
 
 # 73
@@ -1359,6 +1359,45 @@ def equal(input, other):
     """
     result = equal_ext_op(input, other)
     return result.item()
+
+
+def isfinite(input):
+    r"""
+    Determine which elements are finite for each position. If elements are not ``NaN`` , ``-INF`` , ``INF``,
+    they are finite.
+
+    .. math::
+        out_i = \begin{cases}
+          & \text{ if } input_{i} = \text{Finite},\ \ True \\
+          & \text{ if } input_{i} \ne \text{Finite},\ \ False
+        \end{cases}
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Returns:
+        Tensor, has the same shape of input, and the dtype is bool.
+
+    Raises:
+        TypeError: If input is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
+        >>> output = mint.isfinite(x)
+        >>> print(output)
+        [False True False]
+        >>> x = Tensor(2.1, mindspore.float64)
+        >>> output = mint.isfinite(x)
+        >>> print(output)
+        True
+    """
+    return ops.auto_generate.isfinite(input)
 
 
 def item(input):
