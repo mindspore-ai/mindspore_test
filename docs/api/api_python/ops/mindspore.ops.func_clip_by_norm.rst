@@ -13,6 +13,7 @@
         - **max_norm** (Union(float, int)) - 该组网络参数的范数上限。
         - **norm_type** (Union(float, int)) - 范数类型。默认值： ``2.0`` 。
         - **error_if_nonfinite** (bool) - 若为 ``True`` ，当 `x` 中元素的总范数为nan、inf或-inf，抛出异常。 若为 ``False``，则不抛出异常。默认值为 ``False`` 。
+
     返回：
         Tensor、Tensor的列表或元组，表示裁剪后的Tensor。
     

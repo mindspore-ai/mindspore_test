@@ -307,7 +307,6 @@ Optimizer
     mindspore.nn.RMSProp
     mindspore.nn.Rprop
     mindspore.nn.SGD
-    mindspore.nn.thor
 
 Dynamic Learning Rate
 ---------------------
