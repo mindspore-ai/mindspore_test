@@ -45,6 +45,7 @@
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "transform/symbol/acl_compiler_symbol.h"
+#include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 
 namespace mindspore {
 namespace device {
@@ -277,6 +278,7 @@ void GeDeviceContext::Destroy() {
     MS_LOG(INFO) << "The device context is not initialized by current process, it doesn't need to be destroyed.";
     return;
   }
+  silentcheck::ascend::SilentChecker::GetInstance().ClearCheckHooks();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto op_tuning_conf = OpTuningConf::GetInstance();
