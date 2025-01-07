@@ -1577,7 +1577,8 @@ def set_context(**kwargs):
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_COMPILER_CACHE_PATH` instead.
         inter_op_parallel_num(int): The thread number of op parallel at the same time. Default value is ``0`` ,
-            which means use the default num.
+            which means use the default num. This parameter will be deprecated and will be removed in future versions.
+            Please use the api :func:`mindspore.runtime.dispatch_threads_num` instead.
         runtime_num_threads(int): The thread pool number of cpu kernel used in runtime,
             which must bigger than or equal to 0. Default value is ``30`` , if you run many processes at
             the same time, you should set the value smaller to avoid thread contention. If set runtime_num_threads to 1,
