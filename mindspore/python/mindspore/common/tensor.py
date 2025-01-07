@@ -1554,6 +1554,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def logsumexp(self, axis, keepdims=False):
         r"""
         For details, please refer to :func:`mindspore.ops.logsumexp`.
+
+        Note:
+            The input parameter `keepdims` of the inputs has the same meaning as the input parameter `keep_dims` in
+            :func:`mindspore.ops.logsumexp`.
         """
         return tensor_operator_registry.get('logsumexp')(self, axis, keepdims)
 
