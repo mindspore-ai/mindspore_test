@@ -105,8 +105,8 @@ bool isSupportLccl(const std::string &group_name, const std::string &kernel_name
                    const std::unordered_set<std::string> &lccl_enabled_groups) {
 #ifdef ENABLE_INTERNAL_KERNELS
   bool enable_lccl = device::ascend::EnableLccl();
-  std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName, kBroadcastOpName,
-                                                 kAllGatherOpName, kMatMulAllReduceOpName};
+  std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,
+                                                 kAllGatherOpName, kMatMulAllReduceOpName, kBarrierOpName};
   if (enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
       support_lccl_op_names.find(kernel_name) != support_lccl_op_names.end()) {
     return true;
