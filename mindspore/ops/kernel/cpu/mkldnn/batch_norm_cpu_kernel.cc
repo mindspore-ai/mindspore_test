@@ -111,9 +111,10 @@ bool BatchNormCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
     auto moving_variance = GetDeviceAddress<float>(inputs, kIndex4);
     auto mean = GetDeviceAddress<float>(outputs, kIndex3);
     auto variance = GetDeviceAddress<float>(outputs, kIndex4);
+    float bessel_correction = static_cast<float>(nhw_size_) / (nhw_size_ - 1);
     for (size_t i = 0; i < inputs[kIndex3]->size() / sizeof(float); ++i) {
       moving_mean[i] = moving_mean[i] * (1 - momentum_) + mean[i] * momentum_;
-      moving_variance[i] = moving_variance[i] * (1 - momentum_) + variance[i] * momentum_;
+      moving_variance[i] = moving_variance[i] * (1 - momentum_) + variance[i] * bessel_correction * momentum_;
     }
   } else {
     SetArgumentHandle(DNNL_ARG_SRC, inputs[0]->device_ptr());
