@@ -1305,6 +1305,9 @@ class Cell(Cell_):
         else:
             self._set_attr_for_object(name, value)
 
+    def _get_name(self):
+        return self.__class__.__name__
+
     def extend_repr(self):
         """
         Expand the description of Cell.
@@ -1317,19 +1320,28 @@ class Cell(Cell_):
         return self.__repr__()
 
     def __repr__(self):
-        extra_str = self.extend_repr()
-        info_str = self.__class__.__name__ + '<'
-        if self._cells:
-            sub_str = '\n'
-            if extra_str:
-                sub_str += '{}\n'.format(self.extend_repr())
-            for key, value in self._cells.items():
-                sub_str += '({}): {}\n'.format(key, repr(value))
-            sub_str = sub_str.replace('\n', '\n  ') + '>'
-            info_str += sub_str
-        else:
-            info_str += extra_str + '>'
-        return info_str
+        extra_lines = []
+        extend_repr = self.extend_repr()
+        # empty string will be split into list ['']
+        if extend_repr:
+            extra_lines = extend_repr.split("\n")
+        child_lines = []
+        for key, cell in self._cells.items():
+            cell_str = repr(cell)
+            cell_str = _addindent(cell_str, 2)
+            child_lines.append("(" + key + "): " + cell_str)
+        lines = extra_lines + child_lines
+
+        main_str = self._get_name() + "("
+        if lines:
+            # simple one-liner info, which most builtin Modules will use
+            if len(extra_lines) == 1 and not child_lines:
+                main_str += extra_lines[0]
+            else:
+                main_str += "\n  " + "\n  ".join(lines) + "\n"
+
+        main_str += ")"
+        return main_str
 
     def load_parameter_slice(self, params):
         """
@@ -3588,6 +3600,7 @@ class Cell(Cell_):
                 cell._parameters_forward_hook = forward_hook
                 cell._parameters_backward_hook = backward_hook
 
+
 class GraphCell(Cell):
     """
     Base class for running the graph loaded from a MindIR.
@@ -3674,3 +3687,15 @@ def _is_parameter_list_or_tuple(value):
                 return False
         return True
     return False
+
+
+def _addindent(s_, numSpaces):
+    s = s_.split("\n")
+    # don't do anything for single-line stuff
+    if len(s) == 1:
+        return s_
+    first = s.pop(0)
+    s = [(numSpaces * " ") + line for line in s]
+    s = "\n".join(s)
+    s = first + "\n" + s
+    return s
