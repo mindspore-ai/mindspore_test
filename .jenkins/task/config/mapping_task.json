@@ -33,6 +33,7 @@
   },
   "Compile_CPU_Win": {
     "DIR_ARRAY": [
+      "build.bat",
       "CMakeLists.txt",
       "mindspore/core/mindrt/CMakeLists.txt",
       ".gitignore",
@@ -134,6 +135,7 @@
   },
   "Compile_Lite_Windows_AVX": {
     "DIR_ARRAY": [
+      "build.bat",
       ".gitignore",
       "mindspore/core/mindrt/CMakeLists.txt",
       ".gitattributes",
