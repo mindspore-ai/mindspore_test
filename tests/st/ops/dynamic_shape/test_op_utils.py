@@ -19,10 +19,11 @@ import copy
 import os
 
 import numpy as np
+import yaml
 import mindspore as ms
 from mindspore import Tensor, context, nn, ops, Parameter
 from mindspore.common import mutable, JitConfig
-from mindspore.ops_generate.gen_utils import safe_load_yaml
+
 
 IR_LEVEL = 2
 INT = 0
@@ -332,7 +333,8 @@ def check_inputs_with_yaml(inputs_seq, yaml_name, disable_yaml_check):
     if not os.path.exists(ops_yaml_path):
         warning_log(ops_yaml_path, " is not found.")
         return
-    ops_yaml_data = safe_load_yaml(ops_yaml_path)
+    with open(ops_yaml_path, 'r') as f:
+        ops_yaml_data = yaml.safe_load(f)
     debug_log("ops yaml file path: ", ops_yaml_path)
     if yaml_name not in ops_yaml_data.keys():
         raise RuntimeError(f"yaml check failed, yaml_name: '{yaml_name}' you provided is not found in " \

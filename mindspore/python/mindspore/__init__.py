@@ -42,7 +42,7 @@ from mindspore._check_jit_forbidden_api import get_obj_module_and_name_info, is_
     is_invalid_or_jit_forbidden_method
 from mindspore import _install_custom
 from mindspore import mint
-from mindspore.ops_generate import arg_dtype_cast, arg_handler
+from mindspore.ops._utils import arg_handler, arg_dtype_cast
 
 __all__ = ["run_check"]
 __all__.extend(__version__)

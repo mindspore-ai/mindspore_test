@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,20 +13,24 @@
 # limitations under the License.
 # ============================================================================
 
-"""
-Primitive operator classes and operator functional.
+"""Module of base class for resource loader."""
 
-A collection of operators to build neural networks or to compute functions.
-"""
+from abc import ABC, abstractmethod
+from typing import Dict
 
-from . import gen_ops_def
-from .._utils import arg_handler, arg_dtype_cast
-
-from .gen_ops_prim import *
-from .gen_ops_def import *
-from ..operations.manually_defined.ops_def import *
-from .._utils.arg_handler import *
-from .._utils.arg_dtype_cast import *
+from .resource_list import ResourceType
 
 
-__all__ = []
+class ResourceLoader(ABC):
+    """
+    Abstract class for resource loader.
+    """
+    @abstractmethod
+    def load(self) -> Dict[ResourceType, object]:
+        """
+        Load resource.
+
+        Returns:
+            Dict[ResourceType, object]: The resource type and resource object map.
+        """
+        raise NotImplementedError
