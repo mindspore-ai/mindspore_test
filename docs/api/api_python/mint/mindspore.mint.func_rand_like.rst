@@ -13,6 +13,3 @@ mindspore.mint.rand_like
 
     返回：
         Tensor，shape和dtype由输入决定其元素为服从均匀分布的 :math:`[0, 1)` 区间的数字。
-
-    异常：
-        - **ValueError** - 如果 `dtype` 不是一个 `mstype.float_type` 类型。
