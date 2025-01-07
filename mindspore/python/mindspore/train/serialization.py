@@ -47,6 +47,7 @@ from mindspore.train.print_pb2 import Print
 
 import mindspore
 import mindspore.nn as nn
+from mindspore.nn.buffer import Buffer
 from mindspore import context
 from mindspore import log as logger
 from mindspore.log import vlog_print
@@ -911,7 +912,7 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
     """Convert a dict of Parameter to param_list."""
     param_list = []
     for (key, value) in save_obj.items():
-        if isinstance(key, str) and isinstance(value, (Parameter, str)):
+        if isinstance(key, str) and isinstance(value, (Parameter, Buffer, str)):
             if choice_func is not None and not choice_func(key):
                 continue
             each_param = {"name": key, "data": value}
