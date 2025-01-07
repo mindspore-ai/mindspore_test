@@ -525,3 +525,221 @@ def test_nested_trace_side_effect_1():
                 'Tensor(shape=[], dtype=Int64, value=4)\n'
                 'Tensor(shape=[], dtype=Int64, value=12)'}
     check_output(cap.output, patterns)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_4():
+    """
+    Feature: JIT trace function nested by JIT ast
+    Description: JIT trace function nested by JIT ast
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="ast")
+    def foo(x, y):
+        return x * y
+
+    @ms.jit(capture_mode="trace")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = foo(z, y)
+        return x, y, z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            return trace_func(a, x, y, self.x)
+
+    net = Net()
+    with pytest.raises(RuntimeError) as err:
+        net(ms.Tensor(1), ms.Tensor(3))
+    assert "Please check the current code for its nesting usage." in str(
+        err.value)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_ast_1():
+    """
+    Feature: JIT ast function nested by JIT trace
+    Description: JIT ast function nested by JIT trace
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="ast")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    def jit_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y, flag):
+            a = ms.Tensor(2)
+            if flag:
+                return trace_func(a, x, y, self.x)
+            return jit_func(a, x, y, self.x)
+
+    net = Net()
+    res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
+    res_jit = net(ms.Tensor(1), ms.Tensor(3), False)
+    assert res_trace == res_jit
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_ast_2():
+    """
+    Feature: JIT ast function nested by JIT trace
+    Description: JIT ast function nested by JIT trace
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="ast")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return x, y, z
+
+    def jit_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return x, y, z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y, flag):
+            a = ms.Tensor(2)
+            if flag:
+                return trace_func(a, x, y, self.x)
+            return jit_func(a, x, y, self.x)
+
+    net = Net()
+    res_trace = net(ms.Tensor(1), ms.Tensor(3), True)
+    res_jit = net(ms.Tensor(1), ms.Tensor(3), False)
+    assert res_trace == res_jit
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_ast_3():
+    """
+    Feature: JIT ast function nested by JIT trace
+    Description: JIT ast function nested by JIT trace
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="ast")
+    def trace_func(inputs):
+        x, y, z = inputs
+        return x, y, z, x + y + z
+
+    def jit_func(inputs):
+        x, y, z = inputs
+        return x, y, z, x + y + z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, inputs, flag):
+            if flag:
+                return trace_func(inputs) + self.x
+            return jit_func(inputs) + self.x
+
+    inputs = ms.mutable([ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)])
+    net = Net()
+    res_trace = net(inputs, True)
+    res_jit = net(inputs, False)
+    assert np.allclose(res_trace.asnumpy(), res_jit.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_ast_4():
+    """
+    Feature: JIT ast function nested by JIT trace
+    Description: JIT ast function nested by JIT trace
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def foo(x, y):
+        return x * y
+
+    @ms.jit(capture_mode="ast")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = foo(z, y)
+        return x, y, z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            return trace_func(a, x, y, self.x)
+
+    net = Net()
+    with pytest.raises(RuntimeError) as err:
+        net(ms.Tensor(1), ms.Tensor(3))
+    assert "Please check the current code for its nesting usage." in str(
+        err.value)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_double_trace():
+    """
+    Feature: JIT trace function nested by JIT trace
+    Description: JIT trace function nested by JIT trace
+    Expectation: No exception
+    """
+    @ms.jit(capture_mode="trace")
+    def trace_func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    def func(a, x, y, self_x):
+        z = x + a
+        z = z + self_x
+        z = z * y
+        return z
+
+    class Net(ms.nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @ms.jit(capture_mode="trace")
+        def construct(self, x, y, flag):
+            a = ms.Tensor(2)
+            if flag:
+                return trace_func(a, x, y, self.x)
+            return func(a, x, y, self.x)
+
+    net = Net()
+    res_double_trace = net(ms.Tensor(1), ms.Tensor(3), True)
+    res_trace = net(ms.Tensor(1), ms.Tensor(3), False)
+    assert res_double_trace == res_trace
