@@ -98,6 +98,30 @@ void CheckForwardFuse(const device::DeviceContext *context, size_t stream, const
   }
 }
 
+std::pair<bool, TypeId> CheckMatMul(const PrimitivePtr prim, const BaseTensorPtr &x_tensor,
+                                    const BaseTensorPtr &y_tensor) {
+  auto output_type = x_tensor->data_type();
+  if (output_type != y_tensor->data_type()) {
+    return {false, output_type};
+  }
+  if (output_type != kNumberTypeFloat16 && output_type != kNumberTypeBFloat16) {
+    return {false, output_type};
+  }
+  if (prim->HasAttr("cast_type")) {
+    auto cast_type = prim->GetAttr("cast_type");
+    if (!cast_type->isa<Type>() || !IsSupportType(output_type = cast_type->cast<TypePtr>()->type_id())) {
+      return {false, output_type};
+    }
+  }
+  if (!x_tensor->is_contiguous() || !y_tensor->is_contiguous()) {
+    return {false, output_type};
+  }
+  if (x_tensor->shape().size() > kDim4 || y_tensor->shape().size() > kDim4) {
+    return {false, output_type};
+  }
+  return {true, output_type};
+}
+
 template <typename F, typename... Args>
 void DvmCall(const std::string &op_name, OpRunner *op, const F &func, const Args &... inputs) {
   size_t stream = op->stream_id();
@@ -178,11 +202,8 @@ tensor::BaseTensorPtr CastAscendDvm::Call(const BaseTensorPtr &input_tensor, con
   DvmCall(
     op_name_, this,
     [&input_tensor, dst_type](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      auto src_obj = k->Input(input_tensor);
+      auto src_obj = k->Input(input_tensor, false);
       auto dst_dtype = k->TransType(dst_type);
-      if (dst_dtype == dvm::DType::kBFloat16) {
-        dst_dtype = dvm::DType::kFloat32;
-      }
       auto obj = k->kernel_.Cast(src_obj, dst_dtype);
       return k->Output(obj, dst_type, input_tensor->shape());
     },
@@ -434,6 +455,21 @@ tensor::BaseTensorPtr MinimumAscendDvm::Call(const BaseTensorPtr &input_tensor, 
     return MinimumAscend::Call(input_tensor, other_tensor);
   }
   BinaryDvmCall(op_name_, this, dvm::BinaryOpType::kMinimum, input_tensor, other_tensor, input_tensor->data_type());
+  return outputs_.front();
+}
+
+tensor::BaseTensorPtr MulsAscendDvm::Call(const BaseTensorPtr &input_tensor, const ScalarPtr &other_tensor) {
+  auto [succ, scalar] = GetScalarValue<float>(other_tensor);
+  if (!InputCheck(input_tensor) || !succ) {
+    return MulsAscend::Call(input_tensor, other_tensor);
+  }
+  DvmCall(
+    op_name_, this,
+    [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      auto obj = k->kernel_.Binary(dvm::BinaryOpType::kMul, k->Input(input_tensor), scalar);
+      return k->Output(obj, input_tensor->data_type(), input_tensor->shape());
+    },
+    input_tensor);
   return outputs_.front();
 }
 
@@ -714,9 +750,6 @@ tensor::BaseTensorPtr SumExtAscendDvm::Call(const BaseTensorPtr &input_tensor, c
         dst_dtype = k->TransType(dst_type);
         output_type = dst_type;
       }
-      if (dst_dtype == dvm::DType::kBFloat16) {
-        dst_dtype = dvm::DType::kFloat32;
-      }
       reduce_obj = k->kernel_.Cast(reduce_obj, dst_dtype);
       return k->Output(reduce_obj, output_type, k->GetShape(reduce_obj));
     },
@@ -900,12 +933,24 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
   if (!InputCheck(variable_tensor, IsFloatIntType) || !InputCheck(value_tensor, IsFloatIntType)) {
     return InplaceCopyAscend::Call(variable_tensor, value_tensor);
   }
+  auto addr0 = variable_tensor->device_address();
+  auto addr1 = value_tensor->device_address();
+  if (addr0 && addr1 && addr0->GetMutablePtr() == addr1->GetMutablePtr() &&
+      value_tensor->shape() == variable_tensor->shape()) {
+    ProfileTrackerTask();
+    PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
+    outputs_.push_back(variable_tensor);
+    outputs_[0]->set_need_pipeline_sync(true);
+    CreateOutputSimpleInfoForView();
+    FlushLazyFusion();
+    return outputs_[0];
+  }
   auto k = static_cast<LazyFusionKernelAscend *>(g_lazy_fusion_manager.Get(device_context_, stream_id_));
   MS_LOG(INFO) << op_name() << " call start, kernel id is " << k->id();
   ProfileTrackerTask();
   PyBoostUtils::PrepareOpInputs(device_context_, stream_id_, variable_tensor, value_tensor);
   // copy value_tensor to variable_tensor
-  auto value_obj = k->Input(value_tensor);
+  auto value_obj = k->Input(value_tensor, false);
   if (value_tensor->shape() != variable_tensor->shape()) {
     value_obj = k->kernel_.Broadcast(value_obj, k->GetShapeRef(variable_tensor->shape()));
   }
@@ -920,71 +965,34 @@ tensor::BaseTensorPtr InplaceCopyAscendDvm::Call(const BaseTensorPtr &variable_t
 
 tensor::BaseTensorPtr DenseAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
                                            const std::optional<BaseTensorPtr> &bias_tensor) {
-  bool all_contiguous = true;
   BaseTensorPtr bias = nullptr;
   if (bias_tensor.has_value()) {
     bias = bias_tensor.value();
-    all_contiguous = all_contiguous && bias->is_contiguous();
+    if (bias->shape().size() != kDim1 || !bias->is_contiguous()) {
+      return DenseAscend::Call(input_tensor, weight_tensor, bias_tensor);
+    }
   }
-  all_contiguous = all_contiguous && input_tensor->is_contiguous() && weight_tensor->is_contiguous();
-  // input check
-  auto input_type = input_tensor->data_type();
-  const auto input_shape = input_tensor->shape();
-  const auto &weight_shape = weight_tensor->shape();
-  if (!all_contiguous || (input_type != kNumberTypeFloat16 && input_type != kNumberTypeBFloat16) ||
-      weight_tensor->data_type() != input_type || weight_shape.size() != kDim2 || input_shape.size() < kDim2 ||
-      (bias != nullptr && bias->shape().size() != 1)) {
+  if (!CheckMatMul(primitive_, input_tensor, weight_tensor).first) {
     return DenseAscend::Call(input_tensor, weight_tensor, bias_tensor);
   }
   FlushLazyFusion();  // forward fusion not allowed
-  bool need_reshape = input_shape.size() > kDim2;
   DvmCall(
     op_name_, this,
     [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
-      dvm::NDObject *input_obj = nullptr;
-      if (need_reshape) {
-        // input 2D
-        int64_t flattened_dim = 1;
-        for (size_t i = 0; i < input_shape.size() - 1; ++i) {
-          flattened_dim = flattened_dim * input_shape[i];
-        }
-        ShapeVector shape{flattened_dim, input_shape.back()};
-        input_obj = k->Input(input_tensor, false, shape);
-      } else {
-        input_obj = k->Input(input_tensor, false);
-      }
+      auto input_obj = k->Input(input_tensor, false);
       auto weight_obj = k->Input(weight_tensor, false);
       auto bias_obj = bias == nullptr ? nullptr : k->Input(bias, false);
       auto out_obj = k->kernel_.MatMul(input_obj, weight_obj, false, true, bias_obj);
-      auto output_shape = input_shape;
-      output_shape[output_shape.size() - 1] = weight_shape[0];
-      return k->Output(out_obj, input_type, output_shape);
+      return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
     },
     input_tensor, weight_tensor, bias_tensor);
-  if (need_reshape) {
-    FlushLazyFusion();  // to avoid insert a reshape op
-  }
   return outputs_.front();
 }
 
 tensor::BaseTensorPtr MatMulAscendDvm::Call(const BaseTensorPtr &input_tensor, const BaseTensorPtr &mat2_tensor,
                                             const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) {
-  auto input_type = input_tensor->data_type();
-  auto output_type = input_type;
-  auto cast_type = primitive_->GetAttr("cast_type");
-  if (cast_type != nullptr) {
-    if (!cast_type->isa<Type>()) {
-      MS_EXCEPTION(ValueError) << "MatMul cast_type must be a `Type`";
-    }
-    output_type = cast_type->cast<TypePtr>()->type_id();
-  }
-  bool all_contiguous = input_tensor->is_contiguous() && mat2_tensor->is_contiguous();
-  // input check
-  const auto &shape1 = input_tensor->shape();
-  const auto &shape2 = mat2_tensor->shape();
-  if (!all_contiguous || (input_type != kNumberTypeFloat16 && input_type != kNumberTypeBFloat16) ||
-      mat2_tensor->data_type() != input_type || !IsSupportType(output_type) || shape2.size() != shape1.size() ||
-      shape1.size() < kDim2) {
+  auto [enable, output_type] = CheckMatMul(primitive_, input_tensor, mat2_tensor);
+  if (!enable) {
     return MatMulAscend::Call(input_tensor, mat2_tensor, transpose_a, transpose_b);
   }
   FlushLazyFusion();  // forward fusion not allowed
@@ -996,12 +1004,32 @@ tensor::BaseTensorPtr MatMulAscendDvm::Call(const BaseTensorPtr &input_tensor, c
       auto trans_a = GetValue<bool>(transpose_a);
       auto trans_b = GetValue<bool>(transpose_b);
       auto out_obj = k->kernel_.MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
-      if (output_type != input_type) {
-        out_obj = k->kernel_.Cast(out_obj, k->TransType(output_type));
-      }
-      return k->Output(out_obj, input_tensor->data_type(), k->GetShape(out_obj));
+      out_obj = k->kernel_.Cast(out_obj, k->TransType(output_type));
+      return k->Output(out_obj, output_type, k->GetShape(out_obj));
     },
     input_tensor, mat2_tensor);
+  return outputs_.front();
+}
+
+tensor::BaseTensorPtr BatchMatMulAscendDvm::Call(const BaseTensorPtr &x_tensor, const BaseTensorPtr &y_tensor,
+                                                 const BoolImmPtr &transpose_a, const BoolImmPtr &transpose_b) {
+  auto [enable, output_type] = CheckMatMul(primitive_, x_tensor, y_tensor);
+  if (!enable) {
+    return BatchMatMulAscend::Call(x_tensor, y_tensor, transpose_a, transpose_b);
+  }
+  FlushLazyFusion();  // forward fusion not allowed
+  DvmCall(
+    op_name_, this,
+    [&](LazyFusionKernelAscend *k) -> BaseTensorPtr {
+      auto input_obj = k->Input(x_tensor, false);
+      auto weight_obj = k->Input(y_tensor, false);
+      auto trans_a = GetValue<bool>(transpose_a);
+      auto trans_b = GetValue<bool>(transpose_b);
+      auto out_obj = k->kernel_.MatMul(input_obj, weight_obj, trans_a, trans_b, nullptr);
+      out_obj = k->kernel_.Cast(out_obj, k->TransType(output_type));
+      return k->Output(out_obj, output_type, k->GetShape(out_obj));
+    },
+    x_tensor, y_tensor);
   return outputs_.front();
 }
 
@@ -1035,6 +1063,7 @@ void LazyFusionAscendInit() {
   MS_REPLACE_DVM_OP(LessEqual);
   MS_REPLACE_DVM_OP(Add);
   MS_REPLACE_DVM_OP(Mul);
+  MS_REPLACE_DVM_OP(Muls);
   MS_REPLACE_DVM_OP(Sub);
   MS_REPLACE_DVM_OP(Div);
   MS_REPLACE_DVM_OP(Pow);
@@ -1057,6 +1086,7 @@ void LazyFusionAscendInit() {
   MS_REPLACE_DVM_OP(InplaceCopy);
   MS_REPLACE_DVM_OP(Dense);
   MS_REPLACE_DVM_OP(MatMul);
+  MS_REPLACE_DVM_OP(BatchMatMul);
   if (LazyFusionFlags::GetInstance().online_tuning) {
     dvm::SetOnlineTuning(true);
   }
