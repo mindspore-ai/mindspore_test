@@ -22,6 +22,7 @@ from mindspore.train.callback._callback import Callback
 from mindspore import context
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
+from mindspore.ops import functional as F
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
@@ -106,7 +107,7 @@ or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
         cb_params = args
         src_rank = repair_info["src"][0]
         dst_rank = repair_info["dst"][0]
-        send_recv(cb_params.network.trainable_params(), src_rank, dst_rank)
+        send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank)
     logger.info("Finish _tft_repair_callback")
 
 
@@ -348,6 +349,14 @@ class TFTRegister(Callback):
         self.tft.tft_init_processor(cur_rank, world_size, enable_local_copy, enable_tls, tls_key_dir)
         self.tft.tft_start_processor(self._controller_ip, self._controller_port)
         logger.info("Finished start tft processor.")
+
+    def _reset_acc_grads(self):
+        for key, param in self.cb_params.train_network.parameters_and_names():
+            if 'accu_grad' in key:
+                accu_grad = param
+                grad_val = F.cast(F.equal(accu_grad, accu_grad), F.dtype(accu_grad))
+                zeros = F.mul(grad_val, 0)
+                F.assign(accu_grad, zeros)
 
     def on_train_step_end(self, run_context):
         """
