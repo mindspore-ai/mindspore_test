@@ -17,7 +17,7 @@ NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
     // Run op
     ${convert_body}
     (void)op->Call(${call_args});
-    op->CreateOutputSimpleInfo();
+    op->CreateOutputSimpleInfoForView();
     abstract::AbstractBasePtr output_abs;
     if (op->output_value_simple_info() != nullptr) {
         // Get output abstract

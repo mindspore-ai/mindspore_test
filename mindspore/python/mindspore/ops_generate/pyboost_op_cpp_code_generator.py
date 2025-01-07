@@ -21,7 +21,7 @@ for different devices (Ascend, CPU, GPU) and manages residual files associated w
 import os
 import re
 
-from pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size, is_op_multi_output
+from pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size
 import template
 import gen_constants as K
 from gen_utils import save_file
@@ -59,13 +59,10 @@ class PyboostCommonOpHeaderGenerator(BaseGenerator):
             op_name_str = op_proto.op_class.name
             call_args_with_type = op_parser.parse_call_args_with_types()
             cpp_func_return = _generate_cpp_func_return(op_proto)
-            output_is_tuple = "bool output_is_tuple() const override { return true; }" \
-                if is_op_multi_output(op_proto.op_returns) else ''
             pyboost_op_header_str = template.PYBOOST_BASE_OP_DEFINE_TEMPLATE.replace(op_name=op_name_str,
                                                                                      op_name_upper=op_name_str.upper(),
                                                                                      call_args=call_args_with_type,
-                                                                                     return_type=cpp_func_return,
-                                                                                     output_is_tuple=output_is_tuple)
+                                                                                     return_type=cpp_func_return)
             save_path = os.path.join(work_path, f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
             file_name = f"{op_proto.op_name}.h"
             save_file(save_path, file_name, pyboost_op_header_str)

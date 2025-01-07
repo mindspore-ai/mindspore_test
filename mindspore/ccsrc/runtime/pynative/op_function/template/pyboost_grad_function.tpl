@@ -7,7 +7,7 @@ void BACKEND_EXPORT ${func_name}(OpRunnerInfo* op_runner_info, VectorRef *op_out
   // Run op
   ${convert_body}
   (void)op->Call(${call_args});
-  op->CreateOutputSimpleInfo();
+  op->CreateOutputSimpleInfoForView();
   if (op->output_value_simple_info() != nullptr) {
     op_runner_info->output_value_simple_info = op->output_value_simple_info();
   } else {
