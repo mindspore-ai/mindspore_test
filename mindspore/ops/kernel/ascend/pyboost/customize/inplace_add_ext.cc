@@ -28,7 +28,6 @@ tensor::BaseTensorPtr InplaceAddExtAscendCustomize(const std::shared_ptr<OpRunne
                                                    const BaseTensorPtr &input_tensor, const BaseTensorPtr &other_tensor,
                                                    const ScalarPtr &alpha) {
   MS_LOG(DEBUG) << "Call InplaceAddExt start";
-  OpRunner::InferOpOutput(op, input_tensor, other_tensor, alpha);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, other_tensor);
   op->set_outputs({input_tensor});
   // Async
