@@ -14,6 +14,7 @@
 # ============================================================================
 # pylint: disable=unused-variable
 import numpy as np
+import pytest
 import mindspore as ms
 from mindspore import ops
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -41,14 +42,18 @@ def zero_backward_func(x):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_zero_std():
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_zero_std(mode):
     """
     Feature: standard forward, backward features.
     Description: test function zero.
     Expectation: expect correct result.
     """
     x = generate_random_input((2, 2, 3, 4), np.float32)
-    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    if mode == 'pynative':
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == 'KBK':
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
     output_x = zero_forward_func(ms.Tensor(x))
     np.allclose(output_x.asnumpy(), x, rtol=1e-5, equal_nan=True)
 
@@ -64,4 +69,4 @@ def test_zero_dynamic_shape():
     tensor_x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
 
     TEST_OP(zero_forward_func, [[tensor_x1], [tensor_x2]], 'inplace_zero',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE'])
