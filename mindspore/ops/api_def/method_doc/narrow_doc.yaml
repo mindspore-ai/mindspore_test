@@ -13,23 +13,22 @@ narrow:
         output (Tensors) - The narrowed tensor.
     
     Raises:
-        ValueError: The value of `dim` is out of range [-input.ndim, input.ndim).
-        ValueError: The value of `start` is out of range [-input.shape[dim], input.shape[dim]].
-        ValueError: The value of `length` is out of range [0, input.shape[dim] - start].
+        ValueError: The value of `dim` is out of range [-self.ndim, self.ndim).
+        ValueError: The value of `start` is out of range [-self.shape[dim], self.shape[dim]].
+        ValueError: The value of `length` is out of range [0, self.shape[dim] - start].
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import mint
         >>> from mindspore import Tensor
         >>> x = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.int32)
-        >>> output = mint.narrow(x, 0, 0, 2)
+        >>> output = x.narrow(0, 0, 2)
         >>> print(output)
         [[ 1 2 3]
          [ 4 5 6]]
-        >>> output = mint.narrow(x, 1, 1, 2)
+        >>> output = x.narrow(1, 1, 2)
         >>> print(output)
         [[ 2 3]
          [ 5 6]
