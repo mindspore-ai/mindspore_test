@@ -32,8 +32,8 @@ class AcmeKernelInfoTranspose : public AcmeKernelInfo {
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
-  acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                               const acme::OutputsImmutableInfoList &outputs) override;
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                               const internal::OutputsImmutableInfoList &outputs) override;
  
  private:
   std::vector<int> axis_{};

@@ -21,12 +21,12 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoGather::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                   const acme::OutputsImmutableInfoList &outputs) {
-  acme::GatherParam param;
+internal::InternalOpPtr AcmeKernelInfoGather::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                   const internal::OutputsImmutableInfoList &outputs) {
+  internal::GatherParam param;
   param.axes.emplace_back(axis_);
   param.batch_dims = batch_dims_;
-  return acme::CreateGatherOp(inputs, outputs, param, acme::kAcmeGatherOpName);
+  return internal::CreateGatherOp(inputs, outputs, param, internal::kInternalGatherOpName);
 }
 
 void AcmeKernelInfoGather::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -39,6 +39,6 @@ void AcmeKernelInfoGather::Call(const std::shared_ptr<pyboost::OpRunner> &op, co
   auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, axis_, batch_dims_);
   CallAcmeOp(op, inputs, op_key);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Gather, acme::kAcmeGatherOpName, AcmeKernelInfoGather);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Gather, internal::kInternalGatherOpName, AcmeKernelInfoGather);
 }  // namespace kernel
 }  // namespace mindspore

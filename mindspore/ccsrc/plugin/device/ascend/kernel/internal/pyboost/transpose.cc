@@ -21,11 +21,11 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoTranspose::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                      const acme::OutputsImmutableInfoList &outputs) {
-  acme::TransposeParam param;
+internal::InternalOpPtr AcmeKernelInfoTranspose::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                      const internal::OutputsImmutableInfoList &outputs) {
+  internal::TransposeParam param;
   // param.axes = axis_;
-  return acme::CreateTransposeOp(inputs, outputs, param, acme::kAcmeTransposeOpName);
+  return internal::CreateTransposeOp(inputs, outputs, param, internal::kInternalTransposeOpName);
 }
 
 void AcmeKernelInfoTranspose::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -35,6 +35,6 @@ void AcmeKernelInfoTranspose::Call(const std::shared_ptr<pyboost::OpRunner> &op,
   auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
   CallAcmeOp(op, inputs, op_key);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Transpose, acme::kAcmeTransposeOpName, AcmeKernelInfoTranspose);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Transpose, internal::kInternalTransposeOpName, AcmeKernelInfoTranspose);
 }  // namespace kernel
 }  // namespace mindspore

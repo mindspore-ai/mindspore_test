@@ -21,11 +21,11 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoSwiGLU::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                   const acme::OutputsImmutableInfoList &outputs) {
-  acme::SwiGLUParam param;
+internal::InternalOpPtr AcmeKernelInfoSwiGLU::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                   const internal::OutputsImmutableInfoList &outputs) {
+  internal::SwiGLUParam param;
   param.axis = -1;
-  return acme::CreateSwiGLUOp(inputs, outputs, param, acme::kAcmeSwiGLUOpName);
+  return internal::CreateSwiGLUOp(inputs, outputs, param, internal::kInternalSwiGLUOpName);
 }
 
 void AcmeKernelInfoSwiGLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -35,6 +35,6 @@ void AcmeKernelInfoSwiGLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, co
   auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, dim_);
   CallAcmeOp(op, inputs, op_key);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Swiglu, acme::kAcmeSwiGLUOpName, AcmeKernelInfoSwiGLU);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Swiglu, internal::kInternalSwiGLUOpName, AcmeKernelInfoSwiGLU);
 }  // namespace kernel
 }  // namespace mindspore

@@ -22,11 +22,11 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoApplyRotaryPosEmb::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                              const acme::OutputsImmutableInfoList &outputs) {
-  acme::ApplyRotaryPosEmbParam param;
+internal::InternalOpPtr AcmeKernelInfoApplyRotaryPosEmb::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                              const internal::OutputsImmutableInfoList &outputs) {
+  internal::ApplyRotaryPosEmbParam param;
   param.cos_format = cos_format_;
-  return acme::CreateApplyRotaryPosEmbOp(inputs, outputs, param, acme::kAcmeApplyRotaryPosEmbOpName);
+  return internal::CreateApplyRotaryPosEmbOp(inputs, outputs, param, internal::kInternalApplyRotaryPosEmbOpName);
 }
 
 void AcmeKernelInfoApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -42,6 +42,6 @@ void AcmeKernelInfoApplyRotaryPosEmb::Call(const std::shared_ptr<pyboost::OpRunn
   auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, cos_format_);
   CallAcmeOp(op, inputs, op_key);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, acme::kAcmeApplyRotaryPosEmbOpName, AcmeKernelInfoApplyRotaryPosEmb);
+MS_ACME_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, internal::kInternalApplyRotaryPosEmbOpName, AcmeKernelInfoApplyRotaryPosEmb);
 }  // namespace kernel
 }  // namespace mindspore

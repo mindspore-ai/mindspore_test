@@ -21,9 +21,9 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoSwish::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                  const acme::OutputsImmutableInfoList &outputs) {
-  return acme::CreateSwishOp(inputs, outputs, acme::kAcmeSwishOpName);
+internal::InternalOpPtr AcmeKernelInfoSwish::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                  const internal::OutputsImmutableInfoList &outputs) {
+  return internal::CreateSwishOp(inputs, outputs, internal::kInternalSwishOpName);
 }
 
 void AcmeKernelInfoSwish::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -34,6 +34,6 @@ void AcmeKernelInfoSwish::Call(const std::shared_ptr<pyboost::OpRunner> &op, con
   CallAcmeOp(op, inputs, op_key);
 }
 
-MS_ACME_KERNEL_INFO_FACTORY_REG(SiLU, acme::kAcmeSwishOpName, AcmeKernelInfoSwish);
+MS_ACME_KERNEL_INFO_FACTORY_REG(SiLU, internal::kInternalSwishOpName, AcmeKernelInfoSwish);
 }  // namespace kernel
 }  // namespace mindspore
