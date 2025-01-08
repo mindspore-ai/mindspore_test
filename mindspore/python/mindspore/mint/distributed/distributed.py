@@ -1458,11 +1458,6 @@ def broadcast(tensor, src, group=None, async_op=False):
         >>> print(data)
         [[0. 1. 2. 3.]
          [4. 5. 6. 7.]]
-
-    Tutorial Examples:
-        - `Distributed Set Communication Primitives - Broadcast
-          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#broadcast>`_
-
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For broadcast, the input tensor must be tensor")
@@ -1525,10 +1520,6 @@ def barrier(group=None, async_op=False, device_ids=None):
         >>> # Launch 2 processes.
         >>> init_process_group()
         >>> barrier()
-
-    Tutorial Examples:
-        - `Distributed Set Communication Primitives - Barrier
-          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#barrier>`_
     """
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -2008,7 +1999,6 @@ def all_to_all_single(output,
     scatter and gather input with split size to/from all rank, and return result in a single tensor.
 
     Note:
-        - 'output' and 'tensor' shape should be match across ranks.
         - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:

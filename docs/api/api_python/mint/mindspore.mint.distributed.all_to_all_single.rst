@@ -6,7 +6,6 @@ mindspore.mint.distributed.all_to_all_single
     根据用户输入的切分大小，把输入tensor切分后，发送到其他的设备上，并从其他设备接收切分块，然后合并到一个输出tensor中。
 
     .. note::
-        - 各个rank之间发送和接收的切分块大小需要互相匹配。
         - 仅支持PyNative模式，目前不支持Graph模式。
 
     参数：
