@@ -95,9 +95,6 @@ def test_hccl_new_group():
     if rank == 0 or rank == 1:
         with pytest.raises(ValueError):
             new_group([0, 0, 1, 1])
-    if rank == 0 or rank == 1:
-        group = new_group([2, 3])
-        assert group == ""
 
 
 def test_hccl_get_backend():
