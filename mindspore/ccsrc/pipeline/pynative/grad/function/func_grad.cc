@@ -679,7 +679,6 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
   }
   // We need update version after update next edges, to avoid update variable of inputs.
   UpdateVersion(grad_param->op_grad_info, flatten_outputs);
-  BuildCheckVersionFunc(fn, flatten_inputs, flatten_outputs);
   auto variable = std::make_shared<FuncVariable>(fn, false);
   if (isa<FakeBackwardNode>(fn)) {
     variable->set_is_fake_bprop(true);
@@ -691,6 +690,8 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
     SetVariableCustom(flatten_inputs, flatten_outputs, variable);
     return true;
   }
+  // Custom hook no need build check func
+  BuildCheckVersionFunc(fn, flatten_inputs, flatten_outputs);
   if (grad_param->op_grad_info->operator_type != OperatorType::kInplaceOp) {
     SetVariable(flatten_outputs, variable);
   } else {
