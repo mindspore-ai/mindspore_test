@@ -801,7 +801,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def ndimension(self):
         r"""
-        Alias for :func:`mindspore.Tensor.ndim`.
+        Alias for :attr:`mindspore.Tensor.ndim`.
         """
         return len(self._shape)
 
@@ -1510,7 +1510,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def approximate_equal(self, other, tolerance=1e-5):
         r"""
-        For details, please refer to :func:`mindspore.ops.approximate_equal`.
+        For details, please refer to :func:`mindspore.ops.approximate_equal`,
+        The parameter `other` of current interface is the same as the parameter `y` of the reference interface.
         """
         validator.check_isinstance("x", self, Tensor)
         validator.check_isinstance("y", other, Tensor)
