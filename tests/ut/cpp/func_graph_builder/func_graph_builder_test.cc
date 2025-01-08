@@ -49,6 +49,31 @@ class TestFuncGraphBuilder : public UT::Common {
     return std::make_shared<abstract::AbstractTensor>(TypeIdToType(type_id), shape);
   }
 
+  AbstractBasePtr CreateAbstractRefTensor(const abstract::AbstractTensorPtr &ref_value,
+                                          const ValuePtr &ref_key_value) {
+    return std::make_shared<abstract::AbstractRefTensor>(ref_value, ref_key_value);
+  }
+
+  AbstractBasePtr CreateAbstractScalar(const std::string &str) {
+    return std::make_shared<abstract::AbstractScalar>(str);
+  }
+
+  AbstractBasePtr CreateAbstractScalar(int64_t value) {
+    return std::make_shared<abstract::AbstractScalar>(value);
+  }
+
+  AbstractBasePtr CreateAbstractTuple(const AbstractBasePtrList &elements) {
+    return std::make_shared<abstract::AbstractTuple>(elements);
+  }
+
+  AbstractBasePtr CreateAbstractList(const AbstractBasePtrList &elements) {
+    return std::make_shared<abstract::AbstractList>(elements);
+  }
+
+  AbstractBasePtr CreateAbstractDict(const std::vector<abstract::AbstractElementPair> &elements) {
+    return std::make_shared<abstract::AbstractDictionary>(elements);
+  }
+
   py::object CreateIntTensorObject(const ShapeVector &shape_vec) {
     py::tuple shape(shape_vec.size());
     for (size_t i = 0; i < shape_vec.size(); ++i) {
@@ -62,6 +87,17 @@ class TestFuncGraphBuilder : public UT::Common {
   UT::PyFuncGraphFetcher get_py_fun_;
   FuncGraphPairMapEquiv equiv_graph_;
   NodeMapEquiv equiv_node_;
+};
+
+class TestAddLocalVariable : public TestFuncGraphBuilder {
+  public:
+    py::object GetParameterObj() {
+      constexpr auto common_module = "mindspore.common";
+      py::module mod = python_adapter::GetPyModule(common_module);
+      auto py_tensor = python_adapter::CallPyModFn(mod, "Tensor", 1.1);
+      auto py_parameter = python_adapter::CallPyModFn(mod, "Parameter", py_tensor);
+      return py_parameter;
+    }
 };
 
 // Feature: Build graph in pi_jit.
@@ -325,5 +361,144 @@ TEST_F(TestFuncGraphBuilder, TestCanConstantFoldFunc) {
   auto ms_mod = python_adapter::GetPyModule("mindspore");
   auto func_ms_memory_recycle = python_adapter::GetPyObjAttr(builtin_mod, "ms_memory_recycle");
   ASSERT_FALSE(FuncGraphBuilder::CanConstantFoldFunc(func_ms_memory_recycle));
+}
+
+// Feature: Add local variable into func_graph_builder
+// Description: Test the input which doesn't contain Parameter.
+// Expectation: The expected abstract_wrapper is constructed.
+TEST_F(TestAddLocalVariable, NotContainsParameter) {
+  FuncGraphBuilder func_graph_builder;
+
+  py::int_ m_int = 1;
+  auto wrapper = func_graph_builder.AddLocalVariable(m_int);
+  ASSERT_NE(wrapper, nullptr);
+  const auto &expect_abstract_int = CreateAbstractScalar(1);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_int);
+
+  py::tuple m_tuple = py::make_tuple(1, 2, 3);
+  wrapper = func_graph_builder.AddLocalVariable(m_tuple);
+  ASSERT_NE(wrapper, nullptr);
+  std::vector<AbstractBasePtr> m_vector = {CreateAbstractScalar(1), CreateAbstractScalar(2), CreateAbstractScalar(3)};
+  const auto &expect_abstract_tuple = CreateAbstractTuple(m_vector);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_tuple);
+
+  py::list m_list = py::cast(std::vector<int>{1, 2, 3});
+  wrapper = func_graph_builder.AddLocalVariable(m_list);
+  ASSERT_NE(wrapper, nullptr);
+  const auto &expect_abstract_list = CreateAbstractList(m_vector);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_list);
+
+  py::dict m_dict = py::dict();
+  m_dict[py::str("key1")] = 1;
+  m_dict[py::str("key2")] = 2;
+  wrapper = func_graph_builder.AddLocalVariable(m_dict);
+  ASSERT_NE(wrapper, nullptr);
+  std::vector<abstract::AbstractElementPair> m_pair_vector = {
+    std::make_pair(CreateAbstractScalar("key1"), CreateAbstractScalar(1)),
+    std::make_pair(CreateAbstractScalar("key2"), CreateAbstractScalar(2)),
+  };
+  const auto &expect_abstract_dict = CreateAbstractDict(m_pair_vector);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_dict);
+}
+
+// Feature: Add local variable into func_graph_builder.
+// Description: Test the input which is Parameter.
+// Expectation: The expected abstract_wrapper is constructed.
+TEST_F(TestAddLocalVariable, IsParameterObject) {
+  FuncGraphBuilder func_graph_builder;
+  FuncGraphPtr graph = std::make_shared<FuncGraph>();
+  parse::Parser::UpdateTopFuncGraph(graph);
+  auto py_parameter = GetParameterObj();
+
+  auto wrapper = func_graph_builder.AddLocalVariable(py_parameter);
+  ASSERT_NE(wrapper, nullptr);
+  const auto &abstract_tensor = CreateAbstractTensor(kNumberTypeFloat32, ShapeVector{});
+  const auto &expect_abstract_ref_tensor = CreateAbstractRefTensor(
+    std::dynamic_pointer_cast<abstract::AbstractTensor>(abstract_tensor), kValueAny);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_ref_tensor);
+}
+
+// Feature: Add local variable into func_graph_builder.
+// Description: Test the input which is Parameter sequence.
+// Expectation: The expected abstract_wrapper is constructed.
+TEST_F(TestAddLocalVariable, IsParameterSequence) {
+  FuncGraphBuilder func_graph_builder;
+  FuncGraphPtr graph = std::make_shared<FuncGraph>();
+  parse::Parser::UpdateTopFuncGraph(graph);
+  auto py_parameter = GetParameterObj();
+
+  py::tuple m_tuple = py::make_tuple(py_parameter);
+  auto wrapper = func_graph_builder.AddLocalVariable(m_tuple);
+  ASSERT_NE(wrapper, nullptr);
+  const auto &abstract_tensor = CreateAbstractTensor(kNumberTypeFloat32, ShapeVector{});
+  std::vector<AbstractBasePtr> m_vector = {CreateAbstractRefTensor(
+    std::dynamic_pointer_cast<abstract::AbstractTensor>(abstract_tensor), kValueAny)};
+  const auto &expect_abstract_tuple = CreateAbstractTuple(m_vector);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_tuple);
+
+  py::list m_list = py::list();
+  m_list.append(py_parameter);
+  wrapper = func_graph_builder.AddLocalVariable(m_list);
+  ASSERT_NE(wrapper, nullptr);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_tuple);
+}
+
+// Feature: Add local variable into func_graph_builder.
+// Description: Test the input which is not Parameter sequence.
+// Expectation: The expected abstract_wrapper is constructed.
+TEST_F(TestAddLocalVariable, IsNotParameterSequence) {
+  FuncGraphBuilder func_graph_builder;
+  FuncGraphPtr graph = std::make_shared<FuncGraph>();
+  parse::Parser::UpdateTopFuncGraph(graph);
+  auto py_parameter = GetParameterObj();
+
+  py::tuple m_tuple = py::make_tuple(1, py_parameter);
+  auto wrapper = func_graph_builder.AddLocalVariable(m_tuple);
+  ASSERT_NE(wrapper, nullptr);
+  const auto &abstract_tensor = CreateAbstractTensor(kNumberTypeFloat32, ShapeVector{});
+  const auto &abstract_ref_tensor = CreateAbstractRefTensor(
+    std::dynamic_pointer_cast<abstract::AbstractTensor>(abstract_tensor), kValueAny);
+  std::vector<AbstractBasePtr> m_vector = {CreateAbstractScalar(1), abstract_ref_tensor};
+  const auto &expect_abstract_tuple = CreateAbstractTuple(m_vector);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_tuple);
+
+  py::list m_list = py::list();
+  m_list.append(1);
+  m_list.append(py_parameter);
+  wrapper = func_graph_builder.AddLocalVariable(m_list);
+  ASSERT_NE(wrapper, nullptr);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_tuple);
+
+  py::dict m_dict = py::dict();
+  m_dict[py::str("key1")] = 1;
+  m_dict[py::str("key2")] = py_parameter;
+  wrapper = func_graph_builder.AddLocalVariable(m_dict);
+  ASSERT_NE(wrapper, nullptr);
+  std::vector<abstract::AbstractElementPair> m_pair_vector = {
+    std::make_pair(CreateAbstractScalar("key1"), CreateAbstractScalar(1)),
+    std::make_pair(CreateAbstractScalar("key2"), abstract_ref_tensor)
+  };
+  const auto &expect_abstract_dict = CreateAbstractDict(m_pair_vector);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_dict);
+
+  py::dict m_dict2 = py::dict();
+  m_dict2[py::str("key1")] = py_parameter;
+  wrapper = func_graph_builder.AddLocalVariable(m_dict2);
+  ASSERT_NE(wrapper, nullptr);
+  std::vector<abstract::AbstractElementPair> m_pair_vector2 = {
+    std::make_pair(CreateAbstractScalar("key1"), abstract_ref_tensor)
+  };
+  const auto &expect_abstract_dict2 = CreateAbstractDict(m_pair_vector2);
+  ASSERT_EQ(*(wrapper->abstract()), *expect_abstract_dict2);
+}
+
+// Feature: Add local variable into func_graph_builder.
+// Description: Test the input which is NullPyObj.
+// Expectation: The expected abstract_wrapper is constructed.
+TEST_F(TestAddLocalVariable, NullPyObj) {
+  FuncGraphBuilder func_graph_builder;
+
+  auto wrapper = func_graph_builder.AddLocalVariable(py::buffer());
+  ASSERT_EQ(wrapper, nullptr);
 }
 }  // namespace mindspore
