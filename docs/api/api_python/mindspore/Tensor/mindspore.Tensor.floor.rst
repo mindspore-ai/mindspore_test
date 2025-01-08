@@ -6,7 +6,7 @@ mindspore.Tensor.floor
     逐元素向下取整函数。
 
     .. math::
-        out_i = \lfloor input_i \rfloor
+        out_i = \lfloor self_i \rfloor
 
     返回：
         Tensor，shape与 `self` 相同。
