@@ -1637,7 +1637,11 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
   auto auto_grad_cell = std::dynamic_pointer_cast<autograd::FuncGrad>(top_cell_->auto_grad_cell_ptr());
   MS_EXCEPTION_IF_NULL(auto_grad_cell);
   top_cell_->set_grad_is_running(true);
+  // To avoid grad_operation_ be used by nested grad func when running grad.
+  std::string swap_grad_operation;
+  std::swap(grad_operation_, swap_grad_operation);
   auto grads = auto_grad_cell->Finish(w_args, p_args, grad_attr, sens);
+  std::swap(grad_operation_, swap_grad_operation);
   MS_EXCEPTION_IF_NULL(grads);
   InsertCheckForLastGrad(grads);
   MS_EXCEPTION_IF_NULL(top_cell_);
