@@ -1489,7 +1489,7 @@ def lgamma(input):
 
 def i0(x):
     """
-    For details, please refer to :func:`mindspore.ops.i0`.
+    For details, please refer to :func:`mindspore.ops.bessel_i0`.
     """
     return F.i0(x)
 
