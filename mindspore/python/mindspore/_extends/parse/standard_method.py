@@ -4562,3 +4562,9 @@ def register_hook(x, func):
         raise ValueError("Register hook for Parameter inside graph is not supported.")
     hook_op = P.InsertGradientOf(func)
     return hook_op(x)
+
+def zero_(input):
+    r"""
+    Return a tensor filled with zeros.
+    """
+    return F.zero_(input)
