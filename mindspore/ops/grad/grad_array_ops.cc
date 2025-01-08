@@ -2185,7 +2185,7 @@ REG_BPROP_BUILDER("Cast").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   return {dx_, ib->OutZeros(t)};
 });
 
-REG_BPROP_BUILDER("TypeAs").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TypeAs").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
