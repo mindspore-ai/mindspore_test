@@ -1849,8 +1849,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def argmax_with_value(self, axis=0, keep_dims=False):
         """
-        Returns the maximum value with corresponding index.
-
         Compute the max value of input Tensor on the specified axis, and return the max value and index.
 
         Note:
@@ -1859,9 +1857,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             - The value range of `axis` is [-dims, dims - 1]. `dims` is the dimension length of this tensor.
 
         Args:
-            axis (int): The dimension to reduce. Default: ``0`` .
-            keep_dims (bool): Whether to reduce dimension, if ``true`` the output will keep the same dimension as the
-                            input, the output will reduce dimension if ``false`` . Default: ``False`` .
+            axis (int, optional): The dimension to reduce. Default: ``0`` .
+            keep_dims (bool, optional): Whether to reduce dimension, if ``true`` the output will keep the same dimension
+                as the input, the output will reduce dimension if ``false`` . Default: ``False`` .
 
         Returns:
             tuple (Tensor), tuple of 2 tensors, containing the corresponding index and the maximum value of the input
@@ -1898,7 +1896,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def argmin_with_value(self, axis=0, keep_dims=False):
         """
-        Returns the minimum value with corresponding index.
+        Compute the max value of input Tensor on the specified axis, return the minimum value and index.
 
         Note:
             - In auto_parallel and semi_auto_parallel mode, the first output index can not be used.
@@ -1906,9 +1904,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             - The value range of `axis` is [-dims, dims - 1]. `dims` is the dimension length of this tensor.
 
         Args:
-            axis (int): The dimension to reduce. Default: 0.
-            keep_dims (bool): Whether to reduce dimension, if true the output will keep the same dimension as the input,
-                            the output will reduce dimension if false. Default: ``False``.
+            axis (int, optional): The dimension to reduce. Default: ``0``.
+            keep_dims (bool, optional): Whether to reduce dimension, if true the output will keep the same dimension
+                as the input, the output will reduce dimension if false. Default: ``False``.
 
         Returns:
             tuple (Tensor), tuple of 2 tensors, containing the corresponding index and the minimum value of the input

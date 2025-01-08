@@ -3,9 +3,7 @@ mindspore.Tensor.argmin_with_value
 
 .. py:method:: mindspore.Tensor.argmin_with_value(axis=0, keep_dims=False)
 
-    根据指定的索引计算最小值，并返回索引和值。
-
-    在给定轴上计算输入Tensor的最小值，并且返回最小值和索引。
+    根据指定的索引，在给定轴上计算输入Tensor的最小值，并且返回最小值和索引。
 
     .. note::
         - 在auto_parallel和semi_auto_parallel模式下，不能使用第一个输出索引。
@@ -13,8 +11,8 @@ mindspore.Tensor.argmin_with_value
         - `axis` 的取值范围为[-dims, dims - 1]。`dims` 为输入Tensor的维度长度。
 
     参数：
-        - **axis** (int) - 指定计算维度。默认值： ``0`` 。
-        - **keep_dims** (bool) - 表示是否减少维度。如果为 ``True`` ，则输出维度和输入维度相同。如果为 ``False`` ，则减少输出维度。默认值： ``False`` 。
+        - **axis** (int, 可选) - 指定计算维度。默认值： ``0`` 。
+        - **keep_dims** (bool, 可选) - 表示是否减少维度。如果为 ``True`` ，则输出维度和输入维度相同。如果为 ``False`` ，则减少输出维度。默认值： ``False`` 。
 
     返回：
         tuple (Tensor)，表示2个Tensor组成的tuple，包含对应的索引和输入Tensor的最小值。
