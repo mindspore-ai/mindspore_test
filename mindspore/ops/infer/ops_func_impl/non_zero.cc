@@ -25,7 +25,6 @@
 
 namespace mindspore {
 namespace ops {
-constexpr int64_t kNonZeroInputMinDim = 1;
 
 BaseShapePtr NonZeroFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
@@ -33,10 +32,6 @@ BaseShapePtr NonZeroFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   MS_CHECK_VALUE(!IsDynamic(x_shape), primitive->name() + "error: shape should not has dynamic values");
   auto x_rank = SizeToLong(x_shape.size());
-  MS_CHECK_VALUE(x_rank >= kNonZeroInputMinDim,
-                 CheckAndConvertUtils::FormatCheckIntegerMsg("dimension of 'x'", x_rank, kGreaterEqual,
-                                                             kNonZeroInputMinDim, primitive));
-
   auto x_num = std::accumulate(x_shape.begin(), x_shape.end(), int64_t(1), std::multiplies<int64_t>());
   return std::make_shared<abstract::Shape>(ShapeVector({x_num, x_rank}));
 }
@@ -60,9 +55,6 @@ ShapeArray NonZeroFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape = x_tensor->shape();
   auto x_rank = SizeToLong(x_shape.size());
-  MS_CHECK_VALUE(x_rank >= kNonZeroInputMinDim,
-                 CheckAndConvertUtils::FormatCheckIntegerMsg("dimension of 'x'", x_rank, kGreaterEqual,
-                                                             kNonZeroInputMinDim, primitive));
   auto x_num = std::accumulate(x_shape.begin(), x_shape.end(), 1, std::multiplies<int64_t>());
   return {ShapeVector({x_num, x_rank})};
 }

@@ -186,17 +186,38 @@ REG_FALLBACK_BUILDER("Dense").SetBody(BODYFUNC(ib) {
   return {ret};
 });
 
+DEF_PURE_SHAPE_CALC(g_nonzero_ext_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto &x_shape = inputs.at(kIndex0);
+    ShapeVector reshape_x_shape = x_shape;
+    if (x_shape.size() == 0) {
+      reshape_x_shape.push_back(kIndex1);
+    }
+    return {reshape_x_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    int64_t ret_size = -1LL;
+    if (!IsDynamicRank(inputs[0])) {
+      if (inputs[0].size() == 0) {
+        ret_size = 1;
+      } else {
+        ret_size = inputs[0].size();
+      }
+    }
+    return {ret_size};
+  });
+
 REG_FALLBACK_BUILDER("NonZeroExt").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
-  auto output_tensor = ib->Emit("NonZero", {input});
   auto input_shape = input->shape();
   if (IsDynamicRank(input_shape)) {
     MS_EXCEPTION(ValueError)
       << "For `NonZeroExt` op, would use unstack op, the dynamic rank is not support on input be empty.";
   }
-  auto num = SizeToLong(input_shape.size());
-  auto output_tuple =
-    ib->Emit("Unstack", {output_tensor}, {{"num", MakeValue(num)}, {"axis", MakeValue<int64_t>(1LL)}});
+  auto shape = ib->ShapeCalc(g_nonzero_ext_shapecalc, {input})[0];
+  auto expanded_input = ib->Reshape(input, shape);
+  auto output_tensor = ib->Emit("NonZero", {expanded_input});
+  auto output_tuple = ib->Emit("Unstack", {output_tensor}, {{"axis", MakeValue<int64_t>(1LL)}});
   return {output_tuple};
 });
 

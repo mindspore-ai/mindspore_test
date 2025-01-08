@@ -75,6 +75,11 @@ bool NonZeroGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
   if (input_size_ == 0) {
     return true;
   }
+  if (inputs[kIndex0]->GetShapeVector().size() == 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the dimension of 'x' must be greater than or equal to 1, but got 0.";
+    return false;
+  }
   auto input_ptr = GetDeviceAddress<DataType>(inputs, kIndex0);
   auto output_size_ptr = GetDeviceAddress<size_t>(workspace, kIndex0);
   auto output_ptr = GetDeviceAddress<IndexType>(outputs, kIndex0);

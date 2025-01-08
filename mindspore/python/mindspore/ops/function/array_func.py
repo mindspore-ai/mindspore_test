@@ -6619,6 +6619,9 @@ def nonzero(input, *, as_tuple=False):
         >>> print(output)
         (Tensor(shape=[3], dtype=Int64, value=[0, 2, 4]), )
     """
+    if not isinstance(as_tuple, bool):
+        raise TypeError(
+            f"For array function 'nonzero', 'as_tuple' must be bool, but got {type(as_tuple)}.")
     if as_tuple:
         return non_zero_ext_(input)
     return non_zero_(input)

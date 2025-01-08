@@ -77,6 +77,11 @@ bool NonZeroCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
     return true;
   }
 
+  if (inputs[kIndex0]->GetShapeVector().size() == 0) {
+    MS_LOG(ERROR) << "For '" << kernel_name_
+                  << "', the dimension of 'x' must be greater than or equal to 1, but got 0.";
+    return false;
+  }
   auto input_addr = static_cast<T *>(inputs[0]->device_ptr());
   auto output_addr = static_cast<int64_t *>(outputs[0]->device_ptr());
   real_output_size_ = NonZeroCompute(input_addr, output_addr, input_size_);
