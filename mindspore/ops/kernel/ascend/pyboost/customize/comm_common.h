@@ -28,6 +28,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+void CommonCommRunTask(const std::function<void(void)> &run_func);
 void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                           const StringImmPtr &group, const std::function<void(const HcclComm &, void *)> &launch_func,
                           const std::function<void(const DeviceEventPtr &, size_t)> &post_func);

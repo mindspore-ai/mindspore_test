@@ -62,12 +62,7 @@ void InnerCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, 
 
     CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
   };
-
-  if (runtime::OpExecutor::NeedSync()) {
-    run_func();
-  } else {
-    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(std::make_shared<runtime::PassthroughDeviceTask>(run_func));
-  }
+  CommonCommRunTask(run_func);
 }
 
 }  // namespace pyboost
