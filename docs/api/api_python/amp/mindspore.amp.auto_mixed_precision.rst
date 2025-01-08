@@ -30,7 +30,7 @@ mindspore.amp.auto_mixed_precision
 
     `promote_list` 名单里的算子包括：
 
-    ``Addcdiv`` 、 ``Addcmul`` 、 ``Cross`` 、 ``_PyboostCrossPrim`` 、 ``Dot`` 、 ``GridSampler2D`` 、 ``GridSampler3D`` 、 ``BiasAdd``
+    ``Addcdiv`` 、 ``Addcmul`` 、 ``Cross`` 、 ``_PyboostCrossPrim`` 、 ``Dot`` 、 ``GridSampler2D`` 、 ``GridSampler3D`` 、 ``BiasAdd`` 、 ``AddN`` 、 ``Concat``
 
     关于自动混合精度的详细介绍，请参考 `自动混合精度 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/mixed_precision.html>`_ 。
 

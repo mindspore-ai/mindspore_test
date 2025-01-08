@@ -438,7 +438,7 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
     Operators in `promote_list` are:
 
     ``Addcdiv``, ``Addcmul``, ``Cross``, ``_PyboostCrossPrim``, ``Dot``, ``GridSampler2D``, ``GridSampler3D``,
-    ``BiasAdd``
+    ``BiasAdd``, ``AddN``, ``Concat``
 
     For details on automatic mixed precision, refer to
     `Automatic Mix Precision <https://www.mindspore.cn/tutorials/en/master/beginner/mixed_precision.html>`_ .
