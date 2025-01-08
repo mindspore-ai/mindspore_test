@@ -607,6 +607,7 @@ Inverses
     mindspore.mint.linalg.matrix_norm
     mindspore.mint.linalg.norm
     mindspore.mint.linalg.vector_norm
+    mindspore.mint.linalg.qr
 
 mindspore.mint.special
 ----------------------

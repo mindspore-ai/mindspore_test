@@ -215,6 +215,11 @@ REG_STRING_TO_ENUM_SPECIAL(flip_mode, StrToEnumMap{{"BITFLIP", FlipMode::BITFLIP
                                                    {"BITFLIP_DESIGNED", FlipMode::BITFLIP_DESIGNED},
                                                    {"MULTIPLY", FlipMode::MULTIPLY},
                                                    {"MULTIPLY_MAX", FlipMode::MULTIPLY_MAX}});
+
+// LinalgQrMode
+REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED},
+                                              {"COMPLETE", LinalgQrMode::COMPLETE},
+                                              {"R", LinalgQrMode::R}});
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {
