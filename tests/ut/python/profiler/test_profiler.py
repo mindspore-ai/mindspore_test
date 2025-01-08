@@ -165,7 +165,7 @@ class TestProfiler(unittest.TestCase):
         """
         # Construct the RefactorProfiler instance
         profiler = Profiler(start_profile=False,
-                            schedule=Schedule(wait=1, active=1, warm_up=1, repeat=1, skip_first=1),
+                            schedule=Schedule(wait=1, active=1, warmup=1, repeat=1, skip_first=1),
                             data_process=False)
 
         # The first time the start method is called
@@ -189,7 +189,7 @@ class TestProfiler(unittest.TestCase):
         """
         # Construct the RefactorProfiler instance
         profiler = Profiler(start_profile=False,
-                            schedule=Schedule(wait=1, active=1, warm_up=1, repeat=1, skip_first=1),
+                            schedule=Schedule(wait=1, active=1, warmup=1, repeat=1, skip_first=1),
                             data_process=False)
 
         # The first time the start method is called
@@ -238,7 +238,7 @@ class TestProfiler(unittest.TestCase):
                           ProfilerAction.NONE]
         # Construct the RefactorProfiler instance
         profiler = Profiler(start_profile=False,
-                            schedule=Schedule(wait=2, active=2, warm_up=2, repeat=3, skip_first=2),
+                            schedule=Schedule(wait=2, active=2, warmup=2, repeat=3, skip_first=2),
                             data_process=False)
         profiler.start()
         action_list = []
@@ -269,7 +269,7 @@ class TestProfiler(unittest.TestCase):
                           ProfilerAction.NONE, ProfilerAction.NONE, ProfilerAction.WARM_UP]
         # Construct the RefactorProfiler instance
         profiler = Profiler(start_profile=False,
-                            schedule=Schedule(wait=2, active=2, warm_up=2, repeat=3, skip_first=2),
+                            schedule=Schedule(wait=2, active=2, warmup=2, repeat=3, skip_first=2),
                             data_process=False)
         profiler.start()
         action_list = []
@@ -290,7 +290,7 @@ class TestProfiler(unittest.TestCase):
         """
         # Construct the RefactorProfiler instance
         profiler = Profiler(start_profile=False,
-                            schedule=Schedule(wait=1, active=1, warm_up=1, repeat=1, skip_first=1),
+                            schedule=Schedule(wait=1, active=1, warmup=1, repeat=1, skip_first=1),
                             data_process=False)
 
         # The first time the start method is called
@@ -319,7 +319,7 @@ class TestProfiler(unittest.TestCase):
         """
         # Construct the RefactorProfiler instance
         profiler = Profiler(start_profile=False,
-                            schedule=Schedule(wait=1, active=1, warm_up=1, repeat=1, skip_first=1),
+                            schedule=Schedule(wait=1, active=1, warmup=1, repeat=1, skip_first=1),
                             data_process=False)
 
         # The first time the step method is called
@@ -330,7 +330,7 @@ class TestProfiler(unittest.TestCase):
         """
             Input the specified step, verify the schedule functionality.
         """
-        schedule = Schedule(wait=0, active=2, warm_up=0, repeat=2, skip_first=1)
+        schedule = Schedule(wait=0, active=2, warmup=0, repeat=2, skip_first=1)
         self.assertEqual(schedule(0), ProfilerAction.NONE)
         self.assertEqual(schedule(1), ProfilerAction.RECORD)
 
@@ -340,11 +340,11 @@ class TestProfiler(unittest.TestCase):
             properly, and correct the parameters.
         """
         # Input the parameters of the abnormal type to verify that it can be corrected normally
-        schedule = Schedule(wait="1", active=2, warm_up="0", repeat=2, skip_first=1)
+        schedule = Schedule(wait="1", active=2, warmup="0", repeat=2, skip_first=1)
         self.assertEqual(schedule.to_dict().get('wait'), 0)
-        self.assertEqual(schedule.to_dict().get('warm_up'), 0)
+        self.assertEqual(schedule.to_dict().get('warmup'), 0)
         # Input the active parameter less than 1 to verify that it can be corrected normally
-        schedule_error_active = Schedule(wait=1, active=0, warm_up=0, repeat=2, skip_first=1)
+        schedule_error_active = Schedule(wait=1, active=0, warmup=0, repeat=2, skip_first=1)
         self.assertEqual(schedule_error_active.to_dict().get('active'), 1)
 
     def test_should_handler_normal_action_correct_when_profiler_action_controller(self):

@@ -61,13 +61,13 @@ class Schedule:
     .. code-block::
 
         (NONE)        (NONE)          (NONE)       (WARM_UP)       (RECORD)      (RECORD)     (RECORD_AND_SAVE)    None
-        START------->skip_first------->wait-------->warm_up-------->active........active.........active----------->stop
+        START------->skip_first------->wait-------->warmup-------->active........active.........active----------->stop
                                       |                                                             |
                                       |                           repeat_1                          |
                                       ---------------------------------------------------------------
 
     The profiler will skip the first ``skip_first`` steps, then wait for ``wait`` steps,
-    then do the warm_up for the next ``warm_up`` steps, then do the active recording for the next
+    then do the warmup for the next ``warmup`` steps, then do the active recording for the next
     ``active`` steps and then repeat the cycle starting with ``wait`` steps. The optional number
     of cycles is specified with the ``repeat`` parameter, the zero value means that
     the cycles will continue until the profiling is finished.
@@ -75,7 +75,7 @@ class Schedule:
     Keyword Args:
         wait (int): The number of steps to wait before starting the warm-up phase.
         active (int): The number of steps to record data during the active phase.
-        warm_up (int, optional): The number of steps to perform the warm-up phase. Default: ``0``.
+        warmup (int, optional): The number of steps to perform the warm-up phase. Default: ``0``.
         repeat (int, optional): The number of times to repeat the cycle. Default: ``0``.
         skip_first (int, optional): The number of steps to skip at the beginning. Default: ``0``.
 
@@ -117,17 +117,17 @@ class Schedule:
         ...     net = Net()
         ...     STEP_NUM = 15
         ...
-        ...     with Profiler(schedule=schedule(wait=1, warm_up=1, active=2, repeat=1, skip_first=2),
+        ...     with Profiler(schedule=schedule(wait=1, warmup=1, active=2, repeat=1, skip_first=2),
         ...                   on_trace_ready=tensor_board_trace_handler) as prof:
         ...         for i in range(STEP_NUM):
         ...             train(net)
         ...             prof.step()
     """
 
-    def __init__(self, *, wait: int, active: int, warm_up: int = 0, repeat: int = 0, skip_first: int = 0) -> None:
+    def __init__(self, *, wait: int, active: int, warmup: int = 0, repeat: int = 0, skip_first: int = 0) -> None:
         self.wait = wait
         self.active = active
-        self.warm_up = warm_up
+        self.warmup = warmup
         self.repeat = repeat
         self.skip_first = skip_first
         self._check_params()
@@ -149,14 +149,14 @@ class Schedule:
 
         step -= self.skip_first
 
-        num_steps = self.wait + self.warm_up + self.active
+        num_steps = self.wait + self.warmup + self.active
         if 0 < self.repeat <= step / num_steps:
             return ProfilerAction.NONE
 
         mod_step = step % num_steps
         if mod_step < self.wait:
             return ProfilerAction.NONE
-        if mod_step < self.wait + self.warm_up:
+        if mod_step < self.wait + self.warmup:
             return ProfilerAction.WARM_UP
         return ProfilerAction.RECORD if mod_step < num_steps - 1 else ProfilerAction.RECORD_AND_SAVE
 
@@ -168,9 +168,9 @@ class Schedule:
         if not isinstance(self.wait, int) or self.wait < 0:
             logger.warning("Invalid parameter wait, reset it to 0.")
             self.wait = 0
-        if not isinstance(self.warm_up, int) or self.warm_up < 0:
-            logger.warning("Invalid parameter warm_up, reset it to 0.")
-            self.warm_up = 0
+        if not isinstance(self.warmup, int) or self.warmup < 0:
+            logger.warning("Invalid parameter warmup, reset it to 0.")
+            self.warmup = 0
         if not isinstance(self.active, int) or self.active <= 0:
             logger.warning("Invalid parameter active, reset it to 1.")
             self.active = 1
@@ -180,7 +180,7 @@ class Schedule:
         if not isinstance(self.skip_first, int) or self.skip_first < 0:
             logger.warning("Invalid parameter skip_first, reset it to 0.")
             self.skip_first = 0
-        if self.warm_up == 0:
+        if self.warmup == 0:
             logger.warning("Profiler won't be using warmup, this can skew profiler results")
 
     def to_dict(self):
@@ -190,7 +190,7 @@ class Schedule:
         Returns:
             dict, the parameters of schedule and their values.
         """
-        return {'wait': self.wait, 'active': self.active, 'warm_up': self.warm_up,
+        return {'wait': self.wait, 'active': self.active, 'warmup': self.warmup,
                 'repeat': self.repeat, 'skip_first': self.skip_first}
 
 

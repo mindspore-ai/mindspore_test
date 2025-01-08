@@ -429,7 +429,7 @@ class DynamicProfilerMonitorBase(Callback):
                 print_msg(f"Rank {self._rank_id} Dynamic profile start at step {self._start_step}, "
                           f"will stop at step {self._stop_step}")
                 self._profiler = Profiler(output_path=prof_path,
-                                          schedule=schedule(wait=0, warm_up=0,
+                                          schedule=schedule(wait=0, warmup=0,
                                                             active=self._stop_step - self._start_step + 1,
                                                             repeat=1,
                                                             skip_first=1),
