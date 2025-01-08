@@ -176,6 +176,8 @@ class SuperKernelActor : public DebugAwareActor {
 
   // Record every param first used kernel actor to correct the ref count.
   mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> kernel_actor_to_graph_parameters_map_;
+  // Record which kernel actor should insert event when fetch parameter on non-default stream.
+  mindspore::HashSet<KernelActor *> kernel_actors_insert_event_;
 
   // Record all parameter nodes of graph_ and their index positions in graph_'s input_nodes.
   mindspore::HashMap<AnfNode *, size_t> param_node_to_input_idx_;
