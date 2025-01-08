@@ -5,7 +5,7 @@ acosh:
     Computes inverse hyperbolic cosine of `self` element-wise.
 
     .. math::
-        out_i = \cosh^{-1}(input_i)
+        out_i = \cosh^{-1}(self_i)
 
     .. note::
         Input range is [1, inf].

@@ -6,7 +6,7 @@ mindspore.Tensor.acosh
     逐元素计算 `self` 的反双曲余弦。
 
     .. math::
-        out_i = \cosh^{-1}(input_i)
+        out_i = \cosh^{-1}(self_i)
 
     .. note::
         输入范围为[1, inf]。
