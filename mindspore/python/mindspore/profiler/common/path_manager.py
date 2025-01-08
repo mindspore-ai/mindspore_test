@@ -340,4 +340,5 @@ class PathManager:
 
     @classmethod
     def get_real_path(cls, path: str):
-        return os.path.realpath(path)
+        expanded_path = os.path.expanduser(path)
+        return os.path.realpath(expanded_path)
