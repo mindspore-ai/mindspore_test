@@ -15,7 +15,7 @@
 import pytest
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, mint, ops
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=ms.GRAPH_MODE)
@@ -445,6 +445,31 @@ def test_tensor_select_slice_write_2():
     x = ms.Tensor([[1, 2], [3, 4]])
     out = net(x)
     assert ms.ops.all(out == ms.Tensor([[2, 3], [2, 2]]))
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_tensor_select_slice_write_3():
+    """
+    Feature: Support tensor inplace.
+    Description: Tensor setitem by slice, then use this tensor to do some op.
+    Expectation: Run success; CSE pass shouldn't eliminate the second zeros_like node.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x: ms.Tensor):
+            a = mint.zeros_like(x)  # AbstractRefTensor-1
+            a[1:] = 1
+            b = a + 1
+            a = mint.zeros_like(x)  # AbstractRefTensor-2, shouldn't be eliminated by CSE pass.
+            a[0:1] = 2
+            c = a * 2
+            return b + c
+
+    net = Net()
+    x = ops.randn(2, 2)
+    result = net(x)
+    expect = ms.Tensor([[5., 5.], [2., 2.]], dtype=ms.float32)
+    assert ops.all(expect == result)
 
 
 @pytest.mark.skip(
