@@ -17,7 +17,6 @@
 
 from mindspore._c_expression import RuntimeConf
 from mindspore import _checkparam as Validator
-from mindspore.device_manager import _check_runtime_conf_env_valid
 from mindspore._checkparam import args_type_check
 
 
@@ -36,7 +35,6 @@ def threads_num(num):
         >>> ms.set_device("Ascend", 1)
         >>> ms.device_context.cpu.op_tuning.threads_num(10)
     """
-    _check_runtime_conf_env_valid()
     if RuntimeConf.get_instance().is_op_threads_num_configured():
         raise RuntimeError("The 'threads_num' can not be set repeatedly.")
 

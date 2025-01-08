@@ -95,7 +95,6 @@ def set_deterministic(deterministic):
         >>> ms.set_deterministic(True)
     """
     # Check the configuration environment whether valid.
-    _check_runtime_conf_env_valid()
     if DeviceManagerConf.get_instance().is_deterministic_configured():
         raise RuntimeError("The 'mindspore.set_deterministic' can not be set repeatedly.")
 
@@ -124,16 +123,3 @@ def set_deterministic(deterministic):
             del os.environ["TE_PARALLEL_COMPILER"]
 
     DeviceManagerConf.get_instance().set_deterministic(deterministic)
-
-
-def _check_runtime_conf_env_valid():
-    """
-    Check whether the configuration environment of runtime is valid. If the environment is invalid, throw an exception.
-    Check the runtime cannot be initialized:
-    The kernel on the device has been executed to indicate that the runtime has been initialized.
-    """
-    device_target = DeviceManagerConf.get_instance().get_device_target()
-    device_context = DeviceContextManager.get_instance().get_device_context(device_target)
-    if device_context is not None and device_context.initialized():
-        raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
-                           "Suggest setting it as early as possible.")

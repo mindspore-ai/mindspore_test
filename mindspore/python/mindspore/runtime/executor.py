@@ -15,7 +15,6 @@
 
 """Executor manager interfaces."""
 from mindspore._c_expression import RuntimeConf
-from mindspore.device_manager import _check_runtime_conf_env_valid
 from mindspore.runtime.thread_bind_core import _get_cpu_affinity_policy
 from mindspore._checkparam import args_type_check
 from mindspore import _checkparam as Validator
@@ -43,7 +42,6 @@ def launch_blocking():
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.launch_blocking()
     """
-    _check_runtime_conf_env_valid()
     return RuntimeConf.get_instance().set_launch_blocking()
 
 
@@ -62,7 +60,6 @@ def dispatch_threads_num(threads_num):
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.dispatch_threads_num(6)
     """
-    _check_runtime_conf_env_valid()
     if RuntimeConf.get_instance().is_dispatch_threads_num_configured():
         raise RuntimeError("The 'dispatch_threads_num' can not be set repeatedly.")
 
@@ -133,7 +130,6 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.set_cpu_affinity(True, {"device0":["0-9"],"device1":["10-15","20-29"],"device2":["35-45"]})
     """
-    _check_runtime_conf_env_valid()
     if RuntimeConf.get_instance().is_thread_bind_core_configured():
         raise RuntimeError("The 'mindspore.runtime.set_cpu_affinity' cannot be set repeatedly.")
     if enable_affinity:

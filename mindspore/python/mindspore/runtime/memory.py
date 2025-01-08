@@ -18,7 +18,6 @@
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
     _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager
 from mindspore import _checkparam as Validator
-from mindspore.device_manager import _check_runtime_conf_env_valid
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
 import mindspore as ms
@@ -51,7 +50,6 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.set_memory("10GB", "2GB", "60GB", "O1")
     """
-    _check_runtime_conf_env_valid()
     if RuntimeConf.get_instance().is_memory_configured():
         raise RuntimeError("The 'set_memory' can not be set repeatedly.")
 
