@@ -66,4 +66,4 @@ tile:
     .. method:: Tensor.tile(reps) -> Tensor
         :noindex:
 
-    For more details, please refer to :func:`mindspore.ops.tile`.
+    For more details, please refer to :func:`mindspore.ops.tile`. The parameter `reps` in the current interface and the parameter `dims` in the detail reference interface are actually the same parameter.
