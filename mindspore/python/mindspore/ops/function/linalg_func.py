@@ -119,7 +119,7 @@ def eig(A):
     Returns:
         - **eigen_values** (Tensor) - Shape :math:`(*, N)`. eigenvalues of
           the corresponding matrix. The eigenvalues may not have an order.
-        - **eigen_vectors** (Tensor) - Shape :math:`(*, N, N)`,columns of eigen vectors represent
+        - **eigen_vectors** (Tensor) - Shape :math:`(*, N, N)`, columns of eigen vectors represent
         - **normalized** (unit length) eigenvectors of corresponding eigenvalues.
 
     Raises:
@@ -157,7 +157,7 @@ def eigvals(A):
             with float32, float64, complex64 or complex128 data type.
 
     Returns:
-        Tensor, with shape :math:`(*, N)`. Returns the eigenvalues of
+        **eigen_values** (Tensor) - Shape :math:`(*, N)`. Returns the eigenvalues of
         the corresponding matrix, which may not have an order.
 
     Raises:
