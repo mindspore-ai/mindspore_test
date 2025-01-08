@@ -10694,7 +10694,7 @@ def cross(input, other, dim=None):
             found with the size `3`. Default: ``None``.
 
     Returns:
-        Tensor, has the same shape and type as input `input`.
+        Tensor, has the same shape and type as `input`.
 
     Raises:
         TypeError: If `input` is not a Tensor.
