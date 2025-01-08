@@ -14,6 +14,6 @@ mindspore.Tensor.narrow
         output (Tensor) - narrow后的Tensor。
 
     异常：
-        - **ValueError** - `dim` 值超出范围[-input.ndim, input.ndim)。
-        - **ValueError** - `start` 值超出范围[-input.shape[dim], input.shape[dim]]。
-        - **ValueError** - `length` 值超出范围[0, input.shape[dim]-start]。
+        - **ValueError** - `dim` 值超出范围[-self.ndim, self.ndim)。
+        - **ValueError** - `start` 值超出范围[-self.shape[dim], self.shape[dim]]。
+        - **ValueError** - `length` 值超出范围[0, self.shape[dim]-start]。
