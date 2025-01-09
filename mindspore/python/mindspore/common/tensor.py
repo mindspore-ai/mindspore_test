@@ -3051,7 +3051,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Return the positions of all non-zero values.
 
         Note:
-           The rank of `self` should be greater than or equal to 1.
+           The rank of `self`.
+
+           - Ascend: its rank can be equal to 0.
+           - CPU/GPU: its rank should be greater than or eaqual to 1.
 
         Keyword Args:
             as_tuple (bool, optional): Whether the output is tuple.
@@ -3069,7 +3072,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Raises:
             TypeError: If `self` is not Tensor.
             TypeError: If `as_tuple` is not bool.
-            ValueError: If dim of `self` equals to 0.
+            RuntimeError: On GPU and CPU, if dim of `input` equals to 0.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

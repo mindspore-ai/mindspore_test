@@ -6570,7 +6570,10 @@ def nonzero(input, *, as_tuple=False):
     Return the positions of all non-zero values.
 
     Args:
-        input (Tensor): The input Tensor, its rank should be greater than or equal to 1.
+        input (Tensor): The input Tensor.
+
+            - Ascend: its rank can be equal to 0.
+            - CPU/GPU: its rank should be greater than or eaqual to 1.
 
     Keyword Args:
         as_tuple (bool, optional): Whether the output is tuple.
@@ -6588,7 +6591,7 @@ def nonzero(input, *, as_tuple=False):
     Raises:
         TypeError: If `input` is not Tensor.
         TypeError: If `as_tuple` is not bool.
-        ValueError: If dim of `input` equals to 0.
+        RuntimeError: On GPU and CPU, if dim of `input` equals to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

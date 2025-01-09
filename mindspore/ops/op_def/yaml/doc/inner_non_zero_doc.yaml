@@ -6,7 +6,7 @@ inner_non_zero:
             This is an internal and non-standard interface. The target interface is aclnn.
 
         Inputs:
-            - **input** (Tensor) - The input Tensor, its rank should be greater than or eaqual to 1.
+            - **input** (Tensor) - The input Tensor.
 
         Outputs:
             Tensor, a 2-D Tensor whose data type is int64, containing the positions of all non-zero values of the input. 
@@ -14,7 +14,6 @@ inner_non_zero:
 
         Raises:
             TypeError: If `input` is not Tensor.
-            ValueError: If dim of `input` equals to 0.
 
         Supported Platforms:
             ``Ascend``
