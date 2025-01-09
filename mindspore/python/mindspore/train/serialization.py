@@ -568,12 +568,38 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
     return ckpt_file_name
 
 
-def _check_format_and_other_params(format, enc_key, enc_mode, async_save=False, map_param_inc=False,
-                                   global_step_num=None):
-    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or async_save
-                         or map_param_inc or global_step_num is not None)
-    if format == "safetensors" and param_not_default:
-        raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
+def _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode):
+    """check load checkpoint unsupported param"""
+    if format != "safetensors":
+        return
+    default_params = {
+        "dec_key": None,
+        "dec_mode": "AES-GCM",
+    }
+    for param_name, default_value in default_params.items():
+        current_value = locals()[param_name]
+        if current_value != default_value:
+            raise ValueError(f"For 'load_checkpoint', when format is 'safetensors', the parameter '{param_name}' must "
+                             f"be set to default value '{default_value}', but got '{current_value}'.")
+
+
+def _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save=False, map_param_inc=False,
+                                             global_step_num=None):
+    """check save checkpoint unsupported param"""
+    if format != "safetensors":
+        return
+    default_params = {
+        "enc_key": None,
+        "enc_mode": "AES-GCM",
+        "async_save": False,
+        "map_param_inc": False,
+        "global_step_num": None
+    }
+    for param_name, default_value in default_params.items():
+        current_value = locals()[param_name]
+        if current_value != default_value:
+            raise ValueError(f"For 'save_checkpoint', when format is 'safetensors', the parameter '{param_name}' must "
+                             f"be set to default value '{default_value}', but got '{current_value}'.")
 
 
 def _check_async_save(async_save):
@@ -677,7 +703,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     map_param_inc = kwargs.get('incremental', False)
     logger.info("Execute the process of saving checkpoint files.")
     global_step_num = kwargs.get('global_step_num', None)
-    _check_format_and_other_params(format, enc_key, enc_mode, async_save, map_param_inc, global_step_num)
+    _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
@@ -1468,7 +1494,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
     crc_check = Validator.check_isinstance('crc_check', crc_check, bool)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
-    _check_format_and_other_params(format, dec_key, dec_mode)
+    _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode)
     logger.info("Execute the process of loading checkpoint files.")
 
     parameter_dict = {}
