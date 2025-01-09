@@ -1456,8 +1456,10 @@ def randint_ext(*args, generator=None, dtype=None):
 
 
 @_function_forbid_reuse
-def randint_like_ext(input, low, high, *, dtype=None):
+def randint_like_ext(*args, dtype=None):
     r"""
+    randint_like(input, low=0, high, *, dtype=None) -> Tensor
+
     Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
     based on the given dtype and shape of the input tensor.
 
@@ -1466,7 +1468,7 @@ def randint_like_ext(input, low, high, *, dtype=None):
 
     Args:
         input (Tensor): Input Tensor to specify the output shape and its default dtype.
-        low (int): the lower bound of the generated random number
+        low (int, optional): the lower bound of the generated random number. Default: ``0``.
         high (int): the upper bound of the generated random number
 
     Keyword Args:
@@ -1494,7 +1496,11 @@ def randint_like_ext(input, low, high, *, dtype=None):
     """
     seed, offset = default_generator._step(  # pylint: disable=protected-access
         generator_step_)
-    return randint_like_(input, low, high, seed, offset, dtype)
+    args = list(args)
+    if len(args) == 2:
+        args = [args[0], 0, args[1]]
+    args.extend([seed, offset])
+    return randint_like_(*args, dtype=dtype)
 
 
 @_function_forbid_reuse
