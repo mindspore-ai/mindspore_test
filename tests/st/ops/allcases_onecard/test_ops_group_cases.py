@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 import mindspore as ms
+import pytest
 from tests.st.common.multi_process_actuator import run_cases_multi_process, get_max_worker
 from tests.mark_utils import arg_mark
 from tests.st.ops import (
@@ -262,6 +263,7 @@ def ops_group_cases_process(platform, level):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.no_taskset
 def test_ops_group_case_ascend910b_level0():
     """
     Feature: test all level0 cases on ascend910b
@@ -272,6 +274,7 @@ def test_ops_group_case_ascend910b_level0():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.no_taskset
 def test_ops_group_case_ascend910b_level1():
     """
     Feature: test all level1 cases on ascend910b
