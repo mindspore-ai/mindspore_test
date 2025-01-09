@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,9 +223,10 @@ Status CutMixBatchOp::Compute(const TensorRow &input, TensorRow *output) {
     // then x = x1 / (x1+x2) is a random variable from Beta(a1, a2)
     float x1 = gamma_alpha(random_generator_);
     float x2 = gamma_beta(random_generator_);
-    CHECK_FAIL_RETURN_UNEXPECTED((std::numeric_limits<float_t>::max() - x1) > x2,
-                                 "CutMixBatchOp: gamma_distribution x1 and x2 are too large, got x1: " +
-                                   std::to_string(x1) + ", x2:" + std::to_string(x2));
+    while (std::numeric_limits<float>::max() - x1 < x2) {
+      x1 = gamma_alpha(random_generator_);
+      x2 = gamma_beta(random_generator_);
+    }
     float lam = x1 / (x1 + x2);
     double random_number = uniform_distribution(random_generator_);
     if (random_number < prob_) {
