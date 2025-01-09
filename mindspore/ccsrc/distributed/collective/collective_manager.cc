@@ -845,8 +845,8 @@ bool CollectiveManager::WaitCommInitDone(const std::string &group_name) {
   if (!std::any_of(task_list_.begin(), task_list_.end(),
                    [&group_name](const auto &name) { return name == group_name; })) {
     MS_LOG(EXCEPTION)
-      << "The group " << group_name
-      << " init task is not submitted yet. Please check if SubmitCreateDeviceCommTask is invoked for this group";
+      << "The HCCL group " << group_name << " does not existed. The group " << group_name
+      << " init task may not be submitted yet. Please check if SubmitCreateDeviceCommTask is invoked for this group";
   }
   lock.unlock();
 
