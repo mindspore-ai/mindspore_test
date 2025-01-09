@@ -47,7 +47,7 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
     }
   } else {
     runtime::DeviceAddressUtils::ProcessCrossStreamAddress(aclnn_name, device_context, stream_id, input_tensors,
-                                                           output_tensors[0]);
+                                                           output_tensors);
   }
 
   MS_LOG(DEBUG) << "Run device task custom " << aclnn_name << " end";
@@ -55,8 +55,8 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
 }
 }  // namespace
 
-tensor::BaseTensorPtr CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const ValueTuplePtr &tensors_tensor_list) {
+std::vector<tensor::BaseTensorPtr> CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                            const ValueTuplePtr &tensors_tensor_list) {
   MS_EXCEPTION_IF_NULL(op);
   MS_EXCEPTION_IF_NULL(tensors_tensor_list);
   MS_LOG(DEBUG) << "Start custom ascend customize";
@@ -87,6 +87,6 @@ tensor::BaseTensorPtr CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
     LaunchCustomAclnn(aclnn_name, op, tensors_tensor_list_vector, op->outputs());
   }));
-  return op->output(0);
+  return op->outputs();
 }
 }  // namespace mindspore::kernel::pyboost

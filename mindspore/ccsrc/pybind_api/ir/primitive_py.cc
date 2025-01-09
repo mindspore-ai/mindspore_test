@@ -93,10 +93,9 @@ std::map<HookType, std::string> hook_type_with_str = {
 };
 
 py::tuple UnfoldPyArgs(const py::tuple &py_args) {
-  auto input0 = py::cast<py::tuple>(py_args[0]);
-  py::list list = py::cast<py::list>(input0);
-  for (size_t i = 1; i < py_args.size(); i++) {
-    list.append(py_args[i]);
+  py::list list;
+  for (size_t i = 0; i < py_args.size(); i++) {
+    list = list + py::cast<py::list>(py_args[i]);
   }
   return py::cast<py::tuple>(list);
 }
