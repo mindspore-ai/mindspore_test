@@ -292,8 +292,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr SoftplusGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &beta,
                           const NodePtr &threshold) override;
   NodePtr SortExt(const NodePtr &input, const NodePtr &dim, const NodePtr &descending, const NodePtr &stable) override;
-  NodePtr SplitTensor(const NodePtr &input_x, const NodePtr &split_int, const NodePtr &axis) override;
-  NodePtr SplitWithSize(const NodePtr &input_x, const NodePtr &split_sections, const NodePtr &axis) override;
+  NodePtr SplitTensor(const NodePtr &input, const NodePtr &split_size, const NodePtr &dim) override;
+  NodePtr SplitWithSize(const NodePtr &input, const NodePtr &split_size, const NodePtr &dim) override;
   NodePtr Sqrt(const NodePtr &x) override;
   NodePtr Square(const NodePtr &input) override;
   NodePtr StackExt(const NodePtr &tensors, const NodePtr &dim) override;

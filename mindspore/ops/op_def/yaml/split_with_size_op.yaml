@@ -1,12 +1,12 @@
 #operator split_with_size
 split_with_size:
   args:
-    input_x:
+    input:
       dtype: tensor
-    split_sections:
+    split_size:
       dtype: tuple[int]
       type_cast: list[int]
-    axis:
+    dim:
       dtype: int
       default: 0
   returns:

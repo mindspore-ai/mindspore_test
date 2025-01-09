@@ -1011,6 +1011,14 @@ def deprecated_tensor_split(input, split_size_or_sections, axis=0):
     return split(input, split_size_or_sections, axis)
 
 
+def tensor_split_tensor(input, split_size, dim=0):
+    return deprecated_tensor_split(input, split_size, dim)
+
+
+def tensor_split_with_size(input, split_size, dim=0):
+    return deprecated_tensor_split(input, split_size, dim)
+
+
 # 99 sqrt
 def tensor_sqrt(x):
     return sqrt(x)

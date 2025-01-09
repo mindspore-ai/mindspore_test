@@ -47,20 +47,20 @@ class SplitTensorFrontendFuncImpl : public OpFrontendFuncImpl {
       return abs_tuple;
     }
     auto rank = SizeToLong(input_shape.size());
-    auto axis = axis_opt.value();
-    auto split_sections = split_sections_opt.value();
-    if (split_sections == 0) {
+    auto dim = axis_opt.value();
+    auto split_size = split_sections_opt.value();
+    if (split_size == 0) {
       MS_EXCEPTION(ValueError) << "split_size's value cannot be zero";
     }
-    if (axis < 0) {
-      axis += rank;
+    if (dim < 0) {
+      dim += rank;
     }
-    size_t pos = LongToSize(axis);
-    int64_t split_size = input_shape[pos] / split_sections;
-    int64_t remaining = input_shape[pos] % split_sections;
+    size_t pos = LongToSize(dim);
+    int64_t split_num = input_shape[pos] / split_size;
+    int64_t remaining = input_shape[pos] % split_size;
     std::vector<int64_t> output_shape = input_shape;
-    for (int64_t i = 0; i < split_size; ++i) {
-      output_shape[pos] = split_sections;
+    for (int64_t i = 0; i < split_num; ++i) {
+      output_shape[pos] = split_size;
       auto split_tensor_abstract =
         abstract::MakeAbstractTensor(std::make_shared<abstract::Shape>(output_shape), input_abs->GetType());
       (void)output_list.push_back(split_tensor_abstract);

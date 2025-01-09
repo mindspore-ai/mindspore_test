@@ -2300,18 +2300,18 @@ REG_BPROP_BUILDER("Split").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("SplitTensor").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex4);
-  auto split_int = ib->GetInput(kIndex1);
-  auto axis = ib->GetInput(kIndex2);
-  auto dx = ib->Concat(dout, axis);
-  return {dx, ib->OutZeros(split_int), ib->OutZeros(axis)};
+  auto split_size = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto dx = ib->Concat(dout, dim);
+  return {dx, ib->OutZeros(split_size), ib->OutZeros(dim)};
 });
 
 REG_BPROP_BUILDER("SplitWithSize").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex4);
-  auto split_sections = ib->GetInput(kIndex1);
-  auto axis = ib->GetInput(kIndex2);
-  auto dx = ib->Concat(dout, axis);
-  return {dx, ib->OutZeros(split_sections), ib->OutZeros(axis)};
+  auto split_size = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto dx = ib->Concat(dout, dim);
+  return {dx, ib->OutZeros(split_size), ib->OutZeros(dim)};
 });
 
 REG_BPROP_BUILDER("Chunk").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {

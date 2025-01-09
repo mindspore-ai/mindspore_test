@@ -1,11 +1,11 @@
 #operator split_tensor
 split_tensor:
   args:
-    input_x:
+    input:
       dtype: tensor
-    split_int:
+    split_size:
       dtype: int
-    axis:
+    dim:
       dtype: int
       default: 0
   returns:
