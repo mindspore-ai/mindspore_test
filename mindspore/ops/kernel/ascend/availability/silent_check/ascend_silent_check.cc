@@ -445,6 +445,9 @@ SILENT_CHECK_REG(kAscendDevice, DynamicSilentChecker);
 
 // silent checker implementation for static graph
 SilentChecker::SilentChecker(const DeviceContext *device_context) : device_context_(device_context) {
+  if (!IsAsdEnable()) {
+    return;
+  }
   if (device_context_ == nullptr) {
     device_context_ = mindspore::device::DeviceContextManager::GetInstance().GetDeviceContext(kAscendDevice).get();
   }
