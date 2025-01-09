@@ -1017,6 +1017,7 @@ def logdet(input):
 def i0(input):
     r"""
     For details, please refer to :func:`mindspore.ops.bessel_i0`.
+    The parameter `input` of the current interface is the same as the parameter `x` of the reference interface.
 
     Supported Platforms:
         ``GPU`` ``CPU``
