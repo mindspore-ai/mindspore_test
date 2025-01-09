@@ -27,10 +27,6 @@ class InnerNonZeroFrontendFuncImpl : public OpFrontendFuncImpl {
   AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
     const auto &x_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
     auto x_rank = SizeToLong(x_shape.size());
-    int64_t kInnerNonZeroInputMinDim = 1;
-    MS_CHECK_VALUE(x_rank >= kInnerNonZeroInputMinDim,
-                   CheckAndConvertUtils::FormatCheckIntegerMsg("dimension of 'x'", x_rank, kGreaterEqual,
-                                                               kInnerNonZeroInputMinDim, primitive));
     if (IsDynamicRank(x_shape)) {
       x_rank = abstract::Shape::kShapeDimAny;
     }

@@ -25,6 +25,7 @@
 #include "kernel/common/pyboost/op_register.h"
 #include "kernel/common/pyboost/auto_generate/non_zero.h"
 #include "kernel/common/pyboost/auto_generate/unstack_ext.h"
+#include "kernel/common/pyboost/auto_generate/reshape.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,7 +36,16 @@ std::vector<tensor::BaseTensorPtr> NonZeroExtAscendCustomize(const std::shared_p
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto nonzero_op = CREATE_PYBOOST_OP(NonZero, kAscendDevice);
   auto unstack_op = CREATE_PYBOOST_OP(UnstackExt, kAscendDevice);
-  const auto output_tensor = nonzero_op->Call(input_tensor);
+  BaseTensorPtr output_tensor = nullptr;
+  if (input_tensor->shape().size() == kDim0) {
+    std::vector<ValuePtr> unsqueeze_shape;
+    unsqueeze_shape.emplace_back(std::make_shared<Int64Imm>(kIndex1));
+    auto reshape_op = CREATE_PYBOOST_OP(Reshape, kAscendDevice);
+    auto expanded_input = reshape_op->Call(input_tensor, std::make_shared<ValueTuple>(unsqueeze_shape));
+    output_tensor = nonzero_op->Call(expanded_input);
+  } else {
+    output_tensor = nonzero_op->Call(input_tensor);
+  }
   auto output_tuple = unstack_op->Call(output_tensor, std::make_shared<Int64Imm>(1));
   op->set_outputs(unstack_op->outputs());
   MS_LOG(DEBUG) << "NonZeroExt call end";

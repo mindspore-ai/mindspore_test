@@ -25,11 +25,6 @@ class NonZeroExtFrontendFuncImpl : public OpFrontendFuncImpl {
   // Do not override this interface if the op has no InferValue
   AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
     const auto &x_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
-    auto x_rank = SizeToLong(x_shape.size());
-    int64_t kNonZeroExtInputMinDim = 1;
-    MS_CHECK_VALUE(x_rank >= kNonZeroExtInputMinDim,
-                   CheckAndConvertUtils::FormatCheckIntegerMsg("dimension of 'x'", x_rank, kGreaterEqual,
-                                                               kNonZeroExtInputMinDim, primitive));
     if (IsDynamicRank(x_shape)) {
       abstract::AbstractBasePtrList out_tensors = {
         std::make_shared<abstract::AbstractTensor>(kInt64, ShapeVector{abstract::TensorShape::kShapeRankAny})};
@@ -40,6 +35,8 @@ class NonZeroExtFrontendFuncImpl : public OpFrontendFuncImpl {
     }
     abstract::AbstractBasePtrList abs_list{};
     auto output_shape = ShapeVector({abstract::Shape::kShapeDimAny});
+    // When the input dimension is 0d, the output is a tuple (out,) and the output dimension is 1d.
+    auto x_rank = SizeToLong(x_shape.size()) == 0 ? 1 : SizeToLong(x_shape.size());
     for (int i = 0; i < x_rank; i++) {
       abs_list.push_back(std::make_shared<abstract::AbstractTensor>(kInt64, output_shape));
     }
