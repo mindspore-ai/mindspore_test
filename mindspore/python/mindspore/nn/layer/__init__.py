@@ -20,7 +20,7 @@ The high-level components(Cells) used to construct the neural network.
 from __future__ import absolute_import
 
 from mindspore.nn.layer import activation, normalization, container, conv, basic, embedding, pooling, \
-    image, math, combined, timedistributed, rnns, rnn_cells, padding, dense, transformer, \
+    image, math, combined, timedistributed, thor_layer, rnns, rnn_cells, padding, dense, transformer, \
     channel_shuffle
 from mindspore.nn.layer.activation import *
 from mindspore.nn.layer.normalization import *
@@ -38,6 +38,7 @@ from mindspore.nn.layer.combined import *
 from mindspore.nn.layer.timedistributed import *
 from mindspore.nn.layer.transformer import *
 from mindspore.nn.layer.channel_shuffle import ChannelShuffle
+from mindspore.nn.layer.thor_layer import DenseThor, Conv2dThor, EmbeddingThor, EmbeddingLookupThor
 from mindspore.nn.layer.padding import ConstantPad1d, ConstantPad2d, ConstantPad3d, ReflectionPad1d, \
     ReflectionPad2d, ReflectionPad3d, ZeroPad2d, ReplicationPad1d, ReplicationPad2d, ReplicationPad3d
 
@@ -57,5 +58,6 @@ __all__.extend(math.__all__)
 __all__.extend(combined.__all__)
 __all__.extend(timedistributed.__all__)
 __all__.extend(transformer.__all__)
+__all__.extend(thor_layer.__all__)
 __all__.extend(padding.__all__)
 __all__.extend(channel_shuffle.__all__)
