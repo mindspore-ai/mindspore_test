@@ -4094,7 +4094,7 @@ def orgqr(input, input2):
     computes the first :math:`N` columns of a product of
     `Householder <https://en.wikipedia.org/wiki/Householder_transformation#Householder_matrix>`_
     matrices. Suppose input `input` is a matrix of size :math:`(M, N)` after householder transformation.
-    When the diagonal of `input` is set to 1, every colunm of lower triangular in `input` is
+    When the diagonal of `input` is set to 1, every column of lower triangular in `input` is
     denoted as :math:`w_j` for :math:`j` for
     :math:`j=1, \ldots, M`, this function returns the first :math:`N` columns of the matrix
 
@@ -7292,10 +7292,11 @@ def amin(input, axis=None, keepdims=False, *, initial=None, where=None):
     Args:
         input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
             :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. Default: ``None`` , reduce all
-            dimensions. Only constant value is allowed. Assume the rank of `x` is r, and the value range is [-r,r).
-        keepdims (bool): If ``True`` , keep these reduced dimensions and the length is 1. If ``False`` , don't keep
-            these dimensions. Default: ``False`` .
+        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Default: ``None`` ,
+            reduce all dimensions. Only constant value is allowed. Assume the rank of `x` is r, and the value range is
+            [-r,r).
+        keepdims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1. If ``False`` ,
+            don't keep these dimensions. Default: ``False`` .
 
     Keyword Args:
         initial (scalar, optional): The minimum value of an output element. Must be present to allow computation
@@ -7402,10 +7403,11 @@ def amax(input, axis=None, keepdims=False, *, initial=None, where=None):
     Args:
         input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
             :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        axis (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. Default: ``None`` , reduce all
-            dimensions. Only constant value is allowed. Assume the rank of `x` is r, and the value range is [-r,r).
-        keepdims (bool): If ``True`` , keep these reduced dimensions and the length is 1. If ``False`` , don't keep
-            these dimensions. Default: ``False`` .
+        axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Default: ``None`` ,
+            reduce all dimensions. Only constant value is allowed. Assume the rank of `x` is r, and the value range is
+            [-r,r).
+        keepdims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1. If ``False`` ,
+            don't keep these dimensions. Default: ``False`` .
 
     Keyword Args:
         initial (scalar, optional): The minimum value of an output element. Must be present to allow computation
