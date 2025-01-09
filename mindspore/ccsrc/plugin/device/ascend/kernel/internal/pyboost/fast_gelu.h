@@ -32,7 +32,7 @@ class AcmeKernelInfoFastGeLU : public AcmeKernelInfo {
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
-  internal::AcmeOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                const internal::OutputsImmutableInfoList &outputs) override;
 };
 }  // namespace kernel

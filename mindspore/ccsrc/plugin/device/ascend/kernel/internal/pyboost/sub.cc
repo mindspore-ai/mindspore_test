@@ -25,7 +25,7 @@ namespace mindspore {
 namespace kernel {
 internal::InternalOpPtr AcmeKernelInfoSub::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                 const internal::OutputsImmutableInfoList &outputs) {
-  return acme::CreateSubOp(inputs, outputs, internal::kInternalSubOpName);
+  return internal::CreateSubOp(inputs, outputs, internal::kInternalSubOpName);
 }
 
 void AcmeKernelInfoSub::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
