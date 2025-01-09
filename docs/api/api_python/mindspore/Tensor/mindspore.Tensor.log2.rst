@@ -23,5 +23,5 @@ mindspore.Tensor.log2
         - 在Ascend平台中，如果 `self.dtype` 的类型是integer或者boolean，那么输出的类型为float32。
 
     异常：
-        - **TypeError** - 如果 `self.dtype` 的类型不是bool、int8、int32、int64、uint8、uint32、uint64、float16、float32、float64、double、complex64、complex128其中的一种。
+        - **TypeError** - 如果 `self.dtype` 的类型不是bool、int8、int32、int64、uint8、float16、float32、float64、double、complex64、complex128其中的一种。
         - **TypeError** - 在CPU或者GPU平台中，如果 `self.dtype` 的类型是integer或者boolean。
