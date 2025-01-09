@@ -6240,8 +6240,9 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
             there will be :math:`k - 1` pixels skipped for each sampling location. Its value must
             be greater than or equal to 1 and bounded by the height and width of the input `x`. Default: ``1`` .
         groups (int, optional): Splits `input` into groups. Default: ``1`` .
-            :math:`C_{in} % groups == 0` , :math:`C_{out} % groups == 0` , :math:`C_{out} >= groups` ,
-            :math:`\text{kernel_size[1]} = C_{in} / groups`
+
+            - :math:`(C_{in} \text{ % } \text{groups} == 0)` , :math:`(C_{out} \text{ % } \text{groups} == 0)` ,
+              :math:`(C_{out} >= \text{groups})` , :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})`
 
     Returns:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.
@@ -6250,12 +6251,20 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
 
 
     Raises:
+        ValueError: Args and size of the input feature map should satisfy the output formula to ensure that the size of
+            the output feature map is positive; otherwise, an error will be reported. For more details on the output
+            formula, please refer to :class:mindspore.mint.nn.Conv2d.
+        RuntimeError: On Ascend, due to the limitation of the L1 cache size of different NPU chip, if input size or
+            kernel size is too large, it may trigger an error.
         TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.
         TypeError: `groups` is not an int.
         TypeError: If `bias` is not a Tensor.
         ValueError: If  the shape of `bias` is not :math:`(C_{out})` .
         ValueError: If `stride` or `dilation` is less than 1.
         ValueError: If `padding` is `same` , but `stride` is not equal 1.
+        ValueError: The input parameters do not satisfy the convolution output formula.
+        ValueError: The KernelSize cannot exceed the size of the input feature map.
+        ValueError: The value of padding cannot cause the calculation area to exceed the input size.
 
     Supported Platforms:
         ``Ascend``

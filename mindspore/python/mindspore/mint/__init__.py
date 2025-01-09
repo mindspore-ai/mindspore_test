@@ -829,7 +829,10 @@ def cummax(input, dim):
 
 def not_equal(input, other):
     r"""
-    Alias of mint.ne().
+    Alias for :func:`mindspore.mint.ne` .
+
+    Supported Platforms:
+        ``Ascend``
     """
     return ne(input, other)
 

@@ -44,16 +44,23 @@ mindspore.mint.nn.functional.conv2d
           - ``"valid"``：不对输入进行填充，返回输出可能的最大高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。
 
         - **dilation** (Union(int, tuple[int])，可选) - 卷积核元素间的间隔。数据类型为int或由2个int组成的tuple。若 :math:`k > 1` ，则卷积核间隔 `k` 个元素进行采样。垂直和水平方向上的 `k` ，其取值范围分别为[1, H]和[1, W]。默认值： ``1`` 。
-        - **groups** (int，可选) - 将过滤器拆分为组。 :math:`C_{in} % groups == 0` ， :math:`C_{out} % groups == 0` ， :math:`C_{out} >= groups` ， :math:`\text{kernel_size[1]} = C_{in} / groups` 。默认值： ``1`` 。
+        - **groups** (int，可选) - 将过滤器拆分为组。默认值： ``1`` 。
+
+          - :math:`(C_{in} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} \text{ % } \text{groups} == 0)` ， :math:`(C_{out} >= \text{groups})` ， :math:`(\text{kernel_size[1]} = C_{in} / \text{groups})` 。
 
     返回：
         Tensor，卷积后的值。shape为 :math:`(N, C_{out}, H_{out}, W_{out})` 。
         要了解不同的填充模式如何影响输出shape，请参考 :class:`mindspore.mint.nn.Conv2d` 以获取更多详细信息。
 
     异常：
+        - **ValueError** - 输入特征图的大小与参数应满足输出公式，以确保输出特征图大小为正，否则会报错。输出公式请参考 :class:`mindspore.mint.nn.Conv2d` 以获取更多详细信息。
+        - **RuntimeError** - Ascend上受不同型号NPU芯片上L1缓存大小限制，用例尺寸或Kernel Size不能过大。
         - **TypeError** -  `stride` 或 `dilation` 既不是int也不是tuple。
         - **TypeError** -  `groups` 不是int。
         - **TypeError** -  `bias` 不是Tensor。
         - **ValueError** - `bias` 的shape不是 :math:`(C_{out})` 。
         - **ValueError** - `stride` 或 `diation` 小于1。
         - **ValueError** - 如果 `padding` 是 ``"same"`` ， 但是 `stride` 不等于1。
+        - **ValueError** - 输入参数不满足卷积输出公式。
+        - **ValueError** - `KernelSize` 不能超过输入特征图的大小。
+        - **ValueError** - `padding` 值不能导致计算区域超出输入大小。
