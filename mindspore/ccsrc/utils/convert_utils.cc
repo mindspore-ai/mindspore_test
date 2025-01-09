@@ -909,10 +909,10 @@ std::map<SignatureEnumDType, std::pair<TypeId, bool>> GetSignatureTypeMap(const 
   // {T0: (target_type_id=Int32, has_tensor=true), T1: (target_type_id=Float32, has_tensor=false), ...}
   std::map<SignatureEnumDType, std::pair<TypeId, bool>> sig_type_map;
   std::map<SignatureEnumDType, TypeId> ref_type_map;
-  size_t args_size = args_type_id.size();
-  if (dtypes.size() != args_size || args_is_tensor.size() != args_size) {
-    MS_LOG(INFO) << "Check input args failed. dtypes is " << dtypes << " args_type_id " << args_type_id
-                 << " args_is_tensor " << args_is_tensor;
+  size_t args_size = dtypes.size();
+  if (args_type_id.size() != args_is_tensor.size() || args_is_tensor.size() < args_size) {
+    MS_LOG(EXCEPTION) << "Check input args failed. dtypes is " << dtypes << " args_type_id " << args_type_id
+                      << " args_is_tensor " << args_is_tensor;
   }
   for (size_t i = 0; i < args_size; ++i) {
     bool is_parameter = write_indices.find(i) != write_indices.end();
