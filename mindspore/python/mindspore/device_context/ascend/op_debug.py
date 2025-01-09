@@ -15,7 +15,6 @@
 
 """Op debug interfaces."""
 from mindspore._checkparam import args_type_check
-from mindspore.device_manager import _check_runtime_conf_env_valid
 
 try:
     from mindspore._c_expression import AscendOpDebugConf
@@ -43,7 +42,6 @@ def execute_timeout(op_timeout):
     if op_timeout == AscendOpDebugConf.get_instance().execute_timeout():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpDebugConf.get_instance().is_execute_timeout_configured():
         raise RuntimeError("The 'execute_timeout' can not be set repeatedly.")
     if op_timeout < 0:
@@ -70,7 +68,6 @@ def debug_option(option_value):
     if op_timeout == AscendOpDebugConf.get_instance().debug_option():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpDebugConf.get_instance().is_debug_option_configured():
         raise RuntimeError("The 'debug_option' can not be set repeatedly.")
     valid_order = {"oom"}

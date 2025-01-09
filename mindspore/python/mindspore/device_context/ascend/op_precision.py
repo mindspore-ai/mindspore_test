@@ -16,7 +16,6 @@
 """Op precision interfaces."""
 import os
 from mindspore._checkparam import args_type_check
-from mindspore.device_manager import _check_runtime_conf_env_valid
 
 try:
     from mindspore._c_expression import AscendOpPrecisionConf
@@ -66,7 +65,6 @@ def precision_mode(mode):
     if mode == AscendOpPrecisionConf.get_instance().precision_mode():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpPrecisionConf.get_instance().is_precision_mode_configured():
         raise RuntimeError("The 'precision_mode' can not be set repeatedly.")
     supported_modes = [
@@ -103,7 +101,6 @@ def op_precision_mode(path):
     if path == AscendOpPrecisionConf.get_instance().op_precision_mode():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpPrecisionConf.get_instance().is_op_precision_mode_configured():
         raise RuntimeError("The 'op_precision_mode' can not be set repeatedly.")
     op_precision_path = path
@@ -141,7 +138,6 @@ def matmul_allow_hf32(value):
     if is_enable == AscendOpPrecisionConf.get_instance().matmul_allow_hf32():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpPrecisionConf.get_instance().is_matmul_allow_hf32_configured():
         raise RuntimeError("The 'matmul_allow_hf32' can not be set repeatedly.")
     AscendOpPrecisionConf.get_instance().set_matmul_allow_hf32(is_enable)
@@ -172,7 +168,6 @@ def conv_allow_hf32(value):
     if is_enable == AscendOpPrecisionConf.get_instance().conv_allow_hf32():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpPrecisionConf.get_instance().is_conv_allow_hf32_configured():
         raise RuntimeError("The 'conv_allow_hf32' can not be set repeatedly.")
     AscendOpPrecisionConf.get_instance().set_conv_allow_hf32(is_enable)

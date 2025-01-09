@@ -14,9 +14,6 @@
 # ============================================================================
 
 """Op tuning interfaces."""
-from mindspore.device_manager import _check_runtime_conf_env_valid
-
-
 try:
     from mindspore._c_expression import AscendOpTuningConf
 except ImportError:
@@ -43,7 +40,6 @@ def op_compile(value):
     if value == AscendOpTuningConf.get_instance().jit_compile():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpTuningConf.get_instance().is_jit_compile_configured():
         raise RuntimeError("The 'op_compile' can not be set repeatedly.")
     supported_modes = [True, False]
@@ -73,7 +69,6 @@ def aoe_tune_mode(tune_mode):
     if tune_mode == AscendOpTuningConf.get_instance().aoe_tune_mode():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpTuningConf.get_instance().is_aoe_tune_mode_configured():
         raise RuntimeError("The 'aoe_tune_mode' can not be set repeatedly.")
     candidate = ["online", "offline"]
@@ -106,7 +101,6 @@ def aoe_job_type(config):
     if config == AscendOpTuningConf.get_instance().aoe_job_type():
         return
     # Check the configuration environment whether valid
-    _check_runtime_conf_env_valid()
     if AscendOpTuningConf.get_instance().is_aoe_job_type_configured():
         raise RuntimeError("The 'aoe_job_type' can not be set repeatedly.")
     aoe_cfgs = ["1", "2"]
