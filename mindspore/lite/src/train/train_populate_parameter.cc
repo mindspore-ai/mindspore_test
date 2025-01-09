@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "src/train/train_populate_parameter.h"
+#include "securec/include/securec.h"
 #include "src/common/ops/populate/populate_register.h"
 #include "src/common/ops/populate/default_populate.h"
 #include "nnacl/strided_slice_parameter.h"
@@ -47,7 +48,8 @@ OpParameter *PopulateSmoothL1LossParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc SmoothL1LossParameter failed.";
     return nullptr;
   }
-  memset(p, 0, sizeof(SmoothL1LossParameter));
+  auto ret = memset_s(p, sizeof(SmoothL1LossParameter), 0, sizeof(SmoothL1LossParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_SmoothL1Loss();
   MS_ASSERT(value != nullptr);
@@ -62,7 +64,8 @@ OpParameter *PopulateSmoothL1LossGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc SmoothL1LossParameter failed.";
     return nullptr;
   }
-  memset(p, 0, sizeof(SmoothL1LossParameter));
+  auto ret = memset_s(p, sizeof(SmoothL1LossParameter), 0, sizeof(SmoothL1LossParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_SmoothL1LossGrad();
   MS_ASSERT(value != nullptr);
@@ -77,7 +80,8 @@ OpParameter *PopulateApplyMomentumParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc ApplyMomentumParameter failed.";
     return nullptr;
   }
-  memset(p, 0, sizeof(ApplyMomentumParameter));
+  auto ret = memset_s(p, sizeof(ApplyMomentumParameter), 0, sizeof(ApplyMomentumParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_ApplyMomentum();
   MS_ASSERT(value != nullptr);
@@ -101,7 +105,8 @@ OpParameter *PopulateBCEParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc BinaryCrossEntropy Parameter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(BinaryCrossEntropyParameter));
+  auto ret = memset_s(param, sizeof(BinaryCrossEntropyParameter), 0, sizeof(BinaryCrossEntropyParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
 
   param->op_parameter_.type_ = primitive->value_type();
   param->reduction = value->reduction();
@@ -122,7 +127,8 @@ OpParameter *PopulateBCEGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc BinaryCrossEntropyGrad Parameter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(BinaryCrossEntropyGradParameter));
+  auto ret = memset_s(param, sizeof(BinaryCrossEntropyGradParameter), 0, sizeof(BinaryCrossEntropyGradParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
 
   param->op_parameter_.type_ = primitive->value_type();
   param->reduction = value->reduction();
@@ -135,7 +141,8 @@ OpParameter *PopulateAdamParameter(const void *prim) {
     MS_LOG(ERROR) << "new AdamParameter failed.";
     return nullptr;
   }
-  memset(p, 0, sizeof(AdamParameter));
+  auto ret = memset_s(p, sizeof(AdamParameter), 0, sizeof(AdamParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_Adam();
   MS_ASSERT(value != nullptr);
@@ -150,7 +157,8 @@ OpParameter *PopulateSgdParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc SgdParameter failed.";
     return nullptr;
   }
-  memset(p, 0, sizeof(SgdParameter));
+  auto ret = memset_s(p, sizeof(SgdParameter), 0, sizeof(SgdParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_SGD();
   MS_ASSERT(value != nullptr);
@@ -169,7 +177,8 @@ OpParameter *PopulateSparseSoftmaxCrossEntropyWithLogitsParameter(const void *pr
     MS_LOG(ERROR) << "malloc SoftmaxCrossEntropyParameter failed.";
     return nullptr;
   }
-  memset(sce_param, 0, sizeof(SoftmaxCrossEntropyParameter));
+  auto ret = memset_s(sce_param, sizeof(SoftmaxCrossEntropyParameter), 0, sizeof(SoftmaxCrossEntropyParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_SparseSoftmaxCrossEntropyWithLogits();
   MS_ASSERT(value != nullptr);
@@ -185,7 +194,8 @@ OpParameter *PopulateSoftmaxCrossEntropyParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc SoftmaxCrossEntropyParameter failed.";
     return nullptr;
   }
-  memset(sce_param, 0, sizeof(SoftmaxCrossEntropyParameter));
+  auto ret = memset_s(sce_param, sizeof(SoftmaxCrossEntropyParameter), 0, sizeof(SoftmaxCrossEntropyParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   sce_param->op_parameter_.type_ = primitive->value_type();
   sce_param->is_grad_ = false;
@@ -198,7 +208,8 @@ OpParameter *PopulateMaxPoolGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc PoolingParameter failed.";
     return nullptr;
   }
-  memset(pooling_param, 0, sizeof(PoolingParameter));
+  auto ret = memset_s(pooling_param, sizeof(PoolingParameter), 0, sizeof(PoolingParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_MaxPoolGrad();
   MS_ASSERT(value != nullptr);
@@ -237,7 +248,8 @@ OpParameter *PopulateAvgPoolGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc PoolingParameter failed.";
     return nullptr;
   }
-  memset(pooling_param, 0, sizeof(PoolingParameter));
+  auto ret = memset_s(pooling_param, sizeof(PoolingParameter), 0, sizeof(PoolingParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_AvgPoolGrad();
   MS_ASSERT(value != nullptr);
@@ -276,7 +288,8 @@ OpParameter *PopulateActivationGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc ActivationParameter failed.";
     return nullptr;
   }
-  memset(act_param, 0, sizeof(ActivationParameter));
+  auto ret = memset_s(act_param, sizeof(ActivationParameter), 0, sizeof(ActivationParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_ActivationGrad();
   MS_ASSERT(value != nullptr);
@@ -292,7 +305,8 @@ OpParameter *PopulateConvolutionGradFilterParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc Param for conv grad filter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(ConvParameter));
+  auto ret = memset_s(param, sizeof(ConvParameter), 0, sizeof(ConvParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_Conv2DBackpropFilterFusion();
   MS_ASSERT(value != nullptr);
@@ -341,7 +355,8 @@ OpParameter *PopulateConvolutionGradInputParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc Param for conv grad filter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(ConvParameter));
+  auto ret = memset_s(param, sizeof(ConvParameter), 0, sizeof(ConvParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_Conv2DBackpropInputFusion();
   MS_ASSERT(value != nullptr);
@@ -390,7 +405,8 @@ OpParameter *PopulatePowerGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc PowParameter failed.";
     return nullptr;
   }
-  memset(power_param, 0, sizeof(PowParameter));
+  auto ret = memset_s(power_param, sizeof(PowParameter), 0, sizeof(PowParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_PowerGrad();
   MS_ASSERT(value != nullptr);
@@ -407,26 +423,28 @@ OpParameter *PopulateBiasGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc ArithmeticParameter failed.";
     return nullptr;
   }
-  memset(arithmetic_param, 0, sizeof(ArithmeticParameter));
+  auto ret = memset_s(arithmetic_param, sizeof(ArithmeticParameter), 0, sizeof(ArithmeticParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   arithmetic_param->op_parameter_.type_ = primitive->value_type();
   return reinterpret_cast<OpParameter *>(arithmetic_param);
 }
 
 OpParameter *PopulateBNGradParameter(const void *prim) {
-  BNGradParameter *bnGrad_param = reinterpret_cast<BNGradParameter *>(malloc(sizeof(BNGradParameter)));
-  if (bnGrad_param == nullptr) {
+  BNGradParameter *bngrad_param = reinterpret_cast<BNGradParameter *>(malloc(sizeof(BNGradParameter)));
+  if (bngrad_param == nullptr) {
     MS_LOG(ERROR) << "malloc BNGradParameter failed.";
     return nullptr;
   }
-  memset(bnGrad_param, 0, sizeof(BNGradParameter));
+  auto ret = memset_s(bngrad_param, sizeof(BNGradParameter), 0, sizeof(BNGradParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_BatchNormGrad();
   MS_ASSERT(value != nullptr);
-  bnGrad_param->op_parameter_.type_ = primitive->value_type();
-  bnGrad_param->epsilon_ = value->epsilon();
-  bnGrad_param->is_training_ = value->is_training();
-  return reinterpret_cast<OpParameter *>(bnGrad_param);
+  bngrad_param->op_parameter_.type_ = primitive->value_type();
+  bngrad_param->epsilon_ = value->epsilon();
+  bngrad_param->is_training_ = value->is_training();
+  return reinterpret_cast<OpParameter *>(bngrad_param);
 }
 
 OpParameter *PopulateDropoutParameter(const void *prim) {
@@ -435,7 +453,8 @@ OpParameter *PopulateDropoutParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc Dropout Parameter failed.";
     return nullptr;
   }
-  memset(dropout_parameter, 0, sizeof(DropoutParameter));
+  auto ret = memset_s(dropout_parameter, sizeof(DropoutParameter), 0, sizeof(DropoutParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_Dropout();
   MS_ASSERT(value != nullptr);
@@ -455,7 +474,8 @@ OpParameter *PopulateDropoutGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc Dropout Grad Parameter failed.";
     return nullptr;
   }
-  memset(dropoutgrad_parameter, 0, sizeof(DropoutParameter));
+  auto ret = memset_s(dropoutgrad_parameter, sizeof(DropoutParameter), 0, sizeof(DropoutParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_DropoutGrad();
   MS_ASSERT(value != nullptr);
@@ -475,7 +495,8 @@ OpParameter *PopulateArithmeticGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc ArithmeticParameter failed.";
     return nullptr;
   }
-  memset(arithmetic_param, 0, sizeof(ArithmeticParameter));
+  auto ret = memset_s(arithmetic_param, sizeof(ArithmeticParameter), 0, sizeof(ArithmeticParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   arithmetic_param->op_parameter_.type_ = primitive->value_type();
   return reinterpret_cast<OpParameter *>(arithmetic_param);
@@ -487,7 +508,8 @@ OpParameter *PopulateResizeGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc resize grad parameter failed.";
     return nullptr;
   }
-  memset(resize_grad_param, 0, sizeof(ResizeGradParameter));
+  auto ret = memset_s(resize_grad_param, sizeof(ResizeGradParameter), 0, sizeof(ResizeGradParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   resize_grad_param->op_parameter_.type_ = primitive->value_type();
   auto param = primitive->value_as_ResizeGrad();
@@ -505,7 +527,8 @@ OpParameter *PopulateStridedSliceGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc StridedSliceParameter failed.";
     return nullptr;
   }
-  memset(strided_slice_param, 0, sizeof(StridedSliceParameter));
+  auto ret = memset_s(strided_slice_param, sizeof(StridedSliceParameter), 0, sizeof(StridedSliceParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
 
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_StridedSliceGrad();
@@ -534,7 +557,8 @@ OpParameter *PopulateLstmGradParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc LstmGradParameter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(LstmGradParameter));
+  auto ret = memset_s(param, sizeof(LstmGradParameter), 0, sizeof(LstmGradParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
 
   param->op_parameter_.type_ = primitive->value_type();
   param->bidirectional_ = value->bidirectional();
@@ -561,7 +585,8 @@ OpParameter *PopulateLstmGradDataParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc LstmGradParameter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(LstmGradParameter));
+  auto ret = memset_s(param, sizeof(LstmGradParameter), 0, sizeof(LstmGradParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
 
   param->op_parameter_.type_ = primitive->value_type();
   param->bidirectional_ = value->bidirectional();
@@ -587,7 +612,8 @@ OpParameter *PopulateLstmGradWeightParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc LstmGradParameter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(LstmGradParameter));
+  auto ret = memset_s(param, sizeof(LstmGradParameter), 0, sizeof(LstmGradParameter));
+  MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
 
   param->op_parameter_.type_ = primitive->value_type();
   param->input_size_ = value->input_size();

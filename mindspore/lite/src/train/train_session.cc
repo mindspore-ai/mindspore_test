@@ -25,6 +25,7 @@
 #include <queue>
 #include <map>
 #include <set>
+#include "securec/include/securec.h"
 #include "include/errorcode.h"
 #include "src/litert/lite_model.h"
 #include "src/litert/kernel_exec_util.h"
@@ -1378,7 +1379,8 @@ int TrainSession::UpdateFeatureMaps(const std::vector<lite::Tensor *> &features_
         return RET_ERROR;
       }
       find = true;
-      memcpy(tensor->data(), feature->data(), tensor->Size());
+      auto ret = memcpy_s(tensor->data(), tensor->Size(), feature->data(), feature->Size());
+      MS_CHECK_TRUE_MSG(ret == EOK, RET_ERROR, "memcpy_s failed");
     }
     if (!find) {
       MS_LOG(ERROR) << "cannot find feature:" << feature->tensor_name() << ",update failed";
