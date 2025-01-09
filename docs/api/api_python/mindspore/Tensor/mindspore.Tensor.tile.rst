@@ -25,4 +25,4 @@ mindspore.Tensor.tile
     .. py:method:: mindspore.Tensor.tile(reps)
         :noindex:
 
-    详情请参考 :func:`mindspore.ops.tile`，当前接口的参数`reps`和详情参考接口中的参数`dims`实际为同一参数。
+    详情请参考 :func:`mindspore.ops.tile`，当前接口的参数 `reps` 和详情参考接口中的参数 `dims` 实际为同一参数。
