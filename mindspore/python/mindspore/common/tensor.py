@@ -3312,6 +3312,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def xlogy(self, y):
         r"""
         For details, please refer to :func:`mindspore.ops.xlogy`.
+        The parameter `y` of the current interface is the same as the parameter `other` of the reference interface.
         """
         return tensor_operator_registry.get("xlogy")(self, y)
 
@@ -3734,7 +3735,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def multiply(self, value):
         r"""
-        For details, please refer to :func:`mindspore.ops.multiply`.
+        For details, please refer to :func:`mindspore.ops.mul`.
+        The parameter `value` of the current interface is the same as the parameter `other` of the reference interface.
         """
         return tensor_operator_registry.get('multiply')(self, value)
 
