@@ -30,7 +30,7 @@ void AcmeKernelInfo::UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo,
   arginfo->SetDtype(TransInternalDataType(tensor->data_type()));
   auto device_sync = tensor->device_address();
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
-  arginfo->SetFormat(TransAcmeFormat(device_address->GetFormat()));
+  arginfo->SetFormat(TransInternalFormat(device_address->GetFormat()));
 }
 
 void AcmeKernelInfo::UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> &arginfos,

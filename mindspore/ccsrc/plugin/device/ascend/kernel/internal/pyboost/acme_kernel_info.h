@@ -77,8 +77,8 @@ class AcmeKernelInfo {
   void UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor);
   void UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> &arginfos,
                               const std::vector<BaseTensorPtr> &tensorlist);
-  void TransAcmeShapes(acme::ShapeInfoList &shapelist, const std::vector<BaseTensorPtr> &tensorlist);
-  void UpdateAddr(std::vector<acme::RawDeviceAddr> &addrlist,
+  void TransAcmeShapes(internal::ShapeInfoList &shapelist, const std::vector<BaseTensorPtr> &tensorlist);
+  void UpdateAddr(std::vector<internal::RawDeviceAddr> &addrlist,
                   const std::vector<BaseTensorPtr> &tensorlist);
   void MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id);
   void FreeWorkspace(const device::DeviceContext *device_context);
