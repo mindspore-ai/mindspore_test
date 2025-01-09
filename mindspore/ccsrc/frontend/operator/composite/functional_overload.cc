@@ -180,24 +180,24 @@ void GetOpDtypeList(const std::string &prim_name, const abstract::AbstractBasePt
   }
 }
 
-size_t GetVarargsIndex(const std::string &prim_name, bool is_method) {
+std::pair<size_t, bool> GetVarargsIndex(const std::string &prim_name, bool is_method) {
   if (is_method) {
     const auto &iter = ops::tensor_method_varargs_map.find(prim_name);
     if (iter != ops::tensor_method_varargs_map.end()) {
-      return iter->second;
+      return std::pair<size_t, bool>(iter->second, true);
     }
-    return SIZE_MAX;
+    return std::pair<size_t, bool>(0, false);
   } else {
     const auto &iter = ops::function_varargs_map.find(prim_name);
     if (iter != ops::function_varargs_map.end()) {
-      return iter->second;
+      return std::pair<size_t, bool>(iter->second, true);
     }
-    return SIZE_MAX;
+    return std::pair<size_t, bool>(0, false);
   }
 }
 
 bool CheckKwargs(const std::string &prim_name, const std::map<std::string, ops::OP_DTYPE> &keyword_args_dtype,
-                 const std::vector<ops::OP_DTYPE> &position_args_dtype) {
+                 const std::vector<ops::OP_DTYPE> &position_args_dtype, bool has_varargs) {
   const auto &op_def = ops::GetOpDef(prim_name);
   for (const auto &[key, value] : keyword_args_dtype) {
     auto op_indexes = op_def->indexes_;
@@ -209,7 +209,7 @@ bool CheckKwargs(const std::string &prim_name, const std::map<std::string, ops::
     }
     // Check key index.
     auto index_key = iter->second;
-    if (index_key < position_args_dtype.size()) {
+    if (index_key < position_args_dtype.size() && !has_varargs) {
       MS_LOG(DEBUG) << "Mismatch: Primitive[" << prim_name << "] got multiple values for argument '" << key << "'.";
       return false;
     }
@@ -223,12 +223,12 @@ bool CheckKwargs(const std::string &prim_name, const std::map<std::string, ops::
 }
 
 size_t GetPrimDefaultSize(const std::vector<ops::OpInputArg> &op_args, const std::string &prim_name,
-                          size_t varargs_index) {
+                          size_t varargs_index, bool has_varargs) {
   auto default_dict = parse::GetPrimDefaultDict(prim_name);
   bool has_default = !py::isinstance<py::none>(default_dict);
   // The default value of vararg is ().
-  bool vararg_non_default = varargs_index != SIZE_MAX &&
-                            ((has_default && !default_dict.contains(op_args[varargs_index].arg_name_)) || !has_default);
+  bool vararg_non_default =
+    has_varargs && ((has_default && !default_dict.contains(op_args[varargs_index].arg_name_)) || !has_default);
   size_t varargs_count = vararg_non_default ? 1 : 0;
   if (!has_default) {
     return varargs_count;
@@ -239,12 +239,14 @@ size_t GetPrimDefaultSize(const std::vector<ops::OpInputArg> &op_args, const std
 bool CheckPositionArgs(const std::string &prim_name, const std::vector<ops::OP_DTYPE> &position_args_dtype,
                        bool is_method, bool *need_pack) {
   size_t check_position_size = position_args_dtype.size();
-  size_t var_args_index = GetVarargsIndex(prim_name, is_method);
-  if (var_args_index != SIZE_MAX) {
+  auto has_varargs_index_pair = GetVarargsIndex(prim_name, is_method);
+  size_t varargs_index = has_varargs_index_pair.first;
+  bool has_varargs = has_varargs_index_pair.second;
+  if (has_varargs) {
     bool all_int = false;
-    if (position_args_dtype.size() > var_args_index) {
-      check_position_size = var_args_index;
-      all_int = std::all_of(position_args_dtype.begin() + var_args_index,
+    if (position_args_dtype.size() > varargs_index) {
+      check_position_size = varargs_index;
+      all_int = std::all_of(position_args_dtype.begin() + varargs_index,
                             position_args_dtype.begin() + position_args_dtype.size(),
                             [](const auto &op_dtype) { return op_dtype == ops::DT_INT; });
     }
@@ -286,18 +288,20 @@ bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &p
                 << keyword_args_dtype.size() << ".";
   // If no varargs , check args size
   auto inputs_size = position_args_dtype.size() + keyword_args_dtype.size();
-  size_t varargs_index = GetVarargsIndex(prim_name, is_method);
-  if (varargs_index == SIZE_MAX && inputs_size > op_args.size()) {
+  auto has_varargs_index_pair = GetVarargsIndex(prim_name, is_method);
+  size_t varargs_index = has_varargs_index_pair.first;
+  bool has_varargs = has_varargs_index_pair.second;
+  if (!has_varargs && inputs_size > op_args.size()) {
     return false;
   }
-  if (!CheckKwargs(prim_name, keyword_args_dtype, position_args_dtype)) {
+  if (!CheckKwargs(prim_name, keyword_args_dtype, position_args_dtype, has_varargs)) {
     return false;
   }
   if (!CheckPositionArgs(prim_name, position_args_dtype, is_method, need_pack)) {
     return false;
   }
   // Check the number of arguments.
-  auto least_size = op_args.size() - GetPrimDefaultSize(op_args, prim_name, varargs_index);
+  auto least_size = op_args.size() - GetPrimDefaultSize(op_args, prim_name, varargs_index, has_varargs);
   if (inputs_size < least_size) {
     return false;
   }
@@ -526,7 +530,7 @@ AnfNodePtrList GeneratePrimitivePackArgs(const std::pair<std::string, bool> &par
                                          const FuncGraphPtr &graph) {
   const std::string &prim_name = params.first;
   bool is_method = params.second;
-  size_t var_args_index = GetVarargsIndex(prim_name, is_method);
+  size_t var_args_index = GetVarargsIndex(prim_name, is_method).first;
   size_t args_size = args_list.size();
   std::map<std::string, AnfNodePtr> key_map;
   for (size_t idx = 0; idx < args_list.size(); ++idx) {
