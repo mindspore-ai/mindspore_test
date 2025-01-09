@@ -278,7 +278,6 @@ void GeDeviceContext::Destroy() {
     MS_LOG(INFO) << "The device context is not initialized by current process, it doesn't need to be destroyed.";
     return;
   }
-  silentcheck::ascend::SilentChecker::GetInstance().ClearCheckHooks();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto op_tuning_conf = OpTuningConf::GetInstance();
@@ -294,6 +293,7 @@ void GeDeviceContext::Destroy() {
   if (device_res_manager_ == nullptr) {
     return;
   }
+  silentcheck::ascend::SilentChecker::GetInstance().ClearCheckHooks();
   // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
   // for ge, has destropy in graph_executor->finalize
   device_res_manager_->Destroy();
