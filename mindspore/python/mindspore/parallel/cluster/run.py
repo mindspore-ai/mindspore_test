@@ -106,8 +106,10 @@ def get_args():
         "--worker_log_name",
         default="",
         type=str,
-        help="specifies the worker log file name and support configuring IP and hostname, the default name "
-             "will be worker_[rankid]."
+        help="Specifies the worker log file name as a string for current node; the default is worker_[rankid]. "
+             "Support configuring the current IP address and host name by using {ip} and {hostname} respectively. "
+             "e.g. --worker_log_name=worker_{ip}_{hostname}_test, worker [rankid] log name for current node "
+             "will be worker_[real IP address]_[real host name]_test_[rankid]."
     )
     parser.add_argument(
         "--tail_worker_log",
