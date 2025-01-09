@@ -16,7 +16,6 @@
 """Implementation for internal polymorphism `pow` operations."""
 
 from __future__ import absolute_import
-from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite import base
 from mindspore.ops import functional as F
 
@@ -50,34 +49,6 @@ def _tensor_pow_scalar(x, y):
 @pow_.register("Number", "Tensor")
 def _scalar_pow_tensor(x, y):
     """Returns x ** y where x is a scalar and y is a tensor. x and y should have same dtype."""
-    return F.tensor_pow(x, y)
-
-
-@pow_.register("Tuple", "Tensor")
-def _tuple_pow_tensor(x, y):
-    """Returns x ** y where x is a tuple and y is a tensor. """
-    x = utils.sequence_to_tensor(x, y.dtype)
-    return F.tensor_pow(x, y)
-
-
-@pow_.register("Tensor", "Tuple")
-def _tensor_pow_tuple(x, y):
-    """Returns x ** y where x is a tensor and y is a tuple. """
-    y = utils.sequence_to_tensor(y, x.dtype)
-    return F.tensor_pow(x, y)
-
-
-@pow_.register("List", "Tensor")
-def _list_pow_tensor(x, y):
-    """Returns x ** y where x is a list and y is a tensor. """
-    x = utils.sequence_to_tensor(x, y.dtype)
-    return F.tensor_pow(x, y)
-
-
-@pow_.register("Tensor", "List")
-def _tensor_pow_list(x, y):
-    """Returns x ** y where x is a tensor and y is a list. """
-    y = utils.sequence_to_tensor(y, x.dtype)
     return F.tensor_pow(x, y)
 
 
