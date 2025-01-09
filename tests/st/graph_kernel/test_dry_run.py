@@ -15,6 +15,7 @@
 
 import os
 import numpy as np
+import mindspore
 import mindspore.ops as ops
 import mindspore.context as context
 from mindspore import Tensor
@@ -30,6 +31,36 @@ class Net(Cell):
         return x0
 
 
+def run_kernel_with_workspace():
+    np.random.seed(1)
+    x0 = np.random.normal(0, 1, (1,)).astype(np.float32)
+    x1 = np.random.normal(0, 1, (1,)).astype(np.float32)
+    x0_ms = Tensor(x0)
+    x1_ms = Tensor(x1)
+    with AssertGKEnable(True):
+        net = Net()
+        _ = net(x0_ms, x1_ms)
+
+
+class MatMulNet(Cell):
+    def construct(self, x0, x1, x2):
+        y0 = ops.MatMul(transpose_a=False, transpose_b=True)(x0, x1)
+        y1 = ops.Cast()(y0, mindspore.float32)
+        y2 = ops.Cast()(x2, mindspore.float32)
+        y3 = ops.Add()(y1, y2)
+        return y3
+
+
+def run_matmul():
+    context.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")
+    x0 = Tensor(np.random.normal(0, 1, (256, 256)).astype(np.float32), dtype=mindspore.bfloat16)
+    x1 = Tensor(np.random.normal(0, 1, (256, 256)).astype(np.float32), dtype=mindspore.bfloat16)
+    x2 = Tensor(np.random.normal(0, 1, (256, 256)).astype(np.float32), dtype=mindspore.bfloat16)
+    with AssertGKEnable(True):
+        net = MatMulNet()
+        _ = net(x0, x1, x2)
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dry_run_level1():
     """
@@ -43,13 +74,8 @@ def test_dry_run_level1():
     context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O1"})
     np.random.seed(1)
-    x0 = np.random.normal(0, 1, (1,)).astype(np.float32)
-    x1 = np.random.normal(0, 1, (1,)).astype(np.float32)
-    x0_ms = Tensor(x0)
-    x1_ms = Tensor(x1)
-    with AssertGKEnable(True):
-        net = Net()
-        _ = net(x0_ms, x1_ms)
+    run_kernel_with_workspace()
+    run_matmul()
     os.environ.pop("MS_SIMULATION_LEVEL")
     os.environ.pop("RANK_SIZE")
     os.environ.pop("RANK_ID")
