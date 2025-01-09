@@ -7,8 +7,8 @@ split:
     Args:
         split_size (Union[int, tuple(int), list(int)]):
             If `split_size` is an int type, `tensor` will be split into equally sized chunks, each chunk with 
-            size `split_size`. Last chunk will be smaller than `split_size`.
-            if `tensor.shape[dim]` is not divisible by `split_size`.
+            size `split_size`. Last chunk will be smaller than `split_size` if `tensor.shape[dim]` is not divisible
+            by `split_size`.
             If `split_size` is a list type, then `tensor` will be split into len(split_size)
             chunks with sizes `split_size` along the given `dim`.
         dim (int, optional): The dim along which to split. Default: ``0`` .
