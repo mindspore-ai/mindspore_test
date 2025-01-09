@@ -29,14 +29,19 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-
+void CommonCommRunTask(const std::function<void(void)> &run_func) {
+  if (runtime::OpExecutor::NeedSync()) {
+    run_func();
+  } else {
+    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
+      std::make_shared<runtime::PassthroughNoWaitDeviceTask>(run_func));
+  }
+}
 void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                           const StringImmPtr &group, const std::function<void(const HcclComm &, void *)> &launch_func,
                           const std::function<void(const DeviceEventPtr &, size_t)> &post_func) {
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << "Run device task " << op_name << " end";
-
-  runtime::Pipeline::Get().launch_stage()->Wait();
 
   const auto &group_str = GetValue<std::string>(group);
   // Before calling each hccl operator, we need to wait for communicator to be initialized.
@@ -68,7 +73,8 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
     comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(group_str);
   }
 
-  [device_context, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id, op_name, launch_func]() {
+  auto func = [device_context, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id, op_name,
+               launch_func]() {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
                                        op_name, false);
 
@@ -88,8 +94,8 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
       }
     }
     comm_handle->RecordEvent(comm_stream_id);
-  }();
-
+  };
+  runtime::OpExecutor::DispatchLaunchTask(func);
   if (post_func) {
     post_func(comm_handle->event(), comm_stream_id);
   } else if (input_tensor != nullptr) {
