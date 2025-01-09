@@ -1074,5 +1074,24 @@ ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector) {
                  [](int64_t x) { return MakeValue(x); });
   return std::make_shared<ValueTuple>(std::move(shape_out_vector));
 }
+
+int64_t GetCacheCapaticy() {
+  static bool has_init = false;
+  static int64_t cache_capaticy = 0;
+  if (has_init) {
+    return cache_capaticy;
+  }
+  std::string capaticy_type = common::GetRuntimeConfigValue(common::kRuntimeAclnnCache);
+  std::string capaticy_from_user = common::GetRuntimeConfigValue(common::kRuntimeAclnnCacheQueueLength);
+  if (capaticy_type == "global") {
+    cache_capaticy = 0;
+  } else if (!capaticy_from_user.empty()) {
+    cache_capaticy = std::stoull(capaticy_from_user);
+  } else {
+    cache_capaticy = -1;
+  }
+  has_init = true;
+  return cache_capaticy;
+}
 }  // namespace ops
 }  // namespace mindspore

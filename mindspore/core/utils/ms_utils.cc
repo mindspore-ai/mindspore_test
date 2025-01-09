@@ -164,9 +164,5 @@ bool IsEnableAclnnViewOp(const std::string &op) {
   return false;
 }
 
-std::string GetCacheCapaticy() {
-  static std::string capaticy_from_user = GetRuntimeConfigValue(kRuntimeAclnnCacheQueueLength);
-  return capaticy_from_user;
-}
 }  // namespace common
 }  // namespace mindspore
