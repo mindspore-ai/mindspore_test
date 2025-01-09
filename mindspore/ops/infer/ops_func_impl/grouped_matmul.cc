@@ -24,6 +24,7 @@
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -78,7 +79,36 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
   } else {
     x_shape = input_infos[idxes_.x]->GetShape();
   }
-  auto group_list_opt = input_infos[idxes_.group_list]->GetArrayValue<int64_t>();
+
+  const auto &group_list_info = input_infos[idxes_.group_list];
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  bool enable_infer_boost_310p =
+    ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
+  if (enable_infer_boost_310p) {
+    auto transpose_a = GetTransposeValue(input_infos, idxes_.transpose_a);
+    auto transpose_b = GetTransposeValue(input_infos, idxes_.transpose_b);
+    if (MS_UNLIKELY(transpose_a || !transpose_b)) {
+      MS_EXCEPTION(ValueError) << "For internal_op'" << primitive->name()
+                               << "', transpose_a should be False, transpose_b should be True, but got " << transpose_a
+                               << " and " << transpose_b;
+    }
+
+    if (MS_UNLIKELY(group_type != 0)) {
+      MS_EXCEPTION(ValueError) << "For internal_op'" << primitive->name() << "', group_type should be 0, but got "
+                               << group_type;
+    }
+
+    if (MS_UNLIKELY(group_list_info->IsNone() ||
+                    (!group_list_info->IsSequence() && group_list_info->GetType() != kNumberTypeInt32))) {
+      MS_EXCEPTION(ValueError) << "For internal_op'" << primitive->name()
+                               << "', when group_list should be 1-D Tensor or List with int32 elements, but got "
+                               << group_list_info->DebugInfo();
+    }
+  }
+
+  auto group_list_opt = group_list_info->GetArrayValue<int64_t>();
   if (MS_UNLIKELY(IsDynamic(x_shape) || !group_list_opt.has_value() || group_list_opt.value().HasUnknownValue())) {
     return OP_CHECK_RETRY;
   }
@@ -101,6 +131,10 @@ int32_t GroupedMatmulFuncImpl::PrivateCheckValidation(const PrimitivePtr &primit
                                                              expect_sum, primitive));
 
   return OP_CHECK_SUCCESS;
+}
+
+bool GroupedMatmulFuncImpl::GetTransposeValue(const InferInfoPtrList &input_infos, size_t transpose_index) const {
+  return static_cast<bool>(input_infos[transpose_index]->GetScalarValue<bool>().value());
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -26,6 +26,7 @@
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -64,8 +65,8 @@ std::pair<ShapeArray, ShapeArray> GroupedMatmulBaseFuncImpl::FetchInputAndWeight
 
 void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const PrimitivePtr &primitive,
                                                                         const ShapeVector &x_shape,
-                                                                        const ShapeVector &w_shape,
-                                                                        int64_t group_type) const {
+                                                                        const ShapeVector &w_shape, int64_t group_type,
+                                                                        bool transpose_b) const {
   if (MS_UNLIKELY(IsDynamicRank(x_shape) || IsDynamicRank(w_shape))) {
     return;
   }
@@ -88,7 +89,12 @@ void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const Pr
                              << "D Tensor. But got w[0]'s shape :" << w_shape;
   }
   auto x_k = x_shape.back();
-  auto w_k = w_shape[w_shape.size() - 2];
+  ShapeValueDType w_k = 0;
+  if (transpose_b) {
+    w_k = w_shape[w_shape.size() - 1];
+  } else {
+    w_k = w_shape[w_shape.size() - 2];
+  }
   if (MS_UNLIKELY(x_k != abstract::Shape::kShapeDimAny && w_k != abstract::Shape::kShapeDimAny && x_k != w_k)) {
     MS_EXCEPTION(ValueError) << "For '" << op_name
                              << "', x[0] shape should be (m, k), w[0] shape show be(e, k, n) or (k, n)."
@@ -98,7 +104,8 @@ void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const Pr
 
 ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitivePtr &primitive,
                                                                 const ShapeArray &x_shapes, const ShapeArray &w_shapes,
-                                                                int64_t group_list_size, int64_t group_type) const {
+                                                                int64_t group_list_size, int64_t group_type,
+                                                                bool transpose_b) const {
   if (MS_UNLIKELY(x_shapes.size() != kIndex1 || w_shapes.size() != kIndex1)) {
     MS_EXCEPTION(ValueError) << "For '" << primitive->name()
                              << "', when split_item is 3. the size of x and weight should both be 1, but got x's size "
@@ -107,9 +114,12 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitiveP
 
   const auto &x_shape = x_shapes[0];
   const auto &w_shape = w_shapes[0];
-  CheckInputAndWeightShapeForSingleOutput(primitive, x_shape, w_shape, group_type);
+  CheckInputAndWeightShapeForSingleOutput(primitive, x_shape, w_shape, group_type, transpose_b);
   auto m = IsDynamicRank(x_shape) ? abstract::Shape::kShapeDimAny : x_shape[x_shape.size() - 2];
-  auto n = IsDynamicRank(w_shape) ? abstract::Shape::kShapeDimAny : w_shape.back();
+  auto n = abstract::Shape::kShapeDimAny;
+  if (!IsDynamicRank(w_shape)) {
+    n = transpose_b ? w_shape[w_shape.size() - 2] : w_shape.back();
+  }
 
   std::vector<int64_t> res_shape;
   if (group_type == 0) {
@@ -182,11 +192,19 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
     return InferShapeForMultiOutput(primitive, x_shapes, w_shapes);
   }
   auto group_list_size = FetchGroupListSize(primitive, input_infos);
-  return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type);
+
+  auto transpose_b = GetTransposeValue(input_infos, idxes_.transpose_b);
+  return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type, transpose_b);
 }
 
 TypeIdList GroupedMatmulBaseFuncImpl::InferType(const PrimitivePtr &primitive,
                                                 const InferInfoPtrList &input_infos) const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p) {
+    return {kNumberTypeFloat16};
+  }
+
   const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
   TypeIdList output_types;
   std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
@@ -209,8 +227,12 @@ std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
 
   const auto &group_list_info = input_infos[idxes_.group_list];
   if (group_type != kMultiOutGroupType) {
-    if (MS_UNLIKELY(group_list_info->IsNone() ||
-                    (!group_list_info->IsSequence() && group_list_info->GetType() != kNumberTypeInt64))) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    bool enable_infer_boost_310p =
+      ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
+    if (MS_UNLIKELY(group_list_info->IsNone() || (!enable_infer_boost_310p && !group_list_info->IsSequence() &&
+                                                  group_list_info->GetType() != kNumberTypeInt64))) {
       MS_EXCEPTION(ValueError)
         << "For '" << primitive->name()
         << "', when group_type is not -1, group_list should be 1-D Tensor or List with int64 elements, but got "
