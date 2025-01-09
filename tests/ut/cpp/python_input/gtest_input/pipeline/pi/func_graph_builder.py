@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
+# pylint: disable=unused-variable
+import numpy as np
+import mindspore as ms
+from mindspore import Tensor
 from mindspore.ops import Primitive
 from mindspore.ops.operations import _scalar_ops
 
@@ -30,20 +33,8 @@ class FnDict:
         return self.fn_dict.get(name)
 
 
-# pylint: disable=unused-variable
-def test_add_inputs_and_outputs(tag):
-    """
-    Feature: Build graph in pi_jit.
-    Description: Use the func_graph_builder api to add inputs and add outputs.
-    Expectation: The expected graph is constructed.
-    """
-    fns = FnDict()
-
-    @fns
-    def graph(x, y):
-        return y
-
-    return fns[tag]
+def create_int_tensor(shape):
+    return Tensor(np.ones(shape), dtype=ms.int64)
 
 
 def test_add_node(tag):

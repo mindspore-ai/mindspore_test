@@ -15,6 +15,8 @@
  */
 
 #include <string>
+#include "ir/tensor.h"
+#include "pybind_api/ir/tensor_py.h"
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
@@ -25,7 +27,10 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
+using mindspore::tensor::Tensor;
+
 namespace mindspore {
+constexpr auto kFuncGraphBuilderMod = "gtest_input.pipeline.pi.func_graph_builder";
 class TestFuncGraphBuilder : public UT::Common {
  public:
   TestFuncGraphBuilder() : get_py_fun_("gtest_input.pipeline.pi.func_graph_builder", true) {}
@@ -36,6 +41,23 @@ class TestFuncGraphBuilder : public UT::Common {
     return Isomorphic(fg1, fg2, &equiv_graph_, &equiv_node_);
   }
 
+  FuncGraphBuilderPtr CreateFuncGraphBuilder() {
+    return std::make_shared<FuncGraphBuilder>(true);
+  }
+
+  AbstractBasePtr CreateAbstractTensor(TypeId type_id, const ShapeVector &shape) {
+    return std::make_shared<abstract::AbstractTensor>(TypeIdToType(type_id), shape);
+  }
+
+  py::object CreateIntTensorObject(const ShapeVector &shape_vec) {
+    py::tuple shape(shape_vec.size());
+    for (size_t i = 0; i < shape_vec.size(); ++i) {
+      shape[i] = py::int_(shape_vec[i]);
+    }
+    py::module mod = python_adapter::GetPyModule(kFuncGraphBuilderMod);
+    return python_adapter::CallPyModFn(mod, "create_int_tensor", shape);
+  }
+
  public:
   UT::PyFuncGraphFetcher get_py_fun_;
   FuncGraphPairMapEquiv equiv_graph_;
@@ -43,21 +65,18 @@ class TestFuncGraphBuilder : public UT::Common {
 };
 
 // Feature: Build graph in pi_jit.
-// Description: Use the func_graph_builder api to add inputs and add outputs.
-// Expectation: The expected graph is constructed.
-TEST_F(TestFuncGraphBuilder, TestAddInputAddOutput) {
-  FuncGraphBuilder func_graph_builder;
-  py::int_ int_v1 = 1;
-  auto input1 = func_graph_builder.AddTopGraphArgInput(int_v1);
-  ASSERT_NE(input1, nullptr);
-  py::int_ int_v2 = 2;
-  auto input2 = func_graph_builder.AddTopGraphArgInput(int_v2);
-  ASSERT_NE(input2, nullptr);
-  ASSERT_TRUE(func_graph_builder.AddOutput(input2));
-  auto graph = func_graph_builder.graph();
-  ASSERT_NE(graph, nullptr);
-  FuncGraphPtr expected_graph = get_py_fun_.CallAndParseRet("test_add_inputs_and_outputs", "graph");
-  ASSERT_TRUE(CheckEqual(graph, expected_graph));
+// Description: Test function AddTopGraphArgInput.
+// Expectation: The result wrapper is correct.
+TEST_F(TestFuncGraphBuilder, TestAddTopGraphArgInput) {
+  auto builder = CreateFuncGraphBuilder();
+  const py::object &input1 = py::int_(1);
+  const auto &v1_wrapper = builder->AddTopGraphArgInput(input1);
+  const auto &expect_v1_abstract = std::make_shared<abstract::AbstractScalar>(std::make_shared<Int64Imm>(1));
+  ASSERT_TRUE(*(v1_wrapper->abstract()) == *expect_v1_abstract);
+  const auto &input2 = CreateIntTensorObject(ShapeVector{2, 3});
+  const auto &v2_wrapper = builder->AddTopGraphArgInput(input2);
+  const auto &expect_v2_abstract = CreateAbstractTensor(kNumberTypeInt64, ShapeVector{2, 3});
+  ASSERT_TRUE(*(v2_wrapper->abstract()) == *expect_v2_abstract);
 }
 
 // Feature: Build graph in pi_jit.
@@ -159,7 +178,7 @@ TEST_F(TestFuncGraphBuilder, TestAddNodeUnCallable) {
 // Feature: Build graph in pi_jit.
 // Description: Use the func_graph_builder api to add cnode with constant input.
 // Expectation: The expected graph is constructed.
-TEST_F(TestFuncGraphBuilder, DISABLED_TestAddMultiNode) {
+TEST_F(TestFuncGraphBuilder, TestAddMultiNode) {
   FuncGraphBuilder func_graph_builder(true);
   py::int_ int_v1 = 1;
   auto v1_wrapper = func_graph_builder.AddLocalVariable(int_v1);
@@ -169,12 +188,12 @@ TEST_F(TestFuncGraphBuilder, DISABLED_TestAddMultiNode) {
   auto v2_wrapper = func_graph_builder.AddLocalVariable(int_v2);
   auto input2 = func_graph_builder.AddSubGraphInput(v2_wrapper);
   ASSERT_NE(input2, nullptr);
-  auto add_obj = func_graph_builder.AddMultiNode("add", {input1, input2});
-  ASSERT_TRUE(func_graph_builder.AddOutput(add_obj));
-  auto graph = func_graph_builder.graph();
-  ASSERT_NE(graph, nullptr);
-  FuncGraphPtr expected_graph = get_py_fun_.CallAndParseRet("test_add_binary_node", "graph");
-  ASSERT_TRUE(CheckEqual(graph, expected_graph));
+  auto add_wrapper = func_graph_builder.AddMultiNode("add", {input1, input2});
+  ASSERT_NE(add_wrapper, nullptr);
+  auto add_abstract = add_wrapper->abstract();
+  ASSERT_NE(add_abstract, nullptr);
+  auto expected_add_abstract = std::make_shared<abstract::AbstractScalar>(std::make_shared<Int64Imm>(3));
+  ASSERT_EQ(*add_abstract == *expected_add_abstract, true);
 }
 
 // Feature: Build graph in pi_jit.
