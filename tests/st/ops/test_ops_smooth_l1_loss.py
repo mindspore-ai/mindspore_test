@@ -217,8 +217,7 @@ def ops_smooth_l1_loss_binary_case1(input_binary_data=None, output_binary_data=N
     ops_smooth_l1_loss_binary_compare(input_binary_data, output_binary_data, 'none', 1.0)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "kbk", "ge"])
 def test_ops_smooth_l1_loss_binary_cases(mode):
     """

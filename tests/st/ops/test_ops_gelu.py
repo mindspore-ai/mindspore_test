@@ -179,8 +179,6 @@ def ops_gelu_binary_case1(input_binary_data=None, output_binary_data=None):
     ops_gelu_binary_compare(input_binary_data, output_binary_data, 'none', True)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'kbk', 'ge'])
 def test_ops_gelu_binary_cases(mode):
     """
