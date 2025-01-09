@@ -26,8 +26,11 @@
 #endif
 #include <string>
 
-#define UNLIKELY(x) __builtin_expect(!!(x), 0)
-#define LIKELY(x) __builtin_expect(!!(x), 1)
+constexpr int EXPECT_FALSE = 0;
+constexpr int EXPECT_TRUE = 1;
+
+#define UNLIKELY(x) __builtin_expect(!!(x), EXPECT_FALSE)
+#define LIKELY(x) __builtin_expect(!!(x), EXPECT_TRUE)
 
 namespace mindspore {
 namespace profiler {
@@ -35,6 +38,10 @@ namespace ascend {
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 class Utils {
+ private:
+  static constexpr mode_t DEFAULT_DIR_MODE = 0750;
+  static constexpr uint64_t NANOSECONDS_PER_SECOND = 1000000000ULL;
+
  public:
   static bool IsFileExist(const std::string &path) {
     if (path.empty() || path.size() > PATH_MAX) {
@@ -79,11 +86,11 @@ class Utils {
           return false;
         }
       }
-      if (mkdir(base_dir.c_str(), 0750) != 0) {
+      if (mkdir(base_dir.c_str(), DEFAULT_DIR_MODE) != 0) {
         return false;
       }
     }
-    return (mkdir(path.c_str(), 0750) == 0) ? true : false;
+    return (mkdir(path.c_str(), DEFAULT_DIR_MODE) == 0) ? true : false;
   }
 
   static std::string RealPath(const std::string &path) {
@@ -123,8 +130,7 @@ class Utils {
   static uint64_t GetClockMonotonicRawNs() {
     struct timespec ts = {0};
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    return static_cast<uint64_t>(ts.tv_sec) * 1000000000 +
-           static_cast<uint64_t>(ts.tv_nsec);  // 1000000000为秒转换为纳秒的倍数
+    return static_cast<uint64_t>(ts.tv_sec) * NANOSECONDS_PER_SECOND + static_cast<uint64_t>(ts.tv_nsec);
   }
 
   static uint64_t getClockSyscnt() {

@@ -27,6 +27,9 @@ namespace mindspore {
 namespace profiler {
 namespace ascend {
 
+constexpr uint8_t kBitsPerByte = 8;
+constexpr uint8_t kBytesMask = 0xff;
+
 enum class COMMON_EXPORT OpRangeDataType : uint8_t {
   THREAD_ID = 0,
   FLOW_ID = 1,
@@ -140,18 +143,18 @@ struct COMMON_EXPORT OpRangeData : BaseReportData {
 template <typename T>
 inline void encodeFixedData(const T &data, std::vector<uint8_t> &result) {  // NOLINT(runtime/references)
   for (size_t i = 0; i < sizeof(T); ++i) {
-    result.emplace_back((static_cast<size_t>(data) >> (i << 3)) & 0xff);
+    result.emplace_back((static_cast<size_t>(data) >> (i * kBitsPerByte)) & kBytesMask);
   }
 }
 
 inline void encodeStrData(uint16_t type, const std::string &data,
                           std::vector<uint8_t> &result) {  // NOLINT(runtime/references)
   for (size_t i = 0; i < sizeof(uint16_t); ++i) {
-    result.emplace_back((type >> (i << 3)) & 0xff);
+    result.emplace_back((type >> (i * kBitsPerByte)) & kBytesMask);
   }
   uint32_t length = data.size();
   for (size_t i = 0; i < sizeof(uint32_t); ++i) {
-    result.emplace_back((length >> (i << 3)) & 0xff);
+    result.emplace_back((length >> (i * kBitsPerByte)) & kBytesMask);
   }
   for (const auto &c : data) {
     result.emplace_back(c);
