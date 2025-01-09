@@ -4563,6 +4563,7 @@ def register_hook(x, func):
     hook_op = P.InsertGradientOf(func)
     return hook_op(x)
 
+
 def zero_(input):
     r"""
     Return a tensor filled with zeros.

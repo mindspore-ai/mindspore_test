@@ -434,6 +434,7 @@ class MSANFModelParser {
     const mind_ir::AttributeProto &attr_proto);
   AnfNodePtr GetAnfNode(const std::string &node_name);
   tensor::TensorPtr GenerateTensorPtrFromTensorProto(const mind_ir::TensorProto &attr_tensor);
+  ValuePtr GenerateTensorValue(const mind_ir::TensorProto &tensor_proto);
 
   static tensor::TensorPtr GetIncTensor(const std::string &tensor_name);
   static void SetIncTensor(const std::string &tensor_name, const tensor::TensorPtr &tensor);
@@ -454,36 +455,40 @@ class MSANFModelParser {
   std::list<std::pair<const CNodePtr, const mind_ir::AttributeProto *>> node_abstract_protos_;
 };
 
+ValuePtr MSANFModelParser::GenerateTensorValue(const mind_ir::TensorProto &tensor_proto) {
+  if (tensor_proto.has_raw_data()) {
+    // For real tensor.
+    tensor::TensorPtr tensor_info = GenerateTensorPtrFromTensorProto(tensor_proto);
+    if (tensor_info == nullptr) {
+      MS_LOG(ERROR) << "Failed to get the tensor for ValueNode.";
+      return nullptr;
+    }
+    return tensor_info;
+  } else if (tensor_proto.name() == kGraphInputQuantParam) {
+    auto quantization_param_vector = GenerateQuantizationParam(tensor_proto);
+    if (!quantization_param_vector.empty()) {
+      return quantization_param_vector[0];
+    }
+  } else {
+    // For data type.
+    const int attr_tensor_type = tensor_proto.data_type();
+    auto iter = kDefaultValueSwitchMap.find(attr_tensor_type);
+    if (iter == kDefaultValueSwitchMap.end()) {
+      MS_LOG(ERROR) << "Obtain ValueNode attr in type-form has not support input type: " << attr_tensor_type;
+      return nullptr;
+    }
+    return TypeIdToType(iter->second);
+  }
+  MS_LOG(ERROR) << "Failed to get the tensor for value.";
+  return nullptr;
+}
+
 ValuePtr MSANFModelParser::GetValueFromAttributeProto(const mind_ir::AttributeProto &attr_proto) {
   auto attr_name = attr_proto.name();
   switch (attr_proto.type()) {
     case mind_ir::AttributeProto_AttributeType_TENSORS: {
       mind_ir::TensorProto tensor_proto = attr_proto.tensors(0);
-      if (tensor_proto.has_raw_data()) {
-        // For real tensor.
-        tensor::TensorPtr tensor_info = GenerateTensorPtrFromTensorProto(tensor_proto);
-        if (tensor_info == nullptr) {
-          MS_LOG(ERROR) << "Failed to get the tensor for ValueNode.";
-          return nullptr;
-        }
-        return tensor_info;
-      } else if (tensor_proto.name() == kGraphInputQuantParam) {
-        auto quantization_param_vector = GenerateQuantizationParam(tensor_proto);
-        if (!quantization_param_vector.empty()) {
-          return quantization_param_vector[0];
-        }
-      } else {
-        // For data type.
-        const int attr_tensor_type = tensor_proto.data_type();
-        auto iter = kDefaultValueSwitchMap.find(attr_tensor_type);
-        if (iter == kDefaultValueSwitchMap.end()) {
-          MS_LOG(ERROR) << "Obtain ValueNode attr in type-form has not support input type: " << attr_tensor_type;
-          return nullptr;
-        }
-        return TypeIdToType(iter->second);
-      }
-      MS_LOG(ERROR) << "Failed to get the tensor for value.";
-      return nullptr;
+      return GenerateTensorValue(tensor_proto);
     }
     case mind_ir::AttributeProto_AttributeType_NONE: {
       return kNone;
