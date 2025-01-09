@@ -30,6 +30,8 @@ class OPS_API GroupedMatmulFuncImpl : public GroupedMatmulBaseFuncImpl {
     idxes_.group_list = 7;
     idxes_.split_item = 8;
     idxes_.group_type = 9;
+    idxes_.transpose_a = 10;
+    idxes_.transpose_b = 11;
   }
   ~GroupedMatmulFuncImpl() = default;
 
@@ -44,6 +46,7 @@ class OPS_API GroupedMatmulFuncImpl : public GroupedMatmulBaseFuncImpl {
 
   int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                  int64_t group_type) const override;
+  bool GetTransposeValue(const InferInfoPtrList &input_infos, size_t transpose_index) const override;
 };
 }  // namespace ops
 }  // namespace mindspore

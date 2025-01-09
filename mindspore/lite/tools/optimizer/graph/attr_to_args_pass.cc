@@ -102,7 +102,7 @@ static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> 
   {"GridSampler2D", {{"interpolation_mode", 3}, {"padding_mode", 4}, {"align_corners", 5}}},
   {"WeightQuantBatchMatmul", {{"transpose_x", 8}, {"transpose_weight", 9}, {"antiquant_group_size", 10}}},
   {"QuantBatchMatmul", {{"transpose_x1", 7}, {"transpose_x2", 8}, {"dtype", 9}}},
-  {"GroupedMatmul", {{"split_item", 9}, {"group_type", 10}}},
+  {"GroupedMatmul", {{"split_item", 9}, {"group_type", 10}, {"transpose_a", 11}, {"transpose_b", 12}}},
   {"AdaptiveMaxPool2D", {{"output_size", 2}}},
   {"BinaryCrossEntropy", {{"reduction", 4}}},
   {"Cross", {{"dim", 3}}},
