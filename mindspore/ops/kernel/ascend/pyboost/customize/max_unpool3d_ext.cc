@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/max_unpool2d_ext.h"
+#include "kernel/ascend/pyboost/customize/max_unpool3d_ext.h"
 #include <memory>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
@@ -23,28 +23,34 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-
-tensor::BaseTensorPtr MaxUnpool2DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+tensor::BaseTensorPtr MaxUnpool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                     const BaseTensorPtr &input_tensor, const BaseTensorPtr &indices,
                                                     const std::optional<ValueTuplePtr> &kernel_size,
                                                     const std::optional<ValueTuplePtr> &stride,
                                                     const std::optional<ValueTuplePtr> &padding,
                                                     const std::optional<ValueTuplePtr> &ouput_size) {
   OpRunner::InferOpOutput(op, input_tensor, indices, kernel_size, stride, padding, ouput_size);
-  std::vector<int64_t> output_size_vector{};
-  std::vector<int64_t> shape{op->output(0)->shape()};
-  size_t size = shape.size();
-
-  output_size_vector.push_back(shape[size - kDim2]);
-  output_size_vector.push_back(shape[size - kDim1]);
-
+  auto kernel_size_array = ConvertValueTupleToVector<int64_t>(kernel_size);
+  auto stride_array = kernel_size_array;
+  if (stride.has_value()) {
+    stride_array = ConvertValueTupleToVector<int64_t>(stride.value());
+  }
+  auto padding_array = ConvertValueTupleToVector<int64_t>(padding);
+  if (stride_array.size() == 1) {
+    stride_array.resize(kDim3, stride_array[0]);
+  }
+  if (padding_array.size() == 1) {
+    padding_array.resize(kDim3, padding_array[0]);
+  }
+  std::vector<int64_t> out_shape{op->output(0)->shape()};
+  std::vector<int64_t> output_size_vector{out_shape.end() - 3, out_shape.end()};
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, indices);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async
-  PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, indices, output_size_vector]() {
-      MS_LOG(DEBUG) << "Launch MaxUnpool2d start";
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
+    [op, input_tensor, indices, kernel_size_array, stride_array, padding_array, output_size_vector]() {
+      MS_LOG(DEBUG) << "Launch MaxUnpool3DExt start";
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
       // Malloc for input tensors
@@ -53,9 +59,9 @@ tensor::BaseTensorPtr MaxUnpool2DExtAscendCustomize(const std::shared_ptr<OpRunn
 
       // Inplace output need be front
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
-      LAUNCH_ACLNN(aclnnMaxUnpool2d, device_context, op->stream_id(), input_tensor, indices, output_size_vector,
-                   outputs[0]);
-      MS_LOG(DEBUG) << "Launch MaxUnpool2d end";
+      LAUNCH_ACLNN(aclnnMaxUnpool3d, device_context, op->stream_id(), input_tensor, indices, output_size_vector,
+                   stride_array, padding_array, outputs[0]);
+      MS_LOG(DEBUG) << "Launch MaxUnpool3DExt end";
     }));
   return op->output(0);
 }

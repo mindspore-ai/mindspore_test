@@ -277,6 +277,9 @@ from mindspore.mint.nn.layer.activation import GLU
 # 548
 from mindspore.ops.function.nn_func import kl_div_ext
 
+# 559
+from mindspore.mint.nn.layer.pooling import MaxUnpool3d
+
 # 674
 from mindspore.mint.nn.layer.normalization import BatchNorm1d
 
@@ -1445,6 +1448,8 @@ __all__ = [
     # 556
     'LogSigmoid',
     'Sigmoid',
+    # 559
+    'MaxUnpool3d',
     # 674
     'BatchNorm1d',
     # 675

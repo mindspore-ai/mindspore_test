@@ -402,6 +402,7 @@ Dropout层
     mindspore.mint.nn.AvgPool2d
     mindspore.mint.nn.AvgPool3d
     mindspore.mint.nn.MaxUnpool2d
+    mindspore.mint.nn.MaxUnpool3d
 
 填充层
 ^^^^^^^^^^^^^^
@@ -494,6 +495,7 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.avg_pool3d
     mindspore.mint.nn.functional.max_pool2d
     mindspore.mint.nn.functional.max_unpool2d
+    mindspore.mint.nn.functional.max_unpool3d
 
 非线性激活函数
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

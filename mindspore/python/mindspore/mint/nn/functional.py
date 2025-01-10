@@ -277,6 +277,9 @@ from mindspore.ops.function.nn_func import kl_div_ext as kl_div
 # 556
 from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
+# 559
+from mindspore.ops.auto_generate import max_unpool3d_ext as max_unpool3d
+
 from mindspore.ops.auto_generate import adaptive_avg_pool1d
 
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
@@ -1348,8 +1351,8 @@ __all__ = [
     'adaptive_max_pool1d',
     # 258
     'mse_loss',
-    # 259
 
+    # 259
     'adaptive_avg_pool1d',
 
     'adaptive_avg_pool2d',
@@ -1369,4 +1372,6 @@ __all__ = [
     'relu6',
     # 548
     'kl_div',
+    # 559
+    'max_unpool3d',
 ]

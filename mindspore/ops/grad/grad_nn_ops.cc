@@ -3860,6 +3860,20 @@ REG_BPROP_BUILDER("MaxUnpool2DExt").SetUnusedInputs({i0, i6}).SetBody(BODYFUNC(i
           ib->OutZeros(output_shape)};
 });
 
+DEF_PURE_SHAPE_CALC(max_unpool3d_ext_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto &x_shape = inputs.at(kIndex0);
+    ShapeVector x_3d_shape{x_shape.begin(), x_shape.end() - kDim3};
+    x_3d_shape.push_back(abstract::TensorShape::kShapeDimAny);
+    return {x_3d_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    auto &x_shape = inputs[kIndex0];
+    return {
+      IsDynamicRank(x_shape) ? -1LL : static_cast<int64_t>(x_shape.size()) - 1LL,
+    };
+  });
+
 REG_BPROP_BUILDER("MaxUnpool3D").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto argmax = ib->GetInput(kIndex1);
@@ -3872,6 +3886,41 @@ REG_BPROP_BUILDER("MaxUnpool3D").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
                       {"format", ib->GetAttr("format")}});
   auto dargmax = ib->OutZeros(argmax);
   return {dx, dargmax};
+});
+
+REG_BPROP_BUILDER("MaxUnpool3DExt").SetUnusedInputs({i0, i6}).SetBody(BODYFUNC(ib) {
+  auto indices = ib->GetInput(kIndex1);
+  auto kernel_size = ib->GetInput(kIndex2);
+  auto strides = ib->GetInput(kIndex3);
+  auto padding = ib->GetInput(kIndex4);
+  auto output_shape = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(kIndex7);
+  auto indices_shape = ib->Shape(indices);
+  auto indices_shape_vec = ib->GetShape(indices);
+  NodePtr dx;
+  int last_dim = -1;
+  if (IsDynamic(indices_shape_vec)) {
+    NodePtrList ret_shape = ib->ShapeCalc(max_unpool3d_ext_shapecalc, {indices});
+    auto indices_view = ib->Reshape(indices, ret_shape[0]);
+    auto dout_view = ib->Reshape(dout, ret_shape[0]);
+    auto dx_gather = ib->Emit("GatherD", {dout_view, ib->Value<int64_t>(last_dim), indices_view});
+    dx = ib->Reshape(dx_gather, indices_shape);
+  } else if (indices_shape_vec.size() != 0) {
+    ShapeVector indices_size{indices_shape_vec.begin(), indices_shape_vec.end() - kDim3};
+    indices_size.push_back(last_dim);
+    auto indices_view = ib->Reshape(indices, indices_size);
+    auto dout_view = ib->Reshape(dout, indices_size);
+    auto dx_gather = ib->Emit("GatherD", {dout_view, ib->Value<int64_t>(last_dim), indices_view});
+    dx = ib->Reshape(dx_gather, indices_shape);
+  } else {
+    dx = ib->OutZeros(indices);
+  }
+  return {dx,
+          ib->OutZeros(indices),
+          ib->OutZeros(kernel_size),
+          ib->OutZeros(strides),
+          ib->OutZeros(padding),
+          ib->OutZeros(output_shape)};
 });
 
 REG_BPROP_BUILDER("NthElement").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {

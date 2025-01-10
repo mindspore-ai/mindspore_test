@@ -1,0 +1,61 @@
+max_unpool3d_ext:
+    description: |
+        Computes the inverse of `max_pool3d`.
+
+        `max_unpool3d` keeps the maximal value and set all position of non-maximal values to zero.
+        Typically the input is of shape :math:`(N, C, D_{in}, H_{in}, W_{in})` or :math:`(C, D_{in}, H_{in}, W_{in})`,
+        and the output is of shape :math:`(N, C, D_{out}, H_{out}, W_{out})` or :math:`(C, D_{out}, H_{out}, W_{out})`.
+        The operation is as follows.
+
+        .. math::
+            \begin{array}{ll} \\
+            D_{out} = (D{in} - 1) \times stride[0] - 2 \times padding[0] + kernel\_size[0] \\
+            H_{out} = (H{in} - 1) \times stride[1] - 2 \times padding[1] + kernel\_size[1] \\
+            W_{out} = (W{in} - 1) \times stride[2] - 2 \times padding[2] + kernel\_size[2] \\
+            \end{array}
+        
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input Tensor to invert.
+                Tensor of shape :math:`(N, C, D_{in}, H_{in}, W_{in})` or :math:`(C, D_{in}, H_{in}, W_{in})`.
+            indices (Tensor): Max values' index represented by the indices. Tensor of shape must be same with input `input`.
+                Values of indices must belong to :math:`[0, D_{in} \times H_{in} \times W_{in} - 1]`.
+                Data type must be in int32 or int64.
+            kernel_size (Union[int, tuple[int]]): The size of kernel used to take the maximum value, If `kernel_size` is an integer,
+                the kernel size of depth, height and width are the same, equal to this integer. If `kernel_size` is a tuple,
+               the three values in the tuple represent depth, height and width respectively.
+            stride (Union[int, tuple[int]], optional): The distance of kernel moving. If `stride` is an integer,
+                the depth, height and width of movement are the same, equal to this integer, If `stride` is a tuple,
+                the three values in the tuple represent depth, height and width of movement respectively.
+                Default: ``None`` , which indicates the moving step is `kernel_size` .
+            padding (Union[int, tuple[int]], optional): The pad value to be filled. Default: ``0`` . If `padding` is an integer,
+                the paddings of depth, height and width are the same, equal to padding. If `padding` is a tuple,
+                the three values in the tuple represent the size of the fill in the depth, length, and width respectively.
+            output_size (tuple[int], optional): The output size. Default: ``None`` . If output_size is None, then the shape of
+                output computed by `kernel_size`, `stride` and `padding`. If output_size is not None, then output_size must be
+                :math:`(N, C, D, H, W)` or :math:`(D, H, W)` and output_size must belong to
+                :math:`[(N, C, D_{out} - stride[0], H_{out} - stride[1], W_{out} - stride[2]),
+                (N, C, D_{out} + stride[0], H_{out} + stride[1], W_{out} + stride[2])]`.
+
+        Returns:
+            Tensor, with shape :math:`(N, C, D_{out}, H_{out}, W_{out})` or :math:`(C, D_{out}, H_{out}, W_{out})`,
+            with the same data type with `input`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([[[[[0, 1], [8, 9]]]]]).astype(np.float32))
+            >>> indices= Tensor(np.array([[[[[0, 1], [2, 3]]]]]).astype(np.int64))
+            >>> output = ops.max_unpool3d_ext(input, indices, kernel_size=2, stride=1, padding=0)
+            >>> print(output)
+            [[[[[0. 1. 8.]
+                [9. 0. 0.]
+                [0. 0. 0.]]
+            [[0. 0. 0.]
+                [0. 0. 0.]
+                [0. 0. 0.]]]]]
