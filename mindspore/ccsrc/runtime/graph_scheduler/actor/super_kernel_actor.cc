@@ -690,8 +690,11 @@ void SuperKernelActor::FetchParameterInput(const KernelActorPtr &kernel_actor, O
     if (stream_id != kDefaultStreamIndex) {
       auto multi_stream_controller = device::MultiStreamController::GetInstance();
       MS_EXCEPTION_IF_NULL(multi_stream_controller);
-      multi_stream_controller->DispatchRecordWaitEvent(kernel_actor->device_contexts_[0], stream_id,
-                                                       kDefaultStreamIndex);
+      auto device_context = kernel_actor->device_contexts_[0];
+      MS_EXCEPTION_IF_NULL(device_context);
+      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
+      device_context->device_res_manager_->BindDeviceToCurrentThread(false);
+      multi_stream_controller->DispatchRecordWaitEvent(device_context, stream_id, kDefaultStreamIndex);
     }
   }
 

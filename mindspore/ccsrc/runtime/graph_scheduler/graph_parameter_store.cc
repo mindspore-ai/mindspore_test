@@ -197,6 +197,7 @@ void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callba
   device::DeviceContextKey device_key = {device_name, device_id};
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);
   MS_EXCEPTION_IF_NULL(device_context);
+  device_context->device_res_manager_->BindDeviceToCurrentThread(false);
   auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, kDefaultStreamIndex);
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
