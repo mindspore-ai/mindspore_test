@@ -169,6 +169,10 @@ const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const An
     return nullptr;
   }
 
+  if (common::IsExecuteSimulation()) {
+    MS_LOG(EXCEPTION) << "Not support compute_communication_fusion_level when MS_SIMULATION_LEVEL=3.";
+  }
+
   if (mc2_fusion_level == kMC2FusionForward && !IsForwardNode(node)) {
     MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionForward << ", only apply to forward node. Skip node "
                   << node->fullname_with_scope();

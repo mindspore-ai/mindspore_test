@@ -51,6 +51,12 @@ const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
 bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
+
+  if (common::IsExecuteSimulation()) {
+    MS_LOG(INFO) << "Not support MatMulAllReduceAddRmsNormFusion when MS_SIMULATION_LEVEL=3.";
+    return false;
+  }
+
   if (!ms_context->IsEnableInferBoost()) {
     MS_LOG(INFO) << "for MatMulAllReduceAddRmsNormFusion ops, infer_boost must be enabled.";
     return false;

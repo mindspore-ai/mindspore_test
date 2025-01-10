@@ -37,6 +37,7 @@
 #include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
+#include "plugin/device/ascend/kernel/simu/simu_kernel_build.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/customize_copy.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
@@ -155,7 +156,11 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *gr
     } else if (kernel_type == KernelType::HOST_KERNEL) {
       kernel_mod_ptr = kernel::HostOpBuild(kernel);
     } else if (kernel_type == KernelType::HCCL_KERNEL) {
-      kernel_mod_ptr = kernel::HcclOpBuild(kernel);
+      if (common::IsExecuteSimulation()) {
+        kernel_mod_ptr = kernel::SimuOpBuild(kernel);
+      } else {
+        kernel_mod_ptr = kernel::HcclOpBuild(kernel);
+      }
     } else if (kernel_type == KernelType::OPAPI_KERNEL) {
       kernel_mod_ptr = kernel::AclnnOpBuild(kernel);
     } else if (kernel_type == KernelType::AKG_KERNEL) {

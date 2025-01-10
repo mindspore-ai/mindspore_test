@@ -7,6 +7,7 @@ file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "ge/*.cc"
         "host/*.cc"
         "hccl/*.cc"
+        "simu/*.cc"
         "rts/*.cc"
         "akg/*.cc"
         "graph_kernel/*.cc"
