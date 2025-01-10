@@ -10,11 +10,11 @@ mindspore.nn.SmoothL1Loss
     .. math::
         L_{i} =
         \begin{cases}
-        \frac{0.5 (x_i - y_i)^{2}}{\beta}, & \text{if } |x_i - y_i| < {\beta} \\
-        |x_i - y_i| - 0.5 {\beta}, & \text{otherwise.}
+        \frac{0.5 (x_i - y_i)^{2}}{\text{beta}}, & \text{if } |x_i - y_i| < \text{beta} \\
+        |x_i - y_i| - 0.5 * \text{beta}, & \text{otherwise.}
         \end{cases}
 
-    其中，:math:`{\beta}` 代表阈值 `beta` 。
+    其中，:math:`{\text{beta}}` 代表阈值 `beta` 。
 
     当 `reduction` 不是设定为 `none` 时，计算如下：
 

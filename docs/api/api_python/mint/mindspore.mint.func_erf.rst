@@ -7,12 +7,12 @@ mindspore.mint.erf
 
     .. math::
 
-        erf(x)=\frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
+        \text{erf}(x)=\frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
 
     参数：
         - **input** (Tensor) - 高斯误差函数的输入Tensor。上述公式中的 :math:`x` 。支持数据类型：
 
-          - Ascend： float16、float32、float64、int64、bool。
+          - Ascend： float16、float32、float64、int64、bool、bfloat16。
 
     返回：
         Tensor，shape与 `input` 相同。
@@ -22,4 +22,4 @@ mindspore.mint.erf
         - **TypeError** - `input` 不是Tensor。
         - **TypeError** - 
 
-          - Ascend: 如果 `input` 的数据类型不是float16、float32、int64、bool。
+          - Ascend: 如果 `input` 的数据类型不是float16、float32、float64、int64、bool、bfloat16。
