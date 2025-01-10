@@ -26,8 +26,6 @@
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
-#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
@@ -343,6 +341,7 @@ void InternalKernelPlugin::AcmeKernelCall(const std::shared_ptr<pyboost::OpRunne
     MS_LOG(WARNING) << "Acme can't find op[" << kernelname << "]";
     return;
   }
+
   kernel_info->Call(op, input_values);
 }
 

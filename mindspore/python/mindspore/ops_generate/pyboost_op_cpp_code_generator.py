@@ -22,6 +22,7 @@ import os
 import re
 
 from pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size, is_op_multi_output
+from pyboost_utils import tuple_input_to_cpp_type
 import template
 import gen_constants as K
 from gen_utils import save_file
@@ -168,6 +169,7 @@ class PyboostOpCppGenerator:
         self.PYBOOST_CUSTOMIZE_CALL_TEMPLATE = PYBOOST_CUSTOMIZE_CALL_TEMPLATE
         self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = PYBOOST_SINGLE_OP_HEADER_TEMPLATE
         self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
+        self.acme_op_generator = AcmeOpCppCodeGenerator()
         self.gen_path = gen_path
         self.device = device
 
@@ -202,11 +204,13 @@ class PyboostOpCppGenerator:
                 if arg.inplace != '':
                     check_inplace_func = f'ThrowExpectionWhenInternalOverlap({arg.inplace}_tensor);'
                     break
+            acme_call_impl = self.acme_op_generator.generate_customize_call(op_proto, self.device)
             call_impl = self.PYBOOST_CUSTOMIZE_CALL_TEMPLATE.replace(
                 call_args=call_args,
                 return_values=call_func_outputs,
                 customize_func=getattr(op_proto.op_dispatch, self.device) + "Customize",
                 check_expression=check_inplace_func,
+                acme_call=acme_call_impl
             )
             customize_include = \
                 f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"\n'
@@ -372,6 +376,7 @@ class AclnnOpCppCodeGenerator:
             '#include "kernel/${device}/pyboost/auto_generate/${operator_name}.h"\n'
         )
         self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
+        self.acme_op_generator = AcmeOpCppCodeGenerator()
         self.gen_path = gen_path
         self.device = device
 
@@ -426,6 +431,7 @@ class AclnnOpCppCodeGenerator:
             call_args = op_parser.parse_original_call_args(op_proto.op_args)
             call_args_with_type = op_parser.parse_call_args_with_types()
             inplace_process = _generate_inplace_process_cpp_code(op_proto)
+            acme_call_impl = self.acme_op_generator.generate_default_call(op_proto, self.device)
             call_impl = self.PYBOOST_CALL_TEMPLATE.replace(aclnn_name=aclnn_name,
                                                            call_args=call_args,
                                                            call_tensors=call_args_tensor,
@@ -445,7 +451,8 @@ class AclnnOpCppCodeGenerator:
                                                            cast_input_code=cast_input_code,
                                                            real_call_args_tensor=real_call_args_tensor,
                                                            class_name=op_proto.op_class.name,
-                                                           op_name_str=op_proto.op_class.name)
+                                                           op_name_str=op_proto.op_class.name,
+                                                           acme_call=acme_call_impl)
 
             merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=op_proto.op_name,
                                                                                   device=self.device))
@@ -538,6 +545,72 @@ class AclnnOpCppCodeGenerator:
             inputs_kernel_tensors += f'const auto &input_address_info = PyBoostUtils::GetAddressInfo(' \
                                      f'device_context, op->stream_id(), op->input_abs(), {args_list});\n'
         return inputs_kernel_tensors
+
+
+class AcmeOpCppCodeGenerator():
+    """
+    Generates C++ code files for Acme operations in PyBoost.
+
+    Attributes:
+        PYBOOST_ACME_CALL_TEMPLATE (Template): Template for generating ACME operation calls.
+        PYBOOST_ACME_CUSTOMIZE_CALL_TEMPLATE (Template): Template for generating ACME operation customize calls.
+    """
+
+    def __init__(self):
+        """
+        Initializes the AcmeOpCppCodeGenerator with the appropriate templates.
+        """
+        PYBOOST_ACME_CALL_TEMPLATE = template.PYBOOST_ACME_CALL_TEMPLATE
+        PYBOOST_ACME_CUSTOMIZE_CALL_TEMPLATE = template.PYBOOST_ACME_CUSTOMIZE_CALL_TEMPLATE
+        self.PYBOOST_ACME_CALL_TEMPLATE = PYBOOST_ACME_CALL_TEMPLATE
+        self.PYBOOST_ACME_CUSTOMIZE_CALL_TEMPLATE = PYBOOST_ACME_CUSTOMIZE_CALL_TEMPLATE
+
+    def generate_default_call(self, op_proto, device):
+        call_acme_impl = ''
+        if device != 'ascend':
+            return call_acme_impl
+        op_parser = OpTemplateParser(op_proto)
+        _, call_func_outputs = op_parser.generate_pyboost_outputs()
+        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        call_acme_impl = self.PYBOOST_ACME_CALL_TEMPLATE.replace(acme_call_args=call_args, return_values=call_func_outputs)
+        return call_acme_impl
+
+    def generate_customize_call(self, op_proto, device):
+        call_acme_impl = ''
+        if device != 'ascend':
+            return call_acme_impl
+        op_parser = OpTemplateParser(op_proto)
+        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        create_input_address = self._generate_create_input_address(op_parser)
+        _, call_func_outputs = op_parser.generate_pyboost_outputs()
+        value_tuple_convert = self._convert_tuple_tensor(op_parser, op_proto)
+        call_acme_impl = self.PYBOOST_ACME_CUSTOMIZE_CALL_TEMPLATE.replace(acme_call_args=call_args,
+                                                                           create_input_address=create_input_address,
+                                                                           return_values=call_func_outputs,
+                                                                           value_tuple_convert=value_tuple_convert)
+        return call_acme_impl
+
+    def _generate_create_input_address(self, op_parser: OpTemplateParser):
+        need_malloc_tensors, _, _ = op_parser.parse_need_malloc_tensors()
+        create_input_address = ''
+        args_list = ''
+        for item in need_malloc_tensors:
+            args_list += f'{item}, '
+        args_list = args_list[:-2]
+        if args_list:
+            create_input_address = f'PyBoostUtils::PrepareOpInputs(device_context_, op->stream_id(), {args_list});\n'
+        return create_input_address
+
+    def _convert_tuple_tensor(self, op_parser: OpTemplateParser, op_proto):
+        value_tuple_convert = []
+        call_args = op_parser.parse_original_call_args(op_proto.op_args)
+        for op_arg, call_arg in zip(op_proto.op_args, call_args):
+            cpp_type = tuple_input_to_cpp_type(op_arg.arg_dtype)
+            if cpp_type == 'mindspore::tensor::TensorPtr':
+                cpp_type = 'BaseTensorPtr'
+                convert = f"std::vector<{cpp_type}> {call_arg}_vector = ConvertValueTupleToVector<{cpp_type}>({call_arg});\n"
+                value_tuple_convert.append(convert)
+        return value_tuple_convert
 
 
 class PyboostOpFunctionGenerator(BaseGenerator):
