@@ -567,6 +567,16 @@ REG_BPROP_BUILDER("ConvTranspose2D").SetUnusedInputs({i8}).SetBody(BODYFUNC(ib) 
           ib->OutZeros(dilation)};
 });
 
+DEF_PURE_SHAPE_CALC(g_conv2d_ext_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto input_sizes = inputs.at(kIndex0);
+    auto weight_sizes = inputs.at(kIndex1);
+    auto batchfy = (input_sizes.size() == weight_sizes.size());
+    auto _batchfy = batchfy ? 1 : 0;
+    return {{_batchfy}};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1}; });
+
 REG_BPROP_BUILDER("Conv2DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
@@ -585,23 +595,30 @@ REG_BPROP_BUILDER("Conv2DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   std::vector<int64_t> output_padding_vec = {0, 0};
   auto output_padding_value = ib->EmitValue(MakeValue(output_padding_vec));
 
-  auto x_rank = ib->GetRank(x);
-  auto w_rank = ib->GetRank(w);
-  auto batchfy = (x_rank == w_rank);
-  if (!batchfy) {
-    x = ib->ExpandDims(x, 0);
-    dout = ib->ExpandDims(dout, 0);
-  }
+  NodePtr nx, ndout, ndx;
+  NodePtrList ret_batchfy = ib->ShapeCalc(g_conv2d_ext_shapecalc, {x, w});
+  auto &batchfy = ret_batchfy[kIndex0];
+  auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, kIndex0), ib->Value<int64_t>(1));
+  auto cond_out_batchfy = ib->Conditional(
+    batchfy_conditional,
+    [&](Emitter *e) -> NodePtrList {
+      return {x, dout};
+    },
+    [&](Emitter *e) -> NodePtrList {
+      return {e->ExpandDims(x, kIndex0), e->ExpandDims(dout, kIndex0)};
+    });
+  nx = ib->TupleGetItem(cond_out_batchfy, kIndex0);
+  ndout = ib->TupleGetItem(cond_out_batchfy, kIndex1);
 
-  auto conv2d_grad_out = ib->ConvolutionGrad(dout, x, w, bias, stride_value, pad_value, dilation_value,
+  auto conv2d_grad_out = ib->ConvolutionGrad(ndout, nx, w, bias, stride_value, pad_value, dilation_value,
                                              transposed_value, output_padding_value, group_value, output_mask);
   auto dx = ib->TupleGetItem(conv2d_grad_out, kIndex0);
-  if (!batchfy) {
-    dx = ib->Squeeze(dx, MakeValue(ShapeVector{0}));
-  }
+  ndx = ib->Conditional(
+    batchfy_conditional, [&](Emitter *e) -> NodePtrList { return {dx}; },
+    [&](Emitter *e) -> NodePtrList { return {e->Squeeze(dx, MakeValue(ShapeVector{0}))}; });
   auto dw = ib->TupleGetItem(conv2d_grad_out, kIndex1);
   auto dbias = ib->TupleGetItem(conv2d_grad_out, kIndex2);
-  return {dx,
+  return {ndx,
           dw,
           dbias,
           ib->OutZeros(stride_value),
