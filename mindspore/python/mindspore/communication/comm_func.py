@@ -294,7 +294,6 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=F
         >>> import mindspore as ms
         >>> import mindspore.communication as comm
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
         >>> output, _ = comm.comm_func.all_gather_into_tensor(input_tensor)
@@ -365,7 +364,6 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
         >>> import mindspore as ms
         >>> import mindspore.communication as comm
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([8, 8]).astype(np.float32))
         >>> output, _ = comm.comm_func.reduce_scatter_tensor(input_tensor)
