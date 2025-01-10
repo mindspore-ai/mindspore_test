@@ -138,6 +138,9 @@ void AscendStreamMng::RegCallback(aclrtStream stream) {
 }
 
 void AscendStreamMng::UnRegCallback(aclrtStream stream) {
+  if (GetStreamId(stream) != 0) {
+    return;
+  }
   MS_LOG(INFO) << "Unregister callback thread, stream : " << stream << ".";
   if (!is_enable_callback_) {
     return;
