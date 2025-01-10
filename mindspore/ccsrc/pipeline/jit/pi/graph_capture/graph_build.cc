@@ -2626,6 +2626,25 @@ void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTrac
     *stop_reason = StopTraceReason::kNonStopTrace;
   }
 }
+
+ScopePtr GetScopeForCallNode(CallNode *node) {
+  ScopePtr scope = ScopeManager::GetInstance().GetCurrentScope();
+  auto call_vobj = node->input(0)->GetVobj();
+  if (call_vobj == nullptr) {
+    return scope;
+  }
+  auto object = call_vobj->GetPyObject();
+  if (object.ptr() == nullptr) {
+    return scope;
+  }
+  py::object scope_str =
+    python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_PARSE_GET_SCOPE_NAME, object);
+  if (!py::isinstance<py::none>(scope_str)) {
+    auto scope_name = py::cast<std::string>(scope_str);
+    scope = std::make_shared<Scope>(scope_name);
+  }
+  return scope;
+}
 }  // namespace
 
 AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
@@ -3308,6 +3327,9 @@ void SetMixedPrecisionType(CallNode *call_node, FrameStates *frame) {
 StopTraceReason GraphBuilder::HandleCall(int depth) {
   MS_EXCEPTION_IF_CHECK_FAIL(seek(0)->GetType() == ValueNode::Call, "must be call node");
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
+  const auto &scope = GetScopeForCallNode(call_node);
+  ScopeGuard scope_guard(scope);
+
   if (depth > root_->graph_->Config().getIntConfig(GraphJitConfig::kMaxInlineDepth)) {
     call_node->SetInlineReason(InlineReason::kInlineTooDeep);
     return StopTraceReason::kNonStopTrace;
@@ -3730,7 +3752,7 @@ LocationPtr GraphBuilder::GetLocation(const Instr &instr) const {
   if (graph_ == nullptr || graph_->GetCodeObj() == nullptr) {
     return std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::vector<std::string>());
   }
-  auto file_name = PyCodeWrapper(graph_->GetCodeObj()).FileName();
+  const auto &file_name = PyCodeWrapper(graph_->GetCodeObj()).FileName();
   auto line_no = instr.line();
   std::vector<std::string> comments;
   return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));

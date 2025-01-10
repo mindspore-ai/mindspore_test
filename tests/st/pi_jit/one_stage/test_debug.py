@@ -13,63 +13,21 @@
 # limitations under the License.
 # ============================================================================
 """Test one stage debug info"""
-import os
-import glob
-import shutil
-
 from mindspore import jit
 from mindspore import ops
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
-
-def count_file_key(file, key):
-    """Count key string in file"""
-    appear_count = 0
-    with open(file, 'r') as fp:
-        for line in fp:
-            if key in line:
-                appear_count += 1
-    return appear_count
-
+from .test_utils import check_ir_info
 
 def check_debug_info_no_break(func, inputs, expect_dict, dir):
     """Check whether func(inputs) create IR match expect dict"""
-    os.environ['MS_DEV_SAVE_GRAPHS'] = '1'
-    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = dir
-    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'graph_before_compile'
-    try:
-        func(*inputs)
-        ir_files = glob.glob(os.path.join(dir, 'graph_before_compile*.ir'))
-        assert len(ir_files) == 1
-        file = ir_files[0]
-        for key in expect_dict:
-            assert count_file_key(file, key) == expect_dict[key]
-    finally:
-        os.unsetenv('MS_DEV_SAVE_GRAPHS')
-        os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
-        os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-        shutil.rmtree(dir)
+    check_ir_info(func, inputs, expect_dict, 'graph_before_compile', 1, dir)
 
 
 def check_debug_info_with_break(func, inputs, expect_ir_num, expect_dict, dir):
-    os.environ['MS_DEV_SAVE_GRAPHS'] = '1'
-    os.environ['MS_DEV_SAVE_GRAPHS_PATH'] = dir
-    os.environ['MS_DEV_DUMP_IR_PASSES'] = 'graph_before_compile'
-    try:
-        func(*inputs)
-        ir_files = glob.glob(os.path.join(dir, 'graph_before_compile*.ir'))
-        assert len(ir_files) == expect_ir_num
-        for key in expect_dict:
-            real_count = 0
-            for file in ir_files:
-                real_count += count_file_key(file, key)
-            assert real_count == expect_dict[key]
-    finally:
-        os.unsetenv('MS_DEV_SAVE_GRAPHS')
-        os.unsetenv('MS_DEV_SAVE_GRAPHS_PATH')
-        os.unsetenv('MS_DEV_DUMP_IR_PASSES')
-        shutil.rmtree(dir)
+    """Check whether func(inputs) create IR match expect dict"""
+    check_ir_info(func, inputs, expect_dict, 'graph_before_compile', expect_ir_num, dir)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')

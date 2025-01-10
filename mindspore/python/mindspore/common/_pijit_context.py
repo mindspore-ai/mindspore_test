@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Define pijit context"""
-
+# pylint: disable=missing-docstring
 import inspect
 import types
 import functools
