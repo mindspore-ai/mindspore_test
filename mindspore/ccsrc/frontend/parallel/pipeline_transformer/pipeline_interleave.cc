@@ -565,6 +565,11 @@ void PipelineInterleave::RemoveMonadNode() {
 static tensor::TensorPtr CreateZeroseOutput(const AnfNodePtr &node, size_t index) {
   auto out_shapes = GetNodeShape(node);
   auto out_shape_type = GetShapeType(node, out_shapes.at(index), index);
+  const auto &vec = out_shapes.at(index);
+  const auto &it = std::find(vec.begin(), vec.end(), -1);
+  if (it != vec.end()) {
+    MS_LOG(EXCEPTION) << "Under pipeline parallelism, the output of the network does not support dynamic shapes.";
+  }
   auto zero_tensor = TensorConstructUtils::CreateZerosTensor(out_shape_type.second, out_shapes.at(index));
   return zero_tensor;
 }
