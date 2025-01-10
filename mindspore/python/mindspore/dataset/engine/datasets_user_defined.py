@@ -505,6 +505,10 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         self.__init__(self.dataset, self.num_worker, self.multi_process, self.max_rowsize)
 
 
+def _subprocess_handle(eof, signum, frame):
+    threading.Thread(target=eof.set()).start()
+
+
 def _ignore_sigint(is_multiprocessing):
     """
     We need to ignore sigint signal here so subprocesses can exit normally and clear.
@@ -534,7 +538,8 @@ def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiproces
     cde.register_worker_handlers()
 
     if is_multiprocessing:
-        result_queue.cancel_join_thread()  # Ensure that the process does not hung when exiting
+        result_queue.cancel_join_thread()  # Ensure that the process does not hang when exiting
+        signal.signal(signal.SIGTERM, partial(_subprocess_handle, eof))
 
         # init the random seed and np.random seed for the subprocess
         if get_seed() != 5489:
