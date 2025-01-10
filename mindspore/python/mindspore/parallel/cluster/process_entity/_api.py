@@ -95,9 +95,10 @@ class _ComputeGraphNode(_Node):
         tail_worker_process = None
         is_tail_worker_log = self.enable_tail_worker_log()
         if self.join and not is_tail_worker_log:
-            logger.warning(f"The '--tail_worker_log' is:{self.tail_worker_log}, which is beyond the maximum of "
-                           "local_worker_num. So worker logs will not be output to console. Reset "
-                           "'--tail_worker_log', if you want to output worker logs to console.")
+            logger.warning(f"The '--tail_worker_log' is:{self.tail_worker_log}, "
+                           f"which doesn't contain this worker {self.node_id}."
+                           f" So this worker {self.node_id}'s log will not be output to console. Reset "
+                           "'--tail_worker_log', if you want to output this worker's log to console.")
         with open(self.output_file, "w") as file_handle:
             worker_process = subprocess.Popen(self.args_list, preexec_fn=os.setsid, stdout=file_handle,
                                               stderr=subprocess.STDOUT)
