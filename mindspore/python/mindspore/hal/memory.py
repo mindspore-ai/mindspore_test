@@ -244,7 +244,7 @@ def memory_summary(device_target=None):
 
     metrics_to_display = [
         ("total_reserved_memory", "Reserved memory", _format_size),
-        ("total_allocatd_memory", "Allocated memory", _format_size),
+        ("total_allocated_memory", "Allocated memory", _format_size),
         ("total_idle_memory", "Idle memory", _format_size),
         ("total_eager_free_memory", "Eager free memory", _format_size),
         ("max_reserved_memory", "Max reserved memory", _format_size),
@@ -302,7 +302,7 @@ def memory_allocated(device_target=None):
             "WARN_DEPRECATED: The usage of mindspore.hal.memory_allocated() is deprecated."
             " Please use mindspore.runtime.memory_allocated()"
         )
-    return _memory_stats(device_target).get("total_allocatd_memory", 0)
+    return _memory_stats(device_target).get("total_allocated_memory", 0)
 
 
 @_check_inputs_validation

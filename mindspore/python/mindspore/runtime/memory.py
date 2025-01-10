@@ -257,7 +257,7 @@ def memory_summary():
 
     metrics_to_display = [
         ("total_reserved_memory", "Reserved memory", _format_size),
-        ("total_allocatd_memory", "Allocated memory", _format_size),
+        ("total_allocated_memory", "Allocated memory", _format_size),
         ("total_idle_memory", "Idle memory", _format_size),
         ("total_eager_free_memory", "Eager free memory", _format_size),
         ("max_reserved_memory", "Max reserved memory", _format_size),
@@ -308,7 +308,7 @@ def memory_allocated():
     if not _is_initialized(device_target):
         logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
         return 0
-    return _memory_stats(device_target).get("total_allocatd_memory", 0)
+    return _memory_stats(device_target).get("total_allocated_memory", 0)
 
 
 def max_memory_allocated():

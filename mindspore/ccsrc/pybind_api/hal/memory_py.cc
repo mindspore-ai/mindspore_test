@@ -51,7 +51,7 @@ py::dict MemoryStats(const std::string &device_target) {
     device_ctx->device_res_manager_->GetPersistentMemBlocksInfoStatistics();
 
   memory_stats["total_reserved_memory"] = total_mem_size;
-  memory_stats["total_allocatd_memory"] = total_used_mem_size;
+  memory_stats["total_allocated_memory"] = total_used_mem_size;
   memory_stats["total_idle_memory"] = total_idle_mem_size;
   memory_stats["total_eager_free_memory"] = total_eager_free_mem_size;
   memory_stats["max_reserved_memory"] = reserved_mem_peak_size;
