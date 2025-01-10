@@ -161,7 +161,10 @@ class DataPrepareActor : public DebugAwareActor {
   // The tensor of parameter(weight) maybe update host value by Python phase and need re-prepare to sync new host value
   // to device side. 'tensors_need_reprepare_' records all tensors whose host value has updated, this HashSet will be
   // update by update value callback of tensors.
-  std::map<const DataPrepareActor *, mindspore::HashSet<const tensor::Tensor *>> tensors_need_reprepare_;
+  static mindspore::HashMap<const DataPrepareActor *, mindspore::HashSet<const tensor::Tensor *>>
+    tensors_need_reprepare_;
+  // Record each tensor related to graph.
+  static mindspore::HashMap<const tensor::Tensor *, mindspore::HashSet<const DataPrepareActor *>> tensor_with_graphs_;
   // The ref relationship of device address.
   std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
 

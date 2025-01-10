@@ -338,6 +338,10 @@ void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorP
 }  // namespace
 
 std::atomic<size_t> DataPrepareActor::execution_count_ = 0;
+mindspore::HashMap<const DataPrepareActor *, mindspore::HashSet<const tensor::Tensor *>>
+  DataPrepareActor::tensors_need_reprepare_ = {};
+mindspore::HashMap<const tensor::Tensor *, mindspore::HashSet<const DataPrepareActor *>>
+  DataPrepareActor::tensor_with_graphs_ = {};
 
 void DataPrepareActor::Init() {
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
@@ -616,8 +620,20 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   auto arg_index = iter - graph_compiler_info_->origin_parameters_order_.begin();
   auto tensor = FetchInputTensorByArg(args, arg_index, front_node);
   // The tensor needs to be updated if modified.
-  if (tensor != nullptr && tensor->update_value_callback() == nullptr && tensor->is_parameter()) {
-    auto callback = [this](const tensor::Tensor *tensor) { tensors_need_reprepare_[this].insert(tensor); };
+  tensor_with_graphs_[tensor.get()].insert(this);
+  if (tensor != nullptr && tensor->is_parameter()) {
+    auto callback = [](const tensor::Tensor *tensor) {
+      const auto &graph_iter = tensor_with_graphs_.find(tensor);
+      if (graph_iter != tensor_with_graphs_.end()) {
+        const auto &data_prepare_actors = graph_iter->second;
+        for (const auto &data_prepare_actor : data_prepare_actors) {
+          const auto &iter = tensors_need_reprepare_.find(data_prepare_actor);
+          if (iter != tensors_need_reprepare_.end()) {
+            tensors_need_reprepare_[data_prepare_actor].insert(tensor);
+          }
+        }
+      }
+    };
     tensor->set_update_value_callback(callback);
   }
 
