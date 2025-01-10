@@ -3,4 +3,4 @@ mindspore.Tensor.det
 
 .. py:method:: mindspore.Tensor.det()
 
-    详情请参考 :func:`mindspore.ops.det`。
+    此接口从2.4版本开始已被弃用，并将在未来版本中被移除。

@@ -2,6 +2,9 @@ dot:
     description: |
         Computes the dot product of two 1D tensor.
     
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+        
         Args:
             input (Tensor): The first input in the dot product, must be 1D.
             other (Tensor): The second input in the dot product, must be 1D.

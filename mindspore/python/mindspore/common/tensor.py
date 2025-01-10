@@ -1779,7 +1779,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def fmin(self, other):
         r"""
-        For details, please refer to :func:`mindspore.ops.fmin`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('fmin')(self, other)
 
@@ -2487,7 +2487,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def det(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.det`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('det')(self)
 
@@ -2523,7 +2523,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def lgamma(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.lgamma`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('lgamma')(self)
 
@@ -3647,7 +3647,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def cholesky_inverse(self, upper=False):
         r"""
-        For details, please refer to :func:`mindspore.ops.cholesky_inverse`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('cholesky_inverse')(self, upper=upper)
 
@@ -3893,7 +3893,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def lstsq(self, A):
         r"""
-        For details, please refer to :func:`mindspore.ops.lstsq`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('lstsq')(self, A)
 
@@ -3951,11 +3951,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def matrix_power(self, n):
         r"""
-        For details, please refer to :func:`mindspore.ops.matrix_power`.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('matrix_power')(self, n)
 
@@ -4059,13 +4055,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def quantile(self, q, axis=None, keepdims=False):
         r"""
-        For details, please refer to :func:`mindspore.ops.quantile`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('quantile')(self, q, axis, keepdims)
 
     def nanquantile(self, q, axis=None, keepdims=False):
         """
-        For details, please refer to :func:`mindspore.ops.nanquantile`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         return tensor_operator_registry.get('nanquantile')(self, q, axis, keepdims)
 
@@ -4092,7 +4088,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def qr(self, some=True):
         r"""
-        For details, please refer to :func:`mindspore.ops.qr`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.
         """
         validator.check_value_type('some', some, bool, 'Tensor.qr')
         return tensor_operator_registry.get('qr')(self, 'reduced' if some else 'complete')

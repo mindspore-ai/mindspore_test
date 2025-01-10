@@ -10858,9 +10858,6 @@ def cumprod(input, dim, dtype=None):
 
         y_i = x_1 * x_2 * x_3 * ... * x_i
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input tensor.
             :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
@@ -12606,9 +12603,6 @@ def _get_transpose_shape(x2_shape):
 def dot(input, other):
     """
     Computation a dot product between samples in two tensors.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): First tensor in Dot op with datatype float16 or float32.

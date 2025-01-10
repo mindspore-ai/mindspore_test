@@ -2,4 +2,4 @@ subtract:
     description: |
         subtract(other, *, alpha=1) -> Tensor
 
-        For details, please refer to :func:`mindspore.ops.subtract`.
+        This interface is deprecated from version 2.4 and will be removed in a future version.

@@ -830,6 +830,9 @@ class SmoothL1Loss(Cell):
 
     Refer to :func:`mindspore.mint.nn.functional.smooth_l1_loss` for more details.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Supported Platforms:
         ``Ascend``
     """
