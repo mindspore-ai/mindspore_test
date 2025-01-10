@@ -3163,8 +3163,11 @@ EvalResultPtr PrimInstanceEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
 
 EvalResultPtr FunctionalEvaluator::EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list,
                                             const ConfigPtr &, const AnfNodeConfigPtr &out_conf) {
+  MS_EXCEPTION_IF_NULL(out_conf);
+  MS_EXCEPTION_IF_NULL(out_conf->node());
   auto cnode = out_conf->node()->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
+  ScopeGuard scope_guard(cnode->scope());
   TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(cnode->debug_info()));
   auto func_graph = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
