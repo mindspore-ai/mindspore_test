@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -115,6 +115,7 @@ def _tensor_ascend_grad_overflow_row_tensor(grad):
     output = base - status.all()
     output = P.Reshape()(output, ((1,)))
     return output
+
 
 class _OutputToFloat16(Cell):
     "Wrap cell for amp. Cast network output back to float16"
