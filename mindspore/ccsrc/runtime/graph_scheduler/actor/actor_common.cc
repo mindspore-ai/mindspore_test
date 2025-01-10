@@ -1023,6 +1023,13 @@ void SyncDeviceTensorsInParameterStore(size_t outer_index, size_t inner_index, c
       MemoryManagerActor::GetInstance()->AllocateMemory(&allocate_list, device_context, context, from_aid);
     }
 
+    if (device_tensor->GetSize() == 0 || tensor_address->GetSize() == 0) {
+      MS_LOG(DEBUG) << from_aid.Name() << " input size is 0, outer index" << outer_index
+                    << ", inner index: " << inner_index << ", device tensor size: " << device_tensor->GetSize()
+                    << ", tensor address size: " << tensor_address->GetSize() << ".";
+      continue;
+    }
+
     if (!AsyncCopy(device_tensor, tensor_address.get())) {
       MS_LOG(EXCEPTION) << "Sync src addr: " << tensor_address.get() << ", to dst addr: " << device_tensor
                         << " failed.";
@@ -1148,7 +1155,9 @@ DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &paramet
         device_tensor = tensor_address;
       }
       SyncDeviceTensorsInParameterStore(outer_index, inner_index, tensor_address, tensor, context, from_aid);
-      if (device_tensor != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
+      if (device_tensor != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType() &&
+          front_node.first->isa<Parameter>() &&
+          common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
         tensor->set_device_address(device_tensor);
         return device_tensor.get();
       }
