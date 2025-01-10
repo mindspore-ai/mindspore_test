@@ -53,7 +53,7 @@ mindspore.mint.nn.functional.conv3d
     - :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) \% StrideD <= PadBack` 。
     - :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) \% StrideH <= PadDown` 。
     - :math:`stride_d <= kernel_d` 。
-    - :math:`PadUp < kh` 且 :math:`PadDown < kh` 。当 `padding` = ``'valid'`` 时， PadUp 和 PadDown 取值是0。 当 ``padding``= ``'same'`` 时， 对于high维度的PadUp能通过
+    - :math:`PadUp < kh` 且 :math:`PadDown < kh` 。当 `padding` = ``'valid'`` 时， PadUp 和 PadDown 取值是0。 当 `padding` = ``'same'`` 时， 对于high维度的PadUp能通过
       :math:`floor(((H_{out}-1) * strideH + (kh - 1) * DilationH + 1 - H_{in}) / 2)` 计算得到。
       用类似的方法能计算得到关于depth和width维度的padding值。且depth和width维度也有相同的约束条件。
     - :math:`((kh - 1) * DilationH - PadUp)` 取值区间为[0, 255]。深度和宽度维度具有相同的约束。
