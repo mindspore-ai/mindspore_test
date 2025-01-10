@@ -53,7 +53,7 @@ add:
         >>> print(output.dtype)
         Float32
 
-    .. method:: Tensor.add(other, alpha=1) -> Tensor
+    .. method:: Tensor.add(other, *, alpha=1) -> Tensor
         :noindex:
     
     Adds scaled other value to `self`.
