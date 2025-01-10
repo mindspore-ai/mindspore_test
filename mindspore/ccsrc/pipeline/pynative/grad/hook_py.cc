@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include "include/common/utils/hook.h"
+#include "pipeline/jit/ps/pipeline.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
@@ -35,6 +36,7 @@ inline uint64_t GetTensorNumId(const std::string &id) { return std::stoull(id.su
 }  // namespace
 
 std::map<uint64_t, std::vector<uint64_t>> RegisterHook::tensor_id_with_unique_id_ = {};
+std::map<uint64_t, std::weak_ptr<std::map<uint64_t, py::function>>> RegisterHook::tensor_id_with_hook_map_ = {};
 std::map<uint64_t, std::pair<AutoGradMetaDataWeakPtr, TensorBackwardHookPtr>> RegisterHook::hook_meta_fn_map_ = {};
 
 uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook) {
@@ -54,7 +56,40 @@ uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::Tensor &tensor, 
   meta.lock()->AddBackwardHook(unique_id_, tensor_backward_hook);
   hook_meta_fn_map_.emplace(unique_id_, std::make_pair(meta, tensor_backward_hook));
   tensor_id_with_unique_id_[tensor_id].emplace_back(unique_id_);
+
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
+    std::shared_ptr<std::map<uint64_t, py::function>> hook_map;
+    if (tensor.has_user_data("backward_hook")) {
+      hook_map = tensor.user_data<std::map<uint64_t, py::function>>("backward_hook");
+    } else {
+      hook_map = std::make_shared<std::map<uint64_t, py::function>>();
+      const_cast<tensor::Tensor &>(tensor).set_user_data("backward_hook", hook_map);
+    }
+    (*hook_map)[unique_id_] = hook;
+
+    if (tensor_id_with_hook_map_.find(tensor_id) == tensor_id_with_hook_map_.end()) {
+      tensor_id_with_hook_map_[tensor_id] = hook_map;
+    }
+  }
+
   return unique_id_;
+}
+
+void RegisterHook::RemoveTensorBackwardHookOfGraph(uint64_t tensor_id, uint64_t handle_id) {
+  auto found = tensor_id_with_hook_map_.find(tensor_id);
+  if (found != tensor_id_with_hook_map_.end()) {
+    auto hook_map = found->second.lock();
+    if (hook_map != nullptr) {
+      auto iter = hook_map->find(handle_id);
+      if (iter != hook_map->end()) {
+        MS_LOG(DEBUG) << "Remove hook, handle id: " << handle_id
+                      << ", hook: " << py::cast<std::string>(py::str(iter->second));
+        hook_map->erase(iter);
+      } else {
+        MS_LOG(WARNING) << "No hook was found for handle id: " << handle_id;
+      }
+    }
+  }
 }
 
 void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
@@ -65,10 +100,19 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
     return;
   }
   for (auto tensor_it = tensor_id_with_unique_id_.begin(); tensor_it != tensor_id_with_unique_id_.end();) {
+    auto tensor_id = tensor_it->first;
     auto &unique_id_list = tensor_it->second;
-    unique_id_list.erase(std::remove(unique_id_list.begin(), unique_id_list.end(), handle_id), unique_id_list.end());
-    if (unique_id_list.empty()) {
-      tensor_it = tensor_id_with_unique_id_.erase(tensor_it);
+    auto new_end = std::remove(unique_id_list.begin(), unique_id_list.end(), handle_id);
+    if (new_end != unique_id_list.end()) {
+      unique_id_list.erase(new_end, unique_id_list.end());
+      if (unique_id_list.empty()) {
+        tensor_it = tensor_id_with_unique_id_.erase(tensor_it);
+      }
+
+      if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
+        RemoveTensorBackwardHookOfGraph(tensor_id, handle_id);
+      }
+      break;
     } else {
       ++tensor_it;
     }
@@ -79,6 +123,23 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
     return;
   }
   meta->RemoveBackwardHook(handle_id);
+}
+
+py::list RegisterHook::GetHooks(const tensor::Tensor &tensor) {
+  const auto &tensor_id = GetTensorNumId(tensor.id());
+  py::list hooks;
+
+  auto found = tensor_id_with_hook_map_.find(tensor_id);
+  if (found != tensor_id_with_hook_map_.end()) {
+    auto hook_map = found->second.lock();
+    if (hook_map != nullptr) {
+      for (const auto &item : *hook_map) {
+        hooks.append(item.second);
+      }
+    }
+  }
+
+  return hooks;
 }
 
 void RegisterHook::UpdateTensorBackwardHook(const AutoGradMetaDataPtr &auto_grad_meta_data,

@@ -3,7 +3,7 @@ mindspore.ops.SparseApplyProximalAdagrad
 
 .. py:class:: mindspore.ops.SparseApplyProximalAdagrad(use_locking=False)
 
-    根据Proximal Adagrad算法更新网络参数。与 :class:`mindspore.ops.ApplyProximalAdagrad` 相比，增加了一个索引Tensor。
+    根据Proximal Adagrad算法更新网络参数或者Tensor。与 :class:`mindspore.ops.ApplyProximalAdagrad` 相比，增加了一个索引Tensor。
 
     .. math::
         \begin{array}{ll} \\
@@ -19,8 +19,8 @@ mindspore.ops.SparseApplyProximalAdagrad
         - **use_locking** (bool) - 如果为 ``True`` ，则将保护 `var` 和 `accum` 参数不被更新。默认值： ``False`` 。
 
     输入：
-        - **var** (Parameter) - 公式中的"var"。数据类型必须为float16或float32。shape为 :math:`(N, *)` ，其中 :math:`*` 表示任何附加维度。
-        - **accum** (Parameter) - 公式中的"accum"，与 `var` 的shape相同。
+        - **var** (Union[Parameter, Tensor]) - 公式中的"var"。数据类型必须为float16或float32。shape为 :math:`(N, *)` ，其中 :math:`*` 表示任何附加维度。
+        - **accum** (Union[Parameter, Tensor]) - 公式中的"accum"，与 `var` 的shape相同。
         - **lr** (Union[Number, Tensor]) - 学习率，必须为float或为Tensor，其数据类型为float16或float32。必须大于零。
         - **l1** (Union[Number, Tensor]) - l1正则化，必须为float或为Tensor，其数据类型为float16或float32。必须大于等于零。
         - **l2** (Union[Number, Tensor]) - l2正则化，必须为float或为Tensor，其数据类型为float16或float32。必须大于等于零。
@@ -28,7 +28,7 @@ mindspore.ops.SparseApplyProximalAdagrad
         - **indices** (Tensor) - `var` 和 `accum` 第一维度中的索引。如果 `indices` 中存在重复项，则无意义。数据类型必须是int32、int64和 :math:`indices.shape[0] = grad.shape[0]` 。
 
     输出：
-        两个Tensor组成的tuple，更新后的参数。
+        两个Tensor组成的tuple，更新后的参数或者Tensor。
 
         - **var** (Tensor) - shape和数据类型与输入 `var` 相同。
         - **accum** (Tensor) - shape和数据类型与输入 `accum` 相同。

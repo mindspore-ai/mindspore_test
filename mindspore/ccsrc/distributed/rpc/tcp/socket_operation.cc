@@ -451,6 +451,27 @@ int SocketOperation::Accept(int sock_fd) {
   if (acceptFd < 0) {
     MS_LOG(ERROR) << "Failed to call accept, errno: " << errno << ", server: " << sock_fd;
     return acceptFd;
+  } else {
+    if (IS_VLOG_ON(VL_DISTRIBUTED_FD)) {
+      uint16_t port = 0;
+      if (storage.sa.sa_family == AF_INET) {
+        port = ntohs(storage.saIn.sin_port);
+      } else if (storage.sa.sa_family == AF_INET6) {
+        port = ntohs(storage.saIn6.sin6_port);
+      }
+      std::string ip = "";
+      if (storage.sa.sa_family == AF_INET) {
+        char ipv4[INET_ADDRSTRLEN] = {0};
+        ip = inet_ntop(storage.sa.sa_family, &storage.saIn.sin_addr, ipv4, INET_ADDRSTRLEN);
+      } else if (storage.sa.sa_family == AF_INET6) {
+        char ipv6[INET6_ADDRSTRLEN] = {0};
+        ip = inet_ntop(storage.sa.sa_family, &storage.saIn6.sin6_addr, ipv6, INET6_ADDRSTRLEN);
+      } else {
+        MS_VLOG(VL_DISTRIBUTED_FD) << "Unknown fd: " << acceptFd << ", family: " << storage.sa.sa_family << ".";
+      }
+      MS_VLOG(VL_DISTRIBUTED_FD) << "Accept fd : " << acceptFd << ", sock_fd : " << sock_fd << ", port : " << port
+                                 << ", ip : " << ip;
+    }
   }
   if (SetSocketOptions(acceptFd) < 0) {
     MS_LOG(ERROR) << "Failed to set socket options for accepted socket: " << acceptFd;

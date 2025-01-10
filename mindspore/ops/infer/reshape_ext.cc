@@ -19,14 +19,14 @@
 
 #include <string>
 #include <set>
-#include "infer/scalar_graph_holder.h"
+#include "ops/scalar_graph_holder.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
 #include "ops/primitive_c.h"
 #include "mindapi/helper.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

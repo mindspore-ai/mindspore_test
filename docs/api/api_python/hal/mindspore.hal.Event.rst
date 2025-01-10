@@ -9,6 +9,9 @@ mindspore.hal.Event
 
     当事件首次被记录时，底层设备事件才会被初始化。
 
+    .. note::
+        - 接口即将废弃，请使用接口 :class:`mindspore.runtime.Event` 代替。
+
     参数：
         - **enable_timing** (bool, 可选) - 事件是否应计时。（默认值： ``False``）
         - **blocking** (bool, 可选) - 如果为 ``True``， `wait` 函数将是阻塞的。（默认值： ``False``）

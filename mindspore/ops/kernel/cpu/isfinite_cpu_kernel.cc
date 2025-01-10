@@ -48,8 +48,8 @@ bool IsFiniteCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &input
                                         const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kIsFiniteInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kIsFiniteOutputsNum, kernel_name_);
-  auto input = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto output = reinterpret_cast<bool *>(outputs[kIndex0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output = GetDeviceAddress<bool>(outputs, kIndex0);
 
   CTask task;
   task = [this, &input, &output](size_t start, size_t end) {

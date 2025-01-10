@@ -20,7 +20,7 @@ def prompt_flash_attention_forward_func(query, key, value, attn_mask, actual_seq
                                   scale_value, pre_tokens, next_tokens, input_layout,
                                   num_key_value_heads, sparse_mode, inner_precise)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [mstype.float16, mstype.bfloat16])
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])

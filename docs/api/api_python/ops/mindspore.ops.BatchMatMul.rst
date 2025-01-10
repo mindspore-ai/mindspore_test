@@ -8,7 +8,7 @@ mindspore.ops.BatchMatMul
     .. math::
         \text{output}[..., :, :] = \text{matrix}(x[..., :, :]) * \text{matrix}(y[..., :, :])
 
-    两个输入Tensor必须具有相同的秩，并且秩必须不小于 `2`。
+    两个输入Tensor的秩必须不小于 `2`，如果是GPU或者CPU环境，两个输入Tensor必须具有相同的秩。
 
     参数：
         - **transpose_a** (bool) - 如果为 ``True`` ，则在乘法之前转置 `x` 的最后两个维度。默认值： ``False`` 。

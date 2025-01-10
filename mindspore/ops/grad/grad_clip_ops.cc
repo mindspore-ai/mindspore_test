@@ -82,16 +82,21 @@ REG_BPROP_BUILDER("ClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
     auto is_in_Interval = ib->LogicalAnd(ib->GreaterEqual(x, min), ib->LessEqual(x, max));
     auto is_lt_min = ib->LogicalAnd(ib->Less(x, min), ib->Less(min, max));
     auto is_gt_max = ib->LogicalOr(ib->Greater(x, max), ib->Less(max, min));
-    return {ib->Select(is_in_Interval, dout, zero), ib->Select(is_lt_min, dout, zero),
-            ib->Select(is_gt_max, dout, zero)};
+    auto dint = {ib->Select(is_in_Interval, dout, zero), ib->Select(is_lt_min, dout, zero),
+                 ib->Select(is_gt_max, dout, zero)};
+    auto dmin = BinopGradCommon(ib, x, min, *(dint.begin() + kIndex0), *(dint.begin() + kIndex1))[kIndex1];
+    auto dmax = BinopGradCommon(ib, x, max, *(dint.begin() + kIndex0), *(dint.begin() + kIndex2))[kIndex1];
+    return {*(dint.begin() + kIndex0), dmin, dmax};
   }
   if (!min_type_none) {
-    return {ib->Select(ib->GreaterEqual(x, min), dout, zero), ib->Select(ib->Less(x, min), dout, zero),
-            ib->OutZeros(max)};
+    auto dint = {ib->Select(ib->GreaterEqual(x, min), dout, zero), ib->Select(ib->Less(x, min), dout, zero)};
+    auto dmin = BinopGradCommon(ib, x, min, *(dint.begin() + kIndex0), *(dint.begin() + kIndex1))[kIndex1];
+    return {*(dint.begin() + kIndex0), dmin, ib->OutZeros(max)};
   }
   if (!max_type_none) {
-    return {ib->Select(ib->LessEqual(x, max), dout, zero), ib->OutZeros(min),
-            ib->Select(ib->Greater(x, max), dout, zero)};
+    auto dint = {ib->Select(ib->LessEqual(x, max), dout, zero), ib->Select(ib->Greater(x, max), dout, zero)};
+    auto dmax = BinopGradCommon(ib, x, max, *(dint.begin() + kIndex0), *(dint.begin() + kIndex1))[kIndex1];
+    return {*(dint.begin() + kIndex0), ib->OutZeros(min), dmax};
   }
   return {dout, ib->OutZeros(min), ib->OutZeros(max)};
 });
@@ -140,17 +145,6 @@ REG_BPROP_BUILDER("InplaceClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(i
   auto zero = ib->Tensor(0, ib->GetDtype(dout));
   bool min_type_none = ib->GetDtype(min)->isa<TypeNone>();
   bool max_type_none = ib->GetDtype(max)->isa<TypeNone>();
-
-  if (!min_type_none) {
-    if (ib->GetDtype(x)->type_id() != ib->GetDtype(min)->type_id()) {
-      min = ib->Cast(min, ib->GetDtype(x)->type_id());
-    }
-  }
-  if (!max_type_none) {
-    if (ib->GetDtype(x)->type_id() != ib->GetDtype(max)->type_id()) {
-      max = ib->Cast(max, ib->GetDtype(x)->type_id());
-    }
-  }
 
   if (!min_type_none && !max_type_none) {
     auto is_in_Interval = ib->LogicalAnd(ib->GreaterEqual(x, min), ib->LessEqual(x, max));

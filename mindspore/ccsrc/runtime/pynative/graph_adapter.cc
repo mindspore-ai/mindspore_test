@@ -299,7 +299,7 @@ void GraphAdapter::HandleBackoffValueNode(const ValueNodePtr &value_node, const 
     new_device_tensor->set_from_persistent_mem(true);
     MS_LOG(DEBUG) << "Create backoff device tensor:" << new_device_tensor << " type:" << new_device_tensor->type_id()
                   << " for ValueNode " << value_node->ToString();
-    runtime::SchedulerHelper::AddDeviceTensorStore(front_node.get(), new_device_tensor);
+    runtime::SchedulerHelper::AddDeviceTensorStore(front_node, new_device_tensor);
   }
 }
 
@@ -332,7 +332,7 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     auto device_address = HandleAddressForHeterogeneous(tensor, value_node, device_context);
     device_address = std::dynamic_pointer_cast<device::DeviceAddress>(
       kernel::pyboost::PyBoostUtils::ContiguousByDeviceAddress(device_address));
-    runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
+    runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
     tensor->set_device_address(device_address);
     auto front_node = AnfAlgo::FetchFrontNodeByBackendNode(value_node, *graph);
     MS_EXCEPTION_IF_NULL(front_node);
@@ -414,6 +414,9 @@ void GraphAdapter::ReplaceGraphParameterProperties(const KernelGraphPtr &graph,
 
       auto abstract = parameter->abstract();
       MS_EXCEPTION_IF_NULL(abstract);
+      if (!abstract->isa<abstract::AbstractTensor>()) {
+        continue;
+      }
       auto shape = abstract->BuildShape();
       auto new_abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(address->type_id()), shape);
       parameter->set_abstract(new_abs);

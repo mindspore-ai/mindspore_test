@@ -14,16 +14,24 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 from math import log
-import pytest
 import numpy as np
 from mindspore import context
 from mindspore.nn import Cell
 from mindspore.ops import functional as F
 from mindspore.common import mutable
+from mindspore._extends.parse import compile_config
 from sequence_help import TupleFactory, context_prepare
 
-context.set_context(mode=context.GRAPH_MODE, grad_for_scalar=True)
+context.set_context(mode=context.GRAPH_MODE)
 context_prepare()
+
+
+def setup_module():
+    compile_config.GRAD_FOR_SCALAR = 1
+
+
+def teardown_module():
+    compile_config.GRAD_FOR_SCALAR = ''
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
@@ -50,7 +58,7 @@ def test_scalar_add():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_scalar_sub_with_diff_type():
     """

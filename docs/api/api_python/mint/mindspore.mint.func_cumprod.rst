@@ -8,6 +8,9 @@ mindspore.mint.cumprod
     .. math::
         y_i = x_1 * x_2 * x_3 * ... * x_i
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+    
     参数：
         - **input** (Tensor) - 输入Tensor。
         - **dim** (int) - 累积和计算的轴。

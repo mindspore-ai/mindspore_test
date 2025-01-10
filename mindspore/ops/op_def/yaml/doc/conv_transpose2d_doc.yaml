@@ -1,0 +1,57 @@
+conv_transpose2d:
+    description: |
+        Applies a 2D transposed convolution operator over an input image composed of several input planes,
+        sometimes also called deconvolution (although it is not an actual deconvolution).
+
+        Refer to :class:`mindspore.mint.nn.ConvTranspose2d` for more details.
+
+        .. warning::
+            - This is an experimental API that is subject to change or deletion.
+            - In the scenario where inputs are non-contiguous, `output_padding` must be less than `stride` .
+            - For Atlas training products, when the dtype of input is float32, the `groups` only supports 1.
+
+        Args:
+            input (Tensor): input tensor of shape :math:`(minibatch, in\_channels, iH, iW)` or :math:`(in\_channels, iH, iW)` .
+            weight (Tensor): filters of shape :math:`(in\_channels, \frac{out\_channels}{\text{groups}}, kH, kW)` .
+            bias (Tensor, optional): bias of shape :math:`(out\_channels)` . Default: ``None`` .
+            stride (Union[int, tuple(int), list[int]], optional): the stride of the convolving kernel. Can be a single number or a
+                tuple :math:`(sH, sW)` . Default: ``1`` .
+            padding (Union[int, tuple(int), list[int]], optional): :math:`dilation * (kernel\_size - 1) - padding` zero-padding will
+                be added to both sides of each dimension in the input. Can be a single number or a tuple :math:`(padH, padW)` .
+                Default: ``0`` .
+            output_padding (Union[int, tuple(int), list[int]], optional): additional size added to one side of each dimension in the
+                output shape. Can be a single number or a tuple :math:`(out\_padH, out\_padW)` . The value of `output_padding` must
+                be less than `stride` or `dilation` . Default: ``0`` .
+            groups (int, optional): split input into groups, :math:`in\_channels` should be divisible by the
+                number of groups. Default: ``1`` .
+            dilation (Union[int, tuple(int), list[int]], optional): the spacing between kernel elements. Can be a single number or
+                a tuple :math:`(dH, dW)` . Default: ``1`` .
+
+        Returns:
+            Tensor of shape :math:`(minibatch, out\_channels, oH, oW)` or :math:`(out\_channels, oH, oW)` , where
+
+            .. math::
+                oH = (iH - 1) \times sH - 2 \times padH + dH \times (kH - 1) + out\_padH + 1
+            .. math::
+                oW = (iW - 1) \times sW - 2 \times padW + dW \times (kW - 1) + out\_padW + 1
+
+        Raises:
+            TypeError: If `stride`, `padding`, `output_padding` or `dilation` is neither an int nor a tuple or a list.
+            TypeError: If `groups` is not an int.
+            ValueError: If the shape of `bias` is not :math:`(out\_channels)` .
+            ValueError: If `stride` or `dilation` is less than 1.
+            ValueError: If `padding` or `output_padding` is less than 0.
+            ValueError: If `stride`, `padding`, `output_padding` or `dilation` is a tuple whose length is not equal to 2.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.ones([1, 4, 5, 5]), mindspore.float32)
+            >>> weight = Tensor(np.ones([4, 8, 3, 3]), mindspore.float32)
+            >>> output = ops.conv_transpose2d(x, weight)
+            >>> print(output.shape)
+            (1, 8, 7, 7)

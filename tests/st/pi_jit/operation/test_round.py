@@ -32,7 +32,7 @@ test_data = [
 ]
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func, ms_func', [(fallback_round, jit_fallback_round)])
 @pytest.mark.parametrize('x, n, error', test_data)
 def test_round_operations(func, ms_func, x, n, error):

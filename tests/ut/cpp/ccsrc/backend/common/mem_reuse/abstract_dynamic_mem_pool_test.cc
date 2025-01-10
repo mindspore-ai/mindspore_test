@@ -480,11 +480,21 @@ TEST_F(TestAbstractDynamicMemPool, test_memory_reserved_dize) {
 
 class LinearDynamicMemPoolWithoutVmm : public LinearDynamicMemPool {
  public:
-  LinearDynamicMemPoolWithoutVmm() {
-    SetEnableVmm(false);
+  LinearDynamicMemPoolWithoutVmm() { SetEnableVmm(false); }
+
+  size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr) override {
+    auto ret = LinearDynamicMemPool::AllocDeviceMem(size, addr);
+    free_mem_size_ -= ret;
+    return ret;
   }
 
-  uint64_t total_mem_size() const override { return 100 * kGBToByte; }
+  uint64_t total_mem_size() const override { return total_mem_size_; }
+
+  size_t free_mem_size() override { return free_mem_size_; }
+
+ private:
+  size_t total_mem_size_{100 * kGBToByte};
+  size_t free_mem_size_{total_mem_size_};
 };
 
 /// Feature: test persistent mem block limit for abstract dynamic mem pool.
@@ -504,6 +514,26 @@ TEST_F(TestAbstractDynamicMemPool, test_persistent_block_limit) {
   auto common_allocators_it = allocators_map.find(std::make_pair(false, 0));
   EXPECT_TRUE(common_allocators_it != allocators_map.end());
   EXPECT_TRUE(common_allocators_it->second->mem_blocks_.size() == 9);
+}
+
+/// Feature: test malloc common memory from persistent pool.
+/// Description: test memory pool malloc mem block limit.
+/// Expectation: all interface work normally and can not throw exception.
+TEST_F(TestAbstractDynamicMemPool, test_common_malloc_from_persistent) {
+  // Total memory is 100Gb.
+  //    First, malloc 50GB persistent memory and 50GB common memory.
+  //    Second, free 50GB persistent memory.
+  //    Third, malloc 1GB common memory.
+  auto mem_pool = std::make_shared<LinearDynamicMemPoolWithoutVmm>();
+  auto persistent_memory = mem_pool->AllocTensorMem(50 * kGBToByte, true);
+  auto common_memory = mem_pool->AllocTensorMem(50 * kGBToByte, false);
+  auto more_memory = mem_pool->AllocTensorMem(1, false);
+  EXPECT_TRUE(more_memory == nullptr);
+  mem_pool->FreeTensorMem(persistent_memory);
+  more_memory = mem_pool->AllocTensorMem(1, false);
+  EXPECT_TRUE(more_memory != nullptr);
+  mem_pool->FreeTensorMem(common_memory);
+  mem_pool->FreeTensorMem(more_memory);
 }
 }  // namespace device
 }  // namespace mindspore

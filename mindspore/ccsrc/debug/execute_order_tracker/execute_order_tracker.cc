@@ -33,6 +33,8 @@
 namespace mindspore {
 
 namespace {
+using ShapeAndType = std::tuple<std::string, std::string, std::string, std::string, size_t, size_t>;
+
 template <typename T>
 void WriteCsvFile(const std::string &real_path, const std::vector<T> &data_list,
                   const std::vector<std::pair<std::string, std::function<std::string(const T &)>>> &csv_columns) {
@@ -115,8 +117,8 @@ void ExecuteOrderTracker::AddCommOrderInfo(const CommOrderInfoPtr &comm_info) {
 }
 
 void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
+  MS_LOG(INFO) << "The execution order stored program starts running.";
   MS_EXCEPTION_IF_NULL(cnode);
-
   auto order_info = std::make_shared<OrderInfo>();
   order_info->node_name = cnode->fullname_with_scope();
   order_info->logic_id = std::to_string(AnfAlgo::GetStreamDistinctionLabel(cnode.get()));
@@ -127,20 +129,26 @@ void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
     event_id = std::to_string(common::AnfAlgo::GetNodeAttr<uint32_t>(cnode, kAttrEventId));
   }
   order_info->event_id = event_id;
-
   std::string group;
   if (common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
-    group = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+    auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
+    auto group_value = prim->GetAttr(kAttrGroup);
+    if (group_value == nullptr) {
+      MS_LOG(EXCEPTION) << "Group value is nullptr, node: " << cnode->fullname_with_scope();
+    }
+
+    if (group_value->isa<StringImm>()) {
+      group = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+    }
   }
   order_info->group = group;
 
   AddOrderInfo(order_info);
-
   if (IsCommunicationOp(cnode)) {
     auto comm_info = std::make_shared<CommOrderInfo>();
     comm_info->index = order_info->index;
     comm_info->group = order_info->group;
-
     // Get comm_ranks and comm_rank strings
     auto comm_ranks = GetCommRanks(order_info->group);
     std::string comm_ranks_str = std::accumulate(
@@ -180,6 +188,7 @@ void ExecuteOrderTracker::ProcessNode(const CNodePtr &cnode) {
       comm_order_path_ = GetExecuteOrderFilePath(kCommExecuteOrderFileName);
     }
   }
+  MS_LOG(INFO) << "Execution order storage program runs to the end.";
 }
 
 bool ExecuteOrderTracker::IsCommunicationOp(const CNodePtr &cnode) const {
@@ -234,7 +243,6 @@ std::tuple<std::string, std::string, std::string> ExecuteOrderTracker::GetCommun
     }
     return rank_value == std::numeric_limits<uint32_t>::max() ? "" : std::to_string(rank_value);
   };
-
   std::string src_rank = get_rank_str(kAttrSrcRank);
   std::string dest_rank = get_rank_str(kAttrDestRank);
   std::string root_rank = get_rank_str(kAttrRootRank);
@@ -242,8 +250,7 @@ std::tuple<std::string, std::string, std::string> ExecuteOrderTracker::GetCommun
   return {src_rank, dest_rank, root_rank};
 }
 
-std::tuple<std::string, std::string, std::string, std::string, size_t, size_t>
-ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
+ShapeAndType ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
   MS_EXCEPTION_IF_NULL(cnode);
 
   auto GetShapeAndType = [](AbstractBasePtr &abs) {
@@ -290,7 +297,6 @@ ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
     MS_EXCEPTION_IF_NULL(dtype);
     auto type_id = dtype->type_id();
     auto type_size = abstract::TypeIdSize(type_id);
-
     if (type_size == 0) {
       return 0;
     }
@@ -299,7 +305,6 @@ ExecuteOrderTracker::GetInputOutputShapeAndType(const CNodePtr &cnode) const {
 
   auto input_abs = cnode->input(1)->abstract();
   auto output_abs = cnode->abstract();
-
   if (!input_abs || !output_abs) {
     return std::make_tuple("UnknownShape", "UnknownType", "UnknownShape", "UnknownType", 0, 0);
   }
@@ -353,10 +358,18 @@ void ExecuteOrderTracker::Clear() {
 
   // Writing to a CSV file
   if (!order_info_list_.empty()) {
+    if (order_path_.empty()) {
+      MS_LOG(WARNING) << "Execute order dump path is empty, can not dump execute order.";
+      return;
+    }
     WriteCsvFile(order_path_, order_info_list_, order_info_csv);
   }
 
   if (!comm_order_info_list_.empty()) {
+    if (comm_order_path_.empty()) {
+      MS_LOG(WARNING) << "Comm execute order dump path is empty, can not dump comm execute order.";
+      return;
+    }
     WriteCsvFile(comm_order_path_, comm_order_info_list_, comm_order_csv);
   }
 

@@ -101,6 +101,7 @@ AMP_AUTO_BLACK_LIST = [
     P.LayerNorm,
     gen.LayerNormExt,
     P.BatchNorm,
+    gen.BatchNormExt,
     gen.GroupNorm,
     P.KLDivLoss,
     P.SmoothL1Loss,
@@ -112,6 +113,7 @@ AMP_AUTO_BLACK_LIST = [
     P.Pdist,
     P.Cdist,
     P.Renorm,
+    gen.MSELossExt,
 ]
 
 # Indicates which inputs of primitives need to be converted
@@ -843,6 +845,8 @@ def custom_mixed_precision(network, *, white_list=None, black_list=None, dtype=m
 
     Args:
         network (Cell): Definition of the network.
+
+    Keyword Args:
         white_list (list[Primitive, Cell], optional): White list of custom mixed precision. Defaults: ``None`` , means
             white list is not used.
         black_list (list[Cell], optional): Black list of custom mixed precision. Defaults: ``None`` , means

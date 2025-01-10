@@ -23,22 +23,44 @@ if [[ "$(uname)" != Linux || ("$(arch)" != x86_64 && "$(arch)" != aarch64) ]]; t
   return
 fi
 file_path=${BASEPATH}/mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/$(arch)
-file_name=${file_path}/ms_kernels_internal.tar.gz
-if [[ ! -f "${file_name}" ]]; then
-  echo "[WARNING] The file ${file_name}  does NOT EXIST."
+
+internal_file_name=${file_path}/ms_kernels_internal.tar.gz
+if [[ ! -f "${internal_file_name}" ]]; then
+  echo "[WARNING] The file ${internal_file_name}  does NOT EXIST."
   return
 fi
-file_lines=`cat "${file_name}" | wc -l`
-if [[ ${file_lines} -eq 3 ]]; then
-  echo "[WARNING] The file ms_kernel_internal.tar.gz is not pulled. Please ensure git-lfs is installed by"
+internal_file_lines=`cat "${internal_file_name}" | wc -l`
+if [[ ${internal_file_lines} -eq 3 ]]; then
+  echo "[WARNING] The file ms_kernels_internal.tar.gz is not pulled. Please ensure git-lfs is installed by"
   echo "[WARNING] 'git lfs install' and retry downloading using 'git lfs pull'."
   return
 fi
-tar -zxf ${file_name} -C ${file_path}
+tar --warning=no-unknown-keyword -zxf ${internal_file_name} -C ${file_path}
 if [[ $? -ne 0 ]]; then
-  echo "[WARNING] Unzip ms_kernel_internal.tar.gz FAILED!"
+  echo "[WARNING] Unzip ms_kernels_internal.tar.gz FAILED!"
   return
 fi
-echo "Unzip ms_kernel_internal.tar.gz SUCCESS!"
+echo "Unzip ms_kernels_internal.tar.gz SUCCESS!"
+
 export MS_INTERNAL_KERNEL_HOME="${file_path}/ms_kernels_internal"
 echo "MS_INTERNAL_KERNEL_HOME = ${MS_INTERNAL_KERNEL_HOME}"
+
+dependency_file_name=${file_path}/ms_kernels_dependency.tar.gz
+if [[ ! -f "${dependency_file_name}" ]]; then
+  echo "[WARNING] The file ${dependency_file_name}  does NOT EXIST."
+  return
+fi
+dependency_file_lines=`cat "${dependency_file_name}" | wc -l`
+if [[ ${dependency_file_lines} -eq 3 ]]; then
+  echo "[WARNING] The file ms_kernels_dependency.tar.gz is not pulled. Please ensure git-lfs is installed by"
+  echo "[WARNING] 'git lfs install' and retry downloading using 'git lfs pull'."
+  return
+fi
+tar --warning=no-unknown-keyword -zxf ${dependency_file_name} -C ${file_path}
+if [[ $? -ne 0 ]]; then
+  echo "[WARNING] Unzip ms_kernels_dependency.tar.gz FAILED!"
+  return
+fi
+
+cp -r ${file_path}/ms_kernels_dependency/lccl ${file_path}/ms_kernels_dependency/asdops ${file_path}/ms_kernels_internal
+echo "Unzip ms_kernels_dependency.tar.gz SUCCESS!"

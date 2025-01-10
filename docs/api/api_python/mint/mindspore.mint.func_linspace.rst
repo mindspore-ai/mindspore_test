@@ -5,14 +5,14 @@ mindspore.mint.linspace
 
     返回一个在区间 `start` 和 `end` （包括 `start` 和 `end` ）内均匀分布的，包含 `steps` 个值的一维Tensor。
 
-    .. warning::
-        Atlas训练系列产品暂不支持int16数据类型。
-
     .. math::
         \begin{aligned}
         &step = (end - start)/(steps - 1)\\
         &output = [start, start+step, start+2*step, ... , end]
         \end{aligned}
+
+    .. warning::
+        Atlas训练系列产品暂不支持int16数据类型。
 
     参数：
         - **start** (Union[float, int]) - 区间的起始值。可以为int或float。
@@ -23,7 +23,7 @@ mindspore.mint.linspace
         - **dtype** (:class:`mindspore.dtype`, 可选) - 期望输出Tensor的类型。默认值： ``None`` ，则输出类型为float32。
 
     返回：
-        Tensor，具有与 `start` 相同的dtype，shape为 :math:`(steps)` ，数据类型由 `dtype` 指定。
+        Tensor，具有与 `start` 相同的dtype，shape为 :math:`(steps,)` ，数据类型由 `dtype` 指定。
 
     异常：
         - **TypeError** - `start` 或 `end` 的数据类型不支持。

@@ -27,13 +27,13 @@ _optim_adamw_opt = C.MultitypeFuncGraph("optim_adamw_opt")
 hyper_map = C.HyperMap()
 assign_add = P.AssignAdd()
 
+
 @_optim_adamw_opt.register("Float", "Float", "Float", "Tensor", "Tensor", "Tensor", "Tensor",
                            "Tensor", "Tensor", "Tensor")
 def _run_optim_adamw_amsgrad_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_correction2, parameters, grads, exp_avg,
                                  exp_avg_sq, max_exp_avg_sq):
     """Apply adam optimizer to the weight parameter when amsgrad is True."""
     success = True
-    #lerp(grads, exp_avg, beta1)
     exp_avg_tmp = mint.add(mint.mul(exp_avg, beta1), grads, alpha=1 - beta1)
     exp_avg_sq_tmp = mint.mul(exp_avg_sq, beta2) + mint.mul(mint.mul(grads, grads), 1 - beta2)
 
@@ -41,25 +41,25 @@ def _run_optim_adamw_amsgrad_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_cor
     denom = F.cast(mint.div(mint.sqrt(max_exp_avg_sq), sqrt_bias_correction2), max_exp_avg_sq.dtype)
     denom = mint.add(denom, eps)
 
-    delta_param = mint.mul(neg_step_size, mint.div(exp_avg_tmp, denom))
+    delta_param = mint.mul(F.cast(neg_step_size, max_exp_avg_sq.dtype), mint.div(exp_avg_tmp, denom))
     F.assign(exp_avg, exp_avg_tmp)
     F.assign(exp_avg_sq, exp_avg_sq_tmp)
     assign_add(parameters, delta_param)
     return success
+
 
 @_optim_adamw_opt.register("Float", "Float", "Float", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor")
 def _run_optim_adamw_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_correction2, parameters, grads, exp_avg,
                          exp_avg_sq):
     """Apply adam optimizer to the weight parameter when amsgrad is False."""
     success = True
-    #lerp(grads, exp_avg, beta1)
     exp_avg_tmp = mint.add(mint.mul(exp_avg, beta1), grads, alpha=1 - beta1)
     exp_avg_sq_tmp = mint.mul(exp_avg_sq, beta2) + mint.mul(mint.mul(grads, grads), 1 - beta2)
 
     denom = F.cast(mint.div(mint.sqrt(exp_avg_sq_tmp), sqrt_bias_correction2), exp_avg_sq_tmp.dtype)
     denom = mint.add(denom, eps)
 
-    delta_param = mint.mul(neg_step_size, mint.div(exp_avg_tmp, denom))
+    delta_param = mint.mul(F.cast(neg_step_size, exp_avg_sq_tmp.dtype), mint.div(exp_avg_tmp, denom))
     F.assign(exp_avg, exp_avg_tmp)
     F.assign(exp_avg_sq, exp_avg_sq_tmp)
     assign_add(parameters, delta_param)

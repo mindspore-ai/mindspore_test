@@ -22,6 +22,8 @@
 #include <thread>
 #include <mutex>
 #include <set>
+#include <map>
+#include <vector>
 #include <string>
 #include <unordered_map>
 #include <condition_variable>
@@ -79,6 +81,8 @@ class BACKEND_EXPORT AsyncRQueue {
   // Call once before all ChildAfterFork
   static void ChildAfterForkPre();
 
+  bool Spin() { return tasks_queue_.spin(); }
+
   void SetSpin(bool spin);
 
  protected:
@@ -94,7 +98,12 @@ class BACKEND_EXPORT AsyncRQueue {
  private:
   void ClearTaskWithException();
 
+  void BindCoreForThread();
+
   RingQueue<AsyncTaskPtr, kQueueCapacity> tasks_queue_;
+
+  std::map<std::string, int> thread_to_core_idx = {
+    {"frontend_queue", 0}, {"backend_queue", 1}, {"launch_queue", 2}, {"bprop_queue", 3}};
 };
 }  // namespace runtime
 using AsyncRQueuePtr = std::unique_ptr<runtime::AsyncRQueue>;

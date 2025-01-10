@@ -22,6 +22,7 @@
 #include "op_def/structure_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runner.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
@@ -31,9 +32,8 @@ namespace mindspore::compile {
 namespace {
 #if !defined(__APPLE__)
 bool EnablePyNativeSyncRunning() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  return ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
+  return sync_stream;
 }
 #endif
 
@@ -680,5 +680,8 @@ void ViewBackend::AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, Devi
                                         tensor->data_ptr())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
   }
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+    MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
+    device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
 }
 }  // namespace mindspore::compile

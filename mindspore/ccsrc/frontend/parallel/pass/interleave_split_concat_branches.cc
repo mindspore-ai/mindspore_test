@@ -51,9 +51,11 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(manager);
   std::vector<InterLeaveScopePtr> interleave_scopes;
 
-  // Use unique id set to find correspond backward ops
-  std::set<std::string> target_unique_id_set;
+  // Use unique id to find correspond backward ops
+  std::unordered_map<std::string, bool> target_unique_id_map;
+  HashMap<std::string, CNodePtr> matmul_unique_id_map;
   size_t scope_id = 0;
+  HashMap<CNodePtr, CNodePtr> matmul_grad_dual_map;
   for (const auto &child_graph : manager->func_graphs()) {
     MS_EXCEPTION_IF_NULL(child_graph);
     auto graph_orders = child_graph->GetOrderedCnodes();
@@ -64,6 +66,7 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
     for (const auto &node : origin_nodes_topological) {
       MS_EXCEPTION_IF_NULL(node);
       EraseInterLeaveBranchAttr(node);
+      UpdateMatMulGradDualMap(node, &matmul_unique_id_map, &matmul_grad_dual_map);
       // Only split and concat node is the target node
       bool is_split = IsPrimitiveCNode(node, prim::kPrimSplit);
       bool is_concat = IsPrimitiveCNode(node, prim::kPrimConcat);
@@ -75,19 +78,24 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
       auto prim = common::AnfAlgo::GetCNodePrimitive(node);
       MS_EXCEPTION_IF_NULL(prim);
       // Node with enable interleave flag or its backward node
+      bool optimize_matmul_dw_order = false;
       if (!prim->HasAttr(kEnableInterleave)) {
         if (!node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
           continue;
         }
-        if (target_unique_id_set.find(GetValue<std::string>(node->GetPrimalAttr(kPrimalAttrForwardUniqueId))) ==
-            target_unique_id_set.end()) {
+        auto iter_forward =
+          target_unique_id_map.find(GetValue<std::string>(node->GetPrimalAttr(kPrimalAttrForwardUniqueId)));
+        if (iter_forward == target_unique_id_map.end()) {
           continue;
         }
+        optimize_matmul_dw_order = iter_forward->second;
         forward = false;
       }
 
       if (forward && node->HasPrimalAttr(kPrimalAttrUniqueId)) {
-        (void)target_unique_id_set.emplace(GetValue<std::string>(node->GetPrimalAttr(kPrimalAttrUniqueId)));
+        auto enable_flag = GetValue<int64_t>(prim->GetAttr(kEnableInterleave));
+        (void)target_unique_id_map.emplace(GetValue<std::string>(node->GetPrimalAttr(kPrimalAttrUniqueId)),
+                                           enable_flag == kEnableOptimizeMatMulDwOrderFlag);
       }
 
       if (is_split) {
@@ -96,6 +104,11 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
         current_scope->fork_node = node;
         current_scope->forward = forward;
         current_scope->scope_id = ++scope_id;
+        if (optimize_matmul_dw_order) {
+          current_scope->matmul_grad_dual_map = &matmul_grad_dual_map;
+        } else {
+          current_scope->matmul_grad_dual_map = nullptr;
+        }
         scope_stack.push(current_scope);
       }
 

@@ -19,6 +19,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
+#include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 
 namespace mindspore::kernel::pyboost {
@@ -38,7 +40,7 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
   runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);
   kernel_mod->Launch(input_tensors, output_tensors, op);
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync) {
     if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
       MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;

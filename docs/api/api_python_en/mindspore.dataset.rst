@@ -3,8 +3,33 @@ mindspore.dataset
 
 .. automodule:: mindspore.dataset
 
+User Defined
+--------------
+
+.. autosummary::
+    :toctree: dataset
+    :nosignatures:
+    :template: classtemplate_dataset.rst
+
+    mindspore.dataset.GeneratorDataset
+
+Standard Format
+----------------
+
+.. autosummary::
+    :toctree: dataset
+    :nosignatures:
+    :template: classtemplate_dataset.rst
+
+    mindspore.dataset.MindDataset
+    mindspore.dataset.OBSMindDataset
+    mindspore.dataset.TFRecordDataset
+
+Open Source
+-------------
+
 Vision
--------
+^^^^^^^^
 
 .. autosummary::
     :toctree: dataset
@@ -48,7 +73,7 @@ Vision
     mindspore.dataset.WIDERFaceDataset
 
 Text
------
+^^^^^
 
 .. autosummary::
     :toctree: dataset
@@ -58,6 +83,7 @@ Text
     mindspore.dataset.AGNewsDataset
     mindspore.dataset.AmazonReviewDataset
     mindspore.dataset.CLUEDataset
+    mindspore.dataset.CSVDataset
     mindspore.dataset.CoNLL2000Dataset
     mindspore.dataset.DBpediaDataset
     mindspore.dataset.EnWik9Dataset
@@ -76,7 +102,7 @@ Text
     mindspore.dataset.YelpReviewDataset
 
 Audio
-------
+^^^^^^
 
 .. autosummary::
     :toctree: dataset
@@ -91,28 +117,14 @@ Audio
     mindspore.dataset.TedliumDataset
     mindspore.dataset.YesNoDataset
 
-Standard Format
-----------------
+Others
+-------
 
 .. autosummary::
     :toctree: dataset
     :nosignatures:
     :template: classtemplate_dataset.rst
 
-    mindspore.dataset.CSVDataset
-    mindspore.dataset.MindDataset
-    mindspore.dataset.OBSMindDataset
-    mindspore.dataset.TFRecordDataset
-
-User Defined
---------------
-
-.. autosummary::
-    :toctree: dataset
-    :nosignatures:
-    :template: classtemplate_dataset.rst
-
-    mindspore.dataset.GeneratorDataset
     mindspore.dataset.NumpySlicesDataset
     mindspore.dataset.PaddedDataset
     mindspore.dataset.RandomDataset
@@ -178,8 +190,10 @@ The configuration module provides various functions to set and get the supported
     mindspore.dataset.config.ErrorSamplesMode
     mindspore.dataset.config.set_debug_mode
     mindspore.dataset.config.get_debug_mode
+    mindspore.dataset.config.set_multiprocessing_start_method
+    mindspore.dataset.config.get_multiprocessing_start_method
 
-Others
+Tools
 -------
 
 .. autosummary::

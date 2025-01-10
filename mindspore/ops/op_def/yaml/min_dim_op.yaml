@@ -1,0 +1,19 @@
+#operator min_dim
+min_dim:
+  args:
+    input:
+      dtype: tensor
+    dim:
+      dtype: int
+    keepdim:
+      dtype: bool
+      default: False
+  returns:
+    values:
+      dtype: tensor
+    index:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True

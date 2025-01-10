@@ -69,7 +69,19 @@ Status TreeConsumer::Terminate() {
 }
 
 Status IteratorConsumer::RegisterProfilingManager() {
-  auto profiler_state = profiling_manager_->GetProfilerTreeState(tree_adapter_->tree_.get());
+  ExecutionTree *tree = nullptr;
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  if (tree_adapter_->tree_) {
+#endif
+    tree = tree_adapter_->tree_.get();
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  } else {
+    tree = tree_adapter_->receive_tree_.get();
+  }
+#endif
+  auto profiler_state = profiling_manager_->GetProfilerTreeState(tree);
   // This should never happen
   CHECK_FAIL_RETURN_UNEXPECTED(profiler_state != ProfilingManager::kEnabledTreeRegistered,
                                "Something went wrong. Current tree is already registered with the MD Profiler");
@@ -81,7 +93,7 @@ Status IteratorConsumer::RegisterProfilingManager() {
   } else if (profiler_state == ProfilingRegistrationState::kEnabledTreeNotRegistered) {
     // Profiling infrastructures need to be initialized before Op launching
     // Setup profiling manager
-    RETURN_IF_NOT_OK(profiling_manager_->RegisterTree(this->tree_adapter_.get()));
+    RETURN_IF_NOT_OK(profiling_manager_->RegisterTree(tree));
     // dataset_iterator node is used for graph mode
     std::shared_ptr<Tracing> iterator_tracing = std::make_shared<DatasetIteratorTracing>();
     RETURN_IF_NOT_OK(profiling_manager_->RegisterTracingNode(iterator_tracing));
@@ -95,7 +107,19 @@ Status IteratorConsumer::RegisterProfilingManager() {
 }
 
 Status ToDevice::RegisterProfilingManager() {
-  auto profiler_state = profiling_manager_->GetProfilerTreeState(tree_adapter_->tree_.get());
+  ExecutionTree *tree = nullptr;
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  if (tree_adapter_->tree_) {
+#endif
+    tree = tree_adapter_->tree_.get();
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  } else {
+    tree = tree_adapter_->receive_tree_.get();
+  }
+#endif
+  auto profiler_state = profiling_manager_->GetProfilerTreeState(tree);
   // This should never happen
   CHECK_FAIL_RETURN_UNEXPECTED(profiler_state != ProfilingManager::kEnabledTreeRegistered,
                                "Something went wrong. Current tree is already registered with the MD Profiler");
@@ -107,7 +131,7 @@ Status ToDevice::RegisterProfilingManager() {
   } else if (profiler_state == ProfilingRegistrationState::kEnabledTreeNotRegistered) {
     // Profiling infrastructures need to be initialized before Op launching
     // Setup profiling manager
-    RETURN_IF_NOT_OK(profiling_manager_->RegisterTree(this->tree_adapter_.get()));
+    RETURN_IF_NOT_OK(profiling_manager_->RegisterTree(tree));
     // device_queue node is used for graph mode
     std::shared_ptr<Tracing> device_queue_tracing = std::make_shared<DeviceQueueTracing>();
     RETURN_IF_NOT_OK(profiling_manager_->RegisterTracingNode(device_queue_tracing));

@@ -19,11 +19,6 @@ if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     list(REMOVE_ITEM SRC_IN_910B "hccl/hcom_matmul_all_reduce.cc")
 endif()
 
-file(GLOB_RECURSE OPS_KERNEL_ASCEND_SRC_LIST "${MS_OPS_KERNEL_DIR}/ascend/*.cc")
-file(GLOB_RECURSE AICPU_OPS_SRC "${MS_OPS_KERNEL_DIR}/ascend/aicpu/*.cc")
-list(REMOVE_ITEM OPS_KERNEL_ASCEND_SRC_LIST ${AICPU_OPS_SRC})
-list(APPEND SRC_IN_910B ${OPS_KERNEL_ASCEND_SRC_LIST})
-
 if(ENABLE_DVM)
     file(GLOB_RECURSE DVM_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "dvm/*.cc")
     list(APPEND SRC_IN_910B "${DVM_SRC}")
@@ -36,7 +31,4 @@ add_library(_mindspore_plugin_device_ascend_kernel_910b_obj OBJECT ${SRC_IN_910B
 
 add_subdirectory(aicore)
 
-add_subdirectory(${MS_OPS_KERNEL_DIR}/ascend/ascendc "ascendc")
-include_directories(${MS_OPS_KERNEL_DIR}/ascend/aicpu/aicpu_ops)
-add_subdirectory(${MS_OPS_KERNEL_DIR}/ascend/aicpu/aicpu_ops aicpu/aicpu_ops)
 add_subdirectory(internal)

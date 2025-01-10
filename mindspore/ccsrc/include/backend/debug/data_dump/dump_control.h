@@ -17,13 +17,8 @@
 #define MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_CONTROL_H_
 
 #include <string>
-#include <mutex>
 #include <vector>
-#include <memory>
-#include <regex>
-#include "nlohmann/json.hpp"
 #include "utils/ms_utils.h"
-#include "include/backend/kernel_graph.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -31,12 +26,8 @@ namespace mindspore {
 class BACKEND_EXPORT DumpControl {
  public:
   static DumpControl &GetInstance() {
-    std::call_once(dump_mutex_, []() {
-      if (dump_instance_ == nullptr) {
-        dump_instance_ = std::shared_ptr<DumpControl>(new DumpControl);
-      }
-    });
-    return *dump_instance_;
+    static DumpControl instance;
+    return instance;
   }
   ~DumpControl() = default;
   bool dynamic_switch() const { return dynamic_switch_; }
@@ -48,9 +39,7 @@ class BACKEND_EXPORT DumpControl {
 
  private:
   DumpControl() = default;
-  DISABLE_COPY_AND_ASSIGN(DumpControl)
-  inline static std::shared_ptr<DumpControl> dump_instance_ = nullptr;
-  inline static std::once_flag dump_mutex_;
+  DISABLE_COPY_AND_ASSIGN(DumpControl);
   bool dynamic_switch_{false};
   bool dump_switch_{false};
 };

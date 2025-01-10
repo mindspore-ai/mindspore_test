@@ -17,20 +17,17 @@
 #include "plugin/device/ascend/kernel/internal/gelu.h"
 
 #include <memory>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalGelu::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                 const std::vector<KernelTensor *> &outputs) {
-  internal::OpParamPtr param_ptr = std::make_shared<internal::OpParam>();
-  param_ptr->opId = internal::OpId::Gelu;
-  return param_ptr;
+internal::InternalOpPtr InternalGeLU::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                   const internal::OutputsImmutableInfoList &outputs_ii,
+                                                   const std::vector<KernelTensor *> &ms_inputs,
+                                                   const std::vector<KernelTensor *> &ms_outputs) {
+  return internal::CreateGeLUOp(inputs_ii, outputs_ii, internal::kInternalGeLUOpName);
 }
-
-MS_INTERNAL_KERNEL_FACTORY_REG(GeLU, InternalGelu);
+MS_INTERNAL_KERNEL_FACTORY_REG(GeLU, internal::kInternalGeLUOpName, InternalGeLU);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(GeLU, INPUT_NUM_1, INDEX_0);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(GeLU, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel

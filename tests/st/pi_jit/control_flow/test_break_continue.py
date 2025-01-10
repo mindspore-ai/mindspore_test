@@ -30,7 +30,7 @@ class Grad(nn.Cell):
         return grads
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_true_break():
     """
     Feature: PIJit

@@ -49,6 +49,8 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     // Malloc for output tensors
     auto launch_device_address = runtime::DeviceAddressUtils::CreateDeviceAddress(
       op->device_context(), outputs[0], x_tensor->storage_info()->ori_shape, op->stream_id());
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+                                                   launch_device_address->GetSize(), launch_device_address.get());
     if (!device_context->device_res_manager_->AllocateMemory(launch_device_address.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }

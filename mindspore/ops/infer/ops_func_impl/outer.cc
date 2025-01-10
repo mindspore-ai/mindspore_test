@@ -28,10 +28,10 @@
 #include "abstract/dshape.h"
 #include "base/base.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
-static inline bool IsValidType(TypeId t) {
+static inline bool IsValidOuterType(TypeId t) {
   static const std::set<TypeId> valid_types = {
     kNumberTypeBool,  kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,   kNumberTypeInt64,
     kNumberTypeUInt8, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
@@ -69,7 +69,7 @@ ShapeArray OuterFuncImpl::InferShape(const PrimitivePtr &primitive, const InferI
 
 std::vector<TypeId> OuterFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   const auto input_type_id = input_infos[0]->GetType();
-  if (!IsValidType(input_type_id)) {
+  if (!IsValidOuterType(input_type_id)) {
     MS_EXCEPTION(TypeError) << "For Primitive[Outer], the type of the input tensor must be [Bool , Uint8, Int8, Int16, "
                                "Int32, Int64, Float16, Float32, Float64, BFloat16], but got "
                             << TypeIdToString(input_type_id) << "!";

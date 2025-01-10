@@ -38,7 +38,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
         self.class_to_method_template = template.Template("{\"${class_name}\", \"${method_name}\"}")
         self.functional_map_template = template.Template("{\"${func_api_name}\", {${class_to_method_str}}},")
         self.k_prim_op_template = template.Template("prim::kPrim${camel_op_name}")
-        self.tensor_method_kwonlyargs_map_template = template.Template("{\"${op_name}\", {${kw_only_args_list}}},")
+        self.tensor_method_kwonlyargs_map_template = template.Template(
+            "{\"${camel_op_name}\", {${kw_only_args_list}}},")
+        self.tensor_method_varargs_map_template = \
+            template.Template("{\"${op_name}\", ${vararg_index}},")
         self.deprecated_method_decl_template = template.Template(
             "auto ${dep_op_name} = std::make_shared<prim::DeprecatedTensorMethod>(\"${dep_op_name}\", \"${op_name}\");")
         self.functional_method_map_template = template.Template("{\"${op_name}\", {${sort_func_method_list_str}}},")
@@ -47,12 +50,14 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "dtype_to_type_id": ["int", "type"],
                                 "to_kernel_size": ["tuple[int]", "list[int]", "int"],
                                 "to_strides": ["tuple[int]", "list[int]", "int"],
-                                "str_to_enum": ["int", "str"],
+                                "str_to_enum": ["str"],
                                 "to_pair": ["tuple[int]", "list[int]", "int", "float"],
                                 "to_dilations": ["tuple[int]", "list[int]", "int"],
                                 "to_output_padding": ["tuple[int]", "list[int]", "int"],
                                 "to_rates": ["tuple[int]", "list[int]", "int"]}
-        self.prompt_type_map = {"int": "int",
+
+        self.prompt_type_map = {"any": "any",
+                                "int": "int",
                                 "float": "float",
                                 "str": "str",
                                 "bool": "bool",
@@ -60,7 +65,6 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "tensor": "Tensor",
                                 "type": "mstype",
                                 "None": "None"}
-        self.input_args_name = {"input", "x", "input_x"}
 
     def generate(self, work_path, tensor_method_protos_data, mint_func_protos_data, alias_func_mapping):
         """
@@ -80,6 +84,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
         mint_overload_list = self._get_functional_mint_map(mint_func_protos_data, alias_func_mapping)
         tensor_method_kw_only_args_list = self._get_tensor_method_kwonlyargs_map(tensor_method_protos_data)
         mint_kw_only_args_list = self._get_mint_kwonlyargs_map(mint_func_protos_data, alias_func_mapping)
+        tensor_varargs_map_list = self._get_tensor_varargs_map_list(tensor_method_protos_data)
+        mint_varargs_map_list = self._get_mint_varargs_map_list(mint_func_protos_data, alias_func_mapping)
         funcs_sig_map_list = (
             self._get_func_sigs_list(tensor_method_protos_data, alias_func_mapping, is_tensor_method=True))
         funcs_mint_sigs_map = (
@@ -90,6 +96,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                                     mint_map=mint_overload_list,
                                                     tensor_method_kwonlyargs_map=tensor_method_kw_only_args_list,
                                                     mint_kwonlyargs_map=mint_kw_only_args_list,
+                                                    tensor_varargs_map=tensor_varargs_map_list,
+                                                    mint_varargs_map=mint_varargs_map_list,
                                                     tensor_method_sigs_map=funcs_sig_map_list,
                                                     mint_sigs_map=funcs_mint_sigs_map))
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
@@ -140,6 +148,14 @@ class FunctionalMapCppGenerator(BaseGenerator):
         sig_str += '}\n},'
         return sig_str
 
+    def _is_input_arg(self, arg_name, op_name):
+        res = False
+        if op_name in K.INPUT_NAME_MAP and arg_name == K.INPUT_NAME_MAP[op_name]:
+            res = True
+        elif op_name not in K.INPUT_NAME_MAP and arg_name in K.INPUT_ARGS_NAME:
+            res = True
+        return res
+
     def _generate_single_signature_str(self, func_api_name, tensor_proto, is_tensor_method) -> str:
         """
         Generates a single function signature string for the given operation prototype.
@@ -152,40 +168,78 @@ class FunctionalMapCppGenerator(BaseGenerator):
             str: Generated function signature string.
         """
         op_proto = tensor_proto.op_proto
+        op_name = tensor_proto.op_proto.op_class.name
         args_str = f'"Tensor.{func_api_name}(' if is_tensor_method else f'"{func_api_name}('
         first_arg = True
-        kw_args_init_flag = False
+        is_kw_args_init = False
         arg_valid_types = []
         for _, arg in enumerate(op_proto.op_args):
             arg_name = arg.arg_name
-            if is_tensor_method and arg_name in self.input_args_name:
+            if is_tensor_method and self._is_input_arg(arg_name, op_name):
                 continue
-            arg_handler = arg.arg_handler
-            if arg_handler != '':
-                if arg_handler in self.arg_handler_map:
-                    arg_valid_types.extend(self.arg_handler_map[arg_handler])
-                else:
-                    raise ValueError("Generate failed. Check if {} is registered in TensorFuncRegCppGenerator."
-                                     .format(arg_handler))
-            else:
-                arg_valid_types.append(arg.arg_dtype)
-                for cast_type in arg.type_cast:
-                    arg_valid_types.append(cast_type)
-            if arg.as_init_arg and str(arg.default) == 'None':
-                arg_valid_types.append('None')
-            arg_valid_types = self._parse_arg_type_list(func_api_name, arg_name, arg_valid_types)
+
+            arg_valid_types = self._handle_arg_valid_types(arg, arg_name, arg_valid_types, func_api_name)
             single_arg = f'{arg_name}=<' + ','.join(arg_valid_types) + '>'
-            if first_arg:
-                args_str += single_arg
-                first_arg = False
-            else:
-                if tensor_proto.kw_only_args and not kw_args_init_flag and arg_name == tensor_proto.kw_only_args[0]:
-                    args_str += ", *, " + single_arg
-                    kw_args_init_flag = True
-                else:
-                    args_str += ", " + single_arg
+            prefix, is_kw_args_init, first_arg = self._build_prefix(arg_name, first_arg, is_kw_args_init, tensor_proto)
+            args_str += prefix + single_arg
             arg_valid_types = []
         return args_str + ')"'
+
+    def _build_prefix(self, arg_name, first_arg, is_kw_args_init, tensor_proto):
+        """
+        Build and return the prefix for the current argument, handling insertion of kw-only args if needed.
+
+        Args:
+            arg_name (str): Name of the current argument.
+            first_arg (bool): Indicates whether this is the first argument.
+            is_kw_args_init (bool): Indicates whether kw-only args prefix has been inserted.
+            tensor_proto: Contains information about kw_only_args.
+
+        Returns:
+            tuple:
+                prefix (str): Generated prefix (possibly including '*, ').
+                is_kw_args_init (bool): Updated kw-only args insertion status.
+                first_arg (bool): Updated first-argument status.
+        """
+        prefix = "" if first_arg else ", "
+        if tensor_proto.kw_only_args and not is_kw_args_init and arg_name == tensor_proto.kw_only_args[0]:
+            prefix += "*, "
+            is_kw_args_init = True
+        if first_arg:
+            first_arg = False
+        return prefix, is_kw_args_init, first_arg
+
+    def _handle_arg_valid_types(self, arg, arg_name, arg_valid_types, func_api_name):
+        """
+        Collect and return valid argument types based on the arg handler, defaults, and casts.
+
+        Args:
+            arg: Argument object containing handler, dtype, and cast info.
+            arg_name (str): Name of the current argument.
+            arg_valid_types (list): Existing valid types to be extended.
+            func_api_name (str): Name of the current API function.
+
+        Returns:
+            list: Sorted list of valid argument types (descending order).
+        """
+        arg_handler = arg.arg_handler
+        if arg_handler != '':
+            if arg_handler in self.arg_handler_map:
+                arg_valid_types.extend(self.arg_handler_map[arg_handler])
+            else:
+                raise ValueError("Generate failed. Check if {} is registered in TensorFuncRegCppGenerator."
+                                 .format(arg_handler))
+        else:
+            arg_valid_types.append(arg.arg_dtype)
+            for cast_type in arg.type_cast:
+                arg_valid_types.append(cast_type)
+
+        if arg.as_init_arg and str(arg.default) == 'None':
+            arg_valid_types.append('None')
+
+        arg_valid_types = self._parse_arg_type_list(func_api_name, arg_name, arg_valid_types)
+
+        return sorted(arg_valid_types, reverse=True)
 
     def _parse_arg_type_list(self, func_api_name, arg_name, arg_valid_types):
         """
@@ -233,6 +287,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
                     continue
 
                 deprecated_method_name = ''.join(word.capitalize() for word in op_name.split('_'))
+                if func_proto.op_proto.op_name[-1] == '_':
+                    deprecated_method_name += '_'
                 deprecated_method_decl_list.append(
                     self.deprecated_method_decl_template.replace(dep_op_name=deprecated_method_name,
                                                                  op_name=func_api_name))
@@ -275,9 +331,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                                             sort_func_method_list_str=sort_func_method_list))
 
             if func_api_name in alias_func_mapping:
-                deprecated_method_decl_list.append(
-                    self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
-                                                                sort_func_method_list_str=sort_func_method_list))
+                for alias in alias_func_mapping[func_api_name]:
+                    deprecated_method_decl_list.append(
+                        self.functional_method_map_template.replace(op_name=alias,
+                                                                    sort_func_method_list_str=sort_func_method_list))
 
         return deprecated_method_decl_list
 
@@ -304,17 +361,17 @@ class FunctionalMapCppGenerator(BaseGenerator):
                 self.functional_method_map_template.replace(op_name=func_api_name,
                                                             sort_func_method_list_str=mint_func_list))
             if func_api_name in alias_func_mapping:
-                mint_func_decl_list.append(
-                    self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
-                                                                sort_func_method_list_str=mint_func_list))
+                for alias in alias_func_mapping[func_api_name]:
+                    mint_func_decl_list.append(
+                        self.functional_method_map_template.replace(op_name=alias,
+                                                                    sort_func_method_list_str=mint_func_list))
         return mint_func_decl_list
 
-    def _get_and_append_single_op_kw_only_args_list(self, func_api_name, func_protos, single_op_kw_only_args_list):
+    def _get_and_append_single_op_kw_only_args_list(self, func_protos, single_op_kw_only_args_list):
         """
         Extracts keyword-only arguments from a list of function prototypes and appends them to a list.
 
         Args:
-            func_api_name (str): The name of the function API.
             func_protos (list): A list of function prototypes.
             single_op_kw_only_args_list (list): The list to append the keyword-only arguments to.
 
@@ -322,11 +379,12 @@ class FunctionalMapCppGenerator(BaseGenerator):
             None
         """
         for func_proto in func_protos:
+            camel_op_name = pyboost_utils.get_op_name(func_proto.op_proto.op_name, func_proto.op_proto.op_class.name)
             kw_only_args = func_proto.kw_only_args
             if kw_only_args:
                 kw_only_args_list = ", ".join(f"\"{kw_arg}\"" for kw_arg in kw_only_args)
                 single_op_kw_only_args_list.append(
-                    self.tensor_method_kwonlyargs_map_template.replace(op_name=func_api_name,
+                    self.tensor_method_kwonlyargs_map_template.replace(camel_op_name=camel_op_name,
                                                                        kw_only_args_list=kw_only_args_list)
                 )
 
@@ -341,9 +399,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
             list: A list of formatted strings representing the keyword-only arguments.
         """
         tensor_method_kw_only_args_list = []
-        for func_api_name, func_protos in tensor_method_protos_data.items():
-            self._get_and_append_single_op_kw_only_args_list(func_api_name,
-                                                             func_protos,
+        for _, func_protos in tensor_method_protos_data.items():
+            self._get_and_append_single_op_kw_only_args_list(func_protos,
                                                              tensor_method_kw_only_args_list)
         return tensor_method_kw_only_args_list
 
@@ -359,13 +416,72 @@ class FunctionalMapCppGenerator(BaseGenerator):
             list: A list of formatted strings representing the keyword-only arguments.
         """
         mint_kw_only_args_list = []
-        for func_api_name, func_protos in mint_func_protos_data.items():
-            self._get_and_append_single_op_kw_only_args_list(func_api_name,
-                                                             func_protos,
+        for _, func_protos in mint_func_protos_data.items():
+            self._get_and_append_single_op_kw_only_args_list(func_protos,
                                                              mint_kw_only_args_list)
-
-            if mint_kw_only_args_list and func_api_name in alias_func_mapping:
-                self._get_and_append_single_op_kw_only_args_list(alias_func_mapping[func_api_name],
-                                                                 func_protos,
-                                                                 mint_kw_only_args_list)
         return mint_kw_only_args_list
+
+    def _get_and_append_single_op_varargs_list(self, func_protos, single_op_varargs_list):
+        """
+        Extracts variable arguments from a list of function prototypes and appends them to a list.
+
+        Args:
+            func_protos (list): A list of function prototypes.
+            single_op_varargs_list (list): The list to append the variable arguments to.
+
+        Returns:
+            None
+        """
+        for func_proto in func_protos:
+            varargs = func_proto.varargs
+            args = func_proto.op_proto.op_args
+            op_name = func_proto.op_proto.op_class.name
+            if varargs:
+                if len(varargs) != 1:
+                    raise ValueError(
+                        f'There must be only one variable argument. But got {len(vararg_index)} in {op_name}')
+                vararg_index = [i for i in range(len(args)) if args[i].arg_name == varargs[0]]
+                if len(vararg_index) != 1:
+                    raise ValueError(
+                        f'The variable arguments list of {op_name} is wrong, please check.')
+                single_op_varargs_list.append(
+                    self.tensor_method_varargs_map_template.replace(op_name=op_name,
+                                                                    vararg_index=vararg_index[0])
+                )
+
+    def _get_tensor_varargs_map_list(self, tensor_method_protos_data):
+        """
+        Generates a list of variable arguments for tensor methods.
+
+        Args:
+            tensor_method_protos_data (dict): A dictionary of tensor method prototype data.
+
+        Returns:
+            list: A list of formatted strings representing the Variable arguments.
+        """
+        tensor_method_varargs_list = []
+        for _, func_protos in tensor_method_protos_data.items():
+            self._get_and_append_single_op_varargs_list(func_protos,
+                                                        tensor_method_varargs_list)
+        return tensor_method_varargs_list
+
+    def _get_mint_varargs_map_list(self, mint_func_protos_data, alias_func_mapping):
+        """
+        Generates a list of variable arguments for mint functions.
+
+        Args:
+            mint_func_protos_data (dict): A dictionary of mint function prototype data.
+            alias_func_mapping (dict): A dictionary mapping original function names to alias function names.
+
+        Returns:
+            list: A list of formatted strings representing the variable arguments.
+        """
+        mint_varargs_list = []
+        for func_api_name, func_protos in mint_func_protos_data.items():
+            self._get_and_append_single_op_varargs_list(func_protos,
+                                                        mint_varargs_list)
+
+            if mint_varargs_list and func_api_name in alias_func_mapping:
+                self._get_and_append_single_op_varargs_list(func_protos,
+                                                            mint_varargs_list)
+        return mint_varargs_list

@@ -551,6 +551,16 @@ bool TensorLayout::operator!=(const TensorLayout &t1) const {
   return !(IsSameDeviceArrangement(t1) && IsSameTensorMap(t1) && IsSameTensorShape(t1));
 }
 
+bool TensorLayout::operator<(const TensorLayout &t1) const {
+  if (!IsSameDeviceArrangement(t1)) {
+    return device_arrangement_ < t1.device_arrangement();
+  }
+  if (!IsSameTensorMap(t1)) {
+    return tensor_map_ < t1.tensor_map();
+  }
+  return false;
+}
+
 bool TensorLayout::IsSameWithoutSplit(const TensorLayout &t1) const {
   if (!IsSameTensorMap(t1) || !IsSameTensorShape(t1)) {
     return false;

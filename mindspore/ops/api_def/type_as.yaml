@@ -1,0 +1,14 @@
+type_as:
+  - op_yaml: type_as_op.yaml
+    py_method: deprecated_tensor_type_as
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/type_as_method.yaml
+    py_method: deprecated_tensor_type_as
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

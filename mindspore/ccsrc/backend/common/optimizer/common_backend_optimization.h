@@ -29,7 +29,7 @@ BACKEND_EXPORT PassManagerPtr GetCommonUnifyMindIRPassManager();
 void EliminateIllegalDataTypePass(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 void DynamicShapeConvertPass(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 PassManagerPtr GetEliminateIllegalDataTypePassManager();
-PassManagerPtr GetBackendCommonOptimizationPassManagerPtr(const FuncGraphPtr &graph);
+PassManagerPtr GetBackendCommonOptimizationPassManagerPtr();
 BACKEND_EXPORT void OptimizationWithoutBackend(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 BACKEND_EXPORT void OptimizationForAnyTypeKernelGraph(const std::shared_ptr<session::KernelGraph> &kernel_graph);
 }  // namespace opt

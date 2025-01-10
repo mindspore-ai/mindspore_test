@@ -1,27 +1,26 @@
 remainder:
   description: |
-    remainder(self, divisor) -> Tensor
+    remainder(other) -> Tensor
 
     Computes the remainder of `self` divided by `other` element-wise. The result has the same sign as the divisor and
     its absolute value is less than that of `other`.
 
     Supports broadcasting to a common shape and implicit type promotion.
 
-    .. math::
+    .. code:: python
 
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
-    Note:
+    .. note::
         Complex inputs are not supported. At least one input need to be tensor, but not both are bool tensors.
 
+        The dividend `self` is a tensor whose data type is
+        `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+        `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+
     Args:
-        self (Union[Tensor, numbers.Number, bool]): The dividend is a numbers.Number or
-            a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         other (Union[Tensor, numbers.Number, bool]): The divisor is a numbers.Number or
             a bool or a tensor whose data type is number or bool\_ when the dividend is a tensor.
-            When the dividend is Scalar, the divisor must be a Tensor whose data type is number or bool\_.
 
     Returns:
         Tensor, with dtype promoted and shape broadcasted.
@@ -40,5 +39,51 @@ remainder:
         >>> x = Tensor(np.array([-4.0, 5.0, 6.0]).astype(np.float32))
         >>> y = Tensor(np.array([3.0, 2.0, 3.0]).astype(np.float64))
         >>> output = x.remainder(y)
+        >>> print(output)
+        [2.  1.  0.]
+
+    .. method:: Tensor.remainder(divisor) -> Tensor
+        :noindex:
+
+    Computes the remainder of dividing the first input tensor by the second input tensor element-wise.
+
+    Inputs of `self` and `divisor` comply with the implicit type conversion rules to make the data types consistent.
+    The inputs must be two tensors or one tensor and one scalar. When the inputs are two tensors,
+    both dtypes cannot be bool, and the shapes of them could be broadcast. When the inputs are one tensor
+    and one scalar, the scalar could only be a constant.
+
+    .. code:: python
+
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
+
+    .. warning::
+        - When the elements of input exceed 2048, there might be accuracy problems.
+        - The calculation results of this operator on Ascend and CPU might be inconsistent.
+        - If shape is expressed as (D1,D2... ,Dn), then D1\*D2... \*DN<=1000000,n<=8.
+
+    .. note::
+        The first input `self` is a tensor whose data type is number.
+
+    Args:
+        divisor (Union[Tensor, numbers.Number, bool]): When the first input is a tensor, The second input
+            could be a number, a bool or a tensor whose data type is number.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting,
+        and the data type is the one with higher precision.
+
+    Raises:
+        TypeError: If neither `self` nor `divisor` is one of the following: Tensor, number, bool.
+        ValueError: If the shape of `self` and `divisor` cannot be broadcasted to each other.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([-4.0, 5.0, 6.0]).astype(np.float16))
+        >>> y = Tensor(np.array([3.0, 2.0, 3.0]).astype(np.float16))
+        >>> output = x.remainder(divisor=y)
         >>> print(output)
         [2.  1.  0.]

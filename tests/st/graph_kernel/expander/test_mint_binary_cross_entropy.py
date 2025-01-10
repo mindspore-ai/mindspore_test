@@ -89,6 +89,24 @@ def test_basic_ascend_f32_none():
     run_basic(mindspore.float32, 'none')
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_basic_ascend_f32_none_corner_case():
+    """
+    Feature: test graph kernel mint.binary_cross_entropy
+    Description: run test case on Ascend
+    Expectation: the result match with expect, in this case, the result should be [100. 100. -0.]
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    logits = Tensor(np.array([1, 0, 1]).astype(np.float32), dtype=mindspore.float32)
+    labels = Tensor(np.array([0, 1, 1]).astype(np.float32), dtype=mindspore.float32)
+    weight = Tensor(np.array([1, 1, 1]).astype(np.float32), dtype=mindspore.float32)
+    expect = get_output(logits, labels, weight, 'none', False)
+    output = get_output(logits, labels, weight, 'none', True)
+    expect_np = expect.asnumpy().copy()
+    output_np = output.asnumpy().copy()
+    assert np.allclose(expect_np, output_np, 0.0001, 0.0001, equal_nan=True)
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_basic_ascend_f32_sum():
     """

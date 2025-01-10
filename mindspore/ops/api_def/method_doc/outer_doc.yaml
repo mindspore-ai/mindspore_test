@@ -1,0 +1,33 @@
+outer:
+  description: |
+    outer(vec2) -> Tensor
+    
+    Return outer product of `self` and `vec2`. If `self` is a vector of size :math:`n`
+    and `vec2` is a vector of size :math:`m` , then output must be a matrix of shape :math:`(n, m)` .
+
+    Note:
+        This function does not broadcast.
+
+    Args:
+        vec2 (Tensor): 1-D input vector.
+
+    Returns:
+        out (Tensor, optional) - The outer product of two vectors, a 2-D matrix.
+
+    Raises:
+        TypeError: If `vec2` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([7, 8, 9]), mindspore.int32)
+        >>> vec2 = Tensor(np.array([7, 10, 11]), mindspore.int32)
+        >>> out = x.outer(vec2)
+        >>> print(out)
+        [[49 70 77]
+         [56 80 88]
+         [63 90 99]]

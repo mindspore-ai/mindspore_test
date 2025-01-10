@@ -19,6 +19,7 @@ import mindspore as ms
 from mindspore import Tensor, ops, nn, context
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
 
 # np.set_printoptions(threshold=np.inf)
 np.random.seed(5)
@@ -84,21 +85,21 @@ class AsyncMoveTo(nn.Cell):
         else:
             self.conv1 = ops.Conv2D(out_channel=64, kernel_size=3).set_device("CPU")
             self.add1 = ops.Add()
-        self.s1 = ms.hal.Stream()
-        self.s2 = ms.hal.Stream()
-        self.e1 = ms.hal.Event(enable_timing=True, blocking=True)
+        self.s1 = ms.runtime.Stream()
+        self.s2 = ms.runtime.Stream()
+        self.e1 = ms.runtime.Event(enable_timing=True, blocking=True)
 
     def construct(self, x, w):
-        with ms.hal.StreamCtx(self.s1):
+        with ms.runtime.StreamCtx(self.s1):
             conv = self.conv1(x, w)
             on_host = conv.move_to(self.to, blocking=False)
             self.e1.record()
 
-        with ms.hal.StreamCtx(self.s2):
+        with ms.runtime.StreamCtx(self.s2):
             self.e1.synchronize()
             add_out = self.add1(on_host, 1)
 
-        ms.hal.synchronize()
+        ms.runtime.synchronize()
         return add_out.asnumpy()
 
 
@@ -110,6 +111,7 @@ def test_tensor_offload_d2h(mode):
     Description: tensor offload from device to host.
     Expectation: none
     """
+    set_device()
     context.set_context(mode=mode)
     x = Tensor(np.random.randn(128, 256, 32, 32), ms.float32)
     w = Tensor(np.random.randn(64, 256, 3, 3), ms.float32)
@@ -137,6 +139,7 @@ def test_tensor_offload_h2d(mode):
     Description: tensor load from host to device.
     Expectation: none
     """
+    set_device()
     context.set_context(mode=mode)
     x = Tensor(np.random.randn(128, 256, 32, 32), ms.float32)
     w = Tensor(np.random.randn(64, 256, 3, 3), ms.float32)

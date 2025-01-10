@@ -1,0 +1,51 @@
+var_mean:
+    description: |
+        By default, return the variance and mean of each dimension in Tensor.
+        If dim is a dimension list, calculate the variance and mean of the corresponding dimension.
+
+        The variance (:math:`\sigma ^2`) is calculated as:
+
+        .. math::
+
+            \sigma ^2 = \frac{1}{N - \delta N} \sum_{j=0}^{N-1} \left(self_{ij} - \overline{x_{i}}\right)^{2}
+
+        where :math:`x` is the sample set of elements, :math:`\bar{x}` is the sample mean,
+        :math:`N` is the number of samples and :math:`\delta N` is the `correction` .
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input tensor. Supported dtypes: float16, float32.
+            dim (Union[int, tuple(int), list(int)], optional):
+                Specify the dimensions for calculating variance and mean. Default value: ``None``.
+
+        Keyword Args:
+            correction (int, optional): Difference between the sample size and sample degrees of freedom.
+                Defaults to Bessel's correction. Default: ``1``.
+            keepdim (bool, optional): Whether to preserve the dimensions of the output Tensor.
+                If True, retain the reduced dimension with a size of 1. Otherwise, remove the dimensions.
+                Default value: ``False``.
+
+        Returns:
+            A tuple of variance and mean.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If `dim` is not one of the following data types: int, tuple, list, or Tensor.
+            TypeError: If `keepdim` is not a bool.
+            ValueError: If `dim` is out of range.
+            
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore as ms
+            >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
+            >>> output_var, output_mean = ms.mint.var_mean(input, 1, correction=2, keepdim=True)
+            >>> print(output_var)
+            [[ 2.5]
+             [54.5]]
+            >>> print(output_mean)
+            [[ 2.5]
+             [-1.5]]

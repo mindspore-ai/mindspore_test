@@ -7,7 +7,7 @@ class ${class_name}Functional : public Functional {
       ${signatures}
     }, "${func_name}");
     py::list arg_list;
-    auto sig = parser.parse(args, kwargs, &arg_list, false);
+    auto sig = parser.Parse(args, kwargs, &arg_list, false);
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     std::string backend = ms_context->get_param < std::string > (MS_CTX_DEVICE_TARGET);
@@ -15,4 +15,6 @@ class ${class_name}Functional : public Functional {
     return py::none();
   }
 };
+
+static std::shared_ptr<${class_name}Functional> ${func_name}_instance = std::make_shared<${class_name}Functional>();
 

@@ -15,7 +15,9 @@
  */
 
 #include "backend/common/pass/broadcast_to_fusion.h"
-
+#include <vector>
+#include <string>
+#include <memory>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -23,6 +25,11 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> BroadcastToFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimBroadcastTo->name()};
+  return ret;
+}
+
 const BaseRef BroadcastToFusion::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimBroadcastTo, Xs});

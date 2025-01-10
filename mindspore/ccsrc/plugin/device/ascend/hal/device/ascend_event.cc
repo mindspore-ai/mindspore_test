@@ -15,13 +15,22 @@
  */
 
 #include "plugin/device/ascend/hal/device/ascend_event.h"
+#include <cstdint>
+#include <string>
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 
 #include "utils/log_adapter.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore::device::ascend {
+namespace {
+std::string voidPtrToString(void *ptr) {
+  uintptr_t address = reinterpret_cast<uintptr_t>(ptr);
+  return std::to_string(address);
+}
+}  // namespace
 AscendEvent::AscendEvent() {
   auto ret = CALL_ASCEND_API(aclrtCreateEvent, &event_);
   if (ret != ACL_ERROR_NONE) {
@@ -66,6 +75,13 @@ bool AscendEvent::IsReady() const { return event_ != nullptr; }
 void AscendEvent::RecordEvent() {
   MS_EXCEPTION_IF_NULL(event_);
   MS_EXCEPTION_IF_NULL(record_stream_);
+  if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Event", "RecordEvent", "");
+    tracker::CALL_MEMORY_TRACKER(
+      UpdateTask, "Event",
+      {{tracker::kStreamId, std::to_string(AscendStreamMng::GetInstance().GetStreamId(record_stream_))},
+       {tracker::kEvent, voidPtrToString(event_)}});
+  }
   auto ret = CALL_ASCEND_API(aclrtRecordEvent, event_, record_stream_);
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(EXCEPTION) << "aclrtRecordEvent failed, ret:" << ret;
@@ -78,6 +94,12 @@ void AscendEvent::RecordEvent(uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(event_);
   record_stream_ = AscendStreamMng::GetInstance().GetStream(stream_id);
   MS_EXCEPTION_IF_NULL(record_stream_);
+  if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Event", "RecordEvent", "");
+    tracker::CALL_MEMORY_TRACKER(
+      UpdateTask, "Event",
+      {{tracker::kStreamId, std::to_string(stream_id)}, {tracker::kEvent, voidPtrToString(event_)}});
+  }
   auto ret = CALL_ASCEND_API(aclrtRecordEvent, event_, record_stream_);
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(EXCEPTION) << "aclrtRecordEvent failed, ret:" << ret;
@@ -88,6 +110,13 @@ void AscendEvent::RecordEvent(uint32_t stream_id) {
 void AscendEvent::WaitEvent() {
   MS_EXCEPTION_IF_NULL(event_);
   MS_EXCEPTION_IF_NULL(wait_stream_);
+  if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Event", "WaitEvent", "");
+    tracker::CALL_MEMORY_TRACKER(
+      UpdateTask, "Event",
+      {{tracker::kStreamId, std::to_string(AscendStreamMng::GetInstance().GetStreamId(wait_stream_))},
+       {tracker::kEvent, voidPtrToString(event_)}});
+  }
   auto ret = CALL_ASCEND_API(aclrtStreamWaitEvent, wait_stream_, event_);
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
@@ -107,6 +136,12 @@ void AscendEvent::WaitEvent() {
 bool AscendEvent::WaitEvent(uint32_t stream_id) {
   MS_LOG(DEBUG) << "Ascend wait event on stream id : " << stream_id << ".";
   wait_stream_ = AscendStreamMng::GetInstance().GetStream(stream_id);
+  if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Event", "WaitEvent", "");
+    tracker::CALL_MEMORY_TRACKER(
+      UpdateTask, "Event",
+      {{tracker::kStreamId, std::to_string(stream_id)}, {tracker::kEvent, voidPtrToString(event_)}});
+  }
   auto ret = CALL_ASCEND_API(aclrtStreamWaitEvent, wait_stream_, event_);
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
@@ -125,6 +160,13 @@ bool AscendEvent::WaitEvent(uint32_t stream_id) {
 void AscendEvent::WaitEventWithoutReset() {
   MS_EXCEPTION_IF_NULL(event_);
   MS_EXCEPTION_IF_NULL(wait_stream_);
+  if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Event", "WaitEvent", "");
+    tracker::CALL_MEMORY_TRACKER(
+      UpdateTask, "Event",
+      {{tracker::kStreamId, std::to_string(AscendStreamMng::GetInstance().GetStreamId(wait_stream_))},
+       {tracker::kEvent, voidPtrToString(event_)}});
+  }
   // Query result will be reset after aclrtResetEvent is called.
   auto ret = CALL_ASCEND_API(aclrtStreamWaitEvent, wait_stream_, event_);
   if (ret != ACL_ERROR_NONE) {

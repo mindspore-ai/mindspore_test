@@ -28,8 +28,8 @@ def print_(*input_x):
     Once set, the output will be saved in the file specified by print_file_path.
     :func:`mindspore.parse_print` can be employed to reload the data.
     For more information, please refer to :func:`mindspore.set_context` and :func:`mindspore.parse_print`.
-    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    to solve operator execution failure when outputting big tensor or outputting tensor intensively.
+    In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
 
     Note:
         In pynative mode, please use python print function.
@@ -73,10 +73,11 @@ def tensordump(file_name, tensor, mode='out'):
     """
     Save Tensor in numpy's npy format.
 
-    In Parallel situation, tensordump will dump slice of data at each rank.
+    .. warning::
+        - The parameter mode will no longer support the value 'all'.
 
-    In Ascend platform with graph mode,
-    Your code OpA --> OpB may compiled as OpA --> RedistributionOps --> OpB.
+    In Parallel situation, tensordump will dump slice of data at each rank.
+    In Ascend platform with graph mode, Your code OpA --> OpB may compiled as OpA --> RedistributionOps --> OpB.
 
     Note: The redistribution operator is introduced,
     Due to inter-device communication and shard strategies in the static graph parallel scenario.
@@ -91,24 +92,21 @@ def tensordump(file_name, tensor, mode='out'):
     Different requirements of saving dump data can be achieved by configuring parameter mode:
 
     - If the mode is 'out', the dump data contains only OpA's output slice.
-    - If the mode is 'all', the dump data contains both OpA's output slice and OpB's input slice.
     - If the mode is 'in', the dump data contains only OpB's input slice.
 
-    For mode 'all' or 'in', the input slice npy file format is: fileName_cNodeID_dumpMode_rankID_dtype_id.npy.
+    For mode 'in', the input slice npy file format is: fileName_dumpMode_dtype_id.npy.
 
-    For mode 'out' or 'all' the output slice npy file format is: filename_dtype_id.npy.
+    For mode 'out', the output slice npy file format is: filename_dtype_id.npy.
 
     - fileName: Value of the parameter file_name
       (if parameter file_name is a user-specified path, the value of fileName is the last level of the path).
-    - cNodeID: The cnode ID in ir graph of step_parallel_end.ir.
     - dumpMode: Value of the parameter mode.
-    - rankID: Logical device id.
     - dtype: The original data type. Data of type bfloat16 stored in the .npy file will be converted to float32.
     - id: An auto increment ID.
 
     Note:
-        - In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-          to solve operator execution failure when outputting big tensor or outputting tensor intensively.
+        - In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+          can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
         - The operator of tensordump doesn't support in control flow.
         - If current parallel mode is STAND_ALONE, mode should only be 'out'.
         - Parameter mode will be set to 'out' if user doesn't configure it.
@@ -117,23 +115,24 @@ def tensordump(file_name, tensor, mode='out'):
     Args:
         file_name (str): The path of the npy file saves.
         tensor (Tensor): The tensor that user want to dump.
-        mode (str, optional): Used to control tensordump behavior, available value is one of ['in', 'out', 'all'].
+        mode (str, optional): Used to control tensordump behavior, available value is one of ['in', 'out'].
             Default value is ``out``.
 
     Raises:
         TypeError: If `file_name` is not str.
         TypeError: If `tensor` is not Tensor.
         TypeError: If `mode` is not str.
-        ValueError: If `mode` is not in one of ['in', 'out', 'all'].
+        ValueError: If `mode` is not in one of ['in', 'out'].
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
         .. note::
-            Using msrun command to run below example: msrun --worker_num=2 --local_worker_num=2 --master_port=11450
-            --log_dir=msrun_log --join=True --cluster_time_out=300 tensordump_example.py
+            Using msrun command to run below example: msrun --worker_num=2 --local_worker_num=2
+            --master_port=11450 --log_dir=msrun_log --join=True --cluster_time_out=300 tensordump_example.py
 
+        >>> import os
         >>> import numpy as np
         >>> import mindspore as ms
         >>> from mindspore import nn, Tensor, ops, context
@@ -150,11 +149,12 @@ def tensordump(file_name, tensor, mode='out'):
         ...
         ...     def construct(self, x, y, b):
         ...         out1 = self.matmul1(x, y)
-        ...         ops.tensordump(dump_path, out1, 'all')
+        ...         ops.tensordump(dump_path, out1, 'out')
         ...         out2 = self.matmul2(out1, b)
         ...         return out2
         ...
-        >>> ms.set_context(mode=ms.GRAPH_MODE, save_graphs=2)
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> os.environ["MS_DEV_SAVE_GRAPHS"] = "2"
         >>> context.set_auto_parallel_context(parallel_mode='semi_auto_parallel', full_batch=True)
         >>> strategy1 = ((1, 2), (2, 1))
         >>> strategy2 = ((1, 2), (2, 1))
@@ -165,16 +165,18 @@ def tensordump(file_name, tensor, mode='out'):
         >>> out = net(x, y, b)
         >>> print(f"out shape is: {out.shape}")
         >>> matmul1_output_slice = np.load('mul1_mul2_float32_0.npy')                       # load matmul1's output slice
-        >>> matmul2_input_slice = np.load('mul1_mul2_CNode_64_all_rank_0_float32_1.npy')    # load matmul2's input slice
     """
+
     if not isinstance(file_name, str):
         raise TypeError(f"Parameter file_name should only be build_in str type but got: {type(file_name)}")
     if not isinstance(tensor, Tensor):
         raise TypeError(f"Parameter tensor should only be Tensor type, but got: {type(tensor)}")
     if not isinstance(mode, str):
         raise TypeError(f"Parameter mode should only be build_in str type, but got: {type(mode)}")
-    mode_list = ['out', 'in', 'all']
+    mode_list = ['out', 'in']
     if mode not in mode_list:
+        if mode == 'all':
+            raise ValueError(f"Argument [mode] has been not supported value of 'all'.")
         raise ValueError(f"Parameter mode should in {mode_list}, but got {mode}")
     _tensordump = _get_cache_prim(P.TensorDump)(input_output=mode)
     return _tensordump(file_name, tensor)

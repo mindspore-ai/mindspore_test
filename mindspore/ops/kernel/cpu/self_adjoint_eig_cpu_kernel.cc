@@ -21,7 +21,7 @@
 #include "Eigen/Dense"
 
 namespace mindspore::kernel {
-constexpr auto kSelfAdjopintEig = "SelfAdjopintEig";
+constexpr auto kSelfAdjointEig = "SelfAdjointEig";
 constexpr const size_t kInputsNum = 1;
 constexpr const size_t kOutputsNum = 2;
 
@@ -109,10 +109,10 @@ bool SelfAdjointEigCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
       }
     }
   } else {
+    T *A = static_cast<T *>(new T[m * n]);
+    T *B = static_cast<T *>(new T[m]);
+    T *C = static_cast<T *>(new T[m * n]);
     for (int64_t batch = 0; batch < num_array; ++batch) {
-      T *A = static_cast<T *>(new T[m * n]);
-      T *B = static_cast<T *>(new T[m]);
-      T *C = static_cast<T *>(new T[m * n]);
       // Get the address of the input and output matrix for each batch
       for (int64_t i = 0; i < m * n; ++i) {
         A[i] = input[batch * m * n + i];
@@ -139,6 +139,9 @@ bool SelfAdjointEigCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
         }
       }
     }
+    delete[] A;
+    delete[] B;
+    delete[] C;
   }
   return true;
 }

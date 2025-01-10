@@ -61,8 +61,8 @@ def test_asin_std(mode):
         output = (jit(asin_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
         output_grad = (jit(asin_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
 
-    np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
-    np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
+    assert np.allclose(output.asnumpy(), expect, rtol=1e-4, equal_nan=True)
+    assert np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-4, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
@@ -88,7 +88,8 @@ def test_asin_bfloat16(mode):
     Description: testcase for asin functional API.
     Expectation: the result match with expected result.
     """
-    x = generate_random_input((2, 3), np.float32)
+    x_bf = generate_random_input((2, 3), np.float32)
+    x = ms.Tensor(x_bf, dtype=ms.bfloat16).asnumpy()
     expect = generate_expect_forward_output(x).astype(np.float32)
     expect_grad = generate_expect_backward_output(x).astype(np.float32)
 
@@ -100,5 +101,5 @@ def test_asin_bfloat16(mode):
         output = (jit(asin_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
         output_grad = (jit(asin_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
 
-    np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
-    np.allclose(output_grad.float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)
+    assert np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
+    assert np.allclose(output_grad.float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)

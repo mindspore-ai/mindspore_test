@@ -13,26 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_CAST_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_CAST_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_CAST_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_CAST_H_
 
+#include <string>
 #include <vector>
+#include <utility>
 
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "include/internal.h"
 
 namespace mindspore {
 namespace kernel {
 class InternalCast : public InternalKernelMod {
  public:
-  InternalCast() : InternalKernelMod("Cast") {}
+  InternalCast() : InternalKernelMod() {}
   ~InternalCast() = default;
 
  protected:
-  internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                     const std::vector<KernelTensor *> &outputs);
-  uint64_t GenTilingCacheKey(const std::vector<KernelTensor *> &inputs,
-                             const std::vector<KernelTensor *> &outputs) override;
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs,
+                                       const std::vector<KernelTensor *> &ms_inputs,
+                                       const std::vector<KernelTensor *> &ms_outputs) override;
+  uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
+
+ private:
+  TypeId dst_type_{kTypeUnknown};
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_CAST_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_CAST_H_

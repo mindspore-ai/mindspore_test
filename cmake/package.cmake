@@ -38,7 +38,7 @@ include(CPack)
 set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Installation directory for libraries")
 set(INSTALL_PY_DIR ".")
 set(INSTALL_BASE_DIR ".")
-set(INSTALL_BIN_DIR "bin")
+set(INSTALL_BIN_DIR "utils/bin")
 set(INSTALL_CFG_DIR "config")
 set(INSTALL_LIB_DIR "lib")
 set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
@@ -46,12 +46,6 @@ set(INSTALL_ASCEND_DIR "${INSTALL_PLUGIN_DIR}/ascend")
 # set package files
 install(
     TARGETS _c_expression
-    DESTINATION ${INSTALL_BASE_DIR}
-    COMPONENT mindspore
-)
-
-install(
-    TARGETS _data_dump
     DESTINATION ${INSTALL_BASE_DIR}
     COMPONENT mindspore
 )
@@ -100,7 +94,7 @@ if(ENABLE_MINDDATA)
     )
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         install(
-            TARGETS cache_admin cache_server
+            TARGETS dataset-cache dataset-cache-server
             OPTIONAL
             DESTINATION ${INSTALL_BIN_DIR}
             COMPONENT mindspore
@@ -222,6 +216,11 @@ if(ENABLE_D)
                     DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                     COMPONENT mindspore
             )
+            install(
+                    TARGETS ms_ascend_native_boost
+                    DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                    COMPONENT mindspore
+            )
         endif()
     endif()
 endif()
@@ -329,6 +328,9 @@ install(
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/multiprocessing
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/hal
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/utils
+        ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/device_context
+        ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/runtime
+        ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/device_context
     DESTINATION ${INSTALL_PY_DIR}
     COMPONENT mindspore
 )

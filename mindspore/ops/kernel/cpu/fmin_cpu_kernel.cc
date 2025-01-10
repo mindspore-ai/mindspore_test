@@ -99,9 +99,9 @@ bool FminCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &i
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kFminInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kFminOutputsNum, kernel_name_);
 
-  T *input_x_ = static_cast<T *>(inputs[0]->device_ptr());
-  T *input_y_ = static_cast<T *>(inputs[1]->device_ptr());
-  T *output_ = static_cast<T *>(outputs[0]->device_ptr());
+  T *input_x_ = GetDeviceAddress<T>(inputs, 0);
+  T *input_y_ = GetDeviceAddress<T>(inputs, 1);
+  T *output_ = GetDeviceAddress<T>(outputs, 0);
   BroadcastArith(input_x_, input_y_, output_);
   return true;
 }

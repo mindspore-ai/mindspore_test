@@ -6,7 +6,7 @@ argmin:
     GPU: py_method
     interface: tensor
 
-  - op_yaml: deprecated/argmin_op.yaml
+  - op_yaml: deprecated/argmin_method.yaml
     py_method: deprecated_tensor_argmin
     Ascend: py_method
     CPU: py_method

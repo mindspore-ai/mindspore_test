@@ -36,7 +36,7 @@ from mindspore.train.metrics import get_metrics, get_metric_fn
 from mindspore._checkparam import check_input_data, check_output_data
 from mindspore import _checkparam as Validator
 from mindspore.train.callback import _InternalCallbackParam, RunContext, _CallbackManager, Callback, TimeMonitor,\
-    FlopsUtilizationCollector, TFTRegister
+    TFTRegister
 from mindspore.train.callback import __all__ as internal_cb_names
 from mindspore.train.callback._cluster_monitor import ClusterMonitor
 from mindspore import context
@@ -46,7 +46,7 @@ from mindspore.parallel._utils import _get_parallel_mode, _get_device_num, _get_
 from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_ps_mode, \
     _cache_enable, _enable_distributed_mindrt
 from mindspore.train.metrics import Loss
-from mindspore.train._utils import vlog_print
+from mindspore.log import vlog_print
 from mindspore import nn
 from mindspore.boost import AutoBoost
 from mindspore.context import ParallelMode
@@ -143,20 +143,22 @@ def _handle_tft(func):
                 except RuntimeError as e:
                     logger.info("uce wrapper caught RuntimeError")
                     if not uce_env:
-                        logger.info("uce wrapper caught RuntimeError uce not enable")
+                        logger.error("uce wrapper caught RuntimeError but uce not enable, enter MindIO TTP process.",
+                                     exc_info=True)
                         tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                         raise e
                     e_str = str(e)
                     logger.info("uce wrapper caught RuntimeError e_str:{}".format(e_str))
                     if "UCEError" in e_str:
                         logger.info("uce wrapper report UCEError")
+                        obj.is_uce_rank = True
                         tft.tft_report_error(tft.ReportState.RS_UCE.value)
                     elif "ForceStopError" in e_str:
                         logger.info("uce wrapper caught RuntimeError ForceStopError")
                         force_stop_err = tft.ReportState.RS_NORMAL.value
                         tft.tft_report_error(force_stop_err)
                     else:
-                        logger.info("uce wrapper caught RuntimeError rankid: {} OTHER ERROR")
+                        logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
                         tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                         raise e
                     ret = tft.tft_wait_next_action()
@@ -186,12 +188,14 @@ def _handle_tft(func):
                         cb_initial_step = initial_step
 
                     kwargs["initial_step"] = cb_initial_step
+                    # reset all accu grads to zero
+                    obj._reset_acc_grads()
 
                     logger.info("uce wrapper repair complete  \
 initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))
                     continue
                 except BaseException as e:
-                    logger.info("uce wrapper caught BaseException error")
+                    logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
                     tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                     raise e
         else:
@@ -907,10 +911,6 @@ class Model:
         cb_params.list_callback = self._transform_callbacks(callbacks)
         valid_infos = (valid_dataset, valid_frequency, valid_dataset_sink_mode)
         cb_params.list_callback.insert(0, _FrameworkProfilerCallback())
-        if os.environ.get("ENABLE_FLOPS_UTILIZATION_COLLECTOR") == "1" and \
-            FlopsUtilizationCollector not in cb_params.list_callback:
-            cb_params.list_callback.insert(0, FlopsUtilizationCollector(
-                cb_params.batch_num, full_flops=False))
         if context.get_context("mode") == context.PYNATIVE_MODE:
             cb_params.list_callback.insert(0, _StepSync())
         callbacks = cb_params.list_callback
@@ -1669,6 +1669,9 @@ class Model:
             cb_params.eval_results.update({"eval_loss": eval_loss})
         list_callback.on_eval_end(run_context)
 
+        dataset_helper.stop_send()
+        dataset_helper.release()
+
         return metrics
 
     def _eval_process(self, valid_dataset, list_callback=None, cb_params=None, add_eval_loss=False):
@@ -1779,10 +1782,6 @@ class Model:
         cb_params.mode = "eval"
         cb_params.cur_step_num = 0
         cb_params.list_callback = self._transform_callbacks(callbacks)
-        if os.environ.get("ENABLE_FLOPS_UTILIZATION_COLLECTOR") == "1" and \
-            FlopsUtilizationCollector not in cb_params.list_callback:
-            cb_params.list_callback.insert(0, FlopsUtilizationCollector(
-                cb_params.batch_num, full_flops=False))
         cb_params.network = self._network
 
         self._clear_metrics()

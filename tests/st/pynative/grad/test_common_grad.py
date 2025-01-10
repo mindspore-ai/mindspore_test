@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import grad
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, ops
 from mindspore.common import Tensor
 from mindspore.common.api import jit
 import mindspore.mint.nn.functional as Func
@@ -25,6 +25,7 @@ from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.ops import GradOperation
+from mindspore import dtype as mstype
 from tests.mindspore_test_framework.utils.bprop_util import bprop
 from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputs, GradOfAllInputsAndParams
 from tests.mark_utils import arg_mark
@@ -133,7 +134,7 @@ def test_network_with_dict_output():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_jit_network_with_dict_output():
@@ -152,6 +153,78 @@ def test_jit_network_with_dict_output():
         def construct(self, x):
             y = self.relu(x)
             out = {'a': y}
+            return out
+
+    x = np.array([[0.8, 0.6, 0.2], [1.8, 1.3, 1.1]])
+    ms_net = DicNet()
+    # No sens
+    ms_grad = GradOfFirstInput(ms_net, False)
+    grad_out = ms_grad(Tensor(x))
+    assert np.allclose(np.ones_like(x), grad_out.asnumpy())
+
+    # Have sens
+    ms_net = DicNet()
+    out = ms_net(Tensor(x))
+    ms_grad = GradOfFirstInput(ms_net, True)
+    grad_out = ms_grad(Tensor(x), out)
+    assert np.allclose(x, grad_out.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_jit_network_with_multi_output_contain_dict():
+    """
+    Feature: Test pynative jit with multi output contain dict
+    Description: Net in jit has multi out, and one element is a dict
+    Expectation: Success
+    """
+    class DicNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = P.ReLU()
+
+        @jit
+        def construct(self, x):
+            y = self.relu(x)
+            out = {'a': y}
+            return out, y
+
+    x = np.array([[0.8, 0.6, 0.2], [1.8, 1.3, 1.1]])
+    ms_net = DicNet()
+    # No sens
+    ms_grad = GradOfFirstInput(ms_net, False)
+    grad_out = ms_grad(Tensor(x))
+    assert np.allclose(2*np.ones_like(x), grad_out.asnumpy())
+
+    # Have sens
+    ms_net = DicNet()
+    out = ms_net(Tensor(x))
+    ms_grad = GradOfFirstInput(ms_net, True)
+    grad_out = ms_grad(Tensor(x), out)
+    assert np.allclose(2*x, grad_out.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_jit_network_with_dict_output_has_constant_value():
+    """
+    Feature: Test pynative jit with dict output has constant value
+    Description: Net in jit has dict out, one of the element pair has constant value
+    Expectation: Success
+    """
+    class DicNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = P.ReLU()
+
+        @jit
+        def construct(self, x):
+            y = self.relu(x)
+            out = {'a': y, 'b': 2}
             return out
 
     x = np.array([[0.8, 0.6, 0.2], [1.8, 1.3, 1.1]])
@@ -254,7 +327,7 @@ def test_jit_network_with_list_inplace():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_synchronize():
@@ -644,3 +717,181 @@ def test_kwargs_with_sens_in_kwargs():
     kwargs = {'sens': Tensor([1., 2., 3.]), "approximate": "tanh"}
     grad_fn = GradOperation(get_all=True, sens_param=True)(Func.gelu)
     grad_fn(inputs, **kwargs)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_jit_with_while():
+    """
+    Feature: Control flow
+    Description: Test control flow in jit function under pynative mode.
+    Expectation: No exception.
+    """
+    class InnerNet(nn.Cell):
+        @ms.jit
+        def construct(self, x, y):
+            while x < y:
+                x = x * x + 1
+            return x
+
+    class GradNet(nn.Cell):
+        def __init__(self, net):
+            super().__init__()
+            self.net = net
+            self.grad_op = C.GradOperation(get_all=True)
+
+        def construct(self, x, y):
+            gradient_function = self.grad_op(self.net)
+            return gradient_function(x, y)
+
+    x = Tensor([2.0], dtype=mstype.float32)
+    y = Tensor([2.0], dtype=mstype.float32)
+    grads = GradNet(InnerNet())(x, y)
+    assert np.allclose(grads[0].asnumpy(), 1.0, 0.001, 0.001)
+    assert np.allclose(grads[1].asnumpy(), 0.0, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_jit_with_dict_input():
+    """
+    Feature: Grad jit function has dict input
+    Description: Test calculate grad of jit function has dict input under pynative mode.
+    Expectation: No exception.
+    """
+    @ms.jit
+    def dict_net(input_str):
+        x = input_str["a"]
+        m = 2*x+1
+        return m
+
+    x = Tensor(2)
+    out = GradOperation()(dict_net)({"a": x})
+    assert np.allclose(out, 2.0, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_jit_with_multiple_output_contain_list():
+    """
+    Feature: Grad jit function has multiple output contain list
+    Description: Test jit function has multiple output contain list under pynative mode.
+    Expectation: No exception.
+    """
+    @ms.jit
+    def func(a):
+        x = [a+1, a+2]
+        return x, a+1
+
+    x = ms.Tensor([1])
+    out = GradOperation()(func)(x)
+    assert out == 3
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_jit_with_string_output():
+    """
+    Feature: Grad jit function has multiple output contain string
+    Description: Test jit function has multiple output contain string under pynative mode.
+    Expectation: No exception.
+    """
+    @jit
+    def func(x):
+        return "aaa", x+1
+
+    x = Tensor([1])
+    grad1 = GradOperation()(func)(x)
+    assert grad1 == 1
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_jit_with_scalar_output():
+    """
+    Feature: Grad jit function has multiple output contain scalar
+    Description: Test jit function has multiple output contain scalar under pynative mode.
+    Expectation: No exception.
+    """
+    @jit
+    def fn(x):
+        m = x+1
+        z = x*(m+2) + 2*m
+        return z, 1
+
+    x = Tensor([1.0, 2.0])
+    grad1 = GradOperation()(fn)(x)
+    assert (grad1.asnumpy() == [7.0, 9.0]).all()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_jit_bprop_net():
+    """
+    Feature: Test jit grad custom bprop construct func
+    Description: Test jit grad custom bprop construct func
+    Expectation: Success.
+    """
+    class CustomBpropNet(nn.Cell):
+        @jit
+        def construct(self, x):
+            y = x * x
+            z = y + y
+            return z
+
+        def bprop(self, *args):
+            return (args[0] * 4,)
+
+    x = Tensor([2], ms.float32)
+    net = CustomBpropNet()
+    grads = GradOperation()(net)(x)
+    assert np.allclose(grads.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
+    net.set_inputs(Tensor(shape=[None], dtype=ms.float32))
+    grads = GradOperation()(net)(x)
+    assert np.allclose(grads.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_grad_jit_stop_gradient():
+    """
+    Feature: Test jit grad stop gradient.
+    Description: Test jit grad stop gradient.
+    Expectation: Success.
+    """
+    class StopGradientNet(nn.Cell):
+        def __init__(self):
+            super(StopGradientNet, self).__init__()
+            self.p1 = Parameter(Tensor([2], dtype=ms.float32))
+
+        @jit
+        def construct(self, x):
+            y = x * x
+            y = ops.stop_gradient(y)
+            z = y * self.p1
+            return z
+
+    x = Tensor([2], ms.float32)
+    net = StopGradientNet()
+    grad_net = C.GradOperation(get_all=True, get_by_list=True)
+    grads = grad_net(net)(x)
+    assert np.allclose(grads[0][0].asnumpy(), np.array([0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
+    net.set_inputs(Tensor(shape=[None], dtype=ms.float32))
+    grads = grad_net(net)(x)
+    assert np.allclose(grads[0][0].asnumpy(), np.array([0], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)

@@ -3,11 +3,11 @@ mean_ext:
     args:
         input:
             dtype: tensor
-        axis:
+        dim:
             dtype: tuple[int]
             type_cast: int, list[int], tensor
             default: None
-        keep_dims:
+        keepdim:
             dtype: bool
             default: False
         dtype:
@@ -22,5 +22,3 @@ mean_ext:
         Ascend: MeanExtAscend
         CPU: MeanExtCPU
         GPU: MeanExtGPU
-    function:
-        name: mean_ext

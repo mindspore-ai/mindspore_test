@@ -64,7 +64,7 @@ def tensor_factory(nptype, mstype):
 
 @arg_mark(
     plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend910b'],
-    level_mark='level0',
+    level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential')
 @pytest.mark.parametrize("mode", [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
@@ -83,11 +83,11 @@ def test_add(mode):
 
 
 @arg_mark(
-    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend', 'platform_ascend910b'],
-    level_mark='level0',
+    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend910b'],
+    level_mark='level1',
     card_mark='onecard',
     essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_add_with_alpha(mode):
     """
     Feature: Tensor.add.

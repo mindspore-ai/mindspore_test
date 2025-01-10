@@ -6,6 +6,9 @@ mindspore.hal.is_initialized
     返回指定后端是否已被初始化。
 
     .. note::
+        - 接口即将废弃。
+
+    .. note::
         CPU、GPU以及Ascend后端，分别为在如下场景被初始化：
 
         - 分布式任务中，后端会在调用 `mindspore.communication.init` 后初始化。

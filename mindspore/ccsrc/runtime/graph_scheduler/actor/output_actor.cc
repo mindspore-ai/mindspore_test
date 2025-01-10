@@ -148,6 +148,71 @@ void OutputActor::ClearOutputCache() {
   current_count_ = 0;
 }
 
+void OutputActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
+  if (!enable_input_optimize_) {
+    return;
+  }
+  for (const auto &parameter_index : parameter_indexs_) {
+    auto output_position = parameter_index.first;
+    if (output_position >= device_contexts_.size()) {
+      MS_LOG(ERROR) << "The output position is of range: " << output_position;
+      return;
+    }
+    auto front_node_with_idx = parameter_index.second.first;
+    auto output_node = front_node_with_idx.first;
+    MS_EXCEPTION_IF_NULL(output_node);
+    auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+    MS_EXCEPTION_IF_NULL(graph_parameter_store);
+    if (!graph_parameter_store->IsFrontNodeInStore(output_node.get())) {
+      MS_LOG(EXCEPTION) << "Output node " << output_node->DebugString() << " is not in graph parameter store.";
+    }
+    auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(output_node.get());
+    auto tensor = graph_parameter_store->FetchTensor(outer_idx, {output_node, front_node_with_idx.second});
+    MS_EXCEPTION_IF_NULL(tensor);
+
+    const auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape());
+    auto &device_context = device_contexts_[output_position];
+    auto device_tensor = FetchParameter(parameter_index.second, context, device_context, GetAID());
+    // Create the device address and put it into host tensor.
+    if (output_node_to_tensor_device_address_.count({output_node, front_node_with_idx.second}) > 0) {
+      new_tensor->set_device_address(output_node_to_tensor_device_address_[{output_node, front_node_with_idx.second}]);
+    } else {
+      auto output_kernel_tensor = device_tensor->kernel_tensor();
+      MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+      auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+        nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
+        device_tensor->type_id(), device_tensor->host_shape(), device_context->device_context_key().device_name_,
+        device_context->device_context_key().device_id_);
+      kernel_tensor->SetType(output_kernel_tensor->GetType());
+      kernel_tensor->SetShape(output_kernel_tensor->GetShape());
+      kernel_tensor->set_stream_id(device_tensor->stream_id());
+      // SetShape will calculate a default size by host shape, need to set real device size for special format.
+      kernel_tensor->set_size(device_tensor->GetSize());
+      auto tensor_device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      MS_EXCEPTION_IF_NULL(tensor_device_address);
+      MS_LOG(DEBUG) << "Create device tensor:" << tensor_device_address << ", size: " << kernel_tensor->size()
+                    << " type:" << tensor_device_address->type_id()
+                    << " output node:" << output_node->fullname_with_scope() << " output position:" << output_position
+                    << ", origin output device tensor: " << device_tensor;
+      output_node_to_tensor_device_address_[{output_node, front_node_with_idx.second}] = tensor_device_address;
+      new_tensor->set_device_address(tensor_device_address);
+    }
+
+    outputs_[output_position] = new_tensor;
+    if (outputs_[output_position] == nullptr) {
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Create output tensor failed.");
+    }
+    if (!flatten_stub_nodes_.empty()) {
+      const auto &stub_node = flatten_stub_nodes_.at(output_position);
+      MS_EXCEPTION_IF_NULL(stub_node);
+      outputs_[output_position]->set_need_pipeline_sync(true);
+      stub_node->SetValue(outputs_[output_position]);
+    }
+    output_device_tensors_[output_position] = device_tensor;
+    output_nodes_[output_position] = front_node_with_idx;
+  }
+}
+
 void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kOutputProcess, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
@@ -163,10 +228,11 @@ void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const contex
 
   // The last loop.
   if (loop_count_ == current_count_) {
-    if (current_outputs_num_ + device_tensor_store_keys_.size() != outputs_num_) {
+    if (current_outputs_num_ + device_tensor_store_keys_.size() + parameter_indexs_.size() != outputs_num_) {
       std::string error_info = "The outputs num is wrong, the total outputs num: " + std::to_string(outputs_num_) +
                                ", the current outputs num: " + std::to_string(current_outputs_num_) +
-                               ", the device tensor store num: " + std::to_string(device_tensor_store_keys_.size());
+                               ", the device tensor store num: " + std::to_string(device_tensor_store_keys_.size()) +
+                               ", the parameter index num: " + std::to_string(parameter_indexs_.size());
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
 
@@ -220,6 +286,8 @@ void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const contex
       const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(device_tensor_store_key.second, 0, false);
       output_device_tensors_[device_tensor_store_key.first] = device_tensor.get();
     }
+
+    FetchParameterInput(context);
 
     current_outputs_num_ = 0;
     current_count_ = 0;
@@ -512,6 +580,9 @@ void OutputActor::UpdateOutputDeviceAddress() {
       device_tensor->Swap(tensor_device_address.get());
       tensor_device_address->set_user_data(device_tensor->user_data());
     }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
+      device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
   }
 
   output_node_to_tensor_device_address_.clear();

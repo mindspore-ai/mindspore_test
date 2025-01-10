@@ -22,6 +22,7 @@
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "kernel/ascend/pyboost/customize/comm_common.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -37,18 +38,21 @@ void InnerCommAllReduceAscendCustomize(const std::shared_ptr<OpRunner> &op, cons
     PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
-    auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor);
-    auto op_type_enum = HcomUtil::GetHcomReduceOpType(GetValue<std::string>(op_type));
+    auto hccl_count = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor).first;
+    auto reduce_op = HcomUtil::GetCollectiveOpReduceType(GetValue<std::string>(op_type));
 
     const auto &op_name = op->primitive()->name();
     auto input_data_ptr = GetDevicePtrFromTensor(op_name, input_tensor);
     auto output_data_ptr = GetDevicePtrFromTensor(op_name, op->output(0));
-    auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum](
-                         const HcclComm &hccl_comm, void *comm_stream_ptr) {
-      auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllReduce(
-        input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum, comm_stream_ptr, hccl_comm);
-      if (hccl_result != HCCL_SUCCESS) {
-        MS_LOG(EXCEPTION) << "HcomRecv failed, ret:" << hccl_result;
+    auto input_dtype = input_tensor->data_type();
+    std::string group_name = GetValue<std::string>(group);
+    auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, input_dtype, reduce_op, group_name](
+                         const HcclComm &, void *comm_stream_ptr) {
+      auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+      auto comm_result = comm_lib->AllReduce(input_data_ptr, output_data_ptr, hccl_count, input_dtype, reduce_op,
+                                             group_name, comm_stream_ptr);
+      if (!comm_result) {
+        MS_LOG(EXCEPTION) << "InnerCommAllReduce failed, ret:" << comm_result;
       }
     };
 

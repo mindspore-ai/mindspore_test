@@ -5,10 +5,14 @@ inplace_fill_tensor:
             dtype: tensor
         value:
             dtype: tensor
+    args_signature:
+        rw_write: input
     returns:
         out:
             dtype: tensor
             inplace: input
+    labels:
+        side_effect_mem: True
     dispatch:
         enable: True
         Ascend: InplaceFillTensorAscend

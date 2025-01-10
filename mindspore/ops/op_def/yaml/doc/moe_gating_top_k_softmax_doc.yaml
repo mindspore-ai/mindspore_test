@@ -1,0 +1,40 @@
+moe_gating_top_k_softmax:
+    description: |
+        In MoE calculation, Softmax calculation is done on the output of x, taking topk operation.
+
+        Args:
+            k (int): The k-value of topk, of size 0 <= k <= the size of x's -1 axis.
+
+        Inputs:
+            - **x** (Tensor) - The input to be computed. The tensor must be 2D or 3D. Supported dtypes: float16, bfloat16, float32.
+            - **finished** (Tensor, optional) - A 1D or 2D Tensor. Supported dtype: bool. The shape of the tensor must be :math:`x.shape[:-1]`. Default: ``None``.
+
+        Outputs:
+            - **y** (Tensor) - The topk value taken after doing softmax on `x`. The data type is the same as `x`. The -1 axis of the shape has the same size as the `k` value, and the rest of the axes have the same size as the corresponding axes of `x`.
+            - **expert_idx** (Tensor) - The index of the topk value, i.e., the expert's serial number, is taken after doing softmax on `x`. The shape is the same as `y`. The data type is int32.
+            - **row_idx** (Tensor) - Indicates the original row position corresponding to each position, shape is consistent with `y`. The data type is int32.
+
+        Raises:
+            TypeError: If the data type of input Tensor does not match the description in args.
+            ValueError: If the shape of input Tensor does not match the description in args.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore as ms
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> from mindspore.ops.operations import _infer_ops
+            >>> x = Tensor(np.array([[0.1, 0.2, 0.1, 0.1],
+            ...                      [0.2, 0.2, 0.4, 0.2],
+            ...                      [0.3, 0.3, 0.1, 0.3],
+            ...                      [0.1, 0.7, 0.1, 0.1]]), ms.float16)
+            >>> finished = Tensor(np.array([True, True, True, True]), ms.bool_)
+            >>> net = _infer_ops.MoeGatingTopKSoftmax()
+            >>> output = net(x, finished, k=4)
+            >>> print(output[0])
+            [[0.2693 0.2437 0.2437 0.2437]
+             [0.2893 0.2369 0.2369 0.2369]
+             [0.262  0.262  0.262  0.2144]
+             [0.378  0.2074 0.2074 0.2074]]

@@ -30,6 +30,7 @@
 #include "include/common/utils/stub_tensor.h"
 #include "utils/simple_info.h"
 #include "ops/op_def.h"
+#include "kernel/functions/base.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
@@ -67,13 +68,15 @@ struct AsyncStatus {
   size_t custom_bprop_cell_count{0};
 };
 
-enum class OperatorType {
-  kDefault = 0,
-  kViewOp,
-  kInplaceOp,
-};
+using OperatorType = kernel::pyboost::OperatorType;
 
 struct OpGradInfo {
+  OpGradInfo() = default;
+  OpGradInfo(OperatorType op_type, PrimitivePtr prim, std::vector<ValuePtr> inputs, ValuePtr output)
+      : operator_type(op_type),
+        op_prim(std::move(prim)),
+        input_value(std::move(inputs)),
+        out_value(std::move(output)) {}
   ~OpGradInfo() {
     input_value.clear();
     out_value = nullptr;
@@ -90,7 +93,7 @@ struct OpGradInfo {
   // If recompute, we record weight_size.
   size_t weight_size{0};
   // op index
-  size_t op_index;
+  size_t op_index{0};
   std::string op_info;
 
   PrimitivePtr op_prim{nullptr};
@@ -99,7 +102,7 @@ struct OpGradInfo {
 
   std::vector<ValuePtr> input_value{};
   ValuePtr out_value{nullptr};
-
+  tensor::BaseTensorPtr clone_value{nullptr};
   std::vector<InputType> input_value_grad_type{};
   ValueSimpleInfoPtr output_value_simple_info{nullptr};
 };
@@ -136,6 +139,9 @@ struct GradParam {
   std::string graph_cache_key;
   // Used for pyexecute
   CNodePtr cnode;
+  // Used for store input args
+  VectorRef args{};
+  VectorRef added_args{};
 };
 
 using GradParamPtr = std::shared_ptr<GradParam>;

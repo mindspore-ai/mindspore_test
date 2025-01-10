@@ -1058,7 +1058,8 @@ class Profiler:
             "op_time": self.ENABLE_STATUS if self._op_time else self.DISABLE_STATUS,
             "profile_framework": self._profile_framework,
             "profiler_level": self.profiler_level.value if self.profiler_level else self.DISABLE_STATUS,
-            "with_stack": "on" if self._with_stack else "off"
+            "with_stack": "on" if self._with_stack else "off",
+            "framework_path": self._output_path,
         }
         ProfilerInfo.set_profiling_options(profiling_options)
         return profiling_options
@@ -1378,10 +1379,6 @@ class Profiler:
         source_timeline_path = os.path.join(self._output_path, f"ascend_timeline_display_{dev_id}.json")
         target_timeline_path = os.path.join(ascend_profiler_output_path, f"trace_view.json")
         PathManager.copy_file(source_timeline_path, target_timeline_path)
-
-        src_op_mem_file = os.path.join(self._output_path, f"operator_memory_{dev_id}.csv")
-        dst_op_mem_file = os.path.join(ascend_profiler_output_path, f"operator_memory.csv")
-        PathManager.copy_file(src_op_mem_file, dst_op_mem_file)
 
         ms_output_path = os.path.realpath(
             os.path.join(source_path, os.path.pardir, 'mindstudio_profiler_output'))

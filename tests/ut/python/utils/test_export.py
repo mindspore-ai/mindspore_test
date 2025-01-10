@@ -31,7 +31,7 @@ from mindspore.common.initializer import TruncatedNormal
 from mindspore.common.parameter import ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
-from mindspore.train.serialization import export, _get_mindir_inputs, convert_model
+from mindspore.train.serialization import export, _get_mindir_inputs
 
 
 def weight_variable():
@@ -210,37 +210,6 @@ def test_get_mindir_inputs2():
     assert input_tensor[1].shape == (10, 20)
     assert input_tensor[1].dtype == mindspore.int32
     os.remove(file_name)
-
-
-def test_convert_model():
-    """
-    Feature: Convert mindir to onnx.
-    Description: Test convert.
-    Expectation: Successfully
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    net1 = InputNet1()
-    input1 = Tensor(np.ones([1, 32, 32]).astype(np.float32))
-    mindir_name1 = "lenet1.mindir"
-    export(net1, input1, file_name=mindir_name1, file_format='MINDIR')
-    onnx_name1 = "lenet1.onnx"
-    convert_model(mindir_name1, onnx_name1, "ONNX")
-    assert os.path.exists(mindir_name1)
-    assert os.path.exists(onnx_name1)
-    os.remove(mindir_name1)
-    os.remove(onnx_name1)
-
-    net2 = InputNet2()
-    input1 = Tensor(np.ones(32).astype(np.float32))
-    input2 = Tensor(np.ones([32, 32]).astype(np.float32))
-    mindir_name2 = "lenet2.mindir"
-    export(net2, input1, input2, file_name=mindir_name2, file_format='MINDIR')
-    onnx_name2 = "lenet2.onnx"
-    convert_model(mindir_name2, onnx_name2, "ONNX")
-    assert os.path.exists(mindir_name2)
-    assert os.path.exists(onnx_name2)
-    os.remove(mindir_name2)
-    os.remove(onnx_name2)
 
 
 def test_export_lenet_with_dataset():

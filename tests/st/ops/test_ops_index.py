@@ -15,6 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
+from mindspore.common import mutable
 from mindspore.ops.auto_generate.gen_ops_def import index
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
@@ -35,9 +36,8 @@ def index_backward_func(x, indices):
     return ms.grad(index_forward_func, (0,))(x, indices)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b']
-          , level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_index_forward(context_mode):
     """
@@ -46,6 +46,8 @@ def test_ops_index_forward(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
     x = generate_random_input((3, 4, 5, 6, 7), np.float64)
 
     # shape(0,) and shape(0,0,0,0,0,0,0,0,0)
@@ -93,9 +95,8 @@ def test_ops_index_forward(context_mode):
         print(output_index_error)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b']
-          , level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_index_backward(context_mode):
     """
@@ -104,6 +105,8 @@ def test_ops_index_backward(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
     x = generate_random_input((4, 3, 2, 4), np.float64)
     indices1 = np.array([[0, 1], [1, 2], [2, 1]], dtype=np.int32)
     indices2 = np.array([[1, 2]], dtype=np.int32)
@@ -125,7 +128,7 @@ def test_ops_index_backward(context_mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_index_bf16(context_mode):
     """
@@ -134,6 +137,8 @@ def test_ops_index_bf16(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
     x = generate_random_input((5, 6, 4, 3, 2, 4), np.float64)
     indices1 = np.array([[0, 1], [1, 3], [2, 1]], dtype=np.int32)
     indices2 = np.array([[0, 4]], dtype=np.int32)
@@ -151,15 +156,25 @@ def test_index_dynamic_shape():
     Description: test function index  dynamic feature.
     Expectation: expect correct result.
     """
-    ms_data1 = generate_random_input((4, 3, 2, 4), np.float64)
-    indices1 = np.array([[1, 1], [0, 2], [2, 1]], dtype=np.int32)
+    ms_data1 = generate_random_input((2, 3, 5, 2, 2), np.float64)
+    ms_data2 = generate_random_input((3, 4, 5, 6), np.float64)
+    indices1 = np.array([[1, 0], [0, 1], [1, 1]], dtype=np.int32)
     indices2 = np.array([[0, 1]], dtype=np.int32)
-
-    ms_data2 = generate_random_input((3, 4, 5, 6, 7), np.float64)
     indices3 = np.array([[0, 1], [1, 1], [2, 1]], dtype=np.int32)
+    indices4 = np.array([[1, 1, 1], [1, 0, 1]], dtype=np.bool_)
+    indices5 = np.array([1], dtype=np.int32)
+
     TEST_OP(index_forward_func
-            , [[ms.Tensor(ms_data1), [ms.Tensor(indices1), ms.Tensor(indices2)]],
-               [ms.Tensor(ms_data2), [ms.Tensor(indices3)]]]
+            , [[ms.Tensor(ms_data1), mutable([ms.Tensor(indices1), ms.Tensor(indices2)])],
+               [ms.Tensor(ms_data2), mutable([ms.Tensor(indices3)])]]
             , 'index'
-            , disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0']
-            , disable_grad=True)
+            , disable_mode=['GRAPH_MODE']
+            )
+
+    TEST_OP(index_forward_func
+            , [[ms.Tensor(ms_data1), mutable([ms.Tensor(indices4)])],
+               [ms.Tensor(ms_data2), mutable([ms.Tensor(indices3), ms.Tensor(indices5)])]]
+            , 'index'
+            , disable_mode=['GRAPH_MODE']
+            , disable_tensor_dynamic_type="DYNAMIC_RANK"
+            )

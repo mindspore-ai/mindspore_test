@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_PASS_INTERLEAVE_BRANCHES_UTILS_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_PASS_INTERLEAVE_BRANCHES_UTILS_H_
 
+#include <string>
 #include <memory>
 #include "ir/anf.h"
 
@@ -26,6 +27,7 @@ auto const kSplitConcatDepend = "split_concat_depend";
 auto const kInterleaveBranchId = "interleave_branch_id";
 auto const kInterleaveScopeId = "interleave_scope_id";
 auto const kInterleaveSharedBranchId = 0;
+auto const kEnableOptimizeMatMulDwOrderFlag = 2;
 
 struct InterLeaveScope {
   CNodePtr fork_node{nullptr};
@@ -33,6 +35,7 @@ struct InterLeaveScope {
   bool forward{false};
   size_t scope_id{0};
   FuncGraphPtr graph{nullptr};
+  HashMap<CNodePtr, CNodePtr> *matmul_grad_dual_map{nullptr};
 };
 
 using InterLeaveScopePtr = std::shared_ptr<InterLeaveScope>;
@@ -40,6 +43,9 @@ using InterLeaveScopePtr = std::shared_ptr<InterLeaveScope>;
 void InterleaveParallelBranches(const InterLeaveScopePtr &interleave_scope, bool use_dp = false);
 
 void EraseInterLeaveBranchAttr(const CNodePtr &node);
+
+void UpdateMatMulGradDualMap(const CNodePtr &node, HashMap<std::string, CNodePtr> *matmul_unique_id_map_ptr,
+                             HashMap<CNodePtr, CNodePtr> *matmul_grad_dual_map_ptr);
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_PASS_INTERLEAVE_BRANCHES_UTILS_H_

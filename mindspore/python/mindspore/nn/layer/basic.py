@@ -442,6 +442,9 @@ class Dropout3d(Cell):
 
 class Upsample(Cell):
     r"""
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     For details, please refer to :func:`mindspore.ops.interpolate`.
 
     Supported Platforms:
@@ -584,6 +587,9 @@ class Identity(Cell):
     r"""
     A placeholder identity operator that returns the same as input.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         args (Any): Any argument.
         kwargs (Any): Any keyword argument.
@@ -631,7 +637,7 @@ class Dense(Cell):
     with the same data type as the :math:`X` created by the layer (only if has_bias is True).
 
     .. warning::
-        In PYNATIVE mode, if `bias` is ``False`` , the `x` cannot be greater than 6D.
+        In PyNative mode, if `bias` is ``False`` , the `x` cannot be greater than 6D.
 
     Args:
         in_channels (int): The number of channels in the input space.
@@ -665,7 +671,7 @@ class Dense(Cell):
                     is not equal to `out_channels` or shape[1] of `weight_init` is not equal to `in_channels`.
         ValueError: If length of shape of `bias_init` is not equal to 1
                     or shape[0] of `bias_init` is not equal to `out_channels`.
-        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PYNATIVE mode.
+        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PyNative mode.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -768,7 +774,7 @@ class Linear(Cell):
         \text{outputs} = X * kernel + bias
 
     .. warning::
-        In PYNATIVE mode, if `bias` is ``False`` , the `x` cannot be greater than 6D.
+        In PyNative mode, if `bias` is ``False`` , the `x` cannot be greater than 6D.
 
     where :math:`X` is the input tensors, :math:`\text{kernel}` is a weight matrix with the same
     data type as the :math:`X` created by the layer, and :math:`\text{bias}` is a bias vector
@@ -803,7 +809,7 @@ class Linear(Cell):
                     is not equal to `out_features` or shape[1] of `weight_init` is not equal to `in_features`.
         ValueError: If length of shape of `bias_init` is not equal to 1
                     or shape[0] of `bias_init` is not equal to `out_features`.
-        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PYNATIVE mode.
+        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PyNative mode.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -811,10 +817,10 @@ class Linear(Cell):
     Examples:
         >>> import mindspore
         >>> from mindspore import Tensor
-        >>> from mindspore import nn
+        >>> from mindspore import mint
         >>> import numpy as np
         >>> x = Tensor(np.array([[180, 234, 154], [244, 48, 247]]), mindspore.float32)
-        >>> net = nn.mint.nn.Linear(3, 4)
+        >>> net = mint.nn.Linear(3, 4)
         >>> output = net(x)
         >>> print(output.shape)
         (2, 4)

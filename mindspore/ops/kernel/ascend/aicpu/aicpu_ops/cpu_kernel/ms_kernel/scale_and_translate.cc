@@ -69,10 +69,14 @@ const char *kScaleAndTranslateGrad = "ScaleAndTranslateGrad";
 namespace aicpu {
 namespace {
 template <typename T>
-inline const T &Clamp(const T &low, const T &high, const T &value) {
-  if (high < value) return high;
-  if (value < low) return low;
-  return value;
+inline const T &Clamp(const T &low, const T &high, const T &val) {
+  if (high < val) {
+    return high;
+  }
+  if (val < low) {
+    return low;
+  }
+  return val;
 }
 
 template <typename Kernel>
@@ -115,19 +119,19 @@ uint32_t ComputeSpansCore(CpuKernelContext &ctx, CpuKernelContext &context, cons
       }
       float total_weight_sum = 0.0f;
       temp_weights.clear();
-      for (int source = span_start; source < span_end; ++source) {
-        float kernel_pos = static_cast<float>(source) + 0.5f - sample_f;
-        float weight = kernel(std::abs(kernel_pos * one_over_kernel_scale));
-        total_weight_sum += weight;
+      for (int source = span_start; source < span_end; source++) {
+        auto kernel_pos = static_cast<float>(source) + 0.5f - sample_f;
+        auto weight = kernel(std::abs(kernel_pos * one_over_kernel_scale));
+        total_weight_sum = total_weight_sum + weight;
         temp_weights.push_back(weight);
       }
       max_span_size = std::max(max_span_size, this_span_size);
       if (std::abs(total_weight_sum) >= 1000.0f * std::numeric_limits<float>::min()) {
-        float one_over_total_weight_sum = 1.0f / total_weight_sum;
-        int out_index = spans->span_size * x;
-        for (float weight : temp_weights) {
+        auto one_over_total_weight_sum = 1.0f / total_weight_sum;
+        auto out_index = spans->span_size * x;
+        for (auto weight : temp_weights) {
           weights_vec(out_index) = weight * one_over_total_weight_sum;
-          ++out_index;
+          out_index++;
         }
       }
       starts_vec(x) = span_start;

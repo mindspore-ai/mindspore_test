@@ -1,0 +1,5 @@
+sub_:
+    description: |
+        sub_(other, *, alpha=1) -> Tensor
+
+        For details, please refer to :func:`mindspore.mint.sub`.

@@ -21,3 +21,5 @@ arange:
     dispatch:
       enable: True
       Ascend: ArangeAscend
+      CPU: None
+      GPU: None

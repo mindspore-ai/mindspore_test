@@ -176,6 +176,42 @@ uint32_t MultiAscendCollectiveCommLib::GetGroupRankFromWorldRank(uint32_t world_
 }
 
 bool MultiAscendCollectiveCommLib::ResumeHcclComm() { return ascend_collective_comm_lib_->ResumeHcclComm(); }
+
+bool MultiAscendCollectiveCommLib::AllGather(const void *send_buff, void *recv_buff, size_t send_count,
+                                             TypeId data_type, const std::string &group_name, void *stream) {
+  return ascend_collective_comm_lib_->AllGather(send_buff, recv_buff, send_count, data_type, group_name, stream);
+}
+
+bool MultiAscendCollectiveCommLib::AllReduce(const void *send_buff, void *recv_buff, size_t send_count,
+                                             TypeId data_type, CollectiveOpReduceType reduce_op,
+                                             const std::string &group_name, void *stream) {
+  return ascend_collective_comm_lib_->AllReduce(send_buff, recv_buff, send_count, data_type, reduce_op, group_name,
+                                                stream);
+}
+
+bool MultiAscendCollectiveCommLib::Broadcast(const void *send_buff, void *recv_buff, size_t send_count,
+                                             TypeId data_type, uint32_t root_rank, const std::string &group_name,
+                                             void *stream) {
+  return ascend_collective_comm_lib_->Broadcast(send_buff, recv_buff, send_count, data_type, root_rank, group_name,
+                                                stream);
+}
+
+bool MultiAscendCollectiveCommLib::ReduceScatter(const void *send_buff, void *recv_buff, size_t recv_count,
+                                                 TypeId data_type, CollectiveOpReduceType reduce_op,
+                                                 const std::string &group_name, void *stream) {
+  return ascend_collective_comm_lib_->ReduceScatter(send_buff, recv_buff, recv_count, data_type, reduce_op, group_name,
+                                                    stream);
+}
+
+bool MultiAscendCollectiveCommLib::Send(const void *send_buff, size_t count, TypeId data_type, uint32_t peer,
+                                        const std::string &group_name, void *stream) {
+  return ascend_collective_comm_lib_->Send(send_buff, count, data_type, peer, group_name, stream);
+}
+
+bool MultiAscendCollectiveCommLib::Recv(void *recv_buff, size_t count, TypeId data_type, uint32_t peer,
+                                        const std::string &group_name, void *stream) {
+  return ascend_collective_comm_lib_->Recv(recv_buff, count, data_type, peer, group_name, stream);
+}
 }  // namespace ascend
 
 using MultiAscendCollectiveCommLib = mindspore::device::ascend::MultiAscendCollectiveCommLib;

@@ -79,8 +79,8 @@ template <typename T>
 bool ResizeAreaCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs,
                                           const std::vector<ResizeAreaCachedInterpolation> &x_interps_) const {
-  auto input_addr = static_cast<T *>(inputs[0]->device_ptr());
-  auto output_addr = static_cast<float *>(outputs[0]->device_ptr());
+  auto input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output_addr = GetDeviceAddress<float>(outputs, kIndex0);
   float scale = 1.0 / (height_scale_ * width_scale_);
   std::vector<float> y_scales;
   std::vector<const T *> y_ptrs;

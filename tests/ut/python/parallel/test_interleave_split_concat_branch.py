@@ -41,7 +41,7 @@ def check_output(dir_name, num_comm_ops=10):
     assert out > str(num_comm_ops)
 
 class SplitConcatNet(Cell):
-    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, split_count=2):
+    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, split_count, flag):
         super(SplitConcatNet, self).__init__()
         self.embed = Linear(in_channels=hidden_size, out_channels=hidden_size)
         self.head = Linear(in_channels=hidden_size, out_channels=hidden_size)
@@ -50,8 +50,8 @@ class SplitConcatNet(Cell):
         self.concat = ops.Concat(2)
         self.split.shard(((dp, 1, 1, 1),))
         self.concat.shard(tuple((dp, 1, 1, 1) for _ in range(split_count)))
-        self.split.add_prim_attr("enable_interleave", 1)
-        self.concat.add_prim_attr("enable_interleave", 1)
+        self.split.add_prim_attr("enable_interleave", flag)
+        self.concat.add_prim_attr("enable_interleave", flag)
 
     def construct(self, x):
         x = self.embed(x)
@@ -64,13 +64,14 @@ class SplitConcatNet(Cell):
         return output
 
 @pytest.mark.parametrize('split_count', [2, 8])
-def test_interleave_split_concat_branch(split_count):
+@pytest.mark.parametrize('parallel_flag', [1, 2])
+def test_interleave_split_concat_branch(split_count, parallel_flag):
     """
     Feature: interleave split/concat branches.
     Description: interleave split/concat branches.
     Expectation: compile done without error and find split/concat branch control depend.
     """
-    dir_name = "./split_concat_branch_interleave_" + str(split_count)
+    dir_name = "./split_concat_branch_interleave_" + str(split_count) + "_" + str(parallel_flag)
     config = {"enable_interleave_split_concat_branch": True,}
     with open("./parallel_speed_up_interleave.json", "w") as file:
         json.dump(config, file, indent=4, separators=(',', ': '))
@@ -91,7 +92,7 @@ def test_interleave_split_concat_branch(split_count):
     ep = 16
     mp = 8
     sp = False
-    net = SplitConcatNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, split_count)
+    net = SplitConcatNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, split_count, parallel_flag)
     x = Tensor(np.ones([expert_num, expert_num, channel, hidden_size]), dtype=ms.float16)
 
     if os.path.exists(dir_name):

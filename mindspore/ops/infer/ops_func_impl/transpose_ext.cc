@@ -29,7 +29,7 @@
 #include "ir/primitive.h"
 #include "abstract/dshape.h"
 #include "base/base.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
 BaseShapePtr TransposeExtFuncImpl::InferShape(const PrimitivePtr &primitive,

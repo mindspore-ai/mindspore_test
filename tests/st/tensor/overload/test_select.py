@@ -16,6 +16,8 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.utils import test_utils
 
 import mindspore as ms
 import mindspore.nn as nn
@@ -30,6 +32,20 @@ class SelectPythonNet(nn.Cell):
 class SelectPyboostNet(nn.Cell):
     def construct(self, x, dim, index):
         return x.select(dim, index)
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
+
+
+@test_utils.run_with_cell
+def select_ext_forward_func(x, dim, index):
+    return x.select(dim, index)
+
+
+@test_utils.run_with_cell
+def select_forward_func(x, condition, y):
+    return x.select(condition, y)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -98,3 +114,43 @@ def test_method_select_pyboost(mode):
     output = net(x, 1, 3)
     expect_output = np.array([5, 5], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_select_ext_dynamic():
+    """
+    Feature: Test select op.
+    Description: Test select dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
+    dim1 = 1
+    index1 = 1
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    dim2 = 2
+    index2 = 3
+    TEST_OP(select_ext_forward_func, [[ms_data1, dim1, index1], [ms_data2, dim2, index2]],
+            'select_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_select_dynamic():
+    """
+    Feature: Test select op.
+    Description: Test select dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
+    condition1 = ms.Tensor(generate_random_input((4, 3, 6), np.bool_))
+    y1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    condition2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.bool_))
+    y2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    TEST_OP(select_forward_func, [[ms_data1, condition1, y1], [ms_data2, condition2, y2]], 'select',
+            disable_mode=['GRAPH_MODE'])

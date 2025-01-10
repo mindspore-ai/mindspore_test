@@ -27,12 +27,19 @@ sed -i 's/\blogger.info\b/print/g' setup.py
 sed -i 's/\blogger.error\b/print/g' setup.py
 sed -i 's/\blogger.warning\b/print/g' setup.py
 
+unset CMAKE_INSTALL_MODE
+
 vendor_name="custom_ascendc_910b"
 if [ ! -d "${ascendc_path}/${vendor_name}" ]; then
   python setup.py -o ${op_host_path} -k ${op_kernel_path} \
-    --soc_version="ascend910b;ascend910_93" \
+    --soc_version="ascend910b;ascend910_93;ascend310p" \
     --vendor_name=${vendor_name}
-
+  if [ $? -eq 0 ]; then
+    echo "Compile inner ascendc custom op successfully!"
+  else
+    echo "Compile inner ascendc custom op failed!"
+    exit 1
+  fi
   mapfile -t result_array < <(find ${tmp_compiler_path} -name ${vendor_name})
   if [ ${#result_array[@]} -gt 0 ]; then
     ascendc_result=${result_array[0]}
@@ -47,7 +54,12 @@ if [ ! -d "${ascendc_path}/${vendor_name}" ]; then
   python setup.py -o ${op_host_path} -k ${op_kernel_path} \
     --soc_version="ascend910" \
     --vendor_name=${vendor_name}
-
+  if [ $? -eq 0 ]; then
+    echo "Compile inner ascendc custom op successfully!"
+  else
+    echo "Compile inner ascendc custom op failed!"
+    exit 1
+  fi
   mapfile -t result_array < <(find ${tmp_compiler_path} -name ${vendor_name})
   if [ ${#result_array[@]} -gt 0 ]; then
     ascendc_result=${result_array[0]}

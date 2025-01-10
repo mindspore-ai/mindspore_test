@@ -25,6 +25,7 @@
 #include "ir/func_graph.h"
 
 namespace mindspore {
+
 class Graph::GraphData {
  public:
   GraphData();

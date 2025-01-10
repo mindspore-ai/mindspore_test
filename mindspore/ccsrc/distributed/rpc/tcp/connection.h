@@ -25,6 +25,7 @@
 #include "actor/msg.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 #include "distributed/rpc/tcp/event_loop.h"
+#include "distributed/rpc/tcp/event_loop_group.h"
 #include "distributed/rpc/tcp/socket_operation.h"
 
 namespace mindspore {
@@ -173,6 +174,7 @@ struct Connection {
   // The threads for handling the receive and send requsets on this connection.
   EventLoop *send_event_loop;
   EventLoop *recv_event_loop;
+  EventLoopGroupPtr event_loop_group_{nullptr};
 
   // Collects data sending metrics.
   SendMetrics *send_metrics;
@@ -183,6 +185,9 @@ struct Connection {
 
   // Owned by the tcp_comm.
   std::shared_ptr<std::mutex> conn_mutex;
+
+  // use by connection
+  std::mutex mutex_;
 
   // Owned by connection itself.
   std::mutex conn_owned_mutex_;

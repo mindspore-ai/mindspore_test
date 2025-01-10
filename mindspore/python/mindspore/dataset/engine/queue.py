@@ -24,6 +24,7 @@ import platform
 import queue
 import types
 
+import dill
 import numpy as np
 
 from mindspore import log as logger
@@ -71,6 +72,9 @@ class _SharedQueue(multiprocessing.queues.Queue):
         # reading a buffer and also have a full queue of buffers in the meta-data queue
         self.num_seg = size + 2
 
+        self.dynamic_shm = True
+        self.fd_list = []
+        self.seg_size = 0
         if platform.system().lower() != 'windows' and max_rowsize == -1:
             self.dynamic_shm = True
             self.fd_list = []
@@ -88,6 +92,42 @@ class _SharedQueue(multiprocessing.queues.Queue):
                     raise
                 else:
                     self.shm_list.append(shared_array)
+
+    def __getstate__(self):
+        copy_out = dill.dumps(self.copy_out)
+        min_shared_mem = dill.dumps(self.min_shared_mem)
+        data_immediate = dill.dumps(self.data_immediate)
+        data_shared = dill.dumps(self.data_shared)
+        # cannot dill 'mmap.mmap' object : self.count
+        print_error = dill.dumps(self.print_error)
+        shm_list = dill.dumps(self.shm_list)
+        seg_pos = dill.dumps(self.seg_pos)
+        num_seg = dill.dumps(self.num_seg)
+        dynamic_shm = dill.dumps(self.dynamic_shm)
+        fd_list = dill.dumps(self.fd_list)
+        seg_size = dill.dumps(self.seg_size)
+        # multiprocessing attribute
+        _closed = dill.dumps(self._closed)
+        super_variable = super().__getstate__()
+        return (copy_out, min_shared_mem, data_immediate, data_shared, print_error, shm_list,
+                seg_pos, num_seg, dynamic_shm, fd_list, seg_size, _closed, super_variable)
+
+    def __setstate__(self, state):
+        copy_out, min_shared_mem, data_immediate, data_shared, print_error, shm_list, \
+            seg_pos, num_seg, dynamic_shm, fd_list, seg_size, _closed, super_variable = state
+        self.copy_out = dill.loads(copy_out)
+        self.min_shared_mem = dill.loads(min_shared_mem)
+        self.data_immediate = dill.loads(data_immediate)
+        self.data_shared = dill.loads(data_shared)
+        self.print_error = dill.loads(print_error)
+        self.shm_list = dill.loads(shm_list)
+        self.seg_pos = dill.loads(seg_pos)
+        self.num_seg = dill.loads(num_seg)
+        self.dynamic_shm = dill.loads(dynamic_shm)
+        self.fd_list = dill.loads(fd_list)
+        self.seg_size = dill.loads(seg_size)
+        self._closed = dill.loads(_closed)
+        super().__setstate__(super_variable)
 
     def put_until(self, data, timeout=None, exit_signal=None):
         """Put data into the queue. Block until timeout is reached or exit_signal is set."""

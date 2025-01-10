@@ -23,9 +23,9 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoRealDiv::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                    const acme::OutputsImmutableInfoList &outputs) {
-  return acme::CreateRealDivOp(inputs, outputs, acme::kAcmeRealDivOpName);
+internal::InternalOpPtr AcmeKernelInfoRealDiv::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                    const internal::OutputsImmutableInfoList &outputs) {
+  return internal::CreateRealDivOp(inputs, outputs, internal::kInternalRealDivOpName);
 }
 
 void AcmeKernelInfoRealDiv::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -35,6 +35,6 @@ void AcmeKernelInfoRealDiv::Call(const std::shared_ptr<pyboost::OpRunner> &op, c
   auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
   CallAcmeOp(op, inputs, op_key);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(RealDiv, acme::kAcmeRealDivOpName, AcmeKernelInfoRealDiv);
+MS_ACME_KERNEL_INFO_FACTORY_REG(RealDiv, internal::kInternalRealDivOpName, AcmeKernelInfoRealDiv);
 }  // namespace kernel
 }  // namespace mindspore

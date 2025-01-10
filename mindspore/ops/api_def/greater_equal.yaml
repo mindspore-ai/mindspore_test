@@ -1,0 +1,7 @@
+greater_equal:
+  op_yaml: greater_equal_op.yaml
+  py_method: tensor_greater_equal
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

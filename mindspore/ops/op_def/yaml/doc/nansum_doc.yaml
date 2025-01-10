@@ -1,0 +1,48 @@
+
+nansum:
+    description: |
+        Computes sum of `input` over a given dimension, treating NaNs as zero.
+
+        .. warning::
+            It is only supported on Atlas A2 Training Series Products.
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input Tensor.
+            dim (Union[int, tuple(int)], optional): The dimensions to sum.
+                Dim must be in the range [-rank(input), rank(input)). Default: ``None``, which indicates the sum of all elements in a tensor.
+            keepdim (bool, optional): Whether the output Tensor keeps dimensions or not. Default: ``False``.
+
+        Keyword Args:
+            dtype (:class:`mindspore.dtype`, optional): The dtype of output Tensor. Default: ``None``.
+
+        Returns:
+            Tensor, the sum of input `input` in the given dimension dim, treating NaNs as zero.
+
+            - If dim is None, keepdim is False,
+              the output is a 0-D Tensor representing the sum of all elements in the input Tensor.
+            - If dim is int, set as 2, and keepdim is False,
+              the shape of output is :math:`(input_1, input_3, ..., input_R)`.
+            - If dim is tuple(int) or list(int), set as (2, 3), and keepdim is False,
+              the shape of output is :math:`(input_1, input_4, ..., input_R)`.
+
+        Raises:
+            TypeError: If `input` is not Tensor.
+            TypeError: If `keepdim` is not a bool.
+            TypeError: If the dtype of `input` or `dtype` is complex type.
+            ValueError: If `dim` not in [-rank(`input`), rank(`input`)).
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.array([[float("nan"), 2, 3], [1, 2, float("nan")]]), mindspore.float32)
+            >>> output1 = ops.nansum(x, dim=0, keepdim=False, dtype=mindspore.float32)
+            >>> output2 = ops.nansum(x, dim=0, keepdim=True, dtype=mindspore.float32)
+            >>> print(output1)
+            [1. 4. 3.]
+            >>> print(output2)
+            [[1. 4. 3.]]

@@ -100,7 +100,7 @@ void ParamReplication::Init() {
 }
 
 struct ExchangeDevAddr {
-  explicit ExchangeDevAddr(const GeDeviceResManager *res_mgr) : res_mgr_(res_mgr) {}
+  explicit ExchangeDevAddr(const AscendDeviceResManager *res_mgr) : res_mgr_(res_mgr) {}
   ~ExchangeDevAddr() {
     if (send_dev_addr != nullptr) {
       res_mgr_->FreeMemory(send_dev_addr);
@@ -111,7 +111,7 @@ struct ExchangeDevAddr {
   }
   void *send_dev_addr = nullptr;
   void *recv_dev_addr = nullptr;
-  const GeDeviceResManager *res_mgr_;
+  const AscendDeviceResManager *res_mgr_;
 };
 
 int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExchangeInfo *remote_info, int src_rank,
@@ -266,11 +266,11 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
   size_t device_hbm_total_size;
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size, &device_hbm_total_size);
   if (ret != ACL_ERROR_NONE || device_hbm_total_size == 0) {
-    MS_LOG(EXCEPTION) << "Internal Error: Get Device HBM memory size failed, ret = " << ret
-                      << ", total HBM size :" << device_hbm_total_size;
+    MS_LOG(EXCEPTION) << "Internal Error: Get Device MOC memory size failed, ret = " << ret
+                      << ", total MOC size :" << device_hbm_total_size;
   }
-  MS_LOG(INFO) << "device_hbm_free_size=" << device_hbm_free_size / kMegaByte
-               << "MB, device_hbm_total_size=" << device_hbm_total_size / kMegaByte;
+  MS_LOG(INFO) << "device_moc_free_size=" << device_hbm_free_size / kMegaByte
+               << "MB, device_moc_total_size=" << device_hbm_total_size / kMegaByte;
 
   DataExchangeInfo local_info(params, device_hbm_free_size);
   DataExchangeInfo remote_info(params.size());

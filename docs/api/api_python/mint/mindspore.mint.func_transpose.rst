@@ -19,4 +19,4 @@ mindspore.mint.transpose
     异常：
         - **TypeError** - 如果 `input` 不是Tensor。
         - **TypeError** - 如果 `dim0` 或者 `dim1` 不是整数。
-        - **TypeError** - 如果 `dim0` 或者 `dim1` 不在:math:`[-ndim, ndim -1]` 范围内。
+        - **ValueError** - 如果 `dim0` 或者 `dim1` 不在 :math:`[-ndim, ndim -1]` 范围内。

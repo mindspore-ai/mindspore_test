@@ -44,6 +44,9 @@ class GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public PatternProcess
   ~GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2 : public PatternProcessPass {
@@ -53,6 +56,9 @@ class GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2 : public PatternProce
   ~GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class PynativeSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {

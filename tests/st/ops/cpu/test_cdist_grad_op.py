@@ -15,12 +15,11 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
-from mindspore.ops.operations import _grad_ops as G
+from mindspore.ops import auto_generate as gen
 from mindspore.ops.functional import vmap
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
@@ -29,13 +28,13 @@ context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 class CdistGradTEST(nn.Cell):
     def __init__(self, p):
         super(CdistGradTEST, self).__init__()
-        self.cdist_grad = G.CdistGrad(p)
+        self.cdist_grad = gen.CdistGrad(p)
 
     def construct(self, grad, x1, x2, dist):
         return self.cdist_grad(grad, x1, x2, dist)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_CdistGradP0_float32():
     """
@@ -55,7 +54,7 @@ def test_CdistGradP0_float32():
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_vmap():
     """
@@ -65,7 +64,7 @@ def test_vmap():
     """
 
     def cal_cdist_grad(grad, x1, x2, dist):
-        return G.CdistGrad(3.0)(grad, x1, x2, dist)
+        return gen.CdistGrad(3.0)(grad, x1, x2, dist)
 
     grad = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]], [[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
     x1 = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]], [[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
@@ -90,7 +89,7 @@ def test_vmap2():
     """
 
     def cal_cdist_grad(grad, x1, x2, dist):
-        return G.CdistGrad(3.0)(grad, x1, x2, dist)
+        return gen.CdistGrad(3.0)(grad, x1, x2, dist)
 
     grad = Tensor(np.array([[[[1.0, 1.0], [2.0, 2.0]], [[1.0, 1.0], [2.0, 2.0]]],
                             [[[1.0, 1.0], [2.0, 2.0]], [[1.0, 1.0], [2.0, 2.0]]]]).astype(np.float32))

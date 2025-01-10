@@ -209,9 +209,9 @@ class FlashAttentionScoreNet(Cell):
         self.net = FlashAttentionScore(head_num=q_heads, scale_value=tor, input_layout=layout)
 
     def construct(self, query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix,
-                  actual_seq_qlen=None, actual_seq_kvlen=None):
+                  q_seq_lens=None, batch_valid_length=None):
         output = self.net(query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix,
-                          actual_seq_qlen=actual_seq_qlen, actual_seq_kvlen=actual_seq_kvlen)[3]
+                          q_seq_lens, batch_valid_length)[3]
         return output
 
 
@@ -277,7 +277,7 @@ def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is
         assert err_ratio < 0.05, "err_ratio is " + str(err_ratio)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('enable_alibi', [False, True])
 def test_internal_asd_flash_attention_score_bsh(ms_dtype, enable_alibi):
@@ -298,7 +298,7 @@ def test_internal_asd_flash_attention_score_bsh(ms_dtype, enable_alibi):
     _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('enable_alibi', [False, True])
 def test_internal_asd_flash_attention_score_bsh_bf16_dyn(enable_alibi):
     """
@@ -361,7 +361,7 @@ def test_internal_asd_flash_attention_score_th_fp16_dyn(enable_alibi):
     _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('enable_alibi', [False, True])
 def test_internal_asd_flash_attention_score_tnd(ms_dtype, enable_alibi):

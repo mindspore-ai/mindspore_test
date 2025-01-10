@@ -52,7 +52,7 @@ template <typename T1, typename T2>
 bool NonDeterministicIntsCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *> &,
                                                     const std::vector<KernelTensor *> &,
                                                     const std::vector<KernelTensor *> &outputs) {
-  auto output = reinterpret_cast<T1 *>(outputs[0]->device_ptr());
+  auto output = GetDeviceAddress<T1>(outputs, kIndex0);
   size_t output_elem_num = outputs[0]->size() / sizeof(T1);
   auto task = [output](size_t start, size_t end) {
     auto max_data = std::numeric_limits<T1>::max();

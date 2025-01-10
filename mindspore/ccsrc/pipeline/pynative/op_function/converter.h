@@ -53,58 +53,63 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
 static std::unordered_map<std::string, ops::OP_DTYPE> type_not_in_yaml_str_map = {
   {"tuple[any]", ops::OP_DTYPE::DT_TUPLE_ANY},
   {"list[any]", ops::OP_DTYPE::DT_LIST_ANY},
+  {"any", ops::OP_DTYPE::DT_ANY},
 };
 
 // information of single parameter
 struct FunctionParameter {
-  explicit FunctionParameter(const std::string &fmt);
-  bool check(const py::object &obj) const;
-  void set_default_obj(const std::string &str);
-  const py::object &get_default_value() { return default_obj; }
+  explicit FunctionParameter(const std::string &fmt, bool is_kw_only);
+  bool Check(const py::object &obj) const;
+  void SetDefaultObj(const std::string &str);
+  const py::object &GetDefaultValue() { return default_obj_; }
 
-  ops::OP_DTYPE type_;  // type of parameter
+  ops::OP_DTYPE type_{ops::OP_DTYPE::DT_END};
   std::vector<ops::OP_DTYPE> cast_types_;
-  py::object default_obj;
-  bool optional_;  // if has default value
-  bool allow_none_;
-  std::string name_;  // parameter name
+  py::object default_obj_;
+  bool optional_{false};
+  bool allow_none_{false};
+  bool kw_only_{false};
+  std::string name_;
+  bool is_any_{false};
+  bool allow_vararg_{false};
 };
 
 // single overload
 struct FunctionSignature {
   explicit FunctionSignature(const std::string &fmt, int index);
-  // bind with real args
   bool CheckParamValid(const py::object &obj, const FunctionParameter &param);
-  bool parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
+  bool Parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
 
   std::string name_;
   std::vector<FunctionParameter> params_;
   size_t max_args_;
+  // e.g. allow input.reshape(1, 2, 3) parse as input.reshape((1, 2, 3))
+  bool allow_int_as_list_;
   int index_;
 };
 
 // parser util
 struct PythonArgParser {
   explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
-  inline const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *python_args,
+  inline const FunctionSignature &Parse(const py::list &args, const py::dict &kwargs, py::list *python_args,
                                         const bool &is_method);
-  std::string parse_error(const py::list &args, const py::dict &kwargs, const bool &is_method);
+  std::string ParseError(const py::list &args, const py::dict &kwargs, const bool &is_method);
 
  private:
-  std::vector<FunctionSignature> signatures_;  // all overloads
+  std::vector<FunctionSignature> signatures_;
   std::string function_name_;
-  size_t max_args_;  // max num of args
+  size_t max_args_;
 };
 
-inline const FunctionSignature &PythonArgParser::parse(const py::list &args, const py::dict &kwargs,
+inline const FunctionSignature &PythonArgParser::Parse(const py::list &args, const py::dict &kwargs,
                                                        py::list *python_args, const bool &is_method) {
   for (auto &signature : signatures_) {
     python_args->attr("clear")();
-    if (signature.parse(args, kwargs, python_args)) {
+    if (signature.Parse(args, kwargs, python_args)) {
       return signature;
     }
   }
-  MS_EXCEPTION(TypeError) << parse_error(args, kwargs, is_method);
+  MS_EXCEPTION(TypeError) << ParseError(args, kwargs, is_method);
 }
 
 class Converter {

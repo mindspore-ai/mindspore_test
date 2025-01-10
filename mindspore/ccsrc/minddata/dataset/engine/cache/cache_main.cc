@@ -146,7 +146,7 @@ ms::Status StartServer(int argc, char **argv) {
   bool daemonize = strcmp(daemonize_string, "true") == 0 || strcmp(daemonize_string, "TRUE") == 0 ||
                    strcmp(daemonize_string, "t") == 0 || strcmp(daemonize_string, "T") == 0;
 
-  // We always change directory to / on unix rather than using the directory where the cache_server
+  // We always change directory to / on unix rather than using the directory where the dataset-cache-server
   // is called. This is a standard procedure for daemonize a process on unix.
   if (chdir("/") == -1) {
     std::string errMsg = "Unable to change directory to /. Errno = " + std::to_string(errno);
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
     std::cerr << rc.ToString() << std::endl;
     return 1;
   }
-  // This executable is not to be called directly, and should be invoked by cache_admin executable.
+  // This executable is not to be called directly, and should be invoked by dataset-cache executable.
   rc = StartServer(argc, argv);
   // Check result
   if (rc.IsError()) {

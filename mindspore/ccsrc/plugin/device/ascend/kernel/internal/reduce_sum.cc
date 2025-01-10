@@ -13,28 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <memory>
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+
 #include "plugin/device/ascend/kernel/internal/reduce_sum.h"
+
+#include <memory>
+#include "kernel/kernel.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalReduceSum::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                      const std::vector<KernelTensor *> &outputs) {
-  internal::OpParamPtr param_ptr = std::make_shared<internal::OpParam>();
-  internal::ReduceParam op_param;
-  op_param.reduceType = internal::ReduceParam::REDUCE_SUM;
-
-  auto axis_list = inputs[kIndex1]->GetValue<std::vector<int64_t>>().value();
-  for (auto axis : axis_list) {
-    op_param.axis.emplace_back(axis);
-  }
-
-  param_ptr->specificParam = op_param;
-  param_ptr->opId = internal::OpId::ReduceSum;
-  return param_ptr;
+internal::InternalOpPtr InternalReduceSum::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                        const internal::OutputsImmutableInfoList &outputs_ii,
+                                                        const std::vector<KernelTensor *> &ms_inputs,
+                                                        const std::vector<KernelTensor *> &ms_outputs) {
+  internal::ReduceSumParam param;
+  param.axes = ms_inputs[1]->GetValueWithCheck<std::vector<int64_t>>();
+  return internal::CreateReduceSumOp(inputs_ii, outputs_ii, param, internal::kInternalReduceSumOpName);
 }
 
-MS_INTERNAL_KERNEL_FACTORY_REG(ReduceSum, InternalReduceSum);
+MS_INTERNAL_KERNEL_FACTORY_REG(ReduceSum, internal::kInternalReduceSumOpName, InternalReduceSum);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(ReduceSum, INPUT_NUM_1, INDEX_0);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(ReduceSum, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel

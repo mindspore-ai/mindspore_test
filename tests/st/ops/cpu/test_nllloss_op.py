@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 """test NLLLoss forward and backward"""
 
-import pytest
+from tests.mark_utils import arg_mark
+
 import numpy as np
 
 from mindspore import context

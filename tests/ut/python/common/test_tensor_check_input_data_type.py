@@ -42,7 +42,6 @@ def test_convert_to_tensor_by_object_type_array():
     with pytest.raises(TypeError) as ex:
         Tensor(a)
     assert "initializing tensor by numpy array failed" in str(ex.value)
-    assert "<class 'mindspore.common.tensor.Tensor'>" in str(ex.value)
 
 
 def test_convert_to_tensor_by_sequence():

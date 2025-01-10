@@ -29,7 +29,7 @@ int GluGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
     return ret;
   }
   dtype_ = inputs[kIndex0]->dtype_id();
-  auto axis_value = GetValue<int64_t>(primitive_->GetAttr("axis"));
+  auto axis_value = inputs[kIndex2]->GetValueWithCheck<int64_t>();
   grad_shape_ = inputs[kIndex0]->GetShapeVector();
   x_shape_ = inputs[kIndex1]->GetShapeVector();
 
@@ -80,8 +80,11 @@ template <typename T>
 void GluGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
   const auto *input0 = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input0);
   const auto *input1 = static_cast<T *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input1);
   auto *output = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
   std::vector<int64_t> shape = x_shape_;
   int64_t dim = axis_;
   size_t lens = outputs[0]->size() > 0 ? outputs[0]->size() / sizeof(T) : 1;
@@ -124,10 +127,21 @@ void GluGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
 }
 
 std::vector<KernelAttr> GluGradCpuKernelMod::GetOpSupport() {
-  std::vector<KernelAttr> support_list = {
-    KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
-    KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
-    KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64)};
+  std::vector<KernelAttr> support_list = {KernelAttr()
+                                            .AddInputAttr(kNumberTypeFloat16)
+                                            .AddInputAttr(kNumberTypeFloat16)
+                                            .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                            .AddOutputAttr(kNumberTypeFloat16),
+                                          KernelAttr()
+                                            .AddInputAttr(kNumberTypeFloat32)
+                                            .AddInputAttr(kNumberTypeFloat32)
+                                            .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                            .AddOutputAttr(kNumberTypeFloat32),
+                                          KernelAttr()
+                                            .AddInputAttr(kNumberTypeFloat64)
+                                            .AddInputAttr(kNumberTypeFloat64)
+                                            .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                            .AddOutputAttr(kNumberTypeFloat64)};
   return support_list;
 }
 

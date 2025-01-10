@@ -13,13 +13,13 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+import os
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-
+from tests.mark_utils import arg_mark
 from mindspore import ops
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -65,9 +65,14 @@ def test_avg_pool_backward(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
-    ms.context.set_context(precompile_only=True)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
     x = ms.Tensor(np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4), ms.float32)
     grads = avg_pool_backward_func(x)
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',

@@ -1,0 +1,14 @@
+asinh:
+  - op_yaml: asinh_ext_op.yaml
+    py_method: deprecated_tensor_asinh
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/asinh_method.yaml
+    py_method: deprecated_tensor_asinh
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

@@ -3,7 +3,7 @@ mindspore.ops.SparseApplyFtrl
 
 .. py:class:: mindspore.ops.SparseApplyFtrl(lr, l1, l2, lr_power, use_locking=False)
 
-    根据FTRL-proximal算法更新相关参数。
+    根据FTRL-proximal算法更新相关参数或者Tensor。
 
     更多详细信息请参见 :class:`mindspore.nn.FTRL` 。
 
@@ -15,9 +15,9 @@ mindspore.ops.SparseApplyFtrl
         - **use_locking** (bool, 可选) - 是否对参数更新加锁保护。默认值： ``False`` 。
 
     输入：
-        - **var** (Parameter) - 要更新的权重。数据类型必须为float16或float32。shape为 :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
-        - **accum** (Parameter) - 要更新的累数值，shape必须与 `var` 相同。
-        - **linear** (Parameter) - 要更新的线性系数，shape必须与 `var` 相同。
+        - **var** (Union[Parameter, Tensor]) - 要更新的权重。数据类型必须为float16或float32。shape为 :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
+        - **accum** (Union[Parameter, Tensor]) - 要更新的累数值，shape必须与 `var` 相同。
+        - **linear** (Union[Parameter, Tensor]) - 要更新的线性系数，shape必须与 `var` 相同。
         - **grad** (Tensor) - 梯度，为一个Tensor。需要满足：如果 `var.shape > 1`，则 :math:`grad.shape[1:] = var.shape[1:]` 。
         - **indices** (Tensor) - `var` 和 `accum` 第一维度的索引向量，数据类型为int32或int64，且需要保证 :math:`indices.shape[0] = grad.shape[0]` 。
 

@@ -244,15 +244,15 @@ template <typename T>
 bool FusedSparseFtrlCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                const std::vector<kernel::KernelTensor *> &workspace,
                                                const std::vector<kernel::KernelTensor *> &) const {
-  auto *var = reinterpret_cast<float *>(inputs[0]->device_ptr());
-  auto *accum = reinterpret_cast<float *>(inputs[1]->device_ptr());
-  auto *linear = reinterpret_cast<float *>(inputs[2]->device_ptr());
-  auto *grad = reinterpret_cast<float *>(inputs[3]->device_ptr());
-  auto *indices = reinterpret_cast<T *>(inputs[4]->device_ptr());
-  auto *new_grad = reinterpret_cast<float *>(workspace[0]->device_ptr());
-  auto *new_indices = reinterpret_cast<T *>(workspace[1]->device_ptr());
-  auto *workspace_grad = reinterpret_cast<float *>(workspace[2]->device_ptr());
-  auto *workspace_indices = reinterpret_cast<T *>(workspace[3]->device_ptr());
+  auto *var = GetDeviceAddress<float>(inputs, 0);
+  auto *accum = GetDeviceAddress<float>(inputs, 1);
+  auto *linear = GetDeviceAddress<float>(inputs, 2);
+  auto *grad = GetDeviceAddress<float>(inputs, 3);
+  auto *indices = GetDeviceAddress<T>(inputs, 4);
+  auto *new_grad = GetDeviceAddress<float>(workspace, 0);
+  auto *new_indices = GetDeviceAddress<T>(workspace, 1);
+  auto *workspace_grad = GetDeviceAddress<float>(workspace, 2);
+  auto *workspace_indices = GetDeviceAddress<T>(workspace, 3);
 
   SparseGradient<T> unique_sparse_grad({new_grad, new_indices, indices_size_});
   SparseGradient<T> workspace_sparse_grad({workspace_grad, workspace_indices, indices_size_});
@@ -437,11 +437,11 @@ template <typename T, typename S>
 bool SparseApplyFtrlCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                const std::vector<kernel::KernelTensor *> &workspace,
                                                const std::vector<kernel::KernelTensor *> &) const {
-  auto *var = reinterpret_cast<T *>(inputs[kVarIndex]->device_ptr());
-  auto *accum = reinterpret_cast<T *>(inputs[kAccumIndex]->device_ptr());
-  auto *linear = reinterpret_cast<T *>(inputs[kLinearIndex]->device_ptr());
-  auto *grad = reinterpret_cast<T *>(inputs[kGradIndex]->device_ptr());
-  auto *indices = reinterpret_cast<S *>(inputs[kIndicesIndex]->device_ptr());
+  auto *var = GetDeviceAddress<T>(inputs, kVarIndex);
+  auto *accum = GetDeviceAddress<T>(inputs, kAccumIndex);
+  auto *linear = GetDeviceAddress<T>(inputs, kLinearIndex);
+  auto *grad = GetDeviceAddress<T>(inputs, kGradIndex);
+  auto *indices = GetDeviceAddress<S>(inputs, kIndicesIndex);
 
   for (int64_t index = 0; index < batch_size_; index++) {
     SparseGradient<S> input_sparse_grad({grad, indices, indices_size_});

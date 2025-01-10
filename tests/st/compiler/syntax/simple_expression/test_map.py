@@ -15,8 +15,8 @@
 
 import pytest
 import numpy as np
-
-from mindspore import Tensor, nn, Parameter, context
+import operator
+from mindspore import Tensor, nn, Parameter, context, jit
 from mindspore.nn import Cell
 import mindspore as ms
 from tests.mark_utils import arg_mark
@@ -183,3 +183,80 @@ def test_map_param_cast():
     with pytest.raises(Exception, match="Data type conversion of 'Parameter' is not supported"):
         ret = net(input_me_x)
         print("ret:", ret)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_fallback_map_with_numpy():
+    """
+    Feature: JIT Fallback
+    Description: Test map in graph mode with numpy.
+    Expectation: No exception.
+    """
+    @jit
+    def foo():
+        x = np.array([1, 2, 3, 4])
+        y = np.array([1, 1, 1, 1])
+        ret = map(lambda x, y: x + y, x, y)
+        return tuple(ret)
+
+    out = foo()
+    assert operator.eq(out, (2, 3, 4, 5))
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_fallback_map_with_numpy_and_tensor():
+    """
+    Feature: JIT Fallback
+    Description: Test map in graph mode with numpy.
+    Expectation: No exception.
+    """
+    @jit
+    def foo():
+        x = np.array([1, 2, 3, 4])
+        y = Tensor([1, 1, 1, 1])
+        ret = map(lambda x, y: x + y, x, y)
+        return tuple(ret)
+
+    out = foo()
+    assert operator.eq(out, (2, 3, 4, 5))
+
+
+def map_fn(x, y):
+    return x + y
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_fallback_map_with_numpy_2():
+    """
+    Feature: JIT Fallback
+    Description: Test map in graph mode with numpy.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo():
+        x = np.array([1, 2, 3, 4])
+        y = np.array([1, 1, 1, 1])
+        ret = map(map_fn, x, y)
+        return tuple(ret)
+
+    out = foo()
+    assert operator.eq(out, (2, 3, 4, 5))
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_fallback_map_with_numpy_and_tensor_2():
+    """
+    Feature: JIT Fallback
+    Description: Test map in graph mode with numpy.
+    Expectation: No exception.
+    """
+    @jit
+    def foo():
+        x = np.array([1, 2, 3, 4])
+        y = Tensor([1, 1, 1, 1])
+        ret = map(map_fn, x, y)
+        return tuple(ret)
+
+    out = foo()
+    assert operator.eq(out, (2, 3, 4, 5))

@@ -58,9 +58,10 @@ class AclMemManager {
   STATUS UpdateWorkspace(size_t work_size, int32_t device_id, std::thread::id thread_id);
   STATUS UpdateWeightspace(std::string model_path, size_t weight_size, int32_t device_id);
   STATUS GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_t device_id);
-  STATUS GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_t device_id, std::thread::id thread_id);
+  STATUS GetModelWorkMem(void **work_ptr, int32_t device_id, std::thread::id thread_id);
   STATUS GetModelWeightMem(AclModelMemInfo *acl_weight_mem_info);
-  STATUS GetModelWeightMem(AclModelMemInfo *acl_weight_mem_info, std::string model_path, int32_t device_id);
+  STATUS GetModelWeightMem(void **weight_ptr, std::string model_path, int32_t device_id);
+  void ReleaseDeviceMem(int32_t device_id, std::string model_path);
   void Lock() { return acl_execute_mutex_.lock(); }
   void Unlock() { return acl_execute_mutex_.unlock(); }
 

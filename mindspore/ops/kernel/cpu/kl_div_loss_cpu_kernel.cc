@@ -103,13 +103,13 @@ bool KLDivLossCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kMyAddInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMyAddOutputsNum, kernel_name_);
 
-  T *input_x = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *input_target = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
+  T *input_x = GetDeviceAddress<T>(inputs, kIndex0);
+  T *input_target = GetDeviceAddress<T>(inputs, kIndex1);
   T *y = nullptr;
   if (reductionMode_ == ops::kNone) {
-    y = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+    y = GetDeviceAddress<T>(outputs, kIndex0);
   } else {
-    y = reinterpret_cast<T *>(workspace[kIndex0]->device_ptr());
+    y = GetDeviceAddress<T>(workspace, kIndex0);
   }
 
   double total_sum = 0;
@@ -129,7 +129,7 @@ bool KLDivLossCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
     return true;
   }
 
-  T *y_ret = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *y_ret = GetDeviceAddress<T>(outputs, kIndex0);
   if (reductionMode_ == ops::kSum) {
     y_ret[kIndex0] = static_cast<T>(total_sum);
     return true;

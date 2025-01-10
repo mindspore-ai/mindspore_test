@@ -1,0 +1,14 @@
+acosh:
+  - op_yaml: acosh_ext_op.yaml
+    py_method: deprecated_tensor_acosh
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/acosh_method.yaml
+    py_method: deprecated_tensor_acosh
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

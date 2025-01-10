@@ -4,7 +4,6 @@ mindspore.Tensor.index_select
 .. py:method:: mindspore.Tensor.index_select(axis, index)
 
     返回一个新的Tensor，该Tensor沿维度 `axis` 按 `index` 中给定的索引对 `self` 进行选择。
-
     返回的Tensor和输入Tensor( `self` )的维度数量相同，其第 `axis` 维度的大小和 `index` 的长度相同；其他维度和 `self` 相同。
 
     .. note::
@@ -27,7 +26,6 @@ mindspore.Tensor.index_select
         :noindex:
 
     返回一个新的Tensor，该Tensor沿维度 `dim` 按 `index` 中给定的索引对 `self` 进行选择。
-
     返回的Tensor和输入Tensor( `self` )的维度数量相同，其第 `dim` 维度的大小和 `index` 的长度相同；其他维度和 `self` 相同。
 
     .. note::

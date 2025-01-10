@@ -17,14 +17,18 @@ set -e
 BASE_PATH=$(cd "$(dirname $0)"; pwd)
 
 RANK_SIZE=$1
-CONFIG_FILE=$2
-OUTPUT_FILE=$3
-CELL_REUSE=${4:-None}
+RANK_LIST=$2
+CONFIG_FILE=$3
+OUTPUT_FILE=$4
+CASE_NAME=$5
+CELL_REUSE=${6:-None}
+# convert rank list to array
+IFS=',' read -r -a array <<< "$RANK_LIST"
 
 export MS_SIMULATION_LEVEL=1
 export RANK_SIZE="$RANK_SIZE"
-export RANK_ID=0
-export PYTHONPATH=${BASE_PATH}/../mindformers:${PYTHONPATH}
+export PYTHONPATH=${BASE_PATH}/mindformers:${PYTHONPATH}
+export MS_DEV_DUMP_IR_PASSES="step_parallel,validate,hwopt_d_after_inline_graph"
 if [ "$CELL_REUSE" = "pp" ]; then
   echo "enable lazy inline in pp"
   export ENABLE_LAZY_INLINE=1
@@ -34,4 +38,13 @@ if [ "$CELL_REUSE" = "no_pp" ]; then
   export ENABLE_LAZY_INLINE_NO_PIPELINE=1
 fi
 
-python ${BASE_PATH}/../mindformers/run_mindformer.py --config "$CONFIG_FILE" > "$OUTPUT_FILE" 2>&1
+bash env_compile_config.sh
+for rank_id in "${array[@]}"
+do
+  export RANK_ID=$rank_id
+  rm -rf "$BASE_PATH"/"$CASE_NAME"/rank_${RANK_ID}
+  mkdir -p "$BASE_PATH"/"$CASE_NAME"/rank_${RANK_ID}
+  python "$BASE_PATH"/mindformers/run_mindformer.py \
+        --config "$CONFIG_FILE" > "$BASE_PATH"/"$CASE_NAME"/rank_${RANK_ID}/"$OUTPUT_FILE" 2>&1
+done
+bash clear_env_compile_config.sh

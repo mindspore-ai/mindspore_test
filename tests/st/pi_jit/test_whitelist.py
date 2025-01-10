@@ -22,10 +22,11 @@ import mindspore.nn as nn
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 from mindspore.communication._hccl_management import get_rank_size
-from mindspore.hal.memory import memory_stats
+from mindspore.runtime.memory import memory_stats
 from mindspore._c_expression import get_code_extra
 from mindspore._c_expression.np_dtypes import np_version_valid
 import math
+from tests.device_utils import set_device
 
 @pytest.fixture(autouse=True)
 def skip_if_python_version_too_high():
@@ -94,6 +95,7 @@ def test_break_func(func):
     Expectation: no error
     TEST_SUMMARY: graph break due to cfunction
     """
+    set_device()
     context.set_context(mode=context.PYNATIVE_MODE)
     x = Tensor([1])
     y = Tensor([2])

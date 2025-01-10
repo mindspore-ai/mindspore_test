@@ -159,11 +159,11 @@ bool SolveTriangularCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
                                                const std::vector<KernelTensor *> &workspace,
                                                const std::vector<KernelTensor *> &outputs) {
   SolveTriangularCheck(inputs, outputs);
-  auto a_addr = reinterpret_cast<T_in *>(inputs[kIndexA]->device_ptr());
-  auto b_addr = reinterpret_cast<T_in *>(inputs[kIndexB]->device_ptr());
-  auto output_addr = reinterpret_cast<T_out *>(outputs[kIndexX]->device_ptr());
-  T_out *casted_a_addr = reinterpret_cast<T_out *>(workspace[kIndex0]->device_ptr());
-  T_out *casted_b_addr = reinterpret_cast<T_out *>(workspace[kIndex1]->device_ptr());
+  auto a_addr = GetDeviceAddress<T_in>(inputs, kIndexA);
+  auto b_addr = GetDeviceAddress<T_in>(inputs, kIndexB);
+  auto output_addr = GetDeviceAddress<T_out>(outputs, kIndexX);
+  T_out *casted_a_addr = GetDeviceAddress<T_out>(workspace, kIndex0);
+  T_out *casted_b_addr = GetDeviceAddress<T_out>(workspace, kIndex1);
   for (size_t i = 0; i < batch_; ++i) {
     T_in *a_batch_addr = a_addr + i * a_batch_size_;
     T_in *b_batch_addr = b_addr + i * b_batch_size_;

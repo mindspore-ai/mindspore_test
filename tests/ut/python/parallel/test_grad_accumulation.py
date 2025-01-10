@@ -23,6 +23,7 @@ from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
 from mindspore.nn.wrap.cell_wrapper import GradAccumulationCell, MicroBatchInterleaved
+from mindspore.parallel import set_algo_parameters
 from .test_pipeline_split import DatasetLenet
 
 
@@ -57,7 +58,6 @@ class Net(nn.Cell):
             x = self.block[i](x)
         return x
 
-
 def test_grad_accumulation_base():
     '''
     Feature: grad_accumulation base
@@ -90,6 +90,28 @@ def test_grad_accumulation_auto_parallel():
     label = Tensor(np.ones([64, 64]), dtype=ms.float32)
     strategy1 = ((8, 1), (1, 1))
     strategy2 = ((4, 2), (2, 1))
+    net = GradAccumulationCell(Net(strategy1, strategy2), 4)
+    params = net.network.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optimizer = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optimizer)
+    model.train(2, dataset, dataset_sink_mode=False)
+    assert True
+
+def test_grad_accumulation_with_auto_parallel_check():
+    '''
+    Feature: grad_accumulation base
+    Description: In grad_accumulation mode, expected success
+    Expectation: success
+    '''
+    context.set_auto_parallel_context(device_num=8, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
+    set_algo_parameters(fully_use_devices=False)
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    strategy1 = ((4, 1), (1, 1))
+    strategy2 = ((8, 1), (1, 1))
+
     net = GradAccumulationCell(Net(strategy1, strategy2), 4)
     params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)

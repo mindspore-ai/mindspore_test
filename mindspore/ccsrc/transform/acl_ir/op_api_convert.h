@@ -20,7 +20,7 @@
 #include <dlfcn.h>
 #include <vector>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <algorithm>
 #include <functional>
@@ -94,8 +94,8 @@ inline void *GetOpApiLibHandler(const std::string &lib_path) {
 }
 
 inline void *GetOpApiFunc(const char *api_name) {
-  static std::map<string, void *> opapi_cache;
-  auto res = opapi_cache.find(string(api_name));
+  static thread_local std::unordered_map<std::string, void *> opapi_cache;
+  auto res = opapi_cache.find(std::string(api_name));
   if (res != opapi_cache.end()) {
     MS_LOG(DEBUG) << "OpApi " << api_name << " hit cache.";
     return res->second;
@@ -106,13 +106,13 @@ inline void *GetOpApiFunc(const char *api_name) {
   for (const auto &handle : opapi_lib_handle) {
     const auto api_func = GetOpApiFuncFromLib(handle.first, handle.second.c_str(), api_name);
     if (api_func != nullptr) {
-      (void)opapi_cache.emplace(string(api_name), api_func);
+      (void)opapi_cache.emplace(std::string(api_name), api_func);
       MS_LOG(DEBUG) << "Get OpApiFunc [" << api_name << "] from " << handle.second;
       return api_func;
     }
   }
   MS_LOG(WARNING) << "Dlsym " << api_name << " failed!";
-  (void)opapi_cache.emplace(string(api_name), nullptr);
+  (void)opapi_cache.emplace(std::string(api_name), nullptr);
   return nullptr;
 }
 
@@ -688,14 +688,14 @@ inline std::vector<void *> GetAddr(const std::pair<std::vector<int64_t>, bool> &
 }
 
 template <typename T>
-std::vector<void *> GetAddr(T) {
+inline std::vector<void *> GetAddr(T) {
   return {};
 }
 
 inline void FillAddress(std::vector<std::vector<void *>> *) {}
 
 template <typename T, typename... Ts>
-void FillAddress(std::vector<std::vector<void *>> *address_list, const T &arg, const Ts &... args) {
+inline void FillAddress(std::vector<std::vector<void *>> *address_list, const T &arg, const Ts &... args) {
   // Current only input/output support nullptr.
   if constexpr (std::is_same_v<T, std::nullptr_t>) {
     std::vector<void *> empty_addr = {nullptr};
@@ -707,7 +707,7 @@ void FillAddress(std::vector<std::vector<void *>> *address_list, const T &arg, c
 }
 
 template <typename... Ts>
-std::vector<std::vector<void *>> GetTensorAddress(const Ts &... args) {
+inline std::vector<std::vector<void *>> GetTensorAddress(const Ts &... args) {
   std::vector<std::vector<void *>> address_list;
   FillAddress(&address_list, args...);
   return address_list;
@@ -958,6 +958,7 @@ inline void UpdateAddress(aclOpExecutor *executor, aclTensor *tensor, const std:
     return;
   }
   aclSetTensorAddr(executor, *idx, tensor, address[0]);
+  MS_LOG(DEBUG) << "aclSetTensorAddr, idx " << *idx << " address " << address[0];
   (*idx)++;
 }
 
@@ -972,13 +973,15 @@ inline void UpdateAddress(aclOpExecutor *executor, aclTensorList *tensors, const
   }
   for (size_t i = 0; i < address.size(); ++i) {
     aclSetDynamicTensorAddr(executor, *idx, i, tensors, address[i]);
+    MS_LOG(DEBUG) << "aclSetDynamicTensorAddr, idx " << *idx << ", i " << i << " address " << address[i];
   }
   (*idx)++;
 }
 
 template <typename T>
-void UpdateAddress(aclOpExecutor *, T, const std::vector<void *> &c, size_t *idx) {
+inline void UpdateAddress(aclOpExecutor *, T, const std::vector<void *> &c, size_t *idx) {
   if (!c.empty()) {
+    MS_LOG(DEBUG) << "UpdateAddress, optional tensor idx: " << *idx;
     (*idx)++;
   }
 }

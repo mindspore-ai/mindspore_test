@@ -37,24 +37,25 @@ size_t get_element_num(const std::vector<size_t> &shape) {
 template <typename T>
 bool check_validation(const std::vector<size_t> &shape, const size_t num_before_axis, const size_t num_after_axis,
                       const std::vector<kernel::KernelTensor *> &inputs,
-                      const std::vector<kernel::KernelTensor *> &outputs) {
+                      const std::vector<kernel::KernelTensor *> &outputs, size_t index_output_idx,
+                      size_t value_output_idx) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kArgMinWithValueInputsNum, kKernelName);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kArgMinWithValueOutputsNum, kKernelName);
   size_t data_size = sizeof(T);
   size_t input_size = get_element_num(shape) * data_size;
   size_t output_num = num_before_axis * num_after_axis;
-  size_t out0_size = output_num * sizeof(int64_t);
-  size_t out1_size = output_num * data_size;
+  size_t index_output_size = output_num * sizeof(int64_t);
+  size_t value_output_size = output_num * data_size;
   if (inputs[0]->size() != input_size) {
     MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of 'x' must be " << input_size
                       << ", but got the memory size is " << inputs[0]->size();
   }
-  if (outputs[0]->size() != out0_size) {
-    MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of the 1st output must be " << out0_size
+  if (outputs[index_output_idx]->size() != index_output_size) {
+    MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of the 1st output must be " << index_output_size
                       << ", but got the memory size is " << outputs[0]->size();
   }
-  if (outputs[1]->size() != out1_size) {
-    MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of the 2nd output must be " << out1_size
+  if (outputs[value_output_idx]->size() != value_output_size) {
+    MS_LOG(EXCEPTION) << "For '" << kKernelName << "', the memory size of the 2nd output must be " << value_output_size
                       << ", but got the memory size is " << outputs[1]->size();
   }
   return true;
@@ -65,13 +66,14 @@ template <typename T>
 bool ArgMinWithValueCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                const std::vector<kernel::KernelTensor *> &,
                                                const std::vector<kernel::KernelTensor *> &outputs) {
-  if (!check_validation<T>(shape_, num_before_axis_, num_after_axis_, inputs, outputs)) {
+  if (!check_validation<T>(shape_, num_before_axis_, num_after_axis_, inputs, outputs, index_output_idx,
+                           value_output_idx)) {
     return false;
   }
 
-  const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output0 = reinterpret_cast<int64_t *>(outputs[0]->device_ptr());
-  auto *output1 = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  const auto *input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *index = GetDeviceAddress<int64_t>(outputs, index_output_idx);
+  auto *value = GetDeviceAddress<T>(outputs, value_output_idx);
 
   auto task = [&](size_t start, size_t end) {
     for (size_t pos = start; pos < end; pos++) {
@@ -89,8 +91,8 @@ bool ArgMinWithValueCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
         }
       }
       auto dst_index = i * num_after_axis_ + j;
-      output0[dst_index] = min_index;
-      output1[dst_index] = min_value;
+      index[dst_index] = min_index;
+      value[dst_index] = min_value;
     }
   };
   ParallelLaunchAutoSearch(task, num_before_axis_ * num_after_axis_, this, &parallel_search_info_);

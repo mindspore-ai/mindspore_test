@@ -318,7 +318,8 @@ KernelWithIndex VisitKernelWithReturnTypeForTupleGetItem(const AnfNodePtr &anf_n
                                                       return_types);
   }
   if (common::AnfAlgo::IsCallNode(item_with_index_tmp.first) || item_with_index_tmp.first->isa<Parameter>() ||
-      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimBpropCut)) {
+      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimBpropCut) ||
+      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimGEGraphOp)) {
     size_t real_index = item_with_index_tmp.second;
     if (abs == nullptr) {
       abs = item_with_index_tmp.first->abstract();
@@ -1975,6 +1976,9 @@ bool AnfAlgo::HasMonadInput(const AnfNodePtr &node) {
 
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
+  if (HasNodeAttr("graph_kernel", cnode) && HasNodeAttr("side_effect_mem", cnode)) {
+    return true;
+  }
   const auto &inputs = cnode->inputs();
   for (const auto &input : inputs) {
     MS_EXCEPTION_IF_NULL(input);
@@ -2622,6 +2626,21 @@ ValuePtr AnfAlgo::ValueToScalar(const ValuePtr &value, TypeId type_id) {
 }
 
 namespace {
+void FlattenValueSequence(ValuePtrList *value_list, const ValuePtr &value) {
+  if (value->isa<tensor::BaseTensor>()) {
+    (void)value_list->emplace_back(value);
+    return;
+  }
+  if (!value->isa<ValueSequence>()) {
+    return;
+  }
+  auto value_seq = value->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(value_seq);
+  for (const auto &i : value_seq->value()) {
+    FlattenValueSequence(value_list, i);
+  }
+}
+
 void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
   MS_EXCEPTION_IF_NULL(value_list);
   for (size_t i = 0; i < ref_list.size(); ++i) {
@@ -2636,6 +2655,10 @@ void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
       auto csr_tensor = utils::cast<tensor::CSRTensorPtr>(ref_list[i]);
       MS_EXCEPTION_IF_NULL(csr_tensor);
       (void)value_list->emplace_back(csr_tensor);
+    } else if (utils::isa<ValueSequencePtr>(ref_list[i])) {
+      auto value_seq = utils::cast<ValueSequencePtr>(ref_list[i]);
+      MS_EXCEPTION_IF_NULL(value_seq);
+      FlattenValueSequence(value_list, value_seq);
     } else {
       MS_LOG(EXCEPTION) << "The ref value " << ref_list[i].ToString() << " is not a vector ref or a tensor!";
     }

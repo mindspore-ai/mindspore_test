@@ -353,7 +353,7 @@ def test_batch_exception_04():
     # apply dataset operations
     data1 = ds.TFRecordDataset(DATA_DIR, shuffle=ds.Shuffle.FILES)
     try:
-        data1 = data1.batch(batch_size=-1)
+        data1 = data1.batch(batch_size=-2)
         sum([1 for _ in data1])
 
     except Exception as e:
@@ -713,6 +713,21 @@ def test_batch_exception_19():
             num_iter += 1
         assert num_iter == 2
     assert "got an unexpected keyword argument 'pad_info'" in str(raise_info.value)
+
+
+def test_batch_invalid_batch_size():
+    """
+    Feature: Batch
+    Description: Test setting batch size to -1 without using batch sampler
+    Expectation: Exception is raised as expected
+    """
+    dataset = ds.TFRecordDataset(DATA_DIR, shuffle=ds.Shuffle.FILES)
+    dataset = dataset.batch(batch_size=-1)
+
+    with pytest.raises(RuntimeError) as e:
+        for _ in dataset:
+            pass
+    assert "Batch size cannot be -1 without using batch sampler" in str(e.value)
 
 
 if __name__ == '__main__':

@@ -151,6 +151,7 @@ bool AdaptiveMaxPool3DCpuKernelMod::Launch(const std::vector<KernelTensor *> &in
     output_shape_.push_back(input_shape_[1]);
   }
   auto output_size_ptr = static_cast<int32_t *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_size_ptr);
   const size_t kOutputSizeDims = 3;
   for (size_t i = 0; i < kOutputSizeDims; ++i) {
     const int32_t elem = output_size_ptr[i];
@@ -258,8 +259,11 @@ template <typename T>
 void AdaptiveMaxPool3DCpuKernelMod::AdaptiveMaxPool3DCompute(const std::vector<KernelTensor *> &inputs,
                                                              const std::vector<KernelTensor *> &outputs) {
   auto input_data = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_data);
   auto output_data = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_data);
   auto indices_data = static_cast<int32_t *>(outputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(indices_data);
   if (input_shape_.size() == kInputShapeDims4) {
     (void)input_shape_.insert(input_shape_.begin(), 1);
   }

@@ -59,8 +59,8 @@ bool ArgmaxCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
     return false;
   }
 
-  const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output = reinterpret_cast<S *>(outputs[0]->device_ptr());
+  const auto *input = GetDeviceAddress<T>(inputs, 0);
+  auto *output = GetDeviceAddress<S>(outputs, 0);
 
   auto task = [&](size_t start, size_t end) {
     size_t num_after_axis = LongToSize(num_after_axis_);

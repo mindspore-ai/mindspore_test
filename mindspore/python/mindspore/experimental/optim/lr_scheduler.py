@@ -24,7 +24,6 @@ from mindspore.ops import functional as F
 from mindspore.ops import operations as P
 from mindspore import _checkparam as Validator
 
-
 __all__ = ['StepLR', 'LinearLR', 'LRScheduler', 'ExponentialLR', 'PolynomialLR',
            'MultiplicativeLR', 'ConstantLR', 'MultiStepLR', 'LambdaLR', 'SequentialLR', 'ReduceLROnPlateau',
            'CyclicLR', 'CosineAnnealingWarmRestarts', 'CosineAnnealingLR']
@@ -82,6 +81,7 @@ class LRScheduler:
         [Tensor(shape=[], dtype=Float32, value= 0.01)]
         [Tensor(shape=[], dtype=Float32, value= 0.01)]
     """
+
     def __init__(self, optimizer, last_epoch=-1):
         if not isinstance(optimizer, Optimizer):
             raise TypeError('{} is not an Optimizer'.format(
@@ -192,6 +192,7 @@ class StepLR(LRScheduler):
         ...     scheduler.step()
         ...     current_lr = scheduler.get_last_lr()
     """
+
     def __init__(self, optimizer, step_size, gamma=0.1, last_epoch=-1):
         if not isinstance(step_size, int) and not isinstance(step_size, bool):
             raise TypeError(f"For 'StepLR', the 'step_size' must be int, but got {type(step_size)}.")
@@ -297,8 +298,8 @@ class LinearLR(LRScheduler):
         if self.last_epoch > self.total_iters:
             return [lr * 1. for lr in self._last_lr]
 
-        factor = 1. + (self.end_factor - self.start_factor) / (
-            self.total_iters * self.start_factor + (self.last_epoch - 1) * (self.end_factor - self.start_factor))
+        factor = 1. + (self.end_factor - self.start_factor) / \
+                 (self.total_iters * self.start_factor + (self.last_epoch - 1) * (self.end_factor - self.start_factor))
         return [lr * factor for lr in self._last_lr]
 
     def _get_closed_form_lr(self):
@@ -419,6 +420,7 @@ class PolynomialLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0)]
         [Tensor(shape=[], dtype=Float32, value= 0)]
     """
+
     def __init__(self, optimizer, total_iters=5, power=1.0, last_epoch=-1):
         if not isinstance(power, float):
             raise TypeError(f"For 'PolynomialLR', the 'power' must be float, but got {type(power)}.")
@@ -435,8 +437,8 @@ class PolynomialLR(LRScheduler):
     def get_lr(self):
         if self.last_epoch == 0 or self.last_epoch > self.total_iters:
             return [lr * 1. for lr in self._last_lr]
-        factor = ((1.0 - self.last_epoch / self.total_iters) / (
-            1.0 - (self.last_epoch - 1) / self.total_iters)) ** self.power
+        factor = ((1.0 - self.last_epoch / self.total_iters) /
+                  (1.0 - (self.last_epoch - 1) / self.total_iters)) ** self.power
         return [lr * factor for lr in self._last_lr]
 
     def _get_closed_form_lr(self):
@@ -483,14 +485,16 @@ class LambdaLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.0081)]
         [Tensor(shape=[], dtype=Float32, value= 0.00729)]
     """
+
     def __init__(self, optimizer, lr_lambda, last_epoch=-1):
-        if not isinstance(lr_lambda, list) and not isinstance(lr_lambda, tuple):
-            self.lr_lambdas = [lr_lambda] * len(optimizer.param_groups)
-        else:
-            if len(lr_lambda) != len(optimizer.param_groups):
+        param_groups_length = len(optimizer.param_groups)
+        if isinstance(lr_lambda, (list, tuple)):
+            if len(lr_lambda) != param_groups_length:
                 raise ValueError("Expected {} lr_lambdas, but got {}".format(
-                    len(optimizer.param_groups), len(lr_lambda)))
+                    param_groups_length, len(lr_lambda)))
             self.lr_lambdas = list(lr_lambda)
+        else:
+            self.lr_lambdas = [lr_lambda] * param_groups_length
         super(LambdaLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
@@ -533,14 +537,16 @@ class MultiplicativeLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.009025)]
         [Tensor(shape=[], dtype=Float32, value= 0.00857375)]
     """
+
     def __init__(self, optimizer, lr_lambda, last_epoch=-1):
-        if not isinstance(lr_lambda, list) and not isinstance(lr_lambda, tuple):
-            self.lr_lambdas = [lr_lambda] * len(optimizer.param_groups)
-        else:
-            if len(lr_lambda) != len(optimizer.param_groups):
+        if isinstance(lr_lambda, (list, tuple)):
+            if len(lr_lambda) == len(optimizer.param_groups):
+                self.lr_lambdas = list(lr_lambda)
+            else:
                 raise ValueError("Expected {} lr_lambdas, but got {}".format(
                     len(optimizer.param_groups), len(lr_lambda)))
-            self.lr_lambdas = list(lr_lambda)
+        else:
+            self.lr_lambdas = [lr_lambda] * len(optimizer.param_groups)
         super(MultiplicativeLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
@@ -599,6 +605,7 @@ class MultiStepLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.0005)]
         [Tensor(shape=[], dtype=Float32, value= 0.0005)]
     """
+
     def __init__(self, optimizer, milestones, gamma=0.1, last_epoch=-1):
         Validator.check_value_type('milestones', milestones, [list])
         for milestone in milestones:
@@ -668,6 +675,7 @@ class ConstantLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.05)]
         [Tensor(shape=[], dtype=Float32, value= 0.05)]
     """
+
     def __init__(self, optimizer, factor=1.0 / 3, total_iters=5, last_epoch=-1):
         if factor > 1.0 or factor < 0:
             raise ValueError('Constant multiplicative factor expected to be between 0 and 1.')
@@ -735,6 +743,7 @@ class SequentialLR:
         [Tensor(shape=[], dtype=Float32, value= 0.0729)]
         [Tensor(shape=[], dtype=Float32, value= 0.06561)]
     """
+
     def __init__(self, optimizer, schedulers, milestones, last_epoch=-1):
         for sched_idx in range(len(schedulers)):
             if schedulers[sched_idx].optimizer != optimizer:
@@ -863,6 +872,7 @@ class ReduceLROnPlateau:
         [Tensor(shape=[], dtype=Float32, value= 0.001)]
         [Tensor(shape=[], dtype=Float32, value= 0.0001)]
         """
+
     def __init__(self, optimizer, mode='min', factor=0.1, patience=10,
                  threshold=1e-4, threshold_mode='rel', cooldown=0,
                  min_lr=0, eps=1e-8):
@@ -1053,6 +1063,7 @@ class CyclicLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.01018)]
         [Tensor(shape=[], dtype=Float32, value= 0.010225)]
     """
+
     def __init__(self,
                  optimizer,
                  base_lr,
@@ -1127,11 +1138,11 @@ class CyclicLR(LRScheduler):
     def _triangular_scale_fn(self, x):
         return 1.
 
-    def _triangular2_scale_fn(self, x):
-        return 1 / (2. ** (x - 1))
-
     def _exp_range_scale_fn(self, x):
         return self.gamma ** (x)
+
+    def _triangular2_scale_fn(self, x):
+        return 1 / (2. ** (x - 1))
 
     def get_lr(self):
         cycle = self.floor(1 + self.last_epoch / self.total_step_size)
@@ -1143,13 +1154,9 @@ class CyclicLR(LRScheduler):
         lrs = []
         for base_lr, max_lr in zip(self.base_lrs, self.max_lrs):
             base_height = (max_lr - base_lr) * scale_factor
-
-            if self.scale_mode == 'cycle':
-                lr = base_lr + base_height * self.scale_fn(cycle)
-            else:
-                lr = base_lr + base_height * self.scale_fn(self.last_epoch)
+            cycle_or_epoch = cycle if self.scale_mode == 'cycle' else self.last_epoch
+            lr = base_lr + base_height * self.scale_fn(cycle_or_epoch)
             lrs.append(lr)
-
         return lrs
 
 
@@ -1211,6 +1218,7 @@ class CosineAnnealingWarmRestarts(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.025)]
         [Tensor(shape=[], dtype=Float32, value= 0.00669873)]
     """
+
     def __init__(self, optimizer, T_0, T_mult=1, eta_min=0, last_epoch=-1):
         if T_0 <= 0 or not isinstance(T_0, int):
             raise ValueError("T_0 should be an integer and equal or greater than 0, but got {}".format(T_0))
@@ -1336,6 +1344,7 @@ class CosineAnnealingLR(LRScheduler):
         [Tensor(shape=[], dtype=Float32, value= 0.05)]
         [Tensor(shape=[], dtype=Float32, value= 0)]
     """
+
     def __init__(self, optimizer, T_max, eta_min=0.0, last_epoch=-1):
         if not isinstance(eta_min, (float, int)):
             raise TypeError(f"For 'CosineAnnealingLR', the 'eta_min' must be float or int, but got {type(eta_min)}.")

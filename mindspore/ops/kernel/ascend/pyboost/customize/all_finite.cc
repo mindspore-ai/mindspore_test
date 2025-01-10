@@ -49,7 +49,14 @@ tensor::BaseTensorPtr AllFiniteAscendCustomize(const std::shared_ptr<OpRunner> &
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
     auto stream_ptr = device_context->device_res_manager_->GetStream(op->stream_id());
     MS_EXCEPTION_IF_NULL(stream_ptr);
-    aclrtMemsetAsync(outputs[0]->device_address()->GetMutablePtr(), kAlignSize, 0, kAlignSize, stream_ptr);
+    runtime::OpExecutor::DispatchLaunchTask(
+      [output_device_ptr = outputs[0]->device_address()->GetMutablePtr(), stream_ptr]() {
+        auto ret = aclrtMemsetAsync(output_device_ptr, kAlignSize, 0, kAlignSize, stream_ptr);
+        if (ret != ACL_SUCCESS) {
+          MS_LOG(EXCEPTION) << "Call runtime aclrtMemsetAsync error, ret[" << ret << "]";
+        }
+      });
+
     for (size_t i = 0; i < tensors_tensor_list_vector.size(); i++) {
       LAUNCH_ACLNN(aclnnAllFinite, device_context, op->stream_id(), tensors_tensor_list_vector[i], outputs[0]);
     }

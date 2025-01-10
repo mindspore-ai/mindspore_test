@@ -70,6 +70,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
     if (executor_ == nullptr) {
       executor_ = std::shared_ptr<GraphExecutorPy>(new (std::nothrow) GraphExecutorPy());
     }
+    executor_->set_process_id();
     return executor_;
   }
 
@@ -99,13 +100,12 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   py::bytes GetOptimizeGraphProto(const std::string &phase);
 
   void SetJitConfig(const py::dict &jit_config);
-  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase);
+  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase, const std::string &kind = kOutput);
   bool HasCompiled(const std::string &phase) const;
 
   FuncGraphPtr BuildGraph(const py::dict &init_params, const std::string &phase) const;
   void ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt = py::none(),
                    char *key = nullptr);
-  bool InitParams(const py::dict &init_params, const std::string &phase) const;
   py::dict GetParams(const std::string &phase);
   py::bytes GetRandomStatus(const std::string &phase) const;
   void UpdataParamNodeDefaultInput(const std::string &phase,
@@ -133,6 +133,8 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
     compile_cache_dep_files_ = compile_cache_dep_files;
   }
   void set_weights_values(const py::dict &weights) { weights_ = weights; }
+  int32_t max_call_depth() const { return max_call_depth_; }
+  void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
   void SetOptimizeConfig(const py::list &optimize_cfg);
   std::string GetOptimizeConfig();
   void SetConfigPasses(const py::list &passes);
@@ -152,6 +154,8 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   void ParentBeforeFork();
   void ParentAfterFork();
   void ChildAfterFork();
+  void ClearInfo();
+  void set_process_id();
 
  private:
   GraphExecutorPy() = default;
@@ -165,14 +169,13 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   // If enable compile cache, get the compile cache resource.
   void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);
 
-#ifdef WITH_BACKEND
-  void GeFirstInitParams();
-#endif
-
   bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
                     bool use_vm);
   py::object RunInner(const py::tuple &args, const py::object &phase);
   void ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list);
+  void ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend, const py::dict &dict,
+                              std::map<std::string, std::shared_ptr<tensor::Tensor>> *const tensors,
+                              const FuncGraphPtr &anf_graph) const;
 
   std::map<std::string, ExecutorInfoPtr> info_;
   static std::shared_ptr<GraphExecutorPy> executor_;
@@ -189,6 +192,9 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   py::dict weights_;
   std::map<PyObject *, std::pair<ValuePtr, AbstractBasePtr>> cur_convert_input_;
   bool executor_running_{false};
+  int32_t max_call_depth_{-1};
+  bool need_recompile_{true};
+  pid_t process_id_;
 };
 using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
 
@@ -244,6 +250,7 @@ FuncGraphPtr DynamicObfuscateMindIR(const std::string &file_name, float obf_rati
 void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
                const bool &type);
 bool IsPhaseExport(const std::string &phase);
+py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
 }  // namespace pipeline
 }  // namespace mindspore
 

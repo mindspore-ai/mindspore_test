@@ -128,7 +128,7 @@ Status CacheServer::DoServiceStop() {
   // Also remove the path we use to generate ftok.
   Path p(PortToUnixSocketPath(port_));
   (void)p.Remove();
-  // Finally wake up cache_admin if it is waiting
+  // Finally wake up dataset-cache if it is waiting
   for (int32_t qID : shutdown_qIDs_) {
     SharedMessage msg(qID);
     RETURN_IF_NOT_OK(msg.SendStatus(Status::OK()));
@@ -1177,9 +1177,9 @@ Status CacheServer::AcknowledgeShutdown(CacheServerRequest *cache_req) {
   auto *rq = &cache_req->rq_;
   auto *reply = &cache_req->reply_;
   if (!rq->buf_data().empty()) {
-    // cache_admin sends us a message qID and we will destroy the
-    // queue in our destructor and this will wake up cache_admin.
-    // But we don't want the cache_admin blindly just block itself.
+    // dataset-cache sends us a message qID and we will destroy the
+    // queue in our destructor and this will wake up dataset-cache.
+    // But we don't want the dataset-cache blindly just block itself.
     // So we will send back an ack before shutdown the comm layer.
     try {
       int32_t qID = std::stoi(rq->buf_data(0));

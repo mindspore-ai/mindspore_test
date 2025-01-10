@@ -33,26 +33,6 @@
 
 namespace mindspore::graphkernel::test {
 namespace {
-void Init(bool switch_off) {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  context->set_param<std::string>(MS_CTX_DEVICE_TARGET, kAscendDevice);
-
-  if (switch_off) {
-    std::map<std::string, std::string> gk_jit_config;
-    gk_jit_config["graph_kernel_flags"] = "--disable_pass=add_layer_norm_fusion";
-    graphkernel::GraphKernelFlags::SaveJitConfig(gk_jit_config);
-  } else {
-    std::map<std::string, std::string> gk_jit_config;
-    gk_jit_config["graph_kernel_flags"] = "";
-    graphkernel::GraphKernelFlags::SaveJitConfig(gk_jit_config);
-  }
-
-  std::map<std::string, std::string> ms_jit_config;
-  ms_jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(ms_jit_config);
-}
-
 opt::PassManagerPtr GetControllablePassManager() {
   auto pm = std::make_shared<graphkernel::GraphKernelPassManager>(std::numeric_limits<size_t>::max(), "test_controll");
   pm->Add(std::make_shared<opt::AddLayernormFusion>(), graphkernel::OptLevel_0);
@@ -67,12 +47,32 @@ struct PassSwitchParams {
 /// Feature: Test graph kernel fusion pass switch.
 /// Description: Register fusion pass to graph kernel, switch on or off by flags.
 /// Expectation: Get expected passes by type, control the passes by flags.
-class TestPassSwitch : public GraphKernelCommonTestSuite, public testing::WithParamInterface<PassSwitchParams> {};
+class TestPassSwitch : public GraphKernelCommonTestSuite, public testing::WithParamInterface<PassSwitchParams> {
+ public:
+  void SetUp() override {
+    const auto &param = GetParam();
+    bool switch_off = param.switch_off;
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    context->set_param<std::string>(MS_CTX_DEVICE_TARGET, kAscendDevice);
+
+    if (switch_off) {
+      std::map<std::string, std::string> gk_jit_config;
+      gk_jit_config["graph_kernel_flags"] = "--disable_pass=add_layer_norm_fusion";
+      graphkernel::GraphKernelFlags::SaveJitConfig(gk_jit_config);
+    } else {
+      std::map<std::string, std::string> gk_jit_config;
+      gk_jit_config["graph_kernel_flags"] = "";
+      graphkernel::GraphKernelFlags::SaveJitConfig(gk_jit_config);
+    }
+
+    std::map<std::string, std::string> ms_jit_config;
+    ms_jit_config["infer_boost"] = "on";
+    PhaseManager::GetInstance().set_jit_config(ms_jit_config);
+  }
+};
 
 TEST_P(TestPassSwitch, pass_switch) {
-  const auto &param = GetParam();
-  Init(param.switch_off);
-
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kFloat16, {1, 1024, 11264});
   auto input_1 = c.NewTensorInput("input_1", kFloat16, {1, 1024, 11264});
@@ -96,6 +96,7 @@ TEST_P(TestPassSwitch, pass_switch) {
   checker.src_pattern_.AddVar("input_0").AddVar("input_1").AddVar("gamma").AddVar("beta").AddVar("eps").AddCNode(
     "add_layer_norm", {std::make_shared<Primitive>("AddLayerNorm"), "input_0", "input_1", "gamma", "beta", "eps"});
 
+  const auto &param = GetParam();
   if (param.switch_off) {
     EXPECT_FALSE(checker.build_pattern_map(c.GetGraph()->output()));
   } else {

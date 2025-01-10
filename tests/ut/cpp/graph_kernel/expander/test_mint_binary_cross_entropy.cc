@@ -33,7 +33,7 @@ struct BinaryCrossEntropyParams {
   ShapeVector logits;
   ShapeVector labels;
   ShapeVector weight;
-  int64_t mode;  // 0-----None, 1------reducemean, 2-------reducesum
+  int64_t mode;  // 0-----ReduceSum, 1------ReduceMean, 2-------None
   ShapeVector expect_shape;
   TypePtr type;
 };

@@ -17,7 +17,9 @@ from mindspore import Tensor, jit
 import mindspore as ms
 from tests.mark_utils import arg_mark
 import sys  
-import pytest 
+import pytest
+import os
+
 
 @pytest.fixture(autouse=True)  
 def skip_if_python_version_too_high():  
@@ -25,7 +27,7 @@ def skip_if_python_version_too_high():
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_initial_tensor_body_ref():
     """
     Feature: While specialize.
@@ -47,7 +49,9 @@ def test_initial_tensor_body_ref():
             return out
 
     test_net = Net()
-    ms.context.set_context(precompile_only=True, mode=ms.context.GRAPH_MODE)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+    ms.context.set_context(mode=ms.context.GRAPH_MODE)
     input_a = Tensor([2])
     input_b = Tensor([6])
     test_net(input_a, input_b)
@@ -61,5 +65,9 @@ def test_initial_tensor_body_ref():
     res = jit(mode="PIJit", fn=func)(input_a, input_b)
     except_res = jit(mode="PSJit", fn=func)(input_a, input_b)
 
-    ms.context.set_context(precompile_only=False, mode=ms.context.PYNATIVE_MODE)
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
+    ms.context.set_context(mode=ms.context.PYNATIVE_MODE)
     assert res == except_res

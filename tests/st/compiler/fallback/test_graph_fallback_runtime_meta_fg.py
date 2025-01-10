@@ -273,7 +273,7 @@ def test_fallback_compare_meta():
     assert not ret
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_fallback_compare_meta_2():
     """
@@ -1051,7 +1051,7 @@ def test_multitype_with_cache():
     assert np.allclose(ret.asnumpy(), np.array([4.0, 8.0, 12.0]))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_multitype_as_input_hyper_map():
     """
@@ -1140,7 +1140,7 @@ def test_multitype_funcgraph_with_slice_in_tuple():
     assert np.allclose(res.asnumpy(), np.array([0, 1, 2, 2]))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_fallback_setitem_meta_dict():
     """

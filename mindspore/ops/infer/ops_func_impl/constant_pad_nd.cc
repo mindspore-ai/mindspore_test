@@ -24,6 +24,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -48,7 +49,7 @@ BaseShapePtr ConstantPadNDFuncImpl::InferShape(const PrimitivePtr &primitive,
     return std::make_shared<abstract::Shape>(std::move(out_shape));
   }
   constexpr size_t kScaleNum = 2;
-  auto paddings = paddings_opt.value();
+  mindspore::ArrayValue<int64_t> paddings = paddings_opt.value();
   if (!(paddings.size() % kScaleNum == 0)) {
     MS_EXCEPTION(ValueError) << "Length of padding must be even but got " << paddings.size();
   }
@@ -69,6 +70,13 @@ BaseShapePtr ConstantPadNDFuncImpl::InferShape(const PrimitivePtr &primitive,
       auto new_dim = x_shape[l_diff + i] + paddings[pad_idx] + paddings[pad_idx + 1];
       (void)out_shape.emplace_back(new_dim);
     }
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  constexpr int kSize2 = 2;
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if ((ms_context->ascend_soc_version() == kAscendVersion910) && paddings.size() == kSize2) {
+    ops::BlockInvalid(primitive, input_args, out_shape);
   }
   return std::make_shared<abstract::Shape>(out_shape);
 }

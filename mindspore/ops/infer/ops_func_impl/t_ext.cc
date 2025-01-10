@@ -25,14 +25,15 @@
 namespace mindspore {
 namespace ops {
 ShapeArray TExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  MS_EXCEPTION_IF_NULL(primitive);
+  auto op_name = primitive->name();
   auto &x = input_infos[kInputIndex0];
   ShapeVector x_shape = x->GetShape();
   if (x->IsDynamicRank()) {
     return {{abstract::TensorShape::kShapeRankAny}};
   }
   auto x_rank = SizeToLong(x_shape.size());
-  MS_CHECK_VALUE(x_rank >= 0 && x_rank <= 2,
-                 "For 't', the input dims must be in range [0, 2], but got " + std::to_string(x_rank));
+  CheckAndConvertUtils::CheckInRange("rank of input shape", x_rank, kIncludeBoth, {0, 2}, op_name);
   ShapeVector out_shape;
   out_shape.resize(x_rank);
   std::reverse_copy(x_shape.begin(), x_shape.end(), out_shape.begin());

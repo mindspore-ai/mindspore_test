@@ -15,7 +15,7 @@
  */
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-
+#include <securec.h>
 #define IS_PYTHON_3_11_PLUS (PY_VERSION_HEX >= 0x030B0000)
 #define IS_PYTHON_3_8_PLUS (PY_VERSION_HEX >= 0x03080000)
 
@@ -201,7 +201,9 @@ static void take_ownership(PyFrameObject *f, _PyInterpreterFrame *frame) {
   CHECK(frame->owner != FRAME_OWNED_BY_FRAME_OBJECT);
   CHECK(frame->owner != FRAME_CLEARED);
   Py_ssize_t size = ((char *)&frame->localsplus[frame->stacktop]) - (char *)frame;
-  memcpy((_PyInterpreterFrame *)f->_f_frame_data, frame, size);
+  if (memcpy_s((_PyInterpreterFrame *)f->_f_frame_data, size, frame, size) != EOK) {
+    return;
+  }
   frame = (_PyInterpreterFrame *)f->_f_frame_data;
   f->f_frame = frame;
   frame->owner = FRAME_OWNED_BY_FRAME_OBJECT;
@@ -327,7 +329,9 @@ _PyInterpreterFrame *EvalFramePushAndInit(PyThreadState *ts, PyFunctionObject *f
 
   PyObject **new_fast = _PyFrame_GetLocalsArray(new_f);
   size_t new_size = new_co->co_nlocalsplus + new_co->co_stacksize;
-  memset(new_fast, 0, sizeof(new_fast[0]) * new_size);
+  if (memset_s(new_fast, sizeof(new_fast[0]) * new_size, 0, sizeof(new_fast[0]) * new_size) != EOK) {
+    return NULL;
+  }
   return new_f;
 }
 

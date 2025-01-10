@@ -30,14 +30,10 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 std::vector<tensor::BaseTensorPtr> UnstackExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &x_tensor, const Int64ImmPtr &axis) {
+                                                             const BaseTensorPtr &x_tensor, const Int64ImmPtr &dim) {
   MS_LOG(DEBUG) << "View UnstackExt Call start";
   auto primitive = op->primitive();
-  std::vector<ValuePtr> inputs_unstack;
-  inputs_unstack.push_back(x_tensor);
-  auto input_axis = MakeValue(axis);
-  primitive->AddAttr(ops::kAxis, input_axis);
-  auto storage_info_list = ops::UnstackExtCalc(primitive, inputs_unstack);
+  auto storage_info_list = ops::UnstackExtCalc(primitive, {x_tensor, dim});
   if (!storage_info_list.empty()) {
     std::vector<tensor::BaseTensorPtr> outputs;
     // Create device address for input tensors

@@ -36,9 +36,9 @@ from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, F
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, \
+    unique_consecutive_impl
 from mindspore.ops.operations.array_ops import (
-    UniqueConsecutive,
     MatrixDiagV3,
     MatrixDiagPartV3,
     MatrixSetDiagV3,
@@ -60,19 +60,20 @@ from mindspore.ops.operations.array_ops import (
 from mindspore.common import Tensor
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
-from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._utils.utils import ms_arrange
 
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
-    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
-    inplace_fill_scalar, expand_as, unstack_ext_op
+    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, \
+    expand_as, unstack_ext_op, full_like_op, \
+    index_fill_scalar, index_fill_tensor
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
 from mindspore._c_expression import pyboost_empty
 from mindspore._c_expression import pyboost_empty_like
+from mindspore._c_expression import pyboost_new_empty
 from mindspore.common._stub_tensor import _convert_stub
 
 arg_max_with_value_ = ArgMaxWithValue()
@@ -123,6 +124,7 @@ tensor_shape_ = P.TensorShape()
 tensor_slice = slice_op
 tile_ = P.Tile()
 transpose_ = P.Transpose()
+type_as_ = P.TypeAs()
 tuple_to_array_ = P.TupleToArray()
 tuple_to_tensor_ = TupleToTensor()
 unique_ = P.Unique()
@@ -549,7 +551,7 @@ def empty(size, *, dtype=None, device=None):
         dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor. If `dtype` is ``None`` ,
             `mindspore.float32` will be used. Default: ``None`` .
         device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
-            `device = None`, `mindspore.context.device_target` will be used. Default ``None``.
+            `device = None`, the value set by `mindspore.set_device` will be used. Default ``None``.
 
     Returns:
         Tensor, whose dtype and size are defined by input.
@@ -587,7 +589,7 @@ def empty_like(input, *, dtype=None, device=None):
             tensor will have the same dtype as input `input`. Default ``None``.
         device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
             `device = None`, the tensor will have the same device as input `input` and if the device of the input
-            tensor is not defined, `mindspore.context.device_target` will be used. Default ``None``.
+            tensor is not defined, the value set by `mindspore.set_device` will be used. Default ``None``.
 
     Returns:
         Tensor, has the same shape, type and device as `input` but with uninitialized data (May be a random value).
@@ -613,6 +615,10 @@ def empty_like(input, *, dtype=None, device=None):
     """
 
     return _convert_stub(pyboost_empty_like([input, dtype, device]))
+
+
+def new_empty(input, size, dtype, device):
+    return _convert_stub(pyboost_new_empty([input, size, dtype, device]))
 
 
 def ravel(input):
@@ -849,50 +855,6 @@ def fill(type, shape, value):  # pylint: disable=redefined-outer-name
     return fillv2_(shape, value)
 
 
-def fill_(input, value):
-    """
-    Fills `input` tensor with the specified `value` .
-
-    Args:
-        input (Tensor): The tensor to be filled.
-        value (Union(Tensor, number.Number, bool)): Value to fill the `input` .
-
-    Returns:
-        Tensor.
-
-    Raises:
-        TypeError: The `input` is not a tensor.
-        RunTimeError: The data type of `input` or `value` is not supported.
-        RunTimeError: When the `value` is Tensor, it should be 0-D Tensor or 1-D Tensor with shape=[1].
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import ops
-        >>> x = ops.zeros((3, 3))
-        >>> print(x)
-        [[0. 0. 0.]
-         [0. 0. 0.]
-         [0. 0. 0.]]
-        >>> output = ops.fill_(x, 1.0)
-        >>> print(output)
-        [[1. 1. 1.]
-         [1. 1. 1.]
-         [1. 1. 1.]]
-        >>> print(x)
-        [[1. 1. 1.]
-         [1. 1. 1.]
-         [1. 1. 1.]]
-    """
-    if isinstance(value, (int, float, bool)):
-        return inplace_fill_scalar(input, value)
-    if isinstance(value, Tensor):
-        return inplace_fill_tensor(input, value)
-    raise TypeError(f"For 'ops.fill_', 'value' must be a number or Tensor, but got {type(value)}.")
-
-
 def full(size, fill_value, *, dtype=None):  # pylint: disable=redefined-outer-name
     """
     Create a Tensor of the specified shape and fill it with the specified value.
@@ -1020,6 +982,50 @@ def full_like(input, fill_value, *, dtype=None):
     if dtype is None:
         dtype = input.dtype
     return full(input.shape, fill_value, dtype=dtype)
+
+
+def full_like_ext(input, fill_value, *, dtype=None):
+    """
+    Return a Tensor of the same shape as `input` and filled with `fill_value`.
+
+    .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): input Tensor and the output Tensor have the same shape as `input`.
+        fill_value (Number): Value to fill the returned tensor. Complex numbers are not supported for now.
+
+    Keyword Args:
+        dtype (mindspore.dtype, optional): The specified type of output tensor. `bool_` and `number` are supported,
+            for details, please refer to :class:`mindspore.dtype` . Default: ``None`` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor([[0, 1], [2, 1]], dtype=mindspore.int32)
+        >>> output = mint.full_like(input, 1)
+        >>> print(output)
+        [[1 1]
+         [1 1]]
+        >>> input = Tensor([[0, 1, 1], [2, 1, 2], [1, 3, 4]], dtype=mindspore.int32)
+        >>> output = mint.full_like(input, 0, dtype=mindspore.float32)
+        >>> print(output)
+        [[0. 0. 0.]
+         [0. 0. 0.]
+         [0. 0. 0.]]
+    """
+    if dtype is None:
+        dtype = input.dtype
+    return full_like_op(input, fill_value, dtype)
 
 
 def chunk(input, chunks, axis=0):
@@ -1445,12 +1451,13 @@ def unique_ext(input, sorted=True, return_inverse=False, return_counts=False, di
 
     Args:
         input (Tensor): The input tensor.
-        sorted(bool): Whether to sort the unique elements in ascending order before returning as output.
+        sorted (bool, optional): Whether to sort the unique elements in ascending order before returning as output.
             Default: ``True`` .
-        return_inverse(bool): Whether to also return the indices for where elements in the original input ended up in
+        return_inverse (bool, optional): Whether to also return the indices for where elements
+            in the original input ended up in
             the returned unique list. Default: ``False`` .
-        return_counts(bool): Whether to also return the counts for each unique element. Default: ``False`` .
-        dim(int): the dimension to operate upon. If ``None``, the unique of the flattened input is returned.
+        return_counts (bool, optional): Whether to also return the counts for each unique element. Default: ``False`` .
+        dim (int, optional): the dimension to operate upon. If ``None``, the unique of the flattened input is returned.
             Otherwise, each of the tensors indexed by the given dimension is treated as one of the elements to apply the
             unique operation upon. Default: ``None`` .
 
@@ -1605,11 +1612,10 @@ def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
         [2 2 1 2 1]
     """
 
-    if not isinstance(input, (Tensor, Tensor_)):
-        raise TypeError("For 'unique_consecutive', 'input' must be Tensor.")
-    unique_consecutive_op = _get_cache_prim(
-        UniqueConsecutive)(return_idx, return_counts, axis)
-    output, idx, counts = unique_consecutive_op(input)
+    if not F.isconstant(return_idx) or not F.isconstant(return_counts):
+        raise ValueError(
+            f"For 'unique_consecutive', 'return_inverse' and 'return_counts' cannot be mutable")
+    output, idx, counts = unique_consecutive_impl(input, return_idx, return_counts, axis)
     if return_idx and return_counts:
         return output, idx, counts
     if return_idx:
@@ -2220,10 +2226,13 @@ def squeeze(input, axis=None):
     to (A, B) when :math:`axis=1`, but when :math:`axis=0` or :math:`axis=2`, an error will occur.
 
     Note:
-        - Squeezing a dimension that is not 1 will raise an error.
         - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
           and there is no Tensor data copy process.
         - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
+        - In GE mode, only support remove dimensions of size 1 from the shape of input tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
@@ -2238,7 +2247,6 @@ def squeeze(input, axis=None):
         TypeError: If `input` is not a tensor.
         TypeError: If `axis` is not an int, tuple or list.
         TypeError: If `axis` is a tuple or list whose elements are not all int.
-        ValueError: If the corresponding dimension of the specified axis isn't equal to 1.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2279,7 +2287,7 @@ def scatter_mul(input_x, indices, updates):
     when the data types of parameters need to be converted.
 
     Args:
-        input_x (Parameter): The target tensor to be updated, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor to be updated, with data type of Parameter or Tensor.
             The shape is :math:`(N,*)` where :math:`*` means any number of additional dimensions.
         indices (Tensor): The index to do mul operation whose data type must be int32 or int64.
         updates (Tensor): The tensor doing the mul operation with `input_x`,
@@ -2291,8 +2299,8 @@ def scatter_mul(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2378,7 +2386,7 @@ def scatter_max(input_x, indices, updates):
     required by `input_x`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
             The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
         indices (Tensor): The index to do max operation whose data type must be mindspore.int32.
         updates (Tensor): The tensor doing the max operation with `input_x`,
@@ -2390,8 +2398,8 @@ def scatter_max(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2419,7 +2427,7 @@ def scatter_add(input_x, indices, updates):
     This operation outputs the `input_x` after the update is done, which makes it convenient to use the updated value.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do add operation whose data type must be int32 or int64.
         updates (Tensor): The tensor doing the add operation with `input_x`,
             the data type is same as `input_x`, the shape is `indices.shape + x.shape[1:]`.
@@ -2430,8 +2438,8 @@ def scatter_add(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-            is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2471,7 +2479,7 @@ def scatter_min(input_x, indices, updates):
     when `updates` does not support conversion to the data type required by `input_x`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do min operation whose data type must be mindspore.int32 or mindspore.int64.
         updates (Tensor): The tensor doing the min operation with `input_x`,
             the data type is same as `input_x`, the shape is `indices.shape + input_x.shape[1:]`.
@@ -2482,8 +2490,8 @@ def scatter_min(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2523,7 +2531,7 @@ def scatter_div(input_x, indices, updates):
     when `updates` does not support conversion to the data type required by `input_x`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do divide operation whose data type must be mindspore.int32 or
           mindspore.int64.
         updates (Tensor): The tensor doing the divide operation with `input_x`, the data type is same as `input_x`,
@@ -2535,8 +2543,8 @@ def scatter_div(input_x, indices, updates):
     Raises:
         TypeError: If the type of `indices` is not one of the following dtype: int32, int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter is required
-                      when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter or Tensor is required
+                      when data type conversion of Parameter or Tensor is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2609,7 +2617,7 @@ def scatter_update(input_x, indices, updates):
     the relatively highest priority data type.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index of input tensor. With int32 or int64 data type.
             If there are duplicates in indices, the order for updating is undefined.
         updates (Tensor): The tensor to update the input tensor, has the same type as input,
@@ -2621,8 +2629,8 @@ def scatter_update(input_x, indices, updates):
     Raises:
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2661,7 +2669,7 @@ def scatter_nd_add(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do min operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor doing the addition operation with `input_x`,
@@ -2676,8 +2684,8 @@ def scatter_nd_add(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2736,7 +2744,7 @@ def scatter_nd_sub(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index of input tensor, with int32 or int64 data type.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor doing the subtraction operation with `input_x`, has the same type as input.
@@ -2751,8 +2759,8 @@ def scatter_nd_sub(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2811,7 +2819,7 @@ def scatter_nd_mul(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): Input parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do multiplication operation whose data type must be mindspore.int32 or
             mindspore.int64. The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the multiplication operation with `input_x`.
@@ -2826,8 +2834,8 @@ def scatter_nd_mul(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``GPU`` ``CPU``
@@ -2886,7 +2894,7 @@ def scatter_nd_div(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do div operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the div operation with `input_x`.
@@ -2901,8 +2909,8 @@ def scatter_nd_div(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``GPU`` ``CPU``
@@ -2962,7 +2970,7 @@ def scatter_nd_max(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do maximum operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the max operation with `input_x`.
@@ -2977,8 +2985,8 @@ def scatter_nd_max(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -3037,7 +3045,7 @@ def scatter_nd_min(input_x, indices, updates, use_locking=False):
     :math:`(i_0, i_1, ..., i_{Q-2}, x\_shape_N, ..., x\_shape_{P-1})`.
 
     Args:
-        input_x (Parameter): The target tensor, with data type of Parameter.
+        input_x (Union[Parameter, Tensor]): The target tensor, with data type of Parameter or Tensor.
         indices (Tensor): The index to do min operation whose data type must be mindspore.int32 or mindspore.int64.
             The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         updates (Tensor): The tensor to do the min operation with `input_x`.
@@ -3052,8 +3060,8 @@ def scatter_nd_min(input_x, indices, updates, use_locking=False):
         TypeError: If the dtype of `indices` is not int32 or int64.
         TypeError: If dtype of `input_x` and `updates` are not the same.
         ValueError: If the shape of `updates` is not equal to `indices.shape[:-1] + x.shape[indices.shape[-1]:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -3663,6 +3671,7 @@ def scatter(input, axis, index, src):
         return scatter_prim(input, axis, index, src)
     return scatter_value_(input, axis, index, src)
 
+
 def scatter_add_ext(input, dim, index, src):
     """
     Add all elements in `src` to the index specified by `index` to `input` along dimension specified by `dim`.
@@ -3680,7 +3689,7 @@ def scatter_add_ext(input, dim, index, src):
 
     Args:
         input (Tensor): The target tensor. The rank must be at least 1.
-        dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`input`). Default: ``0``.
+        dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`input`).
         index (Tensor): The index of `input` to do scatter operation whose data type must be mindspore.int32 or
             mindspore.int64. Same rank as `input`. Except for the dimension specified by `dim`,
             the size of each dimension of `index` must be less than or equal to the size of
@@ -3693,10 +3702,10 @@ def scatter_add_ext(input, dim, index, src):
 
     Raises:
         TypeError: If `index` is neither int32 nor int64.
-        ValueError: If anyone of the rank among `input`, `index` and `src` less than 1.
+        ValueError: If anyone of the rank among `input`, `index` and `src` is less than 1.
         ValueError: If the rank of `input`, `index` and `src` is not the same.
-        ValueError: If, outside dimension `dim`, the size of any dimension of `index` is greater than the size of
-            the corresponding dimension of `input` .
+        ValueError: The size of any dimension of `index` except the dimension specified by `dim` is
+            greater than the size of the corresponding dimension of `input`.
         ValueError: If the size of any dimension of `src` is less than that of `index`.
 
     Supported Platforms:
@@ -4232,6 +4241,7 @@ def matrix_set_diag(x, diagonal, k=0, align="RIGHT_LEFT"):  # pylint: disable=re
         k = cast_(k, mstype.int32)
     return matrix_set_diag_v3_op(x, diagonal, k)
 
+
 def meshgrid_ext(*tensors, indexing='ij'):
     """
     Generates coordinate matrices from given coordinate tensors.
@@ -4318,6 +4328,7 @@ def meshgrid_ext(*tensors, indexing='ij'):
     if indexing is None:
         indexing = 'ij'
     return meshgrid_impl(tensors, indexing)
+
 
 def meshgrid(*inputs, indexing='xy'):
     """
@@ -4645,6 +4656,58 @@ def index_fill(x, axis, index, value):
     if isinstance(value, (bool, float, int)):
         value = cast_(value, x.dtype)
     return index_fill_(x, axis, index, value)
+
+def index_fill_ext(input, dim, index, value):
+    """
+    Fills the elements under the `dim` dimension of the input Tensor `input` with the input `value`
+    by selecting the indices in the order given in `index`.
+
+    Args:
+        input (Tensor): Input Tensor.  The supported data type is Number or Bool.
+        dim (int): Dimension along which to fill the input Tensor. Only supports
+            an int number, which data type is int32 or int64.
+        index (Tensor): Indices of the input Tensor to fill in. The dtype must be int32 or int64.
+        value (Union[bool, int, float, Tensor]): Value to fill the returned Tensor. If `value` is
+            a Tensor, it must be a 0-dimensional Tensor and has the same dtype as `input`. Otherwise,
+            the `value` will be a value with the same data type as `input`.
+
+    Returns:
+        Tensor, has the same dtype and shape as input Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is neither int number nor Tensor.
+        TypeError: When `dim` is a Tensor, its dtype is not int32 or int64.
+        TypeError: If `index` is not a Tensor.
+        TypeError: If dtype of `index` is not int32.
+        TypeError: If `value` is not a bool, int, float, or Tensor.
+        TypeError: When `value` is a Tensor, the dtype of `input` and `value` are not the same.
+        ValueError: If `dim` is a Tensor and its rank is not equal to 0.
+        ValueError: If the rank of `index` is greater than 1D.
+        ValueError: When `value` is a Tensor and its rank is not equal to 0.
+        RuntimeError: If the value of `dim` is out the range of `[-x.ndim, x.ndim - 1]`.
+        RuntimeError: If the values of `index` are out the range of `[-x.shape[dim], x.shape[dim]-1]`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import ops
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).astype(np.float32))
+        >>> index = Tensor([0, 2], mindspore.int32)
+        >>> value = Tensor(-2.0, mindspore.float32)
+        >>> y = ops.index_fill_ext(x, 1, index, value)
+        >>> print(y)
+        [[-2. 2. -2.]
+         [-2. 5. -2.]
+         [-2. 8. -2.]]
+    """
+    if isinstance(value, Tensor):
+        return index_fill_tensor(input, dim, index, value)
+    return index_fill_scalar(input, dim, index, value)
 
 
 @constexpr
@@ -5329,8 +5392,8 @@ def tril_ext(input, diagonal=0):
 
     Args:
         input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
-          Supporting all number types including bool.
-        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: 0,
+            Supporting all number types including bool.
+        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: ``0``,
             indicating the main diagonal.
 
     Returns:
@@ -5959,16 +6022,13 @@ def aminmax(input, *, axis=0, keepdims=False):
     argmax_with_value_op = _get_cache_prim(ArgMaxWithValue)(axis, keepdims)
     _, output0 = argmin_with_value_op(input)
     _, output1 = argmax_with_value_op(input)
-    if keepdims is True and input.ndim == 0:
-        output0 = ops.reshape(output0, [1])
-        output1 = ops.reshape(output1, [1])
     return output0, output1
 
 
 def narrow(input, axis, start, length):
     """
-    Returns a narrowed tensor from input tensor, and
-    the dimension axis is input from start to start + length.
+    Obtains a tensor of a specified length at a
+    specified start position along a specified axis.
 
     Args:
         input (Tensor): the tensor to narrow.
@@ -6085,6 +6145,7 @@ def topk(input, k, dim=None, largest=True, sorted=True):
          [3, 0],
          [0, 1]]))
     """
+    validator.check_value_type("largest", largest, [bool], "topk")
     top_k_ = _get_cache_prim(P.TopK)(sorted)
     if not largest:
         input = -input
@@ -6504,16 +6565,17 @@ def mvlgamma(input, p):
     return mvlgamma_op(input)
 
 
-def nonzero(input, as_tuple=False):
+def nonzero(input, *, as_tuple=False):
     r"""
     Return the positions of all non-zero values.
 
     Args:
         input (Tensor): The input Tensor, its rank should be greater than or equal to 1.
+
+    Keyword Args:
         as_tuple (bool, optional): Whether the output is tuple.
             If ``False`` , return Tensor. Default: ``False`` .
             If ``True`` , return Tuple of Tensor, only support ``Ascend`` .
-
 
     Returns:
         - If `as_tuple` is ``False``, return the Tensor, a 2-D Tensor whose data type is int64,
@@ -6541,19 +6603,19 @@ def nonzero(input, as_tuple=False):
         [[0 0 0]
          [0 1 0]]
         >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-        >>> output = ops.nonzero(x, False)
+        >>> output = ops.nonzero(x, as_tuple=False)
         >>> print(output)
         [[0]
          [2]
          [4]]
         >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
-        >>> output = ops.nonzero(x, True)
+        >>> output = ops.nonzero(x, as_tuple=True)
         >>> print(output)
         (Tensor(shape=[2], dtype=Int64, value=[0, 0]),
          Tensor(shape=[2], dtype=Int64, value=[0, 1]),
          Tensor(shape=[2], dtype=Int64, value=[0, 0]))
         >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-        >>> output = ops.nonzero(x, True)
+        >>> output = ops.nonzero(x, as_tuple=True)
         >>> print(output)
         (Tensor(shape=[3], dtype=Int64, value=[0, 2, 4]), )
     """
@@ -6941,7 +7003,7 @@ def _check_rank_range(x_rank, limit, arg_name, op_name):
 
 def repeat_interleave(input, repeats, axis=None):
     """
-    Repeat elements of a tensor along an axis, like `numpy.repeat`.
+    Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat`.
 
     Args:
         input (Tensor): The tensor to repeat values for. Must be of type: float16,
@@ -6981,7 +7043,7 @@ def repeat_interleave(input, repeats, axis=None):
 
 def repeat_interleave_ext(input, repeats, dim=None, output_size=None):
     r"""
-    Repeat elements of a tensor along an axis, like `numpy.repeat`.
+    Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat`.
 
     .. warning::
         Only support on Atlas A2 training series.
@@ -7022,7 +7084,7 @@ def repeat_interleave_ext(input, repeats, dim=None, output_size=None):
 
 def repeat_elements(x, rep, axis=0):
     """
-    Repeat elements of a tensor along an axis, like `numpy.repeat` .
+    Repeat elements of a tensor along an axis, like :func:`mindspore.numpy.repeat` .
 
     Note:
         It is recommended to use :func:'mindspore.mint.repeat_interleave', the dimension of input 'x' can support
@@ -7199,10 +7261,9 @@ def gather_ext(input, dim, index):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import gather_ext
         >>> input = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
         >>> index = Tensor(np.array([[0, 0], [1, 1]]), mindspore.int32)
-        >>> output = gather_ext(input, 1, index)
+        >>> output = ops.function.array_func.gather_ext(input, 1, index)
         >>> print(output)
         [[-0.1 -0.1]
          [0.5   0.5]]
@@ -7244,10 +7305,9 @@ def max_ext(input, dim=None, keepdim=False):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import max_ext
         >>> y = Tensor(np.array([[0.0, 0.3, 0.4, 0.5, 0.1],
         ...                      [3.2, 0.4, 0.1, 2.9, 4.0]]), mindspore.float32)
-        >>> output, index = max_ext(y, 0, True)
+        >>> output, index = ops.function.array_func.max_ext(y, 0, True)
         >>> print(output, index)
         [[3.2 0.4 0.4 2.9 4. ]] [[1 1 0 1 1]]
     """
@@ -7295,9 +7355,8 @@ def min_ext(input, dim=None, keepdim=False):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import min_ext
         >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output, index = min_ext(x, 0, keepdim=True)
+        >>> output, index = ops.function.array_func.min_ext(x, 0, keepdim=True)
         >>> print(output, index)
         [0.0] [0]
     """
@@ -7374,6 +7433,51 @@ def from_numpy(array):
         [1 2]
     """
     return Tensor.from_numpy(array)
+
+
+def type_as(input, other):
+    r"""
+    Returns input cast to the type of the with the other.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Note:
+        When converting complex numbers to boolean type, the imaginary part of the complex number is not
+        taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+
+    Args:
+        input (Tensor): The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+            The tensor whose data type is to be converted.
+        other (Tensor): The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
+            The tensor whose data type is specified.
+
+    Returns:
+        Tensor, the shape of tensor is the same as `input`, :math:`(x_0, x_1, ..., x_R)`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `other` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        >>> input = Tensor(input_np)
+        >>> other_np = np.random.randn(2, 3, 4).astype(np.int32)
+        >>> other = Tensor(other_np)
+        >>> output = ops.type_as(input, other)
+        >>> print(output.dtype)
+        Int32
+        >>> print(output.shape)
+        (2, 3, 4, 5)
+    """
+    return type_as_(input, other)
+
 
 __all__ = [
     'unique',

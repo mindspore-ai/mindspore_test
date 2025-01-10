@@ -1,0 +1,130 @@
+scatter_add:
+  description: |
+    scatter_add(dim, index, src) -> Tensor
+
+    Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`.
+    It takes three inputs `self`, `src` and `index` of the same rank r >= 1.
+
+    For a 3-D tensor, the operation updates input as follows:
+
+    .. code-block::
+
+        self[index[i][j][k]][j][k] += src[i][j][k]  # if dim == 0
+
+        self[i][index[i][j][k]][k] += src[i][j][k]  # if dim == 1
+
+        self[i][j][index[i][j][k]] += src[i][j][k]  # if dim == 2
+
+    .. note::
+        The rank of this tensor `self` must be at least 1.
+
+    Args:
+        dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`self`).
+        index (Tensor): The index of `self` to do scatter operation whose data type must be int32 or
+            int64. Same rank as `self`. Except for the dimension specified by `dim`,
+            the size of each dimension of `index` must be less than or equal to the size of
+            the corresponding dimension of `self`.
+        src (Tensor): The tensor doing the scatter operation with `self`, has the same type as `self` and
+            the size of each dimension must be greater than or equal to that of `index`.
+
+    Returns:
+        Tensor, has the same shape and type as `self`.
+
+    Raises:
+        TypeError: If `index` is neither int32 nor int64.
+        ValueError: If anyone of the rank among `self`, `index` and `src` is less than 1.
+        ValueError: If the rank of `self`, `index` and `src` is not the same.
+        ValueError: The size of any dimension of `index` except the dimension specified by `dim` is
+            greater than the size of the corresponding dimension of `self`.
+        ValueError: If the size of any dimension of `src` is less than that of `index`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
+        >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
+        >>> out = input.scatter_add(dim=1, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 11. 4. 13.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
+        >>> out = input.scatter_add(dim=0, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 3. 0. 0.]
+         [0. 0. 0. 0. 0.]
+         [4. 5. 6. 0. 0.]
+         [0. 0. 0. 0. 0.]
+         [7. 8. 9. 0. 0.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
+        >>> out = input.scatter_add(dim=1, index=index, src=src)
+        >>> print(out)
+        [[1. 0. 2. 0. 3.]
+         [4. 0. 5. 0. 6.]
+         [7. 0. 8. 0. 9.]
+         [0. 0. 0. 0. 0.]
+         [0. 0. 0. 0. 0.]]
+
+    .. method:: Tensor.scatter_add(indices, updates) -> Tensor
+        :noindex:
+
+    Creates a new tensor by adding the values from the positions in `self` indicated by
+    `indices`, with values from `updates`. When multiple values are given for the same
+    index, the updated result will be the sum of all values. This operation is almost
+    equivalent to using ScatterNdAdd, except that the updates are applied on output `Tensor`
+    instead of input `Parameter`.
+
+    The last axis of `indices` is the depth of each index vectors. For each index vector,
+    there must be a corresponding value in `updates`. The shape of `updates` should be
+    equal to the shape of `self[indices]`. For more details, see Examples.
+
+    .. math::
+        output\left [indices  \right ] = input\_x + update
+
+    .. note::
+        The dimension of this tensor `self` must be no less than indices.shape[-1].
+
+        If some values of the `indices` are out of bound:
+
+        - On GPU, if some values of the `indices` are out of bound, instead of raising an index error,
+          the corresponding `updates` will not be updated to self tensor.
+        - On CPU, if some values of the `indices` are out of bound, raising an index error.
+        - On Ascend, out of bound checking is not supported, if some values of the `indices` are out of bound,
+          unknown errors may be caused.
+
+    Args:
+        indices (Tensor): The index of input tensor whose data type is int32 or int64.
+            The rank must be at least 2.
+        updates (Tensor): The tensor to update the input tensor, has the same type as input,
+            and updates. And the shape should be
+            equal to :math:`indices.shape[:-1] + input\_x.shape[indices.shape[-1]:]`.
+
+    Returns:
+        Tensor, has the same shape and type as `self`.
+
+    Raises:
+        TypeError: If dtype of `indices` is neither int32 nor int64.
+        ValueError: If length of shape of `self` is less than the last dimension of shape of `indices`.
+        RuntimeError: If a value of `indices` is not in `self` on CPU backend.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input_x = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
+        >>> indices = Tensor(np.array([[0, 0], [0, 0]]), mindspore.int32)
+        >>> updates = Tensor(np.array([1.0, 2.2]), mindspore.float32)
+        >>> output = input_x.scatter_add(indices, updates)
+        >>> print(output)
+        [[ 3.1  0.3  3.6]
+         [ 0.4  0.5 -3.2]]

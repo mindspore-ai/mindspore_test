@@ -21,14 +21,17 @@
 #include <vector>
 #include <unordered_map>
 
-#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
-#include "plugin/device/ascend/kernel/internal/acme_kernel_mod.h"
-#include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/factory/ms_factory.h"
@@ -37,44 +40,42 @@
 #include "op_def/nn_op_name.h"
 #include "acl/acl_base.h"
 #include "transform/acl_ir/acl_helper.h"
+#include "utils/phase.h"
+#include "utils/ms_context.h"
 
 namespace mindspore::kernel {
 namespace {
-static const char k310PKey[] = "Ascend310P";
+constexpr auto kPhaseNameDecode = "decode";
+constexpr auto kPhaseNameIncrement = "increment";
+constexpr auto kQuantLinearSparseName = "QuantLinearSparse";
+constexpr auto kQuantBatchMatmulName = "QuantBatchMatmul";
+constexpr auto CONST_2 = 2;
+constexpr auto Align16 = 16;
+constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
+constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
 
-// unordered_map value vector<vector<size_t>> mean:
-// the first vector is input_idx, the second is output_idx
-static const std::unordered_map<std::string, std::vector<std::vector<size_t> > > kNzFormatOpsList = {
-  {kMatMulOpName, {{0, 1}, {0}}},
-  {"QuantLinearSparse", {{0}, {0}}},
-  {"QuantBatchMatmul", {{0, 1}, {0}}},
-  {kPagedAttentionOpName, {{0, 1, 2, 7}, {0}}},
-  {kFlashAttentionScoreOpName, {{0, 1, 2, 6}, {3}}},
-  {kReshapeAndCacheOpName, {{2, 3}, {}}}};
+// unordered_map vector<vector<vector<size_t>>> represents:
+// list[op_name][0] for phase prefill, list[op_name][1] for phase increment;
+// list[op_name][][0] for input indices, list[op_name][][0] for output indices.
+static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_t>>>> kNzFormatOpsList = {
+  {kMatMulOpName, {{{0, 1}, {}}, {{1}, {}}}},
+  {kQuantLinearSparseName, {{{0}, {}}, {{}, {}}}},
+  {kQuantBatchMatmulName, {{{0, 1}, {}}, {{1}, {}}}},
+  {kPagedAttentionOpName, {{{0, 1, 2, 7}, {0}}, {{0, 1, 2, 7}, {0}}}},
+  {kFlashAttentionScoreOpName, {{{0, 1, 2, 6}, {3}}, {{0, 1, 2, 6}, {3}}}},
+  {kReshapeAndCacheOpName, {{{2, 3}, {}}, {{2, 3}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
 // ATTENTION_INPUT_QKV: ms_nd_shape{b, s, h} need convert to {b * s, h}, then transform nz format
 // ATTENTION_INPUT_MASK: ms_nd_shape{b, 1, s, s} need convert to {b, 1, s, s}, then transform nz format
-static const std::unordered_map<std::string, std::unordered_map<size_t, int64_t> > kSpecialNzFormatOpsList = {
+static const std::unordered_map<std::string, std::unordered_map<size_t, int64_t>> kSpecialNzFormatOpsList = {
   {kPagedAttentionOpName, {{0, internal::TransDataParam::ATTENTION_INPUT_QKV}}},
   {kFlashAttentionScoreOpName,
    {{0, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {1, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {2, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {6, internal::TransDataParam::ATTENTION_INPUT_MASK}}}};
-
-bool IsAscend310PSoc() {
-  const char *soc_name_c = aclrtGetSocName();
-  if (soc_name_c == nullptr) {
-    return false;
-  }
-  std::string soc_name(soc_name_c);
-  if (soc_name.find(k310PKey) != std::string::npos) {
-    return true;
-  }
-  return false;
-}
 
 int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_node, const size_t input_idx) {
   MS_EXCEPTION_IF_NULL(cur_node);
@@ -151,6 +152,23 @@ void GetMsTypesList(const CNodePtr &kernel, std::vector<TypeId> *ms_in_dtypes, s
   }
   return;
 }
+
+void UpdateNzFormatOpsList(const AnfNodePtr &node) {
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmul->name() &&
+      common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, cnode)) {
+    auto dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(cnode, kAttrDynInputSizes);
+    if (!dyn_input_sizes.empty()) {
+      auto weight_num = static_cast<size_t>(dyn_input_sizes[0]);
+      std::vector<size_t> input_idx;
+      for (size_t i = weight_num; i < weight_num * 2; ++i) {
+        input_idx.emplace_back(i);
+      }
+      kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {{input_idx, {}}, {input_idx, {}}};
+    }
+  }
+}
 }  // namespace
 
 KernelModPtr InternalKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
@@ -160,11 +178,8 @@ KernelModPtr InternalKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
   std::string opname = common::AnfAlgo::GetCNodeName(anf_node);
   // Easy to compare accuracy and performance, later changed to debug
   KernelModPtr kernel_ptr;
-  if (Factory<AcmeKernelMod>::Instance().IsRegistered(opname)) {
-    MS_LOG(INFO) << "Supported by AcmeKernel: " << opname;
-    kernel_ptr = std::static_pointer_cast<KernelMod>(Factory<AcmeKernelMod>::Instance().Create(opname));
-  } else {
-    MS_LOG(INFO) << "Supported by InternalKernel [" << opname << "]";
+  if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
+    MS_LOG(INFO) << "Supported by InternalKernel: " << opname;
     kernel_ptr = std::static_pointer_cast<KernelMod>(Factory<InternalKernelMod>::Instance().Create(opname));
   }
 
@@ -199,29 +214,45 @@ bool InternalKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
   std::vector<TypeId> ms_in_dtypes;
   std::vector<TypeId> ms_out_dtypes;
   GetMsTypesList(cnode, &ms_in_dtypes, &ms_out_dtypes);
-  if (Factory<AcmeKernelMod>::Instance().IsRegistered(opname)) {
-    auto acme_op_name = TransAcmeOpName(opname);
-    auto acme_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapAcmeInputDtypes(opname, ms_in_dtypes);
-    auto acme_out_dtypes = InternalKernelModInOutMap::GetInstance()->MapAcmeOutputDtypes(opname, ms_out_dtypes);
-    return acme::IsAcmeKernelDtypesSupported(acme_op_name, acme_in_dtypes, acme_out_dtypes);
+  if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
+    auto internal_op_name = TransInternalOpName(opname);
+    auto internal_in_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalInputDtypes(opname, ms_in_dtypes);
+    auto internal_out_dtypes = InternalKernelModInOutMap::GetInstance()->MapInternalOutputDtypes(opname, ms_out_dtypes);
+    return internal::IsInternalKernelDtypesSupported(internal_op_name, internal_in_dtypes, internal_out_dtypes);
   }
 
-  if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
-    if (opname == kReshapeOpName) {
+  return false;
+}
+
+bool CheckMatMulWeightIsUnAlign(const AnfNodePtr &node) {
+  const auto op_name = AnfUtils::GetCNodeName(node);
+  if (op_name == kMatMulOpName || op_name == kQuantLinearSparseName || op_name == kQuantBatchMatmulName) {
+    auto cnode = node->cast<CNodePtr>();
+    auto &inputs = cnode->inputs();
+    // In QuantLinearSparse op, Shape of Weight is compressed, check unalign by bias.
+    auto idx = (op_name == kQuantLinearSparseName) ? kQuantLinearSparseBiasIdx : kMatMulWeightIdx;
+    auto base_shape_ptr = inputs[idx]->Shape();  // check weight
+    MS_EXCEPTION_IF_NULL(base_shape_ptr);
+    auto shape_ptr = base_shape_ptr->cast<abstract::ShapePtr>();
+    MS_EXCEPTION_IF_NULL(shape_ptr);
+    auto data_shape = shape_ptr->shape();
+    MS_LOG(INFO) << "data_shape = " << data_shape;
+    auto len = data_shape.size();
+    if ((len >= 1 && data_shape[len - 1] % Align16 != 0) ||
+        (len >= CONST_2 && data_shape[len - CONST_2] % Align16 != 0)) {
       return true;
     }
-    internal::DtypesParamPtr check_param = std::make_shared<internal::DtypesParam>();
-    check_param->op_id_ = InternalKernelUtils::ToInternalOpId(opname);
-    if (check_param->op_id_ == -1) {
-      MS_LOG(INFO) << "internal can't find Kernel[" << opname << "]";
-      return false;
-    }
-
-    check_param->in_dtypes_ = InternalKernelModInOutMap::GetInstance()->MapInternelInputDtypes(opname, ms_in_dtypes);
-    check_param->out_dtypes_ = InternalKernelModInOutMap::GetInstance()->MapInternelOutputDtypes(opname, ms_out_dtypes);
-    return internal::IsInternalKernelDtypesSupported(check_param);
   }
   return false;
+}
+
+bool IsDecodePhase(const std::string &phase) {
+  return phase.rfind(kPhaseNameDecode) != std::string::npos || phase.rfind(kPhaseNameIncrement) != std::string::npos;
+}
+
+bool CheckOpSupprtNzFormatOnly(const bool &enable_internal_op, const std::string &op_name) {
+  return !enable_internal_op &&
+         (op_name == kMatMulOpName || op_name == kQuantLinearSparseName || op_name == kQuantBatchMatmulName);
 }
 
 void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node,
@@ -231,17 +262,27 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   MS_EXCEPTION_IF_NULL(input_formats);
   MS_EXCEPTION_IF_NULL(output_formats);
 
-  bool is_310p = IsAscend310PSoc();
-  if (!is_310p) {
-    return;
-  }
-
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
+  UpdateNzFormatOpsList(node);
 
-  auto format_idx_iter = kNzFormatOpsList.find(AnfUtils::GetCNodeName(node));
+  auto phase = PhaseManager::GetInstance().phase();
+  auto phase_idx = static_cast<size_t>(IsDecodePhase(phase));
+  auto op_name = AnfUtils::GetCNodeName(node);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+  auto enable_op = (std::find(enable_op_list.begin(), enable_op_list.end(), op_name) != enable_op_list.end());
+  auto support_nz_format_only = CheckOpSupprtNzFormatOnly(enable_op, op_name);
+
+  auto format_idx_iter = kNzFormatOpsList.find(op_name);
   if (format_idx_iter != kNzFormatOpsList.end()) {
-    auto input_nz_format_idx = format_idx_iter->second[0];
-    auto output_nz_format_idx = format_idx_iter->second[1];
+    auto input_nz_format_idx = format_idx_iter->second[phase_idx][0];
+    auto output_nz_format_idx = format_idx_iter->second[phase_idx][1];
+    if (CheckMatMulWeightIsUnAlign(node) || support_nz_format_only) {
+      input_nz_format_idx.push_back(0);
+      output_nz_format_idx.push_back(0);
+    }
+
     for (const auto &input_idx : input_nz_format_idx) {
       input_formats->at(input_idx) = kOpFormat_FRAC_NZ;
     }

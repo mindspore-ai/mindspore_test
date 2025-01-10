@@ -1,0 +1,21 @@
+scatter:
+  - op_yaml: scatter_op.yaml
+    py_method: tensor_scatter
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: scatter_value_op.yaml
+    py_method: tensor_scatter
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/scatter_method.yaml
+    py_method: deprecated_tensor_scatter
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

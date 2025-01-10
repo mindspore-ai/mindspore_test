@@ -88,17 +88,6 @@ file(GLOB CXX_API_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/litert/cxx_api/graph/*.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/litert/cxx_api/tensor/*.cc
         )
-if(MSLITE_ENABLE_PARALLEL_INFERENCE)
-    set(CXX_API_SRCS
-            ${CXX_API_SRCS}
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/predict_task_queue.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_worker.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_pool.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_parallel_runner.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/model_parallel_runner_impl.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/extendrt/cxx_api/model_pool/resource_manager.cc
-            )
-endif()
 
 file(GLOB C_API_SRCS
         ${CMAKE_CURRENT_SOURCE_DIR}/litert/c_api/*.cc
@@ -386,7 +375,6 @@ add_subdirectory(common)
 if(MSLITE_EXPORT_COMPUTE_IR)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/common/draw)
 endif()
-
 add_library(lite_src_mid OBJECT ${LITE_SRC})
 add_dependencies(lite_src_mid lite_src_common_mid fbs_src fbs_inner_src)
 
@@ -485,13 +473,6 @@ if(SUPPORT_NPU)
     add_subdirectory(litert/delegate/npu)
     target_link_libraries(mindspore-lite npu_kernel_mid)
     target_link_libraries(mindspore-lite_static npu_kernel_mid)
-endif()
-
-if(SUPPORT_NNAPI)
-    add_compile_definitions(SUPPORT_NNAPI)
-    add_subdirectory(litert/delegate/nnapi)
-    target_link_libraries(mindspore-lite nnapi_kernel_mid)
-    target_link_libraries(mindspore-lite_static nnapi_kernel_mid)
 endif()
 
 if(PLATFORM_ARM32 OR PLATFORM_ARM64 AND NOT TARGET_HIMIX

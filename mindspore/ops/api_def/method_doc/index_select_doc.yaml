@@ -45,6 +45,11 @@ index_select:
     .. method:: Tensor.index_select(dim, index) -> Tensor
         :noindex:
     
+    Generates a new Tensor that accesses the values of `self` along the specified `dim` dimension
+    using the indices specified in `index`. The new Tensor has the same number of dimensions as `self`,
+    with the size of the `dim` dimension being equal to the length of `index`, and the size of all other
+    dimensions will be unchanged from the original `self` Tensor.
+    
     .. note::
         The value of index must be in the range of `[0, self.shape[dim])`, the result is undefined out of range.
 

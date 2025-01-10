@@ -343,7 +343,7 @@ CNodePtr NewStridedSliceNode(const AnfNodePtr &tensor_node, const Shape &begin, 
 }
 
 CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank, const Shape &send_shape,
-                     TypeId type_id, const std::string &group_name) {
+                     TypeId type_id, const std::string &group_name, const RankList &rank_list) {
   MS_EXCEPTION_IF_NULL(send_data);
   Attr attr_tag = std::make_pair(parallel::SR_TAG, MakeValue((tag)));
   Attr attr_rank = std::make_pair(parallel::DEST_RANK, MakeValue(dest_rank));
@@ -362,6 +362,11 @@ CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank
   common::AnfAlgo::SetNodeAttr(parallel::GROUP_BACK, MakeValue(group_name), send_node);
   common::AnfAlgo::SetNodeAttr(parallel::SHAPE, MakeValue(shape), send_node);
   common::AnfAlgo::SetNodeAttr(parallel::DTYPE, TypeIdToType(type_id), send_node);
+  auto long_rank_list = parallel::g_device_manager->FindRankListByHashName(group_name);
+  std::vector<uint32_t> group_rank_ids;
+  std::transform(long_rank_list.begin(), long_rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
+                 [](int64_t e) -> uint32_t { return static_cast<uint32_t>(e); });
+  common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue(group_rank_ids), send_node);
 
   std::vector<TypeId> dtypes = {common::AnfAlgo::GetOutputInferDataType(send_data, 0)};
   std::vector<ShapeVector> shapes(1, shape);
@@ -372,7 +377,7 @@ CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank
 }
 
 CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_rank, const Shape &recv_shape,
-                        TypeId type_id, const std::string &group_name) {
+                        TypeId type_id, const std::string &group_name, const RankList &rank_list) {
   MS_EXCEPTION_IF_NULL(parameter);
   tensor::TensorPtr recv_tensor = std::make_shared<mindspore::tensor::Tensor>(type_id, recv_shape);
   AnfNodePtr recv_input = NewValueNode(MakeValue(recv_tensor));
@@ -395,6 +400,11 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
   common::AnfAlgo::SetNodeAttr(parallel::SHAPE, MakeValue(recv_shape), recv_node);
   common::AnfAlgo::SetNodeAttr(parallel::DTYPE, TypeIdToType(type_id), recv_node);
   common::AnfAlgo::SetNodeAttr("flash_tag", MakeValue("True"), recv_node);
+  auto long_rank_list = parallel::g_device_manager->FindRankListByHashName(group_name);
+  std::vector<uint32_t> group_rank_ids;
+  std::transform(long_rank_list.begin(), long_rank_list.end(), std::inserter(group_rank_ids, group_rank_ids.begin()),
+                 [](int64_t e) -> uint32_t { return static_cast<uint32_t>(e); });
+  common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue(group_rank_ids), recv_node);
 
   common::AnfAlgo::SetOutputInferTypeAndShape({type_id}, {recv_shape}, recv_node.get());
   recv_node->set_scope(parameter->scope());
@@ -537,9 +547,9 @@ CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_
         send_shape[kIndex3] = kFAHeadSizeNum3 * send_shape[kIndex3] + kFAMax + kFASum;
         auto query_tuple = NewMakeTupleNode(send_query_and_grads);
         auto query_concat = NewConcatNode(query_tuple, kIndex3, send_shape);
-        cur_send_qkv_node = NewSendNode(CreateDepend(query_concat, pre_node, pre_node),
-                                        GetSendRecvTag(pos, send_qkv_dst_rank, TagType::query),
-                                        spRankList[send_qkv_dst_rank], send_shape, output_type_id, qkv_group);
+        cur_send_qkv_node = NewSendNode(
+          CreateDepend(query_concat, pre_node, pre_node), GetSendRecvTag(pos, send_qkv_dst_rank, TagType::query),
+          spRankList[send_qkv_dst_rank], send_shape, output_type_id, qkv_group, spRankList);
       }
     } else {                                                             // send kv
       auto kv_type = (inner_step == 0 ? TagType::kv_a : TagType::kv_b);  // grad should send kv_a first
@@ -547,7 +557,7 @@ CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_
       send_kv_node = CreateDepend(send_kv_node, pre_node, pre_node);
       auto tag = GetSendRecvTag(pos, send_qkv_dst_rank, kv_type);
       auto dest_rank = spRankList[send_qkv_dst_rank];
-      cur_send_qkv_node = NewSendNode(send_kv_node, tag, dest_rank, kv_shape, output_type_id, qkv_group);
+      cur_send_qkv_node = NewSendNode(send_kv_node, tag, dest_rank, kv_shape, output_type_id, qkv_group, spRankList);
     }
   }
   return cur_send_qkv_node;
@@ -563,14 +573,16 @@ CNodePtr GetCurrentRecvQKVNode(size_t pos, size_t step, size_t inner_step, size_
       if (inner_step == kIndex0) {  // recv q
         auto recv_shape = q_shape;
         recv_shape[kIndex3] = kFAHeadSizeNum3 * recv_shape[kIndex3] + kFAMax + kFASum;
-        cur_recv_qkv_node = NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, TagType::query),
-                                           spRankList[recv_qkv_src_rank], recv_shape, output_type_id, qkv_group);
+        cur_recv_qkv_node =
+          NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, TagType::query),
+                         spRankList[recv_qkv_src_rank], recv_shape, output_type_id, qkv_group, spRankList);
         cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(TagType::query));
       }
     } else {  // recv kv
       auto kv_type = inner_step == kIndex0 ? TagType::kv_a : TagType::kv_b;
-      cur_recv_qkv_node = NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, kv_type),
-                                         spRankList[recv_qkv_src_rank], kv_shape, output_type_id, qkv_group);
+      cur_recv_qkv_node =
+        NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, kv_type), spRankList[recv_qkv_src_rank],
+                       kv_shape, output_type_id, qkv_group, spRankList);
       cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(kv_type));
     }
   }

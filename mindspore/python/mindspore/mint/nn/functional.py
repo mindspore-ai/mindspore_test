@@ -66,7 +66,7 @@ from mindspore.ops.auto_generate import prelu
 # 20
 
 # 21
-
+from mindspore.ops.function.nn_func import conv3d_ext as conv3d
 # 22
 
 # 23
@@ -203,7 +203,7 @@ from mindspore.ops.functional import embedding
 # 88
 
 # 89
-
+from mindspore.ops.auto_generate import avg_pool1d_ext as avg_pool1d
 # 90
 from mindspore.ops.function.nn_func import avg_pool2d_ext as avg_pool2d
 # 91
@@ -226,6 +226,8 @@ from mindspore.ops.function.math_func import tanh
 from mindspore.ops.auto_generate import selu_ext as selu  # pylint: disable=W0611
 # 100
 from mindspore.ops.auto_generate import softshrink  # pylint: disable=W0611
+# 152
+from mindspore.ops.auto_generate import adaptive_avg_pool3d_ext
 # 220
 from mindspore.ops.function.nn_func import hardshrink  # pylint: disable=W0611
 # 221
@@ -251,13 +253,20 @@ from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
 # 324
 from mindspore.ops.auto_generate import elu_ext as elu
 
+# 421
+from mindspore.ops.auto_generate import flatten_ext as flatten
+
 # 426
 from mindspore.ops.function.clip_func import clamp
 # 427
 from mindspore.ops.function.math_func import norm_ext
 # 428
 from mindspore.ops.functional import broadcast_to
-
+# 536
+from mindspore.ops.function.nn_func import glu_ext as glu
+# 537
+from mindspore.ops.auto_generate import hardtanh as hardtanh_op
+from mindspore.ops.auto_generate import inplace_hardtanh as hardtanh_
 # 556
 from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
@@ -266,6 +275,105 @@ from mindspore.ops.auto_generate import adaptive_avg_pool1d
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
 from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 from mindspore.ops.function.nn_func import nll_loss_ext as nll_loss
+
+
+def hardtanh(input, min_val=-1.0, max_val=1.0, inplace=False):
+    r"""
+     Applies the hardtanh activation function element-wise. The activation function is defined as:
+
+     .. math::
+         \text{hardtanh}(input) = \begin{cases}
+             max\_val, & \text{ if } input > max\_val \\
+             min\_val, & \text{ if } input < min\_val \\
+             input, & \text{ otherwise. }
+         \end{cases}
+
+     Linear region range :math:`[min\_val, max\_val]` can be adjusted using `min_val` and `max_val`.
+
+     Hardtanh Activation Function Graph:
+
+     .. image:: ../images/Hardtanh.png
+         :align: center
+
+    .. warning::
+        This is an experimental optimizer API that is subject to change.
+
+     Args:
+         input (Tensor): Input Tensor.
+         min_val (Union[bool, int, float], optional): Minimum value of the linear region range. Default: ``-1.0`` .
+         max_val (Union[bool, int, float], optional): Maximum value of the linear region range. Default: ``1.0`` .
+         inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+     Returns:
+         Tensor, with the same dtype and shape as `input`.
+
+     Raises:
+         TypeError: If `input` is not a Tensor.
+         TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+         TypeError: If dtype of `min_val` is neither float nor int.
+         TypeError: If dtype of `max_val` is neither float nor int.
+
+     Supported Platforms:
+         ``Ascend``
+
+     Examples:
+         >>> import mindspore
+         >>> from mindspore import Tensor, mint
+         >>> x = Tensor([-1, -2, 0, 2, 1], mindspore.float16)
+         >>> output = mint.nn.functional.hardtanh(x, min_val=-1.0, max_val=1.0, inplace=False)
+         >>> print(output)
+         [-1. -1.  0.  1.  1.]
+     """
+    if inplace:
+        return hardtanh_(input, min_val, max_val)
+    return hardtanh_op(input, min_val, max_val)
+
+
+def relu6(input, inplace=False):
+    r"""
+    Computes ReLU (Rectified Linear Unit) upper bounded by 6 of input tensors element-wise.
+
+    .. math::
+
+        \text{ReLU6}(input) = \min(\max(0,input), 6)
+
+    It returns :math:`\min(\max(0,input), 6)` element-wise.
+
+    ReLU6 Activation Function Graph:
+
+    .. image:: ../images/ReLU6.png
+        :align: center
+
+    .. warning::
+        This is an experimental optimizer API that is subject to change.
+
+    Args:
+        input (Tensor): input Tensor. Dtype is in int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+    Returns:
+        Tensor, with the same dtype and shape as the `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> result = mint.nn.functional.relu6(x)
+        >>> print(result)
+        [[0. 4. 0.]
+         [2. 0. 6.]]
+    """
+    if inplace:
+        return hardtanh_(input, 0, 6)
+    return hardtanh_op(input, 0, 6)
 
 
 def binary_cross_entropy(input, target, weight=None, reduction='mean'):
@@ -512,10 +620,14 @@ def smooth_l1_loss(input, target, reduction='mean', beta=1.0):
     Args:
         input (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
             Supported dtypes:
-                Ascend: float16, float32, bfloat16.
+
+            - Ascend: float16, float32, bfloat16.
+
         target (Tensor): Ground truth data, tensor of shape :math:`(N, *)`, same shape as the `input`.
             Supported dtypes:
-                Ascend: float16, float32, bfloat16.
+
+            - Ascend: float16, float32, bfloat16.
+
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
 
@@ -535,7 +647,7 @@ def smooth_l1_loss(input, target, reduction='mean', beta=1.0):
         RuntimeError: If dtype of `input` or `target` is not one of float16, float32, bfloat16.
         ValueError: If shape of `input` is not the same as `target`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
-        RuntimeError: If `beta` is not a float, int or bool.
+        TypeError: If `beta` is not a float, int or bool.
         RuntimeError: If `beta` is less than 0.
 
     Supported Platforms:
@@ -661,6 +773,7 @@ def dropout2d(input, p=0.5, training=True):
 
     return result
 
+
 def normalize(input, p=2.0, dim=1, eps=1e-12):
     r"""
     Perform normalization of inputs over specified dimension
@@ -703,6 +816,97 @@ def normalize(input, p=2.0, dim=1, eps=1e-12):
     return input / denom
 
 
+def upsample(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
+    r"""
+    Samples `input` by the given `size` or `scale_factor`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Refer to :func:`mindspore.mint.nn.functional.interpolate` for more details.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+    return interpolate(input, size, scale_factor, mode, align_corners)
+
+
+def adaptive_avg_pool3d(input, output_size):
+    r"""
+    Performs 3D adaptive average pooling on a multi-plane input signal.
+    That is, for any input size, the size of the specified output is :math:`(D, H, W)`.
+    The number of output features is equal to the number of input planes.
+
+    Suppose the last 3 dimension size of x is :math:`(inD, inH, inW)`, the last 3 dimension size of output is
+    :math:`(outD, outH, outW)`.
+
+    .. math::
+        \begin{array}{ll} \\
+            \forall \quad od \in [0,outD-1], oh \in [0,outH-1], ow \in [0,outW-1]\\
+            output[od,oh,ow] = \\
+            \qquad mean(x[istartD:iendD+1,istartH:iendH+1,istartW:iendW+1])\\
+            where,\\
+            \qquad istartD= \left\lceil \frac{od * inD}{outD} \right\rceil \\
+            \qquad iendD=\left\lfloor \frac{(od+1)* inD}{outD} \right\rfloor \\
+            \qquad istartH=\left\lceil \frac{oh * inH}{outH} \right\rceil \\
+            \qquad iendH=\left\lfloor \frac{(oh+1) * inH}{outH} \right\rfloor \\
+            \qquad istartW=\left\lceil \frac{ow * inW}{outW} \right\rceil \\
+            \qquad iendW=\left\lfloor \frac{(ow+1) * inW}{outW} \right\rfloor
+        \end{array}
+
+    .. warning::
+        For Ascend, it is only supported on Atlas A2 Training Series Products.
+        This is an experimental optimizer API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of adaptive_avg_pool3d, which is a 4D or 5D Tensor.
+        output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(D, H, W)`,
+            or an int D for :math:`(D, D, D)`. :math:`D`, :math:`H` and :math:`W` can be int or None
+            which means the output size is the same as that of the input.
+
+    Returns:
+        Tensor, with the same type as the `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        ValueError: If the dimension of `input` is not 4D or 5D.
+        ValueError: If `output_size` value is not positive.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> # case 1: output_size=(3, 3, 4)
+        >>> output_size=(3, 3, 4)
+        >>> input_val = np.random.randn(4, 3, 5, 6, 7)
+        >>> input = Tensor(input_val, mindspore.float32)
+        >>> output = mint.nn.functional.adaptive_avg_pool3d(input, output_size)
+        >>> print(output.shape)
+        (4, 3, 3, 3, 4)
+        >>> # case 2: output_size=4
+        >>> output_size=5
+        >>> input_val = np.random.randn(2, 3, 8, 6, 12)
+        >>> input = Tensor(input_val, mindspore.float32)
+        >>> output = mint.nn.functional.adaptive_avg_pool3d(input, output_size)
+        >>> print(output.shape)
+        (2, 3, 5, 5, 5)
+        >>> # case 3: output_size=(None, 4, 5)
+        >>> output_size=(None, 4, 5)
+        >>> input_val = np.random.randn(4, 1, 9, 10, 8)
+        >>> input = Tensor(input_val, mindspore.float32)
+        >>> output = mint.nn.functional.adaptive_avg_pool3d(input, output_size)
+        >>> print(output.shape)
+        (4, 1, 9, 4, 5)
+    """
+    validator.check_value_type("output_size", output_size, [int, tuple, list], "adaptive_avg_pool3d")
+    if isinstance(output_size, int):
+        output_size = (output_size, output_size, output_size)
+    output_size = tuple(-1 if val is None else val for val in output_size)
+    return adaptive_avg_pool3d_ext(input, output_size)
+
 
 __all__ = [
     'conv_transpose2d',
@@ -724,7 +928,7 @@ __all__ = [
     # 8
     'layer_norm',
     # 9
-
+    'upsample',
     # 10
 
     # 11
@@ -751,6 +955,7 @@ __all__ = [
     # 20
     'cross_entropy',
     # 21
+    'conv3d',
     'nll_loss',
     # 22
 
@@ -887,7 +1092,7 @@ __all__ = [
     # 88
 
     # 89
-
+    'avg_pool1d',
     # 90
     'avg_pool2d',
     # 91
@@ -910,6 +1115,8 @@ __all__ = [
 
     # 100
 
+    # 152
+    'adaptive_avg_pool3d',
     # 254
     'max_unpool2d',
 
@@ -936,4 +1143,12 @@ __all__ = [
     'adaptive_avg_pool2d',
     # 393
     'dropout2d',
+    # 421
+    'flatten',
+    # 536
+    'glu',
+    # 537
+    'hardtanh',
+    'hardtanh_',
+    'relu6',
 ]

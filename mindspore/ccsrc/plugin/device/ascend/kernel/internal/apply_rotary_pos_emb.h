@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_APPLYROTARYPOSEMB_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_APPLYROTARYPOSEMB_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_APPLYROTARYPOSEMB_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_APPLYROTARYPOSEMB_H_
 
+#include <string>
 #include <vector>
+#include <utility>
 
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "include/internal.h"
 
 namespace mindspore {
 namespace kernel {
-class ApplyRotaryPosEmb : public InternalKernelMod {
- public:
-  ApplyRotaryPosEmb() : InternalKernelMod("ApplyRotaryPosEmb") {}
-  ~ApplyRotaryPosEmb() = default;
-
- protected:
-  internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                     const std::vector<KernelTensor *> &outputs);
-};
+DECLARE_INTERNAL_KERNEL_MOD(ApplyRotaryPosEmb)
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_APPLYROTARYPOSEMB_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_APPLYROTARYPOSEMB_H_

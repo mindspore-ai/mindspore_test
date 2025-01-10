@@ -1,7 +1,7 @@
 mindspore.mint.nn.Embedding
 ===========================
 
-.. py:function:: mindspore.mint.nn.Embedding(num_embeddings, embedding_dim, padding_idx=None, max_norm=None, norm_type=2.0, scale_grad_by_freq=False, sparse=False, _weight=None, _freeze=False, dtype=None)
+.. py:class:: mindspore.mint.nn.Embedding(num_embeddings, embedding_dim, padding_idx=None, max_norm=None, norm_type=2.0, scale_grad_by_freq=False, sparse=False, _weight=None, _freeze=False, dtype=None)
 
     以 `input` 中的值作为索引，从 `weight` 中查询对应的embedding向量。
 

@@ -25,8 +25,8 @@
           - CPU/GPU: float16、float32、float64。
         - **labels** (Tensor) - 真实值。
           
-          - Ascend: 与 `logits` 的shape相同， `logits` 和 `labels` 遵循隐式类型转换规则，使数据类型一致。
-          - CPU/GPU: 与 `logits` 的shape和数据类型相同。
+          - CPU/Ascend: 与 `logits` 的shape相同， `logits` 和 `labels` 遵循隐式类型转换规则，使数据类型一致。
+          - GPU: 与 `logits` 的shape和数据类型相同。
 
     输出：
         Tensor，如果 `reduction` 为'none'，则输出为Tensor且与 `input` 的shape相同。否则shape为 :math:`()`。

@@ -27,25 +27,18 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/eliminate_redundant_output.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore::graphkernel {
 bool IsUpdateState(const std::pair<AnfNodePtr, int> &user) {
-  if (common::GetEnv("MS_DEV_GK_NO_DEPEND") == "1") {
-    return IsPrimitiveCNode(user.first, prim::kPrimUpdateState);
-  }
-  return IsPrimitiveCNode(user.first, prim::kPrimUpdateState) ||
-         (IsPrimitiveCNode(user.first, prim::kPrimDepend) && user.second > 1);
+  return IsPrimitiveCNode(user.first, prim::kPrimUpdateState);
 }
 
 AnfNodePtrList GetUpdateStateList(const FuncGraphPtr &func_graph) {
   auto todos = TopoSort(func_graph->get_return());
   AnfNodePtrList result;
-  (void)std::copy_if(todos.begin(), todos.end(), std::back_inserter(result), [](const AnfNodePtr &node) {
-    if (common::GetEnv("MS_DEV_GK_NO_DEPEND") == "1") {
-      return IsPrimitiveCNode(node, prim::kPrimUpdateState);
-    }
-    return IsPrimitiveCNode(node, prim::kPrimUpdateState) || IsPrimitiveCNode(node, prim::kPrimDepend);
-  });
+  (void)std::copy_if(todos.begin(), todos.end(), std::back_inserter(result),
+                     [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimUpdateState); });
   return result;
 }
 
@@ -279,9 +272,9 @@ bool MergeOutputForUpdateState::Run(const FuncGraphPtr &func_graph) {
     for (size_t i = min_input_num; i < cnode->size(); ++i) {
       auto input = cnode->input(i);
       if (IsPrimitiveCNode(input, prim::kPrimTupleGetItem)) {
-        // only keep one GetItem for that link to the same node.
+        // only keep one GetItem for that link to the same graph kernel node.
         auto gt_input = input->cast<CNodePtr>()->input(kRealInputNodeIndexInTupleGetItem);
-        if (node_set.insert(gt_input).second) {
+        if (!common::AnfAlgo::IsGraphKernel(node) || node_set.insert(gt_input).second) {
           inputs.push_back(input);
         }
       } else {

@@ -16,6 +16,7 @@
 
 #include "plugin/device/ascend/optimizer/mindir/centralization_mindir.h"
 #include <vector>
+#include <string>
 #include <memory>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -65,6 +66,12 @@ std::vector<int64_t> GetReduceMeanInferShape(const CNodePtr &cnode) {
   return output_shape;
 }
 }  // namespace
+
+std::vector<std::string> CentralizationMindIR::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimCentralization->name()};
+  return ret;
+}
+
 const BaseRef CentralizationMindIR::DefinePattern() const {
   VarPtr x1 = std::make_shared<Var>();
   VarPtr x2 = std::make_shared<Var>();

@@ -113,11 +113,11 @@ void SparseSegmentSqrtNWithNumSegmentsCpuKernelMod::LaunchKernel(const std::vect
   size_t k =
     static_cast<size_t>(std::accumulate(y_shape_.begin(), y_shape_.end(), kIndex1, std::multiplies<int64_t>()));
   auto x_shape_0 = static_cast<T2>(x_shape_[kIndex0]);
-  auto x_addr = static_cast<T1 *>(inputs[kIndex0]->device_ptr());
-  auto indices_addr = static_cast<T2 *>(inputs[kIndex1]->device_ptr());
-  auto segment_ids_addr = static_cast<T2 *>(inputs[kIndex2]->device_ptr());
-  auto num_segments_addr = static_cast<T2 *>(inputs[kIndex3]->device_ptr());
-  auto y_addr = static_cast<T1 *>(outputs[kIndex0]->device_ptr());
+  auto x_addr = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto indices_addr = GetDeviceAddress<T2>(inputs, kIndex1);
+  auto segment_ids_addr = GetDeviceAddress<T2>(inputs, kIndex2);
+  auto num_segments_addr = GetDeviceAddress<T2>(inputs, kIndex3);
+  auto y_addr = GetDeviceAddress<T1>(outputs, kIndex0);
 
   for (size_t i = 0; i < k; i++) {
     y_addr[i] = static_cast<T1>(0);

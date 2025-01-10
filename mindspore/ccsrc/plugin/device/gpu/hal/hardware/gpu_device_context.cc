@@ -22,6 +22,8 @@
 #include <tuple>
 #include <utility>
 #include <unordered_set>
+#include "plugin/device/gpu/device_context_conf/op_precision_conf.h"
+#include "plugin/device/gpu/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
 #include "plugin/device/gpu/hal/device/gpu_device_address.h"
@@ -76,6 +78,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "runtime/device/tensor_array.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -533,7 +536,7 @@ void GPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   // somas
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     auto somas = std::make_shared<GPUSomas>();
     bool ret = somas->Assign(kernel_graph);
     if (ret) {
@@ -1047,10 +1050,8 @@ bool GPUKernelExecutor::DoLaunchKernel(const CNodePtr &kernel, const std::vector
   PROFILER_START(start_time);
   auto ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
   // Sync running.
-  auto ms_context = MsContext::GetInstance();
-  static bool sync_stream = common::IsEnableRuntimeConfig(common::kRuntimeSynchronize);
-  if ((sync_stream || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE)) &&
-      !res_manager_->SyncAllStreams()) {
+  bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
+  if (sync_stream && !res_manager_->SyncAllStreams()) {
     return false;
   }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
@@ -1194,7 +1195,7 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if ((ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) &&
-      ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) && !res_manager_->SyncAllStreams()) {
+      runtime::RuntimeConf::GetInstance()->launch_blocking() && !res_manager_->SyncAllStreams()) {
     return false;
   }
 
@@ -1318,6 +1319,9 @@ void PybindGPUStatelessFunc(py::module *m) {
   (void)m->def("gpu_get_device_properties", &GPUDeviceContext::GetDeviceProperties,
                "Get GPU device properties of specified device id.");
   (void)m->def("gpu_get_arch_list", &GPUDeviceContext::GetArchList, "Get GPU arch list of this MindSpore package.");
+
+  RegGPUOpPrecisionConf(m);
+  RegGPUOpTuningConf(m);
 }
 REGISTER_DEV_STATELESS_FUNC_CB(kGPUDevice, PybindGPUStatelessFunc);
 }  // namespace gpu

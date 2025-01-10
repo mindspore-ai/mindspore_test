@@ -13,3 +13,4 @@ sigmoid_grad:
     dispatch:
         enable: True
         Ascend: SigmoidGradAscend
+

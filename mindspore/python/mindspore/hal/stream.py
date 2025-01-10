@@ -21,8 +21,13 @@ from mindspore._c_expression import default_stream as default_stream_
 from mindspore._c_expression import communication_stream as communication_stream_
 
 from mindspore import _checkparam as Validator
+from mindspore import log as logger
 from .event import Event
 
+function_stream_status = {'record_event': False, 'wait_event': False, 'wait_stream': False,
+                          'query': False, 'synchronize': False, 'set_cur_stream': False,
+                          'current_stream': False, 'default_stream': False,
+                          'communication_stream': False, 'StreamCtx': False}
 
 class Stream(Stream_):
     r"""
@@ -31,13 +36,15 @@ class Stream(Stream_):
     A device stream is a linear sequence of execution that belongs to a specific device,
     independent from other streams.
 
-    For a quick start of using Stream, please refer to `Illustration of stream management <https://www.mindspore.cn/docs/en/master/api_python/samples/hal/stream_manager.html>`_ .
+    Note:
+        - The api will be deprecated, please use the api :class:`mindspore.runtime.Stream`.
 
     Args:
         priority (int, optional): priority of the stream, lower numbers represent higher priorities.
             By default, streams have priority ``0``.
         kwargs (dict): keyword arguments.
     """
+
     def __init__(self, priority=0, **kwargs):
         self.init_finished = False
         if 'stream' in kwargs and kwargs['stream'] is not None:
@@ -84,6 +91,12 @@ class Stream(Stream_):
              [5. 5. 5.]
              [5. 5. 5.]]
         """
+        if not function_stream_status['record_event']:
+            function_stream_status['record_event'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Stream().record_event() is deprecated."
+                " Please use mindspore.runtime.Stream().record_event()"
+            )
         if event is None:
             event = Event()
         if not isinstance(event, Event):
@@ -121,6 +134,12 @@ class Stream(Stream_):
              [5. 5. 5.]
              [5. 5. 5.]]
         """
+        if not function_stream_status['wait_event']:
+            function_stream_status['wait_event'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.current_stream().wait_event(event) is deprecated."
+                " Please use mindspore.runtime.current_stream().wait_event(event)"
+            )
         if not isinstance(event, Event):
             raise TypeError(f"For 'wait_event', the argument 'event' should be Event,"
                             f" but got {type(event)}.")
@@ -156,6 +175,12 @@ class Stream(Stream_):
             >>> print(d)
             [[4. 4.]]
         """
+        if not function_stream_status['wait_stream']:
+            function_stream_status['wait_stream'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
+                " Please use mindspore.runtime.Stream()"
+            )
         if not isinstance(stream, Stream):
             raise TypeError(f"For 'wait_stream', the argument 'stream' should be Stream,"
                             f" but got {type(stream)}.")
@@ -199,6 +224,12 @@ class Stream(Stream_):
             >>> s1.synchronize()
             >>> assert s1.query()
         """
+        if not function_stream_status['query']:
+            function_stream_status['query'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
+                " Please use mindspore.runtime.Stream()"
+            )
         # pylint: disable=useless-super-delegation
         return super().query()
 
@@ -221,6 +252,9 @@ def synchronize():
     r"""
     Synchronize all streams on current device.(Each MindSpore process only occupies one device)
 
+    Note:
+        - The api will be deprecated, please use the api :func:`mindspore.runtime.synchronize` instead.
+
     Examples:
         >>> import mindspore as ms
         >>> import numpy as np
@@ -233,6 +267,12 @@ def synchronize():
         >>> ms.hal.synchronize()
         >>> assert s1.query()
     """
+    if not function_stream_status['synchronize']:
+        function_stream_status['synchronize'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.synchronize() is deprecated."
+            " Please use mindspore.runtime.synchronize()"
+        )
     synchronize_()
 
 
@@ -240,6 +280,9 @@ def set_cur_stream(stream):
     r"""
     Sets the current stream.This is a wrapper API to set the stream.
     Usage of this function is discouraged in favor of the ``stream`` context manager.
+
+    Note:
+        - The api will be deprecated, please use the api :func:`mindspore.runtime.set_cur_stream` instead.
 
     Args:
         stream (Stream): selected stream. This function is a no-op
@@ -257,6 +300,12 @@ def set_cur_stream(stream):
         >>> assert ms.hal.current_stream() == s1
         >>> ms.hal.set_cur_stream(ms.hal.default_stream())
     """
+    if not function_stream_status['set_cur_stream']:
+        function_stream_status['set_cur_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.Stream() is deprecated."
+            " Please use mindspore.runtime.Stream()"
+        )
     if stream is None:
         return
     if not isinstance(stream, Stream):
@@ -269,6 +318,9 @@ def current_stream():
     r"""
     Return current stream used on this device.
 
+    Note:
+        - The api will be deprecated, please use the api :func:`mindspore.runtime.current_stream` instead.
+
     Returns:
         stream (Stream), current stream.
 
@@ -277,12 +329,21 @@ def current_stream():
         >>> cur_stream = ms.hal.current_stream()
         >>> assert cur_stream == ms.hal.default_stream()
     """
+    if not function_stream_status['current_stream']:
+        function_stream_status['current_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.current_stream() is deprecated."
+            " Please use mindspore.runtime.current_stream()"
+        )
     return Stream(stream=current_stream_())
 
 
 def default_stream():
     r"""
     Return default stream on this device.
+
+    Note:
+        - The api will be deprecated, please use the api :func:`mindspore.runtime.default_stream` instead.
 
     Returns:
         stream (Stream), default stream.
@@ -292,12 +353,21 @@ def default_stream():
         >>> cur_stream = ms.hal.current_stream()
         >>> assert cur_stream == ms.hal.default_stream()
     """
+    if not function_stream_status['default_stream']:
+        function_stream_status['default_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.default_stream() is deprecated."
+            " Please use mindspore.runtime.default_stream()"
+        )
     return Stream(stream=default_stream_())
 
 
 def communication_stream():
     r"""
     Return communication stream on this device.
+
+    Note:
+        - The api will be deprecated, please use the api :func:`mindspore.runtime.communication_stream` instead.
 
     Returns:
         stream (Stream), communication stream.
@@ -307,12 +377,21 @@ def communication_stream():
         >>> ms.hal.communication_stream()
         Stream(device_name=Ascend, device_id:0, stream id:1)
     """
+    if not function_stream_status['communication_stream']:
+        function_stream_status['communication_stream'] = True
+        logger.warning(
+            "WARN_DEPRECATED: The usage of mindspore.hal.communication_stream() is deprecated."
+            " Please use mindspore.runtime.communication_stream()"
+        )
     return Stream(stream=communication_stream_())
 
 
 class StreamCtx():
     r"""
     Context-manager that selects a given stream.
+
+    Note:
+        - The api will be deprecated, please use the api :class:`mindspore.runtime.StreamCtx`.
 
     All kernels queued within its context will be enqueued on a selected
     stream.
@@ -335,7 +414,14 @@ class StreamCtx():
         >>> ms.hal.synchronize()
         >>> assert s1.query()
     """
+
     def __init__(self, ctx_stream):
+        if not function_stream_status['StreamCtx']:
+            function_stream_status['StreamCtx'] = True
+            logger.warning(
+                "WARN_DEPRECATED: The usage of mindspore.hal.StreamCtx(s1) is deprecated."
+                " Please use mindspore.runtime.StreamCtx(s1)"
+            )
         if ctx_stream is not None and not isinstance(ctx_stream, Stream):
             raise TypeError(f"For 'StreamCtx', the argument 'ctx_stream' should be Stream,"
                             f" but got {type(ctx_stream)}.")

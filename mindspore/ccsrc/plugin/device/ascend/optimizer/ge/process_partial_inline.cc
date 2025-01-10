@@ -25,6 +25,11 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> ProcessPartialInline::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimPartial->name()};
+  return ret;
+}
+
 const BaseRef ProcessPartialInline::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimPartial, Xs});

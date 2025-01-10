@@ -273,6 +273,14 @@ bool BaseTensor::is_contiguous() const {
   return storage == nullptr || storage->is_contiguous;
 }
 
+bool BaseTensor::NeedContiguous() const {
+  const auto &storage = storage_info();
+  if (storage == nullptr) {
+    return false;
+  }
+  return !storage->is_contiguous || storage->storage_offset != 0;
+}
+
 std::vector<int64_t> BaseTensor::stride() const {
   const auto &storage = storage_info();
   if (storage != nullptr) {

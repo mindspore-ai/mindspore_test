@@ -29,6 +29,7 @@ endif()
 
 ########### mindspore_ascend.so #####
 set(ASCEND_SUB_COMP
+        device_context_conf
         hal/device
         hal/hardware
         kernel
@@ -77,6 +78,7 @@ set(MS_KERNELS_INTERNAL_LIB_PATH
     ${ORIGIN_PATH}/ascend/ms_kernels_internal/internal_kernel/lib)
 
 target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
+target_link_libraries(mindspore_ascend PRIVATE -Wl,--whole-archive mindspore_ops_ascend -Wl,--no-whole-archive)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_ascend PRIVATE securec d_collective)
 target_link_libraries(mindspore_ascend PRIVATE multi_ascend_collective)

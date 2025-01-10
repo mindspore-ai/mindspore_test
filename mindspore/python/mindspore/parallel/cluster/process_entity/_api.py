@@ -16,6 +16,7 @@
 import os
 import re
 import sys
+import signal
 import subprocess
 import socket
 import mindspore.log as logger
@@ -92,13 +93,15 @@ class _ComputeGraphNode(_Node):
         if not self.is_simulation:
             os.environ["MS_ROLE"] = "MS_WORKER"
         tail_worker_process = None
-        if self.join and self.tail_worker_log != "-1" and (str(self.node_id) not in self.tail_worker_log):
+        is_tail_worker_log = self.enable_tail_worker_log()
+        if self.join and not is_tail_worker_log:
             logger.warning(f"The '--tail_worker_log' is:{self.tail_worker_log}, which is beyond the maximum of "
                            "local_worker_num. So worker logs will not be output to console. Reset "
                            "'--tail_worker_log', if you want to output worker logs to console.")
         with open(self.output_file, "w") as file_handle:
-            worker_process = subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
-            if self.join and (self.tail_worker_log == "-1" or str(self.node_id) in self.tail_worker_log):
+            worker_process = subprocess.Popen(self.args_list, preexec_fn=os.setsid, stdout=file_handle,
+                                              stderr=subprocess.STDOUT)
+            if self.join and is_tail_worker_log:
                 tail_worker_process = self.output_to_console()
             return worker_process, tail_worker_process
 
@@ -106,7 +109,15 @@ class _ComputeGraphNode(_Node):
         """
         Output worker log file to console.
         """
-        return subprocess.Popen(['tail', '-f', self.output_file])
+        return subprocess.Popen(['/usr/bin/tail', '-f', self.output_file])
+
+    def enable_tail_worker_log(self):
+        tail_worker_log_list = []
+        if self.tail_worker_log != "-1":
+            tail_worker_log_list.extend([int(num) for num in self.tail_worker_log.split(',')])
+        if self.tail_worker_log != "-1" and self.node_id not in tail_worker_log_list:
+            return False
+        return True
 
 
 class _ProcessManager:
@@ -155,12 +166,18 @@ class _ProcessManager:
             os.environ["MS_SIMULATION_LEVEL"] = str(self.sim_level)
         elif os.getenv("MS_SIMULATION_LEVEL"):
             self.is_simulation = True
+            self.sim_rank_id = int(os.getenv("RANK_ID", "-1"))
             if os.getenv("RANK_SIZE"):
                 self.exported_rank_size = os.getenv("RANK_SIZE")
         # If sim_rank_id is set, single worker can be started.
-        if self.is_simulation and self.sim_rank_id:
-            self.worker_num = 1
+        if self.is_simulation and (self.sim_rank_id != -1):
+            logger.info(f"Simulation rank id is set to {self.sim_rank_id}, will dryrun a single process.")
             self.local_worker_num = 1
+        if self.is_simulation and self.local_worker_num > 128:
+            self.local_worker_num = 1
+            self.sim_rank_id = 0
+            logger.warning(f"In dryrun case, local worker num is set to larger than 128. "
+                           "To avoid a system clash, local worker num is set to 1.")
 
         self.cmd = args.task_script
         self.cmd_args = args.task_script_args
@@ -234,9 +251,6 @@ class _ProcessManager:
                            "You can access 'RANK_ID' environment variable after calling "
                            "'mindspore.communication.init()'")
 
-        if self.is_simulation and self.sim_rank_id and self.worker_num != 1:
-            raise ValueError(f"Simulation rank_id is set, worker_num must be 1, but got {self.worker_num}.")
-
         for i in range(self.local_worker_num):
             os.environ["DEVICE_ID"] = str(i)
             node_id, log_name = self._get_node_id_and_log_path(i)
@@ -249,9 +263,10 @@ class _ProcessManager:
                 os.environ["RANK_ID"] = str(node_id)
                 logger.warning(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
                                "Environment variable [RANK_ID] is exported.")
-            if self.is_simulation and self.sim_rank_id:
+            if self.is_simulation and (self.sim_rank_id != -1):
                 # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
                 os.environ["RANK_ID"] = str(self.sim_rank_id)
+                logger.warning(f"In dryrun case, RANK_ID is assigned to {self.sim_rank_id}.")
 
             cpu_num = subprocess.getoutput("cat /proc/cpuinfo|grep processor|wc -l")
             if not cpu_num.isdigit():
@@ -276,8 +291,14 @@ class _ProcessManager:
         If there's any process does not exit normally, logs will be analyzed
         so that understandable root cause of exception could be returned.
         """
+        def signal_handler(sig, frame):
+            logger.warning("msrun process received SIGNIN (Ctrl+C), terminating all workers.")
+            self.kill_all_processes()
+            sys.exit(0)
+
         has_exception = False
         success_cgn_processes = set()
+        signal.signal(signal.SIGINT, signal_handler)
         while True:
             # Traversal all workers and kill immediately if any exception happens.
             for p in self.cgn_processes:
@@ -294,22 +315,13 @@ class _ProcessManager:
 
             if has_exception:
                 logger.warning("There's worker exits with exception, kill all other workers.")
-                for p in self.cgn_processes:
-                    if p.poll() is None:
-                        p.kill()
-                for p_tail in self.tail_cgn_processes:
-                    if p_tail is not None:
-                        logger.debug("There's worker exits with exception, kill tail process:{p_tail.pid}.")
-                        p_tail.kill()
+                self.kill_worker_processes()
+                self.kill_tail_log_processes()
                 break
             elif len(success_cgn_processes) == len(self.cgn_processes):
                 logger.info("All workers successfully exit!")
-                for p_tail in self.tail_cgn_processes:
-                    if p_tail is not None:
-                        logger.debug("Tial worker log process:{p_tail.pid} successfully exit!.")
-                        p_tail.kill()
+                self.kill_tail_log_processes()
                 break
-
 
         if self.msn_process:
             self.msn_process.wait()
@@ -322,6 +334,35 @@ class _ProcessManager:
             self._analyze_log()
             raise RuntimeError("Distributed job exited with exception. Please check logs in "
                                f"directory: {self.log_dir}.")
+
+    def kill_tail_log_processes(self):
+        """
+        Kills all tail worker log processes.
+
+        """
+        for p_tail in self.tail_cgn_processes:
+            if p_tail is not None:
+                logger.debug("Tail worker log process:{p_tail.pid} has been killed!")
+                p_tail.kill()
+
+    def kill_worker_processes(self):
+        """
+        Kills all worker processes.
+
+        """
+        for p in self.cgn_processes:
+            if p.poll() is None:
+                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+
+    def kill_all_processes(self):
+        """
+        Kills all running processes, including scheduler, worker and tail log.
+
+        """
+        self.kill_worker_processes()
+        self.kill_tail_log_processes()
+        if self.msn_process.poll() is None:
+            self.msn_process.kill()
 
     def stop_processes(self):
         """
@@ -346,6 +387,7 @@ class _ProcessManager:
             self.start_scheduler()
         self.start_workers()
 
+
     def _get_node_id_and_log_path(self, index):
         """
         Generate node id and log path for corresponding process.
@@ -355,16 +397,16 @@ class _ProcessManager:
             raise ValueError(f"Total worker number is {self.worker_num}, "
                              f"but got exceeded local worker number: {self.local_worker_num}.")
         if self.local_worker_num == self.worker_num:
-            return index, os.path.join(self.log_dir, formatted_log_name  + "_" + str(index) + ".log")
+            return index, os.path.join(self.log_dir, formatted_log_name + "_" + str(index) + ".log")
 
         if self.node_rank >= 0:
             # We assume that each node has same process number.
             node_id = self.node_rank * self.local_worker_num + index
-            log_name = os.path.join(self.log_dir, formatted_log_name  + "_" + str(node_id) + ".log")
+            log_name = os.path.join(self.log_dir, formatted_log_name + "_" + str(node_id) + ".log")
         else:
             # If node_rank is default value -1, let MindSpore assign rank id.
             node_id = None
-            log_name = os.path.join(self.log_dir, formatted_log_name  + "_" + str(index) + ".log")
+            log_name = os.path.join(self.log_dir, formatted_log_name + "_" + str(index) + ".log")
         return node_id, log_name
 
 

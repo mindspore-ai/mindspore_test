@@ -52,6 +52,7 @@ void InsertMoveTo::Init(const FuncGraphPtr &graph) {
   func_graph_ = graph;
   kernel_graph_ = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph_);
+  kernel_graph_->SetExecOrderByDefault();
 }
 
 void InsertMoveTo::CollectOffloadedParameter() {

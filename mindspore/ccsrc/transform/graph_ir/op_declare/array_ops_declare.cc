@@ -328,9 +328,10 @@ REG_ADPT_DESC(LogSpace, prim::kPrimLogSpace->name(), CUST_ADPT_DESC(LogSpace));
 
 // UniqueConsecutive
 INPUT_MAP(UniqueConsecutive) = {{1, INPUT_DESC(x)}};
-ATTR_MAP(UniqueConsecutive) = {{"return_idx", ATTR_DESC(return_idx, AnyTraits<bool>())},
-                               {"return_counts", ATTR_DESC(return_counts, AnyTraits<bool>())},
-                               {"axis", ATTR_DESC(axis, AnyTraits<int64_t>())}};
+ATTR_MAP(UniqueConsecutive) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(UniqueConsecutive) = {{kIndex2, ATTR_DESC(return_idx, AnyTraits<bool>())},
+                                     {kIndex3, ATTR_DESC(return_counts, AnyTraits<bool>())},
+                                     {kIndex4, ATTR_DESC(axis, AnyTraits<int64_t>())}};
 OUTPUT_MAP(UniqueConsecutive) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(idx)}, {2, OUTPUT_DESC(count)}};
 REG_ADPT_DESC(UniqueConsecutive, prim::kPrimUniqueConsecutive->name(), ADPT_DESC(UniqueConsecutive));
 

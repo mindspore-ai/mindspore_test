@@ -27,7 +27,7 @@
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "utils/shape_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

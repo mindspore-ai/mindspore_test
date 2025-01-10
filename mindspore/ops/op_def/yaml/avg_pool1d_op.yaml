@@ -1,0 +1,32 @@
+#operator avg_pool1d
+avg_pool1d:
+    args:
+        input:
+            dtype: tensor
+        kernel_size:
+            dtype: tuple[int]
+            type_cast: int, list[int]
+        stride:
+            dtype: tuple[int]
+            default: None
+            type_cast: int, list[int]
+        padding:
+            dtype: tuple[int]
+            default: 0
+            type_cast: int, list[int]
+        ceil_mode:
+            dtype: bool
+            default: False
+        count_include_pad:
+            dtype: bool
+            default: True
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: AvgPool1D
+    function:
+        name: avg_pool1d_ext
+    dispatch:
+        enable: True
+        Ascend: AvgPool1DAscend

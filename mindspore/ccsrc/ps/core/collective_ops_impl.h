@@ -66,8 +66,16 @@ class CollectiveOpsImpl {
   bool AllReduce(const std::string &data_name, void *sendbuff, void *recvbuff, size_t count);
 
   template <typename T>
-  bool AllGather(const void *sendbuff, void *recvbuff, size_t send_count, const ps::core::AbstractNodePtr &node);
+  bool AllGather(const void *sendbuff, void *recvbuff, size_t send_count, const ps::core::AbstractNodePtr &node,
+                 const CommunicationGroupInfo &group_info);
 
+  template <typename T>
+  bool Gather(const void *sendbuff, void *recvbuff, size_t send_count, uint32_t root,
+              const ps::core::AbstractNodePtr &node, const CommunicationGroupInfo &group_info);
+
+  template <typename T>
+  bool Scatter(const void *sendbuff, void *recvbuff, size_t send_count, uint32_t root,
+               const ps::core::AbstractNodePtr &node, const CommunicationGroupInfo &group_info);
   // Collective broadcast within the specified group. The parameter "root" is the group rank of the root process.
   // Normally 0.
   template <typename T>
@@ -102,7 +110,15 @@ class CollectiveOpsImpl {
 
   // Implementation of RingAllGather.
   template <typename T>
-  bool RingAllGather(const void *sendbuff, void *recvbuff, size_t send_count);
+  bool RingAllGather(const void *sendbuff, void *recvbuff, size_t send_count, const CommunicationGroupInfo &group_info);
+
+  template <typename T>
+  bool Gather(const void *sendbuff, void *recvbuff, size_t send_count, uint32_t root,
+              const CommunicationGroupInfo &group_info);
+
+  template <typename T>
+  bool Scatter(const void *sendbuff, void *recvbuff, size_t send_count, uint32_t root,
+               const CommunicationGroupInfo &group_info);
 
   // Implementation of Broadcast. The parameter "root" is the group rank of the root process. Normally 0.
   template <typename T>

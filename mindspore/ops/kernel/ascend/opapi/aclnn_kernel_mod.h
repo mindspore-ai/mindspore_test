@@ -36,7 +36,7 @@
 #include "transform/acl_ir/op_api_util.h"
 #include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
-#include "mindspore/ops/kernel/ascend/opapi/aclnn_kernel_utils.h"
+#include "kernel/ascend/opapi/aclnn_kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -54,26 +54,29 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   template <typename... Args>                                                                                        \
   void GetWorkspaceForResize##FUNC_NAME(const Args &... args) {                                                      \
     hash_id_##FUNC_NAME##_ = transform::AclnnHash(op_type_##FUNC_NAME##_, args...);                                  \
+    auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
     size_t cur_workspace = 0;                                                                                        \
-    if (hash_map_.count(hash_id_##FUNC_NAME##_)) {                                                                   \
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_##FUNC_NAME##_]);                       \
+    if (iter != hash_map_.end()) {                                                                                   \
+      MS_LOG(DEBUG) << "op " << op_type_##FUNC_NAME##_ << " hit cache with hash id: " << hash_id_##FUNC_NAME##_;     \
+      hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);                                            \
       cur_workspace = std::get<3>(hash_cache_.front());                                                              \
     } else {                                                                                                         \
+      MS_LOG(DEBUG) << "op " << op_type_##FUNC_NAME##_ << " miss cache with hash id: " << hash_id_##FUNC_NAME##_;    \
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_##FUNC_NAME##_, args...);      \
       cur_workspace = workspace;                                                                                     \
       if (!fail_cache) {                                                                                             \
         hash_cache_.emplace_front(hash_id_##FUNC_NAME##_, executor, cache, workspace);                               \
         hash_map_[hash_id_##FUNC_NAME##_] = hash_cache_.begin();                                                     \
+        if (hash_cache_.size() > capacity_) {                                                                        \
+          hash_map_.erase(std::get<0>(hash_cache_.back()));                                                          \
+          auto release_func = std::get<2>(hash_cache_.back());                                                       \
+          release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                  \
+          hash_cache_.pop_back();                                                                                    \
+        }                                                                                                            \
       } else {                                                                                                       \
         hash_id_##FUNC_NAME##_ = 0;                                                                                  \
         cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                           \
       }                                                                                                              \
-    }                                                                                                                \
-    if (hash_cache_.size() > capacity_) {                                                                            \
-      hash_map_.erase(std::get<0>(hash_cache_.back()));                                                              \
-      auto release_func = std::get<2>(hash_cache_.back());                                                           \
-      release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                      \
-      hash_cache_.pop_back();                                                                                        \
     }                                                                                                                \
                                                                                                                      \
     if (cur_workspace != 0) {                                                                                        \
@@ -85,13 +88,15 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
                                                                                                                      \
   template <typename... Args>                                                                                        \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor##FUNC_NAME(const Args &... args) {                   \
-    if (capacity_ == 0 || hash_id_##FUNC_NAME##_ == 0 || !hash_map_.count(hash_id_##FUNC_NAME##_)) {                 \
+    auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
+    if (capacity_ == 0 || hash_id_##FUNC_NAME##_ == 0 || iter == hash_map_.end()) {                                  \
       aclOpExecutor *executor;                                                                                       \
       std::function<void()> release_func;                                                                            \
-      std::tie(std::ignore, executor, release_func) = GEN_EXECUTOR(op_type_##FUNC_NAME##_, args...);                 \
+      std::tie(std::ignore, executor, release_func, hash_id_##FUNC_NAME##_, std::ignore) =                           \
+        GEN_EXECUTOR_BOOST(op_type_##FUNC_NAME##_, hash_id_##FUNC_NAME##_, args...);                                 \
       return std::make_pair(executor, release_func);                                                                 \
     }                                                                                                                \
-    const auto &cur_run = *hash_map_[hash_id_##FUNC_NAME##_];                                                        \
+    const auto &cur_run = *(iter->second);                                                                           \
     UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                         \
     const auto &executor = std::get<1>(cur_run);                                                                     \
     return std::make_pair(executor, nullptr);                                                                        \
@@ -124,25 +129,28 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   void GetWorkspaceForResize(const Args &... args) {                                                            \
     hash_id_ = transform::AclnnHash(op_type_, args...);                                                         \
     size_t cur_workspace = 0;                                                                                   \
-    if (hash_map_.count(hash_id_)) {                                                                            \
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_]);                                \
+    auto iter = hash_map_.find(hash_id_);                                                                       \
+    if (iter != hash_map_.end()) {                                                                              \
+      MS_LOG(DEBUG) << "op " << op_type_ << " hit cache with hash id: " << hash_id_;                            \
+      hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);                                       \
       cur_workspace = std::get<3>(hash_cache_.front());                                                         \
     } else {                                                                                                    \
+      MS_LOG(DEBUG) << "op " << op_type_ << " miss cache with hash id: " << hash_id_;                           \
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_, args...);               \
       cur_workspace = workspace;                                                                                \
       if (!fail_cache) {                                                                                        \
         hash_cache_.emplace_front(hash_id_, executor, cache, workspace);                                        \
         hash_map_[hash_id_] = hash_cache_.begin();                                                              \
+        if (hash_cache_.size() > capacity_) {                                                                   \
+          hash_map_.erase(std::get<0>(hash_cache_.back()));                                                     \
+          auto release_func = std::get<2>(hash_cache_.back());                                                  \
+          release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                             \
+          hash_cache_.pop_back();                                                                               \
+        }                                                                                                       \
       } else {                                                                                                  \
         hash_id_ = 0;                                                                                           \
         cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                      \
       }                                                                                                         \
-    }                                                                                                           \
-    if (hash_cache_.size() > capacity_) {                                                                       \
-      hash_map_.erase(std::get<0>(hash_cache_.back()));                                                         \
-      auto release_func = std::get<2>(hash_cache_.back());                                                      \
-      release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                 \
-      hash_cache_.pop_back();                                                                                   \
     }                                                                                                           \
                                                                                                                 \
     if (cur_workspace != 0) {                                                                                   \
@@ -153,13 +161,15 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
                                                                                                                 \
   template <typename... Args>                                                                                   \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {                         \
-    if (capacity_ == 0 || hash_id_ == 0 || !hash_map_.count(hash_id_)) {                                        \
+    auto iter = hash_map_.find(hash_id_);                                                                       \
+    if (capacity_ == 0 || hash_id_ == 0 || iter == hash_map_.end()) {                                           \
       aclOpExecutor *executor;                                                                                  \
       std::function<void()> release_func;                                                                       \
-      std::tie(std::ignore, executor, release_func) = GEN_EXECUTOR(op_type_, args...);                          \
+      std::tie(std::ignore, executor, release_func, hash_id_, std::ignore) =                                    \
+        GEN_EXECUTOR_BOOST(op_type_, hash_id_, args...);                                                        \
       return std::make_pair(executor, release_func);                                                            \
     }                                                                                                           \
-    const auto &cur_run = *hash_map_[hash_id_];                                                                 \
+    const auto &cur_run = *(iter->second);                                                                      \
     UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                    \
     const auto &executor = std::get<1>(cur_run);                                                                \
     return std::make_pair(executor, nullptr);                                                                   \
@@ -233,7 +243,7 @@ class AclnnKernelMod : public KernelMod {
       MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity_;
     }
   }
-  ~AclnnKernelMod() = default;
+  ~AclnnKernelMod();
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
@@ -280,7 +290,6 @@ class AclnnKernelMod : public KernelMod {
     auto attr_value = primitive_->GetAttr(attr_name);
     return GetValue<T>(attr_value);
   }
-  std::string GetCommName(const std::string &group);
 
   aclOpExecutor *executor_{nullptr};
   CallBackFunc release_func_{nullptr};

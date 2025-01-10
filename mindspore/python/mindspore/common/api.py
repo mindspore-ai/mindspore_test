@@ -48,12 +48,12 @@ from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcas
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import is_stub_tensor
 from mindspore.common._utils import is_shape_unknown
-from mindspore.common.mutable import mutable
+from mindspore.common.mutable import mutable, _check_element_type
 from mindspore.common._register_for_adapter import ms_adapter_registry
 from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, update_auto_dynamic_shape_phase, \
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
 from mindspore.common._pijit_context import PIJitCaptureContext
-from mindspore.common.parameter import Parameter
+from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
 
 # Store ms_function class compiled pipeline cache.
 ms_compile_cache = set()
@@ -275,7 +275,9 @@ def __get_compile_cache_dep_files(file_path, compile_cache_dep_files, pkg):
             else:
                 whole_module = module_name
                 if n.name is not None:
-                    whole_module += "." + n.name
+                    if not whole_module.endswith("."):
+                        whole_module += "."
+                    whole_module += n.name
             try:
                 module_spec = importlib.util.find_spec(whole_module, pkg)
             except (ModuleNotFoundError, ValueError):
@@ -307,7 +309,22 @@ def _get_compile_cache_dep_files():
     return compile_cache_dep_files
 
 
-def _restore_mutable_attr(args_list, compile_args):
+def _contains_auto_grad_tensor(obj):
+    """Check object is or contains auto grad tensor element"""
+    if isinstance(obj, PythonTensor):
+        return obj._has_auto_grad()
+    if isinstance(obj, (tuple, list)):
+        for element in obj:
+            if _contains_auto_grad_tensor(element):
+                return True
+    if isinstance(obj, dict):
+        for key in obj:
+            if _contains_auto_grad_tensor(obj[key]):
+                return True
+    return False
+
+
+def _add_mutable_attr(args_list, compile_args, is_grad):
     """Restore the mutable attr for every arg."""
     new_compile_args = ()
     for idx, arg in enumerate(args_list):
@@ -318,7 +335,12 @@ def _restore_mutable_attr(args_list, compile_args):
             else:
                 new_compile_args += (mutable(compile_args[idx], False),)
         else:
-            new_compile_args += (compile_args[idx],)
+            if is_grad and _contains_auto_grad_tensor(arg):
+                if not _check_element_type(arg):
+                    raise RuntimeError("Input \"%s\" contains tensor with gradient but can not mutable." % (str(arg)))
+                new_compile_args += (mutable(compile_args[idx], False),)
+            else:
+                new_compile_args += (compile_args[idx],)
     return new_compile_args
 
 
@@ -332,6 +354,7 @@ def _get_parameter_layout():
 
 def _handle_arg(obj, arg, compile_arg):
     """Handle arg for runtime .If need handle the arg, return True"""
+    from mindspore._extends.parse import compile_config
     if isinstance(arg, PythonTensor):
         if arg.has_init:
             arg.init_data()
@@ -344,7 +367,8 @@ def _handle_arg(obj, arg, compile_arg):
         if isinstance(arg, list) and not arg:
             return None
         return arg
-    elif context.get_context("grad_for_scalar") and isinstance(arg, (int, float)):
+    elif (context.get_context("grad_for_scalar") or str(compile_config.GRAD_FOR_SCALAR) == '1') and \
+            isinstance(arg, (int, float)):
         return arg
     elif hasattr(obj, "enable_tuple_broaden") and obj.enable_tuple_broaden and isinstance(arg, tuple) and \
             _check_all_tensor(arg):
@@ -530,6 +554,29 @@ def _get_parameter_ids(args, kwargs):
             parameter_ids += str(id(value))
     return parameter_ids
 
+def _get_tensor_hook_key(tensor):
+    """Get the hook key of Tensor/Parameter"""
+    return ".".join(map(str, map(id, tensor.hooks())))
+
+def _get_hook_key(*args, **kwargs):
+    """Get the hook key of Tensors/Parameters"""
+    hook_key = ""
+    for idx, arg in enumerate(args):
+        if idx != 0:
+            hook_key += "."
+        # Only arg of the type Tensor or Parameter is supported now
+        if isinstance(arg, (Tensor, Parameter)):
+            hook_key += _get_tensor_hook_key(arg)
+
+    for idx, value in enumerate(kwargs.values()):
+        if idx != 0:
+            hook_key += "."
+        # Only kwarg of the type Tensor or Parameter is supported now
+        if isinstance(value, (Tensor, Parameter)):
+            hook_key += _get_tensor_hook_key(value)
+
+    return hook_key
+
 
 class _MindsporeFunctionExecutor:
     """
@@ -583,13 +630,14 @@ class _MindsporeFunctionExecutor:
             _pynative_executor.clear_res()
             raise err
 
-        if context.get_context("precompile_only"):
+        if context.get_context("precompile_only") or os.getenv('MS_DEV_PRECOMPILE_ONLY') == '1':
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
-        output = self._graph_executor(tuple(new_inputs), phase)
         if context.get_context("mode") == context.PYNATIVE_MODE:
-            output = _pynative_executor.grad_jit(output, *new_inputs)
+            output = _pynative_executor.grad_jit(*new_inputs)
+        else:
+            output = self._graph_executor(tuple(new_inputs), phase)
 
         return output
 
@@ -607,8 +655,10 @@ class _MindsporeFunctionExecutor:
         compile_args = get_auto_dynamic_shape_args_with_check_input_signature(compile_args, key_id,
                                                                               self.input_signature)
 
-        # Restore the mutable attr for every arg.
-        compile_args = _restore_mutable_attr(args, compile_args)
+        # Add mutable for compile_args for two scene:
+        # 1) Origin args is mutable.
+        # 2) Args contains sequence with gradient tensor.
+        compile_args = _add_mutable_attr(args, compile_args, _pynative_executor.requires_grad())
         self._compile_args = compile_args
         generate_name, echo_function_name = self._get_generate_name()
         # The full Function name
@@ -647,11 +697,14 @@ class _MindsporeFunctionExecutor:
         parameter_ids = _get_parameter_ids(args, kwargs)
         if parameter_ids != "":
             key = str(key) + '.' + parameter_ids
+
+        key = str(key) + "." + _get_hook_key(*args, **kwargs)
+
         phase = generate_name + '.' + str(key)
 
         update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, self.input_signature)
 
-        if phase in ms_compile_cache:
+        if phase in ms_compile_cache and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
             self._graph_executor.clear_compile_arguments_resource()
@@ -685,6 +738,7 @@ class _MindsporeFunctionExecutor:
 
         if not is_compile:
             raise RuntimeError("Executor compile failed.")
+        set_parameter_hook_updated(False)
         ms_compile_cache.add(phase)
 
         return phase
@@ -1353,8 +1407,6 @@ class _no_grad(contextlib.ContextDecorator):
         self.prev_state = False
 
     def __enter__(self):
-        if context.get_context("mode") == context.GRAPH_MODE:
-            raise RuntimeError("For no_grad feature, currently only support Pynative mode, but got Graph mode.")
         self.prev_state = _pynative_executor.enable_grad()
         _pynative_executor.set_enable_grad(False)
 
@@ -1503,18 +1555,18 @@ class _PyNativeExecutor:
         """
         self._executor.sync()
 
-    def grad_jit(self, output, *args):
+    def grad_jit(self, *args):
         """
         Building grad graph decorated by jit.
 
         Args:
-            output (tuple): The function or cell decorated by jit output object.
             args (tuple): Function or cell decorated by jit input arguments.
 
         Return:
-            None.
+            output: The output object of function or cell decorated by jit.
         """
-        return self._executor.grad_jit(output, *args)
+        output = self._executor.grad_jit(*args)
+        return output
 
     def call_custom_bprop(self, obj, output, *args, **kwargs):
         """
@@ -1705,7 +1757,6 @@ class _CellGraphExecutor:
         self._graph_executor = GraphExecutor_.get_instance()
         self._graph_executor.set_py_exe_path(sys.executable)
         self._graph_executor.set_kernel_build_server_dir(os.path.split(kernel_build_server.__file__)[0] + os.sep)
-        self._pid = os.getpid()
 
     def init_dataset(self, queue_name, dataset_size, batch_size, dataset_types, dataset_shapes,
                      input_indexs, phase='dataset', need_run=True):
@@ -1806,8 +1857,12 @@ class _CellGraphExecutor:
             self.enable_tuple_broaden = obj.enable_tuple_broaden
         logger.debug(f"Convert the network: {do_convert}.")
         self._graph_executor.set_enable_tuple_broaden(self.enable_tuple_broaden)
+
         key = self._graph_executor.generate_arguments_key(obj, args, kwargs, self.enable_tuple_broaden)
         obj.arguments_key = str(key)
+
+        obj.arguments_key = obj.arguments_key + "." + _get_hook_key(*args, **kwargs)
+
         # When exist parameter in the top graph inputs, need check if the parameter object has changed.
         parameter_ids = _get_parameter_ids(args, kwargs)
         if parameter_ids != "":
@@ -1817,7 +1872,7 @@ class _CellGraphExecutor:
         obj.phase_cache[raw_phase] = phase
         update_auto_dynamic_shape_phase(args, key_id, phase)
         obj.current_phase = phase
-        if phase in obj.compile_cache and self.has_compiled(phase):
+        if phase in obj.compile_cache and self.has_compiled(phase) and not parameter_hook_updated():
             logger.debug("%r graph has existed.", phase)
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
@@ -1843,6 +1898,7 @@ class _CellGraphExecutor:
         obj.compile_cache.add(phase)
         if not result:
             raise RuntimeError("Executor compile failed.")
+        set_parameter_hook_updated(False)
         graph = self._graph_executor.get_func_graph(phase)
 
         if graph is None:
@@ -1878,7 +1934,7 @@ class _CellGraphExecutor:
         return self._graph_executor.get_allreduce_fusion(real_phase)
 
     def __call__(self, obj, *args, phase='predict'):
-        if context.get_context("precompile_only") or _is_role_sched():
+        if context.get_context("precompile_only") or os.getenv('MS_DEV_PRECOMPILE_ONLY') == '1' or _is_role_sched():
             return None
         return self.run(obj, *args, phase=phase)
 
@@ -1936,9 +1992,7 @@ class _CellGraphExecutor:
 
     def del_net_res(self, obj, net_id):
         """Clear the memory resource of a network."""
-        # no need to del net res by gc in independent dataset process which is a subprocess forked by main process
-        if self._pid == os.getpid():
-            self._graph_executor.del_net_res(obj, net_id)
+        self._graph_executor.del_net_res(obj, net_id)
 
     def _get_branch_control_input(self):
         if ('obf_ratio' not in self.obfuscate_config.keys()) or (
@@ -2015,6 +2069,24 @@ def ms_memory_recycle():
             _cell_graph_executor.del_net_res(None, cell_cache)
             cell_cache.clear()
     _ms_memory_recycle()
+
+
+def set_recursion_limit(recursion_limit=1000):
+    """
+    Specify the recursion depth limit of function call before compiling graph.
+    It needs to be call when the nested function call is too deep or the number of sub graphs is too large.
+    If recursion_limit is set larger than before, the system max stack depth should be set larger too,
+    otherwise a `core dumped` exception may be raised because of system stack overflow.
+
+    Args:
+        recursion_limit (int, optional): The recursion depth limit. Must be a positive integer. Default: ``1000`` .
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.set_recursion_limit(10000)
+    """
+    recursion_limit = Validator.check_positive_int(recursion_limit)
+    GraphExecutor_.get_instance().set_max_call_depth(recursion_limit)
 
 
 def _generate_branch_control_input(obf_random_seed):

@@ -1,0 +1,43 @@
+index_fill_ext:
+    description: |
+        Fills the specified indices along the given dimension `dim` of the `input` Tensor with the provided scalar or tensor `value`.
+
+        .. warning::
+            This is an experimental API and may be modified or removed in the future.
+
+        Args:
+            input (Tensor): The target Tensor to be filled. `input` must be a Tensor, and its `dtype` should match the `dtype` of `value`.
+            dim (int): The dimension along which to fill. `dim` must be an integer.
+            index (Tensor): A 1-D Tensor containing the indices to be filled. `index` must be an integer type Tensor, and the values must be within the valid range of indices for the `input` Tensor along the specified dimension.
+            value (Union(Tensor, Number)): The value to fill at the specified indices. `value` can be a scalar (e.g., a number) or a Tensor of the same type and shape as `input`.
+
+        Returns:
+            Tensor, The filled Tensor. The shape of the returned Tensor is the same as `input`, but the values at the specified indices will be replaced with `value`.
+
+        Raises:
+            TypeError: If `dim` is not an integer, or if the `dtype` of `input`, `index`, or `value` is not as expected.
+            AttributeError: If `value` is of an unsupported type (e.g., `float`), it may raise an `'float' object has no attribute 'dtype'` error.
+            IndexError: If any value in `index` exceeds the valid index range for the `input` Tensor along the specified dimension. For example, if `index` contains `100` and `input` has a shape of `[7]`, it will raise an "Index value[100] is out of range, it should be smaller than [7]" error.
+            ValueError: If the value of `dim` exceeds the valid range for the `input` Tensor's dimensions, a dimension-related error may be raised.
+            RuntimeError: If the dimensions, shape, or index values of the input Tensor are not as expected, it may cause runtime errors like `aclIndexFillTensorGetWorkspaceSize call failed`, indicating memory allocation or index range issues.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor, ops
+            >>> import numpy as np
+            >>> input = Tensor(np.arange(9).astype(np.float32).reshape(3, 3))
+            >>> index = Tensor([0,], mindspore.int32)
+            >>> value = Tensor([1,]], dtype=np.float32))
+            >>> y1 = ops.index_fill_ext(input, 0, index, value)
+            >>> print(y1)
+            [[ 0.  1.  2. ]
+             [ 1.  1.  1. ]
+             [ 6.  7.  8. ]]
+            >>> y2 = ops.index_fill_ext(input, 0, index, 1)
+            >>> print(y2)
+            [[ 0.  1.  2. ]
+             [ 1.  1.  1. ]
+             [ 6.  7.  8. ]]

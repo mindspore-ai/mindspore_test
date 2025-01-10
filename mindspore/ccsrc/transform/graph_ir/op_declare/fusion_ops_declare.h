@@ -48,10 +48,25 @@ DECLARE_OP_USE_OUTPUT(AllGatherMatmul)
 DECLARE_OP_ADAPTER(GroupedMatmul)
 DECLARE_OP_USE_DYN_OUTPUT(GroupedMatmul)
 
+// MoeInitRouting
+DECLARE_OP_ADAPTER(MoeInitRouting)
+DECLARE_OP_USE_INPUT_ATTR(MoeInitRouting)
+DECLARE_OP_USE_OUTPUT(MoeInitRouting)
+
 // MoeFinalizeRouting
 DECLARE_OP_ADAPTER(MoeFinalizeRouting)
 DECLARE_OP_USE_OUTPUT(MoeFinalizeRouting)
 
+// MoeComputeExpertTokens
+DECLARE_OP_ADAPTER(MoeComputeExpertTokens)
+DECLARE_OP_USE_INPUT_ATTR(MoeComputeExpertTokens)
+DECLARE_OP_USE_OUTPUT(MoeComputeExpertTokens)
+
 DECLARE_OP_ADAPTER(GeGluV2)
 DECLARE_OP_USE_OUTPUT(GeGluV2)
+
+// MoeGatingTopKSoftmax
+DECLARE_OP_ADAPTER(MoeGatingTopKSoftmax)
+DECLARE_OP_USE_OUTPUT(MoeGatingTopKSoftmax)
+
 #endif  // MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_DECLARE_FUSION_OPS_DECLARE_H_

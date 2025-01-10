@@ -20,8 +20,8 @@
 #include <memory>
 #include <vector>
 #include "mindspore/ops/infer/reshape_ext.h"
-#include "mindspore/ops/infer/scalar_graph_holder.h"
 #include "mindspore/ops/op_def/array_ops.h"
+#include "ops/scalar_graph_holder.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
@@ -35,6 +35,18 @@ std::set<PrimitivePtr> fusion_pattern_nodes = {
   prim::kPrimMakeTuple, prim::kPrimRealMakeTuple, prim::kPrimScalarAdd,      prim::kPrimScalarSub,
   prim::kPrimScalarMul, prim::kPrimScalarDiv,     prim::kPrimScalarFloorDiv,
 };
+
+bool IsMakeTuple(const BaseRef &ref) {
+  if (utils::isa<AnfNodePtr>(ref)) {
+    AnfNodePtr node = utils::cast<AnfNodePtr>(ref);
+    MS_EXCEPTION_IF_NULL(node);
+    if (IsPrimitive(node, prim::kPrimMakeTuple) || IsPrimitive(node, prim::kPrimRealMakeTuple)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 bool GetScalarValueFromNode(const ValueNodePtr &v_node, int64_t *v) {
   // For the ShapeReshapeFusion, the ValueNode should be int64 scalar.
@@ -194,8 +206,9 @@ std::shared_ptr<ops::ScalarGraphHolder> CreateScalarGraph(const CNodePtr &reshap
 }  // namespace
 
 const BaseRef ShapeReshapeFusion::DefinePattern() const {
+  VarPtr make_tuple_prim = std::make_shared<CondVar>(IsMakeTuple);
   VarPtr shape_tuple = std::make_shared<SeqVar>();
-  VectorRef make_tuple = VectorRef({prim::kPrimRealMakeTuple, shape_tuple});
+  VectorRef make_tuple = VectorRef({make_tuple_prim, shape_tuple});
   return VectorRef({std::make_shared<Primitive>("Reshape"), reshape_input_, make_tuple});
 }
 
@@ -242,12 +255,6 @@ const AnfNodePtr ShapeReshapeFusion::Process(const FuncGraphPtr &func_graph, con
   new_node->set_abstract(node->abstract());
   common::AnfAlgo::SetNodeAttr(kAttrOnlyDependShape, MakeValue(only_depend_shape), new_node);
   return new_node;
-}
-
-const BaseRef ShapeReshapeFusion2::DefinePattern() const {
-  VarPtr shape_tuple = std::make_shared<SeqVar>();
-  VectorRef make_tuple = VectorRef({prim::kPrimMakeTuple, shape_tuple});
-  return VectorRef({std::make_shared<Primitive>("Reshape"), reshape_input_, make_tuple});
 }
 
 const BaseRef ShapeReshapeDirectFusion::DefinePattern() const {

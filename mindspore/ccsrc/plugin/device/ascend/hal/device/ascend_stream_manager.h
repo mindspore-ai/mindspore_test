@@ -90,7 +90,15 @@ class AscendStreamMng {
   void SetBusyStreamNum(uint32_t stream_num) { busy_stream_num_ = stream_num; }
   uint32_t GetBusyStreamNum() const { return busy_stream_num_; }
   void SetCopyStream(aclrtStream stream) { copy_stream_ = stream; }
+  void SetForwardSendStream(aclrtStream stream) { forward_send_stream_ = stream; }
+  void SetBackwardSendStream(aclrtStream stream) { backward_send_stream_ = stream; }
+  void SetForwardRecvStream(aclrtStream stream) { forward_recv_stream_ = stream; }
+  void SetBackwardRecvStream(aclrtStream stream) { backward_recv_stream_ = stream; }
   aclrtStream GetCopyStream() const { return copy_stream_; }
+  aclrtStream GetForwardSendStream() const { return forward_send_stream_; }
+  aclrtStream GetBackwardSendStream() const { return backward_send_stream_; }
+  aclrtStream GetForwardRecvStream() const { return forward_recv_stream_; }
+  aclrtStream GetBackwardRecvStream() const { return backward_recv_stream_; }
 
   void set_current_stream(size_t stream_id) { current_stream_id_ = stream_id; }
   size_t current_stream() const { return current_stream_id_; }
@@ -116,6 +124,10 @@ class AscendStreamMng {
   // Ensure the thread safety for creating and destroying stream.
   std::mutex stream_mutex_;
   aclrtStream copy_stream_{nullptr};
+  aclrtStream forward_send_stream_{nullptr};
+  aclrtStream backward_send_stream_{nullptr};
+  aclrtStream forward_recv_stream_{nullptr};
+  aclrtStream backward_recv_stream_{nullptr};
 
   // all gpu CUDA streams including default_stream_.
   std::vector<void *> streams_;

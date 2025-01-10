@@ -1,0 +1,20 @@
+#operator cdist_grad
+cdist_grad:
+  args:
+    grad:
+      dtype: tensor
+    input_x:
+      dtype: tensor
+    input_y:
+      dtype: tensor
+    cdist:
+      dtype: tensor
+    p:
+      dtype: float
+      default: 2.0
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True

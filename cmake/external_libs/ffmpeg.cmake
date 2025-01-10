@@ -9,7 +9,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         --disable-static
         --enable-shared
         --disable-x86asm
-        --extra-cflags="-D_FORTIFY_SOURCE=2 -fstack-protector-all"
+        --extra-cflags="-fstack-protector-all"
+        --extra-cxxflags="-fstack-protector-all"
+        --extra-cflags="-D_FORTIFY_SOURCE=2"
+        --extra-cxxflags="-D_FORTIFY_SOURCE=2"
         --extra-ldflags="-Wl,-z,relro,-z,now")
 else()
     set(FFMPEG_FLAGS
@@ -24,8 +27,8 @@ else()
         --disable-x86asm)
 endif()
 
-set(REQ_URL "https://ffmpeg.org/releases/ffmpeg-5.1.2.tar.gz")
-set(SHA256 "87fe8defa37ce5f7449e36047171fed5e4c3f4bb73eaccea8c954ee81393581c")
+set(REQ_URL "https://ffmpeg.org/releases/ffmpeg-5.1.4.tar.gz")
+set(SHA256 "ad1d83e0f022ba405928ea4985c9cab978c4698bb7937738a1085808c3eb78b4")
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(FFMPEG_DLL_DIR $ENV{FFMPEG_CACHE_DIR})
@@ -46,14 +49,21 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     include_directories(${FFMPEG_DLL_DIR}/include)
 else()
     mindspore_add_pkg(ffmpeg
-            VER 5.1.2
+            VER 5.1.4
             LIBS avcodec avdevice avfilter avformat avutil swresample swscale
             URL ${REQ_URL}
             SHA256 ${SHA256}
-            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2022-3964.patch
-            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2022-3965.patch
-            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-47342.patch
             PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-7272.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-50008.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-51795.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2023-51793.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-35366.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-35367.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-35368.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-31578.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-36616.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-36617.patch
+            PATCHES ${TOP_DIR}/third_party/patch/ffmpeg/CVE-2024-36618.patch
             CONFIGURE_COMMAND ./configure ${FFMPEG_FLAGS}
             )
 

@@ -95,18 +95,35 @@ class TensorOperation:
         # get or create the executor from EXECUTORS_LIST
         executor = None
         key = str(os.getpid()) + "_" + str(threading.currentThread().ident)
-        if key in EXECUTORS_LIST:
-            # get the executor by process id and thread id
-            executor = EXECUTORS_LIST[key]
-            # remove the old transform which in executor and update the new transform
-            executor.UpdateOperation(self.parse())
-        else:
-            # create a new executor by process id and thread_id
-            executor = cde.Execute(self.parse())
-            # add the executor the global EXECUTORS_LIST
-            EXECUTORS_LIST[key] = executor
+        try:
+            if key in EXECUTORS_LIST:
+                # get the executor by process id and thread id
+                executor = EXECUTORS_LIST[key]
+                # remove the old transform which in executor and update the new transform
+                executor.UpdateOperation(self.parse())
+            else:
+                # create a new executor by process id and thread_id
+                executor = cde.Execute(self.parse())
+                # add the executor the global EXECUTORS_LIST
+                EXECUTORS_LIST[key] = executor
 
-        output_tensor_list = executor(tensor_row)
+            output_tensor_list = executor(tensor_row)
+        except RuntimeError as e:
+            if "Create stream failed" in str(e):
+                raise RuntimeError("Cannot reset NPU device in forked subprocess.\n    "
+                                   "Note: the following sevral scenarios are not supported yet.\n"
+                                   "    1. GeneratorDataset with num_parallel_workers>1 and "
+                                   "python_multiprocessing=True.\n    2. Independent dataset mode (export "
+                                   "MS_INDEPENDENT_DATASET=True):\n        1) Use the eager mode of dvpp "
+                                   "in the main process, and then start the dataset independent process. "
+                                   "GeneratorDataset / map / batch performs dvpp operations in thread mode.\n"
+                                   "        2) Initialize the device in the main process, and then start the "
+                                   "dataset independent process. GeneratorDataset / map / batch executes the "
+                                   "dvpp operation in thread mode.\n    "
+                                   "Suggestion: except for the scenes above to use NPU with multiprocessing, "
+                                   "you can set ds.config.set_multiprocessing_start_method('spawn') in your "
+                                   "script and rerun.")
+            raise e
         output_numpy_list = [x.as_array() for x in output_tensor_list]
         return output_numpy_list[0] if len(output_numpy_list) == 1 else tuple(output_numpy_list)
 

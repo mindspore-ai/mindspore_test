@@ -37,14 +37,22 @@ BaseShapePtr FmodTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr FmodTensorFuncImpl::InferType(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex0]->GetType();
+  auto input_type = input_args[kInputIndex0]->GetType();
+  auto other_type = input_args[kInputIndex1]->GetType();
+  MS_EXCEPTION_IF_NULL(input_type);
+  MS_EXCEPTION_IF_NULL(other_type);
+  auto out_type = PromoteType(input_type, other_type, primitive->name());
+  return std::make_shared<TensorType>(out_type);
 }
 
 TypePtrList FmodTensorFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &input_type = x_tensor->Dtype();
-  return {input_type};
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &other_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  MS_EXCEPTION_IF_NULL(other_tensor);
+  const auto &input_type = input_tensor->Dtype();
+  const auto &other_type = other_tensor->Dtype();
+  return {PromoteType(input_type, other_type, primitive->name())};
 }
 
 ShapeArray FmodTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

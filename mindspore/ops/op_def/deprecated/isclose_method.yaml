@@ -1,0 +1,21 @@
+#deprecated isclose
+isclose:
+  args:
+    input:
+      dtype: tensor
+    x2:
+      dtype: tensor
+    rtol:
+      dtype: float
+      type_cast: bool, int
+      default: 1e-05
+    atol:
+      dtype: float
+      type_cast: bool, int
+      default: 1e-08
+    equal_nan:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor

@@ -252,12 +252,11 @@ bool ProfilingManager::IsProfilingEnable(const ExecutionTree *tree) const {
   return (external_state == kEnabledTreeNotRegistered || external_state == kEnabledTreeRegistered);
 }
 
-Status ProfilingManager::RegisterTree(const TreeAdapter *tree_adapter) {
-  RETURN_UNEXPECTED_IF_NULL(tree_adapter);
+Status ProfilingManager::RegisterTree(ExecutionTree *tree) {
   CHECK_FAIL_RETURN_UNEXPECTED(tree_ == nullptr, "Another tree is already registered.");
   CHECK_FAIL_RETURN_UNEXPECTED((autotuning_ || profiling_) == true,
                                "MD Profiler is disabled. Cannot register the tree.");
-  tree_ = tree_adapter->tree_.get();
+  tree_ = tree;
   MS_LOG(INFO) << "Registering tree: " + tree_->GetUniqueId();
   perf_monitor_ = std::make_unique<Monitor>(this);
   // Register all sampling nodes here.

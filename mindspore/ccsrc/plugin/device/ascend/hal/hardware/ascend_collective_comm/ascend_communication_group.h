@@ -42,7 +42,7 @@ class AscendCommunicationGroup : public CommunicationGroup {
   bool Finalize() override;
 
   // Initialize HCCL communicator by root info, using API HcclCommInitRootInfo.
-  bool InitializeByRootInfo(void *root_info, uint32_t group_size, uint32_t group_rank);
+  bool InitializeByRootInfoConfig(void *root_info, uint32_t group_size, uint32_t group_rank);
 
   // Initialize HCCL communicator by rank table if the rank table is configured. Note that HCCL initialization APIs
   // for global_comm (HcclCommInitClusterInfoConfig) and sub_comm (HcclCreateSubCommConfig) are different when using
@@ -54,22 +54,18 @@ class AscendCommunicationGroup : public CommunicationGroup {
   // Return HCCL communicator because collective operations need it as a input.
   const HcclComm &hccl_communicator() const;
 
-  // Set global communicator for sub communicator.
-  void SetGlobalComm(HcclComm global_comm) { global_comm_ = global_comm; }
-
   // Return communicator name maintained by HCCL. This is different from the group set by user.
   std::string inner_comm_name() const;
 
  private:
+  // Initialpize HCCL config parameters, such as hcclBufferSize and hcclDeterministic.
+  void InitializeCommConfig();
+
   // The HCCL unique id for this group. Used to initialize this group's communicator.
   HcclRootInfo unique_id_;
 
   // HCCL communicator of this group.
   HcclComm comm_;
-
-  // The HCCL global communicator. This is used as a parameter to segment sub communicator if initializing with
-  // 'HcclCreateSubCommConfig'.
-  HcclComm global_comm_;
 
   // The config for HCCL communicator of this group.
   HcclCommConfig config_;

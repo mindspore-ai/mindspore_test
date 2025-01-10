@@ -68,7 +68,7 @@ def for_mix_with_sideeffect(x):
     return list(z)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [for_range, for_enumerate, for_mix, for_zip])
 @pytest.mark.parametrize('param', [1, Tensor([1])])
 def test_for_iter_unrolling(func, param):
@@ -90,7 +90,7 @@ def test_for_iter_unrolling(func, param):
     assert excepted == result
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [for_mix_with_sideeffect])
 @pytest.mark.parametrize('param', [1, Tensor([1])])
 def test_not_implement_for_iter(func, param):

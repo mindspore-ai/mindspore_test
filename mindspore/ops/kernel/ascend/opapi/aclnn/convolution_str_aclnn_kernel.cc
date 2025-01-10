@@ -30,7 +30,13 @@
 
 namespace mindspore {
 namespace kernel {
-
+namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+}  // namespace
 void ConvolutionStrAscend::SetExpandTensor(KernelTensor *input_tensor, const std::vector<KernelTensor *> &inputs) {
   input_tensor->SetType(inputs[kIndex0]->GetType());
   input_tensor->SetShape(std::make_shared<abstract::TensorShape>(pad_nd_shape_));
@@ -40,20 +46,23 @@ void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
                                             const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
+  auto spatial_len = inputs[kIndex1]->GetShapeVector().size() - kIndex2;
 
   stride_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
+  ExpandParamIfNeeded(&stride_, spatial_len);
   padding_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   dilation_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
+  ExpandParamIfNeeded(&dilation_, spatial_len);
   transposed_ = transform::ConvertKernelTensor<bool>(inputs[kIndex6]);
   output_padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex7]);
   groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex8]);
 
+  auto &input_sizes = inputs[kIndex0]->GetShape()->GetShapeVector();
+  auto &weight_sizes = inputs[kIndex1]->GetShape()->GetShapeVector();
+  auto k = SizeToLong(weight_sizes.size());
+  auto dim = static_cast<size_t>(k - 2);
+  pad_vector_ = std::vector<int64_t>(dim, 0);
   if (padding_ == PadMode::SAME) {
-    auto &input_sizes = inputs[kIndex0]->GetShape()->GetShapeVector();
-    auto &weight_sizes = inputs[kIndex1]->GetShape()->GetShapeVector();
-    auto k = SizeToLong(weight_sizes.size());
-    auto dim = static_cast<size_t>(k - 2);
-
     std::vector<int64_t> padding_l;
     std::vector<int64_t> padding_r;
     bool symmetric_padding = true;
@@ -71,7 +80,6 @@ void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
       }
       auto left = total_padding / 2;
       auto right = total_padding - left;
-
       padding_l.push_back(left);
       padding_r.push_back(right);
       if (left != right) {
@@ -99,7 +107,8 @@ void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
       pad_vector_ = padding_l;
       need_ConstantPadNd_ = true;
 
-      //   infer outshape
+      // infer outshape
+      pad_nd_shape_ = std::vector<int64_t>{};
       std::vector<int64_t> x_shape = inputs[kIndex0]->GetShapeVector();
       auto x_rank = x_shape.size();
       size_t kScaleNum = 2;
@@ -135,7 +144,6 @@ void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
       }
     }
   } else if (padding_ == PadMode::VALID) {
-    pad_vector_ = {0, 0};
     GetWorkspaceForResizeConvolutionStr(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_,
                                         dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
                                         OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));

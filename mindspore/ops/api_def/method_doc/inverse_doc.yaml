@@ -1,0 +1,23 @@
+inverse:
+  description: |
+    inverse() -> Tensor
+    
+    Compute the inverse of the `self` matrix.
+    
+    Returns:
+        Tensor, has the same type and shape as `self`.
+    
+    Raises:
+        ValueError: If the last two dimensions of `self` are not the same size.
+        ValueError: If the dimension of `self` is less than 2.
+    
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    
+    Examples:
+        >>> from mindspore import Tensor
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor([[1., 2.], [3., 4.]], mstype.float32)
+        >>> print(x.inverse())
+        [[-2.   1. ]
+         [ 1.5 -0.5]]

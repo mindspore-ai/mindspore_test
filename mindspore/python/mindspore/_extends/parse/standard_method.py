@@ -17,16 +17,19 @@
 """standard_method"""
 
 from __future__ import absolute_import
-from mindspore import Tensor, CSRTensor, COOTensor
+from mindspore import Tensor, CSRTensor, COOTensor, Parameter
 from mindspore import dtype as mstype
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.common import mutable
+from mindspore.common.generator import default_generator
 import mindspore.common._monad as monad
 from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _reverse, \
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
-from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op
+from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op, inplace_index_add_op
+from mindspore.ops.auto_generate import inplace_copy_op
+from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
 
 from ... import _checkparam as validator
 from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
@@ -39,7 +42,6 @@ from ...ops.composite import MultitypeFuncGraph, env_get, hyper_add, \
     zeros_like, ones_like, repeat_elements, multitype_ops
 from ...ops.composite.multitype_ops import _constexpr_utils as const_utils
 from ...ops.composite.multitype_ops import _compile_utils as compile_utils
-from ...ops.operations.math_ops import Median
 from ...ops.operations._inner_ops import Format
 from ...ops.operations import _csr_ops
 from ...ops.operations import _map_tensor_ops
@@ -66,11 +68,13 @@ _csr_mm = _csr_ops.CSRMM()
 itemsize_map = {mstype.bool_: 1, mstype.int8: 1, mstype.uint8: 1,
                 mstype.float16: 2, mstype.int16: 2, mstype.uint16: 2,
                 mstype.float32: 4, mstype.int32: 4, mstype.uint32: 4,
-                mstype.float64: 8, mstype.int64: 8, mstype.uint64: 8}
+                mstype.float64: 8, mstype.int64: 8, mstype.uint64: 8,
+                mstype.bfloat16: 2}
 
 nan_tensor = Tensor(float('nan'), dtype=mstype.float32)
 
 _map = composite.HyperMap()
+generator_step_ = Tensor(12, mstype.int64)
 
 
 def hypermap_dynamic_tuple(func, *inputs):
@@ -101,6 +105,14 @@ def hypermap_dynamic_list(func, *inputs):
         ret = ret + F.make_list(new_out)
         i = i + 1
     return ret
+
+
+def index_add_(x, dim, index, source, *, alpha=1):
+    """
+    Accumulate the elements of `alpha` times `source` into the `self` by adding to the indices
+    in the order given in `index`.
+    """
+    return inplace_index_add_op(x, dim, index, source, alpha)
 
 
 def mean(x, axis=None, keep_dims=False):
@@ -945,17 +957,11 @@ def argmin_with_value(x, axis=0, keep_dims=False):
     return F.min(x, axis, keep_dims)
 
 
-def median(input, global_median, axis=0, keep_dims=False):
+def median(input, axis=-1, keepdims=False):
     r"""
     Computes the median of input tensor.
-
-    .. warning::
-        When attr `global_median` is True, the second output Tensor value is meaningless.
-
     """
-    check_axis_in_range(axis, input.ndim)
-    median_ = Median(global_median, axis, keep_dims)
-    return median_(input)
+    return F.median(input, axis, keepdims)
 
 
 def msort(x):
@@ -1100,6 +1106,13 @@ def copy(x):
     x = x / 1.0
     x = x.astype(origin_dtype)
     return x
+
+
+def copy_(self, src, non_blocking=False):
+    """
+    Copies the elements from src into self tensor and returns self.
+    """
+    return inplace_copy_op(self, src)
 
 
 def max(input, axis=None, keepdims=False, *, initial=None,  # pylint: disable=redefined-builtin
@@ -1476,7 +1489,7 @@ def lgamma(input):
 
 def i0(x):
     """
-    For details, please refer to :func:`mindspore.ops.i0`.
+    For details, please refer to :func:`mindspore.ops.bessel_i0`.
     """
     return F.i0(x)
 
@@ -1931,6 +1944,13 @@ def clamp(x, min=None, max=None):
     return F.clamp(x, min, max)
 
 
+def clamp_(x, min=None, max=None):
+    """
+    Clamps all elements in `x` into the range `[min, max]`.
+    """
+    return F.clamp_(x, min, max)
+
+
 def clip(x, min=None, max=None):
     """
     Clamps all elements in `x` into the range `[min, max]`.
@@ -2312,9 +2332,9 @@ def setitem(data, index, value):
     return data.__setitem__(index, value)
 
 
-def item(data, *args):
+def item(data):
     """Implementation of `item`."""
-    return compile_utils.tensor_item(data, *args)
+    return compile_utils.tensor_item(data)
 
 
 def itemset(data, *args):
@@ -2773,9 +2793,9 @@ def enumerate_(x, start=0):
     return ret
 
 
-def expand_tensor_as(x, y):
+def expand_tensor_as(input, x):
     """Expand tensor"""
-    return F.broadcast_to(x, shape_(y))
+    return F.broadcast_to(input, shape_(x))
 
 
 def broadcast_to(x, shape):
@@ -2815,8 +2835,8 @@ def col2im(*inputs):
 
 def narrow(input, axis, start, length):
     """
-    Returns a narrowed tensor from input tensor.
-    The dimension axis is input from start to start + length.
+    Obtains a tensor of a specified length at a
+    specified start position along a specified axis.
     """
     return F.narrow(input, axis, start, length)
 
@@ -2980,6 +3000,11 @@ def tanh(x):
     return F.tanh(x)
 
 
+def tanh_(x):
+    """Returns hyperbolic tangent of `x`."""
+    return F.tanh_(x)
+
+
 def cosh(x):
     """
     Computes hyperbolic cosine of `x` element-wise.
@@ -3009,6 +3034,13 @@ def tensor_scatter_add(x, indices, updates):
     index, the updated result will be the sum of all values.
     """
     return F.tensor_scatter_add(x, indices, updates)
+
+
+def inplace_scatter_add(input, dim, index, src):
+    """
+    Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`.
+    """
+    return inplace_scatter_add_(input, dim, index, src)
 
 
 def tensor_scatter_sub(x, indices, updates):
@@ -3076,11 +3108,11 @@ def negative(input):
     return F.neg(input)
 
 
-def nonzero(input, as_tuple=False):
+def nonzero(input, *, as_tuple=False):
     """
     Return a Tensor of the positions of all non-zero values.
     """
-    return F.nonzero(input, as_tuple)
+    return F.nonzero(input, as_tuple=as_tuple)
 
 
 def new_zeros(x, size, *, dtype=None):
@@ -3368,6 +3400,23 @@ def lerp(start, end, weight):
 def norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     """Returns the matrix norm or vector norm of a given tensor."""
     return F.norm(A, ord, dim, keepdim, dtype=dtype)
+
+
+def normal_(input, mean=0, std=1, *, generator=None):
+    """
+    Update the `input` tensor in place by generating random numbers sampled from the normal
+    distribution which constructed by the parameters `mean` and `std`.
+
+    For details, please refer to :func:`mindspore.Tensor.normal_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return inplace_normal_op(input, mean, std, seed, offset)
 
 
 def renorm(input_x, p, dim, maxnorm):
@@ -3911,42 +3960,62 @@ def to(input_x, dtype):
     r"""
     Performs tensor dtype conversion.
     """
-    return P.Cast()(input_x, dtype)
+    return F.cast(input_x, dtype)
 
 
 def to_bool(input_x):
     r"""
     Converts input tensor dtype to bool.
     """
-    return P.Cast()(input_x, mstype.bool_)
+    return F.cast(input_x, mstype.bool_)
 
 
 def to_float(input_x):
     r"""
     Converts input tensor dtype to float32.
     """
-    return P.Cast()(input_x, mstype.float32)
+    return F.cast(input_x, mstype.float32)
 
 
 def to_half(input_x):
     r"""
     Converts input tensor dtype to float16.
     """
-    return P.Cast()(input_x, mstype.float16)
+    return F.cast(input_x, mstype.float16)
 
 
 def to_int(input_x):
     r"""
     Converts input tensor dtype to int32.
     """
-    return P.Cast()(input_x, mstype.int32)
+    return F.cast(input_x, mstype.int32)
 
 
 def to_long(input_x):
     r"""
     Converts input tensor dtype to int64.
     """
-    return P.Cast()(input_x, mstype.int64)
+    return F.cast(input_x, mstype.int64)
+
+
+def to_double(input_x):
+    r"""
+    Converts input tensor dtype to float64.
+    """
+    return F.cast(input_x, mstype.float64)
+
+def to_bfloat16(input_x):
+    r"""
+    Converts input tensor dtype to bfloat16.
+    """
+    return F.cast(input_x, mstype.bfloat16)
+
+
+def to_byte(input_x):
+    r"""
+    Converts input tensor dtype to uint8.
+    """
+    return F.cast(input_x, mstype.uint8)
 
 
 def cholesky(input_x, upper=False):
@@ -4428,6 +4497,16 @@ def index_put(input, indices, values, accumulate=False):
     return _index_put(input, values, indices)
 
 
+def index_put_(input, indices, values, accumulate=False):
+    r"""
+    For details, please refer to :func:`mindspore.Tensor.index_put_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    return inplace_index_put_op(input, indices, values, accumulate)
+
+
 def aminmax(input, *, axis=0, keepdims=False):
     r"""
     For details, please refer to :func:`mindspore.ops.aminmax`.
@@ -4476,3 +4555,10 @@ def _getitem(data, index):
 
 def _setitem(data, index, value):
     return multitype_ops.setitem(data, index, value)
+
+
+def register_hook(x, func):
+    if isinstance(x, Parameter):
+        raise ValueError("Register hook for Parameter inside graph is not supported.")
+    hook_op = P.InsertGradientOf(func)
+    return hook_op(x)

@@ -18,6 +18,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.context as context
+import mindspore.runtime as rt
 from mindspore import Tensor, ops
 from mindspore.common.api import _pynative_executor
 from tests.st.utils import test_utils
@@ -45,7 +46,7 @@ def rfft_and_irfft_backward_func(x, signal_ndim, inverse, real, norm='backward',
     return ops.grad(rfft_and_irfft_forward_func, (0,))(x, signal_ndim, inverse, real, norm, onesided, signal_sizes)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype, eps', [(np.complex64, 1e-6), (np.complex128, 1e-6)])
 def test_fftwithsize_fft_ifft(dtype, eps):
@@ -69,7 +70,7 @@ def test_fftwithsize_fft_ifft(dtype, eps):
     assert np.all(diff_ifft < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype, eps', [(np.complex64, 1e-6), (np.complex128, 1e-6)])
 def test_fftwithsize_fft2_ifft2(dtype, eps):
@@ -92,7 +93,7 @@ def test_fftwithsize_fft2_ifft2(dtype, eps):
     assert np.all(diff_ifft2 < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_fft_with_size_rfft3_forward(mode):
@@ -109,7 +110,7 @@ def test_fft_with_size_rfft3_forward(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_fft_with_size_irfft3_forward(mode):
@@ -126,7 +127,7 @@ def test_fft_with_size_irfft3_forward(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_fft_with_size_rfft3_backward(mode):
@@ -152,7 +153,7 @@ def test_fft_with_size_rfft3_backward(mode):
     assert np.allclose(output.asnumpy(), expect.real)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_fft_with_size_rfft3_and_irfft3_backward(mode):
@@ -174,7 +175,7 @@ def test_fft_with_size_rfft3_and_irfft3_backward(mode):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_fftwithsize_exception():
     """
@@ -186,7 +187,7 @@ def test_fftwithsize_exception():
     inverse = True
     real = True
     x = Tensor(np.random.uniform(-10, 10, size=[2, 1])).astype(ms.complex64)
-    ms.context.set_context(pynative_synchronize=True)
+    rt.launch_blocking()
     with pytest.raises(ValueError, match="For 'FFTWithSize', the last dimension of the input cannot be 1"):
         fft_forward_func(x, signal_ndim, inverse, real)
         _pynative_executor.sync()

@@ -34,7 +34,7 @@
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
-
+#include "mindspore/ops/op_def/structure_op_name.h"
 namespace mindspore {
 namespace runtime {
 namespace {
@@ -47,10 +47,10 @@ void CheckDryRun(const CNodePtr &kernel_) {
   static auto enabled_profile = common::GetCompileConfig("COMPILE_PROFILE") == "1";
   if (is_dry_run_mode && !enabled_profile) {
     MS_LOG_WITH_NODE(EXCEPTION, kernel_)
-      << "The dry run mode can not support dynamic shape graph which contains value depend kernel:"
+      << "The dry run mode can not support dynamic shape graph which contains value depend or computing depend kernel:"
       << kernel_->fullname_with_scope()
       << ", launch kernel is skipped for dry run mode, which leads to fail to GetValue for infer "
-         "shape of these value depend kernel. You can only simulate compile graph and not do "
+         "shape of these value depend or computing depend kernel. You can only simulate compile graph and not do "
          "InferShape and Resize by `export MS_SIMULATION_LEVEL=0` instead.";
   }
 }
@@ -83,8 +83,9 @@ void KernelActor::Init() {
   }
   is_dynamic_type_ = common::AnfAlgo::IsAnyTypeOutput(kernel_);
   has_dynamic_ = is_dynamic_shape_ || is_dynamic_type_ || is_dynamic_value_;
-
-  if (is_dynamic_value_ && (is_dynamic_shape_ || is_dynamic_type_)) {
+  bool is_value_dyn = (is_dynamic_value_ && (is_dynamic_shape_ || is_dynamic_type_));
+  if (is_value_dyn || (kernel_mod_->IsNeedUpdateOutputShapeAndSize() &&
+                       no_dyn_need_update_ops.find(kernel_mod_->kernel_name()) == no_dyn_need_update_ops.end())) {
     CheckDryRun(kernel_);
   }
 
@@ -176,6 +177,13 @@ void KernelActor::InitIsMonadInput() {
 
 void KernelActor::InitInputInfo() {
   for (size_t i = 0; i < real_input_num_; ++i) {
+    if (is_monad_input_[i]) {
+      auto build_info = kernel_info_->GetMutableSelectKernelBuildInfo();
+      MS_EXCEPTION_IF_NULL(build_info);
+      (void)real_input_data_infos_.emplace_back(std::make_shared<InputDataInfo>(
+        build_info->GetInputFormat(i), ShapeVector{}, 0, build_info->GetInputDeviceType(i)));
+      continue;
+    }
     const auto &input_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, i, false);
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     (void)real_input_data_infos_.emplace_back(
@@ -482,11 +490,7 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
       }
       MS_LOG(DEBUG) << "Set ptr:" << device_ptr << " to device address:" << output_device_tensors_[i]
                     << " in actor:" << GetAID();
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(),
-                                                     device::tracker::MemType::kInSideSomas,
-                                                     output_device_tensors_[i]->GetSize(), output_device_tensors_[i]);
       output_device_tensors_[i]->set_ptr(device_ptr);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, output_device_tensors_[i], device_ptr);
     }
   }
 
@@ -497,11 +501,7 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
       auto device_ptr = GetSomasDevicePtr(somas_workspace[i].first);
       // In this scenario, the Init function can ensure that the pointer of the relevant operation is not nullptr.
       // In order to perform performance, the pointer validity is not checked here.
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        AddMemInfo, GetAID().Name(), device::tracker::MemType::kInSideSomas, workspace_device_tensors_[i]->GetSize(),
-        workspace_device_tensors_[i]);
       workspace_device_tensors_[i]->set_ptr(device_ptr);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, workspace_device_tensors_[i], device_ptr);
     }
   }
 }
@@ -676,13 +676,13 @@ void KernelActor::UpdateDeviceTensorCopyStore(DeviceTensor *const new_device_ten
                   << " type:" << output_device_tensors_[input_index]->GetDeviceType() << " and " << new_device_tensor
                   << " type:" << new_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
     DeviceTensorCopyStore::GetInstance().Insert(output_device_tensors_[input_index], new_device_tensor);
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
-                  << " type:" << new_device_tensor->GetDeviceType() << " and "
-                  << AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, input_index)
-                  << " type:" << AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, input_index)->GetDeviceType()
-                  << " for copy actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, input_index).get(),
-                                                new_device_tensor);
+    auto prev_output_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, input_index);
+    if (prev_output_device_tensor != nullptr) {
+      MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << new_device_tensor
+                    << " type:" << new_device_tensor->GetDeviceType() << " and " << prev_output_device_tensor
+                    << " type:" << prev_output_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+      DeviceTensorCopyStore::GetInstance().Insert(prev_output_device_tensor.get(), new_device_tensor);
+    }
     MS_LOG(DEBUG) << "Set ptr:" << new_device_tensor->GetPtr() << " from device tensor:" << new_device_tensor
                   << " to device tensor:" << output_device_tensors_[input_index] << " for ref pair (" << pair.first
                   << ", " << pair.second << ") for actor:" << GetAID();
@@ -723,7 +723,7 @@ void KernelActor::CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t inpu
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, "The input index is of range.");
   }
   if (copy_input_device_tensors_[input_index] == nullptr) {
-    const auto &pre_kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel_, input_index);
+    const auto &pre_kernel_tensor = device_tensor->kernel_tensor();
     MS_EXCEPTION_IF_NULL(pre_kernel_tensor);
     auto new_kernel_tensor = std::make_shared<kernel::KernelTensor>(
       pre_kernel_tensor->GetShape(), pre_kernel_tensor->GetType(), pre_kernel_tensor->GetValueTrack(), nullptr,
@@ -815,6 +815,12 @@ void KernelActor::UpdateInputDeviceTensor(const OpData<DeviceTensor> *input_data
 }
 
 void KernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const context) {
+  // Collect the inputs from graph root parameter.
+  if (enable_input_optimize_) {
+    FetchParameterByTensorStore(&input_device_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
+                                &memory_free_list_, context);
+  }
+
   // Collect the inputs from input data.
   const auto &data_iter = input_op_datas_.find(context->sequential_num_);
   if (data_iter != input_op_datas_.end()) {
@@ -1058,7 +1064,8 @@ void KernelActor::ResizeKernelMod() {
   }
 }
 namespace {
-void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors, const std::string &actor_name,
+void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors,
+                      const std::vector<DeviceTensor *> &output_device_tensors, const std::string &actor_name,
                       const std::vector<bool> &depend_shape_input_list) {
   for (size_t i = 0, end = input_device_tensors.size(); i < end; i++) {
     // Skip shape depend inputs.
@@ -1069,7 +1076,18 @@ void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors, c
     if (device_addr == nullptr || !device_addr->IsPtrValid()) {
       continue;
     }
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(UseMemBlock, actor_name, device_addr->GetPtr());
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsInput, actor_name, device_addr->device_name(),
+                                                   device_addr->GetPtr(), device_addr->type_id(),
+                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+  }
+  for (size_t i = 0, end = output_device_tensors.size(); i < end; i++) {
+    auto device_addr = output_device_tensors[i];
+    if (device_addr == nullptr || !device_addr->IsPtrValid()) {
+      continue;
+    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, actor_name, device_addr->device_name(),
+                                                   device_addr->GetPtr(), device_addr->type_id(),
+                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
   }
 }
 }  // namespace
@@ -1094,7 +1112,7 @@ bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context) 
 
 bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    TrackInputMemory(input_device_tensors_, GetAID().Name(), depend_shape_input_list_);
+    TrackInputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
   }
 
   if (EnableExecuteOrderDump()) {
@@ -1201,7 +1219,12 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
   }
 
   std::vector<KernelTensor *> cross_stream_kernel_tensors;
+  size_t index = 0;
   for (const auto &input_kernel_tensor : input_kernel_tensors_) {
+    if (is_monad_input_[index++]) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(input_kernel_tensor);
     if (input_kernel_tensor->stream_id() == stream_id) {
       continue;
     }

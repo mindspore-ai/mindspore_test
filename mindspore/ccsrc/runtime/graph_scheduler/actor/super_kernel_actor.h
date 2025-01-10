@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 #include <queue>
+#include <set>
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
@@ -107,7 +108,9 @@ class SuperKernelActor : public DebugAwareActor {
   // of CNode and Parameter, prepare input and heterogeneous output device address of all kernels.
   void LinkKernelActors();
   void AnalyseNodesDependence(const HashMap<size_t, AnfNodePtr> &device_tensor_store_keys_map,
-                              const HashMap<AnfNodePtr, std::vector<size_t>> &output_node_to_actor_output_index);
+                              const HashMap<size_t, ParameterInfo> &parameter_indexs_map,
+                              const HashMap<AnfNodePtr, std::vector<size_t>> &output_node_to_actor_output_index,
+                              std::vector<std::pair<KernelActorPtr, size_t>> *param_first_used_kernel_actors);
 
   void LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node, size_t output_index);
   void LinkKernelActorByDeviceType(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node,
@@ -118,6 +121,8 @@ class SuperKernelActor : public DebugAwareActor {
   // From the outside, the input device address is used only once by the super kernel actor, origin ref count only +1 in
   // compile phase.
   void CorrectRefCount(size_t input_index, DeviceTensor *device_tensor);
+  void CorrectRefCountByCondition(size_t index, DeviceTensor *device_tensor,
+                                  std::vector<DeviceTensor *> *memory_free_list);
 
   void FetchPersistentDeviceTensor();
 
@@ -138,6 +143,9 @@ class SuperKernelActor : public DebugAwareActor {
   bool LaunchAllKernels(OpContext<DeviceTensor> *const context);
 
   void TrackInputMemory();
+
+  void FetchParameterInput(const KernelActorPtr &kernel_actor, OpContext<DeviceTensor> *const context);
+  void FreeInputParamWithoutUser(OpContext<DeviceTensor> *const context);
 
   friend class GraphScheduler;
   KernelGraphPtr graph_;
@@ -162,6 +170,12 @@ class SuperKernelActor : public DebugAwareActor {
 
   // Record the use count of all input nodes(parameter) of graph_, use to correct current ref count in runtime.
   std::vector<size_t> input_params_use_cnt_;
+
+  // Record the graph parameter without user.
+  std::set<std::pair<size_t, ParameterInfo>> input_params_no_user_;
+
+  // Record every param first used kernel actor to correct the ref count.
+  mindspore::HashMap<KernelActorPtr, std::vector<std::pair<size_t, size_t>>> kernel_actor_to_graph_parameters_map_;
 
   // Record all parameter nodes of graph_ and their index positions in graph_'s input_nodes.
   mindspore::HashMap<AnfNode *, size_t> param_node_to_input_idx_;

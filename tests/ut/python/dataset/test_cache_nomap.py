@@ -1171,7 +1171,7 @@ def test_cache_nomap_device_que():
 def test_cache_nomap_session_destroy():
     """
     Feature: DatasetCache op
-    Description: Test executing cache_admin -d while the pipeline is running
+    Description: Test executing dataset-cache -d while the pipeline is running
 
        Repeat
          |
@@ -1211,7 +1211,7 @@ def test_cache_nomap_session_destroy():
 def test_cache_nomap_server_stop():
     """
     Feature: DatasetCache op
-    Description: Test executing cache_admin --stop while the pipeline is running
+    Description: Test executing dataset-cache --stop while the pipeline is running
 
        Repeat
          |

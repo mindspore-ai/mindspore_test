@@ -5,7 +5,7 @@ mindspore.ops.addmv
 
     `mat` 和 `vec` 相乘，且将输入向量 `input` 加到最终结果中。
 
-    如果 `mat` 是一个大小为 :math:`(N, M)` Tensor， `vec` 一个大小为 :math:`M` 的一维Tensor，那么 `input` 必须是可广播的，且
+    如果 `mat` 是一个大小为 :math:`(N, M)` Tensor， `vec` 一个大小为 :math:`M` 的一维Tensor，那么 `input` 必须是可广播的，且\
     带有一个大小为 :math:`N` 的一维Tensor。这种情况下 `out` 是一个大小为 :math:`N` 的一维Tensor。
 
     可选值 `bata` 和 `alpha` 分别是 `mat` 和 `vec` 矩阵向量的乘积和附加Tensor `input` 的扩展因子。如果 `beta` 为0，那么 `input` 将被忽略。

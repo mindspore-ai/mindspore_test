@@ -1,0 +1,71 @@
+isclose:
+  description: |
+    isclose(other, rtol=1e-05, atol=1e-08, equal_nan=False) -> Tensor
+
+    Returns a tensor of Boolean values indicating whether each element of `input`
+    is "close" to the corresponding element of `other`. Closeness is defined as:
+    
+    .. math::
+        |input-other| <= atol + rtol * |other|
+
+    Args:
+        other (Tensor): Second tensor to compare.
+        rtol (float, optional): Relative tolerance. Default: ``1e-05`` .
+        atol (float, optional): Absolute tolerance. Default: ``1e-08`` .
+        equal_nan (bool, optional): If ``True`` , then two NaNs will be considered equal. Default: ``True`` .
+
+    Returns:
+        Tensor, with the same shape as `input` and `other` after broadcasting, its dtype is bool.
+    
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([1.3, 2.1, 3.2, 4.1, 5.1]), mindspore.float16)
+        >>> other = Tensor(np.array([1.3, 3.3, 2.3, 3.1, 5.1]), mindspore.float16)
+        >>> output = Tensor.isclose(input, other)
+        >>> print(output)
+        [ True False False False  True]
+    
+    .. method:: Tensor.isclose(x2, rtol=1e-05, atol=1e-08, equal_nan=False) -> Tensor
+        :noindex:
+
+    Returns a new Tensor with boolean elements representing if each element of `input`
+    is "close" to the corresponding element of `x2`. Closeness is defined as:
+
+    .. math::
+        |input-x2| <= atol + rtol * |x2|
+
+    Args:
+        x2 (Tensor): Second tensor to compare. Dtype must be same as `input`.
+        rtol (Union[float, int, bool], optional): Relative tolerance. Default: ``1e-05`` .
+        atol (Union[float, int, bool], optional): Absolute tolerance. Default: ``1e-08`` .
+        equal_nan (bool, optional): If ``True`` , then two NaNs will be considered equal. Default: ``False``.
+
+    Returns:
+        A bool Tensor, with the shape as broadcasted result of the input `input` and `x2`.
+
+    Raises:
+        TypeError: `x2` is not Tensor.
+        TypeError: `input` or `x2` dtype is not support. Support dtype: float16, float32, float64, int8, int16, int32,
+            int64 and uint8. On Ascend, more dtypes are support: bool and bfloat16.
+        TypeError: `atol` or `rtol` is not float, int or bool.
+        TypeError: `equal_nan` is not bool.
+        TypeError: `input` and `x2` have different dtypes.
+        ValueError: `input` and `x2` cannot broadcast.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([1.3, 2.1, 3.2, 4.1, 5.1]), mindspore.float16)
+        >>> x2 = Tensor(np.array([1.3, 3.3, 2.3, 3.1, 5.1]), mindspore.float16)
+        >>> output = Tensor.isclose(input, x2)
+        >>> print(output)
+        [ True False False False  True]

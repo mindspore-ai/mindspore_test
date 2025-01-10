@@ -27,10 +27,11 @@ deprecated_tensor_method_map = {
 
     # 5 add
     "add": "deprecated_tensor_add",
+    "add_": "deprecated_tensor_add_",
     # 6 all
-
+    "all": "tensor_all",
     # 7 allclose
-
+    "allclose": "tensor_allclose",
     # 8 any
     "any": "tensor_any",
     # 9 arctan2
@@ -40,7 +41,7 @@ deprecated_tensor_method_map = {
     # 11 argmin
     "argmin": "deprecated_tensor_argmin",
     # 12 argsort
-
+    "argsort": "deprecated_tensor_argsort",
     # 13 atan2
     "atan2": "tensor_atan2",
     # 14 bfloat16
@@ -82,7 +83,7 @@ deprecated_tensor_method_map = {
     # 32 expand
 
     # 33 expand_as
-
+    "expand_as": "deprecated_tensor_expand_as",
     # 34 flatten
     "flatten": "deprecated_tensor_flatten",
     # 35 flip
@@ -108,11 +109,11 @@ deprecated_tensor_method_map = {
     # 45 int
 
     # 46 inverse
-
+    "inverse": "deprecated_tensor_inverse",
     # 47 is_contiguous
 
     # 48 isclose
-
+    "isclose": "deprecated_tensor_isclose",
     # 49 isfinite
 
     # 50 isnan
@@ -128,7 +129,7 @@ deprecated_tensor_method_map = {
     # 55 log
 
     # 56 log2
-
+    "log2": "tensor_log2",
     # 57 logical_and
     "logical_and": "tensor_logical_and",
     # 58 logical_not
@@ -161,7 +162,7 @@ deprecated_tensor_method_map = {
     # 71 nan_to_num
 
     # 72 narrow
-
+    "narrow": "deprecated_tensor_narrow",
     # 73 ne
 
     # 74 neg
@@ -177,11 +178,11 @@ deprecated_tensor_method_map = {
     # 79 numpy
 
     # 80 outer
-
+    "outer": "deprecated_tensor_outer",
     # 81 permute
 
     # 82 pow
-
+    "pow": "deprecated_tensor_pow",
     # 83 prod
     "prod": "deprecated_tensor_prod",
     # 84 reciprocal
@@ -200,9 +201,10 @@ deprecated_tensor_method_map = {
     # 90 rsqrt
 
     # 91 scatter
+    "scatter": "deprecated_tensor_scatter",
 
     # 92 scatter_add
-
+    "scatter_add": "deprecated_tensor_scatter_add",
     # 93 select
     "select": "deprecated_tensor_select",
     # 94 sigmoid
@@ -222,7 +224,7 @@ deprecated_tensor_method_map = {
     # 101 squeeze
 
     # 102 std
-
+    "std": "deprecated_tensor_std",
     # 103 sub
     "sub": "deprecated_tensor_sub",
     # 104 sum
@@ -230,7 +232,7 @@ deprecated_tensor_method_map = {
     # 105 swapaxes
 
     # 106 t
-
+    "t": "deprecated_tensor_t",
     # 107 tanh
 
     # 108 tile
@@ -240,7 +242,7 @@ deprecated_tensor_method_map = {
     # 110 topk
     "topk": "deprecated_tensor_topk",
     # 111 transpose
-
+    "transpose": "deprecated_tensor_transpose",
     # 112 tril
     "tril": "deprecated_tensor_tril",
     # 113 trunc
@@ -248,13 +250,13 @@ deprecated_tensor_method_map = {
     # 114 type
 
     # 115 type_as
-
+    "type_as": "deprecated_tensor_type_as",
     # 116 unbind
-
+    "unbind": "deprecated_tensor_unbind",
     # 117 unfold
 
     # 118 unique
-
+    "unique": "deprecated_tensor_unique",
     # 119 unsqeeze
 
     # 120 view
@@ -284,7 +286,7 @@ deprecated_tensor_method_map = {
     # 132 absolute
 
     # 133 bincount
-
+    "bincount": "tensor_bincount",
     # 134 diff
 
     # 135 double
@@ -292,7 +294,7 @@ deprecated_tensor_method_map = {
     # 136 lcm
 
     # 137 mm
-
+    "mm": "deprecated_tensor_mm",
     # 138 ravel
 
     # 139 nelement
@@ -302,7 +304,7 @@ deprecated_tensor_method_map = {
     # 141 indices
 
     # 142 view_as
-
+    "view_as": "deprecated_tensor_view_as",
     # 143 values
 
     # 144 index_copy
@@ -322,6 +324,20 @@ deprecated_tensor_method_map = {
     # 151
 
     # 152
+    'median': 'deprecated_tensor_median',
+
+    # 153 acos, arccos; acosh, arccosh, asin, arcsin; asinh, arcsinh; atan, arctan; dot
+    "acos": "deprecated_tensor_acos",
+    "arccos": "deprecated_tensor_arccos",
+    "acosh": "deprecated_tensor_acosh",
+    "arccosh": "deprecated_tensor_arccosh",
+    "asin": "deprecated_tensor_asin",
+    "arcsin": "deprecated_tensor_arcsin",
+    "asinh": "deprecated_tensor_asinh",
+    "arcsinh": "deprecated_tensor_arcsinh",
+    "atan": "deprecated_tensor_atan",
+    "arctan": "deprecated_tensor_arctan",
+    "dot": "deprecated_tensor_dot",
 
     # 153
 
@@ -334,13 +350,26 @@ deprecated_tensor_method_map = {
     # 157
 
     # 158
+    "unsqueeze": "deprecated_tensor_unsqueeze",
+    # 159 histc
+    "histc": "tensor_histc",
 
-    # 159
-
-    # 160
+    # 160 frac
+    "frac": "tensor_frac",
 
     # 161
+    "fmod": "deprecated_tensor_fmod",
+    # 162 log10
+    "log10": "tensor_log10",
 
-    # 162
-
+    # 501
+    "addbmm": "deprecated_tensor_addbmm",
+    # 931
+    "nansum": "deprecated_tensor_nansum",
+    # 502
+    "addmm": "deprecated_tensor_addmm",
+    # 790 addmv
+    "addmv": "deprecated_tensor_addmv",
+    # 1028
+    "var": "deprecated_tensor_var",
 }

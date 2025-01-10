@@ -30,6 +30,12 @@
 #include <openssl/rand.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#include <wincrypt.h>
+#undef ERROR
+#endif
+
 namespace mindspore {
 void IntToByte(std::vector<Byte> *byteArray, int32_t n) {
   if (byteArray == nullptr) {
@@ -288,15 +294,49 @@ EVP_CIPHER_CTX *GetEvpCipherCtx(const std::string &alg_mode, const std::string &
   return ctx;
 }
 
+int ReadRandomBytes(const char *randomPath, size_t len, char *buf) {
+#ifdef _WIN32
+  HCRYPTPROV hCryptProv;
+  if (!CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+    MS_LOG(ERROR) << "Failed to init crypto context, error id: " << GetLastError();
+    return 1;
+  }
+  if (!CryptGenRandom(hCryptProv, len, buf)) {
+    MS_LOG(ERROR) << "Failed to generate random seed.";
+    return 1;
+  }
+  return 0;
+#else
+  std::ifstream random_device(randomPath, std::ios::in | std::ios::binary);
+  if (random_device.is_open()) {
+    random_device.read(buf, len);
+  } else {
+    MS_LOG(ERROR) << "Failed to open random file.";
+    return 1;
+  }
+  return 0;
+#endif
+}
+
+bool SetRandomSeed() {
+  char seed[RAND_SEED_LENGTH];
+  if (ReadRandomBytes(kRandomPath, sizeof(seed), seed) != 0) {
+    MS_LOG(ERROR) << "Read Random Bytes failed!";
+    return false;
+  }
+  RAND_seed(seed, RAND_SEED_LENGTH);
+  return true;
+}
+
 bool BlockEncrypt(Byte *encrypt_data, size_t *encrypt_data_len, const std::vector<Byte> &plain_data, const Byte *key,
                   int32_t key_len, const std::string &enc_mode, unsigned char *tag) {
   size_t encrypt_data_buf_len = *encrypt_data_len;
   int32_t cipher_len = 0;
   int32_t iv_len = AES_BLOCK_SIZE;
   std::vector<Byte> iv(iv_len);
-  auto ret = RAND_bytes(iv.data(), iv_len);
+  auto ret = RAND_priv_bytes(iv.data(), iv_len);
   if (ret != 1) {
-    MS_LOG(ERROR) << "RAND_bytes error, failed to init iv.";
+    MS_LOG(ERROR) << "RAND_priv_bytes error, failed to init iv.";
     return false;
   }
   std::vector<Byte> iv_cpy(iv);
@@ -443,6 +483,10 @@ std::unique_ptr<Byte[]> Encrypt(size_t *encrypt_len, const Byte *plain_data, siz
 
   size_t offset = 0;
   *encrypt_len = 0;
+  if (!SetRandomSeed()) {
+    MS_LOG(ERROR) << "Failed to set secure random seed.";
+    return nullptr;
+  }
   while (offset < plain_len) {
     size_t cur_block_size = std::min(MAX_BLOCK_SIZE, plain_len - offset);
     block_buf.assign(plain_data + offset, plain_data + offset + cur_block_size);

@@ -30,7 +30,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "ops/ops_func_impl/simple_infer.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {
@@ -175,7 +175,6 @@ TypePtr AvgPool2DFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args.at(kIndex0));
   auto input_type = input_args[kIndex0]->GetType();
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("input", input_type, valid_types_, primitive->name());
   return input_type;
 }
 
@@ -267,7 +266,6 @@ TypePtrList AvgPool2DFuncImpl::InferType(const PrimitivePtr &primitive, const Va
   const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   auto input_type = input->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_types_, primitive->name());
   return {input_type};
 }
 

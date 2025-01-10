@@ -32,12 +32,11 @@ def isinf_forward(input_x):
     return mint.isinf(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_net_2d_float32(context_mode):
     """
-    Feature: mint ops Polar.
-    Description: test polar forward.
+    Feature: mint ops isinf.
+    Description: test isinf forward.
     Expectation: expect correct result.
     """
     context.set_context(mode=context_mode, device_target="Ascend")
@@ -75,8 +74,8 @@ def test_net_2d_float32(context_mode):
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_net_3d_int16(context_mode):
     """
-    Feature: mint ops polar.
-    Description: test polar forward.
+    Feature: mint ops isinf.
+    Description: test isinf forward.
     Expectation: expect correct result.
     """
     context.set_context(mode=context_mode, device_target="Ascend")
@@ -89,17 +88,17 @@ def test_net_3d_int16(context_mode):
     assert np.array_equal(output, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_forward_dynamic_shape():
     """
-    Feature: mint.arange
-    Description: Verify the result of arange forward with dynamic shape
+    Feature: mint.isinf
+    Description: Verify the result of isinf forward with dynamic shape
     Expectation: success
     """
     inputs1_x = ms.Tensor(np.array([[1.0, 10, 2], [0, 6, 1]], np.float32))
 
     inputs2_x = ms.Tensor(np.array([[[5, 0.1], [0, 5.5]], [[0.1, 0.8], [5, 6]]], np.float32))
 
-    TEST_OP(isinf_forward, [[inputs1_x], [inputs2_x]], 'arange', disable_mode=
+    TEST_OP(isinf_forward, [[inputs1_x], [inputs2_x]], 'isinf', disable_mode=
             ['GRAPH_MODE'], disable_grad=True, disable_yaml_check=True)

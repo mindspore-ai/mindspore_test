@@ -35,7 +35,7 @@ bool SoftShrinkCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
     auto task = [input, output, this](size_t start, size_t end) {
       auto input_tmp = input + start;
       auto output_tmp = output + start;
-      (void)SoftShrink(input_tmp, (end - start), output_tmp, lambd);
+      (void)SoftShrink(input_tmp, (end - start), output_tmp, lambd_);
     };
     ParallelLaunchAutoSearch(task, size_, this, &parallel_search_info_);
     return true;
@@ -44,8 +44,8 @@ bool SoftShrinkCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
   /* common soft shrink */
   T *input_addr = reinterpret_cast<T *>(inputs.at(kIndex0)->device_ptr());
   T *output_addr = reinterpret_cast<T *>(outputs.at(kIndex0)->device_ptr());
-  T pos_lamdb = lambd;
-  T neg_lambd = -(lambd);
+  T pos_lamdb = lambd_;
+  T neg_lambd = -(lambd_);
   auto task = [input_addr, output_addr, pos_lamdb, neg_lambd](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       if (input_addr[i] > pos_lamdb) {
@@ -82,7 +82,11 @@ int SoftShrinkCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
-  lambd = inputs[kIndex1]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex1]->GetValueWithCheck<float>();
+  if (lambd_ < 0.0) {
+    MS_EXCEPTION(RuntimeError) << "For 'SoftShrink', the values for lambd should be greater or equal to 0, "
+                               << ", but found to be [" << lambd_ << "].";
+  }
   return KRET_OK;
 }
 

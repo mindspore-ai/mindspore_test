@@ -22,7 +22,7 @@
 #include "ops/ops_func_impl/simple_infer.h"
 #include "infer/ops_func_impl/reduce_arithmetic.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

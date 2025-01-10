@@ -114,7 +114,7 @@ void ConditionSwitchActor::Run(OpContext<DeviceTensor> *const context) {
     MS_EXCEPTION_IF_NULL(input_device_tensors_[0]);
     MS_EXCEPTION_IF_NULL(input_device_tensors_[0]->kernel_tensor());
     bool index = input_device_tensors_[0]->kernel_tensor()->GetValueWithCheck<bool>();
-    if (common::IsNeedProfileMemory()) {
+    if (common::IsDryRun()) {
       index = true;
     }
     MS_LOG(DEBUG) << "Index:" << index << " for actor:" << GetAID();
@@ -158,6 +158,31 @@ void ConditionSwitchActor::CollectMemoryFreeList(size_t index) {
   }
 }
 
+void ConditionSwitchActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
+  // Fetch parameter input tensor from graph parameter store.
+  if (!enable_input_optimize_) {
+    return;
+  }
+
+  for (auto &parameter_index : parameter_indexs_) {
+    auto device_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
+    if (device_tensor == nullptr) {
+      std::string error_info =
+        GetAID().Name() + " get graph parameter store failed: " + parameter_index.second.first.first->DebugString() +
+        ", device type:" + std::to_string(static_cast<int>(device_contexts_[0]->GetDeviceType()));
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+
+    if (parameter_index.first >= input_device_tensors_.size()) {
+      std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
+                               " current:" + std::to_string(input_device_tensors_.size()) +
+                               " for actor:" + GetAID().Name();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    input_device_tensors_[parameter_index.first] = device_tensor;
+  }
+}
+
 void ConditionSwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
 
@@ -198,6 +223,8 @@ void ConditionSwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
     MS_EXCEPTION_IF_NULL(device_tensor);
     input_device_tensors_[device_tensor_store_key.first] = device_tensor.get();
   }
+
+  FetchParameterInput(context);
 
   if (output_data_by_output_index_.size() + 1 != input_device_tensors_.size()) {
     MS_LOG(EXCEPTION) << "Invalid output size:" << output_data_by_output_index_.size()

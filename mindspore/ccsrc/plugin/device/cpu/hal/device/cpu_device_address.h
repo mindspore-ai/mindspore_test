@@ -62,8 +62,11 @@ class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override;
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
                         const std::string &format) const override;
+  bool AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr) const override;
   bool SyncDeviceToDevice(const DeviceSync *src_device_addr) const override;
   bool AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const override;
+  bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                         const std::string &format) const override;
   bool SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                           const std::string &format) const override;
 

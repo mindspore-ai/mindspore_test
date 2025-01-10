@@ -22,7 +22,7 @@ class TestCellListInsertNet(nn.Cell):
         return len(self.cell_list)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celllist_insert_method_boundary_cond(mode):
     """
@@ -52,7 +52,7 @@ class EmbeddedCellDictNet(nn.Cell):
                 x = net(x)
         return x
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celllist_embed_celldict_case(mode):
     """

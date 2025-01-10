@@ -1,0 +1,14 @@
+scatter_add:
+  - op_yaml: scatter_add_ext_op.yaml
+    py_method: tensor_scatter_add_empty
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/scatter_add_method.yaml
+    py_method: deprecated_tensor_scatter_add
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

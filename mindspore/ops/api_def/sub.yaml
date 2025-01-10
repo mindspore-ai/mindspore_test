@@ -1,19 +1,20 @@
 sub:
   - op_yaml: sub_op.yaml
-    py_method: deprecated_tensor_sub # callback to python function "def deprecated_tensor_sub"
+    py_method: tensor_sub_ext # callback to python function "def tensor_sub_ext"
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
     interface: tensor
 
   - op_yaml: sub_ext_op.yaml
-    py_method: deprecated_tensor_sub # callback to python function "def deprecated_tensor_sub"
+    py_method: tensor_sub_ext # callback to python function "def tensor_sub_ext"
+    kwonlyargs: alpha
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/sub_op.yaml
+  - op_yaml: deprecated/sub_method.yaml
     py_method: deprecated_tensor_sub # callback to python function "def deprecated_tensor_sub"
     Ascend: py_method
     CPU: py_method

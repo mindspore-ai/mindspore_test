@@ -15,6 +15,9 @@ abs:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([-1.0, 1.0, 0.0]), mindspore.float32)
         >>> output = Tensor.abs(x)  # x.abs() 
         >>> print(output)

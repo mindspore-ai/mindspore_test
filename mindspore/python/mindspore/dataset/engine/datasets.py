@@ -35,7 +35,6 @@ import stat
 import subprocess
 import warnings
 
-import gc
 import time
 import uuid
 import multiprocessing
@@ -53,8 +52,8 @@ import mindspore._c_dataengine as cde
 from mindspore._c_expression import typing
 
 from mindspore import log as logger
-from mindspore.parallel._ps_context import _is_role_pserver, _is_role_sched, _get_ps_context,\
-                                           _enable_distributed_mindrt
+from mindspore.parallel._ps_context import _is_role_pserver, _is_role_sched, _get_ps_context, \
+    _enable_distributed_mindrt
 from mindspore.dataset.engine.offload import GetOffloadModel
 
 import mindspore.dataset.transforms.c_transforms as c_transforms
@@ -74,7 +73,8 @@ from .validators import check_batch, check_shuffle, check_map, check_filter, che
     check_save, check_tuple_iterator, check_dict_iterator, check_schema, check_to_device_send, check_padded_batch, \
     check_total_batch, check_sync_update
 from ..core.config import get_callback_timeout, _init_device_info, get_enable_shared_mem, get_num_parallel_workers, \
-    get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, _get_debug_hook_list
+    get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, \
+    _get_debug_hook_list, get_multiprocessing_start_method
 from ..core.datatypes import mstype_to_detype
 from ..core.validator_helpers import replace_none
 from ..core.py_util_helpers import ExceptionHandler
@@ -403,12 +403,26 @@ class Dataset:
         parent = self.parent
         self.parent = []
         dataset = copy.deepcopy(self)
+        dataset = self.pre_process(dataset)
         global _OP_NAME
         _OP_NAME = Dataset._get_operator_id(dataset)
         ir_tree = dataset.parse_tree(getter_mode)
         self.parent = parent
         _init_device_info()
         return ir_tree, dataset
+
+    def pre_process(self, dataset):
+        """Insert batch operation for GeneratorDataset with batch_sampler."""
+        if hasattr(dataset, "has_batch_sampler") and dataset.has_batch_sampler:
+            original_parent = dataset.parent
+            dataset.parent = []
+            dataset = dataset.batch(batch_size=-1, num_parallel_workers=dataset.num_parallel_workers,
+                                    per_batch_map=dataset.collate_fn)
+            dataset.parent = original_parent
+        else:
+            for index in range(len(dataset.children)):
+                dataset.children[index] = self.pre_process(dataset.children[index])
+        return dataset
 
     def parse_tree(self, getter_mode=False):
         """
@@ -2743,8 +2757,8 @@ class BatchDataset(UnionBaseDataset):
             if self.num_parallel_workers is None:
                 self.num_parallel_workers = get_num_parallel_workers()
 
-            self.process_pool = _PythonMultiprocessing(str(self), self.num_parallel_workers, [self.per_batch_map],
-                                                       self.max_rowsize)
+            self.process_pool = _PythonMultiprocessing(get_multiprocessing_start_method(), self.num_parallel_workers,
+                                                       str(self), [self.per_batch_map], self.max_rowsize)
             # Wrap per_batch_map into _PythonCallable
             self.per_batch_map = _PythonCallable(self.per_batch_map, 0, self.process_pool)
         else:
@@ -3196,7 +3210,19 @@ def _worker_loop(operations, pipe, worker_id):
 
 
 def worker_target(operations, worker_id):
+    logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
     return lambda pipe: _worker_loop(operations, pipe, worker_id)
+
+
+class WorkerTarget:
+    def __init__(self, operations, pipe, worker_id):
+        self.operations = operations
+        self.pipe = pipe
+        self.worker_id = worker_id
+        logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
+
+    def __call__(self):
+        return _worker_loop(self.operations, self.pipe, self.worker_id)
 
 
 class _MPWorker(multiprocessing.Process):
@@ -3253,6 +3279,12 @@ class _MPWorker(multiprocessing.Process):
 
                 logger.info(f"Closing worker with PID: {self.pid}")
                 self.pipe.master_close()
+
+                process_dir = os.path.join('/proc', str(self.pid))
+                while self.is_alive() and os.path.exists(process_dir):
+                    logger.info("Waiting for worker {} closed ...".format(self.pid))
+                    time.sleep(0.001)
+
                 # del the handle which hold by master
                 del self.pipe.in_queue
                 del self.pipe.res_queue
@@ -3270,6 +3302,41 @@ class _MPWorker(multiprocessing.Process):
             return super().is_alive()
         except ValueError:
             return False
+
+
+def worker_is_alive(worker):
+    """Check the subprocess worker status in spawn mode"""
+    try:
+        return worker.is_alive()
+    except ValueError:
+        return False
+
+
+def close_worker(worker, pipe):
+    """Close the subprocess worker in spawn mode"""
+    try:
+        if worker_is_alive(worker):
+            # release the eager executor which is used by current process
+            transforms.transforms.clean_unused_executors()
+
+            logger.info(f"Closing worker with PID: {worker.pid}")
+            pipe.master_close()
+
+            process_dir = os.path.join('/proc', str(worker.pid))
+            while worker_is_alive(worker) and os.path.exists(process_dir):
+                logger.info("Waiting for worker {} closed ...".format(worker.pid))
+                time.sleep(0.5)
+
+            # del the handle which hold by master
+            del pipe.in_queue
+            del pipe.res_queue
+            worker.terminate()
+            worker.join()
+            worker.close()
+    except ValueError:
+        # Process has been closed already
+        return
+    return
 
 
 class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
@@ -3298,10 +3365,11 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             self.origin_hook(ex_type, value, tb)
             self.mp_pool_exit_preprocess()
 
-    def __init__(self, op_name, num_parallel_workers, operations, max_rowsize=(-1, -1)):
+    def __init__(self, start_method, num_parallel_workers, op_name, operations, max_rowsize=(-1, -1)):
         super(_PythonMultiprocessing, self).__init__()
-        self.op_name = op_name
+        self.start_method = start_method  # python multiprocssing start method: fork / spawn
         self.num_parallel_workers = num_parallel_workers
+        self.op_name = op_name
         self.operations = operations
         self.max_rowsize = max_rowsize
 
@@ -3312,8 +3380,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         self.queues_map = {}
         self.next_queue = 0
 
-        self.eot = None
-        self.watch_dog = None
+        self.cleaning_process = None
         self.ppid = None
         self.hook = None
         self.warning_ctl = None
@@ -3326,60 +3393,6 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             self.terminate()
         except TypeError:
             pass
-
-    # This wait function is for cleaning zombie subprocesses
-    @staticmethod
-    def wait_pid():
-        """
-        This function is used by the main process to release subprocess resources.
-        """
-        try:
-            while True:
-                child_pid, _ = os.waitpid(-1, os.WNOHANG)
-                if child_pid == 0:
-                    break
-        except OSError:
-            # waitpid may fail for some reason, so we ignore this error
-            pass
-
-    # Dataset need watch_dog thread to monitoring fork multiprocessing,
-    # and thread can't be a member function otherwise python won't collect and release resources.
-    @staticmethod
-    def _watch_dog(eot, workers):
-        """
-        This thread is for monitoring subprocesses forked by GeneratorDataset/map/batch
-        """
-        if not isinstance(workers, list):
-            raise TypeError("[Internal Error] The 2nd parameter of watch dog thread should be list of process, "
-                            "but got {}.".format(type(workers)))
-
-        while not eot.is_set():
-            # Monitoring and count how many subprocesses already exit
-            clear_subprocess_timeout = _PythonMultiprocessing._monitor_subprocess_exit(workers)
-            # If find subprocess exit, we will wait for 30s and do some waitpid operations
-            if clear_subprocess_timeout > 0:
-                start = time.time()
-                while time.time() - start < clear_subprocess_timeout:
-                    # We need to distinguishing get_dataset_size or train finished normally and hang scenario.
-                    # If get_dataset_size or train finished normally, _stop_subprocess can be execute and
-                    # self.need_abort can be set to True. If main process is hang in get(), self.need_abort
-                    # will never set to True, then we wait for 30s and kill main process
-                    if eot.is_set():
-                        return
-                    # Sometimes subprocess may be zombie, so in 30s we can wait and do some useful tasks(waitpid).
-                    _PythonMultiprocessing.wait_pid()
-                # multiprocessing.queue may hang in .get() forever when put() process was killed.
-                # We have to exit main process otherwise main process will hang.
-                _PythonMultiprocessing._terminate_processes(workers)
-                logger.critical("The subprocess of dataset may exit unexpected or be killed, "
-                                "main process will exit. If this is not an artificial operation, you can use "
-                                "ds.config.set_enable_watchdog(False) to block this error.")
-                os.kill(os.getpid(), signal.SIGTERM)
-            # sleep to release GIL
-            time.sleep(1)
-
-        # release the workers
-        del workers
 
     @staticmethod
     def _terminate_processes(processes):
@@ -3397,45 +3410,12 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                 # We don't use w.join because join can only used in main process or join will raise an error.
                 p._popen.wait()  # pylint: disable=W0212
 
-    # Monitor the exit number of subprocesses
-    @staticmethod
-    def _monitor_subprocess_exit(workers):
-        """
-        To monitor whether process is exit.
-
-        Args:
-            workers (list of multiprocessing.Process): multiprocessing.Process.
-
-        Returns:
-            int, the timeout(in seconds) when process exit.
-        """
-        for w in workers:
-            try:
-                exit_code = w.exitcode
-                if exit_code is not None:
-                    # For kill -9, we can exit quickly
-                    if exit_code == -9:
-                        return 1
-                    # For kill -15, we still exit after 30s
-                    if exit_code == -15:
-                        return 30
-                # In some cases the subprocess has been killed but the exitcode is still None.
-                # So we use os.kill(pid, 0) to check if it is alive.
-                subprocess_alive = _PythonMultiprocessing.is_process_alive(w.pid)
-                if not subprocess_alive:
-                    # Like kill -15, we wait 30s before exit
-                    return 30
-            except ValueError:
-                # process has been closed already
-                return 0
-        return 0
-
     @staticmethod
     def is_process_alive(pid):
         """
         Check if the process is alive or not.
         Note:  We hit a deadlock when we use psutil or w.exitcode to check whether a process is alive.
-        Instead we use os.kill(ppid, 0).
+        Instead, we use os.kill(ppid, 0).
 
         Args:
             pid: pid of the process to be checked
@@ -3462,6 +3442,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             quit_signal: The flag of quit.
         """
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # Initialize C++ side signal handlers
+        cde.register_worker_handlers()
         while _PythonMultiprocessing.is_process_alive(ppid):
             if quit_signal.is_set():
                 return
@@ -3473,6 +3455,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
             time.sleep(0.1)
 
+        logger.info("Clean process detects that the main process {} has exited, begin to terminate the "
+                    "worker process(es): {}".format(ppid, [worker.pid for worker in workers]))
         _PythonMultiprocessing._terminate_processes(workers)
         del workers
         os.kill(os.getpid(), signal.SIGTERM)
@@ -3489,10 +3473,10 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         """
         self.python_threads_to_workers = {}
         self.op_id = op_id
-        logger.info("Launching new Python Multiprocessing pool for Op:" + str(self.op_id))
+        logger.info("Launching new Python multiprocessing pool for Op: " + str(self.op_id))
         if self.is_mp_enabled():
             message = "Launching a new Python multiprocessing pool while a pool already exists!" + \
-                " The existing pool will be terminated first."
+                      " The existing pool will be terminated first."
             logger.warning(message)
             self.terminate()
             self.reset()
@@ -3511,29 +3495,44 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         if self.workers is not None:
             raise Exception("Pool was already created, close it first.")
 
-        # Let gc collect unreferenced memory to avoid child processes in the pool to do it
-        gc.collect()
-
-        # Construct python worker processes
         self.workers = []
+        self.pipes = []
+        self.check_interval = get_multiprocessing_timeout_interval()
         self.warning_ctl = multiprocessing.Value('i', 0)
-        for worker_id in range(self.num_parallel_workers):
-            worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
-            worker.start()
-            self.workers.append(worker)
+        if self.start_method == "fork":
+            # Construct python worker processes
+            for worker_id in range(self.num_parallel_workers):
+                worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
+                worker.start()
+                self.workers.append(worker)
+        else:
+            multiprocessing.set_start_method(self.start_method, True)
 
-        logger.info("Op: " + str(self.op_id) + " Python multiprocessing pool workers' PIDs: " + str(self.get_pids()))
+            # Construct python worker processes
+            for worker_id in range(self.num_parallel_workers):
+                shared_memory = get_enable_shared_mem()
+                pipe = Pipe(self.warning_ctl, shared_memory=shared_memory, max_rowsize=self.max_rowsize)
+                self.check_interval = get_multiprocessing_timeout_interval()
+                worker = multiprocessing.Process(target=WorkerTarget(self.operations, pipe, worker_id),
+                                                 name="MapWorker" + str(worker_id), daemon=True)
+                self.workers.append(worker)
+                self.pipes.append(pipe)
+                worker.start()
+
+            multiprocessing.set_start_method("fork", True)
+
+        logger.info("Launch worker process(es): {}".format(self.get_pids()))
 
         self.hook = _PythonMultiprocessing._ExceptHookHandler()
 
-        # The op (Map, Batch, etc) multiprocessing will launch a watch dog thread for monitoring sub processes
-        self._launch_watch_dog()
+        # Launch a clean process and register worker processes to be monitored by the watch dog.
+        self._launch_monitor()
 
         atexit.register(self.terminate)
 
     def terminate(self):
-        # close watch dog first and then close all the workers
-        self.abort_watchdog()
+        # abort the monitor first and then close all the workers
+        self._abort_monitor()
         self.close_all_workers()
         if hasattr(self, "warning_ctl"):
             del self.warning_ctl
@@ -3592,15 +3591,48 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
         # todo check_iterator_cleanup
         if self.is_running() and check_iterator_cleanup() is False:
-            return self.workers[worker_id].execute(idx, *args)
+            if self.start_method == "fork":
+                return self.workers[worker_id].execute(idx, *args)
+            # spawn mode
+            self.pipes[worker_id].master_send(idx, args)
+            time_s = time.time()
+            wait_count = 1
+            while True:
+                cost_time = time.time() - time_s
+                if cost_time / self.check_interval >= wait_count:
+                    wait_count += 1
+                    logger.warning("It has been waiting for " + "%.3f" % cost_time + "s because the sub-process "
+                                   "worker of the map operation is hanging. "
+                                   "Check whether the user defined data transform is too slow or the "
+                                   "output data is too large. You can also set the timeout interval by "
+                                   "ds.config.set_multiprocessing_timeout_interval to adjust the output frequency "
+                                   "of this log.")
+                    pid = self.workers[worker_id].pid
+                    logger.warning("Map worker subprocess ID {} is stuck.".format(pid))
+                    install_status, _ = subprocess.getstatusoutput("py-spy --version")
+                    if install_status == 0:
+                        stack = subprocess.getoutput("py-spy dump -p {} -l".format(pid))
+                        logger.warning("Map worker subprocess stack:\n{}".format(stack))
+                    else:
+                        logger.warning("Please `pip install py-spy` to get the stacks of the stuck process.")
+                try:
+                    res = self.pipes[worker_id].master_receive()
+                except queue.Empty:
+                    continue
+                if res is None:
+                    # receive finish signal
+                    return None
+                if isinstance(res, ExceptionHandler):
+                    res.reraise()
+                return res
 
         return None
 
-    def _launch_watch_dog(self):
+    def _launch_monitor(self):
         """
-        We will launch a watchdog thread and a clean process to cleaning subprocess when there is process was killed.
-        The watchdog thread will cleanup subprocesses and main process when one of the subprocesses was killed.
-        The cleaning subprocess will cleanup subprocesses when main process was killed.
+        Launch a clean process and register subprocess to be monitored by the watch dog.
+        The clean process will clean up subprocesses when main process exited.
+        The watch dog will clean up subprocesses and main process when any subprocess exited.
         """
         if platform.system().lower() != 'windows':
             self.eof = multiprocessing.Event()
@@ -3609,38 +3641,45 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                                                             args=(self.ppid, self.workers, self.eof),
                                                             daemon=True)
             self.cleaning_process.start()
+            logger.info("Launch clean process {} to monitor worker "
+                        "process(es): {}".format(self.cleaning_process.pid, self.get_pids()))
 
             if get_enable_watchdog():
-                self.eot = threading.Event()
-                self.watch_dog = threading.Thread(target=self._watch_dog,
-                                                  name="MapWatchDog",
-                                                  args=(self.eot, self.workers + [self.cleaning_process]),
-                                                  daemon=True)
-                self.watch_dog.start()
+                worker_ids = [worker.pid for worker in self.workers]
+                worker_ids.append(self.cleaning_process.pid)
+                cde.register_worker_pids(id(self), set(worker_ids))
 
-    def _abort_watchdog(self):
-        if not self.eot.is_set():
-            self.eot.set()
-
-    def abort_watchdog(self):
-        if hasattr(self, 'watch_dog') and self.watch_dog is not None and hasattr(self, 'eot') and self.eot is not None:
-            self._abort_watchdog()
+    def _abort_monitor(self):
+        """Deregister workers monitored by the watch dog and join clean process."""
+        if get_enable_watchdog():
+            cde.deregister_worker_pids(id(self))
+        if hasattr(self, 'eof') and self.eof is not None:
+            self.eof.set()
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
-            if hasattr(self, 'eof') and self.eof is not None and not self.eof.is_set():
-                self.eof.set()
-            _PythonMultiprocessing._terminate_processes([self.cleaning_process])
+            # let the quit event notify the cleaning process to exit
+            self.cleaning_process.join(timeout=5)
+            if self.cleaning_process.is_alive():
+                # if the cleaning process did not exit, it may hang, try to terminate it
+                _PythonMultiprocessing._terminate_processes([self.cleaning_process])
             del self.cleaning_process
 
     def is_running(self):
         if hasattr(self, 'workers') and self.workers is not None:
-            return all([w.is_alive() for w in self.workers])
+            if self.start_method == "fork":
+                return all([w.is_alive() for w in self.workers])
+            return all([worker_is_alive(w) for w in self.workers])
         return False
 
     def close_all_workers(self):
         """Close all the subprocess workers"""
         if hasattr(self, 'workers') and self.workers is not None:
-            for w in self.workers:
-                w.close()
+            if self.start_method == "fork":
+                for w in self.workers:
+                    w.close()
+            else:
+                for i, w in enumerate(self.workers):
+                    close_worker(w, self.pipes[i])
+
             check_interval = get_multiprocessing_timeout_interval()
             for w in self.workers:
                 try:
@@ -3656,8 +3695,12 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                         continue
                     raise e
                 try:
-                    if w.is_alive():
-                        os.close(subprocess_file_descriptor)
+                    if self.start_method == "fork":
+                        if w.is_alive():
+                            os.close(subprocess_file_descriptor)
+                    else:
+                        if worker_is_alive(w):
+                            os.close(subprocess_file_descriptor)
                 except OSError as e:
                     # Maybe the file descriptor had been released, so ignore the 'Bad file descriptor'
                     if "Bad file descriptor" not in str(e):
@@ -3666,6 +3709,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             # use clear to release the handle which is better than self.workers = None
             self.workers.clear()
             self.workers = None
+            self.pipes.clear()
+            self.pipes = None
             self.pids = None
 
 
@@ -3911,8 +3956,9 @@ class MapDataset(UnionBaseDataset):
                     callable_list.append(op)
 
             if callable_list:
-                self.process_pool = _PythonMultiprocessing(str(self), self.num_parallel_workers, callable_list,
-                                                           self.max_rowsize)
+                self.process_pool = _PythonMultiprocessing(get_multiprocessing_start_method(),
+                                                           self.num_parallel_workers, str(self),
+                                                           callable_list, self.max_rowsize)
                 # Pass #2
                 idx = 0
                 for op in self.operations:
@@ -4138,6 +4184,7 @@ class ConcatDataset(UnionBaseDataset):
                     if isinstance(c, ConcatDataset):
                         c.use_sampler(sampler)
                     set_child(c)
+
             set_child(self)
 
             return

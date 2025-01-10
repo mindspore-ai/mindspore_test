@@ -295,6 +295,20 @@ def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=Tru
         query = Tensor(np.ones((B, N_Q, S, D), dtype=np.float16))
         key = Tensor(np.ones((B, N_KV, S, D), dtype=np.float16))
         value = Tensor(np.ones((B, N_KV, S, D), dtype=np.float16))
+    elif input_layout == "SBH":
+        H_Q = N_Q * D
+        H_KV = N_KV * D
+        query = Tensor(np.ones((S, B, H_Q), dtype=np.float16))
+        key = Tensor(np.ones((S, B, H_KV), dtype=np.float16))
+        value = Tensor(np.ones((S, B, H_KV), dtype=np.float16))
+    elif input_layout == "BSND":
+        query = Tensor(np.ones((B, S, N_Q, D), dtype=np.float16))
+        key = Tensor(np.ones((B, S, N_KV, D), dtype=np.float16))
+        value = Tensor(np.ones((B, S, N_KV, D), dtype=np.float16))
+    elif input_layout == "TND":
+        query = Tensor(np.ones((B * S, N_Q, D), dtype=np.float16))
+        key = Tensor(np.ones((B * S, N_KV, D), dtype=np.float16))
+        value = Tensor(np.ones((B * S, N_KV, D), dtype=np.float16))
     else:
         raise ValueError(f"input_layout is invalid.")
     real_shift = Tensor(np.ones((B, N, S, S), dtype=np.float16)
@@ -306,7 +320,7 @@ def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=Tru
     return query, key, value, real_shift, attn_mask
 
 
-@pytest.mark.parametrize('input_layout', ["BSH"])
+@pytest.mark.parametrize('input_layout', ["BSH", "SBH", "BNSD", "BSND"])
 @pytest.mark.parametrize('use_mqa', [True])
 @pytest.mark.parametrize('with_real_shift', [True])
 def test_flash_attention_semi_auto_parallel_flops(input_layout, use_mqa, with_real_shift):
@@ -359,6 +373,12 @@ def test_flash_attention_semi_auto_parallel_flops(input_layout, use_mqa, with_re
                 if input_layout == "BSH":
                     stra = ((dp, sp, mp), (dp, 1, kv_head_stra),
                             (dp, 1, kv_head_stra))
+                elif input_layout == "SBH":
+                    stra = ((sp, dp, mp), (1, dp, kv_head_stra),
+                            (1, dp, kv_head_stra))
+                elif input_layout == "BSND":
+                    stra = ((dp, sp, mp, 1), (dp, 1, kv_head_stra, 1),
+                            (dp, 1, kv_head_stra, 1))
                 else:
                     stra = ((dp, mp, sp, 1), (dp, kv_head_stra, 1, 1),
                             (dp, kv_head_stra, 1, 1))
@@ -375,6 +395,10 @@ def test_flash_attention_semi_auto_parallel_flops(input_layout, use_mqa, with_re
         def construct(self, query, key, value, real_shift, attn_mask):
             if self.input_layout == "BSH":
                 bsz, seq_len, _ = query.shape
+            elif self.input_layout == "SBH":
+                seq_len, bsz, _ = query.shape
+            elif self.input_layout == "BSND":
+                bsz, seq_len, _, _ = query.shape
             else:
                 bsz, _, seq_len, _ = query.shape
             if self.keep_prob < 1.0:

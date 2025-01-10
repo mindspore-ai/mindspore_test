@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.max_pool2d
 ========================================
 
-.. py:function:: mindspore.mint.nn.functional.max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1, *, ceil_mode=False, return_indices=False)
+.. py:function:: mindspore.mint.nn.functional.max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)
 
     二维最大值池化。
 

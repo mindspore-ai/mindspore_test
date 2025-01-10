@@ -59,7 +59,6 @@ class PyboostFunctionsGenerator(BaseGenerator):
             'op_run_info->requires_grad);\n'
         )
         self.convert_template = Template("auto $arg_name = converter.${convert_func}(args, $arg_index);\n")
-
         self.PYBOOST_FUNCTION_TEMPLATE = template.PYBOOST_FUNCTION_TEMPLATE
         self.PYBOOST_COMM_FUNCTION_TEMPLATE = template.PYBOOST_COMM_FUNCTION_TEMPLATE
         self.REGISTER_DEFINE_TEMPLATE = template.REGISTER_DEFINE_TEMPLATE
@@ -87,7 +86,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         pyboost_func_pybind_def = ''
         pyboost_func_include_headers_str = ''
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_pyboost_func_name = op_parser.get_pyboost_func_name()
@@ -100,7 +99,8 @@ class PyboostFunctionsGenerator(BaseGenerator):
             call_args_str = self._get_call_args_str(op_proto)
             grad_args_str = self._get_grad_args_str(op_proto)
             cast_args_str = self._get_cast_to_value_str(op_proto)
-            view_arg_str = self._get_view_str(op_proto.op_view, grad_args_str)
+            view_arg_str = self._get_first_str(op_proto.op_view, grad_args_str)
+            view_arg_str = ", " + view_arg_str if view_arg_str else ''
             multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
             # communication operators have different func template
             function_tpl = self.PYBOOST_COMM_FUNCTION_TEMPLATE \
@@ -119,7 +119,8 @@ class PyboostFunctionsGenerator(BaseGenerator):
                                                      grad_args=grad_args_str,
                                                      cast_args=cast_args_str,
                                                      view_arg=view_arg_str,
-                                                     is_multi=multi_ouptut_str)
+                                                     is_multi=multi_ouptut_str,
+                                                     operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE + template.NEW_LINE
             pyboost_op_name = op_parser.get_pyboost_name()
             pyboost_func_name = op_parser.get_pyboost_func_name()
@@ -130,7 +131,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
             pyboost_func_include_headers_str += self.pyboost_func_include_header_template.replace(
                 operator_name=op_proto.op_name)
         register_func_str = self.REGISTER_TEMPLATE.replace(register_func=pyboost_func_pybind_def)
-        function_class_register = self._get_function_class_register(tensor_func_protos_data)
+        function_class_register = self._get_function_class_register(op_protos)
         pyboost_func_file = self.PYBOOST_HEADER_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
                                                                  function_body=pyboost_func_str,
                                                                  register_function_body=register_func_str,
@@ -139,27 +140,33 @@ class PyboostFunctionsGenerator(BaseGenerator):
         file_name = "pyboost_functions.cc"
         save_file(save_path, file_name, pyboost_func_file)
 
-    def _get_function_class_register(self, tensor_func_protos_data) -> str:
+
+    def _get_cast_args_with_type_str(self, op_proto, cast_args_str):
+        args_with_type = []
+        for op_arg, cast_args_name in zip(op_proto.op_args, cast_args_str):
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            args_with_type.append("const " + input_dtype + " &" + cast_args_name)
+        return list(args_with_type)
+
+
+    def _get_function_class_register(self, op_protos) -> str:
         """
         Generates a function class registration string for tensor functions.
 
         Args:
-            tensor_func_protos_data (dict): A dictionary where the keys are function names and
-                                            the values are lists of tensor function prototypes.
+            op_protos (list): A list of tensor op prototypes.
 
         Returns:
             str: A concatenated string representing the registration information for tensor
                  function classes.
         """
         function_class_register = ''
-        for _, tensor_func_protos in tensor_func_protos_data.items():
-            for func_proto in tensor_func_protos:
-                # deprecated op should not be registered
-                if 'deprecated' in func_proto.op_proto.op_name:
-                    continue
-                class_name, op_name = func_proto.op_proto.op_class.name, func_proto.op_proto.op_name
-                function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,
-                                                                              op_name=op_name)
+        for op_proto in op_protos:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
+                continue
+            class_name, op_name = op_proto.op_class.name, op_proto.op_name
+            function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,
+                                                                          op_name=op_name)
         return function_class_register
 
     def _generate_parser_func(self, op_proto: OpProto) -> str:
@@ -342,21 +349,22 @@ class PyboostFunctionsGenerator(BaseGenerator):
             cast_args_str.append(cast_arg)
         return cast_args_str
 
-    def _get_view_str(self, is_view_op: bool, grad_args: list):
+    def _get_first_str(self, is_view_or_inplace: bool, grad_args: list):
         """
         Generates the view base str of arguments for the operator.
 
         This method constructs a list of argument names that need to be cast to their corresponding types.
 
         Args:
-            op_proto (OpProto): The operator prototype containing the argument information.
+            is_view_or_inplace (bool): Whether the op is view op or inplace op.
+            grad_args (list): grad args
 
         Returns:
-            str: Formatted view argument names.
+            str: Formatted view or inplace first argument names.
         """
-        view_arg_str = ''
+        arg_str = ''
         for i, grad_arg in enumerate(grad_args):
-            if is_view_op and i == 0:
-                view_arg_str = ", " + grad_arg
+            if is_view_or_inplace and i == 0:
+                arg_str = grad_arg
                 break
-        return view_arg_str
+        return arg_str

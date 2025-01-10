@@ -22,8 +22,10 @@ mindspore.ops.NLLLoss
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right]
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
-        - **weight** (Tensor，可选) - 指定各类别的权重。若值不为None，则shape为 :math:`(C,)`。数据类型仅支持float32或float16或bfloat16(仅Atlas A2训练系列产品支持)。要求与 `logits` 的数据类型保持一致。默认值： ``None`` 。
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
           - ``"none"``：不应用规约方法。
@@ -35,6 +37,7 @@ mindspore.ops.NLLLoss
     输入：
         - **logits** (Tensor) - 输入预测值，shape为 :math:`(N, C)` 。数据类型仅支持float32或float16或bfloat16(仅Atlas A2训练系列产品支持)。
         - **labels** (Tensor) - 输入目标值，shape为 :math:`(N,)` ，取值范围为 :math:`[0, C-1]` 。数据类型仅支持uint8或int32或int64。
+        - **weight** (Tensor) - 指定各类别的权重。shape为 :math:`(C,)`。数据类型仅支持float32或float16或bfloat16(仅Atlas A2训练系列产品支持)。要求与 `logits` 的数据类型保持一致。
 
     返回：
         由 `loss` 和 `total_weight` 组成的2个Tensor的tuple。

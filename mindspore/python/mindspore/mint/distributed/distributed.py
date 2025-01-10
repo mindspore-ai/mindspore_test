@@ -14,7 +14,13 @@
 # ============================================================================
 """Communication management API"""
 from __future__ import absolute_import
+import hashlib
+import builtins
+import io
+import pickle
+import numpy as np
 from mindspore import log as logger
+from mindspore.common import dtype as mstype
 from mindspore.ops import ReduceOp, cat
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
@@ -63,6 +69,51 @@ from mindspore.ops.auto_generate.gen_ops_prim import (
     dist_comm_barrier_op,
     dist_comm_batch_isend_irecv_op,
 )
+
+_pickler = pickle.Pickler
+_unpickler = pickle.Unpickler
+BACKEND_HCCL = "hccl"
+BACKEND_MCCL = "mccl"
+
+safe_builtins = {
+    'range',
+    'complex',
+    'set',
+    'frozenset',
+    'slice',
+}
+
+
+class RestrictedUnpickler(pickle.Unpickler):
+    # Override find_class method.
+    def find_class(self, module, name):
+        # Only allow safe classes from builtins.
+        if module == "builtins" and name in safe_builtins:
+            return getattr(builtins, name)
+        # Forbid everything else.
+        raise pickle.UnpicklingError("global '%s.%s' is forbidden" %
+                                     (module, name))
+
+
+def restricted_loads(s):
+    """Helper function analogous to pickle.loads()."""
+    return RestrictedUnpickler(io.BytesIO(s)).load()
+
+
+def _object_to_tensor(obj, size=0):
+    f = io.BytesIO()
+    _pickler(f).dump(obj)
+    buf = np.frombuffer(f.getvalue(), dtype=np.int8)
+    tensor_size = buf.size
+    if size > tensor_size:
+        buf = np.resize(buf, size)
+        tensor_size = size
+    return Tensor(buf), tensor_size
+
+
+def _tensor_to_object(tensor, tensor_size):
+    buf = tensor.asnumpy().tobytes()[:tensor_size]
+    return restricted_loads(buf)
 
 
 def init_process_group(backend="hccl",
@@ -120,9 +171,8 @@ def init_process_group(backend="hccl",
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, destroy_process_group
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> destroy_process_group()
     """
@@ -160,11 +210,11 @@ def destroy_process_group(group=None):
 
     Note:
         - This method isn't supported in GPU and CPU versions of MindSpore.
-        - This method should be used after init_process_group().
+        - This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Raises:
@@ -185,9 +235,8 @@ def destroy_process_group(group=None):
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, destroy_process_group
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> destroy_process_group()
     """
@@ -208,11 +257,11 @@ def get_rank(group=None):
     Get the rank ID for the current device in the specified collective communication group.
 
     Note:
-        This method should be used after mindspore.mint.distributed.init_process_group.
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Returns:
@@ -223,7 +272,7 @@ def get_rank(group=None):
         TypeError: If group is not a string.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -235,9 +284,9 @@ def get_rank(group=None):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-        >>> from mindspore import set_context
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_rank
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> rank_id = get_rank()
         >>> print(rank_id)
@@ -263,11 +312,11 @@ def get_world_size(group=None):
     Get the rank size of the specified collective communication group.
 
     Note:
-        This method should be used after mindspore.mint.distributed.init_process_group.
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Returns:
@@ -291,9 +340,8 @@ def get_world_size(group=None):
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_world_size
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> group_size = get_world_size()
         >>> print("group_size is: ", group_size)
@@ -325,13 +373,16 @@ def new_group(ranks=None,
     Create a new distributed group.
 
     Note:
-        This method should be used after init_process_group().
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         ranks (list[int], optional): List of ranks of group members. If ``None``,
             will be create the world group. Default is ``None``.
         timeout (int, invalid): Currently it is a reserved parameter.
-        backend (str, invalid): Currently it is a reserved parameter.
+        backend (str, invalid): Support backend Library, Currently support ``"hccl"`` and ``"mccl"``.
+            when backend is ``"hccl"`` will use Huawei Collective Communication Library(HCCL).
+            when  backend is ``"mccl"`` will use MindSpore Collective Communication Library(MCCL).
+            If ``None``, which means ``"hccl"`` in Ascend. Default is ``None``.
         pg_options (str, invalid): Currently it is a reserved parameter.
         use_local_synchronization (bool, invalid): Currently it is a reserved parameter.
         group_desc (str, invalid): Currently it is a reserved parameter.
@@ -343,7 +394,7 @@ def new_group(ranks=None,
         TypeError: If list ranks in Group has duplicate rank id.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -355,13 +406,12 @@ def new_group(ranks=None,
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
-        >>> from mindspore.mint.distributed import init_process_group, get_backend
-        >>> set_context(device_target="Ascend")
+        >>> from mindspore.mint.distributed import init_process_group, new_group
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> group = new_group()
         >>> print("group is: ", group)
-        group is: hccl
+        group is: hccl_world_group
     """
     if ranks is not None:
         if not isinstance(ranks, list):
@@ -369,7 +419,11 @@ def new_group(ranks=None,
         ranks = sorted(ranks)
     else:
         return GlobalComm.WORLD_COMM_GROUP
-    group = "group_" + "_".join([str(elem) for elem in ranks])
+    if backend is None:
+        backend = "hccl"
+    if not isinstance(backend, str) or backend not in ("hccl", "mccl"):
+        raise TypeError(f"the input backend must be hccl or mccl, but got {backend}")
+    group = backend + "_" + str(len(ranks)) + "_" + hashlib.sha1(bytes("_".join(map(str, ranks)), "utf-8")).hexdigest()
     try:
         create_group(group, ranks)
     except RuntimeError as e:
@@ -384,18 +438,21 @@ def get_backend(group=None):
 
     Note:
         Only one communication backend is supported by MindSpore for each process.
-        It should be one of `hccl`/`nccl`/`mccl`. Currently only support hccl.
+        It should be one of `hccl`/`nccl`/`mccl`. Currently only support hccl and mccl.
 
     Args:
-        group (str, optional): The communication group to work on. It is a reserved parameter.
-            Normally, the group should be created by `mindspore.mint.distributed.new_group`, If ``None``,
+        group (str, optional): The communication group to work on.
+            Normally, the group should be created by :func:`mindspore.mint.distributed.new_group`, If ``None``,
             which means ``"hccl_world_group"`` in Ascend. Default: ``None``.
 
     Returns:
         string, the backend of the group.
 
+    Raises:
+        TypeError: If the `group` is not a str.
+
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -407,14 +464,24 @@ def get_backend(group=None):
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_backend
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> backend = get_backend()
         >>> print("backend is: ", backend)
         backend is: hccl
     """
+    if group is None:
+        return BACKEND_HCCL
+    if not isinstance(group, str):
+        raise TypeError(
+            "For 'get_backend', the argument 'group' must be type of string or None, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    if BACKEND_HCCL in group:
+        return BACKEND_HCCL
+    if BACKEND_MCCL in group:
+        return BACKEND_MCCL
     return _get_backend()
 
 
@@ -424,11 +491,11 @@ def get_global_rank(group, group_rank):
     rank which id is 'group_rank' in the user group.
 
     Note:
-        This method should be used after init_process_group().
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str): The communication group to work on. Normally, the group should
-            be created by `mindspore.mint.distributed.new_group`. If ``None``, which
+            be created by :func:`mindspore.mint.distributed.new_group`. If ``None``, which
             means ``"hccl_world_group"`` in Ascend.
         group_rank (int): Group rank to query.
 
@@ -454,18 +521,19 @@ def get_global_rank(group, group_rank):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
-            This example should be run with 4 devices.
+            This example should be run with 8 devices.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_global_rank, new_group, get_rank
-        >>> set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
+        >>> # Launch 8 processes.
         >>> init_process_group()
         >>> rank_ids = [0,4]
         >>> if get_rank() in rank_ids:
         ...     group = new_group(rank_ids)
         ...     world_rank_id = get_global_rank(group, 1)
         ...     print("world_rank_id is: ", world_rank_id)
+        #rank 0 and 4:
         world_rank_id is: 4
     """
     if not isinstance(group_rank, int):
@@ -490,11 +558,11 @@ def get_group_rank(group, global_rank):
     the rank ID in the world communication group.
 
     Note:
-        This method should be used after mindspore.mint.distributed.init_process_group.
+        This method should be used after :func:`mindspore.mint.distributed.init_process_group`.
 
     Args:
         group (str): The communication group to work on. Normally, the group should be
-            created by `mindspore.mint.distributed.new_group`. If ``None``, which means
+            created by :func:`mindspore.mint.distributed.new_group`. If ``None``, which means
             ``"hccl_world_group"`` in Ascend.
         global_rank (int): A rank ID in the world communication group.
 
@@ -518,16 +586,19 @@ def get_group_rank(group, global_rank):
             <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
+            This example should be run with 8 devices.
+
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, new_group, get_group_rank, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
+        >>> # Launch 8 processes.
         >>> init_process_group()
         >>> rank_ids = [0,4]
         >>> if get_rank() in rank_ids:
         ...     group = new_group(rank_ids)
-        ...     group_rank_id = get_group_rank(4, group)
+        ...     group_rank_id = get_group_rank(group, 4)
         ...     print("group_rank_id is: ", group_rank_id)
+        #rank 0 and 4:
         group_rank_id is: 1
     """
     if not isinstance(global_rank, int):
@@ -552,7 +623,7 @@ def get_process_group_ranks(group=None):
 
     Args:
         group (str, optional): The communication group to work on. Normally, the group should be created by
-            `mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
+            :func:`mindspore.mint.distributed.new_group`. If ``None``, which means ``"hccl_world_group"`` in Ascend.
             Default: ``None``.
 
     Returns:
@@ -563,7 +634,7 @@ def get_process_group_ranks(group=None):
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -579,9 +650,9 @@ def get_process_group_ranks(group=None):
             This example should be run with 4 devices.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
         >>> from mindspore.mint.distributed import init_process_group, get_process_group_ranks
-        >>> set_context(device_target="Ascend")
+        >>> # Launch 4 processes.
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> output = get_process_group_ranks()
         >>> print(output)
@@ -756,7 +827,7 @@ def all_gather_into_tensor(output_tensor, input_tensor, group=None, async_op=Fal
         >>> from mindspore.mint.distributed import all_gather_into_tensor
         >>> from mindspore import Tensor
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> out_tensor = Tensor(np.zeros([4, 8]).astype(np.float32))
@@ -801,7 +872,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
         The tensors must have the same shape and format in all processes of the collection.
 
     Args:
-        output(Tensor): the output tensor has the same dtype as `input_x` with a shape of math:`(N/rank\_size, *)`
+        output(Tensor): the output tensor has the same dtype as `input_x` with a shape of :math:`(N/rank\_size, *)`
         input(Tensor): The input tensor to be reduced and scattered, suppose it has a shape :math:`(N, *)`, where `*`
             means any number of additional dimensions. N must be divisible by rank_size.
             rank_size refers to the number of cards in the communication group.
@@ -842,7 +913,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
         >>> from mindspore.mint.distributed import reduce_scatter_tensor
         >>> import numpy as np
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([8, 8]).astype(np.float32))
         >>> output_tensor = Tensor(np.ones([4, 8]).astype(np.float32))
@@ -931,15 +1002,16 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=None, async_op=False):
         >>> from mindspore.mint.distributed import init_process_group, reduce
         >>> from mindspore import Tensor
         >>> import numpy as np
-        >>> # Launch 4 processes.
+        >>> # Launch 2 processes.
         >>> init_process_group()
         >>> dest_rank=1
         >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = reduce(input_tensor)
+        >>> output = reduce(input_tensor, dest_rank)
         >>> print(input_tensor)
-        Process with rank 1: [[4. 4. 4. 4. 4. 4. 4. 4.]
-                             [4. 4. 4. 4. 4. 4. 4. 4.]],
-        Other proesses: [0.].
+        Process with rank 0: [[1. 1. 1. 1. 1. 1. 1. 1.]
+                             [1. 1. 1. 1. 1. 1. 1. 1.]],
+        Process with rank 1: [[2. 2. 2. 2. 2. 2. 2. 2.]
+                             [2. 2. 2. 2. 2. 2. 2. 2.]],
     """
 
     if not isinstance(tensor, (Tensor, Tensor_)):
@@ -988,7 +1060,7 @@ class P2POp:
         P2POp Object.
 
     Raises:
-        ValueError: when `op` is not string or function of 'isend' and 'irecv'.
+        TypeError: when `op` is not string or function of 'isend' and 'irecv'.
         TypeError: when `tensor` is not type of Tensor or 'peer' is not int.
         NotImplementedError: when `tag` is not 0.
 
@@ -1000,6 +1072,7 @@ class P2POp:
         >>> import mindspore
         >>> from mindspore.mint.distributed import P2POp, isend, irecv
         >>> from mindspore import Tensor
+        >>> # Launch 2 processes.
         >>> send_tensor = Tensor(1.)
         >>> send_op = P2POp('isend', send_tensor, 1)
         >>> send_op = P2POp(isend, send_tensor, 1)
@@ -1018,20 +1091,25 @@ class P2POp:
     def __new__(cls, op, tensor, peer, group=None, tag=0):
         if isinstance(op, str):
             op_name = op
+            if op_name not in ["isend", "irecv"]:
+                raise TypeError(
+                    f"Expected op to be of type isend or irecv, but got {op_name}"
+                )
         else:
+            if op not in [isend, irecv]:
+                raise TypeError(
+                    f"Expected op to be of type isend or irecv, but got {op}"
+                )
             op_name = op.__name__
-        if op_name not in ["isend", "irecv"]:
-            raise ValueError(
-                f"Expected ``op`` to be of type ``isend`` or `irecv``, but got {op_name}"
-            )
+
         if not isinstance(tensor, (Tensor, Tensor_)):
             raise TypeError(
-                f"Expected ``tensor`` to be Tensor, but got {type(tensor)}."
+                f"Expected tensor to be Tensor, but got {type(tensor)}."
             )
         if not isinstance(peer, int):
             raise TypeError("For P2POp, the peer must be int")
         if tag != 0:
-            raise NotImplementedError("``tag`` not support yet.")
+            raise NotImplementedError("tag is not support yet.")
         return object.__new__(cls)
 
 
@@ -1080,7 +1158,7 @@ def batch_isend_irecv(p2p_op_list):
         >>> import numpy as np
         >>> import mindspore
         >>> from mindspore.mint.distributed import init_process_group, get_rank, get_world_size
-        >>> from mindspore.mint.distributed import import batch_isend_irecv, P2POp
+        >>> from mindspore.mint.distributed import batch_isend_irecv, P2POp
         >>> from mindspore import Tensor
         >>>
         >>> init_process_group()
@@ -1099,9 +1177,9 @@ def batch_isend_irecv(p2p_op_list):
         >>> output = batch_isend_irecv(p2p_op_list)
         >>> print(recv_tensor)
         rank 0:
-        (Tensor(shape=[], dtype=Float32, value= 0), Tensor(shape=[], dtype=Float32, value= 2))
+        2.0
         rank 1:
-        (Tensor(shape=[], dtype=Float32, value= 0), Tensor(shape=[], dtype=Float32, value= 1))
+        1.0
     """
     tensors = []
     op_types = []
@@ -1171,7 +1249,7 @@ def scatter_tensor(output_tensor, input_tensor, src=0, group=None, async_op=Fals
         CommHandle, CommHandle is an async work handle, if `async_op` is set to True.
         CommHandle will be None, when `async_op` is False.
 
-    Raise:
+    Raises:
         TypeError: If the type of the first input parameter is not Tensor, or any of `op` and `group` is not a str.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
@@ -1259,7 +1337,7 @@ def gather_into_tensor(output_tensor, input_tensor, dst=0, group=None, async_op=
         CommHandle, CommHandle is an async work handle, if `async_op` is set to True.
         CommHandle will be None, when `async_op` is False.
 
-    Raise:
+    Raises:
         TypeError: If the type of the `input_tensor` or `output_tensor` parameter is not Tensor,
             or any of `op` and `group` is not a str.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
@@ -1355,7 +1433,7 @@ def broadcast(tensor, src, group=None, async_op=False):
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -1370,7 +1448,6 @@ def broadcast(tensor, src, group=None, async_op=False):
             This example should be run with 2 devices.
 
         >>> import mindspore as ms
-        >>> from mindspore import Tensor
         >>> from mindspore.mint.distributed import init_process_group, broadcast
         >>> import numpy as np
         >>> # Launch 2 processes.
@@ -1381,11 +1458,6 @@ def broadcast(tensor, src, group=None, async_op=False):
         >>> print(data)
         [[0. 1. 2. 3.]
          [4. 5. 6. 7.]]
-
-    Tutorial Examples:
-        - `Distributed Set Communication Primitives - Broadcast
-          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#broadcast>`_
-
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For broadcast, the input tensor must be tensor")
@@ -1448,10 +1520,6 @@ def barrier(group=None, async_op=False, device_ids=None):
         >>> # Launch 2 processes.
         >>> init_process_group()
         >>> barrier()
-
-    Tutorial Examples:
-        - `Distributed Set Communication Primitives - Barrier
-          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#barrier>`_
     """
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -1465,7 +1533,7 @@ def barrier(group=None, async_op=False, device_ids=None):
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     output = dist_comm_barrier_op(group)
-    _, handle = _deal_comm_outputs(output, async_op)
+    _, handle = _deal_comm_outputs(output, async_op, True)
     return handle
 
 
@@ -1474,8 +1542,7 @@ def send(tensor, dst=0, group=None, tag=0):
     Send tensors to the specified dest_rank.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to send.
@@ -1504,16 +1571,25 @@ def send(tensor, dst=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import send
+        >>> from mindspore.mint.distributed import send, recv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
+        # Launch 2 processes.
         >>> init_process_group()
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> send(input_, 0)
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     send(input_, 1)
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     out = recv(x, src=0)
+        >>>     print(x)
+        rank 1:
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For send, the input tensor must be tensor")
@@ -1542,8 +1618,7 @@ def recv(tensor, src=0, group=None, tag=0):
     Receive tensors from src.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to fill with received data.
@@ -1575,24 +1650,25 @@ def recv(tensor, src=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import recv
+        >>> from mindspore.mint.distributed import send, recv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
         # Launch 2 processes.
-        Process 0 send the following array to Process 1
-        [[ 0.  1.]
-         [ 2.  3.]]
         >>> init_process_group()
-        >>> x = ms.Tensor(np.zeros([2, 2]))
-        # Process 1 receive tensor from Process 0.
-        >>> out = recv(x, src=0)
-        >>> print(out)
-        [[ 0.  1.]
-         [ 2.  3.]]
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     send(input_, 1)
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     out = recv(x, src=0)
+        >>>     print(x)
+        rank 1:
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For recv, the input tensor must be tensor")
@@ -1617,8 +1693,7 @@ def isend(tensor, dst=0, group=None, tag=0):
     Send tensors to the specified dest_rank asynchronously.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to send.
@@ -1650,17 +1725,27 @@ def isend(tensor, dst=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import isend
+        >>> from mindspore.mint.distributed import isend, irecv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
+        # Launch 2 processes.
         >>> init_process_group()
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> handle = isend(input_, 0)
-        >>> handle.wait()
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     handle = isend(input_, 1)
+        >>>     handle.wait()
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     handle = irecv(x, src=0)
+        >>>     handle.wait()
+        >>>     print(x)
+        rank 1:
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For isend, the input tensor must be tensor")
@@ -1689,8 +1774,7 @@ def irecv(tensor, src=0, group=None, tag=0):
     Receive tensors from src asynchronously.
 
     Note:
-        - Send and Receive must be used in combination and have same tag.
-        - Only support PyNative mode, Graph mode is not currently supported.
+        Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
         tensor (Tensor): Tensor to fill with received data.
@@ -1723,25 +1807,27 @@ def irecv(tensor, src=0, group=None, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
         >>> from mindspore.mint.distributed import init_process_group
-        >>> from mindspore.mint.distributed import irecv
+        >>> from mindspore.mint.distributed import isend, irecv, get_rank
         >>> from mindspore import Tensor
         >>> import numpy as np
         >>>
         # Launch 2 processes.
-        Process 0 send the following array to Process 1
-        [[ 0.  1.]
-         [ 2.  3.]]
         >>> init_process_group()
-        >>> x = ms.Tensor(np.zeros([2, 2]))
-        # Process 1 receive tensor from Process 0.
-        >>> handle = irecv(x, src=0)
-        >>> handle.wait()
-        >>> print(x)
-        [[ 0.  1.]
-         [ 2.  3.]]
+        >>> this_rank = get_rank()
+        # Process 0 send the array to Process 1
+        >>> if this_rank == 0:
+        >>>     input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>>     handle = isend(input_, 1)
+        >>>     handle.wait()
+        >>> if this_rank == 1:
+        >>>     x = Tensor(np.zeros([2, 8]).astype(np.float32))
+        >>>     handle = irecv(x, src=0)
+        >>>     handle.wait()
+        >>>     print(x)
+        rank 1:
+        [[1. 1. 1. 1. 1. 1. 1. 1.]
+         [1. 1. 1. 1. 1. 1. 1. 1.]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For irecv, the input tensor must be tensor")
@@ -1799,12 +1885,10 @@ def all_to_all(output_tensor_list, input_tensor_list, group=None, async_op=False
 
             This example should be run with 2 devices.
 
-        >>> import numpy as np
-        >>> import mindspore
+        >>> import mindspore as ms
         >>> from mindspore.mint.distributed import init_process_group, get_rank
         >>> from mindspore.mint.distributed import all_to_all
         >>> from mindspore import Tensor
-        >>> from mindspore.ops import zeros
         >>>
         >>> init_process_group()
         >>> this_rank = get_rank()
@@ -1915,7 +1999,6 @@ def all_to_all_single(output,
     scatter and gather input with split size to/from all rank, and return result in a single tensor.
 
     Note:
-        - 'output' and 'tensor' shape should be match across ranks.
         - Only support PyNative mode, Graph mode is not currently supported.
 
     Args:
@@ -1968,9 +2051,9 @@ def all_to_all_single(output,
         >>>     result = all_to_all_single(output, tensor, [2, 1], [2, 1])
         >>>     print(output)
         >>> if this_rank == 1:
-        >>>     output = Tensor(np.zeros([3, 3]).astype(np.float32))
+        >>>     output = Tensor(np.zeros([2, 3]).astype(np.float32))
         >>>     tensor = Tensor([[9, 10., 11], [12, 13, 14]])
-        >>>     result = all_to_all_single(output, tensor)
+        >>>     result = all_to_all_single(output, tensor, [1, 1], [1, 1])
         >>>     print(output)
         rank 0:
         [[ 0.  1.  2.]
@@ -2055,7 +2138,7 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -2071,12 +2154,10 @@ def all_gather(tensor_list, tensor, group=None, async_op=False):
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> from mindspore import ops
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import all_gather
         >>> from mindspore import Tensor
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> init_process_group()
         >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> out_tensors = [Tensor(np.zeros([2, 8]).astype(np.float32)), Tensor(np.zeros([2, 8]).astype(np.float32))]
@@ -2137,8 +2218,8 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
     Raises:
         TypeError: If the type of `output` parameter is not Tensor, `input_list` is not Tensor List.
         TypeError: If any of `op` and `group` is not a str. async_op is not bool or 'op' is invalid.
-        TypeError: If size of `input_list` is not equal to group size。
-        TypeError: If the type or shape of `output` not equal to the member of `input_list`。
+        TypeError: If size of `input_list` is not equal to group size.
+        TypeError: If the type or shape of `output` not equal to the member of `input_list`.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
@@ -2156,13 +2237,11 @@ def reduce_scatter(output, input_list, op=ReduceOp.SUM, group=None, async_op=Fal
 
             This example should be run with 2 devices.
 
-        >>> import mindspore as ms
         >>> from mindspore import Tensor
         >>> from mindspore.mint.distributed import init_process_group
         >>> from mindspore.mint.distributed import reduce_scatter
         >>> import numpy as np
         >>>
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> init_process_group()
         >>> input_tensors = [Tensor(np.ones([4, 8]).astype(np.float32)), Tensor(np.ones([4, 8]).astype(np.float32))]
         >>> output_tensor = Tensor(np.zeros([4, 8]).astype(np.float32))
@@ -2226,15 +2305,15 @@ def scatter(tensor, scatter_list, src=0, group=None, async_op=False):
         CommHandle, CommHandle is an async work handle, if `async_op` is set to True.
         CommHandle will be None, when `async_op` is False.
 
-    Raise:
+    Raises:
         TypeError: If the type of `tensor` parameter is not Tensor, `scatter_list` is not Tensor List.
         TypeError: If any of `op` and `group` is not a str. async_op is not bool or 'op' is invalid.
-        TypeError: If size of `scatter_list` is not equal to group size。
-        TypeError: If the type or shape of `tensor` not equal to the member of `scatter_list`。
+        TypeError: If size of `scatter_list` is not equal to group size.
+        TypeError: If the type or shape of `tensor` not equal to the member of `scatter_list`.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -2248,22 +2327,22 @@ def scatter(tensor, scatter_list, src=0, group=None, async_op=False):
 
             This example should be run with 2 devices.
 
-        >>> import mindspore as ms
+        >>> from mindspore import Tensor
         >>> from mindspore.mint.distributed import init_process_group, scatter
         >>> import numpy as np
         >>> # Launch 2 processes.
         >>>
         >>> init_process_group()
-        >>> inputs = [Tensor(np.arange(4).reshape([2.0, 2])), Tensor(np.arange(4).reshape([2, 2.0]))]
+        >>> inputs = [Tensor(np.ones([2, 2]).astype(np.float32)), Tensor(np.ones([2, 2]).astype(np.float32))]
         >>> output = Tensor(np.zeros([2, 2]).astype(np.float32))
         >>> scatter(output, inputs, src=0)
         >>> print(output)
         # rank_0
-        [[0. 1.]
-         [2. 3.]]
+        [[1. 1.]
+         [1. 1.]]
         # rank_1
-        [[0. 1.]
-         [2. 3.]]
+        [[1. 1.]
+         [1. 1.]]
     """
     _check_all_tensors(scatter_list)
     _check_all_tensor_same_dtype_and_shape(scatter_list)
@@ -2316,15 +2395,15 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
         CommHandle, CommHandle is an async work handle, if `async_op` is set to True.
         CommHandle will be None, when `async_op` is False.
 
-    Raise:
+    Raises:
         TypeError: If the type of input tensor is not Tensor, or gather_list is not Tensor list.
         TypeError: If dst is not an integer, group is not a string or async_op is not bool.
-        TypeError: If size of `gather_list` is not equal to group size。
-        TypeError: If the type or shape of `tensor` not equal to the member of `gather_list`。
+        TypeError: If size of `gather_list` is not equal to group size.
+        TypeError: If the type or shape of `tensor` not equal to the member of `gather_list`.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``CPU``
 
     Examples:
         .. note::
@@ -2391,3 +2470,335 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
     output = dist_comm_gather_op(tensor, gather_list, group_size, dst, rank_id, group)
     _, handle = _deal_comm_outputs(output, async_op)
     return handle
+
+
+def scatter_object_list(scatter_object_output_list, scatter_object_input_list, src=0, group=None):
+    r"""
+    Scatters picklable objects in scatter_object_input_list to the whole group.
+
+    Note:
+        - Similar to :func:`mindspore.mint.distributed.scatter`, but Python objects can be passed in.
+        - Only the objects in process `src` (global rank) will do scatter.
+        - Only support PyNative mode, Graph mode is not currently supported.
+
+    Args:
+        scatter_object_output_list (list[Any]): Non-empty list whose first element
+            will store the object scattered to this rank.
+        scatter_object_input_list (list[Any]): List of python objects to scatter.
+            it must be specified on the source rank.
+        src (int, optional): Specifies the rank(global rank) of the process that send the tensor.
+            And only process `src` will send the tensor. Default: ``0`` .
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+
+    Raises:
+        TypeError: If `group` is not a str or `src` is not an integer.
+        TypeError: If size of `scatter_object_input_list` is not equal to group size.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> from mindspore.mint.distributed import init_process_group, scatter_object_list
+        >>> init_process_group()
+        >>> obj = ["test",  {1: 2}]
+        >>> scatter_object_output_list=[None]
+        >>> scatter_object_list(scatter_object_output_list, obj)
+        >>> print(scatter_object_output_list)
+        # rank_0
+        ['test']
+        # rank_1
+        [{1: 2}]
+    """
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(
+            "For 'scatter_object_list', the argument 'group' must be type of string, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    if not isinstance(scatter_object_output_list, list) or not scatter_object_output_list:
+        raise TypeError(f"The scatter_object_output_list can not be empty.")
+    if not isinstance(src, int):
+        raise TypeError("For scatter_object_list, the src must be int")
+    group_size = get_group_size(group)
+    rank_id = get_rank()
+    tensor_sizes = []
+    tensor_list = []
+    if rank_id == src:
+        if not isinstance(scatter_object_input_list, list) or len(scatter_object_input_list) != group_size:
+            raise TypeError(
+                "The len of scatter_object_input_list must be equal to group rank size, "
+                "but got {len(scatter_object_input_list)}."
+            )
+        for obj in scatter_object_input_list:
+            _, size = _object_to_tensor(obj)
+            tensor_sizes.append(Tensor([size], dtype=mstype.int32))
+        max_size = int(max(tensor_sizes).item())
+        for obj in scatter_object_input_list:
+            tensor, _ = _object_to_tensor(obj, max_size)
+            tensor_list.append(tensor)
+    else:
+        tensor_sizes = [Tensor([0], dtype=mstype.int32) for i in range(group_size)]
+
+    object_size = cat(tensor_sizes)
+    broadcast(object_size, src, group)
+    max_object_size = int(max(object_size).item())
+    data = np.zeros((max_object_size)).astype(np.int8)
+    if rank_id != src:
+        tensor_list = [Tensor(data) for i in range(group_size)]
+    out_tensor = Tensor(data)
+    scatter(out_tensor, tensor_list, src, group)
+    group_id = get_group_rank_from_world_rank(rank_id, group)
+    scatter_object_output_list[0] = _tensor_to_object(out_tensor, object_size[group_id])
+
+
+def gather_object(obj, object_gather_list=None, dst=0, group=None):
+    r"""
+    Gathers python objects from the whole group in a single process.
+
+    Note:
+        - Similar to :func:`mindspore.mint.distributed.gather`, but Python objects can be passed in.
+        - Only support PyNative mode, Graph mode is not currently supported.
+
+    Args:
+        obj (Any): The python objects to be gathered.
+        object_gather_list (list[Any], optional): List of same-sized tensors to use for gathered data.
+            On the ``dst`` rank, it should be correctly sized as the size of the group for this
+            collective and will contain the output. Default: ``None``.
+        dst (int, optional): Specifies the rank(global rank) of the process that receive the tensor.
+            And only process `dst` will receive the gathered tensor. Default: ``0`` .
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+
+    Raises:
+        TypeError: If dst is not an integer, or group is not a string.
+        TypeError: If size of `object_gather_list` is not equal to group size.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> from mindspore.mint.distributed import init_process_group, gather_object, get_rank
+        >>> init_process_group()
+        >>> rank = get_rank()
+        >>> obj = ["test", {1: 2}]
+        >>> object_gather_list=[None, None]
+        >>> gather_object(obj[rank], object_gather_list)
+        >>> print(object_gather_list)
+        # rank_0
+        ['test', {1: 2}]
+    """
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(
+            "For 'gather_object', the argument 'group' must be type of string, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    if not isinstance(dst, int):
+        raise TypeError("For gather_object, the dst must be int")
+    group_size = get_group_size(group)
+    rank_id = get_rank()
+    if rank_id == dst:
+        if not isinstance(object_gather_list, list) or len(object_gather_list) != group_size:
+            raise TypeError(
+                f"The len of object_gather_list must be equal to group rank size, but got {len(object_gather_list)}."
+            )
+    _, size = _object_to_tensor(obj)
+    tensor = Tensor([size], dtype=mstype.int32)
+    object_size_list = [Tensor([0], dtype=mstype.int32) for i in range(group_size)]
+    all_gather(object_size_list, tensor, group=group)
+    max_object_size = int(max(object_size_list).item())
+    in_tensor, size = _object_to_tensor(obj, max_object_size)
+    data = np.zeros((size)).astype(np.int8)
+    object_tensor_list = [Tensor(data) for i in range(group_size)]
+    gather(in_tensor, object_tensor_list, dst, group)
+    if rank_id != dst:
+        return
+    for i, item in enumerate(object_size_list):
+        tensor_size = int(item.item())
+        tensor = object_tensor_list[i]
+        object_gather_list[i] = _tensor_to_object(tensor, tensor_size)
+
+
+def broadcast_object_list(object_list, src=0, group=None, device=None):
+    """
+    Broadcasts the entire group of input Python objects.
+
+    Note:
+        - Similar to :func:`mindspore.mint.distributed.broadcast`, but Python objects can be passed in.
+        - Only support PyNative mode, Graph mode is not currently supported.
+
+    Args:
+        object_list (list[Any]): list of input to be sent if src is the rank of current process,
+            and list to be used to save received data otherwise.
+        src (int, optional): Specifies the rank(global rank) of the process that broadcast the Python objects.
+            And only process `src` will broadcast the Python objects. Default: ``0`` .
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+        device (str, optional): Currently it is a reserved parameter. Default: ``None``.
+
+    Raises:
+        TypeError: If `src` is not an integer or `group` is not a string.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> from mindspore.mint.distributed import init_process_group, broadcast_object_list, get_rank
+        >>> init_process_group()
+        >>> rank = get_rank()
+        >>> obj = ["test", 12, {1: 2}]
+        >>> if rank == 1:
+        >>>     obj = [None, None, None]
+        >>> broadcast_object_list(obj)
+        >>> print(obj)
+        ['test', 12, {1: 2}]
+    """
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(
+            "For 'broadcast_object_list', the argument 'group' must be type of string, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    if not isinstance(src, int):
+        raise TypeError("For broadcast_object_list, the src must be int")
+    if not isinstance(object_list, list) or not object_list:
+        raise TypeError(f"The object_list can not be empty.")
+    rank_id = get_rank()
+    tensor_sizes = []
+    tensor_list = []
+    size = 0
+    object_size_list = [Tensor([0], dtype=mstype.int32) for i in range(len(object_list))]
+    if rank_id == src:
+        tensor_list, tensor_sizes = zip(
+            *[_object_to_tensor(obj) for obj in object_list]
+        )
+        object_size_list = [Tensor([tensor_sizes[i]], dtype=mstype.int32) for i in range(len(tensor_sizes))]
+        object_tensor = cat(tensor_list)
+    object_size = cat(object_size_list)
+    broadcast(object_size, src, group)
+    size = int(sum(object_size).item())
+    if rank_id != src:
+        data = np.zeros((size)).astype(np.int8)
+        object_tensor = Tensor(data)
+    broadcast(object_tensor, src, group)
+    if rank_id != src:
+        offset = 0
+        for i, item in enumerate(object_size):
+            obj_size = item
+            obj_view = object_tensor[offset : offset + obj_size]
+            offset += obj_size
+            object_list[i] = _tensor_to_object(obj_view, obj_size)
+
+
+def all_gather_object(object_list, obj, group=None):
+    """
+    Aggregates Python objects in a specified communication group.
+
+    Note:
+        Similar to :func:`mindspore.mint.distributed.all_gather`, but Python objects can be passed in.
+
+    Args:
+        object_list (list[Any]): Output Python object list.
+        obj (Any): Python object to be broadcast from current process.
+        group (str, optional): The communication group to work on. If ``None``, which means ``"hccl_world_group"`` in
+            Ascend. Default: ``None``.
+
+    Raises:
+        TypeError: `group` is not a str.
+        TypeError: If size of `object_list` is not equal to group size.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> from mindspore.mint.distributed import init_process_group, get_rank
+        >>> from mindspore.mint.distributed import all_gather_object
+        >>> init_process_group()
+        >>> rank = get_rank()
+        >>> obj = ["test", {1: 2}]
+        >>> object_gather_list=[None, None]
+        >>> all_gather_object(object_gather_list, obj[rank])
+        >>> print(object_gather_list)
+        # rank_0
+        ['test', {1: 2}]
+        # rank_1
+        ['test', {1: 2}]
+    """
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError(
+            "For 'all_gather_object', the argument 'group' must be type of string, "
+            "but got 'group' type : {}.".format(type(group))
+        )
+    group_size = get_group_size(group)
+    if not isinstance(object_list, list) or len(object_list) != group_size:
+        raise TypeError(
+            f"The len of argument object_list must be equal to group rank size, but got {len(object_list)}."
+        )
+    _, size = _object_to_tensor(obj)
+    tensor = Tensor([size], dtype=mstype.int32)
+    object_size_list = [Tensor([0], dtype=mstype.int32) for i in range(group_size)]
+    all_gather(object_size_list, tensor, group=group)
+    max_object_size = int(max(object_size_list).item())
+    in_tensor, size = _object_to_tensor(obj, max_object_size)
+    data = np.zeros((size)).astype(np.int8)
+    object_tensor_list = [Tensor(data) for i in range(group_size)]
+    all_gather(object_tensor_list, in_tensor, group=group)
+
+    for i, item in enumerate(object_size_list):
+        tensor_size = int(item.item())
+        tensor = object_tensor_list[i]
+        object_list[i] = _tensor_to_object(tensor, tensor_size)

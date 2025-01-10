@@ -81,6 +81,24 @@ class EXPORT_WRAPPER MultiAscendCollectiveCommLib : public CollectiveCommunicati
 
   bool ResumeHcclComm() override;
 
+  bool AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
+                 const std::string &group_name, void *stream = nullptr) override;
+
+  bool AllReduce(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
+                 CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override;
+
+  bool Broadcast(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
+                 const std::string &group_name, void *stream = nullptr) override;
+
+  bool ReduceScatter(const void *send_buff, void *recv_buff, size_t recv_count, TypeId data_type,
+                     CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override;
+
+  bool Send(const void *send_buff, size_t count, TypeId data_type, uint32_t peer, const std::string &group_name,
+            void *stream = nullptr) override;
+
+  bool Recv(void *recv_buff, size_t count, TypeId data_type, uint32_t peer, const std::string &group_name,
+            void *stream = nullptr) override;
+
  private:
   CollectiveCommunicationLib *ascend_collective_comm_lib_;
   CollectiveCommunicationLib *lowlatency_collective_comm_lib_;

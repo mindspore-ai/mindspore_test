@@ -34,8 +34,8 @@ mindspore.ops.smooth_l1_loss
           - CPU/GPU: float16、float32、float64。
         - **target** (Tensor) - shape： :math:`(N, *)` 。
           
-          - Ascend: 与 `input` 的shape相同， `input` 和 `target` 遵循隐式类型转换规则，使数据类型一致。
-          - CPU/GPU: 与 `input` 的shape和数据类型相同。
+          - CPU/Ascend: 与 `input` 的shape相同， `input` 和 `target` 遵循隐式类型转换规则，使数据类型一致。
+          - GPU: 与 `input` 的shape和数据类型相同。
         - **beta** (number，可选) - 控制损失函数在L1Loss和L2Loss间变换的阈值，默认值： ``1.0`` 。
           
           - Ascend: 该值必须大于等于0。
@@ -54,5 +54,5 @@ mindspore.ops.smooth_l1_loss
         - **RuntimeError** - `input` 或 `target` 的数据类型不是float16，float32，float64和bfloat16中的任一者。
         - **ValueError** - `input` 与 `target` 的shape不同。
         - **ValueError** - `reduction` 不是 ``'none'`` ， ``'mean'`` 和 ``'sum'`` 中的任一者。
-        - **RuntimeError** - `beta` 不是float，bool或int。
+        - **TypeError** - `beta` 不是float，bool或int。
         - **RuntimeError** - `beta` 小于等于0。

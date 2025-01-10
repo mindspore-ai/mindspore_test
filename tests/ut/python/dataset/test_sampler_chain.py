@@ -523,6 +523,38 @@ def test_add_user_defined_sampler_result():
         assert item["data"] == expected_result[i]
 
 
+def test_generator_sampler_chain():
+    """
+    Feature: Chain sampler
+    Description: Test using add_child on user defined sampler for GeneratorDataset
+    Expectation: Raise runtime error that it is not supported yet
+    """
+
+    class MyDataset:
+        def __init__(self):
+            self.data = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+        def __getitem__(self, index):
+            return self.data[index]
+
+        def __len__(self):
+            return len(self.data)
+
+    class MySampler(ds.Sampler):
+        def __iter__(self):
+            for index in range(5, 10):
+                yield index
+
+    # Sequential sampler generates indices from 0 to 9, then user defined sampler selects
+    # from the 5th to 9th of them
+    sequential_sampler = ds.SequentialSampler(num_samples=10)
+    sampler = MySampler()
+    sampler.add_child(sequential_sampler)
+    with pytest.raises(RuntimeError) as e:
+        _ = ds.GeneratorDataset(MyDataset(), column_names=["data"], sampler=sampler)
+    assert "GeneratorDataset does not support user defined sampler with child sampler yet" in str(e.value)
+
+
 if __name__ == '__main__':
     test_numpyslices_sampler_no_chain()
     test_numpyslices_sampler_chain()

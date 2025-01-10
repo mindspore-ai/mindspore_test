@@ -26,6 +26,7 @@
 #include "distributed/rpc/tcp/connection.h"
 #include "distributed/rpc/tcp/connection_pool.h"
 #include "distributed/rpc/tcp/event_loop.h"
+#include "distributed/rpc/tcp/event_loop_group.h"
 
 namespace mindspore {
 namespace distributed {
@@ -39,8 +40,12 @@ void ConnectedEventHandler(int fd, uint32_t events, void *context);
 
 class TCPComm {
  public:
-  explicit TCPComm(bool enable_ssl = false)
-      : server_fd_(-1), recv_event_loop_(nullptr), send_event_loop_(nullptr), enable_ssl_(enable_ssl) {}
+  explicit TCPComm(bool enable_ssl = false, const EventLoopGroupPtr &event_loop_group = nullptr)
+      : server_fd_(-1),
+        recv_event_loop_(nullptr),
+        send_event_loop_(nullptr),
+        event_loop_group_(event_loop_group),
+        enable_ssl_(enable_ssl) {}
   TCPComm(const TCPComm &) = delete;
   TCPComm &operator=(const TCPComm &) = delete;
   ~TCPComm() = default;
@@ -118,6 +123,7 @@ class TCPComm {
   // All the connections share the same read and write event loop objects.
   EventLoop *recv_event_loop_;
   EventLoop *send_event_loop_;
+  const EventLoopGroupPtr &event_loop_group_;
 
   // The connection pool used to store new connections.
   std::shared_ptr<ConnectionPool> conn_pool_;

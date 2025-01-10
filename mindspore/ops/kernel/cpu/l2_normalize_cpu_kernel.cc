@@ -152,8 +152,8 @@ bool L2NormalizeCpuFunc<T>::RunFunc(const std::vector<kernel::KernelTensor *> &i
                                     const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kL2NormalizeInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kL2NormalizeOutputsNum, kernel_name_);
-  auto input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input_addr = GetDeviceAddress<T>(inputs, 0);
+  auto output_addr = GetDeviceAddress<T>(outputs, 0);
 
   int dims = SizeToInt(input_shape_.size());
   auto reduce_shape = input_shape_;

@@ -1,0 +1,14 @@
+log10:
+  - op_yaml: log10_op.yaml
+    py_method: tensor_log10
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/log10_method.yaml
+    py_method: tensor_log10
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

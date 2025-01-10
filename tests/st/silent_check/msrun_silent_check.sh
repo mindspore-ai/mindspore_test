@@ -26,7 +26,7 @@ export ASCEND_GLOBAL_LOG_LEVEL=1
 export ASCEND_GLOBAL_EVENT_ENABLE=0
 
 export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3
-export MS_DEV_DUMP_IR_PASSES="silent_check_v2,graph_build"
+export MS_DEV_DUMP_IR_PASSES="silent_check,graph_build"
 
 export HCCL_EXEC_TIMEOUT=8
 

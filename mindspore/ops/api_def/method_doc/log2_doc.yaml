@@ -1,0 +1,44 @@
+log2:
+  description: |
+    log2() -> Tensor
+
+    Returns the logarithm to the base 2 of a tensor element-wise
+
+    .. math::
+        y_i = \log_2(x_i)
+
+    .. warning::
+        - This is an experimental API that is subject to change or deletion.
+        - If the self value of operator Log2 is within the range (0, 0.01] or [0.95, 1.05], the output accuracy
+          may be affacted.
+  
+    .. note::
+        The value of `self` must be greater than 0.
+
+    Returns:
+        Tensor, has the same shape as the `self`, and the dtype changes according to the `self.dtype`.
+    
+        - if `self.dtype` is in [float16, float32, float64, complex64, complex128], the output dtype is the same as the `self.dtype`.
+        - if `self.dtype` is double type, the output dtype is float64.
+        - if `self.dtype` is integer or boolean type on Ascend, the output dtype is float32.
+
+    Raises:
+        TypeError: If dtype of `self` is not one of bool, int8, int32, int64, uint8, uint32, uint64, float16, float32,
+            float64, double, complex64, complex128.
+        TypeError: If dtype of `self` is integer or boolean type on CPU and GPU.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([3.0, 5.0, 7.0]), mindspore.float32)
+        >>> output = Tensor.log2(x)
+        >>> print(output)
+        [1.5849625 2.321928  2.807355 ]
+        >>> x = Tensor(np.array([2, 4, 8]).astype(np.float16))
+        >>> output = Tensor.log2(x)
+        >>> print(output)
+        [1. 2. 3.]

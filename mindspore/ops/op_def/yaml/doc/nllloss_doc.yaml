@@ -27,9 +27,6 @@ nllloss:
             This is an experimental API that is subject to change or deletion.
             
         Args:
-            weight (Tensor, optional): The rescaling weight to each class, with shape :math:`(C,)` and data type only
-              supports float32 or float16 or bfloat16(only supported by Atlas A2 training series products). It should
-              have the same data type as `logits` . Default: ``'None'`` .
             reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
                 ``'sum'`` . Default: ``'mean'`` .
     
@@ -45,6 +42,9 @@ nllloss:
               or bfloat16(only supported by Atlas A2 training series products).
             - **labels** (Tensor) - Ground truth labels, with shape :math:`(N,)`, where each value belong to
               :math:`[0, C-1]`. Data type only supports uint8 or int32 or int64.
+            - **weight** (Tensor) - The rescaling weight to each class, with shape :math:`(C,)` and data type only
+              supports float32 or float16 or bfloat16(only supported by Atlas A2 training series products). It should
+              have the same data type as `logits` .
     
         Returns:
             Tuple of 2 tensors composed with `loss` and `total_weight`.

@@ -2175,8 +2175,8 @@ Status InverseMelScaleImpl(const std::shared_ptr<Tensor> &input, std::shared_ptr
   std::shared_ptr<Tensor> freq_bin_mat;
   RETURN_IF_NOT_OK(CreateFbanks<T>(&freq_bin_mat, n_stft, f_min, f_max, n_mels, sample_rate, norm, mel_type));
 
-  auto fb_ptr = &*freq_bin_mat->begin<float>();
-  Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>> matrix_fb(fb_ptr, n_mels, n_stft);
+  auto fb_ptr = &*freq_bin_mat->begin<T>();
+  Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> matrix_fb(fb_ptr, n_mels, n_stft);
   // pack melspec <n, n_mels, time>
   TensorShape input_shape = input->shape();
   TensorShape input_reshape({input->Size() / input_shape[-1] / input_shape[-2], input_shape[-2], input_shape[-1]});

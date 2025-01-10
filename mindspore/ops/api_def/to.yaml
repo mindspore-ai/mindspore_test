@@ -1,7 +1,0 @@
-to:
-  op_yaml: cast_op.yaml
-  py_method: tensor_to
-  Ascend: pyboost
-  CPU: pyboost
-  GPU: pyboost
-  interface: tensor

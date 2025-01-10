@@ -183,6 +183,7 @@ void SeqpipeScheduler::GetBorderNode() {
       if (node.border->HasPrimalAttr(SEQ_CHUNK)) {
         node.seq_chunk = GetValue<int64_t>(node.border->GetPrimalAttr(SEQ_CHUNK));
       }
+      node.border->AddAttr(SEQ_CHUNK, MakeValue<int64_t>(node.seq_chunk));
     }
   };
   set_seq_chunk(fwd_begin_);
@@ -222,8 +223,12 @@ void SeqpipeScheduler::SpecialControl(const std::pair<BorderStruct, BorderStruct
 }
 
 void SeqpipeScheduler::ExtractDataStruct() {
-  seq_chunk_size_ = int64_t(fwd_cell_.size() / micro_size_ / chunk_num_);
-  fp_block_size_ = fwd_cell_.size();
+  auto max_seq = std::max_element(fwd_cell_.begin(), fwd_cell_.end(),
+                                  [](const auto &a, const auto &b) { return a.seq_chunk < b.seq_chunk; });
+  if (max_seq != fwd_cell_.end()) {
+    seq_chunk_size_ = max_seq->seq_chunk + 1;
+  }
+  fp_block_size_ = LongToSize(seq_chunk_size_ * micro_size_ * chunk_num_);
   sorted_fwd_begin_ = BorderMap(fwd_begin_);
   sorted_fwd_end_ = BorderMap(fwd_end_);
   sorted_fwd_cell_ = BorderMap(fwd_cell_);
@@ -233,7 +238,7 @@ void SeqpipeScheduler::ExtractDataStruct() {
   execute_order_ = ExecuteOrder();
   fp_execute_order_ = FpBpExecuteOrder(false);
   bp_execute_order_ = FpBpExecuteOrder(true);
-  calm_down_index_ = 2 * fp_block_size_ - warm_up_size_;
+  calm_down_index_ = kSizeTwo * fp_block_size_ - warm_up_size_;
 }
 
 size_t SeqpipeScheduler::GetOrderIndex(size_t seq_chunk, size_t micro, size_t chunk, bool is_bp, std::string type) {
@@ -352,14 +357,14 @@ void SeqpipeScheduler::Reorder() {
   size_t bp_delta = 1;
   if (stage_ == stage_num_ - 1 && fp_block_size_ < LongToSize(stage_num_) + warm_up_size_) {
     size_t fp_1f1b_size = fp_block_size_ - warm_up_size_;
-    warm_up_size_stage0 -= (stage_num_ - fp_1f1b_size);
+    warm_up_size_stage0 -= (LongToSize(stage_num_) - fp_1f1b_size);
     bp_delta = 0;
   }
   // stage0 first bp send position is warm_up_size_stage0 + 1.
   // Thus, the last stage doing bp receive position should match the stage0 send position.
   if (chunk_num_ > 1 && stage_ == stage_num_ - 1) {
     last_stage_pre_fetched_bp_index_ =
-      GetOrderIndex(LongToSize(seq_chunk_size_ - 1), 0, LongToSize(chunk_num_ - 2), true, "bp");
+      GetOrderIndex(LongToSize(seq_chunk_size_ - 1), 0, LongToSize(chunk_num_ - INT64_TWO), true, "bp");
     auto pre_recv = execute_order_[warm_up_size_stage0 + 1];
     last_stage_pre_fetch_bp_index_ =
       GetOrderIndex(pre_recv.seq_chunk, pre_recv.micro, pre_recv.chunk, true, "bp") + bp_delta;

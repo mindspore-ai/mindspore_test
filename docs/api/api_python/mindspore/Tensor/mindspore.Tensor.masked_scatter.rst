@@ -10,7 +10,7 @@ mindspore.Tensor.masked_scatter
 
     参数：
         - **mask** (Tensor[bool]) - 一个bool Tensor, 其shape可以被广播到Tensor本身。
-        - **x** (Tensor) - 一个Tensor, 其数据类型与Tensor本身相同。 `tensor` 中的元素数量必须大于等于 `mask` 中的True元素
+        - **x** (Tensor) - 一个Tensor, 其数据类型与Tensor本身相同。 `tensor` 中的元素数量必须大于等于 `mask` 中的True元素\
           的数量。
 
     返回：

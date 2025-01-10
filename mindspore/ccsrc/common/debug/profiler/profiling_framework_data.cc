@@ -138,7 +138,7 @@ std::vector<uint8_t> OpRangeData::encode() {
 void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data) {
   auto profiler_manager = profiler::ProfilerManager::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_manager);
-  if (!profiler_manager->GetProfilingEnableFlag() || !profiler_manager->EnableCollectHost()) {
+  if (!profiler_manager->EnableCollectHost()) {
     return;
   }
   std::string op_name;

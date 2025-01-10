@@ -13,22 +13,62 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <memory>
+
 #include "plugin/device/ascend/kernel/internal/paged_attention_mask.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+
+#include <memory>
+#include "kernel/kernel.h"
+#include "utils/llm_manager.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
+
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalPagedAttentionMask::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                               const std::vector<KernelTensor *> &outputs) {
-  internal::OpParamPtr param_ptr = std::make_shared<internal::OpParam>();
-  param_ptr->opId = internal::OpId::PagedAttention;
-  internal::MixParam op_param;
-  op_param.maskType = internal::MixParam::MaskType::MASK_TYPE_NONE;
-  if (!(inputs[kIndex7]->GetType()->isa<TypeNone>())) {
-    op_param.maskType = internal::MixParam::MaskType::MASK_TYPE_ALIBI;
-  }
-  param_ptr->specificParam = op_param;
-  return param_ptr;
+bool InternalPagedAttentionMask::Init(const std::vector<KernelTensor *> &inputs,
+                                      const std::vector<KernelTensor *> &outputs) {
+  auto &llm_manager = LLMManager::GetInstance();
+  llm_manager.add_force_resize_kernel(kernel_name_);
+  MS_LOG(INFO) << "Force op '" << kernel_name_ << "' to be resized to update op param 'seq_len'";
+  return InternalKernelMod::Init(inputs, outputs);
 }
+
+internal::InternalOpPtr InternalPagedAttentionMask::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                                 const internal::OutputsImmutableInfoList &outputs_ii,
+                                                                 const std::vector<KernelTensor *> &ms_inputs,
+                                                                 const std::vector<KernelTensor *> &ms_outputs) {
+  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex8]->GetValueWithCheck<int64_t>());
+  param_.tor = ms_inputs[kIndex9]->GetValueWithCheck<float>();
+  param_.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
+  param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeNone;
+
+  // input alibi_mask is not None
+  if (!(ms_inputs[kIndex7]->GetType()->isa<TypeNone>())) {
+    param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeAlibi;
+  }
+
+  auto kv_cache_quant_mode = ms_inputs[kIndex11]->GetValueWithCheck<int64_t>();
+  param_.kv_cache_quant_mode = kv_cache_quant_mode;
+
+  return internal::CreatePagedAttentionOp(inputs_ii, outputs_ii, param_, internal::kInternalPagedAttentionOpName);
+}
+
+bool InternalPagedAttentionMask::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
+                                                const std::vector<KernelTensor *> &outputs) {
+  bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
+  bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
+  if (q_need_recreate || kv_need_recreate) {
+    return true;
+  }
+  return InternalKernelMod::IsNeedRecreate(inputs, outputs);
+}
+
+uint64_t InternalPagedAttentionMask::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len);
+}
+
+MS_INTERNAL_KERNEL_FACTORY_REG(PagedAttentionMask, internal::kInternalPagedAttentionOpName, InternalPagedAttentionMask);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(PagedAttentionMask, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4,
+                                     INDEX_5, INDEX_6, INDEX_7);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(PagedAttentionMask, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore

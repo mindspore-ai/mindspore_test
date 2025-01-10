@@ -25,7 +25,7 @@ clone:
             >>> import numpy as np
             >>> from mindspore import Tensor, ops
             >>> input = Tensor(np.ones((3,3)).astype("float32"))
-            >>> output = ops.clone(input)
+            >>> output = ops.auto_generate.clone(input)
             >>> print(output)
             [[1. 1. 1.]
              [1. 1. 1.]

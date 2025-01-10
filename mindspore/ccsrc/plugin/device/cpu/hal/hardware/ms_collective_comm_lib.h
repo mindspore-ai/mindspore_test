@@ -65,7 +65,10 @@ class MsCollectiveCommLib : public CollectiveCommunicationLib {
 
   bool AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                  const std::string &group_name, void *stream = nullptr) override;
-
+  bool Gather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
+              const std::string &group_name, void *stream = nullptr) override;
+  bool Scatter(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
+               const std::string &group_name, void *stream = nullptr) override;
   bool AllReduce(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                  CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override;
 
@@ -76,6 +79,8 @@ class MsCollectiveCommLib : public CollectiveCommunicationLib {
                      CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override {
     return true;
   }
+  bool CheckIfVal(const void *send_buff, void *recv_buff, const std::string &group_name,
+                  CommunicationGroupInfo *group_info);
 
  private:
   MsCollectiveCommLib();

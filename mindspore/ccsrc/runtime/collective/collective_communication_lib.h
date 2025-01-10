@@ -127,6 +127,14 @@ class CollectiveCommunicationLib {
                              CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) {
     return true;
   }
+  virtual bool Gather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
+                      const std::string &group_name, void *stream = nullptr) {
+    return true;
+  }
+  virtual bool Scatter(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
+                       const std::string &group_name, void *stream = nullptr) {
+    return true;
+  }
 
   virtual bool Send(const void *send_buff, size_t count, TypeId data_type, uint32_t peer, const std::string &group_name,
                     void *stream = nullptr) {
@@ -154,6 +162,9 @@ class CollectiveCommunicationLib {
   virtual void SetLocalGroupRank(const std::string &group_name, uint32_t local_rank_id);
 
   virtual void SetLocalGroupSize(const std::string &group_name, uint32_t local_group_size);
+
+  // A helper func to pass the host communication lib into CCOOL to assist in creating a communication group
+  virtual void SetHelperCommLib(CollectiveCommunicationLib *comm_lib);
 
   virtual bool ResumeHcclComm() { return false; }
 

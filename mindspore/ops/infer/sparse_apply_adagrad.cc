@@ -24,7 +24,7 @@
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "abstract/utils.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ir/dtype/container.h"
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"

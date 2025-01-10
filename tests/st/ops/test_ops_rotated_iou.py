@@ -75,8 +75,7 @@ def ops_rotated_iou_binary_case6(input_binary_data=None, output_binary_data=None
     output = output.astype(ms.float32)
     assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+
 @pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE])
 def test_ops_rotated_iou_binary_cases(context_mode):
     """

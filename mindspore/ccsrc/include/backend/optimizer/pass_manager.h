@@ -36,7 +36,10 @@ class BACKEND_EXPORT PassManager {
   // Get all the passes added by AddPass
   const std::vector<PassPtr> &Passes() const { return passes_; }
   // Add graph pass, the pass object will be freed when pass manager freed.
+  // Please use AddFusionPass instead if graph pass is doing fusion.
   virtual void AddPass(const PassPtr &pass);
+  // Add graph fusion pass, which can turn on/off by graphkernelflags.
+  void AddFusionPass(const PassPtr &pass, bool condition = true);
   // Run passes added in pass manager on the input graph
   // @param [in out] graph The graph to be optimized
   // @return true, graph changed
@@ -59,6 +62,7 @@ class BACKEND_EXPORT PassManager {
   std::vector<PassPtr> passes_;
   bool run_only_once_;
   CacheManagerPtr cache_manager_;
+  std::map<PassPtr, bool> fusion_passes_switch_;
 };
 using PassManagerPtr = std::shared_ptr<PassManager>;
 }  // namespace opt

@@ -17,6 +17,7 @@ import os
 import subprocess
 import shutil
 import numpy as np
+
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context
@@ -323,7 +324,7 @@ def test_pipeline_with_begin_end_inline():
     """
     context.set_auto_parallel_context(
         device_num=32, global_rank=0, pipeline_stages=2)
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./pipeline_with_begin_end_inline")
     context.set_context(jit_config={"jit_level": "O2"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     if os.path.exists("./speed_up.json"):
@@ -342,18 +343,18 @@ def test_pipeline_with_begin_end_inline():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./pipeline_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./pipeline_with_begin_end_inline/rank_0")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./rank_0/*validate*.ir"
+    file = "./pipeline_with_begin_end_inline/rank_0/*validate*.ir"
     para = " call @"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "2"
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./pipeline_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./pipeline_with_begin_end_inline/rank_0")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
     context.set_context(save_graphs=False)
@@ -367,7 +368,7 @@ def test_grad_accumulation_with_begin_end_inline():
     """
     context.set_auto_parallel_context(
         device_num=32, global_rank=0, pipeline_stages=2)
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./grad_accumulation_with_begin_end_inline")
     context.set_context(jit_config={"jit_level": "O2"})
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     if os.path.exists("./speed_up.json"):
@@ -386,18 +387,18 @@ def test_grad_accumulation_with_begin_end_inline():
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./grad_accumulation_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./grad_accumulation_with_begin_end_inline/rank_0")
     model.train(2, dataset, dataset_sink_mode=False)
-    file = "./rank_0/*validate*.ir"
+    file = "./grad_accumulation_with_begin_end_inline/rank_0/*validate*.ir"
     para = " call @"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "2"
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./grad_accumulation_with_begin_end_inline/rank_0"):
+        shutil.rmtree("./grad_accumulation_with_begin_end_inline/rank_0")
     if os.path.exists("./speed_up.json"):
         os.remove("./speed_up.json")
     context.set_context(save_graphs=False)
@@ -409,7 +410,6 @@ def test_pipeline_split_stage0_flops():
     Description: parallel subgraph inline in grad parallel
     Expectation: success
     """
-    context.set_context(save_graphs=True)
     context.set_auto_parallel_context(
         device_num=32, global_rank=0, pipeline_stages=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
@@ -425,10 +425,9 @@ def test_pipeline_split_stage0_flops():
     model.train(2, dataset, dataset_sink_mode=False, callbacks=[
                 FlopsUtilizationCollector(dataset.get_dataset_size())])
 
-
 def test_pipeline_split_stage0_flops_ma():
     """
-    Feature: parallel subgraph inline
+    Feature: record flops info with env and callback
     Description: parallel subgraph inline in grad parallel
     Expectation: success
     """
@@ -443,20 +442,18 @@ def test_pipeline_split_stage0_flops_ma():
     params = net.network.cell1.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
-    os.environ["ENABLE_FLOPS_UTILIZATION_COLLECTOR"] = "1"
     os.environ["MA_LOG_DIR"] = os.getcwd()
     model = Model(net, optimizer=optimizer)
-    model.train(2, dataset, dataset_sink_mode=False)
+    model.train(2, dataset, FlopsUtilizationCollector(enable_ma_collector=True), dataset_sink_mode=False)
     file = "flops_rank_0.txt"
-    para = "flops{type=\"model_flops\"} 2097152"
+    para = "flops{type=\"model_flops\", rank_id=\"0\"} 2097152"
     output = subprocess.check_output(
         ["grep '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "1"
-    if os.path.exists("time_step_rank_0"):
-        os.remove("time_step_rank_0")
-    if os.path.exists("flops_rank_0"):
-        os.remove("flops_rank_0")
-    os.environ["ENABLE_FLOPS_UTILIZATION_COLLECTOR"] = ""
+    if os.path.exists("time_step_rank_0.txt"):
+        os.remove("time_step_rank_0.txt")
+    if os.path.exists("flops_rank_0.txt"):
+        os.remove("flops_rank_0.txt")
     os.environ["MA_LOG_DIR"] = ""

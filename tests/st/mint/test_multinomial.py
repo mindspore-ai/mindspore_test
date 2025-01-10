@@ -34,7 +34,6 @@ def multinomial_forward_dyn_func(x, num_samples, replacement):
 
 
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_multinomial_std(mode):
     """
     Feature: standard forward, backward features.

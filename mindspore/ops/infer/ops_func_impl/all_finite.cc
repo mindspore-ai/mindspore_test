@@ -16,7 +16,6 @@
 
 #include "infer/ops_func_impl/all_finite.h"
 #include "utils/ms_context.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

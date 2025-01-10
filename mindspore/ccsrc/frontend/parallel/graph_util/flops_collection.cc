@@ -32,8 +32,11 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "utils/check_convert_utils.h"
+#include "infer/ops_func_impl/flash_attention_score.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
+using mindspore::ops::FASInputLayoutMode;
 namespace parallel {
 namespace {
 
@@ -53,22 +56,49 @@ std::set<std::string> fp_primitive_set = {prim::kPrimMatMul->name(), prim::kPrim
 std::set<std::string> bp_primitive_set = {prim::kPrimMatMul->name(), prim::kPrimFlashAttentionScoreGrad->name(),
                                           prim::kPrimBatchMatMul->name(), prim::kPrimConv2DBackpropInput->name(),
                                           prim::kPrimConv2DBackpropFilter->name()};
-constexpr size_t k_bsh_shape_size = 3;
 constexpr size_t k_double_expand_ratio = 2;
 
-int64_t CalFAFlops(const std::vector<ShapeVector> &input_shapes) {
+int64_t CalFAFlops(const std::vector<ShapeVector> &input_shapes, int64_t input_layout) {
   (void)CheckAndConvertUtils::CheckInteger("rank of 'flash attention inputs'", input_shapes.size(), kGreaterEqual,
                                            kIndex2, "FA");
   auto q_shape = input_shapes[0];
   auto k_shape = input_shapes[1];
-  auto b = q_shape[0];
   (void)CheckAndConvertUtils::CheckInRange("rank of 'flash attention input[0]'", q_shape.size(), kIncludeBoth,
                                            {kIndex3, kIndex4}, "FA");
   (void)CheckAndConvertUtils::CheckInRange("rank of 'flash attention input[1]'", k_shape.size(), kIncludeBoth,
                                            {kIndex3, kIndex4}, "FA");
-  auto s1 = q_shape.size() == k_bsh_shape_size ? q_shape[1] : q_shape[kIndex2];
-  auto s2 = k_shape.size() == k_bsh_shape_size ? k_shape[1] : k_shape[kIndex2];
-  auto h1 = q_shape.size() == k_bsh_shape_size ? q_shape[kIndex2] : q_shape[1] * q_shape[kIndex3];
+  int64_t b = 0;
+  int64_t s1 = 0;
+  int64_t s2 = 0;
+  int64_t h1 = 0;
+  switch (input_layout) {
+    case FASInputLayoutMode::BSH:
+      b = q_shape[0];
+      s1 = q_shape[1];
+      s2 = k_shape[1];
+      h1 = q_shape[kIndex2];
+      break;
+    case FASInputLayoutMode::BSND:
+      b = q_shape[0];
+      s1 = q_shape[1];
+      s2 = k_shape[1];
+      h1 = q_shape[kIndex2] * q_shape[kIndex3];
+      break;
+    case FASInputLayoutMode::SBH:
+      b = q_shape[1];
+      s1 = q_shape[0];
+      s2 = k_shape[0];
+      h1 = q_shape[kIndex2];
+      break;
+    case FASInputLayoutMode::BNSD:
+      b = q_shape[0];
+      s1 = q_shape[kIndex2];
+      s2 = k_shape[kIndex2];
+      h1 = q_shape[1] * q_shape[kIndex3];
+      break;
+    default:
+      MS_LOG(EXCEPTION) << "FA Not support layout: " << input_layout << " in flops collection.";
+  }
   return k_double_expand_ratio * k_double_expand_ratio * b * s1 * s2 * h1;
 }
 
@@ -81,8 +111,9 @@ OpInfoPtr GetFAInfo(const CNodePtr &node) {
   if (node->HasPrimalAttr("origin_input_shapes")) {
     op_info->origin_input_shapes = GetValue<std::vector<ShapeVector>>(node->GetPrimalAttr("origin_input_shapes"));
   }
-  op_info->full_flops = CalFAFlops(op_info->origin_input_shapes);
-  op_info->shard_flops = CalFAFlops(op_info->shard_input_shapes);
+  auto input_layout = GetInputValueFromCNode<int64_t>(node, ops::kFlashAttentionScoreInputLayoutIndex + 1);
+  op_info->full_flops = CalFAFlops(op_info->origin_input_shapes, input_layout);
+  op_info->shard_flops = CalFAFlops(op_info->shard_input_shapes, input_layout);
   return op_info;
 }
 
@@ -202,8 +233,19 @@ OpInfoPtr GetFwdNodeInfo(const CNodePtr &node) {
 OpInfoPtr GetBpNodeInfo(const CNodePtr &node, std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map) {
   MS_EXCEPTION_IF_NULL(node);
   std::string fwd_unique_id = GetValue<std::string>(node->GetPrimalAttr(kPrimalAttrForwardUniqueId));
-  auto fwd_info = op_info_map_dx_dw_map[fwd_unique_id];
+
   OpInfoPtr op_info = std::make_shared<OpInfo>();
+  auto fwd_info = op_info;
+  if (op_info_map_dx_dw_map.find(fwd_unique_id) == op_info_map_dx_dw_map.end()) {
+    if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul)) {
+      fwd_info = GetFwdNodeInfo(node);
+    } else {
+      MS_LOG(EXCEPTION) << "Can not find the forward node of CNode:" << node->fullname_with_scope();
+    }
+  } else {
+    fwd_info = op_info_map_dx_dw_map[fwd_unique_id];
+  }
+
   if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimConv2DBackpropInput) ||
       IsPrimitiveCNode(node, prim::kPrimConv2DBackpropFilter)) {
     return fwd_info;

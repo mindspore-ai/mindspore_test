@@ -93,14 +93,18 @@ const char kRuntimeGeKernel[] = "ge_kernel";
 const char kAclnnViewOp[] = "MS_DEV_VIEW_OP";
 const char kRuntimeCache[] = "backend_compile_cache";
 const char kRuntimeCopyAsync[] = "copy_async";
+const char kRuntimeClusterThreadNum[] = "cluster_thread_num";
+const char kRuntimeThreadLoadCache[] = "multi_thread_load_cache";
+const char kRuntimeAsyncInitComm[] = "async_init_comm";
+const char kRuntimeInputOptimize[] = "input_optimize";
 // Runtime debug config.
-const char kRuntimeSynchronize[] = "synchronize";
 const char kRuntimeMemoryTrack[] = "memory_track";
 const char kRuntimeMemoryStat[] = "memory_statistics";
 const char kRuntimeCompileStat[] = "compile_statistics";
 const char kRuntimePerformanceStat[] = "performance_statistics";
 const char kRuntimePerformanceStatTopNum[] = "performance_statistics_top_num";
 const char kRuntimeAclnnCacheQueueLength[] = "aclnn_cache_queue_length";
+const char kRuntimePreBuildCommKernel[] = "pre_build_comm_kernel";
 const char kSingleQuote = '\'';
 const char kDoubleQuote = '"';
 const char kSemicolon = ';';
@@ -243,12 +247,30 @@ inline bool IsNeedMemoryStatistic() {
   return !need_statistic.empty() && need_statistic != "0";
 }
 
-inline bool IsNeedProfileMemory() {
-  static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
-  static const char kSimulationLevel[] = "MS_SIMULATION_LEVEL";
-  static const auto launch_skipped = GetEnv(kLaunchSkippedEnv);
+inline bool IsCompileSimulation() {
+  static const auto kSimulationLevel = "MS_SIMULATION_LEVEL";
+  static const auto kSimulationLevelCompileGraph = "0";
+  static const auto kSimulationLevelCompileKernel = "1";
+  static const auto kSimulationLevelCompileWithDeivce = "2";
   static const auto simulation_level = common::GetEnv(kSimulationLevel);
-  static const bool skip_launch = (launch_skipped == "all" || launch_skipped == "ALL" || !simulation_level.empty());
+  static const auto simu_compile =
+    (simulation_level == kSimulationLevelCompileGraph || simulation_level == kSimulationLevelCompileKernel ||
+     simulation_level == kSimulationLevelCompileWithDeivce);
+  return simu_compile;
+}
+
+inline bool IsExecuteSimulation() {
+  static const auto kSimulationLevel = "MS_SIMULATION_LEVEL";
+  static const auto kSimulationLevelExecute = "3";
+  static const auto simulation_level = common::GetEnv(kSimulationLevel);
+  static const auto simu_execute = (simulation_level == kSimulationLevelExecute);
+  return simu_execute;
+}
+
+inline bool IsDryRun() {
+  static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
+  static const auto launch_skipped = GetEnv(kLaunchSkippedEnv);
+  static const bool skip_launch = (launch_skipped == "all" || launch_skipped == "ALL" || IsCompileSimulation());
   return skip_launch;
 }
 }  // namespace common

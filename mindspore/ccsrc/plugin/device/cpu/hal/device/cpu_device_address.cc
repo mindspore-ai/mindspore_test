@@ -156,7 +156,7 @@ bool CPUDeviceAddress::SyncDeviceToHost(const ShapeVector &, size_t size, TypeId
     if (ret_code == ERANGE) {
       ConvertSameType(host_ptr, GetDevicePtr(), size, type);
     } else if (ret_code != EOK) {
-      MS_LOG(ERROR) << "Failed to copy tensor!";
+      MS_LOG(ERROR) << "Failed to copy tensor for device address:" << this;
       return false;
     } else {
       return true;
@@ -191,7 +191,7 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
     return true;
   }
   if (GetDevicePtr() == nullptr) {
-    MS_LOG(ERROR) << "The pointer device ptr is null!";
+    MS_LOG(ERROR) << "The pointer device ptr is null for device address:" << this;
     return false;
   }
   if (host_ptr == GetDevicePtr()) {
@@ -227,14 +227,24 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
     LongToInt(GetDevicePtr(), host_ptr, size / sizeof(int64_t));
   } else {
     MS_LOG(ERROR) << "Types not match. Device type: " << TypeIdLabel(type_id()) << ", host type: " << TypeIdLabel(type)
-                  << "!";
+                  << " for device address:" << this;
     return false;
   }
   return true;
 }
 
+bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr) const {
+  // cpu not provide async copy, call sync copy instead
+  return SyncHostToDevice({}, size, type, host_ptr, "");
+}
+
 bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
   return SyncDeviceToDevice(src_device_addr);
+}
+
+bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                         const std::string &format) const {
+  return SyncHostToDevice(GetShapeVector(), size, type, tensor_data->data(), format);
 }
 
 bool CPUDeviceAddress::SyncDeviceToDevice(const DeviceSync *src_device_addr) const {
@@ -261,7 +271,7 @@ bool CPUDeviceAddress::SyncDeviceToDevice(const ShapeVector &, size_t size, Type
   }
   if (DeviceAddress::format() != format) {
     MS_LOG(ERROR) << "Format is different, src(format:" << format << "), dst(format:" << DeviceAddress::format()
-                  << ").";
+                  << ") for device address:" << this;
     return false;
   }
 
@@ -283,7 +293,7 @@ bool CPUDeviceAddress::SyncDeviceToDevice(const ShapeVector &, size_t size, Type
     LongToInt(GetDevicePtr(), src_ptr, size / sizeof(int64_t));
   } else {
     MS_LOG(ERROR) << "Types not match. Device type: " << TypeIdLabel(type_id()) << ", host type: " << TypeIdLabel(type)
-                  << "!";
+                  << " for device address" << this;
     return false;
   }
   return true;

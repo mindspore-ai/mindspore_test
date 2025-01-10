@@ -10,7 +10,7 @@ mindspore.mint.eye
 
     参数：
         - **n** (int) - 指定返回Tensor的行数。仅支持常量值。
-        - **m** (int，可选) - 指定返回Tensor的列数。仅支持常量值。默认值为None，返回Tensor的列数默认与n相等。
+        - **m** (int，可选) - 指定返回Tensor的列数。仅支持常量值。默认值为 ``None`` ，返回Tensor的列数默认与n相等。
         - **dtype** (mindspore.dtype，可选) - 指定返回Tensor的数据类型。数据类型必须是 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 。默认值为 ``None`` ，返回Tensor的数据类型默认为mindspore.float32。
 
     返回：

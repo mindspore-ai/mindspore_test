@@ -54,8 +54,7 @@ def mint_diff_binary_case2(input_binary_data=None, output_binary_data=None):
     output = diff_backward_func(Tensor(input_binary_data[0]), n=3, dim=2, prepend=Tensor(input_binary_data[1]))
     assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-04, 1e-04)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+
 @pytest.mark.parametrize('context_mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_ops_diff_binary_cases(context_mode):
     """

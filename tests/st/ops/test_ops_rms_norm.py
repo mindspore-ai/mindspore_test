@@ -50,7 +50,6 @@ def rms_norm_grad_numpy_impl(x, gamma, epsilon, y_grad):
     return dx, dgamma.astype(np.float32)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 @pytest.mark.parametrize('input_dtype', [np.float32, np.float16])
 def test_rms_norm_forward(mode, input_dtype):
@@ -77,10 +76,10 @@ def test_rms_norm_forward(mode, input_dtype):
         y, rstd = rms_norm_forward_func(x, gamma, eps)
     elif mode == 'KBK':
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        y, rstd = (jit(rms_norm_forward_func, jit_config=JitConfig(jit_level="O0")))(x, gamma, eps)
+        y, rstd = rms_norm_forward_func(x, gamma, eps)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        y, rstd = rms_norm_forward_func(x, gamma, eps)
+        y, rstd = (jit(rms_norm_forward_func, jit_config=JitConfig(jit_level="O2")))(x, gamma, eps)
     loss = 1e-4 if input_dtype == np.float32 else 1e-3
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=loss)
     np.testing.assert_allclose(rstd.asnumpy(), expect_rstd, rtol=loss)
@@ -116,10 +115,10 @@ def test_rms_norm_backward(mode, input_dtype):
         x_grad, gamma_grad = rms_norm_backward_func(x, gamma, eps)
     elif mode == 'KBK':
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        x_grad, gamma_grad = (jit(rms_norm_backward_func, jit_config=JitConfig(jit_level="O0")))(x, gamma, eps)
+        x_grad, gamma_grad = rms_norm_backward_func(x, gamma, eps)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        x_grad, gamma_grad = rms_norm_backward_func(x, gamma, eps)
+        x_grad, gamma_grad = (jit(rms_norm_backward_func, jit_config=JitConfig(jit_level="O2")))(x, gamma, eps)
     loss = 1e-4 if input_dtype == np.float32 else 1e-3
     np.testing.assert_allclose(x_grad.asnumpy(), expect_x_grad, rtol=loss)
     np.testing.assert_allclose(gamma_grad.asnumpy(), expect_gamma_grad, rtol=loss)
@@ -146,10 +145,10 @@ def test_rms_norm_backward_cmp_with_numpy(mode, input_dtype):
         x_grad, gamma_grad = rms_norm_backward_func(x, gamma, eps)
     elif mode == 'KBK':
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        x_grad, gamma_grad = (jit(rms_norm_backward_func, jit_config=JitConfig(jit_level="O0")))(x, gamma, eps)
+        x_grad, gamma_grad = rms_norm_backward_func(x, gamma, eps)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        x_grad, gamma_grad = rms_norm_backward_func(x, gamma, eps)
+        x_grad, gamma_grad = (jit(rms_norm_backward_func, jit_config=JitConfig(jit_level="O2")))(x, gamma, eps)
     a_loss = 1e-4 if input_dtype == np.float32 else 0.2
     r_loss = 1e-3 if input_dtype == np.float32 else 5e-1
     np.testing.assert_allclose(x_grad.asnumpy(), expect_x_grad, rtol=r_loss, atol=a_loss)

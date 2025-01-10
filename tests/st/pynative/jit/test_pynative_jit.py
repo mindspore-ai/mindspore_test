@@ -290,7 +290,7 @@ def test_pynative_jit():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_jit_mix_execute():
@@ -531,7 +531,7 @@ def test_ms_vmap_cell_list():
 
         def construct(self, x):
             """
-            结构函数
+            construct
             """
             output = F.vmap(self.net, (None, None), 0)(self.a, x)
             return output
@@ -548,14 +548,13 @@ def test_ms_vmap_cell_list():
     vmap = VmapNet(m1, m2, m3)
     output = vmap(input_tensor)
     assert np.all(output.asnumpy() == expect)
-    # 反向
     grad = GradOfDefault(vmap)
     output_grad = grad(input_tensor)
     assert np.all(output_grad.asnumpy() == expect_grad)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_control_flow_for_in_while_return_in_for_param():

@@ -1,0 +1,51 @@
+hardshrink:
+    description: |
+        hardshrink(lambd=0.5) -> Tensor
+
+        Hard Shrink activation function. Calculates the output according to the input elements.
+
+        The formula is defined as follows:
+
+        .. math::
+            \text{HardShrink}(x) =
+            \begin{cases}
+            x, & \text{ if } x > \lambda \\
+            x, & \text{ if } x < -\lambda \\
+            0, & \text{ otherwise }
+            \end{cases}
+
+        HardShrink Activation Function Graph:
+
+        .. image:: ../../images/HardShrink.png
+            :align: center
+
+        .. note::
+            The input Tensor. :math:`x` in the above formula. Supported dtypes: 
+
+            - Ascend: float16, float32, bfloat16.
+            - CPU/GPU: float16, float32.
+
+        Args:
+            lambd (number, optional): The threshold :math:`\lambda` defined by the Hard Shrink formula.
+                Default: ``0.5`` .
+
+        Returns:
+            Tensor, has the same data type and shape as the input `self`.
+
+        Raises:
+            TypeError: If `lambd` is not a float, int or bool.
+            TypeError: If `self` is not a tensor.
+            TypeError: If dtype of `self` is not float16, float32 or bfloat16.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> input = Tensor(np.array([[0.5, 1, 2.0], [0.0533, 0.0776, -2.1233]]), mindspore.float32)
+            >>> output = input.hardshrink()
+            >>> print(output)
+            [[ 0.      1.      2.    ]
+             [ 0.      0.     -2.1233]]

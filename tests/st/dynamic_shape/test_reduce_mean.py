@@ -15,14 +15,13 @@
 
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
-from tests.mark_utils import arg_mark
 
 from mindspore import ops
 from mindspore.common.api import _pynative_executor
 import mindspore as ms
-
-ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
+from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
+from tests.device_utils import set_device, get_device
 
 
 @test_utils.run_with_cell
@@ -46,6 +45,9 @@ def test_reduce_mean(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor(np.array([[0.248653, 0.273924, 0.640271],
                             [0.746676, 0.004394, 0.437812]]).astype(np.float32))
     out = reduce_mean_forward_func(x)
@@ -69,6 +71,9 @@ def test_reduce_mean_vmap(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    set_device()
+    if get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     in_axes = -1
     x = ms.Tensor(np.random.uniform(low=-1, high=1, size=(4, 3, 2, 2)).astype(np.float32))
     nest_vmap = ops.vmap(ops.vmap(reduce_mean_forward_func, in_axes=in_axes, out_axes=-1), in_axes=in_axes, out_axes=-1)

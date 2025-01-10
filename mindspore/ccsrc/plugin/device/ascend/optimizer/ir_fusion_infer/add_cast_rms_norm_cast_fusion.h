@@ -16,6 +16,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_CAST_RMSNORM_CAST_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_CAST_RMSNORM_CAST_FUSION_H_
 
+#include <vector>
+#include <string>
 #include <memory>
 #include "include/backend/optimizer/optimizer.h"
 
@@ -35,6 +37,8 @@ class AddCastRmsNormCastFusion : public PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
+
   VarPtr x1_;
   VarPtr x2_;
   VarPtr gamma_;

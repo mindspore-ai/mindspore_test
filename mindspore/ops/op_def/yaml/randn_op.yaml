@@ -3,6 +3,7 @@ randn:
     args:
         shape:
             dtype: tuple[int]
+            type_cast: list[int]
         seed:
             dtype: tensor
         offset:

@@ -19,12 +19,12 @@
 #include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "op_def/auto_generate/gen_ops_name.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {
-void CheckRandIntRange(const InferInfoPtr &from, const InferInfoPtr &to, const std::string &name, bool output_bool);
+void CheckRandRange(const InferInfoPtr &from, const InferInfoPtr &to, const std::string &name, bool output_bool);
 
 ShapeArray RandLikeExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   return {input_infos[kInputIndex0]->GetShape()};
@@ -40,8 +40,7 @@ TypeIdList RandLikeExtFuncImpl::InferType(const PrimitivePtr &primitive, const I
     output_type = input_infos[kIndex0]->GetType();
   }
   if (prim_name == kNameRandIntLike) {
-    CheckRandIntRange(input_infos[kInputIndex1], input_infos[kInputIndex2], prim_name,
-                      (output_type == kNumberTypeBool));
+    CheckRandRange(input_infos[kInputIndex1], input_infos[kInputIndex2], prim_name, (output_type == kNumberTypeBool));
   }
   CheckAndConvertUtils::CheckTypeIdValid("dtype", output_type, common_mint_valid_type_ids_with_bool, primitive->name());
   return {output_type};

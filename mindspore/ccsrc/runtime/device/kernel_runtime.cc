@@ -119,7 +119,6 @@ constexpr size_t kMinInputSize = 2;
 KernelRuntime::TbeLaunchKernelModCallBack KernelRuntime::tbe_call_ = nullptr;
 KernelRuntime::~KernelRuntime() {
   stream_ = nullptr;
-  copy_data_stream_ = nullptr;
   communication_stream_ = nullptr;
 }
 
@@ -1446,17 +1445,6 @@ bool KernelRuntime::LaunchKernelWithPynativeProfiling(kernel::KernelMod *kernel_
   return ret;
 }
 
-void KernelRuntime::DebugStreamSync(const CNodePtr &kernel) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto enable_sync_run = ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
-  if (enable_sync_run) {
-    if (!SyncStream()) {
-      MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Op " << kernel->fullname_with_scope() << " run failed!";
-    }
-  }
-}
-
 void KernelRuntime::GetOrMallocAddress(const std::shared_ptr<MemScheduler> &mem_scheduler,
                                        const DeviceAddress *device_address,
                                        const kernel::KernelTensorPtr &kernel_tensor) {
@@ -1756,7 +1744,6 @@ bool KernelRuntime::LaunchKernelMod(const session::KernelGraph &graph, bool mock
         return false;
       }
       KernelLaunchProfiling(kernel->fullname_with_scope());
-      DebugStreamSync(kernel);
     }
     LaunchKernelEvent(kernel_post_run_events, kernels[i]);
   }

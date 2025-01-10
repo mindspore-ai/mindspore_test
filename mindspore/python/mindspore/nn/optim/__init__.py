@@ -33,7 +33,6 @@ from mindspore.nn.optim.rmsprop import RMSProp
 from mindspore.nn.optim.proximal_ada_grad import ProximalAdagrad
 from mindspore.nn.optim.lazyadam import LazyAdam
 from mindspore.nn.optim.ada_grad import Adagrad
-from mindspore.nn.optim.thor import thor
 from mindspore.nn.optim.adafactor import AdaFactor
 from mindspore.nn.optim.adasum import AdaSumByDeltaWeightWrapCell, AdaSumByGradWrapCell
 from mindspore.nn.optim.adamax import AdaMax
@@ -41,5 +40,5 @@ from mindspore.nn.optim.adadelta import Adadelta
 from mindspore.nn.optim.tft_wrapper import OptTFTWrapper
 
 __all__ = ['Optimizer', 'Momentum', 'LARS', 'Adam', 'AdamWeightDecay', 'LazyAdam', 'AdamOffload',
-           'Lamb', 'SGD', 'ASGD', 'Rprop', 'FTRL', 'RMSProp', 'ProximalAdagrad', 'Adagrad', 'thor', 'AdaFactor',
+           'Lamb', 'SGD', 'ASGD', 'Rprop', 'FTRL', 'RMSProp', 'ProximalAdagrad', 'Adagrad', 'AdaFactor',
            'AdaSumByDeltaWeightWrapCell', 'AdaSumByGradWrapCell', 'AdaMax', 'Adadelta', 'OptTFTWrapper']

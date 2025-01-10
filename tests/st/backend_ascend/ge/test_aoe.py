@@ -14,9 +14,11 @@
 # ============================================================================
 import os
 import mindspore.context as context
+import mindspore as ms
 from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
 from mindspore import Parameter
+from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
 
 
@@ -39,7 +41,10 @@ class GraphNet(nn.Cell):
 
 
 def aoe_online():
-    context.set_context(mode=context.GRAPH_MODE, aoe_tune_mode="online", aoe_config={"job_type": "2"})
+    context.set_context(mode=context.GRAPH_MODE)
+    set_device()
+    ms.device_context.ascend.op_tuning.aoe_tune_mode("online")
+    ms.device_context.ascend.op_tuning.aoe_job_type("2")
     context.set_context(jit_config={"jit_level": "O2"})
     net = GraphNet()
     x = Tensor(3, mstype.int32)

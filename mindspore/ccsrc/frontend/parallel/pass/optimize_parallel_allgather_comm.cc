@@ -70,7 +70,9 @@ void MoveCastBehindAllGather(const FuncGraphPtr &func_graph, const CNodePtr &all
   auto all_gather_input_node = all_gather_cnode->input(kIndex1);
   manager->SetEdge(cast_cnode, kIndex1, all_gather_input_node);
   manager->SetEdge(all_gather_cnode, kIndex1, cast_cnode);
-
+  if (GetCNodePrimitive(all_gather_cnode)->HasAttr(RECOMPUTE)) {
+    GetCNodePrimitive(cast_cnode)->AddAttr(RECOMPUTE, GetCNodePrimitive(all_gather_cnode)->GetAttr(RECOMPUTE));
+  }
   // Update abstract from cast to all_gather
   auto new_cast_abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(cast_dtype),
                                                                  cast_cnode->input(kIndex1)->abstract()->GetShape());

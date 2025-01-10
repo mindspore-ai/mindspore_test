@@ -20,6 +20,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/anf_utils.h"
+#include "backend/common/graph_kernel/core/graph_kernel_splitter.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 

@@ -222,6 +222,12 @@ class COMMON_EXPORT ParallelContext {
   void set_dump_local_norm(const bool dump_ln);
   bool dump_local_norm() const { return dump_local_norm_; }
 
+  void set_dump_local_norm_path(const std::string &dump_local_norm_path);
+  std::string dump_local_norm_path() const { return dump_local_norm_path_; }
+
+  void set_dump_device_local_norm(const bool dump_device_local_norm);
+  bool dump_device_local_norm() const { return dump_device_local_norm_; }
+
   void set_enable_micro_interleaved(const bool);
   bool enable_micro_interleaved() const { return enable_micro_interleaved_; }
 
@@ -309,6 +315,8 @@ class COMMON_EXPORT ParallelContext {
   bool hccl_test_available_ = false;
   bool sharding_propagation_;
   bool dump_local_norm_ = false;
+  std::string dump_local_norm_path_;
+  bool dump_device_local_norm_ = false;
   bool enable_micro_interleaved_ = false;
   bool enable_fine_grained_micro_interleaved_ = false;
   int64_t fine_grained_micro_interleaved_size_ = -1;

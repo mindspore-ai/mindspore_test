@@ -51,7 +51,8 @@ class DataPrepareActor : public DebugAwareActor {
         host_data_source_actor_(host_data_source_actor),
         host_tensor_queue_(host_tensor_queue),
         has_continuous_memory_(false),
-        first_step_(true) {}
+        first_step_(true),
+        has_parameter_input_(false) {}
   ~DataPrepareActor() override = default;
 
   // The process entry of data prepare.
@@ -82,9 +83,7 @@ class DataPrepareActor : public DebugAwareActor {
 
   // Fetch the input info.
   TensorPtr FetchInputTensor(const std::vector<TensorPtr> &tensors, size_t tensor_index, const VectorRef &args,
-                             const KernelWithIndex &front_node) const;
-  TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node) const;
-  size_t FetchInputTensorIndex(const KernelWithIndex &front_node) const;
+                             const KernelWithIndex &front_node);
 
   void PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
                                        OpContext<DeviceTensor> *const context);
@@ -113,7 +112,7 @@ class DataPrepareActor : public DebugAwareActor {
   // by the kernel graph, and addresses need to be specially allocated for these parameters.
   void PrepareDeviceTensorStoreForControlNode(const ControlNodeParserPtr &control_node_parser,
                                               const std::vector<TensorPtr> &tensors, const VectorRef &args,
-                                              OpContext<DeviceTensor> *const context) const;
+                                              OpContext<DeviceTensor> *const context);
   void PrepareHostTensorQueueForControlNode(const std::vector<TensorPtr> &tensors,
                                             std::vector<TensorPtr> *const host_tensors,
                                             OpContext<DeviceTensor> *const context);
@@ -132,8 +131,18 @@ class DataPrepareActor : public DebugAwareActor {
   // Preprocess before prepare data for data prepare actor.
   void PreprocessBeforePrepareData() const;
 
+  // Prepare when input optimize, prepare const value and weights at the first step.
+  void PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
+                                      OpContext<DeviceTensor> *const context, uint64_t start_time);
+
   // Remove after refact.
-  bool enable_prepare_case() { return !tensors_need_reprepare_.empty() || is_sub_data_ || has_heter_weights_; }
+  bool enable_prepare_case() {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+    return !tensors_need_reprepare_[this].empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_ ||
+           has_heter_weights_;
+  }
 
   const GraphCompilerInfo *graph_compiler_info_;
   GraphExecutionStrategy strategy_;
@@ -147,11 +156,14 @@ class DataPrepareActor : public DebugAwareActor {
   std::set<AnfNode *> address_modified_input_nodes_;
   bool first_step_;
   std::vector<ShapeVector> host_tensors_;
+  bool has_parameter_input_;
 
   // The tensor of parameter(weight) maybe update host value by Python phase and need re-prepare to sync new host value
   // to device side. 'tensors_need_reprepare_' records all tensors whose host value has updated, this HashSet will be
   // update by update value callback of tensors.
-  static mindspore::HashSet<const tensor::Tensor *> tensors_need_reprepare_;
+  std::map<const DataPrepareActor *, mindspore::HashSet<const tensor::Tensor *>> tensors_need_reprepare_;
+  // The ref relationship of device address.
+  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
 
   bool has_dynamic_shape_{false};
 

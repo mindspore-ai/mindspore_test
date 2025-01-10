@@ -26,6 +26,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
@@ -104,8 +105,8 @@ bool isSupportLccl(const std::string &group_name, const std::string &kernel_name
                    const std::unordered_set<std::string> &lccl_enabled_groups) {
 #ifdef ENABLE_INTERNAL_KERNELS
   bool enable_lccl = device::ascend::EnableLccl();
-  std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName, kBroadcastOpName,
-                                                 kAllGatherOpName, kMatMulAllReduceOpName};
+  std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,
+                                                 kAllGatherOpName, kMatMulAllReduceOpName, kBarrierOpName};
   if (enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
       support_lccl_op_names.find(kernel_name) != support_lccl_op_names.end()) {
     return true;
@@ -137,7 +138,7 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
   std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
                                            kMatMulAllReduceOpName};
   if (reduce_op_names.count(kernel_name_) != 0) {
-    if (!HcomUtil::GetHcomOperationType(primitive_, &op_type_)) {
+    if (!HcomUtil::GetHcomOperationType(primitive_, &op_type_, &collective_reduce_type_)) {
       MS_LOG(ERROR) << "GetHcomOperationType fail!";
       return false;
     }
@@ -153,7 +154,9 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  if (common::GetEnv(kSimulationLevel).empty() && !common::IsNeedProfileMemory()) {
+  if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
+    // Before calling each hccl operator, we need to wait for communicator to be initialized.
+    distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_);
 #ifdef ENABLE_INTERNAL_KERNELS
     std::unordered_set<std::string> lccl_enabled_groups =
       MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();

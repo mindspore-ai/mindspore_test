@@ -15,6 +15,7 @@
 """
 Generate operator definition from ops.yaml
 """
+import argparse
 import copy
 import logging
 import os
@@ -115,6 +116,8 @@ def get_tensor_op_protos_with_deprecated(func_protos, op_protos):
             op_name = func_proto.op_proto.op_name
             if "deprecated" in func_proto.op_proto.op_name:
                 func_proto.op_proto.op_class.name = ''.join(word.capitalize() for word in op_name.split('_'))
+                if func_proto.op_proto.op_name[-1] == '_':
+                    func_proto.op_proto.op_class.name += '_'
                 tensor_op_protos.append(func_proto.op_proto)
     return tensor_op_protos
 
@@ -155,9 +158,9 @@ def generate_arg_handler_files(work_path):
     check_change_and_replace_file(dst_arg_dtype_cast_path, tmp_arg_dtype_cast_path)
 
 
-def gen_tensor_func_code(work_path, func_protos, alias_api_mapping):
+def gen_tensor_func_code(work_path, op_protos, func_protos, alias_api_mapping):
     generator = TensorFuncRegCppGenerator()
-    generator.generate(work_path, func_protos, alias_api_mapping)
+    generator.generate(work_path, op_protos, func_protos, alias_api_mapping)
 
 
 def gen_functional_map_code(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping):
@@ -170,18 +173,21 @@ def gen_tensor_docs_code(work_path, tensor_docs_data):
     generator.generate(work_path, tensor_docs_data)
 
 
-def gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping):
+def gen_functional_overload_py(work_path, mint_func_protos, function_doc_data, alias_api_mapping):
     generator = FunctionalOverloadPyGenerator()
-    generator.generate(work_path, mint_func_protos, alias_api_mapping)
+    generator.generate(work_path, mint_func_protos, function_doc_data, alias_api_mapping)
 
 
-def main():
+def main(args):
     current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
 
+    if args.clear_auto_gen:
+        delete_auto_gen_files(work_path)
+
     # merge ops yaml
-    doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path, tensor_method_doc_yaml_path \
-        = merge_ops_yaml(work_path)
+    (doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path,
+     tensor_method_doc_yaml_path, mint_func_doc_yaml_path) = merge_ops_yaml(work_path)
 
     # make auto_generate dir
     cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
@@ -196,6 +202,7 @@ def main():
     deprecated_ops_yaml_dict = safe_load_yaml(deprecated_ops_yaml_path)
     ops_api_yaml_dict = safe_load_yaml(ops_api_yaml_path)
     tensor_method_doc_yaml_dict = safe_load_yaml(tensor_method_doc_yaml_path)
+    mint_function_doc_yaml_dict = safe_load_yaml(mint_func_doc_yaml_path)
 
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
     deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
@@ -215,13 +222,63 @@ def main():
     # generate aclnn kernelmod register
     generate_aclnn_reg_file(work_path, op_protos)
     # generate tensor_py func code
-    gen_tensor_func_code(work_path, tensor_method_protos, alias_api_mapping)
+    gen_tensor_func_code(work_path, op_protos, tensor_method_protos, alias_api_mapping)
     # generate functional map code
     gen_functional_map_code(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping)
     # generate _tensor_docs.py that attaches docs to tensor func APIs when import mindspore
     gen_tensor_docs_code(work_path, tensor_method_doc_yaml_dict)
     # generate functional_overload.py which init pybind mint APIs from cpp
-    gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping)
+    gen_functional_overload_py(work_path, mint_func_protos, mint_function_doc_yaml_dict, alias_api_mapping)
+
+
+def delete_auto_gen_files(work_path):
+    """
+    Deletes auto-generated files and folders.
+    """
+    auto_gen_code_file = get_auto_gen_path_from_gitignore(work_path)
+
+    for name in auto_gen_code_file:
+        # Recursively delete all single-level folder names
+        if name.rstrip('/').count('/') == 0:
+            for dir_path, dir_names, _ in os.walk(work_path, topdown=False):
+                for dirname in dir_names:
+                    if dirname == name.rstrip('/'):
+                        folder_path = os.path.join(dir_path, dirname)
+                        logging.info("Recursively deleting folder: %s", folder_path)
+                        shutil.rmtree(folder_path)
+            continue
+
+        # Delete all individual files or folders
+        tmp_path = os.path.join(work_path, name)
+        if os.path.exists(tmp_path):
+            if os.path.isdir(tmp_path):
+                logging.info("Deleting folder: %s", tmp_path)
+                shutil.rmtree(tmp_path)
+            elif os.path.isfile(tmp_path):
+                logging.info("Deleting file: %s", tmp_path)
+                os.remove(tmp_path)
+        else:
+            logging.info("The path is not exist: %s", tmp_path)
+
+
+def get_auto_gen_path_from_gitignore(work_path):
+    """
+    Extracts a list of auto-gen file and folder paths from the "# auto gen code files" section in the .gitignore file.
+    """
+    file_path = os.path.join(work_path, ".gitignore")
+    auto_gen_code_file_started = False
+    auto_gen_code_file = []
+    with open(file_path, 'r') as f:
+        for line in f.readlines():
+            if line.strip() == "# auto gen code files":
+                auto_gen_code_file_started = True
+                continue
+            if auto_gen_code_file_started:
+                if line.strip() and not line.strip().startswith("#"):
+                    auto_gen_code_file.append(line.strip())
+                else:
+                    break
+    return auto_gen_code_file
 
 
 def load_op_protos_from_ops_yaml(ops_yaml_data):
@@ -267,18 +324,30 @@ def merge_ops_yaml(work_path):
 
     deprecated_ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEPRECATED_DEF_YAML_PATH)
     deprecated_ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'deprecated_ops.yaml')
-    merge_files(deprecated_ops_yaml_dir_path, deprecated_ops_yaml_path, '*_op.yaml')
+    merge_files(deprecated_ops_yaml_dir_path, deprecated_ops_yaml_path, '*_method.yaml')
 
     tensor_method_doc_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_METHOD_DOC_YAML_PATH)
     tensor_method_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_method_doc.yaml')
     merge_files(tensor_method_doc_yaml_dir_path, tensor_method_doc_yaml_path, '*doc.yaml')
 
-    return doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path, tensor_method_doc_yaml_path
+    mint_func_doc_yaml_dir_path = os.path.join(work_path, K.MS_MINT_FUNC_DOC_YAML_PATH)
+    mint_func_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'mint_func_doc.yaml')
+    merge_files(mint_func_doc_yaml_dir_path, mint_func_doc_yaml_path, '*doc.yaml')
+
+    return (doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path,
+            ops_api_yaml_path, tensor_method_doc_yaml_path, mint_func_doc_yaml_path)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--clear_auto_gen', default=False, help='clear all auto gen files')
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     try:
-        main()
+        arguments = parse_args()
+        main(arguments)
     # pylint: disable=broad-except
     except Exception as e:
         logging.critical("Auto generate failed, err info: %s", e)

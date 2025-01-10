@@ -24,9 +24,10 @@ import os
 import re
 import shutil
 import stat
+import atexit
 import threading
 from threading import Thread, RLock
-from multiprocessing import Pool
+from multiprocessing import Pool, active_children
 import multiprocessing as mp
 from collections import defaultdict, OrderedDict
 from io import BytesIO
@@ -48,6 +49,7 @@ import mindspore
 import mindspore.nn as nn
 from mindspore import context
 from mindspore import log as logger
+from mindspore.log import vlog_print
 from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
@@ -71,7 +73,7 @@ from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices,
     _get_device_num
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
-    _restore_group_info_list, _get_param_list_when_first_dim_sharded
+    _restore_group_info_list
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
@@ -82,7 +84,6 @@ from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_
     split_mindir, split_dynamic_mindir
 from mindspore.common.generator import Generator
 from ..ops.operations._opaque_predicate_registry import add_opaque_predicate, clean_funcs
-
 
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
                      "Int32": mstype.int32, "UInt32": mstype.uint32, "Int64": mstype.int64, "UInt64": mstype.uint64,
@@ -123,6 +124,31 @@ def init_ckpt_file_system(fs: FileSystem):
 
 # Initialize checkpoint file system
 init_ckpt_file_system(_ckpt_fs)
+
+
+def _wait_async_process_save_ckpt():
+    """Waiting for asynchronous saving process of ckpt to complete"""
+    for process in active_children():
+        if process.name == "asyn_save_ckpt":
+            process.join()
+
+
+def _wait_async_thread_save_ckpt():
+    """Waiting for asynchronous saving thread of ckpt to complete"""
+    thread_list = threading.enumerate()
+    for thread in thread_list:
+        if thread.getName() == "asyn_save_ckpt":
+            thread.join()
+
+
+def _async_save_close():
+    """Waiting for asynchronous saving of ckpt to complete"""
+    _wait_async_process_save_ckpt()
+    _wait_async_thread_save_ckpt()
+
+
+# Registering atexit handles asynchronous save
+atexit.register(_async_save_close)
 
 
 def _get_cur_rank_dp(parameter_layout_dict):
@@ -284,7 +310,8 @@ def _type_convert(param, new_param, strict_load):
                             {param.data.dtype, new_param.data.dtype}.issubset(int_type)):
         logger.warning(f"The type of {new_param.name}:{new_param.data.dtype} in 'parameter_dict' is different from "
                        f"the type of it in 'net':{param.data.dtype}, then the type convert from "
-                       f"{new_param.data.dtype} to {param.data.dtype} in the network.")
+                       f"{new_param.data.dtype} to {param.data.dtype} in the network. May consume additional memory "
+                       f"and time")
         return True
     return False
 
@@ -338,6 +365,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 os.chmod(tmp_name, stat.S_IWUSR)
                 os.remove(tmp_name)
             if format == "ckpt":
+                ckpt_save_time_start = time.time()
                 with _ckpt_fs.create(tmp_name, *_ckpt_fs.create_args) as f:
                     plain_data = None
                     if enc_key is not None:
@@ -378,11 +406,29 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             block_data = plain_data.read(max_block_size)
                     if crc_check:
                         f.write('crc_num'.encode() + crc_num.to_bytes(10, byteorder='big'))
+                ckpt_save_time_end = time.time()
+                cost_time = ckpt_save_time_end - ckpt_save_time_start
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save ckpt cost time:{cost_time}.")
             elif format == "safetensors":
                 save_dict = {}
-                for name, value in data_list.items():
+                crc_num = 0
+                for name in sorted(data_list.keys()):
+                    value = data_list[name]
                     save_dict[name] = value[2].asnumpy()
-                save_file(save_dict, tmp_name)
+
+                    if crc_check:
+                        crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
+                        crc_num = binascii.crc32(
+                            bytes(save_dict[name]), crc_num)
+                safetensors_save_time_start = time.time()
+                if crc_check:
+                    save_file(save_dict, tmp_name, metadata={
+                        "crc_num": str(crc_num)})
+                else:
+                    save_file(save_dict, tmp_name)
+                safetensors_save_time_end = time.time()
+                cost_time = safetensors_save_time_end - safetensors_save_time_start
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors cost time:{cost_time}.")
             if not os.path.exists(tmp_name):
                 logger.warning(f"Rename failed, can't find {tmp_name}, it is possible that multiple processes have "
                                f"simultaneously modified a file.")
@@ -522,12 +568,32 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
     return ckpt_file_name
 
 
-def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, async_save=False, map_param_inc=False,
+def _check_format_and_other_params(format, enc_key, enc_mode, async_save=False, map_param_inc=False,
                                    global_step_num=None):
-    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or async_save
+    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or async_save
                          or map_param_inc or global_step_num is not None)
     if format == "safetensors" and param_not_default:
         raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
+
+
+def _check_async_save(async_save):
+    """Check async_save for save_checkpoint."""
+    if not isinstance(async_save, (bool, str)):
+        raise TypeError("For 'save_checkpoint', the parameter 'async_save' must be bool or str, "
+                        "but got {}.".format(type(async_save)))
+    if isinstance(async_save, str):
+        if async_save not in ("process", "thread"):
+            raise ValueError("For 'save_checkpoint', the argument 'async_save' can only be 'process' or 'thread',"
+                             "but got {}.".format(async_save))
+    return async_save
+
+
+def _async_process_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_param_inc=False,
+                        crc_check=False, format="ckpt", cond=None):
+    """Check whether the process is pulled up successfully, execute the process of saving checkpoint into file."""
+    with cond:
+        cond.notify()
+    _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
 
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
@@ -547,7 +613,10 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
             it can be the returned value of `mindspore.load_checkpoint()`.
         ckpt_file_name (str): Checkpoint file name. If the file name already exists, it will be overwritten.
         integrated_save (bool): Whether to integrated save in automatic model parallel scene. Default: ``True`` .
-        async_save (bool): Whether to open an independent thread to save the checkpoint file. Default: ``False`` .
+        async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file, if True,
+                                    the asynchronous thread is used by default. If the type is string,
+                                    the method of asynchronous saving, it can be "process" or "thread".
+                                    Default: ``False`` .
         append_dict (dict): Additional information that needs to be saved. The key of dict must be str, the value
                             of dict must be one of int, float, bool, string, Parameter or Tensor. Default: ``None`` .
         enc_key (Union[None, bytes]): Byte type key used for encryption. If the value is ``None`` , the encryption
@@ -567,8 +636,10 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
 
     Raises:
         TypeError: If the parameter `save_obj` is not :class:`mindspore.nn.Cell` , list or dict type.
-        TypeError: If the parameter `integrated_save` or `async_save` is not bool type.
+        TypeError: If the parameter `integrated_save` is not bool type.
         TypeError: If the parameter `ckpt_file_name` is not string type.
+        TypeError: If the parameter `async_save` is not bool or string type.
+        ValueError: If the parameter `async_save` is string type but not in ["process", "thread"].
 
     Examples:
         >>> import mindspore as ms
@@ -598,7 +669,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     """
     ckpt_file_name = _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format)
     integrated_save = Validator.check_bool(integrated_save)
-    async_save = Validator.check_bool(async_save)
+    async_save = _check_async_save(async_save)
     append_dict = _check_append_dict(append_dict)
     enc_key = Validator.check_isinstance('enc_key', enc_key, (type(None), bytes))
     enc_mode = Validator.check_isinstance('enc_mode', enc_mode, str)
@@ -606,7 +677,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     map_param_inc = kwargs.get('incremental', False)
     logger.info("Execute the process of saving checkpoint files.")
     global_step_num = kwargs.get('global_step_num', None)
-    _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, map_param_inc, global_step_num)
+    _check_format_and_other_params(format, enc_key, enc_mode, async_save, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
@@ -682,7 +753,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data_list[key].append(dims)
                     tensor_type = str(param["data"].dtype)
                     data_list[key].append(tensor_type)
-                    data = param["data"]
+                    data = param["data"] if async_save != "process" else param["data"].asnumpy()
                     data_list[key].append(data)
 
     if os.getenv("AITURBO") == "1":
@@ -690,11 +761,35 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         ckpt_name = os.path.basename(ckpt_file_name)
         aiturbo.save_ckpt(ckpt_name, global_step_num, data_list_np, crc_check)
     elif async_save:
-        data_copy = copy.deepcopy(data_list)
-        thr = Thread(target=_exec_save,
-                     args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
-                     name="asyn_save_ckpt")
-        thr.start()
+        if async_save == "process":
+            if sys.platform.startswith("win"):
+                logger.warining("The Win platform currently does not support asynchronous process saving of ckpt, "
+                                "so serial saving of ckpt is used now.")
+                _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+            else:
+                _wait_async_process_save_ckpt()
+                ctx = mp.get_context("fork")
+                cond = ctx.Condition()
+                process_flag = True
+                while process_flag:
+                    process = ctx.Process(target=_async_process_save,
+                                          args=(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check,
+                                                format, cond), daemon=True, name="asyn_save_ckpt")
+                    process.start()
+                    with cond:
+                        wait_flag = cond.wait(timeout=5)
+                        if not wait_flag:
+                            logger.warning("Async save process fails to create. will kill and recreate")
+                            process.kill()
+                        else:
+                            process_flag = False
+        else:
+            data_copy = copy.deepcopy(data_list)
+            _wait_async_thread_save_ckpt()
+            thr = Thread(target=_exec_save,
+                         args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
+                         name="asyn_save_ckpt")
+            thr.start()
     else:
         _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
@@ -1201,8 +1296,28 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
     ckpt_file_name = _check_ckpt_file_name(ckpt_file_name, format)
     if format == "safetensors":
         with safe_open(ckpt_file_name, framework='np') as f:
-            for k in f.keys():
+            cal_crc_num = 0
+            sf_load_time_start = time.time()
+            for k in sorted(f.keys()):
+                if crc_check:
+                    cal_crc_num = binascii.crc32(bytes(k, encoding='utf-8'), cal_crc_num)
+                    cal_crc_num = binascii.crc32(bytes(f.get_tensor(k)), cal_crc_num)
+                if choice_func is not None and not choice_func(k):
+                    continue
                 parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
+            sf_load_time_end = time.time()
+            cost_time = sf_load_time_end - sf_load_time_start
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load safetensors cost time:{cost_time}.")
+            if crc_check:
+                if f.metadata() is None or f.metadata().get("crc_num") is None:
+                    logger.warning(
+                        "For 'load_checkpoint', the safetensors file do not contain the crc code, "
+                        "please check the file.")
+                else:
+                    crc_num = int(f.metadata()["crc_num"])
+                    if cal_crc_num != crc_num:
+                        raise ValueError("For 'load_checkpoint', the crc check has failed. "
+                                         "Please check whether the ckpt file is damaged.")
         return
     checkpoint_list = _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check)
     try:
@@ -1346,13 +1461,14 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin load checkpoint.")
     specify_prefix = _check_prefix(specify_prefix)
     filter_prefix = _check_prefix(filter_prefix)
     dec_key = Validator.check_isinstance('dec_key', dec_key, (type(None), bytes))
     dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
     crc_check = Validator.check_isinstance('crc_check', crc_check, bool)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
-    _check_format_and_other_params(format, dec_key, dec_mode, crc_check)
+    _check_format_and_other_params(format, dec_key, dec_mode)
     logger.info("Execute the process of loading checkpoint files.")
 
     parameter_dict = {}
@@ -1392,6 +1508,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     if _warm_up_host_cache_enabled(parameter_dict):
         _warm_up_host_cache_post_process(is_worker, net_dict, warm_up_dict)
 
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Load checkpoint is finished.")
     return parameter_dict
 
 
@@ -1448,7 +1565,8 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
         >>> from mindspore import context
         >>> from mindspore import load_checkpoint_async
         >>> from mindspore import load_param_into_net
-        >>> context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+        >>> mindspore.set_device(device_target="Ascend")
+        >>> context.set_context(mode=context.GRAPH_MODE)
         >>> # Create the dataset taking MNIST as an example. Refer to
         >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
         >>> dataset = create_dataset()
@@ -1555,7 +1673,12 @@ def _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check):
     try:
         if dec_key is None:
             with _ckpt_fs.open(ckpt_file_name, *_ckpt_fs.open_args) as f:
+                ckpt_load_time_start = time.time()
                 pb_content = f.read()
+                ckpt_load_time_end = time.time()
+                cost_time = ckpt_load_time_end - ckpt_load_time_start
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt cost time:{cost_time}.")
+
         else:
             pb_content = _decrypt(ckpt_file_name, dec_key, len(dec_key), dec_mode)
             if pb_content is None:
@@ -2094,7 +2217,7 @@ def _export(net, file_name, file_format, *inputs, **kwargs):
     logger.info("exporting model file:%s format:%s.", file_name, file_format)
     if "obf_config" in kwargs and file_format != "MINDIR":
         raise ValueError(f"Dynamic obfuscation only support for MindIR format, but got {file_format} format.")
-    if "custom_func" in kwargs and file_format != "MINDIR":
+    if "custom_func" in kwargs and file_format != "MINDIR" and kwargs["custom_func"] is not None:
         raise ValueError(f"Currently only support custom_func for MindIR format, but got {file_format} format.")
     if file_format == 'AIR':
         _save_air(net, file_name, *inputs, **kwargs)
@@ -2476,6 +2599,9 @@ def check_checkpoint(ckpt_file_name):
     """
     Check whether the checkpoint is valid.
 
+    Note:
+        The interface is deprecated from version 2.5 and will be removed in a future version.
+
     Args:
         ckpt_file_name (str): Checkpoint file name.
 
@@ -2489,6 +2615,8 @@ def check_checkpoint(ckpt_file_name):
         >>> print(check_result)
         True
     """
+    logger.warning("The interface 'mindspore.check_checkpoint' is deprecated from version 2.5 "
+                   "and will be removed in a future version.")
     if not ckpt_file_name.endswith('.ckpt'):
         return False
     checkpoint_list = Checkpoint()
@@ -2514,6 +2642,9 @@ def check_checkpoint(ckpt_file_name):
 def parse_print(print_file_name):
     """
     Parse data file generated by :class:`mindspore.ops.Print`.
+
+    Note:
+        The interface is deprecated from version 2.5 and will be removed in a future version.
 
     Args:
         print_file_name (str): The file name needs to be parsed.
@@ -2549,6 +2680,8 @@ def parse_print(print_file_name):
         [[ 1.00000000e+00,  2.00000000e+00,  3.00000000e+00,  4.00000000e+00],
         [ 5.00000000e+00,  6.00000000e+00,  7.00000000e+00,  8.00000000e+00]])]
     """
+    logger.warning("The interface 'mindspore.parse_print' is deprecated from version 2.5 "
+                   "and will be removed in a future version.")
     print_file_path = os.path.realpath(print_file_name)
 
     if os.path.getsize(print_file_path) == 0:
@@ -2839,19 +2972,21 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
 
 
 def _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
-                           output_format, name_map):
+                           output_format, name_map, return_param_dict):
     """gather transform tasks"""
     tasks = []
     for rank in range(0, dst_device_num):
         tasks.append(
-            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map))
+            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map,
+             return_param_dict))
     return tasks
 
 
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
                                 train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
                                 format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
-                                output_format='safetensors', name_map=None, max_process_num=64):
+                                output_format='safetensors', name_map=None, max_process_num=64,
+                                return_param_dict=False):
     """
     Load checkpoint into net for distributed predication. Used in the case of distributed inference.
 
@@ -2891,6 +3026,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
             dictionary before loading or saving the segmented weights into the network. Default: None.
         max_process_num (int): Maximum number of processes. Default: 64.
+        return_param_dict (bool): Whether to return the param_dict. Default: ``False``.
 
     Raises:
         TypeError: The type of inputs do not match the requirements.
@@ -3017,25 +3153,27 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
             except RuntimeError:
                 rank_id = 0
                 logger.warning(f"Get rank failed, default loading weight for rank 0.")
+            param_dict = _load_parallel_checkpoint(
+                (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map,
+                 return_param_dict))
+            return param_dict
+        if dst_safetensors_dir is None:
+            raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
+                             f"when network is None.")
+        if rank_id is not None:
             _load_parallel_checkpoint(
-                (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map))
+                (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                 rank_id, output_format, name_map, return_param_dict))
         else:
-            if dst_safetensors_dir is None:
-                raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
-                                 f"when network is None.")
-            if rank_id is not None:
-                _load_parallel_checkpoint((unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                                           rank_id, output_format, name_map))
-            else:
-                dst_strategy_dict = _build_searched_strategy(predict_strategy)
-                dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
-                dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
-                dst_device_num = dst_stage_device_num * dst_stage_num
-                tasks = _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                                               dst_device_num, output_format, name_map)
-                with Pool(processes=max_process_num) as pool:
-                    list(pool.imap(_load_parallel_checkpoint, tasks))
-        return
+            dst_strategy_dict = _build_searched_strategy(predict_strategy)
+            dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
+            dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
+            dst_device_num = dst_stage_device_num * dst_stage_num
+            tasks = _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                                           dst_device_num, output_format, name_map, return_param_dict)
+            with Pool(processes=max_process_num) as pool:
+                list(pool.imap(_load_parallel_checkpoint, tasks))
+        return True
 
     network = Validator.check_isinstance("network", network, nn.Cell)
     _check_checkpoint_file(checkpoint_filenames)
@@ -3081,21 +3219,14 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         param_rank = rank_list.get(param.name)[0]
         skip_merge_split = rank_list.get(param.name)[1]
         shard_stride = train_strategy.get(param.name)[4]
-        tensor_map = train_strategy.get(param.name)[1]
-        first_dim_shard_idx = tensor_map[0] if tensor_map else -1
-        device_arrangement = train_strategy.get(param.name)[0]
-        first_dim_shard_size = 1
-        if first_dim_shard_idx >= 0:
-            first_dim_shard_size = device_arrangement[-1 - first_dim_shard_idx]
         if train_strategy.get(param.name)[5]:
-            shard_size = int(ckpt_file_len / shard_stride / train_strategy.get(param.name)[5] / first_dim_shard_size)
+            repeat_size = int(ckpt_file_len / shard_stride / train_strategy.get(param.name)[5])
         else:
-            shard_size = 0
+            repeat_size = 0
         for rank in param_rank:
             param_total_list = list(range(0, ckpt_file_len))
-            if first_dim_shard_size != 1:
-                param_total_list = _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_shard_idx, rank)
-            if shard_size > 0:
+            if repeat_size > 0:
+                shard_size = shard_stride * train_strategy.get(param.name)[5]
                 rank_index = param_total_list.index(rank)
                 start = rank_index // shard_size * shard_size
                 param_total_list = param_total_list[start:start + shard_size]
@@ -3154,11 +3285,15 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                        .format(param_not_in_ckpt))
 
     load_param_into_net(network, param_dict, strict_load=strict_load)
+    return True
 
 
 def async_ckpt_thread_status():
     """
     Get the status of asynchronous save checkpoint thread.
+
+    Note:
+        The interface is deprecated from version 2.5 and will be removed in a future version.
 
     When performing asynchronous save checkpoint, you can determine whether the asynchronous thread is completed.
 
@@ -3171,6 +3306,8 @@ def async_ckpt_thread_status():
         >>> ms.async_ckpt_thread_status()
         False
     """
+    logger.warning("The interface 'mindspore.async_ckpt_thread_status' is deprecated from version 2.5 "
+                   "and will be removed in a future version.")
     thr_list = threading.enumerate()
     return True in [ele.getName() == "asyn_save_ckpt" for ele in thr_list]
 
@@ -3301,8 +3438,8 @@ def convert_model(mindir_file, convert_file, file_format):
     """
     Convert mindir model to other format model. The current version only supports conversion to ONNX models.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
+    Note:
+        The interface is deprecated from version 2.5 and will be removed in a future version.
 
     Args:
         mindir_file (str): MindIR file name.
@@ -3318,6 +3455,8 @@ def convert_model(mindir_file, convert_file, file_format):
         >>> import mindspore as ms
         >>> ms.convert_model("lenet.mindir", "lenet.onnx", "ONNX")
     """
+    logger.warning("The interface 'mindspore.train.serialization.convert_model' is deprecated from version 2.5 "
+                   "and will be removed in a future version.")
     Validator.check_file_name_by_regular(mindir_file)
     Validator.check_file_name_by_regular(convert_file)
     if file_format != "ONNX":

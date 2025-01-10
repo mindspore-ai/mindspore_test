@@ -337,7 +337,7 @@ std::pair<py::object, StubNodePtr> MakeTopNode(const TypePtr &type) {
 
 std::pair<StubNodePtr, bool> MakeStubNode(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
-  MS_LOG(INFO) << "Make stub node for Abstract: " << abs->ToString();
+  MS_LOG(DEBUG) << "Make stub node for Abstract: " << abs->ToString();
   const auto &type = abs->GetType();
   MS_EXCEPTION_IF_NULL(type);
   const auto &shape = abs->GetShape();

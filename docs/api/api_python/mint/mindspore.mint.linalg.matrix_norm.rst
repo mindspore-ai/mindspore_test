@@ -1,17 +1,17 @@
 mindspore.mint.linalg.matrix_norm
 =================================
 
-.. py:function:: mindspore.mint.linalg.matrix_norm(A, ord='fro', axis=(-2, -1), keepdims=False, *, dtype=None)
+.. py:function:: mindspore.mint.linalg.matrix_norm(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None)
 
     返回给定Tensor在指定维度上的矩阵范数。
 
-    `ord` 为norm的计算模式。支持下列norm模式。
+    `ord` 为范数的计算模式。支持下列范数模式。
 
     ====================   ==================================
     `ord`                   矩阵范数
     ====================   ==================================
-    ``'fro'`` (默认值)       Frobenius norm
-    ``'nuc'``               nuclear norm
+    ``'fro'`` (默认值)       Frobenius 范数
+    ``'nuc'``               Nuclear 范数
     ``inf``                 :math:`max(sum(abs(x), dim=1))`
     ``-inf``                :math:`min(sum(abs(x), dim=1))`
     ``1``                   :math:`max(sum(abs(x), dim=0))`
@@ -25,7 +25,7 @@ mindspore.mint.linalg.matrix_norm
 
     参数：
         - **A** (Tensor) - shape为 :math:`(*, m, n)` 的Tensor，其中*是零个或多个batch维度。
-        - **ord** (Union[int, inf, -inf, 'fro', 'nuc'], 可选) - norm的模式。行为参考上表。默认值： ``'fro'`` 。
+        - **ord** (Union[int, inf, -inf, 'fro', 'nuc'], 可选) - 范数的计算模式。行为参考上表。默认值： ``'fro'`` 。
         - **dim** (Tuple(int, int), 可选) - 计算矩阵范数的维度。默认值： ``(-2, -1)`` 。
         - **keepdim** (bool) - 输出Tensor是否保留原有的维度。默认值： ``False`` 。
 
@@ -44,5 +44,5 @@ mindspore.mint.linalg.matrix_norm
         - **ValueError** - `dim` 的任意元素超出索引。
 
     .. note::
-        动态shape，动态rank和可变输入不支持在 `图模式(mode=mindspore.GRAPH_MODE)
+        动态shape、动态rank和可变输入不支持在 `图模式(mode=mindspore.GRAPH_MODE)
         <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 下执行。

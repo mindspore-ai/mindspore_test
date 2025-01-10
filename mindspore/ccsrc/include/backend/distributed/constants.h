@@ -97,11 +97,23 @@ const uint16_t kMaxPort = 65535;
 constexpr uint32_t kDefaultFinishTimeout = 30;
 
 // For each computing graph node, there is a range for rpc server's port number.
-// Each node has range number 2048, and the port started from 8118.
-constexpr uint32_t kStartPort = 8118;
-constexpr uint32_t kNodePortRangeNum = 4096;
-// We consider device number on one node is 32.
-constexpr uint32_t kMaxDeviceNumPerNode = 32;
+// Start port and port ranges for Worker and Server roles are independent.
+constexpr uint32_t kNodeRolePortRangeNum = 4096;
+constexpr uint32_t kStartWorkerPort = 8118;
+constexpr uint32_t kStartServerPort = kStartWorkerPort + kNodeRolePortRangeNum;
+// We consider Worker and Server number on one node is 16 each.
+constexpr uint32_t kMaxWorkerNumPerNode = 16;
+constexpr uint32_t kMaxServerNumPerNode = 16;
+
+// For each node role, it has specified port range parameters.
+struct NodeRolePortAssignment {
+  uint32_t start_port;
+  uint32_t port_range;
+  uint32_t max_node_num;
+};
+const NodeRolePortAssignment kWorkerPortAssignment = {kStartWorkerPort, kNodeRolePortRangeNum, kMaxWorkerNumPerNode};
+const NodeRolePortAssignment kServerPortAssignment = {kStartServerPort, kNodeRolePortRangeNum, kMaxServerNumPerNode};
+
 constexpr char kNodePortRange[] = "node_port_range";
 using ServerPortRange = std::pair<uint32_t, uint32_t>;
 

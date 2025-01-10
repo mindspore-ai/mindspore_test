@@ -1,0 +1,41 @@
+#operator max_dim
+max_dim:
+    description: |
+        Calculates the maximum value along with the given dim for the input tensor, and returns the maximum values and
+            indices.
+
+        Args:
+            input (Tensor): The input tensor, can be any dimension. Set the shape of input tensor as
+                :math:`(input_1, input_2, ..., input_N)` .Complex tensor is not supported.
+            dim (int): The dimension to reduce.
+            keepdim (bool, optional): Whether to reduce dimension, if ``True`` the output will keep the same dimension as the
+                `input` , the output will reduce dimension if ``false``. Default: ``False``.
+
+        Returns:
+            tuple (Tensor), tuple of 2 tensors, containing the maximum value of the self tensor along the given
+            dimension `dim` and the corresponding index.
+
+            - **values** (Tensor) - The maximum value of input tensor, with the same shape as `index`, and same dtype as `input`.
+            - **index** (Tensor) - The index for the maximum value of the input tensor, with dtype int64. If `keepdim`
+              is ``True`` , the shape of output tensors is :math:`(input_1, input_2, ..., input_{dim-1}, 1, input_{dim+1}, ..., input_N)`.
+              Otherwise, the shape is :math:`(input_1, input_2, ..., input_{dim-1}, input_{dim+1}, ..., input_N)` .
+
+        Raises:
+            TypeError: If `input` is not Tensor.
+            TypeError: If `keepdim` is not a bool.
+            TypeError: If `dim` is not an int.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+            >>> output, index = ops.auto_generate.MaxDim()(x, 0, False)
+            >>> print(output, index)
+            0.7 3
+            >>> output, index = ops.auto_generate.MaxDim()(x, 0, True)
+            >>> print(output)
+            [0.7] [3]

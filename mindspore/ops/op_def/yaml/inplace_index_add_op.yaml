@@ -1,0 +1,29 @@
+#operator inplace_index_add
+inplace_index_add:
+  args:
+    input:
+        dtype: tensor
+    dim:
+        dtype: int
+    index:
+        dtype: tensor
+    source:
+        dtype: tensor
+    alpha:
+        dtype: number
+        default: 1
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  function:
+    disable: True
+  class:
+    name: InplaceIndexAddExt
+  dispatch:
+    enable: True
+    Ascend: InplaceIndexAddExtAscend

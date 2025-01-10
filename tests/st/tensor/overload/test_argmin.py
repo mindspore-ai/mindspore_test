@@ -48,34 +48,18 @@ def net2_test(x):
     assert np.allclose(output2.asnumpy(), np.array([[0], [1], [2]]))
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
-def test_tensor_argmin_graph_mode(mode):
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
+def test_tensor_argmin(mode):
     """
-    Feature: tensor.argmax
-    Description: Verify the result of any
+    Feature: tensor.argmin
+    Description: Verify the result of argmin
     Expectation: success
     """
     ms.set_context(mode=mode)
     x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
     net2_test(x)
-
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend910b'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
-def test_tensor_argmin_pynative_mode(mode):
-    """
-    Feature: tensor.argmax
-    Description: Verify the result of any
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-    x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
     if ms.get_context('device_target') == 'Ascend':
         net_test(x)
-    else:
-        net2_test(x)

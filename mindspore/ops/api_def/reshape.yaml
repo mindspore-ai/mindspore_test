@@ -5,3 +5,5 @@ reshape:
   CPU: pyboost
   GPU: pyboost
   interface: tensor
+  varargs: shape
+  # Tensor.reshape(*shape)

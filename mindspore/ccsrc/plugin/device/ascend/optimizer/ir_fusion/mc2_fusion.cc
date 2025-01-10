@@ -29,7 +29,6 @@
 
 namespace mindspore::opt {
 namespace {
-enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
 
 bool IsForwardNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -55,6 +54,44 @@ bool IsBpropNode(const AnfNodePtr &node) {
     return false;
   }
   return node->fullname_with_scope().find("Gradients") == 0;
+}
+
+bool IsOnlyOnePathToMatmul(const CNodePtr &all_gather_cnode, const CNodePtr &matmul_cnode,
+                           const FuncGraphPtr &func_graph) {
+  std::unordered_set<CNodePtr> visited;
+  int path_count = 0;
+
+  std::function<void(const CNodePtr &)> dfs = [&](const CNodePtr &current_node) {
+    if (path_count > 1) return;
+
+    if (visited.count(current_node) > 0) {
+      return;
+    }
+    visited.insert(current_node);
+
+    if (current_node == matmul_cnode) {
+      path_count++;
+      return;
+    }
+
+    auto manager = current_node->func_graph()->manager();
+    if (manager != nullptr) {
+      auto node_users = manager->node_users()[current_node];
+      for (const auto &user_pair : node_users) {
+        dfs(user_pair.first->cast<CNodePtr>());
+      }
+    }
+  };
+
+  auto manager = all_gather_cnode->func_graph()->manager();
+  auto all_gather_users = manager->node_users()[all_gather_cnode];
+
+  for (const auto &user_pair : all_gather_users) {
+    visited.clear();
+    dfs(user_pair.first->cast<CNodePtr>());
+  }
+
+  return path_count == 1;
 }
 
 bool IsKbkMode(const FuncGraphPtr &graph) {
@@ -160,6 +197,11 @@ const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const An
   return fusion_node;
 }
 
+std::vector<std::string> MatmulReduceScatterFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimMatMul->name(), prim::kPrimReduceScatter->name()};
+  return ret;
+}
+
 const VectorRef MatmulReduceScatterFusion::DefineFusionPattern() const {
   MS_LOG(DEBUG) << "Do MatmulReduceScatterPattern.";
   // MatMul
@@ -187,6 +229,14 @@ const VectorRef MatmulReduceScatterFusion::DefineFusionPattern() const {
 CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                       const EquivPtr &equiv) const {
   MS_LOG(DEBUG) << "Create MatmulReduceScatter CNode";
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  const auto &soc_version = context_ptr->ascend_soc_version();
+  if (soc_version == "ascend910_93") {
+    // The current feature is not supported on this machine.
+    return nullptr;
+  }
+
   auto reduce_scatter_cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reduce_scatter_cnode != nullptr, {});
 
@@ -194,54 +244,51 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   MS_CHECK_TRUE_RET(matmul_cnode != nullptr, {});
   MS_CHECK_TRUE_RET(matmul_cnode->func_graph() == reduce_scatter_cnode->func_graph(), {});
 
-  auto input_x = matmul_cnode->input(kIndex1);
-  auto input_w = matmul_cnode->input(kIndex2);
+  auto input = matmul_cnode->input(kIndex1);
+  auto x2 = matmul_cnode->input(kIndex2);
   std::vector<TypeId> valid_type_list = {kFloat16->type_id(), kBFloat16->type_id()};
-  MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input_x, input_w}, valid_type_list), {});
+  MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input, x2}, valid_type_list), {});
 
   auto matmul_cnode_users = matmul_cnode->func_graph()->manager()->node_users()[matmul_cnode];
   MS_CHECK_TRUE_RET(matmul_cnode_users.size() == 1, {});
 
-  // create op
-  auto matmul_reduce_scatter_prim = prim::kPrimMatmulReduceScatter->Clone();
-  MS_CHECK_TRUE_RET(matmul_reduce_scatter_prim, {});
+  auto trans_input = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
+  auto trans_x2 = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+  MS_CHECK_TRUE_RET(!trans_input, {});
 
-  auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
-  auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+  auto input_shape = GetShape(input);
+  MS_CHECK_TRUE_RET(input_shape.size() == kSizeTwo, {});
+  MS_CHECK_TRUE_RET(GetShape(x2).size() == kSizeTwo, {});
 
-  // X1, X2 only support two dimensions
-  auto input_x_shape = GetShape(input_x);
-
-  // Check if both inputs are 2-dimensional
-  MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
-  MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
-
-  // Define valid range for the second dimension [256, 65535)
   constexpr int64_t kMaxValue = 65535;
   constexpr int64_t kMinValue = 256;
-  int64_t input_x_dim1 = input_x_shape[kIndex1];
-  if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
-    MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
+  int64_t input_dim1 = input_shape[kIndex1];
+  if (input_dim1 >= kMaxValue || input_dim1 < kMinValue) {
+    MS_LOG(WARNING) << "The second dimension of input is " << input_dim1
                     << ", but aclnnMatmulReduceScatter required should be between " << kMinValue << " (inclusive) and "
                     << kMaxValue << " (exclusive).";
     return nullptr;
   }
 
-  // Ensure is_trans_a is false
-  MS_CHECK_TRUE_RET(!is_trans_a, {});
-
-  // add attr
+  auto matmul_reduce_scatter_prim = prim::kPrimMatmulReduceScatter->Clone();
+  MS_CHECK_TRUE_RET(matmul_reduce_scatter_prim, {});
   auto reduce_scatter_prim = GetCNodePrimitive(reduce_scatter_cnode);
-  auto rank_list_attr = reduce_scatter_prim->GetAttr(kAttrRankList);
   matmul_reduce_scatter_prim->AddAttr(kAttrGroup, reduce_scatter_prim->GetAttr(kAttrGroup));
-  matmul_reduce_scatter_prim->AddAttr(kAttrRankSize, reduce_scatter_prim->GetAttr(kAttrRankSize));
-  matmul_reduce_scatter_prim->AddAttr(kAttrReduceOp, reduce_scatter_prim->GetAttr(kAttrOp));
-  matmul_reduce_scatter_prim->AddAttr(kAttrRankList, rank_list_attr);
-  matmul_reduce_scatter_prim->AddAttr(kAttrCommTurn, MakeValue<int64_t>(0));  // default value: 0
-  matmul_reduce_scatter_prim->AddAttr(kAttrIsTransA, MakeValue<bool>(is_trans_a));
-  matmul_reduce_scatter_prim->AddAttr(kAttrIsTransB, MakeValue<bool>(is_trans_b));
+  auto reduce_op = GetValue<std::string>(reduce_scatter_prim->GetAttr(kAttrOp));
+  if (reduce_op != "sum") {
+    MS_LOG(WARNING) << "The reduce op is " << reduce_op << ", but aclnnMatmulReduceScatter only support sum.";
+    return nullptr;
+  }
 
-  auto matmul_reduce_scatter_cnode = func_graph->NewCNode({NewValueNode(matmul_reduce_scatter_prim), input_x, input_w});
+  auto kernel_graph = func_graph->cast<std::shared_ptr<mindspore::session::KernelGraph>>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto matmul_reduce_scatter_cnode = func_graph->NewCNode(
+    {NewValueNode(matmul_reduce_scatter_prim), input, x2,
+     kernel_graph->NewValueNode(reduce_scatter_prim->GetAttr(kAttrGroup)),
+     kernel_graph->NewValueNode(reduce_scatter_prim->GetAttr(kAttrRankSize)),
+     kernel_graph->NewValueNode(MakeValue<int64_t>(Reduction::REDUCTION_SUM)),
+     kernel_graph->NewValueNode(mindspore::kNone), kernel_graph->NewValueNode(MakeValue<int64_t>(0)),
+     kernel_graph->NewValueNode(MakeValue<bool>(trans_input)), kernel_graph->NewValueNode(MakeValue<bool>(trans_x2))});
   if (matmul_reduce_scatter_cnode == nullptr) {
     MS_LOG(DEBUG) << "New matmul_reduce_scatter_cnode should not be null, but it is null.";
     return nullptr;
@@ -250,6 +297,11 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   matmul_reduce_scatter_cnode->set_scope(reduce_scatter_cnode->scope());
   MS_LOG(DEBUG) << "Create MatmulReduceScatter cnode success.";
   return matmul_reduce_scatter_cnode;
+}
+
+std::vector<std::string> AllGatherMatmulFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimAllGather->name(), prim::kPrimMatMul->name()};
+  return ret;
 }
 
 const VectorRef AllGatherMatmulFusion::DefineFusionPattern() const {
@@ -269,7 +321,6 @@ const VectorRef AllGatherMatmulFusion::DefineFusionPattern() const {
 
   auto allgather_x = VectorRef({is_allgather, x_input});
 
-  // ReduceScatter
   auto is_matmul = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimMatMul>);
   MS_CHECK_TRUE_RET(is_matmul != nullptr, {});
   auto matmul = VectorRef({is_matmul, allgather_x, w_input, transpose_x1, transpose_x2});
@@ -281,8 +332,9 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   MS_LOG(DEBUG) << "Create AllGatherMatmul CNode";
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->ascend_soc_version() == "ascend310p") {
-    // MC2 on 310p is demo feature, AllGatherMatmul is not support, other is ok.
+  const auto &soc_version = context_ptr->ascend_soc_version();
+  if (soc_version == "ascend310p" || soc_version == "ascend910_93") {
+    // The current feature is not supported on this machine.
     return nullptr;
   }
   auto matmul_cnode = node->cast<CNodePtr>();
@@ -292,48 +344,45 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   MS_CHECK_TRUE_RET(all_gather_cnode != nullptr, {});
   MS_CHECK_TRUE_RET(all_gather_cnode->func_graph() == matmul_cnode->func_graph(), {});
 
-  auto input_x = all_gather_cnode->input(kIndex1);
-  auto input_w = matmul_cnode->input(kIndex2);
+  if (!IsOnlyOnePathToMatmul(all_gather_cnode, matmul_cnode, func_graph)) {
+    return nullptr;
+  }
+
+  auto input = all_gather_cnode->input(kIndex1);
+  auto x2 = matmul_cnode->input(kIndex2);
   std::vector<TypeId> valid_type_list = {kFloat16->type_id(), kBFloat16->type_id()};
-  MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input_x, input_w}, valid_type_list), {});
+  MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input, x2}, valid_type_list), {});
 
-  // X1, X2 only support two dimensions
-  auto input_x_shape = GetShape(input_x);
+  auto input_shape = GetShape(input);
+  MS_CHECK_TRUE_RET(input_shape.size() == kSizeTwo, {});
+  MS_CHECK_TRUE_RET(GetShape(x2).size() == kSizeTwo, {});
 
-  // Check if both inputs are 2-dimensional
-  MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
-  MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
-
-  // Define valid range for the second dimension [256, 65535)
   constexpr int64_t kMaxValue = 65535;
   constexpr int64_t kMinValue = 256;
-  int64_t input_x_dim1 = input_x_shape[kIndex1];
-  if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
-    MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
+  int64_t input_dim1 = input_shape[kIndex1];
+  if (input_dim1 >= kMaxValue || input_dim1 < kMinValue) {
+    MS_LOG(WARNING) << "The second dimension of input is " << input_dim1
                     << ", but aclnnAllGatherMatmul required should be between " << kMinValue << " (inclusive) and "
                     << kMaxValue << " (exclusive).";
     return nullptr;
   }
 
-  auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
-  auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
-  MS_CHECK_TRUE_RET(!is_trans_a, {});  // Only support is_trans_a = false.
+  auto trans_input = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
+  auto trans_x2 = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+  MS_CHECK_TRUE_RET(!trans_input, {});
 
-  // create op
   auto all_gather_matmul_prim = prim::kPrimAllGatherMatmul->Clone();
   MS_CHECK_TRUE_RET(all_gather_matmul_prim, {});
-  // add attr
   auto all_gather_prim = GetCNodePrimitive(all_gather_cnode);
-  auto rank_list_attr = all_gather_prim->GetAttr(kAttrRankList);
   all_gather_matmul_prim->AddAttr(kAttrGroup, all_gather_prim->GetAttr(kAttrGroup));
-  all_gather_matmul_prim->AddAttr(kAttrRankSize, all_gather_prim->GetAttr(kAttrRankSize));
-  all_gather_matmul_prim->AddAttr(kAttrRankList, rank_list_attr);
-  all_gather_matmul_prim->AddAttr(kAttrCommTurn, MakeValue<int64_t>(0));     // default value: 0
-  all_gather_matmul_prim->AddAttr(kAttrGatherIndex, MakeValue<int64_t>(0));  // only support 0 currently
-  all_gather_matmul_prim->AddAttr(kAttrIsTransA, MakeValue<bool>(is_trans_a));
-  all_gather_matmul_prim->AddAttr(kAttrIsTransB, MakeValue<bool>(is_trans_b));
-
-  auto all_gather_matmul_cnode = func_graph->NewCNode({NewValueNode(all_gather_matmul_prim), input_x, input_w});
+  auto kernel_graph = func_graph->cast<std::shared_ptr<mindspore::session::KernelGraph>>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto all_gather_matmul_cnode = func_graph->NewCNode(
+    {NewValueNode(all_gather_matmul_prim), input, x2, kernel_graph->NewValueNode(all_gather_prim->GetAttr(kAttrGroup)),
+     kernel_graph->NewValueNode(all_gather_prim->GetAttr(kAttrRankSize)), kernel_graph->NewValueNode(mindspore::kNone),
+     kernel_graph->NewValueNode(MakeValue<int64_t>(0)), kernel_graph->NewValueNode(MakeValue<bool>(true)),
+     kernel_graph->NewValueNode(MakeValue<int64_t>(0)), kernel_graph->NewValueNode(MakeValue<bool>(trans_input)),
+     kernel_graph->NewValueNode(MakeValue<bool>(trans_x2))});
   if (all_gather_matmul_cnode == nullptr) {
     MS_LOG(DEBUG) << "New all_gather_matmul_cnode should not be null, but it is null.";
     return nullptr;
@@ -378,6 +427,11 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
 
   MS_LOG(DEBUG) << "Create AllGatherMatmul cnode success.";
   return all_gather_matmul_cnode;
+}
+
+std::vector<std::string> QuantBatchMatmulAllReduceFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimAllReduce->name()};
+  return ret;
 }
 
 const VectorRef QuantBatchMatmulAllReduceFusion::DefineFusionPattern() const {

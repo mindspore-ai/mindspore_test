@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_OPTIMIZER_IRPASS_AVG_POOL_GRAD_FOR_GE_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_OPTIMIZER_IRPASS_AVG_POOL_GRAD_FOR_GE_H_
 
+#include <vector>
+#include <string>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -31,6 +33,7 @@ class AvgPoolGradForGE : public PatternProcessPass {
  private:
   CNodePtr CreateTensorShapeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                  const AnfNodePtr &grad_node) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

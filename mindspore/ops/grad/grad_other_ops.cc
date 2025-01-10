@@ -30,10 +30,9 @@ REG_BPROP_BUILDER("Assign").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("InplaceCopy").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
-  auto y_dtype = ib->GetDtype(y);
   auto dout = ib->GetInput(kIndex3);
   auto res = BinopGradCommon(ib, x, y, nullptr, dout);
-  return {ib->OutZeros(x), ib->Cast(res[1], y_dtype)};
+  return {ib->OutZeros(x), res[1]};
 });
 
 REG_BPROP_BUILDER("InplaceZero").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
@@ -51,10 +50,11 @@ REG_BPROP_BUILDER("RandLikeExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(Retur
 REG_BPROP_BUILDER("RandnLike").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("RandIntLike").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("Generator").SetBody(ReturnZeros);
+REG_BPROP_BUILDER("InplaceRandom").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("IOU").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("SyncBatchNorm").SetUnusedInputs({i2, i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SyncBatchNorm").FreeUselessValues_IO({i2, i3, i4}, {i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto scale = ib->GetInput(kIndex1);
   auto mean = ib->GetInput(kIndex3);
@@ -93,6 +93,57 @@ REG_BPROP_BUILDER("_DynamicLossScale").SetUnusedInputs({i0, i2}).SetBody(BODYFUN
   auto res = ib->Emit("Mul", {dout, loss_scale},
                       {{"split_overflow", MakeValue(true)}, {"layer_overflow", ib->GetAttr("layer")}});
   return {res, ib->OutZeros(loss_scale)};
+});
+
+REG_BPROP_BUILDER("InplaceSubExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr dx = nullptr;
+  NodePtr dy = nullptr;
+
+  if (x->need_compute_grad_out()) {
+    dx = dout;
+  }
+
+  if (y->need_compute_grad_out()) {
+    dy = ib->Neg(dout);
+    auto alpha_opt = GetAlpha(alpha);
+    if (!alpha_opt.has_value()) {
+      auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(x));
+      dy = ib->Mul(dy, alpha_tensor);
+    } else if (alpha_opt.value() != 1) {
+      if (ib->GetDtypeId(x) == kNumberTypeFloat16) {
+        auto alpha_tensor = ib->ScalarToTensor(alpha);
+        dy = ib->Mul(dy, alpha_tensor);
+      } else {
+        auto alpha_tensor = ib->Tensor(alpha_opt.value(), ib->GetDtype(x));
+        dy = ib->Mul(dy, alpha_tensor);
+      }
+    }
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
+  ret.emplace_back(ib->OutZeros(alpha));
+  return ret;
+});
+
+REG_BPROP_BUILDER("InplaceSubScalar").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr dx = nullptr;
+  NodePtr dy = nullptr;
+
+  if (x->need_compute_grad_out()) {
+    dx = dout;
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
+  ret.emplace_back(ib->OutZeros(alpha));
+  return ret;
 });
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

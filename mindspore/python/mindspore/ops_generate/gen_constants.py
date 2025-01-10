@@ -65,24 +65,41 @@ MS_OP_DEF_YAML_PATH = "mindspore/ops/op_def/yaml"
 MS_OP_DEPRECATED_DEF_YAML_PATH = "mindspore/ops/op_def/deprecated"
 MS_OP_API_YAML_PATH = "mindspore/ops/api_def"
 MS_TENSOR_METHOD_DOC_YAML_PATH = "mindspore/ops/api_def/method_doc"
-MS_MINT_FUNC_PATH = "mindspore/python/mindspore/mint"
+MS_MINT_FUNC_DOC_YAML_PATH = "mindspore/ops/api_def/function_doc"
+MS_MINT_FUNC_OVERLOAD_PATH = "mindspore/python/mindspore/ops"
 PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"
 PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/function/auto_generate"
+PYBOOST_AUTO_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/auto_generate"
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/auto_generate"
 RUNTIME_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/runtime/pynative/op_function/auto_generate"
-TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/"
+TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_register/auto_generate"
+TENSOR_API_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_api/auto_generate"
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
+ADD_MINT_DOCS_PY_PATH = "mindspore/python/mindspore/mint"
 
 # yaml keys def
-OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'dispatch', 'labels'}
+OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'dispatch', 'labels', 'bprop_expander'}
 ARG_KEYS = {'dtype', 'default', 'prim_init', 'type_cast', 'arg_handler'}
 RETURN_KEYS = {'dtype', 'inplace', 'type_cast'}
 ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}
 CLASS_KEYS = {'name', 'disable'}
 FUNCTION_KEYS = {'name', 'disable'}
 DISPATCH_KEYS = {'enable', 'is_comm_op', 'Ascend', 'GPU', 'CPU'}
-TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'kwonlyargs', 'alias', 'Ascend', 'GPU', 'CPU', 'interface'}
+TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'kwonlyargs', 'varargs', 'alias', 'Ascend', 'GPU', 'CPU', 'interface'}
+
+# func signature parsing
+ARG_HANDLER_MAP = {"to_2d_paddings": "int|tuple[int]|list[int]",
+                   "dtype_to_type_id": "type",
+                   "to_kernel_size": "int|tuple[int]|list[int]",
+                   "to_strides": "int|tuple[int]|list[int]",
+                   "str_to_enum": "str",
+                   "to_pair": "int|tuple[int]|list[int]|float",
+                   "to_dilations": "tuple[int]|list[int]|int",
+                   "to_output_padding": "int|tuple[int]|list[int]",
+                   "to_rates": "int|tuple[int]|list[int]"}
+INPUT_ARGS_NAME = {"input", "x", "input_x"}
+INPUT_NAME_MAP = {"DeprecatedExpandAs": "input"}
 
 # infer
 MS_OPS_FUNC_IMPL_PATH = "mindspore/ops/infer/ops_func_impl"
@@ -92,9 +109,9 @@ MS_OPS_VIEW_PATH = "mindspore/ops/view"
 
 # kernel
 MS_OPS_KERNEL_PATH = "mindspore/ops/kernel"
+MS_OPS_KERNEL_FUNCTIONS_AUTO_GEN_PATH = "mindspore/ops/kernel/functions/auto_generate"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 
-MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 
 OP_NAME_OP_DEF = """
 #ifndef MINDSPORE_CORE_OP_NAME_H_

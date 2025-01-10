@@ -11,7 +11,7 @@ isclose:
     Args:
         rtol(float, optional): Relative tolerance. Default: ``1e-05`` .
         atol(float, optional): Absolute tolerance. Default: ``1e-08`` .
-        equal_nan(bool, optional): If ``True`` , then two NaNs will be considered equal. Default: ``True`` .
+        equal_nan(bool, optional): If ``True`` , then two NaNs will be considered equal. Default: ``False`` .
 
     Inputs:
         - **input** (Tensor) - First tensor to compare.

@@ -91,7 +91,7 @@ void BatchNormCpuKernelMod::InitWorkspaceSize(const std::vector<KernelTensor *> 
 bool BatchNormCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
                                    const std::vector<kernel::KernelTensor *> &workspace,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  auto wksp = reinterpret_cast<float *>(workspace[0]->device_ptr());
+  auto wksp = GetDeviceAddress<float>(workspace, kIndex0);
   auto scale_ret = memcpy_s(wksp, workspace[0]->size(), inputs[kIndex1]->device_ptr(), inputs[kIndex1]->size());
   auto max_size = workspace[0]->size() - inputs[kIndex1]->size();
   auto bias_ret = memcpy_s(wksp + (inputs[kIndex1]->size() / sizeof(float)), max_size, inputs[kIndex2]->device_ptr(),
@@ -107,13 +107,14 @@ bool BatchNormCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
     SetArgumentHandle(DNNL_ARG_DST, outputs[0]->device_ptr());
     ExecutePrimitive();
 
-    auto moving_mean = reinterpret_cast<float *>(inputs[kIndex3]->device_ptr());
-    auto moving_variance = reinterpret_cast<float *>(inputs[kIndex4]->device_ptr());
-    auto mean = reinterpret_cast<float *>(outputs[kIndex3]->device_ptr());
-    auto variance = reinterpret_cast<float *>(outputs[kIndex4]->device_ptr());
+    auto moving_mean = GetDeviceAddress<float>(inputs, kIndex3);
+    auto moving_variance = GetDeviceAddress<float>(inputs, kIndex4);
+    auto mean = GetDeviceAddress<float>(outputs, kIndex3);
+    auto variance = GetDeviceAddress<float>(outputs, kIndex4);
+    float bessel_correction = static_cast<float>(nhw_size_) / (nhw_size_ - 1);
     for (size_t i = 0; i < inputs[kIndex3]->size() / sizeof(float); ++i) {
       moving_mean[i] = moving_mean[i] * (1 - momentum_) + mean[i] * momentum_;
-      moving_variance[i] = moving_variance[i] * (1 - momentum_) + variance[i] * momentum_;
+      moving_variance[i] = moving_variance[i] * (1 - momentum_) + variance[i] * bessel_correction * momentum_;
     }
   } else {
     SetArgumentHandle(DNNL_ARG_SRC, inputs[0]->device_ptr());

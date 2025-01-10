@@ -11,7 +11,7 @@ mindspore.ops.IndexAdd
         - **check_index_bound** (bool，可选) - 如果为True将对索引进行边界检查。默认值： ``True`` 。
 
     输入：
-        - **x** (Parameter) - 要添加到的输入参数。
+        - **x** (Union[Parameter, Tensor]) - 要添加到的输入参数或Tensor。
         - **indices** (Tensor) - 沿 `axis` 在指定 `indices` 位置进行加法运算。数据类型支持int32。`indices` 必须为一维且与 `y` 在 `axis` 维度的尺寸相同。 `indices` 取值范围应为[0, b)，其中b为 `x` 在 `axis` 维度的尺寸。
         - **y** (Tensor) - 被添加到 `x` 的输入Tensor。必须与 `x` 的数据类型相同。除 `axis` 之外的维度shape必须与 `x` 的shape相同。
 
@@ -19,7 +19,6 @@ mindspore.ops.IndexAdd
         Tensor，与 `x` 的shape和数据类型相同。
 
     异常：
-        - **TypeError** - `x` 不是Parameter。
         - **TypeError** - `indices` 或 `y` 不是Tensor。
         - **ValueError** - axis 超过了 `x` 的秩。
         - **ValueError** - `x` 与 `y` 的秩不相同。

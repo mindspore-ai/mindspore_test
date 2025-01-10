@@ -42,6 +42,7 @@
 #include "debug/debugger/debugger_utils.h"
 #include "debug/debug_services.h"
 #include "runtime/device/ms_device_shape_transfer.h"
+#include "proto/debug_graph.pb.h"
 
 using debugger::GraphProto;
 using debugger::ModelProto;
@@ -313,10 +314,10 @@ void Debugger::DumpConstantDataAscend(const KernelGraphPtr &graph) {
  * Runtime category: MindRT.
  * Description: Dumps a single node for given graph_id.
  */
-void Debugger::DumpSingleNode(const CNodePtr &node, uint32_t graph_id) const {
+void Debugger::DumpSingleNode(const CNodePtr &node, uint32_t graph_id, const DeviceContext *device_context) const {
   if (debugger_ && debugger_->DebuggerBackendEnabled()) {
     uint32_t rank_id = GetRankID();
-    (void)E2eDump::DumpSingleNodeData(node, graph_id, rank_id, debugger_.get());
+    (void)E2eDump::DumpSingleNodeData(node, graph_id, rank_id, debugger_.get(), device_context);
   }
 }
 

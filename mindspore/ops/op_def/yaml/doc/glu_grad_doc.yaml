@@ -1,0 +1,3 @@
+glu_grad:
+  description: |
+    Computes grad for Glu operation.

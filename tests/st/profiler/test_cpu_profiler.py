@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,50 +12,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""test cpu profiler"""
-import os
-import shutil
-import sys
+import glob
 import tempfile
-import numpy as np
-
-import mindspore.context as context
-from mindspore import Tensor
+from mindspore import context, Model, nn
 from mindspore import Profiler
 from tests.mark_utils import arg_mark
-from model_zoo import TinyAddNet
 from file_check import FileChecker
+from model_zoo import LeNet5
+from fake_dataset import FakeDataset
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_cpu_profiling():
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_cpu_profiler():
     """
-    Feature: Profiling can collect custom aicpu operators
-    Description: Test profiling can collect custom aicpu operators on ascend
-    Expectation: The file aicpu_intermediate_*.csv generated successfully and s1 == s2
+    Feature: CPU Profiler
+    Description: Test the CPU profiler.
+    Expectation: The CPU profiler should collect and analyze data successfully.
     """
-    if sys.platform != 'linux':
-        return
-    data_path = os.path.join(os.getcwd(), 'data_cpu')
-    if os.path.isdir(data_path):
-        shutil.rmtree(data_path)
-    context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
-    with tempfile.TemporaryDirectory(suffix="profiler_cpu") as tmpdir:
-        profiler = Profiler(output_path=tmpdir, data_simplification=False)
-        x = np.random.randn(1, 3, 3, 4).astype(np.float32)
-        y = np.random.randn(1, 3, 3, 4).astype(np.float32)
-        add = TinyAddNet()
-        add(Tensor(x), Tensor(y))
+    with tempfile.TemporaryDirectory(suffix="_cpu_profiler") as tmpdir:
+        context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
+        profiler = Profiler(output_path=tmpdir)
+        dataloader = FakeDataset.create_fake_cv_dataset()
+        net = LeNet5()
+        optimizer = nn.Momentum(net.trainable_params(), 0.01, 0.9)
+        loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+        model = Model(net, loss, optimizer)
+        model.train(1, dataloader, dataset_sink_mode=False)
         profiler.analyse()
 
-        op_detail_file = f"{tmpdir}/profiler/cpu_op_detail_info_{rank_id}.csv"
-        op_type_file = f"{tmpdir}/profiler/cpu_op_type_info_{rank_id}.csv"
-        timeline_file = f"{tmpdir}/profiler/cpu_op_execute_timestamp_{rank_id}.txt"
+        # Check trace_view.json
+        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+        FileChecker.check_timeline_values(
+            trace_view_path,
+            "name",
+            [
+                "*Conv2D*",
+                "*BiasAdd*",
+            ],
+            fuzzy_match=True
+        )
 
-        op_dict = {"full_op_name": "Default/Add-op*"}
-        FileChecker.check_csv_items(op_detail_file, op_dict, fuzzy_match=True)
-        op_dict = {"op_type": "Add"}
-        FileChecker.check_csv_items(op_type_file, op_dict, fuzzy_match=False)
-        FileChecker.check_txt_not_empty(timeline_file)
-        profiler.op_analyse(op_name="Add")
+        op_name_list = ["BiasAdd", "Conv2D"]
+        res = profiler.op_analyse(op_name=op_name_list)
+        for op_name in op_name_list:
+            assert op_name in res

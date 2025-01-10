@@ -92,10 +92,10 @@ bool EighCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &workspace,
                                     const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputsNum, kernel_name_);
-  auto A_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  auto A_addr = GetDeviceAddress<T>(inputs, 0);
   // is the Matrix a symmetric matrix(true lower triangle, false upper triangle)
-  auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  T *a_Work_dir = reinterpret_cast<T *>(workspace[0]->device_ptr());
+  auto output_addr = GetDeviceAddress<T>(outputs, 0);
+  T *a_Work_dir = GetDeviceAddress<T>(workspace, 0);
   Map<MatrixSquare<T>> A(A_addr, m_, m_);
   Map<MatrixSquare<T>> A_(a_Work_dir, m_, m_);
   Map<MatrixSquare<T>> output(output_addr, m_, 1);
@@ -107,7 +107,7 @@ bool EighCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
   }
   T *output_v_addr = nullptr;
   if (compute_eigen_vectors_) {
-    output_v_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
+    output_v_addr = GetDeviceAddress<T>(outputs, 1);
   }
   if constexpr (std::is_same<T, float>::value || std::is_same<T, double>::value) {
     SolveSelfAdjointMatrix(A_, &output, compute_eigen_vectors_, m_, output_v_addr);

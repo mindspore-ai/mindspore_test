@@ -199,27 +199,29 @@ void GridSampler2DCpuKernelMod::Call2Half(const float16 *x_data_addr, float16 *y
                                           std::vector<int64_t> y_dims, int64_t *y_stride, int64_t *x_stride,
                                           const int64_t *grid_stride, int64_t interpolation_mode, int64_t padding_mode,
                                           bool align_corners) {
-  uint32_t data_num = LongToSize(y_dims[0] * y_dims[2] * y_dims[3]);
+  uint32_t data_num = LongToSize(y_dims[kIndex0] * y_dims[kIndex2] * y_dims[kIndex3]);
   auto shard_compute = [&](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       int64_t y_iter[4] = {0};
-      y_iter[1] = static_cast<int64_t>(i);
+      y_iter[kIndex1] = static_cast<int64_t>(i);
       int64_t count = 3;
-      while (y_iter[1] > 0) {
+      while (y_iter[kIndex1] > 0) {
         if (count == 1) {
           count--;
         }
         y_iter[count] = y_iter[1] % y_dims[count];
-        y_iter[1] /= y_dims[count--];
+        y_iter[kIndex1] /= y_dims[count--];
       }
-      const int64_t y_c = y_dims[1];
-      int64_t grid_offset = y_iter[0] * grid_stride[0] + y_iter[2] * grid_stride[1] + y_iter[3] * grid_stride[2];
+      const int64_t y_c = y_dims[kIndex1];
+      int64_t grid_offset = y_iter[0] * grid_stride[kIndex0] + y_iter[kIndex2] * grid_stride[kIndex1] +
+                            y_iter[kIndex3] * grid_stride[kIndex2];
       float x = static_cast<float>(grid_data_addr[grid_offset]);
-      float y = static_cast<float>(grid_data_addr[grid_offset + grid_stride[3]]);
-      x = GridSamplerComputeSourceIndex<float>(x, x_dims[3], padding_mode, align_corners);
-      y = GridSamplerComputeSourceIndex<float>(y, x_dims[2], padding_mode, align_corners);
-      auto x_ptr_NC = y_iter[0] * x_stride[0];
-      auto y_ptr_NCHW = y_iter[0] * y_stride[0] + y_iter[2] * y_stride[2] + y_iter[3] * y_stride[3];
+      float y = static_cast<float>(grid_data_addr[grid_offset + grid_stride[kIndex3]]);
+      x = GridSamplerComputeSourceIndex<float>(x, x_dims[kIndex3], padding_mode, align_corners);
+      y = GridSamplerComputeSourceIndex<float>(y, x_dims[kIndex2], padding_mode, align_corners);
+      auto x_ptr_NC = y_iter[kIndex0] * x_stride[kIndex0];
+      auto y_ptr_NCHW =
+        y_iter[kIndex0] * y_stride[kIndex0] + y_iter[kIndex2] * y_stride[kIndex2] + y_iter[kIndex3] * y_stride[kIndex3];
 
       if (interpolation_mode == static_cast<int64_t>(ops::InterpolationMode::BILINEAR)) {
         BilinearHalf(x, y, x_data_addr, y_data_addr, y_c, x_dims, y_stride, x_stride, x_ptr_NC, y_ptr_NCHW);
@@ -236,9 +238,9 @@ void GridSampler2DCpuKernelMod::NearestHalf(float x, float y, const float16 *x_d
                                             const int64_t *x_stride, int64_t x_ptr_NC, int64_t y_ptr_NCHW) const {
   int64_t x_nearest = static_cast<int64_t>(std::nearbyint(x));
   int64_t y_nearest = static_cast<int64_t>(std::nearbyint(y));
-  for (int64_t c = 0; c < y_c; ++c, x_ptr_NC += x_stride[1], y_ptr_NCHW += y_stride[1]) {
+  for (int64_t c = 0; c < y_c; ++c, x_ptr_NC += x_stride[kIndex1], y_ptr_NCHW += y_stride[kIndex1]) {
     if (WithinBounds2D(y_nearest, x_nearest, x_dims[kTwo], x_dims[kThree])) {
-      auto x_index = x_ptr_NC + y_nearest * x_stride[2] + x_nearest * x_stride[3];
+      auto x_index = x_ptr_NC + y_nearest * x_stride[kIndex2] + x_nearest * x_stride[kIndex3];
       y_data_addr[y_ptr_NCHW] = x_data_addr[x_index];
     } else {
       y_data_addr[y_ptr_NCHW] = static_cast<float16>(0);
@@ -290,10 +292,13 @@ void GridSampler2DCpuKernelMod::BilinearHalf(float x, float y, const float16 *x_
 template <typename T>
 void GridSampler2DCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  auto x_data_addr = static_cast<T *>(inputs[0]->device_ptr());
-  auto grid_data_addr = static_cast<T *>(inputs[1]->device_ptr());
-  auto output_data_addr = static_cast<T *>(outputs[0]->device_ptr());
-  size_t loop_count = LongToSize(output_shape_[0] * output_shape_[2] * output_shape_[3]);
+  auto x_data_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_data_addr);
+  auto grid_data_addr = static_cast<T *>(inputs[kIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(grid_data_addr);
+  auto output_data_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_data_addr);
+  size_t loop_count = LongToSize(output_shape_[kIndex0] * output_shape_[kIndex2] * output_shape_[kIndex3]);
   auto task = [this, &x_data_addr, &grid_data_addr, &output_data_addr](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       ComputeTask<T>(x_data_addr, grid_data_addr, output_data_addr, i);
@@ -308,10 +313,13 @@ void GridSampler2DCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
 
 void GridSampler2DCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  auto x_data_addr = static_cast<float16 *>(inputs[0]->device_ptr());
-  auto grid_data_addr = static_cast<float16 *>(inputs[1]->device_ptr());
-  auto output_data_addr = static_cast<float16 *>(outputs[0]->device_ptr());
-  size_t loop_count = LongToSize(output_shape_[0] * output_shape_[2] * output_shape_[3]);
+  auto x_data_addr = static_cast<float16 *>(inputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(x_data_addr);
+  auto grid_data_addr = static_cast<float16 *>(inputs[kIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(grid_data_addr);
+  auto output_data_addr = static_cast<float16 *>(outputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_data_addr);
+  size_t loop_count = LongToSize(output_shape_[kIndex0] * output_shape_[kIndex2] * output_shape_[kIndex3]);
   auto task = [this, &x_data_addr, &grid_data_addr, &output_data_addr](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       ComputeTask(x_data_addr, grid_data_addr, output_data_addr, i);

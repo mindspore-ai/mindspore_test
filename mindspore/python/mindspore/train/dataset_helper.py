@@ -15,7 +15,6 @@
 """Dataset help for minddata dataset"""
 from __future__ import absolute_import
 
-import os
 import math
 import copy
 
@@ -25,9 +24,11 @@ from mindspore.common._auto_dynamic import is_auto_dynamic, convert_new_shapes
 from mindspore.common.dtype import pytype_to_dtype
 from mindspore.common.api import _cell_graph_executor, _is_args_fullmode, ARG_SPECIFIED
 from mindspore.common._utils import is_shape_unknown
+from mindspore.dataset.core import config as dataset_config
 from mindspore.dataset.engine import offload
 from mindspore import context, nn
-from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, _construct_tensor_list
+from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, \
+    _construct_tensor_list, enable_data_broadcast
 from mindspore.parallel._utils import _get_device_num, _get_global_rank, _need_to_full, \
     _to_full_shapes, _get_pipeline_stages, _change_symbols_for_parallel, _is_in_auto_parallel_mode, \
     _origin_shapes, _dynamic_shape_for_dataset
@@ -263,16 +264,14 @@ def connect_network_with_dataset(network, dataset_helper):
             "The dataset has been connected to other network, please check the code.")
     is_dynamic = bool(network.get_inputs())
     queue_name = dataset.__transfer_dataset__.queue_name
+
     # In pipeline parallel, some stages have no GetNext, should not get in.
+    # Don't enable dynamic shape(multi-subgraph) feature in pp/dataset_broadcast mode,
+    # otherwise get_data_info will stuck since some rank do not consume data.
     use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+    data_broadcast = enable_data_broadcast()
 
-    # temp env to disable dynamic feature of sink size 1
-    dynamic_sink1_env = os.getenv("MS_DEV_DYNAMIC_SINK1", None)
-    dynamic_sink1 = True
-    if dynamic_sink1_env and dynamic_sink1_env.strip() in ['False', 'false']:
-        dynamic_sink1 = False
-
-    if _dynamic_sink_scenario(dataset, dataset_iter, is_dynamic) and not use_pipeline_parallel and dynamic_sink1:
+    if _dynamic_sink_scenario(dataset, dataset_iter, is_dynamic) and not use_pipeline_parallel and not data_broadcast:
         dataset_types, dataset_shapes = dataset_helper.get_data_info()
         # Need to do full_batch for shapes which also do in the _DatasetIterMSLoopSink
         if _need_to_full():
@@ -314,7 +313,7 @@ def connect_network_with_dataset(network, dataset_helper):
             aux.__shape_type__ = str(dataset_types) + str(dataset_shapes)
 
     if _dynamic_sink_data(dataset, dataset_iter) and _dynamic_sink_exception_scenario(dataset_iter, is_dynamic) and \
-        not use_pipeline_parallel and dynamic_sink1:
+        not use_pipeline_parallel and not data_broadcast:
         dataset_helper.get_data_info()
     network.add_flags(sink_mode=True)
     return network
@@ -686,8 +685,9 @@ class _DatasetIterNormal:
         self.dataset = dataset
         self.device_num = _get_device_num()
         self.global_rank = _get_global_rank()
+        do_copy = dataset_config.get_iterator_mode()["do_copy"]
         self.iter = self.dataset.create_tuple_iterator(
-            num_epochs=epoch_num, do_copy=True)
+            num_epochs=epoch_num, do_copy=do_copy)
 
     def __iter__(self):
         return self

@@ -17,11 +17,14 @@
 #include "kernel/ascend/pyboost/customize/comm_common.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "utils/ms_utils.h"
+#include "availability/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,11 +39,18 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   runtime::Pipeline::Get().launch_stage()->Wait();
 
   const auto &group_str = GetValue<std::string>(group);
+  // Before calling each hccl operator, we need to wait for communicator to be initialized.
+  distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_str);
   const auto &hccl_comm = device::ascend::AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_str);
+  auto checker = silentcheck::SilentCheckerBase::GetInstance();
+  if (checker != nullptr) {
+    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Run device task " << op_name << " with group " << group_str;
+    checker->DoSilentCheck(op_name, group_str, input_tensor);
+  }
 
   auto comm_handle = op->comm_handle();
   auto device_context = op->device_context();
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  static auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
 
   // Need to bind context if the comm_op is the first op launched in this thread.
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
@@ -62,7 +72,11 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
                                        op_name, false);
 
+    device::tracker::CALL_MEMORY_TRACKER(UpdateTask, "PyNative",
+                                         {{device::tracker::kStreamId, std::to_string(comm_stream_id)}});
+    device::tracker::CALL_MEMORY_TRACKER(CacheLastTask);
     CommUtils::GetInstance().SyncOpStream(device_context, op_stream_id, comm_stream_id);
+    device::tracker::CALL_MEMORY_TRACKER(EmptyCache);
     auto comm_stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(comm_stream_id);
 
     if (launch_func) {

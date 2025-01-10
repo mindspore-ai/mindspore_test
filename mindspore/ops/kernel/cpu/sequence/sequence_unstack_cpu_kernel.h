@@ -76,7 +76,7 @@ class SequenceUnstackCpuKernelMod : public NativeCpuKernelMod {
   SequenceUnstackFunc kernel_func_;
 
   SequenceUnstackParameter sequence_unstack_param_{};
-  std::vector<int64_t> input_shape_;
+  std::vector<int64_t> input_shape_{};
   size_t output_num_{0};
   size_t input_size_{1};
   size_t input_num_{1};

@@ -29,6 +29,7 @@
 #if !defined(BUILD_LITE) && defined(ENABLE_D)
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #include "minddata/dataset/engine/datasetops/map_op/npu_map_job.h"
+#include "minddata/dataset/kernels/image/image_utils.h"
 #endif
 #include "minddata/dataset/engine/ir/datasetops/map_node.h"
 #include "minddata/dataset/kernels/tensor_op.h"
@@ -239,34 +240,59 @@ Status MapOp::InitResource(const std::vector<std::vector<std::shared_ptr<TensorO
 
   if (dvpp_flag) {
     MS_LOG(INFO) << "Init resource for Ascend910B.";
-    auto ms_context = MsContext::GetInstance();
-    if (ms_context == nullptr) {
-      RETURN_STATUS_UNEXPECTED("Get ms context failed by MsContext::GetInstance()");
-    }
-    *device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    if ((*device_context) == nullptr) {
-      RETURN_STATUS_UNEXPECTED("Get device context failed by ms context");
-    }
-    (*device_context)->Initialize();
-    if ((*device_context)->device_res_manager_ == nullptr) {
-      RETURN_STATUS_UNEXPECTED("The device resource manager is null.");
+    {
+      std::unique_lock<std::mutex> lock(device_context_mutex_);
+      auto ms_context = MsContext::GetInstance();
+      if (ms_context == nullptr) {
+        RETURN_STATUS_UNEXPECTED("Get ms context failed by MsContext::GetInstance()");
+      }
+      *device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+        {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+      if ((*device_context) == nullptr) {
+        RETURN_STATUS_UNEXPECTED("Get device context failed by ms context");
+      }
+      (*device_context)->Initialize();
+      if ((*device_context)->device_res_manager_ == nullptr) {
+        RETURN_STATUS_UNEXPECTED("The device resource manager is null.");
+      }
+
+      std::string soc_version;
+      auto ret = AclAdapter::GetInstance().GetSocName(&soc_version);
+      if (ret != APP_ERR_OK) {
+        RETURN_STATUS_UNEXPECTED("Get Soc Version failed.");
+      }
+      if (soc_version.find("Ascend910B") == std::string::npos &&
+          soc_version.find("Ascend910_93") == std::string::npos) {
+        std::string err_msg = "The SoC: " + soc_version + " is not Ascend910B / Ascend910_93";
+        RETURN_STATUS_UNEXPECTED(err_msg);
+      }
     }
 
-    std::string soc_version;
-    auto ret = AclAdapter::GetInstance().GetSocName(&soc_version);
-    if (ret != APP_ERR_OK) {
-      RETURN_STATUS_UNEXPECTED("Get Soc Version failed.");
+    try {
+      if ((*device_context)->device_res_manager_->CreateStream(stream_id) != true) {
+        RETURN_STATUS_UNEXPECTED("Create new stream failed on Ascend910B platform.");
+      }
+      MS_LOG(INFO) << "Create new stream id: " << std::to_string(*stream_id);
+    } catch (const std::exception &e) {
+      std::string str_err = e.what();
+      if (str_err.find("driver error:out of memory") != std::string::npos) {
+        RETURN_STATUS_UNEXPECTED(
+          "Cannot reset NPU device in forked subprocess.\n    "
+          "Note: the following sevral scenarios are not supported yet.\n"
+          "    1. GeneratorDataset with num_parallel_workers>1 and "
+          "python_multiprocessing=True.\n    2. Independent dataset mode (export "
+          "MS_INDEPENDENT_DATASET=True):\n        1) Use the eager mode of dvpp "
+          "in the main process, and then start the dataset independent process. "
+          "GeneratorDataset / map / batch performs dvpp operations in thread mode.\n"
+          "        2) Initialize the device in the main process, and then start the "
+          "dataset independent process. GeneratorDataset / map / batch executes the "
+          "dvpp operation in thread mode.\n    "
+          "Suggestion: except for the scenes above to use NPU with multiprocessing, "
+          "you can set ds.config.set_multiprocessing_start_method('spawn') in your "
+          "script and rerun.");
+      }
+      MS_LOG(EXCEPTION) << e.what();
     }
-    if (soc_version.find("Ascend910B") == std::string::npos && soc_version.find("Ascend910_93") == std::string::npos) {
-      std::string err_msg = "The SoC: " + soc_version + " is not Ascend910B / Ascend910_93";
-      RETURN_STATUS_UNEXPECTED(err_msg);
-    }
-
-    if ((*device_context)->device_res_manager_->CreateStream(stream_id) != true) {
-      RETURN_STATUS_UNEXPECTED("Create new stream failed on Ascend910B platform.");
-    }
-    MS_LOG(INFO) << "Create new stream id: " << std::to_string(*stream_id);
   }
   return Status::OK();
 }
@@ -280,6 +306,20 @@ Status MapOp::ComputeIsDvpp(const std::shared_ptr<TensorOp> tfunc, TensorRow *i_
   std::vector<std::shared_ptr<DeviceTensorAscend910B>> device_in((*i_row).size());
   auto i = 0;
   for (auto &tensor : *i_row) {
+    // if the first op is Decode, confirm that it is in jpeg format.
+    if (tfunc->Name() == kDvppDecodeOp) {
+      CHECK_FAIL_RETURN_UNEXPECTED(tensor->shape().Rank() == 1,
+                                   "[DvppDecode] Invalid data shape. Currently only support 1D. Its rank is: " +
+                                     std::to_string(tensor->shape().Rank()));
+      CHECK_FAIL_RETURN_UNEXPECTED(
+        IsNonEmptyJPEG(tensor) == true,
+        "[DvppDecode] Invalid image type. Currently only support JPG. Its shape is: " + tensor->shape().ToString());
+      CHECK_FAIL_RETURN_UNEXPECTED(
+        tensor->type() == DataType::DE_UINT8,
+        "[DvppDecode] Invalid data type. Currently only support uint8. Its type is: " + tensor->type().ToString());
+    }
+
+    // create device tensor for input
     if (tfunc->Name() == "DvppConvertColorOp") {
       std::vector<int> channels = {1, 3, 4};
       RETURN_IF_NOT_OK(DeviceTensorAscend910B::CreateDeviceTensor(tensor, device_context, stream_id, &device_in[i],
@@ -290,7 +330,20 @@ Status MapOp::ComputeIsDvpp(const std::shared_ptr<TensorOp> tfunc, TensorRow *i_
     }
     i++;
   }
-  std::vector<std::shared_ptr<DeviceTensorAscend910B>> device_out;
+  std::vector<std::shared_ptr<DeviceTensorAscend910B>> device_out((*i_row).size());
+  if (tfunc->Name() == kDvppDecodeOp) {
+    // if the op is Decode, we should get the height and width form JPEG header and create the output tensor first
+    int img_width = 0;
+    int img_height = 0;
+    for (int32_t k = 0; k < (*i_row).size(); k++) {
+      RETURN_IF_NOT_OK(GetJpegImageInfo((*i_row)[k], &img_width, &img_height));
+      TensorShape shape{1, img_height, img_width, 3};
+      DataType type(DataType::DE_UINT8);
+      std::shared_ptr<DeviceTensorAscend910B> device_tensor = nullptr;
+      RETURN_IF_NOT_OK(
+        DeviceTensorAscend910B::CreateDeviceTensor(shape, type, device_context, stream_id, &device_out[k]));
+    }
+  }
   Status rc = tfunc->Compute(device_in, &device_out);
   if (rc.IsError()) {
     std::string op_name = tfunc->Name();
@@ -763,6 +816,15 @@ Status MapOp::Launch() {
     python_multiprocessing_runtime_->launch(id());
   }
   return DatasetOp::Launch();
+}
+
+Status MapOp::Terminate() {
+  // Terminate python multiprocessing. This will stop the MP pool.
+  if (python_multiprocessing_runtime_) {
+    MS_LOG(INFO) << "Terminate Python Multiprocessing for MapOp:" << id();
+    python_multiprocessing_runtime_->terminate();
+  }
+  return Status::OK();
 }
 
 std::vector<int32_t> MapOp::GetMPWorkerPIDs() const {

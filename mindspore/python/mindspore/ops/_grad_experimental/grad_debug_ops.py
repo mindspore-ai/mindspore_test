@@ -15,6 +15,7 @@
 
 """Generate bprop for debug ops"""
 
+import mindspore.ops.functional as F
 from mindspore.ops import operations as P
 from mindspore.ops._grad_experimental.grad_base import bprop_getters
 
@@ -27,5 +28,9 @@ def get_bprop_insert_gradient_of(self):
     f = self.f
 
     def bprop(x, out, dout):
-        return (f(dout),)
+        fdout = f(dout)
+        if fdout is None:
+            dout = F.depend(dout, fdout)
+            return (dout,)
+        return (fdout,)
     return bprop

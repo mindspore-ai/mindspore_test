@@ -1,14 +1,15 @@
 cumsum:
-  - op_yaml: deprecated/cumsum_op.yaml
-    py_method: deprecated_tensor_cumsum
-    Ascend: py_method
+  - op_yaml: cumsum_ext_op.yaml
+    py_method: tensor_cumsum
+    kwonlyargs: dtype
+    Ascend: pyboost
     CPU: py_method
     GPU: py_method
     interface: tensor
 
-  - op_yaml: cumsum_ext_op.yaml
-    py_method: tensor_cumsum_ext
-    Ascend: pyboost
+  - op_yaml: deprecated/cumsum_method.yaml
+    py_method: deprecated_tensor_cumsum
+    Ascend: py_method
     CPU: py_method
     GPU: py_method
     interface: tensor

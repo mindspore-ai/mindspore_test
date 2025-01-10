@@ -332,7 +332,8 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
           << "Failed to find backward cell reuse graph, skip pass 'overlap_gradmatmul_and_gradallreduce'.";
         continue;
       }
-      if (!parallel::ParallelContext::GetInstance()->enable_fine_grained_micro_interleaved()) {
+      if (!parallel::ParallelContext::GetInstance()->enable_fine_grained_micro_interleaved() &&
+          !ms_context->IsKByKExecutorMode()) {
         DoOverLap(manager, forward_graph, backward_graph);
         continue;
       }

@@ -42,6 +42,7 @@ KernelModPtr HcclOpBuild(const AnfNodePtr &anf_node) {
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   kernel_mod_ptr->SetIsGraphMode(kernel_graph->is_graph_run_mode());
+  kernel_mod_ptr->SetPrimitive(prim);
 
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
   std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);

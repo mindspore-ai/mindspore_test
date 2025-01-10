@@ -68,7 +68,7 @@ class MatrixExpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelpe
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 
-  std::vector<size_t> input_shape_;
+  std::vector<size_t> input_shape_{};
   TypeId data_type_;
 };
 }  // namespace kernel

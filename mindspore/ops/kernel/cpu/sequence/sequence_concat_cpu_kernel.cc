@@ -95,7 +95,7 @@ bool SequenceConcatCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> 
                                               const std::vector<KernelTensor *> &,
                                               const std::vector<KernelTensor *> &outputs) {
   const auto input_addr = GetDeviceAddress<T>(inputs, 0);
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *output_addr = GetDeviceAddress<T>(outputs, 0);
 
   size_t element_index_size =
     LongToSize(std::accumulate(tuple_shape_.begin() + 1, tuple_shape_.end(), 1, std::multiplies<int64_t>()));

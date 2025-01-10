@@ -6,6 +6,9 @@ mindspore.hal.reset_max_memory_allocated
     重置内存池真实被Tensor占用的内存大小的峰值。
 
     .. note::
+        - 接口即将废弃，请使用接口 :func:`mindspore.runtime.reset_max_memory_allocated` 代替。 
+
+    .. note::
         - 若用户不指定 `device_target` ，将此参数设置为当前已经设置的后端类型。
 
     参数：

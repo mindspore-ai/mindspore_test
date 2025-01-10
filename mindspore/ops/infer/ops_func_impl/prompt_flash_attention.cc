@@ -27,8 +27,8 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
 #include "mindapi/helper.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "ops_utils/op_constants.h"
+#include "op_def/op_enum.h"
 
 namespace mindspore {
 namespace ops {
@@ -408,7 +408,6 @@ TypePtr PromptFlashAttentionInferType(const PrimitivePtr &primitive, const std::
   (void)types.emplace("value", input_args[kPromptFlashAttentionInputValueIndex]->GetType());
   const std::set<TypePtr> valid_types = {kFloat16, kBFloat16, kInt8};
   auto type = CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, op_name);
-
   if ((*type == *kInt8) && !CheckOptinalNone(input_args[kPromptFlashAttentionInputQuantScale1Index]) &&
       !CheckOptinalNone(input_args[kPromptFlashAttentionInputDeqScale1Index]) &&
       !CheckOptinalNone(input_args[kPromptFlashAttentionInputDeqScale2Index])) {

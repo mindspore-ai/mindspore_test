@@ -43,6 +43,8 @@ class OpApiUtil {
                                       std::vector<std::string> *output_formats,
                                       std::vector<std::string> *input_reshape_types,
                                       std::vector<std::string> *output_reshape_types, const KernelType &kernel_type);
+
+  static std::string GetCommName(const std::string &group);
 };
 
 class AclUtil {

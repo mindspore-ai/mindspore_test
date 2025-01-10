@@ -1,0 +1,5 @@
+arccos:
+  description: |
+    arccos() -> Tensor
+    
+    Alias for :func:`mindspore.Tensor.acos`.

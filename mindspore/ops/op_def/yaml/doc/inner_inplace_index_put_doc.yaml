@@ -1,0 +1,51 @@
+inner_inplace_index_put:
+    description: |
+            Returns a Tensor. According to the index number of `indices` ,
+            replace the value corresponding to the `input` with the value in `values`.
+
+            .. warning::
+                This is an internal and non-standard interface. The target interface is aclnn.
+
+            Inputs:
+                - **input** (Tensor) - The input Tensor.
+                - **indices** (tuple[Tensor], list[Tensor]) - the indices of type is bool, uint8, int32 or int64,
+                  used to index into the "self Tensor". The rank of tensors in indices should be 1-D,
+                  size of indices should <= the rank of "self Tensor" and the tensors in indices should be broadcastable.
+                - **values** (Tensor) - 1-D Tensor of the same type as "self Tensor". If size == 1, it will be broadcastable.
+                - **accumulate** (bool, optional) - If `accumulate` is True, the elements in values are added to "self Tensor",
+                  else the elements in `values` replace the corresponding element in the "self Tensor".
+                  Default: ``False``.
+
+            Outputs:
+                Tensor, with the same type and shape as the "self Tensor".
+
+            Raises:
+                TypeError: If the dtype of the "self Tensor" is not equal to the dtype of `values`.
+                TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
+                TypeError: If the dtype of tensors in `indices` are not bool, uint8, int32 or int64.
+                TypeError: If the dtypes of tensors in `indices` are inconsistent.
+                TypeError: If the dtype of `accumulate` is not bool.
+                ValueError: If rank(`values`) is not 1-D.
+                ValueError: If size(`values`) is not 1 or max size of the tensors in `indices` when
+                    rank("self Tensor") == size(`indices`).
+                ValueError: If size(`values`) is not 1 or "self Tensor".shape[-1] when
+                    rank("self Tensor") > size(`indices`).
+                ValueError: If the rank of tensors in `indices` is not 1-D.
+                ValueError: If the tensors in `indices` is not be broadcastable.
+                ValueError: If size(`indices`) > rank("self Tensor").
+
+            Supported Platforms:
+                ``Ascend``
+
+            Examples:
+                >>> import numpy as np
+                >>> import mindspore
+                >>> from mindspore import Tensor, ops
+                >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6]]).astype(np.int32))
+                >>> values = Tensor(np.array([3]).astype(np.int32))
+                >>> indices = [Tensor(np.array([0, 1, 1]).astype(np.int32)), Tensor(np.array([1, 2, 1]).astype(np.int32))]
+                >>> accumulate = True
+                >>> ops.auto_generate.InnerInplaceIndexPut()(x, indices, values, accumulate)
+                >>> print(x)
+                [[1 5 3]
+                 [4 8 9]]

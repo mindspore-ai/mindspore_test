@@ -15,7 +15,6 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.mark_utils import arg_mark
 
 import mindspore as ms
 from mindspore import Tensor, context
@@ -37,7 +36,6 @@ def conv2d_backward_func(x, weight):
     return ms.grad(conv2d_forward_func, (0, 1))(x, weight)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_conv2d_forward(mode):
     """

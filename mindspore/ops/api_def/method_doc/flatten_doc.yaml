@@ -40,7 +40,7 @@ flatten:
             ``'F'`` means to flatten in column-major (Fortran-style) order. Default: ``'C'`` .
 
     Keyword Args:
-        start_dim (int, optional): The first dimension to flatten. Default: ``1`` .
+        start_dim (int, optional): The first dimension to flatten. Default: ``0`` .
         end_dim (int, optional): The last dimension to flatten. Default: ``-1`` .
 
     Returns:

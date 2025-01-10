@@ -1,0 +1,5 @@
+arccosh:
+  description: |
+    arccosh() -> Tensor
+    
+    Alias for :func:`mindspore.Tensor.acosh`.

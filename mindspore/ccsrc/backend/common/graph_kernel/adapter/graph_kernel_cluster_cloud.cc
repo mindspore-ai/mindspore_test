@@ -104,7 +104,9 @@ class DvmSupportChecker {
     check_func_["GreaterEqual"] = {compare_check};
     check_func_["Less"] = {compare_check};
     check_func_["LessEqual"] = {compare_check};
-    check_func_["IsFinite"] = {compare_check};
+    check_func_["IsFinite"] = {compare_check, [](const AnfNodePtr &node) {
+                                 return Callback::Instance()->GetInputType(node, 0) != kNumberTypeInt32;
+                               }};
     // select op
     check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported, [](const AnfNodePtr &node) {
                                return InputCheck(node, {2, 3});
@@ -118,7 +120,7 @@ class DvmSupportChecker {
     check_func_["Neg"] = {int_op_check, input_check_all};
     check_func_["Abs"] = {int_op_check, input_check_all};
     check_func_["Assign"] = {int_op_check, input_check_all};
-    check_func_["broadcast"] = {int_op_check, input_check_first};
+    check_func_["BroadcastTo"] = {int_op_check, input_check_first};
     // slice op
     check_func_["Slice"] = {DvmSupportChecker::DvmSliceSupported, input_check_first};
     check_func_["StridedSlice"] = {DvmSupportChecker::DvmSliceSupported, input_check_first};
@@ -229,8 +231,7 @@ class DvmSupportChecker {
     auto a_shape = GetShape(cnode->input(kIndex1));
     auto b_shape = GetShape(cnode->input(kIndex2));
     auto c_shape = GetShape(node);
-    if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE || c_shape.back() > MAX_GM_STRIDE ||
-        c_shape.back() == 1) {
+    if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE) {
       return false;
     }
     if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && c_shape.size() > kSizeFour) {

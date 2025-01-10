@@ -24,7 +24,8 @@ from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import AllGather
 from mindspore.communication import GlobalComm
 from mindspore.common import jit
-from mindspore.communication import create_group
+from mindspore.communication import create_group, destroy_group
+from mindspore.communication._comm_helper import _get_group_map
 from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
 
 _ALLGATHER_CELL = None
@@ -131,6 +132,21 @@ def _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy):
             context.set_auto_parallel_context(dataset_strategy=origin_dataset_strategy)
 
 
+def _get_group_name(group_map, group):
+    """get group name"""
+    group_name = str(group)
+    is_manual_communication_group = True
+    if group_map:
+        for name, rank_list in group_map.items():
+            if list(group) == rank_list:
+                group_name = name
+                is_manual_communication_group = False
+                break
+    if is_manual_communication_group:
+        create_group(str(group), list(group))
+    return group_name, is_manual_communication_group
+
+
 def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
     """
     Broadcast single parameter to other rank in data parallel dimension.
@@ -158,8 +174,9 @@ def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         return
     net_param_dict = net.parameters_dict()
     _chang_parallel_context(origin_dataset_strategy)
+    group_map = _get_group_map()
     for group, params in param_redundancy_reversed.items():
-        create_group(str(group), list(group))
+        group_name, is_manual_communication_group = _get_group_name(group_map, group)
         allreduce_input = []
         for param in params:
             if param not in net_param_dict:
@@ -170,7 +187,9 @@ def _single_parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
             allreduce_input.append(real_param)
         if not allreduce_input:
             continue
-        communicator = SingleCommunicator(str(group))
+        communicator = SingleCommunicator(group_name)
         for real_param in allreduce_input:
             real_param.set_data(communicator(real_param), real_param.sliced)
+        if is_manual_communication_group:
+            destroy_group(group_name)
     _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy)

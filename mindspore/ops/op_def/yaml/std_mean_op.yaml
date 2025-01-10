@@ -1,0 +1,31 @@
+#operator std_mean
+std_mean:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: tuple[int]
+            type_cast: int, list[int]
+            default: None
+        correction:
+            dtype: int
+            type_cast: tensor
+            default: 1
+        keepdim:
+            dtype: bool
+            default: False
+    returns:
+        std:
+            dtype: tensor
+        mean:
+            dtype: tensor
+    class:
+        name: StdMean
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: StdMeanAscend
+        CPU: None
+        GPU: None
+        

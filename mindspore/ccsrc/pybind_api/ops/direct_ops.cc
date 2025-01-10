@@ -21,5 +21,6 @@ namespace mindspore::kernel::pyboost {
 void RegDirectOps(py::module *m) {
   m->def("pyboost_empty", &mindspore::kernel::pyboost::Empty, "Empty");
   m->def("pyboost_empty_like", &mindspore::kernel::pyboost::EmptyLike, "EmptyLike");
+  m->def("pyboost_new_empty", &mindspore::kernel::pyboost::NewEmpty, "NewEmpty");
 }
 }  // namespace mindspore::kernel::pyboost

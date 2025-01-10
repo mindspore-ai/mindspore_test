@@ -38,13 +38,13 @@ adamw:
                 <https://www.mindspore.cn/docs/en/master/api_python/mindspore.experimental.html#lrscheduler-class>`_ .
 
             Inputs:
-                - **var** (Parameter) - Weights to be updated. The shape is :math:`(N, *)` where :math:`*` means,
+                - **var** (Union[Parameter, Tensor]) - Weights to be updated. The shape is :math:`(N, *)` where :math:`*` means
                   any number of additional dimensions. The data type can be float16 or float32.
-                - **m** (Parameter) - The 1st moment vector in the updating formula,
+                - **m** (Union[Parameter, Tensor]) - The 1st moment vector in the updating formula,
                   it should have the the shape as `var`. The data type can be float16 or float32.
-                - **v** (Parameter) - The 2nd moment vector in the updating formula,
+                - **v** (Union[Parameter, Tensor]) - The 2nd moment vector in the updating formula,
                   it should have the same shape as `m`.
-                - **max_v** (Parameter) - The 2nd moment vector in the updating formula,
+                - **max_v** (Union[Parameter, Tensor]) - The 2nd moment vector in the updating formula,
                   it should have the same shape as `m`.
                 - **gradient** (Tensor) - Gradient, has the same shape as `var`
                 - **step** (Tensor) - step

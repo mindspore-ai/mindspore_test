@@ -42,6 +42,7 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "frontend/parallel/strategy_loader.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "include/common/utils/parallel_context.h"
@@ -68,17 +69,29 @@ namespace mindspore {
 namespace parallel {
 void SearchParallelStrategy(const std::string &strategy_search_mode, const FuncGraphPtr &root,
                             const std::vector<AnfNodePtr> &all_nodes) {
+  if (StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
+    if (StrategyLoader::LoadStrategyFromFile(all_nodes) == SUCCESS) {
+      MS_LOG(INFO) << "Load strategies success, jump search strategy.";
+      return;
+    }
+    MS_LOG(EXCEPTION) << "Load strategies failed, please check whether your config is changed.";
+  }
   if ((strategy_search_mode == kDynamicProgramming) || (strategy_search_mode == kShardingPropagation)) {
+    PROF_START(parallel_strategy_search);
     if (ParallelStrategySearch(all_nodes, root) != SUCCESS) {
       MS_LOG(EXCEPTION) << "Auto-parallel strategy search failed when using " << strategy_search_mode
                         << " searching mode";
     }
+    PROF_END(parallel_strategy_search);
   } else if (strategy_search_mode == kRecursiveProgramming) {
     if (ParallelStrategyRecSearch(all_nodes, root) != SUCCESS) {
       MS_LOG(EXCEPTION) << "Auto-parallel strategy search failed when using RP searching mode";
     }
   } else {
     MS_LOG(EXCEPTION) << "Auto-parallel strategy searching mode unexpected: " << strategy_search_mode;
+  }
+  if (StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn()) {
+    StrategyLoader::SaveStrategyToFile(all_nodes);
   }
 }
 
@@ -98,8 +111,7 @@ bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_se
   root->set_flag(kHasShard, HasCellShard(root));
   std::string parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (root->has_flag(kSkipAutoParallelCompile) || parallel_mode != kAutoParallel ||
-      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY) || StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn() ||
-      HasNestedMetaFg(root)) {
+      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY) || HasNestedMetaFg(root)) {
     return true;
   }
 
@@ -868,6 +880,12 @@ static void CreateEdgeAccrossMakeList(const CNodePtr &cnode, const PrimitivePtr 
   }
 }
 
+namespace {
+bool HasOperatorInfo(const CNodePtr &cnode) {
+  return IsAutoParallelCareNode(cnode) || IsValueNode<FuncGraph>(cnode->input(0)) || IsSomePrimitive(cnode, GENERATOR);
+}
+}  // namespace
+
 static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const std::vector<AnfNodePtr> &all_nodes) {
   auto &inputs = cnode->inputs();
   ValueNodePtr prim_anf_node = inputs[0]->cast<ValueNodePtr>();
@@ -914,7 +932,7 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
         if (is_cross) {
           break;
         }
-        if (!IsAutoParallelCareNode(prev_cnode) && !IsValueNode<FuncGraph>(prev_cnode->input(0))) {
+        if (!HasOperatorInfo(prev_cnode)) {
           MS_LOG_WITH_NODE(EXCEPTION, prev_node) << "Did not create OperatorInfo for : " << prev_prim->name();
         }
         is_before_tuple_get_item = true;
@@ -1277,7 +1295,7 @@ Status ParallelStrategySearch(const std::vector<AnfNodePtr> &all_nodes, const Fu
       MS_LOG(INFO) << op->name() << ": The strategy is: " << s_strategy->ToString();
     }
     // Label the cnodes of the op if they were already created
-    for (const auto cnode : op->cnodes()) {
+    for (const auto &cnode : op->cnodes()) {
       cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
     }
     // Clear strategy if set strategy using layout

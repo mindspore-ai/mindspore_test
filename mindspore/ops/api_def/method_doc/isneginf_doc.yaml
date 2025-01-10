@@ -1,6 +1,6 @@
 isneginf:
   description: |
-    isneginf(input) -> Tensor
+    isneginf() -> Tensor
 
     Determines which elements are -inf for each position.
 
@@ -8,22 +8,17 @@ isneginf:
         - This is an experimental API that is subject to change.
         - For Ascend, it is only supported on platforms above Atlas A2.
 
-    Args:
-        input (Tensor): Input Tensor.
-
     Returns:
-        Tensor with the same shape as the input, where elements are `True` if the corresponding element in the `input` is negative infinity, and `False` otherwise.
-
-    Raises:
-        TypeError: If the input is not a tensor.
+        Tensor with the same shape as the `self`, where elements are `True` if the corresponding element in the `self` is negative infinity, and `False` otherwise.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import ops, Tensor
+        >>> from mindspore import Tensor
         >>> from mindspore import dtype as mstype
-        >>> output = ops.isneginf(Tensor([[-float("inf"), float("inf")], [1, -float("inf")]], mstype.float32))
+        >>> x = Tensor([[-float("inf"), float("inf")], [1, -float("inf")]], mstype.float32)
+        >>> output = x.isneginf()
         >>> print(output)
         [[ True False]
          [False  True]]

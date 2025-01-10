@@ -117,16 +117,18 @@ uint32_t FractionalAvgPoolGradCpuKernel::DoCompute(CpuKernelContext &ctx) {
           const int64_t in_col_start = *(col_seq_data + c);
           int64_t in_col_end = overlapping ? *(col_seq_data + c + 1) : *(col_seq_data + c + 1) - 1;
           in_col_end = std::min(in_col_end, in_max_col_index);
-          const int64_t num_elements_in_pooling_cell =
-            (in_row_end - in_row_start + 1) * (in_col_end - in_col_start + 1);
-          const int64_t out_index = (b * out_rows + r) * out_cols + c;
-          // Now we can evenly distribute out_backprop(b, h, w, *) to
-          // in_backprop(b, hs:he, ws:we, *).
-          for (int64_t in_r = in_row_start; in_r <= in_row_end; ++in_r) {
-            for (int64_t in_c = in_col_start; in_c <= in_col_end; ++in_c) {
-              const int64_t in_index = (b * in_rows + in_r) * in_cols + in_c;
+          auto in_row_offset = in_row_end - in_row_start + 1;
+          auto in_col_offset = in_col_end - in_col_start + 1;
+          const int64_t num_elements_in_pooling_cell = in_row_offset * in_col_offset;
+          auto out_rows_tmp = b * out_rows + r;
+          const int64_t out_index = out_rows_tmp * out_cols + c;
+          // distribute out_backprop(b, h, w, *) to in_backprop(b, hs:he, ws:we, *).
+          for (int64_t in_r = in_row_start; in_r <= in_row_end; in_r++) {
+            for (int64_t in_c = in_col_start; in_c <= in_col_end; in_c++) {
+              auto in_rows_tmp = b * in_rows + in_r;
+              const int64_t in_index = in_rows_tmp * in_cols + in_c;
               // Walk through each channel (depth).
-              for (int64_t d = 0; d < out_depth; ++d) {
+              for (int64_t d = 0; d < out_depth; d++) {
                 const double out_backprop_element = static_cast<double>(out_backprop_mat.coeffRef(d, out_index));
                 double &in_backprop_ref = in_backprop_tensor_temp_mat.coeffRef(d, in_index);
                 in_backprop_ref += out_backprop_element / num_elements_in_pooling_cell;
@@ -153,15 +155,14 @@ uint32_t FractionalAvgPoolGradCpuKernel::DoCompute(CpuKernelContext &ctx) {
             const int64_t in_col_start = *(col_seq_data + c);
             int64_t in_col_end = overlapping ? *(col_seq_data + c + 1) : *(col_seq_data + c + 1) - 1;
             in_col_end = std::min(in_col_end, in_max_col_index);
-            const int64_t num_elements_in_pooling_cell =
-              (in_row_end - in_row_start + 1) * (in_col_end - in_col_start + 1);
-            const int64_t out_index = (b * out_rows + r) * out_cols + c;
-            // Now we can evenly distribute out_backprop(b, h, w, *) to
-            // in_backprop(b, hs:he, ws:we, *).
+            auto row_diff = in_row_end - in_row_start + 1;
+            const int64_t num_elements_in_pooling_cell = row_diff * (in_col_end - in_col_start + 1);
+            auto out_rows_tmp = b * out_rows + r;
+            const int64_t out_index = out_rows_tmp * out_cols + c;
             for (int64_t in_r = in_row_start; in_r <= in_row_end; ++in_r) {
               for (int64_t in_c = in_col_start; in_c <= in_col_end; ++in_c) {
-                const int64_t in_index = (b * in_rows + in_r) * in_cols + in_c;
-                // Walk through each channel (depth).
+                auto in_rows_tmp = b * in_rows + in_r;
+                const int64_t in_index = in_rows_tmp * in_cols + in_c;
                 for (int64_t d = 0; d < out_depth; ++d) {
                   const double out_backprop_element = static_cast<double>(out_backprop_mat.coeffRef(d, out_index));
                   double &in_backprop_ref = in_backprop_tensor_temp_mat.coeffRef(d, in_index);

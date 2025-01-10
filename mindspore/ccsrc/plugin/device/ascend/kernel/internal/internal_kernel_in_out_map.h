@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <string>
 #include "mindapi/base/type_id.h"
-#include "acme/include/acme.h"
+#include "include/internal.h"
 
 namespace mindspore {
 namespace kernel {
@@ -63,11 +63,11 @@ class InternalKernelModInOutMap {
   void AppendMutableList(const std::string &op_name, InternalKernelMapDtype map_dtype);
   std::vector<int> GetKernelInMap(const std::string &op_name, bool *is_mutable);
   std::vector<int> GetKernelOutMap(const std::string &op_name, bool *is_mutable);
-  std::vector<int64_t> MapInternelInputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
-  std::vector<int64_t> MapInternelOutputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
 
-  std::vector<acme::DataType> MapAcmeInputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
-  std::vector<acme::DataType> MapAcmeOutputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
+  std::vector<internal::DataType> MapInternalInputDtypes(const std::string &op_name,
+                                                         const std::vector<TypeId> &ms_dtypes);
+  std::vector<internal::DataType> MapInternalOutputDtypes(const std::string &op_name,
+                                                          const std::vector<TypeId> &ms_dtypes);
 
  private:
   std::map<std::string, std::vector<int>> input_idx_;  /* ms idx */

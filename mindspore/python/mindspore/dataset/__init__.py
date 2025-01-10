@@ -12,25 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides APIs to load and process various common datasets such as MNIST,
-CIFAR-10, CIFAR-100, VOC, COCO, ImageNet, CelebA, CLUE, etc. It also supports datasets
-in standard format, including MindRecord, TFRecord, Manifest, etc. Users can also define
-their own datasets with this module.
+At the heart of MindSpore data loading utility is the `mindspore.dataset` module.
+It is a `dataset engine <https://www.mindspore.cn/docs/en/master/design/data_engine.html>`_ based on pipline design.
 
-Besides, this module provides APIs to sample data while loading.
+This module provides the following data loading methods to help users load datasets into MindSpore.
 
-We can enable cache in most of the dataset with its key arguments 'cache'. Please notice that cache is not supported
-on Windows platform yet. Do not use it while loading and processing data on Windows. More introductions and limitations
-can refer `Single-Node Tensor Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+- User defined dataset loading: allows users to define `Random-accessible(Map-style) datasets
+  <https://www.mindspore.cn/tutorials/en/master/beginner/dataset.html#random-accessible-dataset>`_ or
+  `Iterable-style dataset <https://www.mindspore.cn/tutorials/en/master/beginner/dataset.html#iterable-dataset>`_
+  to customize data reading and processing logic.
+- Standard format dataset loading: support loading dataset files in standard data formats, including
+  `MindRecord <https://www.mindspore.cn/docs/en/master/model_train/dataset/record.html>`_,
+  `TFRecord <https://tensorflow.google.cn/tutorials/load_data/tfrecord.md?hl=en>`_ .
+- Open source dataset loading: supports reading `open source datasets <#open-source>`_ ,
+  such as MNIST, CIFAR-10, CLUE, LJSpeech, etc.
 
-Common imported modules in corresponding API examples are as follows:
+In addition, this module also provides data sampler, transformations, batching, as well as basic configurations
+such as random seed, parallelism setting and other features, to be used in conjunction with the dataset loading.
 
-.. code-block::
-
-    import mindspore.dataset as ds
-    import mindspore.dataset.transforms as transforms
-    import mindspore.dataset.vision as vision
-
+- Data Sampler: Provides various common `sampler <#sampler-1>`_, such as RandomSampler, DistributedSampler, etc.
+- Data Transformations: Provides multiple `dataset operations <https://www.mindspore.cn/docs/en/master/api_python/
+  dataset/mindspore.dataset.GeneratorDataset.html#pre-processing-operation>`_ to perform data augmentation, batching.
+- Basic Configuration: Provides `pipeline configuration <#config>`_ for random seed setting, parallelism setting,
+  data recovery mode, etc.
 
 Descriptions of common dataset terms are as follows:
 

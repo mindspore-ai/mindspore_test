@@ -40,7 +40,7 @@ x2 = np.array([[np.inf, 1, 88.0, 0]]).astype(np.float32)
 x3 = np.array([[1, 2], [3, 4], [5.0, 88.0]]).astype(np.float32)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_nan():
     ms_isnan = NetIsNan()
@@ -57,7 +57,7 @@ def test_nan():
     assert (output3.asnumpy() == expect3).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_is_nan_cpu_dynamic_shape():
     """

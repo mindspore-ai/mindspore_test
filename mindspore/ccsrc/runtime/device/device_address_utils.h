@@ -38,7 +38,7 @@ namespace runtime {
 // Extract the methods related to DeviceAddress in GraphCompiler to the DeviceAddressUtils class.
 class BACKEND_EXPORT DeviceAddressUtils {
  public:
-  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const tensor::BaseTensorPtr &tensor);
+  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const tensor::BaseTensor *tensor);
   static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const AbstractBasePtr &abs);
   static void CreateKernelTensor(const ValuePtr &input_value);
   static void CreateKernelTensor(const tensor::TensorPtr &input_tensor);

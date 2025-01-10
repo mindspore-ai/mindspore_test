@@ -75,7 +75,6 @@ class DatasetOp : public std::enable_shared_from_this<DatasetOp> {
  public:
   static constexpr int32_t kInvalidOperatorId = -1;
   static constexpr int32_t kInfiniteRepeat = -1;
-  static bool handler_set;
 
   // Flags that control operator runtime behaviors
   enum OpState { kDeOpRunning = 0, kDeOpIdle = 1, kDeOpTerminated };
@@ -367,6 +366,9 @@ class DatasetOp : public std::enable_shared_from_this<DatasetOp> {
 
   virtual std::vector<int32_t> GetMPWorkerPIDs() const;
 
+  // Terminate the Op which contains subprocess
+  virtual Status Terminate();
+
  protected:
   // \brief Removes a parent operator from this operator
   // \notes External callers do not have access to this function
@@ -389,7 +391,7 @@ class DatasetOp : public std::enable_shared_from_this<DatasetOp> {
   // If this repeat happen to be the last repeat in the current epoch, also increase op_current_epochs_ by 1.
   void UpdateRepeatAndEpochCounter();
 
-  // Launch the Op
+  // Launch the Op which contains subprocess
   virtual Status Launch();
 
   enum ImplementedPullMode { NotImplemented = 0, Implemented, DisabledDebugMode };

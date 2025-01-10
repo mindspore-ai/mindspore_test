@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import os
 
 import numpy as np
@@ -27,6 +25,9 @@ from mindspore.ops import composite as C
 from mindspore import dtype as mstype
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common.api import _pynative_executor
+from mindspore.device_context.gpu.op_precision import matmul_allow_tf32
+from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
 
 
 class MatMulNet(nn.Cell):
@@ -136,7 +137,7 @@ def test_matmul_tensor_api_modes(mode):
     np.testing.assert_array_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_matmul_tensor_core(mode):
     """
@@ -144,7 +145,8 @@ def test_matmul_tensor_core(mode):
     Description: Test matmul tensor api for Graph and PyNative modes.
     Expectation: The result match to the expect value.
     """
-    context.set_context(mode=mode, device_target="GPU")
+    context.set_context(mode=mode)
+    set_device()
     m = 300
     n = 300
     k = 400
@@ -155,16 +157,16 @@ def test_matmul_tensor_core(mode):
     x_ms = Tensor(x_np)
     y_ms = Tensor(y_np)
 
-    context.set_context(gpu_config={"matmul_allow_tf32": False})
+    matmul_allow_tf32(False)
     out_ms_fp32 = P.MatMul()(x_ms, y_ms).asnumpy()
 
-    context.set_context(gpu_config={"matmul_allow_tf32": True})
+    matmul_allow_tf32(True)
     out_ms_tf32 = P.MatMul()(x_ms, y_ms).asnumpy()
 
     assert np.abs(out_ms_fp32 - out_ms_tf32).mean() < 0.005
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_matmul_dtypes():
     """
     Feature: Test matmul dtypes.
@@ -199,7 +201,7 @@ def test_matmul_dtypes():
         del os.environ['MS_DISABLE_KERNEL_BACKOFF']
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_matmul_fp16():
     """
     Feature: Test matmul fp16 results.

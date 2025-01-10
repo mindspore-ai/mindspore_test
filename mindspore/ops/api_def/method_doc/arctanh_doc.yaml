@@ -1,0 +1,5 @@
+arctanh:
+  description: |
+    arctanh() -> Tensor
+    
+    Alias for :func:`mindspore.Tensor.atanh`.

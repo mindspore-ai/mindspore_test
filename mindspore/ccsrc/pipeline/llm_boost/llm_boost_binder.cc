@@ -15,6 +15,11 @@
  */
 
 #include "pipeline/llm_boost/llm_boost_binder.h"
+#include <iostream>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/factory/ms_factory.h"
 
@@ -63,7 +68,7 @@ int64_t LlmBoostBinder::SetKVCache(const py::list &py_kcache, const py::list &py
 }
 
 int64_t LlmBoostBinder::SetWeight(const py::list &py_weights) {
-  MS_LOG(INFO) << "TransformerBoost set_weights";
+  MS_LOG(INFO) << "LlmBoostBinder::SetWeight";
   std::vector<tensor::TensorPtr> weights;
   for (auto &obj : py_weights) {
     auto tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : obj.cast<tensor::TensorPtr>();
@@ -71,5 +76,72 @@ int64_t LlmBoostBinder::SetWeight(const py::list &py_weights) {
   }
   return impl_->SetWeight(weights);
 }
+
+int64_t LlmBoostBinder::InitModel(const pybind11::dict &dict) {
+  MS_LOG(INFO) << "LlmBoostBinder::InitModel";
+  enum dtype_e { VAL_INT, VAL_FLOAT };
+  mindspore::kernel::llm_data data;
+  std::map<std::string, std::tuple<dtype_e, void *>> keys = {
+    {"batch_size", {VAL_INT, &data.batch_size}},   {"seq_length", {VAL_INT, &data.seq_length}},
+    {"hidden_size", {VAL_INT, &data.hidden_size}}, {"num_layers", {VAL_INT, &data.num_layers}},
+    {"num_heads", {VAL_INT, &data.num_heads}},     {"vocab_size", {VAL_INT, &data.vocab_size}},
+    {"multiple_of", {VAL_INT, &data.multiple_of}}, {"rms_norm_eps", {VAL_FLOAT, &data.rms_norm_eps}},
+    {"n_kv_heads", {VAL_INT, &data.kv_head_num}},  {"num_blocks", {VAL_INT, &data.page_num}},
+    {"block_size", {VAL_INT, &data.page_size}}};
+
+  for (auto &item : dict) {
+    auto str = std::string(pybind11::str(item.first));
+    auto tup = keys.find(str);
+    if (tup != keys.end()) {
+      auto [dtype, value] = tup->second;
+      if (!item.second.is_none()) {
+        switch (dtype) {
+          case VAL_INT: {
+            *static_cast<int *>(value) = item.second.cast<int>();
+            break;
+          }
+          case VAL_FLOAT: {
+            *static_cast<float *>(value) = item.second.cast<float>();
+            break;
+          }
+        }
+      }
+    }
+  }
+  if (data.kv_head_num == 0) {
+    data.kv_head_num = data.num_heads;
+  }
+  impl_ = builder_->BuildModel(model_name_);
+  if (impl_ == nullptr) {
+    MS_LOG(ERROR) << "LlmBoostBinder::InitModel: boost is not initialized properly";
+    return -1;
+  }
+  return impl_->InitData(data);
+}
+
+int64_t LlmBoostBinder::SetWeightMap(const pybind11::dict &dict) {
+  std::map<std::string, mindspore::tensor::TensorPtr> weight_map;
+  for (auto &item : dict) {
+    auto str = std::string(pybind11::str(item.first));
+    auto obj = item.second;
+    auto tensor = obj.cast<mindspore::tensor::TensorPtr>();
+    weight_map[str] = tensor;
+  }
+  if (impl_ == nullptr) {
+    MS_LOG(ERROR) << "LlmBoostBinder::SetWeightMap: boost is not initialized properly";
+    return -1;
+  }
+
+  return impl_->SetWeightMap(weight_map);
+}
+
+int64_t LlmBoostBinder::AddFlags(const bool &is_first_iteration) {
+  if (impl_ == nullptr) {
+    MS_LOG(ERROR) << "LlmBoostBinder::AddFlags: boost is not initialized properly";
+    return -1;
+  }
+  return impl_->AddFlags(is_first_iteration);
+}
+
 }  // namespace pipeline
 }  // namespace mindspore

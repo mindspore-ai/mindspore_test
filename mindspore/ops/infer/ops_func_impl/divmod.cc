@@ -26,7 +26,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/ms_context.h"
 #include "ops/ops_func_impl/simple_infer.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {
@@ -41,7 +41,6 @@ TypePtr DivModFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
   auto y_dtype = input_args[kIndex1]->GetType();
 
   auto mode = input_args[kIndex2]->GetValue();
-
   if (mode != mindspore::kNone) {
     return x_dtype;
   } else {

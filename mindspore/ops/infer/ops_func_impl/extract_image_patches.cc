@@ -23,8 +23,7 @@
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"
 #include "abstract/dshape.h"
-#include "include/common/utils/utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

@@ -45,7 +45,7 @@ def verify_forward(reduction, loss, expect):
         np.testing.assert_array_almost_equal(loss, expect_mean)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("reduction", ['none', 'mean', 'sum'])
 def test_smoothl1loss(reduction):
@@ -145,7 +145,7 @@ def smoothl1loss_grad_2(beta, reduction):
     return grad(Tensor(prediction), Tensor(target), Tensor(9, ms.float32))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("reduction", ['mean', 'sum'])
 def test_smoothl1loss_grad_sum(reduction):

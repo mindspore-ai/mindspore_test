@@ -188,17 +188,15 @@ REG_ADPT_DESC(SoftMarginLossGrad, prim::kPrimSoftMarginLossGrad->name(), ADPT_DE
 
 // Cdist
 INPUT_MAP(Cdist) = {{1, INPUT_DESC(x1)}, {2, INPUT_DESC(x2)}};
-ATTR_MAP(Cdist) = {
-  {"p", ATTR_DESC(p, AnyTraits<float>())},
-};
+ATTR_MAP(Cdist) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(Cdist) = {{3, ATTR_DESC(p, AnyTraits<float>())}};
 OUTPUT_MAP(Cdist) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Cdist, prim::kPrimCdist->name(), ADPT_DESC(Cdist))
 
 // CdistGrad
 INPUT_MAP(CdistGrad) = {{1, INPUT_DESC(grad)}, {2, INPUT_DESC(x1)}, {3, INPUT_DESC(x2)}, {4, INPUT_DESC(cdist)}};
-ATTR_MAP(CdistGrad) = {
-  {"p", ATTR_DESC(p, AnyTraits<float>())},
-};
+ATTR_MAP(CdistGrad) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(CdistGrad) = {{5, ATTR_DESC(p, AnyTraits<float>())}};
 OUTPUT_MAP(CdistGrad) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(CdistGrad, prim::kPrimCdistGrad->name(), ADPT_DESC(CdistGrad))
 

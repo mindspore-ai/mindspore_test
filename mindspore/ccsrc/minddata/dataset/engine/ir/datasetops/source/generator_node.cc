@@ -28,44 +28,48 @@ namespace dataset {
 GeneratorNode::GeneratorNode(const py::function &generator_function, const std::vector<std::string> &column_names,
                              const std::vector<DataType> &column_types, int64_t source_len,
                              std::shared_ptr<SamplerObj> sampler, uint32_t num_parallel_workers,
-                             std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime)
+                             std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime,
+                             bool has_batch_sampler)
     : MappableSourceNode(),
       column_names_(column_names),
       column_types_(column_types),
       source_len_(source_len),
       sampler_(std::move(sampler)),
       num_parallel_workers_(num_parallel_workers),
-      python_multiprocessing_runtime_(std::move(python_multiprocessing_runtime)) {
+      python_multiprocessing_runtime_(std::move(python_multiprocessing_runtime)),
+      has_batch_sampler_(has_batch_sampler) {
   py::gil_scoped_acquire gil_acquire;
   generator_function_ = generator_function;
 }
 
 GeneratorNode::GeneratorNode(const py::function &generator_function, const std::shared_ptr<SchemaObj> &schema,
                              int64_t source_len, std::shared_ptr<SamplerObj> sampler, uint32_t num_parallel_workers,
-                             std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime)
+                             std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime,
+                             bool has_batch_sampler)
     : MappableSourceNode(),
       schema_(schema),
       source_len_(source_len),
       sampler_(std::move(sampler)),
       num_parallel_workers_(num_parallel_workers),
-      python_multiprocessing_runtime_(std::move(python_multiprocessing_runtime)) {
+      python_multiprocessing_runtime_(std::move(python_multiprocessing_runtime)),
+      has_batch_sampler_(has_batch_sampler) {
   py::gil_scoped_acquire gil_acquire;
   generator_function_ = generator_function;
 }
 
 GeneratorNode::~GeneratorNode() {
   py::gil_scoped_acquire gil_acquire;
-  generator_function_ = py::none();
+  generator_function_ = py::object();
 }
 
 std::shared_ptr<DatasetNode> GeneratorNode::Copy() {
   std::shared_ptr<GeneratorNode> node;
   if (schema_ == nullptr) {
     node = std::make_shared<GeneratorNode>(generator_function_, column_names_, column_types_, source_len_, sampler_,
-                                           num_parallel_workers_, python_multiprocessing_runtime_);
+                                           num_parallel_workers_, python_multiprocessing_runtime_, has_batch_sampler_);
   } else {
     node = std::make_shared<GeneratorNode>(generator_function_, schema_, source_len_, sampler_, num_parallel_workers_,
-                                           python_multiprocessing_runtime_);
+                                           python_multiprocessing_runtime_, has_batch_sampler_);
   }
   (void)node->SetNumWorkers(num_workers_);
   (void)node->SetConnectorQueueSize(connector_que_size_);
@@ -98,8 +102,9 @@ Status GeneratorNode::Build(std::vector<std::shared_ptr<DatasetOp>> *const node_
 
   // GeneratorOp's constructor takes in a prefetch_size, which isn't being set by user nor is it being used by
   // GeneratorOp internally. Here it is given a zero which is the default in generator builder
-  std::shared_ptr<GeneratorOp> op = std::make_shared<GeneratorOp>(
-    generator_function_, column_names_, column_types_, 0, connector_que_size_, sampler_rt, num_parallel_workers_);
+  std::shared_ptr<GeneratorOp> op =
+    std::make_shared<GeneratorOp>(generator_function_, column_names_, column_types_, 0, connector_que_size_, sampler_rt,
+                                  num_parallel_workers_, has_batch_sampler_);
   // set the number of rows from source length
   op->SetNumRows(source_len_);
 

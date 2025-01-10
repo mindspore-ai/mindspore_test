@@ -1,0 +1,91 @@
+
+nansum:
+  description: |
+    nansum(dim=None, keepdim=False, *, dtype=None) -> Tensor
+
+    Computes sum of input Tensor over a given dimension, treating NaNs as zero.
+
+    .. warning::
+        - It is only supported on Atlas A2 Training Series Products.
+        - This is an experimental API that is subject to change or deletion.
+
+    Args:
+        dim (Union[int, tuple(int)], optional): The dimensions to sum.
+            Dim must be in the range [-rank(self), rank(self)). Default: ``None``, which indicates the sum of all elements in a tensor.
+        keepdim (bool, optional): Whether the output Tensor keeps dimensions or not. Default: ``False``, indicating that no dimension is kept.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The dtype of output Tensor. Default: ``None``.
+
+    Returns:
+        Tensor, the sum of input Tensor in the given dimension dim, treating NaNs as zero.
+
+        - If dim is None, keepdim is False,
+          the output is a 0-D Tensor representing the sum of all elements in the self Tensor.
+        - If dim is int, set as 2, and keepdim is False,
+          the shape of output is :math:`(self_1, self_3, ..., self_R)`.
+        - If dim is tuple(int) or list(int), set as (2, 3), and keepdim is False,
+          the shape of output is :math:`(self_1, self_4, ..., self_R)`.
+
+    Raises:
+        TypeError: If `keepdim` is not a bool.
+        TypeError: If the dtype of `self` or `dtype` is complex type.
+        ValueError: If `dim` is not in [-rank(self), rank(self)).
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[float("nan"), 2, 3], [1, 2, float("nan")]]), mindspore.float32)
+        >>> output1 = x.nansum(dim=0, keepdim=False, dtype=mindspore.float32)
+        >>> output2 = x.nansum(dim=0, keepdim=True, dtype=mindspore.float32)
+        >>> print(output1)
+        [1. 4. 3.]
+        >>> print(output2)
+        [[1. 4. 3.]]
+
+    .. method:: Tensor.nansum(axis=None, keepdims=False, *, dtype=None) -> Tensor
+        :noindex:
+
+    Computes sum of `input` over a given dimension, treating NaNs as zero.
+
+    Args:
+        axis (Union[int, tuple(int)], optional): The dimensions to reduce. Supposed the rank of `self` is r,
+            axis must be in the range [-r,r). Default: ``None``, all dimensions are reduced.
+        keepdims (bool, optional): Whether the output Tensor keeps dimensions or not. Default: ``False``.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The dtype of output Tensor. Default: ``None``.
+
+    Returns:
+        Tensor, the sum of input Tensor in the given dimension dim, treating NaNs as zero.
+
+        - If axis is None, keepdims is False,
+          the output is a 0-D Tensor representing the sum of all elements in the input Tensor.
+        - If axis is int, set as 2, and keepdims is False,
+          the shape of output is :math:`(self_1, self_3, ..., self_R)`.
+        - If axis is tuple(int) or list(int), set as (2, 3), and keepdims is False,
+          the shape of output is :math:`(self_1, self_4, ..., self_R)`.
+
+    Raises:
+        TypeError: If `keepdims` is not a bool.
+        TypeError: If the dtype of `self` or `dtype` is complex type.
+        ValueError: If `axis` not in [-rank(self), rank(self)).
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[float("nan"), 2, 3], [1, 2, float("nan")]]), mindspore.float32)
+        >>> output1 = x.nansum(axis=0, keepdims=False, dtype=mindspore.float32)
+        >>> output2 = x.nansum(axis=0, keepdims=True, dtype=mindspore.float32)
+        >>> print(output1)
+        [1. 4. 3.]
+        >>> print(output2)
+        [[1. 4. 3.]]

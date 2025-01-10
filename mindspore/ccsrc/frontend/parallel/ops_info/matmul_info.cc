@@ -139,7 +139,21 @@ Status MatMulBase::GetAttrs() {
                   << mat_a_dimension_ << ", the dim of mat_b is " << mat_b_dimension_;
     return FAILED;
   }
-
+  auto ndtp_reduce_scatter_axis_iter = attrs_.find(NDTP_REDUCE_SCATTER_AXIS);
+  if (ndtp_reduce_scatter_axis_iter != attrs_.end()) {
+    MS_EXCEPTION_IF_NULL(ndtp_reduce_scatter_axis_iter->second);
+    if (ndtp_reduce_scatter_axis_iter->second->isa<Int64Imm>()) {
+      ndtp_reduce_scatter_axis_ = ndtp_reduce_scatter_axis_iter->second->cast<Int64ImmPtr>()->value();
+      if (ndtp_reduce_scatter_axis_ >= SizeToLong(mat_a_dimension_) || ndtp_reduce_scatter_axis_ < 0) {
+        MS_LOG(ERROR) << name_ << ": The value of ndtp_reduce_scatter_axis is not in [0, " << mat_a_dimension_ - 1
+                      << "].";
+        return FAILED;
+      }
+    } else {
+      MS_LOG(ERROR) << name_ << ": The value of ndtp_reduce_scatter_axis is not int64_t.";
+      return FAILED;
+    }
+  }
   MS_LOG(INFO) << name_ << ": the transpose_a is " << transpose_a_ << ", transpose_b is " << transpose_b_;
   return SUCCESS;
 }
@@ -469,6 +483,23 @@ Status MatMul::CheckNDTPInputLayout(const TensorLayout &a_in_layout, const Tenso
     axis1_1 = temp;
   }
 
+  if (a_in_layout.IsInterleavedParallel()) {
+    auto tensor_map_interleaved0 = a_in_layout.tensor_map_before();
+    auto reduce_axis_map = tensor_map_interleaved0[axis0_1];
+    if (std::find(reduce_axis_map.begin(), reduce_axis_map.end(), 0) != reduce_axis_map.end()) {
+      MS_LOG(ERROR) << "Only support splitting micro interleaved in batch axis for matmul.";
+      return FAILED;
+    }
+  }
+  if (b_in_layout.IsInterleavedParallel()) {
+    auto tensor_map_intereaved1 = b_in_layout.tensor_map_before();
+    if (std::any_of(tensor_map_intereaved1.begin(), tensor_map_intereaved1.end(),
+                    [](const auto &map1) { return std::find(map1.begin(), map1.end(), 0) != map1.end(); })) {
+      MS_LOG(ERROR) << "Only support splitting micro interleaved in batch axis for matmul.";
+      return FAILED;
+    }
+  }
+
   // for 2D-WS: x,y       y,x
   // for 3D: (z,x),y     (z,y),x
   // In the above case, the last dim are both not divided
@@ -478,9 +509,22 @@ Status MatMul::CheckNDTPInputLayout(const TensorLayout &a_in_layout, const Tenso
   } else {
     // Judge whether  meet these conditions for 2D.
     auto a_axis0_1_size = a_tensor_map[axis0_1].size();
-    if (a_axis0_1_size != kSizeTwo ||
-        a_tensor_map[axis0_1][a_axis0_1_size - kIndex2] != b_tensor_map[axis1_0][kIndex0] ||
-        a_tensor_map[axis0_1][a_axis0_1_size - kIndex1] != b_tensor_map[axis1_1][kIndex0]) {
+    auto a_y_index = a_axis0_1_size - kIndex1;
+    auto a_x_index = a_axis0_1_size - kIndex2;
+    if (a_tensor_map[axis0_1][a_y_index] != b_tensor_map[axis1_1][kIndex0]) {
+      ndtp_split_y_ = false;
+      // if not splitting y, assume the last is x index, and check whether a_tensor_map[a_x_index] is equal to
+      // b_tensor_map's.
+      a_x_index = a_axis0_1_size - kIndex1;
+    } else {
+      ndtp_split_y_ = true;
+    }
+    // support 2D TP input layout (no transpose for example):
+    // 1. (layout(..., (x, y)), layout(..., x, y)): op will insert AllGather(y) before input_a
+    // 2. (layout(..., x), layout(..., x, y)): op will not insert AllGather(y) before input_a
+    if ((a_axis0_1_size != kSizeOne || a_tensor_map[axis0_1][a_x_index] != b_tensor_map[axis1_0][kIndex0]) &&
+        (a_axis0_1_size != kSizeTwo || a_tensor_map[axis0_1][a_x_index] != b_tensor_map[axis1_0][kIndex0] ||
+         a_tensor_map[axis0_1][a_y_index] != b_tensor_map[axis1_1][kIndex0])) {
       MS_LOG(ERROR) << "For 2D MatMul/Batch MatMul, the input layout for the last two dimensions should be like: \n"
                     << " ( , (x, y)), (y, x) when one of transpose_a and transpose_b is 'true'; or ( , (x, "
                        "y)), (x, y) in the "
@@ -490,6 +534,10 @@ Status MatMul::CheckNDTPInputLayout(const TensorLayout &a_in_layout, const Tenso
                     << b_tensor_map[b_in_layout.tensor_shape_before().array().size() - kSizeTwo] << ", "
                     << b_tensor_map[b_in_layout.tensor_shape_before().array().size() - kSizeOne] << ").";
       return FAILED;
+    }
+    if (ndtp_reduce_scatter_axis_ == -1) {
+      // if ndtp_reduce_scatter_axis is not set, set it to the last axis of the output tensor for 2DTP.
+      ndtp_reduce_scatter_axis_ = SizeToLong(a_in_layout.tensor_shape_before().array().size() - kIndex1);
     }
     MS_LOG(INFO) << "2D TP inputLayout check pass, it is activated.";
     return SUCCESS;
@@ -502,21 +550,25 @@ Status MatMul::Check3DTPInputLayout(const TensorLayout &a_in_layout, const Tenso
   auto b_tensor_map = b_in_layout.tensor_map_before();
 
   auto a_axis0_size = a_tensor_map[axis0_0].size();
+  auto a_y_index = a_axis0_size - kIndex1;
+  if (a_tensor_map[axis0_0][a_y_index] != b_tensor_map[axis1_1][kIndex0]) {
+    ndtp_split_y_ = false;
+  } else {
+    ndtp_split_y_ = true;
+  }
+  // support 3D TP input layout (no transpose for example):
+  // 1. (layout(..., (..., z, y), x), layout(..., (x, z), y)): op will insert AllGather(y) before input_a
+  // 2. (layout(..., x), layout(..., (x, z), y)): op will not insert AllGather(y) before input_a
   if (a_tensor_map[axis0_1].size() != kSizeOne ||
       b_tensor_map[axis1_1].size() !=
         kSizeOne  // any one of the last dimension should not be divided more than once in the input layout
-      || a_tensor_map[axis0_0].size() <
-           kSizeTwo ||  // the S dimension should be divided at least twice (accept the extra split for S).
-      b_tensor_map[axis1_0].size() != kSizeTwo  // the second last dimension should be divide twice.
-      || a_tensor_map[axis0_0][a_axis0_size - kIndex2] !=
-           b_tensor_map[axis1_0][kIndex1]  // the z in two inputs should be equal
-      || a_tensor_map[axis0_0][a_axis0_size - kIndex1] != b_tensor_map[axis1_1][kIndex0] ||
-      a_tensor_map[axis0_1][kIndex0] != b_tensor_map[axis1_0][kIndex0]  // the pattern of x and y should be satisfied.
+      || b_tensor_map[axis1_0].size() != kSizeTwo  // the second last dimension should be divide twice (x, z).
+      || a_tensor_map[axis0_1][kIndex0] != b_tensor_map[axis1_0][kIndex0]  // the pattern of x should be satisfied.
   ) {
     MS_LOG(ERROR) << "For 3D MatMul/Batch MatMul, the input layout for the last two dimensions should be like: \n"
-                  << " ((..., z, x), y), (x, (y, z))  when transpose_b is 'true'; or "
-                  << " (y, (..., z, x)), ((y ,z), x)  when transpose_a is 'true'; or "
-                  << " ((..., z, x), y), ((y, z), x)  in the other situation. But now they are: ("
+                  << " ((..., z, y), x), (y, (x, z))  when transpose_b is 'true'; or "
+                  << " (x, (..., z, y)), ((x ,z), y)  when transpose_a is 'true'; or "
+                  << " ((..., z, y), x), ((x, z), y)  in the other situation. But now they are: ("
                   << a_tensor_map[a_in_layout.tensor_shape_before().array().size() - kSizeTwo] << ", "
                   << a_tensor_map[a_in_layout.tensor_shape_before().array().size() - kSizeOne] << "), ("
                   << b_tensor_map[b_in_layout.tensor_shape_before().array().size() - kSizeTwo] << ", "
@@ -524,6 +576,10 @@ Status MatMul::Check3DTPInputLayout(const TensorLayout &a_in_layout, const Tenso
     return FAILED;
   }
   three_d_tp_ = true;
+  if (ndtp_reduce_scatter_axis_ == -1) {
+    // if ndtp_reduce_scatter_axis is not set, set it to the second last axis of the output tensor for 3DTP.
+    ndtp_reduce_scatter_axis_ = SizeToLong(a_in_layout.tensor_shape_before().array().size() - kIndex2);
+  }
   MS_LOG(INFO) << "3D TP inputLayout check pass, it is activated.";
   return SUCCESS;
 }
@@ -697,39 +753,56 @@ TensorLayout MatMul::InferNDTPOutputLayout() {
       input_layout0.tensor_map_before()[input_layout0.tensor_shape_before().array().size() - kIndex2]);
     Shape tensor_map0_1(
       input_layout0.tensor_map_before()[input_layout0.tensor_shape_before().array().size() - kIndex1]);
-    if (!transpose_a_) {
-      std::swap(tensor_map0_0[tensor_map0_0.size() - kIndex1], tensor_map0_1[kIndex0]);
-      output_extended_tensor_map.push_back(tensor_map0_0);
+    Shape tensor_map1_0(
+      input_layout1.tensor_map_before()[input_layout1.tensor_shape_before().array().size() - kIndex2]);
+    Shape tensor_map1_1(
+      input_layout1.tensor_map_before()[input_layout1.tensor_shape_before().array().size() - kIndex1]);
+    if (ndtp_split_y_) {
+      // if BS axis splits y, pop back the y first because of the AllGather(y) before matmul
+      if (!transpose_a_) {
+        tensor_map0_0.pop_back();
+        output_extended_tensor_map.push_back(tensor_map0_0);
+      } else {
+        tensor_map0_1.pop_back();
+        output_extended_tensor_map.push_back(tensor_map0_1);
+      }
     } else {
-      std::swap(tensor_map0_1[tensor_map0_1.size() - kIndex1], tensor_map0_0[kIndex0]);
-      output_extended_tensor_map.push_back(tensor_map0_1);
+      if (!transpose_a_) {
+        output_extended_tensor_map.push_back(tensor_map0_0);
+      } else {
+        output_extended_tensor_map.push_back(tensor_map0_1);
+      }
     }
-    if (!transpose_b_) {
-      output_extended_tensor_map.push_back(
-        input_layout1.tensor_map_before()[input_layout1.tensor_shape_before().array().size() - kIndex1]);
-    } else {
-      output_extended_tensor_map.push_back(
-        input_layout1.tensor_map_before()[input_layout1.tensor_shape_before().array().size() - kIndex2]);
-    }
-
+    output_extended_tensor_map.push_back(!transpose_b_ ? tensor_map1_1 : tensor_map1_0);
+    // choose which axis the x will be pushed back by the ndtp_reduce_scatter_axis_
+    output_extended_tensor_map[ndtp_reduce_scatter_axis_].push_back(!transpose_b_ ? tensor_map1_0[kIndex0]
+                                                                                  : tensor_map1_1[kIndex0]);
   } else {
-    // For 2D TP, the last dim output_extended_tensor_map change position and others unchange
+    // For 2D TP (no transpose):
+    // 1. (..., (x, y)), (x, y) -> (..., (y, x))
+    // 2. (..., x), (x, y) -> (..., (y, x))
     if (!transpose_a_) {
       output_extended_tensor_map.push_back(
         input_layout0.tensor_map_before()[input_layout0.tensor_shape_before().array().size() - kIndex2]);
-      Shape xy_shape(input_layout0.tensor_map_before()[input_layout0.tensor_shape_before().array().size() - kIndex1]);
-      std::swap(xy_shape[xy_shape.size() - kIndex2], xy_shape[xy_shape.size() - kIndex1]);
-      output_extended_tensor_map.push_back(xy_shape);
     } else {
       output_extended_tensor_map.push_back(
         input_layout0.tensor_map_before()[input_layout0.tensor_shape_before().array().size() - kIndex1]);
-      Shape xy_shape(input_layout0.tensor_map_before()[input_layout0.tensor_shape_before().array().size() - kIndex2]);
-      std::swap(xy_shape[xy_shape.size() - kIndex2], xy_shape[xy_shape.size() - kIndex1]);
-      output_extended_tensor_map.push_back(xy_shape);
     }
+    auto b_x_index = transpose_b_ ? (input_layout1.tensor_shape_before().array().size() - kIndex1)
+                                  : (input_layout1.tensor_shape_before().array().size() - kIndex2);
+    auto b_y_index = transpose_b_ ? (input_layout1.tensor_shape_before().array().size() - kIndex2)
+                                  : (input_layout1.tensor_shape_before().array().size() - kIndex1);
+    Shape tensor_map_yx;
+    tensor_map_yx.push_back(input_layout1.tensor_map_before()[b_y_index][kIndex0]);
+    tensor_map_yx.push_back(input_layout1.tensor_map_before()[b_x_index][kIndex0]);
+    output_extended_tensor_map.push_back(tensor_map_yx);
   }
   output_tensor_layout.InitFromExtendVector(input_layout0.device_arrangement_origin().array(),
                                             output_extended_tensor_map, output_tensor_shape);
+  MS_LOG(DEBUG) << name_ << ": Infer 2D/3D MatMul output layout success: {device_matrix:"
+                << output_tensor_layout.device_arrangement_origin().array()
+                << ", tensor_map:" << output_tensor_layout.tensor_map_before()
+                << ", tensor_shape:" << output_tensor_layout.tensor_shape_before().array() << "}";
   return output_tensor_layout;
 }
 
@@ -1154,6 +1227,36 @@ void MatMul::ProcessMatMulLeftInput(const std::vector<Group> &x_group_list, cons
   }
 }
 
+void SetCommOpAttrs(AnfNodePtr *comm_op, const AnfNodePtr &matmul) {
+  auto comm_cnode = (*comm_op)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(comm_cnode);
+  comm_cnode->AddPrimalAttr(kPrimalAttrForwardCommNodeUniqueId, MakeValue<std::string>(matmul->UniqueId()));
+  auto comm_prim = GetCNodePrimitive(comm_cnode);
+  auto instance_name = comm_prim->instance_name();
+  comm_prim->set_instance_name(FORWARD_OP + instance_name);
+}
+
+void SetReplaceOpCommRecompute(AnfNodePtr *replace_op, const CNodePtr &cnode) {
+  // add recompute_comm_op attrs
+  auto prim_origin = GetCNodePrimitive(cnode);
+  auto replace_op_prim = GetCNodePrimitive(*replace_op);
+  if (prim_origin != nullptr && prim_origin->HasAttr(RECOMPUTE_COMM_OP)) {
+    auto origin_recompute_op_attr = prim_origin->GetAttr(RECOMPUTE_COMM_OP);
+    replace_op_prim->AddAttr(RECOMPUTE_COMM_OP, origin_recompute_op_attr);
+  } else if (prim_origin != nullptr && prim_origin->HasAttr(RECOMPUTE)) {
+    replace_op_prim->AddAttr(RECOMPUTE_COMM_OP, prim_origin->GetAttr(RECOMPUTE));
+  }
+}
+
+void SetMatMulReplaceCommInputRecompute(AnfNodePtr *replace_comm_input_op, const CNodePtr &cnode) {
+  // add recompute attrs
+  auto prim_origin = GetCNodePrimitive(cnode);
+  auto replace_op_prim = GetCNodePrimitive(*replace_comm_input_op);
+  if (prim_origin != nullptr && prim_origin->HasAttr(RECOMPUTE_COMM_OP)) {
+    replace_op_prim->AddAttr(RECOMPUTE, prim_origin->GetAttr(RECOMPUTE_COMM_OP));
+  }
+}
+
 AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNodePtr &matmul_actual_input_node,
                                              GenerateGraph *gen_g,
                                              std::vector<std::pair<AnfNodePtr, int64_t>> *input_nodes) {
@@ -1168,7 +1271,7 @@ AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNod
   } else {
     all_gather_tensor_axis = LAST_INDEX(input_layout0.tensor_shape_before().array().size());
   }
-  size_t scatter_tensor_axis = all_gather_tensor_axis;
+  int64_t scatter_tensor_axis = three_d_tp_ ? ndtp_reduce_scatter_axis_ : SizeToLong(all_gather_tensor_axis);
   size_t all_gather_tensor_axis1 = SECOND_FROM_END(input_layout1.tensor_shape_before().array().size());
   if (transpose_a_) {
     if (three_d_tp_) {
@@ -1181,8 +1284,8 @@ AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNod
   if (transpose_b_) {
     all_gather_tensor_axis1 += kIndex1;
   }
-  int64_t all_gather_dim0 =
-    GetAllGatherDim(all_gather_tensor_axis, input_layout0, kIndex0);  // left input all gather device dim.
+  // left input all gather device dim.
+  int64_t all_gather_dim0 = ndtp_split_y_ ? GetAllGatherDim(all_gather_tensor_axis, input_layout0, kIndex0) : -1;
   int64_t all_gather_dim1 =
     GetAllGatherDim(all_gather_tensor_axis1, input_layout1, kIndex1);  // right input (weight) all gather device dim.
 
@@ -1211,6 +1314,7 @@ AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNod
     Attr attr_group = std::make_pair(GROUP, MakeValue(z_group_list[kIndex0].name()));
     all_gather_attrs.push_back(attr_group);
     z_all_gather = gen_g->PushBack({gen_g->NewOpInst(ALL_GATHER, all_gather_attrs), gen_g->virtual_input_node()});
+    SetMatMulReplaceCommInputRecompute(&z_all_gather, cnode);
     matmul_right_input =
       this->ComputePreAllGatherGraph(cnode, gen_g, z_group_list, SizeToLong(all_gather_tensor_axis1), z_all_gather);
   } else {
@@ -1222,6 +1326,13 @@ AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNod
   auto matmul = gen_g->PushBack(
     {gen_g->NewOpInst(IsPrimitiveCNode(cnode, prim::kPrimBatchMatMul) ? BATCH_MATMUL : MATMUL, matmul_attrs),
      matmul_left_input, matmul_right_input});
+  SetReplaceOpCommRecompute(&matmul, cnode);
+  if (x_all_gather != nullptr) {
+    SetCommOpAttrs(&x_all_gather, matmul);
+  }
+  if (z_all_gather != nullptr) {
+    SetCommOpAttrs(&z_all_gather, matmul);
+  }
   if (matmul_actual_input_node == nullptr) {
     std::pair<AnfNodePtr, int64_t> left_input_node =
       x_flag ? std::make_pair(x_all_gather, kIndex1) : std::make_pair(matmul, kIndex1);
@@ -1231,8 +1342,7 @@ AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNod
     z_flag ? std::make_pair(z_all_gather, kIndex2) : std::make_pair(matmul, kIndex2);
   input_nodes->push_back(right_input_node);
   // post matmul
-  AnfNodePtr post_matmul_op =
-    this->ComputePostMatMulGraph(cnode, gen_g, matmul, input_layout0, SizeToLong(scatter_tensor_axis));
+  AnfNodePtr post_matmul_op = this->ComputePostMatMulGraph(cnode, gen_g, matmul, input_layout0, scatter_tensor_axis);
   MS_LOG(INFO) << name_ << "End to create the NDTP replace graph.";
   return post_matmul_op == nullptr ? matmul : post_matmul_op;
 }
@@ -1276,18 +1386,22 @@ AnfNodePtr MatMul::ComputePreAllGatherGraph(const CNodePtr &cnode, GenerateGraph
     Attr split_count_attr = std::make_pair(OUTPUT_NUM, MakeValue(SizeToLong(split_count)));
     OperatorAttrs split_attrs = {split_axis_attr, split_count_attr};
     auto split = gen_g->PushBack({gen_g->NewOpInst(SPLIT, split_attrs), all_gather_node});
+    SetMatMulReplaceCommInputRecompute(&split, cnode);
     // tuple get item
     std::vector<AnfNodePtr> make_tuple_inputs;
     make_tuple_inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
     for (int64_t i = 0; i < SizeToLong(split_count); ++i) {
       auto tuple_get_item = gen_g->PushBack({gen_g->NewOpInst(TUPLE_GETITEM), split, CreatInt64Imm(i)});
+      SetMatMulReplaceCommInputRecompute(&tuple_get_item, cnode);
       make_tuple_inputs.push_back(tuple_get_item);
     }
     // make tuple
     auto make_tuple = gen_g->PushBack(make_tuple_inputs);
+    SetMatMulReplaceCommInputRecompute(&make_tuple, cnode);
     // concat
     int64_t concat_axis = all_gather_tensor_axis;  // concat_axis is the index of the tensor, not the dev_matrix.
     auto concat = gen_g->PushBack({gen_g->NewOpInst(CONCAT), make_tuple, CreatInt64Imm(concat_axis)});
+    SetMatMulReplaceCommInputRecompute(&concat, cnode);
     return concat;
   } else {
     // MatMul
@@ -1336,10 +1450,12 @@ AnfNodePtr MatMul::ComputePostMatMulGraph(const CNodePtr &cnode, GenerateGraph *
       std::swap(t1[kIndex0], t1[scatter_tensor_axis]);
       AnfNodePtr transpose_1 = gen_g->PushBack({gen_g->NewOpInst(TRANSPOSE), matmul, CreateTuple(t1)});
       reduce_scatter_op = gen_g->PushBack({gen_g->NewOpInst(REDUCE_SCATTER, attrs), transpose_1});
+      SetCommOpAttrs(&reduce_scatter_op, matmul);
       AnfNodePtr transpose_2 = gen_g->PushBack({gen_g->NewOpInst(TRANSPOSE), reduce_scatter_op, CreateTuple(t1)});
       return transpose_2;
     } else {
       reduce_scatter_op = gen_g->PushBack({gen_g->NewOpInst(REDUCE_SCATTER, attrs), matmul});
+      SetCommOpAttrs(&reduce_scatter_op, matmul);
       return reduce_scatter_op;
     }
   }
@@ -1363,9 +1479,7 @@ Status MatMul::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
   std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(virtual_converter_begin, 1)};
   for (int64_t i = 0; i < interleaved_num; ++i) {
     auto tuple_get_item = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), virtual_converter_begin, CreatInt64Imm(i)});
-    if (enable_nd_tp_ && three_d_tp_) {
-      MS_LOG(EXCEPTION) << "Only 1D/2D TP supoort interleave, but now is 3D TP.";
-    } else if (enable_nd_tp_) {
+    if (enable_nd_tp_) {
       auto ndtp_matmul = GetInputOutputNodeForNDTP(cnode, tuple_get_item, &gen_g, &input_nodes);
       virtual_converter_end_inputs_vector.push_back(ndtp_matmul);
     } else {

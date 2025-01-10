@@ -17,99 +17,74 @@
 #include "plugin/device/ascend/kernel/internal/paged_attention.h"
 
 #include <memory>
-#include <string>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "kernel/kernel.h"
 #include "utils/llm_manager.h"
-#include "utils/ms_context.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
-
-namespace {
-const int eye_num_32 = 32;
-std::vector<int8_t> CreateEyeMatrix32x32() {
-  std::vector<int8_t> eye_matrix(eye_num_32 * eye_num_32, 0);
-  for (size_t i = 0; i < eye_num_32; ++i) {
-    eye_matrix[i * eye_num_32 + i] = 1;
-  }
-  return eye_matrix;
-}
-}  // namespace
 bool InternalPagedAttention::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto &enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-  enable_custom_pa_ = (std::find(enable_op_list.begin(), enable_op_list.end(), kernel_name_) != enable_op_list.end());
-  auto antiquant_scale_dtype = inputs[kIndex5]->dtype_id();
-  auto antiquant_offset_dtype = inputs[kIndex6]->dtype_id();
-  if (enable_custom_pa_ && antiquant_scale_dtype == kNumberTypeInt64 && antiquant_offset_dtype == kNumberTypeInt32) {
-    MS_LOG(INFO) << "When antiquant_scale dtype is int64, antiquant_offset dtype is int32, custom PagedAttention "
-                    "is not supported. Switch to other impl.";
-    enable_custom_pa_ = false;
-  }
   auto &llm_manager = LLMManager::GetInstance();
   llm_manager.add_force_resize_kernel(kernel_name_);
   MS_LOG(INFO) << "Force op '" << kernel_name_ << "' to be resized to update op param 'seq_len'";
   return InternalKernelMod::Init(inputs, outputs);
 }
 
-internal::OpParamPtr InternalPagedAttention::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                           const std::vector<KernelTensor *> &outputs) {
-  internal::OpParamPtr param_ptr = std::make_shared<internal::OpParam>();
-  param_ptr->opId = internal::OpId::PagedAttention;
-  internal::MixParam op_param;
-  op_param.maskType = internal::MixParam::MaskType::MASK_TYPE_NONE;
-
-  if (soc_ == "ascend310p") {
-    op_param.mixType = internal::MixParam::MixType::MIX_PAGED_ATTENTION_NZ_MASK;
-  } else {
-    op_param.mixType = internal::MixParam::MixType::MIX_PAGED_ATTENTION_MASK_ND;
+internal::InternalOpPtr InternalPagedAttention::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                             const internal::OutputsImmutableInfoList &outputs_ii,
+                                                             const std::vector<KernelTensor *> &ms_inputs,
+                                                             const std::vector<KernelTensor *> &ms_outputs) {
+  auto last_input_index = kIndex12;
+  if (ms_inputs.size() <= last_input_index) {
+    MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", inputs number should be larger than " << last_input_index
+                      << ", but got " << ms_inputs.size();
   }
+  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex9]->GetValueWithCheck<int64_t>());
+  param_.tor = ms_inputs[kIndex10]->GetValueWithCheck<float>();
+  param_.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex11]->GetValueWithCheck<int64_t>());
+  param_.kv_cache_quant_mode = ms_inputs[last_input_index]->GetValueWithCheck<int64_t>();
+  has_attn_mask_ = (!(ms_inputs[kIndex7]->GetType()->isa<TypeNone>()));
 
-  op_param.headSize = static_cast<int32_t>(inputs[kIndex9]->GetValueWithCheck<int64_t>());
-  op_param.tor = inputs[kIndex10]->GetValueWithCheck<float>();
-  op_param.kvHead = static_cast<int32_t>(inputs[kIndex11]->GetValueWithCheck<int64_t>());
+  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
+  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
 
-  if (!enable_custom_pa_) {
-    (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &kv_seq_len_);
-    for (const auto &item : kv_seq_len_) {
-      (void)op_param.kvSeqLen.emplace_back(item);
-    }
-    if (soc_ == "ascend910b" && !(inputs[kIndex5]->GetType()->isa<TypeNone>())) {
-      op_param.identityM = CreateEyeMatrix32x32();
-    }
-  } else {
-    const int64_t head_dim_align = 16;
-    int64_t head_dim = inputs[kIndex1]->GetShapeVector()[kDim3];
-    if (head_dim % head_dim_align != 0) {
-      MS_LOG(EXCEPTION) << kernel_name_ << ": 'head_dim' must be an integer multiple of 16 currently.";
-    }
-  }
-
-  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &q_seq_len_);
-  bool no_need_lookahead =
-    std::all_of(q_seq_len_.begin(), q_seq_len_.end(), [](int32_t seq_len) { return seq_len == 1; });
-  if (!no_need_lookahead) {
-    for (const auto &item : q_seq_len_) {
-      (void)op_param.qSeqLen.emplace_back(item);
-    }
-    // input attn_mask is not None
-    if (!(inputs[kIndex7]->GetType()->isa<TypeNone>())) {
-      op_param.maskType = internal::MixParam::MaskType::MASK_TYPE_LOOK_AHEAD;
-    }
-  }
-
-  param_ptr->specificParam = op_param;
-  return param_ptr;
+  CheckLookahead();
+  created_flag_ = true;
+  return internal::CreatePagedAttentionOp(inputs_ii, outputs_ii, param_, internal::kInternalPagedAttentionOpName);
 }
 
-uint64_t InternalPagedAttention::GenTilingCacheKey(const std::vector<KernelTensor *> &inputs,
-                                                   const std::vector<KernelTensor *> &outputs) {
+bool InternalPagedAttention::UpdateParam(const std::vector<KernelTensor *> &inputs,
+                                         const std::vector<KernelTensor *> &outputs) {
+  if (created_flag_) {
+    // the q_seq_len and batch_valid_length are inited in CreateKernel, so there is no need to load them again
+    created_flag_ = false;
+    return true;
+  }
+
+  bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
+  bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"batch_valid_length"}, &param_.kv_seq_len);
+  if (q_need_recreate || kv_need_recreate) {
+    CheckLookahead();
+    auto ret = internal_op_->UpdateParam(&param_);
+    if (ret != internal::kInternalOk) {
+      MS_LOG(ERROR) << "InternalPagedAttention UpdateParam failed, kernel_name: " << kernel_name_;
+      return false;
+    }
+    return true;
+  }
+
+  return true;
+}
+
+uint64_t InternalPagedAttention::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
   // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
-  return TilingCacheMgr::GetInstance().GenTilingCacheKey(kernel_name_, inputs, q_seq_len_, kv_seq_len_);
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len);
 }
+
+MS_INTERNAL_KERNEL_FACTORY_REG(PagedAttention, internal::kInternalPagedAttentionOpName, InternalPagedAttention);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(PagedAttention, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4, INDEX_5,
+                                     INDEX_6, INDEX_7);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(PagedAttention, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore

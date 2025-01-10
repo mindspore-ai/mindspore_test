@@ -236,24 +236,24 @@ class ProductIterator {
       }
     }
   }
+  bool HasNext() { return has_next_; }
   std::vector<int64_t> Next() {
     std::vector<int64_t> permutation(next_permutation_);
-    bool carry = true;
+    bool carry_flag = true;
     for (int64_t i = next_permutation_.size() - 1; i >= 0; i--) {
-      if (carry) {
+      if (carry_flag) {
         next_permutation_[i] = next_permutation_[i] + 1;
       }
-      if (next_permutation_[i] == columns_[i]->FeatureCount(batch_index_)) {
-        next_permutation_[i] = 0;
-      } else {
-        carry = false;
+      if (next_permutation_[i] != columns_[i]->FeatureCount(batch_index_)) {
+        carry_flag = false;
         break;
+      } else {
+        next_permutation_[i] = 0;
       }
     }
-    has_next_ = !carry;
+    has_next_ = !carry_flag;
     return permutation;
   }
-  bool HasNext() { return has_next_; }
 
  private:
   bool has_next_;

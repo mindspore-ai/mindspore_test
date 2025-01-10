@@ -28,9 +28,9 @@ mindspore.ops.ApplyAdagradDA
         - **use_locking** (bool) - 如果为 ``True`` ， `var` 和 `gradient_accumulator` 的更新将受到锁的保护。否则，行为为未定义，很可能出现较少的冲突。默认值为 ``False`` 。
 
     输入：
-        - **var** (Parameter) - 要更新的变量。数据类型必须为float16或float32。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
-        - **gradient_accumulator** (Parameter) - 要更新累积的梯度，为公式中的 :math:`grad\_accum` 。shape必须与 `var` 相同。
-        - **gradient_squared_accumulator** (Parameter) - 要更新的平方累积的梯度，为公式中的 :math:`grad\_squared\_accum` 。shape必须与 `var` 相同。
+        - **var** (Union[Parameter, Tensor]) - 要更新的变量。数据类型必须为float16或float32。shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
+        - **gradient_accumulator** (Union[Parameter, Tensor]) - 要更新累积的梯度，为公式中的 :math:`grad\_accum` 。shape必须与 `var` 相同。
+        - **gradient_squared_accumulator** (Union[Parameter, Tensor]) - 要更新的平方累积的梯度，为公式中的 :math:`grad\_squared\_accum` 。shape必须与 `var` 相同。
         - **grad** (Tensor) - 梯度，为一个Tensor。shape必须与 `var` 相同。
         - **lr** ([Number, Tensor]) - 学习率。必须是Scalar。数据类型为float32或float16。
         - **l1** ([Number, Tensor]) - L1正则化。必须是Scalar。数据类型为float32或float16。
@@ -38,12 +38,12 @@ mindspore.ops.ApplyAdagradDA
         - **global_step** ([Number, Tensor]) - 训练步骤的编号。必须是Scalar。数据类型为int32或int64。
 
     输出：
-        1个Tensor组成的tuple，更新后的参数。
+        1个Tensor组成的tuple，更新后的参数或者Tensor。
 
         - **var** (Tensor) - shape和数据类型与 `var` 相同。
 
     异常：
-        - **TypeError** - 如果 `var` 、 `gradient_accumulator` 或 `gradient_squared_accumulator` 不是Parameter。
+        - **TypeError** - 如果 `var` 、 `gradient_accumulator` 或 `gradient_squared_accumulator` 不是Parameter或者Tensor。
         - **TypeError** - 如果 `grad` 不是 Tensor。
         - **TypeError** - 如果 `lr` 、 `l1` 、 `l2` 或者 `global_step` 既不是数值型也不是Tensor。
         - **TypeError** - 如果 `use_locking` 不是bool。

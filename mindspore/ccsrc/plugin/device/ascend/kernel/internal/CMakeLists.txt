@@ -11,7 +11,7 @@ set(ME_KERNELS_INTERNAL_LIB_PATH
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/include)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel)
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
 

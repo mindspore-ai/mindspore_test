@@ -20,7 +20,8 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
-from mindspore import ops, context, mint
+from mindspore import context, mint
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 @test_utils.run_with_cell
@@ -30,10 +31,9 @@ def unfold_forward_func(input_tensor, kernel_size, dilation=1, padding=0, stride
 
 @test_utils.run_with_cell
 def unfold_backward_func(input_tensor, kernel_size, dilation=1, padding=0, stride=1):
-    return ops.grad(unfold_forward_func, (0,))(input_tensor, kernel_size, dilation, padding, stride)
+    return ms.grad(unfold_forward_func, (0,))(input_tensor, kernel_size, dilation, padding, stride)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_unfold(mode):
     """
@@ -72,9 +72,7 @@ def test_unfold_dynamic():
     Description: test op Im2ColExt and Col2ImExt.
     Expectation: expect correct result.
     """
-    ms.context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(2, 5, 60, 30), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(1, 3, 15, 10), dtype=ms.float32)
     TEST_OP(

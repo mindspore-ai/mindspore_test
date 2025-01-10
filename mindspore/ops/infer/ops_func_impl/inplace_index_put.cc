@@ -17,20 +17,22 @@
 #include "infer/ops_func_impl/inplace_index_put.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr InplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_shape = input_args[kIndex0]->GetShape();
-  return x_shape->Clone();
+
+ShapeArray InplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                               const InferInfoPtrList &input_infos) const {
+  auto &indices = input_infos[kIndex1];
+  if (indices->IsSequence() && indices->IsDynamicSequence()) {
+    MS_EXCEPTION(ValueError) << "For `InplaceIndexPut` op, 'indices' shape can not DynamicSequenceShape.";
+  }
+  return {input_infos[kIndex0]->GetShape()};
 }
 
-TypePtr InplaceIndexPutFuncImpl::InferType(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_LOG(EXCEPTION) << "Currently, the 'InplaceIndexPut' op supports only the pynative mode.";
-  return input_args[kIndex0]->GetType()->Clone();
+std::vector<TypeId> InplaceIndexPutFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                       const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex0]->GetType()};
 }
 }  // namespace ops
 }  // namespace mindspore

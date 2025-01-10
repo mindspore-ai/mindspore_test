@@ -15,6 +15,8 @@
  */
 
 #include "runtime/graph_scheduler/actor/copy_actor.h"
+
+#include <utility>
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
@@ -78,6 +80,42 @@ void CopyActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
   }
 }
 
+void UpdateRefDeviceTensors(const std::vector<DeviceTensor *> &input_device_tensor,
+                            const std::vector<DeviceTensor *> &output_device_tensor,
+                            const std::set<DeviceTensorPtr> &ref_parameter_device_tensors, const AID &aid) {
+  MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor[0]
+                << " type:" << output_device_tensor[0]->GetDeviceType() << " and " << input_device_tensor[0]
+                << " type:" << input_device_tensor[0]->GetDeviceType() << " for copy actor:" << aid;
+  DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor[0], input_device_tensor[0]);
+  for (const auto &device_tensor : ref_parameter_device_tensors) {
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor[0]
+                  << " type:" << output_device_tensor[0]->GetDeviceType() << " and " << device_tensor
+                  << " type:" << device_tensor->GetDeviceType() << " for copy actor:" << aid;
+    DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor[0], device_tensor.get());
+    if (device_tensor->GetDeviceType() != output_device_tensor[0]->GetDeviceType()) {
+      MS_LOG(WARNING) << "Invalid ref device address:" << device_tensor << " type:" << device_tensor->GetDeviceType()
+                      << " and:" << output_device_tensor[0] << " type:" << output_device_tensor[0]->GetDeviceType();
+      continue;
+    }
+    device_tensor->set_ptr(output_device_tensor[0]->GetMutablePtr());
+    MS_LOG(DEBUG) << "Set ptr:" << device_tensor->GetPtr() << " from device address:" << output_device_tensor[0]
+                  << " to:" << device_tensor << " in actor:" << aid;
+  }
+}
+
+bool CheckNonWeightParameter(const std::vector<std::pair<size_t, AnfNodePtr>> &device_tensor_store_keys,
+                             const std::vector<std::pair<size_t, ParameterInfo>> &parameter_indexs) {
+  if (EnableInputOptimize()) {
+    if (parameter_indexs.size() > 0 && parameter_indexs[0].second.first.first->isa<Parameter>() &&
+        common::AnfAlgo::IsParameterWeight(parameter_indexs[0].second.first.first->cast<ParameterPtr>())) {
+      return false;
+    }
+    return true;
+  }
+  return device_tensor_store_keys.empty();
+}
+
 void CopyActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(output_device_tensor_[0]);
@@ -87,37 +125,24 @@ void CopyActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
   }
 
   if (input_device_tensor_[0]->GetSize() != output_device_tensor_[0]->GetSize()) {
-    MS_LOG(WARNING) << GetAID().Name() << " copy size is not equal, input size:" << input_device_tensor_[0]->GetSize()
-                    << ", output size:" << output_device_tensor_[0]->GetSize();
+    MS_LOG(WARNING) << GetAID().Name() << " copy size is not equal, input device tensor:" << input_device_tensor_[0]
+                    << " size:" << input_device_tensor_[0]->GetSize()
+                    << ", output device tensor:" << output_device_tensor_[0]
+                    << "size:" << output_device_tensor_[0]->GetSize();
   }
 
   {
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, GetAID().Name());
+    MS_LOG(DEBUG) << "Copy device tensor from device address:" << input_device_tensor_[0]
+                  << " type:" << input_device_tensor_[0]->GetDeviceType() << " to " << output_device_tensor_[0]
+                  << " type:" << output_device_tensor_[0]->GetDeviceType() << " for copy actor:" << GetAID();
     if (!Copy(output_device_tensor_[0], input_device_tensor_[0])) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    if (device_tensor_store_keys_.empty()) {
-      MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor_[0]
-                    << " type:" << output_device_tensor_[0]->GetDeviceType() << " and " << input_device_tensor_[0]
-                    << " type:" << input_device_tensor_[0]->GetDeviceType() << " for copy actor:" << GetAID();
-      DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor_[0], input_device_tensor_[0]);
-      for (const auto &device_tensor : ref_parameter_device_tensors_) {
-        MS_EXCEPTION_IF_NULL(device_tensor);
-        MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor_[0]
-                      << " type:" << output_device_tensor_[0]->GetDeviceType() << " and " << device_tensor
-                      << " type:" << device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
-        DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor_[0], device_tensor.get());
-        if (device_tensor->GetDeviceType() != output_device_tensor_[0]->GetDeviceType()) {
-          MS_LOG(WARNING) << "Invalid ref device address:" << device_tensor
-                          << " type:" << device_tensor->GetDeviceType() << " and:" << output_device_tensor_[0]
-                          << " type:" << output_device_tensor_[0]->GetDeviceType();
-          continue;
-        }
-        device_tensor->set_ptr(output_device_tensor_[0]->GetMutablePtr());
-        MS_LOG(DEBUG) << "Set ptr:" << device_tensor->GetPtr() << " from device address:" << output_device_tensor_[0]
-                      << " to:" << device_tensor << " in actor:" << GetAID();
-      }
+    // Record ref map for non weight parameter.
+    if (CheckNonWeightParameter(device_tensor_store_keys_, parameter_indexs_)) {
+      UpdateRefDeviceTensors(input_device_tensor_, output_device_tensor_, ref_parameter_device_tensors_, GetAID());
     }
     output_device_tensor_[0]->kernel_tensor()->SetType(input_device_tensor_[0]->kernel_tensor()->GetType());
     output_device_tensor_[0]->kernel_tensor()->SetShape(input_device_tensor_[0]->kernel_tensor()->GetShape());
@@ -130,6 +155,44 @@ void CopyActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
   }
 
   PostRun(context);
+}
+
+void CopyActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
+  if (!enable_input_optimize_) {
+    return;
+  }
+  if (parameter_indexs_.size() > 0) {
+    input_device_tensor_[0] =
+      FetchParameter(parameter_indexs_[0].second, context, device_contexts_[kInputDeviceContextIndex], GetAID());
+    if (input_device_tensor_[0] == nullptr) {
+      std::string error_info =
+        GetAID().Name() +
+        " get graph parameter store input failed: " + parameter_indexs_[0].second.first.first->fullname_with_scope() +
+        ", device type:" +
+        std::to_string(static_cast<int>(device_contexts_[kInputDeviceContextIndex]->GetDeviceType()));
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+
+    if (parameter_indexs_[0].second.first.first->isa<Parameter>() &&
+        !common::AnfAlgo::IsParameterWeight(parameter_indexs_[0].second.first.first->cast<ParameterPtr>())) {
+      // Get non-weight parameter addr.
+      MS_EXCEPTION_IF_NULL(output_);
+      output_device_tensor_[0] = output_.get();
+    } else {
+      // Get weight parameter addr.
+      output_device_tensor_[0] =
+        FetchParameter(parameter_indexs_[0].second, context, device_contexts_[kOutputDeviceContextIndex], GetAID());
+    }
+
+    if (output_device_tensor_[0] == nullptr) {
+      std::string error_info =
+        GetAID().Name() +
+        " get graph parameter store output failed: " + parameter_indexs_[0].second.first.first->fullname_with_scope() +
+        ", device type:" +
+        std::to_string(static_cast<int>(device_contexts_[kOutputDeviceContextIndex]->GetDeviceType()));
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+  }
 }
 
 void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
@@ -163,16 +226,20 @@ void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
   } else {
-    const auto &data_iter = input_op_datas_.find(context->sequential_num_);
-    if (data_iter == input_op_datas_.end()) {
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "No input data.");
-    }
-    const auto &input_data = data_iter->second[0];
-    MS_EXCEPTION_IF_NULL(input_data);
-    input_device_tensor_[0] = input_data->data_;
+    if (input_op_datas_.empty()) {
+      FetchParameterInput(context);
+    } else {
+      const auto &data_iter = input_op_datas_.find(context->sequential_num_);
+      if (data_iter == input_op_datas_.end()) {
+        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "No input data.");
+      }
+      const auto &input_data = data_iter->second[0];
+      MS_EXCEPTION_IF_NULL(input_data);
+      input_device_tensor_[0] = input_data->data_;
 
-    MS_EXCEPTION_IF_NULL(output_);
-    output_device_tensor_[0] = output_.get();
+      MS_EXCEPTION_IF_NULL(output_);
+      output_device_tensor_[0] = output_.get();
+    }
   }
 
   if (!WaitRuntimePipelineFinish(context)) {

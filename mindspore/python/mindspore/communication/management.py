@@ -100,10 +100,9 @@ def _set_envs():
     This takes compatibility into account because user scripts may get 'DEVICE_ID' or 'RANK_ID' envs.
     """
     os.environ["RANK_ID"] = str(get_rank())
+    os.environ["DEVICE_ID"] = str(context.get_context("device_id"))
     if os.getenv("RANK_SIZE") is None:
         os.environ["RANK_SIZE"] = str(get_group_size())
-    if os.getenv("DEVICE_ID") is None:
-        os.environ["DEVICE_ID"] = str(get_local_rank())
 
 
 def init(backend_name=None):
@@ -141,7 +140,7 @@ def init(backend_name=None):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> from mindspore.communication import init
@@ -227,7 +226,7 @@ def release():
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> from mindspore.communication import init, release
@@ -266,7 +265,7 @@ def get_rank(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> from mindspore.communication import init, get_rank
@@ -311,12 +310,12 @@ def get_local_rank(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_rank, get_local_rank
-        >>> ms.set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> world_rank = get_rank()
@@ -359,7 +358,7 @@ def get_group_size(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -406,12 +405,12 @@ def get_local_rank_size(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_local_rank_size
-        >>> ms.set_context(device_target="Ascend")
+        >>> ms.set_device(device_target="Ascend")
         >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> local_rank_size = get_local_rank_size()
@@ -456,13 +455,14 @@ def get_world_rank_from_group_rank(group, group_rank_id):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore.communication import init, create_group, get_world_rank_from_group_rank, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-4"
         >>> rank_ids = [0,4]
@@ -510,13 +510,14 @@ def get_group_rank_from_world_rank(world_rank_id, group):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore.communication import init, create_group, get_group_rank_from_world_rank, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-4"
         >>> rank_ids = [0,4]
@@ -561,14 +562,15 @@ def create_group(group, rank_ids):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore import ops
         >>> from mindspore.communication import init, create_group, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-7"
         >>> rank_ids = [0,7]
@@ -609,14 +611,15 @@ def destroy_group(group):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore import set_context
         >>> from mindspore import ops
         >>> from mindspore.communication import init, create_group, destroy_group, get_rank
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-2"
         >>> rank_ids = [0,2]
@@ -656,7 +659,7 @@ def get_process_group_ranks(group=GlobalComm.WORLD_COMM_GROUP):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 4 devices.

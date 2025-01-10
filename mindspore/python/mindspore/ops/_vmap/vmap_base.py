@@ -512,8 +512,6 @@ _ops_vmap_clone_prim_dict = {
     "ApplyAdagradV2": P.ApplyAdagradV2,
     "UniformCandidateSampler": UniformCandidateSampler,
     "UniqueWithPad": P.UniqueWithPad,
-    "CdistGrad": G.CdistGrad,
-    "Cdist": P.Cdist,
     "STFT": math_ops.STFT,
     "Conv2D": P.Conv2D,
     "Conv3D": P.Conv3D,

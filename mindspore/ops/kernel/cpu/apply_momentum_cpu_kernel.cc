@@ -26,7 +26,7 @@ constexpr size_t kApplyMomentumInputsNum = 5;
 
 bool ApplyMomentumCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  dtype_ = inputs[0]->dtype_id();
+  dtype_ = inputs[kIndex0]->dtype_id();
   return true;
 }
 
@@ -39,17 +39,17 @@ bool ApplyMomentumCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
                                        const std::vector<kernel::KernelTensor *> &,
                                        const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kApplyMomentumInputsNum, kernel_name_);
-  if (inputs[0]->size() != inputs[1]->size()) {
+  if (inputs[kIndex0]->size() != inputs[kIndex1]->size()) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_
                       << "', the type of input 'accumulation' and 'variable' must be "
                          "same, but got the memory size of 'accumulation': "
-                      << inputs[1]->size() << " and 'variable': " << inputs[0]->size();
+                      << inputs[kIndex1]->size() << " and 'variable': " << inputs[kIndex0]->size();
   }
-  if (inputs[0]->size() != inputs[3]->size()) {
+  if (inputs[kIndex0]->size() != inputs[kIndex3]->size()) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_
                       << "', the type of input 'gradient' and 'variable' must be "
                          "same, but got the memory size of 'gradient': "
-                      << inputs[3]->size() << " and 'variable': " << inputs[0]->size();
+                      << inputs[kIndex3]->size() << " and 'variable': " << inputs[kIndex0]->size();
   }
 
   if (dtype_ == kNumberTypeFloat32) {
@@ -90,12 +90,12 @@ bool ApplyMomentumCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
 template <typename T>
 void ApplyMomentumCpuKernelMod::LaunchApplyMomentum(const std::vector<KernelTensor *> &inputs,
                                                     const std::vector<KernelTensor *> &) {
-  T *weight = static_cast<T *>(inputs[0]->device_ptr());
-  T *accumulate = static_cast<T *>(inputs[1]->device_ptr());
-  T learning_rate = static_cast<T *>(inputs[2]->device_ptr())[0];
-  const T *gradient = static_cast<T *>(inputs[3]->device_ptr());
-  T moment = static_cast<T *>(inputs[4]->device_ptr())[0];
-  size_t elem_num = inputs[0]->size() / sizeof(T);
+  T *weight = static_cast<T *>(inputs[kIndex0]->device_ptr());
+  T *accumulate = static_cast<T *>(inputs[kIndex1]->device_ptr());
+  T learning_rate = static_cast<T *>(inputs[kIndex2]->device_ptr())[0];
+  const T *gradient = static_cast<T *>(inputs[kIndex3]->device_ptr());
+  T moment = static_cast<T *>(inputs[kIndex4]->device_ptr())[0];
+  size_t elem_num = inputs[kIndex0]->size() / sizeof(T);
 
   auto task = [&](size_t start, size_t end) {
     for (size_t i = start; i < end; ++i) {

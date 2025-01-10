@@ -63,5 +63,4 @@ def test_floor_dynamic_shape():
     tensor_x1 = ms.Tensor(generate_random_input((2, 3), np.float32))
     tensor_x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
 
-    TEST_OP(floor_forward_func_grad, [[tensor_x1], [tensor_x2]], 'inplace_floor',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(floor_forward_func_grad, [[tensor_x1], [tensor_x2]], 'inplace_floor', disable_mode=['GRAPH_MODE'])

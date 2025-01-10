@@ -3,7 +3,7 @@ mindspore.ops.SparseApplyAdagradV2
 
 .. py:class:: mindspore.ops.SparseApplyAdagradV2(lr, epsilon, update_slots=True, use_locking=False)
 
-    根据Adagrad算法更新相关参数。
+    根据Adagrad算法更新相关参数或者Tensor。
 
     .. math::
         \begin{array}{ll} \\
@@ -22,13 +22,14 @@ mindspore.ops.SparseApplyAdagradV2
         - **use_locking** (bool) - 是否对参数更新加锁保护。默认值： ``False`` 。
 
     输入：
-        - **var** (Parameter) - 要更新的变量。为任意维度，其数据类型为float16或float32。其shape为 :math:`(N, *)` ，其中 :math:`*` 为任意数量的额外维度。
-        - **accum** (Parameter) - 要更新的累积。shape必须与 `var` 相同。
+        - **var** (Union[Parameter, Tensor]) - 要更新的变量。为任意维度，其数据类型为float16或float32。其shape为 :math:`(N, *)` ，其中 :math:`*` 为任意数量的额外维度。
+        - **accum** (Union[Parameter, Tensor]) - 要更新的累积。shape必须与 `var` 相同。
         - **grad** (Tensor) - 梯度，为一个Tensor。shape必须与 `var` 相同，且需要满足当 `var.shape > 1` 时 :math:`grad.shape[1:] = var.shape[1:]`。
-        - **indices** (Tensor) - `var` 和 `accum` 第一维度的索引向量，数据类型为int32，且需要保证 :math:`indices.shape[0] = grad.shape[0]`。
+        - **indices** (Tensor) - `var` 和 `accum` 第一维度的索引向量，数据类型为int32，且需要保证 :math:`indices.shape[0] = grad.shape[0]`。indices的值\
+          需要唯一，否则结果将不可预测。
 
     输出：
-        2个Tensor组成的tuple，更新后的参数。
+        2个Tensor组成的tuple，更新后的参数或者Tensor。
 
         - **var** (Tensor) - shape和数据类型与 `var` 相同。
         - **accum** (Tensor) - shape和数据类型与 `accum` 相同。

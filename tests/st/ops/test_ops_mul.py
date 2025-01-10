@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, context
 from mindspore.mint import mul
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -41,7 +41,7 @@ def mul_forward_func(x, y):
 
 @test_utils.run_with_cell
 def mul_backward_func(x, y):
-    return ops.grad(mul_forward_func, (0, 1))(x, y)
+    return ms.grad(mul_forward_func, (0, 1))(x, y)
 
 
 @test_utils.run_with_cell
@@ -49,16 +49,28 @@ def mul_vmap_func(x, y):
     return ops.vmap(mul_forward_func, in_axes=0, out_axes=0)(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+def set_mode(mode):
+    """
+    set_mode
+    """
+    if mode == "ge":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={'jit_level': 'O2'})
+    elif mode == "kbk":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={'jit_level': 'O0'})
+    else:
+        context.set_context(mode=context.PYNATIVE_MODE)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_mul_normal(context_mode):
+@pytest.mark.parametrize("mode", ["ge", "kbk", "pyboost"])
+def test_ops_mul_normal(mode):
     """
     Feature: pyboost function.
     Description: test function mul forward and backward.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
+    set_mode(mode)
     x = generate_random_input((1, 16, 4096, 128), np.float32)
     y = generate_random_input((4096, 128), np.float32)
     output = mul_forward_func(ms.Tensor(x), ms.Tensor(y))
@@ -73,16 +85,16 @@ def test_ops_mul_normal(context_mode):
     np.testing.assert_allclose(output2[1].asnumpy(), expect_out2[1], rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_mul_forward_case01(context_mode):
+@pytest.mark.parametrize("mode", ["kbk", "pyboost"])
+def test_ops_mul_forward_case01(mode):
     """
     Feature: pyboost function.
     Description: test function mul forward.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
+    set_mode(mode)
     x = generate_random_input((3, 77, 3, 768), np.float16)
     y = 0.125
     output = mul_forward_func(ms.Tensor(x), y)
@@ -91,14 +103,14 @@ def test_ops_mul_forward_case01(context_mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_mul_forward_case02(context_mode):
+@pytest.mark.parametrize("mode", ["ge", "kbk", "pyboost"])
+def test_ops_mul_forward_case02(mode):
     """
     Feature: pyboost function.
     Description: test function mul forward.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
+    set_mode(mode)
     x = np.random.rand(1, 1, 4096)
     y = np.random.rand(1, 4096, 4096)
     output = mul_forward_func(ms.Tensor(x, ms.bfloat16), ms.Tensor(y, ms.bfloat16))
@@ -108,14 +120,14 @@ def test_ops_mul_forward_case02(context_mode):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_mul_vmap(context_mode):
+@pytest.mark.parametrize("mode", ["ge", "kbk", "pyboost"])
+def test_ops_mul_vmap(mode):
     """
     Feature: pyboost function.
     Description: test function mul vmap feature.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
+    set_mode(mode)
     x = generate_random_input((2, 3, 4, 5), np.float32)
     y = generate_random_input((2, 3, 4, 5), np.float32)
     output = mul_vmap_func(ms.Tensor(x), ms.Tensor(y))
@@ -136,5 +148,6 @@ def test_ops_mul_dynamic_shape():
     x2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
     y2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
 
-    TEST_OP(mul_forward_func
-            , [[ms.Tensor(x1), ms.Tensor(y1)], [ms.Tensor(x2), ms.Tensor(y2)]], 'mul')
+    TEST_OP(mul_forward_func,
+            [[ms.Tensor(x1), ms.Tensor(y1)], [ms.Tensor(x2), ms.Tensor(y2)]],
+            'mul', disable_mode=["GRAPH_MODE",])

@@ -61,6 +61,7 @@ void CheckInplaceOpValidate(const FuncGraphPtr &func_graph, const std::vector<st
     if (!abs->isa<abstract::AbstractRefTensor>()) {
       continue;
     }
+    TraceGuard guard(MakeTraceInfo<TraceInplace>(node->debug_info()));
     auto abs_ref = abs->cast<abstract::AbstractRefPtr>();
     MS_EXCEPTION_IF_NULL(abs_ref->ref_key_value());
     auto ref_key = abs_ref->ref_key_value()->cast<StringImmPtr>();
@@ -106,35 +107,39 @@ std::vector<std::string> GetRequiresGradRefKeys(const AnfNodePtr &j_node, const 
       continue;
     }
     // Process parameters
-    if (idx->value() == 0) {
-      const AnfNodeIndexSet &grad_param_user_nodes = mgr->node_users()[iter.first];  // %6
-      // EnvironGet is a user node
-      for (const auto &grad_param_iter : grad_param_user_nodes) {
-        if (IsPrimitiveCNode(grad_param_iter.first, prim::kPrimEnvironGet)) {
-          auto ref_to_embed = grad_param_iter.first->cast<CNodePtr>()->input(ref_to_embed_index);
-          MS_EXCEPTION_IF_NULL(ref_to_embed);
-          if (ref_to_embed->isa<CNode>()) {
-            MS_EXCEPTION_IF_NULL(ref_to_embed->cast<CNodePtr>()->input(1));
-            auto abs = ref_to_embed->cast<CNodePtr>()->input(1)->abstract();
-            if (abs == nullptr) {
-              continue;
-            }
-            auto ref_key = abstract::GetRefKeyFromAbstract(abs);
-            MS_LOG(DEBUG) << "The ref_key of parameter is: " << ref_key;
-            ref_keys.push_back(ref_key);
-          }
-        }
+    if (idx->value() != 0) {
+      // %5 or %6
+      if (arg_inputs.size() < LongToSize(idx->value())) {
+        MS_LOG(EXCEPTION) << "The number of args must be greater than index, but got he number of args: "
+                          << arg_inputs.size() << ", index: " << idx->value();
+      }
+      auto arg_input = arg_inputs[idx->value() - 1];
+      MS_EXCEPTION_IF_NULL(arg_input);
+      auto arg_input_abs = arg_input->abstract();
+      if (arg_input_abs && arg_input_abs->isa<abstract::AbstractRefTensor>()) {
+        auto arg_input_ref_key = abstract::GetRefKeyFromAbstract(arg_input_abs);
+        MS_LOG(DEBUG) << "The ref_key of arg is: " << arg_input_ref_key;
+        ref_keys.push_back(arg_input_ref_key);
       }
       continue;
     }
-    // %5 or %6
-    auto arg_input = arg_inputs[idx->value() - 1];
-    MS_EXCEPTION_IF_NULL(arg_input);
-    auto arg_input_abs = arg_input->abstract();
-    if (arg_input_abs && arg_input_abs->isa<abstract::AbstractRefTensor>()) {
-      auto arg_input_ref_key = abstract::GetRefKeyFromAbstract(arg_input_abs);
-      MS_LOG(DEBUG) << "The ref_key of arg is: " << arg_input_ref_key;
-      ref_keys.push_back(arg_input_ref_key);
+    const AnfNodeIndexSet &grad_param_user_nodes = mgr->node_users()[iter.first];  // %6
+    // EnvironGet is a user node
+    for (const auto &grad_param_iter : grad_param_user_nodes) {
+      if (IsPrimitiveCNode(grad_param_iter.first, prim::kPrimEnvironGet)) {
+        auto ref_to_embed = grad_param_iter.first->cast<CNodePtr>()->input(ref_to_embed_index);
+        MS_EXCEPTION_IF_NULL(ref_to_embed);
+        if (ref_to_embed->isa<CNode>()) {
+          MS_EXCEPTION_IF_NULL(ref_to_embed->cast<CNodePtr>()->input(1));
+          auto abs = ref_to_embed->cast<CNodePtr>()->input(1)->abstract();
+          if (abs == nullptr) {
+            continue;
+          }
+          auto ref_key = abstract::GetRefKeyFromAbstract(abs);
+          MS_LOG(DEBUG) << "The ref_key of parameter is: " << ref_key;
+          ref_keys.push_back(ref_key);
+        }
+      }
     }
   }
   return ref_keys;

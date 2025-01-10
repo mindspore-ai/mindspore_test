@@ -1,0 +1,22 @@
+#operator inplace_masked_fill_tensor
+inplace_masked_fill_tensor:
+    args:
+        input:
+            dtype: tensor
+        mask:
+            dtype: tensor
+        value:
+            dtype: tensor
+    args_signature:
+        rw_write: input
+    returns:
+        out:
+            dtype: tensor
+            inplace: input
+    function:
+        name: masked_fill_tensor_
+    labels:
+        side_effect_mem: True
+    dispatch:
+        enable: True
+        Ascend: InplaceMaskedFillTensorAscend

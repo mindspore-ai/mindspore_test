@@ -8,8 +8,8 @@ mindspore.mint.greater_equal
     更多参考详见 :func:`mindspore.ops.ge`。
 
     参数：
-        - **input** (Union[Tensor, Number]) - 第一个输入，是一个Number或数据类型为number或bool_的Tensor。
-        - **other** (Union[Tensor, Number]) - 第二个输入，是一个Number或数据类型为number或bool_的Tensor。
+        - **input** (Union[Tensor, Number]) - 第一个输入，是一个Number或数据类型为number或bool的Tensor。
+        - **other** (Union[Tensor, Number]) - 第二个输入，是一个Number或数据类型为number或bool的Tensor。
 
     返回：
         Tensor，shape与广播后的shape相同，数据类型为bool。

@@ -31,6 +31,9 @@ void TCPServer::Finalize() {
     tcp_comm_.reset();
     tcp_comm_ = nullptr;
   }
+  if (event_loop_group_) {
+    event_loop_group_->Finalize();
+  }
 }
 
 void TCPServer::SetMessageHandler(const MessageHandler &handler, uint32_t) { tcp_comm_->SetMessageHandler(handler); }
@@ -41,11 +44,32 @@ uint32_t TCPServer::GetPort() const { return port_; }
 
 bool TCPServer::InitializeImpl(const std::string &url, const MemAllocateCallback &allocate_cb) {
   if (tcp_comm_ == nullptr) {
-    tcp_comm_ = std::make_unique<TCPComm>(enable_ssl_);
+    const auto &value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeClusterThreadNum);
+    MS_LOG(INFO) << "Config cluster threads num : " << value << ".";
+    // Enable multi threads by default.
+    if (value.size() == 0 || (value != "False" && value != "false" && value != "FALSE")) {
+      size_t cluster_thread_num = 0;
+      std::stringstream sstream(value);
+      size_t config_value = 0;
+      sstream >> config_value;
+      if (config_value != 0) {
+        cluster_thread_num = config_value;
+      }
+      // Enable event loop group when cluster thread num more than 1.
+      const size_t event_loop_group_min_thread_num = 1;
+      if (cluster_thread_num > event_loop_group_min_thread_num) {
+        event_loop_group_ = std::make_shared<EventLoopGroup>(cluster_thread_num);
+      }
+    }
+
+    tcp_comm_ = std::make_unique<TCPComm>(enable_ssl_, event_loop_group_);
     MS_EXCEPTION_IF_NULL(tcp_comm_);
     bool rt = tcp_comm_->Initialize();
     if (!rt) {
       MS_LOG(EXCEPTION) << "Failed to initialize tcp comm";
+    }
+    if (event_loop_group_) {
+      event_loop_group_->Initialize();
     }
     if (url != "") {
       rt = (tcp_comm_->StartServerSocket(url, allocate_cb) == 0) ? true : false;

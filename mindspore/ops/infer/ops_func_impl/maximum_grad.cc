@@ -17,7 +17,7 @@
 
 #include <memory>
 #include <utility>
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

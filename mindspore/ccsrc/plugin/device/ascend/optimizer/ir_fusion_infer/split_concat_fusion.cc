@@ -27,6 +27,11 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> SplitConcatFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimSplit->name(), prim::kPrimConcat->name()};
+  return ret;
+}
+
 const BaseRef SplitConcatFusion::DefinePattern() const {
   split_axis_ = std::make_shared<CondVar>(IsConstant);
   concat_axis_ = std::make_shared<CondVar>(IsConstant);

@@ -252,31 +252,47 @@ void ProfileExecute(ProfContext *profile_ctx, const Function &func) {
 }
 class MsProfileStatGuard {
  public:
-  explicit MsProfileStatGuard(std::string &&state_name) {
-    if (!EnabledProfile()) {
+  explicit MsProfileStatGuard(std::string &&state_name, std::string &&phase_name = "", bool vlog = false) {
+    if (!EnabledVlog(vlog) && !EnabledProfile()) {
       return;
     }
     start_ = GetTime();
     state_name_ = std::move(state_name);
+    phase_name_ = std::move(phase_name);
+    vlog_ = vlog;
   }
 
   ~MsProfileStatGuard() {
-    if (!EnabledProfile()) {
+    if (!EnabledVlog(vlog_) && !EnabledProfile()) {
       return;
     }
     if (interrupted_) {
       return;
     }
     auto end = GetTime();
-    MsProfile::StatTime(state_name_, end - start_);
+    if (EnabledVlog(vlog_)) {
+      constexpr int time_convert_unit = 1000;
+      DisplayVlog(state_name_, phase_name_, (end - start_) * time_convert_unit);
+    }
+    if (EnabledProfile()) {
+      MsProfile::StatTime(state_name_, end - start_);
+    }
   }
 
   void Interrupt() { interrupted_ = true; }
 
+  bool EnabledVlog(bool vlog) const { return vlog && IS_VLOG_ON(VL_FLOW); }
+
+  void DisplayVlog(const std::string &state_name, const std::string &phase_name, double cost_time) {
+    MS_VLOG(VL_FLOW) << "[MsProfile] [" << phase_name_ << "] " << state_name_ << " costs " << cost_time << " msec.";
+  }
+
  private:
   std::string state_name_;
+  std::string phase_name_;
   double start_;
   bool interrupted_{false};
+  bool vlog_{false};
 };
 
 struct MemoryInfo {

@@ -92,7 +92,7 @@ static void ParallelInit(const ParallelProcessorContextPtr &processor_context) {
     return;
   }
 
-  if (processor_context->parallel_mode == kAutoParallel && !processor_context->load_strategy) {
+  if (processor_context->parallel_mode == kAutoParallel) {
     return;
   }
 

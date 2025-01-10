@@ -13,97 +13,111 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <memory>
-#include "infer/ops_func_impl/convolution_str.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "ops/test_value_utils.h"
-#include "common/common_test.h"
-#include "ir/dtype/type.h"
-#include "ir/primitive.h"
-#include "abstract/abstract_value.h"
-#include "mindapi/base/types.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore::ops {
-struct ConvolutionStrParams {
-  ShapeVector input_shape;
-  ShapeVector weight_shape;
-  ShapeVector bias_shape;
-  ValuePtr stride;       // tuple[int]
-  ValuePtr padding;
-  ValuePtr dilation;       // tuple[int]
-  ValuePtr transposed;       // bool
-  ValuePtr outputPadding;       // tuple[int]
-  ValuePtr groups;       // tuple[int]
-  ShapeVector out_shape;
-  bool is_static = false;
-};
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::SAME)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
+                  })
+    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
 
-class TestConvolutionStr : public TestOps, public testing::WithParamInterface<ConvolutionStrParams> {};
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, 2, 1, 1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::SAME)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
+                  })
+    .FeedExpectedOutput({{-1, 2, -1, -1}}, {kNumberTypeFloat32});
 
-TEST_P(TestConvolutionStr, dyn_shape) {
-  const auto &param = GetParam();
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 2, 3, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::SAME)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
+                  })
+    .FeedExpectedOutput({{3, -1, 3, 3}}, {kNumberTypeFloat32});
 
-  auto input_abs = std::make_shared<abstract::AbstractTensor>(kFloat32, param.input_shape);
-  ASSERT_NE(input_abs, nullptr);
-  auto weight_abs = std::make_shared<abstract::AbstractTensor>(kFloat32, param.weight_shape);
-  ASSERT_NE(weight_abs, nullptr);
-  auto bias_abs = std::make_shared<abstract::AbstractTensor>(kFloat32, param.bias_shape);
-  ASSERT_NE(bias_abs, nullptr);
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-1, 2, 3, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, 2, 1, 1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::VALID)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
+                  })
+    .FeedExpectedOutput({{-1, 2, 3, 3}}, {kNumberTypeFloat32});
 
-  auto stride_abs = param.stride->ToAbstract();
-  ASSERT_NE(stride_abs, nullptr);
-  auto padding_abs = param.padding->ToAbstract();
-  ASSERT_NE(padding_abs, nullptr);
-  auto dilation_abs = param.dilation->ToAbstract();
-  ASSERT_NE(dilation_abs, nullptr);
-  auto transposed_abs = param.transposed->ToAbstract();
-  ASSERT_NE(transposed_abs, nullptr);
-  auto outputPadding_abs = param.outputPadding->ToAbstract();
-  ASSERT_NE(outputPadding_abs, nullptr);
-  auto groups_abs = param.groups->ToAbstract();
-  ASSERT_NE(stride_abs, nullptr);
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 2, 3, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, 2, 1, 1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::VALID)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
+                  })
+    .FeedExpectedOutput({{3, 2, 3, 3}}, {kNumberTypeFloat32});
 
-  auto count_include_pad = CreateScalar<bool>(false);
-  auto count_include_pad_abs = count_include_pad->ToAbstract();
-  auto divisor_override = CreateScalar<int64_t>(int64_t(1));
-  auto divisor_override_abs = divisor_override->ToAbstract();
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 2, 3, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{2, 2, -1, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::VALID)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                      ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
+                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
+                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
+                  })
+    .FeedExpectedOutput({{3, 2, -1, -1}}, {kNumberTypeFloat32});
 
-  auto prim = std::make_shared<Primitive>("ConvolutionStr");
-  auto infer_impl = std::make_shared<ConvolutionStrFuncImpl>();
-  ASSERT_NE(infer_impl, nullptr);
-
-  // for abstract based infer
-  std::vector<AbstractBasePtr> input_args{input_abs, weight_abs, bias_abs, stride_abs, padding_abs, dilation_abs,
-                                          transposed_abs, outputPadding_abs, groups_abs};
-  auto inferred_shape = infer_impl->InferShape(prim, input_args);
-  auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
-  ShapeCompare(inferred_shape, expect_shape);
+  return generator.Generate();
 }
+}  // namespace
 
-INSTANTIATE_TEST_CASE_P(
-  TestConvolutionStr, TestConvolutionStr,
-  testing::Values(ConvolutionStrParams{ShapeVector{-2}, ShapeVector{-2}, ShapeVector{1}, CreatePyIntTuple({1, 1}),
-                                    CreatePyInt(PadMode::SAME), CreatePyIntTuple({1, 1}), CreateScalar<bool>(false),
-                                    CreatePyIntTuple({1, 1}), CreatePyInt(1), ShapeVector{-2}},
-
-                  ConvolutionStrParams{ShapeVector{-2}, ShapeVector{2, 2, 1, 1}, ShapeVector{1}, CreatePyIntTuple({1, 1}),
-                                    CreatePyInt(PadMode::SAME), CreatePyIntTuple({1, 1}), CreateScalar<bool>(false),
-                                    CreatePyIntTuple({1, 1}), CreatePyInt(1), ShapeVector{-1, 2, -1, -1}},
-
-                  ConvolutionStrParams{ShapeVector{3, 2, 3, 3}, ShapeVector{-2}, ShapeVector{1}, CreatePyIntTuple({1, 1}),
-                                    CreatePyInt(PadMode::SAME), CreatePyIntTuple({1, 1}), CreateScalar<bool>(false),
-                                    CreatePyIntTuple({1, 1}), CreatePyInt(1), ShapeVector{3, -1, 3, 3}},
-
-                  ConvolutionStrParams{ShapeVector{-1, 2, 3, 3}, ShapeVector{2, 2, 1, 1}, ShapeVector{1}, CreatePyIntTuple({1, 1}),
-                                    CreatePyInt(PadMode::VALID), CreatePyIntTuple({1, 1}), CreateScalar<bool>(false),
-                                    CreatePyIntTuple({1, 1}), CreatePyInt(1), ShapeVector{-1, 2, 3, 3}},
-                  
-                  ConvolutionStrParams{ShapeVector{3, 2, 3, 3}, ShapeVector{2, 2, 1, 1}, ShapeVector{2}, CreatePyIntTuple({1, 1}),
-                                    CreatePyInt(PadMode::VALID), CreatePyIntTuple({1, 1}), CreateScalar<bool>(false),
-                                    CreatePyIntTuple({1, 1}), CreatePyInt(1), ShapeVector{3, 2, 3, 3}},
-
-                  ConvolutionStrParams{ShapeVector{3, 2, 3, 3}, ShapeVector{2, 2, -1, -1}, ShapeVector{1}, CreatePyIntTuple({1, 1}),
-                                    CreatePyInt(PadMode::VALID), CreatePyIntTuple({1, 1}), CreateScalar<bool>(false),
-                                    CreatePyIntTuple({1, 1}), CreatePyInt(1), ShapeVector{3, 2, -1, -1}}));
+INSTANTIATE_TEST_CASE_P(ConvolutionStr, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops

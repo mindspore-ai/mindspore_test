@@ -22,9 +22,7 @@ from mindspore import Tensor
 
 class Net(nn.Cell):
     def construct(self, x, exponent):
-        if isinstance(x, (Tensor)):
-            return x.pow(exponent)
-        return Tensor.pow(x, exponent)
+        return x.pow(exponent)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
@@ -66,7 +64,7 @@ def test_tensor_pow_scalar(mode):
     Expectation: success
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
-    x = 2.0
+    x = Tensor(2.0)
     exponent = 3.0
     net = Net()
     output_x = net(x, exponent)

@@ -30,6 +30,8 @@ namespace kernel {
 class ArgMinWithValueCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArgMinWithValueCpuKernelMod() = default;
+  ArgMinWithValueCpuKernelMod(size_t index_output_idx, size_t value_output_idx)
+      : index_output_idx(index_output_idx), value_output_idx(value_output_idx) {}
   ~ArgMinWithValueCpuKernelMod() override = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
@@ -58,6 +60,8 @@ class ArgMinWithValueCpuKernelMod : public NativeCpuKernelMod {
   size_t num_before_axis_{0};
   size_t num_after_axis_{0};
   size_t dim_axis_{0};
+  const size_t index_output_idx{0};
+  const size_t value_output_idx{1};
 };
 }  // namespace kernel
 }  // namespace mindspore

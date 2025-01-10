@@ -14,13 +14,11 @@
 # ============================================================================
 import pytest
 import numpy as np
-from tests.st.utils import test_utils
-from tests.mark_utils import arg_mark
+import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops, mint
-
-
-context.set_context(ascend_config={"matmul_allow_hf32": True, "conv_allow_hf32": True})
+from tests.device_utils import set_device
+from tests.st.utils import test_utils
 
 
 @test_utils.run_with_cell
@@ -40,7 +38,7 @@ def baddbmm_forward_func(input_x, batch1, batch2):
 
 @test_utils.run_with_cell
 def addmm_forward_func(input_x, mat1, mat2):
-    return ops.auto_generate.addmm(input_x, mat1, mat2, 1, 1)
+    return ops.auto_generate.addmm_op(input_x, mat1, mat2, 1, 1)
 
 
 @test_utils.run_with_cell
@@ -63,8 +61,6 @@ def set_mode(mode):
         context.set_context(mode=context.PYNATIVE_MODE)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["KBK", "PYBOOST"])
 def test_hf32(mode):
     """
@@ -73,6 +69,9 @@ def test_hf32(mode):
     Expectation: expect correct result.
     """
     set_mode(mode)
+    set_device()
+    ms.device_context.ascend.op_precision.matmul_allow_hf32(True)
+    ms.device_context.ascend.op_precision.conv_allow_hf32(True)
 
     # mint.matmul
     x = np.array([[1.7640524, 0.4001572, 0.978738],

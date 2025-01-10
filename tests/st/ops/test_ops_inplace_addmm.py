@@ -15,7 +15,6 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.common.dtype as mstype
 from mindspore import Tensor
@@ -49,8 +48,6 @@ def addmm__backward_func(input1, mat1, mat2, beta, alpha):
     return ms.grad(addmm__forward_func, (1, 2))(input1, mat1, mat2, beta, alpha)
 
 
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('ms_type', [mstype.float32, mstype.float16])
 def test_inplace_addmm(ms_type):
     """

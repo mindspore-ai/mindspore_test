@@ -113,13 +113,13 @@ int MaxPoolGradWithArgmaxCpuKernelMod::Resize(const std::vector<KernelTensor *> 
 template <typename T, typename S>
 bool MaxPoolGradWithArgmaxCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                      const std::vector<kernel::KernelTensor *> &outputs) {
-  auto *input = reinterpret_cast<T *>(inputs.at(kDim0)->device_ptr());
+  auto *input = GetDeviceAddress<T>(inputs, kDim0);
   MS_EXCEPTION_IF_NULL(input);
-  auto *grad = reinterpret_cast<T *>(inputs.at(kDim1)->device_ptr());
+  auto *grad = GetDeviceAddress<T>(inputs, kDim1);
   MS_EXCEPTION_IF_NULL(grad);
-  auto *index = reinterpret_cast<S *>(inputs.at(kDim2)->device_ptr());
+  auto *index = GetDeviceAddress<S>(inputs, kDim2);
   MS_EXCEPTION_IF_NULL(index);
-  auto *output = reinterpret_cast<T *>(outputs.at(kDim0)->device_ptr());
+  auto *output = GetDeviceAddress<T>(outputs, kDim0);
   MS_EXCEPTION_IF_NULL(output);
   const int c = channel_;
   const int xCHW = c * x_height_ * x_width_;

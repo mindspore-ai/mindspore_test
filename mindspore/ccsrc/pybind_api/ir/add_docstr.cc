@@ -15,33 +15,9 @@
  */
 
 #include <string>
-#include <vector>
 #include "include/common/pybind_api/api_register.h"
 
 namespace mindspore {
-// Helper function to process and assign the docstring
-void assign_docstring(const char **target_doc, py::str doc_str) {
-  const char *doc_cstr = PyUnicode_AsUTF8(doc_str.ptr());
-  if (doc_cstr == nullptr) {
-    throw py::error_already_set();
-  }
-
-  size_t doc_len = strlen(doc_cstr);
-  char *doc_copy = reinterpret_cast<char *>(malloc(doc_len + 1));
-  if (doc_copy == nullptr) {
-    PyErr_SetString(PyExc_MemoryError, "Unable to allocate memory for docstring");
-    throw py::error_already_set();
-  }
-
-  snprintf(doc_copy, doc_len + 1, "%s", doc_cstr);
-
-  if (*target_doc != nullptr) {
-    free(const_cast<char *>(*target_doc));
-  }
-
-  *target_doc = doc_copy;
-}
-
 py::object add_docstr(py::object obj, py::str doc_str) {
   // Check if the object is an instance method (PyInstanceMethod_Type)
   if (Py_TYPE(obj.ptr()) == &PyInstanceMethod_Type) {
@@ -50,14 +26,25 @@ py::object add_docstr(py::object obj, py::str doc_str) {
     PyObject *func_obj = meth->func;
     if (PyCFunction_Check(func_obj)) {
       PyCFunctionObject *func = reinterpret_cast<PyCFunctionObject *>(func_obj);
-      assign_docstring(&func->m_ml->ml_doc, doc_str);
+      // Directly convert doc_str to std::string
+      const std::string &new_doc = doc_str.cast<std::string>();
+
+      // Allocate a new C-style string for ml_doc (as it expects a char*)
+      char *doc_cstr = strdup(new_doc.c_str());
+      if (!doc_cstr) {
+        throw std::runtime_error("Memory allocation failed for docstring");
+      }
+
+      // Free the existing ml_doc if necessary and assign the new docstring
+      if (func->m_ml->ml_doc) {
+        free(const_cast<char *>(func->m_ml->ml_doc));
+      }
+      func->m_ml->ml_doc = doc_cstr;
     } else {
-      PyErr_Format(PyExc_TypeError, "Cannot add docstring to non-CFunction instance method");
-      throw py::error_already_set();
+      throw std::invalid_argument("Cannot add docstring to non-CFunction instance method");
     }
   } else {
-    PyErr_Format(PyExc_TypeError, "Invalid type '%s' to add docstring", Py_TYPE(obj.ptr())->tp_name);
-    throw py::error_already_set();
+    throw std::invalid_argument(std::string("Invalid type '") + Py_TYPE(obj.ptr())->tp_name + "' to add docstring");
   }
 
   Py_INCREF(obj.ptr());

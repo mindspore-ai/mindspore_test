@@ -1,0 +1,15 @@
+std:
+  - op_yaml: std_op.yaml
+    py_method: tensor_std # callback to python function "def tensor_std"
+    Ascend: pyboost
+    kwonlyargs: correction, keepdim
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/std_method.yaml
+    py_method: deprecated_tensor_std # callback to python function "def deprecated_tensor_std"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

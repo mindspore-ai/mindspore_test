@@ -40,6 +40,19 @@ class GradNet(nn.Cell):
         z = m * y
         return z
 
+class GradNetJit(nn.Cell):
+    def __init__(self):
+        super(GradNetJit, self).__init__()
+        self.w = Parameter(Tensor([5.0], mindspore.float32), name='w')
+        self.b = Parameter(Tensor([5.0], mindspore.float32), name='b')
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def construct(self, x):
+        y = self.w * x + self.b
+        with _no_grad():
+            m = y * self.w
+        z = m * y
+        return z
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('input', [Tensor([2], mindspore.float32)])
@@ -53,6 +66,27 @@ def test_network_func(input):
     model_py = GradNet()
 
     @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def test_network(x):
+        grad_fn = ops.grad(model_py)
+        gradients = grad_fn(x)
+        return gradients
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    gradient_jit = test_network(input)
+    gradient_py = ops.grad(model_py)(input)
+    match_array(gradient_jit, gradient_py, error=0, err_msg=str(gradient_jit))
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('input', [Tensor([2], mindspore.float32)])
+def test_network_jit_func(input):
+    """
+    Feature: integrate no grad function into graph
+    Description: replace no grad into StopGradient
+    Expectation: no error
+    TEST_SUMMARY: match the result with pynative
+    """
+    model_py = GradNetJit()
+
     def test_network(x):
         grad_fn = ops.grad(model_py)
         gradients = grad_fn(x)

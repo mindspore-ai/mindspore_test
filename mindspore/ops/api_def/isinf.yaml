@@ -1,0 +1,7 @@
+isinf:
+  op_yaml: isinf_op.yaml
+  py_method: tensor_isinf
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

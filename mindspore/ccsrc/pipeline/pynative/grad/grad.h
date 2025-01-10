@@ -68,6 +68,14 @@ class ME_EXPORT GradExecutor {
                      std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4),
                      std::forward<decltype(PH5)>(PH5));
     };
+  std::function<void(const py::object &, const py::object &, const py::args &)> CallCustomBpropFunc =
+    [this](auto &&PH1, auto &&PH2, auto &&PH3) {
+      CallCustomBprop(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2),
+                      std::forward<decltype(PH3)>(PH3));
+    };
+  std::function<py::object(const py::args &)> GradJit = [this](auto &&PH1) {
+    return jit()->GradJit(std::forward<decltype(PH1)>(PH1));
+  };
   inline TopCellInfoPtr top_cell() const {
     MS_EXCEPTION_IF_NULL(top_cell_);
     return top_cell_;
@@ -99,7 +107,7 @@ class ME_EXPORT GradExecutor {
   py::object RunGradGraph();
   CNodePtr ConstructForwardGraph(const OpGradInfoPtr &grad_info, const std::vector<std::string> &input_value_id) const;
   void RecordForwardGraph(const OpGradInfoPtr &grad_info) const;
-  void RecordCustomBprop(const autograd::CustomContext &context) const;
+  void RecordCustomBprop(const std::shared_ptr<autograd::CustomContext> &context) const;
   void RecordForwardGraphForInput(const ValuePtr &value, const string &input_id,
                                   const abstract::AbstractBasePtr &param_abs);
   void RecordNestedGraph(const FuncGraphPtr &first_grad_fg, const GraphInfoPtr &inner_graph_info,
@@ -111,7 +119,7 @@ class ME_EXPORT GradExecutor {
   TopCellInfoPtr GetPipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
                                     bool is_reverse_match) const;
   void ErasePipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
-                            bool is_pipeline_ir_top_cell);
+                            bool is_pipeline_top_cell);
   void GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr &grad, const py::object &obj,
                                         const py::args &args);
   bool ReplacePipelineTopCellForwardOutput();
@@ -210,8 +218,7 @@ class ME_EXPORT GradExecutor {
   void EndGraphInner(const py::object &obj, const py::object &out, const py::args &args);
   void EndGraphImpl(const InputArgsInfoPtr &input_args_info);
   void SetForwardLastNodeInfo(const ValuePtr &v) const;
-  void GetCustomBpropPrim(const py::object &obj, const py::args &args, const InputArgsInfoPtr &input_args_info);
-  void DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const;
+  void DoGradForCustomBprop(const std::shared_ptr<autograd::CustomContext> &context);
   void CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info);
   void GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
                     const std::vector<size_t> &p_args);
@@ -230,6 +237,7 @@ class ME_EXPORT GradExecutor {
                                     const std::pair<AnfNodePtr, std::vector<int64_t>> &out) const;
   void ResetMetaGradInfoForNewTopCell(const InputArgsInfoPtr &input_args_info) const;
   void ClearBpropTask() const;
+  std::string SizeofContainer() const;
 
   bool init_{false};
   bool grad_flag_{false};

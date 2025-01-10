@@ -246,8 +246,8 @@ bool SliceGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
     CPUKernelUtils::GetElementNumEveryDim(output_shape_, &output_element_num_);
   }
 
-  auto *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   auto ret = memset_s(output_addr, outputs[0]->size(), 0, outputs[0]->size());
   if (ret != EOK) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', output buff memset failed. Error no: " << ret;
@@ -378,9 +378,9 @@ template <typename T>
 void SliceGradCpuKernelMod::CopyDataToOutput(const std::vector<kernel::KernelTensor *> &inputs, size_t in_offset,
                                              const std::vector<kernel::KernelTensor *> &outputs, size_t out_offset,
                                              size_t copy_num, int id) const {
-  T *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
   auto in_buff_size = inputs[0]->size();
-  T *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   auto out_buff_size = outputs[0]->size();
 
   if ((in_offset + copy_num) * sizeof(T) > in_buff_size) {

@@ -28,6 +28,7 @@ from mindspore.parallel._parallel_serialization import _rank_list_for_transform_
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
     _merge_protobuf_strategy, _merge_json_strategy, _extract_src_dst_layout_map_by_src
 from mindspore.parallel.transform_safetensors import _transform_safetensors, _collect_safetensor_files
+from mindspore._c_expression import AutoParallelContext
 
 __all__ = ["merge_pipeline_strategys", "rank_list_for_transform", "transform_checkpoint_by_rank",
            "transform_checkpoints", "sync_pipeline_shared_parameters", "load_segmented_checkpoints"]
@@ -648,3 +649,46 @@ def load_segmented_checkpoints(ckpt_file_dir, net=None, strict_load=False, filte
         parameter_dict.update(ms.load_checkpoint(checkpoint_file, net, strict_load, filter_prefix, dec_key,
                                                  dec_mode, specify_prefix, choice_func))
     return parameter_dict
+
+
+def set_op_strategy_config(mode="SAVE", path=""):
+    """
+    Set strategy json configuration when using sharding propagation.
+
+    .. warning::
+        This is an experimental interface, may be changed or canceled in the future;
+        This interface currently doesn't support saving or loading strategies using layout.
+
+    Note:
+        - It only works when `parallel_mode=ParallelMode.AUTO_PARALLEL` and `search_mode='sharding_propagation'`.
+        - It only supports saving and reloading with the same configuration for the same network. If the network
+          or training hyperparameters are modified after using the `SAVE` mode to save the strategies of operator
+          to the setting json file, which may lead to the failure of using the `LOAD` mode to load operator
+          strategies from json.
+        - When performing distributed training, users can first save the strategy using dryrun on a single device
+          and then load strategy to perform distributed training.
+
+    Args:
+        mode (str): The parameter for choosing save or load .json file. Default value: ``"SAVE"`` .
+        path (str): Path to save or load parallel strategy json, must be an absolute path. Default value: ``""`` .
+
+    Raises:
+        KeyError: When type is not ``"SAVE"`` or ``"LOAD"`` .
+        KeyError: When path does not end in ``".json"`` .
+        KeyError: When path is not an absolute path.
+    """
+    if not os.path.isabs(path):
+        raise KeyError("File path must be an absolute path")
+    _, file_type = os.path.splitext(path)
+    if file_type != ".json":
+        raise KeyError("File type must be .json")
+    dir_path = os.path.dirname(path)
+    if dir_path and not os.path.exists(dir_path):
+        os.makedirs(dir_path, mode=0o700, exist_ok=True)
+    check_mode_type = ["SAVE", "LOAD"]
+    if mode in check_mode_type:
+        if AutoParallelContext.get_instance() is None:
+            raise ValueError("Get AutoParallelContext instance failed!!!")
+        AutoParallelContext.get_instance().set_ops_strategy_json_config(mode, path, "all")
+    else:
+        raise KeyError("Type must be 'SAVE' or 'LOAD'")

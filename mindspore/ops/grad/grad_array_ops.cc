@@ -1248,11 +1248,13 @@ REG_BPROP_BUILDER("Select").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex1);
   auto y = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  auto dx = x->need_compute_grad_out() ? ib->Select(cond, dout, ib->ZerosLike(dout)) : nullptr;
-  auto dy = y->need_compute_grad_out() ? ib->Select(cond, ib->ZerosLike(dout), dout) : nullptr;
+  auto dx = x->need_compute_grad_out() ? ib->Select(cond, dout, ib->ZerosLikeExt(dout, ib->EmitValue(kNone))) : nullptr;
+  auto dy = y->need_compute_grad_out() ? ib->Select(cond, ib->ZerosLikeExt(dout, ib->EmitValue(kNone)), dout) : nullptr;
   auto ret = BinopGradSelect(ib, cond, x, y, dout, dx, dy);
   return {ib->OutZeros(cond), ret[kIndex1], ret[kIndex2]};
 });
+
+REG_BPROP_BUILDER("FullLike").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("OnesLike").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
@@ -1445,7 +1447,7 @@ REG_BPROP_BUILDER("Reshape").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(shp)};
 });
 
-REG_BPROP_BUILDER("ViewAs").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ViewAs").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -1790,8 +1792,99 @@ REG_BPROP_BUILDER("Index").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto indices = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto zero_x = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  // Indices is tuple[tensor]
+  std::vector<ShapeVector> indices_shapes = indices->shapes();
+  auto indices_nums = indices_shapes.size();
+  NodePtrList indices_res;
+  for (size_t i = 0; i < indices_nums; ++i) {
+    indices_res.push_back(ib->OutZeros(ib->TupleGetItem(indices, i)));
+  }
   auto dy = ib->Emit("InplaceIndexPut", {zero_x, indices, dout, ib->Value(true)});
-  return {dy, ib->OutZeros(indices)};
+  return {dy, ib->MakeTuple(indices_res)};
+});
+
+REG_BPROP_BUILDER("IndexFillScalar").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
+  auto dim = ib->GetInput(kIndex1);
+  auto indices = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto zero_value = ib->ZerosLike(value);
+  auto x_grad = ib->Emit("IndexFillScalar", {dout, dim, indices, zero_value});
+  return {x_grad, ib->OutZeros(dim), ib->OutZeros(indices), ib->OutZeros(value)};
+});
+
+REG_BPROP_BUILDER("IndexFillTensor").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto indices = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto zero_value = ib->ZerosLike(value);
+  auto false_value = ib->Value(false);
+
+  NodePtr value_grad = nullptr;
+  if (value->need_compute_grad_out()) {
+    auto index_unsorted = ib->Unique2(indices, false_value, false_value, false_value);
+    auto index_unsorted_first = ib->TupleGetItem(index_unsorted, kIndex0);
+    auto index_select_answer = ib->Emit("IndexSelect", {dout, dim, index_unsorted_first});
+    value_grad = ib->SumExt(index_select_answer, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
+  } else {
+    value_grad = ib->OutZeros(value);
+  }
+  auto x_grad = x->need_compute_grad_out() ? ib->Emit("IndexFillScalar", {dout, dim, indices, ib->Value<int64_t>(0)})
+                                           : ib->OutZeros(x);
+  return {x_grad, ib->OutZeros(dim), ib->OutZeros(indices), value_grad};
+});
+
+REG_BPROP_BUILDER("InplaceFillScalar").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+  return {ib->ZerosLikeExt(ib->GetInput(kIndex0), ib->EmitValue(kNone)), ib->OutZeros(ib->GetInput(kIndex1))};
+});
+
+REG_BPROP_BUILDER("InplaceFillTensor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  NodePtr value_grad = nullptr;
+  auto value = ib->GetInput(kIndex1);
+  if (value->need_compute_grad_out()) {
+    value_grad = ib->SumExt(ib->GetInput(kIndex3), ib->EmitValue(kNone), ib->Value(false));
+  } else {
+    value_grad = ib->OutZeros(value);
+  }
+  return {ib->ZerosLikeExt(ib->GetInput(kIndex0), ib->EmitValue(kNone)), value_grad};
+});
+
+REG_BPROP_BUILDER("InplaceMaskedFillScalar").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mask = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr input_grad = nullptr;
+  if (input->need_compute_grad_out()) {
+    auto dout_clone = ib->Emit("Clone", {dout});
+    input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
+  } else {
+    input_grad = ib->OutZeros(input);
+  }
+  return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2))};
+});
+
+REG_BPROP_BUILDER("InplaceMaskedFillTensor").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mask = ib->GetInput(kIndex1);
+  auto value = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr input_grad = nullptr;
+  NodePtr value_grad = nullptr;
+  if (input->need_compute_grad_out()) {
+    auto dout_clone = ib->Emit("Clone", {dout});
+    input_grad = ib->Emit("InplaceMaskedFillScalar", {dout_clone, mask, ib->Value<float>(0)});
+  } else {
+    input_grad = ib->OutZeros(input);
+  }
+  if (value->need_compute_grad_out()) {
+    auto temp = ib->Emit("MaskedSelect", {dout, mask});
+    value_grad = ib->SumExt(temp, ib->EmitValue(kNone), ib->Value(false));
+  } else {
+    value_grad = ib->OutZeros(value);
+  }
+  return {input_grad, ib->OutZeros(ib->GetInput(kIndex1)), value_grad};
 });
 
 REG_BPROP_BUILDER("UnsortedSegmentSum").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
@@ -1985,6 +2078,16 @@ REG_BPROP_BUILDER("ScatterUpdate").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUN
   return {dx, ib->OutZeros(indices), updates_grad};
 });
 
+REG_BPROP_BUILDER("InplaceNormal").SetUnusedInputs({i0, i1, i2, i3, i4, i5, i6}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto mean = ib->GetInput(kIndex1);
+  auto std = ib->GetInput(kIndex2);
+  auto seed = ib->GetInput(kIndex3);
+  auto offset = ib->GetInput(kIndex4);
+  auto dx = ib->ZerosLikeExt(x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  return {dx, ib->OutZeros(mean), ib->OutZeros(std), ib->OutZeros(seed), ib->OutZeros(offset)};
+});
+
 REG_BPROP_BUILDER("NormalTensorTensor").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("NormalTensorFloat").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
@@ -1995,6 +2098,17 @@ REG_BPROP_BUILDER("NormalFloatFloat").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).
 
 REG_BPROP_BUILDER("UniformExt").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("InplaceUniform").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto from = ib->GetInput(kIndex1);
+  auto to = ib->GetInput(kIndex2);
+  auto seed = ib->GetInput(kIndex3);
+  auto offset = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+  auto dx = ib->ZerosLikeExt(x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  return {dx, ib->OutZeros(from), ib->OutZeros(to), ib->OutZeros(seed), ib->OutZeros(offset)};
+});
+
 REG_BPROP_BUILDER("ScatterAddExt").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
@@ -2003,6 +2117,17 @@ REG_BPROP_BUILDER("ScatterAddExt").FreeUselessValues_IO({i0, i3}, {}).SetBody(BO
   auto dout = ib->GetInput(kIndex5);
   NodePtr x_grad = nullptr;
   x_grad = x->need_compute_grad_out() ? dout : ib->OutZeros(x);
+  auto update_grad = update->need_compute_grad_out() ? ib->GatherD(dout, axis, indices) : ib->OutZeros(update);
+  return {x_grad, ib->OutZeros(axis), ib->OutZeros(indices), update_grad};
+});
+
+REG_BPROP_BUILDER("InplaceScatterAdd").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto indices = ib->GetInput(kIndex2);
+  auto update = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  NodePtr x_grad = x->need_compute_grad_out() ? dout : ib->OutZeros(x);
   auto update_grad = update->need_compute_grad_out() ? ib->GatherD(dout, axis, indices) : ib->OutZeros(update);
   return {x_grad, ib->OutZeros(axis), ib->OutZeros(indices), update_grad};
 });
@@ -2654,7 +2779,7 @@ REG_BPROP_BUILDER("MaskedSelect").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto mask = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("MaskedSelectGrad", {x, mask, dout});
-  auto dmask = ib->ZerosLike(mask);
+  auto dmask = ib->ZerosLikeExt(mask, ib->EmitValue(kNone));
   auto x_shape = ib->GetShape(x);
   auto dx_shape = ib->GetShape(dx);
   if (x_shape != dx_shape) {
@@ -3017,7 +3142,7 @@ REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   }
   NodePtr dupdates = nullptr;
   if (updates->need_compute_grad_out()) {
-    dupdates = ib->Cast(ib->Reshape(ib->ZerosLike(updates), {-1}), kFloat32);
+    dupdates = ib->Cast(ib->Reshape(ib->ZerosLikeExt(updates, ib->EmitValue(kNone)), {-1}), kFloat32);
     auto dupdates_val = ib->Cast(ib->Emit("MaskedSelect", {dout, mask}), kFloat32);
     auto length = ib->TupleGetItem(ib->Shape(dupdates_val), LongToSize(0));
     auto scatter_indices = ib->Range(length);

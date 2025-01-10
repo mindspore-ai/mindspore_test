@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import numpy as np
 import pytest
 import mindspore as ms
@@ -21,6 +20,8 @@ from mindspore import Tensor
 from mindspore import ops
 from mindspore.mint.nn import Conv2d
 from mindspore.common.parameter import Parameter
+from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
 
 
 class Net2d(nn.Cell):
@@ -34,7 +35,6 @@ class Net2d(nn.Cell):
         return self.Conv2d(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_nn_conv2d_default(mode):
     """
@@ -45,7 +45,8 @@ def test_nn_conv2d_default(mode):
     """
     ms.set_context(jit_level='O0')
     ms.set_context(mode=mode)
-    ms.context.set_context(ascend_config={"conv_allow_hf32": False})
+    set_device()
+    ms.device_context.ascend.op_precision.conv_allow_hf32(False)
     x = Tensor([[[[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
                  [[9.0, 10.0, 11.0], [12.0, 13.0, 14.0], [15.0, 16.0, 17.0]]],
                 [[[18.0, 19.0, 20.0], [21.0, 22.0, 23.0], [24.0, 25.0, 26.0]],
@@ -83,7 +84,6 @@ def test_nn_conv2d_default(mode):
     assert np.allclose(output.asnumpy(), expected, atol=1e-4, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_nn_conv2d_padding_same(mode):
     """
@@ -94,7 +94,8 @@ def test_nn_conv2d_padding_same(mode):
     """
     ms.set_context(jit_level='O0')
     ms.set_context(mode=mode)
-    ms.context.set_context(ascend_config={"conv_allow_hf32": False})
+    set_device()
+    ms.device_context.ascend.op_precision.conv_allow_hf32(False)
     x = Tensor([[[[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
                  [[9.0, 10.0, 11.0], [12.0, 13.0, 14.0], [15.0, 16.0, 17.0]]],
                 [[[18.0, 19.0, 20.0], [21.0, 22.0, 23.0], [24.0, 25.0, 26.0]],
@@ -139,7 +140,8 @@ def test_conv2d_with_bf16():
     Description: The weight init of conv 2d is implemented by numpy, test type of bfloat16.
     Expectation: Success.
     """
-    ms.context.set_context(ascend_config={"conv_allow_hf32": False})
+    set_device()
+    ms.device_context.ascend.op_precision.conv_allow_hf32(False)
     x = ms.Tensor(np.ones([2, 2, 4, 4]), ms.bfloat16)
     weight = ms.Tensor(np.ones([2, 2, 1, 1]), ms.bfloat16)
     bias = ms.Tensor(np.ones([2]), ms.bfloat16)
@@ -174,7 +176,8 @@ def test_conv2d_backward(context_mode):
     """
     ms.set_context(jit_level='O0')
     ms.context.set_context(mode=context_mode)
-    ms.context.set_context(ascend_config={"conv_allow_hf32": False})
+    set_device()
+    ms.device_context.ascend.op_precision.conv_allow_hf32(False)
     x = Tensor([[[[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
                  [[9.0, 10.0, 11.0], [12.0, 13.0, 14.0], [15.0, 16.0, 17.0]]],
                 [[[18.0, 19.0, 20.0], [21.0, 22.0, 23.0], [24.0, 25.0, 26.0]],

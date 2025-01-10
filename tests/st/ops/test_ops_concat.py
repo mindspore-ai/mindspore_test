@@ -21,9 +21,11 @@ import pytest
 import mindspore as ms
 from mindspore import ops, nn, Tensor, context, mutable
 import mindspore.ops.functional as F
+from mindspore.device_context.cpu.op_tuning import threads_num
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def concat_func(x1, x2, axis):
@@ -31,7 +33,7 @@ def concat_func(x1, x2, axis):
 
 
 def concat_bwd_func(x1, x2, axis):
-    return ops.grad(concat_func, (0, 1))(x1, x2, axis)
+    return ms.grad(concat_func, (0, 1))(x1, x2, axis)
 
 
 @test_utils.run_with_cell
@@ -67,7 +69,7 @@ def forward_datas_prepare(shape, num=2, axis=0, diff_shapes=False, need_expect=T
     return tuple(np_inpus if numpy_inputs else tensor_inputs), np_expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("params", [(((2, 2), (2, 3)), 1), (((3, 2, 3), (3, 3, 3)), -2)])
@@ -124,7 +126,7 @@ def test_concat_dynamic():
     Description: test op concat.
     Expectation: expect correct result.
     """
-    ms.context.set_context(runtime_num_threads=1)  # multi-threads have none-initialized bug now.
+    threads_num(1)
     axis = 1
     inputs_case1, _ = forward_datas_prepare((2, 4), axis=axis, need_expect=False)
     inputs_case2, _ = forward_datas_prepare((2, 2, 2), axis=axis, need_expect=False)
@@ -295,7 +297,7 @@ def test_concat_with_input_complex64(mode):
     assert np.allclose(out.asnumpy(), expect_out)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_concat_with_dyn_len_sequence_input():
     """
@@ -346,3 +348,93 @@ def test_concat_with_single_input():
     x = Tensor(np.random.rand(100, 10).astype(np.float32))
     out = net(x)
     print(out)
+
+
+def ops_concat_binary_compare(input_binary_data, output_binary_data, dim, is_bf16=False):
+
+    @test_utils.run_with_cell
+    def cat_forward_func(x1, x2, dim):
+        return ms.mint.cat((x1, x2), dim)
+
+
+    @test_utils.run_with_cell
+    def cat_backward_func(x1, x2, dim):
+        return ms.grad(cat_forward_func, (0, 1))(x1, x2, dim)
+
+    if is_bf16:
+        tensors = [ms.Tensor(np_data, ms.bfloat16) for np_data in input_binary_data]
+        loss = 4e-3
+    else:
+        tensors = [ms.Tensor(np_data) for np_data in input_binary_data]
+        loss = 1e-4
+    output = cat_forward_func(tensors[0], tensors[1], dim)
+    if is_bf16:
+        assert np.allclose(output.float().asnumpy(), output_binary_data[0], loss, loss)
+    else:
+        assert np.allclose(output.asnumpy(), output_binary_data[0], loss, loss)
+
+    grads = cat_backward_func(tensors[0], tensors[1], dim)
+    for i, expect in enumerate(output_binary_data[1:]):
+        if is_bf16:
+            assert np.allclose(grads[i].float().asnumpy(), expect, loss, loss)
+        else:
+            assert np.allclose(grads[i].asnumpy(), expect, loss, loss)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((4608, 32), np.float32), ((4608, 32), np.float32)],
+                                output_info=[((4608, 64), np.float32), ((4608, 32), np.float32),
+                                             ((4608, 32), np.float32)],
+                                extra_info='auto_drive'))
+def ops_concat_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_concat_binary_compare(input_binary_data, output_binary_data, 1)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((2048, 5120), np.float32), ((2048, 5120), np.float32)],
+                                output_info=[((4096, 5120), np.float32), ((2048, 5120), np.float32),
+                                             ((2048, 5120), np.float32)],
+                                extra_info='pg135B'))
+def ops_concat_binary_case2(input_binary_data=None, output_binary_data=None):
+    ops_concat_binary_compare(input_binary_data, output_binary_data, 0, True)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 1, 5120), np.float32), ((1, 4096, 5120), np.float32)],
+                                output_info=[((1, 4097, 5120), np.float32), ((1, 1, 5120), np.float32),
+                                             ((1, 4096, 5120), np.float32)],
+                                extra_info='pgmoe'))
+def ops_concat_binary_case3(input_binary_data=None, output_binary_data=None):
+    ops_concat_binary_compare(input_binary_data, output_binary_data, 1, True)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 8, 1, 5120), np.float32), ((1, 8, 1544, 5120), np.float32)],
+                                output_info=[((1, 8, 1545, 5120), np.float32), ((1, 8, 1, 5120), np.float32),
+                                             ((1, 8, 1544, 5120), np.float32)],
+                                extra_info='pgmoe'))
+def ops_concat_binary_case4(input_binary_data=None, output_binary_data=None):
+    ops_concat_binary_compare(input_binary_data, output_binary_data, 2, True)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((2048, 6144), np.float32), ((2048, 6144), np.float32)],
+                                output_info=[((4096, 6144), np.float32), ((2048, 6144), np.float32),
+                                             ((2048, 6144), np.float32)],
+                                extra_info='pg230b'))
+def ops_concat_binary_case5(input_binary_data=None, output_binary_data=None):
+    ops_concat_binary_compare(input_binary_data, output_binary_data, 0, True)
+
+
+@pytest.mark.parametrize("mode", ['pynative', 'kbk'])
+def test_concat_binary_cases(mode):
+    """
+    Feature: Ops.
+    Description: test op concat with binary data.
+    Expectation: expect correct result.
+    """
+    if mode == "kbk":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    else:
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+
+    ops_concat_binary_case1()
+    ops_concat_binary_case2()
+    ops_concat_binary_case3()
+    ops_concat_binary_case4()
+    ops_concat_binary_case5()

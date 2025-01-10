@@ -13,5 +13,7 @@ mm_ext:
     dispatch:
         enable: True
         Ascend: MmAscend
+        CPU: None
+        GPU: None
 
 

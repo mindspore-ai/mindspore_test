@@ -36,7 +36,7 @@ class ApplyProximalAdagradTEST(nn.Cell):
         return self.apply_proximal_adagrad(self.var, self.accum, lr, l1, l2, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_apply_proximal_adagrad_op(data_type):

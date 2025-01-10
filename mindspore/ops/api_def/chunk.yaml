@@ -1,14 +1,14 @@
 chunk:
-  - op_yaml: deprecated/chunk_op.yaml
-    py_method: deprecated_tensor_chunk
-    Ascend: py_method
+  - op_yaml: chunk_op.yaml
+    py_method: tensor_chunk
+    Ascend: pyboost
     CPU: py_method
     GPU: py_method
     interface: tensor
 
-  - op_yaml: chunk_op.yaml
-    py_method: tensor_chunk_ext
-    Ascend: pyboost
+  - op_yaml: deprecated/chunk_method.yaml
+    py_method: deprecated_tensor_chunk
+    Ascend: py_method
     CPU: py_method
     GPU: py_method
     interface: tensor

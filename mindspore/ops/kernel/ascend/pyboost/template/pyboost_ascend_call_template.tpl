@@ -10,7 +10,7 @@ ${create_input_address}
 ${inplace_process}
 
 PyBoostUtils::PrepareOpOutputs(device_context_, op->stream_id(), outputs_);
-ProfileMemoryInfo();
+ProfileTrackerTask();
 
 // Async
 PyBoostUtils::DispatchRun(
@@ -29,5 +29,7 @@ std::make_shared<runtime::PyBoostDeviceTask>(
   }
 )
 );
-op->CreateOutputSimpleInfoForView();
+op->CreateOutputSimpleInfo();
+ProfileTrackerInput(${call_args});
+ProfileTrackerOutput(${return_values});
 return ${return_values};

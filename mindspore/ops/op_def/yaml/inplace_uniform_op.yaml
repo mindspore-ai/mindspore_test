@@ -1,0 +1,26 @@
+#operator inplace_uniform
+inplace_uniform:
+    args:
+        input:
+            dtype: tensor
+        from_:
+            dtype: number
+            type_cast: tensor
+        to:
+            dtype: number
+            type_cast: tensor
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: InplaceUniformAscend

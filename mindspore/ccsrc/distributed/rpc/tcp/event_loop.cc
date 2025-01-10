@@ -167,8 +167,9 @@ bool EventLoop::Initialize(const std::string &threadName) {
   }
   (void)sem_init(&sem_id_, 0, 0);
 
-  if (pthread_create(&loop_thread_, nullptr, EvloopRun, reinterpret_cast<void *>(this)) != 0) {
-    MS_LOG(ERROR) << "Failed to call pthread_create";
+  retval = pthread_create(&loop_thread_, nullptr, EvloopRun, reinterpret_cast<void *>(this));
+  if (retval != 0) {
+    MS_LOG(ERROR) << "Failed to call pthread_create, errno: " << retval << ", strerror: " << strerror(retval);
     Finalize();
     return false;
   }
@@ -210,6 +211,7 @@ void EventLoop::Finalize() {
 }
 
 void EventLoop::DeleteEvent(int fd) {
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Try delete fd : " << fd << " in eventloop : " << this << ".";
   auto iter = events_.find(fd);
   if (iter == events_.end()) {
     return;
@@ -219,6 +221,7 @@ void EventLoop::DeleteEvent(int fd) {
   if (eventData != nullptr) {
     delete eventData;
   }
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Delete fd : " << fd << " in eventloop : " << this << ".";
   (void)events_.erase(fd);
 }
 
@@ -305,10 +308,12 @@ void EventLoop::AddEvent(Event *event) {
     return;
   }
   DeleteEvent(event->fd);
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Add fd : " << event->fd << " in eventloop : " << this << ".";
   (void)events_.emplace(event->fd, event);
 }
 
 int EventLoop::DeleteEpollEvent(int fd) {
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Try to delete epoll event fd : " << fd << " in eventloop : " << this << ".";
   Event *tev = nullptr;
   struct epoll_event ev;
   int ret = 0;
@@ -317,8 +322,11 @@ int EventLoop::DeleteEpollEvent(int fd) {
   tev = FindEvent(fd);
   if (tev == nullptr) {
     event_lock_.unlock();
+    MS_VLOG(VL_DISTRIBUTED_FD) << "Delete epoll event fd : " << fd << " in eventloop : " << this
+                               << " failed, not found.";
     return RPC_ERROR;
   }
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Delete epoll event fd : " << fd << " in eventloop : " << this << ".";
   (void)events_.erase(tev->fd);
 
   // Don't delete tev immediately, let's push it into deleted_events_, before next epoll_wait,we will free
@@ -411,6 +419,7 @@ void EventLoop::RemoveDeletedEvents() {
       deleteEv = nullptr;
       ++eventIter;
     }
+    MS_VLOG(VL_DISTRIBUTED_FD) << "Remove delete events, fd : " << fdIter->first << " , event loop : " << this << ".";
     (void)deleted_events_.erase(fdIter++);
   }
   deleted_events_.clear();

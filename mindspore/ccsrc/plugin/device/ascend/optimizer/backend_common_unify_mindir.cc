@@ -23,7 +23,6 @@
 #include "include/common/debug/dump_proto.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/debug/profiler/profiling.h"
-#include "backend/common/pass/dropout_gen_mask_fusion.h"
 #include "backend/common/pass/erase_visit_attr.h"
 #include "plugin/device/ascend/optimizer/ir_fission/cdist_fission.h"
 #include "plugin/device/ascend/optimizer/ir_fission/tensor_scatter_fission.h"
@@ -34,8 +33,8 @@
 #include "plugin/device/ascend/optimizer/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/batchnorm_to_bninfer.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/batchnormgrad_to_bninfergrad.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/histogram_fixed_width_fusion.h"
 #include "plugin/device/ascend/optimizer/mindir/add_depend_for_adamw.h"
+#include "plugin/device/ascend/optimizer/mindir/ascend_mindir_op_adapter.h"
 #include "plugin/device/ascend/optimizer/mindir/renorm_split.h"
 #include "plugin/device/ascend/optimizer/mindir/optimizer_unify_output.h"
 #include "plugin/device/ascend/optimizer/mindir/space_batch_nd_attr_update.h"
@@ -43,17 +42,11 @@
 #include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/mindir/all_to_all_v_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/mindir/neighbor_exchange_v2_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/mindir/quant_dtype_cast_adjust.h"
-#include "plugin/device/ascend/optimizer/mindir/fse_decode_adjust.h"
 #include "plugin/device/ascend/optimizer/mindir/reduce_axis_update.h"
 #include "plugin/device/ascend/optimizer/mindir/clip_by_norm_fission.h"
-#include "plugin/device/ascend/optimizer/mindir/specialized_prepare.h"
-#include "plugin/device/ascend/optimizer/mindir/tensor_array.h"
 #include "plugin/device/ascend/optimizer/mindir/dropout_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/mindir/ascend_mindir_op_adapter.h"
 #include "plugin/device/ascend/optimizer/mindir/sparse_softmax_cross_entropy_with_logits_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/mindir/adam_weight_decay_unify_mindir.h"
-#include "plugin/device/ascend/optimizer/mindir/centralization_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/lamb_fission.h"
 #include "plugin/device/ascend/optimizer/ge/adjust_print_for_ge.h"
 #include "plugin/device/ascend/optimizer/ge/add_attr_to_dump.h"
@@ -64,6 +57,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/rms_norm_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
 #include "plugin/device/ascend/optimizer/ge/avg_pool_grad_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
@@ -75,11 +69,15 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
 #include "utils/phase.h"
 #include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
 
 namespace mindspore {
 namespace opt {
@@ -87,18 +85,15 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   MS_EXCEPTION_IF_NULL(unify_mindir_pm);
   (*unify_mindir_pm)->AddPass(std::make_shared<RenormSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::ReduceAxisUpdate>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<HistogramFixedWidthFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::ClipByNormFission>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::TensorArrayAddFlowCond1>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::TensorArrayAddFlowCond2>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::GeTensorArrayCastIndex>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::TensorArrayPrepare>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::ClipByNormFission>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SpaceToBatchNDAttrUpdate>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchToSpaceNDAttrUpdate>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdamWeightDecayUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddDependForAdamW>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<CdistFission>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<CdistGradFission>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistFission>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistGradFission>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
 
   // Since the SparseSoftmaxCrossEntropyWithLogits operator can only use AICPU and has poor execution performance,
   // it does not take effect for the time being.
@@ -124,76 +119,60 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutGradExtUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutUnifyMindIR1>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutGradUnifyMindIR>());
-
+  // AllToAll & AlltoAllV
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeV2UnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeV2GradUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllToAllUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AlltoAllVUnifyMindIR>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::QuantDTypeCastAdjust>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::FSEDecodeAdjust>());
   // batchnorm
   (*unify_mindir_pm)->AddPass(std::make_shared<BnSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchNormGradUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BnGradSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BatchNormGrad2BNInferGrad>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<BatchNormGradInferFission>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<BatchNormGradInferFission>());
   (*unify_mindir_pm)->AddPass(std::make_shared<BatchNorm2BNInfer>());
-  // just rename primitive name
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::DropoutGenMaskFusion>());
 
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::LambFissionGe>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::LambFissionGe>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdjustPrintForGe>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddAttrToDump>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::GetNextForGE>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnGradSplit>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulReduceScatterFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllGatherMatmulFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::InsertDependForOptShardAllGather>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::CentralizationMindIR>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddAttrToDump>());
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
 }
 
 PassManagerPtr GetBackendFusionGroupPassManager() {
-  auto pm = std::make_shared<graphkernel::GraphKernelPassManager>(std::numeric_limits<size_t>::max(), "fusion_group");
-  pm->Add(std::make_shared<opt::FlashAttentionFusionV1>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::FlashAttentionFusionV2>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::QuantBatchMatmulAllReduceFusion>(), graphkernel::OptLevel_0);
+  auto pm = std::make_shared<PassManager>("unify_mindir_2");
+  pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV1>());
+  pm->AddFusionPass(std::make_shared<opt::FlashAttentionFusionV2>());
+  pm->AddFusionPass(std::make_shared<opt::QuantBatchMatmulAllReduceFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatMulAllReduceAddRmsNormFusion>());
 
 #ifdef ENABLE_INTERNAL_KERNELS
-  pm->Add(std::make_shared<opt::AddLayernormFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::AddLayernormV3Fusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::AddLayernormExtFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::QbmmAddFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::InferenceSwiGLUFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::InferenceMatmulSplitFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::ShapeReshapeFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::ShapeReshapeFusion2>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::AddRmsNormQuantFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::RmsNormQuantFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::AddRmsNormFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::AddCastRmsNormCastFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::MatMulAllReduceFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::SplitConcatFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::MatmulElemBiasaddFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::MatmulElemAddFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::MatmulElemReluFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::MatmulElemGeluFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::QbmmAllReduceAddFusion>(), graphkernel::OptLevel_0);
+  pm->AddFusionPass(std::make_shared<opt::AddLayernormFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AddLayernormV3Fusion>());
+  pm->AddFusionPass(std::make_shared<opt::AddLayernormExtFusion>());
+  pm->AddFusionPass(std::make_shared<opt::QbmmAddFusion>());
+  pm->AddFusionPass(std::make_shared<opt::InferenceSwiGLUFusion>());
+  pm->AddFusionPass(std::make_shared<opt::InferenceMatmulSplitFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AddRmsNormDynamicQuantFusion>());
+  pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AddRmsNormQuantFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastQuantFusion>());
+  pm->AddFusionPass(std::make_shared<opt::RmsNormQuantFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AddRmsNormFusion>());
+  pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
+  pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
+  pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>());
+  pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
+  pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>());
 #endif  // ENABLE_INTERNAL_KERNELS
-
-  auto passes = pm->Passes();
-  std::ostringstream ss;
-  for (size_t i = 0; i < passes.size() - 1; ++i) {
-    ss << passes[i]->name() << ",";
-  }
-  ss << passes.back()->name();
-  MS_LOG(INFO) << "graph kernel passes: " << ss.str() << ".";
-
   return pm;
 }
 
@@ -217,7 +196,6 @@ void AscendUnfoldInputsForSpecialNodes(const KernelGraphPtr &kernel_graph) {
 
   optimizer->AddPassManager(unfold_inputs_pm);
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name =

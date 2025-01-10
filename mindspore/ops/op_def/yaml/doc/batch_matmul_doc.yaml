@@ -6,7 +6,8 @@ batch_mat_mul:
 
         \text{output}[..., :, :] = \text{matrix}(x[..., :, :]) * \text{matrix}(y[..., :, :])
 
-        The rank of both two input tensors must be same and not less than `2`.
+        The rank of the two input tensors must be at least `2`, and the two input tensors must have the same rank
+        if the environment is GPU or CPU.
 
         Args:
             transpose_a (bool): If ``True`` , the last two dimensions of `x` is transposed before multiplication.

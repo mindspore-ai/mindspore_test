@@ -13,3 +13,5 @@ elu_ext:
   dispatch:
     enable: True
     Ascend: EluExtAscend
+    CPU: None
+    GPU: None

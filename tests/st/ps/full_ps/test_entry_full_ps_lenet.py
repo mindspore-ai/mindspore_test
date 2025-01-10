@@ -24,15 +24,18 @@ def test_full_ps_lenet_ascend():
     Expectation: success.
     """
     return_code = os.system(
-        "bash shell_run_test.sh Ascend /home/workspace/mindspore_dataset/mnist 1 1 127.0.0.1 8082"
+        "export GLOG_v=1 && bash shell_run_test.sh Ascend /home/workspace/mindspore_dataset/mnist 1 1 127.0.0.1 8082"
     )
     if return_code != 0:
         os.system(f"echo '\n**************** Worker Log ****************'")
         os.system(f"grep -E 'ERROR|Error|error' ./worker*/worker*.log")
+        os.system(f"cat ./worker*/worker*.log")
         os.system(f"echo '\n**************** Server Log ****************'")
         os.system(f"grep -E 'ERROR|Error|error' ./server*/server*.log")
+        os.system(f"cat ./server*/server*.log")
         os.system(f"echo '\n**************** Scheduler Log ****************'")
         os.system(f"grep -E 'ERROR|Error|error' ./sched/sched.log")
+        os.system(f"cat ./sched/sched.log")
     assert return_code == 0
 
 

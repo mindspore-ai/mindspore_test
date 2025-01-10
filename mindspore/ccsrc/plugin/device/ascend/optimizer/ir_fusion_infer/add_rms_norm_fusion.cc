@@ -28,6 +28,10 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> AddRmsNormFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimAdd->name()};
+  return ret;
+}
 
 const BaseRef AddRmsNormFusion::DefinePattern() const {
   VectorRef add_rms_norm = VectorRef({prim::kPrimRmsNorm, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, eps_});

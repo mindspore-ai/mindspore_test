@@ -178,10 +178,10 @@ void CropAndResizeCpuKernelMod::BilinearV2Resize(T *input_image, float y1, float
 template <typename T>
 bool CropAndResizeCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                              const std::vector<kernel::KernelTensor *> &outputs) {
-  auto *input_image = reinterpret_cast<T *>(inputs[IMAGE]->device_ptr());
-  auto *input_boxes = reinterpret_cast<float *>(inputs[BOXES]->device_ptr());
-  auto *input_box_index = reinterpret_cast<int *>(inputs[BOX_INDEX]->device_ptr());
-  auto *output = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  auto *input_image = GetDeviceAddress<T>(inputs, IMAGE);
+  auto *input_boxes = GetDeviceAddress<float>(inputs, BOXES);
+  auto *input_box_index = GetDeviceAddress<int>(inputs, BOX_INDEX);
+  auto *output = GetDeviceAddress<float>(outputs, kIndex0);
 
   auto task = [this, &input_box_index, &input_boxes, &input_image, &output](size_t start, size_t end) {
     const float HALF = 0.5;

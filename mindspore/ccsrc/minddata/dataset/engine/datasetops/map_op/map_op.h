@@ -151,6 +151,10 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
 
   Status GetNextRowPullMode(TensorRow *const row) override;
 
+  /// Used by independent dataset mode to stop the subprocess
+  /// \return Status The status code returned
+  Status Terminate() override;
+
  private:
   // A helper function to create jobs for workers.
   Status GenerateWorkerJob(const std::unique_ptr<MapWorkerJob> *worker_job, int32_t worker_id);
@@ -228,6 +232,8 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
   // @return - Status
   Status ComputeIsDvpp(const std::shared_ptr<TensorOp> tfunc, TensorRow *i_row, TensorRow *o_row,
                        device::DeviceContext *device_context, size_t stream_id);
+
+  std::mutex device_context_mutex_;
 #endif
 
  protected:

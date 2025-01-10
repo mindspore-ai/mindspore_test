@@ -707,18 +707,19 @@ bool CompFunc(const AnfNodePtr &node1, const AnfNodePtr &node2) {
 }
 
 void InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node, const FuncGraphManagerPtr &manager,
-                  const FuncGraphPtr &root, const std::string &attr_tag) {
+                  const FuncGraphPtr &root, const std::string &attr_tag, const size_t post_node_input_index) {
   MS_EXCEPTION_IF_NULL(prior_node);
   MS_EXCEPTION_IF_NULL(post_node);
   auto post_cnode = post_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(post_cnode);
-  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), post_cnode->input(1), prior_node};
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), post_cnode->input(post_node_input_index),
+                                          prior_node};
   auto depend_node = root->NewCNode(depend_input);
-  depend_node->set_abstract(post_cnode->input(1)->abstract());
+  depend_node->set_abstract(post_cnode->input(post_node_input_index)->abstract());
   if (!attr_tag.empty()) {
     depend_node->AddAttr(attr_tag, MakeValue<bool>(true));
   }
-  manager->SetEdge(post_node, 1, depend_node);
+  manager->SetEdge(post_node, post_node_input_index, depend_node);
 }
 
 void ReorderForForward(const std::vector<AnfNodePtr> &forward_start, const std::vector<AnfNodePtr> &forward_end,

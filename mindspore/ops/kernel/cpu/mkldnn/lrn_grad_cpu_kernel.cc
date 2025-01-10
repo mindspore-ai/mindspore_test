@@ -92,10 +92,10 @@ bool LrnGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
   constexpr size_t kOutputsNum = 1;
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputsNum, kernel_name_);
-  auto dout = reinterpret_cast<T *>(inputs.at(kIndex0)->device_ptr());
-  auto input = reinterpret_cast<T *>(inputs.at(kIndex1)->device_ptr());
-  auto out = reinterpret_cast<T *>(inputs.at(kIndex2)->device_ptr());
-  auto grad_x = reinterpret_cast<T *>(outputs.at(kIndex0)->device_ptr());
+  auto dout = GetDeviceAddress<T>(inputs, kIndex0);
+  auto input = GetDeviceAddress<T>(inputs, kIndex1);
+  auto out = GetDeviceAddress<T>(inputs, kIndex2);
+  auto grad_x = GetDeviceAddress<T>(outputs, kIndex0);
   SetArgumentHandle(DNNL_ARG_SRC, input);
   SetArgumentHandle(DNNL_ARG_DST, out);
   SetArgumentHandle(DNNL_ARG_DIFF_DST, dout);

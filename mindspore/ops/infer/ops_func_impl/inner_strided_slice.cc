@@ -48,7 +48,6 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -195,7 +194,6 @@ ShapeVector ComputeInferShape(const ShapeVector &begin_v, const ShapeVector &end
       start = begin_v[j];
       finish = end_v[j];
       strides = strides_v[j];
-
     } else {
       start = 0;
       finish = x_shape[i];

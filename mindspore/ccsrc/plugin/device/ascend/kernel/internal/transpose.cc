@@ -17,33 +17,20 @@
 #include "plugin/device/ascend/kernel/internal/transpose.h"
 
 #include <memory>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalTranspose::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                      const std::vector<KernelTensor *> &outputs) {
-  internal::OpParamPtr param_ptr = std::make_shared<internal::OpParam>();
-  internal::TransposeParam transpose_param;
-
-  auto perm_tensor = inputs.at(kIndex1);  // input 1 : perm
-  if (perm_tensor->dtype_id() == TypeId::kNumberTypeInt64) {
-    auto perm_list = perm_tensor->GetValue<std::vector<int64_t>>().value();
-    for (auto axis : perm_list) {
-      transpose_param.perm.emplace_back(axis);
-    }
-  } else {
-    MS_LOG(EXCEPTION) << "InternalTranspose input[1] dtype is not kNumberTypeInt64";
-  }
-
-  param_ptr->specificParam = transpose_param;
-  param_ptr->opId = internal::OpId::Transpose;
-  return param_ptr;
+internal::InternalOpPtr InternalTranspose::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                        const internal::OutputsImmutableInfoList &outputs_ii,
+                                                        const std::vector<KernelTensor *> &ms_inputs,
+                                                        const std::vector<KernelTensor *> &ms_outputs) {
+  internal::TransposeParam param;
+  param.axes = ms_inputs[1]->GetValueWithCheck<std::vector<int64_t>>();
+  return internal::CreateTransposeOp(inputs_ii, outputs_ii, param, internal::kInternalTransposeOpName);
 }
 
-MS_INTERNAL_KERNEL_FACTORY_REG(Transpose, InternalTranspose);
+MS_INTERNAL_KERNEL_FACTORY_REG(Transpose, internal::kInternalTransposeOpName, InternalTranspose);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(Transpose, INPUT_NUM_1, INDEX_0);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(Transpose, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel

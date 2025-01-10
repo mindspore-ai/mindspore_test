@@ -22,12 +22,11 @@
 
 #include "kernel/kernel.h"
 #include "ir/value.h"
-#include "acme/include/acme.h"
-//#include "acme/tiling_mem_mgr.h"
+#include "include/internal.h"
 #include "include/common/factory/ms_factory.h"
 
-#include "plugin/device/ascend/kernel/internal/acme/acme_tiling_cache.h"
-#include "plugin/device/ascend/kernel/internal/acme/acme_spinlock.h"
+#include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
+#include "plugin/device/ascend/kernel/internal/internal_spinlock.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -57,29 +56,29 @@ class AcmeKernelInfo {
   virtual void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) = 0;
 
  protected:
-  virtual acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                       const acme::OutputsImmutableInfoList &outputs) {
+  virtual internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs) {
     return nullptr;
   }
 
   std::string kernel_name_;
-  acme::AcmeOpPtr acme_op_{nullptr};
-  inline static std::unordered_map<uint64_t, acme::AcmeOpPtr> hash_map_;
+  internal::InternalOpPtr acme_op_{nullptr};
+  inline static std::unordered_map<uint64_t, internal::InternalOpPtr> hash_map_;
   // resize by create
-  acme::ShapeInfoList acme_inputs_shape_;
-  acme::ShapeInfoList acme_outputs_shape_;
+  internal::ShapeInfoList acme_inputs_shape_;
+  internal::ShapeInfoList acme_outputs_shape_;
 
-  acme::InputsAddrList acme_inputs_addr_;
-  acme::OutputsAddrList acme_outputs_addr_;
-  acme::WsAddrList acme_wss_addr_;
+  internal::InputsAddrList acme_inputs_addr_;
+  internal::OutputsAddrList acme_outputs_addr_;
+  internal::WsAddrList acme_wss_addr_;
   std::vector<size_t> workspace_size_list_;
 
  private:
-  void UpdateArgImmutableInfo(acme::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor);
-  void UpdateArgImmutableInfo(std::vector<acme::ArgImmutableInfo> &arginfos,
+  void UpdateArgImmutableInfo(internal::ArgImmutableInfo *arginfo, const BaseTensorPtr &tensor);
+  void UpdateArgImmutableInfo(std::vector<internal::ArgImmutableInfo> &arginfos,
                               const std::vector<BaseTensorPtr> &tensorlist);
-  void TransAcmeShapes(acme::ShapeInfoList &shapelist, const std::vector<BaseTensorPtr> &tensorlist);
-  void UpdateAddr(std::vector<acme::RawDeviceAddr> &addrlist,
+  void TransAcmeShapes(internal::ShapeInfoList &shapelist, const std::vector<BaseTensorPtr> &tensorlist);
+  void UpdateAddr(std::vector<internal::RawDeviceAddr> &addrlist,
                   const std::vector<BaseTensorPtr> &tensorlist);
   void MallocWorkspace(const device::DeviceContext *device_context, size_t stream_id);
   void FreeWorkspace(const device::DeviceContext *device_context);

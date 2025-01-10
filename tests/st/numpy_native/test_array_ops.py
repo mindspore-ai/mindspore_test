@@ -17,6 +17,7 @@
 import pytest
 import numpy as onp
 
+import mindspore.runtime as rt
 import mindspore.numpy as mnp
 from mindspore import context, Tensor, int32
 from mindspore.nn import Cell
@@ -1219,7 +1220,7 @@ def test_tensor_reshape():
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 def test_tensor_squeeze():
-    context.set_context(pynative_synchronize=True)
+    rt.launch_blocking()
     lst = [[[1.0], [2.0], [3.0]]]
     tensor_list = to_tensor(lst)
     assert tensor_list.squeeze().shape == (3,)

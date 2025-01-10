@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace opt {
+enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
 class MC2FusionBase : public PatternProcessPass {
  public:
   explicit MC2FusionBase(const std::string &name = "", bool multigraph = true) : PatternProcessPass(name, multigraph) {}
@@ -48,6 +49,7 @@ class MatmulReduceScatterFusion : public MC2FusionBase {
   const VectorRef DefineFusionPattern() const override;
   CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                              const EquivPtr &equiv) const override;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class AllGatherMatmulFusion : public MC2FusionBase {
@@ -60,6 +62,7 @@ class AllGatherMatmulFusion : public MC2FusionBase {
   const VectorRef DefineFusionPattern() const override;
   CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                              const EquivPtr &equiv) const override;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class QuantBatchMatmulAllReduceFusion : public MC2FusionBase {
@@ -73,6 +76,7 @@ class QuantBatchMatmulAllReduceFusion : public MC2FusionBase {
   const VectorRef DefineFusionPattern() const override;
   CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                              const EquivPtr &equiv) const override;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

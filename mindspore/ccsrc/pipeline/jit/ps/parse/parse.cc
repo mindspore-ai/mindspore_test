@@ -583,6 +583,9 @@ FuncGraphPtr Parser::ParseFuncGraph() {
   for (auto &func_block_item : func_block_list_) {
     MS_EXCEPTION_IF_NULL(func_block_item);
     MS_EXCEPTION_IF_NULL(func_block_item->func_graph());
+
+    func_block_item->ReplaceNodeWithItsHook();
+
     if (!func_block_item->isolated_nodes().empty()) {
       // Find unused variables.
       func_block_item->FindIsolatedNodes();
@@ -1126,7 +1129,8 @@ FunctionBlockPtr Parser::ParseExpr(const FunctionBlockPtr &block, const py::obje
           block->AddIsolatedNode(call_node);
         }
       } else {
-        WriteAssignVars(block, target_node, call_node);
+        bool need_reorder = py::cast<bool>(expand_info[3]);
+        WriteAssignVars(block, target_node, call_node, need_reorder);
       }
     }
   }
@@ -3848,8 +3852,8 @@ void Parser::HandleAssignStarred(const FunctionBlockPtr &block, const py::object
   block->WriteVariable(name_id, assigned_node);
 }
 
-void Parser::HandleAssignName(const FunctionBlockPtr &block, const py::object &target,
-                              const AnfNodePtr &assigned_node) const {
+void Parser::HandleAssignName(const FunctionBlockPtr &block, const py::object &target, const AnfNodePtr &assigned_node,
+                              bool need_reorder) const {
   MS_EXCEPTION_IF_NULL(block);
   MS_EXCEPTION_IF_NULL(assigned_node);
   py::str name = python_adapter::GetPyObjAttr(target, "id");
@@ -3868,7 +3872,7 @@ void Parser::HandleAssignName(const FunctionBlockPtr &block, const py::object &t
     }
   }
   MS_LOG(DEBUG) << "Assign name: `" << name_id << "` to node: " << assigned_node->DebugString();
-  block->WriteVariable(name_id, assigned_node);
+  block->WriteVariable(name_id, assigned_node, need_reorder);
 }
 
 void Parser::HandleAssignTupleWithStarredExpression(const FunctionBlockPtr &block, const py::object &target,
@@ -4161,13 +4165,13 @@ void Parser::HandleAssignSubscript(const FunctionBlockPtr &block, const py::obje
 }
 
 void Parser::WriteAssignVars(const FunctionBlockPtr &block, const py::object &target_object,
-                             const AnfNodePtr &value_node) {
+                             const AnfNodePtr &value_node, bool need_reorder) {
   MS_EXCEPTION_IF_NULL(value_node);
   auto ast_type = AstSubType(py::cast<int32_t>(ast_->CallParseModFunction(PYTHON_PARSE_GET_AST_TYPE, target_object)));
   MS_LOG(DEBUG) << "target_object: " << target_object << ", value_node: " << value_node->DebugString()
                 << ", ast_type: " << ast_type;
   if (ast_type == AST_SUB_TYPE_NAME) {
-    HandleAssignName(block, target_object, value_node);
+    HandleAssignName(block, target_object, value_node, need_reorder);
   } else if (ast_type == AST_SUB_TYPE_TUPLE || ast_type == AST_SUB_TYPE_LIST) {
     HandleAssignTupleOrList(block, target_object, value_node);
   } else if (ast_type == AST_SUB_TYPE_SUBSCRIPT) {

@@ -15,12 +15,11 @@
 
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
 
 from mindspore import ops
 import mindspore as ms
 from tests.mark_utils import arg_mark
-
+from tests.st.utils import test_utils
 
 @test_utils.run_with_cell
 def reduce_prod_forward_func(x):
@@ -65,7 +64,6 @@ def test_reduce_prod_vmap(mode):
     Description: test reduce_prod op vmap.
     Expectation: expect correct result.
     """
-    ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
     ms.context.set_context(mode=mode)
     in_axes = -1
     x = ms.Tensor(np.random.uniform(low=-1, high=1, size=(4, 3, 2, 2)).astype(np.float32))

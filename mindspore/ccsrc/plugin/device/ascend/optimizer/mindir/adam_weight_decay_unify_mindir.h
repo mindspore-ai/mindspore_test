@@ -42,6 +42,7 @@ class AdamWeightDecayUnifyMindIR : public PatternProcessPass {
   const AnfNodePtr CreateAdamApplyOneWithDecayAssign(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                      const AnfNodePtrList &input_list,
                                                      AnfNodePtrList *new_node_inputs) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

@@ -111,7 +111,7 @@ class ME_EXPORT PrimitivePy : public Primitive {
   std::vector<Signature> signatures_;
   std::vector<PrimitivePyWeakPtr> bprop_cut_prims_;
   HookType hook_type_{HookType::kUnknown};
-  py::function hook_fn_{py::none()};
+  py::function hook_fn_;
   // If a cell registers a backward hook, but the inputs of the cell does not calculate the derivative, and the
   // parameters in the cell need to calculate the derivative, then the hook function will not be executed
   static mindspore::OrderedMap<std::string, py::function> unpair_backward_hook_grad_;
@@ -125,7 +125,7 @@ class PrimitivePyAdapter {
   ~PrimitivePyAdapter() {
     // cppcheck-suppress unreadVariable
     py::gil_scoped_acquire acquire_gil;
-    hook_fn_ = py::none();
+    hook_fn_ = py::object();
   }
   const mindspore::HashMap<std::string, ValuePtr> &attrs() const { return attrs_; }
   void AddPyAttr(const py::str &name, const py::object &obj);
@@ -149,7 +149,7 @@ class PrimitivePyAdapter {
     ~PrimitiveUserData() {
       // cppcheck-suppress unreadVariable
       py::gil_scoped_acquire acquire_gil;
-      obj = py::none();
+      obj = py::object();
     }
   };
 
@@ -181,7 +181,7 @@ class PrimitivePyAdapter {
   std::vector<size_t> const_input_indexes_;
   std::vector<Signature> signatures_;
   HookType hook_type_{HookType::kUnknown};
-  py::function hook_fn_{py::none()};
+  py::function hook_fn_;
   UserData user_data_;
 };
 

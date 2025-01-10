@@ -13,7 +13,6 @@ convolution_str_grad:
     stride:
       dtype: tuple[int]
       default: 1
-      arg_handler: to_strides
     padding:
       dtype: int
       default: "'valid'"
@@ -21,14 +20,12 @@ convolution_str_grad:
     dilation:
       dtype: tuple[int]
       default: 1
-      arg_handler: to_dilations
     transposed:
       dtype: bool
       default: False
     output_padding:
       dtype: tuple[int]
       default: 0
-      arg_handler: to_output_padding
     groups:
       dtype: int
       default: 1

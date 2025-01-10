@@ -899,6 +899,20 @@ int32_t AddCommOpFusionType(const CNodePtr &comm_node, const AnfNodePtr &param_n
       prim->name() == ALL_GATHER) {
     prim->set_attr(RECOMPUTE, MakeValue(true));
     prim->set_instance_name(PARALLEL_OPTIMIZER_ALLGATHER);
+    auto node_users = comm_node->func_graph()->manager()->node_users();
+    auto ag_users = node_users.at(comm_node);
+    for (const auto &node_pair : ag_users) {
+      if (IsPrimitiveCNode(node_pair.first, prim::kPrimLoad)) {
+        auto load_prim = GetCNodePrimitive(node_pair.first->cast<CNodePtr>());
+        load_prim->set_attr(RECOMPUTE, MakeValue(true));
+        load_prim->set_attr(kAttrParallelOptLoad, MakeValue(true));
+      }
+    }
+    if (IsPrimitiveCNode(comm_node->input(kIndex1), prim::kPrimCast)) {
+      auto cast_cnode = comm_node->input(kIndex1)->cast<CNodePtr>();
+      auto cast_prim = GetCNodePrimitive(cast_cnode);
+      cast_prim->set_attr(RECOMPUTE, MakeValue(true));
+    }
   }
   MS_LOG(INFO) << "Set comm fusion:" << param->param_info()->name() << "'s fusion type is " << fusion_type;
   return fusion_type;
@@ -2308,7 +2322,7 @@ Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
 CostPtrList OperatorInfo::GetCostByStrategyPtr(const StrategyPtr &strategy) {
   auto target = std::find_if(
     strategy_cost_.begin(), strategy_cost_.end(),
-    [&](const std::shared_ptr<StrategyWithCost> &stra_cost) { return stra_cost->strategy_ptr == strategy; });
+    [&](const std::shared_ptr<StrategyWithCost> &stra_cost) { return stra_cost->strategy_ptr->IsEqual(strategy); });
   if (target == strategy_cost_.end()) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "There is no StrategyWithCost with a strategy";
   }

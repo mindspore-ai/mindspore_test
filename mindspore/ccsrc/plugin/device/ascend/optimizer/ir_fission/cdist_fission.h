@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FISSION_CDIST_FISSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FISSION_CDIST_FISSION_H_
 
+#include <vector>
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
 
@@ -27,6 +28,9 @@ class CdistFission : public PatternProcessPass {
   ~CdistFission() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class CdistGradFission : public PatternProcessPass {
@@ -35,6 +39,9 @@ class CdistGradFission : public PatternProcessPass {
   ~CdistGradFission() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

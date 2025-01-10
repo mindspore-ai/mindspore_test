@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 def softmax_(x, axis):
@@ -53,7 +54,7 @@ def tensor_softmax_forward_func(x, axis=-1):
     return x.softmax(axis)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_softmax_static_shape(mode):
@@ -142,9 +143,7 @@ def test_softmax_dynamic():
     Description: test op softmax dynamic shape
     Expectation: expect correct result.
     """
-    context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)  # multi-threads have none-initialized bug now.
     input_case1 = Tensor(np.random.randn(8, 30, 3), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(9, 4), dtype=ms.float32)
     TEST_OP(

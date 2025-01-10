@@ -30,7 +30,7 @@ from mindspore.common.seed import get_seed
 from mindspore._c_expression import GraphExecutor_
 from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shape_by_layout
 
-SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom"]
+SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom", "Index"]
 
 
 def _get_parallel_mode():
@@ -127,7 +127,6 @@ class ParallelParamInitProfCtx:
 
 def _slice_parameter(parameter, phase, layout):
     """Slice python parameter obj according to the layout."""
-    # graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
     if getattr(parameter, "init_param", False):
         if layout is None:
             parameter.sliced = True
@@ -136,6 +135,9 @@ def _slice_parameter(parameter, phase, layout):
             rank = get_rank()
             new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
             parameter.shape = new_tensor_shape
+            if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
+                parameter.init_mode.shape = new_tensor_shape
+            parameter.sliced = True
     else:
         graph_executor = GraphExecutor_.get_instance()
         new_param = parameter.init_data(layout, set_sliced=True)

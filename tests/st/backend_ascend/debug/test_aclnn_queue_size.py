@@ -40,7 +40,8 @@ def test_clone_pyboost():
     x = mindspore.Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
     context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
     net = Net()
-    net(x)
+    for _ in range(5):
+        net(x)
 
 def test_clone_kbyk():
     """

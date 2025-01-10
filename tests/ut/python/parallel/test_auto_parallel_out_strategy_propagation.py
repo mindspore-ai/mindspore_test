@@ -21,8 +21,8 @@ from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Cell
 from mindspore.ops import operations as P
 
-from mindspore.parallel._auto_parallel_context import _set_ops_strategy_json_config
-
+from mindspore.parallel import set_op_strategy_config
+import pytest
 
 def test_out_strategy_propagate1():
     """
@@ -271,8 +271,8 @@ def test_out_strategy_propagate6():
 def test_sharding_strategy_save_and_load1():
     """
     Feature: test strategy can be saved and loaded
-    Description: the sharding strategy would be saved or loaded according to the _set_ops_strategy_json_config
-    Expectation: when the type is set to SAVE, the config json file requires to be generated; when the type is set to
+    Description: the sharding strategy would be saved or loaded according to the set_op_strategy_config
+    Expectation: when the mode is set to SAVE, the config json file requires to be generated; when the type is set to
     LOAD, the strategy requires to be loaded the same as the SAVEd strategy .
     """
 
@@ -329,34 +329,34 @@ def test_sharding_strategy_save_and_load1():
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    _set_ops_strategy_json_config(type="SAVE", path="./tmp/strategy.json", mode="all")
+    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
 
     _in_strategy1 = ((_dp1, _mp1), (1, _mp1))
     _in_strategy2 = ((_dp2, _mp2), (1, _mp2))
-    if os.path.exists("./tmp/strategy.json"):
-        os.remove("./tmp/strategy.json")
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2)
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2)
-    assert os.path.exists("./tmp/strategy.json")
+    assert os.path.exists("/tmp/strategy.json")
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    _set_ops_strategy_json_config(type="LOAD", path="./tmp/strategy.json", mode="all")
+    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
     _in_strategy1 = None
     _in_strategy2 = None
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2)
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
-    os.remove("./tmp/strategy.json")
+    os.remove("/tmp/strategy.json")
 
 
 def test_sharding_strategy_save_and_load2():
     """
     Feature: test strategy can be saved and loaded when ops has out_strategy
-    Description: the sharding strategy would be saved or loaded according to the _set_ops_strategy_json_config
-    Expectation: when the type is set to SAVE, the config json file requires to be generated; when the type is set to
+    Description: the sharding strategy would be saved or loaded according to the set_op_strategy_config
+    Expectation: when the mode is set to SAVE, the config json file requires to be generated; when the type is set to
     LOAD, the strategy requires to be loaded the same as the SAVEd strategy .
     """
 
@@ -414,23 +414,23 @@ def test_sharding_strategy_save_and_load2():
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
     ms.set_algo_parameters(fully_use_devices=True)
-    _set_ops_strategy_json_config(type="SAVE", path="./tmp/strategy.json", mode="all")
+    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
 
     _in_strategy1 = ((_dp1, _mp1), (1, _mp1))
     _out_strategy1 = ((_dp1 * _mp1, 1),)
     _in_strategy2 = ((_dp2, _mp2), (1, _mp2))
     _out_strategy2 = ((_dp2 * _mp2, 1),)
-    if os.path.exists("./tmp/strategy.json"):
-        os.remove("./tmp/strategy.json")
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2, _out_strategy1, _out_strategy2)
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2, _out_strategy1, _out_strategy2)
-    assert os.path.exists("./tmp/strategy.json")
+    assert os.path.exists("/tmp/strategy.json")
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
-    _set_ops_strategy_json_config(type="LOAD", path="./tmp/strategy.json", mode="all")
+    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
     _in_strategy1 = None
     _out_strategy1 = None
     _in_strategy2 = None
@@ -438,4 +438,25 @@ def test_sharding_strategy_save_and_load2():
     _strategies = compile_and_get_strategies(_in_strategy1, _in_strategy2, _out_strategy1, _out_strategy2)
     assert_sharding_strategy(_dp1, _mp1, _dp2, _mp2, _strategies)
     ms.reset_auto_parallel_context()
-    os.remove("./tmp/strategy.json")
+    os.remove("/tmp/strategy.json")
+
+def test_sharding_strategy_save_and_load3():
+    """
+    Feature: test invalid setting for set_op_strategy_config
+    Description: the sharding strategy would be saved or loaded according to the set_op_strategy_config
+    Expectation: the interface mode only support 'SAVE' / 'LOAD', the path only support absolute path,
+    and must be json.
+    """
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
+                                      search_mode="sharding_propagation")
+    ms.set_algo_parameters(fully_use_devices=True)
+    with pytest.raises(KeyError):
+        set_op_strategy_config(mode="SAVE", path="./tmp/strategy.json")
+    with pytest.raises(KeyError):
+        set_op_strategy_config(mode="LOAD", path="./tmp/strategy.json")
+    with pytest.raises(KeyError):
+        set_op_strategy_config(mode="SAVE", path="/tmp/strategy.yaml")
+    with pytest.raises(KeyError):
+        set_op_strategy_config(mode="LOAD", path="/tmp/strategy.yaml")
+    with pytest.raises(KeyError):
+        set_op_strategy_config(mode="READ", path="/tmp/strategy.json")

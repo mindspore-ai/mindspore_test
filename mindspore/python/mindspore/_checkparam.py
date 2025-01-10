@@ -1373,11 +1373,6 @@ def args_type_check(*type_args, **type_kwargs):
 
 def check_hook_fn(hook_type, hook_fn):
     """Check hook fn"""
-    if context.get_context("mode") != context.PYNATIVE_MODE:
-        logger.warning(f"'{hook_type}' function is only supported in pynative mode, you can use "
-                       f"context.set_context to set pynative mode.")
-        return False
-
     if not isinstance(hook_fn, (FunctionType, MethodType)):
         raise TypeError(f"When using 'hook_type(hook_fn)', the type of 'hook_fn' must be python "
                         f"function, but got {type(hook_fn)}.")

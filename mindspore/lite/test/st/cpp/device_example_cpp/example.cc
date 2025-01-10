@@ -76,8 +76,27 @@ int SetHostData(std::vector<mindspore::MSTensor> tensors, const std::vector<uint
   return 0;
 }
 
+int GetDeviceId() {
+#ifdef ENABLE_ASCEND
+  uint32_t device_id = 0;
+  auto device_id_env = std::getenv("ASCEND_DEVICE_ID");
+  if (device_id_env != nullptr) {
+    try {
+      device_id = static_cast<uint32_t>(std::stoul(device_id_env));
+    } catch (std::invalid_argument &e) {
+      std::cerr << "Invalid device id env:" << device_id_env << ". Set default device id 0.";
+    }
+    std::cerr << "Ascend device_id = " << device_id;
+  }
+#else
+  uint32_t = device_id = 0;
+#endif
+  return device_id;
+}
+
 int SetDeviceData(std::vector<mindspore::MSTensor> tensors, const std::vector<uint8_t *> &host_data_buffer,
-                  std::vector<void *> *device_buffers) {
+                  std::vector<mindspore::MSTensor *> *device_buffers) {
+  uint32_t device_id = GetDeviceId();
   for (size_t i = 0; i < tensors.size(); i++) {
     auto &tensor = tensors[i];
     auto host_data = host_data_buffer[i];
@@ -86,18 +105,11 @@ int SetDeviceData(std::vector<mindspore::MSTensor> tensors, const std::vector<ui
       std::cerr << "Data size cannot be 0, tensor shape: " << ShapeToString(tensor.Shape()) << std::endl;
       return -1;
     }
-    auto device_data = MallocDeviceMemory(data_size);
-    if (device_data == nullptr) {
-      std::cerr << "Failed to alloc device data, data size " << data_size << std::endl;
-      return -1;
-    }
+    auto device_data = mindspore::MSTensor::CreateTensor(tensor.Name(), tensor.DataType(), tensor.Shape(), host_data,
+                                                         data_size, "ascend", device_id);
     device_buffers->push_back(device_data);
-    if (CopyMemoryHost2Device(device_data, data_size, host_data, data_size) != 0) {
-      std::cerr << "Failed to copy data to device, data size " << data_size << std::endl;
-      return -1;
-    }
-    tensor.SetDeviceData(device_data);
-    tensor.SetData(nullptr, false);
+    tensors[i] = *device_data;
+    tensors[i].SetData(nullptr, false);
   }
   return 0;
 }
@@ -118,7 +130,8 @@ int SetOutputHostData(std::vector<mindspore::MSTensor> tensors, std::vector<uint
   return 0;
 }
 
-int SetOutputDeviceData(std::vector<mindspore::MSTensor> tensors, std::vector<void *> *device_buffers) {
+int SetOutputDeviceData(std::vector<mindspore::MSTensor> tensors, std::vector<mindspore::MSTensor *> *device_buffers) {
+  uint32_t device_id = GetDeviceId();
   for (size_t i = 0; i < tensors.size(); i++) {
     auto &tensor = tensors[i];
     auto data_size = tensor.DataSize();
@@ -126,13 +139,10 @@ int SetOutputDeviceData(std::vector<mindspore::MSTensor> tensors, std::vector<vo
       std::cerr << "Data size cannot be 0, tensor shape: " << ShapeToString(tensor.Shape()) << std::endl;
       return -1;
     }
-    auto device_data = MallocDeviceMemory(data_size);
-    if (device_data == nullptr) {
-      std::cerr << "Failed to alloc device data, data size " << data_size << std::endl;
-      return -1;
-    }
-    device_buffers->push_back(device_data);
-    tensor.SetDeviceData(device_data);
+    char host_data[data_size] = {0};
+    auto device_data = mindspore::MSTensor::CreateTensor(tensor.Name(), tensor.DataType(), tensor.Shape(), host_data,
+                                                         data_size, "ascend", device_id);
+    tensors[i] = *device_data;
     tensor.SetData(nullptr, false);
   }
   return 0;
@@ -279,13 +289,6 @@ int TestHostDeviceInput(mindspore::Model *model, uint32_t batch_size) {
     }
   });
 
-  std::vector<void *> device_buffers;
-  ResourceGuard device_rel([&device_buffers]() {
-    for (auto &item : device_buffers) {
-      FreeDeviceMemory(item);
-    }
-  });
-
   auto ret = GenerateRandomInputData(inputs, &host_buffers);
   if (ret != 0) {
     std::cerr << "Generate Random Input Data failed." << std::endl;
@@ -302,6 +305,12 @@ int TestHostDeviceInput(mindspore::Model *model, uint32_t batch_size) {
   g_set_data = false;  // compare data next time
   // Model Predict, input device memory
   outputs.clear();
+  std::vector<mindspore::MSTensor *> device_buffers;
+  ResourceGuard device_rel([&device_buffers]() {
+    for (auto &item : device_buffers) {
+      delete item;
+    }
+  });
   SetDeviceData(inputs, host_buffers, &device_buffers);
   if (Predict(model, inputs, &outputs) != 0) {
     return -1;
@@ -332,13 +341,6 @@ int TestHostDeviceOutput(mindspore::Model *model, uint32_t batch_size) {
     }
   });
 
-  std::vector<void *> device_buffers;
-  ResourceGuard device_rel([&device_buffers]() {
-    for (auto &item : device_buffers) {
-      FreeDeviceMemory(item);
-    }
-  });
-
   auto ret = GenerateRandomInputData(inputs, &host_buffers);
   if (ret != 0) {
     std::cerr << "Generate Random Input Data failed." << std::endl;
@@ -364,6 +366,12 @@ int TestHostDeviceOutput(mindspore::Model *model, uint32_t batch_size) {
     return -1;
   }
   g_set_data = false;  // compare data next time
+  std::vector<mindspore::MSTensor *> device_buffers;
+  ResourceGuard device_rel([&device_buffers]() {
+    for (auto &item : device_buffers) {
+      delete item;
+    }
+  });
   // Model Predict, input device memory
   if (SetDeviceData(inputs, host_buffers, &device_buffers) != 0) {
     std::cerr << "Failed to set input device data" << std::endl;
@@ -373,10 +381,10 @@ int TestHostDeviceOutput(mindspore::Model *model, uint32_t batch_size) {
     return -1;
   }
   // ---------------------- output device data
-  std::vector<void *> output_device_buffers;
+  std::vector<mindspore::MSTensor *> output_device_buffers;
   ResourceGuard output_device_rel([&output_device_buffers]() {
     for (auto &item : output_device_buffers) {
-      FreeDeviceMemory(item);
+      delete item;
     }
   });
   if (SetOutputDeviceData(outputs, &output_device_buffers) != 0) {
@@ -410,6 +418,7 @@ int QuickStart(int argc, const char **argv) {
     std::cerr << "Model path " << model_path << " is invalid.";
     return -1;
   }
+  std::cerr << "model path:" << model_path << std::endl;
   // Create and init context, add CPU device info
   auto context = std::make_shared<mindspore::Context>();
   if (context == nullptr) {
@@ -419,11 +428,22 @@ int QuickStart(int argc, const char **argv) {
   auto &device_list = context->MutableDeviceInfo();
 
 #ifdef ENABLE_ASCEND
+  uint32_t device_id = 0;
   auto device_info = std::make_shared<mindspore::AscendDeviceInfo>();
+  auto device_id_env = std::getenv("ASCEND_DEVICE_ID");
+  if (device_id_env != nullptr) {
+    try {
+      device_id = static_cast<uint32_t>(std::stoul(device_id_env));
+    } catch (std::invalid_argument &e) {
+      std::cerr << "Invalid device id env:" << device_id_env << ". Set default device id 0.";
+    }
+    std::cerr << "Ascend device_id = " << device_id << std::endl;
+  }
+  device_info->SetDeviceID(device_id);
 #else
   auto device_info = std::make_shared<mindspore::GPUDeviceInfo>();
-#endif
   device_info->SetDeviceID(0);
+#endif
   if (device_info == nullptr) {
     std::cerr << "New CPUDeviceInfo failed." << std::endl;
     return -1;
@@ -439,6 +459,10 @@ int QuickStart(int argc, const char **argv) {
   }
   TestHostDeviceInput(&model, 1);
   TestHostDeviceOutput(&model, 1);
+  mindspore::Status finalize_ret = model.Finalize();
+  if (!finalize_ret == mindspore::kSuccess) {
+    std::cerr << "finalize executed success.";
+  }
   return 0;
 }
 

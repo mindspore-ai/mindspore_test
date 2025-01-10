@@ -87,7 +87,7 @@ bool TruncatedNormalCPUKernelMod::Launch(const std::vector<KernelTensor *> &inpu
 template <typename T1, typename T2, typename T3>
 bool TruncatedNormalCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
-  auto input = reinterpret_cast<T1 *>(inputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T1>(inputs, kIndex0);
   size_t input_elem_num = inputs[0]->size() / sizeof(T1);
   for (size_t i = 0; i < input_elem_num; i++) {
     if (input[i] <= 0) {
@@ -95,7 +95,7 @@ bool TruncatedNormalCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *>
     }
   }
 
-  auto output = reinterpret_cast<T2 *>(outputs[0]->device_ptr());
+  auto output = GetDeviceAddress<T2>(outputs, kIndex0);
   size_t output_elem_num = outputs[0]->size() / sizeof(T2);
 
   std::normal_distribution<double> dis(0, 1);

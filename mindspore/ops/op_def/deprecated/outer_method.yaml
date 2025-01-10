@@ -1,0 +1,12 @@
+#deprecated outer
+outer:
+  args:
+    input:
+      dtype: tensor
+    vec2:
+      dtype: tensor
+  args_signature:
+    dtype_group: (input, vec2)
+  returns:
+    output:
+      dtype: tensor

@@ -2264,7 +2264,7 @@ EvalResultPtr GetEvaluatedValueForAttrOrMethodNotInMap(const AnalysisEnginePtr &
   const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() == kLax);
   if (!allow_fallback_runtime) {
     MS_EXCEPTION(AttributeError) << "In JIT strict mode, cannot get attributes " << item_name << " or the "
-                                 << data_type->ToString() << " object has no attribute: " << item_name
+                                 << data_type->ToString() << " object has no attribute: '" << item_name
                                  << "'. You can use os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2' "
                                  << "to enable the JIT lax mode to support the current syntax.\n\n"
                                  << trace::GetDebugInfoStr(out_conf->node()->debug_info());
@@ -2732,6 +2732,24 @@ void AddLabelsToPrimitiveFunction(const PrimitivePtr &prim_func) {
 }
 }  // namespace
 
+bool IsMonad(const AnfNodePtr &input) {
+  return HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) || IsValueNode<Monad>(input));
+}
+
+void GetKeywordArgsMap(const AbstractBasePtr &input_abs, const std::vector<ops::OpInputArg> &op_args,
+                       const AnfNodePtr &input, const FuncGraphPtr &graph, std::map<std::string, AnfNodePtr> *key_map) {
+  auto input_kwarg_abs = input_abs->cast<AbstractKeywordArgPtr>();
+  const auto &key = input_kwarg_abs->get_key();
+  bool is_key_valid = std::any_of(op_args.begin(), op_args.end(),
+                                  [&key](const ops::OpInputArg &op_arg) { return key == op_arg.arg_name_; });
+  if (is_key_valid) {
+    const auto &kwarg_value = graph->NewCNode({NewValueNode(prim::kPrimExtractKeywordArg), NewValueNode(key), input});
+    (*key_map)[key] = kwarg_value;
+  } else {
+    MS_LOG(EXCEPTION) << "Got an unexpected keyword argument '" << key << "'.";
+  }
+}
+
 AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const std::vector<AnfNodePtr> &args_list,
                                             const std::vector<ops::OpInputArg> &op_args,
                                             const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
@@ -2741,29 +2759,19 @@ AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const st
   std::map<std::string, AnfNodePtr> key_map;
   for (size_t idx = 0; idx < args_list.size(); ++idx) {
     auto input = args_list[idx];
-    if (HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) || IsValueNode<UMonad>(input) ||
-                                    IsValueNode<IOMonad>(input))) {
+    if (IsMonad(input)) {
+      --args_size;
       continue;
     }
     auto input_abs = eval_func(input);
     if (input_abs->isa<AbstractKeywordArg>()) {
-      auto input_kwarg_abs = input_abs->cast<AbstractKeywordArgPtr>();
-      const auto &key = input_kwarg_abs->get_key();
-      bool is_key_valid = std::any_of(op_args.begin(), op_args.end(),
-                                      [&key](const ops::OpInputArg &op_arg) { return key == op_arg.arg_name_; });
-      if (is_key_valid) {
-        const auto &kwarg_value =
-          graph->NewCNode({NewValueNode(prim::kPrimExtractKeywordArg), NewValueNode(key), input});
-        key_map[key] = kwarg_value;
-        --args_size;
-      } else {
-        MS_LOG(EXCEPTION) << "Got an unexpected keyword argument '" << key << "'.";
-      }
+      GetKeywordArgsMap(input_abs, op_args, input, graph, &key_map);
     } else {
       (void)nodes.emplace_back(input);
       continue;
     }
   }
+  args_size -= key_map.size();
   if (args_size < op_args.size()) {
     for (size_t i = args_size; i < op_args.size(); ++i) {
       auto arg_name = op_args[i].arg_name_;
@@ -4227,6 +4235,7 @@ class CreateInstanceEvaluator : public TransitionPrimEvaluator {
       // Only support the Scalar parameters type. Bypass class type by offset with 1.
       auto arg = args_abs_list[i + 1];
       MS_EXCEPTION_IF_NULL(arg);
+
       auto param_value = arg->BuildValue();
       MS_EXCEPTION_IF_NULL(param_value);
       if (param_value->ContainsValueAny() && !arg->isa<AbstractFunction>()) {
@@ -4238,7 +4247,7 @@ class CreateInstanceEvaluator : public TransitionPrimEvaluator {
                                 << "', all arguments are required to be constants, but input " << i
                                 << " is a variable, which is " << arg->ToString() << ".";
       }
-      py::object param = ValueToPyData(param_value);
+      py::object param = ValueToPyData(param_value, arg);
       (*params)[i] = param;
     }
     return false;

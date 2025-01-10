@@ -39,12 +39,11 @@ class PynativeCallback {
   virtual ValuePtr *GetInput(size_t index) const = 0;
   virtual ValuePtrList *GetInputs() const = 0;
   virtual ValuePtr *GetOutput() const = 0;
-  virtual bool IsConstantInput(size_t index) const = 0;
+  virtual bool IsNotRequiresGrad(size_t index) const = 0;
 
   /// \brief Free device address of tensor without changing its shape and dtype.
   /// \param value[in/out] the tensor value. after calling, the value will be replaced by a new object.
   virtual void FreeDeviceAddress(ValuePtr *value) const = 0;
-
   /// \brief Free device address of input tensors
   /// \param indices index of inputs to be free. if empty, ALL inputs will be free.
   void FreeInputDeviceAddress(const std::vector<size_t> &indices = {}) const;
@@ -60,17 +59,18 @@ class PynativeCallback {
     FreeInputDeviceAddress(inputs_idx);
     FreeOutputDeviceAddress(outputs_idx);
   }
-
   /// \brief Deprecated. free input and/or output tensors.
   void DeprecatedFreeDeviceAddress(const mindspore::HashSet<size_t> &indices) const;
 };
 using FreeUselessValueFunc = std::function<void(const PynativeCallback &)>;
+using CloneInplaceInputFunc = std::function<bool(const PynativeCallback &)>;
 #define FREE_FUNC(cb) [](const PynativeCallback &cb) -> void
 
 struct COMMON_EXPORT BpropHandle {
   BpropBuilderFunc func = nullptr;
   mindspore::HashSet<size_t> unused_inputs;
   FreeUselessValueFunc free_useless_value_func = nullptr;
+  CloneInplaceInputFunc clone_inplace_input_func = nullptr;
 };
 
 class COMMON_EXPORT BpropBuilder : public Emitter {
@@ -229,6 +229,19 @@ class COMMON_EXPORT BpropIRBuilderFactory {
                  const PynativeCallback &cb) { cb.FreeIODeviceAddress(inputs, outputs); });
       return *this;
     }
+    /// \brief Add whether clone inplace input.
+    /// \param clone func.
+    const RegHelper &CloneInplaceInput(const CloneInplaceInputFunc &func) const {
+      BpropIRBuilderFactory::Instance().RegCloneInplaceInput(name_, func);
+      return *this;
+    }
+    /// \brief Add whether clone inplace input.
+    /// \param is clone flag.
+    const RegHelper &CloneInplaceInput() const {
+      BpropIRBuilderFactory::Instance().RegCloneInplaceInput(name_,
+                                                             [](const PynativeCallback &cb) -> bool { return true; });
+      return *this;
+    }
 
    private:
     std::string name_;
@@ -242,7 +255,9 @@ class COMMON_EXPORT BpropIRBuilderFactory {
   void RegFreeUselessValues(const std::string &name, const FreeUselessValueFunc &func) {
     registry_[name].free_useless_value_func = func;
   }
-
+  void RegCloneInplaceInput(const std::string &name, const CloneInplaceInputFunc &func) {
+    registry_[name].clone_inplace_input_func = func;
+  }
   HashMap<std::string, BpropHandle> registry_;
 };
 
@@ -253,8 +268,8 @@ class COMMON_EXPORT BpropIRBuilderFactory {
 #define BODYFUNC(v) [](BpropBuilder * (v)) -> NodePtrList
 
 #ifdef _MSC_VER
-#define REG_BPROP_BUILDERS_BEGIN(func_name) void Reg##func_name() {
-#define REG_BPROP_BUILDERS_END }
+#define REG_BPROP_BUILDERS_BEGIN(func_name)
+#define REG_BPROP_BUILDERS_END
 #else
 #define REG_BPROP_BUILDERS_BEGIN(func_name)
 #define REG_BPROP_BUILDERS_END

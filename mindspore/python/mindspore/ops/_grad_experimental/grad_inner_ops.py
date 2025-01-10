@@ -23,6 +23,15 @@ from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
 from mindspore.ops._grad_experimental.grad_base import bprop_getters
 
 
+@bprop_getters.register("raise")
+def get_bprop_raise(self):
+    """Grad definition for `raise` operation."""
+    def bprop(x, y, z, out, dout):
+        return x, y, z
+
+    return bprop
+
+
 @bprop_getters.register(inner.ParallelResizeBilinear)
 def get_bprop_parallel_resize_bilinear(self):
     """Grad definition for `ParallelResizeBilinear` operation."""

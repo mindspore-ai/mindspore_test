@@ -157,13 +157,11 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
   }
   if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableGraphKernel()) {
     graphkernel::GraphKernelOptimize(graph);
-    graph->SetExecOrderByDefault();
   }
   opt::GEBackendOptimizeACLAfterKernelSelect(graph);
   if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableKernelPacket() &&
       common::AnfAlgo::IsDynamicGraph(graph)) {
     graphkernel::KernelPacketOptimize(graph);
-    graph->SetExecOrderByDefault();
   }
   for (auto &child_graph : graph->child_graph_order()) {
     if (child_graph.lock()->has_flag(kFlagGeKernel)) {

@@ -395,7 +395,6 @@ class TestUpdateMethodNet(nn.Cell):
         x = Tensor(np.array([[180, 234, 154], [244, 48, 247]]), ms.float32)
         y = Tensor(np.ones([1, 10, 6, 10]), ms.float32)
 
-        # 用包含键值对的列表更新CellDict
         self.cell_dict.clear()
         cell_list = [['dense1', nn.Dense(3, 4)], ['dense2', nn.Dense(4, 6)], ['dense3', nn.Dense(6, 8)]]
         self.cell_dict.update(cell_list)
@@ -403,7 +402,6 @@ class TestUpdateMethodNet(nn.Cell):
         for cell in self.cell_dict.values():
             output1 = cell(output1)
 
-        # 用OrderDict更新CellDict
         self.cell_dict.clear()
         cell_order_dict = OrderedDict([('conv', nn.Conv2d(10, 6, 5, pad_mode='same')),
                                        ('relu', nn.ReLU()),
@@ -414,7 +412,6 @@ class TestUpdateMethodNet(nn.Cell):
         for cell in self.cell_dict.values():
             output2 = cell(output2)
 
-        # 用CellDict更新CellDict
         self.cell_dict.clear()
         cell_dict = nn.CellDict([['conv', nn.Conv2d(10, 6, 5, pad_mode='same')],
                                  ['relu', nn.ReLU()],
@@ -429,7 +426,7 @@ class TestUpdateMethodNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])

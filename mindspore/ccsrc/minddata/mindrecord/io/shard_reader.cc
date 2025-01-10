@@ -1768,6 +1768,7 @@ LoadMode ShardReader::GetLoadMode() const { return load_mode_; }
 
 void ShardReader::GetSampleIdsByRandomAccess() {
   if (all_sampler_ids_.empty()) {
+    all_sampler_ids_.reserve(num_rows_);
     if (GetLoadMode() != mindrecord::LoadMode::kSlow) {
       auto vector_ids = GetSampleIds();
       all_sampler_ids_ = *vector_ids;

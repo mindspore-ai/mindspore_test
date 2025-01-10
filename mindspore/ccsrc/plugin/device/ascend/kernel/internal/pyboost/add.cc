@@ -21,9 +21,9 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoAdd::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                const acme::OutputsImmutableInfoList &outputs) {
-  return acme::CreateAddOp(inputs, outputs, acme::kAcmeAddOpName);
+internal::InternalOpPtr AcmeKernelInfoAdd::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                const internal::OutputsImmutableInfoList &outputs) {
+  return internal::CreateAddOp(inputs, outputs, internal::kInternalAddOpName);
 }
 
 void AcmeKernelInfoAdd::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -33,6 +33,6 @@ void AcmeKernelInfoAdd::Call(const std::shared_ptr<pyboost::OpRunner> &op, const
   auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
   CallAcmeOp(op, inputs, op_key);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Add, acme::kAcmeAddOpName, AcmeKernelInfoAdd);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Add, internal::kInternalAddOpName, AcmeKernelInfoAdd);
 }  // namespace kernel
 }  // namespace mindspore

@@ -159,7 +159,11 @@ std::string BpropBuilder::GetTargetFromContext() const {
   return context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 }
 
-bool BpropBuilder::IsGraphMode() const { return JitRunning(); }
+bool BpropBuilder::IsGraphMode() const {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  return (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode);
+}
 
 NodePtr BpropBuilder::TensorGetItem(const NodePtr &node, int64_t idx) {
   auto data_shape = GetShape(node);

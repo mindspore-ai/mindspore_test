@@ -5,7 +5,7 @@ logical_or:
     Computes the "logical OR" of two tensors element-wise.
 
     .. math::
-        out_{i} = self_{i} \\vee other_{i}
+        out_{i} = self_{i} \vee other_{i}
 
     .. note::
         - Inputs of `self` and `other` comply with the implicit type conversion rules to make the data types
@@ -35,13 +35,3 @@ logical_or:
         >>> output = input.logical_or(other)
         >>> print(output)
         True
-        >>> input = True
-        >>> other = Tensor(0, mindspore.bool_)
-        >>> output = input.logical_or(other)
-        >>> print(output)
-        True
-        >>> input = True
-        >>> other = Tensor(np.array([True, False]), mindspore.bool_)
-        >>> output = input.logical_or(other)
-        >>> print(output)
-        [True True]

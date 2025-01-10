@@ -19,7 +19,6 @@ import mindspore.nn as nn
 import mindspore.common.dtype as mstype
 
 from mindspore import Tensor
-from mindspore import context
 from mindspore import ParameterTuple
 from mindspore.nn import Momentum
 from mindspore.nn import WithLossCell
@@ -27,6 +26,7 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.common.initializer import TruncatedNormal
 from mindspore.common.api import _pynative_executor
+from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
 grad_all = C.GradOperation(get_all=True)
@@ -210,7 +210,7 @@ def test_pynative_custom_bprop_and_cell_ms_cell_change_shape():
     Description: Custom bprop change shape
     Expectation: No exception.
     """
-    context.set_context(check_bprop=True)
+    compile_config.CHECK_BPROP = 1
     custom_cell = test_custom_cell_base()
     ms_cell = custom_cell.test_custom_cell_function(Ms_Cell_Change_Shape())
     ms_cell.bprop_debug = True
@@ -218,6 +218,7 @@ def test_pynative_custom_bprop_and_cell_ms_cell_change_shape():
         grad_all(ms_cell)(Tensor(1, mstype.float32))
         _pynative_executor.sync()
     assert "should have the same shape as the 0th arg" in str(ex.value)
+    compile_config.CHECK_BPROP = ''
 
 
 @arg_mark(plat_marks=['cpu_linux'],

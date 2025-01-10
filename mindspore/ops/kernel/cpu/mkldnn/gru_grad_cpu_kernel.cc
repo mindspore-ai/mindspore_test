@@ -226,12 +226,11 @@ bool GRUGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inpu
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kGruGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kGruGradOutputsNum, kernel_name_);
   SetDataHandle(user_weights_memory_, inputs[kIndex2]->device_ptr());
-  SetDataHandle(user_weights_h_memory_, reinterpret_cast<float *>(inputs[kIndex2]->device_ptr()) + weight_size_);
+  SetDataHandle(user_weights_h_memory_, GetDeviceAddress<float>(inputs, kIndex2) + weight_size_);
   Reorder(&user_weights_memory_, &weights_memory_);
   Reorder(&user_weights_h_memory_, &weights_h_memory_);
   if (has_bias_) {
-    SetDataHandle(bias_memory_,
-                  reinterpret_cast<float *>(inputs[kIndex2]->device_ptr()) + weight_size_ + weight_h_size_);
+    SetDataHandle(bias_memory_, GetDeviceAddress<float>(inputs, kIndex2) + weight_size_ + weight_h_size_);
   } else {
     auto dst_ptr = GetDataHandle(bias_memory_);
     auto size = GetSize(bias_desc_);
@@ -241,14 +240,13 @@ bool GRUGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inpu
   }
 
   SetDataHandle(user_diff_weights_memory_, outputs[kIndex2]->device_ptr());
-  SetDataHandle(user_diff_weights_h_memory_, reinterpret_cast<float *>(outputs[kIndex2]->device_ptr()) + weight_size_);
+  SetDataHandle(user_diff_weights_h_memory_, GetDeviceAddress<float>(outputs, kIndex2) + weight_size_);
   ResetMemory(user_diff_weights_memory_, "user weights grad");
   ResetMemory(user_diff_weights_h_memory_, "user weights iter grad");
   ResetMemory(diff_weights_memory_, "weights grad");
   ResetMemory(diff_weights_h_memory_, "weights iter grad");
   if (has_bias_) {
-    SetDataHandle(diff_bias_memory_,
-                  reinterpret_cast<float *>(outputs[kIndex2]->device_ptr()) + weight_size_ + weight_h_size_);
+    SetDataHandle(diff_bias_memory_, GetDeviceAddress<float>(outputs, kIndex2) + weight_size_ + weight_h_size_);
   }
   auto dst_ptr = GetDataHandle(diff_bias_memory_);
   auto size = GetSize(diff_bias_desc_);

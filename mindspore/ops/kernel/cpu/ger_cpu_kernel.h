@@ -89,9 +89,9 @@ class GerCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<GerC
   std::string kernel_type_{"Unknown"};
   TypeId input_type_1_{kTypeUnknown};
   TypeId input_type_2_{kTypeUnknown};
-  std::vector<size_t> input_shape_1_;
-  std::vector<size_t> input_shape_2_;
-  std::vector<size_t> output_shape_;
+  std::vector<size_t> input_shape_1_{};
+  std::vector<size_t> input_shape_2_{};
+  std::vector<size_t> output_shape_{};
   size_t batches_{1};
   size_t in1dim_{1};
   size_t in2dim_{1};

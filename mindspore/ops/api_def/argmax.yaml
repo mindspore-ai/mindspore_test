@@ -1,5 +1,5 @@
 argmax:
-  - op_yaml: deprecated/argmax_op.yaml
+  - op_yaml: deprecated/argmax_method.yaml
     py_method: deprecated_tensor_argmax
     Ascend: py_method
     CPU: py_method

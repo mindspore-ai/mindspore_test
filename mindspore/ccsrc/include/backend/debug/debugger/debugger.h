@@ -28,7 +28,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/device_address.h"
 #include "include/backend/visible.h"
-#include "proto/debug_graph.pb.h"
+#include "runtime/hardware/device_context.h"
 
 namespace debugger {
 class Chunk;
@@ -45,6 +45,8 @@ template <class T>
 using ProtoVector = google::protobuf::RepeatedPtrField<T>;
 
 namespace mindspore {
+using mindspore::device::DeviceContext;
+
 class DebugServices;
 class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
  public:
@@ -83,7 +85,7 @@ class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
 
   void DumpConstantDataAscend(const KernelGraphPtr &graph);
 
-  void DumpSingleNode(const CNodePtr &node, uint32_t graph_id) const;
+  void DumpSingleNode(const CNodePtr &node, uint32_t graph_id, const DeviceContext *device_context = nullptr) const;
 
   void DumpInGraphCompiler(const KernelGraphPtr &kernel_graph);
 

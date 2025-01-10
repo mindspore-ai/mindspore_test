@@ -80,6 +80,7 @@ class Generator:
             Tensor(0, mstype.int64), name="offset", requires_grad=False)
 
         self._generator = GeneratorOp().set_device("CPU")
+        self._generator.add_prim_attr("manual_seed", False)
         self._to_scalar = TensorToScalar()
 
     def set_state(self, state):
@@ -125,6 +126,7 @@ class Generator:
             raise TypeError("Seed must be an integer.")
         seed = Tensor(seed, mstype.int64)
         self._generator(MANUAL_SEED, (self._seed, self._offset, seed))
+        self._generator.add_prim_attr("manual_seed", True)
         return self
 
     def initial_seed(self):

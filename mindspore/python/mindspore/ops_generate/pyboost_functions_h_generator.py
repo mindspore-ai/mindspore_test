@@ -57,7 +57,7 @@ class PyboostFunctionsHeaderGenerator(BaseGenerator):
         """
         func_list = []
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch.enable:
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_pyboost_func_name = op_parser.get_pyboost_func_name()

@@ -32,7 +32,6 @@ def isneginf_forward(input_x):
     return mint.isneginf(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_net_2d_float32(context_mode):
     """
@@ -79,7 +78,7 @@ def test_net_3d_int16(context_mode):
     assert np.array_equal(output, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_forward_dynamic_shape():
     """

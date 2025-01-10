@@ -21,7 +21,7 @@
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
 #include "utils/anf_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

@@ -59,7 +59,6 @@ bool SequenceEqualCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
   const auto x_addr = GetDeviceAddress<T>(inputs, 0);
   const auto y_addr = GetDeviceAddress<S>(inputs, 1);
   bool *output_addr = GetDeviceAddress<bool>(outputs, 0);
-  MS_EXCEPTION_IF_NULL(output_addr);
   if (x_size_ != y_size_ || is_inputs_type_diff_) {
     *output_addr = false;
     return true;

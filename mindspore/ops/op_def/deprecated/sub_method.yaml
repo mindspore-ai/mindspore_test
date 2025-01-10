@@ -1,0 +1,12 @@
+#deprecated sub
+sub:
+  args:
+    input:
+      dtype: tensor
+      type_cast: number, list[any], tuple[any]
+    y:
+      dtype: tensor
+      type_cast: any
+  returns:
+    outputs:
+      dtype: tensor

@@ -47,8 +47,8 @@ class InSequenceCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   template <typename T, typename S>
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
-  std::vector<int64_t> tuple_shape_;
-  std::vector<int64_t> ele_shape_;
+  std::vector<int64_t> tuple_shape_{};
+  std::vector<int64_t> ele_shape_{};
   TypeId ele_type_;
   TypeId input_type_;
 };

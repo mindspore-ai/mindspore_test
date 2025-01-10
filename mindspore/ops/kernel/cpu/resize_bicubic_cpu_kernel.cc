@@ -128,8 +128,8 @@ class CachedInterpolationCalculator {
 
 inline int64_t Bound(int64_t val, int64_t limit) { return std::min(limit - 1, std::max(int64_t{0}, val)); }
 
-const float *InitCoeffsTable(const double a) {
-  float *coeffs_table = new float[(kTableSize + 1) * 2];
+std::shared_ptr<const float[]> InitCoeffsTable(const double a) {
+  auto coeffs_table = std::shared_ptr<float[]>(new float[(kTableSize + 1) * 2]);
   for (int i = 0; i <= kTableSize; ++i) {
     float x = i * 1.0 / kTableSize;
     coeffs_table[i * calnum2] = ((a + calnum2) * x - (a + calnum3)) * x * x + 1;
@@ -139,13 +139,8 @@ const float *InitCoeffsTable(const double a) {
   return coeffs_table;
 }
 
-const float *GetCoeffsTable(const bool use_keys_cubic) {
-  if (use_keys_cubic) {
-    static const float *coeffs_table = InitCoeffsTable(-0.5f);
-    return coeffs_table;
-  }
-  static const float *coeffs_table = InitCoeffsTable(-0.75f);
-  return coeffs_table;
+std::shared_ptr<const float[]> GetCoeffsTable(const bool use_keys_cubic) {
+  return use_keys_cubic ? InitCoeffsTable(-0.5f) : InitCoeffsTable(-0.75f);
 }
 
 template <typename Scaler, bool use_keys_cubic>
@@ -156,7 +151,7 @@ inline void GetWeightsAndIndices(const float scale, const int64_t out_loc, const
   const int64_t in_loc = std::floor(in_loc_f);
   const float delta = in_loc_f - in_loc;
   const int64_t offset = lrintf(delta * kTableSize);
-  const float *coeffs_table = GetCoeffsTable(use_keys_cubic);
+  auto coeffs_table = GetCoeffsTable(use_keys_cubic);
   if (use_keys_cubic) {
     out->index_0 = Bound(in_loc - 1, limit);
     out->weight_0 = (out->index_0 == in_loc - 1 ? coeffs_table[offset * calnum2 + 1] : 0.0f);

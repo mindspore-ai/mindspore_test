@@ -51,7 +51,7 @@ def batch_to_space_nd_test_case(nptype, block_shape=2, input_shape=(4, 1, 1, 1))
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float16, np.int8, np.int32, np.uint8, np.uint32])
 def test_batch_to_space_nd_graph(dtype):
@@ -64,7 +64,7 @@ def test_batch_to_space_nd_graph(dtype):
     batch_to_space_nd_test_case(dtype)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float16, np.int8, np.int32, np.uint8, np.uint32])
 def test_batch_to_space_nd_pynative(dtype):
@@ -77,7 +77,7 @@ def test_batch_to_space_nd_pynative(dtype):
     batch_to_space_nd_test_case(dtype)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_batch_to_space_nd_function():
     """
@@ -130,7 +130,7 @@ def batch_to_space_nd_dynamic(is_dynamic_rank):
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_batch_to_space_nd_dynamic_case():
     """

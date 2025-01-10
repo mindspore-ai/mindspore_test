@@ -1,0 +1,16 @@
+nansum:
+  - op_yaml: nansum_op.yaml
+    py_method: deprecated_tensor_nansum
+    kwonlyargs: dtype
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+
+  - op_yaml: deprecated/nansum_method.yaml
+    py_method: deprecated_tensor_nansum
+    kwonlyargs: dtype
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

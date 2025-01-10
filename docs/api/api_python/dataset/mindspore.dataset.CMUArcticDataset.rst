@@ -19,7 +19,7 @@
         - **num_parallel_workers** (int, 可选) - 指定读取数据的工作线程数。默认值： ``None`` ，使用全局默认线程数(8)，也可以通过 :func:`mindspore.dataset.config.set_num_parallel_workers` 配置全局线程数。
         - **shuffle** (bool, 可选) - 是否混洗数据集。默认值： ``None`` ，下表中会展示不同参数配置的预期行为。
         - **sampler** (Sampler, 可选) - 指定从数据集中选取样本的采样器。默认值： ``None`` ，下表中会展示不同配置的预期行为。
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` ，不进行分片。指定此参数后， `num_samples` 表示每个分片的最大样本数。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` ，不进行分片。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` ，将使用 ``0`` 。只有当指定了 `num_shards` 时才能指定此参数。
         - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
@@ -44,8 +44,8 @@
 
     **关于CMUArctic数据集：**
 
-    CMU Arctic数据集是为语音合成研究而设计的。这些单人语音数据是在演播室条件下精心录制的，由大约1200个
-    语音平衡的英语语料组成。除了音频文件外，数据集还为Festival语音合成系统提供了完整的支持，包括可按原
+    CMU Arctic数据集是为语音合成研究而设计的。这些单人语音数据是在演播室条件下精心录制的，由大约1200个\
+    语音平衡的英语语料组成。除了音频文件外，数据集还为Festival语音合成系统提供了完整的支持，包括可按原\
     样使用的预建语音。整个软件包是作为免费软件发布的，不限制商业或非商业使用。
 
     您可以将CMUArctic数据集构建成以下目录结构，并通过MindSpore的API进行读取。

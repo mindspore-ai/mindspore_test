@@ -16,7 +16,7 @@
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, ops
+from mindspore import Parameter, Tensor, ops
 from mindspore import context
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
@@ -33,23 +33,39 @@ grad_all = C.GradOperation(get_all=True)
 def get_tensordump_node_num(validator):
     d = validator.graph_info_dict
     res = 0
-    for _, v in d.items():
-        for node, _ in v.items():
+    for _, nodes in d.items():
+        for node, _ in nodes.items():
             if node.startswith('TensorDump'):
                 res += 1
     return res
 
+class MatMulCell(nn.Cell):
+    def __init__(self, hidden_size_config=(128, 128), strategy1=((1, 1), (1, 1))):
+        super(MatMulCell, self).__init__()
+        self.in_feature, self.out_feature = hidden_size_config
+        self.matmul = P.MatMul().shard(strategy1)
+        self.params = Parameter(Tensor(np.random.randn(self.in_feature, self.out_feature), dtype=ms.float32))
 
+    def construct(self, x):
+        out = self.matmul(x, self.params)
+        return out
 
+class SoftmaxCell(nn.Cell):
+    def __init__(self):
+        super(SoftmaxCell, self).__init__()
+        self.softmax = P.Softmax(1)
 
+    def construct(self, x):
+        out = self.softmax(x)
+        return out
 class NetWithLoss(nn.Cell):
     def __init__(self, network):
         super(NetWithLoss, self).__init__()
         self.loss = VirtualLoss()
         self.network = network
 
-    def construct(self, x, y, b):
-        predict = self.network(x, y, b)
+    def construct(self, *x):
+        predict = self.network(*x)
         return self.loss(predict)
 
 
@@ -58,8 +74,8 @@ class GradWrap(nn.Cell):
         super(GradWrap, self).__init__()
         self.network = network
 
-    def construct(self, x, y, b):
-        return grad_all(self.network)(x, y, b)
+    def construct(self, *x):
+        return grad_all(self.network)(*x)
 
 
 def test_tensordump_out_at_parameter():
@@ -134,10 +150,10 @@ def test_tensordump_in_at_parameter():
     assert tensordump_num == 3
 
 
-def test_tensordump_all_at_parameter():
+def test_tensordump_inout_at_parameter():
     """
     Feature: test tensordump for construct parameter
-    Description: x, y, b are both type of Tensor, the tensordump mode is 'all'
+    Description: x, y, b are both type of Tensor, the tensordump mode has both 'in' and 'out'
     Expectation: compile success
     """
     class Net(nn.Cell):
@@ -147,9 +163,12 @@ def test_tensordump_all_at_parameter():
             self.matmul2 = P.MatMul().shard(strategy2)
 
         def construct(self, x, y, b):
-            ops.tensordump('input_x', x, 'all')
-            ops.tensordump('input_y', y, 'all')
-            ops.tensordump('input_b', b, 'all')
+            ops.tensordump('input_x', x, 'out')
+            ops.tensordump('input_y', y, 'out')
+            ops.tensordump('input_b', b, 'out')
+            ops.tensordump('input_x', x, 'in')
+            ops.tensordump('input_y', y, 'in')
+            ops.tensordump('input_b', b, 'in')
             out1 = self.matmul1(x, y)
             out2 = self.matmul2(out1, b)
             return out2
@@ -238,10 +257,10 @@ def test_tensordump_in_at_result():
     assert tensordump_num == 1
 
 
-def test_tensordump_all_at_result():
+def test_tensordump_inout_at_result():
     """
     Feature: test tensordump for construct result
-    Description: out2 is type of Tensor, the tensordump mode is 'all'
+    Description: out2 is type of Tensor, the tensordump mode has both 'in' and 'out'
     Expectation: compile success
     """
     class Net(nn.Cell):
@@ -253,7 +272,8 @@ def test_tensordump_all_at_result():
         def construct(self, x, y, b):
             out1 = self.matmul1(x, y)
             out2 = self.matmul2(out1, b)
-            ops.tensordump('result', out2, 'all')
+            ops.tensordump('resultOutSlice', out2, 'out')
+            ops.tensordump('resultInSlice', out2, 'in')
             return out2
 
     context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True)
@@ -269,7 +289,7 @@ def test_tensordump_all_at_result():
     phase = compile_net(net, x, y, b)
     validator = ParallelValidator(net, phase)
     tensordump_num = get_tensordump_node_num(validator)
-    assert tensordump_num == 1
+    assert tensordump_num == 2
 
 
 def test_tensordump_out_between_ops():
@@ -342,11 +362,11 @@ def test_tensordump_in_between_ops():
     assert tensordump_num == 1
 
 
-def test_tensordump_all_between_ops():
+def test_tensordump_inout_between_ops():
     """
     Feature: test tensordump between two matmul,
     test tensordump op behavior under insertion of redistribution ops
-    Description: tensordump mode is 'all'
+    Description: tensordump mode has both 'in' and 'out'
     Expectation: compile success
     """
     class Net(nn.Cell):
@@ -357,7 +377,8 @@ def test_tensordump_all_between_ops():
 
         def construct(self, x, y, b):
             out1 = self.matmul1(x, y)
-            ops.tensordump('mul1_mul2', out1, 'all')
+            ops.tensordump('dumps/out1OutSlice.npy', out1, 'out')
+            ops.tensordump('dumps/out1InSlice.npy', out1, 'in')
             out2 = self.matmul2(out1, b)
             return out2
 
@@ -380,7 +401,7 @@ def test_multiple_output():
     """
     Feature: test tensordump between two matmul,
     test tensordump op behavior under insertion of redistribution ops
-    Description: out1 is used in multiple operators, tensordump mode is 'all'
+    Description: out1 is used in multiple operators
     Expectation: compile success
     """
     class Net(nn.Cell):
@@ -393,7 +414,8 @@ def test_multiple_output():
 
         def construct(self, x, y, b):
             out1 = self.matmul1(x, y)
-            ops.tensordump('multi_output', out1, 'all')
+            ops.tensordump('dumps/out1OutSlice.npy', out1, 'out')
+            ops.tensordump('dumps/out1InSlice.npy', out1, 'in')
             out2 = self.matmul2(out1, b)
             out3 = self.matmul3(out1, b)
             out4 = self.add(out2, out3)
@@ -420,7 +442,7 @@ def test_multiple_output_with_full_name():
     """
     Feature: test tensordump between two matmul,
     test tensordump op behavior under insertion of redistribution ops
-    Description: out1 is used in multiple operators, tensordump mode is 'all'
+    Description: out1 is used in multiple operators
     Expectation: compile success
     """
     class Net(nn.Cell):
@@ -433,7 +455,8 @@ def test_multiple_output_with_full_name():
 
         def construct(self, x, y, b):
             out1 = self.matmul1(x, y)
-            ops.tensordump('dumps/matmul1Result.npy', out1, 'all')
+            ops.tensordump('dumps/out1OutSlice.npy', out1, 'out')
+            ops.tensordump('dumps/out1InSlice.npy', out1, 'in')
             out2 = self.matmul2(out1, b)
             out3 = self.matmul3(out1, b)
             out4 = self.add(out2, out3)
@@ -454,3 +477,135 @@ def test_multiple_output_with_full_name():
     validator = ParallelValidator(net, phase)
     tensordump_num = get_tensordump_node_num(validator)
     assert tensordump_num == 3
+
+def test_cell_level_dump_in_multi_output():
+    """
+    Feature: test tensordump in cell_level.
+    test tensordump op behavior under insertion of redistribution ops
+    Description: out1 is used in multiple operators, tensordump mode is 'in'
+    Expectation: compile success
+    """
+    class CellLevelTensorDumpNet(nn.Cell):
+        def __init__(self, input_dim, hidden_size1, hidden_size2, strategies):
+            super(CellLevelTensorDumpNet, self).__init__()
+            self.input_dim = input_dim
+            self.hz1 = hidden_size1
+            self. hz2 = hidden_size2
+            st1, st2, st3 = strategies
+            self.matmul1 = MatMulCell((self.input_dim, self.hz1), st1)
+            self.matmul2 = MatMulCell((self.hz1, self.hz2), st2)
+            self.matmul3 = MatMulCell((self.hz1, self.hz2), st3)
+            self.add = P.Add()
+
+        def construct(self, x):
+            x = self.matmul1(x)
+            ops.tensordump("cell_level_dump.npy", x, 'in')
+            out1 = self.matmul2(x)
+            out2 = self.matmul3(x)
+            result = self.add(out1, out2)
+            return result
+
+    context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
+    context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True)
+    strategy1 = ((4, 2), (2, 1))
+    strategy2 = ((2, 4), (4, 1))
+    strategy3 = ((2, 2), (2, 2))
+    input_x = Tensor(np.ones([128, 32]), dtype=ms.float32)
+    strategy_list = [strategy1, strategy2, strategy3]
+    net = GradWrap(NetWithLoss(CellLevelTensorDumpNet(input_x.shape[1], 32, 32, strategy_list)))
+    phase = compile_net(net, input_x)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 2
+
+def test_cell_level_dump_inout_no_redistribution_op_insert():
+    """
+    Feature: test tensordump in cell_level.
+    test tensordump op behavior in scenario of no redistribution operators inserted
+    Description: out1 is used in multiple operators, no redistribution operator inserted
+    Expectation: compile success
+    """
+    class CellLevelTensorDumpNet(nn.Cell):
+        def __init__(self, input_dim, hidden_size1, hidden_size2, strategies):
+            super(CellLevelTensorDumpNet, self).__init__()
+            self.input_dim = input_dim
+            self.hz1 = hidden_size1
+            self.hz2 = hidden_size2
+            st1, st2, st3 = strategies
+            self.matmul1 = MatMulCell((self.input_dim, self.hz1), st1)
+            self.matmul2 = MatMulCell((self.hz1, self.hz2), st2)
+            self.matmul3 = MatMulCell((self.hz1, self.hz2), st3)
+            self.add = P.Add()
+
+        def construct(self, x):
+            x = self.matmul1(x)
+            ops.tensordump("no_redistribution_dump1", x, 'in')
+            ops.tensordump("no_redistribution_dump2", x, 'in')
+            out1 = self.matmul2(x)
+            out2 = self.matmul3(x)
+            result = self.add(out1, out2)
+            return result
+
+    context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
+    context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True)
+    strategy1 = ((1, 1), (1, 1))
+    strategy2 = ((1, 1), (1, 1))
+    strategy3 = ((1, 1), (1, 1))
+    input_x = Tensor(np.ones([128, 32]), dtype=ms.float32)
+    strategy_list = [strategy1, strategy2, strategy3]
+    net = GradWrap(NetWithLoss(CellLevelTensorDumpNet(input_x.shape[1], 32, 32, strategy_list)))
+    phase = compile_net(net, input_x)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 4
+
+
+def test_cell_level_dump_in_with_certain_cell():
+    """
+    Feature: test tensordump only in SoftmaxCell.
+    test tensordump op behavior in scenario of dump single cell input
+    Description: Test dump SoftmaxCell input
+    Expectation: compile success
+    """
+    class SoftmaxCellWrapper(nn.Cell):
+        def __init__(self):
+            super(SoftmaxCellWrapper, self).__init__()
+            self.softmax = SoftmaxCell()
+        def construct(self, x):
+            ops.tensordump("softmax_input_dump.npy", x, 'in')
+            out = self.softmax(x)
+            return out
+
+    class SoftmaxCellTensorDumpNet(nn.Cell):
+        def __init__(self, input_dim, hidden_size1, hidden_size2, strategies):
+            super(SoftmaxCellTensorDumpNet, self).__init__()
+            self.input_dim = input_dim
+            self.hz1 = hidden_size1
+            self.hz2 = hidden_size2
+            self.softmax = SoftmaxCellWrapper()
+            st1, st2, st3 = strategies
+            self.matmul1 = MatMulCell((self.input_dim, self.hz1), st1)
+            self.matmul2 = MatMulCell((self.hz1, self.hz2), st2)
+            self.matmul3 = MatMulCell((self.hz1, self.hz2), st3)
+            self.add = P.Add()
+
+        def construct(self, x):
+            x = self.matmul1(x)
+            sft = self.softmax(x)
+            out1 = self.matmul2(x)
+            result = self.add(sft, out1)
+            result = self.matmul3(result)
+            return result
+
+    context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
+    context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True)
+    strategy1 = ((4, 2), (2, 1))
+    strategy2 = ((2, 4), (4, 1))
+    strategy3 = ((2, 2), (2, 2))
+    input_x = Tensor(np.ones([128, 32]), dtype=ms.float32)
+    strategy_list = [strategy1, strategy2, strategy3]
+    net = GradWrap(NetWithLoss(SoftmaxCellTensorDumpNet(input_x.shape[1], 32, 32, strategy_list)))
+    phase = compile_net(net, input_x)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 1

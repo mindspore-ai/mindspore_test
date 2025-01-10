@@ -330,5 +330,26 @@ class BACKEND_EXPORT GraphKernelFlags {
   // cache the enable_graph_kernel value to check whether the context is changed.
   bool enable_graph_kernel_;
 };
+
+class BACKEND_EXPORT GraphKernelPassChecker {
+ public:
+  static GraphKernelPassChecker &GetInstance();
+  GraphKernelPassChecker(const GraphKernelPassChecker &flags) = delete;
+  GraphKernelPassChecker(GraphKernelPassChecker &&flags) = delete;
+  GraphKernelPassChecker &operator=(const GraphKernelPassChecker &flags) = delete;
+  GraphKernelPassChecker &operator=(GraphKernelPassChecker &&flags) = delete;
+  ~GraphKernelPassChecker() { PassFlagsValidation(); }
+
+  void Init();
+  void SetEnablePassActive(size_t index, bool value);
+  void SetDisablePassActive(size_t index, bool value);
+
+ private:
+  GraphKernelPassChecker() = default;
+  void PassFlagsValidation();
+
+  std::vector<bool> enable_pass_active_;
+  std::vector<bool> disable_pass_active_;
+};
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_COMMON_GRAPH_KERNEL_GRAPH_KERNEL_FLAGS_H

@@ -19,20 +19,21 @@
 
 namespace aicpu {
 void GroupIterable::IteratorStep::UpdateEndOfGroup() {
-  ++next_loc_;
+  // firstly added location index
+  next_loc_++;
   const auto &ix_t = iter_->ix_matrix_;
-  const int64_t N = ix_t.dimension(0);
-  while (next_loc_ < N && iter_->GroupMatches(ix_t, loc_, next_loc_)) {
-    ++next_loc_;
+  const int64_t num = ix_t.dimension(0);
+  while (next_loc_ < num && iter_->GroupMatches(ix_t, location_, next_loc_)) {
+    next_loc_++;
   }
 }
 
-bool GroupIterable::IteratorStep::operator!=(const IteratorStep &rhs) const { return (rhs.loc_ != loc_); }
+bool GroupIterable::IteratorStep::operator!=(const IteratorStep &rhs) const { return (rhs.location_ != location_); }
 
-bool GroupIterable::IteratorStep::operator==(const IteratorStep &rhs) const { return (rhs.loc_ == loc_); }
+bool GroupIterable::IteratorStep::operator==(const IteratorStep &rhs) const { return (rhs.location_ == location_); }
 
 GroupIterable::IteratorStep &GroupIterable::IteratorStep::operator++() {  // prefix ++
-  loc_ = next_loc_;
+  location_ = next_loc_;
   UpdateEndOfGroup();
   return *this;
 }
@@ -43,7 +44,7 @@ const GroupIterable::IteratorStep GroupIterable::IteratorStep::operator++(int) {
   return lhs;
 }
 
-Group GroupIterable::IteratorStep::operator*() const { return Group(iter_, loc_, next_loc_); }
+Group GroupIterable::IteratorStep::operator*() const { return Group(iter_, location_, next_loc_); }
 
 std::vector<int64_t> Group::group() const {
   std::vector<int64_t> g;

@@ -1,0 +1,98 @@
+var:
+  description: |
+    var(axis=None, ddof=0, keepdims=False) -> Tensor
+
+    Compute the variance along the specified axis.
+
+    The variance is the average of the squared deviations from the mean, i.e.,
+    :math:`var = mean(abs(x - x.mean())**2)`.
+
+    Return the variance, which is computed for the flattened array by default,
+    otherwise over the specified axis.
+
+    Note:
+        Numpy arguments `dtype`, `out` and `where` are not supported.
+
+    Args:
+        axis (Union[None, int, tuple(int)], optional): Axis or axes along which the variance is computed.
+            The default is to compute the variance of the flattened array. Default: ``None`` .
+        ddof (int, optional): Means Delta Degrees of Freedom. Default: ``0`` .
+            The divisor used in calculations is :math:`N - ddof`, where :math:`N` represents the number of elements.
+        keepdims (bool, optional): Whether the output Tensor has dim retained or not. If ``True`` , keep these reduced
+            dimensions and the length is 1. If ``False`` , don't keep these dimensions. Default: ``False`` .
+
+    Returns:
+        Variance tensor.
+
+    Raises:
+        TypeError: If `axis` is not one of the followings: None, int, tuple.
+        TypeError: If `ddof` is not an int.
+        TypeError: If `keepdims` is not a bool.
+        ValueError: If `axis` is out of range :math:`[-self.ndim, self.ndim)`.
+
+    See also:
+        - :func:`mindspore.Tensor.mean`: Reduce a dimension of a tensor by averaging all elements in the dimension.
+        - :func:`mindspore.Tensor.std`: Compute the standard deviation along the specified axis.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input_x = Tensor(np.array([1., 2., 3., 4.], np.float32))
+        >>> output = input_x.var()
+        >>> print(output)
+        1.25
+
+    .. method:: Tensor.var(dim=None, *, correction=1, keepdim=False) -> Tensor
+        :noindex:
+
+    Calculates the variance over the dimensions specified by `dim`. `dim` can be a single dimension, list of
+    dimensions, or None to reduce over all dimensions.
+
+    The variance (:math:`\delta ^2`) is calculated as:
+
+    .. math::
+        \delta ^2 = \frac{1}{\max(0, N - \delta N)}\sum^{N - 1}_{i = 0}(x_i - \bar{x})^2
+
+    where :math:`x` is the sample set of elements, :math:`\bar{x}` is the sample mean, :math:`N` is the number
+    of samples and :math:`\delta N` is the `correction`.
+
+    Args:
+        dim (None, int, tuple(int), optional): The dimension or dimensions to reduce. Defaults to ``None``.
+            If ``None``, all dimensions are reduced.
+
+    Keyword Args:
+        correction (int, optional): The difference between the sample size and sample degrees of freedom. Defaults
+            to Bessel's correction. Defaults to ``1``.
+        keepdim (bool, optional): Whether the output tensor has dim retained or not. If ``True`` , keep these
+            reduced dimensions and the length is 1. If ``False``, don't keep these dimensions. Defaults to ``False``.
+
+    Returns:
+        Tensor, the variance.
+        Suppose the shape of `self` is :math:`(x_0, x_1, ..., x_R)`:
+
+        - If `dim` is () and `keepdim` is set to ``False`` , returns a 0-D Tensor, indicating the variance of all
+          elements in `self`.
+        - If `dim` is int, e.g. ``1`` and `keepdim` is set to ``False`` , then the returned Tensor has shape
+          :math:`(x_0, x_2, ..., x_R)`.
+        - If `dim` is tuple(int) or list(int), e.g. ``(1, 2)`` and `keepdim` is set to ``False`` , then the returned
+          Tensor has shape :math:`(x_0, x_3, ..., x_R)`.
+
+    Raises:
+        TypeError: If `dim` is not one of the followings: None, int, list, tuple.
+        TypeError: If `correction` is not an int.
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If `dim` is out of range :math:`[-self.ndim, self.ndim)`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> input_x = Tensor([[8, 2, 1], [5, 9, 3], [4, 6, 7]], mindspore.float32)
+        >>> output = input_x.var(dim=0, correction=1, keepdim=True)
+        >>> print(output)
+        [[ 4.333333, 12.333333, 9.333333]]

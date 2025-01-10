@@ -23,13 +23,13 @@
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "op_def/op_name.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "op_def/auto_generate/gen_ops_name.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace ops {
-void CheckRandIntRange(const InferInfoPtr &from, const InferInfoPtr &to, const std::string &name, bool output_bool) {
+void CheckRandRange(const InferInfoPtr &from, const InferInfoPtr &to, const std::string &name, bool output_bool) {
   auto from_opt = from->GetScalarValue<int64_t>();
   auto to_opt = to->GetScalarValue<int64_t>();
   if (!from_opt.has_value() || !to_opt.has_value()) {
@@ -53,7 +53,7 @@ TypeIdList RandExtFuncImpl ::InferType(const PrimitivePtr &primitive, const Infe
   }
   auto infer_type = static_cast<TypeId>(dtype->GetScalarValueWithCheck<int64_t>());
   if (prim_name == kNameRandInt) {
-    CheckRandIntRange(input_infos[kInputIndex0], input_infos[kInputIndex1], prim_name, (infer_type == kNumberTypeBool));
+    CheckRandRange(input_infos[kInputIndex0], input_infos[kInputIndex1], prim_name, (infer_type == kNumberTypeBool));
   }
   CheckAndConvertUtils::CheckTypeIdValid("dtype", infer_type, common_mint_valid_type_ids_with_bool, primitive->name());
   return {infer_type};

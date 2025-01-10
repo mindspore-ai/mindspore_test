@@ -26,15 +26,15 @@
 #include "include/transform/graph_ir/types.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ge_kernel_executor.h"
-#include "plugin/device/ascend/hal/hardware/ge_graph_executor.h"
-#include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_graph_executor.h"
+#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 class GeGraphExecutor;
 class GeKernelExecutor;
-class GeDeviceResManager;
+class AscendDeviceResManager;
 // The Ascend device properties defined by MindSpore because ACL does not have interface to get this info.
 struct AscendDeviceProperties {
   std::string name;
@@ -42,7 +42,7 @@ struct AscendDeviceProperties {
   size_t free_memory;
 };
 
-class GeDeviceContext : public DeviceInterface<GeGraphExecutor, GeKernelExecutor, GeDeviceResManager> {
+class GeDeviceContext : public DeviceInterface<GeGraphExecutor, GeKernelExecutor, AscendDeviceResManager> {
  public:
   explicit GeDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
   ~GeDeviceContext() override = default;
@@ -60,21 +60,17 @@ class GeDeviceContext : public DeviceInterface<GeGraphExecutor, GeKernelExecutor
   static std::string GetDeviceName(uint32_t);
   static AscendDeviceProperties GetDeviceProperties(uint32_t);
 
+  uint32_t GetExecuteTimeout() override;
+  std::string GetAoeJobType() override;
+  std::string GetPrecisionMode() override;
+
  private:
   DISABLE_COPY_AND_ASSIGN(GeDeviceContext);
 
-  void InitGe(const std::shared_ptr<MsContext> &inst_context);
-  bool FinalizeGe(const std::shared_ptr<MsContext> &inst_context);
-  void GetGeOptions(const std::shared_ptr<MsContext> &inst_context, std::map<std::string, std::string> *ge_options);
-  void SetHcclOptions(const std::shared_ptr<MsContext> &inst_context, std::map<std::string, std::string> *ge_options);
-  void SetAscendConfig(const std::shared_ptr<MsContext> &ms_context_ptr,
-                       std::map<std::string, std::string> *ge_options) const;
-  void SetDumpOptions(std::map<std::string, std::string> *ge_options) const;
   void InitDump() const;
   void FinalizeDump() const;
 
   std::unique_ptr<AscendDeprecatedInterface> deprecated_interface_;
-  transform::GeAllocatorPtr ge_allocator_;
 };
 }  // namespace ascend
 }  // namespace device

@@ -19,6 +19,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <regex>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #endif
@@ -40,12 +41,14 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/pre_launch_comm.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/pynative/graph_adapter.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "utils/log_adapter.h"
 #include "utils/llm_manager.h"
+#include "utils/ms_utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -59,7 +62,11 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/stub_tensor.h"
+#include "runtime/runtime_conf/runtime_conf.h"
+#include "runtime/runtime_conf/thread_bind_core.h"
 
+#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/backend/distributed/collective/collect_hccl_init_info.h"
 namespace mindspore {
 namespace compile {
 bool Backend::GetCond(const BaseRef &c, bool *value) {
@@ -124,6 +131,130 @@ void PushTupleTensor(const VectorRef &args, const std::vector<AnfNodePtr> &param
   auto tensor_input = flatten_value[index];
   MS_EXCEPTION_IF_NULL(tensor_input);
   input_tensors->push_back(tensor_input);
+}
+std::map<std::string, std::vector<CNodePtr>> CollectCommOps(const FuncGraphPtr &root_graph) {
+  std::map<std::string, std::vector<CNodePtr>> comm_ops_group;
+  const auto &sub_graphs = root_graph->manager()->func_graphs_used_total(root_graph);
+  FuncGraphSet all_graphs = sub_graphs;
+  all_graphs.insert(root_graph);
+  for (const auto &func_graph : all_graphs) {
+    auto nodes = func_graph->nodes();
+    for (auto node : nodes) {
+      if (!node->isa<CNode>()) {
+        continue;
+      }
+      auto cnode = node->cast<CNodePtr>();
+      if (common::AnfAlgo::IsCommunicationOp(cnode) && common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
+        auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+        if (comm_ops_group.find(group_name) == comm_ops_group.end()) {
+          comm_ops_group[group_name] = {cnode};
+        } else {
+          comm_ops_group[group_name].emplace_back(cnode);
+        }
+      }
+    }
+  }
+  return comm_ops_group;
+}
+int GetHcclBuffsizeFromEnv(const std::string &env_name) {
+  std::string hccl_buffer_size_env = common::GetEnv(env_name);
+  const int DEFAULT_HCCL_BUFFER_SIZE = 200;
+  int hccl_buffer_size = DEFAULT_HCCL_BUFFER_SIZE;
+  if (!hccl_buffer_size_env.empty()) {
+    MS_LOG(INFO) << "The value of " << env_name << " is: " << hccl_buffer_size_env;
+    try {
+      hccl_buffer_size = stoi(hccl_buffer_size_env);
+    } catch (const std::exception &e) {
+      MS_LOG(EXCEPTION) << "Invalid argument: " << e.what() << " when parse " << hccl_buffer_size_env;
+    }
+    if (hccl_buffer_size < 0) {
+      MS_LOG(EXCEPTION) << "the value of `HCCL_BUFFSIZE` must be greater than zero.";
+    }
+  }
+  return hccl_buffer_size;
+}
+void InitCommGroup(const FuncGraphPtr &root_graph) {
+  auto comm_ops_group = CollectCommOps(root_graph);
+  int32_t default_size = GetHcclBuffsizeFromEnv("HCCL_BUFFSIZE");
+  int32_t p2p_size = GetHcclBuffsizeFromEnv("MS_DEV_P2P_HCCL_BUFFSIZE");
+  int32_t all2all_size = GetHcclBuffsizeFromEnv("MS_DEV_ALL2ALL_HCCL_BUFFSIZE");
+  auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
+  auto init_order = instance->GetInitOrder();
+  if (init_order.size() == 0) {
+    return;
+  }
+  for (auto group_name : init_order) {
+    size_t init_hccl_buffsize = static_cast<size_t>(default_size);
+    if (comm_ops_group[group_name].size() == 0) {
+      const int DEFAULT_HCCL_BUFFER_SIZE = 200;
+      init_hccl_buffsize = DEFAULT_HCCL_BUFFER_SIZE;
+      MS_LOG(INFO) << "There are no communication ops in the group: " << group_name
+                   << ", HCCL_BUFFSIZE: " << init_hccl_buffsize << " MB.";
+    } else {
+      std::string env_name = "HCCL_BUFFSIZE";
+      bool is_dynamic = false;
+      bool is_p2p = true;
+      size_t max_comm_size = 0;
+      for (auto comm_node : comm_ops_group[group_name]) {
+        if (common::AnfAlgo::IsDynamicShape(comm_node)) {
+          is_dynamic = true;
+          is_p2p = false;
+          max_comm_size = 0;
+          MS_LOG(INFO) << "There are dynamic shape operators in group " << group_name
+                       << ", and you cannot obtain the max communication size";
+          break;
+        } else {
+          for (size_t idx = 0; idx < common::AnfAlgo::GetInputNum(comm_node); ++idx) {
+            size_t type_size =
+              GetTypeByte(TypeIdToType(common::AnfAlgo::GetPrevNodeOutputInferDataType(comm_node, idx)));
+            ShapeVector inp_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(comm_node, idx);
+            size_t cure_size = type_size * SizeOf(inp_shape);
+            max_comm_size = max_comm_size > cure_size ? max_comm_size : cure_size;
+          }
+          for (size_t idx = 0; idx < AnfAlgo::GetOutputElementNum(comm_node); ++idx) {
+            size_t type_size = GetTypeByte(TypeIdToType(common::AnfAlgo::GetOutputInferDataType(comm_node, idx)));
+            ShapeVector out_shape = common::AnfAlgo::GetOutputInferShape(comm_node, idx);
+            size_t cure_size = type_size * SizeOf(out_shape);
+            max_comm_size = max_comm_size > cure_size ? max_comm_size : cure_size;
+          }
+        }
+        auto node_name = AnfUtils::GetCNodeName(comm_node);
+        bool is_invalid_p2p = (p2p_size < 0 || (node_name != "Send" && node_name != "Receive"));
+        is_p2p = !is_invalid_p2p;
+        std::regex all2all("all2all", std::regex_constants::icase);
+        if (all2all_size > 0 && std::regex_search(node_name, all2all)) {
+          init_hccl_buffsize = static_cast<size_t>(all2all_size);
+          env_name = "MS_DEV_ALL2ALL_HCCL_BUFFSIZE";
+        }
+      }
+      if (!is_dynamic) {
+        size_t max_size_mb = static_cast<size_t>(static_cast<float>(max_comm_size) / 1024 / 1024) + 1;
+        MS_LOG(INFO) << "In group: " << group_name << ", the max communication size is " << max_size_mb << " MB.";
+      }
+      if (is_p2p) {
+        init_hccl_buffsize = static_cast<size_t>(p2p_size);
+        env_name = "MS_DEV_P2P_HCCL_BUFFSIZE";
+      }
+      MS_LOG(INFO) << "For group: " << group_name << ", the hccl_buffsize is inited by " << env_name
+                   << ", and the value is " << init_hccl_buffsize << " MB.";
+    }
+    distributed::collective::CollectiveManager::instance()->SubmitCreateDeviceCommTask(group_name, init_hccl_buffsize);
+    if (!distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_name)) {
+      MS_LOG(EXCEPTION) << "Failed to wait for communicator of " << group_name
+                        << " init done in backend phase. Please check ERROR log above.";
+    }
+  }
+  MS_LOG(INFO) << "The MOC occupied by HCCL of graph: " << root_graph->ToString() << " is "
+               << instance->GetHcclMemSize() << " MB.";
+  // Clear initialization info after this step so new graphs could be compiled and not communicator will be initialized
+  // twice.
+  instance->Clear();
+}
+
+void TransformGraphToActorDAG(const GraphCompilerInfo &graph_compiler_info) {
+  const auto &actor_set = runtime::GraphScheduler::GetInstance().Transform(graph_compiler_info);
+  runtime::GraphScheduler::GetInstance().Schedule(actor_set);
+  runtime::GraphScheduler::GetInstance().RemoveNodeAddr(graph_compiler_info);
 }
 }  // namespace
 
@@ -243,6 +374,7 @@ MindRTBackendBase::MindRTBackendBase(const std::string &backend_name, const std:
   SetDebuggerInit();
 #endif
   runtime::GraphScheduler::GetInstance().Initialize();
+  ge_backend_ = std::make_shared<GEBackend>();
 }
 
 void MindRTBackendBase::ProcessNotSupportCnode(const FuncGraphPtr &func_graph,
@@ -557,10 +689,27 @@ bool MindRTBackendBase::DumpBackendInfo() {
   }
 
   auto cache_path = context.GetBackendGraphCachePath(func_graph);
-  auto json_path = cache_path + kControlNodeJsonSuffix;
-  MS_LOG(DEBUG) << "Json path:" << json_path;
-
-  nlohmann::json json_stream;
+  auto backinfo_json_path = cache_path + kControlNodeJsonSuffix;
+  auto backinfo_json_real_path = Common::CreatePrefixPath(backinfo_json_path, true);
+  if (!backinfo_json_real_path.has_value()) {
+    MS_LOG(ERROR) << "Invalid backinfo json path:" << backinfo_json_real_path.value();
+  }
+  MS_LOG(DEBUG) << "Backinfo Json path:" << backinfo_json_real_path.value();
+  std::ifstream backinfo_json_stream(backinfo_json_real_path.value());
+  nlohmann::json backinfo_json;
+  if (!backinfo_json_stream.good()) {
+    MS_LOG(INFO) << "Backinfo json: " << backinfo_json_real_path.value()
+                 << " does not exist. So make new Backinfo json file.";
+  } else {
+    if (!backinfo_json_stream.is_open()) {
+      MS_LOG(ERROR) << "Load backinfo json file: " << backinfo_json_real_path.value()
+                    << " error, backend graph cache missed.";
+      return false;
+    }
+    backinfo_json_stream >> backinfo_json;
+    MS_LOG(INFO) << "Load backinfo json file: " << backinfo_json_real_path.value() << " succeed.";
+    backinfo_json_stream.close();
+  }
   nlohmann::json new_data_json;
   std::vector<nlohmann::json> kernel_graph_to_device_context_json;
 
@@ -577,6 +726,8 @@ bool MindRTBackendBase::DumpBackendInfo() {
     kernel_graph_json[kKernelGraphToDeviceName] = device_name;
     kernel_graph_to_device_context_json.push_back(kernel_graph_json);
   }
+  backinfo_json[kKernelGraphNum] = kernel_graph_to_device_context_json.size();
+  MS_LOG(DEBUG) << "Dump root graph number for compile cache, number:" << kernel_graph_to_device_context_json.size();
 
   // Collect all funcgraph valuenode.
   std::map<FuncGraphPtr, AnfNodePtr> func_graph_to_value_node;
@@ -630,9 +781,10 @@ bool MindRTBackendBase::DumpBackendInfo() {
   new_data_json[kDeviceName] = device_name_;
   new_data_json[kDeviceId] = device_id_;
   new_data_json[kMsExcutionMode] = ms_execution_mode_;
-  json_stream[kControlNodeCache] = new_data_json;
+  backinfo_json[kControlNodeCache] = new_data_json;
   context.Clear();
-  return Common::SaveStringToFile(json_path, json_stream.dump());
+  MS_LOG(DEBUG) << "Dump backinfo json to " << backinfo_json_real_path.value() << ".";
+  return Common::SaveStringToFile(backinfo_json_real_path.value(), backinfo_json.dump());
 }
 
 bool MindRTBackendBase::LoadBackendInfo() {
@@ -853,9 +1005,52 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
   }
   return true;
 }
+
+void CheckRunMode(device::RunMode run_mode) {
+  if (run_mode == device::RunMode::kGraphMode || run_mode == device::RunMode::kHybridMode) {
+    MS_LOG(WARNING) << "The subgraph sink and heterogeneous in Jit_level = O2 will be deprecated and removed in a "
+                       "future version, please set jit_level to O0 or O1 and try again.";
+  }
+}
 }  // namespace
 
-const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph) {
+FuncGraphPtr MindRTBackendBase::BuildDFGraph(
+  const FuncGraphPtr &anf_graph, const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors) {
+  if (device_name_ != kAscendDevice) {
+    MS_LOG(INFO) << "BuildDFGraph only support in ascend.";
+    return nullptr;
+  }
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+  MS_EXCEPTION_IF_NULL(anf_graph);
+  return ge_backend_->BuildDFGraph(device_context, anf_graph, init_tensors);
+}
+
+string MindRTBackendBase::ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph,
+                                        bool is_save_to_file) {
+  if (device_name_ != kAscendDevice) {
+    MS_LOG(EXCEPTION) << "Only support export file in 'AIR' format with Ascend backend.";
+    return nullptr;
+  }
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+  MS_EXCEPTION_IF_NULL(anf_graph);
+  return ge_backend_->ExportDFGraph(device_context, file_name, anf_graph, is_save_to_file);
+}
+
+std::unordered_set<std::string> MindRTBackendBase::GetInferParameterNames() {
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+  return ge_backend_->GetInferParameterNames(device_context);
+}
+
+const ActorInfo MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph) {
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -872,6 +1067,14 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
 
   auto root_graph = WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
+  PROF_START(InitCommGroup);
+  InitCommGroup(root_graph);
+  PROF_END(InitCommGroup);
+
+  PROF_START(WaitAllCommInit);
+  (void)distributed::collective::CollectiveManager::instance()->WaitAllCommInitDone();
+  PROF_END(WaitAllCommInit);
+
   bool pynative_with_jit_call_graph = func_graph->has_flag(kFlagPyNativeWithJitCallGraph);
   if (!pynative_with_jit_call_graph) {
     UnifyMindIR(root_graph);
@@ -907,21 +1110,22 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
     bool is_dynamic_graph = common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph);
     auto sub_graph_run_mode = is_dynamic_graph ? run_mode : device::RunMode::kUnknown;
     PROF_START(CompileSubGraph);
-    if (all_support) {
-      if (run_mode == device::RunMode::kGraphMode && pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
-        auto graph_id = graph_compiler_->CompileWholeGraphForGraphRunMode(func_graph, device_context);
-        graph_id_to_device_context_[graph_id] = device_context;
-      } else {
-        BuildSymbolEngine(func_graph, run_mode);
-        CompileSubGraph(func_graph, sub_graph_run_mode);
-      }
-    } else {
-      if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
-        ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
-      }
-      BuildSymbolEngine(func_graph, run_mode);
-      CompileSubGraph(func_graph, sub_graph_run_mode);
+    if (all_support && run_mode == device::RunMode::kGraphMode &&
+        pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
+      auto actor_info = ge_backend_->CompileGraph(func_graph, device_context);
+      is_ge_backend_ = true;
+      MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString();
+      PROF_END(CompileSubGraph);
+      PROF_END(compile_backend_graph);
+      return actor_info;
     }
+    CheckRunMode(run_mode);
+
+    if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
+      ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
+    }
+    BuildSymbolEngine(func_graph, run_mode);
+    CompileSubGraph(func_graph, sub_graph_run_mode);
     PROF_END(CompileSubGraph);
   }
 
@@ -945,8 +1149,7 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
     PROF_START(GraphScheduler);
     // Transform graph to actor DAG, and schedule the actor DAG.
     ParseControlNodes(*graph_compiler_info);
-    const auto &actor_set = runtime::GraphScheduler::GetInstance().Transform(*graph_compiler_info);
-    runtime::GraphScheduler::GetInstance().Schedule(actor_set);
+    TransformGraphToActorDAG(*graph_compiler_info);
     PROF_END(GraphScheduler);
   }
 
@@ -1599,14 +1802,36 @@ void MindRTBackendBase::WaitMultiStream(const GraphCompilerInfo &graph_compiler_
   for (auto device_context : graph_compiler_info.device_contexts_) {
     MS_EXCEPTION_IF_NULL(device_context);
     if (device_context->device_res_manager_->single_op_multi_stream_enable()) {
-      device_context->device_res_manager_->SyncNotDefaultStreams();
+      device::MultiStreamController::GetInstance()->WaitMultiStream(device_context, kDefaultStreamIndex);
     }
+  }
+}
+
+void MindRTBackendBase::BindCoreForMainThread() {
+  static bool is_bind_core_ = false;
+  if (is_bind_core_) {
+    return;
+  }
+  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
+  if (!bind_core_manager.is_enable_thread_bind_core_) {
+    return;
+  }
+
+  const auto &core_list = bind_core_manager.get_thread_bind_core_list(runtime::kBindCoreModule::kMAIN);
+  if (core_list.empty()) {
+    MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Main thread.";
+  } else {
+    bind_core_manager.bind_thread_core(core_list);
+    is_bind_core_ = true;
   }
 }
 
 void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &args, VectorRef *outputs) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
                                      actor_info, true);
+  // Main thread bind to core.
+  BindCoreForMainThread();
+
   MS_EXCEPTION_IF_NULL(root_graph_);
   if (IsGraphOutputValueNodeOrParameter(root_graph_->output(), args, outputs)) {
     return;
@@ -1614,13 +1839,36 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
 
   const auto &context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<bool>(MS_CTX_PRECOMPILE_ONLY)) {
+  if (context_ptr->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) || common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1") {
     MS_LOG(INFO) << "PrecompileOnly, stop run graph";
     return;
   }
 
   // Open abstract_lock for dynamic_shape
   AnfUtils::OpenAbstractLock();
+
+  if (is_ge_backend_) {
+    // For pynative and graph mix execution.
+    // wait for other task finish
+    WaitTaskFinish();
+    // wait for other streams finish
+    auto device_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+    MS_EXCEPTION_IF_NULL(device_context);
+    device_context->device_res_manager_->SyncNotDefaultStreams();
+    // Release python gil.
+    mindspore::ScopedLongRunning long_running;
+
+    std::vector<tensor::TensorPtr> output_tensors;
+    ge_backend_->RunGraph(actor_info, device_context, args, &output_tensors);
+    if (output_tensors.empty()) {
+      return;
+    }
+    size_t output_position = 0;
+    std::vector<tensor::TensorPtr> tuple_tensors;
+    ConstructOutputs(root_graph_->output(), output_tensors, &output_position, outputs, &tuple_tensors);
+    return;
+  }
 
   // Fetch the graph compiler info.
   const auto &graph_iter = actor_to_graph_compiler_info_.find(actor_info);
@@ -1662,6 +1910,13 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   // Run actor DAG.
   const auto &actor_set = runtime::GraphScheduler::GetInstance().Fetch(actor_info);
   MS_EXCEPTION_IF_NULL(actor_set);
+  static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
+  if (!disable_pre_build_comm && !has_pre_build_comm_) {
+    PROF_START(PreLaunchCommKernel);
+    has_pre_build_comm_ = true;
+    runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
+    PROF_END(PreLaunchCommKernel);
+  }
   runtime::GraphScheduler::GetInstance().Run(actor_set, input_tensors, args);
 
   {
@@ -2050,7 +2305,7 @@ std::shared_ptr<GraphCompilerInfo> MindRTBackendBase::ConstructGraphCompilerInfo
   auto strategy = runtime::GraphExecutionStrategy::kPipeline;
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0 ||
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0 ||
       context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     strategy = runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
   }

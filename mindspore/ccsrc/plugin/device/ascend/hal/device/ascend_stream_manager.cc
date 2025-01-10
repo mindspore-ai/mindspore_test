@@ -23,6 +23,7 @@
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {
 namespace device {
@@ -271,6 +272,7 @@ bool AscendStreamMng::SyncStream(aclrtStream stream) const {
   MS_LOG(DEBUG) << "Sync stream: " << stream;
   auto RET = ACL_ERROR_NONE;
   try {
+    GilReleaseWithCheck gil_release;
     RET = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1);
     if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {  // o for switch stream
       MS_LOG(ERROR) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";

@@ -183,9 +183,8 @@ def test_mul_op_dynamic_rank(context_mode):
     np.testing.assert_allclose(out_2.asnumpy(), expect_out_2, rtol=1e-3)
 
 
-# 反向动态shape有公共问题，待解决后再放开用例
 @pytest.mark.skip
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mul_op_dynamic_backward_shape(context_mode):
@@ -214,9 +213,8 @@ def test_mul_op_dynamic_backward_shape(context_mode):
     np.testing.assert_allclose(grads_2[1].asnumpy(), expect_out_2[1], rtol=1e-3)
 
 
-# 反向动态shape有公共问题，待解决后再放开用例
 @pytest.mark.skip
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mul_op_dynamic_backward_rank(context_mode):

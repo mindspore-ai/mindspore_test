@@ -1,0 +1,21 @@
+#operator moe_init_routing
+moe_init_routing:
+  args:
+    x:
+      dtype: tensor
+    row_idx:
+      dtype: tensor
+    expert_idx:
+      dtype: tensor
+    active_num:
+      dtype: int
+      type_cast: tensor
+  returns:
+    expanded_x:
+      dtype: tensor
+    expanded_row_idx:
+      dtype: tensor
+    expanded_expert_idx:
+      dtype: tensor
+  dispatch:
+    enable: True

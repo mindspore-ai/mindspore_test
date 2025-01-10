@@ -46,6 +46,8 @@ class ConditionSwitchActor : public KernelActor {
   void SendOutput(OpContext<DeviceTensor> *const context, size_t index);
 
  private:
+  void FetchParameterInput(OpContext<DeviceTensor> *const context);
+
   friend class InlineControlFlowScheduler;
   // Collect memory free list, as the ref counts of different branches are superimposed on the output,
   // so the excess reference counts of other branches need to be subtracted in advance.

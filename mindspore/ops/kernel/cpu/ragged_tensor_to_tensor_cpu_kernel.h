@@ -77,11 +77,11 @@ class RaggedTensorToTensorCpuKernelMod : public NativeCpuKernelMod {
   int64_t ragged_rank_;
   TypeId shape_dtype_{kTypeUnknown};
   TypeId values_dtype_{kTypeUnknown};
-  std::vector<int64_t> values_shape_;
-  std::vector<int64_t> output_shape_;
-  std::vector<int64_t> default_values_shape_;
-  std::vector<std::string> row_partition_types_;
-  std::vector<std::vector<int64_t>> row_partition_shape_list_;
+  std::vector<int64_t> values_shape_{};
+  std::vector<int64_t> output_shape_{};
+  std::vector<int64_t> default_values_shape_{};
+  std::vector<std::string> row_partition_types_{};
+  std::vector<std::vector<int64_t>> row_partition_shape_list_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

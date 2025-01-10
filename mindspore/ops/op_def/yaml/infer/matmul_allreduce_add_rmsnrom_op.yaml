@@ -1,0 +1,39 @@
+#operator matmul_allreduce_add_rmsnorm
+matmul_allreduce_add_rmsnorm:
+  args:
+    x1:
+      dtype: tensor
+    x2:
+      dtype: tensor
+    bias:
+      dtype: tensor
+    residual:
+      dtype: tensor
+    gamma:
+      dtype: tensor
+    epsilon:
+      dtype: float
+    group:
+      dtype: str
+    reduce_op:
+      dtype: int
+      arg_handler: str_to_enum
+      default: "'sum'"
+    comm_turn:
+      dtype: int
+      default: 0
+    stream_mode:
+      dtype: int
+      default: 1
+  returns:
+    y:
+      dtype: tensor
+    norm_out:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: MatmulAllReduceAddRmsNorm
+  dispatch:
+    enable: True
+    Ascend: MatmulAllReduceAddRmsNormAscend

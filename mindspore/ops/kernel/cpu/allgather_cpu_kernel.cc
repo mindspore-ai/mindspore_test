@@ -38,7 +38,9 @@ bool AllGatherCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
                                    const std::vector<kernel::KernelTensor *> &,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
   auto *input_addr = reinterpret_cast<float *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr);
   auto *output_addr = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   auto input_data_num = inputs[0]->size() / sizeof(float);
   return MPIAllGather(input_addr, output_addr, ranks_group_, input_data_num);
 }

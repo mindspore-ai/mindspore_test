@@ -398,6 +398,23 @@ int64_t AnfUtils::GetIntValue(const ValuePtr &value) {
   }
 }
 
+bool IsOutputNestedTuple(const FuncGraphPtr &fg) {
+  auto output = fg->output();
+  auto abstract = output->abstract();
+  if (!abstract || !abstract->isa<abstract::AbstractTuple>()) {
+    return false;
+  }
+  auto abstract_tuple = abstract->cast<abstract::AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(abstract_tuple);
+  for (const auto &element : abstract_tuple->elements()) {
+    MS_EXCEPTION_IF_NULL(element);
+    if (element->isa<abstract::AbstractTuple>()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::pair<AnfNodePtr, size_t> VisitKernelImpl(const AnfNodePtr &anf_node, size_t index, bool in_getitem) {
   MS_EXCEPTION_IF_NULL(anf_node);
   if (anf_node->isa<ValueNode>() || anf_node->isa<Parameter>() || AnfUtils::IsCustomActorNode(anf_node)) {
@@ -405,8 +422,7 @@ std::pair<AnfNodePtr, size_t> VisitKernelImpl(const AnfNodePtr &anf_node, size_t
   }
   auto cnode = anf_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  if (GetCNodeFuncGraph(cnode) != nullptr && !AnfUtils::IsKernelPacket(cnode) && !AnfUtils::IsGraphKernel(cnode)) {
-    auto fg = GetCNodeFuncGraph(cnode);
+  if (auto fg = GetCNodeFuncGraph(cnode); fg != nullptr && IsOutputNestedTuple(fg)) {
     return VisitKernelImpl(fg->output(), index, in_getitem);
   }
   if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {

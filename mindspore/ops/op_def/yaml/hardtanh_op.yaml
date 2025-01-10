@@ -1,0 +1,16 @@
+#operator hardtanh
+hardtanh:
+  args:
+    input:
+      dtype: tensor
+    min_val:
+      dtype: number
+      default: -1
+    max_val:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True

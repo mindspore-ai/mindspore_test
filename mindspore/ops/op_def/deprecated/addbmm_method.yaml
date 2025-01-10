@@ -1,0 +1,18 @@
+#operator addbmm
+addbmm:
+  args:
+    input:
+      dtype: tensor
+    batch1:
+      dtype: tensor
+    batch2:
+      dtype: tensor
+    beta:
+      dtype: number
+      default: 1
+    alpha:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor

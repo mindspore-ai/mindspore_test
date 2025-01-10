@@ -13,5 +13,7 @@ dropout_grad_ext:
     dispatch:
         enable: True
         Ascend: DropoutGradExtAscend
+        CPU: None
+        GPU: None
     function:
         disable: True

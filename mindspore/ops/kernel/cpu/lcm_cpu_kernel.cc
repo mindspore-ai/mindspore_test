@@ -51,18 +51,18 @@ int LcmCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  x1_shape_ = inputs[0]->GetShapeVector();
-  x2_shape_ = inputs[1]->GetShapeVector();
-  y_shape_ = outputs[0]->GetShapeVector();
+  x1_shape_ = inputs[kIndex0]->GetShapeVector();
+  x2_shape_ = inputs[kIndex1]->GetShapeVector();
+  y_shape_ = outputs[kIndex0]->GetShapeVector();
   return KRET_OK;
 }
 
 template <typename T>
 bool LcmCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  const T *x1 = reinterpret_cast<const T *>(inputs[0]->device_ptr());
-  const T *x2 = static_cast<const T *>(inputs[1]->device_ptr());
-  T *y = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const T *x1 = reinterpret_cast<const T *>(inputs[kIndex0]->device_ptr());
+  const T *x2 = static_cast<const T *>(inputs[kIndex1]->device_ptr());
+  T *y = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
   if (y_shape_.size() == 0) {
     (void)y_shape_.insert(y_shape_.begin(), 1);
   }

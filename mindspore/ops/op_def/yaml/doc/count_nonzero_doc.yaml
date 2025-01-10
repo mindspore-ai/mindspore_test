@@ -8,7 +8,7 @@ count_nonzero:
         Args:
             input (Tensor): Input data is used to count non-zero numbers. With shape
                 :math:`(*)` where :math:`*` means, any number of additional dimensions.
-            dim (Union[int, tuple(int), list(int)], optional): The dimension to reduce. Default value: ``None``, which indicates that the number of non-zero elements is calculated. If `dim` is ``None``, all elements in the tensor are summed up.
+            dim (Union[None, int, tuple(int), list(int)], optional): The dimension to reduce. Default value: ``None``, which indicates that the number of non-zero elements is calculated. If `dim` is ``None``, all elements in the tensor are summed up.
                 
         Returns:
             Tensor, number of nonzero element across dim specified by `dim`.

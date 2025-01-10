@@ -351,6 +351,7 @@ class OperatorInfo {
   Ops sub_ops() const { return sub_ops_; }
   VirtualDivOp virtual_div_op() const { return virtual_div_op_; }
   Shape dev_matrix_shape() const { return dev_matrix_shape_; }
+  Shape out_dev_matrix_shape() const { return out_dev_matrix_shape_; }
   std::vector<TensorInfo> inputs_tensor_info() const { return inputs_tensor_info_; }
   std::vector<TensorInfoBasePtr> inputs_tensor_info_new() const { return inputs_tensor_info_new_; }
   void set_inputs_tensor_info(const std::vector<TensorInfo> &tensor_info) { inputs_tensor_info_ = tensor_info; }
@@ -491,6 +492,13 @@ class OperatorInfo {
   // Key for user data.
   constexpr static char key[] = "OpInfo";
 
+  // return Dump IR parallel detail
+  int64_t as_loss_divisor() const { return as_loss_divisor_; }
+  TensorMaps inputs_tensor_map() const { return inputs_tensor_map_; }
+  TensorMaps outputs_tensor_map() const { return outputs_tensor_map_; }
+  NewTensorMaps inputs_tensor_map_new() const { return inputs_tensor_map_new_; }
+  NewTensorMaps outputs_tensor_map_new() const { return outputs_tensor_map_new_; }
+
  protected:
   // needed by rec_parser
   std::string type_;
@@ -522,7 +530,7 @@ class OperatorInfo {
   void DivisorsReplaceShapes();  // in dynamic shape, using divisors replace to shapes before CheckStrategy and so on
   void ResumeShapes();           // in dynamic shape, resume shapes after CheckStrategy and so on
   void DynamicShapeCheckStrategyLog();
-  void SetRepeatedCalcDevMatrix();
+  virtual void SetRepeatedCalcDevMatrix();
   void ResetTensorMapIfRepeatedCalc();
   void ResetTupleTensorMapIfRepeatedCalc(NewTensorMaps *tensor_map_new);
   void ChangeMakeTupleConstant(const CNodePtr &cnode, size_t make_tuple_index);

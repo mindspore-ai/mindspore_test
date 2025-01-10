@@ -15,6 +15,7 @@
 """ test_stop_gradient """
 import numpy as np
 import pytest
+import os
 
 import mindspore as ms
 import mindspore.common.dtype as mstype
@@ -317,9 +318,15 @@ def test_stop_gradient_7():
             x1 = stop_gradient(x1)
             return x1, x2
 
-    ms.context.set_context(mode=ms.context.GRAPH_MODE, precompile_only=True)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+    ms.context.set_context(mode=ms.context.GRAPH_MODE)
     bprop(PrimWithMultiOutputs_(), Tensor(np.ones([2]).astype(np.float32)), \
         Tensor(np.ones([2]).astype(np.float32)), wrt=['inputs'])
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
 
 
 

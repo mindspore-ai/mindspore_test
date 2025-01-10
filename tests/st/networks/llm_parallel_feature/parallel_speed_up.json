@@ -1,0 +1,10 @@
+{
+    "matmul_grad_comm_overlap": false,
+    "enable_grad_comm_opt": false,
+    "enable_opt_shard_comm_opt": false,
+    "recompute_allgather_overlap_fagrad": false,
+    "compute_communicate_fusion_level": 0,
+    "dataset_broadcast_opt_level": 0,
+    "enable_allreduce_slice_to_reducescatter": false,
+    "enable_interleave_split_concat_branch": false
+}

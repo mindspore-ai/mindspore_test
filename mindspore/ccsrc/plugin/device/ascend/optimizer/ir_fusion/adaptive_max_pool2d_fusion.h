@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_FUSION_H_
 
+#include <vector>
 #include <string>
 #include "include/backend/optimizer/pattern_engine.h"
 #include "include/backend/optimizer/optimizer.h"
@@ -38,6 +39,9 @@ class AdaptiveMaxPool2DGeFusion : public AdaptiveMaxPool2DFusion {
       : AdaptiveMaxPool2DFusion("adaptive_max_pool2d_ge_fusion", multigraph) {}
   ~AdaptiveMaxPool2DGeFusion() override = default;
   const BaseRef DefinePattern() const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

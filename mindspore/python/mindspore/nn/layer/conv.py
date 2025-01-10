@@ -862,6 +862,9 @@ class Conv3dTranspose(_Conv):
     However, when `stride` > 1, Conv2d maps multiple input shapes to the same output shape. Deconvolutional network
     can refer to `Deconvolutional Networks <https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf>`_.
 
+    Note:
+        For Atlas A2 training series products, `output_padding` is currently not supported.
+
     Args:
         in_channels (int): The channel number of the input tensor of the Conv3dTranspose layer.
         out_channels (int): The channel number of the output tensor of the Conv3dTranspose layer.

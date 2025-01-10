@@ -141,16 +141,16 @@ ops::OP_DTYPE GetOpDtypeFromAbstract(const AbstractBasePtr &abs) {
   return ops::OP_DTYPE::DT_ANY;
 }
 
-std::set<std::string> *GetMethodKwonlyArgs(const std::string &functional_name) {
-  const auto &iter = ops::tensor_method_kwonlyargs_map.find(functional_name);
+std::set<std::string> *GetMethodKwonlyArgs(const std::string &prim_name) {
+  const auto &iter = ops::tensor_method_kwonlyargs_map.find(prim_name);
   if (iter != ops::tensor_method_kwonlyargs_map.end()) {
     return &iter->second;
   }
   return nullptr;
 }
 
-std::set<std::string> *GetFunctionKwonlyArgs(const std::string &functional_name) {
-  const auto &iter = ops::function_kwonlyargs_map.find(functional_name);
+std::set<std::string> *GetFunctionKwonlyArgs(const std::string &prim_name) {
+  const auto &iter = ops::function_kwonlyargs_map.find(prim_name);
   if (iter != ops::function_kwonlyargs_map.end()) {
     return &iter->second;
   }
@@ -180,52 +180,28 @@ void GetOpDtypeList(const std::string &prim_name, const abstract::AbstractBasePt
   }
 }
 
-bool MatchPrimitiveWithPackArgs(const ops::OpDefPtr &op_def, const std::vector<ops::OP_DTYPE> &position_args_dtype,
-                                bool *need_pack) {
-  // For example: Reshape(tensor, 2, 3) -> Reshape(tensor, (2, 3))
-  constexpr auto requeired_size = 2;
-  constexpr auto index_allow_pack = 1;
-  const auto &op_args = op_def->args_;
-  bool allow_pack = op_args.size() == requeired_size && position_args_dtype.size() >= requeired_size &&
-                    (op_args[index_allow_pack].arg_dtype_ == ops::DT_TUPLE_INT ||
-                     op_args[index_allow_pack].arg_dtype_ == ops::DT_LIST_INT);
-  if (!allow_pack) {
-    return false;
+size_t GetVarargsIndex(const std::string &prim_name, bool is_method) {
+  if (is_method) {
+    const auto &iter = ops::tensor_method_varargs_map.find(prim_name);
+    if (iter != ops::tensor_method_varargs_map.end()) {
+      return iter->second;
+    }
+    return SIZE_MAX;
+  } else {
+    const auto &iter = ops::function_varargs_map.find(prim_name);
+    if (iter != ops::function_varargs_map.end()) {
+      return iter->second;
+    }
+    return SIZE_MAX;
   }
-  bool all_int = std::all_of(position_args_dtype.begin() + index_allow_pack, position_args_dtype.end(),
-                             [](const auto &op_dtype) { return op_dtype == ops::DT_INT; });
-  if (all_int) {
-    *need_pack = true;
-  }
-  return all_int;
 }
 
-bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &prim_name,
-                        const abstract::AbstractBasePtrList &args_abs_list, bool is_method, bool *need_pack) {
+bool CheckKwargs(const std::string &prim_name, const std::map<std::string, ops::OP_DTYPE> &keyword_args_dtype,
+                 const std::vector<ops::OP_DTYPE> &position_args_dtype) {
   const auto &op_def = ops::GetOpDef(prim_name);
-  if (op_def == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Cannot find OpDef of Primitive[" << prim_name << "].";
-  }
-  // Separate position arguments and keyword arguments.
-  std::vector<ops::OP_DTYPE> position_args_dtype;
-  std::map<std::string, ops::OP_DTYPE> keyword_args_dtype;
-  GetOpDtypeList(prim_name, args_abs_list, &position_args_dtype, &keyword_args_dtype);
-  // If there is a single positional IntArray argument, allow a var-args stype IntArray,
-  // so x.reshape(2, 3) behaves as x.reshape((2, 3)).
-  if (is_method && keyword_args_dtype.empty() && MatchPrimitiveWithPackArgs(op_def, position_args_dtype, need_pack)) {
-    return true;
-  }
-  // Check args size.
-  const auto &op_args = op_def->args_;
-  MS_LOG(DEBUG) << "Matching Primitive" << prim_name << "], expect args number: " << op_args.size()
-                << ". The number of position args is " << position_args_dtype.size() << " and that of keyword args is "
-                << keyword_args_dtype.size() << ".";
-  if (position_args_dtype.size() + keyword_args_dtype.size() > op_args.size()) {
-    return false;
-  }
-  // Check keyword arguments.
   for (const auto &[key, value] : keyword_args_dtype) {
     auto op_indexes = op_def->indexes_;
+    const auto &op_args = op_def->args_;
     const auto &iter = op_indexes.find(key);
     if (iter == op_indexes.end()) {
       MS_LOG(DEBUG) << "Mismatch: For Primitive[" << prim_name << "], no arg matching '" << key << "' could be found.";
@@ -243,9 +219,44 @@ bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &p
       return false;
     }
   }
-  // Check position arguments.
-  const auto kwonly_list = is_method ? GetMethodKwonlyArgs(functional_name) : GetFunctionKwonlyArgs(functional_name);
-  for (size_t i = 0; i < position_args_dtype.size(); ++i) {
+  return true;
+}
+
+size_t GetPrimDefaultSize(const std::vector<ops::OpInputArg> &op_args, const std::string &prim_name,
+                          size_t varargs_index) {
+  auto default_dict = parse::GetPrimDefaultDict(prim_name);
+  bool has_default = !py::isinstance<py::none>(default_dict);
+  // The default value of vararg is ().
+  bool vararg_non_default = varargs_index != SIZE_MAX &&
+                            ((has_default && !default_dict.contains(op_args[varargs_index].arg_name_)) || !has_default);
+  size_t varargs_count = vararg_non_default ? 1 : 0;
+  if (!has_default) {
+    return varargs_count;
+  }
+  return varargs_count + default_dict.cast<py::dict>().size();
+}
+
+bool CheckPositionArgs(const std::string &prim_name, const std::vector<ops::OP_DTYPE> &position_args_dtype,
+                       bool is_method, bool *need_pack) {
+  size_t check_position_size = position_args_dtype.size();
+  size_t var_args_index = GetVarargsIndex(prim_name, is_method);
+  if (var_args_index != SIZE_MAX) {
+    bool all_int = false;
+    if (position_args_dtype.size() > var_args_index) {
+      check_position_size = var_args_index;
+      all_int = std::all_of(position_args_dtype.begin() + var_args_index,
+                            position_args_dtype.begin() + position_args_dtype.size(),
+                            [](const auto &op_dtype) { return op_dtype == ops::DT_INT; });
+    }
+    // all of args type show be int or primitive name has "Deprecated"
+    if ((prim_name.find("Deprecated") != std::string::npos) || all_int) {
+      *need_pack = true;
+    }
+  }
+  const auto kwonly_list = is_method ? GetMethodKwonlyArgs(prim_name) : GetFunctionKwonlyArgs(prim_name);
+  const auto &op_def = ops::GetOpDef(prim_name);
+  const auto &op_args = op_def->args_;
+  for (size_t i = 0; i < check_position_size; ++i) {
     // position argument should not be keyword-only.
     const auto &arg_name = op_args[i].arg_name_;
     if (kwonly_list != nullptr && kwonly_list->find(arg_name) != kwonly_list->end()) {
@@ -254,6 +265,41 @@ bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &p
     if (!MatchPrimitiveArgDtype(prim_name, op_args[i], position_args_dtype[i])) {
       return false;
     }
+  }
+  return true;
+}
+
+bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &prim_name,
+                        const abstract::AbstractBasePtrList &args_abs_list, bool is_method, bool *need_pack) {
+  const auto &op_def = ops::GetOpDef(prim_name);
+  if (op_def == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Cannot find OpDef of Primitive[" << prim_name << "].";
+  }
+  // Separate position arguments and keyword arguments.
+  std::vector<ops::OP_DTYPE> position_args_dtype;
+  std::map<std::string, ops::OP_DTYPE> keyword_args_dtype;
+  GetOpDtypeList(prim_name, args_abs_list, &position_args_dtype, &keyword_args_dtype);
+  // Check args size.
+  const auto &op_args = op_def->args_;
+  MS_LOG(DEBUG) << "Matching Primitive" << prim_name << "], expect args number: " << op_args.size()
+                << ". The number of position args is " << position_args_dtype.size() << " and that of keyword args is "
+                << keyword_args_dtype.size() << ".";
+  // If no varargs , check args size
+  auto inputs_size = position_args_dtype.size() + keyword_args_dtype.size();
+  size_t varargs_index = GetVarargsIndex(prim_name, is_method);
+  if (varargs_index == SIZE_MAX && inputs_size > op_args.size()) {
+    return false;
+  }
+  if (!CheckKwargs(prim_name, keyword_args_dtype, position_args_dtype)) {
+    return false;
+  }
+  if (!CheckPositionArgs(prim_name, position_args_dtype, is_method, need_pack)) {
+    return false;
+  }
+  // Check the number of arguments.
+  auto least_size = op_args.size() - GetPrimDefaultSize(op_args, prim_name, varargs_index);
+  if (inputs_size < least_size) {
+    return false;
   }
   return true;
 }
@@ -424,13 +470,87 @@ ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
   return match_prim;
 }
 
-AnfNodePtrList GeneratePrimitivePackArgs(const AnfNodePtrList &inputs_list, const FuncGraphPtr &func_graph) {
-  constexpr auto index_data = 0;
-  constexpr auto index_args = 1;
-  AnfNodePtrList pack_args{NewValueNode(prim::kPrimMakeTuple)};
-  (void)std::copy(inputs_list.begin() + index_args, inputs_list.end(), std::back_inserter(pack_args));
-  auto pack_args_node = func_graph->NewCNodeInOrder(pack_args);
-  return {inputs_list[index_data], pack_args_node};
+AnfNodePtrList GeneratePrimitivePackPositionArgs(const FuncGraphPtr &func_graph,
+                                                 const std::vector<AnfNodePtr> &args_list, size_t position_args_size,
+                                                 size_t var_args_index) {
+  AnfNodePtrList nodes;
+  if (position_args_size <= var_args_index) {
+    for (size_t i = 0; i < position_args_size; ++i) {
+      (void)nodes.emplace_back(args_list[i]);
+    }
+  } else {
+    for (size_t i = 0; i < var_args_index; ++i) {
+      (void)nodes.emplace_back(args_list[i]);
+    }
+    AnfNodePtrList pack_args{NewValueNode(prim::kPrimMakeTuple)};
+    (void)std::copy(args_list.begin() + var_args_index, args_list.begin() + position_args_size,
+                    std::back_inserter(pack_args));
+    auto pack_args_node = func_graph->NewCNodeInOrder(pack_args);
+    nodes.emplace_back(pack_args_node);
+  }
+  return nodes;
+}
+
+void GeneratePrimitivePackKeywordArgs(const std::string &prim_name, const std::vector<ops::OpInputArg> &op_args,
+                                      std::map<std::string, AnfNodePtr> *key_map, size_t var_args_index,
+                                      AnfNodePtrList *nodes) {
+  size_t nodes_size = nodes->size();
+  for (size_t i = nodes_size; i < op_args.size(); ++i) {
+    const auto &arg_name = op_args[i].arg_name_;
+    const auto &iter = key_map->find(arg_name);
+    if (iter != key_map->end()) {
+      MS_LOG(DEBUG) << "Get args for Primitive[" << prim_name << "]: " << iter->second->DebugString();
+      (void)nodes->emplace_back(iter->second);
+      (void)key_map->erase(arg_name);
+    } else {
+      if (i == var_args_index) {
+        auto empty_tuple_value = std::make_shared<ValueTuple>(ValuePtrList());
+        (void)nodes->emplace_back(NewValueNode(empty_tuple_value));
+        continue;
+      }
+      auto default_arg = parse::GetArgDefaultValue(prim_name, arg_name);
+      if (default_arg == nullptr) {
+        break;
+      }
+      MS_LOG(DEBUG) << "Get the default value of '" << arg_name << "' attribute of Primitive[" << prim_name
+                    << "], which is " << default_arg->ToString() << ".";
+      (void)nodes->emplace_back(NewValueNode(default_arg));
+    }
+  }
+}
+
+AnfNodePtrList GeneratePrimitivePackArgs(const std::pair<std::string, bool> &params,
+                                         const std::vector<AnfNodePtr> &args_list,
+                                         const std::vector<ops::OpInputArg> &op_args,
+                                         const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
+                                         const FuncGraphPtr &graph) {
+  const std::string &prim_name = params.first;
+  bool is_method = params.second;
+  size_t var_args_index = GetVarargsIndex(prim_name, is_method);
+  size_t args_size = args_list.size();
+  std::map<std::string, AnfNodePtr> key_map;
+  for (size_t idx = 0; idx < args_list.size(); ++idx) {
+    auto input = args_list[idx];
+    if (abstract::IsMonad(input)) {
+      --args_size;
+      continue;
+    }
+    auto input_abs = eval_func(input);
+    if (input_abs->isa<abstract::AbstractKeywordArg>()) {
+      abstract::GetKeywordArgsMap(input_abs, op_args, input, graph, &key_map);
+    }
+  }
+  args_size -= key_map.size();
+  AnfNodePtrList nodes = GeneratePrimitivePackPositionArgs(graph, args_list, args_size, var_args_index);
+  GeneratePrimitivePackKeywordArgs(prim_name, op_args, &key_map, var_args_index, &nodes);
+
+  if (nodes.size() != op_args.size()) {
+    std::string args_type_str = (op_args.size() != 0 && op_args[0].as_init_arg_) ? "init arguments" : "inputs";
+    MS_EXCEPTION(TypeError) << "For Operator[" << prim_name << "], the number of " << args_type_str
+                            << " (including default arguments) should be " << op_args.size()
+                            << ", but the actual number of inputs is not satisfied, which is " << args_size << ".";
+  }
+  return nodes;
 }
 
 AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, const AnfNodePtrList &inputs_list,
@@ -453,7 +573,8 @@ AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, cons
   }
   AnfNodePtrList args_node_list;
   if (need_pack) {
-    args_node_list = GeneratePrimitivePackArgs(inputs_list, func_graph);
+    args_node_list = GeneratePrimitivePackArgs(std::make_pair(prim_name, is_method), inputs_list, op_def->args_,
+                                               eval_func, func_graph);
   } else {
     args_node_list =
       abstract::GeneratePrimitiveDefaultArgs(prim_name, inputs_list, op_def->args_, eval_func, func_graph);

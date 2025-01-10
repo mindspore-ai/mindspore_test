@@ -37,8 +37,10 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/config_manager.h"
 #include "kernel/kernel.h"
+#include "proto/debug_graph.pb.h"
 
 constexpr int kFailure = 1;
+constexpr int kQint4ShapeModify = 2;
 constexpr auto kInput = "input";
 constexpr auto kOutput = "output";
 
@@ -68,6 +70,9 @@ std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &
   if (node_name == "BatchNorm") {
     MS_LOG(INFO) << "loading node named " << node_name;
     (void)real_outputs.insert(real_outputs.cend(), {0, 3, 4});
+  } else if (node_name == "FlashAttentionScore") {
+    MS_LOG(INFO) << "loading node named " << node_name;
+    (void)real_outputs.insert(real_outputs.cend(), {0, 1, 3});
   } else {
     // by default, TensorLoader will load all outputs
     for (size_t j = 0; j < output_size; ++j) {
@@ -137,10 +142,17 @@ uint32_t GetSampleMode() {
 uint32_t GetSampleNum() {
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
-  if (IsDeviceTargetGPU()) {
+  if (IsDeviceTargetGPU() || !GetSampleMode()) {
     return 0;
   }
   return DumpJsonParser::GetInstance().sample_num();
+}
+
+size_t ModifySize(const TypeId &host_type, const size_t &host_size) {
+  if (host_type == kNumberTypeInt4) {
+    return host_size / kQint4ShapeModify;
+  }
+  return host_size;
 }
 
 inline TypeId GetInputKernelType(const AnfNodePtr &input_kernel, bool trans_flag) {
@@ -343,7 +355,12 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
   }
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   if (dump_json_parser.op_debug_mode() == DumpJsonParser::DUMP_BOTH_OVERFLOW) {
-    if (!CheckOverFlow(device_context, output_device_tensors)) {
+    auto output_size = output_device_tensors.size();
+    std::vector<size_t> valid_indexes = CheckRealOutput(common::AnfAlgo::GetCNodeName(cnode), output_size);
+    std::vector<device::DeviceAddress *> valid_output_tensors;
+    std::transform(valid_indexes.begin(), valid_indexes.end(), std::back_inserter(valid_output_tensors),
+                   [&output_device_tensors](auto index) { return output_device_tensors[index]; });
+    if (!CheckOverFlow(device_context, valid_output_tensors)) {
       return;
     }
   }
@@ -379,7 +396,7 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
       debugger->DumpSingleNode(cnode, graph_id);
     } else {
       // for Ascend, node are dumped in root_graph_id directory.
-      debugger->DumpSingleNode(cnode, root_graph_id);
+      debugger->DumpSingleNode(cnode, root_graph_id, device_context);
     }
     debugger->ClearCurrentData();
   }
@@ -491,20 +508,23 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       std::string file_path = tensor_info_comm.file_path_prefix + '.' + std::to_string(timestamp) + '.' +
                               tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format +
                               "." + type_str;
-
       auto host_shape = tensor_info.host_shape;
+      if (host_type == kNumberTypeInt4 && !GetSampleNum()) {
+        host_shape.back() *= 2;
+      }
       mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
       MS_EXCEPTION_IF_NULL(out_tensor);
       size_t host_size = LongToSize(out_tensor->data().nbytes());
       if (host_size == 0) {
-        MS_LOG(WARNING) << "Dump tensor size is 0 for tensor: " << file_path << ". Skip it";
+        std::string file_name = tensor_info_comm.file_path_prefix;
+        if (file_name.rfind("/") != std::string::npos) {
+          file_name = file_path.substr(file_name.rfind("/") + 1);
+        }
+        MS_LOG(WARNING) << "Dump tensor size is 0 for tensor: " << file_name << ". Skip it";
         continue;
       }
+      host_size = ModifySize(host_type, host_size);
       size_t device_size = tensor_info.device_size;
-      if (host_type == kNumberTypeInt4) {
-        host_size /= 2;
-        device_size /= 2;
-      }
       if (host_size > device_size) {
         MS_LOG(ERROR) << "Dump host size " << host_size << " greater than device size " << device_size;
         continue;
@@ -672,6 +692,18 @@ inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
     return;
   }
   uint64_t timestamp = Common::GetTimeStamp();
+  std::string host_type = TypeIdToString(tensor_info.host_type, true);
+
+  if (tensor_info.device_size == 0) {
+    std::string file_name = tensor_info_comm.file_path_prefix;
+    if (file_name.rfind("/") != std::string::npos) {
+      file_name = file_name.substr(file_name.rfind("/") + 1);
+    }
+    file_name = file_name + '.' + std::to_string(timestamp) + '.' + tensor_info.io + '.' +
+                std::to_string(tensor_info.io_index) + '.' + tensor_info.format + "." + host_type;
+    MS_LOG(WARNING) << "Dump tensor size is 0 for tensor: " << file_name << ". Skip it";
+    return;
+  }
 
   csv.WriteToCsv(node_type);
   csv.WriteToCsv(node_name);
@@ -681,7 +713,7 @@ inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
   csv.WriteToCsv(tensor_info.io);
   csv.WriteToCsv(tensor_info.io_index);
   csv.WriteToCsv(tensor_info.device_size);
-  csv.WriteToCsv(TypeIdToString(tensor_info.host_type, true));
+  csv.WriteToCsv(host_type);
   csv.WriteToCsv(ShapeToString(tensor_info.host_shape));
 
   for (const auto &name : stat_name_list) {

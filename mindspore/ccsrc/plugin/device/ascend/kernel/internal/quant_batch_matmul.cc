@@ -17,34 +17,29 @@
 #include "plugin/device/ascend/kernel/internal/quant_batch_matmul.h"
 
 #include <memory>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalQuantBatchMatmul::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                             const std::vector<KernelTensor *> &outputs) {
-  auto param_ptr = std::make_shared<internal::OpParam>();
-  param_ptr->opId = internal::OpId::MatMul;
-  bool transpose_x1 = false;
-  bool transpose_x2 = false;
-  transpose_x1 = static_cast<bool>(inputs[kIndex6]->GetValueWithCheck<bool>());
-  transpose_x2 = static_cast<bool>(inputs[kIndex7]->GetValueWithCheck<bool>());
-
-  auto shape_a = inputs[kIndex0]->GetShapeVector();
-  auto shape_b = inputs[kIndex1]->GetShapeVector();
-  int m = (!transpose_x1) ? shape_a[kIndex0] : shape_a[kIndex1];
-  int k = (!transpose_x1) ? shape_a[kIndex1] : shape_a[kIndex0];
-  int n = (!transpose_x2) ? shape_b[kIndex1] : shape_b[kIndex0];
-
-  bool has_bias = !(inputs[kIndex4]->GetType()->isa<TypeNone>());
-  internal::MatMulParam op_param = {transpose_x1, transpose_x2, {m, k, n}, has_bias, true};
-  param_ptr->specificParam = op_param;
-  return param_ptr;
+internal::InternalOpPtr InternalQuantBatchMatmul::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                               const internal::OutputsImmutableInfoList &outputs,
+                                                               const std::vector<KernelTensor *> &ms_inputs,
+                                                               const std::vector<KernelTensor *> &ms_outputs) {
+  internal::MatmulParam param;
+  param.transpose_a = ms_inputs[kIndex6]->GetValueWithCheck<bool>();
+  param.transpose_b = ms_inputs[kIndex7]->GetValueWithCheck<bool>();
+  param.with_bias = !(ms_inputs[kIndex4]->GetType()->isa<TypeNone>());
+  param.enable_shuffle = false;  // the real definition is in internal
+  param.enable_dequant = true;
+  output_format_ = outputs[0].GetFormat();
+  return internal::CreateMatmulOp(inputs, outputs, param, internal::kInternalMatMulOpName);
 }
 
-MS_INTERNAL_KERNEL_FACTORY_REG(QuantBatchMatmul, InternalQuantBatchMatmul);
+uint64_t InternalQuantBatchMatmul::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, output_format_);
+}
+MS_INTERNAL_KERNEL_FACTORY_REG(QuantBatchMatmul, internal::kInternalMatMulOpName, InternalQuantBatchMatmul);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QuantBatchMatmul, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_4, INDEX_2);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QuantBatchMatmul, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel

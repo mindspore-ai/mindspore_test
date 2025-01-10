@@ -23,7 +23,7 @@
 #include <vector>
 #include <unordered_map>
 #include <utility>
-
+#include <unordered_set>
 #include "include/backend/device_type.h"
 #include "include/backend/device_address.h"
 #include "runtime/device/gsm/swap_manager.h"
@@ -43,6 +43,9 @@
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>  // for GetCurrentProcessId()
+#endif
 
 namespace mindspore {
 namespace device {
@@ -52,6 +55,7 @@ using mindspore::kernel::KernelTensor;
 
 const size_t kDeviceContextsNumOne = 1;
 const size_t kDeviceContextsNumTwo = 2;
+static const uint32_t kOpTimeout = 900;
 
 constexpr auto RS_NORMAL = "RS_NORMAL";
 constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
@@ -72,11 +76,19 @@ class DeviceResManager;
 class GraphExecutor;
 class KernelExecutor;
 
+inline pid_t GetCurrentPID() {
+#if defined(_WIN32) || defined(_WIN64)
+  return GetCurrentProcessId();
+#else
+  return getpid();
+#endif
+}
+
 // DeviceContext is unified interface of interaction with device.
 class DeviceContext {
  public:
   explicit DeviceContext(const DeviceContextKey &device_context_key)
-      : device_context_key_(device_context_key), initialized_(false) {}
+      : device_context_key_(device_context_key), initialized_(false), pid_(GetCurrentPID()) {}
   virtual ~DeviceContext() = default;
 
   // Initialize the device context.
@@ -84,6 +96,11 @@ class DeviceContext {
 
   // Destroy device context and release device resource.
   virtual void Destroy() {}
+
+  // Check whether the device context needs to be released.
+  // The device context is copied by the dataset independent process, but does not need to be released
+  // in the dataset independent process.
+  virtual bool IsNeedDestroy() { return pid_ == GetCurrentPID(); }
 
   // Analysis the function graph to check whether all nodes are supported, if yes, return true, if no, return false and
   // mark the unsupported node as "NotSupport" through SetCNodeNotSupported()
@@ -119,6 +136,10 @@ class DeviceContext {
   // todo: delete
   virtual DeprecatedInterface *GetDeprecatedInterface() { return nullptr; }
 
+  virtual uint32_t GetExecuteTimeout() { return kOpTimeout; }
+  virtual std::string GetAoeJobType() { return ""; }
+  virtual std::string GetPrecisionMode() { return ""; }
+
   // Return whether this device context is initialized.
   bool initialized() const {
 #ifdef __APPLE__
@@ -141,6 +162,7 @@ class DeviceContext {
   inline static std::mutex init_mutex_;
 #endif
   bool initialized_;
+  pid_t pid_;  // Indicates the process id which creates the context.
 
  private:
   std::shared_ptr<KernelExecutor> kernel_executor_;
@@ -383,14 +405,43 @@ class BACKEND_EXPORT DeviceResManager {
 class GraphExecutor {
  public:
   virtual ~GraphExecutor() = default;
+  virtual void Initialize() { return; }
+  virtual void Finalize() { return; }
+  virtual void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph) { return; }
   virtual bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) { return true; }
+  // lite used
   virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
                         std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
+  virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
+                        std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
   virtual std::string GetRandomStatus(const std::vector<FuncGraphPtr> &graphs) { return ""; }
   virtual size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const { return 0; }
-  virtual void InitGraphInfo(const FuncGraphPtr &graph) { return; };
+  virtual void InitGraphInfo(const FuncGraphPtr &graph) { return; }
+  virtual void InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const { return; }
+  virtual void AllocGEInputOutputMemory(const KernelGraphPtr &graph) const { return; }
+  virtual void AllocInputMemory(const DeviceAddressPtr &input_address) const { return; }
+  virtual void AllocGEFixMemory() const { return; }
+  virtual void RunCheckpointGraph(const KernelGraphPtr &graph) { return; }
+  virtual void AllocGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
+  virtual void FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
+  virtual FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph,
+                                    const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_inputs_map,
+                                    bool export_air) {
+    return nullptr;
+  }
+  virtual string ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph, bool is_save_to_file) {
+    return "";
+  }
+
+  virtual std::unordered_set<std::string> GetInferParameterNames() { return {}; }
+  virtual DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor, bool is_need_alloc_mem) const {
+    return nullptr;
+  }
+  virtual void FreeInputOutputMemory(const KernelGraphPtr &graph) const { return; }
 
  protected:
   DeviceContext *device_context_{nullptr};
@@ -417,7 +468,7 @@ class BACKEND_EXPORT KernelExecutor {
   // Generate 'KernelMod' for all kernels and set 'KernelMod' into kernel,
   // 'KernelMod' is real executive object of kernel.
   virtual void CreateKernel(const std::vector<CNodePtr> &nodes) const {}
-  virtual kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const { MS_LOG(EXCEPTION) << "Unrealized"; };
+  virtual kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const { MS_LOG(EXCEPTION) << "Unrealized"; }
 
   // Adjust kernel graph before run graph.
   virtual void PreprocessBeforeRun(const FuncGraphPtr &graph) const {}
@@ -438,12 +489,10 @@ class BACKEND_EXPORT KernelExecutor {
   };
   // Unify the MindIR, the default behavior uses the common unified MindIR.
   virtual void UnifyMindIR(const KernelGraphPtr &graph) const;
-  virtual void AddMindIRPass(const KernelGraphPtr &graph) const {};
+  virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}
 
   // Get rank id for distributed training.
   virtual uint32_t GetRankID() const { return 0; }
-
-  virtual void AllocGraphFixedMemory() const {}
 
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
 

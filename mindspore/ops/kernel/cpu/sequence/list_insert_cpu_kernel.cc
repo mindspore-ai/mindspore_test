@@ -55,7 +55,6 @@ bool ListInsertCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inp
                                           const std::vector<KernelTensor *> &outputs) {
   const auto input_addr = GetDeviceAddress<T>(inputs, 0);
   const auto index_addr = GetDeviceAddress<S>(inputs, 1);
-  MS_EXCEPTION_IF_NULL(index_addr);
   const auto target_addr = GetDeviceAddress<T>(inputs, kTargetIndex);
   auto output_addr = GetDeviceAddress<T>(outputs, 0);
   auto len_list = list_shape_[0];

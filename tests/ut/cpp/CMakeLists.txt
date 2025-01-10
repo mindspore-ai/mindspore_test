@@ -166,6 +166,8 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
 file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+        "../../../mindspore/ccsrc/plugin/device/ascend/device_context_conf/op_tuning_conf.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/common/ascend_utils.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/abstract_ascend_memory_pool_support.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_address.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_synchronizer.cc"
@@ -228,11 +230,11 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/batchnorm_to_bninfer.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/batchnormgrad_to_bninfergrad.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/histogram_fixed_width_fusion.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_fusion_base.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/add_layer_norm_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/inference_matmul_split_fusion.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_fusion_base.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_add_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.cc"
@@ -255,6 +257,10 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_matmul_all_reduce.cc")
+list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
+        "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_send.cc")
+list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
+        "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_receive.cc")
 
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
 target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend mindspore_core _c_dataengine

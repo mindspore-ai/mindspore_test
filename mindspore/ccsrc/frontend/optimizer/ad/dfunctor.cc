@@ -66,6 +66,38 @@ void ComplexPreprocess(const AnfNodePtr &input, const CNodePtr &din) {
   }
   din->AddAttr(kAttrCheckComplex, MakeValue(true));
 }
+
+void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const FuncGraphManagerPtr &manager) {
+  MS_EXCEPTION_IF_NULL(primal_graph);
+  MS_LOG(INFO) << "Copy primitive value node for fprop replace in gradjit function for fg: "
+               << primal_graph->ToString();
+  auto value_nodes = primal_graph->value_nodes();
+  for (const auto &value_pair : value_nodes) {
+    const auto &node = value_pair.first;
+    MS_EXCEPTION_IF_NULL(node);
+    if (!IsValueNode<Primitive>(node)) {
+      continue;
+    }
+    const auto &prim = GetValuePtr<Primitive>(node);
+    if (IsPrimitive(node, prim::kPrimUpdateState) ||
+        (prim->Hash() == prim::kPrimReturn->hash() && prim->name() == prim::kPrimReturn->name()) ||
+        (prim->Hash() == prim::kPrimHookBackward->Hash() && prim->name() == prim::kPrimHookBackward->name()) ||
+        (prim->Hash() == prim::kPrimCellBackwardHook->Hash() && prim->name() == prim::kPrimCellBackwardHook->name())) {
+      continue;
+    }
+    auto users = manager->node_users()[node];
+    if (users.size() <= 1) {
+      continue;
+    }
+    for (const auto &user : users) {
+      auto new_value_node = NewValueNode(GetValueNode(node));
+      auto cnode = user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto index = user.second;
+      (void)manager->SetEdge(cnode, index, new_value_node);
+    }
+  }
+}
 }  // namespace
 
 DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top)
@@ -288,7 +320,11 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const CNodePtr &k_app,
     bprop_app = tape_->NewCNodeInFront({bprop, node_adjoint->dout()});
     tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
   } else {
-    bprop_app = tape_->NewCNode({bprop, node_adjoint->dout()});
+    if (common::GetCompileConfig("PUT_ALL_CNODE_INTO_ORDER_LIST") == "0") {
+      bprop_app = tape_->NewCNode({bprop, node_adjoint->dout()});
+    } else {
+      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+    }
   }
 
   if (HasSideEffectBackPropMem(cnode_morph)) {
@@ -400,11 +436,12 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
       }
     }
   }
+
   // Run in pynative mode, when @jit is used.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
+      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
     pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->ProcessCnodeFromAdGrad(k_app, cnode_morph);
   }
-
   for (size_t i = 0; i < param_adjoints.size(); ++i) {
     param_adjoints[i]->RegisterKUser(k_app, i);
   }
@@ -620,7 +657,8 @@ FuncGraphPtr DFunctor::KUserDefined(const FuncGraphPtr &primal) {
 }
 
 bool StopGradientForScalar(const CNodePtr &cnode) {
-  auto grad_for_scalar = MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR);
+  auto grad_for_scalar = (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) ||
+                          common::GetCompileConfig("GRAD_FOR_SCALAR") == "1");
   if (grad_for_scalar) {
     return false;
   }
@@ -780,6 +818,12 @@ void DFunctor::MapParamObject() {
 void DFunctor::MapValueObject() {
   // Map ValueNode.
   auto manager = resources_->manager();
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    const auto &pynative_grad_executor = pynative::PyNativeExecutor::grad_executor();
+    if (pynative_grad_executor->RequiresGrad() && common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") != "1") {
+      CopyPrimitivePtrForFpropReplace(primal_graph_, manager);
+    }
+  }
   auto &value_nodes = primal_graph_->value_nodes();
   for (const auto &value_pair : value_nodes) {
     auto node = value_pair.first;

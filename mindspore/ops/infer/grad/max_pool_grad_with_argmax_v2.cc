@@ -16,7 +16,7 @@
 
 #include "infer/grad/max_pool_grad_with_argmax_v2.h"
 #include <algorithm>
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "mindapi/ir/type.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"

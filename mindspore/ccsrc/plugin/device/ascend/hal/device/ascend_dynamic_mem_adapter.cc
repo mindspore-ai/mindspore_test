@@ -34,7 +34,7 @@ uint8_t *AscendDynamicMemAdapter::MallocStaticDevMem(size_t size, const std::str
   std::lock_guard<std::mutex> locker(mutex_);
   if (has_alloc_size + size > LongToSize(max_available_ms_hbm_size_)) {
     MS_LOG(EXCEPTION) << "No enough memory to allocate, has_alloc_size:" << has_alloc_size << ", size:" << size
-                      << ", max_available_ms_hbm_size:" << max_available_ms_hbm_size_;
+                      << ", max_available_ms_moc_size:" << max_available_ms_hbm_size_;
   }
   auto addr = MallocFromRts(size);
   if (addr != nullptr) {
@@ -89,7 +89,7 @@ std::string AscendDynamicMemAdapter::DevMemStatistics() const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   std::ostringstream oss;
-  oss << "\nDevice HBM memory size: " << device_hbm_total_size_ / kMBToByte << "M";
+  oss << "\nDevice MOC memory size: " << device_hbm_total_size_ / kMBToByte << "M";
   oss << "\nMindSpore Used memory size: " << ms_used_hbm_size_ / kMBToByte << "M";
   auto print_actual_peak_memory = AscendVmmAdapter::GetInstance().IsEnabled()
                                     ? AscendVmmAdapter::GetInstance().GetAllocatedSize()

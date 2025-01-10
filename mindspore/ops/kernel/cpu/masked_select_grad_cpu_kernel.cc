@@ -77,9 +77,9 @@ bool MaskedSelectGradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kernel
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', tensor_size_[" << std::to_string(tensor_size_)
                       << "] should not be less than zero. Output shape: " << output_shape_;
   }
-  auto mask = reinterpret_cast<bool *>(inputs[kIndexMask]->device_ptr());
-  auto grad = reinterpret_cast<T *>(inputs[kIndexGrad]->device_ptr());
-  auto dx = reinterpret_cast<T *>(outputs[kIndexInput]->device_ptr());
+  auto mask = GetDeviceAddress<bool>(inputs, kIndexMask);
+  auto grad = GetDeviceAddress<T>(inputs, kIndexGrad);
+  auto dx = GetDeviceAddress<T>(outputs, kIndexInput);
 
   auto ret = memset_s(dx, outputs[0]->size(), 0, outputs[0]->size());
   if (ret != EOK) {

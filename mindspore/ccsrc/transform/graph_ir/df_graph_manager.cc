@@ -21,6 +21,7 @@
 #include "transform/graph_ir/aoe_util.h"
 #include "utils/ms_context.h"
 #include "pipeline/jit/ps/base.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "utils/phase.h"
 #ifndef ENABLE_LITE_ACL
 #include "include/common/utils/python_adapter.h"
@@ -81,11 +82,15 @@ Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph
   OptionMap new_options = graph_config.options_;
   auto ms_context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context_ptr);
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {ms_context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET),
+     ms_context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+  MS_EXCEPTION_IF_NULL(device_context);
   auto soc_version = ms_context_ptr->ascend_soc_version();
-  if (ms_context_ptr->get_param<std::string>(MS_CTX_PRECISION_MODE) != "") {
-    (new_options)["ge.exec.precision_mode"] = ms_context_ptr->get_param<std::string>(MS_CTX_PRECISION_MODE);
-    MS_LOG(INFO) << "Set precision_mode " << ms_context_ptr->get_param<std::string>(MS_CTX_PRECISION_MODE)
-                 << " by user.";
+  auto precision_mode = device_context->GetPrecisionMode();
+  if (precision_mode != "") {
+    (new_options)["ge.exec.precision_mode"] = precision_mode;
+    MS_LOG(INFO) << "Set precision_mode " << precision_mode << " by user.";
   } else if (graph_config.is_cloud_ && !IsTwoPhaseInfer()) {
     if (soc_version == "ascend910b" || soc_version == "ascend910_93") {
       (new_options)["ge.exec.precision_mode"] = "must_keep_origin_dtype";

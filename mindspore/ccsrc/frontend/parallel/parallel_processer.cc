@@ -42,6 +42,7 @@
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
+#include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/node_check.h"
 #include "frontend/parallel/parallel_node_check.h"
@@ -141,95 +142,6 @@ static std::vector<std::pair<CNodePtr, LossNodeInfo>> GetSensLossPairs(const Fun
   return sens_loss_pairs;
 }
 
-void InsertNewTensorDump(const CNodePtr &dump_cnode, const CNodePtr &last_insert_op, const CNodePtr &node,
-                         const FuncGraphPtr &func_graph, const ScopePtr &scope, const std::string &dump_mode) {
-  // Create New TensorDump Node to display the input of node
-  FuncGraphManagerPtr manager = func_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  const uint32_t src_rank = LongToUint(mindspore::parallel::ParallelContext::GetInstance()->global_rank());
-  std::string rank_str = string("_rank_") + std::to_string(src_rank);
-  ValuePtr v = GetValueNode(dump_cnode->input(1));
-  auto dump_cnode_filepath = GetValue<std::string>(v);
-  size_t p = dump_cnode_filepath.rfind(".npy");
-  if (p != std::string::npos) {
-    dump_cnode_filepath.erase(p);
-  }
-  ValueNodePtr name_value = NewValueNode(std::string(""));
-  auto new_dump_node = func_graph->NewCNode(
-    {NewValueNode(prim::kPrimTensorDump->Clone()), name_value, last_insert_op, NewValueNode(kIOMonad)});
-  std::string node_loc_str = "_" + new_dump_node->ToString() + "_";
-  std::string name = dump_cnode_filepath + node_loc_str + dump_mode + rank_str;
-  name_value->set_value(MakeValue(name));
-  // ops of update_state and depend are used to keep sequence
-  auto monad_node = NewValueNode(kIOMonad);
-  auto new_update_state_node = func_graph->NewCNode({NewValueNode(prim::kPrimUpdateState), monad_node, new_dump_node});
-  auto new_depend_node = func_graph->NewCNode({NewValueNode(prim::kPrimDepend), last_insert_op, new_update_state_node});
-  // config new nodes attributes
-  PrimitivePtr new_dump_prim = GetCNodePrimitive(new_dump_node);
-  new_dump_prim->set_instance_name(name + "_new_generate");
-  new_dump_prim->AddAttr("side_effect_io", MakeValue(true));
-  new_dump_prim->AddAttr("input_output", MakeValue(dump_mode));
-  new_dump_prim->AddAttr("channel_name", MakeValue("ms_tensor_dump"));
-  new_dump_node->set_scope(scope);
-  new_dump_node->input(0)->set_scope(scope);
-  MS_LOG(INFO) << "New Dump Node: " << new_dump_node->DebugString();
-  // Find variable node parent last_insert_op, then change node parent to new_depend_node
-  for (size_t i = 1; i < node->inputs().size(); i++) {
-    CNodePtr input = node->input(i)->cast<CNodePtr>();
-    if (input != nullptr && input == last_insert_op) {
-      (void)manager->SetEdge(node, SizeToInt(i), new_depend_node);
-      break;
-    }
-  }
-}
-
-static void ProcessParallelTensorDump(const CNodePtr &dump_cnode, const CNodePtr &dump_prev, const CNodePtr &node,
-                                      const CNodePtr &last_insert_op, const FuncGraphPtr &func_graph,
-                                      const ScopePtr &scope) {
-  if (!dump_cnode || !dump_prev || node == dump_cnode) {
-    return;
-  }
-  FuncGraphManagerPtr manager = func_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  MS_EXCEPTION_IF_NULL(scope);
-  PrimitivePtr prim = GetCNodePrimitive(dump_cnode);
-  // setting dump_cnode and dump_prev
-  std::string dump_mode = GetValue<std::string>(prim->GetAttr("input_output"));
-  if (dump_mode == "out") {
-    // Default setting do nothing
-  } else if (dump_mode == "all") {
-    InsertNewTensorDump(dump_cnode, last_insert_op, node, func_graph, scope, "all");
-  } else if (dump_mode == "in") {
-    InsertNewTensorDump(dump_cnode, last_insert_op, node, func_graph, scope, "in");
-    // remove edge between dump_code and dump_prev
-    (void)manager->Replace(dump_cnode, dump_prev);
-  } else {
-    MS_LOG(WARNING) << "Dump mode of " << dump_mode << "is not supported, only support mode in [out, in, all]";
-  }
-}
-
-std::pair<CNodePtr, CNodePtr> FindDumpAndDumpPrev(const CNodePtr &node, int pos, const FuncGraphManagerPtr &manager) {
-  CNodePtr dump_cnode = nullptr;
-  CNodePtr dump_prev = nullptr;
-  AnfNodePtr target_node = node->input(LongToSize(pos));
-  MS_EXCEPTION_IF_NULL(target_node);
-  AnfNodeIndexSet node_users = manager->node_users()[target_node];
-  MS_LOG(DEBUG) << "Node Parent is: " << target_node->DebugString();
-  // search tensordump op in successors of [node->input(pos)]
-  for (auto &node_pair : node_users) {
-    AnfNodePtr anf_node = node_pair.first;
-    CNodePtr cnode = anf_node->cast<CNodePtr>();
-    MS_LOG(DEBUG) << "Target Node's successor: " << cnode->DebugString();
-    if (IsPrimitiveCNode(cnode, prim::kPrimTensorDump)) {
-      // if find tensordump op
-      dump_cnode = cnode;
-      dump_prev = target_node->cast<CNodePtr>();
-      return std::make_pair(dump_cnode, dump_prev);
-    }
-  }
-  return std::make_pair(nullptr, nullptr);
-}
-
 static CNodePtr InsertMakeTuple(const AnfNodePtr &prev, uint64_t num, const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(prev);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -268,10 +180,6 @@ static void InsertRedistribution(const RedistributionOpListPtr &redistribution_o
   if (pos_u >= node->size()) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "InsertRedistribution:pos can't be larger than node's inputs'size";
   }
-  // Check existence of dump and dumpprev
-  // If found, this pair stores (TensorDump Node, Parent Node of TensorDump<a.k.a node->input(pos_u)>)
-  auto dump_and_dumpprev = FindDumpAndDumpPrev(node, pos_u, manager);
-
   for (size_t index = 0; index < (redistribution_oplist_ptr->first).size(); ++index) {
     // Create new node
     AnfNodePtr target_node = node->input(pos_u);
@@ -302,11 +210,6 @@ static void InsertRedistribution(const RedistributionOpListPtr &redistribution_o
       (void)InsertMakeTuple(target_node, (redistribution_oplist_ptr->second)[index].second, func_graph);
     }
   }
-  AnfNodePtr last_insert_node = node->input(pos_u);
-  MS_EXCEPTION_IF_NULL(last_insert_node);
-  CNodePtr last_insert_op = last_insert_node->cast<CNodePtr>();
-  ProcessParallelTensorDump(dump_and_dumpprev.first, dump_and_dumpprev.second, node, last_insert_op, func_graph,
-                            pre_node->scope());
 }
 
 static RedistributionOpListPtr InferSensRedistribution(const AnfNodePtr &node, const TensorLayout &loss_layout) {
@@ -894,10 +797,10 @@ static void InsertVirtualDivOp(const VirtualDivOp &virtual_div_op, const CNodePt
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-
+  static auto const kDropoutDoMaskInputNum = 2;
   if (IsSomePrimitive(node, DROPOUT_DO_MASK)) {
     MS_LOG(INFO) << "Handle dropout do mask, only insert the virtual div to input[0]";
-    node_size = 2;
+    node_size = kDropoutDoMaskInputNum;
   }
 
   for (size_t index = 1; index < node_size; ++index) {
@@ -1423,14 +1326,13 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   if (next_nodes.empty()) {
     return;
   }
-
+  ParallelTensorDumpHandler parallel_tensordump_handler(next_nodes);
   // Find Redistribution pre_nodes
   std::vector<AnfNodePtr> pre_nodes;
   RedistributionPreNode(cnode, manager, &pre_nodes);
   if (pre_nodes.size() > 1) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << " Don't support Redistribution has multiple pre_node.";
   }
-
   // Insert Redistribution nodes between pre_nodes and next_nodes
   for (auto &pre_node : pre_nodes) {
     for (auto &next_node : next_nodes) {
@@ -1440,6 +1342,7 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
       Redistribution(next_node.first, pre_node, next_node.second);
       MS_LOG(INFO) << "===========Do Redistribution end  ============";
     }
+    parallel_tensordump_handler.HandleParallelTensorDump();
     for (const auto &next_node : next_nodes) {
       if (!next_node.first.first->has_user_data(FUNC_PARAM)) {
         continue;

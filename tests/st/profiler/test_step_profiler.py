@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import glob
 import os
-import shutil
 import tempfile
 import csv
 import numpy as np
@@ -65,36 +65,18 @@ def generator():
         yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
 
 
-def cleanup():
-    kernel_meta_path = os.path.join(os.getcwd(), "kernel_data")
-    cache_path = os.path.join(os.getcwd(), "__pycache__")
-    if os.path.exists(kernel_meta_path):
-        shutil.rmtree(kernel_meta_path)
-    if os.path.exists(cache_path):
-        shutil.rmtree(cache_path)
-
-
-class TestProfiler:
-    device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
-    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
-
-    def setup(self):
-        """Run begin each test case start."""
-        cleanup()
-        self.data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
-
-    def teardown(self):
-        """Run after each test case end."""
-        cleanup()
-        if os.path.exists(self.data_path):
-            shutil.rmtree(self.data_path)
-
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-    def test_ascend_profiler(self):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_ascend_profiler():
+    """
+    Feature: Ascend Profiler
+    Description: Test Ascend Profiler with step profiler.
+    Expectation: The profiler successfully collects data and generates the expected files.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
         ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
         ms.set_context(jit_level="O2")
 
-        profile_call_back = StopAtStep(5, 8, self.data_path)
+        profile_call_back = StopAtStep(5, 8, tmpdir)
 
         net = Net()
         optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
@@ -102,14 +84,13 @@ class TestProfiler:
         data = ds.GeneratorDataset(generator, ["data", "label"])
         model = ms.Model(net, loss, optimizer)
         model.train(1, data, callbacks=[profile_call_back], dataset_sink_mode=False)
-        profiler_name = 'profiler/'
-        self.profiler_path = os.path.join(self.data_path, profiler_name)
-        aicore_file = self.profiler_path + f'aicore_intermediate_{self.rank_id}_detail.csv'
-        step_trace_file = self.profiler_path + f'step_trace_raw_{self.rank_id}_detail_time.csv'
+        ascend_profiler_output_path = glob.glob(f"{tmpdir}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+        aicore_file = os.path.join(ascend_profiler_output_path, f'kernel_details.csv')
+        step_trace_file = os.path.join(ascend_profiler_output_path, f'step_trace_time.csv')
         d_profiler_files = (aicore_file, step_trace_file)
         for file in d_profiler_files:
             assert os.path.isfile(file)
         with open(step_trace_file, 'r') as csvfile:
             reader = csv.reader(csvfile)
             row_count = sum(1 for row in reader)
-            assert row_count == 6
+            assert row_count == 2

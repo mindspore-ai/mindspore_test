@@ -18,6 +18,7 @@ from mindspore import context, nn, Tensor
 from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 import mindspore.common.dtype as mstype
+import mindspore.runtime as rt
 
 
 class SparseApplyFtrlNet(nn.Cell):
@@ -41,7 +42,8 @@ def test_sparse_apply_ftrl_with_memory_optimize():
     Description: Test the scene of output ref node.
     Expectation: The result meet expectation.
     """
-    context.set_context(mode=context.GRAPH_MODE, memory_optimize_level="O1")
+    context.set_context(mode=context.GRAPH_MODE)
+    rt.set_memory(optimize_level="O1")
 
     grad_np = np.ones([3, 3, 3])
     indice_np = [0, 1, 2]

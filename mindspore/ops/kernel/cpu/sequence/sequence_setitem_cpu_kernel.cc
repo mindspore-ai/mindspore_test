@@ -80,7 +80,6 @@ bool SequenceSetItemCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
                                                const std::vector<KernelTensor *> &outputs) {
   const auto data_addr = GetDeviceAddress<T>(inputs, kDataIndex);
   const auto idx_addr = GetDeviceAddress<int64_t>(inputs, kIdxIndex);
-  MS_EXCEPTION_IF_NULL(idx_addr);
   const auto value_addr = GetDeviceAddress<T>(inputs, kValueIndex);
   T *output_addr = GetDeviceAddress<T>(outputs, 0);
   int64_t idx = idx_addr[0];

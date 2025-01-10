@@ -99,6 +99,9 @@ DECLARE_OP_USE_OUTPUT(GridSampler3DGrad)
 DECLARE_OP_ADAPTER(NonMaxSuppressionV3)
 DECLARE_OP_USE_OUTPUT(NonMaxSuppressionV3)
 
+DECLARE_OP_ADAPTER(NonMaxSuppressionV6)
+DECLARE_OP_USE_OUTPUT(NonMaxSuppressionV6)
+
 DECLARE_OP_ADAPTER(AdjustSaturation)
 DECLARE_OP_USE_OUTPUT(AdjustSaturation)
 

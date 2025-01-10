@@ -46,7 +46,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ge_utils.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "transform/graph_ir/op_adapter.h"
 #include "transform/graph_ir/op_adapter_desc.h"
@@ -58,6 +58,8 @@
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "utils/singleton.h"
+#include "mindspore/ops/infer/ops_func_impl/all_gather_matmul.h"
+#include "mindspore/ops/infer/ops_func_impl/matmul_reduce_scatter.h"
 
 namespace mindspore::transform {
 using ::ge::Operator;
@@ -4084,11 +4086,27 @@ void DfGraphConvertor::ConvertHcclNode(const CNodePtr &node) {
 void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const OperatorPtr &converted_op) const {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(converted_op);
-  if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, node)) {
-    MS_LOG(WARNING) << "Node " << node->fullname_with_scope() << " does not have attr " << kAttrGroup << " skip.";
-    return;
+  auto primitive = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(primitive);
+  std::string group;
+  if (primitive->name() == prim::kPrimAllGatherMatmul->name() ||
+      primitive->name() == prim::kPrimMatmulReduceScatter->name()) {
+    auto index = 0;
+    if (primitive->name() == prim::kPrimAllGatherMatmul->name()) {
+      index = mindspore::ops::kAllGatherMatmulInputGroupIndex + 1;
+    } else if (primitive->name() == prim::kPrimMatmulReduceScatter->name()) {
+      index = mindspore::ops::kMatmulReduceScatterInputGroupIndex + 1;
+    }
+    auto value_node = node->input(index)->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
+    group = GetValue<std::string>(value_node->value());
+  } else {
+    if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, node)) {
+      MS_LOG(WARNING) << "Node " << node->fullname_with_scope() << " does not have attr " << kAttrGroup << ", skip.";
+      return;
+    }
+    group = common::AnfAlgo::GetNodeAttr<std::string>(node, kAttrGroup);
   }
-  std::string group = common::AnfAlgo::GetNodeAttr<std::string>(node, kAttrGroup);
   (void)converted_op->SetAttr("group", group);
 #ifdef ENABLE_D
   if (!common::GetEnv(kSimulationLevel).empty()) {
@@ -4098,7 +4116,7 @@ void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const Operat
     (void)converted_op->SetAttr("group", hccl_inner_comm_name);
     return;
   }
-  if (common::GetEnv(kSimulationLevel).empty() && !common::IsNeedProfileMemory()) {
+  if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
     if (common::UseHostCollective() && !hccl::HcclAdapter::GetInstance().UseHcclCM()) {
       // For HcclCommInitRootInfo manner, set 'group' and 'comm' attrs. 'group' attr value should be hccl's inner comm
       // name.

@@ -1,0 +1,24 @@
+#operator inplace_hardtanh
+inplace_hardtanh:
+  args:
+    input:
+      dtype: tensor
+    min_val:
+      dtype: number
+      default: -1
+    max_val:
+      dtype: number
+      default: 1
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  class:
+    name: InplaceHardtanh
+  dispatch:
+    enable: True
+    Ascend: InplaceHardtanhAscend

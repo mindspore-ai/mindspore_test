@@ -30,6 +30,7 @@
 #include "utils/compile_config.h"
 #include "pipeline/jit/ps/static_analysis/stack_frame.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
+#include "pipeline/jit/ps/pipeline.h"
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "frontend/optimizer/ad/dfunctor.h"
@@ -134,6 +135,14 @@ FuncGraphPtr GetCloneBpropGraph(const MetaFuncGraphPtr &meta_func_graph, const F
     BasicClone(generated_func_graph, false, std::make_shared<UpdateInfo>(scope, bound_cnode->debug_info()));
   return cloned_func_graph;
 }
+
+uint32_t GetMaxCallDepth() {
+  int32_t max_call_depth = pipeline::GraphExecutorPy::GetInstance()->max_call_depth();
+  if (max_call_depth != -1) {
+    return IntToUint(max_call_depth);
+  }
+  return MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_MAX_CALL_DEPTH);
+}
 }  // namespace
 
 bool ContainsAbstractAny(const AbstractBasePtrList &args_abs_list) {
@@ -213,15 +222,15 @@ void BaseFuncGraphEvaluator::EnterStackFrame(const AnalysisEnginePtr &engine, co
   IncreaseStackFrameDepth();
   const auto &top_graph = parse::Parser::GetTopFuncGraph();
   bool no_recursive = (top_graph == nullptr ? false : top_graph->has_flag(FUNC_GRAPH_FLAG_NO_RECURSIVE));
-  const uint32_t max_depth = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_MAX_CALL_DEPTH);
+  const uint32_t max_depth = GetMaxCallDepth();
   if (!no_recursive && FunctionCallDepth() > max_depth) {
     MS_LOG(EXCEPTION) << "Exceed function call depth limit " << max_depth
                       << ", (function call depth: " << FunctionCallDepth()
                       << ", simulate call depth: " << StackFrameDepth() << ").\n"
                       << "It's always happened with complex construction of code or infinite recursion or loop.\n"
                       << "Please check the code if it's has the infinite recursion "
-                      << "or call 'context.set_context(max_call_depth=value)' to adjust this value.\n"
-                      << "If max_call_depth is set larger, the system max stack depth should be set larger too "
+                      << "or call 'mindspore.set_recursion_limit(recursion_limit=value)' to adjust this value.\n"
+                      << "If recursion_limit is set larger, the system max stack depth should be set larger too "
                       << "to avoid stack overflow.\n"
                       << "For more details, please refer to the FAQ at https://www.mindspore.cn.";
   }
@@ -376,15 +385,15 @@ EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const Abstr
   IncreaseFunctionCallDepth();
   const auto &top_graph = parse::Parser::GetTopFuncGraph();
   bool no_recursive = (top_graph == nullptr ? false : top_graph->has_flag(FUNC_GRAPH_FLAG_NO_RECURSIVE));
-  const uint32_t max_depth = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_MAX_CALL_DEPTH);
+  const uint32_t max_depth = GetMaxCallDepth();
   if (!no_recursive && FunctionCallDepth() > max_depth) {
     MS_LOG(EXCEPTION) << "Exceed function call depth limit " << max_depth
                       << ", (function call depth: " << FunctionCallDepth()
                       << ", simulate call depth: " << StackFrameDepth() << ").\n"
                       << "It's always happened with complex construction of code or infinite recursion or loop.\n"
                       << "Please check the code if it's has the infinite recursion "
-                      << "or call 'context.set_context(max_call_depth=value)' to adjust this value.\n"
-                      << "If max_call_depth is set larger, the system max stack depth should be set larger too "
+                      << "or call 'mindspore.set_recursion_limit(recursion_limit=value)' to adjust this value.\n"
+                      << "If recursion_limit is set larger, the system max stack depth should be set larger too "
                       << "to avoid stack overflow.\n"
                       << "For more details, please refer to the FAQ at https://www.mindspore.cn.";
   }

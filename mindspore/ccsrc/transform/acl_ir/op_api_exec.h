@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include <set>
 #include "acl/acl_base.h"
 #include "acl/acl.h"
 #include "transform/acl_ir/op_api_convert.h"
@@ -153,7 +154,7 @@ class GraphCache {
   explicit GraphCache(transform::aclOpExecutor *executor, T &&param) : executor_(executor), converted_params_(param) {}
   std::vector<ShapeVector> operator()(const transform::ProcessCacheType &process_cache_type,
                                       const std::vector<std::vector<void *>> &address_list = {}) {
-    auto release_executor_func = transform::OpApiDefaultResource::GetInstance().release_executor_func();
+    static auto release_executor_func = transform::OpApiDefaultResource::GetInstance().release_executor_func();
     switch (process_cache_type) {
       case ProcessCacheType::kGetOutputShape:
         return FillShapeListFromTuple(converted_params_);
@@ -275,10 +276,12 @@ class ApiCachePool {
   }                                                                                                               \
   (aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
-// For normal generate executor.
+// For generate executor.
 #define GEN_EXECUTOR(aclnn_api, ...)                                                                              \
   [](const std::string &api_str, const std::string &workspace_api_name, const auto &... args) -> auto {           \
     static transform::ApiCachePool api_cache_pool;                                                                \
+    static const std::set<std::string> sync_launch_api = {"aclnnNonzeroV2", "aclnnMaskedSelect", "aclnnNonzero",  \
+                                                          "aclnnUniqueDim", "aclnnUnique2"};                      \
     const char *api_name = api_cache_pool.get(api_str);                                                           \
     static const auto get_workspace_size_func_ptr = transform::GetOpApiFunc(workspace_api_name.c_str());          \
     if (get_workspace_size_func_ptr == nullptr) {                                                                 \
@@ -289,9 +292,11 @@ class ApiCachePool {
     std::function<void()> release_func = nullptr;                                                                 \
     uint64_t *workspace_size_addr = &workspace_size;                                                              \
     transform::aclOpExecutor **executor_addr = &executor;                                                         \
-    if (HitCache(api_name, executor_addr, workspace_size_addr, args...)) {                                        \
+    auto process_cache = transform::ProcessCache(nullptr);                                                        \
+    if (sync_launch_api.find(std::string(api_name)) == sync_launch_api.end() &&                                   \
+        HitCache(api_name, executor_addr, workspace_size_addr, args...)) {                                        \
       MS_LOG(DEBUG) << "gen executor aclnn cache hit.";                                                           \
-      return std::make_tuple(workspace_size, executor, release_func);                                             \
+      return std::make_tuple(workspace_size, executor, process_cache, release_func);                              \
     }                                                                                                             \
     MS_LOG(DEBUG) << "gen executor aclnn cache miss.";                                                            \
     auto init_mem_func = transform::OpApiDefaultResource::GetInstance().init_mem_func();                          \
@@ -307,16 +312,18 @@ class ApiCachePool {
     }                                                                                                             \
     auto releas_call = transform::ReleaseCall(std::move(converted_params));                                       \
     release_func = std::function<void()>(releas_call);                                                            \
+    auto graph_cache = transform::GraphCache(executor, std::move(converted_params));                              \
+    process_cache = transform::ProcessCache(graph_cache);                                                         \
     auto uninit_mem_func = transform::OpApiDefaultResource::GetInstance().uninit_mem_func();                      \
     if (uninit_mem_func) {                                                                                        \
       uninit_mem_func(nullptr, false);                                                                            \
     }                                                                                                             \
     transform::UninitCacheThreadLocal();                                                                          \
-    return std::make_tuple(workspace_size, executor, release_func);                                               \
+    return std::make_tuple(workspace_size, executor, process_cache, release_func);                                \
   }                                                                                                               \
   (aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
-// For custom generate executor.
+// For generate executor without cache.
 #define GEN_EXECUTOR_CUST(aclnn_api, ...)                                                                         \
   [](const std::string &workspace_api_name, auto &... args) -> auto {                                             \
     static const auto get_workspace_size_func_ptr = transform::GetOpApiFunc(workspace_api_name.c_str());          \
@@ -339,7 +346,7 @@ class ApiCachePool {
   }                                                                                                               \
   (aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
-// For speed up generate executor.
+// For speed up generate executor without hash_id.
 #define GEN_EXECUTOR_BOOST(aclnn_api, hash_id, ...)                                                               \
   [](const std::string &api_str, const std::string &workspace_api_name, uint64_t hash_id,                         \
      const auto &... args) -> auto {                                                                              \

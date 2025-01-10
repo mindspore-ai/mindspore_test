@@ -9,6 +9,9 @@ mindspore.nn.Conv3dTranspose
     当Conv3d和ConvTranspose3d使用相同的参数初始化时，且 `pad_mode` 设置为"pad"，它们会在输入的深度、高度和宽度方向上填充 :math:`dilation * (kernel\_size - 1) - padding` 个零，这种情况下它们的输入和输出shape是互逆的。
     然而，当 `stride` 大于1时，Conv3d会将多个输入的shape映射到同一个输出shape。反卷积网络可以参考 `Deconvolutional Networks <https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf>`_ 。
 
+    .. note::
+        - Atlas A2训练系列产品暂不支持 `output_padding` 。
+
     参数：
         - **in_channels** (int) - Conv3dTranspose层输入Tensor的空间维度。
         - **out_channels** (int) - Conv3dTranspose层输出Tensor的空间维度。

@@ -34,7 +34,7 @@ class NetAtanGrad(nn.Cell):
         return self.atan_grad(x, dy)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
 def test_atan_grad_float(dtype):
@@ -52,7 +52,7 @@ def test_atan_grad_float(dtype):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.complex64, np.complex128])
 def test_atan_grad_complex(dtype):

@@ -1,0 +1,39 @@
+mm:
+  description: |
+    mm(mat2) -> Tensor
+
+    Returns the matrix product of two arrays.
+    If `self` is a :math:`(n \times m)` Tensor, `mat2` is a
+    :math:`(m \times p)` Tensor, `out` will be a :math:`(n \times p)` Tensor.
+
+    Note:
+        This function cannot support broadcasting.
+        Refer to :func:`mindspore.ops.matmul` instead if you need a broadcastable function.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        mat2 (Tensor): The second matrix of matrix multiplication.
+            The last dimension of `self` must be the same size as the first dimension of `mat2`.
+
+    Returns:
+        Tensor, the matrix product of the inputs.
+
+    Raises:
+        TypeError: If `self` or `mat2` is not a Tensor.
+        RuntimeError: If the last dimension of `self` is not the same size as the
+            second-to-last dimension of `mat2`.
+        RuntimeError: If dtype of `self` or `mat2` is not float16, float32 or bfloat16.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> x1 = ms.Tensor(np.random.rand(2, 3), ms.float32)
+        >>> x2 = ms.Tensor(np.random.rand(3, 4), ms.float32)
+        >>> out = x1.mm(x2)
+        >>> print(out.shape)
+        (2, 4)

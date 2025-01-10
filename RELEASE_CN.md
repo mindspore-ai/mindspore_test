@@ -2,6 +2,27 @@
 
 [View English](./RELEASE.md)
 
+## MindSpore 2.4.1 Release Notes
+
+### 主要特性及增强
+
+#### AutoParallel
+
+- [STABLE] 支持split/concat分支通信计算并行，用户通过切分输入数据，形成可并行分支，分支间自动进行通信计算并行，降低通信开销。
+- [STABLE] 支持Sequence pipeline，配套MindFormers的dev分支的LLama系列模型，通过引入Sequence维度拆分，降低流水线并行的Bubble以及显存开销。
+
+#### PyNative
+
+- [STABLE] PyNative模式通信算子默认按照通信域分配流，支持通信算子并发执行，协同并行策略优化，提供细粒度的通信掩盖，提升模型性能。
+
+### 问题修复
+
+- [IB0R4N](https://gitee.com/mindspore/mindspore/issues/IB0R4N)：修复在某些切分策略下，加载分布式权重精度不对的问题。
+
+### 贡献者
+
+bantao;caifubi;candanzg;chaijinwei;changzherui;chengbin;chujinjin;DeshiChen;dingjinshan;fary86;fuhouyu;gaoyong10;GuoZhibin;halo;haozhang;hedongdong;huangbingjian;hujiahui8;huoxinyou;jiangshanfeng;jiaorui;jiaxueyu;jshawjc;kisnwang;lichen;limingqi107;liubuyu;looop5;luochao60;luoyang;machenggui;MengXiangyu;Mrtutu;NaCN;panzhihui;qiuzhongya;shenhaojing;shilishan;tanghuikang;TuDouNi;wang_ziqi;weiyang;wujueying;XianglongZeng;xuxinglei;yang guodong;yanghaoran;yao_yf;yide12;yihangchen;YijieChen;YingtongHu;yuchaojie;YuJianfeng;zhangdanyang;ZhangZGC;zhengzuohe;zong_shuai;ZPaC;冯一航;胡彬;宦晓玲;李林杰;刘崇鸣;刘勇琪;任新;王禹程;王振邦;熊攀;俞涵;张栩浩;周一航;
+
 ## MindSpore 2.4.0 Release Notes
 
 ### 主要特性及增强
@@ -631,7 +652,7 @@ ccsszz;dairenjie;DeshiChen;fuhouyu;gaoshuanglong;gaoyong10;GuoZhibin;halo;huoxin
 
 #### Runtime
 
-- [STABLE] 支持静态图多级编译，配置为[mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/zh-CN/r2.3.0/api_python/mindspore/mindspore.set_context.html)，默认值为空，框架根据产品类别自动选择优化级别，Altas训练产品为O2，其余产品均为O0。
+- [STABLE] 支持静态图多级编译，配置为[mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/zh-CN/r2.3.0/api_python/mindspore/mindspore.set_context.html)，默认值为空，框架根据产品类别自动选择优化级别，Atlas训练产品为O2，其余产品均为O0。
 - [STABLE] 静态图O0/O1下支持通信计算多流并发执行。
 - [STABLE] 新增[内存管理接口](https://www.mindspore.cn/docs/zh-CN/r2.3.0/api_python/mindspore.hal.html#内存管理)。
 - [BETA] 内存池支持虚拟内存碎片整理，在静态图O0/O1下默认使能虚拟内存。

@@ -37,8 +37,8 @@ tensor::BaseTensorPtr MaxUnpool2DExtAscendCustomize(const std::shared_ptr<OpRunn
   std::vector<int64_t> shape{op->output(0)->shape()};
   size_t size = shape.size();
 
-  output_size_vector.push_back(shape[size - 2]);
-  output_size_vector.push_back(shape[size - 1]);
+  output_size_vector.push_back(shape[size - kDim2]);
+  output_size_vector.push_back(shape[size - kDim1]);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, indices);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

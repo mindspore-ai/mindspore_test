@@ -1,0 +1,52 @@
+glu:
+  description: |
+    Computes GLU (Gated Linear Unit activation function) of the input tensor.
+
+    .. math::
+        {GLU}(a, b)= a \otimes \sigma(b)
+
+    where :math:`a` is the first half of the `x` Tensor after `x` is split and :math:`b` is the second half.
+
+    Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
+    See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_ .
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        axis (int, optional): Axis to split the input `x`. The value range is `[-r, r)` where `r` is
+            the number of dimensions of `x`. Default: ``-1`` , the last dimension in `x`.
+
+    Inputs:
+        - **x** (Tensor) - Tensor to be calculated. Dtype is floating point and the shape
+          is :math:`(\ast_1, N, \ast_2)` where `*` means, any number of additional
+          dimensions. :math:`N` is required to be an even number, where :math:`N` is the
+          size of `x` on the dimension selected by `axis`.
+
+    Outputs:
+        Tensor, the same dtype as `x`, with the shape :math:`(\ast_1, M, \ast_2)` where :math:`M=N/2`.
+
+    Raises:
+        TypeError: If `x` is not a Tensor or `axis` is not an int.
+        IndexError: If the value of `axis` is out of the range of `[-r, r)`, where `r` is the number
+            of dimensions of `x`.
+        RuntimeError: If dtype of `x` is not supported.
+        RuntimeError: If the length of `x` in the dimension selected by `axis` is not even.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> from mindspore import ops, Tensor
+        >>> from mindspore import dtype as mstype
+        >>> import numpy as np
+        >>> axis = 0
+        >>> x = Tensor(np.array([0.3220, 0.9545, 0.7879, 0.0975, 0.3698,
+        ...                            0.5135, 0.5740, 0.3435, 0.1895, 0.8764,
+        ...                            0.4980, 0.9673, 0.9879, 0.6988, 0.9022,
+        ...                            0.9304, 0.1558, 0.0153, 0.1559, 0.9852]).reshape([2, 2, 5]), mstype.float32)
+        >>> glu = ops.GLU(axis=axis)
+        >>> y = glu(x)
+        >>> print(y)
+        [[[0.20028052 0.6916126  0.57412136 0.06512236 0.26307625]
+          [0.3682598  0.3093122  0.17306386 0.10212085 0.63814086]]]

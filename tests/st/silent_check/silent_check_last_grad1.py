@@ -18,12 +18,13 @@
 import numpy as np
 import mindspore as ms
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 from mindspore import nn, ops
 from mindspore.common.initializer import initializer
 
 
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_context(max_device_memory="2GB")
+rt.set_memory(max_size="2GB")
 ms.set_seed(1)
 np.random.seed(1)
 

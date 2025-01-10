@@ -25,6 +25,7 @@ from abc import abstractmethod, ABCMeta
 from packaging import version
 import numpy as np
 from mindspore import log as logger
+from mindspore.log import vlog_print
 from mindspore._c_expression import MSContext, ms_ctx_param
 from ..version import __version__
 
@@ -378,6 +379,9 @@ class AscendEnvChecker(EnvChecker):
             os.environ['ASCEND_CUSTOM_OPP_PATH'] = cust_ascendc_ascend910_path + ":" + \
                                                    cust_ascendc_ascend910b_path + ":" + cust_aicore_path + ":" + \
                                                    cust_aicpu_path
+        # Ignore ge infer missing error. To be removed after infers are completed.
+        os.environ['FAST_IGNORE_INFER_ERROR'] = "1"
+        os.environ['IGNORE_INFER_ERROR'] = "1"
         plugin_dir = os.path.dirname(self.library_path)
         akg_dir = os.path.join(plugin_dir, "ascend")
         AscendEnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
@@ -507,3 +511,4 @@ def _add_cuda_path():
 _set_pb_env()
 check_version_and_env_config()
 _add_cuda_path()
+vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Initialization MindSpore.")

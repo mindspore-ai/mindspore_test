@@ -16,6 +16,8 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_PROCESS_CALL_INLINE_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_PROCESS_CALL_INLINE_H_
 
+#include <vector>
+#include <string>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -26,6 +28,9 @@ class ProcessCallInline : public PatternProcessPass {
   ~ProcessCallInline() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

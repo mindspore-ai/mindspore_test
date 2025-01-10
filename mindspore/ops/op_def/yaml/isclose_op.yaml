@@ -17,7 +17,7 @@ isclose:
       prim_init: True
     equal_nan:
       dtype: bool
-      default: True
+      default: False
       prim_init: True
   returns:
     output:

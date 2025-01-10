@@ -29,10 +29,11 @@ from mindspore.ops.operations.random_ops import RandomShuffle, RandomChoiceWithM
 from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
-from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
+from mindspore.ops.auto_generate import UniformExt, InplaceUniform, NormalTensorTensor, \
     NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
-    Randn, RandnLike, RandInt, RandIntLike, RandpermExt
+    Randn, RandnLike, RandInt, RandIntLike, RandpermExt, InplaceRandom, InplaceNormal
 
+inplace_normal_ = InplaceNormal()
 normal_tensor_tensor_op = NormalTensorTensor()
 normal_tensor_float_op = NormalTensorFloat()
 normal_float_tensor_op = NormalFloatTensor()
@@ -44,7 +45,8 @@ reshape_ = P.Reshape()
 shape_ = P.Shape()
 top_k_ = P.TopK()
 randperm_ext_ = RandpermExt()
-uniform_ = UniformExt()
+uniform_ext_ = UniformExt()
+inplace_uniform_ = InplaceUniform()
 rand_ext_ = RandExt()
 rand_like_ext_ = RandLikeExt()
 multinomial_ext_ = MultinomialExt()
@@ -52,6 +54,7 @@ randn_ = Randn()
 randn_like_ = RandnLike()
 randint_ = RandInt()
 randint_like_ = RandIntLike()
+inplace_random_ = InplaceRandom()
 generator_step_ = Tensor(12, mstype.int64)
 
 
@@ -295,7 +298,58 @@ def uniform_ext(tensor, a, b, generator=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
-    return uniform_(tensor, a, b, seed, offset)
+    return uniform_ext_(tensor, a, b, seed, offset)
+
+
+@_function_forbid_reuse
+def uniform_(input, from_=0, to=1, *, generator=None):
+    r"""
+    Update the `input` tensor in place by generating random numbers sampled from uniform distribution in the half-open
+    interval :math:`[from\_, to)`.
+
+    .. math::
+        P(x)= \frac{1}{to - from\_}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The origin input tensor.
+        from_ (Union[number.Number, Tensor], optional): The lower bound of the uniform distribution, it can be a scalar
+            value or a tensor of any dimension with a single element. Default: ``0``.
+        to (Union[number.Number, Tensor], optional): The upper bound of the uniform distribution, it can be a scalar
+            value or a tensor of any dimension with a single element. Default: ``1``.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+
+    Returns:
+        Tensor, with the same shape and dtype as `input` tensor.
+
+   Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not one of: bool, int8, int16, int32, int64, uint8, float16, float32, float64,
+            bfloat16.
+        TypeError: If `from_` or `to` is neither a number nor a Tensor.
+        TypeError: If dtype of `from` or `to` is not one of: bool, int8, int16, int32, int64, uint8, float32, float64.
+        ValueError: If `from_` or `to` is Tensor but contains multiple elements.
+        RuntimeError: If `from_` is larger than `to`.
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import ops
+        >>> x = ops.ones((4, 2))
+        >>> generator = mindspore.Generator()
+        >>> generator.manual_seed(100)
+        >>> result = ops.function.random_func.uniform_(x, 1., 2., generator)
+        >>> print(result.shape)
+        (4, 2)
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return inplace_uniform_(input, from_, to, seed, offset)
 
 
 @_function_forbid_reuse
@@ -726,22 +780,69 @@ def is_cpu_backend():
     return context.get_context('device_target') == 'CPU'
 
 
+@_function_forbid_reuse
+def normal_(input, mean=0, std=1, *, generator=None):
+    r"""
+    Update the `input` tensor in place by generating random numbers sampled from the normal
+    distribution which constructed by the parameters `mean` and `std`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The origin input tensor.
+        mean (number, optional): the mean of normal distribution. With float data type.
+            Default: ``0``.
+        std (number, optional): the std of normal distribution. With float data type.
+            Default: ``1``.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+
+    Returns:
+        A tensor that is filled with random numbers that follow a normal distribution and
+        that has the same type and shape as the `self` tensor.
+
+    Raises:
+        TypeError: If the dtype of `mean` or `std` is not one of: bool, int, float, complex.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> x = mindspore.Tensor(np.array([[1, 2], [3, 4]]), dtype=mindspore.float32)
+        >>> output = x.normal_()
+        >>> print(output)
+        [[0.2788825 1.3305743]
+         [1.244194 1.16303174]]
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return inplace_normal_(input, mean, std, seed, offset)
+
+
 def normal_ext(mean=0.0, std=1.0, size=None, generator=None):
     r"""
+    normal(mean, std, *, generator=None) -> Tensor
+
     Generates random numbers according to the standard Normal (or Gaussian) random number distribution.
 
     Args:
-        mean (Union[float, Tensor], optional): Mean value of each element, the shape of the 'mean' tensor
-            should be the same as that of the 'std' tensor. Default: ``0.0``.
-        std (Union[float, Tensor], optional): Standard deviation for each element, the shape of the 'std' tensor
-            should be the same as that of the 'mean' tensor. The value of std should be greater than or equal to 0.
-            Default: ``1.0``.
-        size (tuple, optional): output size, where 'mean' and 'std' are constants. Default: ``None``.
+        mean (Union[float, Tensor]): Mean value of each element, the shape of the `mean` tensor
+            should be the same as that of the `std` tensor.
+        std (Union[float, Tensor]): Standard deviation for each element, the shape of the `std` tensor
+            should be the same as that of the `mean` tensor. The value of `std` should be greater than or equal to 0.
+
+    Keyword Args:
         generator (generator, optional): MindSpore generator. Default: ``None``.
 
     Returns:
-        Outputs a tensor with the same shape as 'mean',
-        or when 'mean' and 'std' are constants and shape is specified as 'size'.
+        Outputs a tensor with the same shape as `mean`.
 
     Raises:
         TypeError: If `mean` or `std` is not Union[float, Tensor].
@@ -759,6 +860,58 @@ def normal_ext(mean=0.0, std=1.0, size=None, generator=None):
         >>> output = ops.function.random_func.normal_ext(mean, std)
         >>> print(output.shape)
         (3,)
+
+    .. function:: normal(mean, std=1.0) -> Tensor
+        :noindex:
+
+    Similar to the function above, but the standard deviations are shared among all drawn elements.
+
+    Args:
+        mean (Tensor): Mean value of each element.
+        std (float, optional): Standard deviation for each element. The value of `std` should be greater
+            than or equal to 0. Default: ``1.0``.
+
+    Returns:
+        Outputs a tensor with the same shape as `mean`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import ops
+        >>> from mindspore import Tensor
+        >>> mean = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
+        >>> output = ops.function.random_func.normal_ext(mean, 1.0)
+        >>> print(output.shape)
+        (3,)
+
+    .. function:: normal(mean, std, size) -> Tensor
+        :noindex:
+
+    Similar to the function above, but the means and standard deviations are shared among all drawn elements. The
+    result tensor has size given by `size`.
+
+    Args:
+        mean (float): Mean value of each element.
+        std (float): Standard deviation for each element.
+        size (tuple): output shape.
+
+    Returns:
+        Outputs a tensor. The shape is specified as `size`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import ops
+        >>> from mindspore import Tensor
+        >>> output = ops.function.random_func.normal_ext(1.0, 2.0, (2, 4))
+        >>> print(output.shape)
+        (2, 4)
     """
     if generator is None:
         generator = default_generator
@@ -1117,7 +1270,7 @@ def rand_ext(*size, generator=None, dtype=None):
     Keyword Args:
         generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
             Default: ``None``, uses the default pseudorandom number generator.
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             `mindspore.float32` will be applied. Default: ``None`` .
 
     Returns:
@@ -1125,7 +1278,7 @@ def rand_ext(*size, generator=None, dtype=None):
         the interval :math:`[0, 1)`.
 
     Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
+        ValueError: If `size` contains negative numbers.
 
     Supported Platforms:
         ``Ascend``
@@ -1139,6 +1292,8 @@ def rand_ext(*size, generator=None, dtype=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
+    if size and isinstance(size[0], (tuple, list)):
+        size = size[0]
     return rand_ext_(size, seed, offset, dtype)
 
 
@@ -1158,9 +1313,6 @@ def rand_like_ext(input, *, dtype=None):
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
         the interval :math:`[0, 1)`.
-
-    Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
 
     Supported Platforms:
         ``Ascend``
@@ -1192,7 +1344,7 @@ def randn_ext(*size, generator=None, dtype=None):
     Keyword Args:
         generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
             Default: ``None``, uses the default pseudorandom number generator.
-        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
             `mindspore.float32` will be applied. Default: ``None`` .
 
     Returns:
@@ -1200,7 +1352,7 @@ def randn_ext(*size, generator=None, dtype=None):
         the interval :math:`[0, 1)`.
 
     Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
+        ValueError: If `size` contains negative numbers.
 
     Supported Platforms:
         ``Ascend``
@@ -1214,6 +1366,8 @@ def randn_ext(*size, generator=None, dtype=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
+    if size and isinstance(size[0], (tuple, list)):
+        size = size[0]
     return randn_(size, seed, offset, dtype)
 
 
@@ -1237,9 +1391,6 @@ def randn_like_ext(input, *, dtype=None):
         Tensor, with the designated shape and dtype, filled with random numbers from the normal distribution on
         the interval :math:`[0, 1)`.
 
-    Raises:
-        ValueError: If `dtype` is not a `mstype.float_type` type.
-
     Supported Platforms:
         ``Ascend``
 
@@ -1256,8 +1407,10 @@ def randn_like_ext(input, *, dtype=None):
 
 
 @_function_forbid_reuse
-def randint_ext(low, high, size, *, generator=None, dtype=None):
+def randint_ext(*args, generator=None, dtype=None):
     r"""
+    randint(low=0, high, size, *, generator=None, dtype=None) -> Tensor
+
     Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
     based on the given shape and dtype.
 
@@ -1265,7 +1418,7 @@ def randint_ext(low, high, size, *, generator=None, dtype=None):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        low (int): the lower bound of the generated random number
+        low (int, optional): the lower bound of the generated random number. Default: ``0``.
         high (int): the upper bound of the generated random number
         size (Union[tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)`.
 
@@ -1295,7 +1448,11 @@ def randint_ext(low, high, size, *, generator=None, dtype=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
-    return randint_(low, high, size, seed, offset, dtype)
+    args = list(args)
+    if len(args) == 2:
+        args = [0] + args
+    args.extend([seed, offset])
+    return randint_(*args, dtype=dtype)
 
 
 @_function_forbid_reuse
@@ -1338,6 +1495,51 @@ def randint_like_ext(input, low, high, *, dtype=None):
     seed, offset = default_generator._step(  # pylint: disable=protected-access
         generator_step_)
     return randint_like_(input, low, high, seed, offset, dtype)
+
+
+@_function_forbid_reuse
+def random_(input, from_=0, to=None, *, generator=None):
+    r"""
+    Fill the input tensor with numbers sampled from a discrete uniform distribution
+    over an interval :math:`[low, high)`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): input tensor.
+        from_ (int, optional): the lower bound of the generated random number. Default: 0.
+        to (int, optional): the upper bound of the generated random number. By default it's the upper limit of
+            the input data type. Default: ``None``.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+
+    Returns:
+        The input tensor.
+
+    Raises:
+        TypeError: If `from_` or `to` is not integer.
+        ValueError: If `from_` >= `to`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor, ops
+        >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
+        >>> from_ = 0
+        >>> to = 5
+        >>> print(ops.function.random_func.random_(a, from_, to).shape)
+        (2, 3)
+    """
+    if not generator:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return inplace_random_(input, from_, to, seed, offset)
 
 
 @_function_forbid_reuse
@@ -1575,10 +1777,11 @@ def randperm_ext(n, *, generator=None, dtype=mstype.int64):
     .. warning::
         - This is an experimental API that is subject to change or deletion.
 
-
     Args:
         n (Union[Tensor, int]): size of the permutation. int or Tensor with shape: () or (1,) and
             data type int64. The value of `n` must be greater than zero.
+
+    Keyword Args:
         generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
             Default: ``None``, uses the default pseudorandom number generator.
         dtype (mindspore.dtype, optional): The type of output. Default: mstype.int64.
@@ -1844,7 +2047,6 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
 
     Raises:
         TypeError: If `input` is not a Tensor whose dtype is not in float16, float32, float64 or bfloat16.
-        , 或是shape为(1, 1)的Tensor
         TypeError: If `num_samples` is not an int, a Scalar of int
             or a Tensor with shape[1,] and only one int element.
         RuntimeError: If :math:`\text{num_samples} <= 0`.

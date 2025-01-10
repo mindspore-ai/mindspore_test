@@ -3,11 +3,11 @@ mindspore.ops.column_stack
 
 .. py:function:: mindspore.ops.column_stack(tensors)
 
-    将多个Tensor沿着水平方向维度堆叠成一个Tensor，即按列拼接。Tensor其他维度拼接的结果
+    将多个Tensor沿着水平方向维度堆叠成一个Tensor，即按列拼接。Tensor其他维度拼接的结果\
     维度不变。类似于 :func:`mindspore.ops.hstack`。
 
     参数：
-        - **tensors** (Union[tuple[Tensor], list[Tensor]]) - 包含多个Tensor。除了需要拼接的轴外，所有的
+        - **tensors** (Union[tuple[Tensor], list[Tensor]]) - 包含多个Tensor。除了需要拼接的轴外，所有的\
           Tensors必须有相同的shape。
 
     返回：

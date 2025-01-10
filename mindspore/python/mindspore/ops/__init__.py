@@ -33,6 +33,7 @@ from mindspore.ops import composite, operations, functional, function
 from mindspore.ops import signature
 from mindspore.ops.auto_generate import cpp_create_prim_instance_helper, gen_arg_dtype_cast, gen_arg_handler, \
     gen_extend_func, gen_ops_def, gen_ops_prim, pyboost_inner_prim
+from mindspore.ops.functional_overload import all_gather_matmul, matmul_reduce_scatter
 from mindspore.ops.composite import *
 from mindspore.ops.operations import *
 from mindspore.ops.function import *
@@ -47,7 +48,7 @@ __all__ = ["get_vm_impl_fn", "vm_impl_registry",
            "CpuRegOp", "CustomRegOp", "DataType",
            "constexpr", "reshard",
            "cpp_create_prim_instance_helper", "gen_arg_dtype_cast", "gen_arg_handler", "gen_extend_func", "gen_ops_def",
-           "gen_ops_prim", "pyboost_inner_prim"]
+           "gen_ops_prim", "pyboost_inner_prim", "all_gather_matmul", "matmul_reduce_scatter"]
 __all__.extend(__primitive__)
 __all__.extend(composite.__all__)
 __all__.extend(operations.__all__)

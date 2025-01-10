@@ -35,41 +35,40 @@
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy_utils.h"
+#include "frontend/parallel/graph_util/pipeline_split_utils.h"
 
 namespace mindspore {
 namespace parallel {
-void StrategyLoader::LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
+Status StrategyLoader::LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
+  std::string strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
+  if (strategy_search_mode != kShardingPropagation) {
+    MS_LOG(EXCEPTION) << "Current mode: " << strategy_search_mode << " doesn't support load strategy.";
+  }
   if (!StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
-    return;
+    return FAILED;
   }
   StrategyMap stra_map;
   StrategyMap out_stra_map;
   if ((StrategyCheckpoint::GetInstance().LoadAutoOpStrategy(&stra_map, &out_stra_map) != SUCCESS)) {
-    return;
+    return FAILED;
   }
   MS_LOG(INFO) << "Load strategies map from json successfully";
-  SetStridedSliceSplitStrategy(all_nodes);
   for (auto &node : all_nodes) {
     auto cnode = node->cast<CNodePtr>();
+    if (cnode == nullptr) {
+      continue;
+    }
     if (!StrategyUtils::CheckExtractInformation(cnode) || IsPrimitiveCNode(node, prim::kPrimSend)) {
       continue;
     }
-    StrategyUtils::SetVirtualDatasetStrategy(cnode);
 
     OperatorInfoPtr operator_info = CreateOperatorInfo(cnode);
     MS_EXCEPTION_IF_NULL(operator_info);
 
-    ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
-    PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
-
-    if (prim->name() == RESHAPE) {
-      cnode->set_user_data<OperatorInfo>(operator_info);
-      continue;
-    }
-
     std::string strategy_key_name = cnode->fullname_with_scope();
     if (stra_map.find(strategy_key_name) == stra_map.end()) {
-      MS_LOG_WITH_NODE(EXCEPTION, node) << "Not found strategy for " << strategy_key_name;
+      MS_LOG_WITH_NODE(WARNING, node) << "Not found strategy for " << strategy_key_name;
+      return FAILED;
     }
     StrategyPtr s_strategy = stra_map[strategy_key_name];
     operator_info->SetSelectedStrategy(s_strategy, 0);
@@ -83,16 +82,22 @@ void StrategyLoader::LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nod
     if (initRet == SUCCESS) {
       MS_LOG(INFO) << "Init selected strategy succeeded.";
     } else {
-      MS_LOG(EXCEPTION) << "Init selected strategy failed.";
+      MS_LOG(ERROR) << "Init selected strategy failed.";
+      return FAILED;
     }
     cnode->set_user_data<OperatorInfo>(operator_info);
     cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
   }
   MS_LOG(INFO) << "End load strategies from file";
+  return SUCCESS;
 }
 
 void StrategyLoader::SaveStrategyToFile(const std::vector<AnfNodePtr> &all_nodes) {
-  if (!StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn() || !CheckShardingPropagation()) {
+  std::string strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
+  if (strategy_search_mode != kShardingPropagation) {
+    MS_LOG(EXCEPTION) << "Current mode: " << strategy_search_mode << " doesn't support save strategy.";
+  }
+  if (!StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn() || GetRank() % DEVICE_NUM_PER_SERVER != 0) {
     return;
   }
   StrategyMap stra_map;

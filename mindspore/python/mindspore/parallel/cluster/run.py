@@ -91,7 +91,7 @@ def get_args():
     )
     parser.add_argument(
         "--sim_rank_id",
-        default=0,
+        default=-1,
         type=int,
         help="specifies simulation process's rank id. Only one process is spawned in simulation scenario."
     )
@@ -106,14 +106,16 @@ def get_args():
         "--worker_log_name",
         default="",
         type=str,
-        help="specifies the worker log output file name, the default name will be worker_[rankid]."
+        help="specifies the worker log file name and support configuring IP and hostname, the default name "
+             "will be worker_[rankid]."
     )
     parser.add_argument(
         "--tail_worker_log",
         default="-1",
         type=str,
-        help="tail worker log output to console, or tail the specified worker log "
-             "(e.g. --tail_log=0 tail the worker 0 log to console)."
+        help="Only tail worker log to console when '--join=True' and the configured value should be within "
+             "[0, local_worker_num], otherwise worker log will not be tail. All worker logs will be tail by "
+             "default. Support tail the specified worker log (e.g. --tail_log=0 tail the worker 0 log to console)."
     )
     parser.add_argument(
         "task_script",

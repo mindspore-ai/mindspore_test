@@ -13,8 +13,11 @@ GroupedMatmul: 'aclnnGroupedMatmulV3'
 MaskedFill: 'aclnnInplaceMaskedFillTensor'
 GreaterEqual: 'aclnnGeTensor'
 UniformExt: 'aclnnInplaceUniform'
+InplaceScatterAdd: 'aclnnScatterAdd'
 GeLU: 'aclnnGelu'
 GeLUGrad: 'aclnnGeluBackward'
+GLU: 'aclnnGlu'
+GluGrad: 'aclnnGluBackward'
 ReverseV2: 'aclnnFlip'
 Less: 'aclnnLtTensor'
 LessEqual: 'aclnnLeTensor'
@@ -34,6 +37,7 @@ Transpose: 'aclnnPermute'
 TransposeExt: 'aclnnPermute'
 ArgMaxExt: 'aclnnArgMax'
 Equal: 'aclnnEqTensor'
+EqualExt: 'aclnnEqual'
 Greater: 'aclnnGtTensor'
 ArgMaxWithValue: 'aclnnMaxDim'
 ArgMinWithValue: 'aclnnMinDim'
@@ -85,9 +89,9 @@ AdaptiveAvgPool2DGradExt: 'aclnnAdaptiveAvgPool2dBackward'
 # 1
 Xlogy: 'aclnnXLogYTensor'
 # 2
-
+IndexFillScalar: 'aclnnIndexFillTensor'
 # 3
-
+IndexFillTensor: 'aclnnIndexFillTensor'
 # 4
 CumminExt: 'aclnnCummin'
 # 5
@@ -117,6 +121,7 @@ ArgSort: 'aclnnArgsort'
 # 16
 InplaceIndexPut: 'aclnnIndexPutImpl'
 InnerIndex: 'aclnnIndex'
+InnerInplaceIndexPut: 'aclnnIndexPutImpl'
 # 17
 
 # 18
@@ -285,6 +290,7 @@ LeakyReLUGradExt: 'aclnnLeakyReluBackward'
 # 98
 ConvolutionStr: 'aclnnConvolution'
 ConvolutionStrGrad: 'aclnnConvolutionBackward'
+Conv3DExt: 'aclnnConvolution'
 # 99
 
 # 100
@@ -297,6 +303,7 @@ ArgMinExt: 'aclnnArgMin'
 AcosExt: 'aclnnAcos'
 # 152
 AcoshExt: 'aclnnAcosh'
+AdaptiveAvgPool3DGradExt: 'aclnnAdaptiveAvgPool3dBackward'
 # 172
 AsinExt: 'aclnnAsin'
 # 173
@@ -332,9 +339,16 @@ SmoothL1LossGrad: 'aclnnSmoothL1LossBackward'
 # 301
 TrilExt: 'aclnnTril'
 
+# 510
+ReduceMax: 'aclnnAmax'
+
+# 511
+ReduceMin: 'aclnnAmin'
+
 # 520
 BincountExt: 'aclnnBincount'
-
+#537
+HardtanhGrad: 'aclnnHardtanhBackward'
 # 538
 HistcExt: 'aclnnHistc'
 
@@ -352,5 +366,11 @@ LogSumExp: 'aclnnLogSumExp'
 Swiglu: 'aclnnSwiGlu'
 SwigluGrad: 'aclnnSwiGluGrad'
 
+# 813
+InplaceErfinv: 'aclnnInplaceErfinv'
+
 # 1039
 InplaceFloor: 'aclnnInplaceFloor'
+
+# 1045
+InplaceUniform: 'aclnnInplaceUniform'

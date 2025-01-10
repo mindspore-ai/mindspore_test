@@ -408,7 +408,7 @@ int CombinedNonMaxSuppressionCpuKernelMod::Resize(const std::vector<KernelTensor
 bool CombinedNonMaxSuppressionCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
                                                    const std::vector<kernel::KernelTensor *> &,
                                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  float *boxes = static_cast<float *>(inputs[0]->device_ptr());
+  float *boxes = static_cast<float *>(inputs[kIndex0]->device_ptr());
   float *scores = static_cast<float *>(inputs[KIndex1]->device_ptr());
   max_output_size_per_class_ = *(static_cast<int *>(inputs[KIndex2]->device_ptr()));
   max_total_size_ = *(static_cast<int *>(inputs[KIndex3]->device_ptr()));

@@ -30,7 +30,7 @@ bool SoftShrinkGpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
   T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
   T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   auto status =
-    SoftShrink(size_, input_addr, lambd, output_addr, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
+    SoftShrink(size_, input_addr, lambd_, output_addr, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
   CHECK_CUDA_STATUS(status, kernel_name_);
   return true;
 }
@@ -57,7 +57,11 @@ int SoftShrinkGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
-  lambd = inputs[kIndex1]->GetValueWithCheck<float>();
+  lambd_ = inputs[kIndex1]->GetValueWithCheck<float>();
+  if (lambd_ < 0.0) {
+    MS_EXCEPTION(RuntimeError) << "For 'SoftShrink', the values for lambd should be greater or equal to 0, "
+                               << ", but found to be [" << lambd_ << "].";
+  }
   return KRET_OK;
 }
 

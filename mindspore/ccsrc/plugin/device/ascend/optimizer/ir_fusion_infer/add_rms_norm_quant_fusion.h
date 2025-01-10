@@ -15,6 +15,8 @@
  */
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_RMSNORM_QUANT_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_RMSNORM_QUANT_FUSION_H_
+#include <vector>
+#include <string>
 #include <memory>
 #include "include/backend/optimizer/optimizer.h"
 
@@ -35,6 +37,8 @@ class AddRmsNormQuantFusion : public PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
+
   VarPtr x1_;
   VarPtr x2_;
   VarPtr gamma_;
@@ -44,6 +48,30 @@ class AddRmsNormQuantFusion : public PatternProcessPass {
   mutable VarPtr sqrt_mode_;
   mutable VarPtr rounding_mode_;
   mutable VarPtr dst_type_;
+};
+
+class AddRmsNormDynamicQuantFusion : public PatternProcessPass {
+ public:
+  explicit AddRmsNormDynamicQuantFusion(bool multigraph = true)
+      : PatternProcessPass("add_rms_norm_dynamic_quant_fusion", multigraph) {
+    x1_ = std::make_shared<Var>();
+    x2_ = std::make_shared<Var>();
+    gamma_ = std::make_shared<Var>();
+    smooth_scale_ = std::make_shared<Var>();
+    eps_ = std::make_shared<Var>();
+    new_shape_ = std::make_shared<Var>();
+  }
+  ~AddRmsNormDynamicQuantFusion() override = default;
+  const BaseRef DefinePattern() const override;
+  const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
+
+ private:
+  VarPtr x1_;
+  VarPtr x2_;
+  VarPtr gamma_;
+  VarPtr new_shape_;
+  VarPtr smooth_scale_;
+  VarPtr eps_;
 };
 }  // namespace opt
 }  // namespace mindspore

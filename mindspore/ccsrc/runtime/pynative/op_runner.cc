@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <array>
+#include "kernel/kernel.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -41,7 +42,7 @@
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pynative/ir_converter.h"
-
+#include "mindspore/ops/op_def/framework_op_name.h"
 using mindspore::profiler::ProfilerManager;
 using EdgePtr = mindspore::pynative::EdgePtr;
 
@@ -166,6 +167,7 @@ void CopyTensorDataToDevice(const tensor::BaseTensorPtr &tensor, const AnfNodePt
     return;
   }
 
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "CopyTensorData", "");
   auto mem_type = tensor->is_parameter() ? device::tracker::MemType::kWeight : device::tracker::MemType::kPyNativeInput;
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                  device_address.get());
@@ -181,6 +183,9 @@ void CopyTensorDataToDevice(const tensor::BaseTensorPtr &tensor, const AnfNodePt
                                         "DefaultFormat", tensor->data_ptr())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
   }
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+    MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
+    device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
 }
 
 void CopyValueNodeDataToDevice(const KernelGraphPtr &graph, const device::DeviceContext *device_context) {
@@ -569,6 +574,23 @@ void UpdateOutputShape(const std::vector<EdgePtr> &output_edges) {
   }
 }
 
+void TrackerACLMemory(const std::vector<kernel::KernelTensor *> &input_tensors,
+                      const std::vector<kernel::KernelTensor *> &output_tensors) {
+  if (!device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    return;
+  }
+  for (auto &kernel_tensor : input_tensors) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsInput, "PyNative", kernel_tensor->device_name(), kernel_tensor->device_ptr(),
+      kernel_tensor->dtype_id(), kernel_tensor->GetDeviceShapeVector(), kernel_tensor->tensor_storage_info());
+  }
+  for (auto &kernel_tensor : output_tensors) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsOutput, "PyNative", kernel_tensor->device_name(), kernel_tensor->device_ptr(),
+      kernel_tensor->dtype_id(), kernel_tensor->GetDeviceShapeVector(), kernel_tensor->tensor_storage_info());
+  }
+}
+
 void LaunchKernels(const KernelGraphPtr &graph, const device::DeviceContext *device_context,
                    const session::BackendOpRunInfoPtr &op_run_info,
                    const std::vector<tensor::BaseTensorPtr> &input_tensors) {
@@ -586,6 +608,9 @@ void LaunchKernels(const KernelGraphPtr &graph, const device::DeviceContext *dev
     bool is_dynamic_value = common::AnfAlgo::IsDynamicValue(node);
     auto runtime_info = node->user_data<runtime::OpRuntimeInfo>();
     MS_EXCEPTION_IF_NULL(runtime_info);
+
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", node->fullname_with_scope(),
+                                                   op_run_info->base_op_run_info.op_name);
 
     if (!MallocForKernelInput(runtime_info, device_context, node)) {
       MS_LOG(EXCEPTION) << "Malloc for kernel input failed, Memory isn't enough, node:" << node->fullname_with_scope();
@@ -616,7 +641,8 @@ void LaunchKernels(const KernelGraphPtr &graph, const device::DeviceContext *dev
     auto kernel_mod = AnfAlgo::GetKernelMod(node);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
     auto stream = device_context->device_res_manager_->GetStream(stream_id);
-    static auto no_simu = common::GetEnv(kSimulationLevel).empty();
+    static auto no_simu = !common::IsCompileSimulation();
+    TrackerACLMemory(inputs, outputs);
     if (no_simu && !device_context->GetKernelExecutor(false)->LaunchKernel(node, inputs, workspaces, outputs,
                                                                            kernel_mod, stream)) {
       MS_LOG(EXCEPTION) << "Launch kernel failed, name:" << node->fullname_with_scope();
@@ -796,8 +822,6 @@ void OpRunner::UpdateDeviceAddress(const KernelGraphPtr &graph,
 void OpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_run_info,
                                 const OpCompilerInfoPtr &op_compiler_info,
                                 const std::vector<tensor::BaseTensorPtr> &input_tensors) {
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", op_run_info->base_op_run_info.op_name,
-                                                 op_compiler_info->graph_->ToString());
   CopyDataToDevice(op_compiler_info->graph_, input_tensors, op_compiler_info->device_context_);
   LaunchKernels(op_compiler_info->graph_, op_compiler_info->device_context_, op_run_info, input_tensors);
 }
@@ -807,7 +831,7 @@ void OpRunner::LaunchKernelTask(const runtime::KernelTaskType &task_type, Device
                                 const device::DeviceAddressPtrList &output_addr_list, size_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_LOG(DEBUG) << "Start, task_type:" << task_type;
-  static auto no_simu = common::GetEnv(kSimulationLevel).empty();
+  static auto no_simu = !common::IsCompileSimulation();
   if (no_simu && !device_context->GetKernelExecutor(false)->ExecuteKernelTask(task_type, input_addr_list,
                                                                               output_addr_list, stream_id)) {
     MS_LOG(EXCEPTION) << "ExecuteKernelTask failed, task_type:" << task_type;
@@ -851,8 +875,6 @@ void OpRunner::ChildAfterFork() {
 void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_run_info,
                                        const OpCompilerInfoPtr &op_compiler_info,
                                        const std::vector<tensor::BaseTensorPtr> &input_tensors) {
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", op_run_info->base_op_run_info.op_name,
-                                                 op_compiler_info->graph_->ToString());
   DynamicOpRunner::CopyHostToDevice(op_compiler_info, input_tensors);
   MallocForConstValue(op_compiler_info);
 
@@ -873,6 +895,8 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     const auto &single_op = single_ops[i];
     const CNodePtr &kernel = single_op->kernel_;
     MS_EXCEPTION_IF_NULL(kernel);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", kernel->fullname_with_scope(),
+                                                   op_run_info->base_op_run_info.op_name);
 
     // Fetch input kernel tensor.
     const auto &input_edges = single_op->inputs_;
@@ -883,7 +907,18 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     const auto &output_kernel_tensors = GetOutputKernelTensors(output_edges, device_context);
 
     BaseShapePtr out_shape;
+    static auto no_simu = !common::IsCompileSimulation();
     if (is_need_infer) {
+      if (!no_simu) {
+        bool is_dyn_shape = common::AnfAlgo::IsDynamicShape(kernel) || common::AnfAlgo::IsDynamicSequence(kernel);
+        bool is_dyn_value = common::AnfAlgo::IsDynamicValue(kernel);
+        bool is_dyn_type = common::AnfAlgo::IsAnyTypeOutput(kernel);
+        if (is_dyn_value && (is_dyn_shape || is_dyn_type)) {
+          MS_LOG(EXCEPTION) << "For " << kernel->fullname_with_scope()
+                            << ", the output shape depends on the actual execution, and it will affect the accuracy of "
+                               "memory in dryrun mode.";
+        }
+      }
       out_shape = InferNodeRealShape(kernel, input_abstracts);
     } else {
       kernel->set_abstract(op_run_info->base_op_run_info.abstract);
@@ -912,7 +947,7 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
     MS_EXCEPTION_IF_NULL(kernel_mod);
     const size_t stream_id = op_run_info->base_op_run_info.stream_id;
     auto stream = device_context->device_res_manager_->GetStream(stream_id);
-    static auto no_simu = common::GetEnv(kSimulationLevel).empty();
+    TrackerACLMemory(input_kernel_tensors, output_kernel_tensors);
     if (no_simu &&
         !device_context->GetKernelExecutor(true)->LaunchKernel(kernel, input_kernel_tensors, workspace_kernel_tensors,
                                                                output_kernel_tensors, kernel_mod, stream)) {
@@ -921,6 +956,11 @@ void DynamicOpRunner::RunSingleOpGraph(const session::BackendOpRunInfoPtr &op_ru
 
     if (is_need_infer) {
       if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
+        if (!no_simu && no_dyn_need_update_ops.find(kernel_mod->kernel_name()) == no_dyn_need_update_ops.end()) {
+          MS_LOG(EXCEPTION) << "For " << kernel->fullname_with_scope()
+                            << ", the output shape depends on the actual execution, and it will affect the accuracy of "
+                               "memory in dryrun mode.";
+        }
         kernel_mod->UpdateOutputShapeAndSize(input_kernel_tensors, output_kernel_tensors);
         UpdateOutputShape(output_edges);
       }

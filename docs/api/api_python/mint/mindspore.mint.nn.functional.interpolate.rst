@@ -9,7 +9,7 @@ mindspore.mint.nn.functional.interpolate
         这是一个实验性API，后续可能修改或删除。
 
     .. note:: 
-        - 在linear模式下， `align_corners`为False时不支持 `scale_factor` 。
+        - 在linear模式下， `align_corners` 为False时不支持 `scale_factor` 。
         - 在nearest模式下，在输入为3-D/4-D Tensor图像按 `scale_factor` 进行缩放的场景中可能存在精度问题.
         - `mode` 和 `recompute_scale_factor` 只能为常量。
 

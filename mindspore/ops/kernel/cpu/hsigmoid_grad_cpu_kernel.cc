@@ -34,11 +34,11 @@ bool HSigmoidGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
                                             const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kHSigmoidGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kHSigmoidGradOutputsNum, kernel_name_);
-  T *dy = static_cast<T *>(inputs[kIndex0]->device_ptr());
+  T *dy = GetDeviceAddress<T>(inputs, kIndex0);
   MS_ERROR_IF_NULL_W_RET_VAL(dy, false);
-  T *x = static_cast<T *>(inputs[kIndex1]->device_ptr());
+  T *x = GetDeviceAddress<T>(inputs, kIndex1);
   MS_ERROR_IF_NULL_W_RET_VAL(x, false);
-  T *out = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *out = GetDeviceAddress<T>(outputs, kIndex0);
   MS_ERROR_IF_NULL_W_RET_VAL(out, false);
 
   auto zero = static_cast<T>(0);

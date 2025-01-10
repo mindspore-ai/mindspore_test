@@ -447,7 +447,7 @@ Tensor::~Tensor() {
   } else {
     // release the data from python layer
     py::gil_scoped_acquire gil_acquire;
-    python_array_ = py::none();  // let borrowed python ndarray ref - 1
+    python_array_ = py::object();  // let borrowed python ndarray ref - 1
   }
 #endif
 #ifdef ENABLE_PYTHON
@@ -462,7 +462,7 @@ Tensor::~Tensor() {
         // refers by 1, then break that reference relationship, otherwise the default
         // destructor will destruct that py::object again while recycling class member
         // python_dict_. A simple assignment to None satisfies all of the above.
-        python_dict_ = py::none();
+        python_dict_ = py::object();
       }
     }
   } catch (const py::error_already_set &e) {
@@ -614,11 +614,11 @@ void Tensor::Invalidate() {
 #ifdef ENABLE_PYTHON
   if (type_.value() == DataType::DE_PYTHON) {
     py::gil_scoped_acquire gil_acquire;
-    python_dict_ = py::none();
+    python_dict_ = py::object();
   }
   if (static_cast<bool>(python_array_)) {
     py::gil_scoped_acquire gil_acquire;
-    python_array_ = py::none();  // let borrowed python ndarray ref - 1
+    python_array_ = py::object();  // let borrowed python ndarray ref - 1
   }
 #endif
 }

@@ -34,6 +34,7 @@ from mindspore.nn.optim.momentum import Momentum
 from mindspore.nn.wrap.cell_wrapper import WithLossCell
 from mindspore.context import ParallelMode
 from mindspore.communication.management import init
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 random.seed(1)
 np.random.seed(1)
@@ -379,7 +380,8 @@ class GradWrap(Cell):
 
 
 def test_pynative_resnet50():
-    context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU", runtime_num_threads=20)
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
+    threads_num(20)
     context.reset_auto_parallel_context()
     context.set_auto_parallel_context(parallel_mode=ParallelMode.DATA_PARALLEL, gradients_mean=False, device_num=8)
     init()

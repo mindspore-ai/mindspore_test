@@ -5,6 +5,9 @@ mindspore.save_mindir
 
     保存MindIR文件。
 
+    .. note::
+        这个接口在2.5版本废弃，并且会在未来版本移除。
+
     参数：
         - **model** (ModelProto) - MindIR model。
         - **file_name** (str) - MindIR文件的全路径名。

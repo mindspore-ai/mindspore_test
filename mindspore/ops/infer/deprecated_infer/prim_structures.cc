@@ -20,8 +20,7 @@
 #include "abstract/utils.h"
 #include "abstract/param_validator.h"
 #include "utils/check_convert_utils.h"
-#include "include/common/utils/utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace abstract {
@@ -358,6 +357,14 @@ AbstractBasePtr InferImplDictItems(const AnalysisEnginePtr &, const PrimitivePtr
                          return std::make_shared<AbstractTuple>(AbstractBasePtrList{item.first, item.second});
                        });
   return std::make_shared<AbstractList>(items);
+}
+
+AbstractBasePtr InferImplInsertGradientOf(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                          const AbstractBasePtrList &args_abs_list) {
+  const std::string op_name = primitive->name();
+  constexpr int args_spec_size = 1;
+  CheckArgsSize(op_name, args_abs_list, args_spec_size);
+  return args_abs_list[0];
 }
 
 namespace {

@@ -20,9 +20,6 @@
 #include <vector>
 #include <thread>
 
-#ifdef PARALLEL_INFERENCE
-#define BIND_CORE
-#endif
 #ifdef __ANDROID__
 #define BIND_CORE
 #include <sched.h>

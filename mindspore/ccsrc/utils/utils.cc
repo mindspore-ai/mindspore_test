@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include "include/common/utils/utils.h"
+#include "utils/ms_utils.h"
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
 #else
@@ -325,6 +326,11 @@ bool IsDisableGeKernel() {
   return config_disable_ge_kernel || use_hccl_rank_table || use_ascend910;
 }
 
+bool IsNeedProfilieMemoryLog() {
+  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsDryRun();
+  return is_need_profile_memory_log;
+}
+
 bool IsMemoryPoolRecycle() {
   static bool optimize_mem = !common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
   static bool disable_ge_kernel = IsDisableGeKernel();
@@ -473,10 +479,22 @@ std::string GetPythonStackStr() {
   return ss.str();
 }
 
+bool IsJit() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  return (context->jit_status() == JitStatus::kJitCompiling) || (context->jit_status() == JitStatus::kJitRunning);
+}
+
+bool JitCompiling() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  return context->jit_status() == JitStatus::kJitCompiling;
+}
+
 bool JitRunning() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  return context->jit_running();
+  return context->jit_status() == JitStatus::kJitRunning;
 }
 
 AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node) {

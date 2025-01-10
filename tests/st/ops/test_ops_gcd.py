@@ -93,7 +93,7 @@ def ops_gcd_binary_case1(input_binary_data=None, output_binary_data=None, loss=0
 
 
 @arg_mark(
-    plat_marks=["platform_ascend", "platform_ascend910b", "platform_gpu"],
+    plat_marks=["platform_ascend", "platform_gpu"],
     level_mark="level0",
     card_mark="onecard",
     essential_mark="essential",

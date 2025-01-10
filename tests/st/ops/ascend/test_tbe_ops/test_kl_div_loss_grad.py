@@ -36,10 +36,10 @@ class Net(nn.Cell):
 
 
 reduction_list = ["none", "mean", "batchmean", "sum"]
-expect_list = [[[0, 0], [-1, 0]],
-               [[0, 0.25], [0.25, 0]],
-               [[0, 0.5], [0.5, 0]],
-               [[0, 1], [1, 0]]]
+expect_list = [[[-1, 0], [-1, 1]],
+               [[-0.25, 0.25], [0.25, -0.25]],
+               [[-0.5, 0.5], [0.5, -0.5]],
+               [[-1, 1], [1, -1]]]
 
 
 def generate_test_cases(dtype, mode, reduction):
@@ -104,5 +104,5 @@ def test_vmap_case():
     dy = Tensor(np.array([[-1, 0], [1, 1]]).astype(dtype))
     output = WrapNet(NetVmap(), 0, 0)(prediction, target, dy)
     print(output)
-    expect = np.array([[0, 0], [-1, 0]])
+    expect = np.array([[-1, 0], [-1, 1]])
     assert np.allclose(output.asnumpy(), expect)

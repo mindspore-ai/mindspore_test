@@ -37,7 +37,7 @@ class TruncateMod(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_truncatemod_output_diff_types():
     """
@@ -87,7 +87,7 @@ def test_truncatemod_output_diff_types():
     assert out.shape == exp.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_truncatemod_output_broadcasting():
     """
@@ -106,7 +106,7 @@ def test_truncatemod_output_broadcasting():
     assert out.shape == exp.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_truncatemod_output_broadcasting_scalar():
     """
@@ -125,7 +125,7 @@ def test_truncatemod_output_broadcasting_scalar():
     assert out.shape == exp.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_truncatemod_dtype_not_supported():
     """
@@ -141,7 +141,7 @@ def test_truncatemod_dtype_not_supported():
         _ = TruncateMod()(input_x, input_y).asnumpy()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_truncatemod_cannot_broadcast():
     """

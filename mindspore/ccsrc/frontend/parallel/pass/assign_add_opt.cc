@@ -32,6 +32,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/convert_utils_base.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace parallel {

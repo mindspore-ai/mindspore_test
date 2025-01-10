@@ -30,7 +30,11 @@ PrimitiveCPtr OnnxGridSampleParser::Parse(const onnx::GraphProto &onnx_graph, co
   bool align_corners = false;
   for (const auto &onnx_node_attr : onnx_node.attribute()) {
     if (onnx_node_attr.name() == "mode") {
-      interpolation_mode = ops::StringToEnumImpl(prim->name(), "interpolation_mode", onnx_node_attr.s());
+      if (onnx_node_attr.s() == "bicubic") {
+        interpolation_mode = ops::StringToEnumImpl(prim->name(), "interpolation_mode", "bicubic2d");
+      } else {
+        interpolation_mode = ops::StringToEnumImpl(prim->name(), "interpolation_mode", onnx_node_attr.s());
+      }
     } else if (onnx_node_attr.name() == "padding_mode") {
       padding_mode = ops::StringToEnumImpl(prim->name(), "padding_mode", onnx_node_attr.s());
     } else if (onnx_node_attr.name() == "align_corners") {

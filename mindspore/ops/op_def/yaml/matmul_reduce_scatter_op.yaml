@@ -1,0 +1,36 @@
+matmul_reduce_scatter:
+  args:
+    input:
+      dtype: tensor
+    x2:
+      dtype: tensor
+    group:
+      dtype: str
+    world_size:
+      dtype: int
+    reduce_op:
+      dtype: int
+      arg_handler: str_to_enum
+      default: "'sum'"
+    bias:
+      dtype: tensor
+      default: None
+    comm_turn:
+      dtype: int
+      default: 0
+    trans_input:
+      dtype: bool
+      default: False
+    trans_x2:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: MatmulReduceScatterAscend
+    CPU: None
+    GPU: None
+  function:
+    disable: True

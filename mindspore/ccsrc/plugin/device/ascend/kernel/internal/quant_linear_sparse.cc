@@ -17,37 +17,25 @@
 #include "plugin/device/ascend/kernel/internal/quant_linear_sparse.h"
 
 #include <memory>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
+#include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalQuantLinearSparse::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                              const std::vector<KernelTensor *> &outputs) {
-  auto param_ptr = std::make_shared<internal::OpParam>();
-  internal::MatMulParam matmul_param;
-  param_ptr->opId = internal::OpId::QuantLinearSparse;
-
-  auto shape_x = inputs[kIndex0]->GetShapeVector();
-  auto shape_deqScale = inputs[kIndex2]->GetShapeVector();
-  int m = shape_x[kIndex0];
-  int k = shape_x[kIndex1];
-  int n = shape_deqScale[shape_deqScale.size() - 1];
-
-  matmul_param = {
-    false,      // transposeA
-    true,       // transposeB
-    {m, k, n},  // oriShape
-    true,       // withBias
-    true,       // enDequant
-    8,          // tilingN
-    8,          // tilingK
-  };
-  param_ptr->specificParam = matmul_param;
-  return std::static_pointer_cast<internal::OpParam>(param_ptr);
+internal::InternalOpPtr InternalQuantLinearSparse::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                                const internal::OutputsImmutableInfoList &outputs_ii,
+                                                                const std::vector<KernelTensor *> &ms_inputs,
+                                                                const std::vector<KernelTensor *> &ms_outputs) {
+  output_format_ = outputs_ii[0].GetFormat();
+  return internal::CreateQuantLinearSparseOp(inputs_ii, outputs_ii, internal::kInternalQuantLinearSparseOpName);
 }
 
-MS_INTERNAL_KERNEL_FACTORY_REG(QuantLinearSparse, InternalQuantLinearSparse);
+uint64_t InternalQuantLinearSparse::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, output_format_);
+}
+MS_INTERNAL_KERNEL_FACTORY_REG(QuantLinearSparse, internal::kInternalQuantLinearSparseOpName,
+                               InternalQuantLinearSparse);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QuantLinearSparse, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_4, INDEX_2, INDEX_3);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QuantLinearSparse, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore

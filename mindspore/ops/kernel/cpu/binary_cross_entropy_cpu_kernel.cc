@@ -60,9 +60,12 @@ template <typename T>
 void BinaryCrossEntropyCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
   const auto *input_x = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_x);
   const auto *input_y = reinterpret_cast<T *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_y);
   const T *weight = reinterpret_cast<T *>(inputs[2]->device_ptr());
   auto *loss = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(loss);
   std::vector<T> tmp_loss(input_size_);
   auto epsilon = static_cast<T>(1e-12);
   auto one = static_cast<T>(1);

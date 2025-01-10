@@ -1,37 +1,90 @@
 max:
   description: |
-    max(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> tuple(Tensor)
+    max() -> Tensor
+    
+    Returns the maximum value of the self tensor.
+    
+    Returns:
+        Scalar Tensor with the same dtype as `input`, the maximum value of the input.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+        >>> output = x.max()
+        >>> print(output)
+        [0.7]
+
+    .. method:: Tensor.max(dim, keepdim=False) -> tuple(Tensor)
+        :noindex:
+
+    Calculates the maximum value along with the given dim for the input tensor, and returns the maximum values and
+    indices.
+
+    Args:
+        dim (int): The dimension to reduce.
+        keepdim (bool, optional): Whether to reduce dimension, if ``True`` the output will keep the same dimension as the
+            `self` , the output will reduce dimension if ``false``. Default: ``False``.
+
+    Returns:
+        tuple (Tensor), tuple of 2 tensors, containing the maximum value of the self tensor along the given
+        dimension `dim` and the corresponding index.
+
+        - **values** (Tensor) - The maximum value of self tensor, with the same shape as `index`, and same dtype as `self`.
+        - **index** (Tensor) - The index for the maximum value of the self tensor, with dtype int64. If `keepdim` is
+          ``True`` , the shape of output tensors is :math:`(self_1, self_2, ..., self_{dim-1}, 1, self_{dim+1}, ..., self_N)`.
+          Otherwise, the shape is :math:`(self_1, self_2, ..., self_{dim-1}, self_{dim+1}, ..., self_N)` .
+
+    Raises:
+        TypeError: If `keepdim` is not a bool.
+        TypeError: If `dim` is not an int.
+        TypeError: If self tensor data type is Complex.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+        >>> output, index = x.max(0, keepdim=True)
+        >>> print(output, index)
+        [0.7] [3]
+
+    .. method:: Tensor.max(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> tuple(Tensor)
+        :noindex:
     
     Return the maximum of a tensor or maximum along an axis.
 
     Note:
-        When `axis` is ``None``, `keepdims` and subsequent parameters
-        have no effect. At the same time, the index is fixed to return 0.
+        When `axis` is ``None``, `keepdims` and subsequent parameters have no effect.
+        At the same time, the index is fixed to return 0.
 
     Args:
-        axis (Union[None, int, list, tuple of ints], optional): Axis or
-            axes along which to operate. By default, flattened input is used. If
-            this is a tuple of ints, the maximum is selected over multiple axes,
+        axis (Union[None, int, list, tuple of ints], optional): Axis or axes along which to operate. By default,
+            flattened input is used. If this is a tuple of ints, the maximum is selected over multiple axes,
             instead of a single axis or all the axes as before. Default: ``None`` .
         keepdims (bool, optional):
-            If this is set to ``True`` , the axes which are reduced are left in the
-            result as dimensions with size one. With this option, the result will
-            broadcast correctly against the input array. Default: ``False`` .
+            If this is set to ``True`` , the axes which are reduced are left in the result as dimensions with size one. 
+            With this option, the result will broadcast correctly against the input array. Default: ``False`` .
 
     Keyword Args:
-        initial (scalar, optional):
-            The minimum value of an output element. Must be present to allow
-            computation on empty slice. Default: ``None`` .
-        where (bool Tensor, optional):
-            A boolean tensor which is broadcasted to match the dimensions of array,
-            and selects elements to include in the reduction. If non-default value
-            is passed, initial must also be provided. Default: ``True`` .
-        return_indices (bool, optional): Whether to return the index of the maximum value.
-            Default: ``False`` . If `axis` is a list or tuple of ints, it must be ``False`` .
+        initial (scalar, optional): The minimum value of an output element. Must be present to allow computation
+            on empty slice. Default: ``None`` .
+        where (bool Tensor, optional): A boolean tensor which is broadcasted to match the dimensions of array,
+            and selects elements to include in the reduction. If non-default value is passed, initial must also
+            be provided. Default: ``True`` .
+        return_indices (bool, optional): Whether to return the index of the maximum value. Default: ``False`` . 
+            If `axis` is a list or tuple of ints, it must be ``False`` .
 
     Returns:
-        Tensor or scalar, maximum of input tensor. If `axis` is ``None`` , the result is a scalar
-        value. If `axis` is given, the result is a tensor of dimension ``self.ndim - 1``.
+        Tensor or scalar, maximum of self tensor. If `axis` is ``None`` , the result is a scalar value. 
+        If `axis` is given, the result is a tensor of dimension ``self.ndim - 1``.
 
     Raises:
         TypeError: If arguments have types not specified above.
@@ -56,20 +109,3 @@ max:
         [2. 3.]
         >>> print(indices)
         [1 1]
-
-    .. method:: Tensor.max() -> Tensor
-        :noindex:
-    
-    Returns the maximum value of all elements in `self` .
-    
-    Returns:
-        Tensor - Returns the maximum value of each row of `self` .
-    
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output = x.max()
-        >>> print(output)
-        [0.7]

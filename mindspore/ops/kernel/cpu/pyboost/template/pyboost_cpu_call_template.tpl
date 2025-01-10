@@ -18,7 +18,7 @@ if (kernel_attr_pair.first || op_name() == "Cast") {
   // Create device address for output tensors
   PyBoostUtils::PrepareOpOutputs(device_context_, 0, outputs_);
   
-  ProfileMemoryInfo();
+  ProfileTrackerTask();
 
   // Async
   PyBoostUtils::DispatchRun(
@@ -40,8 +40,10 @@ if (kernel_attr_pair.first || op_name() == "Cast") {
     // Launch kernel
     PyBoostUtils::LaunchKernel(primitive(), op->device_context(), input_address_info, output_address_info);
   }));
+  ProfileTrackerInput(${call_args});
+  ProfileTrackerOutput(${return_values});
   MS_LOG(DEBUG) << op_name() << " call end";
-  get_op()->CreateOutputSimpleInfoForView();
+  get_op()->CreateOutputSimpleInfo();
   return ${return_values};
 }
 ${cast_input_code}
@@ -53,6 +55,6 @@ for (auto &tensor : outputs()) {
 }
 const auto &real_output = PyBoostUtils::CastTensor(op->outputs(), output_types, "CPU");
 set_outputs(real_output);
-get_op()->CreateOutputSimpleInfoForView();
+get_op()->CreateOutputSimpleInfo();
 return ${return_values};
 

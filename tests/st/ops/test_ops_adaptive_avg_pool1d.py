@@ -49,8 +49,7 @@ def ops_adpative_avg_pool1d_case1(input_binary_data=None, output_binary_data=Non
     assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-03, 1e-03)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_adaptive_avg_pool1d(mode):
     """

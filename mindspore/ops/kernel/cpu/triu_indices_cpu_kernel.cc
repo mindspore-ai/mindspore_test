@@ -62,7 +62,7 @@ bool TriuIndicesCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
     tril_size += diff_row * col_;
   }
   auto triu_size = row_ * col_ - tril_size;
-  auto *output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(output_addr);
   int64_t i = 0;
   int64_t c = std::max<int64_t>(0, offset_);

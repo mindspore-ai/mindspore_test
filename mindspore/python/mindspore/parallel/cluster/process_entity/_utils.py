@@ -77,10 +77,14 @@ def _get_local_ip(ip_address):
     """
     global CURRENT_IP
     if CURRENT_IP is None:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect((ip_address, 0))
-        CURRENT_IP = s.getsockname()[0]
-        s.close()
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((ip_address, 0))
+            CURRENT_IP = s.getsockname()[0]
+            s.close()
+        except Exception as e:
+            raise RuntimeError(f"Get local ip failed: {e}. Please check whether an accessible address "
+                               "is input by '--master_address'.")
     return CURRENT_IP
 
 
@@ -120,7 +124,8 @@ def _convert_addr_to_ip(master_addr):
             logger.info(f"Convert input host name:{master_addr} to ip address:{ip_address}.")
             return ip_address
         except socket.gaierror as e:
-            raise RuntimeError(f"DNS resolution failed: {e}. Please check whether the correct host name is input.")
+            raise RuntimeError(f"DNS resolution failed: {e}. Please check whether a correct host name "
+                               "is input by '--master_address'.")
 
 
 def _send_scale_num(url, scale_num):

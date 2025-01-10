@@ -23,6 +23,7 @@
 #include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -183,12 +184,29 @@ bool SchedulerHelper::HasMonadControl(const AnfNodePtr &input_node, const Kernel
   return false;
 }
 
-void SchedulerHelper::AddDeviceTensorStore(const AnfNode *anf_node, const DeviceTensorPtr &device_tensor) {
+void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor) {
   MS_EXCEPTION_IF_NULL(anf_node);
   MS_EXCEPTION_IF_NULL(device_tensor);
-  MS_LOG(DEBUG) << "Add device tensor store:" << device_tensor << " for node:" << anf_node->DebugString()
-                << " node addr:" << anf_node << " device type:" << device_tensor->GetDeviceType();
-  DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node), device_tensor);
+  // Intercept, parameter-weight is not placed into device tensor store
+  if (EnableInputOptimize()) {
+    // std::shared_ptr<AnfNode> &cur_ptr(anf_node);
+    auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({anf_node, 0}).first;
+    MS_EXCEPTION_IF_NULL(real_node);
+    if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
+      auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+      MS_EXCEPTION_IF_NULL(graph_parameter_store);
+      auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(anf_node.get());
+      graph_parameter_store->Push(outer_idx, 0, device_tensor, device_tensor->GetDeviceType(), SIZE_MAX);
+      MS_LOG(DEBUG) << "Add graph parameter store:" << device_tensor << " for node:" << anf_node.get()->DebugString()
+                    << " node addr:" << anf_node.get() << " device type:" << device_tensor->GetDeviceType()
+                    << ", outer idx:" << outer_idx;
+      device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      return;
+    }
+  }
+  MS_LOG(DEBUG) << "Add device tensor store:" << device_tensor << " for node:" << anf_node.get()->DebugString()
+                << " node addr:" << anf_node.get() << " device type:" << device_tensor->GetDeviceType();
+  DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), device_tensor);
   device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   UpdateRefCount(device_tensor.get(), true);
 }
@@ -426,6 +444,85 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
   if (IsControlFlowActor(to_actor->type())) {
     device_tensor->SetNodeIndex(from_kernel, from_output_index);
   }
+}
+
+void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_actor,
+                                                    const KernelWithIndex &front_node_with_idx,
+                                                    const KernelWithIndex &from_kernel_with_output_idx,
+                                                    const KernelWithIndex &to_kernel_with_input_idx,
+                                                    const KernelGraphPtr &graph) {
+  // Obtain the corresponding front node from back node.
+  ParameterStore &parameterStore = ParameterStore::GetInstance();
+  auto cur_graph_parameter_store = parameterStore.GetGraphParameterStore();
+  size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_idx.first.get());
+  // The index of the font node is flattened
+  size_t real_inner_idx = front_node_with_idx.second;
+  auto cur_device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, 0, false);
+  MS_EXCEPTION_IF_NULL(cur_device_tensor);
+  // The superkernel actor is linked by input parameter, maybe the not used parameter.
+  if (to_actor->type() != KernelTransformType::kSuperKernelActor) {
+    cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  }
+  // Cal ref count
+  auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({from_kernel_with_output_idx.first, 0}).first;
+  MS_EXCEPTION_IF_NULL(real_node);
+  if (real_node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(real_node->cast<ParameterPtr>())) {
+    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
+  } else if (graph->IsRefOutputMapValue(from_kernel_with_output_idx)) {
+    MS_LOG(INFO) << "Ref input: " << from_kernel_with_output_idx.first->DebugString()
+                 << ", index: " << from_kernel_with_output_idx.second;
+    cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX, cur_device_tensor->GetDeviceType());
+  } else {
+    cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx, cur_device_tensor->GetDeviceType());
+  }
+  // Save to_actor info into parameter_index
+  ParameterInfo cur_param_info{front_node_with_idx, real_outer_idx};
+  to_actor->InsertParameterIndexs(to_kernel_with_input_idx.second, cur_param_info);
+  UpdateDataArrowRefCount(to_actor, to_kernel_with_input_idx.second, cur_device_tensor);
+}
+
+void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, OutputActor *const to_actor,
+                                         const KernelWithIndex &kernel_with_index, DeviceContext *device_context,
+                                         size_t output_position) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+
+  auto front_node_with_index = kernel_with_index;
+  auto from_kernel = kernel_with_index.first;
+  MS_EXCEPTION_IF_NULL(from_kernel);
+  MS_EXCEPTION_IF_NULL(device_context);
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  if (!graph_parameter_store->IsFrontNodeInStore(from_kernel.get())) {
+    front_node_with_index = graph_parameter_store->GetRealFrontNode(kernel_with_index);
+    from_kernel = front_node_with_index.first;
+  }
+  auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(from_kernel.get());
+  ParameterInfo parameter_info{front_node_with_index, outer_idx};
+  to_actor->InsertParameterIndexs(output_position, parameter_info);
+  graph_parameter_store->SetUserCnt(outer_idx, front_node_with_index.second, SIZE_MAX, device_context->GetDeviceType());
+
+  auto device_tensor =
+    graph_parameter_store->Fetch(outer_idx, front_node_with_index.second, device_context->GetDeviceType());
+  if (device_tensor != nullptr) {
+    device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+    // The device tensor of graph out need be taken over by host tensor, so set the max reference count.
+    UpdateRefCount(device_tensor, true);
+    MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
+                  << " to actor:" << to_actor->GetAID() << " from kernel"
+                  << (from_kernel == nullptr ? "null" : from_kernel->DebugString())
+                  << " device address:" << device_tensor
+                  << " original ref count:" << device_tensor->original_ref_count()
+                  << " ref count:" << device_tensor->ref_count()
+                  << " dynamic ref count:" << device_tensor->dynamic_ref_count();
+  }
+
+  // Set the device contexts of to_actor.
+  if (output_position >= to_actor->device_contexts_.size()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The output position is out of range.";
+  }
+  to_actor->device_contexts_[output_position] = device_context;
 }
 
 void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActor *const to_actor,
@@ -842,7 +939,7 @@ void SchedulerHelper::AddMemorySign(AbstractActor *const from_actor, AbstractAct
   MS_EXCEPTION_IF_NULL(to_actor);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) == kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() == kOptimizeO0) {
     return;
   }
 
@@ -982,7 +1079,7 @@ void SchedulerHelper::AddSomasInfoForGraphOutput(AbstractActor *const output_act
                                                  size_t graph_id) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) == kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() == kOptimizeO0) {
     return;
   }
   if ((output_actor == nullptr) || (output_actor->type() != KernelTransformType::kKernelActor &&
@@ -1149,8 +1246,8 @@ void SchedulerHelper::CheckActorValid(const ActorSet *actor_set) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << actor->GetAID().Name() << " has no user.";
     }
     if ((actor->type_ != KernelTransformType::kDataPrepareActor) &&
-        (actor->type_ != KernelTransformType::kCustomActor) && (actor->input_datas_num_ == 0) &&
-        (actor->input_controls_num_ == 0)) {
+        (actor->type_ != KernelTransformType::kCustomActor) &&
+        (actor->input_datas_num_ == 0 && actor->parameter_indexs_.size() == 0) && (actor->input_controls_num_ == 0)) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << actor->GetAID().Name() << " has no source.";
     }
 
@@ -1170,10 +1267,12 @@ void SchedulerHelper::CheckActorValid(const ActorSet *actor_set) {
       }
       auto input_data_num = actor->input_datas_num_;
       auto device_tensor_store_num = actor->device_tensor_store_keys_.size();
-      if (input_data_num + device_tensor_store_num != expect_input_num) {
+      auto parameter_index_num = actor->parameter_indexs_.size();
+      if (input_data_num + device_tensor_store_num + parameter_index_num != expect_input_num) {
         MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The input building of " << actor->GetAID().Name()
                                    << " is wrong, input data num: " << input_data_num
                                    << ", device tensor store num: " << device_tensor_store_num
+                                   << ", parameter index num: " << parameter_index_num
                                    << ", total input num: " << expect_input_num;
       }
     }
@@ -1182,11 +1281,14 @@ void SchedulerHelper::CheckActorValid(const ActorSet *actor_set) {
   // Check the output actor.
   auto output_actor = actor_set->output_actor_;
   MS_EXCEPTION_IF_NULL(output_actor);
-  if (output_actor->input_datas_num_ + output_actor->device_tensor_store_keys_.size() != output_actor->outputs_num()) {
+  if (output_actor->input_datas_num_ + output_actor->device_tensor_store_keys_.size() +
+        output_actor->parameter_indexs_.size() !=
+      output_actor->outputs_num()) {
     MS_LOG(INTERNAL_EXCEPTION)
       << "#dmsg#Runtime error info:#dmsg#The outputs num of output actor is wrong, the total outputs num: "
       << output_actor->outputs_num() << ", the input data arrows num: " << output_actor->input_datas_num_
-      << ", the device tensor store num: " << output_actor->device_tensor_store_keys_.size();
+      << ", the device tensor store num: " << output_actor->device_tensor_store_keys_.size()
+      << ", parameter indexes size: " << output_actor->parameter_indexs_.size();
   }
 
   CheckControlActorValid(actor_set);

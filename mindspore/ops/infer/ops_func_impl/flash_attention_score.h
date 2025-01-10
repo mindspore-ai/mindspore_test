@@ -19,7 +19,7 @@
 #include <vector>
 #include <set>
 #include "ops/ops_func_impl/op_func_impl.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

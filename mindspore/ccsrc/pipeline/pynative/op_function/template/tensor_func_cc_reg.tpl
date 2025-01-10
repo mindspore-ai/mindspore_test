@@ -14,46 +14,10 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/arg_handler.h"
-#include "pybind_api/ir/tensor_func_reg.h"
-#include "pipeline/pynative/op_function/converter.h"
-#include <memory>
+#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
 
 namespace mindspore {
 namespace tensor {
-class StubTensorConverterImpl {
- public:
-  StubTensorConverterImpl() {
-    auto stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
-    converter_ = stub_tensor_module.attr("_convert_stub");
-  }
-
-  ~StubTensorConverterImpl() {
-    py::gil_scoped_acquire gil_acquire;
-    converter_ = py::none();
-  }
-
-  py::object Convert(const py::object &object) { return converter_(object); }
-
- private:
-  py::object converter_;
-};
-
-StubTensorConverter &StubTensorConverter::GetInstance() {
-  static StubTensorConverter instance;
-  return instance;
-}
-
-void StubTensorConverter::Clear() { impl_ = nullptr; }
-
-py::object StubTensorConverter::ToPython(const py::object &object) {
-  if (impl_ == nullptr) {
-    impl_ = std::make_unique<StubTensorConverterImpl>();
-  }
-  return impl_->Convert(object);
-}
-
-${func_call_body}
 
 void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class) {
     ${func_def_body}

@@ -222,7 +222,7 @@ def test_tensor_scatter_arithmetic_one_value(func, data_type, index_type):
     compare_with_numpy(func, input_x, indices, updates)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('func', ['add', 'sub', 'div', 'mul', 'max', 'min'])
 @pytest.mark.parametrize('data_type', [mstype.int8])
@@ -248,7 +248,7 @@ def test_tensor_scatter_arithmetic_dim_check(func, data_type, index_type):
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('func', ['add', 'sub', 'div', 'mul', 'max', 'min'])
 @pytest.mark.parametrize('data_type', [mstype.int8, mstype.int16, mstype.int32, mstype.int64])
@@ -294,7 +294,7 @@ def test_tensor_scatter_arithmetic_indices_check(func, data_type, index_type):
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('func', ['div'])
 @pytest.mark.parametrize('data_type', [mstype.float32])
@@ -318,7 +318,7 @@ def test_tensor_scatter_arithmetic_tensor_func_check(func, data_type, index_type
     np.testing.assert_allclose(output.asnumpy(), expected, rtol=1e-6)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('func', ['div'])
 @pytest.mark.parametrize('data_type', [mstype.float32])
@@ -420,7 +420,7 @@ def test_scatter_func_update_vmap(func_name):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, atol=1e-6, rtol=1e-6)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("func_name", ["add", "max", "min", "sub"])
 def test_tensor_scatter_dy_shape(func_name):

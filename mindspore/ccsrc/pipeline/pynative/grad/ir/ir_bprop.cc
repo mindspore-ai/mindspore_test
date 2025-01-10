@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "frontend/optimizer/ad/pynative_jit_grad.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
@@ -37,56 +38,6 @@ const mindspore::HashSet<std::string> kMetaFuncGraphOp{
   kAttrMutableOpName,
   kMakeDictOpName,
 };
-mindspore::HashMap<std::string, FuncGraphPtr> pass_grad_graph_;
-
-FuncGraphPtr OptimizeBpropBuilder(const FuncGraphPtr &bprop_func_graph, const GradParamPtr &grad_param) {
-  PyNativeAlgo::Common::DumpGraphIR("bprop_builder_before_opt.ir", bprop_func_graph);
-  pipeline::ResourcePtr resource = std::make_shared<pipeline::Resource>();
-  resource->set_func_graph(bprop_func_graph);
-  auto manager = resource->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  manager->AddFuncGraph(bprop_func_graph);
-  auto after_opt_bg = pipeline::JitBpropGraphPass(resource, true);
-  auto is_dynamic_shape_control_flow =
-    grad_param->is_jit_graph && grad_param->use_dynamic_shape_process && grad_param->is_control_flow;
-  if (is_dynamic_shape_control_flow) {
-    for (const auto &g : manager->func_graphs()) {
-      g->set_flag(kFlagJitCallGraph, true);
-    }
-  }
-  auto abs_seq = after_opt_bg->parameters().empty()
-                   ? nullptr
-                   : after_opt_bg->parameters().back()->abstract()->cast<abstract::AbstractSequencePtr>();
-  if (abs_seq != nullptr && !abs_seq->dynamic_len() && grad_param->is_jit_graph &&
-      grad_param->use_dynamic_shape_process) {
-    PyNativeAlgo::Common::ProcessTupleParam(after_opt_bg, after_opt_bg->parameters().size() - kIndex1);
-  }
-  PyNativeAlgo::Common::DumpGraphIR("bprop_builder_after_opt.ir", after_opt_bg);
-  return after_opt_bg;
-}
-
-bool ProcessMonadNode(const PrimitivePtr &prim, const CNodePtr &cnode, const GradParamPtr &grad_param) {
-  MS_EXCEPTION_IF_NULL(prim);
-  if (kMonadOp.find(prim->name()) != kMonadOp.end()) {
-    MS_LOG(DEBUG) << "Get monad cnode " << cnode->DebugString();
-    return true;
-  }
-  if ((prim->HasAttr(GRAPH_FLAG_SIDE_EFFECT_MEM) || prim->HasAttr(GRAPH_FLAG_SIDE_EFFECT_IO)) &&
-      (cnode->inputs().back()->abstract()->isa<abstract::AbstractMonad>())) {
-    AnfNodePtrList inputs{cnode->inputs().begin(), cnode->inputs().end() - 1};
-    cnode->set_inputs(inputs);
-  }
-  MS_EXCEPTION_IF_NULL(grad_param);
-  // Jit graph contains monad op
-  if (grad_param->is_jit_graph) {
-    for (size_t i = 1; i < cnode->size(); ++i) {
-      cnode->set_input(i, common::AnfAlgo::VisitKernelWithReturnType(cnode->input(i), 0, false,
-                                                                     {prim::kPrimTupleGetItem, prim::kPrimMakeTuple})
-                            .first);
-    }
-  }
-  return false;
-}
 
 void ClearGradMetaData(const ValuePtr &value) {
   if (value->isa<tensor::BaseTensor>()) {
@@ -137,37 +88,12 @@ AnfNodePtr HandleRealToComplex(const tensor::BaseTensorPtr &input, const Abstrac
   new_din->set_abstract(real_abs);
   return new_din;
 }
-
-void PlantFuncGradBpropGraphDout(const GradParamPtr &grad_param, const FuncGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(grad_param);
-  if (!grad_param->is_func_grad || graph->parameters().empty()) {
-    return;
-  }
-  // Plant dout tuple or dict
-  if (graph->parameters().back()->abstract()->isa<abstract::AbstractSequence>()) {
-    PyNativeAlgo::Common::ProcessTupleParam(graph, grad_param->input_size);
-  } else if (graph->parameters().back()->abstract()->isa<abstract::AbstractDictionary>()) {
-    PyNativeAlgo::Common::ProcessDictParam(graph, grad_param->input_size);
-  }
-}
 }  // namespace
 
 void ClearAutoGradCache() {
-  pass_grad_graph_.clear();
+  mindspore::ad::ClearGradCache();
   bprop_pass::ClearCache();
   PyNativeAlgo::AutoGradUtil::ClearAutoGradStaticCache();
-}
-
-std::pair<bool, FuncGraphPtr> IrBprop::GetBpropGraph(const GradParamPtr &grad_param) {
-  MS_EXCEPTION_IF_NULL(grad_param);
-  const auto it = pass_grad_graph_.find(grad_param->graph_cache_key);
-  bool cache_hit = (it != pass_grad_graph_.end());
-  if (grad_param->is_control_flow || grad_param->is_jit_self_dynamic_shape) {
-    MS_LOG(DEBUG) << "Get control flow graph or dynamic shape";
-    return std::make_pair(cache_hit, GetBpropGraphFromFprop(grad_param));
-  }
-  return std::make_pair(cache_hit, GetBpropGraphFromExpander(grad_param));
 }
 
 void IrBprop::BuildCustomBpropCNode(const CNodePtr &cnode, const PrimitivePtr &prim, std::vector<CNodePtr> *outputs) {
@@ -446,152 +372,6 @@ AbstractBasePtr IrBprop::BuildForwardLastNode() {
   return fn->accumulate_dout()->abstract();
 }
 
-FuncGraphPtr IrBprop::GetBpropGraphFromFprop(const GradParamPtr &grad_param) {
-  MS_EXCEPTION_IF_NULL(grad_param);
-  FuncGraphPtr after_opt_fg = nullptr;
-  // Find ad graph in cache
-  const auto it = pass_grad_graph_.find(grad_param->graph_cache_key);
-  bool cache_hit = (it != pass_grad_graph_.end());
-  if (cache_hit) {
-    MS_LOG(DEBUG) << "Get ad grad graph by cache";
-    after_opt_fg = BasicClone(it->second);
-  } else {
-    auto bprop_builder = std::make_shared<FuncGraph>();
-    bprop_builder->debug_info()->set_name("bprop_builder");
-
-    AnfNodePtrList fprop_app_inputs{NewValueNode(grad_param->fg)};
-    for (const auto &abs : grad_param->op_grad_info->input_abs) {
-      auto param = bprop_builder->add_parameter();
-      param->set_abstract(abs);
-      (void)fprop_app_inputs.emplace_back(param);
-    }
-    auto fprop_app = bprop_builder->NewCNode(fprop_app_inputs);
-    // Get bprop from fprop_fg, it is 2th output of fprop_fg
-    auto get_bprop = bprop_builder->NewCNode(
-      {NewValueNode(prim::kPrimTupleGetItem), fprop_app, NewValueNode(static_cast<int64_t>(kIndex1))});
-
-    AnfNodePtrList node_list{get_bprop};
-    auto dout = bprop_builder->add_parameter();
-    dout->set_abstract(grad_param->op_grad_info->out_abs);
-    (void)node_list.emplace_back(dout);
-    auto call_bprop = bprop_builder->NewCNode(node_list);
-
-    AnfNodePtrList actual_out{NewValueNode(prim::kPrimMakeTuple)};
-    for (size_t i = 0; i < grad_param->input_size; ++i) {
-      // Index 0 env, skip
-      auto out =
-        bprop_builder->NewCNode({NewValueNode(prim::kPrimTupleGetItem), call_bprop, NewValueNode(SizeToLong(i + 1))});
-      (void)actual_out.emplace_back(out);
-    }
-    bprop_builder->set_output(bprop_builder->NewCNode(actual_out));
-    // Call pass for optimize graph, such as inline
-    after_opt_fg = OptimizeBpropBuilder(bprop_builder, grad_param);
-    PlantFuncGradBpropGraphDout(grad_param, after_opt_fg);
-    if (grad_param->is_func_grad && grad_param->is_control_flow) {
-      after_opt_fg = LiftingClone(after_opt_fg);
-    }
-    if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
-      pass_grad_graph_[grad_param->graph_cache_key] = BasicClone(after_opt_fg);
-    }
-  }
-  return after_opt_fg;
-}
-
-FuncGraphPtr IrBprop::GetBpropGraphFromExpander(const GradParamPtr &grad_param) {
-  // Find ad graph in cache
-  if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
-    const auto it = pass_grad_graph_.find(grad_param->graph_cache_key);
-    if (it != pass_grad_graph_.end()) {
-      MS_LOG(DEBUG) << "Get ad grad graph by cache";
-      return BasicClone(it->second);
-    }
-  } else {
-    pass_grad_graph_.clear();
-  }
-
-  // Create new ad param for graph ad
-  PyNativeAlgo::Common::DumpGraphIR("ad_input_graph.ir", grad_param->fg);
-  auto current_ad_param = ad_param_;
-  ad_param_ = std::make_shared<AdParam>();
-  if (ad_param_->tape_->debug_info() != nullptr) {
-    ad_param_->tape_->debug_info()->set_name("ad_graph");
-  }
-  bprop_graph_run_by_single_op_ = bprop_graph_run_by_single_op_ || grad_param->use_dynamic_shape_process;
-
-  GradGraphByExpander(grad_param);
-
-  if (ad_param_->last_node_ != nullptr) {
-    // Set dout parameter
-    const auto last_prim = GetCNodePrimitive(ad_param_->last_node_);
-    if (kMonadOp.find(last_prim->name()) != kMonadOp.end()) {
-      ad_param_->last_node_ = common::AnfAlgo::VisitKernelWithReturnType(
-                                ad_param_->last_node_, 0, false, {prim::kPrimTupleGetItem, prim::kPrimMakeTuple})
-                                .first;
-    }
-    if (ad_param_->anfnode_to_variable_adjoint_.count(ad_param_->last_node_) == 0) {
-      MS_LOG(EXCEPTION) << "Can not find last node" << ad_param_->last_node_->DebugString();
-    }
-    ad_param_->last_variable_ = ad_param_->anfnode_to_variable_adjoint_[ad_param_->last_node_];
-    auto ad_graph_dout = ad_param_->tape_->add_parameter();
-    ad_graph_dout->set_abstract(ad_param_->last_node_->abstract());
-    ad_param_->last_variable_->ir_function_node()->UpdateAccumulativeDout(ad_graph_dout);
-    (void)BackPropagate();
-  } else {
-    // Just have a return node
-    auto ad_graph_dout = ad_param_->tape_->add_parameter();
-    ad_graph_dout->set_abstract(grad_param->fg->output()->abstract());
-    if (ad_graph_dout->debug_info() != nullptr) {
-      ad_graph_dout->debug_info()->set_name("sens");
-    }
-    ad_param_->sens_value_ = grad_param->op_grad_info->out_value;
-    (void)BuildForwardLastNode();
-    // Update dout
-    MS_EXCEPTION_IF_NULL(ad_param_->last_variable_);
-    if (ad_param_->last_variable_->is_need_grad()) {
-      ad_param_->last_variable_->ir_function_node()->UpdateAccumulativeDout(ad_graph_dout);
-    }
-    (void)BackPropagate();
-  }
-
-  AnfNodePtrList outputs{NewValueNode(prim::kPrimMakeTuple)};
-  abstract::AbstractBasePtrList out_abs_list;
-  for (const auto &node : grad_param->fg->parameters()) {
-    (void)outputs.emplace_back(ad_param_->anfnode_to_variable_adjoint_.at(node)->RealDout());
-    (void)out_abs_list.emplace_back(outputs.back()->abstract());
-  }
-  auto ad_graph_out = ad_param_->tape_->FuncGraph::NewCNode(outputs);
-  ad_graph_out->set_abstract(std::make_shared<abstract::AbstractTuple>(out_abs_list));
-  ad_param_->tape_->set_output(ad_graph_out);
-  auto ad_graph = ad_param_->tape_;
-  auto abs_seq = ad_graph->parameters().empty()
-                   ? nullptr
-                   : ad_graph->parameters().back()->abstract()->cast<abstract::AbstractSequencePtr>();
-  if (abs_seq != nullptr && !abs_seq->dynamic_len() && grad_param->is_jit_graph &&
-      grad_param->use_dynamic_shape_process) {
-    auto manager = MakeManager();
-    MS_EXCEPTION_IF_NULL(manager);
-    manager->AddFuncGraph(ad_graph);
-    PyNativeAlgo::Common::ProcessTupleParam(ad_graph, ad_graph->parameters().size() - kIndex1);
-  }
-  PyNativeAlgo::Common::DumpGraphIR("ad_output_graph.ir", ad_graph);
-
-  // Plant dout tuple
-  PlantFuncGradBpropGraphDout(grad_param, ad_graph);
-
-  // Save ad graph in cache
-  if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
-    pass_grad_graph_[grad_param->graph_cache_key] = BasicClone(ad_graph);
-  }
-  // Replace cnode with valuenode for reduce compute
-  bool jit_by_value = grad_param->is_jit_graph && grad_by_value_;
-  if (jit_by_value) {
-    PyNativeAlgo::Common::ReplaceCNodeWithValueNode(ad_graph);
-  }
-  // Restore ad param
-  ad_param_ = current_ad_param;
-  return ad_graph;
-}
-
 void IrBprop::Replace(const AnfNodePtr &old_node, const AnfNodePtr &new_node, expander::bprop::UserType *user,
                       bool need_update) {
   MS_EXCEPTION_IF_NULL(user);
@@ -618,75 +398,6 @@ void IrBprop::Replace(const AnfNodePtr &old_node, const AnfNodePtr &new_node, ex
       AddTupleGetItemUser(new_node, cnode, index);
     }
   }
-}
-
-void IrBprop::GradGraphByExpander(const GradParamPtr &grad_param) {
-  MS_EXCEPTION_IF_NULL(grad_param);
-  if (pass_forward_->need_reverse_graph()) {
-    pass_forward_->ReversePassFuncGraph(grad_param->fg);
-  }
-
-  // First handle parameters
-  CreateParameterAdjoint(grad_param);
-
-  // Second handle cnodes
-  const auto &order = TopoSort(grad_param->fg->output());
-  for (const auto &node : order) {
-    if (node == nullptr || !node->isa<CNode>()) {
-      continue;
-    }
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    auto prim = GetCNodePrimitive(cnode);
-    if (prim == nullptr) {
-      MS_LOG(EXCEPTION) << "Should be primitive, but: " << cnode->DebugString();
-    }
-    ad_param_->last_node_ = cnode;
-    if (ProcessMonadNode(prim, cnode, grad_param) || IsPrimitiveEquals(prim, prim::kPrimStopGradient)) {
-      continue;
-    }
-    MS_LOG(DEBUG) << "Get cnode " << cnode->DebugString() << ", " << cnode->fullname_with_scope();
-    ValuePtrList inputs_value;
-    AnfNodePtrList cnode_inputs;
-    PrepareGradCNodeInputs(prim, cnode, &inputs_value, &cnode_inputs);
-    // Do grad for every cnode
-    GradCNode(prim, cnode, grad_param, inputs_value, &cnode_inputs);
-  }
-}
-
-void IrBprop::CreateParameterAdjoint(const GradParamPtr &grad_param) const {
-  auto &graph_parameters = grad_param->fg->parameters();
-  if (graph_parameters.size() != grad_param->input_size) {
-    MS_LOG(EXCEPTION) << "Parameters size " << graph_parameters.size() << " is not equal to graph input size "
-                      << grad_param->input_size;
-  }
-  for (size_t i = 0; i < graph_parameters.size(); ++i) {
-    MS_LOG(DEBUG) << "Get param " << graph_parameters[i]->DebugString();
-    ParameterPtr param = ad_param_->tape_->add_parameter();
-    param->set_abstract(graph_parameters[i]->abstract());
-    auto zeros_like_dout =
-      PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, PyNativeAlgo::AutoGradUtil::GetFakeZeroTensor(),
-                                                   graph_parameters[i]->abstract(), SpecialType::kZerosLikeType);
-    auto func_node = std::make_shared<IrFunctionNode>(ad_param_->tape_, zeros_like_dout);
-    // Copy to avoid corrupt real input grad info.
-    auto op_arg = ShallowCopyTensorValue(grad_param->op_grad_info->input_value[i]);
-    ClearGradMetaData(op_arg);
-    auto adjoint = std::make_shared<IrVariable>(func_node, op_arg, true);
-    adjoint->set_k_node(param);
-    PyNativeAlgo::AutoGradUtil::SetGradMetaData(op_arg, adjoint, graph_parameters[i]->cast<ParameterPtr>());
-    (void)ad_param_->variable_adjoint_set_.insert(adjoint);
-    (void)ad_param_->anfnode_to_variable_adjoint_.insert(std::make_pair(graph_parameters[i], adjoint));
-  }
-}
-
-void IrBprop::PrepareGradCNodeInputs(const PrimitivePtr &prim, const CNodePtr &cnode, ValuePtrList *inputs_value,
-                                     AnfNodePtrList *cnode_inputs) {
-  MS_EXCEPTION_IF_NULL(cnode);
-  MS_EXCEPTION_IF_NULL(inputs_value);
-  MS_EXCEPTION_IF_NULL(cnode_inputs);
-  (void)cnode_inputs->emplace_back(std::make_shared<ValueNode>(prim));
-  *inputs_value = GetInputArgs(cnode, cnode_inputs);
-  pass_forward_->ReversePassCNode(cnode, inputs_value, cnode_inputs);
 }
 
 ValuePtrList IrBprop::GetInputArgs(const CNodePtr &cnode, AnfNodePtrList *cnode_inputs) const {
@@ -730,69 +441,6 @@ ValuePtrList IrBprop::GetInputArgs(const CNodePtr &cnode, AnfNodePtrList *cnode_
     }
   }
   return input_value;
-}
-
-void IrBprop::GradCNode(const PrimitivePtr &prim, const CNodePtr &cnode, const GradParamPtr &grad_param,
-                        const ValuePtrList &inputs_value, AnfNodePtrList *cnode_inputs) {
-  MS_EXCEPTION_IF_NULL(prim);
-  MS_EXCEPTION_IF_NULL(cnode);
-  bool jit_by_value = grad_param->is_jit_graph && grad_by_value_;
-  if (IsPrimitiveEquals(prim, prim::kPrimMakeTuple) || IsPrimitiveEquals(prim, prim::kPrimMakeList)) {
-    (void)BuildKNodeForMakeTuple(cnode);
-    return;
-  }
-  if (IsPrimitiveEquals(prim, prim::kPrimTupleGetItem)) {
-    (void)BuildKNodeForTupleGetItem(cnode);
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(cnode_inputs);
-  auto k_node = GetKnode(prim, cnode, *cnode_inputs, jit_by_value);
-  if (bprop_graph_run_by_single_op_ && !IsPrimitiveCNode(cnode, prim::kPrimMakeTuple) &&
-      std::any_of(cnode->inputs().begin() + 1, cnode->inputs().end(), [](const AnfNodePtr &node) {
-        MS_EXCEPTION_IF_NULL(node->abstract());
-        return node->abstract()->isa<abstract::AbstractSequence>();
-      })) {
-    k_node->cast<CNodePtr>()->AddAttr(kAttrIsPyboostTupleInput, MakeValue(true));
-  }
-  MS_LOG(DEBUG) << "Build knode " << k_node->DebugString();
-  // Set out
-  auto out = PyNativeAlgo::Common::CreatOutputTensorValueByAbstract(cnode->abstract());
-  (void)cnode_inputs->emplace_back(k_node);
-  // Set dout
-  AnfNodePtr dout = PyNativeAlgo::AutoGradUtil::BuildSpecialNode(
-    ad_param_->tape_, PyNativeAlgo::AutoGradUtil::GetFakeZeroTensor(), cnode->abstract(), SpecialType::kZerosLikeType);
-  (void)cnode_inputs->emplace_back(dout);
-  auto input_node = ad_param_->tape_->FuncGraph::NewCNode(*cnode_inputs);
-  input_node->set_abstract(cnode->abstract());
-
-  std::vector<CNodePtr> outputs;
-  // Get bprop by expander
-  auto ret = BpropExpander(&outputs, &ad_param_->users_).Run(input_node);
-  if (!ret || outputs.empty()) {
-    // Get bprop by python custom
-    MS_LOG(DEBUG) << "Expander has no bprop of this node: " << input_node->DebugString();
-    BuildCustomBpropCNode(input_node, prim, &outputs);
-  }
-
-  auto fn = std::make_shared<IrFunctionNode>(ad_param_->tape_, dout);
-  auto variable_adjoint = std::make_shared<IrVariable>(fn, out);
-  variable_adjoint->set_k_node(k_node);
-  // Get bprop by fake bprop
-  if (outputs.empty()) {
-    MS_LOG(DEBUG) << "Build fake bprop for this node: " << input_node->DebugString();
-    PyNativeAlgo::AutoGradUtil::BuildFakeBpropCNode(input_node, &outputs);
-    variable_adjoint->set_is_fake_bprop(true);
-    variable_adjoint->set_fake_prim_name(prim->name());
-  }
-  // Create current op node din edge
-  AbstractBasePtrList input_abs;
-  for (size_t i = 1; i < cnode->size(); ++i) {
-    (void)input_abs.emplace_back(cnode->input(i)->abstract());
-  }
-  UpdateNextEdges(variable_adjoint, outputs, inputs_value, input_abs);
-  PyNativeAlgo::AutoGradUtil::SetGradMetaData(out, variable_adjoint);
-  (void)ad_param_->anfnode_to_variable_adjoint_.insert(std::make_pair(cnode, variable_adjoint));
-  (void)ad_param_->variable_adjoint_set_.insert(variable_adjoint);
 }
 
 AnfNodePtr IrBprop::BuildKNodeForMakeTuple(const AnfNodePtr &input_node) {

@@ -154,6 +154,10 @@ void ParallelStrategy::DumpProfileParallelStrategy(const FuncGraphPtr &func_grap
   SaveParallelStrategyToFile();
 }
 
+void ParallelStrategy::SetOutputPath(const std::string &output_path) { output_path_ = output_path; }
+
+void ParallelStrategy::ClearOutputPath() { output_path_.clear(); }
+
 void ParallelStrategy::SaveParallelStrategyToFile() {
   if (has_save_parallel_strategy_ || !has_got_parallel_strategy_data_) {
     return;
@@ -161,7 +165,10 @@ void ParallelStrategy::SaveParallelStrategyToFile() {
 
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  std::string dir = GetOutputPath();
+  if (output_path_.empty()) {
+    MS_LOG(ERROR) << "Output path is not set.";
+    return;
+  }
   auto rank_id = common::GetEnv("RANK_ID");
   // If RANK_ID is not set, default value is 0
   if (rank_id.empty()) {
@@ -170,7 +177,7 @@ void ParallelStrategy::SaveParallelStrategyToFile() {
   std::string parallel_str;
   (void)google::protobuf::util::MessageToJsonString(*cache_profiling_parallel_pb_, &parallel_str);
   std::string parallel_file = std::string("parallel_strategy_") + std::string(rank_id) + std::string(".json");
-  std::string parallel_path = dir + "/" + parallel_file;
+  std::string parallel_path = output_path_ + "/" + parallel_file;
   MS_LOG(INFO) << "Start to write parallel strategy string, file path is " << parallel_path;
   std::ofstream ofs(parallel_path);
   if (!ofs.is_open()) {

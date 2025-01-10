@@ -17,6 +17,8 @@
 #include "pybind_api/ir/tensor_py.h"
 
 #include <utility>
+#include <complex>
+#include "pybind11/complex.h"
 
 #include "include/common/pybind_api/api_register.h"
 #include "abstract/abstract_value.h"
@@ -29,13 +31,14 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
-#include "pybind_api/ir/tensor_func_reg.h"
+#include "pybind_api/ir/tensor_register/tensor_func_reg.h"
 
 namespace mindspore {
 namespace pynative::autograd {
 struct RegisterHook {
   uint64_t static RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook);
   static void RemoveTensorBackwardHook(uint64_t id);
+  static py::list GetHooks(const tensor::Tensor &tensor);
 };
 }  // namespace pynative::autograd
 namespace tensor {
@@ -571,6 +574,57 @@ TensorPtr TensorPy::ConvertBytesToTensor(const py::bytes &bytes_obj, const py::t
   return tensor;
 }
 
+py::object TensorPy::Item(const Tensor &tensor) {
+  auto tensor_element_count = tensor.data().size();
+  if (tensor_element_count != 1) {
+    MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
+                             << " more than one element is ambiguous.";
+  }
+  tensor.data_sync();
+  auto data_type = tensor.data_type();
+  auto data = tensor.data_c();
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return py::int_(py::cast(*static_cast<int8_t *>(data)));
+    case TypeId::kNumberTypeUInt8:
+      return py::int_(py::cast(*static_cast<uint8_t *>(data)));
+    case TypeId::kNumberTypeInt16:
+      return py::int_(py::cast(*static_cast<int16_t *>(data)));
+    case TypeId::kNumberTypeUInt16:
+      return py::int_(py::cast(*static_cast<uint16_t *>(data)));
+    case TypeId::kNumberTypeInt:
+    case TypeId::kNumberTypeInt32:
+      return py::int_(py::cast(*static_cast<int *>(data)));
+    case TypeId::kNumberTypeUInt32:
+      return py::int_(py::cast(*static_cast<uint32_t *>(data)));
+    case TypeId::kNumberTypeInt64:
+      return py::int_(py::cast(*static_cast<int64_t *>(data)));
+    case TypeId::kNumberTypeUInt64:
+      return py::int_(py::cast(*static_cast<uint64_t *>(data)));
+    case TypeId::kNumberTypeFloat16:
+      return py::float_(py::cast(*static_cast<float16 *>(data)));
+    case TypeId::kNumberTypeFloat:
+    case TypeId::kNumberTypeFloat32:
+      return py::float_(py::cast(*static_cast<float *>(data)));
+    case TypeId::kNumberTypeDouble:
+    case TypeId::kNumberTypeFloat64:
+      return py::float_(py::cast(*static_cast<double *>(data)));
+    case TypeId::kNumberTypeBFloat16:
+      return py::float_(py::cast(*static_cast<bfloat16 *>(data)));
+    case TypeId::kNumberTypeBool:
+      return py::bool_(py::cast(*static_cast<bool *>(data)));
+    case TypeId::kNumberTypeComplex64:
+    case TypeId::kNumberTypeComplex:
+      return py::cast(std::complex<double>{(*static_cast<float *>(data)), (*(static_cast<float *>(data) + 1))});
+    case TypeId::kNumberTypeComplex128:
+      return py::cast(std::complex<long double>{(*static_cast<double *>(data)), (*(static_cast<double *>(data) + 1))});
+    default:
+      MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
+      break;
+  }
+  return py::none();
+}
+
 py::array TensorPy::SyncAsNumpy(const Tensor &tensor) {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kAsnumpy);
   // Asnumpy should be a read-only operation and should not modify the original Tensor.
@@ -667,6 +721,18 @@ void TensorPy::SetDeviceAddress(const Tensor &tensor, uintptr_t addr, const Shap
     auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);
     device_address->SetData(data);
   }
+}
+
+uintptr_t TensorPy::DataPtr(const Tensor &tensor) {
+  runtime::Pipeline::Get().WaitForward();
+  const auto device_address = tensor.device_address();
+  if (device_address == nullptr) {
+    MS_LOG(ERROR) << "Tensor device address is null";
+    return reinterpret_cast<uintptr_t>(nullptr);
+  }
+  auto *data_ptr = device_address->GetMutablePtr();
+  MS_LOG(DEBUG) << "Get Tensor data ptr " << data_ptr;
+  return reinterpret_cast<uintptr_t>(data_ptr);
 }
 
 TensorPtr TensorPy::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
@@ -801,6 +867,11 @@ void RegMetaTensor(const py::module *m) {
            return TensorPy::MakeTensor(py::array(input), type_ptr);
          }),
          py::arg("input"), py::arg("dtype") = nullptr)
+    .def(py::init([](const py::bytes &input, const TypePtr &type_ptr) {
+           return TensorPy::MakeTensor(py::array(input), type_ptr);
+         }),
+         py::arg("input"), py::arg("dtype") = nullptr)
+
     // We only suppot array/bool_/int_/float_/list/tuple/complex pybind objects as tensor input,
     // and array/bool_/int_/float_/list/tuple init will be matched above, other pybind objects
     // input will raise error except complex data type.
@@ -879,6 +950,19 @@ void RegMetaTensor(const py::module *m) {
     .def("_get_flattened_tensors", Tensor::GetFlattenedTensors)
     .def("_get_fusion_size", Tensor::GetFusionSize)
     .def("_is_test_stub", Tensor::CheckStub)
+    .def("_item", &TensorPy::Item, R"mydelimiter(
+                            Return the value of this tensor as standard Python number.
+                            This only works for tensors with one element.
+
+                            Returns:
+                                A scalar, type is defined by the dtype of the Tensor.
+
+                            Examples:
+                                # index is None:
+                                >>> t = mindspore.Tensor([1])
+                                >>> t.item()
+                                1
+                            )mydelimiter")
     .def("from_numpy", TensorPy::MakeTensorOfNumpy, R"mydelimiter(
                              Creates a Tensor from a numpy.ndarray without copy.
 
@@ -1071,18 +1155,22 @@ void RegMetaTensor(const py::module *m) {
                               )mydelimiter")
     .def("_set_user_data", &TensorPy::SetUserData)
     .def("_get_user_data", &TensorPy::GetUserData)
+    .def("_has_auto_grad", &Tensor::HasAutoGrad)
     .def("set_cast_dtype", &Tensor::set_cast_dtype, py::arg("dtype") = nullptr)
     .def("data_sync", &Tensor::data_sync)
     .def("wait_pipeline", &Tensor::ExecuteLazyTask)
     .def("is_contiguous", &Tensor::is_contiguous)
+    .def("_need_contiguous", &Tensor::NeedContiguous)
     .def("stride", &Tensor::stride)
     .def("storage_offset", &Tensor::storage_offset)
     .def("register_hook", &pynative::autograd::RegisterHook::RegisterTensorBackwardHook)
     .def("remove_hook", &pynative::autograd::RegisterHook::RemoveTensorBackwardHook)
+    .def("hooks", &pynative::autograd::RegisterHook::GetHooks)
     .def("__str__", &Tensor::ToString)
     .def("__repr__", &Tensor::ToStringRepr)
     .def("_offload", &TensorPy::Offload)
     .def("set_device_address", &TensorPy::SetDeviceAddress, py::arg("addr"), py::arg("shape"), py::arg("dtype"))
+    .def("_data_ptr", &TensorPy::DataPtr)
     .def(py::pickle(
       [](const Tensor &t) {  // __getstate__
         /* Return a tuple that fully encodes the state of the object */
@@ -1169,5 +1257,6 @@ void RegRowTensor(const py::module *m) {
     .def("__str__", &RowTensor::ToString)
     .def("__repr__", &RowTensor::ToString);
 }
+
 }  // namespace tensor
 }  // namespace mindspore

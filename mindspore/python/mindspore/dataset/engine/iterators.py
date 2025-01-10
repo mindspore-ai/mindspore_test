@@ -15,19 +15,24 @@
 """Built-in iterators"""
 from abc import abstractmethod
 from copy import deepcopy
+import atexit
 import json
 import os
+import queue
 import signal
+import threading
 import weakref
 from functools import wraps
 import numpy as np
 
 import mindspore._c_dataengine as cde
 from mindspore.common.tensor import Tensor, np_types
+import mindspore.dataset as ds
 import mindspore.dataset.engine.offload as offload
 from mindspore.dataset.core.config import get_debug_mode
 
 from mindspore import log as logger
+from ..core.py_util_helpers import ExceptionHandler
 
 _ITERATOR_CLEANUP = False
 
@@ -87,6 +92,126 @@ def _cleanup_the_iterators_if_created(method):
     return wrapper
 
 
+def __convert_python(obj, to_numpy, _do_copy):
+    """
+    Attempts to recursively convert a python object to Numpy array(s) or tensor(s).
+
+    Args:
+        obj (any): the python object to be converted
+        to_numpy (bool): If True, convert primitive types to NumPy array. If False, convert to Tensor.
+                         (return the obj if type isn't supported)
+    """
+    if isinstance(obj, (int, float, bool, str, np.ndarray, np.str_, np.bytes_, *np_types)):
+        # error out if array is of unsupported type
+        if isinstance(obj, np.ndarray) and obj.dtype not in np_types and obj.dtype.kind not in ('U', 'S'):
+            new_line = '\n'
+            raise TypeError("A NumPy array of unsupported type detected: {}."
+                            "\nSupported types are: {}.".format(
+                                obj.dtype, new_line.join(map(str, (*np_types, np.str_, np.bytes_)))))
+        if to_numpy:
+            return np.array(obj, copy=_do_copy)
+        if _do_copy:
+            return Tensor(np.asarray(obj))
+        return Tensor.from_numpy(np.asarray(obj))
+    if isinstance(obj, dict):
+        return {key: __convert_python(val, to_numpy, _do_copy) for key, val in obj.items()}
+    if isinstance(obj, tuple):
+        return tuple([__convert_python(item, to_numpy, _do_copy) for item in obj])
+    if isinstance(obj, list):
+        return [__convert_python(item, to_numpy, _do_copy) for item in obj]
+    # if we can't convert it to Tensor, return the object as is
+    if _do_copy:
+        return deepcopy(obj)
+    return obj
+
+
+def _transform_md_to_output(t, _output_numpy, _do_copy):
+    if _output_numpy:
+        if t.type().is_python():
+            return __convert_python(t.as_python(), True, _do_copy)
+        return t.as_array()
+    return _transform_md_to_tensor(t, _do_copy)
+
+
+def _transform_md_to_tensor(t, _do_copy):
+    if t.type().is_python():
+        return __convert_python(t.as_python(), False, _do_copy)
+    array = t.as_array()
+    if _do_copy:
+        return Tensor(array)
+    return Tensor.from_numpy(array)
+
+
+def _transform_tensor_to_output(t, _output_numpy):
+    if _output_numpy:
+        return t.asnumpy()
+    return t
+
+
+def _convert_tuple_data(queue_in, queue_out, offload_model, _output_numpy, _do_copy, thread_event):
+    """
+    Convert data on tuple iterator.
+    """
+    while True:
+        try:
+            if thread_event.is_set():
+                return
+            item = queue_in.get(timeout=1)
+            if offload_model is None:
+                queue_out.put([_transform_md_to_output(t, _output_numpy, _do_copy) for t in item])
+                if not item:
+                    break
+                continue
+
+            data = [_transform_md_to_tensor(t, _do_copy) for t in item]
+            if data:
+                data = offload.apply_offload_iterators(data, offload_model)
+            queue_out.put([_transform_tensor_to_output(t, _output_numpy) for t in data])
+            if not item:
+                break
+        except queue.Empty:
+            continue
+        except Exception:  # pylint: disable=broad-except
+            result = ExceptionHandler()
+            queue_out.put(result)
+            break
+    thread_event.set()
+
+
+def _convert_dict_data(queue_in, queue_out, offload_model, _output_numpy, _do_copy, thread_event, col_names):
+    """
+    Convert data on dict iterator.
+    """
+    while True:
+        try:
+            if thread_event.is_set():
+                return
+            item = queue_in.get(timeout=1)
+            if offload_model is None:
+                queue_out.put({k: _transform_md_to_output(t, _output_numpy, _do_copy) for k, t in item})
+                if not item:
+                    break
+                continue
+            data = [_transform_md_to_tensor(t, _do_copy) for t in item]
+            if data:
+                data = offload.apply_offload_iterators(data, offload_model)
+                # Create output dictionary after offload
+                out_data = {}
+                for i, col in enumerate(col_names):
+                    out_data[col] = _transform_tensor_to_output(data[i], _output_numpy)
+                data = out_data
+            if not item:
+                break
+            queue_out.put(data)
+        except queue.Empty:
+            continue
+        except Exception:  # pylint: disable=broad-except
+            result = ExceptionHandler()
+            queue_out.put(result)
+            break
+    thread_event.set()
+
+
 class Iterator:
     """
     General Iterator over a dataset.
@@ -112,6 +237,8 @@ class Iterator:
             init_step = dataset.get_init_step()
             dataset_size = dataset.get_dataset_size()
         if get_debug_mode():
+            if dataset.get_init_step() != 0:
+                logger.warning("Dataset init step will be ignored in debug mode.")
             consumer = cde.PythonPullBasedIteratorConsumer(num_epochs)
             consumer.Init(self.ir_tree)
         else:
@@ -134,9 +261,34 @@ class Iterator:
 
         ITERATORS_LIST.append(weakref.ref(self))
         _unset_iterator_cleanup()
+        self.parallel_convert = ds.config.get_iterator_mode()["parallel_convert"]
+        if self.parallel_convert:
+            # The variable "tick" ensures that the thread is only started on the first iteration
+            self.tick = True
+            self.thread_convert = None
+            self.queue_in = queue.Queue(3)
+            self.queue_out = queue.Queue(3)
+            self.thread_event = None
+            self.enable_get_next_data = True
+            atexit.register(self.__class__.terminate, weakref.ref(self))
 
     def __iter__(self):
         return self
+
+    @staticmethod
+    def terminate(ref):
+        """
+        Interrupt the convert subthread
+        """
+        self = ref()
+        if self is None:
+            return
+        if hasattr(self, "parallel_convert"):
+            if self.parallel_convert:
+                if self.thread_event is not None and self.thread_convert is not None and \
+                    not self.thread_event.is_set():
+                    self.thread_event.set()
+                    self.thread_convert.join()
 
     def stop(self):
         """
@@ -165,18 +317,26 @@ class Iterator:
         self.stop()
 
     def __del__(self):
+        if hasattr(self, "parallel_convert"):
+            if self.parallel_convert:
+                if self.thread_event is not None and self.thread_convert is not None and \
+                    not self.thread_event.is_set():
+                    self.thread_event.set()
+                    self.thread_convert.join()
         self.release()
 
     @abstractmethod
     def _get_next(self):
         raise RuntimeError("Calling base class Iterator's get_next is invalid.")
 
-    def __next__(self):
-        if not self._runtime_context:
-            logger.warning("Iterator does not have a running C++ pipeline." +
-                           "It might because Iterator stop() had been called, or C++ pipeline crashed silently.")
-            raise RuntimeError("Iterator does not have a running C++ pipeline.")
+    @abstractmethod
+    def _parallel_transformation_iteration(self):
+        raise RuntimeError("Calling base class Iterator's parallel_transformation_iteration is invalid.")
 
+    def serial_conversion_iteration(self):
+        """
+        Fetch data to serial conversion
+        """
         # Note offload is applied inside _get_next() if applicable since get_next converts to output format
         data = self._get_next()
         if not data:
@@ -188,6 +348,16 @@ class Iterator:
         self.__index += 1
 
         return data
+
+    def __next__(self):
+        if not self._runtime_context:
+            logger.warning("Iterator does not have a running C++ pipeline." +
+                           "It might because Iterator stop() had been called, or C++ pipeline crashed silently.")
+            raise RuntimeError("Iterator does not have a running C++ pipeline.")
+
+        if self.parallel_convert:
+            return self._parallel_transformation_iteration()
+        return self.serial_conversion_iteration()
 
     def __deepcopy__(self, memo):
         return self
@@ -218,58 +388,20 @@ class Iterator:
             dataset_size (int): The number of steps that one epoch has.
         """
         self._iterator.Reset(step, dataset_size)
-
-    def __convert_python(self, obj, to_numpy):
-        """
-        Attempts to recursively convert a python object to Numpy array(s) or tensor(s).
-
-        Args:
-            obj (any): the python object to be converted
-            to_numpy (bool): If True, convert primitive types to NumPy array. If False, convert to Tensor.
-                             (return the obj if type isn't supported)
-        """
-        if isinstance(obj, (int, float, bool, str, np.ndarray, np.str_, np.bytes_, *np_types)):
-            # error out if array is of unsupported type
-            if isinstance(obj, np.ndarray) and obj.dtype not in np_types and obj.dtype.kind not in ('U', 'S'):
-                new_line = '\n'
-                raise TypeError("A NumPy array of unsupported type detected: {}."
-                                "\nSupported types are: {}.".format(
-                                    obj.dtype, new_line.join(map(str, (*np_types, np.str_, np.bytes_)))))
-            if to_numpy:
-                return np.array(obj, copy=self._do_copy)
-            if self._do_copy:
-                return Tensor(np.asarray(obj))
-            return Tensor.from_numpy(np.asarray(obj))
-        if isinstance(obj, dict):
-            return {key: self.__convert_python(val, to_numpy) for key, val in obj.items()}
-        if isinstance(obj, tuple):
-            return tuple([self.__convert_python(item, to_numpy) for item in obj])
-        if isinstance(obj, list):
-            return [self.__convert_python(item, to_numpy) for item in obj]
-        # if we can't convert it to Tensor, return the object as is
-        if self._do_copy:
-            return deepcopy(obj)
-        return obj
-
-    def _transform_md_to_output(self, t):
-        if self._output_numpy:
-            if t.type().is_python():
-                return self.__convert_python(t.as_python(), True)
-            return t.as_array()
-        return self._transform_md_to_tensor(t)
-
-    def _transform_md_to_tensor(self, t):
-        if t.type().is_python():
-            return self.__convert_python(t.as_python(), False)
-        array = t.as_array()
-        if self._do_copy:
-            return Tensor(array)
-        return Tensor.from_numpy(array)
-
-    def _transform_tensor_to_output(self, t):
-        if self._output_numpy:
-            return t.asnumpy()
-        return t
+        if self.parallel_convert:
+            while not self.queue_in.empty():
+                self.queue_in.get()
+            while not self.queue_out.empty():
+                self.queue_out.get()
+            if self.thread_event is not None:
+                if self.thread_event.is_set():
+                    self.thread_event.clear()
+                    self.tick = True
+                else:
+                    self.thread_event.set()
+                    self.thread_convert.join()
+            self.tick = True
+            self.enable_get_next_data = True
 
 
 class DictIterator(Iterator):
@@ -286,14 +418,15 @@ class DictIterator(Iterator):
         """
         try:
             if self.offload_model is None:
-                return {k: self._transform_md_to_output(t) for k, t in self._iterator.GetNextAsMap().items()}
-            data = [self._transform_md_to_tensor(t) for t in self._iterator.GetNextAsList()]
+                return {k: _transform_md_to_output(t, self._output_numpy, self._do_copy) for k, t in
+                        self._iterator.GetNextAsMap().items()}
+            data = [_transform_md_to_tensor(t, self._do_copy) for t in self._iterator.GetNextAsList()]
             if data:
                 data = offload.apply_offload_iterators(data, self.offload_model)
                 # Create output dictionary after offload
                 out_data = {}
                 for i, col in enumerate(self.get_col_names()):
-                    out_data[col] = self._transform_tensor_to_output(data[i])
+                    out_data[col] = _transform_tensor_to_output(data[i], self._output_numpy)
                 data = out_data
             return data
 
@@ -304,6 +437,53 @@ class DictIterator(Iterator):
                 logger.critical("Memory error occurred, process will exit.")
                 os.kill(os.getpid(), signal.SIGKILL)
             raise err
+
+    def _parallel_transformation_iteration(self):
+        """
+        Launch child thread to convert tensor.
+        """
+        if self.tick:
+            self.thread_event = threading.Event()
+            self.thread_convert = threading.Thread(target=_convert_dict_data,
+                                                   name="Convert_dict_data",
+                                                   args=(self.queue_in, self.queue_out, self.offload_model,
+                                                         self._output_numpy, self._do_copy, self.thread_event,
+                                                         self.get_col_names()),
+                                                   daemon=True)
+            self.thread_convert.start()
+            self.tick = False
+        while True:
+            if self.thread_event.is_set() and self.queue_out.qsize() == 0:
+                self.tick = True
+                self.enable_get_next_data = True
+                raise StopIteration
+            try:
+                if not self.queue_in.full() and self.enable_get_next_data:
+                    if self.offload_model is None:
+                        item = self._iterator.GetNextAsMap().items()
+                        if not item:
+                            self.enable_get_next_data = False
+                        self.queue_in.put(item)
+                    else:
+                        item = self._iterator.GetNextAsList()
+                        if not item:
+                            self.enable_get_next_data = False
+                        self.queue_in.put(item)
+                data = self.queue_out.get(timeout=0.00001)
+                if not data:
+                    continue
+                if isinstance(data, ExceptionHandler):
+                    if data.except_msg.find("Out of memory") >= 0 or data.except_msg.find("MemoryError") >= 0:
+                        logger.critical("Memory error occurred, process will exit.")
+                        os.kill(os.getpid(), signal.SIGKILL)
+                    data.reraise()
+                return data
+            except queue.Empty:
+                continue
+            except Exception as err_info:
+                self.thread_event.set()
+                self.thread_convert.join()
+                raise err_info
 
 
 class TupleIterator(Iterator):
@@ -327,11 +507,49 @@ class TupleIterator(Iterator):
         """
 
         if self.offload_model is None:
-            return [self._transform_md_to_output(t) for t in self._iterator.GetNextAsList()]
-        data = [self._transform_md_to_tensor(t) for t in self._iterator.GetNextAsList()]
+            return [_transform_md_to_output(t, self._output_numpy, self._do_copy) for t in
+                    self._iterator.GetNextAsList()]
+        data = [_transform_md_to_tensor(t, self._do_copy) for t in self._iterator.GetNextAsList()]
         if data:
             data = offload.apply_offload_iterators(data, self.offload_model)
-        return [self._transform_tensor_to_output(t) for t in data]
+        return [_transform_tensor_to_output(t, self._output_numpy) for t in data]
+
+    def _parallel_transformation_iteration(self):
+        """
+        Launch child thread to convert tensor.
+        """
+        if self.tick:
+            self.thread_event = threading.Event()
+            self.thread_convert = threading.Thread(target=_convert_tuple_data,
+                                                   name="Convert_tuple_data",
+                                                   args=(self.queue_in, self.queue_out, self.offload_model,
+                                                         self._output_numpy, self._do_copy, self.thread_event),
+                                                   daemon=True)
+            self.thread_convert.start()
+            self.tick = False
+        while True:
+            if self.thread_event.is_set() and self.queue_out.qsize() == 0:
+                self.tick = True
+                self.enable_get_next_data = True
+                raise StopIteration
+            try:
+                if not self.queue_in.full() and self.enable_get_next_data:
+                    item = self._iterator.GetNextAsList()
+                    if not item:
+                        self.enable_get_next_data = False
+                    self.queue_in.put(item)
+                data = self.queue_out.get(timeout=0.00001)
+                if not data:
+                    continue
+                if isinstance(data, ExceptionHandler):
+                    data.reraise()
+                return data
+            except queue.Empty:
+                continue
+            except Exception as err_info:
+                self.thread_event.set()
+                self.thread_convert.join()
+                raise err_info
 
 
 class DummyIterator:

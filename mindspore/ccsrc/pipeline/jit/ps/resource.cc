@@ -163,6 +163,7 @@ BuiltInTypeMap &GetMethodMap() {
      }},
     {kObjectTypeTensorType,
      {
+       {"register_hook", std::string("register_hook")},                    // C.register_hook
        {"addcdiv", std::string("addcdiv")},                                // C.addcdiv
        {"addcmul", std::string("addcmul")},                                // C.addcmul
        {"all", std::string("all_")},                                       // C.reduce_all
@@ -245,6 +246,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"index_select", std::string("index_select")},                      // index_select()
        {"repeat_interleave", std::string("repeat_interleave")},            // repeat_interleave()
        {"copy", std::string("copy")},                                      // copy()
+       {"copy_", std::string("copy_")},                                    // copy_()
        {"copysign", std::string("copysign")},                              // copysign()
        {"inplace_update", std::string("inplace_update")},                  // P.InplaceUpdateV2
        {"lerp", std::string("lerp")},                                      // lerp()
@@ -280,6 +282,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"minimum", std::string("minimum")},                                // P.Minimum()
        {"cosh", std::string("cosh")},                                      // P.Cosh()
        {"tanh", std::string("tanh")},                                      // P.Tanh()
+       {"tanh_", std::string("tanh_")},                                    // tanh_()
        {"rad2deg", std::string("rad2deg")},                                // F.rad2deg()
        {"deg2rad", std::string("deg2rad")},                                // F.deg2rad()
        {"dot", std::string("dot")},                                        // composite.dot()
@@ -292,6 +295,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"uniform", std::string("uniform")},                                // P.UniformExt()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
        {"clamp", std::string("clamp")},                                    // clamp()
+       {"clamp_", std::string("clamp_")},                                  // clamp_()
        {"clip", std::string("clamp")},                                     // clamp()
        {"__bool__", std::string("tensor_bool")},                           // C.tensor_bool
        {"argmax", std::string("argmax")},                                  // P.Argmax()
@@ -315,6 +319,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"gather", std::string("gather")},                                  // P.Gather()
        {"scatter", std::string("scatter")},                                // P.TensorScatterElements()
        {"scatter_add", std::string("tensor_scatter_add")},                 // P.TensorScatterAdd()
+       {"scatter_add_", std::string("inplace_scatter_add")},               // F.inplace_scatter_add()
        {"scatter_mul", std::string("tensor_scatter_mul")},                 // tensor_scatter_mul()
        {"scatter_sub", std::string("tensor_scatter_sub")},                 // P.TensorScatterSub()
        {"scatter_min", std::string("tensor_scatter_min")},                 // P.TensorScatterMin()
@@ -323,6 +328,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"slice_scatter", std::string("slice_scatter")},                    // slice_scatter()
        {"select_scatter", std::string("select_scatter")},                  // select_scatter()
        {"norm", std::string("norm")},                                      // norm()
+       {"normal_", std::string("normal_")},                                // normal_()
        {"unsorted_segment_min", std::string("unsorted_segment_min")},      // P.UnsortedSegmentMin()
        {"unsorted_segment_max", std::string("unsorted_segment_max")},      // P.UnsortedSegmentMax()
        {"unsorted_segment_prod", std::string("unsorted_segment_prod")},    // P.UnsortedSegmentProd()
@@ -420,6 +426,9 @@ BuiltInTypeMap &GetMethodMap() {
        {"half", std::string("to_half")},                                   // half()
        {"int", std::string("to_int")},                                     // int()
        {"long", std::string("to_long")},                                   // long()
+       {"double", std::string("to_double")},                               // double()
+       {"bfloat16", std::string("to_bfloat16")},                           // bfloat16()
+       {"byte", std::string("to_byte")},                                   // byte()
        {"cholesky", std::string("cholesky")},                              // cholesky()
        {"cholesky_inverse", std::string("cholesky_inverse")},              // cholesky_inverse()
        {"cholesky_solve", std::string("cholesky_solve")},                  // cholesky_solve()
@@ -501,12 +510,14 @@ BuiltInTypeMap &GetMethodMap() {
        {"lu_solve", std::string("lu_solve")},                              // lu_solve()
        {"masked_scatter", std::string("masked_scatter")},                  // masked_scatter()
        {"index_put", std::string("index_put")},                            // index_input()
+       {"index_put_", std::string("index_put_")},                          // index_put_()
        {"aminmax", std::string("aminmax")},                                // aminmax()
        {"quantile", std::string("quantile")},                              // quantile()
        {"nanquantile", std::string("nanquantile")},                        // nanquantile()
        {"orgqr", std::string("orgqr")},                                    // orgqr()
        {"outer", std::string("outer")},                                    // outer()
        {"softmax", std::string("softmax")},                                // softmax()
+       {"index_add_", std::string("index_add_")},                          // index_add_()
      }},
     {kObjectTypeRowTensorType,
      {
@@ -690,6 +701,7 @@ void Resource::GetCompileCacheResource(const py::list &compile_cache_dep_files, 
       << "The env MS_DEV_FORCE_USE_COMPILE_CACHE has been set. It will force to use the compile cache without "
          "checking whether the network has been changed. Please note the correctness.";
   } else {
+    MsProfileStatGuard stat_guard("InitCompileCache", "compile_cache", true);
     MS_EXCEPTION_IF_NULL(compile_cache_consistent);
     if (!*compile_cache_consistent) {
       MS_LOG(WARNING) << "Check the consistency of dependency files hash failed. Execute all the compilation actions.";

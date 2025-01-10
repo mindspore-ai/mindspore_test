@@ -279,7 +279,7 @@ def test_cumprod_with_acl():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_single_ops():
@@ -342,7 +342,7 @@ def test_jit_graph_has_no_parameter():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pyboost_cache():

@@ -39,6 +39,7 @@ class Array {
   int64_t GetDimByIdx(size_t idx) const;
   int64_t GetDimByReverseIdx(size_t idx) const;
   bool operator==(const Array &shape) const;
+  bool operator<(const Array &shape) const;
 
  protected:
   Shape array_;

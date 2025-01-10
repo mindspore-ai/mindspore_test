@@ -108,18 +108,24 @@ template <typename T>
 bool SparseFillEmptyRowsCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                    const std::vector<kernel::KernelTensor *> &outputs) {
   auto indices_ptr = reinterpret_cast<int64_t *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(indices_ptr);
   Eigen::DSizes<Eigen::DenseIndex, kIndex2> indices_size(EigenShapeCast(inputs, kInput_indices, 0),
                                                          EigenShapeCast(inputs, kInput_indices, 1));
   Eigen::TensorMap<Eigen::Tensor<int64_t, kIndex2, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> a_indices(
     indices_ptr, indices_size);
   auto values_ptr = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(values_ptr);
   auto dense_shape_ptr = reinterpret_cast<int64_t *>(inputs[kIndex2]->device_ptr());
+  MS_EXCEPTION_IF_NULL(dense_shape_ptr);
   const auto *default_value = reinterpret_cast<T *>(inputs[kIndex3]->device_ptr());
+  MS_EXCEPTION_IF_NULL(default_value);
   const int64_t N = inputs[kInput_indices]->GetShapeVector()[0];
   const int64_t dense_rows = dense_shape_ptr[0];
   int64_t rank = inputs[kInput_indices]->GetShapeVector()[1];
   auto output_empty_row_indicator_ptr = reinterpret_cast<bool *>(outputs[kOutput_empty_row_indicator]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_empty_row_indicator_ptr);
   auto output_reverse_index_map_ptr = reinterpret_cast<int64_t *>(outputs[kOutput_reverse_index_map]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_reverse_index_map_ptr);
   out_empty_row_indicator_shape_.push_back(dense_rows);
   out_reverse_index_shape_.push_back(N);
   if (dense_rows == 0) {
@@ -158,6 +164,7 @@ bool SparseFillEmptyRowsCpuKernelMod::LaunchKernel(const std::vector<kernel::Ker
   out_indice_shape_.push_back(rank);
   out_values_shape_.push_back(scratch[dense_rows - 1]);
   auto output_y_indices_ptr = reinterpret_cast<int64_t *>(outputs[kOutput_y_indices]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_y_indices_ptr);
   auto ret1 = memset_s(output_y_indices_ptr, scratch[dense_rows - 1] * rank * sizeof(int64_t), 0,
                        scratch[dense_rows - 1] * rank * sizeof(int64_t));
   if (ret1 != EOK) {
@@ -168,6 +175,7 @@ bool SparseFillEmptyRowsCpuKernelMod::LaunchKernel(const std::vector<kernel::Ker
   Eigen::TensorMap<Eigen::Tensor<int64_t, kIndex2, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned>
     a_output_y_indices(output_y_indices_ptr, output_y_indices_size);
   auto output_y_values_ptr = reinterpret_cast<T *>(outputs[kOutput_y_values]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_y_values_ptr);
   for (int64_t i = 0; i < scratch[dense_rows - 1]; ++i) {
     output_y_values_ptr[i] = (*default_value);
   }

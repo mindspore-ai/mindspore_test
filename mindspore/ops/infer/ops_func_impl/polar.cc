@@ -63,8 +63,17 @@ ShapeArray PolarFuncImpl::InferShape(const PrimitivePtr &primitive, const InferI
 }
 
 std::vector<TypeId> PolarFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto type = input_infos[kInputIndex0]->GetType();
-  if (type == kNumberTypeFloat64) {
+  std::map<std::string, TypePtr> types;
+  auto prim_name = primitive->name();
+
+  auto abs_type = input_infos[kInputIndex0]->GetType();
+  auto angle_type = input_infos[kInputIndex1]->GetType();
+
+  (void)types.emplace("abs", std::make_shared<TensorType>(TypeIdToType(abs_type)));
+  (void)types.emplace("angle", std::make_shared<TensorType>(TypeIdToType(angle_type)));
+  (void)CheckAndConvertUtils::CheckTensorTypeSame(types, std::set<TypePtr>{kFloat32, kFloat64}, prim_name);
+
+  if (abs_type == kNumberTypeFloat64) {
     return {kNumberTypeComplex128};
   }
   return {kNumberTypeComplex64};

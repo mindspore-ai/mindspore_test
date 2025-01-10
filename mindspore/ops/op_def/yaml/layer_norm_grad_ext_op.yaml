@@ -31,3 +31,5 @@ layer_norm_grad_ext:
   dispatch:
     enable: True
     Ascend: LayerNormGradExtAscend
+    CPU: None
+    GPU: None

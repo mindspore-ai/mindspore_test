@@ -23,7 +23,7 @@
 #include <set>
 #include <utility>
 #include <vector>
-
+#include <unordered_set>
 #include "utils/hash_map.h"
 #include "ir/anf.h"
 #include "backend/common/session/session_basic.h"
@@ -32,6 +32,7 @@
 #include "runtime/graph_scheduler/actor/actor_set.h"
 #include "include/common/profiler.h"
 #include "include/backend/py_execute_utils.h"
+#include "backend/graph_compiler/ge_backend/ge_backend.h"
 
 namespace mindspore {
 namespace compile {
@@ -85,10 +86,15 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
 
   // The parameter root_graph is a root graph, and the root graph maybe contain multiple sub graphs, It will traverse
   // all sub graphs to call CompileGraph.
-  const ActorInfo &CompileGraphs(const FuncGraphPtr &func_graph);
+  const ActorInfo CompileGraphs(const FuncGraphPtr &func_graph);
 
   // Run Graph in the graph mode.
   void RunGraph(const ActorInfo &actor_info, const VectorRef &args, VectorRef *outputs);
+
+  FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph,
+                            const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_params);
+  string ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph, bool is_save_to_file);
+  std::unordered_set<std::string> GetInferParameterNames();
 
 #ifdef ENABLE_DEBUGGER
   void SetDebuggerInit() const;
@@ -153,6 +159,9 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
   // Check whether this root_graph can enable single op and graph pipeline or not.
   bool CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info);
 
+  // Bind a specific core to the main thread.
+  void BindCoreForMainThread();
+
   // When compiling FuncGraph, it is divided according to the control nodes, and obtain the control nodes and several
   // node segments. Node segments will be compiled into kernelGraphs which are expressed as GraphId and bound to
   // the corresponding device_context.
@@ -173,6 +182,7 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
   std::string device_name_;
   uint32_t device_id_;
   int ms_execution_mode_{kGraphMode};
+  bool has_pre_build_comm_{false};
   void CompileSubGraph(const FuncGraphPtr &func_graph, device::RunMode run_mode = device::RunMode::kUnknown);
   void ProcessNotSupportCnode(const FuncGraphPtr &func_graph, const device::DeviceType &old_target,
                               const device::DeviceType &new_target) const;
@@ -181,6 +191,8 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
 
   // Whether this root_graph can enable single op and graph pipeline or not.
   bool enable_graph_pipeline_{false};
+  bool is_ge_backend_ = false;
+  GEBackendPtr ge_backend_;
 };
 }  // namespace compile
 }  // namespace mindspore

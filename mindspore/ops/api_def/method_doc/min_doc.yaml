@@ -1,42 +1,89 @@
 min:
   description: |
-    min(input) -> Tensor
+    min() -> Tensor
     
-    Calculates the minimum value of the input tensor.
+    Returns the minimum value of the self tensor.
+
+    Returns:
+        Scalar Tensor with the same dtype as `self`, the minimum value of the self.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+        >>> output = Tensor.min(x)
+        >>> print(output)
+        0.0
+
+    .. method:: Tensor.min(dim, keepdim=False) -> tuple(Tensor)
+        :noindex:
+
+    Calculates the minimum value along with the given dim for the self tensor, and returns the minimum values and
+    indices.
+
+    Args:
+        dim (int): The dimension to reduce.
+        keepdim (bool, optional): Whether to reduce dimension, if ``True`` the output will keep the same dimension as
+            the `self` , the output will reduce dimension if ``false``. Default: ``False``.
+
+    Returns:
+        tuple (Tensor), tuple of 2 tensors, containing the minimum value of the self tensor along the given
+        dimension `dim` and the corresponding index.
+
+        - **values** (Tensor) - The minimum value of self tensor along the given dimension `dim`, with the same shape
+          as `index`, and same dtype as `self`.
+        - **index** (Tensor) - The index for the minimum value of the self tensor, with dtype int64. If `keepdim`
+          is ``True`` , the shape of output tensors is :math:`(self_1, self_2, ..., self_{dim-1}, 1, self_{dim+1}, ..., self_N)`.
+          Otherwise, the shape is :math:`(self_1, self_2, ..., self_{dim-1}, self_{dim+1}, ..., self_N)` .
+
+    Raises:
+        TypeError: If `keepdim` is not a bool.
+        TypeError: If `dim` is not an int.
+        TypeError: If self tensor data type is Complex.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
+        >>> output, index = x.min(0, keepdim=True)
+        >>> print(output, index)
+        [0.0] [0]
     
-    Also see :func:`mindspore.ops.extend.min`.
-    
-    .. min(input, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> Tensor, number
+    .. method:: Tensor.min(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> Tensor|number.Number
+        :noindex:
     
     Return the minimum of a tensor or minimum along an axis.
     
     Note:
-        When `axis` is ``None``, `keepdims` and subsequent parameters
-        have no effect. At the same time, the index is fixed to return 0.
+        When `axis` is ``None``, `keepdims` and subsequent parameters have no effect.
+        At the same time, the index is fixed to return 0.
     
     Args:
-        axis (Union[None, int, list, tuple of ints], optional): An axis or
-            axes along which to operate. By default, flattened input is used. If
-            `axis` is a tuple of ints, the minimum is selected over multiple axes,
+        axis (Union[None, int, list, tuple of ints], optional): An axis or axes along which to operate. By default,
+            flattened input is used. If `axis` is a tuple of ints, the minimum is selected over multiple axes,
             instead of a single axis or all the axes as before. Default: ``None`` .
-        keepdims (bool, optional):
-            If ``True`` , the axes which are reduced are left in the
-            result as dimensions with size one. With this option, the result will
-            broadcast correctly against the input array. Default: ``False`` .
+        keepdims (bool, optional): If ``True`` , the axes which are reduced are left in the result as dimensions with
+            size one. With this option, the result will broadcast correctly against the input array. Default: ``False`` .
     
     Keyword Args:
-        initial (scalar, optional):
-            The minimum value of an output element. Must be present to allow
-            computation on empty slice. Default: ``None`` .
-        where (Tensor[bool], optional):
-            A boolean tensor which is broadcasted to match the dimensions of array,
-            and selects elements to include in the reduction. If non-default value
-            is passed, initial must also be provided. Default: ``True`` .
+        initial (scalar, optional): The minimum value of an output element. Must be present to allow computation on
+            empty slice. Default: ``None`` .
+        where (Tensor[bool], optional): A boolean tensor which is broadcasted to match the dimensions of array,
+            and selects elements to include in the reduction. If non-default value is passed, initial must also
+            be provided. Default: ``True`` .
         return_indices (bool, optional): Whether to return the index of the minimum value. Default: ``False`` .
             If `axis` is a list or tuple of ints, it must be ``False`` .
     
     Returns:
-        Tensor or scalar, minimum of input tensor. If `axis` is ``None`` , the result is a scalar
+        Tensor or scalar, minimum of self tensor. If `axis` is ``None`` , the result is a scalar
         value. If `axis` is given, the result is a tensor of dimension ``self.ndim - 1``.
     
     Raises:

@@ -1,0 +1,15 @@
+#deprecated narrow
+narrow:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: int
+    start:
+      dtype: int
+      type_cast: tensor
+    length:
+      dtype: int
+  returns:
+    output:
+      dtype: tensor

@@ -20,13 +20,50 @@ This module provides the utils.
 import os
 import time
 from functools import wraps
-
-# one sys count takes 10 ns, 1 ms has 100000 system count
+from typing import Any, Callable, Type, Tuple, Union
 import re
 import shutil
 import stat
 
 from mindspore import log as logger
+
+
+def no_exception_func(
+        default_ret: Any = None,
+        exception_types: Union[Type[Exception], Tuple[Type[Exception], ...]] = Exception,
+        custom_handler: Callable[[Exception], Any] = None
+) -> Callable[[Callable], Callable]:
+    """
+    A decorator that catches specified exceptions and handles them gracefully.
+
+    Args:
+        default_ret (Any, optional): The default return value if an exception occurs. Defaults to None.
+        exception_types (Union[Type[Exception], Tuple[Type[Exception], ...]], optional):
+            The type(s) of exceptions to catch. Defaults to Exception.
+        custom_handler (Callable[[Exception], Any], optional):
+            A custom function to handle the caught exception. Defaults to None.
+
+    Returns:
+        Callable[[Callable], Callable]: A decorator function.
+
+    Example:
+        @no_exception_func(default_ret=0, exception_types=(ValueError, TypeError))
+        def divide(a, b):
+            return a / b
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return func(*args, **kwargs)
+            except exception_types as ex: # pylint: disable=W0703
+                if custom_handler:
+                    return custom_handler(ex)
+
+                logger.error(f"Call to {func.__name__} failed. Exception: {str(ex)}")
+                return default_ret
+        return wrapper
+    return decorator
 
 
 def timeit(custom_message=None):
@@ -54,6 +91,17 @@ def timeit(custom_message=None):
         return wrapper
 
     return decorator
+
+
+def print_msg_with_pid(msg):
+    """
+    Print message with process id.
+
+    Args:
+        msg (str): The message to print.
+    """
+    print(f"[{os.getpid()}] {msg}", flush=True)
+
 
 def to_int(param, param_name):
     """

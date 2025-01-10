@@ -1,0 +1,31 @@
+moe_compute_expert_tokens:
+  description: |
+    In MoE calculation, Search for the last index processed by each expert through binary search.
+
+    .. math::
+        expert_tokens_{i} = BinarySearch(sorted_experts, num_expert)
+
+    Inputs:
+        - **sorted_experts** (Tensor) - A tensor which represent sorted experts, must be 1D tensor.
+          Supported type: Int32.
+        - **num_expert** (int) - The number of experts, must be greater than 0.
+
+    Outputs:
+        Tensor, have the same dtype with sorted_experts.
+
+    Raises:
+        TypeError: if `sorted_experts` is not a tensor.
+        ValueError: if `num_expert` is less than 0.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore.ops.auto_generate import MoeComputeExpertTokens
+        >>> sorted_experts = ms.Tensor([0, 0, 1, 2, 2], dtype=ms.int32)
+        >>> num_expert = 5
+        >>> net = MoeComputeExpertTokens()
+        >>> expert_tokens = net(sorted_experts, num_expert)
+        >>> print(expert_tokens)
+        [2, 3, 5]

@@ -14,13 +14,13 @@ polar:
         .. warning::
             This is an experimental API that is subject to change.
 
-        Args:
-            abs (Tensor, float): Radial distance. Tensor of any dimension,
+        Inputs:
+            - **abs** (Tensor, float) - Radial distance. Tensor of any dimension,
               with dtype required to be float32.
 
-            angle (Tensor, float): Polar angle. It has the same shape and dtype as `abs`.
+            - **angle** (Tensor, float) - Polar angle. It has the same shape and dtype as `abs`.
 
-        Returns:
+        Outputs:
             Tensor, with the same shape as `abs` and the dtype is complex64.
 
         Supported Platforms:
@@ -30,14 +30,15 @@ polar:
             >>> import mindspore
             >>> import numpy as np
             >>> from mindspore import Tensor
-            >>> import mindspore.mint as mint
+            >>> from mindspore import ops
             >>> x1 = Tensor(np.array([1, 2]), mindspore.float32)
             >>> x2 = Tensor(np.array([3, 4]), mindspore.float32)
-            >>> output = mint.polar(x1, x2)
+            >>> op_polar = ops.Polar()
+            >>> output = op_polar(x1, x2)
             >>> print(output)
-            [-0.9899925 +0.14112001j -1.30728724-1.51360499j]
+            [-0.9899925 +0.14112002j -1.3072872-1.5136049j]
             >>> x1 = Tensor(2.1, mindspore.float32)
             >>> x2 = Tensor(2.1, mindspore.float32)
-            >>> output = mint.polar(x1, x2)
+            >>> output = op_polar(x1, x2)
             >>> print(output)
-            (-1.0601766+1.8127397j)
+            (-1.0601765+1.8127397j)

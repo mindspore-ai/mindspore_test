@@ -18,6 +18,7 @@ import mindspore as ms
 import numpy as np
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
 
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
@@ -25,14 +26,15 @@ from tests.mark_utils import arg_mark
 @test_utils.run_test_with_On
 def test_hal_event_args():
     """
-    Feature: Hal event api.
-    Description: Test hal.event args.
-    Expectation: hal.event performs as expected.
+    Feature: runtime event api.
+    Description: Test runtime.event args.
+    Expectation: runtime.event performs as expected.
     """
-    ev1 = ms.hal.Event()
+    set_device()
+    ev1 = ms.runtime.Event()
     assert ev1 is not None
 
-    ev2 = ms.hal.Event(enable_timing=True, blocking=True)
+    ev2 = ms.runtime.Event(enable_timing=True, blocking=True)
     assert ev2 is not None
 
 
@@ -40,14 +42,15 @@ def test_hal_event_args():
           card_mark='onecard', essential_mark='essential')
 def test_hal_event_elapsed_time():
     """
-    Feature: Hal event api.
-    Description: Test hal.event.elapsed_time.
-    Expectation: hal.event.elapsed_time performs as expected.
+    Feature: runtime event api.
+    Description: Test runtime.event.elapsed_time.
+    Expectation: runtime.event.elapsed_time performs as expected.
     """
+    set_device()
     context.set_context(mode=context.PYNATIVE_MODE)
 
-    start = ms.hal.Event(enable_timing=True)
-    end = ms.hal.Event(enable_timing=True)
+    start = ms.runtime.Event(enable_timing=True)
+    end = ms.runtime.Event(enable_timing=True)
     start.record()
     a = Tensor(np.ones([50, 50]), ms.float32)
     ops.matmul(a, a)
@@ -63,23 +66,24 @@ def test_hal_event_elapsed_time():
           card_mark='onecard', essential_mark='essential')
 def test_hal_event_wait():
     """
-    Feature: Hal event api.
-    Description: Test hal.event.wait.
-    Expectation: hal.device.wait as expected.
+    Feature: runtime event api.
+    Description: Test runtime.event.wait.
+    Expectation: runtime.device.wait as expected.
     """
+    set_device()
     context.set_context(mode=context.PYNATIVE_MODE)
 
-    s1 = ms.hal.Stream()
-    s2 = ms.hal.Stream()
+    s1 = ms.runtime.Stream()
+    s2 = ms.runtime.Stream()
 
-    ev1 = ms.hal.Event()
-    ev2 = ms.hal.Event()
+    ev1 = ms.runtime.Event()
+    ev2 = ms.runtime.Event()
     a = Tensor(np.random.randn(20, 20), ms.float32)
-    with ms.hal.StreamCtx(s1):
+    with ms.runtime.StreamCtx(s1):
         b = ops.matmul(a, a)
         ev1.record()
 
-    with ms.hal.StreamCtx(s2):
+    with ms.runtime.StreamCtx(s2):
         ev1.wait()
         c = ops.matmul(b, b)
         ev2.record()
@@ -92,24 +96,25 @@ def test_hal_event_wait():
     assert np.allclose(ops.matmul(b, b).asnumpy(), c.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_event_sync():
     """
-    Feature: Hal event sync.
-    Description: Test hal.device.sync.
-    Expectation: hal.device.sync as expected.
+    Feature: runtime event sync.
+    Description: Test runtime.device.sync.
+    Expectation: runtime.device.sync as expected.
     """
+    set_device()
     context.set_context(mode=context.PYNATIVE_MODE)
 
-    stream = ms.hal.Stream()
+    stream = ms.runtime.Stream()
 
-    ev1 = ms.hal.Event(True, False)
-    ev2 = ms.hal.Event(True, False)
+    ev1 = ms.runtime.Event(True, False)
+    ev2 = ms.runtime.Event(True, False)
 
     ev1.record(stream)
     a = Tensor(np.random.randn(5000, 5000), ms.float32)
-    with ms.hal.StreamCtx(stream):
+    with ms.runtime.StreamCtx(stream):
         ops.bmm(a, a)
         stream.record_event(ev2)
         assert ev2.query() is False

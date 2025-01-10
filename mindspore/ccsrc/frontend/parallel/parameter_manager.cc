@@ -619,11 +619,7 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
   }
 }
 
-void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
-  MS_EXCEPTION_IF_NULL(root);
-  auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
-  auto root_params = root->parameters();
-  AnfNodePtrList sub_root_params;
+void GetSubRootParams(const AnfNodePtrList &root_params, AnfNodePtrList *sub_root_params) {
   for (auto &be_cloned_parameter_node : root_params) {
     if (ParallelContext::GetInstance()->get_redundancy_node().count(be_cloned_parameter_node)) {
       continue;
@@ -642,8 +638,17 @@ void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
     if (!param_value_in->be_cloned()) {
       continue;
     }
-    sub_root_params.emplace_back(be_cloned_parameter_node);
+    (*sub_root_params).emplace_back(be_cloned_parameter_node);
   }
+}
+
+void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
+  auto root_params = root->parameters();
+  AnfNodePtrList sub_root_params;
+  GetSubRootParams(root_params, &sub_root_params);
+
   for (auto &cloned_parameter_node : root_params) {
     if (ParallelContext::GetInstance()->get_redundancy_node().count(cloned_parameter_node)) {
       continue;
@@ -915,7 +920,9 @@ std::pair<AnfNodePtr, bool> FindParameter(const AnfNodePtr &node, const FuncGrap
   for (size_t index = 0; index < cnode->size(); ++index) {
     PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(prim);
-    if ((prim->name() == DEPEND || prim->name() == LOAD || IsInAllGatherNodeList(cnode)) && index != 1) {
+    if ((prim->name() == DEPEND || prim->name() == LOAD || prim->name() == INSERTGRADIENTOF ||
+         IsInAllGatherNodeList(cnode)) &&
+        index != 1) {
       continue;
     }
     auto res = FindParameter(cnode->input(index), func_graph);
@@ -1418,7 +1425,6 @@ void FindParamNodes(std::unordered_map<string, AnfNodePtr> *root_params_map_1,
     }
     auto param = param_node->cast<ParameterPtr>();
     std::string param_name = param->name();
-
     if ((param_name.substr(0, kPreLenFifteen) == exp_row_name ||
          param_name.substr(0, kPreLenFifteen) == exp_col_name) &&
         ((*root_params_map_1).count(param_name.substr(kPreLenFifteen)) != 0)) {

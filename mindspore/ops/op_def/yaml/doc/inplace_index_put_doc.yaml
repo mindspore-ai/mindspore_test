@@ -7,6 +7,8 @@ inplace_index_put:
                 indices (tuple[Tensor], list[Tensor]): the indices of type is bool, uint8, int32 or int64,
                     used to index into the "self Tensor". The rank of tensors in indices should be 1-D,
                     size of indices should <= the rank of "self Tensor" and the tensors in indices should be broadcastable.
+                    When the tensor types are bool and uint8, shape will match the input dimensions in turn. 
+                    For example: the first tensor of `indices` is of type bool, Shape(x, y), `input` Shape(a, b, c), and (x, y) needs to match (a, b).
                 values (Tensor): 1-D Tensor of the same type as "self Tensor". If size == 1, it will be broadcastable.
                 accumulate (bool, optional): If `accumulate` is True, the elements in values are added to "self Tensor",
                     else the elements in `values` replace the corresponding element in the "self Tensor".
@@ -19,7 +21,7 @@ inplace_index_put:
                 TypeError: If the dtype of the "self Tensor" is not equal to the dtype of `values`.
                 TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
                 TypeError: If the dtype of tensors in `indices` are not bool, uint8, int32 or int64.
-                TypeError: If the dtype of tensors in `indices` are inconsistent.
+                TypeError: If the dtypes of tensors in `indices` are inconsistent.
                 TypeError: If the dtype of `accumulate` is not bool.
                 ValueError: If rank(`values`) is not 1-D.
                 ValueError: If size(`values`) is not 1 or max size of the tensors in `indices` when

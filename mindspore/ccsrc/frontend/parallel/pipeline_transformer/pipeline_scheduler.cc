@@ -644,6 +644,25 @@ void InterleavedScheduler::MemoryOptimizedReorder() {
   MemoryOptimizedStablePhaseReorder();
 
   for (size_t i = LongToSize(micro_size_ * chunk_num_ - bias_ - 1); i < LongToSize(micro_size_ * chunk_num_ - 1); ++i) {
+    if (stage_ == 0) {
+      auto loop_index = sorted_bwd_end[i].second.micro / (stage_num_ + SizeToLong(offset_));
+      auto offset = LongToSize(offset_);
+      if (loop_index != 0 || sorted_bwd_end[i].second.chunk == 0) {
+        offset = 0;
+      }
+      if (offset > 0) {
+        auto prior = sorted_bwd_cell[i].second;
+        auto last = sorted_bwd_begin[i + 1].first;
+        ControlOrder(prior, last);
+        auto prior1 = sorted_bwd_cell[i + offset].second;
+        auto last1 = sorted_bwd_end[i].first;
+        ControlOrder(prior1, last1);
+      }
+      auto prior2 = sorted_bwd_end[i].second;
+      auto last2 = sorted_bwd_begin[i + offset + 1].first;
+      ControlOrder(prior2, last2);
+      continue;
+    }
     if (stage_ != stage_num_ - 1 || sorted_bwd_begin[i + 1].first.chunk == chunk_num_ - 1) {
       auto prior = sorted_bwd_end[i].second;
       auto last = sorted_bwd_begin[i + 1].first;

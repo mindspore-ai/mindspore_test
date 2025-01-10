@@ -26,10 +26,11 @@ os.environ['HCCL_IF_BASE_PORT'] = '30000'
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
-        self.ops = ops.Sin()
-        self.ops.shard(((2, 2, 2),))
-    def construct(self, x):
-        return self.ops(x)
+        self.mul = ops.Mul()
+        self.mul.shard(((2, 2, 2), (2, 2, 2)))
+
+    def construct(self, x, y):
+        return self.mul(x, y)
 
 
 def test_graph_mode():
@@ -52,18 +53,33 @@ def test_graph_mode():
     x_imag = np.random.randn(4, 4, 4).astype(np.float32)
     print(f"x_real is:\n{x_real}")
     print(f"x_imag is:\n{x_imag}")
-    x = ms.Tensor(x_real + 1j*x_imag)
 
-    sin_x = np.sin(x_real + 1j*x_imag)
+    y_real = np.random.randn(4, 4, 4).astype(np.float32)
+    y_imag = np.random.randn(4, 4, 4).astype(np.float32)
+    print(f"y_real is:\n{y_real}")
+    print(f"y_imag is:\n{y_imag}")
+
+    x_np = x_real + 1j*x_imag
+    y_np = y_real + 1j*y_imag
+
+    x_ms = ms.Tensor(x_np)
+    y_ms = ms.Tensor(y_np)
+
+    output_np = x_np * y_np
 
     net = Net()
-    output = net(x)
-    output_np = output.asnumpy()
-    print(f"ms output real part is:\n{np.real(output_np)}")
-    print(f"ms output imag part is:\n{np.imag(output_np)}")
-    print(f"np output real part is:\n{np.real(sin_x)}")
-    print(f"np output imag part is:\n{np.imag(sin_x)}")
+    output_ms = net(x_ms, y_ms)
+    output_ms = output_ms.asnumpy()
 
-    assert np.allclose(np.real(output_np), np.real(sin_x)) and np.allclose(np.imag(output_np), np.imag(sin_x)), \
-    f"parallel complex st run failed, please check log_output."
+    print(f"ms output real part is:\n{np.real(output_ms)}")
+    print(f"ms output imag part is:\n{np.imag(output_ms)}")
+    print(f"np output real part is:\n{np.real(output_np)}")
+    print(f"np output imag part is:\n{np.imag(output_np)}")
+
+    assert (np.allclose(np.real(output_np), np.real(output_ms), rtol=1e-03, atol=1e-03) and
+            np.allclose(np.imag(output_np), np.imag(output_ms), rtol=1e-03, atol=1e-03)), \
+            f"parallel complex st run failed, please check log_output."
+    print(f"rank_{D.get_rank()} pass the test")
     ms.reset_auto_parallel_context()
+
+test_graph_mode()

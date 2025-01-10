@@ -307,7 +307,6 @@ Optimizer
     mindspore.nn.RMSProp
     mindspore.nn.Rprop
     mindspore.nn.SGD
-    mindspore.nn.thor
 
 Dynamic Learning Rate
 ---------------------
@@ -401,3 +400,4 @@ Tools
     mindspore.nn.Flatten
     mindspore.nn.Identity
     mindspore.nn.Unflatten
+    mindspore.nn.utils.no_init_parameters

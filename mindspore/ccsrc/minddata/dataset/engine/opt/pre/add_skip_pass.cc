@@ -19,16 +19,19 @@
 #include <algorithm>
 #include <string>
 
+#include "minddata/dataset/engine/ir/datasetops/data_queue_node.h"
 #include "minddata/dataset/engine/ir/datasetops/root_node.h"
 #include "minddata/dataset/engine/ir/datasetops/skip_node.h"
-#include "minddata/dataset/engine/ir/datasetops/data_queue_node.h"
+#ifdef ENABLE_PYTHON
+#include "minddata/dataset/engine/ir/datasetops/source/generator_node.h"
+#endif
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {
 // constructor
 AddSkipPass::InjectionFinder::InjectionFinder(const std::shared_ptr<DatasetNode> &node)
-    : injection_point_(nullptr), has_shuffle_node_(false) {}
+    : injection_point_(nullptr), has_shuffle_node_(false), has_batch_sampler_(false) {}
 
 // Performs finder work for BuildVocabOp that has special rules about skip injection
 Status AddSkipPass::InjectionFinder::Visit(std::shared_ptr<RootNode> node, bool *const modified) {
@@ -70,6 +73,18 @@ Status AddSkipPass::InjectionFinder::Visit(std::shared_ptr<ShuffleNode> node, bo
   return Status::OK();
 }
 
+#ifdef ENABLE_PYTHON
+// Detect batch sampler
+Status AddSkipPass::InjectionFinder::Visit(std::shared_ptr<GeneratorNode> node, bool *const modified) {
+  RETURN_UNEXPECTED_IF_NULL(node);
+  RETURN_UNEXPECTED_IF_NULL(modified);
+  if (node->HasBatchSampler()) {
+    has_batch_sampler_ = true;
+  }
+  return Status::OK();
+}
+#endif
+
 Status AddSkipPass::InjectionFinder::VisitAfter(std::shared_ptr<DataQueueNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);
   RETURN_UNEXPECTED_IF_NULL(modified);
@@ -92,9 +107,15 @@ Status AddSkipPass::RunOnTree(std::shared_ptr<DatasetNode> root_ir, bool *const 
   AddSkipPass::InjectionFinder finder(root_ir);
   RETURN_IF_NOT_OK(finder.Run(root_ir, modified));
   // If we detect a shuffle node in the pipeline, we disable fast-recovery
-  if (GlobalContext::config_manager()->fast_recovery() && finder.HasShuffleNode()) {
-    GlobalContext::config_manager()->set_fast_recovery(false);
-    MS_LOG(WARNING) << "Disabling fast recovery of Dataset pipeline since shuffle node is detected.";
+  if (GlobalContext::config_manager()->fast_recovery()) {
+    if (finder.HasShuffleNode()) {
+      GlobalContext::config_manager()->set_fast_recovery(false);
+      MS_LOG(WARNING) << "Disabling fast recovery of Dataset pipeline since shuffle node is detected.";
+    }
+    if (finder.HasBatchSampler()) {
+      GlobalContext::config_manager()->set_fast_recovery(false);
+      MS_LOG(WARNING) << "Disabling fast recovery of Dataset pipeline since batch_sampler is detected.";
+    }
   }
   // The first injection logic is to check if we should inject the skip op as the root node.
   std::shared_ptr<DatasetNode> node = finder.injection_point();

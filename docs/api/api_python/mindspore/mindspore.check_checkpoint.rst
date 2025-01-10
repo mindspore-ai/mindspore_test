@@ -5,6 +5,9 @@ mindspore.check_checkpoint
 
     检查checkpoint文件是否合法。
 
+    .. note::
+        这个接口在2.5版本废弃，并且会在未来版本移除。
+
     参数：
         - **ckpt_file_name** (str) - checkpoint的文件名称。
 

@@ -9,7 +9,7 @@ mindspore.mint.triu
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **input** (Tensor) - shape是 :math:`(M, N, *)` 的Tensor，其中*表示任意数量的维度。
+        - **input** (Tensor) - shape是 :math:`(*, M, N)` 的Tensor，其中*表示任意数量的维度。
         - **diagonal** (int，可选) - 指定对角线位置，默认值： ``0`` ，指定主对角线。
 
     返回：

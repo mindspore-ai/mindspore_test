@@ -1248,17 +1248,24 @@ NodePtr FuncBuilder::OutZeros(const NodePtr &node) {
   return NewFuncNode(std::make_shared<ValueTuple>(values), node->abstract(), InputType::kConstant);
 }
 
-ValuePtr FuncBuilder::Ones(const ValuePtr &value) {
-  MS_EXCEPTION_IF_NULL(value);
-  auto ones_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract());
-  NodePtrList inputs{NewFuncNode(value, ones_abs, InputType::kOpOutput)};
-  return EmitOp(prim::kPrimOnesLike, inputs)->Value();
+ValuePtr FuncBuilder::Ones(const tensor::BaseTensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor->data_type() != kNumberTypeComplex64 && tensor->data_type() != kNumberTypeComplex128) {
+    return Ones(Value<ShapeVector>(tensor->shape()), Value(static_cast<int64_t>(tensor->data_type())))->Value();
+  }
+  auto ones_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(tensor->ToAbstract());
+  NodePtr input = NewFuncNode(tensor, ones_abs, InputType::kOpOutput);
+  return EmitOp(prim::kPrimOnesLike, {input})->Value();
 }
 
-ValuePtr FuncBuilder::Zeros(const ValuePtr &value) {
-  MS_EXCEPTION_IF_NULL(value);
-  auto zeros_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract());
-  auto input = NewFuncNode(value, zeros_abs, InputType::kOpOutput);
+ValuePtr FuncBuilder::Zeros(const tensor::BaseTensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor->data_type() != kNumberTypeComplex64 && tensor->data_type() != kNumberTypeComplex128) {
+    return Zeros(Value<std::vector<int64_t>>(tensor->shape()), Value(static_cast<int64_t>(tensor->data_type())))
+      ->Value();
+  }
+  auto zeros_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(tensor->ToAbstract());
+  auto input = NewFuncNode(tensor, zeros_abs, InputType::kOpOutput);
   return ZerosLike(input)->Value();
 }
 
@@ -1350,8 +1357,7 @@ ValuePtr FuncBuilder::FillZeros(const ValuePtr &value, const abstract::AbstractB
       MS_EXCEPTION_IF_NULL(tensor_dtype);
       auto dtype = tensor_dtype->element();
       auto shape = PyNativeAlgo::Common::BuildShape(abs);
-      auto out_tensor = std::make_shared<tensor::Tensor>(dtype->type_id(), shape);
-      auto zero_node = ZerosLike(NewFuncNode(out_tensor, abs, InputType::kOpOutput));
+      auto zero_node = Zeros(Value(shape), Value(static_cast<int64_t>(dtype->type_id())));
       convert_value = zero_node->Value();
     } else {
       MS_LOG(DEBUG) << "None value abstract got None abstract!";

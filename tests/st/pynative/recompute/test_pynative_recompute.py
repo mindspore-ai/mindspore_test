@@ -462,7 +462,7 @@ class Block(Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_net_normal_recompute():
@@ -537,7 +537,7 @@ def test_net_normal_recompute_function():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_net_normal_recompute_sequential_cell():
@@ -564,7 +564,7 @@ def test_net_normal_recompute_sequential_cell():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_net_normal_recompute_not_tensor_input():
@@ -593,7 +593,7 @@ def test_net_normal_recompute_not_tensor_input():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_net_recompute_not_tensor_input():

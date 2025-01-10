@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "mindspore/ops/infer/symbol_ops_impl/common.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace symshape {
@@ -56,12 +56,14 @@ SymbolPtr Squeeze::Eval() {
   return ResultIntList(std::move(result));
 }
 
-REG_SYMBOL_OP_BUILDER("Squeeze").SetShapeDepend({DependOn::kShape}).SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
-  auto input_shape = b->GetInputShape(kIndex0);
-  auto axis = b->GetAttr(kAttrAxis);
-  MS_EXCEPTION_IF_NULL(axis);
-  return b->Emit(std::make_shared<Squeeze>(input_shape, axis));
-});
+REG_SYMBOL_OP_BUILDER("Squeeze")
+  .SetShapeDepend({DependOn::kShape, DependOn::kValue})
+  .SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
+    auto input_shape = b->GetInputShape(kIndex0);
+    auto axis = b->GetInputOrAttr(kIndex1, kAttrAxis);
+    MS_EXCEPTION_IF_NULL(axis);
+    return b->Emit(std::make_shared<Squeeze>(input_shape, axis));
+  });
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

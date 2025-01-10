@@ -46,7 +46,7 @@ class Grad(nn.Cell):
         return gout
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_softplus_grad_1d_fp32():
     x = np.array([0.58401114, 0.68800163, 0.9760397, 0.14702141, 0.46563736, 0.9607501,
@@ -64,7 +64,7 @@ def test_softplus_grad_1d_fp32():
     assert np.allclose(output[0].asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_softplus_grad_3d_fp16():
     np.random.seed(42)
@@ -77,7 +77,7 @@ def test_softplus_grad_3d_fp16():
     assert np.allclose(output[0].asnumpy(), expect, rtol=1e-2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_softplus_grad_7d_fp32():
     np.random.seed(20)

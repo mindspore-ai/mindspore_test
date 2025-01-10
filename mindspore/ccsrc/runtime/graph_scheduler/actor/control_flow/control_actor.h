@@ -109,6 +109,7 @@ class ControlActor : public MemoryAwareActor {
 
   // Get all input, including data, partial, branchid.
   virtual void FetchInput(OpContext<DeviceTensor> *const context);
+  virtual void FetchParameterInput(OpContext<DeviceTensor> *const context);
   void Run(OpContext<DeviceTensor> *const context) override;
   bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const override;
   void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,

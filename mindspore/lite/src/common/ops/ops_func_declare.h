@@ -161,7 +161,6 @@
 #include "infer/splice.h"
 #include "infer/call.h"
 #include "infer/split_with_overlap.h"
-#include "infer/glu.h"
 #include "infer/tensor_array.h"
 #include "infer/tensor_array_read.h"
 #include "infer/tensor_array_write.h"

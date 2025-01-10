@@ -33,6 +33,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/op_def/random_op_name.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/custom/custom_aot_cpu_kernel.h"
 #include "kernel/cpu/custom/custom_julia_cpu_kernel.h"
@@ -79,8 +80,8 @@ static const std::set<std::string> kVmapCPUWhiteList = {kUnsortedSegmentMinOpNam
                                                         kApplyFtrlOpName,
                                                         kMatrixBandPartOpName,
                                                         kGerOpName,
-                                                        kCdistOpName,
-                                                        kCdistGradOpName,
+                                                        ops::kNameCdist,
+                                                        ops::kNameCdistGrad,
                                                         kSparseSegmentMeanOpName};
 
 void GetOutputDtypes(const CNodePtr &kernel_node, std::vector<TypeId> *output_types) {

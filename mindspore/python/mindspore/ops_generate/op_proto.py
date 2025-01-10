@@ -141,8 +141,10 @@ class OpProto:
                  op_returns,
                  op_view=False,
                  op_graph_view=False,
+                 op_inplace=False,
                  op_labels=None,
-                 op_deprecated=None):
+                 op_deprecated=None,
+                 bprop_expander=True):
         self.op_name = op_name
         self.op_args = op_args
         self.op_function = op_function
@@ -152,8 +154,10 @@ class OpProto:
         self.op_returns = op_returns
         self.op_view = op_view
         self.op_graph_view = op_graph_view
+        self.op_inplace = op_inplace
         self.op_labels = op_labels
         self.op_deprecated = op_deprecated
+        self.bprop_expander = bprop_expander
 
     @staticmethod
     def load_from_yaml(op_name, op_data):
@@ -191,14 +195,16 @@ class OpProto:
         if not isinstance(op_graph_view, bool):
             raise TypeError(
                 f'The graph view value should be bool, but get {type(op_graph_view)}, op name is {op_name}.')
+        op_inplace = is_inplace_op(op_returns)
         # get op labels
         op_labels = op_data.get('labels', None)
         # get op deprecated
         op_deprecated = op_data.get('deprecated', None)
+        bprop_expander = op_data.get('bprop_expander', True)
         op_proto = OpProto(op_name=op_name, op_args=op_args, op_returns=op_returns, op_function=op_function,
                            op_class=op_class, op_dispatch=op_dispatch, op_args_signature=op_args_signature,
-                           op_view=op_view, op_graph_view=op_graph_view, op_labels=op_labels,
-                           op_deprecated=op_deprecated)
+                           op_view=op_view, op_graph_view=op_graph_view, op_inplace=op_inplace, op_labels=op_labels,
+                           op_deprecated=op_deprecated, bprop_expander=bprop_expander)
         return op_proto
 
 
@@ -390,3 +396,15 @@ def check_op_yaml_keys(op_name: str, input_keys: set, compare_keys: set):
     if diff_keys:
         raise TypeError(
             f'The definition of keys in yaml has faults, op name is {op_name}, wrong keys are {diff_keys}.')
+
+
+def is_inplace_op(args):
+    """
+    is inplace op
+    :param args:
+    :return: bool
+    """
+    for arg in args:
+        if arg.inplace:
+            return True
+    return False

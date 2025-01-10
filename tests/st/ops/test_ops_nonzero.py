@@ -34,18 +34,18 @@ def generate_expect_forward_output(x, as_tuple=False):
 
 
 @test_utils.run_with_cell
-def nonzero_forward_func(x, as_tuple=False):
-    return nonzero(x, as_tuple)
+def nonzero_forward_func(x, as_tuple_=False):
+    return nonzero(x, as_tuple=as_tuple_)
 
 
 @test_utils.run_with_cell
 def nonzero_astuple_false_forward_func(x):
-    return nonzero(x, False)
+    return nonzero(x, as_tuple=False)
 
 
 @test_utils.run_with_cell
 def nonzero_astuple_true_forward_func(x):
-    return nonzero(x, True)
+    return nonzero(x, as_tuple=True)
 
 
 @test_utils.run_with_cell
@@ -53,7 +53,7 @@ def nonzero_backward_func(x, as_tuple=False):
     if as_tuple:
         grad_op = ops.GradOperation(get_all=True, get_by_list=False, sens_param=False)
         return grad_op(nonzero_forward_func)(x, as_tuple)
-    return ops.grad(nonzero_forward_func, (0))(x, as_tuple)
+    return ms.grad(nonzero_forward_func, (0))(x, as_tuple)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
@@ -71,18 +71,14 @@ def test_ops_nonzero_normal(context_mode, as_tuple):
     x = generate_random_input((2, 3, 4, 5), np.float32)
     if not as_tuple:
         output = nonzero_forward_func(ms.Tensor(x), as_tuple)
-        output_tensor = ms.Tensor(x).nonzero(as_tuple)
         expect = generate_expect_forward_output(x, as_tuple)
         np.testing.assert_array_equal(output.asnumpy(), expect)
-        np.testing.assert_array_equal(output_tensor.asnumpy(), expect)
 
     if as_tuple and ms.get_context(attr_key='device_target') == 'Ascend':
         output_tuple = nonzero_forward_func(ms.Tensor(x), as_tuple)
-        output_tensor_tuple = ms.Tensor(x).nonzero(as_tuple)
         expect_tuple = generate_expect_forward_output(x, as_tuple)
-        for expect, output, output_tensor in zip(expect_tuple, output_tuple, output_tensor_tuple):
+        for expect, output in zip(expect_tuple, output_tuple):
             np.testing.assert_array_equal(output.asnumpy(), expect)
-            np.testing.assert_array_equal(output_tensor.asnumpy(), expect)
 
     x = np.array([1, 2, 2, 4, 3]).astype(np.float32)
     if not as_tuple:
@@ -95,7 +91,6 @@ def test_ops_nonzero_normal(context_mode, as_tuple):
         expect_tuple = np.array([[0, 0, 0, 0, 0]])
         for expect, output in zip(expect_tuple, output_tuple):
             np.testing.assert_array_equal(output.asnumpy(), expect)
-
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

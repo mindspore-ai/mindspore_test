@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import numpy as np
 import pytest
 
@@ -22,6 +20,10 @@ import mindspore.common.dtype as mstype
 from mindspore.common.initializer import Normal
 from mindspore import Tensor
 from mindspore import context
+from mindspore.device_context.gpu.op_tuning import conv_fprop_algo
+from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
+
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -35,8 +37,9 @@ def test_conv2d_depthwiseconv2d_str(algo, mode):
     Description: Test conv2d depth wise op
     Expectation: The value is processed as expected
     """
-    gpu_config = {"conv_fprop_algo": algo}
-    context.set_context(mode=mode, device_target="GPU", gpu_config=gpu_config)
+    context.set_context(mode=mode)
+    set_device()
+    conv_fprop_algo(algo)
     net = nn.Conv2d(128, 128, (2, 3), stride=4, pad_mode='valid', padding=0, group=128, weight_init='normal')
     input_data = Tensor(np.ones([3, 128, 127, 114]), dtype=mstype.float32)
     output = net(input_data)

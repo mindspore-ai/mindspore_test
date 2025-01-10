@@ -16,6 +16,8 @@
 
 #include <pybind11/operators.h>
 #include <stack>
+#include <memory>
+#include <string>
 #include "kernel/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/operator/composite/composite.h"
@@ -69,6 +71,7 @@ using TensorTransform = mindspore::parallel::TensorTransform;
 using OffloadContext = mindspore::OffloadContext;
 using mindspore::MsCtxParam;
 using PSContext = mindspore::ps::PSContext;
+using CreateGroupConfig = mindspore::distributed::collective::CreateGroupConfig;
 using CollectiveManager = mindspore::distributed::collective::CollectiveManager;
 using RecoveryContext = mindspore::distributed::recovery::RecoveryContext;
 using DeviceContextManager = mindspore::device::DeviceContextManager;
@@ -91,8 +94,13 @@ void RegProfiler(const py::module *m) {
     .def("step_profiling_enable", &Profiler::StepProfilingEnable, py::arg("enable_flag"),
          "enable or disable step profiling")
     .def("enable_op_time", &Profiler::EnableOpTime, "Enable op_time.")
-    .def("enable_profile_memory", &Profiler::EnableProfileMemory, "Enable profile_memory.");
+    .def("enable_profile_memory", &Profiler::EnableProfileMemory, "Enable profile_memory.")
+    .def("mstx_mark", &Profiler::MstxMark, py::arg("message"), py::arg("stream") = py::none(), "Mark a profiling point")
+    .def("mstx_range_start", &Profiler::MstxRangeStart, py::arg("message"), py::arg("stream") = py::none(),
+         "Start a profiling range")
+    .def("mstx_range_end", &Profiler::MstxRangeEnd, py::arg("range_id"), "End a profiling range");
 }
+
 void RegProfilerManager(const py::module *m) {
   (void)py::class_<ProfilerManager, std::shared_ptr<ProfilerManager>>(*m, "ProfilerManager")
     .def_static("get_instance", &ProfilerManager::GetInstance, "ProfilerManager get_instance.")
@@ -135,9 +143,13 @@ void RegLlmBoostBinder(const py::module *m) {
   (void)py::class_<pipeline::LlmBoostBinder, std::shared_ptr<pipeline::LlmBoostBinder>>(*m, "LlmBoostBinder")
     .def(py::init<const std::string &, const std::string &>())
     .def("init", &pipeline::LlmBoostBinder::Init, "init")
-    .def("forward", &pipeline::LlmBoostBinder::Forward, "forward")
+    .def("forward", &pipeline::LlmBoostBinder::Forward, py::arg("inputs"), py::arg("params") = py::str(""), "forward")
     .def("set_kvcache", &pipeline::LlmBoostBinder::SetKVCache, "set_kvcache")
-    .def("set_weights", &pipeline::LlmBoostBinder::SetWeight, "set_weights");
+    .def("set_weights", &pipeline::LlmBoostBinder::SetWeight, "set_weights")
+    .def("set_weights_map", &pipeline::LlmBoostBinder::SetWeightMap, "set_weights_map")
+    .def("init_model", &pipeline::LlmBoostBinder::InitModel, "init_model")
+    .def("add_flags", &pipeline::LlmBoostBinder::AddFlags, py::arg("is_first_iteration") = py::bool_(false),
+         "add_flags");
 }
 
 void RegLlmBoostUtils(py::module *m) { m->def("_set_format", &pipeline::SetFormat, "set_format"); }
@@ -166,6 +178,7 @@ void RegModule(py::module *m) {
   RegValues(m);
   mindspore::initializer::RegRandomNormal(m);
   RegMsContext(m);
+  RegDeviceManagerConf(m);
   RegSecurity(m);
   RegForkUtils(m);
   RegNumpyTypes(m);
@@ -173,15 +186,19 @@ void RegModule(py::module *m) {
   RegStress(m);
   RegSendRecv(m);
   RegCleanTdtChannel(m);
+  mindspore::dump::RegDumpControl(m);
   RegTFT(m);
   RegTensorDoc(m);
+  RegReuseDataPtr(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegCommHandle(m);
   mindspore::hal::RegMemory(m);
   mindspore::hal::RegUtils(m);
+  mindspore::runtime::RegRuntimeConf(m);
   mindspore::pynative::RegPyNativeExecutor(m);
   mindspore::pynative::RegisterPyBoostFunction(m);
+  mindspore::pynative::RegisterCustomizeFunction(m);
   mindspore::pynative::RegisterFunctional(m);
   mindspore::kernel::pyboost::RegDirectOps(m);
   mindspore::pijit::RegPIJitInterface(m);
@@ -281,7 +298,9 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_optimize_config", &GraphExecutorPy::GetOptimizeConfig, "Get the optimize config.")
     .def("set_config_passes", &GraphExecutorPy::SetConfigPasses, py::arg("passes") = py::list(),
          "Set the optimizer passes.")
-    .def("get_running_passes", &GraphExecutorPy::GetRunningPasses, "Get the running passes.");
+    .def("get_running_passes", &GraphExecutorPy::GetRunningPasses, "Get the running passes.")
+    .def("set_max_call_depth", &GraphExecutorPy::set_max_call_depth, py::arg("max_call_depth") = py::int_(1000),
+         "Get the running passes.");
 
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");
   (void)m.def("reset_op_id_with_offset", &mindspore::pipeline::ResetOpIdWithOffset, "Reset Operator Id With Offset");
@@ -402,6 +421,10 @@ PYBIND11_MODULE(_c_expression, m) {
          "Get pipeline segment split num.")
     .def("set_dump_local_norm", &ParallelContext::set_dump_local_norm, "Set dump_local_norm.")
     .def("get_dump_local_norm", &ParallelContext::dump_local_norm, "Get dump_local_norm.")
+    .def("set_dump_local_norm_path", &ParallelContext::set_dump_local_norm_path, "Set dump_local_norm_path.")
+    .def("get_dump_local_norm_path", &ParallelContext::dump_local_norm_path, "Get dump_local_norm_path.")
+    .def("set_dump_device_local_norm", &ParallelContext::set_dump_device_local_norm, "Set dump_device_local_norm.")
+    .def("get_dump_device_local_norm", &ParallelContext::dump_device_local_norm, "Get dump_device_local_norm.")
     .def("set_pipeline_interleave", &ParallelContext::set_pipeline_interleave, "Set pipeline interleave.")
     .def("get_pipeline_interleave", &ParallelContext::pipeline_interleave, "Get pipeline interleave.")
     .def("set_pipeline_scheduler", &ParallelContext::set_pipeline_scheduler, "Set pipeline scheduler.")
@@ -622,11 +645,17 @@ PYBIND11_MODULE(_c_expression, m) {
     .def(py::init())
     .def_static("reg_op", &OpLib::RegOp, "Register op info.");
 
+  (void)py::class_<CreateGroupConfig>(m, "CreateGroupConfig")
+    .def_readwrite("async", &CreateGroupConfig::async)
+    .def_readwrite("submit_now", &CreateGroupConfig::submit_now);
+
   (void)py::class_<CollectiveManager, std::shared_ptr<CollectiveManager>>(m, "CollectiveManager")
     .def_static("get_instance", &CollectiveManager::instance, "Get collective manager instance.")
     .def("initialized", &CollectiveManager::initialized, "Returns whether distributed module is initialized.")
-    .def("create_group", &CollectiveManager::CreateCommunicationGroup, "Create collective group.")
+    .def("create_group", &CollectiveManager::CreateCommunicationGroup, "Create collective group.",
+         pybind11::arg("group_name"), pybind11::arg("rank_list"), pybind11::arg("async") = CreateGroupConfig())
     .def("destroy_group", &CollectiveManager::DestroyCommunicationGroup, "Destroy collective group.")
+    .def("get_group_map", &CollectiveManager::get_group_map, "Get the group map")
     .def("get_local_rank_id", &CollectiveManager::GetLocalRankId, "Get the node rank id.")
     .def("get_local_group_size", &CollectiveManager::GetLocalGroupSize, "Get the node rank id.")
     .def("get_world_rank_from_group_rank", &CollectiveManager::GetWorldRankFromGroupRank,

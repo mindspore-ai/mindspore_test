@@ -34,7 +34,7 @@ bool DynamicStitchCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTen
   input_tuple_num_ = input_count / 2;
   int max_index = -1;
   for (size_t i = 0; i < input_tuple_num_; ++i) {
-    auto indice = reinterpret_cast<int32_t *>(inputs[i]->device_ptr());
+    auto indice = GetDeviceAddress<int32_t>(inputs, i);
     auto shape_size = GetShapeSize(inputs[i]->GetShapeVector());
     for (auto j = 0; j < shape_size; ++j) {
       max_index = std::max(indice[j], max_index);
@@ -59,12 +59,12 @@ bool DynamicStitchCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTen
     out_dims[num_out_dims - 1] *= result_shape_[in_dim];
   }
 
-  auto merged = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto merged = GetDeviceAddress<T>(outputs, kIndex0);
   size_t slice_size = LongToSize(out_dims[1]);
   size_t slice_bytes = slice_size * sizeof(T);
   for (size_t i = 0; i < input_tuple_num_; i++) {
-    auto indice = reinterpret_cast<int32_t *>(inputs[i]->device_ptr());
-    auto data = reinterpret_cast<T *>(inputs[i + input_tuple_num_]->device_ptr());
+    auto indice = GetDeviceAddress<int32_t>(inputs, i);
+    auto data = GetDeviceAddress<T>(inputs, i + input_tuple_num_);
     auto shape_size = GetShapeSize(inputs[i]->GetShapeVector());
     for (auto j = 0; j < shape_size; ++j) {
       auto ret = memcpy_s(merged + indice[j] * slice_size, slice_bytes, data + j * slice_size, slice_bytes);

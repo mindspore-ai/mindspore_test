@@ -1,7 +1,15 @@
 mindspore.ops
 ==============
 
+mindspore.ops provides a large number of function interfaces, including neural network functions, mathematical operation functions, Tensor operation functions, Parameter operation functions, differential functions and so on.
+
 For more information about dynamic shape support status, please refer to `Dynamic Shape Support Status of ops Interface <https://mindspore.cn/docs/en/master/api_python/dynamic_shape_func.html>`_ .
+
+The module import method is as follows:
+
+.. code-block::
+
+    from mindspore import ops
 
 Compared with the previous version, the added, deleted and supported platforms change information of `mindspore.ops` operators in MindSpore, please refer to the link `mindspore.ops API Interface Change <https://gitee.com/mindspore/docs/blob/master/resource/api_updates/func_api_updates_en.md>`_.
 
@@ -51,6 +59,7 @@ Neural Network
     mindspore.ops.max_unpool1d
     mindspore.ops.max_unpool2d
     mindspore.ops.max_unpool3d
+    mindspore.ops.incre_flash_attention
     mindspore.ops.prompt_flash_attention
     mindspore.ops.rms_norm
     mindspore.ops.unfold
@@ -801,3 +810,17 @@ CSR Functions
     mindspore.ops.csr_square
     mindspore.ops.csr_tan
     mindspore.ops.csr_tanh
+
+MC2 Functions
+-------------
+
+.. warning::
+    These are experimental APIs that are subject to change or deletion.
+
+.. msplatwarnautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.all_gather_matmul
+    mindspore.ops.matmul_reduce_scatter

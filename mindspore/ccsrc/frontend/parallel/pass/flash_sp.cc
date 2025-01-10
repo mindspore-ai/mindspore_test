@@ -1001,7 +1001,9 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
                            int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t input_layout,
                            int fa_index, int index, TypeId output_type_id, bool is_last_update = false,
                            bool need_split = false) {
-  CNodePtr split_max_0, split_sum_0, split_attn_0;
+  CNodePtr split_max_0;
+  CNodePtr split_sum_0;
+  CNodePtr split_attn_0;
   if (need_split) {
     auto split_max = NewSplitNode(*history_max, kDim2, kIndex2);
     *history_max = NewTupleGetItemNode(split_max, kIndex1);
@@ -2156,7 +2158,7 @@ CNodePtr DynCreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr
   return attention_results;
 }
 
-void CreateCommNodeForRA(const AnfNodePtr &query_node, const AnfNodePtr &value_node, const CNodePtr &last_fa_node,
+void CreateCommNodeForRA(AnfNodePtr *query_node, const AnfNodePtr &value_node, const CNodePtr &last_fa_node,
                          const CNodePtr &last_send_node, const CNodePtr &last_recv_node, int64_t pos,
                          int64_t send_rank_id, int64_t recv_rank_id, int fa_index, TypeId output_type_id, size_t step,
                          const Shape &kv_shape, AnfNodePtr *key_node, CNodePtr *send_node, CNodePtr *recv_node) {
@@ -2168,19 +2170,21 @@ void CreateCommNodeForRA(const AnfNodePtr &query_node, const AnfNodePtr &value_n
     neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex2;
   }
   if (pos % kIndex2 == kIndex0) {
-    kv_concat_tuple = CreateDepends(kv_concat_tuple, {query_node, last_fa_node, last_send_node, last_recv_node});
+    kv_concat_tuple = CreateDepends(kv_concat_tuple, {last_fa_node, last_recv_node});
     *send_node =
       NewSendNode(kv_concat_tuple, 0, send_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
     *recv_node =
       NewReceiveNode(*send_node, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
-    *key_node = CreateDepends(*key_node, {kv_concat_tuple, *recv_node});
+    *query_node = CreateDepends(*query_node, {*recv_node});
+    *query_node = CreateDepends(*query_node, {last_fa_node, last_recv_node});
   } else {
-    auto depend_node = CreateDepends(query_node, {kv_concat_tuple, last_fa_node, last_send_node, last_recv_node});
+    auto depend_node = CreateDepends(kv_concat_tuple, {last_fa_node, last_send_node});
     *recv_node =
       NewReceiveNode(depend_node, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
     *send_node = NewSendNode(CreateDepend(kv_concat_tuple, *recv_node), 0, send_rank_id, neigh_shape, output_type_id,
                              g_device_manager->world_group());
-    *key_node = CreateDepends(*key_node, {kv_concat_tuple, *send_node});
+    *query_node = CreateDepends(*query_node, {*send_node});
+    *query_node = CreateDepends(*query_node, {last_fa_node, last_send_node});
   }
   (*send_node)->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(GetFlashIndexString(fa_index, step)));
   (*recv_node)->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(GetFlashIndexString(fa_index, step)));
@@ -2245,11 +2249,9 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
     }
 
     if (i != sp_num - kIndex1) {
-      CreateCommNodeForRA(query_node, value_node, last_fa_node, last_send_node, last_recv_node, pos, send_rank_id,
+      CreateCommNodeForRA(&query_node, value_node, last_fa_node, last_send_node, last_recv_node, pos, send_rank_id,
                           recv_rank_id, fa_index, output_type_id, i, kv_shape, &key_node, &send_node, &recv_node);
     }
-
-    key_node = CreateDepends(key_node, {last_fa_node, last_send_node, last_recv_node});
 
     SetFAInputs(query_node, key_node, value_node, attn_node, operator_info, eod_masks, sp_num, i, pos,
                 Shape{fa_s1, fa_s2}, &fa_inputs, &first_actual_mask, &full_mask);
@@ -2340,7 +2342,7 @@ CNodePtr DynCreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr 
     }
 
     if (i != sp_num - kIndex1) {
-      CreateCommNodeForRA(query_node, value_node, last_fa_node, last_send_node, last_recv_node, pos, send_rank_id,
+      CreateCommNodeForRA(&query_node, value_node, last_fa_node, last_send_node, last_recv_node, pos, send_rank_id,
                           recv_rank_id, fa_index, output_type_id, i, kv_shape, &key_node, &send_node, &recv_node);
     }
 
@@ -2529,7 +2531,9 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
   auto pos = GetPosInSpDevice(flash_score_info_ptr, static_cast<int>(rank_id));
   CNodePtr local_fa_node;
   CNodePtr last_fa_node;
-  CNodePtr history_max, history_sum, acc_attention;
+  CNodePtr history_max;
+  CNodePtr history_sum;
+  CNodePtr acc_attention;
   CNodePtr last_send_node;
   CNodePtr last_recv_node;
   CNodePtr send_node;
@@ -2603,6 +2607,9 @@ void CreateAndReplaceRingAttentionFAScore(const FuncGraphManagerPtr &manager,
   CNodePtr cnode;
   bool has_dyn_shape = IsDynamicShape(fa_score_node);
   if (enable_ra_context_parallel) {
+    if (has_dyn_shape) {
+      MS_LOG(EXCEPTION) << "Ring attention cp don't support dynamic shape currently.";
+    }
     cnode = CreateReplaceRingAttentionCP(manager, origin_nodes_topological, fa_score_node, fsp_info, i);
   } else if (use_send_recv) {
     if (!has_dyn_shape) {

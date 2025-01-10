@@ -17,6 +17,7 @@ Test module for testing silent check.
 """
 import os
 from tests.mark_utils import arg_mark
+import pytest
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -29,14 +30,15 @@ def test_silent_check1():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     py_file = 'silent_check_last_grad1.py'
     ret1 = os.system(f"bash {sh_path}/singlerun_silent_check.sh {sh_path}/{py_file}")
-    ret2 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 == 0
     assert ret2 == 0
     os.system(f'rm -rf ms_graphs log_output ascend_log')
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_silent_check2():
+@pytest.mark.parametrize("mode", ["kbk", "pyboost"])
+def test_silent_check2(mode):
     """
     Feature: Test silent check for last grad node
     Description: Test silent check in sink mode
@@ -44,8 +46,8 @@ def test_silent_check2():
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     py_file = 'silent_check_last_grad2.py'
-    ret1 = os.system(f"bash {sh_path}/singlerun_silent_check.sh {sh_path}/{py_file}")
-    ret2 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
+    ret1 = os.system(f"bash {sh_path}/singlerun_silent_check.sh {sh_path}/{py_file} {mode}")
+    ret2 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 == 0
     assert ret2 == 0
     os.system(f'rm -rf ms_graphs log_output ascend_log')

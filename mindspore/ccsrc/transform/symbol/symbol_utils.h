@@ -111,7 +111,7 @@ namespace transform {
 #define HAS_ASCEND_API(func_name) HasAscendApi(mindspore::transform::func_name##_)
 
 std::string GetAscendPath();
-void *GetLibHandler(const std::string &lib_path);
+void *GetLibHandler(const std::string &lib_path, bool if_global = false);
 void LoadAscendApiSymbols();
 void LoadSimulationApiSymbols();
 }  // namespace transform

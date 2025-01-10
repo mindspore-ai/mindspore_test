@@ -75,8 +75,6 @@ constexpr auto kAsinOpName = "Asin";
 constexpr auto kAsinGradOpName = "AsinGrad";
 constexpr auto kAsinhOpName = "Asinh";
 constexpr auto kAsinhGradOpName = "AsinhGrad";
-constexpr auto kCdistOpName = "Cdist";
-constexpr auto kCdistGradOpName = "CdistGrad";
 constexpr auto kMatrixInverseOpName = "MatrixInverse";
 constexpr auto kMatrixSolveOpName = "MatrixSolve";
 constexpr auto kMatrixPowerOpName = "MatrixPower";
@@ -200,6 +198,8 @@ constexpr auto kEpsOpName = "Eps";
 constexpr auto kMatmulReduceScatterOpName = "MatmulReduceScatter";
 constexpr auto kAllGatherMatmulOpName = "AllGatherMatmul";
 constexpr auto kQuantBatchMatmulAllReduceOpName = "QuantBatchMatmulAllReduce";
+constexpr auto kAlltoAllAllGatherBatchMatMulOpName = "AlltoAllAllGatherBatchMatMul";
+constexpr auto kBatchMatMulReduceScatterAlltoAllOpName = "BatchMatMulReduceScatterAlltoAll";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_BASE_MATH_OP_NAME_H_

@@ -1,0 +1,28 @@
+#operator inplace_normal (Tensor.normal_)
+inplace_normal:
+  args:
+    input:
+      dtype: tensor
+    mean:
+      dtype: number
+    std:
+      dtype: number
+    seed:
+      dtype: tensor
+    offset:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  class:
+    name: InplaceNormal
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceNormalAscend

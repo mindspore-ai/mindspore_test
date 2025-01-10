@@ -9,7 +9,8 @@ macro(run_shell_script script)
             ERROR_VARIABLE error
     )
     if(NOT result EQUAL 0)
-        message(FATAL_ERROR "Custom ascendc opp compile failed: ${error}")
+        message(FATAL_ERROR "Custom ascendc opp compile failed, please see\
+        '${CMAKE_SOURCE_DIR}/custom_workspace/custom_compiler/build.log' for more detailed info.")
     endif()
     message(STATUS "Custom ascendc opp compile succeed.")
 endmacro()

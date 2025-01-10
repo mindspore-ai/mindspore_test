@@ -86,15 +86,15 @@ void MatmulDoubleCpuKernelFunc::MatMul(const std::vector<kernel::KernelTensor *>
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMatMulOutputsNum, kernel_name_);
   if (batch_ > 1) {
     for (size_t index = 0; index < batch_; ++index) {
-      const auto a_addr = reinterpret_cast<T *>(inputs[0]->device_ptr()) + index * a_row_ * a_col_;
-      const auto b_addr = reinterpret_cast<T *>(inputs[1]->device_ptr()) + index * b_row_ * b_col_;
-      auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr()) + index * out_row_ * out_col_;
+      const auto a_addr = GetDeviceAddress<T>(inputs, 0) + index * a_row_ * a_col_;
+      const auto b_addr = GetDeviceAddress<T>(inputs, 1) + index * b_row_ * b_col_;
+      auto output_addr = GetDeviceAddress<T>(outputs, 0) + index * out_row_ * out_col_;
       ComputeMatMulOutput(a_addr, b_addr, output_addr);
     }
   } else {
-    const auto a_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-    const auto b_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-    auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+    const auto a_addr = GetDeviceAddress<T>(inputs, 0);
+    const auto b_addr = GetDeviceAddress<T>(inputs, 1);
+    auto output_addr = GetDeviceAddress<T>(outputs, 0);
     ComputeMatMulOutput(a_addr, b_addr, output_addr);
   }
 }

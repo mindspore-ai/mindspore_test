@@ -15,6 +15,7 @@
 """lenet_train_export."""
 
 import sys
+import os
 import numpy as np
 from train_utils import save_inout, train_wrap
 from official.cv.lenet.src.lenet import LeNet5
@@ -22,7 +23,8 @@ import mindspore.common.dtype as mstype
 from mindspore import context, Tensor, nn
 from mindspore.train.serialization import export
 
-context.set_context(mode=context.GRAPH_MODE, device_target="GPU", save_graphs=False)
+context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
+os.environ["MS_DEV_SAVE_GRAPHS"] = "0"
 
 n = LeNet5()
 loss_fn = nn.MSELoss()

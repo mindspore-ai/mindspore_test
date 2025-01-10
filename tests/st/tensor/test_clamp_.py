@@ -14,7 +14,7 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import Tensor, dtype as mstype
+from mindspore import ops, Tensor, jit, JitConfig, dtype as mstype
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -40,6 +40,16 @@ def clamp_forward_func_grad(x, min_, max_):
     return x.clamp_(min_, max_)
 
 
+def clamp_backward_func(x, min_, max_):
+    grad = ops.GradOperation(get_all=True)
+    return grad(clamp_forward_func_grad)(x, min_, max_)
+
+
+def expect_backward_func(x, min_, max_):
+    grad = ops.GradOperation(get_all=True)
+    return grad(generate_expect_forward_output)(x, min_, max_)
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 def test_mint_clamp_normal0(context_mode):
@@ -51,7 +61,7 @@ def test_mint_clamp_normal0(context_mode):
     ms.context.set_context(mode=context_mode)
     x = np.array([[10, 0, 0, -2], [5.3, 5.2, 11, 8]])
     x = Tensor(x, mstype.float32)
-    # min & max
+    # input_min & input_max
     clamp_forward_func(x, -1, 9)
     expect = Tensor(
         np.array([[9, 0, 0, -1], [5.3, 5.2, 9, 8]]), mstype.float32)
@@ -59,40 +69,57 @@ def test_mint_clamp_normal0(context_mode):
     assert np.allclose(x.asnumpy(), expect.asnumpy(), rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("context_mode", ['pynative', 'KBK'])
 def test_mint_clamp_normal1(context_mode):
     """
     Feature: pyboost function.
-    Description: test function clamp forward and backward.
+    Description: test function clamp_ forward and backward.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
-    x = np.array([[10, 0, 0, -2], [5.3, 5.2, 11, 8]])
-    x = Tensor(x, mstype.float32)
-    # min & max
-    clamp_forward_func(x, -1, None)
-    expect = Tensor(
-        np.array([[10, 0, 0, -1], [5.3, 5.2, 11, 8]]), mstype.float32)
-    assert np.allclose(x.asnumpy(), expect.asnumpy(), rtol=1e-3)
+    x = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
+    input_min = 3
+    input_max = 6
+    expect_out = generate_expect_forward_output(x, input_min, input_max)
+    expect_grad = expect_backward_func(x, input_min, input_max)
+    if context_mode == 'pynative':
+        output = clamp_forward_func(x, input_min, input_max)
+        grad = clamp_backward_func(x, input_min, input_max)
+    else:
+        output = (jit(clamp_forward_func, jit_config=JitConfig(jit_level="O0")))(
+            x, input_min, input_max)
+        grad = (jit(clamp_backward_func, jit_config=JitConfig(jit_level="O0")))(
+            x, input_min, input_max)
+    np.allclose(expect_out, output.asnumpy(), rtol=1e-5)
+    np.allclose(expect_grad, grad[0].asnumpy(), rtol=1e-5)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("context_mode", ['pynative', 'KBK'])
 def test_mint_clamp_normal2(context_mode):
     """
     Feature: pyboost function.
-    Description: test function clamp forward and backward.
+    Description: test function clamp_ forward and backward.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
-    x = np.array([[10, 0, 0, -2], [5.3, 5.2, 11, 8]])
-    x = Tensor(x, mstype.float32)
-    # min & max
-    clamp_forward_func(x, None, 9)
-    expect = Tensor(
-        np.array([[9, 0, 0, -2], [5.3, 5.2, 9, 8]]), mstype.float32)
-    assert np.allclose(x.asnumpy(), expect.asnumpy(), rtol=1e-3)
+    x = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
+    input_min = ms.Tensor(generate_random_input((3, 4, 1), np.float32))
+    input_max = ms.Tensor(generate_random_input((3, 1, 1), np.float32))
+    expect_out = generate_expect_forward_output(x, input_min, input_max)
+    expect_grad, expect_min, expect_max = expect_backward_func(
+        x, input_min, input_max)
+    if context_mode == 'pynative':
+        output = clamp_forward_func(x, input_min, input_max)
+        grad, grad_min, grad_max = clamp_backward_func(x, input_min, input_max)
+    else:
+        output = (jit(clamp_forward_func, jit_config=JitConfig(jit_level="O0")))(
+            x, input_min, input_max)
+        grad, grad_min, grad_max = (
+            jit(clamp_backward_func, jit_config=JitConfig(jit_level="O0")))(x, input_min, input_max)
+    np.allclose(expect_out, output.asnumpy(), rtol=1e-5)
+    np.allclose(expect_grad, grad.asnumpy(), rtol=1e-5)
+    np.allclose(expect_min, grad_min.asnumpy(), rtol=1e-5)
+    np.allclose(expect_max, grad_max.asnumpy(), rtol=1e-5)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

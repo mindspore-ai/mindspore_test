@@ -236,6 +236,11 @@ AnfNodePtr CreateLambApplyWeightAssignNode(const FuncGraphPtr &graph, const AnfN
 }
 }  // namespace
 
+std::vector<std::string> LambFissionGe::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimLamb->name()};
+  return ret;
+}
+
 const BaseRef LambFissionGe::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimLamb, Xs});

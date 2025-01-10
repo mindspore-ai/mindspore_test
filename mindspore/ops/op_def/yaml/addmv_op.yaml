@@ -1,0 +1,25 @@
+#operator addmv
+addmv:
+  args:
+    input:
+      dtype: tensor
+    mat:
+      dtype: tensor
+    vec:
+      dtype: tensor
+    beta:
+      dtype: number
+      default: 1
+    alpha:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: AddmvAscend
+    CPU: None
+    GPU: None

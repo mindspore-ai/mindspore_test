@@ -179,6 +179,7 @@ std::map<string, ValuePtr> GenerateWeightsValueMap(const py::dict &weights) {
 
 std::pair<FuncGraphPtr, LayoutMap> LoadFuncGraphFromMindIR(const py::dict &weights, bool has_parallel_info,
                                                            size_t idx) {
+  MsProfileStatGuard stat_guard("LoadFuncGraphFromMindIR", "compile_cache", true);
   LayoutMap layout_map;
   std::string compile_cache_path = GetCompileCachePath(idx);
   auto realpath = Common::CreatePrefixPath(compile_cache_path, true);
@@ -445,6 +446,7 @@ FuncGraphPtr CompileCacheManager::GetCachedFuncGraph(const FuncGraphManagerPtr &
   std::string parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
   bool has_parallel_info = false;
   if ((parallel_mode == parallel::kAutoParallel) || (parallel_mode == parallel::kSemiAutoParallel)) {
+    MsProfileStatGuard stat_guard("CreateParallelGroups", "compile_cache", true);
     if (!CreateParallelGroupsByCkptFile(compile_cache_id_)) {
       MS_LOG(WARNING) << "Failed to create the parallel groups info. Execute all the compilation actions.";
       return nullptr;

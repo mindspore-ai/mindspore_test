@@ -204,7 +204,7 @@ def test_grid_sampler_vmap(mode):
     assert np.allclose(out.asnumpy(), expect_out, 1e-04, 1e-04)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
 def test_grid_sampler_5d_forward(mode):

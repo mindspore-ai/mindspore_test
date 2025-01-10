@@ -28,7 +28,6 @@ tensor::BaseTensorPtr InplaceClampScalarAscendCustomize(const std::shared_ptr<Op
                                                         const std::optional<ScalarPtr> &min,
                                                         const std::optional<ScalarPtr> &max) {
   MS_LOG(DEBUG) << "Call aclnnClamp start";
-  OpRunner::InferOpOutput(op, input_tensor, min, max);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
 
   op->set_outputs({input_tensor});

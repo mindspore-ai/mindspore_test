@@ -148,13 +148,13 @@ bool SparseCountSparseOutputCpuKernelMod::LaunchKernel(const std::vector<kernel:
     return true;
   }
 
-  const auto *indices_addr = reinterpret_cast<int64_t *>(inputs[0]->device_ptr());
-  const auto *values_addr = reinterpret_cast<I *>(inputs[1]->device_ptr());
-  const auto *shape_ptr = reinterpret_cast<int64_t *>(inputs[2]->device_ptr());
-  const auto *weights = reinterpret_cast<T *>(inputs[3]->device_ptr());
-  auto *output_indices = reinterpret_cast<int64_t *>(outputs[0]->device_ptr());
-  auto *output_values = reinterpret_cast<T *>(outputs[1]->device_ptr());
-  auto *output_shape = reinterpret_cast<int64_t *>(outputs[2]->device_ptr());
+  const auto *indices_addr = GetDeviceAddress<int64_t>(inputs, kIndex0);
+  const auto *values_addr = GetDeviceAddress<I>(inputs, kIndex1);
+  const auto *shape_ptr = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  const auto *weights = GetDeviceAddress<T>(inputs, kIndex3);
+  auto *output_indices = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto *output_values = GetDeviceAddress<T>(outputs, kIndex1);
+  auto *output_shape = GetDeviceAddress<int64_t>(outputs, kIndex2);
   const size_t indices_length = inputs[0]->size() / sizeof(int64_t);
   bool use_weights = inputs[3]->size() > 0;
   bool is_1d = shape_shape_[0] == 1;

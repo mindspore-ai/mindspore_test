@@ -10,7 +10,7 @@ mindspore.mint.var
     .. math::
         \delta ^2 = \frac{1}{\max(0, N - \delta N)}\sum^{N - 1}_{i = 0}(x_i - \bar{x})^2
     
-    其中 :math:`x` 表示用来计算方差的样本集, :math:`\bar{x}` 表示样本的均值, :math:`N` 表示样本的数量，:math:`\delta N` 则为 `correction` 的值。
+    其中 :math:`x` 表示用来计算方差的样本集， :math:`\bar{x}` 表示样本的均值， :math:`N` 表示样本的数量，:math:`\delta N` 则为 `correction` 的值。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
@@ -34,7 +34,7 @@ mindspore.mint.var
     异常：
         - **TypeError** - 如果 `input` 不是Tensor。
         - **TypeError** - 如果 `input` 的数据类型不是bfloat16，float16或flaot32。
-        - **TypeError** - 如果 `dim` 不是None，int或tuple类型。
+        - **TypeError** - 如果 `dim` 不是None，int，list或tuple类型。
         - **TypeError** - 如果 `correction` 不是int类型。
         - **TypeError** - 如果 `keepdim` 不是bool类型。
         - **ValueError** - 如果 `dim` 不在 :math:`[-input.ndim, input.ndim)` 范围内。

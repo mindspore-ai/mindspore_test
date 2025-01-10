@@ -84,14 +84,14 @@ int SparseSparseMinimumCpuKernelMod::Resize(const std::vector<KernelTensor *> &i
 template <typename T>
 void SparseSparseMinimumCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x1_indices_addr = static_cast<int64_t *>(inputs[0]->device_ptr());
-  auto x1_values_addr = static_cast<T *>(inputs[1]->device_ptr());
-  auto x1_shape_addr = static_cast<int64_t *>(inputs[2]->device_ptr());
-  auto x2_indices_addr = static_cast<int64_t *>(inputs[3]->device_ptr());
-  auto x2_values_addr = static_cast<T *>(inputs[4]->device_ptr());
-  auto x2_shape_addr = static_cast<int64_t *>(inputs[5]->device_ptr());
-  auto y_indices_addr = static_cast<int64_t *>(outputs[0]->device_ptr());
-  auto y_values_addr = static_cast<T *>(outputs[1]->device_ptr());
+  auto x1_indices_addr = GetDeviceAddress<int64_t>(inputs, kIndex0);
+  auto x1_values_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto x1_shape_addr = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  auto x2_indices_addr = GetDeviceAddress<int64_t>(inputs, kIndex3);
+  auto x2_values_addr = GetDeviceAddress<T>(inputs, kIndex4);
+  auto x2_shape_addr = GetDeviceAddress<int64_t>(inputs, kIndex5);
+  auto y_indices_addr = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto y_values_addr = GetDeviceAddress<T>(outputs, kIndex1);
 
   for (size_t n = 0; n < static_cast<size_t>(num_dims_); n++) {
     if (x1_shape_addr[n] != x2_shape_addr[n]) {

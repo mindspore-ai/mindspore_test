@@ -82,7 +82,7 @@ class AscendVmmAdapter {
       return false;
     }
 
-    if (common::IsNeedProfileMemory()) {
+    if (common::IsDryRun()) {
       MS_LOG(INFO) << "Dry run, vmm is disabled.";
       return false;
     }
@@ -107,10 +107,8 @@ class AscendVmmAdapter {
       return false;
     }
 
-    // Not open vmm by default in PyNative mode
-    bool is_enable_vmm = ctx->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode;
-    MS_LOG(INFO) << "VMM is " << (is_enable_vmm ? "enabled" : "disabled") << " by default.";
-    return is_enable_vmm;
+    MS_LOG(INFO) << "VMM is enabled.";
+    return true;
   }
 
  private:

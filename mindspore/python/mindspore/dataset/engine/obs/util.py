@@ -42,6 +42,14 @@ obsClient = ObsClient(
 def get_used_disk_per():
     """ Get the disk usage of working directory."""
 
+    if os.path.exists(config.WORKING_PATH) and not os.access(config.WORKING_PATH, os.R_OK | os.W_OK | os.X_OK):
+        err_msg =\
+                "Permission denied:'{}'. Suggestion: " \
+                "1) It is recommended to manually create the {} directory and add read/write permissions to it. " \
+                "2) If you can't create, we suggest you download MindRecord manually and "\
+                "read it using the MindDataset interface.".format(config.WORKING_PATH, config.WORKING_PATH)
+        raise RuntimeError(err_msg)
+
     if not os.path.exists(config.WORKING_PATH):
         try:
             os.makedirs(config.WORKING_PATH)

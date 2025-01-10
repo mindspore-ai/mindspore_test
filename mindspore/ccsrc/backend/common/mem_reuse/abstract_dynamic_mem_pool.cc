@@ -20,12 +20,16 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/debug/common.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/utils.h"
+#ifdef ENABLE_DEBUGGER
+#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#endif
 #include "utils/convert_utils_base.h"
 #include "utils/file_utils.h"
 #include "utils/log_adapter.h"
@@ -33,7 +37,6 @@
 
 namespace mindspore {
 namespace device {
-
 LockGuard::LockGuard(const Lock &lock) : lock_(const_cast<Lock *>(&lock)) { lock_->lock(); }
 
 LockGuard::~LockGuard() { lock_->unlock(); }
@@ -205,6 +208,22 @@ MemBuf *MemBufAllocator::MallocExpandBlock(size_t size) {
   return MapAndSplitMemBuf(candidate, size);
 }
 
+void MemBufAllocator::Initialize(size_t size) {
+  MS_LOG(INFO) << "Initialize allocator : " << BriefInfo() << " with size : " << size << ".";
+  if (enable_eager_free_) {
+    MS_LOG(INFO) << "Skip initialization of allocator, since vmm is enabled.";
+    return;
+  }
+  MemBlock *mem_block = ExpandBlock(size);
+  if (mem_block == nullptr) {
+    MS_LOG(WARNING) << "Initialize allocator failed, size : " << size << ".";
+    return;
+  }
+  MemBuf *mem_buf =
+    new MemBuf(mem_block->size_, mem_block->addr_, mem_block->stream_id_, mem_block, MemBufStatus::kMemBufIdle);
+  (void)free_mem_bufs_.emplace(mem_buf);
+}
+
 const std::pair<size_t, size_t> MemBufAllocator::FreeIdleMemsByEagerFree() {
   // Free all idle mem bufs.
   size_t eager_free_size = 0;
@@ -216,10 +235,11 @@ const std::pair<size_t, size_t> MemBufAllocator::FreeIdleMemsByEagerFree() {
   // Do eager free on eager free mem bufs.
   size_t real_free_size = 0;
   for (auto mem_buf : eager_free_mem_bufs_) {
-    MS_LOG(DEBUG) << "Eager free mem buf : " << mem_buf << ", details : " << mem_buf->ToJson() << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Eager free mem buf : " << mem_buf << ", details : " << mem_buf->ToJson()
+                                         << ".";
     real_free_size += mem_eager_freer_(mem_buf->addr_, mem_buf->size_);
   }
-  MS_LOG(INFO) << "Free idle mems by eager free, egaer_free_size : " << eager_free_size
+  MS_LOG(INFO) << "Free idle mems by eager free, eager_free_size : " << eager_free_size
                << ", real_free_size : " << real_free_size << ".";
   return std::make_pair(eager_free_size, real_free_size);
 }
@@ -235,13 +255,13 @@ std::string MemBufAllocator::DumpStateInfo() const {
   }
   ss << "\tMem block total size : " << mem_block_size << "\n";
 
-  auto mem_buf_accumulter = [](size_t size, MemBuf *const &left) { return left->size_ + size; };
+  auto mem_buf_accumulator = [](size_t size, MemBuf *const &left) { return left->size_ + size; };
   size_t init_value = 0;
-  size_t free_size = std::accumulate(free_mem_bufs_.begin(), free_mem_bufs_.end(), init_value, mem_buf_accumulter);
+  size_t free_size = std::accumulate(free_mem_bufs_.begin(), free_mem_bufs_.end(), init_value, mem_buf_accumulator);
   ss << "\tFree mem buf total size : " << free_size << ", total count : " << free_mem_bufs_.size() << "\n";
 
   size_t eager_free_size =
-    std::accumulate(eager_free_mem_bufs_.begin(), eager_free_mem_bufs_.end(), init_value, mem_buf_accumulter);
+    std::accumulate(eager_free_mem_bufs_.begin(), eager_free_mem_bufs_.end(), init_value, mem_buf_accumulator);
   ss << "\tEager free mem buf total size : " << eager_free_size << ", total count : " << eager_free_mem_bufs_.size()
      << "\n";
 
@@ -313,12 +333,13 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
 MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
   MemBlock *mem_block = mem_block_expander_(size);
   if (mem_block == nullptr) {
-    MS_LOG(ERROR) << "Expand block failed, expand size : 0.";
+    MS_LOG(ERROR) << "Expand block failed, expand size : 0, memory is not enough";
     return nullptr;
   }
 
   if (mem_block->size_ < size) {
-    MS_LOG(ERROR) << "Expand block failed, expand size : " << mem_block->size_ << ".";
+    MS_LOG(ERROR) << "Expand block failed, expand size : " << mem_block->size_
+                  << " is less than require size : " << size << ".";
   }
 
   (void)mem_blocks_.emplace_back(mem_block);
@@ -326,6 +347,30 @@ MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
 }
 
 AbstractDynamicMemPool::AbstractDynamicMemPool() {}
+
+void AbstractDynamicMemPool::Initialize(size_t init_size, size_t increase_size, size_t max_size) {
+  const auto &value = common::GetConfigValue(common::kAllocConf, common::kAllocDefragMemoryStepFreq);
+  std::string dump_key = "dump";
+  enable_dump_memory_ = value.find(dump_key) != std::string::npos;
+
+  if (init_size == 0) {
+    MS_LOG(INFO) << "Skip initialization of memory pool since init size is not configured.";
+    return;
+  }
+
+  LockGuard lock(lock_);
+  MS_LOG(INFO) << "Initialize dynamic memory pool, init size : " << init_size << ", increase size : " << increase_size
+               << ", max size : " << max_size << ".";
+  init_size_ = init_size >> 1;
+  increase_size_ = increase_size;
+  max_size_ = max_size;
+
+  // Do initialization with init size.
+  auto persistent_allocator = GetMemBufAllocator(init_size_, true, kDefaultStreamIndex);
+  persistent_allocator->Initialize(AlignMemorySize(init_size_));
+  auto common_allocator = GetMemBufAllocator(init_size_, false, kDefaultStreamIndex);
+  common_allocator->Initialize(AlignMemorySize(init_size_));
+}
 
 void AbstractDynamicMemPool::ReleaseDeviceRes() {
   LockGuard lock(lock_);
@@ -372,20 +417,25 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
   return mem_buf_allocator.first->addr_;
 }
 
+// Strategy when vmm is disable:
+//    Persistent memory:  First malloc form its own pool, if fails, try to malloc from common pool.
+//    Common memory:  First malloc from its own pool, if fails, it will try to expand the pool.
+//                    If the expansion fails, try to malloc from persistent pool.
 std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size, bool from_persistent_mem,
                                                                            uint32_t stream_id) {
   auto allocator = GetMemBufAllocator(align_size, from_persistent_mem, stream_id);
   auto mem_buf = allocator->Malloc(align_size);
   if (MS_UNLIKELY(mem_buf == nullptr)) {
-    // Enable malloc from another allocator when from_persisatent_mem is true and vmm is not enabled.
+    // Enable malloc from another allocator when from_persistent_mem is true and vmm is not enabled.
     if (!enable_vmm_ && from_persistent_mem) {
-      auto another_allocator = GetMemBufAllocator(align_size, !from_persistent_mem, stream_id);
-      mem_buf = another_allocator->Malloc(align_size);
-      allocator = another_allocator;
+      auto common_allocator = GetMemBufAllocator(align_size, false, stream_id);
+      mem_buf = common_allocator->Malloc(align_size);
+      allocator = common_allocator;
     }
 
     if (MS_UNLIKELY(mem_buf == nullptr)) {
       if (IsEnableEagerFree() || enable_vmm_) {
+        WaitPipelineHelper();
         if (!SyncAllStreams()) {
           MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
           return std::make_pair(nullptr, nullptr);
@@ -396,11 +446,22 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
       if (MS_UNLIKELY(mem_buf == nullptr)) {
         mem_buf = allocator->MallocExpandBlock(align_size);
         if (MS_UNLIKELY(mem_buf == nullptr)) {
-          MS_LOG(INFO) << "Alloc tensor mem failed and try to sync all events to release memory.";
-          (void)DoSyncAllEvents();
-          mem_buf = allocator->Malloc(align_size);
+          if (MS_LIKELY(!from_persistent_mem)) {
+            // Common pool expand block failed, try to malloc from persistent pool.
+            auto persistent_allocator = GetMemBufAllocator(align_size, true, stream_id);
+            mem_buf = persistent_allocator->Malloc(align_size);
+            if (MS_LIKELY(mem_buf != nullptr)) {
+              allocator = persistent_allocator;
+            }
+          }
+
           if (MS_UNLIKELY(mem_buf == nullptr)) {
-            return std::make_pair(nullptr, nullptr);
+            MS_LOG(INFO) << "Alloc tensor mem failed and try to sync all events to release memory.";
+            (void)DoSyncAllEvents();
+            mem_buf = allocator->Malloc(align_size);
+            if (MS_UNLIKELY(mem_buf == nullptr)) {
+              return std::make_pair(nullptr, nullptr);
+            }
           }
         }
       }
@@ -505,12 +566,12 @@ MemBufAllocator *AbstractDynamicMemPool::GetMemBufAllocator(size_t size, bool fr
   return allocator.get();
 }
 
-// keep addrs is in free addrs, so here find mem bufs first
-// and then, traverse keep addrs and spilt candidates
+// Keep addrs is in free addrs, so here find mem bufs first.
+// And then, traverse keep addrs and spilt candidates.
 void AbstractDynamicMemPool::FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs,
                                                 const std::vector<DeviceMemPtr> &keep_addrs,
                                                 const std::vector<size_t> &keep_addr_sizes) {
-  MS_LOG(DEBUG) << "Free part tensor mems.";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Free part tensor mems.";
   LockGuard lock(lock_);
   (void)DoFreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
 }
@@ -556,7 +617,7 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
                       << ", keep start : " << keep_start << ", keep end : " << keep_end << ".";
       continue;
     }
-    // Split candidates. If keep start euqal to base start, split mem buf into two parts, or three parts.
+    // Split candidates. If keep start equal to base start, split mem buf into two parts, or three parts.
     // First construct keep mem buf and set it into addr_mem_buf_allocators_, then process head buf and tail buf.
     MemBuf *keep_mem_buf = nullptr;
     if (keep_start == base_start) {
@@ -574,7 +635,7 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
       mem_buf->size_ = prev_remain_size;
     }
     (void)mem_bufs.emplace_back(keep_mem_buf);
-    MS_LOG(DEBUG) << "keep_mem_buf : " << keep_mem_buf->ToJson() << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "keep_mem_buf : " << keep_mem_buf->ToJson() << ".";
     // Process last mem buf.
     if (keep_end < base_end) {
       void *last_addr = static_cast<uint8_t *>(keep_mem_buf->addr_) + keep_mem_buf->size_;
@@ -585,7 +646,7 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
       if (candidates.count(last_mem_buf->addr_) > 0) {
         MS_LOG(INFO) << "Duplicate address : " << last_mem_buf->addr_ << ".";
       }
-      MS_LOG(DEBUG) << "last mem buf : " << last_mem_buf->ToJson() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "last mem buf : " << last_mem_buf->ToJson() << ".";
       (void)candidates.emplace(last_mem_buf->addr_, std::make_pair(last_mem_buf, allocator));
     }
   }
@@ -646,7 +707,7 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
     return MmapDeviceMem(size, addr);
   };
   std::function<size_t(void *addr, const size_t size)> mem_eager_freer = [&](void *addr, const size_t size) {
-    MS_LOG(DEBUG) << "Eager free addr : " << addr << ", size : " << size << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Eager free addr : " << addr << ", size : " << size << ".";
     return FreeDeviceMemByEagerFree(addr, size);
   };
 
@@ -654,12 +715,12 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
                                            IsEnableEagerFree() || IsEnableVmm(), is_persistent, stream_id);
 }
 
-// Element in vector : memory_stream_id, addr
+// Element in vector : <memory_stream_id, addr>
 bool AbstractDynamicMemPool::RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
                                          const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
                                          const DeviceEventPtr &event) {
-  MS_LOG(DEBUG) << "Record event for task id on stream : " << task_id_on_stream
-                << ", user stream id : " << user_stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Record event for task id on stream : " << task_id_on_stream
+                                       << ", user stream id : " << user_stream_id << ".";
   LockGuard lock(lock_);
   for (auto &[memory_stream_id, addr] : memory_stream_addresses) {
     auto &&it = addr_mem_buf_allocators_.find(addr);
@@ -668,20 +729,21 @@ bool AbstractDynamicMemPool::RecordEvent(int64_t task_id_on_stream, uint32_t use
       if (mem_buf->IsEventNotUsed()) {
         mem_stat_.used_by_event_size_ += mem_buf->size_;
       }
-      MS_LOG(DEBUG) << "Record event for : " << mem_buf->ToJson() << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Record event for : " << mem_buf->ToJson() << ".";
       (void)mem_buf->RecordEvent(task_id_on_stream, user_stream_id, event);
       (void)stream_pair_mem_bufs_[std::make_pair(user_stream_id, memory_stream_id)].emplace(mem_buf);
     } else {
       // Output of somas sub graph may be used by somas sub graph inner node, address may not be kept in mem pool.
-      MS_LOG(DEBUG) << "Unknown address : " << addr << ".";
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Unknown address : " << addr << ".";
     }
   }
   return true;
 }
 
 bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
-  MS_LOG(DEBUG) << "Wait event for task id on stream : " << task_id_on_stream << ", user stream id : " << user_stream_id
-                << ", memory stream id : " << memory_stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for task id on stream : " << task_id_on_stream
+                                       << ", user stream id : " << user_stream_id
+                                       << ", memory stream id : " << memory_stream_id << ".";
   LockGuard lock(lock_);
   auto key = std::make_pair(user_stream_id, memory_stream_id);
   auto iter = stream_pair_mem_bufs_.find(key);
@@ -691,16 +753,16 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_
 
   auto mem_bufs_ = iter->second;
   for (const auto &mem_buf : mem_bufs_) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << mem_buf->ToJson() << ".";
     mem_buf->WaitEvent(task_id_on_stream, user_stream_id);
     // Remove event and try to free memory.
     if (mem_buf->IsEventNotUsed()) {
-      (void)iter->second.erase(mem_buf);
       mem_stat_.used_by_event_size_ -= mem_buf->size_;
+      // Force clear all mem bufs.
+      for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
+        (void)stream_pair_mem_bufs.second.erase(mem_buf);
+      }
       if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
-        // Force clear all mem bufs.
-        for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
-          (void)stream_pair_mem_bufs.second.erase(mem_buf);
-        }
         (void)DoFreeTensorMem(mem_buf->addr_);
       }
     }
@@ -709,8 +771,8 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_
 }
 
 bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) {
-  MS_LOG(DEBUG) << "Wait event for task id on stream : " << task_id_on_stream
-                << ", memory stream id : " << memory_stream_id << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for task id on stream : " << task_id_on_stream
+                                       << ", memory stream id : " << memory_stream_id << ".";
   LockGuard lock(lock_);
   for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
     const auto &[user_stream, memory_stream] = stream_pair_mem_bufs.first;
@@ -719,16 +781,16 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memor
     }
     auto mem_bufs = stream_pair_mem_bufs.second;
     for (const auto &mem_buf : mem_bufs) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Wait event for : " << mem_buf->ToJson() << ".";
       mem_buf->WaitEvent(task_id_on_stream, user_stream);
       // Remove event and try to free memory.
       if (mem_buf->IsEventNotUsed()) {
-        (void)stream_pair_mem_bufs.second.erase(mem_buf);
         mem_stat_.used_by_event_size_ -= mem_buf->size_;
+        // Force clear all mem bufs.
+        for (auto &kv : stream_pair_mem_bufs_) {
+          (void)kv.second.erase(mem_buf);
+        }
         if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
-          // Force clear all mem bufs.
-          for (auto &kv : stream_pair_mem_bufs_) {
-            (void)kv.second.erase(mem_buf);
-          }
           (void)DoFreeTensorMem(mem_buf->addr_);
         }
       }
@@ -738,7 +800,8 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memor
 }
 
 bool AbstractDynamicMemPool::SyncAllEvents() {
-  MS_LOG(DEBUG) << "Sync all events, stream_pair_addresses_ size : " << stream_pair_mem_bufs_.size() << ".";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Sync all events, stream_pair_addresses_ size : "
+                                       << stream_pair_mem_bufs_.size() << ".";
   LockGuard lock(lock_);
   return DoSyncAllEvents();
 }
@@ -764,25 +827,54 @@ bool AbstractDynamicMemPool::DoSyncAllEvents() {
   return true;
 }
 
+size_t AbstractDynamicMemPool::CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool) {
+  auto device_free_mem_size = free_mem_size();
+  // Make sure available mem is enough.
+  if (device_free_mem_size < size) {
+    MS_LOG(WARNING) << "Memory not enough: current free memory size[" << device_free_mem_size
+                    << "] is smaller than required size[" << size << "].";
+    return 0;
+  }
+  auto unit_size = MemAllocUnitSize(from_persistent_mem);
+  if (device_free_mem_size < unit_size) {
+    MS_LOG(WARNING) << "Device memory size [" << device_free_mem_size << "] is smaller than unit size [" << unit_size
+                    << "].";
+  }
+  // Calculate alloc size.
+  size_t alloc_size = unit_size;
+  if (size > unit_size) {
+    alloc_size = ((size + unit_size - 1) / unit_size) * unit_size;
+  }
+  return std::min(alloc_size, device_free_mem_size);
+}
+
 void AbstractDynamicMemPool::DefragMemory() {
-  MS_LOG(DEBUG) << "Try to defrag memory.";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Try to defrag memory.";
   LockGuard lock(lock_);
+
+  if (enable_dump_memory_) {
+    MS_LOG(INFO) << "Start dump memory info.";
+    DumpDynamicMemPoolDebugInfo();
+  }
+
   if (!enable_vmm_) {
-    MS_LOG(DEBUG) << "Skip defrag memory since vmm is not enabled.";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Skip defrag memory since vmm is not enabled.";
     return;
   }
 
   if (eager_free_count_ == 0) {
-    MS_LOG(DEBUG) << "Exit defrag memory since eager free count is 0.";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Exit defrag memory since eager free count is 0.";
     return;
   }
   if (last_eager_free_count_ == eager_free_count_) {
-    MS_LOG(DEBUG) << "Exit defrag memory since last eager free count equals to eager free count : "
-                  << last_eager_free_count_ << ".";
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY)
+      << "Exit defrag memory since last eager free count equals to eager free count : " << last_eager_free_count_
+      << ".";
     return;
   }
 
   MS_LOG(INFO) << "Defrag memory start.";
+  WaitPipelineHelper();
   if (!SyncAllStreams()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
     return;
@@ -791,6 +883,12 @@ void AbstractDynamicMemPool::DefragMemory() {
   MS_LOG(INFO) << "Defrag memory, eager_free_size : " << eager_free_size << ", real_free_size : " << real_free_size
                << ".";
   last_eager_free_count_ = eager_free_count_;
+}
+
+void AbstractDynamicMemPool::WaitPipelineHelper() {
+  lock_.unlock();
+  WaitPipeline();
+  lock_.lock();
 }
 
 namespace {
@@ -1048,6 +1146,59 @@ void AbstractDynamicMemPool::ResetMaxMemAllocated() {
   mem_stat_.temp_used_size_ = mem_stat_.used_size_;
   mem_stat_.temp_used_by_event_size_ = mem_stat_.used_by_event_size_;
   mem_stat_.temp_peak_size_ = 0;
+}
+
+AbstractEnhancedDynamicMemPool::AbstractEnhancedDynamicMemPool() {}
+
+void AbstractEnhancedDynamicMemPool::ReportMemoryPoolInfo() {
+  // Report memory data to profiler.
+#ifdef ENABLE_DEBUGGER
+  static auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
+  MS_EXCEPTION_IF_NULL(profiler_inst);
+  if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
+    profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
+                                        TotalUsedByEventMemStatistics());
+  }
+#endif
+}
+
+MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenAllocateMemoryTimeEvent(const void *addr, size_t size,
+                                                                              uint32_t stream_id, bool from_persistent,
+                                                                              bool is_persistent) {
+  auto time_event = std::make_shared<MemoryTimeEvent>();
+  time_event->created_at_ = static_cast<uint64_t>(
+    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch())
+      .count());
+  time_event->addr_ = const_cast<void *>(addr);
+  time_event->size_ = size;
+  time_event->from_persistent_ = static_cast<uint8_t>(from_persistent);
+  time_event->is_persistent_ = static_cast<uint8_t>(is_persistent);
+  time_event->stream_id_ = stream_id;
+  time_event->run_mode_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().run_mode_;
+  time_event->used_size_ = mem_stat_.used_size_;
+  time_event->peak_size_ = mem_stat_.peak_size_;
+  time_event->alloc_size_ = mem_stat_.alloc_size_;
+  time_event->used_by_event_size_ = mem_stat_.used_by_event_size_;
+  time_event->eager_free_size_ = mem_stat_.eager_free_size_;
+  time_event->owner_ = DynamicMemAllocatorDebugInfo::GetDebugInfo().name_;
+  time_event->alloc_type_ = static_cast<uint8_t>(DynamicMemAllocatorDebugInfo::GetDebugInfo().type_);
+  return time_event;
+}
+
+MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenFreeMemoryTimeEvent(const void *addr) {
+  auto time_event = std::make_shared<MemoryTimeEvent>();
+  time_event->created_at_ = static_cast<uint64_t>(
+    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch())
+      .count());
+  time_event->addr_ = const_cast<void *>(addr);
+  const size_t time_event_free_size = -1;
+  time_event->size_ = time_event_free_size;
+  time_event->used_size_ = mem_stat_.used_size_;
+  time_event->peak_size_ = mem_stat_.peak_size_;
+  time_event->alloc_size_ = mem_stat_.alloc_size_;
+  time_event->used_by_event_size_ = mem_stat_.used_by_event_size_;
+  time_event->eager_free_size_ = mem_stat_.eager_free_size_;
+  return time_event;
 }
 }  // namespace device
 }  // namespace mindspore

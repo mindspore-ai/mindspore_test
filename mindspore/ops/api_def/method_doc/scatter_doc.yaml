@@ -1,0 +1,130 @@
+scatter:
+  description: |
+    scatter(dim, index, src) -> Tensor
+
+    Update the value in `src` to `self` according to the specified index.
+    For a 3-D tensor, the output will be:
+
+    .. code-block::
+
+        output[index[i][j][k]][j][k] = src[i][j][k]  # if dim == 0
+
+        output[i][index[i][j][k]][k] = src[i][j][k]  # if dim == 1
+
+        output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
+
+    .. note::
+        The backward is supported only for the case `src.shape == index.shape` when `src` is a tensor.
+        The rank of the input tensor `self` must be at least 1.
+
+    Args:
+        dim (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(self).
+        index (Tensor): The index to do update operation whose data must be positive number with type of int32
+            or int64. Same rank as `self` . And accepted range is [-s, s) where s is the size along axis.
+        src (Tensor, float): The data doing the update operation with `self`. Can be a tensor with the same data type
+            as `self` or a float number to scatter.
+
+    Returns:
+        Tensor, has the same shape and type as `self` .
+
+    Raises:
+        TypeError: If `index` is neither int32 nor int64.
+        ValueError: If rank of any of `self` , `index` and `src` is less than 1.
+        ValueError: If the rank of `src` is not equal to the rank of `self` .
+        TypeError: If the data types of `self` and `src` have different dtypes.
+        RuntimeError: If `index` has negative elements.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
+        >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
+        >>> out = input.scatter(dim=1, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 8. 4. 8.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
+        >>> out = input.scatter(dim=0, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 3. 0. 0.]
+         [0. 0. 0. 0. 0.]
+         [4. 5. 6. 0. 0.]
+         [0. 0. 0. 0. 0.]
+         [7. 8. 9. 0. 0.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
+        >>> out = input.scatter(dim=1, index=index, src=src)
+        >>> print(out)
+        [[1. 0. 2. 0. 3.]
+         [4. 0. 5. 0. 6.]
+         [7. 0. 8. 0. 9.]
+         [0. 0. 0. 0. 0.]
+         [0. 0. 0. 0. 0.]] 
+
+    .. method:: Tensor.scatter(axis, index, src) -> Tensor
+        :noindex:
+
+    Update the value in `src` to `self` according to the specified index.
+    Refer to :func:`mindspore.ops.tensor_scatter_elements` for more details.
+
+    .. note::
+        The backward is supported only for the case `src.shape == index.shape`.
+        The rank of the input tensor `self` must be at least 1.
+
+    Args:
+        axis (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(self).
+        index (Tensor): The index to do update operation whose data must be positive number with type of int32
+            or int64. Same rank as `self` . And accepted range is [-s, s) where s is the size along axis.
+        src (Tensor, float): The data doing the update operation with `self`. Can be a tensor with the same data type
+            as `self` or a float number to scatter.
+
+    Returns:
+        Tensor, has the same shape and type as `self` .
+
+    Raises:
+        TypeError: If `index` is neither int32 nor int64.
+        ValueError: If rank of any of `self` , `index` and `src` is less than 1.
+        ValueError: If the rank of `src` is not equal to the rank of `self` .
+        TypeError: If the data types of `self` and `src` have different dtypes.
+        RuntimeError: If `index` has negative elements.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
+        >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
+        >>> out = input.scatter(axis=1, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 8. 4. 8.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
+        >>> out = input.scatter(axis=0, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 3. 0. 0.]
+         [0. 0. 0. 0. 0.]
+         [4. 5. 6. 0. 0.]
+         [0. 0. 0. 0. 0.]
+         [7. 8. 9. 0. 0.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
+        >>> out = input.scatter(axis=1, index=index, src=src)
+        >>> print(out)
+        [[1. 0. 2. 0. 3.]
+         [4. 0. 5. 0. 6.]
+         [7. 0. 8. 0. 9.]
+         [0. 0. 0. 0. 0.]
+         [0. 0. 0. 0. 0.]]

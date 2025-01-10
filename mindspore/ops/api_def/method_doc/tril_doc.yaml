@@ -1,21 +1,18 @@
 tril:
   description: |
-    transpose(input, diagonal=0) -> Tensor
+    tril(diagonal=0) -> Tensor
     
     Returns the lower triangle part of `input` (elements that contain the diagonal and below),
     and set the other elements to zeros.
 
     Args:
-        input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
-          Supporting all number types including bool.
-        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: 0,
+        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: ``0``,
             indicating the main diagonal.
 
     Returns:
         Tensor, the same shape and data type as the `input`.
 
     Raises:
-        TypeError: If `input` is not a Tensor.
         TypeError: If `diagonal` is not an int.
         TypeError: If the type of `input` is neither number nor bool.
         ValueError: If the rank of `input` is less than 2.

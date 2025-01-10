@@ -16,7 +16,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/adaptive_max_pool2d_fusion.h"
 #include <memory>
 #include <vector>
-
+#include <string>
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "abstract/dshape.h"
@@ -97,6 +97,11 @@ void SetNodeAttr(const AnfNodePtr &node, const std::vector<int64_t> &height_attr
   common::AnfAlgo::SetNodeAttr(kAttrDatFormat, MakeValue("NCHW"), node);
 }
 }  // namespace
+
+std::vector<std::string> AdaptiveMaxPool2DGeFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimAdaptiveMaxPool2D->name()};
+  return ret;
+}
 
 const BaseRef AdaptiveMaxPool2DFusion::DefinePattern() const {
   VarPtr X = std::make_shared<Var>();

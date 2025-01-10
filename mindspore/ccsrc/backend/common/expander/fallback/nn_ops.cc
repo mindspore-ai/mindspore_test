@@ -778,5 +778,177 @@ REG_FALLBACK_BUILDER("GroupNormGrad").SetBody(BODYFUNC(ib) {
   auto dbeta = ib->Cast(ib->ReduceSum(db, ShapeVector{0}), input->dtype());
   return {ib->MakeTuple({dx, dgamma, dbeta})};
 });
+
+REG_FALLBACK_BUILDER("Index").SetBody(BODYFUNC(ib) {
+  auto input_tensor = ib->GetInput(kIndex0);
+  auto indices = ib->GetInput(kIndex1);
+  auto input_shape = input_tensor->shape();
+  auto input_shape_nums = input_shape.size();
+  if (input_shape_nums == 0) {
+    MS_EXCEPTION(ValueError) << "For `Index` op, too many indices for tensor of dimension " << input_shape_nums;
+  }
+  auto indices_abs = indices->abstract();
+  MS_EXCEPTION_IF_NULL(indices_abs);
+  auto indices_shape = indices_abs->GetShape();
+  MS_EXCEPTION_IF_NULL(indices_shape);
+  auto indices_is_dyn_seq = indices_shape->isa<abstract::DynamicSequenceShape>();
+  if (indices_is_dyn_seq) {
+    MS_EXCEPTION(ValueError) << "For `Index` op, 'indices' shape can not DynamicSequenceShape.";
+  }
+  std::vector<ShapeVector> indices_shapes = indices->shapes();
+  if (indices_shapes.empty()) {
+    MS_EXCEPTION(ValueError) << "For 'Index', 'indices' shape can't be empty.";
+  }
+  auto indices_nums = indices_shapes.size();
+  if (!IsDynamicRank(input_shape) && indices_nums > input_shape_nums) {
+    MS_EXCEPTION(ValueError) << "For 'Index', too many indices for tensor of dimension " << input_shape_nums << " (got "
+                             << indices_nums << ")";
+  }
+
+  bool needCast = false;
+  TypeId indicesDtype = ib->TupleGetItem(indices, kIndex0)->dtype()->type_id();
+  // Expand indices, then insert input and value
+  NodePtrList new_indices;
+  new_indices.emplace_back(input_tensor);
+  for (size_t i = 0; i < indices_nums; ++i) {
+    auto tensor = ib->TupleGetItem(indices, i);
+    auto type_id = tensor->dtype()->type_id();
+    if (type_id != kNumberTypeInt64 && type_id != kNumberTypeInt32 && type_id != kNumberTypeBool &&
+        type_id != kNumberTypeUInt8) {
+      MS_EXCEPTION(TypeError) << "For 'Index', tensors used as indices must be long, int, uint8, or bool tensors";
+    }
+    if (type_id == kNumberTypeBool || type_id == kNumberTypeUInt8) {
+      auto shape = tensor->shape();
+      auto rank = SizeToLong(shape.size());
+      if (IsDynamicRank(shape)) {
+        MS_EXCEPTION(ValueError) << "For 'Index', when the dytpe of tensor is bool or uint8 ,it would use "
+                                 << "'Unstack' op, the dynamic rank is not support";
+      }
+      for (int64_t j = 0; j < rank; j++) {
+        auto srcIdx = new_indices.size() - 1 + j;
+        if (!IsDynamic(shape) && !IsDynamic(input_shape) && shape[j] != input_shape[srcIdx]) {
+          MS_EXCEPTION(ValueError) << "For 'Index', the shape of the mask " << shape << " at index " << j
+                                   << " does not match the shape of the indexed tensor " << input_shape << " at index "
+                                   << srcIdx;
+        }
+      }
+      // The InnerNonZero(input) output shape is (rank) * (non zero number)
+      auto nonzero_tensor = ib->Emit("InnerNonZero", {tensor});
+      auto unstack_tensor = ib->Emit("Unstack", {nonzero_tensor}, {{"axis", MakeValue<int64_t>(0LL)}});
+      // The nonzero and unstack will generation tuple[tensor], the tuple size is input's rank
+      for (int64_t j = 0; j < rank; j++) {
+        new_indices.emplace_back(ib->TupleGetItem(unstack_tensor, j));
+      }
+    } else {
+      new_indices.emplace_back(tensor);
+    }
+    if (indicesDtype != type_id) {
+      needCast = true;
+    }
+  }
+  if (needCast) {
+    for (size_t i = 1; i < new_indices.size(); i++) {
+      if (new_indices[i]->dtype()->type_id() == kNumberTypeInt32) {
+        new_indices[i] = ib->Cast(new_indices[i], kInt64);
+      }
+    }
+  }
+  auto output = ib->Emit("InnerIndex", new_indices);
+  return {output};
+});
+
+REG_FALLBACK_BUILDER("InplaceIndexPut").SetBody(BODYFUNC(ib) {
+  auto input_tensor = ib->GetInput(kIndex0);
+  auto indices = ib->GetInput(kIndex1);
+  auto values_tensor = ib->GetInput(kIndex2);
+  auto accumulate = ib->GetInput(kIndex3);
+
+  auto indices_abs = indices->abstract();
+  MS_EXCEPTION_IF_NULL(indices_abs);
+  auto indices_shape = indices_abs->GetShape();
+  MS_EXCEPTION_IF_NULL(indices_shape);
+  auto indices_is_dyn_seq = indices_shape->isa<abstract::DynamicSequenceShape>();
+  if (indices_is_dyn_seq) {
+    MS_EXCEPTION(ValueError) << "For `InplaceIndexPut` op, 'indices' shape can not DynamicSequenceShape.";
+  }
+  std::vector<ShapeVector> indices_shapes = indices->shapes();
+  if (indices_shapes.empty()) {
+    return {input_tensor};
+  }
+  auto indices_nums = indices_shapes.size();
+  auto input_shape = ib->GetShape(input_tensor);
+  auto value_shape = ib->GetShape(values_tensor);
+  if (!IsDynamic(input_shape)) {
+    if (!IsDynamic(value_shape)) {
+      auto input_numel = std::accumulate(input_shape.begin(), input_shape.end(), kIndex1, std::multiplies<int64_t>());
+      auto values_numel = std::accumulate(value_shape.begin(), value_shape.end(), kIndex1, std::multiplies<int64_t>());
+      if (input_numel == 0 || values_numel == 0 || indices_nums == 0) {
+        return {input_tensor};
+      }
+    }
+    auto input_shape_nums = input_shape.size();
+    if (input_shape_nums == 0) {
+      MS_EXCEPTION(ValueError) << "For `InplaceIndexPut` op, too many indices for tensor of dimension "
+                               << input_shape_nums;
+    }
+  }
+  if (!IsDynamicRank(input_shape) && indices_nums > input_shape.size()) {
+    MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', too many indices for tensor of dimension " << input_shape.size()
+                             << " (got " << indices_nums << ")";
+  }
+  // Expand indices, then insert input and value
+  bool needCast = false;
+  TypeId indicesDtype = ib->TupleGetItem(indices, kIndex0)->dtype()->type_id();
+  NodePtrList new_indices;
+  new_indices.emplace_back(input_tensor);
+  for (size_t i = 0; i < indices_nums; ++i) {
+    auto tensor = ib->TupleGetItem(indices, i);
+    auto type_id = tensor->dtype()->type_id();
+    if (type_id != kNumberTypeInt64 && type_id != kNumberTypeInt32 && type_id != kNumberTypeBool &&
+        type_id != kNumberTypeUInt8) {
+      MS_EXCEPTION(TypeError)
+        << "For 'InplaceIndexPut', tensors used as indices must be long, int, uint8, or bool tensors";
+    }
+    if (type_id == kNumberTypeBool || type_id == kNumberTypeUInt8) {
+      auto shape = tensor->shape();
+      auto rank = SizeToLong(shape.size());
+      if (IsDynamicRank(shape)) {
+        MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', when the dytpe of tensor is bool or uint8 ,it would use "
+                                 << "'Unstack' op, the dynamic rank is not support";
+      }
+      for (int64_t j = 0; j < rank; j++) {
+        auto srcIdx = new_indices.size() - 1 + j;
+        if (!IsDynamic(shape) && !IsDynamic(input_shape) && shape[j] != input_shape[srcIdx]) {
+          MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', the shape of the mask " << shape << " at index " << j
+                                   << " does not match the shape of the indexed tensor " << input_shape << " at index "
+                                   << srcIdx;
+        }
+      }
+      // The InnerNonZero(input) output shape is (rank) * (non zero number)
+      auto nonzero_tensor = ib->Emit("InnerNonZero", {tensor});
+      auto unstack_tensor = ib->Emit("Unstack", {nonzero_tensor}, {{"axis", MakeValue<int64_t>(0LL)}});
+      // The nonzero and unstack will generation tuple[tensor], the tuple size is input's rank
+      for (int64_t j = 0; j < rank; j++) {
+        new_indices.emplace_back(ib->TupleGetItem(unstack_tensor, j));
+      }
+    } else {
+      new_indices.emplace_back(tensor);
+    }
+    if (indicesDtype != type_id) {
+      needCast = true;
+    }
+  }
+  if (needCast) {
+    for (size_t i = 1; i < new_indices.size(); i++) {
+      if (new_indices[i]->dtype()->type_id() == kNumberTypeInt32) {
+        new_indices[i] = ib->Cast(new_indices[i], kInt64);
+      }
+    }
+  }
+  new_indices.emplace_back(values_tensor);
+  new_indices.emplace_back(accumulate);
+  auto output = ib->Emit("InnerInplaceIndexPut", new_indices);
+  return {output};
+});
 }  // namespace expander
 }  // namespace mindspore

@@ -13,7 +13,7 @@ mindspore.ops.ScatterNdMin
         - **use_locking** (bool，可选) - 是否启用锁保护。默认值： ``False`` 。
 
     输入：
-        - **input_x** (Parameter) - 输入参数，数据类型为Parameter。
+        - **input_x** (Union[Parameter, Tensor]) - 输入参数，数据类型为Parameter或Tensor。
         - **indices** (Tensor) - 指定最小值操作的索引，数据类型为mindspore.int32或mindspore.int64。索引的rank必须至少为2，并且 `indices.shape[-1] <= len(shape)` 。
         - **updates** (Tensor) - 指定与 `input_x` 操作的Tensor，数据类型与 `input_x` 相同，shape为 `indices.shape[:-1] + x.shape[indices.shape[-1]:]` 。
 

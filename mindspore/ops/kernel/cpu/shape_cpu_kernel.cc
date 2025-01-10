@@ -43,7 +43,7 @@ int ShapeCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
 
 bool ShapeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                      const std::vector<KernelTensor *> &outputs) {
-  auto output_addr = GetDeviceAddress<int64_t>(outputs, 0);
+  auto output_addr = GetDeviceAddress<int64_t>(outputs, kIndex0);
   for (size_t i = 0; i < LongToSize(output_shape_[0]); ++i) {
     output_addr[i] = input_shape_[i];
   }

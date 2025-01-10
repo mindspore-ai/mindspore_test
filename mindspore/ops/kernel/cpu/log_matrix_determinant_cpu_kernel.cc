@@ -108,9 +108,9 @@ bool LogMatrixDeterminantCpuKernelMod::Launch(const std::vector<kernel::KernelTe
 template <typename T>
 void LogMatrixDeterminantCpuKernelMod::LaunchLogMatrixDeterminant(const std::vector<KernelTensor *> &inputs,
                                                                   const std::vector<KernelTensor *> &outputs) {
-  auto input_x = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output_sign = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto output_y = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  auto input_x = GetDeviceAddress<T>(inputs, 0);
+  auto output_sign = GetDeviceAddress<T>(outputs, 0);
+  auto output_y = GetDeviceAddress<T>(outputs, 1);
 
   size_t shape_size = shape_x_.size();
   int64_t m = shape_x_[shape_size - 1];

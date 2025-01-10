@@ -7,6 +7,9 @@ mindspore.hal.set_cur_stream
 
     不建议使用此函数，建议使用 `StreamCtx` 上下文管理器。
 
+    .. note::
+        - 接口即将废弃，请使用接口 :func:`mindspore.runtime.set_cur_stream` 代替。 
+
     参数：
         - **stream** (Stream) - 指定的流。如果是 ``None`` ，这个上下文管理器无操作。
 

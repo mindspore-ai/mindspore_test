@@ -56,6 +56,10 @@ bool ReshapeExtKernel::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_EXCEPTION_IF_NULL(outputs[kIndex0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
+  if (inputs[kIndex0]->size() == 0) {
+    return true;
+  }
+
   auto status =
     aclrtMemcpyAsync(outputs[kIndex0]->device_ptr(), outputs[kIndex0]->size(), inputs[kIndex0]->device_ptr(),
                      inputs[kIndex0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);

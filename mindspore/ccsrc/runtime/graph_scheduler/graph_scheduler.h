@@ -84,6 +84,9 @@ class BACKEND_EXPORT GraphScheduler {
   // Whether graph scheduler is initialized.
   bool initialized() const { return init_; }
 
+  // Remove non weight parameter device address.
+  void RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info);
+
 #ifdef ENABLE_RPC_ACTOR
   // Returns pointer of RpcNodeScheduler to distributed module.
   RpcNodeScheduler *rpc_node_scheduler() { return rpc_node_scheduler_.get(); }
@@ -117,6 +120,13 @@ class BACKEND_EXPORT GraphScheduler {
   // Optimize the actor DAG. For example, erase invalid data arrow, etc.
   void Optimize(const ActorSetPtr &actor_set, const GraphCompilerInfo &graph_compiler_info) const;
 
+  // Replace the original BuildDataSourceActor
+  void BuildGraphParameterStore(const GraphCompilerInfo &graph_compiler_info);
+
+  CopyActor *CreateCopyActor(AbstractActor *const from_actor, AbstractActor *const to_actor,
+                             const KernelWithIndex &from_kernel_with_output_idx,
+                             const KernelWithIndex &to_kernel_with_input_idx);
+
   // The processing of actors build.
   std::vector<DataSourceActorPtr> BuildDataSourceActor(const GraphCompilerInfo &graph_compiler_info,
                                                        const HostTensorQueuePtr &host_queue);
@@ -125,6 +135,8 @@ class BACKEND_EXPORT GraphScheduler {
   std::vector<SuperKernelActorPtr> BuildSuperKernelActor(const GraphCompilerInfo &graph_compiler_info);
   LoopCountActorPtr BuildLoopCountActor(const GraphCompilerInfo &graph_compiler_info);
   OutputActorPtr BuildOutputActor(const GraphCompilerInfo &graph_compiler_info) const;
+  // Replace the original BuildDataPrepareActor
+  DataPrepareActorPtr BuildDataPrepareActorForGraphParameterStore(const GraphCompilerInfo &graph_compiler_info);
   DataPrepareActorPtr BuildDataPrepareActor(const GraphCompilerInfo &graph_compiler_info,
                                             const std::vector<DataSourceActorPtr> &data_source_actors,
                                             const HostTensorQueuePtr &host_queue);
@@ -168,6 +180,11 @@ class BACKEND_EXPORT GraphScheduler {
   void LinkDataArrowForDeviceTensorStore(AbstractActor *const from_actor, AbstractActor *const to_actor,
                                          const KernelWithIndex &from_kernel_with_output_idx,
                                          const KernelWithIndex &to_kernel_with_input_idx, const KernelGraphPtr &graph);
+  // Remove the linkDataArrow, include ref count ,inner copy actor logic and SOMAS enabling logic
+  void LinkDataArrowForGraphParameterStore(AbstractActor *const from_actor, AbstractActor *const to_actor,
+                                           const KernelWithIndex &from_kernel_with_output_idx,
+                                           const KernelWithIndex &to_kernel_with_input_idx,
+                                           const KernelGraphPtr &graph);
   void LinkDataArrowForHostDSActor(AbstractActor *const from_actor, AbstractActor *const to_actor,
                                    const KernelWithIndex &from_kernel_with_output_idx,
                                    const KernelWithIndex &to_kernel_with_input_idx, const KernelGraphPtr &graph);
@@ -208,7 +225,8 @@ class BACKEND_EXPORT GraphScheduler {
   void LinkControlArrowByCommunicationNode(const std::vector<CNodePtr> &communication_nodes,
                                            const std::vector<KernelGraphPtr> &graphs,
                                            const GraphCompilerInfo &graph_compiler_info) const;
-  void LinkDeviceTensorStoreForAutoMonadActor(const std::vector<AbstractActor *> &auto_monad_actors);
+  void LinkDeviceTensorStoreForAutoMonadActor(const std::vector<AbstractActor *> &auto_monad_actors,
+                                              const GraphCompilerInfo &graph_compiler_info);
   void LinkControlArrowForDataPrepareActor(DataPrepareActor *data_prepare_actor, const ActorSet *actor_set,
                                            const ControlNodeParserPtr &parser) const;
   void LinkControlArrowForLoopCountActor(LoopCountActor *loop_count_actor, const ActorSet *actor_set,
@@ -219,6 +237,9 @@ class BACKEND_EXPORT GraphScheduler {
   void LinkOutputResultArrowForOutputActor(OutputActor *to_actor, const GraphCompilerInfo &graph_compiler_info) const;
 
   void LinkKernelActorsForSubGraphExecute(const ActorSet *actor_set) const;
+
+  void LinkControlArrowForNoInputArrowActor(const ActorSet *actor_set);
+  void CorrectControlArrowForAutoMonadActor(AbstractActor *const auto_monad_actor, const AbstractActorPtr &copy_actor);
 
   // Persist device tensors of graph's some nodes(such as weights and value nodes).
   void PersistDeviceTensor(const GraphCompilerInfo &graph_compiler_info) const;
@@ -293,6 +314,9 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Disable custom actor in scheduler.
   bool is_enable_custom_actor{false};
+
+  bool is_bind_core_{false};
+  bool is_shut_spin_{false};
 };
 }  // namespace runtime
 }  // namespace mindspore

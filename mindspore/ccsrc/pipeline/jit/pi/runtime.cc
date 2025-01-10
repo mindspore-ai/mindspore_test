@@ -1085,7 +1085,8 @@ static void SetExecStatus(const JitCompileResults *c, const PyFrameWrapper &f, b
 }
 
 static py::object CallCompiledResults(PyThreadState *tstate, const PyFrameWrapper &f, JitCompileResults *c) {
-  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY)) {
+  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) ||
+      common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1") {
     return py::none();
   }
 

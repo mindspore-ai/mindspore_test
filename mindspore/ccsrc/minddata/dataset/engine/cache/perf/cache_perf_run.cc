@@ -451,7 +451,7 @@ Status CachePerfRun::StartPipelines() {
         // Call _exit instead of exit because we will hang in TaskManager destructor for a forked child process.
         _exit(-1);
       }
-      // truncate the binary name so we are left with the absolute path of cache_admin binary
+      // truncate the binary name so we are left with the absolute path of dataset-cache binary
       canonical_path.resize(last_seperator + 1);
       std::string cache_pipeline_binary = canonical_path + std::string(kCachePipelineBinary);
 

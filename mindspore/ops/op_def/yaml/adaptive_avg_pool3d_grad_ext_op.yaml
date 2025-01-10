@@ -1,0 +1,16 @@
+#operator adaptive_avg_pool3d_grad_ext
+adaptive_avg_pool3d_grad_ext:
+  args:
+    input_grad:
+      dtype: tensor
+    input:
+      dtype: tensor
+  returns:
+    output_grad:
+      dtype: tensor
+  class:
+    name: AdaptiveAvgPool3DGradExt
+  function:
+    disable: True
+  dispatch:
+    enable: True

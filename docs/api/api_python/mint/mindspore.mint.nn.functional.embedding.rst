@@ -10,7 +10,7 @@ mindspore.mint.nn.functional.embedding
 
     参数：
         - **input** (Tensor) - 用于检索的索引输入。取值范围： `[0, weight.shape[0])` 。
-        - **weight** (Parameter) - 用于检索的数据。必须是2D输入。
+        - **weight** (Union[Parameter, Tensor]) - 用于检索的数据。必须是2D输入。
         - **padding_idx** (int, 可选) - 如果给定非 ``None`` 值，则 `weight` 中对应行在反向计算中不会更新。取值范围：`[-weight.shape[0], weight.shape[0])`。默认值 ``None`` 。
         - **max_norm** (float, 可选) - 如果给定非 ``None`` 值，则先求出 `input` 指定位置的 `weight` 的p-范数结果reslut（p的值通过 `norm_type` 指定），然后对 `result > max_norm` 位置的 `weight` 进行原地更新，
           更新公式：:math:`\frac{max\_norm}{result+1e^{-7}}` 。默认值 ``None`` 。
@@ -23,4 +23,3 @@ mindspore.mint.nn.functional.embedding
     异常：
         - **ValueError** - `padding_idx` 的取值不在有效范围。
         - **ValueError** - `weight.shape` 非法。
-        - **TypeError** - `weight` 不是 :class:`mindspore.Parameter` 。

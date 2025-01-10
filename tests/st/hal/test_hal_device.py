@@ -17,6 +17,7 @@ from tests.mark_utils import arg_mark
 
 import mindspore.context as context
 import mindspore.nn as nn
+import mindspore as ms
 from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.hal import is_initialized, is_available, device_count,\
@@ -31,7 +32,7 @@ class Net(nn.Cell):
         return self.ops(x)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_hal_device_gpu():
     """
     Feature: Hal device api.
@@ -42,13 +43,13 @@ def test_hal_device_gpu():
     assert not is_initialized("GPU")
     assert is_available("GPU")
     assert is_available("CPU")
-    assert not is_available("Ascend")
+    assert not ms.device_context.ascend.is_available()
     net = Net()
     net(Tensor(2.0))
     assert not is_initialized("CPU")
     assert is_initialized("GPU")
     try:
-        device_count("Ascend")
+        ms.device_context.ascend.device_count()
     except ValueError as e:
         assert str(e).find('not available') != -1
 
@@ -74,13 +75,13 @@ def test_hal_device_ascend():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
     assert not is_initialized("Ascend")
-    assert is_available("Ascend")
+    assert ms.device_context.ascend.is_available()
     assert get_device_properties(0).total_memory == 0
     net = Net()
     net(Tensor(2.0))
     assert not is_initialized("CPU")
     assert is_initialized("Ascend")
-    dev_cnt = device_count()
+    dev_cnt = ms.device_context.ascend.device_count()
     assert dev_cnt > 0
     assert get_device_properties(dev_cnt - 1).total_memory > 0
     try:
@@ -93,7 +94,7 @@ def test_hal_device_ascend():
     print("Device name is", get_device_name(dev_cnt - 1))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_hal_device_cpu():
     """
@@ -102,8 +103,7 @@ def test_hal_device_cpu():
     Expectation: hal.device api performs as expected.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
-    assert not is_initialized("CPU")
-    assert is_available("CPU")
+    assert ms.device_context.cpu.is_available()
     net = Net()
     net(Tensor(2.0))
     assert is_initialized("CPU")

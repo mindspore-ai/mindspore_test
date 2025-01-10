@@ -19,11 +19,22 @@ import numpy as np
 import pytest
 
 from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.utils import test_utils
 
 
 class SplitNet(nn.Cell):
     def construct(self, x, split_size_or_sections, axis=0):
         return x.split(split_size_or_sections, axis)
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
+
+
+@test_utils.run_with_cell
+def split_forward_func(x, split_size_or_sections, axis=0):
+    return x.split(split_size_or_sections, axis)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -73,3 +84,45 @@ def test_method_split_python(mode):
               np.array([[5, 6, 7, 8, 9], [15, 16, 17, 18, 19]], dtype=np.float32)]
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_split_tensor_dynamic():
+    """
+    Feature: Test split op.
+    Description: Test split dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
+    split_size_or_sections1 = 2
+    axis1 = 0
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    split_size_or_sections2 = 3
+    axis2 = 2
+    TEST_OP(split_forward_func,
+            [[ms_data1, split_size_or_sections1, axis1], [ms_data2, split_size_or_sections2, axis2]], 'split_tensor',
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_nontensor_dynamic_type='BOTH', disable_resize=True)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_split_size_dynamic():
+    """
+    Feature: Test split op.
+    Description: Test split dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
+    split_size_or_sections1 = (2, 2)
+    axis1 = 0
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    split_size_or_sections2 = (3, 2, 2)
+    axis2 = 2
+    TEST_OP(split_forward_func,
+            [[ms_data1, split_size_or_sections1, axis1], [ms_data2, split_size_or_sections2, axis2]], 'split_with_size',
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_nontensor_dynamic_type='BOTH', disable_resize=True)

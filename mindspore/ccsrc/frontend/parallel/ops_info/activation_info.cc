@@ -591,6 +591,273 @@ void DropoutInfo::InferReplaceOps() {
   replace_op_ = {std::make_pair(DROPOUT, args)};
 }
 
+std::vector<StrategyPtr> DropoutExtInfo::GenerateOpStrategies(int64_t stage_id) {
+  // inputs_shape_ size is 3, since p is float and not be processed here
+  if ((inputs_shape_.size() != DROPOUT_EXT_INPUTS_SIZE)) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Inputs shape size should be " << DROPOUT_EXT_INPUTS_SIZE
+                                        << ", but get " << inputs_shape_.size();
+  }
+
+  Shape input0_split(inputs_shape_[kIndex0].size(), 1);  // input
+  Shape input1_split(inputs_shape_[kIndex1].size(), 0);  // seed
+  Shape input2_split(inputs_shape_[kIndex2].size(), 0);  // offset
+  Shapes splittable_inputs = {input0_split, input1_split, input2_split};
+
+  std::vector<StrategyPtr> sp_vector;
+  if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
+  }
+  return sp_vector;
+}
+
+bool DropoutExtInfo::IsUnsplittableStrategy(const Dimensions &strategy) const {
+  return std::all_of(strategy.cbegin(), strategy.cend(), [](int64_t val) { return val == NO_SPLIT_STRATEGY; });
+}
+
+Status DropoutExtInfo::CheckStrategy(const StrategyPtr &strategy) {
+  if (CheckStrategyValue(strategy, inputs_shape_) != SUCCESS) {
+    return FAILED;
+  }
+
+  Strategies stra = strategy->GetInputDim();
+  Dimensions seed_strategy = stra[kIndex1];
+  Dimensions offset_strategy = stra[kIndex2];
+  if (!IsUnsplittableStrategy(seed_strategy) || !IsUnsplittableStrategy(offset_strategy)) {
+    MS_LOG(ERROR) << name_ << ": Input `seed` and `offset` are not supported to shard, but get strategy"
+                  << StrategyToString(stra);
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status DropoutExtInfo::GetAttrs() {
+  if (inputs_shape_.size() != DROPOUT_EXT_INPUTS_SIZE) {
+    MS_LOG(ERROR) << name_ << ": Inputs shape size(" << inputs_shape_.size() << ") or outputs shape size("
+                  << outputs_shape_.size() << ") is wrong.";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status DropoutExtInfo::InferDevMatrixShape() {
+  Strategies stra = strategy_->GetInputDim();
+  Dimensions input_strategy = stra.at(0);
+  dev_matrix_shape_ = input_strategy;
+  // mask reshapes to 1-D
+  int64_t dev_num = std::accumulate(dev_matrix_shape_.begin(), dev_matrix_shape_.end(), 1, std::multiplies<int64_t>());
+  mask_dev_matrix_shape_ = {dev_num};
+  MS_LOG(DEBUG) << name_ << ": dev_matrix_shape_: " << ShapeToString(dev_matrix_shape_)
+                << ", mask_dev_matrix_shape_: " << ShapeToString(mask_dev_matrix_shape_);
+  return SUCCESS;
+}
+
+// override since outputs have different dev matrices
+void DropoutExtInfo::SetRepeatedCalcDevMatrix() {
+  if (repeated_calc_num_ <= 1) {
+    return;
+  }
+  if (repeated_num_in_dev_matrix_right_) {
+    dev_matrix_shape_.push_back(repeated_calc_num_);
+    mask_dev_matrix_shape_.push_back(repeated_calc_num_);
+  } else {
+    (void)dev_matrix_shape_.insert(dev_matrix_shape_.cbegin(), repeated_calc_num_);
+    (void)mask_dev_matrix_shape_.insert(mask_dev_matrix_shape_.cbegin(), repeated_calc_num_);
+  }
+  MS_LOG(DEBUG) << name_ << ": Set repeated calc dev matrix, repeated_calc_num_: " << repeated_calc_num_
+                << ", dev_matrix_shape_: " << ShapeToString(dev_matrix_shape_)
+                << ", mask_dev_matrix_shape_: " << ShapeToString(mask_dev_matrix_shape_);
+}
+
+Status DropoutExtInfo::InferTensorMap() {
+  Shape tensor_map_in;
+  size_t size = inputs_shape_.at(0).size();
+  // such as 4: tensor_map_index [3,2,1,0]
+  for (size_t i = 0; i < size; ++i) {
+    tensor_map_in.push_back(static_cast<int64_t>(size - i - 1));
+  }
+
+  inputs_tensor_map_.push_back(tensor_map_in);
+  // seed, offset are unsplittable
+  for (size_t i = 1; i < inputs_shape_.size(); ++i) {
+    inputs_tensor_map_.push_back(Shape(inputs_shape_[i].size(), -1));
+  }
+
+  outputs_tensor_map_.push_back(tensor_map_in);
+  // mask's dev matrix is 1-D
+  outputs_tensor_map_.push_back({0});  // the dropout has two outputs
+
+  return SUCCESS;
+}
+
+// override since outputs have different dev matrices
+Status DropoutExtInfo::InferTensorInfo() {
+  if (inputs_shape_.empty() || outputs_shape_.empty() || inputs_tensor_map_.empty() || outputs_tensor_map_.empty()) {
+    MS_LOG(ERROR) << name_ << ": Invalid args";
+    return FAILED;
+  }
+
+  size_t real_input_index = 0;
+  for (size_t i = 0; i < inputs_tensor_map_.size(); ++i) {
+    // Insert placeholder TensorInfo for optional input
+    while (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
+           input_value_[real_input_index]->isa<None>()) {
+      (void)inputs_tensor_info_.emplace_back(TensorInfo());
+      ++real_input_index;
+    }
+    TensorLayout input_layout;
+    if (input_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_[i], inputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": Infer input tensor layout failed, the index is " << i;
+      return FAILED;
+    }
+    TensorInfo input_tensor_info(input_layout);
+    inputs_tensor_info_.push_back(input_tensor_info);
+    ++real_input_index;
+  }
+
+  for (size_t i = 0; i < outputs_tensor_map_.size(); ++i) {
+    TensorLayout output_layout;
+    // output1 `mask` has a special dev matrix
+    Shape dev_matrix_shape;
+    if (i == 1) {
+      dev_matrix_shape = mask_dev_matrix_shape_;
+    } else {
+      dev_matrix_shape = dev_matrix_shape_;
+    }
+    if (output_layout.InitFromVector(dev_matrix_shape, outputs_tensor_map_[i], outputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": Infer output tensor layout failed, the index is " << i;
+      return FAILED;
+    }
+    TensorInfo output_tensor_info(output_layout);
+    outputs_tensor_info_.push_back(output_tensor_info);
+  }
+
+  return SUCCESS;
+}
+
+// seed = TupleGetItem(generator, 0)
+// offset = TupleGetItem(generator, 1)
+// dropout_ext = PrimFunc_DropoutExt(input, p, seed, offset)
+CNodePtr DropoutExtInfo::GetGeneratorCNode(const CNodePtr &cnode) const {
+  MS_EXCEPTION_IF_NULL(cnode);
+  // Primitive, input, p, seed, offset
+  if (cnode->size() != DROPOUT_EXT_CNODE_SIZE) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Size should be " << DROPOUT_EXT_CNODE_SIZE << ", but get " << cnode->size();
+  }
+
+  // if using mint.nn.Dropout, seed and offset are TupleGetItem from Generator
+  // if using dropout_ext_op(input, p, seed, offset) directly, seed and offset should be Tensor, which is ValueNode
+  AnfNodePtr get_item_seed = cnode->input(DROPOUT_EXT_SEED_INDEX);
+  MS_EXCEPTION_IF_NULL(get_item_seed);
+  if (!get_item_seed->isa<CNode>()) {
+    MS_LOG(DEBUG) << name_ << ": Seed is not from Generator";
+    return nullptr;
+  }
+  auto get_item_seed_cnode = get_item_seed->cast<CNodePtr>();
+  if (get_item_seed_cnode->size() != TUPLE_GETITEM_CNODE_SIZE) {
+    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode)
+      << "Size should be " << TUPLE_GETITEM_CNODE_SIZE << ", but get " << get_item_seed_cnode->size();
+  }
+
+  // Generator CNode
+  AnfNodePtr generator = get_item_seed_cnode->input(1);
+  MS_EXCEPTION_IF_NULL(generator);
+  if (!generator->isa<CNode>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode) << "input[1] should be a CNode";
+  }
+  return generator->cast<CNodePtr>();
+}
+
+bool DropoutExtInfo::HaveManualSeed(const CNodePtr &generator_cnode) const {
+  MS_EXCEPTION_IF_NULL(generator_cnode);
+  if (generator_cnode->size() != GENERATOR_SIZE) {
+    MS_LOG_WITH_NODE(EXCEPTION, generator_cnode)
+      << "Size should be " << GENERATOR_SIZE << ", but get " << generator_cnode->size();
+  }
+  // get Generator Primitive
+  if (!IsValueNode<Primitive>(generator_cnode->input(0))) {
+    MS_LOG_WITH_NODE(EXCEPTION, generator_cnode) << "input[0] should be a Primitive";
+  }
+  ValueNodePtr value_node = generator_cnode->input(0)->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_node);
+  PrimitivePtr prim = value_node->value()->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(prim);
+  if (prim->name() != GENERATOR) {
+    MS_LOG_WITH_NODE(EXCEPTION, generator_cnode)
+      << "Primitive name should be " << GENERATOR << ", but get " << prim->name();
+  }
+
+  auto attr = prim->attrs();
+  // if not use default_generator, it may not have manual_seed attr, it should be set seed manually
+  if (attr.find(MANUAL_SEED) == attr.end()) {
+    MS_LOG(DEBUG) << name_ << ": Generator primitive attrs do not have `" << MANUAL_SEED << "`";
+    return true;
+  }
+  return GetValue<bool>(attr[MANUAL_SEED]);
+}
+
+// param_seed, param_offset
+// tuple = MakeTuple(param_seed, param_offset, step)
+// generator = PrimFunc_Generator(0, tuple, UpdateState)
+ParameterPtr DropoutExtInfo::GetSeedParameter(const CNodePtr &generator_cnode) const {
+  MS_EXCEPTION_IF_NULL(generator_cnode);
+  if (generator_cnode->size() != GENERATOR_SIZE) {
+    MS_LOG_WITH_NODE(EXCEPTION, generator_cnode)
+      << "Size should be " << GENERATOR_SIZE << ", but get " << generator_cnode->size();
+  }
+  // seed and offset from MakeTuple
+  AnfNodePtr make_tuple = generator_cnode->input(2);
+  MS_EXCEPTION_IF_NULL(make_tuple);
+  if (!make_tuple->isa<CNode>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, generator_cnode) << "input[2] should be a CNode";
+  }
+  auto make_tuple_cnode = make_tuple->cast<CNodePtr>();
+  if (make_tuple_cnode->size() != SIZE_FOUR) {
+    MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "Size should be 4, but get " << make_tuple_cnode->size();
+  }
+
+  AnfNodePtr seed_input = make_tuple_cnode->input(1);
+  MS_EXCEPTION_IF_NULL(seed_input);
+  if (!seed_input->isa<Parameter>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, seed_input) << "input[1] should be a Parameter";
+  }
+  return seed_input->cast<ParameterPtr>();
+}
+
+int64_t DropoutExtInfo::SEED_NUM = 0;
+
+void DropoutExtInfo::ReplaceNodeInputOrAttrs() {
+  // all default_generator use the same param_seed, skip if it has been set to 1 by any DropoutExt
+  if (SEED_NUM > 0) {
+    MS_LOG(DEBUG) << name_ << ": Seed of default_generator has been set to " << SEED_NUM;
+    return;
+  }
+  for (auto &cnode : cnodes_) {
+    MS_EXCEPTION_IF_NULL(cnode);
+    CNodePtr generator = GetGeneratorCNode(cnode);
+    // if using dropout_ext_op(input, p, seed, offset) directly, can not get generator here
+    // no need to rest seed since it is manual passed in directly
+    if (generator == nullptr) {
+      continue;
+    }
+    // Generator with a False `manual_seed` means default_generator using random generated seed rather than manual seed
+    // seeds in all device should be reset to a same value
+    if (!HaveManualSeed(generator)) {
+      ParameterPtr seed = GetSeedParameter(generator);
+      MS_EXCEPTION_IF_NULL(seed);
+      auto tensor = std::dynamic_pointer_cast<tensor::Tensor>(seed->default_param());
+      MS_EXCEPTION_IF_NULL(tensor);
+      if (tensor->data_type_c() != static_cast<int>(TypeId::kNumberTypeInt64) || tensor->DataSize() != 1) {
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Seed of generator should be a int64 scalar";
+      }
+      ++SEED_NUM;
+      MS_LOG(WARNING) << name_ << ": Manual seed of default generator has not been set, " << SEED_NUM
+                      << " will be used instead";
+      auto data = static_cast<int64_t *>(tensor->data_c());
+      data[0] = SEED_NUM;
+    }
+  }
+}
+
 Status CastInfo::InferMirrorOps() {
   mirror_ops_.clear();
 
@@ -975,6 +1242,7 @@ REGISTER(SqueezeInfo);
 REGISTER(SquareInfo);
 REGISTER(SigmoidInfo);
 REGISTER(DropoutInfo);
+REGISTER(DropoutExtInfo);
 REGISTER(HShrinkInfo);
 REGISTER(HSigmoidInfo);
 REGISTER(IsFiniteInfo);

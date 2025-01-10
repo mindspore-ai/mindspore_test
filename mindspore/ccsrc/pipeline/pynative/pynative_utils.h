@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <algorithm>
+#include <tuple>
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "kernel/common/pyboost/op_runner.h"
@@ -53,6 +55,7 @@ struct Common {
   static ValuePtr CreatOutputTensorValueByAbstract(const abstract::AbstractBasePtr &abs);
   static void ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph);
   static const std::shared_ptr<PyNativeExecutor> &GetPyNativeExecutor();
+  static ValuePtr StubNodeToValue(const ValuePtr &val);
   static void StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info);
   static tensor::BaseTensorPtr StubNodeToTensor(const ValuePtr &value);
   static tensor::BaseTensorPtr ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous, bool requires_grad);
@@ -169,8 +172,8 @@ struct PyBoost {
   static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim, const py::list &args);
   static void DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
   static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
-  static void UpdateStubOutput(const FrontendOpRunInfoPtr &op_run_info, const AbstractBasePtr &abstract,
-                               const kernel::pyboost::OpPtr &op);
+  static void UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
+                               const AbstractBasePtr &abstract, const ValuePtr &real_out);
   static PrimitivePtr ConvertPrimitive(const py::object &obj);
   static py::object RunPyFunction(const PrimitivePtr &prim, const py::list &args);
   template <typename T>
@@ -208,9 +211,33 @@ struct PyBoost {
     }
     return ret;
   }
-  static void DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&op_inputs);
+  static void DataSyncForGraph(const kernel::pyboost::OpPtr &op);
   static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCellInfoPtr &top_cell);
   static void BumpVersionAsync(const tensor::BaseTensorPtr &tensor);
+  static ValuePtr OutputToValue(const BaseTensorPtr &output) { return output; }
+  static ValuePtr MultiOutputToValue(const std::vector<BaseTensorPtr> &outputs) {
+    std::vector<ValuePtr> output_values;
+    output_values.reserve(outputs.size());
+    (void)std::transform(outputs.begin(), outputs.end(), std::back_inserter(output_values),
+                         [](const BaseTensorPtr &value) -> ValuePtr { return value; });
+    return std::make_shared<ValueTuple>(output_values);
+  }
+  template <typename... Args>
+  static ValuePtr MultiOutputToValue(const std::tuple<Args...> &outputs) {
+    std::vector<ValuePtr> output_values = TupleToVector(outputs);
+    return std::make_shared<ValueTuple>(output_values);
+  }
+
+ private:
+  template <std::size_t... Is, typename Tuple>
+  static std::vector<ValuePtr> UnpackTuple(const Tuple &t, std::index_sequence<Is...>) {
+    return {std::get<Is>(t)...};
+  }
+
+  template <typename... Args>
+  static std::vector<ValuePtr> TupleToVector(const std::tuple<Args...> &t) {
+    return UnpackTuple(t, std::index_sequence_for<Args...>{});
+  }
 };
 
 // Some common functions used in both jit and PackFunc grad

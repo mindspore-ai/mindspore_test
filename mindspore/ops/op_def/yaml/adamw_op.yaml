@@ -53,3 +53,5 @@ adamw:
   dispatch:
     enable: True
     Ascend: AdamWAscend
+    CPU: None
+    GPU: None

@@ -223,8 +223,6 @@ class Custom(ops.PrimitiveWithInfer):
     .. note::
         The supported platforms are determined by the input `func_type`. The supported platforms are as follows:
 
-        - "hybrid": supports ["GPU", "CPU"].
-        - "akg": supports ["GPU", "CPU"].
         - "aot": supports ["GPU", "CPU", "Ascend"].
         - "pyfunc": supports ["CPU"].
         - "julia": supports ["CPU"].
@@ -233,11 +231,7 @@ class Custom(ops.PrimitiveWithInfer):
         func (Union[function, str]):
 
             - function: If func is of function type, then func should be a Python function which describes the
-              computation logic of a user defined operator. The function can be one of the following:
-
-              1. A AKG operator implementation function, which can use ir builder/tvm compute/hybrid grammar.
-              2. A pure python function
-              3. An kernel decorated function written by the Hybrid DSL.
+              computation logic of a user defined operator.
 
             - str: If func is of str type, then str should be a path of file along with a function name.
               This could be used when func_type is "aot" or "julia".
@@ -354,7 +348,7 @@ class Custom(ops.PrimitiveWithInfer):
 
         func_type (str): The implementation type of `func`, should be one of
 
-            [ ``"hybrid"`` , ``"akg"`` , ``"aot"`` , ``"pyfunc"`` , ``"julia"`` ].
+            [ ``"aot"`` , ``"pyfunc"`` , ``"julia"`` ].
 
         bprop (function): The back propagation function of `func`. Default: ``None`` .
         reg_info (Union[str, dict, list, tuple]): Represents the registration information(reg info) of `func` with
@@ -398,50 +392,14 @@ class Custom(ops.PrimitiveWithInfer):
         >>> input_x = Tensor(np.ones([16, 16]).astype(np.float32))
         >>> input_y = Tensor(np.ones([16, 16]).astype(np.float32))
         >>>
-        >>> # Example, func_type = "hybrid"
-        >>> # This is the default func_type in Custom,
-        >>> # and both out_shape and out_dtype can be None(default value).
-        >>> # In this case, the input func must be a function written in the Hybrid DSL
-        >>> # and decorated by @kernel.
-        >>> @kernel
-        ... def add_script(a, b):
-        ...     c = output_tensor(a.shape, a.dtype)
-        ...     for i0 in range(a.shape[0]):
-        ...         for i1 in range(a.shape[1]):
-        ...             c[i0, i1] = a[i0, i1] + b[i0, i1]
-        ...     return c
+        >>> # Example, func_type = "pyfunc"
+        >>> def func_pyfunc(x1, x2):
+        ...     return x1 + x2
         >>>
-        >>> test_op_hybrid = ops.Custom(add_script)
-        >>> output = test_op_hybrid(input_x, input_y)
-        >>> # the result will be a 16 * 16 tensor with all elements 2
+        >>> test_pyfunc = ops.Custom(func_pyfunc, lambda x, _: x, lambda x, _: x, "pyfunc")
+        >>> output = test_pyfunc(input_x, input_y)
         >>> print(output.shape)
         (16, 16)
-        >>> # Example, func_type = "aot"
-        >>> def test_aot(x, y, out_shapes, out_types):
-        ...     program = ops.Custom("./reorganize.so:CustomReorganize", out_shapes, out_types, "aot")
-        ...     out = program(x, y)
-        ...     return out
-        >>>
-        >>> # Example, func_type = "pyfunc"
-        >>> def func_multi_output(x1, x2):
-        ...     return (x1 + x2), (x1 - x2)
-        >>>
-        >>> test_pyfunc = ops.Custom(func_multi_output, lambda x, _: (x, x), lambda x, _: (x, x), "pyfunc")
-        >>> output = test_pyfunc(input_x, input_y)
-        >>>
-        >>> # Example, func_type = "julia"
-        >>> # julia code:
-        >>> # add.jl
-        >>> # module Add
-        >>> # function add(x, y, z)
-        >>> #   z .= x + y
-        >>> #   return z
-        >>> # end
-        >>> # end
-        >>> def test_julia(x, y, out_shapes, out_types):
-        ...     program = ops.Custom("./add.jl:Add:add", out_shapes, out_types, "julia")
-        ...     out = program(x, y)
-        ...     return out
     """
 
     registered_func = {}

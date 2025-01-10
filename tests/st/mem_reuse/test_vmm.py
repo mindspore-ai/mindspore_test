@@ -17,6 +17,7 @@ from mindspore import ops, context
 import numpy as np
 import os
 from tests.mark_utils import arg_mark
+from tests.device_utils import set_device
 
 
 @arg_mark(
@@ -31,21 +32,22 @@ def test_pynative_multi_stream_vmm():
     Description: Pynative Multi-stream VMM.
     Expectation: No exception.
     """
+    set_device()
     os.environ["MS_ALLOC_CONF"] = "enable_vmm:true"
     context.set_context(mode=context.PYNATIVE_MODE)
 
     x = ms.Tensor(np.random.randn(256, 1024, 1024), dtype=ms.float32)
-    s1 = ms.hal.Stream()
-    with ms.hal.StreamCtx(s1):
+    s1 = ms.runtime.Stream()
+    with ms.runtime.StreamCtx(s1):
         o0 = ops.broadcast_to(x, (12, 256, 1024, 1024))
-        o0 += 1
+        o0 = o0 + 1
         del o0
         ev = s1.record_event()
 
     ev.wait()
     o1 = ops.broadcast_to(x, (12, 256, 1024, 1024))
-    o1 += 1
-    ms.hal.synchronize()
+    o1 = o1 + 1
+    ms.runtime.synchronize()
 
 
 @arg_mark(
@@ -60,6 +62,7 @@ def test_pynative_single_stream_vmm():
     Description: Pynative Single-stream VMM.
     Expectation: No exception.
     """
+    set_device()
     os.environ["MS_ALLOC_CONF"] = "enable_vmm:true"
     context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -69,8 +72,8 @@ def test_pynative_single_stream_vmm():
     o1 = o0 + 1
     o2 = o0 + 1
     del o0, o1, o2
-    ms.hal.synchronize()
+    ms.runtime.synchronize()
 
     o3 = ops.broadcast_to(x, (12, 256, 1024, 1024))
-    o3 += 1
-    ms.hal.synchronize()
+    o3 = o3 + 1
+    ms.runtime.synchronize()

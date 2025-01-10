@@ -267,6 +267,64 @@ Value Range:
 """
 STRICT_CHECK_PARENT_CONTEXT = ''
 
+"""
+Name: CELL_PARAMETER_HOOK
+Function: Whether to enable cell parameter hook.
+          Cell parameter hook is an experimental api that may be deleted later.
+Value Range:
+    1: Enable
+    Default: Disable
+"""
+CELL_PARAMETERS_HOOK = ''
+
+"""
+Name: CHECK_BPROP
+Function: Whether to check back propagation nodes. The checking ensures that the shape and dtype of
+          back propagation node outputs is the same as input parameters.
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+CHECK_BPROP = ''
+
+"""
+Name: GRAD_FOR_SCALAR
+Function: Whether to get gradient for scalar. When enable, the function's scalar input can be derived.
+          Because the back-end does not support scaling operations currently, this interface only
+          supports simple operations that can be deduced by the front-end.
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+GRAD_FOR_SCALAR = ''
+
+"""
+Name: DEBUG_LEVEL
+Function: Whether to record more debug information in compiling process. Used for debugging when errors occur.
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+DEBUG_LEVEL = ''
+
+"""
+Name: PYNATIVE_JIT_GRAD_MODE
+Function: Which method used for grad jit in pynative mode
+Value Range:
+    1: Replace ValueNode
+    Default: Parametrization
+"""
+PYNATIVE_JIT_GRAD_MODE = ''
+
+"""
+Name: PUT_ALL_CNODE_INTO_ORDER_LIST
+Function: Whether to put all CNode into order list in back prop.
+Value Range:
+    0: Disable
+    Default: Enable.
+"""
+PUT_ALL_CNODE_INTO_ORDER_LIST = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -296,4 +354,10 @@ __all__ = [
     "ENABLE_RECOMPUTE_BEFORE_INLINE",
     "STRICT_CHECK_PARENT_CONTEXT",
     "AUTO_PASSES_OPTIMIZE_PATH",
+    "CELL_PARAMETERS_HOOK",
+    "CHECK_BPROP",
+    "GRAD_FOR_SCALAR",
+    "DEBUG_LEVEL",
+    "PYNATIVE_JIT_GRAD_MODE",
+    "PUT_ALL_CNODE_INTO_ORDER_LIST",
 ]

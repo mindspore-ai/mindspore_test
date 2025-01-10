@@ -20,9 +20,6 @@
 #include <sstream>
 #include "thread/threadpool.h"
 #include "thread/core_affinity.h"
-#if !defined(_WIN32) && !defined(BUILD_LITE)
-#include "include/fork_utils.h"
-#endif
 
 namespace mindspore {
 std::mutex ThreadPool::create_thread_pool_muntex_;

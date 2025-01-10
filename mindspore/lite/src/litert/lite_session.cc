@@ -54,7 +54,6 @@
 #include "src/litert/delegate/tensorrt/tensorrt_delegate.h"
 #endif
 #ifdef SUPPORT_NNAPI
-#include "src/litert/delegate/nnapi/nnapi_delegate.h"
 #endif
 #ifdef ENABLE_COREML
 #include "src/litert/delegate/coreml/coreml_delegate.h"
@@ -1103,9 +1102,6 @@ int LiteSession::InitDelegate() {
     delegate_device_type_ = -1;
   } else if (context_->delegate_mode_ != kNoDelegate) {
     switch (context_->delegate_mode_) {
-      case kNNAPI:
-        ret = CreateNNAPIDelegate();
-        break;
       case kCoreML:
         ret = CreateCoreMLDelegate();
         break;

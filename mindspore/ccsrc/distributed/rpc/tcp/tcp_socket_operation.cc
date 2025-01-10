@@ -69,6 +69,7 @@ int TCPSocketOperation::ReceiveMessage(Connection *connection, struct msghdr *re
 
   while (*recvLen < totalRecvLen) {
     auto retval = recvmsg(connection->socket_fd, recvMsg, 0);
+    MS_VLOG(VL_DISTRIBUTED_FD) << "Recvmsg fd : " << connection->socket_fd << ", size : " << retval << ".";
     if (retval > 0) {
       size_t received_bytes = static_cast<size_t>(retval);
       *recvLen += received_bytes;
@@ -126,6 +127,7 @@ int TCPSocketOperation::SendMessage(Connection *connection, struct msghdr *sendM
 
   while (*sendLen != totalSendLen) {
     auto retval = sendmsg(connection->socket_fd, sendMsg, MSG_NOSIGNAL);
+    MS_VLOG(VL_DISTRIBUTED_FD) << "Sendmsg fd : " << connection->socket_fd << ", size : " << retval << ".";
     if (retval < 0) {
       ++eagainCount;
       if (errno != EAGAIN) {

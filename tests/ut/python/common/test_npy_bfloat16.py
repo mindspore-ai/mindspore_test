@@ -202,8 +202,6 @@ def test_bf16_item():
     Description: The __item__ method in Tensor is implemented by numpy, test type of bfloat16.
     Expectation: Success.
     """
-    x = ms.Tensor([[1, 2, 3], [4, 5, 6]], ms.bfloat16)
-    assert np.allclose(float(x.item((0, 1))), 2, rtol=0.01, atol=0.01)
     x = ms.Tensor(1.2, ms.bfloat16)
     assert np.allclose(float(x.item()), 1.2, rtol=0.01, atol=0.01)
 

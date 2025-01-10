@@ -16,16 +16,15 @@
 from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.ops.primitive import constexpr
-from mindspore.common._register_for_tensor import tensor_operator_registry_for_mint
 from mindspore.common.tensor import Tensor
-from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
+from mindspore.ops.function.array_func import gather_ext as gather
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
 from mindspore.mint.nn.functional import sigmoid
 from mindspore.mint.nn import functional
 from mindspore.mint import linalg
 from mindspore.mint import special
 from mindspore.mint import distributed
-from mindspore.ops import erf, where
+from mindspore.ops import erf
 from mindspore.ops.function.math_func import linspace_ext as linspace
 from mindspore.ops.function.math_func import median_ext as median
 from mindspore.ops.function.array_func import ones_like_ext as ones_like
@@ -38,6 +37,7 @@ from mindspore.ops.function.array_func import empty_like
 from mindspore.ops.function.math_func import isclose
 from mindspore.ops.auto_generate import abs
 from mindspore.ops.auto_generate import clone
+from mindspore.ops.function.array_func import full_like_ext as full_like
 # 1
 from mindspore.ops.function.math_func import divide, div
 from mindspore.ops.auto_generate import topk_ext as topk
@@ -45,9 +45,11 @@ from mindspore.ops.function.math_func import roll
 # 2
 from mindspore.ops.function.math_func import sin
 # 3
-from mindspore.mint.functional_overload import clamp
-from mindspore.mint.functional_overload import clip
-from mindspore.mint.functional_overload import fmod
+from mindspore.ops.functional_overload import clamp, where
+from mindspore.ops.functional_overload import clip
+from mindspore.ops.functional_overload import fmod
+from mindspore.ops.functional_overload import max
+from mindspore.ops.functional_overload import min
 # 4
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
@@ -71,9 +73,9 @@ from mindspore.ops.function.math_func import cross
 # 10
 from mindspore.ops.function.math_func import ne
 # 11
-
+from mindspore.ops.function.math_func import cdist as cdist_
 # 12
-from mindspore.ops.function.array_func import repeat_interleave_ext as repeat_interleave
+from mindspore.ops.functional_overload import repeat_interleave
 # 13
 from mindspore.ops.functional import flip
 # 14
@@ -86,17 +88,17 @@ from mindspore.ops.auto_generate import bmm_ext as bmm
 # 17
 
 # 18
-from mindspore.ops.functional import sum
+
 # 19
 from mindspore.ops.functional import log
 # 20
 
 # 21
-from mindspore.ops.functional import mul
+from mindspore.ops.function.math_func import mul_ext as mul
 # 22
 from mindspore.ops.functional import cumprod
 # 23
-
+from mindspore.ops.auto_generate import exp2
 # 24
 
 # 25
@@ -178,7 +180,7 @@ from mindspore.ops.functional import maximum
 # 63
 from mindspore.ops.functional import minimum
 # 64
-
+from mindspore.ops.functional import ravel
 # 65
 from mindspore.ops.functional import logical_and
 # 66
@@ -192,7 +194,7 @@ from mindspore.ops.functional import less_equal, le
 # 70
 from mindspore.ops.functional import negative, neg
 # 71
-from mindspore.ops.functional import isfinite
+
 # 72
 
 # 73
@@ -270,7 +272,7 @@ from mindspore.ops.function.math_func import diff_ext as diff
 # 109
 from mindspore.ops.auto_generate import argmin_ext as argmin
 # 110
-
+from mindspore.ops.function.nn_func import softmax_ext
 # 111
 
 # 112
@@ -343,12 +345,14 @@ from mindspore.ops.function.random_func import randint_like_ext as randint_like
 from mindspore.ops.auto_generate import floor
 # 231
 from mindspore.ops.function.math_func import inverse_ext as inverse
+# 239
+from mindspore.ops.functional_overload import lerp
 # 244
 from mindspore.ops.auto_generate import log1p
 # 261
 from mindspore.ops.function.random_func import multinomial_ext as multinomial
 # 275
-from mindspore.mint.functional_overload import remainder
+from mindspore.ops.functional_overload import remainder
 # 285
 from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 # 289
@@ -381,6 +385,30 @@ from mindspore.ops.auto_generate import mm_ext as mm
 # 382
 from mindspore.ops.function.math_func import dstack
 
+# 501
+from mindspore.ops.function.math_func import addbmm_ext as addbmm
+
+# 502
+from mindspore.ops.function.math_func import addmm_ext as addmm
+
+# 505
+from mindspore.ops.function.math_func import addmv_ext as addmv
+
+# 510
+from mindspore.ops.function.math_func import amax_ext as amax
+
+# 511
+from mindspore.ops.function.math_func import amin_ext as amin
+
+# 521
+from mindspore.ops.functional_overload import bitwise_not
+
+# 526
+from mindspore.ops.auto_generate import dot
+
+# 533
+from mindspore.ops.function.math_func import frac_ext as frac
+
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
 
@@ -393,8 +421,17 @@ from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
 # 557
 from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
 
+# 582
+from mindspore.ops.function.math_func import std_mean_ext as std_mean
+
+# 588
+from mindspore.ops.function.math_func import var_mean_ext as var_mean
+
 # 610
 from mindspore.ops.function.math_func import nan_to_num
+
+# 613
+from mindspore.ops.functional_overload import nansum
 
 # 664
 from mindspore.ops.function.array_func import meshgrid_ext as meshgrid
@@ -405,6 +442,9 @@ from mindspore.ops.auto_generate import count_nonzero
 # 697
 from mindspore.ops.function.math_func import float_power_ext as float_power
 
+# 708
+from mindspore.ops.function.math_func import std_ext as std
+
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
 
@@ -414,10 +454,10 @@ from mindspore.ops.function.math_func import isnan_ext as isnan
 # 1007
 from mindspore.ops.auto_generate import t_ext as t
 from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
+from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
 
-
-#1023
+# 1023
 from mindspore.ops.function.array_func import unbind_ext as unbind
 
 
@@ -446,7 +486,7 @@ def add(input, other, *, alpha=1):
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default 1.
+        alpha (number.Number): A scaling factor applied to `other`, default: ``1``.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
@@ -492,7 +532,7 @@ def any(input, dim=None, keepdim=False):
         input (Tensor): Input Tensor, has the shape :math:`(N, *)` where :math:`*` means,
             any number of additional dimensions.
         dim (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce.
-            Suppose the rank of `input` is r, `dim` must be in the range [-rank(input), rank(input)).
+            Suppose the rank of `input` is r, `dim` must be in the range [-r,r).
             Default: ``None`` , all dimensions are reduced.
         keepdim (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default : ``False`` .
@@ -504,7 +544,7 @@ def any(input, dim=None, keepdim=False):
           the output is a 0-D Tensor representing the "logical OR" of all elements in the input Tensor.
         - If `dim` is int, such as 2, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If `dim` is tuple(int), such as (2, 3), and `keepdim` is ``False`` ,
+        - If `dim` is tuple(int) or list(int), such as (2, 3), and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
         - If `dim` is 1-D Tensor, such as [2, 3], and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
@@ -541,6 +581,35 @@ def any(input, dim=None, keepdim=False):
 
 def all(input, dim=None, keepdim=False):
     r"""
+    all(input) -> Tensor
+
+    Reduces all elements of `input` by the "logical AND".
+
+    Args:
+        input (Tensor): Input Tensor, has the shape :math:`(N, *)` where :math:`*` means,
+            any number of additional dimensions.
+
+    Returns:
+        Tensor, the dtype is bool.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([[True, False], [True, True]]))
+        >>> # case 1: Reduces a dimension by the "logicalAND" of all elements in the dimension.
+        >>> output = mint.all(x)
+        >>> print(output)
+        False
+
+    .. function:: all(input, dim, keepdim=False) -> Tensor
+        :noindex:
+
     Reduces a dimension of `input` by the "logical AND" of all elements in the dimension, by default. And also can
     reduce a dimension of `input` along the `dim`. Determine whether the dimensions of the output and input are the
     same by controlling `keepdim`.
@@ -551,20 +620,17 @@ def all(input, dim=None, keepdim=False):
     Args:
         input (Tensor): Input Tensor, has the shape :math:`(N, *)` where :math:`*` means,
             any number of additional dimensions.
-        dim (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce.
+        dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce.
             Suppose the rank of `input` is r, `dim` must be in the range [-rank(input), rank(input)).
-            Default: ``None`` , all dimensions are reduced.
         keepdim (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default : ``False`` .
 
     Returns:
         Tensor, the dtype is bool.
 
-        - If `dim` is ``None`` , and `keepdim` is ``False`` ,
-          the output is a 0-D Tensor representing the "logical AND" of all elements in the input Tensor.
         - If `dim` is int, such as 2, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If `dim` is tuple(int), such as (2, 3), and `keepdim` is ``False`` ,
+        - If `dim` is tuple(int) or list(int), such as (2, 3), and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
         - If `dim` is 1-D Tensor, such as [2, 3], and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
@@ -581,17 +647,11 @@ def all(input, dim=None, keepdim=False):
         >>> import numpy as np
         >>> from mindspore import Tensor, mint
         >>> x = Tensor(np.array([[True, False], [True, True]]))
-        >>> # case 1: Reduces a dimension by the "logicalAND" of all elements in the dimension.
-        >>> output = mint.all(x, keepdim=True)
-        >>> print(output)
-        [[False]]
-        >>> print(output.shape)
-        (1, 1)
-        >>> # case 2: Reduces a dimension along axis 0.
+        >>> # case 1: Reduces a dimension along axis 0.
         >>> output = mint.all(x, dim=0)
         >>> print(output)
         [ True False]
-        >>> # case 3: Reduces a dimension along axis 1.
+        >>> # case 2: Reduces a dimension along axis 1.
         >>> output = mint.all(x, dim=1)
         >>> print(output)
         [False True]
@@ -607,8 +667,8 @@ def allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
     .. math::
         |input-other| ≤ atol + rtol × |other|
 
-    .. warning:
-            This is an experimental API that is subject to change or deletion.
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): First tensor to compare.
@@ -666,7 +726,7 @@ def cat(tensors, dim=0):
             all other dimensions should be equal, that is,
             :math:`t1.shape[1] = t2.shape[1], t1.shape[2] = t2.shape[2], ..., t1.shape[R-1] = t2.shape[R-1]`,
             where :math:`R` represents the rank of tensor.
-        dim (int): The specified dimension, whose value is in range :math:`[-R, R)`. Default: ``0`` .
+        dim (int, optional): The specified dimension, whose value is in range :math:`[-R, R)`. Default: ``0`` .
 
     Returns:
         Tensor, the shape is :math:`(x_1, x_2, ..., \sum_{i=1}^Nx_{mi}, ..., x_R)`.
@@ -705,10 +765,13 @@ def cat(tensors, dim=0):
 
 def concat(tensors, dim=0):
     r"""
+    Alias for :func:`mindspore.mint.cat`.
+
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
-    Alias of mint.cat().
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
     """
     return cat(tensors, dim)
 
@@ -723,6 +786,9 @@ def cummax(input, dim):
             y_{i} = \max(x_{1}, x_{2}, ... , x_{i})
         \end{array}
 
+    .. note::
+        O2 mode is not supported in Ascend.
+
     Args:
         input (Tensor): The input Tensor. Rank of `input` must be greater than 0.
         dim (int): The dimension to do the operation over. The value of `dim` must be in the range
@@ -736,9 +802,6 @@ def cummax(input, dim):
         TypeError: If `input` is not a Tensor.
         TypeError: If `dim` is not an int.
         ValueError: If `dim` is out the range of `[-input.ndim, input.ndim - 1]`.
-
-    .. note::
-        O2 mode is not supported in Ascend.
 
     Supported Platforms:
         ``Ascend``
@@ -771,6 +834,16 @@ def not_equal(input, other):
     return ne(input, other)
 
 
+def softmax(input, dim, *, dtype=None):
+    r"""
+    Alias for :func:`mindspore.mint.nn.functional.softmax`.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+    return softmax_ext(input, dim, dtype)
+
+
 def _einsum_convert_sublist_to_label(num, ell_num=False):
     """Convert sublist to label."""
     if num == Ellipsis or ell_num and num == 52:
@@ -779,7 +852,8 @@ def _einsum_convert_sublist_to_label(num, ell_num=False):
         return chr(num + ord('A'))
     if 26 <= num < 52:
         return chr(num + ord('a') - 26)
-    raise ValueError(f'For einsum, the number in sublist must be in range [0, 52), but got {num}')
+    raise ValueError(
+        f'For einsum, the number in sublist must be in range [0, 52), but got {num}')
 
 
 def _einsum_convert_label_to_index(label):
@@ -791,7 +865,8 @@ def _einsum_convert_label_to_index(label):
         return label_num - ord('a') + 26
     if label_num == ord('.'):
         return 52
-    raise ValueError(f'For einsum, the label in equation must be in [a-zA-Z] or ., but got {label}')
+    raise ValueError(
+        f'For einsum, the label in equation must be in [a-zA-Z] or ., but got {label}')
 
 
 def _einsum_convert_sublist(equation, *operands):
@@ -814,18 +889,21 @@ def _einsum_convert_sublist(equation, *operands):
             operands_tmp = list([equation]) + list(operands[1::2])
         equation = equation_tmp
         operands = tuple(operands_tmp)
-    if len(operands) == 0: # pylint: disable=len-as-condition
-        raise ValueError("For einsum, the 'operands' must have at least one operand.")
+    if len(operands) == 0:  # pylint: disable=len-as-condition
+        raise ValueError(
+            "For einsum, the 'operands' must have at least one operand.")
     return equation, operands
 
 
 def _einsum_check_inputargs(equation, operands):
     """Check equation and operands."""
     if not isinstance(equation, str):
-        raise TypeError(f"For einsum, 'equation' must be a str, but got {type(equation)}.")
+        raise TypeError(
+            f"For einsum, 'equation' must be a str, but got {type(equation)}.")
     for operand in operands:
         if not isinstance(operand, Tensor):
-            raise TypeError(f"For einsum, members of 'operands' must be Tensor, but got {type(operand)}.")
+            raise TypeError(
+                f"For einsum, members of 'operands' must be Tensor, but got {type(operand)}.")
 
 
 @constexpr
@@ -838,7 +916,8 @@ def _einsum_parse_equation(equation):
     if '->' in equation:
         l_equation, r_equation = equation.split('->', 1)
         if l_equation == '':
-            raise ValueError('For einsum, equation must contain characters to the left fo the arrow.')
+            raise ValueError(
+                'For einsum, equation must contain characters to the left fo the arrow.')
     else:
         l_equation = equation
 
@@ -853,13 +932,15 @@ def _einsum_parse_equation(equation):
         if '.' in subequation and ('...' not in subequation or subequation.count('.') != 3):
             raise ValueError(f"For einsum, an ellipsis in the equation must include three continuous \'.\', "
                              f"and can only be found once.")
-        subequation_lst = [_einsum_convert_label_to_index(label) for label in subequation.replace('...', '.')]
+        subequation_lst = [_einsum_convert_label_to_index(
+            label) for label in subequation.replace('...', '.')]
         l_equationlst.append(subequation_lst)
 
     if "." in r_equation and ('...' not in r_equation or r_equation.count('.') != 3):
         raise ValueError(f"For einsum, an ellipsis in the equation must include three continuous \'.\', "
                          f"and can only be found once.")
-    r_equationlst = [_einsum_convert_label_to_index(label) for label in r_equation.replace('...', '.')]
+    r_equationlst = [_einsum_convert_label_to_index(
+        label) for label in r_equation.replace('...', '.')]
 
     return l_equationlst, r_equationlst, ('->' in equation)
 
@@ -868,8 +949,8 @@ def _einsum_parse_labels(l_equationlst, operands):
     """Parse left script of equation."""
     align_rank = 0
     max_labels = 53
+    ellipsis_dimnum = 0
     labels_count = [0] * max_labels
-    labels2dimlst = [[-max_labels] for _ in range(max_labels)]
 
     if len(operands) != len(l_equationlst):
         raise ValueError(f"For einsum, 'operands' is not equal to specified in the 'equation', "
@@ -880,67 +961,70 @@ def _einsum_parse_labels(l_equationlst, operands):
         label_num = 0
         operand_shape = list(operands[idx].shape)
         for label in sub_equ:
+            dim_num = 1
             label_num += 1
             end_dim = start_dim + 1
 
             # Label is ellipsis
             if label == 52:
                 end_dim = len(operand_shape) - len(sub_equ) + label_num
-            if labels2dimlst[label] == [-max_labels]:
-                labels2dimlst[label] = operand_shape[start_dim:end_dim]
-                align_rank += (end_dim - start_dim)
-            else:
-                if labels2dimlst[label] != operand_shape[start_dim:end_dim]:
-                    raise ValueError(f"For einsum, one label in 'equation' can only represent the same dimension "
-                                     f"in 'operands', but '{_einsum_convert_sublist_to_label(label, True)}' "
-                                     f"represented different dimensions.")
+                dim_num = end_dim - start_dim
+                if ellipsis_dimnum != 0 and ellipsis_dimnum != dim_num:
+                    raise ValueError(f"For einsum, an ellipsis in 'equation' can only represent the same numbers of "
+                                     f"dimensions in 'operands'.")
+                ellipsis_dimnum = dim_num
+            if labels_count[label] == 0:
+                align_rank += dim_num
             labels_count[label] += 1
-            start_dim = end_dim
+            start_dim += dim_num
         if label_num != len(sub_equ) or start_dim != len(operand_shape):
             raise ValueError(f"For einsum, the numbers of labels specified in the 'equation' does not match "
                              f"'operands[{idx}]'.")
-    return labels2dimlst, labels_count, align_rank
+    return ellipsis_dimnum, labels_count, align_rank
 
 
-def _einsum_infer_output(r_equationlst, arrow_exist, labels2dimlst, labels_count):
+def _einsum_infer_output(r_equationlst, arrow_exist, ellipsis_dimnum, labels_count):
     """Parse right script of equation and infer output shape."""
     idx = 0
     idle_idx = -1
-    output_shape = []
+    output_rank = 0
     labels_perm_idx = [idle_idx] * 53
 
     if arrow_exist:
         for label in r_equationlst:
             if labels_count[label] != 0:
-                output_shape += labels2dimlst[label]
                 if labels_perm_idx[label] != idle_idx:
                     raise ValueError(f"For einsum, '{_einsum_convert_sublist_to_label(label, True)}' or {label} in "
                                      f"sublist format has appears more than once in output subscript.")
+                dimnum = 1
+                if label == 52:
+                    dimnum = ellipsis_dimnum
                 labels_perm_idx[label] = idx
-                idx += len(labels2dimlst[label])
+                output_rank += dimnum
+                idx += dimnum
             else:
                 raise ValueError(f"For einsum, the label to the right of arrow in the 'equation' must appear on "
                                  f"left, but '{_einsum_convert_sublist_to_label(label, True)}' does not.")
     else:
         if labels_count[52] != 0:
-            output_shape += labels2dimlst[52]
+            output_rank += ellipsis_dimnum
             labels_perm_idx[52] = idx
-            idx += len(labels2dimlst[52])
+            idx += ellipsis_dimnum
         for label, count in enumerate(labels_count):
             if count == 1:
-                output_shape += labels2dimlst[label]
+                output_rank += 1
                 labels_perm_idx[label] = idx
-                idx += len(labels2dimlst[label])
+                idx += 1
 
     for label, count in enumerate(labels_count):
         if count != 0 and labels_perm_idx[label] == idle_idx:
             labels_perm_idx[label] = idx
             idx += 1
 
-    return output_shape, labels_perm_idx
+    return output_rank, labels_perm_idx
 
 
-def _einsum_adjust_operands(operands, l_equationlst, labels2dimlst, labels_perm_idx, align_rank):
+def _einsum_adjust_operands(operands, l_equationlst, ellipsis_dimnum, labels_perm_idx, align_rank):
     """Align operands to output as possible."""
     # Unsqueeze miss dimensions to make all operands has same rank, compute diagonal if operand has same label.
     # Then use _labels_perm_idx to transpose all operands to align dimensions with output.
@@ -966,7 +1050,7 @@ def _einsum_adjust_operands(operands, l_equationlst, labels2dimlst, labels_perm_
             else:
                 label_dims[label] = dim
                 if label == 52:
-                    for ell_idx in range(len(labels2dimlst[label])):
+                    for ell_idx in range(ellipsis_dimnum):
                         align_axis[labels_perm_idx[label] + ell_idx] = dim
                         dim += 1
                 else:
@@ -1040,7 +1124,7 @@ def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
             ronly_size *= r_shape[i]
 
     # Compute the einsum bmm operators pipeline.
-    # The whole operators pipline is transpose(in) -> reshape(in) -> bmm(in) -> reshape(out) -> transpose(out).
+    # The whole operators pipeline is transpose(in) -> reshape(in) -> bmm(in) -> reshape(out) -> transpose(out).
     l_reshape_shape = (batch_size, lonly_size, sum_size)
     r_reshape_shape = (batch_size, sum_size, ronly_size)
 
@@ -1079,18 +1163,24 @@ def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
 
 def _einsum(equation, operands):
     '''Einsum main process'''
-    _l_equationlst, _r_equationlst, _arrow_exist = _einsum_parse_equation(equation)
-    _labels2dimlst, _labels_count, _align_rank = _einsum_parse_labels(_l_equationlst, operands)
-    _output_shape, _labels_perm_idx = _einsum_infer_output(_r_equationlst, _arrow_exist, _labels2dimlst, _labels_count)
-    _output_rank = len(_output_shape)
-
-    _adjust_operands = _einsum_adjust_operands(operands, _l_equationlst, _labels2dimlst, _labels_perm_idx, _align_rank)
-    _dim_last_op, _has_zero_dim = _einsum_find_dimlastop(_align_rank, operands, _adjust_operands)
+    _l_equationlst, _r_equationlst, _arrow_exist = _einsum_parse_equation(
+        equation)
+    _ellipsis_dimnum, _labels_count, _align_rank = _einsum_parse_labels(
+        _l_equationlst, operands)
+    _output_rank, _labels_perm_idx = _einsum_infer_output(
+        _r_equationlst, _arrow_exist, _ellipsis_dimnum, _labels_count)
+    _adjust_operands = _einsum_adjust_operands(operands, _l_equationlst, _ellipsis_dimnum, _labels_perm_idx,
+                                               _align_rank)
+    _dim_last_op, _has_zero_dim = _einsum_find_dimlastop(
+        _align_rank, operands, _adjust_operands)
     _result = _adjust_operands[0]
 
     # Fast path if operands has zero dim.
     if _has_zero_dim:
-        return zeros(_output_shape, dtype=_result.dtype)
+        output_shape = []
+        for dim in range(_output_rank):
+            output_shape.append(_adjust_operands[_dim_last_op[dim]].shape[dim])
+        return zeros(output_shape, dtype=_result.dtype)
 
     # Sum or squeeze dimensions that is 1 for all rest operands.
     _reduce_dim = _output_rank
@@ -1235,6 +1325,81 @@ def einsum(equation, *operands):
     return _einsum(_equation, _operands)
 
 
+def equal(input, other):
+    r"""
+    Computes the equivalence between two tensors.
+
+    Note:
+        `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The first input.
+        other (Tensor): The second input.
+
+    Returns:
+        bool.
+
+    Raises:
+        TypeError: If `input` or `other` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor([1, 2, 3], mindspore.int32)
+        >>> y = Tensor([1, 2, 4], mindspore.int32)
+        >>> output = mint.equal(x, y)
+        >>> print(output)
+        False
+    """
+    result = equal_ext_op(input, other)
+    return result.item()
+
+
+def isfinite(input):
+    r"""
+    Determine which elements are finite for each position. If elements are not ``NaN`` , ``-INF`` , ``INF``,
+    they are finite.
+
+    .. math::
+        out_i = \begin{cases}
+          & \text{ if } input_{i} = \text{Finite},\ \ True \\
+          & \text{ if } input_{i} \ne \text{Finite},\ \ False
+        \end{cases}
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Returns:
+        Tensor, has the same shape of input, and the dtype is bool.
+
+    Raises:
+        TypeError: If input is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
+        >>> output = mint.isfinite(x)
+        >>> print(output)
+        [False True False]
+        >>> x = Tensor(2.1, mindspore.float64)
+        >>> output = mint.isfinite(x)
+        >>> print(output)
+        True
+    """
+    return ops.auto_generate.isfinite(input)
+
+
 def item(input):
     r"""
     Returns the value of this tensor as a standard Python number.
@@ -1275,6 +1440,43 @@ def item(input):
 
 def mean(input, dim=None, keepdim=False, *, dtype=None):
     r"""
+    mean(input, *, dtype=None) -> Tensor
+
+    Reduces all dimension of a tensor by averaging all elements.
+
+    Args:
+        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
+            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
+        ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ... [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]),
+        ... mindspore.float32)
+        >>> output = mint.mean(x)
+        >>> print(output)
+        5.0
+        >>> print(output.shape)
+        ()
+
+    .. function:: mean(input, dim, keepdim=False, *, dtype=None) -> Tensor
+        :noindex:
+
     Reduces all dimension of a tensor by averaging all elements in the dimension, by default.
     And reduce a dimension of `input` along the specified `dim`. `keepdim`
     determines whether the dimensions of the output and input are the same.
@@ -1285,9 +1487,8 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     Args:
         input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
             :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce. Default: ``None`` ,
-            reduce all dimensions. Only constant value is allowed. Assume the rank of `input` is r,
-            and the value range is [-r,r).
+        dim (Union[int, tuple(int), list(int), Tensor]): The dimensions to reduce.
+            Only constant value is allowed. Assume the rank of `input` is r, and the value range is [-r,r).
         keepdim (bool): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default: ``False`` .
 
@@ -1297,8 +1498,6 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
     Returns:
         Tensor.
 
-        - If `dim` is ``None`` , and `keepdim` is ``False`` ,
-          the output is a 0-D tensor representing the product of all elements in the input tensor.
         - If `dim` is int, set as 1, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_0, input_2, ..., input_R)`.
         - If `dim` is tuple(int) or list(int), set as (1, 2), and `keepdim` is ``False`` ,
@@ -1319,51 +1518,57 @@ def mean(input, dim=None, keepdim=False, *, dtype=None):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, mint
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = mint.mean(x, 1, keepdim=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by averaging all elements in the dimension.
         >>> x = Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
         ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
         ... [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]),
         ... mindspore.float32)
-        >>> output = mint.mean(x)
-        >>> print(output)
-        5.0
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along the axis 0
         >>> output = mint.mean(x, 0, True)
         >>> print(output)
         [[[4. 4. 4. 4. 4. 4.]
           [5. 5. 5. 5. 5. 5.]
           [6. 6. 6. 6. 6. 6.]]]
-        >>> # case 3: Reduces a dimension along the axis 1
-        >>> output = mint.mean(x, 1, True)
-        >>> print(output)
-        [[[2. 2. 2. 2. 2. 2.]]
-         [[5. 5. 5. 5. 5. 5.]]
-         [[8. 8. 8. 8. 8. 8.]]]
-        >>> # case 4: Reduces a dimension along the axis 2
-        >>> output = mint.mean(x, 2, True)
-        >>> print(output)
-        [[[ 2.]
-          [ 2.]
-          [ 2.]]
-         [[ 4.]
-          [ 5.]
-          [ 6.]]
-         [[ 6.]
-          [ 8.]
-          [10.]]]
     """
-    return ops.function.math_func.mean_ext(input, axis=dim, keep_dims=keepdim, dtype=dtype)
+    return ops.auto_generate.mean_ext(input, dim, keepdim, dtype)
 
 
 def prod(input, dim=None, keepdim=False, *, dtype=None):
     r"""
+    prod(input, *, dtype=None) -> Tensor
+
+    Multiplying all elements of input.
+
+    Args:
+        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
+            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mindspore.float32)
+        >>> output = mint.prod(x)
+        >>> print(output)
+        2.2833798e+33
+        >>> print(output.shape)
+        ()
+
+    .. function:: prod(input, dim, keepdim=False, *, dtype=None) -> Tensor
+        :noindex:
+
     Reduces a dimension of a tensor by multiplying all elements in the dimension, by default. And also can
     reduce a dimension of `input` along the `dim`. Determine whether the dimensions of the output and input are the
     same by controlling `keepdim`.
@@ -1371,7 +1576,7 @@ def prod(input, dim=None, keepdim=False, *, dtype=None):
     Args:
         input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
             :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        dim (int): The dimensions to reduce. Default: ``None`` , reduce all dimensions. Only constant value is allowed.
+        dim (int): The dimensions to reduce. Only constant value is allowed.
             Assume the rank of `x` is r, and the value range is [-r,r).
         keepdim (bool): If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default: ``False`` .
@@ -1382,8 +1587,6 @@ def prod(input, dim=None, keepdim=False, *, dtype=None):
     Returns:
         Tensor.
 
-        - If `dim` is ``None`` , and `keepdim` is ``False`` ,
-          the output is a 0-D tensor representing the product of all elements in the input tensor.
         - If `dim` is int, set as 1, and `keepdim` is ``False`` ,
           the shape of output is :math:`(input_0, input_2, ..., input_R)`.
 
@@ -1400,46 +1603,112 @@ def prod(input, dim=None, keepdim=False, *, dtype=None):
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, mint
-        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = mint.prod(x, 1, keepdim=True)
-        >>> result = output.shape
-        >>> print(result)
-        (3, 1, 5, 6)
-        >>> # case 1: Reduces a dimension by multiplying all elements in the dimension.
         >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
         ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
         ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mindspore.float32)
-        >>> output = mint.prod(x)
-        >>> print(output)
-        2.2833798e+33
-        >>> print(output.shape)
-        ()
-        >>> # case 2: Reduces a dimension along axis 0.
         >>> output = mint.prod(x, 0, True)
         >>> print(output)
         [[[ 28.  28.  28.  28.  28.  28.]
           [ 80.  80.  80.  80.  80.  80.]
           [162. 162. 162. 162. 162. 162.]]]
-        >>> # case 3: Reduces a dimension along axis 1.
-        >>> output = mint.prod(x, 1, True)
-        >>> print(output)
-        [[[  6.   6.   6.   6.   6.   6.]]
-         [[120. 120. 120. 120. 120. 120.]]
-         [[504. 504. 504. 504. 504. 504.]]]
-        >>> # case 4: Reduces a dimension along axis 2.
-        >>> output = mint.prod(x, 2, True)
-        >>> print(output)
-        [[[1.00000e+00]
-          [6.40000e+01]
-          [7.29000e+02]]
-         [[4.09600e+03]
-          [1.56250e+04]
-          [4.66560e+04]]
-         [[1.17649e+05]
-          [2.62144e+05]
-          [5.31441e+05]]]
     """
-    return ops.auto_generate.prod_ext(input, axis=dim, keep_dims=keepdim, dtype=dtype)
+    return ops.auto_generate.prod_ext(input, dim, keepdim, dtype)
+
+
+def sum(input, dim=None, keepdim=False, *, dtype=None):
+    r'''
+    sum(input, *, dtype=None) -> Tensor
+
+    Calculate sum of all elements in Tensor.
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        A Tensor, sum of all elements in `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mstype.float32)
+        >>> out = mint.sum(x)
+        >>> print(out)
+        270.0
+
+    .. function:: sum(input, dim, keepdim=False, *, dtype=None) -> Tensor
+        :noindex:
+
+    Calculate sum of Tensor elements over a given dim.
+
+    Note:
+        The `dim` with tensor type is only used for compatibility with older versions and is not recommended.
+
+    Args:
+        input (Tensor): The input tensor.
+        dim (Union[int, tuple(int), list(int), Tensor]): Dimensions along which a sum is performed.
+            If the `dim` is a tuple or list of ints, a sum is performed on all the dimensions specified in the tuple.
+            Must be in the range :math:`[-input.ndim, input.ndim)` .
+        keepdim (bool): Whether the output tensor has `dim` retained or not.
+            If ``True`` , keep these reduced dimensions and the length is 1.
+            If ``False`` , don't keep these dimensions. Default: ``False`` .
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
+    Returns:
+        A Tensor, sum of elements over a given `dim` in `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not an int, tulpe(int), list(int) or Tensor.
+        ValueError: If `dim` is not in the range :math:`[-input.ndim, input.ndim)` .
+        TypeError: If `keepdim` is not a bool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mstype.float32)
+        >>> out = mint.sum(x)
+        >>> print(out)
+        270.0
+        >>> out = mint.sum(x, dim=2)
+        >>> print(out)
+        [[ 6. 12. 18.]
+         [24. 30. 36.]
+         [42. 48. 54.]]
+        >>> out = mint.sum(x, dim=2, keepdim=True)
+        >>> print(out)
+        [[[ 6.]
+          [12.]
+          [18.]]
+         [[24.]
+          [30.]
+          [36.]]
+         [[42.]
+          [48.]
+          [54.]]]
+    '''
+    return ops.auto_generate.sum_ext(input, dim, keepdim, dtype)
 
 
 def ones(size, *, dtype=None):
@@ -1462,7 +1731,7 @@ def ones(size, *, dtype=None):
         Tensor, whose dtype and size are defined by input.
 
     Raises:
-        TypeError: If `size` is neither an int nor an tuple/list/Tensor of int.
+        TypeError: If `size` is neither an int nor a tuple/list/Tensor of int.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1526,7 +1795,7 @@ def split(tensor, split_size_or_sections, dim=0):
             if `tensor.shape[dim]` is not divisible by `split_size_or_sections`.
             If `split_size_or_sections` is a list type, then `tensor` will be split into len(split_size_or_sections)
             chunks with sizes `split_size_or_sections` along the given `dim`.
-        dim (int): The dim along which to split. Default: ``0`` .
+        dim (int, optional): The dim along which to split. Default: ``0`` .
 
     Returns:
         A tuple of sub-tensors.
@@ -1537,7 +1806,7 @@ def split(tensor, split_size_or_sections, dim=0):
         ValueError: If argument `dim` is out of range of :[-tensor.ndim, tensor.ndim).
         TypeError: If each element in `split_size_or_sections` is not integer.
         TypeError: If argument `split_size_or_sections` is not int, tuple(int) or list(int).
-        ValueError: The sum of `split_size_or_sections` is not equal to x.shape[dim].
+        ValueError: The sum of `split_size_or_sections` is not equal to tensor.shape[dim].
 
     Supported Platforms:
         ``Ascend``
@@ -1599,13 +1868,16 @@ def squeeze(input, dim):
     to (A, B) when :math:`dim=1`, but when :math:`dim=0` or :math:`dim=2`, an error will occur.
 
     Note:
-        - Squeezing a dimension that is not 1 will raise an error.
         - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
           and there is no Tensor data copy process.
         - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
+        - In GE mode, only support remove dimensions of size 1 from the shape of input tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
+        input (Tensor): Used to calculate Squeeze. The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
         dim (Union[int, tuple(int)]): Specifies the dimension indexes of shape to be removed, which will
             remove all the dimensions of size 1 in the given dim parameter. If specified, it must be int32 or int64.
 
@@ -1659,7 +1931,7 @@ def sub(input, other, *, alpha=1):
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default 1.
+        alpha (number.Number): A scaling factor applied to `other`, default ``1``.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
@@ -1694,7 +1966,13 @@ def sub(input, other, *, alpha=1):
 
 def swapaxes(input, axis0, axis1):
     '''
-    Interchange two axes of a tensor, alias for mint.transpose()
+    Alias for :func:`mindspore.mint.transpose` . The `input` corresponds to the `input` in the reference interface,
+    and the parameters `axis0` and `axis1` correspond to `dim0` and `dim1` in the reference interface respectively.
+
+    For more details, see :func:`mindspore.mint.transpose` .
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Examples:
         >>> import numpy as np
@@ -1706,6 +1984,67 @@ def swapaxes(input, axis0, axis1):
         (4, 3, 2)
     '''
     return transpose(input, axis0, axis1)
+
+
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
+    r"""
+    Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
+
+    When `return_inverse=True` , it returns a tensor containing the indices of the elements in the input tensor
+    within the output tensor.
+
+    When `return_counts=True` , it returns a tensor representing the number of occurrences of each output element
+    in the input.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor.
+        return_inverse (bool, optional): Whether to return the index of where the element in the original input
+            maps to the position in the output. Default: ``False`` .
+        return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
+        dim (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
+            returned. If specified, it must be int32 or int64. Default: ``None`` .
+
+    Returns:
+        A tensor or a tuple of tensors containing tensor objects (`output`, `inverse_indices`, `counts`).
+
+        - **output** (Tensor): the output tensor has the same type as `input` and represents the output list of
+          unique scalar elements.
+        - **inverse_indices** (Tensor, optional): if `return_inverse` is True, there will be an additional returned
+          tensor `inverse_indices`. `inverse_indices` has the same shape as `input` and represents the index of where
+          the element in the original input maps to the position in the output.
+        - **counts** (Tensor, optional):  if `return_counts` is True, there will be an additional returned tensor
+          `counts`. `counts` has the same shape as `output` or `output.shape[dim]` if dim was specified and represents
+          the number of occurrences for each unique value or tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not supported.
+        TypeError: If `return_inverse` is not a bool.
+        TypeError: If `return_counts` is not a bool.
+        TypeError: If `dim` is not an int.
+        ValueError: If `dim` is not in the range of :math:`[-ndim, ndim-1]`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor(np.array([1, 1, 2, 2, 3, 1, 1, 2]), mstype.int64)
+        >>> output, inverse_indices, counts = mint.unique_consecutive(x, True, True, None)
+        >>> print(output)
+        [1 2 3 1 2]
+        >>> print(inverse_indices)
+        [0 0 1 1 2 3 3 4]
+        >>> print(counts)
+        [2 2 1 2 1]
+    """
+
+    return ops.function.array_func.unique_consecutive(input, return_inverse, return_counts, dim)
 
 
 def zeros(size, *, dtype=None):
@@ -1725,7 +2064,7 @@ def zeros(size, *, dtype=None):
         Tensor, whose dtype and size are defined by input.
 
     Raises:
-        TypeError: If `size` is neither an int nor an tuple/list/Tensor of int.
+        TypeError: If `size` is neither an int nor a tuple/list/Tensor of int.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1782,9 +2121,9 @@ def scatter(input, dim, index, src):
 
     Raises:
         TypeError: If `index` is neither int32 nor int64.
-        ValueError: If rank of any of `input` , `index` and `src` less than 1.
+        ValueError: If rank of any of `input` , `index` and `src` is less than 1.
         ValueError: If the rank of `src` is not equal to the rank of `input` .
-        TypeError: If the data type of `input` and `src` have different dtypes.
+        TypeError: If the data types of `input` and `src` have different dtypes.
         RuntimeError: If `index` has negative elements.
 
     Supported Platforms:
@@ -1824,6 +2163,58 @@ def scatter(input, dim, index, src):
     return ops.function.array_func.scatter(input, dim, index, src)
 
 
+def cdist(x1, x2, p=2.0, compute_mode='use_mm_for_euclid_dist_if_necessary'):
+    """
+    Computes p-norm distance between each pair of row vectors of two input Tensors.
+
+    .. warning::
+        This is an experimental optimizer API that is subject to change.
+
+    Note:
+        On Ascend, the supported dtypes are float16 and float32.
+        On CPU, the supported dtypes are float16 and float32.
+        On GPU, the supported dtypes are float32 and float64.
+
+    Args:
+        x1 (Tensor): Input tensor of shape :math:`(B, P, M)`.
+            Letter :math:`B` represents 0 or positive int number.
+            When :math:`B` is equal to 0, it means this dimension can be ignored,
+            i.e. shape of the tensor is :math:`(P, M)`.
+        x2 (Tensor): Input tensor of shape :math:`(B, R, M)`, has the same dtype as `x1`.
+        p (float, optional): P value for the p-norm distance to calculate between each
+            vector pair, P >= 0. Default: ``2.0`` .
+        compute_mode (string, optional): Specify the cumpute mode. Setting this parameter currently has no effect.
+            Default: ``'use_mm_for_euclid_dist_if_necessary'`` .
+
+    Returns:
+        Tensor, p-norm distance, has the same dtype as `x1`, its shape is :math:`(B, P, R)`.
+
+    Raises:
+        TypeError: If `x1` or `x2` is not Tensor.
+        TypeError: If dtype of `x1` or `x2` is not listed in the "Note" above.
+        TypeError: If `p` is not float32.
+        ValueError: If `p` is negative.
+        ValueError: If dimension of `x1` is not the same as `x2`.
+        ValueError: If dimension of `x1` or `x2` is neither 2 nor 3.
+        ValueError: If the batch dim of `x1` and `x2` can not broadcast.
+        ValueError: If the number of columns of `x1` is not the same as that of `x2`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
+        >>> y = Tensor(np.array([[[3.0, 3.0], [3.0, 3.0]]]).astype(np.float32))
+        >>> output = ops.cdist(x, y, 2.0)
+        >>> print(output)
+        [[[2.8284273 2.8284273]
+          [1.4142137 1.4142137]]]
+    """
+    return cdist_(x1, x2, p)
+
+
 __all__ = [
     'conv2d',
     'full',
@@ -1836,6 +2227,7 @@ __all__ = [
     'isclose',
     'empty',
     'empty_like',
+    'full_like',
     # 1
     'div',
     'divide',
@@ -1894,9 +2286,9 @@ __all__ = [
     # 22
     'cumprod',
     # 23
-
+    'exp2',
     # 24
-
+    'cdist',
     # 25
     'greater',
     'gt',
@@ -1980,7 +2372,7 @@ __all__ = [
     # 63
     'minimum',
     # 64
-
+    'ravel',
     # 65
     'logical_and',
     # 66
@@ -2024,7 +2416,6 @@ __all__ = [
     # 83
     'narrow',
     # 84
-
     'masked_select',
 
     # 86
@@ -2077,7 +2468,7 @@ __all__ = [
     # 109
     'argmin',
     # 110
-
+    'softmax',
     # 111
 
     # 112
@@ -2149,7 +2540,8 @@ __all__ = [
     'erfc',
     # 208
     'eye',
-
+    # 239
+    'lerp',
     # 256
     'median',
     'randperm',
@@ -2195,8 +2587,32 @@ __all__ = [
     # 406
     'allclose',
 
+    # 501
+    'addbmm',
+
+    # 502
+    'addmm',
+
+    # 505
+    'addmv',
+
+    # 510
+    'amax',
+
+    # 511
+    'amin',
+
     # 520
     'bincount',
+
+    # 521
+    'bitwise_not',
+
+    # 526
+    'dot',
+
+    # 533
+    'frac',
 
     # 538
     'histc',
@@ -2210,8 +2626,20 @@ __all__ = [
     # 557
     'logsumexp',
 
+    # 582
+    'std_mean',
+
+    # 588
+    'var_mean',
+
+    # 586
+    'unique_consecutive',
+
     # 610
     'nan_to_num',
+
+    # 613
+    'nansum',
 
     # 664
     'meshgrid',
@@ -2221,6 +2649,9 @@ __all__ = [
 
     # 697
     'float_power',
+
+    # 708
+    'std',
 
     # 887
     'log2',
@@ -2237,29 +2668,6 @@ __all__ = [
     # 1100
     'diff',
 ]
-
-setattr(tensor_operator_registry_for_mint, 'add', add)
-setattr(tensor_operator_registry_for_mint, 'all', all)
-setattr(tensor_operator_registry_for_mint, 'any', any)
-setattr(tensor_operator_registry_for_mint, 'log', log)
-setattr(tensor_operator_registry_for_mint, 'ceil', ceil)
-setattr(tensor_operator_registry_for_mint, 'clamp', clamp)
-setattr(tensor_operator_registry_for_mint, 'cos', cos)
-setattr(tensor_operator_registry_for_mint, 'flatten', flatten)
-setattr(tensor_operator_registry_for_mint, 'item', item)
-setattr(tensor_operator_registry_for_mint, 'max', max)
-setattr(tensor_operator_registry_for_mint, 'mean', mean)
-setattr(tensor_operator_registry_for_mint, 'min', min)
-setattr(tensor_operator_registry_for_mint,
-        'repeat_interleave', repeat_interleave)
-setattr(tensor_operator_registry_for_mint, 'ne', ne)
-setattr(tensor_operator_registry_for_mint, 'round', round)
-setattr(tensor_operator_registry_for_mint, 'sin', sin)
-setattr(tensor_operator_registry_for_mint, 'split', split)
-setattr(tensor_operator_registry_for_mint, 'sqrt', sqrt)
-setattr(tensor_operator_registry_for_mint, 'square', square)
-setattr(tensor_operator_registry_for_mint, 'sub', sub)
-setattr(tensor_operator_registry_for_mint, 'sum', sum)
 
 __all__.extend(functional.__all__)
 __all__.extend(nn.__all__)

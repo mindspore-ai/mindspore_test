@@ -77,7 +77,7 @@ class SparseReorderCpuKernelMod : public NativeCpuKernelMod {
                        const std::vector<kernel::KernelTensor *> &, const std::vector<kernel::KernelTensor *> &)>;
   static std::vector<std::pair<KernelAttr, SparseReorderFunc>> func_list_;
   SparseReorderFunc kernel_func_;
-  std::vector<size_t> indices_shape_;
+  std::vector<size_t> indices_shape_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

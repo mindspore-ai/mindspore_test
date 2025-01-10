@@ -1,0 +1,27 @@
+atanh:
+  description: |
+    atanh() ->Tensor
+
+    Computes inverse hyperbolic tangent of `self` element-wise.
+    
+    .. math::
+
+        out_i = \tanh^{-1}(self_{i})
+
+    Returns:
+        Tensor, has the same shape as `self`. The dtype of output is float32 when dtype of `self` is in bool, int8, uint8, int16, int32, int64. Otherwise output has the same dtype as `self`.
+
+    Raises:
+        TypeError: If `self` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([0, -0.5]), mindspore.float32)
+        >>> output = input.atanh()
+        >>> print(output)
+        [ 0.         -0.54930615]

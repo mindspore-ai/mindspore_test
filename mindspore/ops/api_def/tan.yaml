@@ -1,0 +1,7 @@
+tan:
+  op_yaml: tan_op.yaml
+  py_method: tensor_tan
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

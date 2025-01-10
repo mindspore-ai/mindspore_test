@@ -115,15 +115,17 @@ struct SimuCreateTypeGetter<T **> {
                                                                                          \
   template <>                                                                            \
   inline aclError SimuFuncI##name(void **in_ret, ##__VA_ARGS__) {                        \
-    static int st##name{};                                                               \
-    *in_ret = static_cast<void *>(&st##name);                                            \
+    static uintptr_t currentPointer = 0;                                                 \
+    currentPointer += sizeof(void *);                                                    \
+    *in_ret = reinterpret_cast<void *>(currentPointer);                                  \
     return ACL_ERROR_NONE;                                                               \
   }                                                                                      \
                                                                                          \
   template <>                                                                            \
   inline void SimuFuncI##name(void **in_ret, ##__VA_ARGS__) {                            \
-    static int st##name{};                                                               \
-    *in_ret = static_cast<void *>(&st##name);                                            \
+    static uintptr_t currentPointer = 0;                                                 \
+    currentPointer += sizeof(void *);                                                    \
+    *in_ret = reinterpret_cast<void *>(currentPointer);                                  \
   }                                                                                      \
   extern name##FunObj name##_;                                                           \
   inline void SimuAssignI##name() {                                                      \

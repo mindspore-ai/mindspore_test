@@ -60,6 +60,11 @@ tensor::BaseTensorPtr InnerNonZeroAscendCustomize(const std::shared_ptr<OpRunner
   op->UpdateOutputShape(outputs[kIndex0], output_real_shape);
   MS_LOG(DEBUG) << "InnerNonZero Ascend end";
 
+  const auto &release_func = std::get<kIndex3>(return_values);
+  if (release_func) {
+    release_func();
+  }
+
   return op->output(0);
 }
 }  // namespace pyboost

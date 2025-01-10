@@ -17,28 +17,17 @@
 #include "plugin/device/ascend/kernel/internal/reshape_and_cache.h"
 
 #include <memory>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr ReshapeAndCache::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                    const std::vector<KernelTensor *> &outputs) {
-  auto param_ptr = std::make_shared<internal::OpParam>();
-  param_ptr->opId = internal::OpId::ReshapeAndCache;
-
-  if (soc_ == "ascend310p") {
-    param_ptr->opId = internal::OpId::ReshapeAndCacheNz;
-  }
-
-  internal::MixParam mix_param;
-  mix_param.mixType = internal::MixParam::MixType::MIX_RESHAPE_AND_CACHE_ND;
-  param_ptr->specificParam = mix_param;
-  return param_ptr;
+internal::InternalOpPtr InternalReshapeAndCache::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                              const internal::OutputsImmutableInfoList &outputs_ii,
+                                                              const std::vector<KernelTensor *> &ms_inputs,
+                                                              const std::vector<KernelTensor *> &ms_outputs) {
+  return internal::CreateReshapeAndCacheOp(inputs_ii, outputs_ii, internal::kInternalReshapeAndCacheOpName);
 }
-
-MS_INTERNAL_KERNEL_FACTORY_REG(ReshapeAndCache, ReshapeAndCache);
+MS_INTERNAL_KERNEL_FACTORY_REG(ReshapeAndCache, internal::kInternalReshapeAndCacheOpName, InternalReshapeAndCache);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(ReshapeAndCache, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4);
 }  // namespace kernel
 }  // namespace mindspore

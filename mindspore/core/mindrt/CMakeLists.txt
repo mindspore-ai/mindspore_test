@@ -30,4 +30,5 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_compile_definitions(BUILDING_CORE_DLL)
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
 add_library(mindrt_mid OBJECT ${MINDRT_SRC})

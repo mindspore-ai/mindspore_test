@@ -14,12 +14,11 @@
 # ============================================================================
 import pytest
 import numpy as np
-from tests.st.utils import test_utils
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
 from tests.mark_utils import arg_mark
-
+from tests.st.utils import test_utils
 
 @test_utils.run_with_cell
 def sinc_forward_func(x):

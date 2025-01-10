@@ -1,3 +1,6 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CUPTI_INCLUDE_DIRS})
+
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-non-abstract-non-virtual-dtor -Wno-overloaded-virtual")
 endif()
@@ -63,6 +66,38 @@ endif()
 
 set_property(SOURCE ${GPU_SRC_LIST} ${AKG_GPU_SRC_LIST}
         PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
+
 if(ENABLE_GPU)
-    add_library(_mindspore_plugin_device_gpu_kernel_obj OBJECT ${GPU_SRC_LIST} ${AKG_GPU_SRC_LIST})
+    add_library(mindspore_ops_gpu STATIC ${GPU_SRC_LIST} ${AKG_GPU_SRC_LIST})
+    add_dependencies(mindspore_ops_gpu proto_input)
+    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+        target_compile_definitions(mindspore_ops_gpu PRIVATE BUILDING_GPU_DLL)
+    endif()
+
+    add_subdirectory(cuda_impl)
+    if(WIN32)
+        target_link_libraries(mindspore_ops_gpu PRIVATE cuda_ops
+                ${CUBLAS_LIBRARY_PATH}
+                ${CUDA_PATH}/lib/x64/curand.lib
+                ${CUDNN_LIBRARY_PATH}
+                ${CUDA_PATH}/lib/x64/cudart.lib
+                ${CUDA_PATH}/lib/x64/cuda.lib
+                ${CUDA_PATH}/lib/x64/cusolver.lib
+                ${CUDA_PATH}/lib/x64/cufft.lib
+                ${CUDA_PATH}/lib/x64/cusparse.lib
+                ${CUDA_PATH}/lib/x64/nvrtc.lib
+                )
+    else()
+        target_link_libraries(mindspore_ops_gpu PRIVATE cuda_ops
+                ${CUBLAS_LIBRARY_PATH}
+                ${CUDA_PATH}/lib64/libcurand.so
+                ${CUDNN_LIBRARY_PATH}
+                ${CUDA_PATH}/lib64/libcudart.so
+                ${CUDA_PATH}/lib64/stubs/libcuda.so
+                ${CUDA_PATH}/lib64/libcusolver.so
+                ${CUDA_PATH}/lib64/libcufft.so
+                ${CUDA_PATH}/lib64/libcusparse.so
+                ${CUDA_PATH}/lib64/libnvrtc.so
+                )
+    endif()
 endif()

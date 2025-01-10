@@ -1,0 +1,14 @@
+frac:
+  - op_yaml: frac_op.yaml
+    py_method: tensor_frac
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/frac_method.yaml
+    py_method: tensor_frac
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

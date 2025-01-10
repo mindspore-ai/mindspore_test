@@ -46,10 +46,6 @@
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
-#ifndef BUILD_LITE
-#include "pybind_api/ir/base_ref_py.h"
-#include "include/common/utils/stub_tensor.h"
-#endif
 
 namespace mindspore::session {
 using abstract::AbstractTensor;
@@ -965,7 +961,9 @@ const KernelTensorPtr &AnfRuntimeAlgorithm::GetOrCreateOutputKernelTensor(const 
   MS_EXCEPTION_IF_NULL(node);
 
   auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
-  MS_EXCEPTION_IF_NULL(kernel_info);
+  if (kernel_info == nullptr) {
+    MS_LOG(EXCEPTION) << "Failed to get kernel info for node:" << node->DebugString() << " index:" << output_idx;
+  }
 
   // Get output kernel tensor in device address if exists.
   if (kernel_info->OutputAddrExist(output_idx)) {
@@ -2296,26 +2294,10 @@ void AnfRuntimeAlgorithm::FlattenInputArg(const BaseRef &arg, const AnfNodePtr &
     return;
   }
 
-#ifndef BUILD_LITE
-  if (utils::isa<PyObjectRef>(arg)) {
-    auto value = utils::cast<PyObjectRef>(arg).object_;
-    flatten_tensors->push_back(py::cast<tensor::TensorPtr>(value));
-    return;
-  }
-#endif
-
   if (utils::isa<tensor::Tensor>(arg)) {
     (void)flatten_tensors->emplace_back(utils::cast<tensor::TensorPtr>(arg));
   } else if (utils::isa<tensor::BaseTensor>(arg)) {
     (void)flatten_tensors->emplace_back(std::make_shared<tensor::Tensor>(*utils::cast<tensor::BaseTensorPtr>(arg)));
-#ifndef BUILD_LITE
-  } else if (utils::isa<stub::TensorNode>(arg)) {
-    auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
-    MS_EXCEPTION_IF_NULL(tensor_stub);
-    auto value = tensor_stub->WaitValue();
-    MS_EXCEPTION_IF_NULL(value);
-    FlattenInputArg(value, node, flatten_tensors);
-#endif
   } else if (utils::isa<Scalar>(arg)) {
     (void)flatten_tensors->emplace_back(ScalarToTensor(utils::cast<ScalarPtr>(arg)));
   } else if (utils::isa<Monad>(arg)) {
@@ -2550,25 +2532,25 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
   auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
   std::string result;
   if (device_address->type_id() == TypeId::kNumberTypeInt32) {
-    for (size_t i = 0; is_vaild_index(i, size / 4); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(int)); ++i) {
       value += std::to_string((reinterpret_cast<int *>(buf))[i]);
       value += ", ";
     }
     result = " type int, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeInt64) {
-    for (size_t i = 0; is_vaild_index(i, size / 8); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(int64_t)); ++i) {
       value += std::to_string((reinterpret_cast<int64_t *>(buf))[i]);
       value += ", ";
     }
     result = " type int64, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeFloat32) {
-    for (size_t i = 0; is_vaild_index(i, size / 4); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(float)); ++i) {
       value += std::to_string(reinterpret_cast<float *>((reinterpret_cast<void *>(buf)))[i]);
       value += ", ";
     }
     result = " type float32, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeFloat64) {
-    for (size_t i = 0; is_vaild_index(i, size / 8); ++i) {
+    for (size_t i = 0; is_vaild_index(i, size / sizeof(double)); ++i) {
       value += std::to_string((reinterpret_cast<double *>(reinterpret_cast<void *>(buf)))[i]);
       value += ", ";
     }
@@ -2580,9 +2562,10 @@ std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const de
     }
     result = " type bool, value:" + value;
   } else if (device_address->type_id() == TypeId::kNumberTypeFloat16) {
-    for (size_t i = 0; is_vaild_index(i, size / 2); ++i) {
+    constexpr size_t kFloat16TypeSize = 2;
+    for (size_t i = 0; is_vaild_index(i, size / kFloat16TypeSize); ++i) {
       float fp32 = 0;
-      device::HalfToFloat(&fp32, buf + i * 2, 1);
+      device::HalfToFloat(&fp32, buf + i * kFloat16TypeSize, 1);
       value += std::to_string(fp32);
       value += ", ";
     }

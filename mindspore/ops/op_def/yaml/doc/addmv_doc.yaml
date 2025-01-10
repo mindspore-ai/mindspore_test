@@ -1,0 +1,44 @@
+addmv:
+    description: |
+        Performs a matrix-vector product of `mat` and `vec`, and add the input vector `input` to the final result.
+
+        If `mat` is a tensor of size :math:`(N, M)` , `vec` is a 1-D tensor of size :math:`M` , then `input` must be
+        broadcastable with a 1-D tensor of size :math:`N` . In this case, `output` is a 1-D Tensor of size :math:`N` .
+
+        .. math::
+            output = \\beta input + \\alpha (mat @ vec)
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): Vector to be added.
+            mat (Tensor): The first tensor needs to be multiplied.
+            vec (Tensor): The second tensor needs to be multiplied.
+
+        Keyword Args:
+            beta (Union[float, int], optional): Coefficient of `input`. Default: ``1``.
+            alpha (Union[float, int], optional): Coefficient of :math:`mat @ vec` . Default: ``1``.
+
+        Returns:
+            Tensor, with a shape of :math:`(N,)` , and its dtype is the same as `input`.
+
+        Raises:
+            TypeError: If dtype of `input`, `mat` or `vec` is not tensor.
+            TypeError: If dtypes of `mat` and `vec` are not the same.
+            ValueError: If `mat` is not a 2-D tensor.
+            ValueError: If `vec` is not a 1-D tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, mint
+            >>> input = Tensor(np.array([2., 3.]).astype(np.float32))
+            >>> mat = Tensor(np.array([[2., 5., 3.], [4., 2., 2.]]).astype(np.float32))
+            >>> vec = Tensor(np.array([3., 2., 4.]).astype(np.float32))
+            >>> output = mint.addmv(input, mat, vec)
+            >>> print(output)
+            [30. 27.]
+

@@ -58,9 +58,6 @@ class IrBprop {
     pass_forward_ = std::make_shared<bprop_pass::IrPassForward>(this, std::move(device_target), grad_by_value_);
   }
 
-  // Get graph bporp graph by ad::grad or by expander
-  std::pair<bool, FuncGraphPtr> GetBpropGraph(const GradParamPtr &grad_param);
-
   // Build custom
   void BuildCustomBpropCNode(const CNodePtr &cnode, const PrimitivePtr &prim, std::vector<CNodePtr> *outputs);
 
@@ -105,28 +102,8 @@ class IrBprop {
   inline bprop_pass::PyNativePassForwardPtr pass_forward() { return pass_forward_; }
 
  private:
-  // Get bprop graph by ad::grad
-  FuncGraphPtr GetBpropGraphFromFprop(const GradParamPtr &grad_param);
-
-  // Get Bprop by expander
-  FuncGraphPtr GetBpropGraphFromExpander(const GradParamPtr &grad_param);
-
-  // Use topo grad for every cnode
-  void GradGraphByExpander(const GradParamPtr &grad_param);
-
-  // Create variable for param
-  void CreateParameterAdjoint(const GradParamPtr &grad_param) const;
-
-  // Use pass for cnode inputs
-  void PrepareGradCNodeInputs(const PrimitivePtr &prim, const CNodePtr &cnode, ValuePtrList *inputs_value,
-                              AnfNodePtrList *cnode_inputs);
-
   // Get knode and value for cnode inputs
   ValuePtrList GetInputArgs(const CNodePtr &cnode, AnfNodePtrList *cnode_inputs) const;
-
-  // Do grad for a cnode
-  void GradCNode(const PrimitivePtr &prim, const CNodePtr &cnode, const GradParamPtr &grad_param,
-                 const ValuePtrList &inputs_value, AnfNodePtrList *cnode_inputs);
 
   // Build knode for MakeTuple
   AnfNodePtr BuildKNodeForMakeTuple(const AnfNodePtr &input_node);

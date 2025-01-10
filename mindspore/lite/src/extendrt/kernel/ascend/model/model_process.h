@@ -32,6 +32,7 @@
 #include "kernel/kernel.h"
 #include "extendrt/kernel/ascend/options/acl_model_options.h"
 #include "extendrt/kernel/ascend/model/dyn_shape_process.h"
+#include "src/litert/kernel/ascend/src/acl_mem_manager.h"
 
 namespace mindspore::kernel {
 namespace acl {
@@ -107,6 +108,9 @@ class ModelProcess {
   bool InitUpdateWeightBuffer(const std::vector<KernelTensor *> &kernel_inputs);
   bool CreateWeightsInput(const std::vector<KernelTensor *> &inputs);
   void DestoryUpdateWeightBuffer();
+  bool ShareWeightspaceProcess(const size_t &work_size);
+  bool ShareWorkspaceProcess(const size_t &work_size, const size_t &weight_size);
+  bool ShareWorkspaceAndWeightspaceProcess(const size_t &work_size);
 
   AclModelOptionsPtr options_;
   uint32_t model_id_ = UINT32_MAX;
@@ -136,6 +140,7 @@ class ModelProcess {
   bool is_dynamic_shape_range_ = false;
   aclmdlIODims *dynamic_dims_ = nullptr;
   void *weight_ptr_ = nullptr;
+  void *work_ptr_ = nullptr;
   std::vector<bool> user_defined_output_buf_;
   std::set<void *> dyn_out_sys_buf_addr_;
   bool is_sharing_workspace_ = false;

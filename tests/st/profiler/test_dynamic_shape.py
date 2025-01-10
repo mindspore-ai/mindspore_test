@@ -15,15 +15,17 @@
 import glob
 import tempfile
 import numpy as np
+from tests.mark_utils import arg_mark
+from model_zoo import DynamicShapeNet
+from file_check import FileChecker
+
 import mindspore
 import mindspore.context as context
 import mindspore.dataset as ds
 from mindspore import Model
 from mindspore import Profiler
 from mindspore import Tensor
-from tests.mark_utils import arg_mark
-from model_zoo import DynamicShapeNet
-from file_check import FileChecker
+from mindspore.profiler import ProfilerLevel
 
 
 def dataset_generator():
@@ -46,6 +48,7 @@ def test_dynamic_shape_kbk_with_profiler_all_parameters_on():
     with tempfile.TemporaryDirectory() as tmpdir:
         network = DynamicShapeNet()
         profiler = Profiler(
+            profiler_level=ProfilerLevel.Level1,
             output_path=tmpdir,
             op_time=True,
             profile_communication=True,
@@ -68,12 +71,8 @@ def test_dynamic_shape_kbk_with_profiler_all_parameters_on():
         model.train(1, dataset, dataset_sink_mode=True)
         profiler.analyse()
 
-        # Check dynamic_shape_*.json
-        dyn_shape_path = glob.glob(f"{tmpdir}/profiler/dynamic_shape_*.json")[0]
-        FileChecker.check_json_keys(dyn_shape_path, ["InitData1", "GetNext2", "GetNext3"])
-
         # Check trace_view.json
-        trace_view_path = glob.glob(f"{tmpdir}/profiler/rank-*_ascend_ms/ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
+        trace_view_path = glob.glob(f"{tmpdir}/*_ascend_ms/ASCEND_PROFILER_OUTPUT/trace_view.json")[0]
         FileChecker.check_timeline_values(
             trace_view_path,
             "name",
@@ -92,15 +91,15 @@ def test_dynamic_shape_kbk_with_profiler_all_parameters_on():
         )
 
         # check op_statistic.csv
-        op_statistic_path = glob.glob(f"{tmpdir}/profiler/rank-*_ascend_ms/ASCEND_PROFILER_OUTPUT/op_statistic.csv")[0]
+        op_statistic_path = glob.glob(f"{tmpdir}/*_ascend_ms/ASCEND_PROFILER_OUTPUT/op_statistic.csv")[0]
         FileChecker.check_csv_items(op_statistic_path, {"OP Type": ["GetNext", "InitData", "Add"]})
 
         # check step_trace_time.csv
-        step_trace_time_path = glob.glob(f"{tmpdir}/profiler/rank-*_ascend_ms/"
+        step_trace_time_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
         FileChecker.check_file_line_count(step_trace_time_path, 2)
 
         # check kernel_details.csv
-        kernel_details_path = glob.glob(f"{tmpdir}/profiler/rank-*_ascend_ms/"
+        kernel_details_path = glob.glob(f"{tmpdir}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/kernel_details.csv")[0]
         FileChecker.check_csv_items(kernel_details_path, {"Name": ["*Add*", "GetNext*"]})

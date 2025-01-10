@@ -4,11 +4,18 @@ where:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor
+    interface: tensor, function
 
-  - op_yaml: deprecated/where_op.yaml
+  - op_yaml: deprecated/where_method.yaml
     py_method: deprecated_tensor_where
     Ascend: py_method
     CPU: py_method
     GPU: py_method
     interface: tensor
+
+  - op_yaml: non_zero_ext_op.yaml
+    py_method: place_holder
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function

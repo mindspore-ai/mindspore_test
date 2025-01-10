@@ -1,0 +1,16 @@
+addmv:
+  - op_yaml: addmv_op.yaml
+    py_method: tensor_addmv
+    kwonlyargs: beta, alpha
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/addmv_method.yaml
+    py_method: deprecated_tensor_addmv
+    kwonlyargs: beta, alpha
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

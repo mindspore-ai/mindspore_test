@@ -187,15 +187,15 @@ bool SolveTriangularGradCpuKernelMod::LaunchKernel(const std::vector<KernelTenso
                                                    const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSolveTriangularGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSolveTriangularGradOutputsNum, kernel_name_);
-  auto a_addr = reinterpret_cast<T_in *>(inputs[kIndexA]->device_ptr());
-  auto x_addr = reinterpret_cast<T_out *>(inputs[kIndexX]->device_ptr());
-  auto dx_addr = reinterpret_cast<T_out *>(inputs[kIndexDX]->device_ptr());
-  auto da_addr = reinterpret_cast<T_grad *>(outputs[kIndexDA]->device_ptr());
-  auto db_addr = reinterpret_cast<T_grad *>(outputs[kIndexDB]->device_ptr());
+  auto a_addr = GetDeviceAddress<T_in>(inputs, kIndexA);
+  auto x_addr = GetDeviceAddress<T_out>(inputs, kIndexX);
+  auto dx_addr = GetDeviceAddress<T_out>(inputs, kIndexDX);
+  auto da_addr = GetDeviceAddress<T_grad>(outputs, kIndexDA);
+  auto db_addr = GetDeviceAddress<T_grad>(outputs, kIndexDB);
   set_attr(inputs);
-  T_grad *casted_a_addr = reinterpret_cast<T_grad *>(workspace[kIndex0]->device_ptr());
-  T_grad *casted_x_addr = reinterpret_cast<T_grad *>(workspace[kIndex1]->device_ptr());
-  T_grad *casted_dx_addr = reinterpret_cast<T_grad *>(workspace[kIndex2]->device_ptr());
+  T_grad *casted_a_addr = GetDeviceAddress<T_grad>(workspace, kIndex0);
+  T_grad *casted_x_addr = GetDeviceAddress<T_grad>(workspace, kIndex1);
+  T_grad *casted_dx_addr = GetDeviceAddress<T_grad>(workspace, kIndex2);
   for (size_t i = 0; i < batch_; ++i) {
     T_in *a_batch_addr = a_addr + i * a_batch_size_;
     T_out *x_batch_addr = x_addr + i * x_batch_size_;

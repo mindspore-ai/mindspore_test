@@ -12,7 +12,7 @@ mindspore.ops.logical_or
     当输入是一个Tensor和一个bool时，bool对象只能是一个常量。
 
     .. math::
-        out_{i} = input_{i} \\vee other_{i}
+        out_{i} = input_{i} \vee other_{i}
 
     .. note::
         logical_or支持广播。
@@ -22,4 +22,4 @@ mindspore.ops.logical_or
         - **other** (Union[Tensor, bool]) - 当第一个输入是Tensor的时候，第二个输入是bool或者数据类型可被隐式转换为bool的Tensor。
 
     返回：
-        Tensor，形状与广播后的shape相同，数据类型为bool。
+        Tensor，shape与广播后的shape相同，数据类型为bool。

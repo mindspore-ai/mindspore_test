@@ -1,9 +1,9 @@
 mindspore.ops.type_as
 =====================
 
-.. py:function:: mindspore.ops.type_as(input, tensor)
+.. py:function:: mindspore.ops.type_as(input, other)
 
-    将第一个输入的Tensor的数据类型转换为第二个输入的Tensor的数据类型。
+    将第一个input的数据类型转换为other的数据类型。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
@@ -13,11 +13,11 @@ mindspore.ops.type_as
 
     参数：
         - **input** (Tensor) - 输入要进行数据类型转换的Tensor，其shape为 :math:`(x_0, x_1, ..., x_R)` 。
-        - **tensor** (Tensor) - 数据类型为指定类型的Tensor，其shape为 :math:`(x_0, x_1, ..., x_R)` 。
+        - **other** (Tensor) - 数据类型为指定类型的Tensor，其shape为 :math:`(x_0, x_1, ..., x_R)` 。
 
     返回：
         Tensor，其shape与 `input` 相同，即 :math:`(x_0, x_1, ..., x_R)` 。
 
     异常：
         - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - `tensor` 不是Tensor。
+        - **TypeError** - `other` 不是Tensor。

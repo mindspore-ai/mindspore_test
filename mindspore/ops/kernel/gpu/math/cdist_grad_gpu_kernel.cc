@@ -22,13 +22,18 @@ namespace mindspore {
 namespace kernel {
 constexpr size_t kCdistInputDimsMin = 2;
 constexpr size_t kTwo = 2;
-constexpr size_t kThree = 3;
 bool CdistGradGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
   if (inputs.empty() || outputs.empty()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' got empty inputs or outputs, which is invalid.";
     return false;
   }
+  return true;
+}
+
+int CdistGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                  const std::vector<KernelTensor *> &outputs) {
+  ResetResource();
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!is_match) {
@@ -37,27 +42,13 @@ bool CdistGradGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
   kernel_func_ = func_list_[index].second;
-  p_ = GetValue<float>(primitive_->GetAttr("p"));
-  batch_ = 0;
+  p_ = inputs[kIndex4]->GetValueWithCheck<float>();
   unit_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
-  return true;
-}
-
-int CdistGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
-                                  const std::vector<KernelTensor *> &outputs) {
-  for (const auto &input : inputs) {
-    // If any input shape contains -1, means input shape is dynamic, so just return do nothing.
-    auto input_shape = input->GetShapeVector();
-    if (!IsValidShape(input_shape)) {
-      return KRET_UNKNOWN_SHAPE;
-    }
-  }
-  ResetResource();
-  std::vector<int64_t> grad_shape = inputs[0]->GetShapeVector();
-  std::vector<int64_t> in_shape0 = inputs[1]->GetShapeVector();
-  std::vector<int64_t> in_shape1 = inputs[kTwo]->GetShapeVector();
-  std::vector<int64_t> dist_shape = inputs[kThree]->GetShapeVector();
-  std::vector<int64_t> output_shape = outputs[0]->GetShapeVector();
+  std::vector<int64_t> grad_shape = inputs[kIndex0]->GetShapeVector();
+  std::vector<int64_t> in_shape0 = inputs[kIndex1]->GetShapeVector();
+  std::vector<int64_t> in_shape1 = inputs[kIndex2]->GetShapeVector();
+  std::vector<int64_t> dist_shape = inputs[kIndex3]->GetShapeVector();
+  std::vector<int64_t> output_shape = outputs[kIndex0]->GetShapeVector();
   auto in_shape_size = in_shape0.size();
   grad_size_ = std::accumulate(grad_shape.begin(), grad_shape.end(), 1, std::multiplies<int64_t>());
   input0_size_ = std::accumulate(in_shape0.begin(), in_shape0.end(), 1, std::multiplies<int64_t>());
@@ -68,6 +59,15 @@ int CdistGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     MS_LOG(ERROR) << "For " << kernel_name_ << ",invalid input shape, input0 shape size " << in_shape_size
                   << ", input1 shape size " << in_shape1.size();
     return KRET_RESIZE_FAILED;
+  }
+  for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
+    if (in_shape0[i] != in_shape1[i]) {
+      MS_LOG(ERROR) << "invalid input shape, the batch shape of input0 must be the same as the shape of input1 ,but "
+                       "got 'input0_shape["
+                    << i << "]': " << in_shape0[i] << " and 'input1_shape[" << i << "]': " << in_shape1[i]
+                    << ", kernel_name_ " << kernel_name_;
+      return KRET_RESIZE_FAILED;
+    }
   }
   batch_ = 0;
   for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
@@ -90,11 +90,11 @@ template <typename T>
 bool CdistGradGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &workspace,
                                          const std::vector<KernelTensor *> &outputs) {
-  T *grad_start_ = GetDeviceAddress<T>(inputs, 0);
-  T *dist_start_ = GetDeviceAddress<T>(inputs, 3);
-  T *t1_start_ = GetDeviceAddress<T>(inputs, 1);
-  T *t2_start_ = GetDeviceAddress<T>(inputs, 2);
-  T *res_start_ = GetDeviceAddress<T>(outputs, 0);
+  T *grad_start_ = GetDeviceAddress<T>(inputs, kIndex0);
+  T *dist_start_ = GetDeviceAddress<T>(inputs, kIndex3);
+  T *t1_start_ = GetDeviceAddress<T>(inputs, kIndex1);
+  T *t2_start_ = GetDeviceAddress<T>(inputs, kIndex2);
+  T *res_start_ = GetDeviceAddress<T>(outputs, kIndex0);
 
   auto status = CalCdistGrad(out_size_, l1_size_, l2_size_, grad_start_, dist_start_, t1_start_, t2_start_, res_start_,
                              m_, p_, r0_, r1_, batch_, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
@@ -109,6 +109,7 @@ std::vector<std::pair<KernelAttr, CdistGradGpuKernelMod::CdistGradFunc>> CdistGr
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
    &CdistGradGpuKernelMod::LaunchKernel<float>},
   {KernelAttr()
@@ -116,6 +117,7 @@ std::vector<std::pair<KernelAttr, CdistGradGpuKernelMod::CdistGradFunc>> CdistGr
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
      .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat64),
    &CdistGradGpuKernelMod::LaunchKernel<double>}};
 

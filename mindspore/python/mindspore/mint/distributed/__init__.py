@@ -20,7 +20,7 @@ Note that the APIs in the following list need to preset communication environmen
 For Ascend devices, it is recommended to use the msrun startup method
 without any third-party or configuration file dependencies.
 Please see the `msrun start up
-<https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+<https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
 for more details.
 """
 from __future__ import absolute_import
@@ -52,6 +52,10 @@ from mindspore.mint.distributed.distributed import (
     scatter,
     all_gather,
     reduce_scatter,
+    all_gather_object,
+    broadcast_object_list,
+    gather_object,
+    scatter_object_list,
 )
 
 __all__ = [
@@ -82,4 +86,8 @@ __all__ = [
     "reduce",
     "P2POp",
     "batch_isend_irecv",
+    "all_gather_object",
+    "broadcast_object_list",
+    "gather_object",
+    "scatter_object_list",
 ]

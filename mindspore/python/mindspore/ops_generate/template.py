@@ -149,11 +149,15 @@ FUNCTIONAL_OVERLOAD_PY_TEMPLATE = Template.load_from_file(
 TENSOR_FUNC_CC_REG = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_cc_reg.tpl'))
 
-TENSOR_FUNC_HEADER_REG = Template.load_from_file(
-    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_header_reg.tpl'))
+TENSOR_API_HEADER = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_api_header.tpl'))
 
-TENSOR_FUNC_HEADER_BODY = Template.load_from_file(
-    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_header_body.tpl'))
+TENSOR_API_SOURCE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_api_source.tpl'))
+
+TENSOR_FUNC_UTILS = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_utils_header.tpl'))
+
 
 TENSOR_FUNC_CALL_BODY = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_call_body.tpl'))
@@ -213,6 +217,14 @@ PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_source_template.tpl'))
 
+PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_op_header_template.tpl'))
+
+PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_single_op_source_template.tpl'))
+
 PYBOOST_ASCEND_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_ascend_call_template.tpl'))
@@ -236,6 +248,14 @@ PYBOOST_GPU_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_source_template.tpl'))
 
+PYBOOST_GPU_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_single_op_header_template.tpl'))
+
+PYBOOST_GPU_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_single_op_source_template.tpl'))
+
 PYBOOST_GPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_call_template.tpl'))
@@ -257,6 +277,14 @@ PYBOOST_CPU_OP_HEADER_TEMPLATE = Template.load_from_file(
 PYBOOST_CPU_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_source_template.tpl'))
+
+PYBOOST_CPU_SINGLE_OP_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_single_op_header_template.tpl'))
+
+PYBOOST_CPU_SINGLE_OP_SOURCE_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_single_op_source_template.tpl'))
 
 PYBOOST_CPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
@@ -463,3 +491,21 @@ FUNCTIONAL_MAP_H_TEMPLATE = Template.load_from_file(
 
 ADD_TENSOR_DOCS_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_docs_py.tpl'))
+
+AUTO_GRAD_IMPL_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/auto_grad_impl_cc.tpl'))
+
+AUTO_GRAD_REG_H_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/auto_grad_reg_h.tpl'))
+
+FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/functions_cc.tpl'))
+
+FUNCTION_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/function_body.tpl'))
+
+FUNCTIONS_H_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/functions_h.tpl'))
+
+DO_GRAD_FUNCTION_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/do_grad_function.tpl'))

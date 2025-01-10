@@ -45,6 +45,13 @@ bool ExpanderFallback::Run(const FuncGraphPtr &graph) {
     }
   }
   if (changed) {
+    auto all_nodes = TopoSort(graph->get_return());
+    for (const auto &node : all_nodes) {
+      if (common::AnfAlgo::IsDynamicShape(node)) {
+        kernel_graph->SetGraphDynamicAttr(true);
+        break;
+      }
+    }
     graphkernel::BindValueToGraph().Run(graph);
   }
   return changed;

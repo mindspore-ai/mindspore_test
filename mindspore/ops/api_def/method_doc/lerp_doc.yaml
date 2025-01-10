@@ -1,0 +1,5 @@
+lerp:
+  description: |
+    lerp(end, weight) -> Tensor
+
+    For more details, please refer to :func:`mindspore.ops.lerp`.

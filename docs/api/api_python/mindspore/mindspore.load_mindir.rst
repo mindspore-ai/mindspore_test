@@ -5,6 +5,9 @@ mindspore.load_mindir
 
     加载MindIR文件。
 
+    .. note::
+        这个接口在2.5版本废弃，并且会在未来版本移除。
+
     参数：
         - **file_name** (str) - MindIR文件的全路径名。
 

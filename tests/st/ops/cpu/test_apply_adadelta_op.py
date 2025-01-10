@@ -38,7 +38,7 @@ class Net(nn.Cell):
         return self.apply_adadelta(self.var, self.accum, self.accum_update, lr, rho, epsilon, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_apply_adadelta():
     """

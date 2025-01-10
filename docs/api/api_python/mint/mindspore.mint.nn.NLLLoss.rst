@@ -1,7 +1,7 @@
 mindspore.mint.nn.NLLLoss
 ==========================
 
-.. py:function:: mindspore.mint.nn.NLLLoss(weight=None, ignore_index=-100, reduction='mean')
+.. py:class:: mindspore.mint.nn.NLLLoss(weight=None, ignore_index=-100, reduction='mean')
         
     获取预测值和目标值之间的负对数似然损失。
 
@@ -37,9 +37,9 @@ mindspore.mint.nn.NLLLoss
           - ``'sum'``：计算输出元素的总和。
 
     输入：
-        - **input** (Tensor) - 输入预测值，shape为 :math:`(N)` 或 :math:`(N, C)` 或 :math:`(N, C, H, W)`
-          (针对二维数据)，或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`input` 需为对数概率。数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。
-        - **target** (Tensor) - 输入目标值，shape为 :math:`(N)` 或 :math:`(N, d_1, d_2, ..., d_K)` (针对高维数据)。
+        - **input** (Tensor) - 输入预测值，shape为 :math:`(N)` 或 :math:`(N, C)` ， :math:`C` 表示类的数量， :math:`N` 表示batch size，
+          或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`input` 需为对数概率。数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。
+        - **target** (Tensor) - 输入目标值，shape为 :math:`()` 或 :math:`(N)` ，限定范围为 :math:`[0, C-1]`，或 :math:`(N, d_1, d_2, ..., d_K)` (针对高维数据)。
           数据类型支持int32、int64、uint8。
 
     输出：

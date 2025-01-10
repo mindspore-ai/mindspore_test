@@ -155,14 +155,26 @@ std::shared_ptr<AclEnvGuard> AclEnvGuard::GetAclEnv(std::string_view cfg_file) {
 
 void AclEnvGuard::AddModel(const std::shared_ptr<ModelInfer> &model_infer) {
   std::lock_guard<std::mutex> lock(global_acl_env_mutex_);
+  MS_LOG(INFO) << "Get global_acl_env_mutex_!";
   model_infers_.push_back(model_infer);
+}
+
+void AclEnvGuard::DeleteModel(const std::shared_ptr<ModelInfer> &model_infer) {
+  std::lock_guard<std::mutex> lock(global_acl_env_mutex_);
+  MS_LOG(INFO) << "Get global_acl_env_mutex_!";
+  for (auto it = model_infers_.begin(); it != model_infers_.end(); it++) {
+    if (*it == model_infer) {
+      model_infers_.erase(it);
+      break;
+    }
+  }
 }
 
 bool AclEnvGuard::Finalize() {
   std::lock_guard<std::mutex> lock(global_acl_env_mutex_);
   bool model_finalized =
     std::all_of(model_infers_.begin(), model_infers_.end(),
-                [](const std::shared_ptr<ModelInfer> &model_infer) { return model_infer->Finalize(); });
+                [](const std::shared_ptr<ModelInfer> &model_infer) { return model_infer->Finalize(true); });
   if (!model_finalized || global_acl_env_.use_count() > 1) {
     MS_LOG(ERROR) << "There is model has not been unloaded, and will not finalize acl.";
     return false;
@@ -175,5 +187,11 @@ bool AclEnvGuard::Finalize() {
   MS_LOG(INFO) << "Execute acl env finalize success.";
   return true;
 }
+
+int32_t AclEnvGuard::GetModelNum() {
+  std::lock_guard<std::mutex> lock(global_acl_env_mutex_);
+  return model_infers_.size();
+}
+
 }  // namespace acl
 }  // namespace mindspore::kernel

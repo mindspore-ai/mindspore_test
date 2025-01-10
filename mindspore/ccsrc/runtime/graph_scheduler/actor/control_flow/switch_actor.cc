@@ -43,7 +43,7 @@ void SwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
   MS_LOG(INFO) << "Sync stream in the condition switch.";
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   size_t index = GetIndex(context);
-  if (common::IsNeedProfileMemory()) {
+  if (common::IsDryRun()) {
     // dry run switch index is always 0.
     index = input_partials_.size() - kSwitchCondPos - 1;
   }

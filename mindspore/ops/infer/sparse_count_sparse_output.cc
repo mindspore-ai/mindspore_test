@@ -23,7 +23,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "abstract/param_validator.h"
 #include "base/base.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"

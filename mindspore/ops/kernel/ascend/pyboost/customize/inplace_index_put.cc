@@ -16,6 +16,7 @@
 
 #include <functional>
 #include "kernel/ascend/pyboost/customize/inplace_index_put.h"
+#include "kernel/ascend/pyboost/auto_generate/inner_inplace_index_put.h"
 #include "kernel/ascend/pyboost/auto_generate/inner_non_zero.h"
 #include "kernel/ascend/pyboost/auto_generate/select_ext.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
@@ -93,8 +94,8 @@ tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRun
                                                      const BaseTensorPtr &input_tensor,
                                                      const ValueTuplePtr &indices_tensor_list,
                                                      const BaseTensorPtr &values_tensor, const BoolImmPtr &accumulate) {
+  MS_LOG(DEBUG) << "InplaceIndexPut Ascend start";
   op->set_outputs({input_tensor});
-
   const auto &input_shape = input_tensor->shape();
   const auto &values_shape = values_tensor->shape();
   std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
@@ -105,23 +106,17 @@ tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRun
   if (input_numel == 0 || values_numel == 0 || indices_tensor_vector.size() == 0) {
     return op->output(0);
   }
-
   auto new_indices_tensor_vector = GetNewTensor(op, input_tensor, indices_tensor_vector);
-  auto accumulate_imm = GetValue<bool>(accumulate);
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, new_indices_tensor_vector,
-                                values_tensor);
 
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, input_tensor, new_indices_tensor_vector, values_tensor, accumulate_imm]() {
-      auto device_context = op->device_context();
-      PyBoostUtils::MallocOpInputs(device_context, input_tensor, new_indices_tensor_vector, values_tensor);
+  ValueTuplePtr new_indices_tensor_list = PyBoostUtils::ConvertTensorVectorToTuple(new_indices_tensor_vector);
 
-      MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-      LAUNCH_ACLNN(aclnnIndexPutImpl, device_context, op->stream_id(), input_tensor, new_indices_tensor_vector,
-                   values_tensor, accumulate_imm, false);
-      MS_LOG(DEBUG) << op->primitive()->name() << " Launch end";
-    }));
-  return op->output(0);
+  auto device_context = op->device_context();
+  const auto &device_name = device_context->device_context_key_.device_name_;
+  auto inner_inp_index_put_op = CREATE_PYBOOST_OP(InnerInplaceIndexPut, device_name);
+  auto index_out = inner_inp_index_put_op->Call(input_tensor, new_indices_tensor_list, values_tensor, accumulate);
+  op->set_outputs(inner_inp_index_put_op->outputs());
+  MS_LOG(DEBUG) << "InplaceIndexPut Ascend end";
+  return index_out;
 }
 }  // namespace pyboost
 }  // namespace kernel

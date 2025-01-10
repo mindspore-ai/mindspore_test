@@ -131,8 +131,8 @@ STATUS AclMemManager::GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_
   return lite::RET_OK;
 }
 
-STATUS AclMemManager::GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_t device_id,
-                                      std::thread::id thread_id) {
+STATUS AclMemManager::GetModelWorkMem(void **work_ptr, int32_t device_id, std::thread::id thread_id) {
+  MS_CHECK_TRUE_MSG(work_ptr != nullptr, lite::RET_NULL_PTR, "work_ptr is nullptr!");
   std::unique_lock<std::mutex> acl_mtx(acl_mem_alloc_mutex_);
   if (work_mem_thread_info_map_.find(device_id) == work_mem_thread_info_map_.end()) {
     MS_LOG(ERROR) << "Get work mem from device " << device_id << " failed!";
@@ -145,6 +145,7 @@ STATUS AclMemManager::GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_
   auto &share_mem_info = work_mem_thread_info_map_.at(device_id).at(thread_id);
   if (share_mem_info.mem_info.mem_addr == nullptr) {
     if (share_mem_info.mem_info.mem_size == 0) {
+      MS_LOG(ERROR) << "The size of the work space of the model added by the ModelGroup.add_model is 0!";
       return lite::RET_ERROR;
     }
     auto acl_ret = CALL_ASCEND_API(aclrtMalloc, &(share_mem_info.mem_info.mem_addr), share_mem_info.mem_info.mem_size,
@@ -156,7 +157,7 @@ STATUS AclMemManager::GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_
     share_mem_info.allocated = true;
     MS_LOG(DEBUG) << "Malloc max work size is " << share_mem_info.mem_info.mem_size;
   }
-  *acl_work_mem_info = share_mem_info.mem_info;
+  *work_ptr = share_mem_info.mem_info.mem_addr;
   return lite::RET_OK;
 }
 
@@ -178,8 +179,8 @@ STATUS AclMemManager::GetModelWeightMem(AclModelMemInfo *acl_weight_mem_info) {
   return lite::RET_OK;
 }
 
-STATUS AclMemManager::GetModelWeightMem(AclModelMemInfo *acl_weight_mem_info, std::string model_path,
-                                        int32_t device_id) {
+STATUS AclMemManager::GetModelWeightMem(void **weight_ptr, std::string model_path, int32_t device_id) {
+  MS_CHECK_TRUE_MSG(weight_ptr != nullptr, lite::RET_NULL_PTR, "weight_ptr is nullptr!");
   std::unique_lock<std::mutex> acl_mtx(acl_mem_alloc_mutex_);
   if (weight_mem_info_map_.find(device_id) == weight_mem_info_map_.end()) {
     MS_LOG(ERROR) << "Can't get weight mem of device " << device_id << "!";
@@ -204,8 +205,36 @@ STATUS AclMemManager::GetModelWeightMem(AclModelMemInfo *acl_weight_mem_info, st
     }
     MS_LOG(DEBUG) << "Malloc weight size is " << share_mem_info.mem_info.mem_size << "!";
   }
-  *acl_weight_mem_info = share_mem_info.mem_info;
+  *weight_ptr = share_mem_info.mem_info.mem_addr;
   return lite::RET_OK;
+}
+
+void AclMemManager::ReleaseDeviceMem(int32_t device_id, std::string model_path) {
+  for (auto &device_id_iter : work_mem_thread_info_map_) {
+    if (device_id_iter.first != device_id) {
+      continue;
+    }
+    for (auto &thread_id_iter : device_id_iter.second) {
+      if (thread_id_iter.second.mem_info.mem_addr != nullptr) {
+        (void)CALL_ASCEND_API(aclrtFree, thread_id_iter.second.mem_info.mem_addr);
+        thread_id_iter.second.mem_info.mem_addr = nullptr;
+      }
+    }
+  }
+  for (auto &device_id_iter : weight_mem_info_map_) {
+    if (device_id_iter.first != device_id) {
+      continue;
+    }
+    for (auto &model_path_iter : device_id_iter.second) {
+      if (model_path_iter.first != model_path) {
+        continue;
+      }
+      if (model_path_iter.second.mem_info.mem_addr != nullptr) {
+        (void)CALL_ASCEND_API(aclrtFree, model_path_iter.second.mem_info.mem_addr);
+        model_path_iter.second.mem_info.mem_addr = nullptr;
+      }
+    }
+  }
 }
 
 AclMemManager::~AclMemManager() {

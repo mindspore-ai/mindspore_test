@@ -74,10 +74,10 @@ bool Dilation2DBackpropInputCpuKernelMod::LaunchKernel(const std::vector<kernel:
                                                        const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
-  T *input = static_cast<T *>(inputs[kInputIndexi]->device_ptr());
-  T *filter = static_cast<T *>(inputs[kFilterIndexi]->device_ptr());
-  T *out_backprop = static_cast<T *>(inputs[kBackpropIndexi]->device_ptr());
-  T *output = static_cast<T *>(outputs[kOutputIndexi]->device_ptr());
+  T *input = GetDeviceAddress<T>(inputs, kInputIndexi);
+  T *filter = GetDeviceAddress<T>(inputs, kFilterIndexi);
+  T *out_backprop = GetDeviceAddress<T>(inputs, kBackpropIndexi);
+  T *output = GetDeviceAddress<T>(outputs, kOutputIndexi);
 
   size_t num_batch = LongToSize(i_input_shape_[kFormatNCHWIndexN]);
   size_t input_height = LongToSize(i_input_shape_[kFormatNCHWIndexH]);

@@ -1,12 +1,14 @@
 mindspore.mint.nonzero
 ======================
 
-.. py:function:: mindspore.mint.nonzero(input, as_tuple=False)
+.. py:function:: mindspore.mint.nonzero(input, *, as_tuple=False)
 
     返回所有非零元素下标位置。
 
     参数：
         - **input** (Tensor) - 输入Tensor，其秩应大于等于1。
+
+    关键字参数：
         - **as_tuple** (bool, 可选) - 是否以tuple形式输出。如果为 ``False`` ，输出Tensor，默认值： ``False`` 。如果为 ``True`` ，输出Tuple[Tensor]， 只支持 ``Ascend`` 。
 
     返回：

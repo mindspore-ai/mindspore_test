@@ -72,8 +72,7 @@ def compare_grad(x, p, grad):
     assert (elem_count * (keep_prob - 0.02)) < nonzero_count < (elem_count * (keep_prob + 0.02))
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
 def test_func_dropout_normal(mode, dtype):
@@ -159,8 +158,7 @@ def compare_func(x, p, output, mask=None):
             assert np.ceil(reduce(lambda a, b: a * b, x.shape) / 128) * 16 == mask.shape[0]
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 def test_nn_DropoutExt_normal(mode):
     """

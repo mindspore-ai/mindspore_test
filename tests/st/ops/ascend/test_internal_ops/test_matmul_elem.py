@@ -149,7 +149,6 @@ def fast_gelu_np(x):
 def matmul_biasadd(m, k, n, trans_a=False, trans_b=False, mstype=ms.float16, is_dyn=False, profiling=False):
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    os.environ["MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST"] = "MatMulElemwise"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
 
@@ -186,7 +185,6 @@ def matmul_unary(m, k, n, trans_a=False, trans_b=False, mstype=ms.float16,
                  elemtype="gelu", is_dyn=False, profiling=False):
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    os.environ["MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST"] = "MatMulElemwise"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", save_graphs=True, save_graphs_path="./graph")
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
 
@@ -223,7 +221,7 @@ def matmul_unary(m, k, n, trans_a=False, trans_b=False, mstype=ms.float16,
     assert np.allclose(output_np, expect, 0.01, 0.01)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_matmul_biasadd_1024_1024_1024_False_False_float16():
@@ -249,7 +247,7 @@ def test_matmul_biasadd_m_4096_4096_False_True_float16(m, is_dyn):
     matmul_biasadd(m, 4096, 4096, trans_a=False, trans_b=True, mstype=ms.float16, is_dyn=is_dyn)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('elemtype', ["relu", "gelu"])

@@ -34,16 +34,17 @@ from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
 from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, BitwiseAndScalar,\
     BitwiseAndTensor, BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor,\
-    RemainderTensorScalar, RemainderScalarTensor
+    RemainderTensorScalar, RemainderScalarTensor, std_mean_op, var_mean_op, InplaceErfinv
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
 from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl, cross_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, reduce_min_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
-from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
-                                         cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op,
+from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
+                                         cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op, std_op,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
@@ -52,11 +53,12 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
-                                         pow_tensor_scalar_op, not_equal_op, isinf)
+                                         frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
+                                         addbmm_op, addmm_op)
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
-from mindspore.ops.auto_generate import tanh
+from mindspore.ops.auto_generate import tanh, tanh_
 from mindspore.nn import layer
 from mindspore._checkparam import check_is_number
 from mindspore import _checkparam as validator
@@ -187,7 +189,8 @@ dtype_ = P.DType()
 eps_ = P.Eps()
 erf_ = P.Erf()
 erfc_ = P.Erfc()
-erfinv_ = P.Erfinv()
+erfinv_ext_ = P.Erfinv()
+inplace_erfinv_ = InplaceErfinv()
 exp2_ = P.Pow()
 expand_dims_ = P.ExpandDims()
 fill_v2_ = P.FillV2()
@@ -230,7 +233,6 @@ size_ = P.Size()
 scalar_to_tensor_ = P.ScalarToTensor()
 shape_ = P.Shape()
 sparse_segment_mean_ = SparseSegmentMean()
-tanh_ = P.Tanh()
 tensor_round_ = P.Round()
 tile_ = P.Tile()
 tile_size_ = TileSize()
@@ -894,16 +896,16 @@ def float_power_ext(input, exponent):
             to each other.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> from mindspore import Tensor, ops
         >>> input = Tensor([1, 2, 3])
-        >>> ops.float_power(input, 2)
+        >>> ops.function.math_func.float_power_ext(input, 2)
         Tensor(shape=[3], dtype=Float64, value= [ 1.00000000e+00,  4.00000000e+00,  9.00000000e+00])
         >>>
         >>> exp = Tensor([2, -3, -4])
-        >>> ops.float_power(input, exp)
+        >>> ops.function.math_func.float_power_ext(input, exp)
         Tensor(shape=[3], dtype=Float64, value= [ 1.00000000e+00,  1.25000000e-01,  1.23456790e-02])
     """
     if not (isinstance(input, Tensor) or isinstance(exponent, Tensor)):
@@ -1014,7 +1016,7 @@ def logdet(input):
 
 def i0(input):
     r"""
-    Alias for :func:`mindspore.ops.bessel_i0` .
+    For details, please refer to :func:`mindspore.ops.bessel_i0`.
 
     Supported Platforms:
         ``GPU`` ``CPU``
@@ -1119,8 +1121,8 @@ def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined
     Adds Tensor `updates` to specified axis and indices of Tensor `var` element-wise.
 
     Args:
-        var (Parameter): The input Parameter to add to, with data type uint8, int8, int16, int32,
-            float16, float32, float64.
+        var (Union[Parameter, Tensor]): The input Parameter or Tensor to add to, with data type uint8, int8, int16,
+            int32, float16, float32, float64.
         indices (Tensor): The indies along `axis` to perform the addition. A 1D Tensor
             of shape :math:`(updates.shape[axis],)`, every value of it
             should be in range :math:`[0, var.shape[axis])` with data type int32.
@@ -1132,7 +1134,6 @@ def inplace_index_add(var, indices, updates, axis):  # pylint: disable=redefined
         Tensor, updated result, has the same shape and dtype as `var`.
 
     Raises:
-        TypeError: If `var` is not a Parameter.
         TypeError: If neither `indices` nor `updates` is a Tensor.
         ValueError: If `axis` is out of valid range.
         ValueError: If `var` rank is not the same as `updates` rank.
@@ -1238,7 +1239,7 @@ def logical_not(input):
 
 
 def logical_or(input, other):
-    """
+    r"""
     Computes the "logical OR" of two tensors element-wise.
 
     Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
@@ -1250,7 +1251,7 @@ def logical_or(input, other):
 
     .. math::
 
-        out_{i} = input_{i} \\vee other_{i}
+        out_{i} = input_{i} \vee other_{i}
 
     Note:
         logical_or supports broadcasting.
@@ -1714,7 +1715,7 @@ def xlogy_ext(input, other):
 
     .. math::
 
-        out_i = input_{i}\log{other_{i}}
+        out_i = input_{i} * \log({other_{i}})
 
     Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
     The inputs must be two tensors or one tensor and one scalar.
@@ -1910,11 +1911,11 @@ def polar(abs, angle):  # pylint: disable=redefined-outer-name
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> abs = Tensor(np.array([1, 2]), mindspore.float64)
-        >>> angle = Tensor(np.array([np.pi / 2, 5 * np.pi / 4]), mindspore.float64)
+        >>> abs = Tensor(np.array([1, 2]), mindspore.float32)
+        >>> angle = Tensor(np.array([np.pi / 2, 5 * np.pi / 4]), mindspore.float32)
         >>> output = ops.polar(abs, angle)
         >>> print(output)
-        [ 6.12323400e-17+1.j         -1.41421356e+00-1.41421356j]
+        [ -4.3711388e-08+1.j         -1.4142137e+00-1.4142134j]
     """
     return polar_(abs, angle)
 
@@ -2405,6 +2406,9 @@ def inverse(input):
     """
     Compute the inverse of the input matrix.
 
+    Note:
+        The `input` dtype of complex numbers is not supported.
+
     Args:
         input (Tensor): A matrix to be calculated. Input `input` must be at least two dimensions, and the size of
             the last two dimensions must be the same size. And the matrix must be invertible.
@@ -2828,6 +2832,45 @@ def eps(x):
     return eps_(x)
 
 
+def erfinv_(input):
+    r"""
+    Update the `input` tensor in-place by computing the inverse error function with `input`, which is defined in the
+    range `(-1, 1)` as:
+
+    .. math::
+
+
+        erfinv(erf(input)) = input
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor to compute with.
+
+    Returns:
+
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `input.dtype` is not one of: bool, int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([0, 0.5, -0.9]), mindspore.float32)
+        >>> output = ops.erfinv_(input)
+        >>> print(output)
+        [ 0.          0.47693613 -1.1630869 ]
+    """
+    return inplace_erfinv_(input)
+
+
 def linspace(start, end, steps):
     r"""
     Returns a Tensor whose value is `steps` evenly spaced in the interval `start` and `end` (including `start` and
@@ -2848,7 +2891,7 @@ def linspace(start, end, steps):
             Must be positive int number or 0D int32/int64 Tensor.
 
     Returns:
-        Tensor, has the same dtype as `start`, and the shape of :math:`(steps)`.
+        Tensor, has the same dtype as `start`, and the shape of :math:`(steps,)`.
 
     Raises:
         TypeError: If `start` or `end` is not a Tensor.
@@ -3525,19 +3568,19 @@ def ne(input, other):
     r"""
     Computes the non-equivalence of two tensors element-wise.
 
-    Note:
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
-        - When the inputs are two tensors, the shapes of them could be broadcast.
-        - When the inputs are one tensor and one scalar, the scalar could only be a constant.
-        - Broadcasting is supported.
-
     .. math::
 
         out_{i} =\begin{cases}
         & \text{True,    if } input_{i} \ne other_{i} \\
         & \text{False,   if } input_{i} = other_{i}
         \end{cases}
+
+    Note:
+        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
+          consistent.
+        - When the inputs are two tensors, the shapes of them could be broadcast.
+        - When the inputs are one tensor and one scalar, the scalar could only be a constant.
+        - Broadcasting is supported.
 
     Args:
         input (Union[Tensor, Number, bool]): The first input is a number or
@@ -3880,7 +3923,7 @@ def median_ext(input, dim=None, keepdim=False):
     Raises:
         TypeError: If dtype of ``input`` is not one of the following: uint8, int16, int32, int64, float16 or float32.
         TypeError: If input ``input`` is not a Tensor.
-        TypeError: If ``dim`` is not a int.
+        TypeError: If ``dim`` is not an int.
         TypeError: If ``keepdim`` is not a bool.
         ValueError: If ``dim`` is not in range of [-x.dim, x.dim-1].
 
@@ -3926,7 +3969,7 @@ def median(input, axis=-1, keepdims=False):
     Raises:
         TypeError: If dtype of `input` is not one of the following: int16, int32, int64, float32, float64.
         TypeError: If input `input` is not a Tensor.
-        TypeError: If `axis` is not a int.
+        TypeError: If `axis` is not an int.
         TypeError: If `keepdims` is not a bool.
         ValueError: If `axis` is not in range of [-x.dim, x.dim-1].
 
@@ -4299,6 +4342,8 @@ def logspace(start, end, steps, base=10, *, dtype=mstype.float32):
         end (Union[float, Tensor]): End value of interval.
         steps (int): The steps must be a non-negative integer.
         base (int, optional): The base must be a non-negative integer. Default: ``10`` .
+
+    Keyword Args:
         dtype (mindspore.dtype, optional): The dtype of output. Default: ``mstype.float32`` .
 
     Returns:
@@ -4501,6 +4546,7 @@ def vander(x, N=None):
     exponent = F.expand_dims(exponent, 0)
     return F.tensor_pow(x, exponent)
 
+
 def var_ext(input, dim=None, *, correction=1, keepdim=False):
     r"""
     Calculates the variance over the dimensions specified by `dim`. `dim` can be a single dimension, list of
@@ -4519,7 +4565,7 @@ def var_ext(input, dim=None, *, correction=1, keepdim=False):
 
     Args:
         input (Tensor): The tensor used to calculate the variance.
-        dim (None or int or tuple of ints, optional): The dimension or dimensions to reduce. Defaults to ``None``.
+        dim (None, int, tuple(int), optional): The dimension or dimensions to reduce. Defaults to ``None``.
             If ``None``, all dimensions are reduced.
 
     Keyword Args:
@@ -4542,7 +4588,7 @@ def var_ext(input, dim=None, *, correction=1, keepdim=False):
     Raises:
         TypeError: If `input` is not a Tensor.
         TypeError: If `input` is not in bfloat16, float16, flaot32.
-        TypeError: If `dim` is not one of the followings: None, int, tuple.
+        TypeError: If `dim` is not one of the followings: None, int, list, tuple.
         TypeError: If `correction` is not an int.
         TypeError: If `keepdim` is not a bool.
         ValueError: If `dim` is out of range :math:`[-input.ndim, input.ndim)`.
@@ -4559,6 +4605,66 @@ def var_ext(input, dim=None, *, correction=1, keepdim=False):
         [[ 4.333333, 12.333333, 9.333333]]
     """
     return var_op(input, dim, correction, keepdim)
+
+
+def std_ext(input, dim=None, *, correction=1, keepdim=False):
+    r"""
+    Calculates the standard deviation over the dimensions specified by `dim`. `dim` can be a single dimension, list of
+    dimensions, or None to reduce over all dimensions.
+
+    The standard deviation (:math:`\sigma`) is calculated as:
+
+    .. math::
+        \sigma =\sqrt{\frac{1}{N-\delta N}\sum_{j-1}^{N-1}\left(s e l f_{i j}-\overline{x_{i}}\right)^{2}}
+
+    where :math:`x` is the sample set of elements, :math:`\bar{x}` is the sample mean, :math:`N` is the number
+    of samples and :math:`\delta N` is the `correction`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The tensor used to calculate the standard deviation.
+        dim (None, int, tuple(int), optional): The dimension or dimensions to reduce. Defaults to ``None``.
+            If ``None``, all dimensions are reduced.
+
+    Keyword Args:
+        correction (int, optional): The difference between the sample size and sample degrees of freedom. Defaults
+            to Bessel’s correction. Defaults to ``1``.
+        keepdim (bool, optional): Whether the output tensor has dim retained or not. If ``True`` , keep these
+            reduced dimensions and the length is 1. If ``False``, don't keep these dimensions. Defaults to ``False``.
+
+    Returns:
+        Tensor, the standard deviation.
+        Suppose the shape of `input` is :math:`(x_0, x_1, ..., x_R)`:
+
+        - If `dim` is () and `keepdim` is set to ``False`` , returns a 0-D Tensor, indicating the standard deviation of
+          all elements in `input`.
+        - If `dim` is int, e.g. ``1`` and `keepdim` is set to ``False`` , then the returned Tensor has shape
+          :math:`(x_0, x_2, ..., x_R)`.
+        - If `dim` is tuple(int) or list(int), e.g. ``(1, 2)`` and `keepdim` is set to ``False`` , then the returned
+          Tensor has shape :math:`(x_0, x_3, ..., x_R)`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `input` is not in bfloat16, float16, float32.
+        TypeError: If `dim` is not one of the followings: None, int, tuple.
+        TypeError: If `correction` is not an int.
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If `dim` is out of range :math:`[-input.ndim, input.ndim)`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import mint, Tensor
+        >>> input = Tensor(np.array([[1, 2, 3], [-1, 1, 4]]).astype(np.float32))
+        >>> output = ops.std_ext(input, dim=1, correction=1, keepdim=False)
+        >>> print(output)
+        [1.      2.5166113]
+    """
+    return std_op(input, dim, correction, keepdim)
 
 
 def var(input, axis=None, ddof=0, keepdims=False):
@@ -4813,6 +4919,116 @@ def std_mean(input, axis=None, ddof=0, keepdims=False):
     return tensor_pow(output[0], 0.5), output[1]
 
 
+def std_mean_ext(input, dim=None, *, correction=1, keepdim=False):
+    r"""
+    By default, return the standard deviation and mean of each dimension in Tensor.
+    If dim is a dimension list, calculate the standard deviation and mean of the corresponding dimension.
+
+    The standard deviation (:math:`\sigma`) is calculated as:
+
+    .. math::
+
+        \sigma = \sqrt{\frac{1}{N - \delta N} \sum_{j=0}^{N-1} \left(self_{ij} - \overline{x_{i}}\right)^{2}}
+
+    where is :math:`x` the sample set of elements, :math:`\bar{x}` is the sample mean,
+    :math:`N` is the number of samples and :math:`\delta N` is the `correction` .
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor. Supported dtypes: float16, float32.
+        dim (Union[int, tuple(int), list(int)], optional):
+            Specify the dimensions for calculating standard deviation and mean. Default value: ``None``.
+
+    Keyword Args:
+        correction (int, optional): Difference between the sample size and sample degrees of freedom.
+            Defaults to Bessel's correction. Default: ``1``.
+        keepdim (bool, optional): Whether to preserve the dimensions of the output Tensor.
+            If True, retain the reduced dimension with a size of 1. Otherwise, remove the dimensions.
+            Default value: ``False``.
+
+    Returns:
+        A tuple of standard deviation and mean.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not one of the following data types: int, tuple, list, or Tensor.
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If `dim` is out of range.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
+        >>> output_std, output_mean = ms.mint.std_mean(input, 1, correction=2, keepdim=True)
+        >>> print(output_std)
+        [[1.5811388]
+         [7.3824115]]
+        >>> print(output_mean)
+        [[ 2.5]
+         [-1.5]]
+    """
+    return std_mean_op(input, dim, correction, keepdim)
+
+
+def var_mean_ext(input, dim=None, *, correction=1, keepdim=False):
+    r"""
+    By default, return the variance and mean of each dimension in Tensor.
+    If dim is a dimension list, calculate the variance and mean of the corresponding dimension.
+
+    The variance (:math:`\sigma ^2`) is calculated as:
+
+    .. math::
+
+        \sigma ^2 = \frac{1}{N - \delta N} \sum_{j=0}^{N-1} \left(self_{ij} - \overline{x_{i}}\right)^{2}
+
+    where is :math:`x` the sample set of elements, :math:`\bar{x}` is the sample mean,
+    :math:`N` is the number of samples and :math:`\delta N` is the `correction` .
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor. Supported dtypes: float16, float32.
+        dim (Union[int, tuple(int), list(int)], optional):
+            Specify the dimensions for calculating variance and mean. Default value: ``None``.
+
+    Keyword Args:
+        correction (int, optional): Difference between the sample size and sample degrees of freedom.
+            Defaults to Bessel's correction. Default: ``1``.
+        keepdim (bool, optional): Whether to preserve the dimensions of the output Tensor.
+            If True, retain the reduced dimension with a size of 1. Otherwise, remove the dimensions.
+            Default value: ``False``.
+
+    Returns:
+        A tuple of variance and mean.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not one of the following data types: int, tuple, list, or Tensor.
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If `dim` is out of range.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
+        >>> output_var, output_mean = ms.mint.var_mean(input, 1, correction=2, keepdim=True)
+        >>> print(output_var)
+        [[ 2.5]
+         [54.5]]
+        >>> print(output_mean)
+        [[ 2.5]
+         [-1.5]]
+    """
+    return var_mean_op(input, dim, correction, keepdim)
+
+
 def reciprocal(input):
     r"""
     Returns reciprocal of a tensor element-wise.
@@ -4985,6 +5201,103 @@ def addbmm(input, batch1, batch2, *, beta=1, alpha=1):
     return beta * input + alpha * (bmm_res.sum(axis=0))
 
 
+def addbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
+    r"""
+    Applies batch matrix multiplication to `batch1` and `batch2`, with a reduced add step and add `input` to the result.
+
+    The optional values `alpha` and `beta` are the matrix-matrix product between `batch1` and `batch2` and the scale
+    factor for the added tensor `input` respectively. If `beta` is 0, then `input` will be ignored.
+
+    .. math::
+        output = \beta input + \alpha (\sum_{i=0}^{b-1} {batch1_i @ batch2_i})
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor to be added.
+        batch1 (Tensor): The first batch of tensor to be multiplied.
+        batch2 (Tensor): The second batch of tensor to be multiplied.
+
+    Keyword Args:
+        beta (Union[int, float], optional): Multiplier for `input`. Default: ``1`` .
+        alpha (Union[int, float], optional): Multiplier for `batch1` @ `batch2`. Default: ``1`` .
+
+    Returns:
+        Tensor, has the same dtype as `input`.
+
+    Raises:
+        TypeError: If `alpha` or `beta` is not an int or float.
+        ValueError: If `batch1`, `batch2` cannot apply batch matrix multiplication.
+        ValueError: If `batch1` and `batch2` are not 3-D tensors.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> m = np.ones((3, 3)).astype(np.float32)
+        >>> arr1 = np.arange(24).astype(np.float32).reshape((2, 3, 4))
+        >>> arr2 = np.arange(24).astype(np.float32).reshape((2, 4, 3))
+        >>> a = Tensor(arr1)
+        >>> b = Tensor(arr2)
+        >>> c = Tensor(m)
+        >>> output = ops.addbmm_ext(c, a, b)
+        >>> print(output)
+        [[ 949. 1009. 1069.]
+         [1285. 1377. 1469.]
+         [1621. 1745. 1869.]]
+    """
+    return addbmm_op(input, batch1, batch2, beta, alpha)
+
+
+def addmm_ext(input, mat1, mat2, *, beta=1, alpha=1):
+    r"""
+    Performs a matrix multiplication of the 2-D matrices mat1 and mat2. The matrix input is added to the final result.
+    The formula is defined as follows:
+
+    .. math::
+        output = \beta input + \alpha (mat1 @ mat2)
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): matrix to be added, the shape must be broadcastable with mat1 @ mat2.
+        mat1 (Tensor): the first matrix to be matrix multiplied, must be 2-D Tensor, with the same shape of the input.
+        mat2 (Tensor): the second matrix to be matrix multiplied, must be 2-D Tensor, with the same shape of the input.
+
+    Keyword Args:
+        beta (Union[float, int], optional): multiplier for input. Default: ``1`` .
+        alpha (Union[float, int], optional): multiplier for :math:`mat1 @ mat2`. Default: ``1`` .
+
+    Returns:
+        Tensor, with the same dtype as `input` and the same shape as mat1 @ mat2.
+
+    Raises:
+        TypeError: If the type of `input`, `mat1` or `mat2` is not Tensor.
+        TypeError: If the types of `input`, `mat1`, `mat2` are different.
+        ValueError: If `mat1` and `mat2` are not 2-D tensors.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.ones([3, 3]).astype(np.float32))
+        >>> mat1 = Tensor(np.ones([3, 4]).astype(np.float32))
+        >>> mat2 = Tensor(np.ones([4, 3]).astype(np.float32))
+        >>> output =  ops.function.math_func.addmm_ext(input, mat1, mat2)
+        >>> print(output)
+        [[5. 5. 5.]
+         [5. 5. 5.]
+         [5. 5. 5.]]
+    """
+    return addmm_op(input, mat1, mat2, beta, alpha)
+
+
 def addmm(input, mat1, mat2, *, beta=1, alpha=1):
     r"""
     Multiplies matrix `mat1` and matrix `mat2`. The matrix `input` is added to the final result.
@@ -5094,6 +5407,53 @@ def addmv(input, mat, vec, *, beta=1, alpha=1):
         beta = ops.scalar_cast(beta, mstype.int64)
     out = beta * input + alpha * mv(mat, vec)
     return out
+
+
+def addmv_ext(input, mat, vec, *, beta=1, alpha=1):
+    """
+    Performs a matrix-vector product of `mat` and `vec`, and add the input vector `input` to the final result.
+
+    If `mat` is a tensor of size :math:`(N, M)` , `vec` is a 1-D tensor of size :math:`M` , then `input` must be
+    broadcastable with a 1-D tensor of size :math:`N` . In this case, `output` is a 1-D Tensor of size :math:`N` .
+
+    .. math::
+        output = \beta input + \alpha (mat @ vec)
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Vector to be added.
+        mat (Tensor): The first tensor needs to be multiplied.
+        vec (Tensor): The second tensor needs to be multiplied.
+
+    Keyword Args:
+        beta (Union[float, int], optional): Coefficient of `input`. Default: ``1``.
+        alpha (Union[float, int], optional): Coefficient of :math:`mat @ vec` . Default: ``1``.
+
+    Returns:
+        Tensor, with a shape of :math:`(N,)` , and its dtype is the same as `input`.
+
+    Raises:
+        TypeError: If dtype of `input`, `mat` or `vec` is not tensor.
+        TypeError: If dtypes of `mat` and `vec` are not the same.
+        ValueError: If `mat` is not a 2-D tensor.
+        ValueError: If `vec` is not a 1-D tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.array([2., 3.]).astype(np.float32))
+        >>> mat = Tensor(np.array([[2., 5., 3.], [4., 2., 2.]]).astype(np.float32))
+        >>> vec = Tensor(np.array([3., 2., 4.]).astype(np.float32))
+        >>> output = mint.addmv(input, mat, vec)
+        >>> print(output)
+        [30. 27.]
+    """
+    return addmv_op(input, mat, vec, beta, alpha)
 
 
 def adjoint(x):
@@ -5233,60 +5593,13 @@ def lcm(input, other):
     return lcm_(input, other)
 
 
-def cdist(x1, x2, p=2.0):
-    """
-    Computes p-norm distance between each pair of row vectors of two input Tensors.
-
-    Note:
-        On Ascend, the supported dtypes are float16 and float32.
-        On CPU, the supported dtypes are float16 and float32.
-        On GPU, the supported dtypes are float32 and float64.
-
-    Args:
-        x1 (Tensor): Input tensor of shape :math:`(B, P, M)`.
-          Letter :math:`B` represents 0 or positive int number.
-          When :math:`B` is equal to 0, it means this dimension can be ignored,
-          i.e. shape of the tensor is :math:`(P, M)`.
-        x2 (Tensor): Input tensor of shape :math:`(B, R, M)`, has the same dtype as `x1`.
-        p (float, optional): P value for the p-norm distance to calculate between each
-          vector pair, P ∈ [0,∞]. Default: ``2.0`` .
-
-    Returns:
-        Tensor, p-norm distance, has the same dtype as `x1`, its shape is :math:`(B, P, R)`.
-
-    Raises:
-        TypeError: If `x1` or `x2` is not Tensor.
-        TypeError: If dtype of `x1` or `x2` is not listed in the "Note" above.
-        TypeError: If `p` is not float32.
-        ValueError: If `p` is negative.
-        ValueError: If dimension of `x1` is not the same as `x2`.
-        ValueError: If dimension of `x1` or `x2` is neither 2 nor 3.
-        ValueError: If the batch shape of `x1` is not the same as the shape of `x2`.
-        ValueError: If the number of columns of `x1` is not the same as that of `x2`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
-        >>> y = Tensor(np.array([[[3.0, 3.0], [3.0, 3.0]]]).astype(np.float32))
-        >>> output = ops.cdist(x, y, 2.0)
-        >>> print(output)
-        [[[2.8284273 2.8284273]
-          [1.4142137 1.4142137]]]
-    """
-    cdist_ = _get_cache_prim(P.Cdist)(p)
-    return cdist_(x1, x2)
-
-
 def lerp(input, end, weight):
     """
     Does a linear interpolation of two tensors input and end based on a float or tensor weight.
 
     If `weight` is a tensor, the shapes of three inputs need to be broadcast;
     If `weight` is a float, the shapes of `input` and `end` need to be broadcast.
+    If `weight` is a float and platform is Ascend, the types of `input` and `end` need to be float32.
 
     .. math::
 
@@ -5403,7 +5716,7 @@ def bernoulli_ext(input, *, generator=None):
             Default: ``None``, uses the default pseudorandom number generator.
 
     Returns:
-        output (Tensor): The output tensor, with the same shape and dtype as `input`.
+        output (Tensor), The output tensor, with the same shape and dtype as `input`.
 
     Raises:
         TypeError: If dtype of `input` is not one of: float16, float32, float64, bfloat16.
@@ -6135,6 +6448,7 @@ def diff(x, n=1, axis=-1, prepend=None, append=None):
     a2 = x.gather(TupleToTensor()(a[1:], mstype.int64), axis)
     return a2 - a1
 
+
 def _diff_is_scalar_or_scalar_tensor(value):
     """judge the value"""
     if isinstance(value, int):
@@ -6144,6 +6458,7 @@ def _diff_is_scalar_or_scalar_tensor(value):
         return True
 
     return False
+
 
 def _diff_check(input, n, dim):
     """judge the input n and dim"""
@@ -6158,6 +6473,7 @@ def _diff_check(input, n, dim):
 
     if input.dtype in (mstype.complex64, mstype.complex128, mstype.float64, mstype.int16):
         raise TypeError("For 'diff', 'input' do not support complex64/complex128/float64/int16")
+
 
 def _diff_helper(input, n, dim):
     """calculate the forward difference"""
@@ -6177,6 +6493,7 @@ def _diff_helper(input, n, dim):
 
     return result
 
+
 def _diff_prepend_append_on_dim(input, prepend, append, dim):
     """append tensor on dim"""
     if prepend is not None and append is None:
@@ -6186,6 +6503,7 @@ def _diff_prepend_append_on_dim(input, prepend, append, dim):
         return cat((input, append), dim)
 
     return cat((prepend, input, append), dim)
+
 
 def diff_ext(input, n=1, dim=-1, prepend=None, append=None):
     r"""
@@ -6201,7 +6519,7 @@ def diff_ext(input, n=1, dim=-1, prepend=None, append=None):
         input (Tensor): the tensor to compute the differences on.
         n (int, optional): the number of times to recursively compute the difference.
             Default: ``1`` .
-        dim (Tensor, optional): the dimension to compute the difference along.
+        dim (int, optional): the dimension to compute the difference along.
             Default is the last dimension. Default: ``0`` .
         prepend (Tensor, optional): values to prepend or append to `input` along `dim`
             before computing the difference. Their dimensions must be equivalent to that of input,
@@ -6926,7 +7244,7 @@ def logsumexp(input, axis, keep_dims=False):
     Args:
         input (Tensor): The input tensor. With float16 or float32 data type.
         axis (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
-        keep_dims (bool): If True, keep these reduced dimensions and the length is 1.
+        keep_dims (bool, optional): If True, keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions.
             Default : ``False`` .
 
@@ -7164,6 +7482,174 @@ def amax(input, axis=None, keepdims=False, *, initial=None, where=None):
         axis = ()
     input = _init_and_select_elem(input, initial, where, ops.maximum)
     return _get_cache_prim(P.ReduceMax)(keepdims)(input, axis)
+
+
+def amax_ext(input, dim=(), keepdim=False):
+    r"""
+    Computes the maximum value of of all elements along the specified `dim` dimension of the `input`,
+    and retains the dimension based on the `keepdim` parameter.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Input tensor.
+        dim (Union[int, tuple(int), list(int)], optional): The dimension to be reduced,
+            the value should be within `[-len(input.shape), len(input.shape) - 1]`,
+            when the `dim` is `()`, all dimensions are reduced, default: ``()``.
+        keepdim (bool, optional): Whether the output tensor retains the dimension `dim`, default: ``False``.
+
+    Returns:
+        Tensor, has same type as `input`, and the shape changes according to the values of `dim` and `keepdim`.
+
+        - If `dim` is `()`, and `keepdim` is False, the output is a 0-D tensor representing the maximum value of
+          all elements in the `input` tensor.
+        - If `dim` is `1`, and `keepdim` is False, the shape of output is
+          :math:`(input.shape[0], input.shape[2], ..., input.shape[n])`.
+        - If `dim` is `(1, 2)`, and `keepdim` is False, the shape of output is
+          :math:`(input.shape[0], input.shape[3], ..., input.shape[n])`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not an int or tuple(int) or list(int).
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If the value of any elements of `dim` is not in the range
+            `[-len(input.shape), len(input.shape) - 1]`.
+        RuntimeError: If any element of `dim` is repeated.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
+        >>> output = ops.function.math_func.amax_ext(x, 1, keepdim=True)
+        >>> result = output.shape
+        >>> print(result)
+        (3, 1, 5, 6)
+        >>> # case 1: Reduces a dimension by the maximum value of all elements in the dimension.
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ... [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]),
+        ... mindspore.float32)
+        >>> output = ops.function.math_func.amax_ext(x)
+        >>> print(output)
+        9.0
+        >>> print(output.shape)
+        ()
+        >>> # case 2: Reduces a dimension along axis 0.
+        >>> output = ops.function.math_func.amax_ext(x, 0, True)
+        >>> print(output)
+        [[[7. 7. 7. 7. 7. 7.]
+          [8. 8. 8. 8. 8. 8.]
+          [9. 9. 9. 9. 9. 9.]]]
+        >>> # case 3: Reduces a dimension along axis 1.
+        >>> output = ops.function.math_func.amax_ext(x, 1, True)
+        >>> print(output)
+        [[[3. 3. 3. 3. 3. 3.]]
+         [[6. 6. 6. 6. 6. 6.]]
+         [[9. 9. 9. 9. 9. 9.]]]
+        >>> # case 4: Reduces a dimension along axis 2.
+        >>> output = ops.function.math_func.amax_ext(x, 2, True)
+        >>> print(output)
+        [[[1.]
+          [2.]
+          [3.]]
+         [[4.]
+          [5.]
+          [6.]]
+         [[7.]
+          [8.]
+          [9.]]]
+    """
+    return reduce_max_impl(input, dim, keepdim)
+
+
+def amin_ext(input, dim=(), keepdim=False):
+    r"""
+    Computes the minimum value of of all elements along the specified `dim` dimension of the `input`,
+    and retains the dimension based on the `keepdim` parameter.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Input tensor.
+        dim (Union[int, tuple(int), list(int)], optional): The dimension to be reduced,
+            the value should be within `[-len(input.shape), len(input.shape) - 1]`,
+            when the `dim` is `()`, all dimensions are reduced, default: ``()``.
+        keepdim (bool, optional): Whether the output tensor retains the dimension `dim`, default: ``False``.
+
+    Returns:
+        Tensor, has same type as `input`, and the shape changes according to the values of `dim` and `keepdim`.
+
+        - If `dim` is `()`, and `keepdim` is False, the output is a 0-D tensor representing the minimum value of
+          all elements in the `input` tensor.
+        - If `dim` is `1`, and `keepdim` is False, the shape of output is
+          :math:`(input.shape[0], input.shape[2], ..., input.shape[n])`.
+        - If `dim` is `(1, 2)`, and `keepdim` is False, the shape of output is
+          :math:`(input.shape[0], input.shape[3], ..., input.shape[n])`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not an int or tuple(int) or list(int).
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If the value of any elements of `dim` is not in the range
+            `[-len(input.shape), len(input.shape) - 1]`.
+        RuntimeError: If any element of `dim` is repeated.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
+        >>> output = ops.function.math_func.amin_ext(x, 1, keepdim=True)
+        >>> result = output.shape
+        >>> print(result)
+        (3, 1, 5, 6)
+        >>> # case 1: Reduces a dimension by the minimum value of all elements in the dimension.
+        >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
+        ... [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+        ... [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]),
+        ... mindspore.float32)
+        >>> output = ops.function.math_func.amin_ext(x)
+        >>> print(output)
+        1.0
+        >>> print(output.shape)
+        ()
+        >>> # case 2: Reduces a dimension along axis 0.
+        >>> output = ops.function.math_func.amin_ext(x, 0, True)
+        >>> print(output)
+        [[[1. 1. 1. 1. 1. 1.]
+          [2. 2. 2. 2. 2. 2.]
+          [3. 3. 3. 3. 3. 3.]]]
+        >>> # case 3: Reduces a dimension along axis 1.
+        >>> output = ops.function.math_func.amin_ext(x, 1, True)
+        >>> print(output)
+        [[[1. 1. 1. 1. 1. 1.]]
+         [[4. 4. 4. 4. 4. 4.]]
+         [[7. 7. 7. 7. 7. 7.]]]
+        >>> # case 4: Reduces a dimension along axis 2.
+        >>> output = ops.function.math_func.amin_ext(x, 2, True)
+        >>> print(output)
+        [[[1.]
+          [2.]
+          [3.]]
+         [[4.]
+          [5.]
+          [6.]]
+         [[7.]
+          [8.]
+          [9.]]]
+    """
+    return reduce_min_impl(input, dim, keepdim)
 
 
 def mean(x, axis=None, keep_dims=False):
@@ -7796,6 +8282,7 @@ def _compute_vector_norm_inf(x, dim, keepdims, norm_func):
             ret_norm = ret_norm.reshape(ret_shape)
     return ret_norm
 
+
 @_primexpr
 def _check_vector_norm_inputs(x, ord):
     """vector_norm inputs check"""
@@ -7805,6 +8292,7 @@ def _check_vector_norm_inputs(x, ord):
     if not isinstance(ord, (bool, int, float)):
         raise ValueError(f"For `vector_norm`, the ord mode must be one of [bool, int, float, inf, -inf], "
                          f"but got {ord}.")
+
 
 def vector_norm_ext(x, ord=2, dim=None, keepdim=False, *, dtype=None):
     r"""
@@ -7820,7 +8308,7 @@ def vector_norm_ext(x, ord=2, dim=None, keepdim=False, *, dtype=None):
     ``-inf``                        :math:`min(abs(x))`
     ``0``                           :math:`sum(x!=0)`
     other ``int`` or ``float``      :math:`sum(abs(x)^{ord})^{(1 / ord)}`
-    ==========================      ===========================================
+    ==========================      ==========================================
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -7848,7 +8336,8 @@ def vector_norm_ext(x, ord=2, dim=None, keepdim=False, *, dtype=None):
         Tensor, the result of norm calculation on the specified dimension, `dim`.
 
     Raises:
-        TypeError: If `dim` is not an int or tuple.
+        TypeError: If `x` is not a Tensor.
+        TypeError: If `dim` is neither an int nor a list or tuple.
         ValueError: If `ord` is not in [bool, int, float, inf, -inf].
         ValueError: The elements of `dim` are duplicate.
         ValueError: If any elements of `dim` is out of range.
@@ -7912,7 +8401,7 @@ def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
             behavior. Default: ``'fro'`` .
         dim (Tuple(int, int), optional): calculate the dimension of the matrix norm.
             Default: ``(-2, -1)`` .
-        keepdims (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+        keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
 
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): When set, `A` will be converted to the specified type,
@@ -7970,6 +8459,7 @@ def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
         return ops.amin(vector_norm_ext(A, 1, row_axis, keepdim, dtype=dtype), col_axis, keepdim)
     return ops.amax(vector_norm_ext(A, 1, row_axis, keepdim, dtype=dtype), col_axis, keepdim)
 
+
 @_primexpr
 def _check_linalg_norm_input(dim, ord, ndim):
     """dim check"""
@@ -7989,6 +8479,7 @@ def _check_linalg_norm_input(dim, ord, ndim):
     else:
         raise TypeError(f'For `linalg.norm`, the dim should be int, list of int or tuple of int, but got {type(dim)}')
     return dim, False
+
 
 def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     r"""
@@ -8098,13 +8589,13 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): The input of norm with data type of bfloat16, float16 or float32.
-            The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
-        p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
+        input (Tensor): The shape is :math:`(*)` or :math:`(*, m, n)`
+            where :math:`*` means, any number of additional dimensions.
+        p (Union[bool, int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
             behavior. Default: ``fro`` .
         dim (Union[int, List(int), Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
             Default: ``None`` .
-        keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+        keepdim (bool, optional): whether the output Tensor retains the original dimension. Default: ``False`` .
 
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): When set, `input` will be converted to the specified type,
@@ -8150,6 +8641,7 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         return matrix_norm_ext(input, p, dim, keepdim, dtype=dtype)
     raise ValueError(f"For `norm_ext`, the value of `p` must be one of [int, float, inf, -inf, 'fro', 'nuc',] "
                      f"but got `{p}`.")
+
 
 def vector_norm(x, ord=2, axis=None, keepdims=False, *, dtype=None):
     r"""
@@ -9660,9 +10152,9 @@ def remainder(input, other):
     both dtypes cannot be bool, and the shapes of them could be broadcast. When the inputs are one tensor
     and one scalar, the scalar could only be a constant.
 
-    .. math::
+    .. code:: python
 
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
     .. warning::
         - When the elements of input exceed 2048, there might be accuracy problems.
@@ -9707,9 +10199,10 @@ def remainder_ext(input, other):
 
     Supports broadcasting to a common shape and implicit type promotion.
 
-    .. math::
+    .. code:: python
 
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
+
 
     Note:
         Complex inputs are not supported. At least one input need to be tensor, but not both are bool tensors.
@@ -9995,7 +10488,7 @@ def trapz(y, x=None, *, dx=1.0, dim=-1):
         TypeError: If `y` is not a Tensor.
         TypeError: If `x` is not None and is not a Tensor.
         TypeError: If `dx` is not a float number.
-        TypeError: If `dim` is not a Integer.
+        TypeError: If `dim` is not an integer.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -10201,7 +10694,7 @@ def cross(input, other, dim=None):
             found with the size `3`. Default: ``None``.
 
     Returns:
-        Tensor, has the same shape and type as input `input`.
+        Tensor, has the same shape and type as `input`.
 
     Raises:
         TypeError: If `input` is not a Tensor.
@@ -10364,8 +10857,11 @@ def cumprod(input, dim, dtype=None):
 
         y_i = x_1 * x_2 * x_3 * ... * x_i
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
-        input (Tensor[Number]): The input tensor.
+        input (Tensor): The input tensor.
             :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
         dim (int): The dimensions to compute the cumulative product. Only constant value is allowed.
         dtype (:class:`mindspore.dtype`, optional): The desired data type of output.
@@ -10621,6 +11117,9 @@ def isposinf(input):
     """
     Tests element-wise for positive infinity.
 
+    .. warning::
+        For Ascend, it is only supported on platforms above Atlas A2.
+
     Args:
         input (Tensor): Input values.
 
@@ -10648,6 +11147,9 @@ def isposinf(input):
 def isneginf(input):
     """
     Tests element-wise for negative infinity.
+
+    .. warning::
+        For Ascend, it is only supported on platforms above Atlas A2.
 
     Args:
         input (Tensor): Input Tensor.
@@ -10691,7 +11193,7 @@ def logical_xor(input, other):
 
     Raises:
         TypeError: If the dtype of `input` or `other` is not bool or can not be implicitly converted to bool.
-        ValueError: If the shape of two inputs cannot be broadcast.
+        ValueError: If the shapes of two inputs cannot be broadcast.
 
     Supported Platforms:
         ``Ascend`` ``CPU``
@@ -11012,7 +11514,7 @@ def tanhshrink(input):
 
     if input.dtype in mstype.int_type + mstype.uint_type:
         input = input.astype(mstype.float32)
-    return input - tanh_(input)
+    return input - tanh(input)
 
 
 def zeta(input, other):
@@ -12029,6 +12531,8 @@ def vecdot(x, y, *, axis=-1):
         y (Tensor): Second batch of vectors. The shape of Tensor is :math:`(*,N)`
             where :math:`*` means, any number of additional dimensions. Supporting broadcasting.
             The dtype of Tensor should be one of the following types: float, double, int, complex64 and complex128.
+
+    Keyword Args:
         axis (int): Dimension across which to calculate the dot product. Default: ``-1`` .
 
     Returns:
@@ -12101,6 +12605,9 @@ def _get_transpose_shape(x2_shape):
 def dot(input, other):
     """
     Computation a dot product between samples in two tensors.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): First tensor in Dot op with datatype float16 or float32.
@@ -12456,15 +12963,16 @@ def round(input, *, decimals=0):
         input (Tensor): The input tensor.
 
     Keyword Args:
-        decimals (int, optional): Number of decimal places to round to (default: 0). If decimals is negative,
+        decimals (int, optional): Number of decimal places to round to (default: ``0``). If decimals is negative,
             it specifies the number of positions to the left of the decimal point. It supports converting the
-            single-element tensor to an int.
+            single-element tensor to an int. When `input` type is int32 or int64, the `decimals` should be 0.
 
     Returns:
         Tensor, has the same shape and type as the `input`.
 
     Raises:
         TypeError: If `input` is not a Tensor.
+        RuntimeError: If `input` type is int32 or int64, the `decimals` is not 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -12483,6 +12991,7 @@ def round(input, *, decimals=0):
         [ 0.8  1.5  2.4  2.5 -4.6]
     """
     return round_op(input, decimals)
+
 
 def isnan_ext(tensor):
     r"""
@@ -12511,6 +13020,7 @@ def isnan_ext(tensor):
         [ True  False  False  False]
     """
     return not_equal_op(tensor, tensor)
+
 
 def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0):
     r"""
@@ -12583,6 +13093,58 @@ def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_thresh
     iou = rotated_iou_op(boxes_cp, query_boxes_cp, trans, mode, is_cross, v_threshold, e_threshold)
     return cast_(iou, origin_dtype)
 
+
+def mul_ext(input, other):
+    r"""
+    Multiply other value by input Tensor.
+
+    .. math::
+
+        out_{i} = input_{i} \times other_{i}
+
+    Note:
+        - When the two inputs have different shapes, they must be able to broadcast to a common shape.
+        - The two inputs comply with the implicit type conversion rules to make the data types
+          consistent.
+
+    Args:
+        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+
+    Returns:
+        Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
+        and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If the type of `input`, `other` is not one of the following: Tensor, number.Number, bool.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> x = Tensor(np.array([2, 6, 9]).astype(np.int32))
+        >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
+        >>> output = ops.mul_ext(x, y)
+        >>> print(output)
+        [8. 30. 54.]
+        >>> # the data type of x is int32, the data type of y is float32,
+        >>> # and the output is the data format of higher precision float32.
+        >>> print(output.dtype)
+        Float32
+    """
+    if isinstance(other, (float, int, bool)) and isinstance(input, Tensor):
+        return muls(input, other)
+    return mul(input, other)
 
 __all__ = [
     'addn',
@@ -12716,6 +13278,7 @@ __all__ = [
     'sinh',
     'cosh',
     'tanh',
+    'tanh_',
     'tanhshrink',
     'asinh',
     'arcsinh',

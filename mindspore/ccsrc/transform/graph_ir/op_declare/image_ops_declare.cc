@@ -220,11 +220,12 @@ REG_ADPT_DESC(CombinedNonMaxSuppression, prim::kPrimCombinedNonMaxSuppression->n
               ADPT_DESC(CombinedNonMaxSuppression))
 
 std::vector<std::string> interpolation_modes = {"bilinear", "nearest"};
+std::vector<std::string> interpolation_modes_2d = {"bilinear", "nearest", "bicubic"};
 std::vector<std::string> padding_modes = {"zeros", "border", "reflection"};
 // GridSampler2D
 INPUT_MAP(GridSampler2D) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(grid)}};
 ATTR_MAP(GridSampler2D) = EMPTY_ATTR_MAP;
-INPUT_ATTR_MAP(GridSampler2D) = {{3, ATTR_DESC(interpolation_mode, AnyTraits<GEEnumToStr>(), interpolation_modes)},
+INPUT_ATTR_MAP(GridSampler2D) = {{3, ATTR_DESC(interpolation_mode, AnyTraits<GEEnumToStr>(), interpolation_modes_2d)},
                                  {4, ATTR_DESC(padding_mode, AnyTraits<GEEnumToStr>(), padding_modes)},
                                  {5, ATTR_DESC(align_corners, AnyTraits<bool>())}};
 OUTPUT_MAP(GridSampler2D) = {{0, OUTPUT_DESC(y)}};
@@ -266,6 +267,17 @@ INPUT_MAP(NonMaxSuppressionV3) = {{1, INPUT_DESC(boxes)},
 ATTR_MAP(NonMaxSuppressionV3) = {{"offset", ATTR_DESC(offset, AnyTraits<int>())}};
 OUTPUT_MAP(NonMaxSuppressionV3) = {{0, OUTPUT_DESC(selected_indices)}};
 REG_ADPT_DESC(NonMaxSuppressionV3, prim::kPrimNonMaxSuppressionV3->name(), ADPT_DESC(NonMaxSuppressionV3))
+
+// NonMaxSuppressionV6
+INPUT_MAP(NonMaxSuppressionV6) = {{1, INPUT_DESC(boxes)},
+                                  {2, INPUT_DESC(scores)},
+                                  {3, INPUT_DESC(max_output_size)},
+                                  {4, INPUT_DESC(iou_threshold)},
+                                  {5, INPUT_DESC(score_threshold)}};
+ATTR_MAP(NonMaxSuppressionV6) = {{"center_point_box", ATTR_DESC(center_point_box, AnyTraits<int>())},
+                                 {"max_boxes_size", ATTR_DESC(max_boxes_size, AnyTraits<int>())}};
+OUTPUT_MAP(NonMaxSuppressionV6) = {{0, OUTPUT_DESC(selected_indices)}};
+REG_ADPT_DESC(NonMaxSuppressionV6, kNameNonMaxSuppression, ADPT_DESC(NonMaxSuppressionV6))
 
 // AdjustSaturation
 INPUT_MAP(AdjustSaturation) = {{1, INPUT_DESC(images)}, {2, INPUT_DESC(scale)}};

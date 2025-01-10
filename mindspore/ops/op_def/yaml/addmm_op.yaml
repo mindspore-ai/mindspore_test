@@ -9,11 +9,17 @@ addmm:
       dtype: tensor
     beta:
       dtype: number
+      default: 1
     alpha:
       dtype: number
+      default: 1
   returns:
     output:
       dtype: tensor
+  function:
+    disable: True
   dispatch:
     enable: True
     Ascend: AddmmAscend
+    CPU: None
+    GPU: None

@@ -23,8 +23,13 @@ namespace kernel {
 namespace {
 constexpr size_t kCdistInputDimsMin = 2;
 
-const std::vector<KernelAttr> kernel_attr = {
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32)}};
+const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddOutputAttr(kNumberTypeFloat32)}};
 }  // namespace
 
 inline float DistSign(float val) {
@@ -77,16 +82,6 @@ void CdistGradCpuKernelMod::InitFunc(float p) {
 
 bool CdistGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
-  p_ = GetValue<float>(primitive_->GetAttr(ops::kP));
-  auto input_type_id = inputs[0]->dtype_id();
-  switch (input_type_id) {
-    case kNumberTypeFloat32:
-      InitFunc(p_);
-      break;
-    default:
-      MS_LOG(ERROR) << "cdist grad kernel does not support " << TypeIdToString(input_type_id);
-      return false;
-  }
   return true;
 }
 
@@ -97,13 +92,32 @@ int CdistGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     MS_LOG(WARNING) << "For " << kernel_name_ << " Resize failed. ret " << ret;
     return ret;
   }
-  std::vector<int64_t> in_shape0 = inputs[1]->GetShapeVector();
-  std::vector<int64_t> in_shape1 = inputs[2]->GetShapeVector();
+  p_ = inputs[kIndex4]->GetValueWithCheck<float>();
+  auto input_type_id = inputs[kIndex0]->dtype_id();
+  switch (input_type_id) {
+    case kNumberTypeFloat32:
+      InitFunc(p_);
+      break;
+    default:
+      MS_LOG(ERROR) << "cdist grad kernel does not support " << TypeIdToString(input_type_id);
+      return false;
+  }
+  std::vector<int64_t> in_shape0 = inputs[kIndex1]->GetShapeVector();
+  std::vector<int64_t> in_shape1 = inputs[kIndex2]->GetShapeVector();
   auto in_shape_size = in_shape0.size();
   if (in_shape1.size() != in_shape_size || in_shape_size < kCdistInputDimsMin) {
     MS_LOG(ERROR) << "For " << kernel_name_ << ",invalid input shape, input0 shape size " << in_shape_size
                   << ", input1 shape size " << in_shape1.size();
     return KRET_RESIZE_FAILED;
+  }
+  for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
+    if (in_shape0[i] != in_shape1[i]) {
+      MS_LOG(ERROR) << "invalid input shape, the batch shape of input0 must be the same as the shape of input1 ,but "
+                       "got 'input0_shape["
+                    << i << "]': " << in_shape0[i] << " and 'input1_shape[" << i << "]': " << in_shape1[i]
+                    << ", kernel_name_ " << kernel_name_;
+      return KRET_RESIZE_FAILED;
+    }
   }
   batch_ = 0;
   for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
@@ -111,9 +125,9 @@ int CdistGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
   batch_ = (batch_ <= 0) ? 1 : batch_;
 
-  r0_ = in_shape0[in_shape_size - 2];
-  m_ = in_shape0[in_shape_size - 1];
-  r1_ = in_shape1[in_shape_size - 2];
+  r0_ = in_shape0[in_shape_size - kIndex2];
+  m_ = in_shape0[in_shape_size - kIndex1];
+  r1_ = in_shape1[in_shape_size - kIndex2];
 
   l1_size = r0_ * m_;
   l2_size = r1_ * m_;
@@ -126,12 +140,12 @@ std::vector<KernelAttr> CdistGradCpuKernelMod::GetOpSupport() { return kernel_at
 bool CdistGradCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
                                    const std::vector<KernelTensor *> &outputs) {
-  float *grad_start = reinterpret_cast<float *>(inputs[0]->device_ptr());
-  float *dist_start = reinterpret_cast<float *>(inputs[3]->device_ptr());
-  float *t1_start = reinterpret_cast<float *>(inputs[1]->device_ptr());
-  float *t2_start = reinterpret_cast<float *>(inputs[2]->device_ptr());
-  float *res_start = reinterpret_cast<float *>(outputs[0]->device_ptr());
-  auto ret = memset_s(res_start, outputs[0]->size(), 0, outputs[0]->size());
+  float *grad_start = reinterpret_cast<float *>(inputs[kIndex0]->device_ptr());
+  float *dist_start = reinterpret_cast<float *>(inputs[kIndex3]->device_ptr());
+  float *t1_start = reinterpret_cast<float *>(inputs[kIndex1]->device_ptr());
+  float *t2_start = reinterpret_cast<float *>(inputs[kIndex2]->device_ptr());
+  float *res_start = reinterpret_cast<float *>(outputs[kIndex0]->device_ptr());
+  auto ret = memset_s(res_start, outputs[kIndex0]->size(), 0, outputs[kIndex0]->size());
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
   }

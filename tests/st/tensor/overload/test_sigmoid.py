@@ -13,17 +13,28 @@
 # limitations under the License.
 # ============================================================================
 """Test the overload functional method"""
-import mindspore as ms
-import mindspore.nn as nn
 import numpy as np
 import pytest
-
 from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.utils import test_utils
+
+import mindspore as ms
+import mindspore.nn as nn
 
 
 class SigmoidNet(nn.Cell):
     def construct(self, x):
         return x.sigmoid()
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
+
+
+@test_utils.run_with_cell
+def sigmoid_forward_func(x):
+    return x.sigmoid()
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -43,3 +54,19 @@ def test_method_sigmoid(mode):
     output = net(x)
     expect_output = np.array([0.7310586, 0.880797, 0.95257413, 0.98201376, 0.9933072], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_sigmoid_dynamic():
+    """
+    Feature: Test sigmoid op.
+    Description: Test sigmoid dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    TEST_OP(sigmoid_forward_func, [[ms_data1], [ms_data2]], 'sigmoid',
+            disable_mode=['GRAPH_MODE'])

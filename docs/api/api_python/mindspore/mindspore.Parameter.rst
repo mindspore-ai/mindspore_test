@@ -166,6 +166,10 @@
             - 仅支持 `Graph` 模式。
             - 建议使用cell.recompute(parallel_optimizer_comm_recompute=True/False)去配置由优化器并行生成的 :class:`mindspore.ops.AllGather` 算子，而不是直接使用该接口。
 
+    .. py:method:: register_hook(hook_fn)
+
+        详情请参考 :func:`mindspore.Tensor.register_hook`。
+
     .. py:method:: requires_grad
         :property:
 

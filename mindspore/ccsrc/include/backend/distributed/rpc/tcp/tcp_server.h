@@ -60,6 +60,9 @@ class BACKEND_EXPORT TCPServer : public RPCServerBase {
   // The basic TCP communication component used by the server.
   std::unique_ptr<TCPComm> tcp_comm_;
 
+  // Event loop group holder, support multi event loop process during networking.
+  EventLoopGroupPtr event_loop_group_;
+
   DISABLE_COPY_AND_ASSIGN(TCPServer);
 };
 }  // namespace rpc

@@ -16,9 +16,12 @@
 """
 Built-in validators.
 """
+
+import collections
 import inspect as ins
 import os
 from functools import wraps
+
 import numpy as np
 
 from mindspore._c_expression import typing
@@ -28,7 +31,6 @@ from ..core.validator_helpers import parse_user_args, type_check, type_check_lis
     validate_dataset_param_value, check_padding_options, \
     check_num_parallel_workers, check_columns, check_pos_int32, check_valid_str, check_dataset_num_shards_shard_id, \
     check_valid_list_tuple, check_int32, check_independent_mode
-
 from . import datasets
 from . import samplers
 from . import cache_client
@@ -976,7 +978,7 @@ def check_tuple_iterator(method):
     @wraps(method)
     def new_method(self, *args, **kwargs):
         [columns, num_epochs, _, _], param_dict = parse_user_args(method, *args, **kwargs)
-        nreq_param_bool = ['output_numpy']
+        nreq_param_bool = ['output_numpy', 'do_copy']
         validate_dataset_param_value(nreq_param_bool, param_dict, bool)
         if num_epochs is not None:
             type_check(num_epochs, (int,), "num_epochs")
@@ -996,7 +998,7 @@ def check_dict_iterator(method):
     @wraps(method)
     def new_method(self, *args, **kwargs):
         [num_epochs, _, _], param_dict = parse_user_args(method, *args, **kwargs)
-        nreq_param_bool = ['output_numpy']
+        nreq_param_bool = ['output_numpy', 'do_copy']
         validate_dataset_param_value(nreq_param_bool, param_dict, bool)
         if num_epochs is not None:
             type_check(num_epochs, (int,), "num_epochs")
@@ -1071,7 +1073,34 @@ def check_source_function(source):
     return str(var) + source_doc
 
 
-def check_generatordataset(method):
+def check_batch_sampler(batch_sampler, num_samples, shuffle, num_shards, shard_id, sampler, collate_fn):
+    """Check whether the params are valid with batch_sampler."""
+    if batch_sampler is not None:
+        if not all(param is None for param in [num_samples, shuffle, num_shards, shard_id, sampler]):
+            raise ValueError("batch_sampler is mutually exclusive with num_samples, shuffle, num_shards, "
+                             "shard_id and sampler.")
+        if not isinstance(batch_sampler, (samplers.BuiltinSampler, collections.abc.Iterable)):
+            raise TypeError("batch_sampler should have __getitem__ or __iter__ method.")
+
+    if collate_fn is not None:
+        if batch_sampler is None:
+            raise ValueError("collate_fn can be specified only when batch_sampler is set.")
+        if not isinstance(collate_fn, collections.abc.Callable):
+            raise TypeError("collate_fn should be callable.")
+
+
+def check_valid_map_style_dataset(source, sampler, batch_sampler, num_shards):
+    """Check whether the params are valid for map style dataset."""
+    if not hasattr(source, "__getitem__"):
+        if sampler is not None:
+            raise ValueError("sampler is not supported if source does not have attribute '__getitem__'.")
+        if batch_sampler is not None:
+            raise ValueError("batch_sampler is not supported if source does not have attribute '__getitem__'.")
+        if num_shards is not None:
+            raise ValueError("num_shards is not supported if source does not have attribute '__getitem__'.")
+
+
+def check_generator_dataset(method):
     """A wrapper that wraps a parameter checker around the original Dataset(GeneratorDataset)."""
 
     @wraps(method)
@@ -1133,10 +1162,13 @@ def check_generatordataset(method):
                 except TypeError:
                     raise TypeError("sampler should be either iterable or from mindspore.dataset.samplers.")
 
-        if sampler is not None and not hasattr(source, "__getitem__"):
-            raise ValueError("sampler is not supported if source does not have attribute '__getitem__'.")
-        if num_shards is not None and not hasattr(source, "__getitem__"):
-            raise ValueError("num_shards is not supported if source does not have attribute '__getitem__'.")
+        batch_sampler = param_dict.get("batch_sampler")
+        num_samples = param_dict.get("num_samples")
+        shuffle = param_dict.get("shuffle")
+        collate_fn = param_dict.get("collate_fn")
+        check_batch_sampler(batch_sampler, num_samples, shuffle, num_shards, shard_id, sampler, collate_fn)
+
+        check_valid_map_style_dataset(source, sampler, batch_sampler, num_shards)
 
         return method(self, *args, **kwargs)
 
@@ -1306,7 +1338,7 @@ def check_batch(method):
             sig = ins.signature(batch_size)
             if len(sig.parameters) != 1:
                 raise ValueError("callable batch_size should take one parameter (BatchInfo).")
-        else:
+        elif batch_size != -1:
             check_pos_int32(int(batch_size), "batch_size")
 
         if num_parallel_workers is not None:
@@ -1977,7 +2009,7 @@ def check_hostname(hostname):
     return all(allowed.match(x) for x in hostname.split("."))
 
 
-def check_numpyslicesdataset(method):
+def check_numpy_slices_dataset(method):
     """A wrapper that wraps a parameter checker around the original Dataset(NumpySlicesDataset)."""
 
     @wraps(method)
@@ -2018,7 +2050,7 @@ def check_numpyslicesdataset(method):
     return new_method
 
 
-def check_paddeddataset(method):
+def check_padded_dataset(method):
     """A wrapper that wraps a parameter checker around the original Dataset(PaddedDataset)."""
 
     @wraps(method)

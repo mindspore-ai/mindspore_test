@@ -21,7 +21,7 @@ import shutil
 import re
 import numpy as np
 import mindspore.nn as nn
-from mindspore import context, _data_dump, Callback, dataset, Model
+from mindspore import context, _c_expression, Callback, dataset, Model
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import TruncatedNormal
 from mindspore.common.parameter import ParameterTuple
@@ -197,21 +197,21 @@ class StopAtStep(Callback):
         self.start_step = start_step
         self.stop_step = stop_step
         # pylint: disable=W0212
-        _data_dump._dump_set_dynamic()
+        _c_expression._dump_set_dynamic()
 
     def on_train_step_begin(self, run_context):
         cb_params = run_context.original_args()
         step_num = cb_params.cur_step_num
         if step_num == self.start_step:
             # pylint: disable=W0212
-            _data_dump._dump_start()
+            _c_expression._dump_start()
 
     def on_train_step_end(self, run_context):
         cb_params = run_context.original_args()
         step_num = cb_params.cur_step_num
         if step_num == self.stop_step:
             # pylint: disable=W0212
-            _data_dump._dump_stop()
+            _c_expression._dump_stop()
 
 
 def generator():

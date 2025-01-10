@@ -80,13 +80,3 @@ Utils
     mindspore.train.names
     mindspore.train.rearrange_inputs
 
-Thor
----------------
-
-.. autosummary::
-    :toctree: train
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.train.ConvertModelUtils
-    mindspore.train.ConvertNetUtils

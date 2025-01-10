@@ -38,7 +38,6 @@ tensor::BaseTensorPtr CountNonZeroAscendCustomize(const std::shared_ptr<OpRunner
   }
   BoolImmPtr keep_dims = std::make_shared<BoolImm>(false);
   Int64ImmPtr out_dtype = std::make_shared<Int64Imm>(kNumberTypeInt64);
-  OpRunner::InferOpOutput(op, input_tensor, dims);
   auto device_context = op->device_context();
 
   const auto &device_name = device_context->device_context_key_.device_name_;

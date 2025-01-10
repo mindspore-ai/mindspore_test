@@ -23,7 +23,7 @@ grad_all = C.GradOperation(get_all=True)
 grad_all_with_sens = C.GradOperation(get_all=True, sens_param=True)
 
 def setup_module(module):
-    context.set_context(mode=context.PYNATIVE_MODE, check_bprop=False)
+    context.set_context(mode=context.PYNATIVE_MODE)
 
 
 def single(x):

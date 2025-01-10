@@ -24,6 +24,7 @@
 #include "include/common/utils/signal_util.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "utils/ms_context.h"
+#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
@@ -246,6 +247,9 @@ void AscendKernelRuntime::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
 
 void AscendKernelRuntime::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Ascend finalize start";
+  if (!initialized_) {
+    return;
+  }
   SetContextForce();
 
   // release ge runtime
@@ -313,14 +317,20 @@ bool AscendKernelRuntime::Init() {
 #ifdef ENABLE_DEBUGGER
     SetDebugger();
 #endif
-    mem_manager_ = std::make_shared<AscendMemoryManager>();
+    if (!(IS_VLOG_ON(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK))) {
+      mem_manager_ = std::make_shared<AscendMemoryManager>();
+    } else {
+      mem_manager_ = std::make_shared<EnhancedAscendMemoryManager>();
+    }
     MS_EXCEPTION_IF_NULL(mem_manager_);
     mem_manager_->Initialize();
     auto rt_ret = CALL_ASCEND_API(aclrtSetExceptionInfoCallback, TaskExceptionCallback);
     if (rt_ret != ACL_ERROR_NONE) {
       MS_LOG(EXCEPTION) << "Reg SetTaskFailCallback failed, error: " << rt_ret;
     }
-    uint32_t op_execute_timeout = ms_context->get_param<uint32_t>(MS_CTX_OP_TIMEOUT);
+    auto op_debug_conf = OpDebugConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(op_debug_conf);
+    uint32_t op_execute_timeout = op_debug_conf->execute_timeout();
     std::string hccl_exec_timeout = common::GetEnv("HCCL_EXEC_TIMEOUT");
     uint32_t notify_wait_timeout;
     if (hccl_exec_timeout.empty()) {
@@ -622,7 +632,7 @@ bool AscendKernelRuntime::MemcpyAsync(void *dst, const void *src, uint64_t size,
   }
   // cppcheck-suppress unreadVariable
   auto lock = device::KernelRuntime::LockRuntime(stream);
-  if (!common::IsNeedProfileMemory()) {
+  if (!common::IsDryRun()) {
     if (ACL_ERROR_NONE !=
         CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, static_cast<aclrtMemcpyKind>(kind), stream)) {
       MS_LOG(ERROR) << "Call runtime rtMemcpyAsync error.";
@@ -665,37 +675,6 @@ void AscendKernelRuntime::CreateDefaultStream() {
   MS_LOG(INFO) << "Create ascend communication stream, stream id: " << communication_stream_id_;
   communication_stream_ = AscendStreamMng::GetInstance().GetStream(communication_stream_id_);
   MS_EXCEPTION_IF_NULL(communication_stream_);
-
-  size_t copy_stream_id;
-  AscendStreamMng::GetInstance().CreateStream(&copy_stream_id);
-  MS_LOG(INFO) << "Create ascend copy data stream, stream id: " << copy_stream_id;
-  copy_data_stream_ = AscendStreamMng::GetInstance().GetStream(copy_stream_id);
-  AscendStreamMng::GetInstance().SetCopyStream(copy_data_stream_);
-  MS_EXCEPTION_IF_NULL(copy_data_stream_);
-
-  size_t forward_send_stream_id;
-  AscendStreamMng::GetInstance().CreateStream(&forward_send_stream_id);
-  MS_LOG(INFO) << "Create ascend forward Send communication stream, stream id: " << forward_send_stream_id;
-  forward_send_stream_ = AscendStreamMng::GetInstance().GetStream(forward_send_stream_id);
-  MS_EXCEPTION_IF_NULL(forward_send_stream_);
-
-  size_t backward_send_stream_id;
-  AscendStreamMng::GetInstance().CreateStream(&backward_send_stream_id);
-  MS_LOG(INFO) << "Create ascend backward Send communication stream, stream id: " << backward_send_stream_id;
-  backward_send_stream_ = AscendStreamMng::GetInstance().GetStream(backward_send_stream_id);
-  MS_EXCEPTION_IF_NULL(backward_send_stream_);
-
-  size_t forward_recv_stream_id;
-  AscendStreamMng::GetInstance().CreateStream(&forward_recv_stream_id);
-  MS_LOG(INFO) << "Create ascend forward Receive communication stream, stream id: " << forward_recv_stream_id;
-  forward_recv_stream_ = AscendStreamMng::GetInstance().GetStream(forward_recv_stream_id);
-  MS_EXCEPTION_IF_NULL(forward_recv_stream_);
-
-  size_t backward_recv_stream_id;
-  AscendStreamMng::GetInstance().CreateStream(&backward_recv_stream_id);
-  MS_LOG(INFO) << "Create ascend backward Receive communication stream, stream id: " << backward_recv_stream_id;
-  backward_recv_stream_ = AscendStreamMng::GetInstance().GetStream(backward_recv_stream_id);
-  MS_EXCEPTION_IF_NULL(backward_recv_stream_);
 }
 
 size_t AscendKernelRuntime::GetCommunicationStreamIDByGroup(const std::string &group) {

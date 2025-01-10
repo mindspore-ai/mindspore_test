@@ -297,6 +297,25 @@ void HostQueueDataSourceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const 
   }
 }
 
+void HostQueueDataSourceActor::AddCopyDataCallBack(
+  bool enable_async_copy, const mindspore::tensor::TensorPtrList &host_tensors,
+  const std::vector<mindspore::runtime::DeviceTensor *> &device_tensors) {
+  if (!enable_async_copy || device_tensors.empty()) {
+    return;
+  }
+
+  device::CallbackFunc callback_func = [host_tensors]() {
+    // Clear buffer automatically.
+  };
+  auto device_context = device_contexts_[0];
+  MS_EXCEPTION_IF_NULL(device_context);
+  auto callback_ret =
+    device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, device_tensors[0]->stream_id());
+  if (!callback_ret) {
+    MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
+  }
+}
+
 void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -371,6 +390,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
         device_tensor->set_host_shape(host_tensor->shape());
       }
     }
+    AddCopyDataCallBack(enable_async_copy, host_tensors, device_tensors);
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Host data source actor run exception.");
@@ -445,6 +465,16 @@ void HostQueueDataSourceActor::ReleaseData() {
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);
       AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first.get());
+      if (ref_device_tensors_.find(data_node_with_index) == ref_device_tensors_.end()) {
+        continue;
+      }
+      for (const auto &device_tensor : ref_device_tensors_[data_node_with_index]) {
+        if (device_tensor != nullptr) {
+          MS_LOG(DEBUG) << "Set pointer ref count from device address:" << new_address << " to:" << device_tensor
+                        << " for data source node:" << data_node_with_index.first->DebugString();
+          device_tensor->set_pointer_ref_count(new_address->pointer_ref_count());
+        }
+      }
     }
   }
 }

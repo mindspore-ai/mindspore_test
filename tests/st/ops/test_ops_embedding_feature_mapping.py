@@ -17,7 +17,6 @@ import numpy as np
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import ops, nn, context
-from tests.mark_utils import arg_mark
 
 
 class EmbeddingFeatueMappingV2Net(nn.Cell):
@@ -92,7 +91,6 @@ class EmbeddingFeatueMappingInsertNet(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_embedding_feature_mapping_test():
     """
     Feature: Ops

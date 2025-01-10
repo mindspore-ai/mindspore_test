@@ -1,0 +1,27 @@
+#operator addbmm
+addbmm:
+  args:
+    input:
+      dtype: tensor
+    batch1:
+      dtype: tensor
+    batch2:
+      dtype: tensor
+    beta:
+      dtype: number
+      default: 1
+      type_cast: tensor
+    alpha:
+      dtype: number
+      default: 1
+      type_cast: tensor
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: AddbmmAscend
+    CPU: None
+    GPU: None

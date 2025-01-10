@@ -1,0 +1,8 @@
+#deprecated frac
+frac:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor

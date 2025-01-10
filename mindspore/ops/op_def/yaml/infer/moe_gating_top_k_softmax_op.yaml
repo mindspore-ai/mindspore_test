@@ -1,0 +1,22 @@
+#operator moe_gating_top_k_softmax
+moe_gating_top_k_softmax:
+  args:
+    x:
+      dtype: tensor
+    finished:
+      dtype: tensor
+      default: None
+    k:
+      dtype: int
+      default: 1
+  returns:
+    y:
+      dtype: tensor
+    expert_idx:
+      dtype: tensor
+    row_idx:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True

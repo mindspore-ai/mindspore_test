@@ -41,3 +41,5 @@ max_pool_with_mask:
   dispatch:
     enable: True
     Ascend: MaxPoolWithMaskAscend
+    CPU: None
+    GPU: None

@@ -20,40 +20,25 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "pybind11/pybind11.h"
-#include "pybind11/pytypes.h"
-#include "runtime/hardware/device_context.h"
-#include "runtime/device/memory_manager.h"
+#include "base/base.h"
 #include "utils/ms_context.h"
+#include "runtime/hardware/deprecated_interface.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class GeDeviceContext;
-
 class AscendDeprecatedInterface : public DeprecatedInterface {
  public:
-  explicit AscendDeprecatedInterface(GeDeviceContext *ge_device_context) : ge_device_context_(ge_device_context) {}
+  AscendDeprecatedInterface() = default;
   ~AscendDeprecatedInterface() override = default;
 
   // for ge
-  void DoExecNonInputGraph(const std::string &phase) override;
-  bool RunInitGraph(const FuncGraphPtr &anf_graph, const pybind11::dict &init_params) override;
-  void ExportDFGraph(const std::string &file_name, const std::string &phase, const pybind11::object &encrypt,
-                     char *key) override;
-  FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph, const pybind11::dict &init_params) override;
-  void ClearGraphWrapper() override;
-  void ClearOpAdapterMap() override;
   void DumpProfileParallelStrategy(const FuncGraphPtr &func_graph) override;
 
   bool OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) override;
   bool CloseTsd(const std::shared_ptr<MsContext> &ms_context_ptr, bool force) override;
   bool IsTsdOpened(const std::shared_ptr<MsContext> &inst_context) override;
   bool CheckIsAscend910Soc() override;
-  void UnregisterExternalAllocator() override;
-
- private:
-  GeDeviceContext *const ge_device_context_;
 };
 }  // namespace ascend
 }  // namespace device

@@ -33,13 +33,13 @@ class Erfinv(nn.Cell):
         return self.erfinv(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_erfinv_graph_mode():
     """
     Feature: ErfInv function.
     Description:  The Tensor of float16, float32 or float32.
-    Expectation: Output tensor with the same shape as input。
+    Expectation: Output tensor with the same shape as input.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     erfinv = Erfinv()
@@ -57,13 +57,13 @@ def test_erfinv_graph_mode():
     assert (np.abs(z_out_ms.asnumpy() - z_out_sc) < 1e-5).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_erfinv_pynative_mode():
     """
     Feature: ErfInv function.
     Description:  The Tensor of float16, float32 or float32.
-    Expectation: Output tensor with the same shape as input。
+    Expectation: Output tensor with the same shape as input.
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
     erfinv = Erfinv()
@@ -105,7 +105,7 @@ def test_erfinv_tensor_api():
     np.testing.assert_array_almost_equal(output.asnumpy(), expected, decimal=4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_erfinv_functional_tensor_modes():
     """

@@ -229,3 +229,25 @@ class FileChecker:
                                                          f"but found {line_count} in file {file_path}.")
         except (IOError, OSError) as e:
             assert False, f"Failed to read file, ERROR: {e}"
+
+    @classmethod
+    def assert_csv_no_header(cls, csv_path: str, header_to_check: str) -> None:
+        """
+        Check if the headers of a CSV file not contain the given headers list.
+
+        Args:
+        csv_path (str): Path to the CSV file.
+        header_to_check (str): The header to check for absence.
+
+        Raises:
+        AssertionError: If the header is found in the CSV file.
+        """
+        try:
+            cls.check_file_exists(csv_path)
+            with open(csv_path, 'r', newline='', encoding='utf-8') as csvfile:
+                reader = csv.reader(csvfile)
+                headers = next(reader)  # Read the first row which contains headers
+                assert header_to_check not in headers, (f"The column '{header_to_check}' should not be present in the "
+                                                        f"CSV file.")
+        except (IOError, OSError) as e:
+            assert False, f"Failed to read CSV file or file is empty, ERROR: {e}"

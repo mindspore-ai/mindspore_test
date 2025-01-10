@@ -81,6 +81,7 @@ class ConvertPadV3Paddings : public ConvertBasePaddings {
   }
   bool ExpandInputXDims(const FuncGraphPtr &, const CNodePtr &) const override { return false; }
   void ReduceOutputDims(const FuncGraphPtr &, const CNodePtr &) const override {}
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class ConvertPadV3GradPaddings : public ConvertBasePaddings {
@@ -110,6 +111,7 @@ class ConvertPadV3GradPaddings : public ConvertBasePaddings {
   }
   bool ExpandInputXDims(const FuncGraphPtr &, const CNodePtr &) const override;
   void ReduceOutputDims(const FuncGraphPtr &, const CNodePtr &) const override;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

@@ -101,7 +101,7 @@ int PadV3CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
 
 template <typename S>
 bool PadV3CpuKernelMod::GetPaddings(const std::vector<KernelTensor *> &inputs) {
-  auto paddings_arg = static_cast<S *>(inputs[1]->device_ptr());
+  auto paddings_arg = static_cast<S *>(inputs[kIndex1]->device_ptr());
   paddings_ = std::vector<int64_t>(input_dim_ * kNum2, 0);
   for (int64_t i = 0; i < paddings_num_ && i < input_dim_ * kNum2; ++i) {
     paddings_[i] = int64_t(*(paddings_arg + i));
@@ -333,10 +333,10 @@ bool PadV3CpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
   if (!GetPaddings<S>(inputs)) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', get paddings failed";
   }
-  auto input_ptr = static_cast<T *>(inputs[0]->device_ptr());
-  auto output_ptr = static_cast<T *>(outputs[0]->device_ptr());
+  auto input_ptr = static_cast<T *>(inputs[kIndex0]->device_ptr());
+  auto output_ptr = static_cast<T *>(outputs[kIndex0]->device_ptr());
   if (mode_ == ops::kConstant) {
-    T constant_values = *(static_cast<T *>(inputs[2]->device_ptr()));
+    T constant_values = *(static_cast<T *>(inputs[kIndex2]->device_ptr()));
     for (int64_t i = 0; i < input_dim_ / kNum2; ++i) {
       int64_t u = paddings_[i * kNum2];
       int64_t v = paddings_[i * kNum2 + 1];

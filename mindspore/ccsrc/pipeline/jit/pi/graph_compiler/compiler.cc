@@ -146,18 +146,17 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   MS_LOG(INFO) << "Args for run: " << std::string(py::str(args_tuple));
   auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
   MS_EXCEPTION_IF_NULL(graph_executor);
-  py::object ret = graph_executor->Run(args_tuple, py::str(phase));
+  py::object ret;
   int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto executor = pynative::PyNativeExecutor::GetInstance();
   if (mode == kPynativeMode && executor->grad_flag()) {
     executor->grad_executor()->jit()->set_graph_phase(phase);
-    executor->GradJit(ret, args_tuple);
+    ret = executor->GradJit(args_tuple);
+  } else {
+    ret = graph_executor->Run(args_tuple, py::str(phase));
   }
   FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(phase);
   MS_EXCEPTION_IF_NULL(ms_func_graph);
-  if (ms_func_graph->modify_output()) {
-    ret = py::cast<py::tuple>(ret)[0];
-  }
   ret = python_adapter::CallPyFn("mindspore.common.api", "_convert_python_data", ret);
   ret.inc_ref();
   return ret.ptr();
@@ -216,7 +215,7 @@ CallableGraph Compiler::Compile(const PyFunctionObject &func, const PyFrameWrapp
   if (graph == nullptr) {
     return nullptr;
   }
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG)) {
+  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("func_graph_builder.ir", graph);
   }
   args = ExpandVariableArgs(args, code->co_flags, code->co_argcount);
@@ -278,7 +277,7 @@ CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tu
   py::tuple new_arg = EliminateStubTensor(args);
   new_arg = EliminateSelf(new_arg, compile_info.co_name_);
   MarkArgmentMutable(new_arg);
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG)) {
+  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("graph_before_compile.ir", func_graph);
   }
   MS_LOG(INFO) << "Args for compile: " << std::string(py::str(new_arg));

@@ -53,7 +53,6 @@ class ME_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyNativeE
     MS_EXCEPTION_IF_NULL(forward_executor_);
     return forward_executor_;
   }
-
   void StoreAsyncStatus(const FrontendOpRunInfoPtr &op_run_info) const;
   // Generate stub tensor and dispatch async task.
   py::object RunOpStub(const py::args &args) const;
@@ -72,7 +71,7 @@ class ME_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyNativeE
   void EndGraph(const py::object &obj, const py::object &out, const py::args &args) const;
   py::object RunGrad(const prim::GradOperationPtr &grad, const py::object &cell, const py::object &weights,
                      const py::object &grad_position, const py::args &args) const;
-  py::object GradJit(const py::object &out, const py::args &args) const;
+  py::object GradJit(const py::args &args) const;
   void CallCustomBprop(const py::object &cell_obj, const py::object &out, const py::args &args) const;
   void set_forward_use_dynamic_shape_process(bool flag) const;
   void SetDynamicInput(const py::object &obj, const py::args &args) const;

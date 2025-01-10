@@ -541,12 +541,11 @@ struct ComputeLocationBase<T, true> {
     if (empty) {
       return Vec(0);
     }
-    Vec twice_span_vec(twice_span);
+    Vec two_span_vec(twice_span);
     auto abs_in = in.abs();
-    auto fdouble_flips = abs_in / twice_span_vec;
-    auto double_flips = fdouble_flips.trunc();
-    auto extra = abs_in - double_flips * twice_span_vec;
-    return minimum(extra, twice_span_vec - extra);
+    auto double_flips = (abs_in / two_span_vec).trunc();
+    auto extra = abs_in - double_flips * two_span_vec;
+    return minimum(extra, two_span_vec - extra);
   }
 
   inline std::pair<vec256::Vec256<T>, vec256::Vec256<T>> reflect_coordinates_get_grad(
@@ -554,18 +553,15 @@ struct ComputeLocationBase<T, true> {
     if (empty) {
       return std::make_pair(Vec(0), Vec(0));
     }
-    Vec twice_span_vec(twice_span);
     auto neg_in = in < Vec(0);
     auto abs_in = in.abs();
-    auto fdouble_flips = abs_in / twice_span_vec;
-    auto double_flips = fdouble_flips.trunc();
-
-    auto extra = abs_in - double_flips * twice_span_vec;
+    Vec twice_span_vec(twice_span);
+    auto extra = abs_in - (abs_in / twice_span_vec).trunc() * twice_span_vec;
     auto reflected_extra = twice_span_vec - extra;
-    auto one_more_flip = extra > reflected_extra;
+    auto one_flip = extra > reflected_extra;
 
-    return std::make_pair(Vec::blendv(extra, reflected_extra, one_more_flip),
-                          Vec::blendv(Vec(1), Vec(-1), one_more_flip ^ neg_in));
+    return std::make_pair(Vec::blendv(extra, reflected_extra, one_flip),
+                          Vec::blendv(Vec(1), Vec(-1), one_flip ^ neg_in));
   }
 };
 
@@ -610,16 +606,13 @@ struct ComputeLocationBase<T, false> {
     const vec256::Vec256<T> &in) const {
     Vec twice_span_vec(twice_span), low_vec(low);
     Vec in_minus_low = in - low_vec;
-    auto neg_in = in_minus_low < Vec(0);
-    auto abs_in = in_minus_low.abs();
-    auto fdouble_flips = abs_in / twice_span_vec;
-    auto double_flips = fdouble_flips.trunc();
-
-    auto extra = abs_in - double_flips * twice_span_vec;
+    auto neg_i = in_minus_low < Vec(0);
+    auto abs_i = in_minus_low.abs();
+    auto extra = abs_i - (abs_i / twice_span_vec).trunc() * twice_span_vec;
     auto reflected_extra = twice_span_vec - extra;
-    auto one_more_flip = extra > reflected_extra;
-    auto boolex = one_more_flip ^ neg_in;
-    return std::make_pair(Vec::blendv(extra, reflected_extra, one_more_flip) + low_vec,
+    auto one_flip = extra > reflected_extra;
+    auto boolex = one_flip ^ neg_i;
+    return std::make_pair(Vec::blendv(extra, reflected_extra, one_flip) + low_vec,
                           Vec::blendv(Vec(1), Vec(-1), boolex));
   }
 };
@@ -680,12 +673,15 @@ struct ComputeLocation<T, GridSamplerPadding::Reflection, align_corners> : Compu
   }
 
   inline std::pair<Vec, Vec> ApplyGetGrad(const Vec &in) const {
-    Vec res, grad_refl, grad_clip, grad(scaling_factor);
-    std::tie(res, grad_refl) = reflect_coordinates_get_grad(unnormalize(in));
+    Vec result;
+    Vec grad_refl;
+    Vec grad_clip;
+    Vec grad(scaling_factor);
+    std::tie(result, grad_refl) = reflect_coordinates_get_grad(unnormalize(in));
     grad = grad_refl * grad;
-    std::tie(res, grad_clip) = clip_coordinates_get_grad(res);
+    std::tie(result, grad_clip) = clip_coordinates_get_grad(result);
     grad = grad_clip & grad;
-    return std::make_pair(res, grad);
+    return std::make_pair(result, grad);
   }
 };
 

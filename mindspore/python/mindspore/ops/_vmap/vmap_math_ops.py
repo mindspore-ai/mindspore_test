@@ -19,6 +19,7 @@ from __future__ import absolute_import
 import mindspore.numpy as mnp
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
+from mindspore.ops import auto_generate as gen
 from mindspore.ops.auto_generate import MatMulExt
 from mindspore.ops.primitive import _primexpr
 from mindspore.common import Tensor
@@ -29,7 +30,7 @@ from mindspore.ops.primitive import Primitive
 from mindspore.ops.function import _VmapGeneralRule
 from mindspore.ops._vmap.vmap_base import vmap_rules_getters, vmap_general_preprocess, get_assign_vmap_rule, \
     get_unop_vmap_rule, _raise_value_error, _bdim_at_front, _broadcast_by_axis, _handle_broadcasting, \
-    _vmap_clone_prim, _bdim_at_any, _get_reduce_batch_axis, _get_reduce_out_dim
+    _bdim_at_any, _get_reduce_batch_axis, _get_reduce_out_dim
 from mindspore.ops.operations.math_ops import Bernoulli, BesselI0, BesselI1, BesselJ0, BesselJ1, \
     BesselK0, BesselK0e, BesselY0, BesselY1, BesselK1, BesselK1e, Median
 
@@ -128,28 +129,29 @@ def get_addcxxx_vmap_rule(prim, axis_size):
     return vmap_rule
 
 
-@vmap_rules_getters.register(P.Cdist)
+@vmap_rules_getters.register(gen.Cdist)
 def get_cdist_vmap_rule(prim, axis_size):
     """VmapRule for `cdist` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr("batch_rank", batch_rank)
+    prim = prim.clone()
+    prim.set_label('batch_rank', batch_rank)
 
-    def vmap_rule(x_bdim, y_bdim):
+    def vmap_rule(x_bdim, y_bdim, p_bdim):
         x, x_dim = x_bdim
         y, y_dim = y_bdim
+        p, _ = p_bdim
 
-        if x_dim is None and y_dim is None:
+        if x_dim is None and y_dim is None and p is None:
             out = prim(x, y)
             return (out, None)
         x = _bdim_at_front(x, x_dim, axis_size)
         y = _bdim_at_front(y, y_dim, axis_size)
 
-        out = batch_prim(x, y)
+        out = prim(x, y, p)
         return out, 0
 
     return vmap_rule

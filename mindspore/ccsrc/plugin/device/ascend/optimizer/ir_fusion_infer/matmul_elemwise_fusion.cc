@@ -15,6 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include <vector>
+#include <string>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
@@ -28,8 +29,36 @@ namespace opt {
 namespace {
 constexpr auto kFusedMatmulElemUnaryOpName = "FusedMatmulElemUnary";
 constexpr auto kFusedMatmulElemBinaryOpName = "FusedMatmulElemBinary";
+constexpr size_t kUnaryInputNum = 1;
+constexpr size_t kBinaryInputNum = 2;
+
+bool IsElemNode(const BaseRef &ref) {
+  if (utils::isa<AnfNodePtr>(ref)) {
+    AnfNodePtr node = utils::cast<AnfNodePtr>(ref);
+    MS_EXCEPTION_IF_NULL(node);
+    if (IsOneOfPrimitive(node, {prim::kPrimBiasAdd, prim::kPrimAdd, prim::kPrimReLU, prim::kPrimGeLU})) {
+      return true;
+    }
+  }
+
+  return false;
+}
 }  // namespace
-const BaseRef MatmulElemFusionBase::DefinePattern() const {
+
+std::string MatmulElemFusion::GetElemwiseType(const CNodePtr &elemwise_node) const {
+  static const std::map<std::string, std::string> kOpElemiseTypeMap = {{prim::kPrimBiasAdd->name(), "bias_add"},
+                                                                       {prim::kPrimAdd->name(), "bias_add"},
+                                                                       {prim::kPrimReLU->name(), "relu"},
+                                                                       {prim::kPrimGeLU->name(), "gelu"}};
+  return kOpElemiseTypeMap.at(common::AnfAlgo::GetCNodeName(elemwise_node));
+}
+
+std::vector<std::string> MatmulElemFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimMatMul->name()};
+  return ret;
+}
+
+const BaseRef MatmulElemFusion::DefinePattern() const {
   auto x = std::make_shared<Var>();
   auto w = std::make_shared<Var>();
   auto trans_a = std::make_shared<Var>();
@@ -41,18 +70,23 @@ const BaseRef MatmulElemFusionBase::DefinePattern() const {
 
   auto is_matmul = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimMatMul>);
   MS_CHECK_TRUE_RET(is_matmul != nullptr, {});
-
   auto matmul_x_w = VectorRef({is_matmul, x, w, trans_a, trans_b});
 
-  VectorRef pattern = DefineMatmulFusionPattern(matmul_x_w);
+  VarPtr is_elem = std::make_shared<CondVar>(IsElemNode);
+  VarPtr elem_other_input = std::make_shared<SeqVar>();
+  VectorRef pattern({is_elem, matmul_x_w, elem_other_input});
   return pattern;
 }
 
-const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
-                                               const EquivPtr &equiv) const {
+const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                           const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->IsEnableInferBoost()) {
+    return nullptr;
+  }
+  auto const &soc_version = ms_context->ascend_soc_version();
+  if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93") {
     return nullptr;
   }
 
@@ -63,7 +97,8 @@ const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, c
     return nullptr;
   }
 
-  if (elewise_input_num_ != kUnaryInputNum && elewise_input_num_ != kBinaryInputNum) {
+  auto elewise_input_num = common::AnfAlgo::GetInputTensorNum(node);
+  if (elewise_input_num != kUnaryInputNum && elewise_input_num != kBinaryInputNum) {
     MS_LOG(EXCEPTION) << "Only support elewise unary and binary inputs";
   }
 
@@ -79,16 +114,17 @@ const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, c
 
   // create op
   PrimitivePtr matmul_elemwise_prim = nullptr;
-  if (elewise_input_num_ == kUnaryInputNum) {
+  if (elewise_input_num == kUnaryInputNum) {
     matmul_elemwise_prim = std::make_shared<Primitive>(kFusedMatmulElemUnaryOpName);
-  } else if (elewise_input_num_ == kBinaryInputNum) {
+  } else if (elewise_input_num == kBinaryInputNum) {
     matmul_elemwise_prim = std::make_shared<Primitive>(kFusedMatmulElemBinaryOpName);
   }
   MS_CHECK_TRUE_RET(matmul_elemwise_prim, {});
 
-  std::string elemwise_type = GetElemwiseType();
+  std::string elemwise_type = GetElemwiseType(elemwise_node);
   const std::string bias_add_str = "bias_add";
-  if (elemwise_type == bias_add_str && common::AnfAlgo::GetOutputInferDataType(node, 0) != kFloat16->type_id()) {
+  if (elemwise_type == bias_add_str && (common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1).size() > 1 ||
+                                        common::AnfAlgo::GetOutputInferDataType(node, 0) != kFloat16->type_id())) {
     return nullptr;
   }
   matmul_elemwise_prim->AddAttr("ElemwiseType", MakeValue(elemwise_type));
@@ -102,9 +138,9 @@ const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, c
   auto input_w = matmul_cnode->input(kIndex2);
 
   CNodePtr matmul_elemwise_cnode = nullptr;
-  if (elewise_input_num_ == kUnaryInputNum) {
+  if (elewise_input_num == kUnaryInputNum) {
     matmul_elemwise_cnode = func_graph->NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w});
-  } else if (elewise_input_num_ == kBinaryInputNum) {
+  } else if (elewise_input_num == kBinaryInputNum) {
     auto input_e = elemwise_node->input(kIndex2);
     matmul_elemwise_cnode = func_graph->NewCNode({NewValueNode(matmul_elemwise_prim), input_x, input_w, input_e});
   }
@@ -116,48 +152,6 @@ const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, c
   }
 
   return matmul_elemwise_cnode;
-}
-
-const VectorRef MatmulElemBiasaddFusion::DefineMatmulFusionPattern(const VectorRef &predecessor) const {
-  auto bias = std::make_shared<Var>();
-  auto format = std::make_shared<Var>();
-  MS_CHECK_TRUE_RET(bias != nullptr, {});
-  MS_CHECK_TRUE_RET(format != nullptr, {});
-
-  auto is_biasadd = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimBiasAdd>);
-  MS_CHECK_TRUE_RET(is_biasadd != nullptr, {});
-  auto biasadd_matmul_bias = VectorRef({is_biasadd, predecessor, bias, format});
-
-  return biasadd_matmul_bias;
-}
-
-const VectorRef MatmulElemAddFusion::DefineMatmulFusionPattern(const VectorRef &predecessor) const {
-  auto bias = std::make_shared<Var>();
-  MS_CHECK_TRUE_RET(bias != nullptr, {});
-
-  auto is_add = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimAdd>);
-  MS_CHECK_TRUE_RET(is_add != nullptr, {});
-  auto matmul_add = VectorRef({is_add, predecessor, bias});
-
-  return matmul_add;
-}
-
-const VectorRef MatmulElemReluFusion::DefineMatmulFusionPattern(const VectorRef &predecessor) const {
-  auto is_relu = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimReLU>);
-  MS_CHECK_TRUE_RET(is_relu != nullptr, {});
-
-  auto relu_matmul = VectorRef({is_relu, predecessor});
-
-  return relu_matmul;
-}
-
-const VectorRef MatmulElemGeluFusion::DefineMatmulFusionPattern(const VectorRef &predecessor) const {
-  auto is_gelu = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimGeLU>);
-  MS_CHECK_TRUE_RET(is_gelu != nullptr, {});
-
-  auto gelu_matmul = VectorRef({is_gelu, predecessor});
-
-  return gelu_matmul;
 }
 }  // namespace opt
 }  // namespace mindspore

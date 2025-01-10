@@ -6,7 +6,7 @@ atan2:
     GPU: py_method
     interface: tensor
 
-  - op_yaml: deprecated/atan2_op.yaml
+  - op_yaml: deprecated/atan2_method.yaml
     py_method: tensor_atan2
     Ascend: py_method
     CPU: py_method

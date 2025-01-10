@@ -21,7 +21,7 @@
 #include <vector>
 #include <utility>
 #include "transform/acl_ir/op_api_cache.h"
-#include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 
 namespace mindspore::kernel {
 BACKEND_EXPORT void GatherOpHash(const mindspore::tensor::BaseTensorPtr &);

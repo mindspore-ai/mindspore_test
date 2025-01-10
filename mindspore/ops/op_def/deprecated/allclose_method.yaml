@@ -1,0 +1,21 @@
+#operator allclose
+allclose:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+    rtol:
+      dtype: float
+      default: 1e-05
+      type_cast: int
+    atol:
+      dtype: float
+      default: 1e-08
+      type_cast: int
+    equal_nan:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor

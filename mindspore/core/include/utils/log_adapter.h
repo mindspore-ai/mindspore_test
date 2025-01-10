@@ -248,13 +248,17 @@ enum VLogLevel : int {
   VL_PI = COMPONENT_START + (SM_PI - 1) * COMPONENT_RANGE,                                // 23. PIJIT
   VL_FL = COMPONENT_START + (SM_FL - 1) * COMPONENT_RANGE,                                // 24. Federated Learning
   VL_DISTRIBUTED = COMPONENT_START + (SM_DISTRIBUTED - 1) * COMPONENT_RANGE,              // 25. Distributed
+  VL_DISTRIBUTED_FD,                                                                      //    Distributed socket fd
+  VL_DISTRIBUTED_TRACE,                                                                   //    Distributed trace
   VL_LITE = COMPONENT_START + (SM_LITE - 1) * COMPONENT_RANGE,                            // 26. LITE
   VL_ARMOUR = COMPONENT_START + (SM_ARMOUR - 1) * COMPONENT_RANGE,                        // 27. ARMOUR
   VL_HCCL_ADPT = COMPONENT_START + (SM_HCCL_ADPT - 1) * COMPONENT_RANGE,                  // 28. Hccl Adapter
   VL_RUNTIME_FRAMEWORK = COMPONENT_START + (SM_RUNTIME_FRAMEWORK - 1) * COMPONENT_RANGE,  // 29. Runtime framework
-
+  VL_RUNTIME_FRAMEWORK_MEMORY,
+  VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK = VL_RUNTIME_FRAMEWORK + COMPONENT_RANGE - 1,
   VL_GE = COMPONENT_START + (SM_GE - 1) * COMPONENT_RANGE,  // 30. GraphEngine
   VL_ASCEND_KERNEL_SELECT = VL_GE,                          // print ascend kernel select
+  VL_ASCEND_SILENT_CHECK,                                   // silent check
 
   VL_API = COMPONENT_START + (SM_API - 1) * COMPONENT_RANGE,                        // 31. MindAPI
   VL_SYMBOLIC_SHAPE = COMPONENT_START + (SM_SYMBOLIC_SHAPE - 1) * COMPONENT_RANGE,  // 32. symbolic shape

@@ -57,7 +57,9 @@ const AnfNodePtr FloatStatusBaseFusion::Process(const FuncGraphPtr &func_graph, 
     func_graph->set_manager(mng);
   }
   auto &users = mng->node_users()[node];
-  if (!(users.size() == 1 && IsPrimitiveCNode(users.back().first, prim::kPrimAddN))) {
+  if (std::any_of(users.begin(), users.end(), [](const CNodeIndexPair &index_pair) {
+        return !IsPrimitiveCNode(index_pair.first, prim::kPrimAddN);
+      })) {
     return nullptr;
   }
   auto input_node = opt::GetAnfNodeByVar(equiv, input_);

@@ -20,6 +20,7 @@
 #include <functional>
 #include <iterator>
 #include <utility>
+#include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/auto_parallel/costmodel.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
@@ -32,65 +33,32 @@ Status Edge::InitEdgeCost() {
   pre_op_output_.clear();
   next_op_input_.clear();
   cost_map_.clear();
+  std::string edge_without_digit = GetEdgeNameNoDigit();
+  bool use_sp = (ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation) ||
+                (ParallelContext::GetInstance()->sharding_propagation());
 
   for (auto &swc : prev_op_->GetStrategyCost()) {
     MS_EXCEPTION_IF_NULL(swc);
-    (void)pre_op_output_.emplace_back(std::make_pair(swc->strategy_ptr, swc->outputs_ptr));
+    (void)pre_op_output_.emplace_back(
+      std::make_pair(swc->strategy_ptr, swc->outputs_ptr[prev_op_output_index_].tensor_layout()));
   }
   for (auto &swc : next_op_->GetStrategyCost()) {
     MS_EXCEPTION_IF_NULL(swc);
-    (void)next_op_input_.emplace_back(std::make_pair(swc->strategy_ptr, swc->inputs_ptr));
+    (void)next_op_input_.emplace_back(
+      std::make_pair(swc->strategy_ptr, swc->inputs_ptr[next_op_input_index_].tensor_layout()));
+  }
+  if (use_sp && entire_costgraph->FindCostMapInCache(edge_without_digit, pre_op_output_, next_op_input_, &cost_map_)) {
+    MS_LOG(INFO) << "Find the same cost map in cache, skip InitEdgeCost.";
+    return Status::SUCCESS;
   }
   if (is_identity_edge) {
-    for (auto &target_output : pre_op_output_) {
-      auto target_output_lyt = target_output.second[prev_op_output_index_].tensor_layout();
-      auto target_output_str = target_output.first;
-      for (auto &target_input : next_op_input_) {
-        auto target_input_lyt = target_input.second[next_op_input_index_].tensor_layout();
-        auto target_input_str = target_input.first;
-        // for identity_info ops, no need to compare device_matrix
-        if ((target_output_lyt == target_input_lyt) || (target_output_lyt.IsSameWithoutSplit(target_input_lyt) &&
-                                                        edge_name().find(IDENTITY_INFO) != std::string::npos)) {
-          CostPtrKey ck = {target_output_str, target_input_str};
-          CostPtr cost = std::make_shared<Cost>(0.0, 0.0);
-          MS_EXCEPTION_IF_NULL(cost);
-          cost->communication_without_parameter_ = 0.0;
-          cost->communication_with_partial_para_ = 0.0;
-          CostPtrList cl;
-          cl.push_back(cost);
-          (void)cost_map_.emplace(std::make_pair(ck, cl));
-          has_available_cost = true;
-        }
-      }
+    // the strategy of reshape will be made in step_parallel with no cost_map_, so skip InitEdgeCost
+    if (use_sp && edge_name_.find(RESHAPE) != std::string::npos) {
+      return Status::SUCCESS;
     }
+    InitIdentityEdgeCost(&has_available_cost);
   } else {
-    for (auto &target_output : pre_op_output_) {
-      auto target_output_lyt = target_output.second[prev_op_output_index_].tensor_layout();
-      auto target_output_str = target_output.first;
-      auto type_length = prev_op_->GetOutputTypeLengths()[prev_op_output_index_];
-      auto type = prev_op_->outputs_type()[prev_op_output_index_];
-      for (auto &target_input : next_op_input_) {
-        auto target_input_lyt = target_input.second[next_op_input_index_].tensor_layout();
-        auto target_input_str = target_input.first;
-        CostPtr cost;
-        if (GetRedistributionCost(target_output_lyt, target_input_lyt, type_length, type, &cost) != SUCCESS) {
-          MS_LOG(EXCEPTION) << "Failure: redistribution cost calculation failed";
-        }
-        MS_EXCEPTION_IF_NULL(cost);
-        MS_LOG(DEBUG) << "The redistribution cost: computation_cost: " << cost->computation_cost_
-                      << ", communication_cost: " << cost->communication_cost_
-                      << ", communication_without_parameter_: " << cost->communication_without_parameter_
-                      << ", communication_with_partial_para_: " << cost->communication_with_partial_para_ << ".";
-        // refine communication cost calculation for practice
-        RefineForPracticalCost(cost, true);
-        cost->communication_forward_ = cost->communication_redis_forward_;
-        CostPtrKey ck = {target_output_str, target_input_str};
-        CostPtrList cl;
-        cl.push_back(cost);
-        (void)cost_map_.emplace(std::make_pair(ck, cl));
-        has_available_cost = true;
-      }
-    }
+    InitNotIdentityEdgeCost(&has_available_cost);
   }
   if (!has_available_cost) {
     const auto fully_use = CostModelContext::GetInstance()->fully_use_device();
@@ -112,7 +80,70 @@ Status Edge::InitEdgeCost() {
     MS_LOG(ERROR) << "Generating cost for edge: " << edge_name_ << " failed.";
     return Status::FAILED;
   }
+  if (use_sp) {
+    entire_costgraph->SaveCostMapToCache(edge_without_digit, pre_op_output_, next_op_input_, cost_map_);
+  }
   return Status::SUCCESS;
+}
+
+void Edge::InitIdentityEdgeCost(bool *has_available_cost) {
+  for (auto &target_output : pre_op_output_) {
+    auto target_output_lyt = target_output.second;
+    auto target_output_str = target_output.first;
+    for (auto &target_input : next_op_input_) {
+      auto target_input_lyt = target_input.second;
+      auto target_input_str = target_input.first;
+      // for identity_info ops, no need to compare device_matrix
+      if ((target_output_lyt == target_input_lyt) || (target_output_lyt.IsSameWithoutSplit(target_input_lyt) &&
+                                                      edge_name().find(IDENTITY_INFO) != std::string::npos)) {
+        CostPtrKey ck = {target_output_str, target_input_str};
+        CostPtr cost = std::make_shared<Cost>(0.0, 0.0);
+        MS_EXCEPTION_IF_NULL(cost);
+        cost->communication_without_parameter_ = 0.0;
+        cost->communication_with_partial_para_ = 0.0;
+        CostPtrList cl;
+        cl.push_back(cost);
+        (void)cost_map_.emplace(std::make_pair(ck, cl));
+        *has_available_cost = true;
+      }
+    }
+  }
+}
+
+void Edge::InitNotIdentityEdgeCost(bool *has_available_cost) {
+  for (auto &target_output : pre_op_output_) {
+    auto target_output_lyt = target_output.second;
+    auto target_output_str = target_output.first;
+    auto type_length = prev_op_->GetOutputTypeLengths()[prev_op_output_index_];
+    auto type = prev_op_->outputs_type()[prev_op_output_index_];
+    for (auto &target_input : next_op_input_) {
+      auto target_input_lyt = target_input.second;
+      auto target_input_str = target_input.first;
+      CostPtr cost;
+      if (GetRedistributionCost(target_output_lyt, target_input_lyt, type_length, type, &cost) != SUCCESS) {
+        MS_LOG(EXCEPTION) << "Failure: redistribution cost calculation failed";
+      }
+      MS_EXCEPTION_IF_NULL(cost);
+      MS_LOG(DEBUG) << "The redistribution cost: computation_cost: " << cost->computation_cost_
+                    << ", communication_cost: " << cost->communication_cost_
+                    << ", communication_without_parameter_: " << cost->communication_without_parameter_
+                    << ", communication_with_partial_para_: " << cost->communication_with_partial_para_ << ".";
+      // refine communication cost calculation for practice
+      RefineForPracticalCost(cost, true);
+      cost->communication_forward_ = cost->communication_redis_forward_;
+      CostPtrKey ck = {target_output_str, target_input_str};
+      CostPtrList cl;
+      cl.push_back(cost);
+      (void)cost_map_.emplace(std::make_pair(ck, cl));
+      *has_available_cost = true;
+    }
+  }
+}
+
+std::string Edge::GetEdgeNameNoDigit() {
+  std::string no_num_name = edge_name_;
+  no_num_name.erase(std::remove_if(no_num_name.begin(), no_num_name.end(), ::isdigit), no_num_name.end());
+  return no_num_name;
 }
 
 Status Edge::GetRedistributionCost(const TensorLayout &prev_op_output_layout, const TensorLayout &next_op_input_layout,
@@ -334,19 +365,29 @@ Status Edge::CalculateMemoryCostForInference() {
   return SUCCESS;
 }
 
-CostPtr Edge::GetCostByStrategyPair(const CostPtrKey &stra_pair) {
-  if (cost_map_.find(stra_pair) == cost_map_.end()) {
+CostPtr Edge::GetCostByStrategyPair(const StrategyPtr &output_str, const StrategyPtr &input_str) {
+  CostPtrList cost_vec;
+  if (cost_map_.find({output_str, input_str}) == cost_map_.end()) {
+    for (const auto &key_value : cost_map_) {
+      const StrategyPtr &candidate_output_stra = key_value.first.first;
+      const StrategyPtr &candidate_input_stra = key_value.first.second;
+      const CostPtrList &candidate_cost = key_value.second;
+      if (candidate_output_stra->IsEqual(output_str) && candidate_input_stra->IsEqual(input_str)) {
+        cost_vec = candidate_cost;
+      }
+    }
+  } else {
+    cost_vec = cost_map_[{output_str, input_str}];
+  }
+  if (cost_vec.empty()) {
+    MS_LOG(WARNING) << "output_str: " << output_str->ToString() << ", "
+                    << "input_str: " << input_str->ToString() << ". "
+                    << "No available cost under current strategy pair of the edge: " << edge_name_;
     return nullptr;
   }
-  auto cost_vec = cost_map_[stra_pair];
-  if (cost_vec.empty()) {
-    MS_LOG(EXCEPTION) << "stra_pair.first: " << stra_pair.first->ToString() << ", "
-                      << "stra_pair.second: " << stra_pair.second->ToString() << ". "
-                      << "No available cost under current strategy pair of the edge: " << edge_name_;
-  }
   if (cost_vec.size() > 1) {
-    MS_LOG(INFO) << "stra_pair.first: " << stra_pair.first->ToString() << ", "
-                 << "stra_pair.second: " << stra_pair.second->ToString() << ". "
+    MS_LOG(INFO) << "output_str: " << output_str->ToString() << ", "
+                 << "input_str: " << input_str->ToString() << ". "
                  << "Multiple costs available under the stratey pair of the edge: " << edge_name_;
   }
   return cost_vec[0];
@@ -559,7 +600,7 @@ bool Edge::CheckStrategyConsistency(StrategyPtr prev_stra, StrategyPtr next_stra
   if (next_stra == nullptr) {
     MS_LOG(EXCEPTION) << next_op_->name() << "'s selected strategy is null!";
   }
-  auto cost = GetCostByStrategyPair({prev_stra, next_stra});
+  auto cost = GetCostByStrategyPair(prev_stra, next_stra);
   if (cost == nullptr || cost->communication_cost_ > 0.0) {
     MS_LOG(INFO) << "The edge " << edge_name_ << "'s strategy: prev_stra is " << prev_stra->ToString()
                  << ", next_stra is " << next_stra->ToString();
@@ -593,8 +634,8 @@ void Edge::SetCostMapAndInputOutput(const std::map<CostPtrKey, CostPtrList> &cos
 
   for (const auto &key_value : cost_map_) {
     auto &key_pair = key_value.first;
-    (void)pre_op_output_.emplace_back(std::pair<StrategyPtr, std::vector<TensorInfo>>(key_pair.first, {}));
-    (void)next_op_input_.emplace_back(std::pair<StrategyPtr, std::vector<TensorInfo>>(key_pair.second, {}));
+    (void)pre_op_output_.emplace_back(std::make_pair(key_pair.first, TensorLayout()));
+    (void)next_op_input_.emplace_back(std::make_pair(key_pair.second, TensorLayout()));
   }
 }
 

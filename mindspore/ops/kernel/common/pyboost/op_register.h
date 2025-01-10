@@ -46,6 +46,7 @@ class BACKEND_EXPORT OpFactory {
   std::shared_ptr<T> Create(const std::string &device, uint32_t stream_id);
 
   bool IsRegistered(const std::string &device) const { return op_creator_.find(device) != op_creator_.end(); }
+  std::map<std::string, OpCreator> &op_creator() { return op_creator_; }
 
  private:
   OpFactory() = default;

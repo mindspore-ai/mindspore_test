@@ -35,8 +35,8 @@ void MaxUnpool2DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
   ShapeVector shape = outputs[kIndex0]->GetShapeVector();
   size_t size = shape.size();
   output_size_.clear();
-  output_size_.push_back(shape[size - 2]);
-  output_size_.push_back(shape[size - 1]);
+  output_size_.push_back(shape[size - kDim2]);
+  output_size_.push_back(shape[size - kDim1]);
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], output_size_, outputs[kIndex0]);
 }
 

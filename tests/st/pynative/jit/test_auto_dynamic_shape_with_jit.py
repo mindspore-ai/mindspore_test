@@ -117,7 +117,7 @@ class CmpNet(nn.Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_pynative_auto_dynamic_shape_with_inner_jit():

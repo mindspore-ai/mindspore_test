@@ -22,6 +22,7 @@ import mindspore.ops as ops
 from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
+import mindspore.nn as nn
 
 # 1
 
@@ -32,6 +33,12 @@ from mindspore.nn.layer.basic import Identity
 # 4
 
 # 5
+from mindspore.mint.nn.layer.padding import (
+    ConstantPad1d, ConstantPad2d, ConstantPad3d,
+    ZeroPad1d, ZeroPad2d, ZeroPad3d,
+    ReflectionPad1d, ReflectionPad2d, ReflectionPad3d,
+    ReplicationPad1d, ReplicationPad2d, ReplicationPad3d
+)
 
 # 6
 from mindspore.nn.layer.basic import UnfoldExt as Unfold
@@ -54,6 +61,7 @@ from mindspore.nn.layer import ReLU
 from mindspore.nn.layer.basic import DropoutExt as Dropout
 # 15
 from mindspore.mint.nn.layer.conv import Conv2d, ConvTranspose2d
+from mindspore.mint.nn.layer.conv import Conv3d
 # 16
 from mindspore.nn.layer import LogSoftmaxExt as LogSoftmax
 # 17
@@ -222,11 +230,13 @@ from mindspore.mint.nn.layer.activation import SiLU, LogSigmoid
 # 97
 
 # 98
-
+from mindspore.nn.layer import AvgPool1dExt as AvgPool1d
 # 99
 from mindspore.nn.layer import AvgPool2dExt as AvgPool2d
 # 100
 from mindspore.nn.layer import SoftShrink as Softshrink
+# 152
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool3d
 # 159
 
 # 220
@@ -248,6 +258,18 @@ from mindspore.ops.function.nn_func import mse_loss_ext
 
 # 393
 from mindspore.mint.nn.layer.basic import Dropout2d
+
+# 406
+from mindspore.mint.nn.layer.activation import ELU
+
+# 407
+from mindspore.mint.nn.layer.basic import Flatten
+
+# 421
+from mindspore.mint.nn.layer.activation import Tanh
+
+# 536
+from mindspore.mint.nn.layer.activation import GLU
 
 # 674
 from mindspore.mint.nn.layer.normalization import BatchNorm1d
@@ -284,7 +306,7 @@ class NLLLoss(Cell):
     :math:`N` is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index,
     where :math:`C` is the number of classes.
 
-    If `reduction` is not ``'None'`` (default ``'mean'``), then
+    If `reduction` is not ``None`` (default ``'mean'``), then
 
     .. math::
 
@@ -311,11 +333,12 @@ class NLLLoss(Cell):
             - ``'sum'``: the output elements will be summed.
 
     Inputs:
-        - **input** (Tensor) - :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
-          in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
+        - **input** (Tensor) - :math:`(N)` or :math:`(N, C)` where `C = number of classes` , `N = batch size` ,
+          or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
           `input` is expected to be log-probabilities, data type must be float16 or float32 or bfloat16(only supported
           by Atlas A2 training series products).
-        - **target** (Tensor) - :math:`(N)` or :math:`(N, d_1, d_2, ..., d_K)` for
+        - **target** (Tensor) - :math:`()` or :math:`(N)` ,
+          where the value range is :math:`[0, C-1]`, or :math:`(N, d_1, d_2, ..., d_K)` for
           high-dimensional loss, data type must be int32 or int64 or uint8.
 
     Outputs:
@@ -604,12 +627,6 @@ class GELU(Cell):
         >>> print(output)
         [[-1.5880802e-01  3.9999299e+00 -3.1077917e-21]
          [ 1.9545976e+00 -2.2918017e-07  9.0000000e+00]]
-        >>> gelu = mint.nn.GELU(approximate=False)
-        >>> # CPU not support "approximate=False", using "approximate=True" instead
-        >>> output = gelu(input)
-        >>> print(output)
-        [[-1.5865526e-01  3.9998732e+00 -0.0000000e+00]
-         [ 1.9544997e+00 -1.4901161e-06  9.0000000e+00]]
     """
 
     def __init__(self):
@@ -618,6 +635,82 @@ class GELU(Cell):
 
     def construct(self, input):
         return F.gelu(input)
+
+
+class Hardtanh(Cell):
+    r"""
+    Activation function Hardtanh.
+
+    Refer to :func:`mindspore.mint.nn.functional.hardtanh` for more details.
+
+    Hardtanh Activation Function Graph:
+
+    .. image:: ../images/Hardtanh.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float32)
+        >>> hardtanh = mint.nn.Hardtanh(min_val=-1.0, max_val=1.0)
+        >>> output = hardtanh(x)
+        >>> print(output)
+        [-1. -1.  0.  1.  1.]
+    """
+
+    def __init__(self, min_val=-1.0, max_val=1.0, inplace=False):
+        """Initialize ReLU6"""
+        super(Hardtanh, self).__init__()
+        self.min_val = min_val
+        self.max_val = max_val
+        self.inplace = inplace
+
+    def construct(self, input):
+        if self.inplace:
+            return F.hardtanh_(input, self.min_val, self.max_val)
+        return F.hardtanh_op(input, self.min_val, self.max_val)
+
+
+class ReLU6(Cell):
+    r"""
+    Activation function ReLU6.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Refer to :func:`mindspore.mint.nn.functional.relu6` for more details.
+
+    ReLU6 Activation Function Graph:
+
+    .. image:: ../images/ReLU6.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> relu6 = mint.nn.ReLU6()
+        >>> output = relu6(input)
+        >>> print(output)
+        [[0. 4. 0.]
+        [2. 0. 6.]]
+    """
+
+    def __init__(self, inplace=False):
+        """Initialize ReLU6"""
+        super(ReLU6, self).__init__()
+        self.inplace = inplace
+
+    def construct(self, input):
+        return F.relu6(input, self.inplace)
 
 
 class Mish(Cell):
@@ -752,6 +845,85 @@ class SmoothL1Loss(Cell):
         return out
 
 
+class BCELoss(Cell):
+    r"""
+    Compute the binary cross entropy between the true labels and predicted labels.
+
+    Set the predicted labels as :math:`x`, true labels as :math:`y`, the output loss as :math:`\ell(x, y)`.
+    The formula is as follow:
+
+    .. math::
+        L = \{l_1,\dots,l_n,\dots,l_N\}^\top, \quad
+        l_n = - w_n \left[ y_n \cdot \log x_n + (1 - y_n) \cdot \log (1 - x_n) \right]
+
+    where N is the batch size. Then,
+
+    .. math::
+        \ell(x, y) = \begin{cases}
+        L, & \text{if reduction} = \text{'none';}\\
+        \operatorname{mean}(L), & \text{if reduction} = \text{'mean';}\\
+        \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    .. note::
+        Note that the predicted labels should always be the output of sigmoid. Because it is a two-class
+        classification, the true labels should be numbers between 0 and 1.
+        And if :math:`x_n` is either 0 or 1, one of the log terms would be mathematically undefined in the above loss
+        equation.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
+            And it must have the same shape and data type as `inputs`. Default: ``None`` .
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the weighted mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Inputs:
+        - **input** (Tensor) - The input tensor with shape :math:`(N, *)` where :math:`*` means, any number
+          of additional dimensions. The data type must be float16 or float32 or bfloat16(only supported
+          by Atlas A2 training series products).
+        - **target** (Tensor) - The label tensor with shape :math:`(N, *)` where :math:`*` means, any number
+          of additional dimensions. The same shape and data type as `input`.
+
+    Outputs:
+        Tensor, has the same dtype as `input`. if `reduction` is ``'none'``, then it has the same shape as `input`.
+        Otherwise, it is a scalar Tensor.
+
+    Raises:
+        TypeError: If dtype of `input`, `target` or `weight` (if given) is not float16, float32 or bfloat16.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
+        ValueError: If shape of `input` is not the same as `target` or `weight` (if given).
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import nn
+        >>> import numpy as np
+        >>> weight = ms.Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 3.3, 2.2]]), ms.float32)
+        >>> loss = nn.BCELoss(weight=weight, reduction='mean')
+        >>> input = ms.Tensor(np.array([[0.1, 0.2, 0.3], [0.5, 0.7, 0.9]]), ms.float32)
+        >>> target = ms.Tensor(np.array([[0, 1, 0], [0, 0, 1]]), ms.float32)
+        >>> output = loss(input, target)
+        >>> print(output)
+        1.8952923
+    """
+
+    def __init__(self, weight=None, reduction='mean'):
+        super(BCELoss, self).__init__()
+        self.bce_loss = nn.loss.BCELoss(weight, reduction)
+
+    def construct(self, input, target):
+        return self.bce_loss(input, target)
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
@@ -762,6 +934,18 @@ __all__ = [
     # 4
 
     # 5
+    'ConstantPad1d',
+    'ConstantPad2d',
+    'ConstantPad3d',
+    'ZeroPad1d',
+    'ZeroPad2d',
+    'ZeroPad3d',
+    'ReflectionPad1d',
+    'ReflectionPad2d',
+    'ReflectionPad3d',
+    'ReplicationPad1d',
+    'ReplicationPad2d',
+    'ReplicationPad3d',
 
     # 6
     'Fold',
@@ -791,7 +975,7 @@ __all__ = [
     # 18
     'PReLU',
     # 19
-
+    'Conv3d',
     # 20
 
     # 21
@@ -953,11 +1137,13 @@ __all__ = [
     'AdaptiveAvgPool2d',
 
     # 98
-
+    'AvgPool1d',
     # 99
     'AvgPool2d',
     # 100
     'SELU',
+    # 152
+    'AdaptiveAvgPool3d',
     # 159
     'GELU',
     # 220
@@ -981,6 +1167,18 @@ __all__ = [
 
     # 393
     'Dropout2d',
+    # 406
+    'ELU',
+    # 407
+    'Flatten',
+    # 412
+    'Hardtanh',
+    'ReLU6',
+    # 413
+    'BCELoss',
+    # 421
+    'Tanh',
+
     # 556
     'LogSigmoid',
     # 674

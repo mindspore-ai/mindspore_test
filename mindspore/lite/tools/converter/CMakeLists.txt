@@ -102,17 +102,6 @@ file(GLOB CXX_API_SRCS
         ${SRC_DIR}/litert/cxx_api/model/*.cc
         ${SRC_DIR}/litert/cxx_api/graph/*.cc
         ${SRC_DIR}/litert/cxx_api/tensor/*.cc)
-if(MSLITE_ENABLE_PARALLEL_INFERENCE)
-    set(CXX_API_SRCS
-            ${CXX_API_SRCS}
-            ${SRC_DIR}/extendrt/cxx_api/model_pool/predict_task_queue.cc
-            ${SRC_DIR}/extendrt/cxx_api/model_pool/model_worker.cc
-            ${SRC_DIR}/extendrt/cxx_api/model_pool/model_pool.cc
-            ${SRC_DIR}/extendrt/cxx_api/model_pool/model_parallel_runner.cc
-            ${SRC_DIR}/extendrt/cxx_api/model_pool/model_parallel_runner_impl.cc
-            ${SRC_DIR}/extendrt/cxx_api/model_pool/resource_manager.cc
-            )
-endif()
 
 if(MSLITE_ENABLE_RUNTIME_PASS)
         file(GLOB KERNEL_ONLINE_FUSION_SRC ${SRC_DIR}/litert/pass/online_fusion/*.cc)

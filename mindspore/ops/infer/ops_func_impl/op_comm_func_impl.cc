@@ -43,8 +43,8 @@ uint64_t GetRankValue(const std::string &name, const std::unique_ptr<InferInfo> 
 
 void CheckInferShape(const std::string &name, const ShapeVector &input_shape, const ShapeVector &output_shape) {
   if (input_shape.size() != output_shape.size()) {
-    MS_EXCEPTION(ValueError) << "For '" << name << "', output_tensor shape must be equal to " << input_shape
-                             << ", but got " << output_shape;
+    MS_EXCEPTION(ValueError) << "For '" << name << "', output_tensor shape size must be equal to " << input_shape.size()
+                             << ", but got " << output_shape.size();
   }
   if (!std::equal(output_shape.begin(), output_shape.end(), input_shape.begin())) {
     MS_EXCEPTION(ValueError) << "For '" << name << "', output_tensor shape must be equal to " << input_shape
@@ -53,14 +53,29 @@ void CheckInferShape(const std::string &name, const ShapeVector &input_shape, co
 }
 
 TypeId CheckInferType(const std::string &name, const TypeId type) {
-  static const std::set<TypeId> valid_types = {kNumberTypeInt8,    kNumberTypeInt32,    kNumberTypeFloat16,
-                                               kNumberTypeFloat32, kNumberTypeBFloat16, kNumberTypeComplex64};
+  static const std::set<TypeId> valid_types = {kNumberTypeInt8,    kNumberTypeUInt8,    kNumberTypeInt16,
+                                               kNumberTypeUInt16,  kNumberTypeInt32,    kNumberTypeUInt32,
+                                               kNumberTypeInt64,   kNumberTypeUInt64,   kNumberTypeFloat16,
+                                               kNumberTypeFloat32, kNumberTypeBFloat16, kNumberTypeFloat64};
   (void)CheckAndConvertUtils::CheckTypeIdValid("input", type, valid_types, name);
   return type;
 }
 
-TypeId CheckInferTypes(const std::string &name, const TypeId type, const TypeId out_type) {
-  CheckInferType(name, type);
+TypeId CheckReduceInferType(const std::string &name, const TypeId type) {
+  static const std::set<TypeId> valid_types = {kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,
+                                               kNumberTypeInt64,   kNumberTypeFloat16, kNumberTypeFloat32,
+                                               kNumberTypeBFloat16};
+  (void)CheckAndConvertUtils::CheckTypeIdValid("input", type, valid_types, name);
+  return type;
+}
+
+TypeId CheckInferTypes(const std::string &name, const TypeId type, const TypeId out_type, bool is_reduce_op) {
+  if (is_reduce_op) {
+    CheckReduceInferType(name, type);
+  } else {
+    CheckInferType(name, type);
+  }
+
   if (out_type != type) {
     MS_EXCEPTION(ValueError) << "For '" << name << "', output_tensor type " << TypeIdToString(out_type)
                              << " must be equal to input_tensor type " << TypeIdToString(type);

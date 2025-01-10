@@ -80,11 +80,11 @@ void SparseSegmentSumWithNumSegmentsCpuKernelMod::LaunchKernel(const std::vector
   size_t m = std::accumulate(segment_ids_shape_.begin(), segment_ids_shape_.end(), kMultiply, std::multiplies<int>());
   size_t num_elements = std::accumulate(y_shape_.begin(), y_shape_.end(), kMultiply, std::multiplies<int>());
   auto x_shape0 = static_cast<T2>(x_shape_[kIndex0]);
-  auto x_addr = static_cast<T1 *>(inputs[kIndex0]->device_ptr());
-  auto indices_addr = static_cast<T2 *>(inputs[kIndex1]->device_ptr());
-  auto segment_ids_addr = static_cast<T2 *>(inputs[kIndex2]->device_ptr());
-  auto num_segments_addr = static_cast<T2 *>(inputs[kIndex3]->device_ptr());
-  auto y_addr = static_cast<T1 *>(outputs[kIndex0]->device_ptr());
+  auto x_addr = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto indices_addr = GetDeviceAddress<T2>(inputs, kIndex1);
+  auto segment_ids_addr = GetDeviceAddress<T2>(inputs, kIndex2);
+  auto num_segments_addr = GetDeviceAddress<T2>(inputs, kIndex3);
+  auto y_addr = GetDeviceAddress<T1>(outputs, kIndex0);
   for (size_t i = 1; i < m; i++) {
     if (segment_ids_addr[i] < segment_ids_addr[i - 1]) {
       MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', input segment_ids should be sorted.";

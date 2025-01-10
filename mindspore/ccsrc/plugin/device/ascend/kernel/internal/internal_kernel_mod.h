@@ -17,111 +17,103 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_MOD_H_
 
 #include <memory>
-#include <unordered_map>
-#include <map>
 #include <vector>
 #include <string>
-#include <utility>
 
 #include "kernel/kernel.h"
-#include "./internal_kernel.h"
+#include "include/internal.h"
+#include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
 #include "include/common/factory/ms_factory.h"
-#include "plugin/device/ascend/kernel/internal/tiling_cache.h"
-#include "utils/ms_context.h"
+
+#include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
+#include "plugin/device/ascend/kernel/internal/internal_spinlock.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace kernel {
-static std::map<std::string, int> ms_op_key_to_internel_op_id = {
-  {"SiLU", internal::OpId::Swish},
-  {"Swiglu", internal::OpId::SwiGLU},
-  {"AddLayerNorm", internal::OpId::AddLayerNorm},
-  {"Cast", internal::OpId::Cast},
-  {"ReshapeAndCache", internal::OpId::ReshapeAndCache},
-  {"Gather", internal::OpId::Gather},
-  {"ApplyRotaryPosEmb", internal::OpId::ApplyRotaryPosEmb},
-  {"Add", internal::OpId::Add},
-  {"Sub", internal::OpId::Sub},
-  {"RealDiv", internal::OpId::RealDiv},
-  {"QuantV2", internal::OpId::QuantPerChannel},
-  {"Mul", internal::OpId::Mul},
-  {"Less", internal::OpId::Less},
-  {"LogicalNot", internal::OpId::LogicalNot},
-  {"NotEqual", internal::OpId::NotEqual},
-  {"Equal", internal::OpId::Equal},
-  {"Transpose", internal::OpId::Transpose},
-  {"GeLU", internal::OpId::Gelu},
-  {"Softmax", internal::OpId::Softmax},
-  {"RmsNorm", internal::OpId::RmsNorm},
-  {"TransData", internal::OpId::TransData},
-  {"FastGeLU", internal::OpId::FastGeLU},
-  {"RmsNormQuant", internal::OpId::RmsNormQuant},
-  {"AddRmsNormQuantV2", internal::OpId::AddRmsNormQuant},
-  {"AddRmsNorm", internal::OpId::AddRmsNorm},
-  {"ReduceSum", internal::OpId::ReduceSum},
-  {"FlashAttentionScore", internal::OpId::FlashAttentionScore},
-  {"PagedAttentionMask", internal::OpId::PagedAttention},
-  {"PagedAttention", internal::OpId::PagedAttention},
-  {"FusedMatmulElemBinary", internal::OpId::MatMul},
-  {"FusedMatmulElemUnary", internal::OpId::MatMul},
-  {"MatMul", internal::OpId::MatMul},
-  {"QuantLinearSparse", internal::OpId::QuantLinearSparse},
-  {"QuantBatchMatmul", internal::OpId::MatMul},
-  {"MatmulSplitOut2", internal::OpId::MatmulQkv},
-  {"MatmulSplitOut3", internal::OpId::MatmulQkv},
-  {"MatmulBiasSplitOut2", internal::OpId::MatmulQkv},
-  {"MatmulBiasSplitOut3", internal::OpId::MatmulQkv},
-  {"MatmulBiasSplitSiluOut2", internal::OpId::MatmulQkv},
-  {"MatmulSplitSiluOut2", internal::OpId::MatmulQkv},
-  {"QuantbatchmatmulSplitOut2", internal::OpId::MatmulQkv},
-  {"QuantbatchmatmulSplitOut3", internal::OpId::MatmulQkv},
-  {"QuantbatchmatmulSplitSiluOut2", internal::OpId::MatmulQkv},
-};
-
 class InternalKernelMod : public KernelMod {
  public:
-  explicit InternalKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {
+  InternalKernelMod() {
     ascend_profiler_ = profiler::Profiler::GetInstance(kAscendDevice);
     MS_EXCEPTION_IF_NULL(ascend_profiler_);
-    auto context_ptr = mindspore::MsContext::GetInstance();
-    soc_ = context_ptr->ascend_soc_version();
   }
-  virtual ~InternalKernelMod();
+
+  virtual ~InternalKernelMod() = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
-  void set_fullname(const std::string &fullname) { fullname_ = fullname; }
 
   std::vector<KernelAttr> GetOpSupport() override {
     MS_LOG(EXCEPTION) << "This interface is not support in internal kernel.";
   }
 
+  void set_fullname(const std::string &fullname) override { fullname_ = fullname; }
+
  protected:
-  virtual int Build(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
-  void SetInOutIdx(size_t in_count, size_t out_count);
-  virtual internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                             const std::vector<KernelTensor *> &outputs) = 0;
-  virtual uint64_t GenTilingCacheKey(const std::vector<KernelTensor *> &inputs,
-                                     const std::vector<KernelTensor *> &outputs);
-  virtual void SetTilingInfo(const uint64_t key);
-  std::shared_ptr<internal::InternelKernelImpl> impl_;
-  std::unordered_map<size_t, size_t> inputsIdxMap_;
-  std::unordered_map<size_t, size_t> outputsIdxMap_;
-  std::vector<internal::Tensor *> inputs_;
-  std::vector<internal::Tensor *> outputs_;
-  TilingInfo tiling_info_;
-  std::string op_type_;
+  virtual bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+  virtual bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+    return true;
+  }
+  virtual internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                               const internal::OutputsImmutableInfoList &outputs,
+                                               const std::vector<KernelTensor *> &ms_inputs,
+                                               const std::vector<KernelTensor *> &ms_outputs) {
+    return nullptr;
+  }
+
+  virtual uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs);
+
+  internal::InternalOpPtr internal_op_{nullptr};
+  std::vector<size_t> internal_to_ms_input_indices_mapper_;
+  std::vector<size_t> internal_to_ms_output_indices_mapper_;
+  internal::ShapeInfoList internal_inputs_shape_;
+  internal::ShapeInfoList internal_outputs_shape_;
+  internal::InputsAddrList internal_inputs_addr_;
+  internal::OutputsAddrList internal_outputs_addr_;
+  internal::WsAddrList internal_wss_addr_;
+
+ private:
   std::shared_ptr<profiler::Profiler> ascend_profiler_{nullptr};
+  void GetOrGenerateTiling(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+  inline void UpdateAddr(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
+                         const std::vector<KernelTensor *> &workspace);
+  void GetInternalKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+
+  MemoryType host_tiling_mem_type_{kMemoryUndefined};
+  MemoryType device_tiling_mem_type_{kMemoryUndefined};
+  uint64_t last_key_{0};
+  TilingCacheItemPtr last_item_{nullptr};
+  TilingCacheItemPtr not_cached_item_{nullptr};
+  std::vector<size_t> recreate_cared_indices_;
+  std::vector<size_t> nz_output_indices_;
   std::string fullname_;
-  std::string soc_;
+  SimpleSpinLock lock_;
 };
 
 using InternalKernelModPtr = std::shared_ptr<InternalKernelMod>;
 using InternalKernelModPtrList = std::vector<InternalKernelModPtr>;
 
-#define MS_INTERNAL_KERNEL_FACTORY_REG(NAME, DERIVE) MS_KERNEL_FACTORY_REG(InternalKernelMod, NAME, DERIVE)
+#define MS_INTERNAL_KERNEL_FACTORY_REG(PRIM_NAME_STR, INTERNAL_NAME_VAR, DERIVE) \
+  MS_KERNEL_FACTORY_REG(InternalKernelMod, PRIM_NAME_STR, DERIVE);               \
+  static const NameMappingRegistrar g_##PRIM_NAME_STR##_ms_to_internal_mapper(#PRIM_NAME_STR, INTERNAL_NAME_VAR);
+
+#define DECLARE_INTERNAL_KERNEL_MOD(NAME)                                                         \
+  class Internal##NAME : public InternalKernelMod {                                               \
+   public:                                                                                        \
+    Internal##NAME() : InternalKernelMod() {}                                                     \
+    ~Internal##NAME() = default;                                                                  \
+                                                                                                  \
+   protected:                                                                                     \
+    internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,         \
+                                         const internal::OutputsImmutableInfoList &outputs,       \
+                                         const std::vector<KernelTensor *> &ms_inputs,            \
+                                         const std::vector<KernelTensor *> &ms_outputs) override; \
+  };
+
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_MOD_H_

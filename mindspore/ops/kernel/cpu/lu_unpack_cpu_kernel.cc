@@ -94,8 +94,8 @@ void LuUnpackCpuKernelMod::LuUnpack(const std::vector<kernel::KernelTensor *> &i
   using MatrixMap = Eigen::Map<Eigen::Matrix<T_data, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
   auto input_ptr = GetDeviceAddress<T_data>(inputs, kFirstInputIndex);
   MS_EXCEPTION_IF_NULL(input_ptr);
-  MatrixMap input(reinterpret_cast<T_data *>(inputs[kFirstInputIndex]->device_ptr()) + matrix_index * matrix_size,
-                  matrix_width, matrix_height);
+  MatrixMap input(GetDeviceAddress<T_data>(inputs, kFirstInputIndex) + matrix_index * matrix_size, matrix_width,
+                  matrix_height);
   auto output_y2 = GetDeviceAddress<T_data>(outputs, kThirdOutputIndex);
   MS_EXCEPTION_IF_NULL(output_y2);
   //  Triu
@@ -106,12 +106,12 @@ void LuUnpackCpuKernelMod::LuUnpack(const std::vector<kernel::KernelTensor *> &i
     T_data *MiddlePtr = new T_data[matrix_size];
     MatrixMap MiddleData(MiddlePtr, matrix_width, matrix_height);
     MiddleData = input.template triangularView<Eigen::Upper>();
-    MatrixMap(reinterpret_cast<T_data *>(outputs[kThirdOutputIndex]->device_ptr()) + matrix_index * U_stride,
-              matrix_height, matrix_height) = MiddleData.block(0, 0, matrix_height, matrix_height);
+    MatrixMap(GetDeviceAddress<T_data>(outputs, kThirdOutputIndex) + matrix_index * U_stride, matrix_height,
+              matrix_height) = MiddleData.block(0, 0, matrix_height, matrix_height);
     delete[] MiddlePtr;
   } else {
-    MatrixMap(reinterpret_cast<T_data *>(outputs[kThirdOutputIndex]->device_ptr()) + matrix_index * U_stride,
-              matrix_width, matrix_height) = input.template triangularView<Eigen::Upper>();
+    MatrixMap(GetDeviceAddress<T_data>(outputs, kThirdOutputIndex) + matrix_index * U_stride, matrix_width,
+              matrix_height) = input.template triangularView<Eigen::Upper>();
   }
   //  Tril
   auto output_y1 = GetDeviceAddress<T_data>(outputs, kSecondOutputIndex);
@@ -120,12 +120,12 @@ void LuUnpackCpuKernelMod::LuUnpack(const std::vector<kernel::KernelTensor *> &i
     T_data *MiddlePtr = new T_data[matrix_size];
     MatrixMap MiddleData(MiddlePtr, matrix_width, matrix_height);
     MiddleData = input.template triangularView<Eigen::UnitLower>();
-    MatrixMap(reinterpret_cast<T_data *>(outputs[kSecondOutputIndex]->device_ptr()) + matrix_index * L_stride,
-              matrix_width, matrix_width) = MiddleData.block(0, 0, matrix_width, matrix_width);
+    MatrixMap(GetDeviceAddress<T_data>(outputs, kSecondOutputIndex) + matrix_index * L_stride, matrix_width,
+              matrix_width) = MiddleData.block(0, 0, matrix_width, matrix_width);
     delete[] MiddlePtr;
   } else {
-    MatrixMap(reinterpret_cast<T_data *>(outputs[kSecondOutputIndex]->device_ptr()) + matrix_index * L_stride,
-              matrix_width, matrix_height) = input.template triangularView<Eigen::UnitLower>();
+    MatrixMap(GetDeviceAddress<T_data>(outputs, kSecondOutputIndex) + matrix_index * L_stride, matrix_width,
+              matrix_height) = input.template triangularView<Eigen::UnitLower>();
   }
   //  Swap
   std::vector<T_pivots> final_order;
@@ -152,7 +152,7 @@ void LuUnpackCpuKernelMod::LuUnpack(const std::vector<kernel::KernelTensor *> &i
     std::swap(final_order[perm_id], final_order[perm_pivots_id]);
   }
   //  Index_select
-  auto output_y0 = reinterpret_cast<T_data *>(outputs[kFirstOutputIndex]->device_ptr());
+  auto output_y0 = GetDeviceAddress<T_data>(outputs, kFirstOutputIndex);
   MS_EXCEPTION_IF_NULL(output_y0);
   auto output_size = outputs[kFirstOutputIndex]->size();
   size_t indices_num = final_order.size();
@@ -193,7 +193,7 @@ bool LuUnpackCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
   int64_t matrix_width = Lu_data_dim1;
   int64_t matrix_height = Lu_data_dim2;
   int64_t matrix_size = matrix_width * matrix_height;
-  auto input_x1 = reinterpret_cast<T_pivots *>(inputs[1]->device_ptr());
+  auto input_x1 = GetDeviceAddress<T_pivots>(inputs, kIndex1);
 
   int32_t block_size = Lu_data_dim1 * Lu_data_dim1;
   T_data *P_eye = new T_data[block_size]{};

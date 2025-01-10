@@ -55,5 +55,5 @@ mindspore.mint.nn.functional.smooth_l1_loss
         - **RuntimeError** - `input` 或 `target` 的数据类型不是float16，float32和bfloat16中的任一者。
         - **ValueError** - `input` 与 `target` 的shape不同。
         - **ValueError** - `reduction` 不是 ``'none'`` ， ``'mean'`` 和 ``'sum'`` 中的任一者。
-        - **RuntimeError** - `beta` 不是float，bool或int。
+        - **TypeError** - `beta` 不是float，bool或int。
         - **RuntimeError** - `beta` 小于0。

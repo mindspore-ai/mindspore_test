@@ -1,18 +1,45 @@
 mindspore.mint.normal
 =======================
 
-.. py:function:: mindspore.mint.normal(mean=0.0, std=1.0, size=None, generator=None)
+.. py:function:: mindspore.mint.normal(mean, std, *, generator=None)
 
     根据正态（高斯）随机数分布生成随机数。
 
     参数：
-        - **mean** (Union[float, Tensor]，可选) - 每个元素的均值, shape与std相同。默认值： ``0.0``。
-        - **std** (Union[float, Tensor]，可选) - 每个元素的标准差， shape与mean相同。std的值大于等于0。默认值： ``1.0``。
-        - **size** (tuple，可选) - 当mean和std为常量时，指定输出shape。默认值:  ``None``。
+        - **mean** (Union[float, Tensor]) - 每个元素的均值，shape与 `std` 相同。
+        - **std** (Union[float, Tensor]) - 每个元素的标准差，shape与 `mean` 相同。 `std` 的值大于等于0。
+
+    关键字参数：
         - **generator** (generator，可选) - MindSpore随机种子。默认值： ``None``。
 
+
     返回：
-        Tensor，输出tensor的shape和mean的shape相同，或者在mean和std为常量时，shape为size。
+        Tensor，输出tensor的shape和 `mean` 的shape相同。
 
     异常：
         - **TypeError** - 如果 `mean` 或 `std` 不是Union[float, Tensor]。
+    
+    .. py:function:: mindspore.mint.normal(mean, std=1.0)
+        :noindex:
+
+    与上面接口类似。但所有生成的元素共享同一个标准差。
+
+    参数：
+        - **mean** (Tensor) - 每个元素的均值。
+        - **std** (float，可选) - 每个元素的标准差。 `std` 的值大于等于0。默认值： ``1.0``。
+
+    返回：
+        Tensor，输出tensor的shape和 `mean` 的shape相同。
+
+    .. py:function:: mindspore.mint.normal(mean, std, size)
+        :noindex:
+
+    与上面接口类似。但所有生成的元素共享同一个均值和标准差。输出Tensor的大小由 `size` 指定。
+
+    参数：
+        - **mean** (float) - 每个元素的均值。
+        - **std** (float) - 每个元素的标准差。
+        - **size** (tuple) - 输出shape。
+
+    返回：
+        Tensor，shape为 `size` 。

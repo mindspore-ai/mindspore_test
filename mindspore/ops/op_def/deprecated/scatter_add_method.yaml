@@ -1,0 +1,12 @@
+#deprecated scatter_add
+scatter_add:
+  args:
+    input:
+      dtype: tensor
+    indices:
+      dtype: tensor
+    updates:
+      dtype: tensor
+  returns:
+    out:
+      dtype: tensor

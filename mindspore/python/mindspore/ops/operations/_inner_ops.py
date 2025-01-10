@@ -536,7 +536,8 @@ class ConvertToDynamic(PrimitiveWithCheck):
           >>>         dynamic_input = self.convert_to_dynamic(input)
           >>>         reshaped_input = self.reshape(dynamic_input, new_shape)
           >>>
-          >>> ms.set_context(mode=ms.GRAPH_MODE, device_target="CPU")
+          >>> ms.set_context(mode=ms.GRAPH_MODE)
+          >>> ms.set_device(device_target="CPU")
           >>> input = Tensor(np.array([0, 1, 2, 3])
           >>> new_shape = (2, 2)
           >>> net = TestDynamicNet()
@@ -587,7 +588,8 @@ class GpuConvertToDynamicShape(PrimitiveWithCheck):
           >>>         dynamic_shape_input = self.convert_to_dynamic_shape(input)
           >>>         reshaped_input = self.reshape(input, new_shape)
           >>>
-          >>> ms.set_context(mode=ms.GRAPH_MODE, device_target="GPU")
+          >>> ms.set_context(mode=ms.GRAPH_MODE)
+          >>> ms.set_device(device_target="GPU")
           >>> input = Tensor(np.array([0, 1, 2, 3])
           >>> new_shape = (2, 2)
           >>> net = TestDynamicShapeReshapeNet()
@@ -634,7 +636,8 @@ class ErrorOnDynamicShapeInput(PrimitiveWithInfer):
           >>>         dynamic_shape_input = self.convert_to_dynamic_shape(input)
           >>>         self.error_on_dynamic_shape_input(dynamic_shape_input)
           >>>
-          >>> ms.set_context(mode=ms.GRAPH_MODE, device_target="GPU")
+          >>> ms.set_context(mode=ms.GRAPH_MODE)
+          >>> ms.set_device(device_target="GPU")
           >>> input = Tensor(np.array([0])
           >>> net = TestDynamicShapeReshapeNet()
           >>> output = net(input, new_shape)
@@ -1409,9 +1412,9 @@ class PsROIPooling(PrimitiveWithInfer):
         >>>                                  group_size=7)
         >>> out, channel_map = psRoIPooling(features, rois)
         >>> print(out.shape)
-            [4, 21, 7, 7]
+        [4, 21, 7, 7]
         >>> print(channel_map.shape)
-            [4, 21, 7, 7]
+        [4, 21, 7, 7]
     """
 
     @prim_attr_register
@@ -1796,7 +1799,8 @@ class KMeansCentroids(PrimitiveWithInfer):
         >>> import mindspore.nn as nn
         >>> from mindspore import Tensor
         >>> from mindspore.ops import operations as P
-        >>> ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
 
         >>> class Net(nn.Cell):
         >>>    def __init__(self):
@@ -2063,6 +2067,8 @@ class CheckBprop(PrimitiveWithInfer):
                              f"which is:{len(yshapes)} but got {len(xshapes)}.")
 
         def shape_equal(shape1, shape2):
+            if -2 in shape1 or -2 in shape2:
+                return True
             if len(shape1) != len(shape2):
                 return False
             for shape_axis1, shape_axis2 in zip(shape1, shape2):

@@ -227,6 +227,30 @@ bool ControlActor::CheckRunningCondition(const OpContext<DeviceTensor> *context)
   return true;
 }
 
+void ControlActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
+  if (!enable_input_optimize_) {
+    return;
+  }
+  // Fetch parameter device tensor from device tensor store.
+  for (auto &parameter_index : parameter_indexs_) {
+    if (parameter_index.first >= device_contexts_.size()) {
+      std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
+                               " current:" + std::to_string(device_contexts_.size()) + " for actor:" + GetAID().Name();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    auto device_tensor =
+      FetchParameter(parameter_index.second, context, device_contexts_[parameter_index.first], GetAID());
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    if (parameter_index.first >= input_device_tensors_.size()) {
+      std::string error_info = "The input index is out of range, need:" + std::to_string(parameter_index.first) +
+                               " current:" + std::to_string(input_device_tensors_.size()) +
+                               " for actor:" + GetAID().Name();
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+    }
+    input_device_tensors_[parameter_index.first] = device_tensor;
+  }
+}
+
 void ControlActor::FetchInput(OpContext<DeviceTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
@@ -281,6 +305,8 @@ void ControlActor::FetchInput(OpContext<DeviceTensor> *const context) {
     MS_EXCEPTION_IF_NULL(device_tensors[0]);
     input_device_tensors_[device_tensor_store_key.first] = device_tensors[0].get();
   }
+
+  FetchParameterInput(context);
 
   for (size_t i = 0; i < output_data_by_output_index_.size(); ++i) {
     if (output_data_by_output_index_[i].empty()) {
@@ -699,7 +725,7 @@ void ControlActor::MergeDeviceAddress(OpContext<DeviceTensor> *const context,
   const auto &new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
   MS_EXCEPTION_IF_NULL(new_device_tensor);
 
-  MS_LOG(DEBUG) << "Create device tensor:" << new_device_tensor << " type:" << new_device_tensor->type_id();
+  MS_LOG(DEBUG) << "Create device tensor:" << new_device_tensor->PrintInfo();
   if (!device_context->device_res_manager_->AllocateMemory(new_device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_context,
                                                 GetAID().Name(), new_device_tensor->GetSize());

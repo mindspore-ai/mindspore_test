@@ -77,13 +77,14 @@ class TensorRow {
 
   enum TensorRowFlags : uint32_t {
     kFlagNone = 0,
-    kFlagEOE = 1U,        // The row is an eoe end-of-epoch msg
-    kFlagEOF = 1U << 1,   // The row is an eof end-of-data msg
-    kFlagWait = 1U << 2,  // The row is an control signal for workers to suspend operations
-    kFlagQuit = 1U << 3,  // The row is a control signal for workers to quit
-    kFlagSkip = 1U << 4,  // The row is a control signal for workers to skip this row
-    kFlagError = 1U << 5  // The row is an error row (needs to be replaced with another row or skipped, as per
-                          //   ErrorSamplesMode config)
+    kFlagEOE = 1U,         // The row is an eoe end-of-epoch msg
+    kFlagEOF = 1U << 1,    // The row is an eof end-of-data msg
+    kFlagWait = 1U << 2,   // The row is an control signal for workers to suspend operations
+    kFlagQuit = 1U << 3,   // The row is a control signal for workers to quit
+    kFlagSkip = 1U << 4,   // The row is a control signal for workers to skip this row
+    kFlagError = 1U << 5,  // The row is an error row (needs to be replaced with another row or skipped, as per
+                           // ErrorSamplesMode config)
+    kFlagEOB = 1U << 6     // The row is an eob end-of-batch msg
   };
 
   // Type definitions
@@ -278,6 +279,8 @@ class TensorRow {
   bool eof() const { return (static_cast<uint32_t>(tensor_row_flag_) & static_cast<uint32_t>(kFlagEOF)); }
 
   bool eoe() const { return (static_cast<uint32_t>(tensor_row_flag_) & static_cast<uint32_t>(kFlagEOE)); }
+
+  bool eob() const { return (static_cast<uint32_t>(tensor_row_flag_) & static_cast<uint32_t>(kFlagEOB)); }
 
   bool wait() const { return (static_cast<uint32_t>(tensor_row_flag_) & static_cast<uint32_t>(kFlagWait)); }
 

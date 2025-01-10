@@ -156,6 +156,63 @@ std::vector<SwitchActorPtr> ControlNodeScheduler::BuildSwitchActor(const GraphCo
   return switch_actors;
 }
 
+void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCompilerInfo &graph_compiler_info,
+                                                                  const AID &memory_manager_aid) const {
+  auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  const auto parser = graph_compiler_info.control_node_parser_;
+  MS_EXCEPTION_IF_NULL(parser);
+  MS_EXCEPTION_IF_NULL(cur_graph_parameter_store);
+  const auto &control_node_parameters = parser->control_node_parameters();
+  for (const auto &parameter_with_index : control_node_parameters) {
+    MS_EXCEPTION_IF_NULL(parameter_with_index.first);
+    graph_compiler_info.origin_parameters_to_backend_parameters_[parameter_with_index.first].emplace_back(
+      std::make_pair(parameter_with_index, parameter_with_index));
+
+    const auto &node_with_index_with_context =
+      parser->FetchBackendParameterWithContextByFrontParameter(parameter_with_index);
+    const auto &node_with_index = node_with_index_with_context.first;
+    const auto &device_context = node_with_index_with_context.second;
+    MS_EXCEPTION_IF_NULL(node_with_index.first);
+    MS_EXCEPTION_IF_NULL(device_context);
+    MS_LOG(DEBUG) << "Control node parameter front node:" << parameter_with_index.first->DebugString()
+                  << " index:" << parameter_with_index.second
+                  << " backend node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second;
+    // control_node_parameters are flattened. so parameter_with_index is flattened.It's already naturally adapted to
+    // tuple
+    size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(parameter_with_index.first.get());
+    size_t real_inner_idx = parameter_with_index.second;
+    auto cur_device_type = device_context->GetDeviceType();
+    // Determine whether the scenario is heterogeneous
+    if (!cur_graph_parameter_store->CheckDeviceTensorHeter(real_outer_idx, real_inner_idx, cur_device_type)) {
+      CreateBuildInfoForFrontNode(parameter_with_index, node_with_index.first);
+      // Create device tensor.
+      const auto &device_address = AnfAlgo::GetMutableOutputAddr(node_with_index.first, node_with_index.second, false);
+      MS_EXCEPTION_IF_NULL(device_address);
+      const auto &sub_abstract =
+        common::AnfAlgo::FetchAbstractByIndex(parameter_with_index.first->abstract(), parameter_with_index.second);
+      MS_EXCEPTION_IF_NULL(sub_abstract);
+      const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
+        sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
+        device_address->format(), device_address->type_id(), device_address->host_shape(),
+        device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
+      auto new_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      MS_EXCEPTION_IF_NULL(new_address);
+      MS_LOG(DEBUG) << "Create new address for node that has no corresponding backend node:"
+                    << parameter_with_index.first->DebugString() << " index:" << parameter_with_index.second
+                    << " addr:" << new_address << " size:" << device_address->GetSize()
+                    << ", type id:" << device_address->type_id()
+                    << " type:" << (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString())
+                    << " shape:"
+                    << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString());
+      AnfAlgo::SetOutputAddr(new_address, parameter_with_index.second, parameter_with_index.first.get());
+      cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, new_address, new_address->GetDeviceType(), 0);
+      MS_LOG(INFO) << "BuildGraphParameterStoreForControlNode succeed ";
+    }
+  }
+}
+
 void ControlNodeScheduler::BuildDataSourceActorForControlNode(
   const GraphCompilerInfo &graph_compiler_info, const HostTensorQueuePtr &host_queue,
   const HostQueueDSActorPtr &host_queue_ds_actor, const AID &memory_manager_aid,
@@ -623,8 +680,9 @@ void ParseRealIndex(const mindspore::HashMap<size_t, size_t> &dynamic_len_index,
         indexes.emplace_back(j + start_index);
       }
       real_indexes->emplace_back(indexes, true);
+      size_t old_index = start_index;
       start_index += tmp_dynamic_len_index[start_index];
-      tmp_dynamic_len_index.erase(start_index);
+      tmp_dynamic_len_index.erase(old_index);
     } else {
       std::vector<size_t> indexes{start_index};
       real_indexes->emplace_back(indexes, false);
@@ -698,7 +756,7 @@ void ControlNodeScheduler::Link(ActorSet *const actor_set, const GraphCompilerIn
   LinkArrowForControlActor(actor_set->control_actors_.get(), graph_compiler_info);
 
   // Link arrows from host data source actor or data prepare actor to entrance actor of root graph.
-  LinkArrowForRootGraphEntranceActor(graph_compiler_info);
+  LinkArrowForRootGraphEntranceActor(actor_set, graph_compiler_info);
 
   // Link output data arrows from control actors to output actor.
   LinkDataArrowForOutputActor(actor_set, graph_compiler_info);
@@ -1482,12 +1540,23 @@ void ControlNodeScheduler::LinkArrowByParameter(const AnfNodePtr &parameter, Con
   MS_EXCEPTION_IF_NULL(parameter);
   MS_EXCEPTION_IF_NULL(to_actor);
   MS_EXCEPTION_IF_NULL(parser);
+
   MS_LOG(DEBUG) << "Link arrow by parameter:" << parameter->DebugString() << " indx:" << from_node_with_index.second
                 << " for actor:" << to_actor->GetAID();
+
   if (parser->IsRootGraphPersistentDeviceTensor(parameter)) {
-    (void)to_actor->device_tensor_store_keys_.emplace_back(to_node_with_index.second, parameter);
-    return;
+    if (EnableInputOptimize()) {
+      auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+      auto real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(parameter.get());
+      ParameterInfo cur_param_info{from_node_with_index, real_outer_idx};
+      to_actor->InsertParameterIndexs(to_node_with_index.second, cur_param_info);
+      return;
+    } else {
+      (void)to_actor->device_tensor_store_keys_.emplace_back(to_node_with_index.second, parameter);
+      return;
+    }
   }
+
   // Link arrow from entrance actor.
   const auto &func_graph = parameter->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -2358,39 +2427,80 @@ void ControlNodeScheduler::LinkDataArrowForOutputActor(ActorSet *const actor_set
   to_actor->device_contexts_ = iter->second;
 }
 
-void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const GraphCompilerInfo &graph_compiler_info) const {
+void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *actor_set,
+                                                              const GraphCompilerInfo &graph_compiler_info) const {
   MS_EXCEPTION_IF_NULL(graph_compiler_info.control_node_parser_);
   const auto &root_graph = graph_compiler_info.control_node_parser_->root_func_graph_;
   MS_EXCEPTION_IF_NULL(root_graph);
   const auto &entrance_actor_name = root_graph->ToString() + kEntranceActorNameSuffix;
   auto to_actor = dynamic_cast<EntranceActor *>(FetchActor(entrance_actor_name));
   MS_EXCEPTION_IF_NULL(to_actor);
+  auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  if (EnableInputOptimize()) {
+    bool all_weights = true;
+    for (auto &node : graph_compiler_info.origin_parameters_order_) {
+      auto parameter = node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(parameter);
+      if (!common::AnfAlgo::IsParameterWeight(parameter)) {
+        all_weights = false;
+      }
+    }
+    if (all_weights) {
+      const auto &data_prepare_actor_name = graph_compiler_info.name_ + kDataPrepareActorNameSuffix;
+      auto data_prepare_actor = FetchActor(data_prepare_actor_name);
+      MS_EXCEPTION_IF_NULL(data_prepare_actor);
+      SchedulerHelper::AddControlArrow(data_prepare_actor, to_actor);
+      return;
+    }
+    for (size_t i = 0; i < to_actor->formal_parameters_.size(); ++i) {
+      const auto &formal_parameter = to_actor->formal_parameters_[i];
+      MS_EXCEPTION_IF_NULL(formal_parameter.first);
+      MS_LOG(DEBUG) << "Formal parameter:" << formal_parameter.first->DebugString()
+                    << " index:" << formal_parameter.second;
+      size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(formal_parameter.first.get());
+      // parameter-weight not support tuple
+      size_t real_inner_idx = formal_parameter.second;
+      auto device_tensors = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
+      // input but not parameter-weight won't be heter.
+      if (device_tensors.empty()) {
+        continue;
+      }
+      MS_EXCEPTION_IF_NULL(device_tensors[0]);
+      auto cur_device_tensor = device_tensors[0];
+      ParameterInfo cur_param_info{formal_parameter, real_outer_idx};
+      to_actor->InsertParameterIndexs(i, cur_param_info);
+      // cal ref count
+      cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX,
+                                            cur_device_tensor->GetDeviceType());
+      SchedulerHelper::AddControlArrow(actor_set->data_prepare_actor_.get(), to_actor);
+    }
+  } else {
+    const auto &host_ds_actor_name = graph_compiler_info.name_ + kHostDSActorNameSuffix;
+    auto host_ds_actor = dynamic_cast<HostQueueDataSourceActor *>(FetchActor(host_ds_actor_name));
+    // No host data source actor scenario.
+    if (host_ds_actor == nullptr) {
+      const auto &data_prepare_actor_name = graph_compiler_info.name_ + kDataPrepareActorNameSuffix;
+      auto data_prepare_actor = FetchActor(data_prepare_actor_name);
+      MS_EXCEPTION_IF_NULL(data_prepare_actor);
+      SchedulerHelper::AddControlArrow(data_prepare_actor, to_actor);
+      return;
+    }
 
-  const auto &host_ds_actor_name = graph_compiler_info.name_ + kHostDSActorNameSuffix;
-  auto host_ds_actor = dynamic_cast<HostQueueDataSourceActor *>(FetchActor(host_ds_actor_name));
-  // No host data source actor scenario.
-  if (host_ds_actor == nullptr) {
-    const auto &data_prepare_actor_name = graph_compiler_info.name_ + kDataPrepareActorNameSuffix;
-    auto data_prepare_actor = FetchActor(data_prepare_actor_name);
-    MS_EXCEPTION_IF_NULL(data_prepare_actor);
-    SchedulerHelper::AddControlArrow(data_prepare_actor, to_actor);
-    return;
-  }
-
-  // The host data source actor sends all the input to the entrance actor of the root graph.
-  for (size_t i = 0; i < to_actor->formal_parameters_.size(); ++i) {
-    const auto &formal_parameter = to_actor->formal_parameters_[i];
-    MS_EXCEPTION_IF_NULL(formal_parameter.first);
-    MS_LOG(DEBUG) << "Formal parameter:" << formal_parameter.first->DebugString()
-                  << " index:" << formal_parameter.second;
-    const auto &iter = host_ds_actor->data_node_position_map_.find(formal_parameter);
-    if (iter != host_ds_actor->data_node_position_map_.end()) {
-      const auto &parameter_with_index = host_ds_actor->data_nodes()[iter->second];
-      SchedulerHelper::AddDataArrow(host_ds_actor, to_actor, parameter_with_index.second, i,
-                                    parameter_with_index.first);
-    } else {
-      MS_LOG(INFO) << "Invalid formal parameter:" << formal_parameter.first->DebugString()
-                   << " index:" << formal_parameter.second << " for actor:" << to_actor->GetAID();
+    // The host data source actor sends all the input to the entrance actor of the root graph.
+    for (size_t i = 0; i < to_actor->formal_parameters_.size(); ++i) {
+      const auto &formal_parameter = to_actor->formal_parameters_[i];
+      MS_EXCEPTION_IF_NULL(formal_parameter.first);
+      MS_LOG(DEBUG) << "Formal parameter:" << formal_parameter.first->DebugString()
+                    << " index:" << formal_parameter.second;
+      const auto &iter = host_ds_actor->data_node_position_map_.find(formal_parameter);
+      if (iter != host_ds_actor->data_node_position_map_.end()) {
+        const auto &parameter_with_index = host_ds_actor->data_nodes()[iter->second];
+        SchedulerHelper::AddDataArrow(host_ds_actor, to_actor, parameter_with_index.second, i,
+                                      parameter_with_index.first);
+      } else {
+        MS_LOG(INFO) << "Invalid formal parameter:" << formal_parameter.first->DebugString()
+                     << " index:" << formal_parameter.second << " for actor:" << to_actor->GetAID();
+      }
     }
   }
 }
@@ -2624,7 +2734,7 @@ void GetNameForExitActor(AbstractActor *const actor, DataArrow *const dst_arrow,
   if (exit_actor->node() != nullptr) {
     return;
   }
-  size_t input_index = dst_arrow->to_input_index_;
+  size_t input_index = IntToSize(dst_arrow->to_input_index_);
   if (input_index >= exit_actor->formal_parameters().size()) {
     MS_LOG(EXCEPTION) << "Invalid input index:" << input_index << " for actor:" << exit_actor->GetAID();
   }
@@ -2652,7 +2762,7 @@ void GetInputNameForControlActor(AbstractActor *const actor, std::map<size_t, In
   MS_EXCEPTION_IF_NULL(control_actor);
   for (const auto &pair : control_actor->input_partial_arrow_aids()) {
     MS_EXCEPTION_IF_NULL(pair.second);
-    size_t input_index = pair.second->to_input_index_;
+    size_t input_index = IntToSize(pair.second->to_input_index_);
     (*input_aids)[input_index] = {pair.first.Name(), IntToSize(pair.second->from_output_index_)};
     *max_index = (*max_index > input_index ? *max_index : input_index);
   }
@@ -2682,7 +2792,7 @@ void GetAllInputByArrow(AbstractActor *const actor,
   MS_EXCEPTION_IF_NULL(max_index);
   for (const auto &pair : actor->input_data_arrow_aids()) {
     MS_EXCEPTION_IF_NULL(pair.second);
-    size_t input_index = pair.second->to_input_index_;
+    size_t input_index = IntToSize(pair.second->to_input_index_);
     std::string name = pair.first.Name();
     size_t index = IntToSize(pair.second->from_output_index_);
     if (actor->type() == KernelTransformType::kExitActor) {
@@ -2800,7 +2910,8 @@ std::vector<AbstractActorPtr> InsertExecuteActor(std::vector<AbstractActor *> *a
     }
     const auto &control_actor = dynamic_cast<ControlActor *>(actor);
     MS_EXCEPTION_IF_NULL(control_actor);
-    if (control_actor->node() != nullptr && common::AnfAlgo::IsCallNode(control_actor->node())) {
+    if (control_actor->type() == KernelTransformType::kGatherActor && control_actor->node() != nullptr &&
+        common::AnfAlgo::IsCallNode(control_actor->node())) {
       actors->emplace_back(actor);
       const auto &func_graphs = parser->FetchFuncGraphbyCallNode(control_actor->node());
       std::string actor_name = control_actor->GetAID().Name() + kStubActorNameSuffix;

@@ -60,7 +60,9 @@ bool TensorToSeqCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
     return true;
   }
   const auto input_addr = inputs[0]->device_ptr();
+  MS_EXCEPTION_IF_NULL(input_addr);
   auto output_addr = outputs[0]->device_ptr();
+  MS_EXCEPTION_IF_NULL(output_addr);
   auto input_size = inputs[0]->size();
   auto output_size = outputs[0]->size();
   if (input_size != output_size) {

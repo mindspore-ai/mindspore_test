@@ -1,0 +1,38 @@
+fmod:
+  description: |
+    fmod(input, other) -> Tensor
+    
+    Computes the floating-point remainder of the division operation input/other.
+
+    .. math::
+
+        out = input - n * other
+
+    Where :math:`n` is :math:`input/other` with its fractional part truncated.
+    The returned value has the same sign as `input` and is less than `other` in magnitude.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): the dividend.
+        other (Union[Tensor, Number]): the divisor.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting,
+        and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.array([-4., -3.5, 0, 3.5, 4]), mindspore.float32)
+        >>> output = mint.fmod(input, 2.5)
+        >>> print(output)
+        [-1.5 -1.   0.   1.   1.5]

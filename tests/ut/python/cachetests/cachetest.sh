@@ -18,13 +18,13 @@
 CURRPATH=$(cd "$(dirname $0)" || exit; pwd)
 
 echo "----------------------------------------------"
-echo "Invalid syntax and cache_admin failure testing"
+echo "Invalid syntax and dataset-cache failure testing"
 echo "----------------------------------------------"
 echo
 ${CURRPATH}/cachetest_args.sh
 num_failures=$?
 echo
-echo "Invalid syntax and cache_admin failure testing complete.  Number of failures: $num_failures"
+echo "Invalid syntax and dataset-cache failure testing complete.  Number of failures: $num_failures"
 echo
 
 echo "----------------------------------------------"

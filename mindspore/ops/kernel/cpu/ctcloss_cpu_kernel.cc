@@ -85,27 +85,27 @@ int CTCLossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  probs_shape_ = inputs[0]->GetShapeVector();
-  indices_dims_ = inputs[1]->GetShapeVector();
-  labels_dims_ = inputs[2]->GetShapeVector();
-  dtype_ = inputs[0]->dtype_id();
+  probs_shape_ = inputs[kIndex0]->GetShapeVector();
+  indices_dims_ = inputs[kIndex1]->GetShapeVector();
+  labels_dims_ = inputs[kIndex2]->GetShapeVector();
+  dtype_ = inputs[kIndex0]->dtype_id();
 
-  if (probs_shape_.size() != 3) {
+  if (probs_shape_.size() != kSizeThree) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'probs' must be 3-D, but got " << probs_shape_.size()
                       << "-D.";
   }
-  if (labels_dims_.size() != 1) {
+  if (labels_dims_.size() != kSizeOne) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'labels' must be 1-D, but got " << labels_dims_.size()
                       << "-D.";
   }
-  if (indices_dims_.size() != 2) {
+  if (indices_dims_.size() != kSizeTwo) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'labels_indices' must be 2-D, but got "
                       << indices_dims_.size() << "-D.";
   }
 
-  max_time_ = LongToSize(probs_shape_[0]);
-  batch_size_ = LongToSize(probs_shape_[1]);
-  num_class_ = LongToSize(probs_shape_[2]);
+  max_time_ = LongToSize(probs_shape_[kIndex0]);
+  batch_size_ = LongToSize(probs_shape_[kIndex1]);
+  num_class_ = LongToSize(probs_shape_[kIndex2]);
   blank_index_ = num_class_ - 1;
   return KRET_OK;
 }
@@ -171,10 +171,10 @@ template <typename TT>
 void CTCLossCpuKernelMod::CalculateBwdVar(const std::vector<uint32_t> &label_with_blank,
                                           const std::vector<std::vector<TT>> &y,
                                           std::vector<std::vector<TT>> *log_beta_b) const {
-  int T = (*log_beta_b)[0].size();
-  int U = label_with_blank.size();
+  size_t T = (*log_beta_b)[0].size();
+  size_t U = label_with_blank.size();
   if (U > 1) {
-    for (int u = U - 2; u < U; ++u) {
+    for (size_t u = U - 2; u < U; ++u) {
       (*log_beta_b)[u][T - 1] = TT(0);
     }
   } else {
@@ -182,10 +182,12 @@ void CTCLossCpuKernelMod::CalculateBwdVar(const std::vector<uint32_t> &label_wit
     (*log_beta_b)[0][T - 2] = TT(0);
   }
 
-  for (int t = T - 2; t >= 0; --t) {
-    int low = std::max(0, U - (2 * (T - t)));
-    int high = std::min(U, 2 * (t + 1));
-    for (int u = low; u < high; ++u) {
+  MS_EXCEPTION_IF_CHECK_FAIL(T > 1, "For CTCLoss, the length of log_beta_b must be greater than 1!");
+  for (int64_t tt = T - 2; tt >= 0; --tt) {
+    size_t low = std::max(static_cast<int64_t>(0), static_cast<int64_t>(U) - (2 * (static_cast<int64_t>(T) - tt)));
+    size_t high = std::min(static_cast<int64_t>(U), 2 * (tt + 1));
+    auto t = static_cast<size_t>(tt);
+    for (size_t u = low; u < high; ++u) {
       if (ctc_merge_repeated_ || label_with_blank[u] == blank_index_) {
         (*log_beta_b)[u][t] =
           LogSumExp((*log_beta_b)[u][t], (*log_beta_b)[u][t + 1] + TT(log(y[label_with_blank[u]][t + 1])));
@@ -276,12 +278,12 @@ void CTCLossCpuKernelMod::GenLabelWithBlank(const uint32_t *seq_len,
 template <typename T>
 void CTCLossCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) const {
-  const auto *inputs_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  const auto *labels_indices_addr = reinterpret_cast<uint64_t *>(inputs[1]->device_ptr());
-  const auto *labels_values_addr = reinterpret_cast<uint32_t *>(inputs[2]->device_ptr());
-  const auto *sequence_length_addr = reinterpret_cast<uint32_t *>(inputs[3]->device_ptr());
-  auto *loss_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto *gradient_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  const auto *inputs_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *labels_indices_addr = GetDeviceAddress<uint64_t>(inputs, kIndex1);
+  const auto *labels_values_addr = GetDeviceAddress<uint32_t>(inputs, kIndex2);
+  const auto *sequence_length_addr = GetDeviceAddress<uint32_t>(inputs, kIndex3);
+  auto *loss_addr = GetDeviceAddress<T>(outputs, kIndex0);
+  auto *gradient_addr = GetDeviceAddress<T>(outputs, kIndex1);
 
   std::vector<std::vector<uint32_t>> label_batch;
   std::vector<std::vector<uint32_t>> labels_with_blank;

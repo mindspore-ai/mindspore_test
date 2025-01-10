@@ -12,7 +12,7 @@ mindspore.mint.sub
     .. note::
         - 当两个输入shape不同时，
           它们必须能够广播到一个共同的shape。
-        - 两个输入和 `alpha` 遵守隐式类型转换规则以使数据类型
+        - 两个输入和 `alpha` 遵守隐式类型转换规则以使数据类型\
           保持一致。
 
     参数：
@@ -26,7 +26,7 @@ mindspore.mint.sub
           `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
 
     关键字参数：
-        - **alpha** (number.Number) - 应用于 `other` 的缩放因子，默认值为1。
+        - **alpha** (number.Number) - 应用于 `other` 的缩放因子，默认值为 ``1``。
 
     返回：
         Tensor，其shape与输入 `input`、 `other` 广播后的shape相同，

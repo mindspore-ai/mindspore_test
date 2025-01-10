@@ -94,7 +94,7 @@ def test_sparsecountsparseoutput_checkvalue_difftypes():
             sparse_count_sparse_output_valuecheck(v_type, w_type)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparsecountsparseoutput_checkvalue_maxvalue():
     """

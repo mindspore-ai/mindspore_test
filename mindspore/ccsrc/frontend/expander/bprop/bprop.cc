@@ -400,6 +400,18 @@ void BpropExpander::FreeUselessValues(const PynativeCallback &cb) {
   }
 }
 
+bool BpropExpander::IsCloneInplaceInput(const PynativeCallback &cb) {
+  auto handle = BpropIRBuilderFactory::Instance().GetBuilder(cb.opname());
+  if (handle == nullptr) {
+    MS_LOG(DEBUG) << "Bprop IRBuilder [" << cb.opname() << "] is not registered in bprop expander.";
+    return false;
+  }
+  if (handle->clone_inplace_input_func != nullptr) {
+    return handle->clone_inplace_input_func(cb);
+  }
+  return false;
+}
+
 bool BpropExpander::RunBprop(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values) {
   static const bool cache_env = (common::GetEnv("MS_DEV_DISABLE_BPROP_CACHE") != "on");
   const auto prim = GetCNodePrimitive(cnode);
@@ -640,41 +652,7 @@ bool ExpandBpropInGraphMode(const BpropHandle *handle, const PrimitivePtr &prim,
 }
 
 #ifdef _MSC_VER
-void RegGradArrayOps();
-void RegGradClipOps();
-void RegGradCommOps();
-void RegGradDebugOps();
-void RegGradImageOps();
-void RegGradImplementationsOps();
-void RegGradInnerOps();
-void RegGradLinalgOps();
-void RegGradMathOps();
-void RegGradNnOps();
-void RegGradOtherOps();
-void RegGradQuantOps();
-void RegGradScipyOps();
-void RegGradSparseOps();
-void RegGradSequenceOps();
-void RegGradScalarOps();
-
-WinBpropRegister::WinBpropRegister() {
-  RegGradArrayOps();
-  RegGradClipOps();
-  RegGradCommOps();
-  RegGradDebugOps();
-  RegGradImageOps();
-  RegGradImplementationsOps();
-  RegGradInnerOps();
-  RegGradLinalgOps();
-  RegGradMathOps();
-  RegGradNnOps();
-  RegGradOtherOps();
-  RegGradQuantOps();
-  RegGradScipyOps();
-  RegGradSparseOps();
-  RegGradSequenceOps();
-  RegGradScalarOps();
-}
+WinBpropRegister::WinBpropRegister() {}
 #endif
 }  // namespace bprop
 }  // namespace expander

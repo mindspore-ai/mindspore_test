@@ -112,14 +112,14 @@ template <typename T>
 bool ApplyAdagradV2CpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kApplyAdagradV2InputsNum, kernel_name_);
-  auto *var = reinterpret_cast<T *>(inputs[kVarIndex]->device_ptr());
-  auto *accum = reinterpret_cast<T *>(inputs[kAccumIndex]->device_ptr());
-  const auto *lr = reinterpret_cast<T *>(inputs[kLRIndex]->device_ptr());
-  const auto *gradient = reinterpret_cast<T *>(inputs[kGradIndex]->device_ptr());
+  auto *var = GetDeviceAddress<T>(inputs, kVarIndex);
+  auto *accum = GetDeviceAddress<T>(inputs, kAccumIndex);
+  const auto *lr = GetDeviceAddress<T>(inputs, kLRIndex);
+  const auto *gradient = GetDeviceAddress<T>(inputs, kGradIndex);
 
   // multithreading
-  MS_EXCEPTION_IF_NULL(inputs[0]);
-  size_t length = inputs[0]->size() / sizeof(T);
+  MS_EXCEPTION_IF_NULL(inputs[kIndex0]);
+  size_t length = inputs[kIndex0]->size() / sizeof(T);
   const float &epsilon = this->epsilon_;
   const bool &update_slots = this->update_slots_;
   auto task = [this, var, accum, lr, gradient, &epsilon, &update_slots](size_t start, size_t end) {

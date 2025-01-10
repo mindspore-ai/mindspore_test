@@ -35,7 +35,7 @@ class CeluTEST(nn.Cell):
         return self.celu(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_celu_op(data_type):
@@ -59,7 +59,7 @@ def test_celu_op(data_type):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_celu_func(data_type):

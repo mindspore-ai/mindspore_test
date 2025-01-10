@@ -26,7 +26,7 @@
 #include "kernel/kernel.h"
 #include "include/common/factory/ms_factory.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/ascend/hal/hardware/ge_graph_executor.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_graph_executor.h"
 
 namespace mindspore {
 namespace kernel {

@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_MEM_DYNAMIC_ALLOCATOR_H_
 
 #include <algorithm>
+#include <atomic>
 #include <functional>
 #include <list>
 #include <map>
@@ -43,12 +44,141 @@
 
 namespace mindspore {
 namespace device {
+struct DynamicMemBuf : public EventBase {
+  DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id)
+      : device_addr_(addr), status_(status), size_(size), stream_id_(stream_id) {}
+  DynamicMemBuf(DeviceMemPtr addr, DynamicMemBufStatus status, size_t size, uint32_t stream_id,
+                const std::string &allocator_name, AllocatorType allocator_type)
+      : device_addr_(addr),
+        status_(status),
+        size_(size),
+        stream_id_(stream_id),
+        allocator_name_(allocator_name),
+        allocator_type_{allocator_type} {}
+  DynamicMemBuf(const DynamicMemBuf &) = delete;
+  DynamicMemBuf &operator=(const DynamicMemBuf &) = delete;
+
+  DeviceMemPtr device_addr_;
+  DynamicMemBufStatus status_;
+  size_t size_;
+
+  uint32_t stream_id_{0};
+
+  // Debug info.
+  std::string allocator_name_;
+  AllocatorType allocator_type_{AllocatorType::kOther};
+};
+
+class DynamicMemBlock {
+ public:
+  DynamicMemBlock(DeviceMemPtr addr_base, size_t size, const uint32_t stream_id)
+      : device_addr_base_(addr_base), mem_block_size_(size), stream_id_(stream_id) {}
+  DynamicMemBlock() = delete;
+  DynamicMemBlock(const DynamicMemBlock &) = delete;
+  DynamicMemBlock &operator=(const DynamicMemBlock &) = delete;
+
+  ~DynamicMemBlock() { block_all_mem_buf_map_.clear(); }
+
+  const DeviceMemPtr &device_addr() const { return device_addr_base_; }
+
+  size_t size() const { return mem_block_size_; }
+
+  void update_border_addr(DeviceMemPtr left_addr, DeviceMemPtr right_addr);
+
+  size_t get_actual_peak();
+
+  // The map of all memory buf in this memory block by device address.
+  DeviceAddrMapMemBuf block_all_mem_buf_map_;
+
+  DeviceMemPtr device_addr_base_{nullptr};
+
+  // Max addr
+  DeviceMemPtr max_addr_ = nullptr;
+  // Min addr
+  DeviceMemPtr min_addr_ = nullptr;
+
+  size_t mem_block_size_{0};
+  const uint32_t stream_id_;
+};
+
+struct DeviceState {
+  void UpdatePeakSize() {
+    size_t total_used_size_ = total_used_mem_size_ + total_used_by_event_mem_size_;
+    size_t temp_used_size_ = temp_total_used_mem_size_ + temp_total_used_by_event_mem_size_;
+    used_mem_peak_size_ = std::max(used_mem_peak_size_, total_used_size_);
+    if (total_used_size_ > temp_used_size_) {
+      temp_used_mem_peak_size_ = std::max(temp_used_mem_peak_size_, total_used_size_ - temp_used_size_);
+    }
+  }
+
+  // Memory allocated from device
+  size_t total_mem_size_{0};
+  // Memory in use
+  size_t total_used_mem_size_{0};
+  // Memory in use by event
+  size_t total_used_by_event_mem_size_{0};
+  // Memory in idle.
+  size_t total_idle_mem_size_{0};
+  // Memory in eager free.
+  size_t total_eager_free_mem_size_{0};
+  // Maximum peak memory usage
+  size_t used_mem_peak_size_{0};
+  // Recorded data for memory in use since reset maximum allocated memory
+  size_t temp_total_used_mem_size_{0};
+  // Recorded data for memory in use by event since reset maximum allocated memory
+  size_t temp_total_used_by_event_mem_size_{0};
+  // Recorded data for maximum peak memory usage since reset maximum allocated memory
+  size_t temp_used_mem_peak_size_{0};
+  // Temporary recorded data for memory reserved since reset maximum reserved memory
+  size_t temp_total_mem_size_{0};
+};
+
+struct MemStatusManager {
+  bool Empty() const { return mem_block_list_.empty(); }
+
+  void AddMemBlock(const DynamicMemBlockPtr &mem_block, uint32_t stream_id);
+
+  void DoAddMemBlock(const DynamicMemBlockPtr &mem_block, std::vector<DynamicMemBlockPtr> *mem_block_list);
+
+  size_t CalActualPeak();
+
+  SizeMapMemBuf &GetOrCreateMemBufMap(uint32_t stream_id, DynamicMemBufStatus status);
+
+  void AddMemBuf(const DynamicMemBufPtr &mem_buf);
+
+  void RemoveMemBuf(const DynamicMemBufPtr &mem_buf);
+
+  void Clear() noexcept;
+
+  const DeviceState DumpMemBlockDebugInfo(const std::string &mem_type);
+
+  std::vector<uint32_t> GetStreamIds() const {
+    std::vector<uint32_t> stream_ids;
+    for (const auto &iter : mem_blocks_) {
+      (void)stream_ids.emplace_back(iter.first);
+    }
+    return stream_ids;
+  }
+
+  size_t unit_size_{kDynamicMemAllocUnitSize};
+  // Mem pool state
+  DeviceState mps_;
+
+  std::vector<DynamicMemBlockPtr> mem_block_list_;
+  std::vector<DynamicMemBlockPtr> mem_block_insertion_order_;
+  size_t total_block_size_ = 0;
+  std::unordered_map<uint32_t, std::vector<DynamicMemBlockPtr>> mem_blocks_;
+  std::unordered_map<std::pair<uint32_t, DynamicMemBufStatus>, SizeMapMemBuf, pair_hash> mem_bufs_;
+};
+
 // Implement of best fit dynamic memory pool.
 class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
  public:
   DynamicMemPoolBestFit()
       : persistent_mem_(std::make_shared<MemStatusManager>()), common_mem_(std::make_shared<MemStatusManager>()) {}
   virtual ~DynamicMemPoolBestFit();
+
+  void Initialize(size_t init_size, size_t increase_size, size_t max_size) override;
 
   // The main program entry of memory alloc.
   DeviceMemPtr AllocTensorMem(size_t size, bool from_persistent_mem = false, bool need_recycle = false,
@@ -113,6 +243,17 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   std::string GetMemoryPoolType() const override { return "Other"; }
 
   static void set_wait_callback(const std::function<void()> &wait_callback) { wait_callback_ = wait_callback; }
+
+  bool IsEnableTimeEvent() override { return enable_time_event_; }
+
+  void SetEnableTimeEvent(bool enable_time_event) override { enable_time_event_ = enable_time_event; }
+
+  virtual MemoryTimeEventPtr GenAllocateMemoryTimeEvent(const void *addr, size_t size, uint32_t stream_id,
+                                                        bool from_persistent, bool is_persistent);
+
+  virtual MemoryTimeEventPtr GenFreeMemoryTimeEvent(const void *addr);
+
+  virtual void ReportMemoryTimeEvent(const MemoryTimeEventPtr &time_event) {}
 #ifndef ENABLE_TEST
 
  protected:
@@ -125,12 +266,13 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle = false) override;
   std::set<DeviceMemPtr> mem_bufs_;
 
+  void WaitPipelineHelper();
+
   // The related interface of device memory eager free.
   const bool IsEnableEagerFree() const override { return false; }
   const bool IsEnableVmm() const override { return enable_vmm_; }
   void SetEnableVmm(bool enable_vmm) { enable_vmm_ = enable_vmm; }
-  void WaitPipeline();
-
+  void WaitPipelineWithCallback();
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 #ifndef ENABLE_TEST
 
@@ -206,6 +348,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   bool enable_vmm_{false};
   size_t eager_free_count_{0};
   size_t last_eager_free_count_{0};
+  std::atomic<bool> enable_time_event_{false};
 };
 }  // namespace device
 }  // namespace mindspore

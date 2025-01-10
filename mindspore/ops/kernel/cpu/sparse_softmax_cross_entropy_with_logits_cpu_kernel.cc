@@ -117,10 +117,10 @@ template <typename T, typename S>
 bool SparseSoftmaxCrossEntropyWithLogitsCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                                    const std::vector<kernel::KernelTensor *> &workspace,
                                                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  const auto *logits = static_cast<T *>(inputs[kIndex0]->device_ptr());
-  const auto *labels = static_cast<S *>(inputs[kIndex1]->device_ptr());
-  auto *losses = static_cast<T *>(workspace[kIndex0]->device_ptr());
-  auto *output = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  const auto *logits = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *labels = GetDeviceAddress<S>(inputs, kIndex1);
+  auto *losses = GetDeviceAddress<T>(workspace, kIndex0);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
 
   for (size_t i = 0; i < batch_size_; ++i) {
     if (labels[i] < 0) {

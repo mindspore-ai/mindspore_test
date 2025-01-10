@@ -1,0 +1,22 @@
+#deprecated sum
+sum:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: tuple[int]
+      type_cast: int, list[int], tensor
+      default: None
+    dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    keepdims:
+      dtype: bool
+      default: False
+    initial:
+      dtype: number
+      default: None
+  returns:
+    output:
+      dtype: tensor

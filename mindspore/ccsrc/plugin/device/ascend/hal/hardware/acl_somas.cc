@@ -22,6 +22,7 @@
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -46,7 +47,7 @@ size_t AclSomas::GetAlignSize(size_t original_size) const {
 bool AclSomas::GetDependExecOrderFlag(const session::KernelGraph &graph) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto opt_level = ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL);
+  auto opt_level = runtime::RuntimeConf::GetInstance()->mem_optimize_level();
   return opt_level != kOptimizeO0;
 }
 

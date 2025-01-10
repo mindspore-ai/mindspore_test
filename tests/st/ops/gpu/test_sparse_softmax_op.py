@@ -50,7 +50,7 @@ def test_net_graph():
     np.testing.assert_almost_equal(output.asnumpy(), expect, decimal=6)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_net_pynative():
     '''
     Feature: SparseSoftmax gpu TEST (PYNATIVE_MODE).

@@ -21,7 +21,7 @@
 #include <vector>
 #include "abstract/dshape.h"
 #include "ir/dtype/tensor_type.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

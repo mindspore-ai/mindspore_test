@@ -1,0 +1,14 @@
+histc:
+  - op_yaml: histc_ext_op.yaml
+    py_method: tensor_histc
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/histc_method.yaml
+    py_method: tensor_histc
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

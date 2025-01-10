@@ -45,7 +45,7 @@ std::vector<TypeId> DistCommReduceScatterFuncImpl::InferType(const PrimitivePtr 
   auto x_list = input_infos[kIndex1]->GetSequenceElements();
   for (size_t i = 1; i < x_list.size(); i++) {
     auto in_type = x_list[i]->GetType();
-    CheckInferTypes(primitive->name(), in_type, out_type);
+    CheckInferTypes(primitive->name(), in_type, out_type, true);
   }
   return {out_type};
 }

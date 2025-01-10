@@ -20,7 +20,7 @@
 #include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+
 #include "utils/check_convert_utils.h"
 #include "op_def/op_enum.h"
 
@@ -35,6 +35,9 @@ class MeshgridFrontendFuncImpl : public OpFrontendFuncImpl {
     auto input_type = input_abs->GetType();
     auto tuple_type = input_type->cast<TuplePtr>();
     auto elements = tuple_type->elements();
+    (void)CheckAndConvertUtils::CheckInteger("number of input tensors", SizeToLong(elements.size()), kGreaterThan, 1,
+                                             primitive->name());
+
     for (size_t i = 0; i < elements.size() - 1; ++i) {
       auto type_ptr_x = elements[i]->cast<TensorTypePtr>();
       MS_EXCEPTION_IF_NULL(type_ptr_x);
@@ -64,8 +67,6 @@ class MeshgridFrontendFuncImpl : public OpFrontendFuncImpl {
     if (!indexing_opt.has_value()) {
       element_shape = ShapeVector(out_rank, abstract::TensorShape::kShapeDimAny);
     } else {
-      (void)CheckAndConvertUtils::CheckInteger("number of input tensors", SizeToLong(tuple_shape->size()), kGreaterThan,
-                                               1, primitive->name());
       auto indexing_res = static_cast<ops::Indexing>(indexing_opt.value());
       for (size_t i = 0; i < tuple_shape->size(); ++i) {
         auto single_shape = (*tuple_shape)[i]->GetShapeVector();

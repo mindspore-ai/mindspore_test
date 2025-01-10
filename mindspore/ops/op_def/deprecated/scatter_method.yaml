@@ -1,0 +1,15 @@
+#deprecated scatter
+scatter:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: int
+    index:
+      dtype: tensor
+    src:
+      dtype: tensor
+      type_cast: float
+  returns:
+    out:
+      dtype: tensor

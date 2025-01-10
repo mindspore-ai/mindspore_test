@@ -31,12 +31,12 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (item_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common.symbol import Symbol
+
 
 np_types = (np.int8, np.int16, np.int32, np.int64,
             np.uint8, np.uint16, np.uint32, np.uint64, np.float16,
@@ -46,7 +46,7 @@ np_types = (np.int8, np.int16, np.int32, np.int64,
 def _check_input_data_type(input_data):
     """Check the type of input_data for Tensor"""
     validator.check_value_type('input_data', input_data,
-                               (Tensor_, Tensor, np.ndarray, np.str_, list, tuple, float, int, bool, complex),
+                               (Tensor_, Tensor, np.ndarray, np.str_, list, tuple, float, int, bool, complex, bytes),
                                'Tensor')
     valid_dtypes = (np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64,
                     np.float16, np.float32, np.float64, np.bool_, np.str_, np.complex64, np.complex128)
@@ -351,12 +351,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         return out
 
     def __bool__(self):
-        data = self.asnumpy()
-        if data.shape == ():
-            return bool(data)
-        if data.shape == (1,):
-            return bool(data[0])
-        raise ValueError("The truth value of an array with more than one element is ambiguous.")
+        return bool(self._item())
 
     @staticmethod
     def _convert_scalar_(data, func, message):
@@ -402,9 +397,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __radd__(self, other):
         return self.__add__(other)
 
-    def __iadd__(self, other):
-        return self.__add__(other)
-
     def __rsub__(self, other):
         return tensor_operator_registry.get('__sub__')(other, self)
 
@@ -440,9 +432,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def __imod__(self, other):
         return self.__mod__(other)
-
-    def __pow__(self, other):
-        return tensor_operator_registry.get('__pow__')(self, other)
 
     def __rpow__(self, other):
         return tensor_operator_registry.get('__rpow__')(self, other)
@@ -496,6 +485,18 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             self.__dict__.update(state)
         Tensor_.__setstate__(self, value)
 
+    def __array__(self, dtype=None):
+        """support create numpy array from tensor."""
+        if dtype is None:
+            return self.asnumpy()
+        return self.asnumpy().astype(dtype, copy=False)
+
+    def __contains__(self, element):
+        """support 'in' operator."""
+        if isinstance(element, (Tensor, numbers.Number)):
+            return (element == self).any().item()
+        return False
+
     def _getitem_origin(self, index):
         """__getitem__ origin process, called by TensorPy::TensorGetItem"""
         out = tensor_operator_registry.get('_tensor_getitem_origin')(self, index)
@@ -529,6 +530,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def shape(self):
         """
         For details, please refer to :func:`mindspore.ops.shape`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> print(x.shape)
+            (2, 2)
         """
         return self._shape
 
@@ -541,7 +549,16 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     @property
     def dtype(self):
-        """Return the dtype of the tensor (:class:`mindspore.dtype`)."""
+        """
+        Return the dtype of the tensor (:class:`mindspore.dtype`).
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([1, 2], dtype=np.float32))
+            >>> print(x.dtype)
+            Float32
+        """
         return self._dtype
 
     @property
@@ -816,24 +833,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         self.const_arg = const_arg
         return self
 
-    def arccosh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.arccosh`.
-        """
-        return tensor_operator_registry.get('acosh')(self)
-
-    def arcsin(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.arcsin`.
-        """
-        return tensor_operator_registry.get('asin')(self)
-
-    def arctan(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.arctan`.
-        """
-        return tensor_operator_registry.get('atan')(self)
-
     def cauchy(self, median=0.0, sigma=1.0):
         r"""
         Fills the tensor with numbers drawn from the Cauchy distribution. It is
@@ -931,26 +930,17 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         self.assign_value_cpp(value)
         return self
 
-    def bincount(self, weights=None, minlength=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.bincount`.
+    def item(self):
         """
-        return tensor_operator_registry.get('bincount')(self, weights, minlength)
-
-
-    @item_mint
-    def item(self, index=None):
-        """
-        Get the item at the specified index of the tensor.
-
-        Args:
-            index (Union[None, int, tuple(int)]): The index in Tensor. Default: ``None``.
+        Return the value of this tensor as standard Python number.
+        This only works for tensors with one element.
 
         Returns:
             A scalar, type is defined by the dtype of the Tensor.
 
         Raises:
-            ValueError: If the length of the `index` is not equal to self.ndim.
+            ValueError: If the count of value in tensor is more than one.
+            TypeError: The type of element in tensor is not supported.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
@@ -958,19 +948,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Examples:
             >>> import mindspore as ms
             >>> from mindspore import Tensor
-            >>> x = Tensor([[1, 2, 3], [4, 5, 6]], ms.float32)
-            >>> print(x.item((0, 1)))
-            2.0
             >>> x = Tensor(1.2, ms.float32)
             >>> print(x.item())
             1.2
         """
-
-        if index is not None:
-            output = self.asnumpy().item(index)
-        else:
-            output = self.asnumpy().item()
-        return output
+        return self._item()
 
     def itemset(self, *args):
         r"""
@@ -982,7 +964,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Args:
             args (Union[(numbers.Number), (int/tuple(int), numbers.Number)]): The arguments that
                 specify the index and value. If `args` contain one argument (a scalar),
-                it is only used in case tensor is of size 1. If `args` contain two
+                it is only used in case tensor is of size 1. If `args` contains two
                 arguments, the last argument is the value to be set and must be a
                 scalar, the first argument specifies a single tensor element location.
                 It is either an int or a tuple.
@@ -1102,14 +1084,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('select_scatter')(self, src, axis, index)
 
-    def histc(self, bins=100, min=0., max=0.):
-        """
-        For details, please refer to :func:`mindspore.ops.histc`.
-        """
-        validator.check_value_type('min', min, (int, float,), 'Tensor.histc')
-        validator.check_value_type('max', max, (int, float,), 'Tensor.histc')
-        return tensor_operator_registry.get('histc')(self, bins, float(min), float(max))
-
     def geqrf(self):
         """
         For details, please refer to :func:`mindspore.ops.geqrf`.
@@ -1159,6 +1133,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(z.is_contiguous())
             True
         """
+        if not self._need_contiguous():
+            return self
         return tensor_operator_registry.get('contiguous')(self)
 
     def is_contiguous(self):
@@ -1220,26 +1196,33 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return Tensor_.storage_offset(self)
 
-    def register_hook(self, hook_fn):
+    def register_hook(self, hook):
         """
         Registers a backward hook for tensor.
 
         Note:
-            - The `register_backward_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
-            - The 'hook_fn' must be defined as the following code. `grad` is the gradient passed to the tensor,
+            - The `hook` must be defined as the following code. `grad` is the gradient passed to the tensor,
               which may be modified by returning a new output gradient.
-            - The 'hook_fn' should have the following signature:
-              hook_fn(grad) -> New output gradient, but can not return None or not set return value.
+            - The `hook` should have the following signature:
+              hook(grad) -> New output gradient, but can not return None or not set return value.
+            - The following constraints must be met under graph mode:
+
+              - The `hook` must satisfy the syntax constraints of the graph mode.
+              - Registering `hook` for `Parameter` is not supported in the graph (i.e., function `Cell.construct` or
+                function decorated by `@jit`).
+              - It is not supported to delete `hook` inside graph.
+
+              - Register `hook` in the graph will return then `Tensor` it self.
 
         Args:
-            hook_fn (function): Python function. Tensor backward hook function.
+            hook (function): Python function. Tensor backward hook function.
 
         Returns:
-            A handle corresponding to the `hook_fn` . The handle can be used to remove the added `hook_fn` by calling
+            A handle corresponding to the `hook` . The handle can be used to remove the added `hook` by calling
             `handle.remove()` .
 
         Raises:
-            TypeError: If the `hook_fn` is not a function of python.
+            TypeError: If the `hook` is not a function of python.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
@@ -1262,11 +1245,14 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output)
             (Tensor(shape=[], dtype=Float32, value=8), Tensor(shape=[], dtype=Float32, value=6))
         """
-        if not check_hook_fn("register_hook", hook_fn):
-            return _TensorHookHandle()
-        handle = _TensorHookHandle()
-        handle.id = Tensor_.register_hook(self, hook_fn)
+        if not check_hook_fn("register_hook", hook):
+            return _TensorHookHandle(self)
+        handle = _TensorHookHandle(self)
+        handle.id = Tensor_.register_hook(self, hook)
         return handle
+
+    def _remove_hook(self):
+        pass
 
     def flush_from_cache(self):
         """
@@ -1294,66 +1280,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('addcmul')(self, tensor1, tensor2, value)
 
-    def add_(self, other, *, alpha=1):
-        """
-        inplace update self by following compute:
-            self = self + other * alpha.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-            The `other` tensor must be broadcastable with the `self` tensor. It may be of a different data type.
-
-        Args:
-            other (Tensor): the source tensor Add to self Tensor.
-            alpha (Number): no effect currently.
-
-        Returns:
-            Return self Tensor.
-
-        Supported Platforms:
-            ``Ascend``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> a = Tensor(np.ones((2,3)).astype("float32"))
-            >>> b = Tensor(np.ones((2,3)).astype("float32"))
-            >>> a.add_(b)
-            >>> print(a)
-            [[2. 2. 2.]
-            [2. 2. 2.]]
-        """
-        if isinstance(other, (int, float)):
-            ret = tensor_operator_registry.get("adds_")(self, other, alpha)
-        else:
-            ret = tensor_operator_registry.get("add_")(self, other, alpha)
-        return ret
-
-    def subtract(self, other, *, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.subtract`.
-        """
-        return tensor_operator_registry.get('sub')(self, alpha * other)
-
-    def true_divide(self, value):
-        r"""
-        Alias for Tensor.div() with :math:`rounding\_mode=None`.
-        For details, please refer to :func:`mindspore.ops.div`.
-        """
-        return tensor_operator_registry.get('div')(self, value, rounding_mode=None)
-
-    def addbmm(self, batch1, batch2, *, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addbmm`.
-        """
-        return tensor_operator_registry.get('addbmm')(self, batch1, batch2, beta=beta, alpha=alpha)
-
-    def addmm(self, mat1, mat2, *, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addmm`.
-        """
-        return tensor_operator_registry.get('addmm')(self, mat1, mat2, beta=beta, alpha=alpha)
-
     def addmm_(self, mat1, mat2, *, beta=1, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.addmm`.
@@ -1379,13 +1305,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('adjoint')(self)
 
-
     def angle(self):
         r"""
         For details, please refer to :func:`mindspore.ops.angle`.
         """
         return tensor_operator_registry.get('angle')(self)
-
 
     def baddbmm(self, batch1, batch2, beta=1, alpha=1):
         r"""
@@ -1422,41 +1346,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             shape = shape[0]
         return tensor_operator_registry.get('reshape')(self, shape)
 
-    def view_as(self, other):
-        r"""
-        View self Tensor as the same shape as `other` .
-
-        Args:
-            other(Tensor): The returned Tensor has the same shape as `other`.
-
-        Returns:
-            Tensor, has the same shape as `other`.
-
-        Raises:
-            TypeError: If `other` is not a Tensor.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> from mindspore import Tensor
-            >>> from mindspore import dtype as mstype
-            >>> a = Tensor([[1, 2, 3], [2, 3, 4]], mstype.float32)
-            >>> b = Tensor([1, 1, 1, 1, 1, 1], mstype.float32)
-            >>> output = a.view_as(b)
-            >>> print(output)
-            [1. 2. 3. 2. 3. 4.]
-        """
-        if not isinstance(other, (Tensor, Tensor_)):
-            raise TypeError(f"For view_as, the input other must be a Tensor, but got {type(other)}")
-        return self.view(other.shape)
-
-    def t(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.t`.
-        """
-        return tensor_operator_registry.get("t")(self)
-
     def bitwise_and(self, other):
         """
         For details, please refer to :func:`mindspore.ops.bitwise_and`.
@@ -1489,12 +1378,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         other = _cast(other, self.dtype)
         return tensor_operator_registry.get('bitwise_right_shift')(self, other)
 
-    def scatter(self, axis, index, src):
-        """
-        For details, please refer to :func:`mindspore.ops.scatter`.
-        """
-        return tensor_operator_registry.get('scatter')(self, axis, index, src)
-
     def scatter_mul(self, indices, updates):
         """
         For details, please refer to :func:`mindspore.ops.scatter_mul`.
@@ -1525,77 +1408,55 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('broadcast_to')(self, shape)
 
-    def expand_as(self, x):
-        """
-        Expand the dimension of target tensor to the dimension of input tensor.
-
-        Args:
-            x (Tensor): The input tensor. The shape of the input tensor must obey
-                the broadcasting rule.
-
-        Returns:
-            Tensor, has the same dimension as input tensor.
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> from mindspore import dtype as mstype
-            >>> x = Tensor([1, 2, 3], dtype=mstype.float32)
-            >>> y = Tensor(np.ones((2, 3)), dtype=mstype.float32)
-            >>> output = x.expand_as(y)
-            >>> print(output)
-            [[1. 2. 3.]
-            [1. 2. 3.]]
-        """
-        return tensor_operator_registry.get('broadcast_to')(self, x.shape)
-
     def real(self):
         r"""
         For details, please refer to :func:`mindspore.ops.real`.
         """
         return tensor_operator_registry.get('real')(self)
 
-    def tan(self):
-        """
-        For details, please refer to :func:`mindspore.ops.tan`.
-        """
-        return tensor_operator_registry.get('tan')(self)
-
-    def cosh(self):
+    def tanh_(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.cosh`.
-        """
-        return tensor_operator_registry.get('cosh')(self)
+        Computes hyperbolic tangent of self inplace element-wise. The Tanh function is defined as:
 
-    def acos(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.acos`.
-        """
-        return tensor_operator_registry.get('acos')(self)
+        .. math::
 
-    def arccos(self):
-        r"""
-        Alias for :func:`mindspore.Tensor.acos`.
+            tanh(x_i) = \frac{\exp(x_i) - \exp(-x_i)}{\exp(x_i) + \exp(-x_i)} = \frac{\exp(2x_i) - 1}{\exp(2x_i) + 1},
+
+        where :math:`x_i` is an element of the input Tensor.
+
+        Tanh Activation Function Graph:
+
+        .. image:: ../../images/Tanh.png
+            :align: center
+
+        .. warning::
+            - This is an experimental API that is subject ot change or deletion.
+
+        Returns:
+            Tensor, with the same type and shape as the `self`.
+
+        Raises:
+            TypeError: If `self` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([1, 2, 3, 4, 5]), mindspore.float32)
+            >>> output = x.tanh_()
+            >>> print(output)
+            [0.7615941 0.9640276 0.9950547 0.9993293 0.9999092]
         """
-        return self.acos()
+        return tensor_operator_registry.get('tanh_')(self)
 
     def cov(self, *, correction=1, fweights=None, aweights=None):
         r"""
         For details, please refer to :func:`mindspore.ops.cov`.
         """
         return tensor_operator_registry.get('cov')(self, correction=correction, fweights=fweights, aweights=aweights)
-
-    def acosh(self):
-        """
-        For details, please refer to :func:`mindspore.ops.acosh`.
-        """
-        return tensor_operator_registry.get('acosh')(self)
-
-    def asin(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.asin`.
-        """
-        return tensor_operator_registry.get('asin')(self)
 
     def floor_(self):
         r"""
@@ -1634,12 +1495,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('floor_divide')(self, other)
 
-    def lerp(self, end, weight):
-        """
-        For details, please refer to :func:`mindspore.ops.lerp`.
-        """
-        return tensor_operator_registry.get('lerp')(self, end, weight)
-
     # pylint: disable=redefined-builtin
     def norm(self, ord=None, dim=None, keepdim=False, *, dtype=None):
         """
@@ -1665,12 +1520,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         return tensor_operator_registry.get('__lt__')(tensor_operator_registry.get('abs')(
             tensor_operator_registry.get('__sub__')(input_x, input_y)
         ), tolerance)
-
-    def log1p(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.log1p`.
-        """
-        return tensor_operator_registry.get('log1p')(self)
 
     def logit(self, eps=None):
         r"""
@@ -1716,16 +1565,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def i0(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.i0`.
+        For details, please refer to :func:`mindspore.ops.bessel_i0`.
         """
         return tensor_operator_registry.get('i0')(self)
-
-    def isclose(self, x2, rtol=1e-05, atol=1e-08, equal_nan=False):
-        """
-        For details, please refer to :func:`mindspore.ops.isclose`.
-        """
-        return tensor_operator_registry.get('isclose')(self, x2, rtol, atol, equal_nan)
-
 
     def isposinf(self):
         r"""
@@ -1751,29 +1593,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('inv')(self)
 
-    def inverse(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.inverse`.
-        """
-        return tensor_operator_registry.get('inverse')(self)
-
     def invert(self):
         r"""
         For details, please refer to :func:`mindspore.ops.invert`.
         """
         return tensor_operator_registry.get('invert')(self)
-
-    def log10(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.log10`.
-        """
-        return tensor_operator_registry.get('log10')(self)
-
-    def log2(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.log2`.
-        """
-        return tensor_operator_registry.get('log2')(self)
 
     def amin(self, axis=None, keepdims=False, *, initial=None, where=None):
         """
@@ -1808,13 +1632,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.reverse_sequence`.
         """
         return tensor_operator_registry.get("reverse_sequence")(self, seq_lengths, seq_dim, batch_dim)
-
-    def transpose(self, *axes):
-        r"""
-        For details, please refer to :func:`mindspore.ops.transpose`.
-        """
-        perm = validator.check_transpose_axis(axes, self.ndim)
-        return tensor_operator_registry.get('transpose')(self, perm)
 
     def col2im(self, output_size, kernel_size, dilation, padding_value, stride):
         """
@@ -1892,18 +1709,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('deg2rad')(self)
 
-    def dot(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.dot`.
-        """
-        return tensor_operator_registry.get('dot')(self, other)
-
-    def outer(self, vec2):
-        r"""
-        For details, please refer to :func:`mindspore.ops.outer`.
-        """
-        return tensor_operator_registry.get('outer')(self, vec2)
-
     def rad2deg(self):
         r"""
         For details, please refer to :func:`mindspore.ops.rad2deg`.
@@ -1920,13 +1725,27 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         Alias for :func:`mindspore.Tensor.numel`.
         """
-        return tensor_operator_registry.get('nelement')(self)
+        return self.size
 
     def numel(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.numel`.
+        Returns a Scalar of type int that represents the total number of elements in the Tensor.
+
+        Returns:
+            int. A scalar representing the total of elements in the Tensor.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
+            >>> print(input_x.numel())
+            4
         """
-        return tensor_operator_registry.get('numel')(self)
+        return self.size
 
     def permute(self, *axis):
         """
@@ -1940,7 +1759,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.positive`.
         """
         return tensor_operator_registry.get("positive")(self)
-
 
     def float_power(self, other):
         r"""
@@ -1959,18 +1777,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.fmin`.
         """
         return tensor_operator_registry.get('fmin')(self, other)
-
-    def fmod(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.fmod`.
-        """
-        return tensor_operator_registry.get('fmod')(self, other)
-
-    def narrow(self, axis, start, length):
-        """
-        For details, please refer to :func:`mindspore.ops.narrow`.
-        """
-        return tensor_operator_registry.get('narrow')(self, axis, start, length)
 
     def swapaxes(self, axis0, axis1):
         """
@@ -1995,14 +1801,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.slogdet`.
         """
         return tensor_operator_registry.get('slogdet')(self)
-
-    def unsqueeze(self, dim):
-        """
-        For details, please refer to :func:`mindspore.ops.unsqueeze`.
-        """
-        validator.check_is_int(dim, 'dim')
-        validator.check_int_range(dim, -self.ndim - 1, self.ndim + 1, validator.INC_LEFT, 'dim')
-        return tensor_operator_registry.get('unsqueeze')(self, dim)
 
     def expand_dims(self, axis):
         """
@@ -2043,7 +1841,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         dtype = _check_astype_and_convert(dtype)
         if not copy and dtype == self.dtype:
             return self
-        return tensor_operator_registry.get('cast')(self, dtype)
+        return self.to(dtype)
 
     def argmax_with_value(self, axis=0, keep_dims=False):
         """
@@ -2232,11 +2030,75 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("copy_")(self, src)
 
-    def scatter_add(self, indices, updates):
+    def scatter_add_(self, dim, index, src):
         """
-        For details, please refer to :func:`mindspore.ops.scatter_add`.
+        Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`.
+
+        For a 3-D tensor, the operation updates `self` as follows:
+
+        .. code-block::
+
+            self[index[i][j][k]][j][k] += src[i][j][k]  # if dim == 0
+
+            self[i][index[i][j][k]][k] += src[i][j][k]  # if dim == 1
+
+            self[i][j][index[i][j][k]] += src[i][j][k]  # if dim == 2
+
+        Args:
+            dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`self`).
+            index (Tensor): The index of `self` to do scatter operation whose data type must
+                be int32 or int64. Same rank as `self`. Except for the dimension
+                specified by `dim`, size of each dimension of `index` must be less than or equal to the size of
+                the corresponding dimension of `self`.
+            src (Tensor): The tensor doing the scatter operation with `self`, has the same type as `self` and
+                the size of each dimension must be greater than or equal to that of `index`.
+
+        Returns:
+            Tensor, has the same shape and type as `self`.
+
+        Raises:
+            TypeError: If `index` is neither int32 nor int64.
+            ValueError: If anyone of the rank among `self`, `index` and `src` is less than 1.
+            ValueError: If the ranks of `self`, `index` and `src` are not the same.
+            ValueError: The size of any dimension of `index` except the dimension specified by `dim` is
+                greater than the size of the corresponding dimension of `self`.
+            ValueError: If the size of any dimension of `src` is less than that of `index`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor
+            >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
+            >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
+            >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
+            >>> out = input.scatter_add_(1, index, src)
+            >>> print(out)
+            [[1. 2. 11. 4. 13.]]
+            >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+            >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+            >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
+            >>> out = input.scatter_add_(0, index, src)
+            >>> print(out)
+            [[1. 2. 3. 0. 0.]
+            [0. 0. 0. 0. 0.]
+            [4. 5. 6. 0. 0.]
+            [0. 0. 0. 0. 0.]
+            [7. 8. 9. 0. 0.]]
+            >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+            >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+            >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
+            >>> out = input.scatter_add_(1, index, src)
+            >>> print(out)
+            [[1. 0. 2. 0. 3.]
+            [4. 0. 5. 0. 6.]
+            [7. 0. 8. 0. 9.]
+            [0. 0. 0. 0. 0.]
+            [0. 0. 0. 0. 0.]]
         """
-        return tensor_operator_registry.get("tensor_scatter_add")(self, indices, updates)
+        return tensor_operator_registry.get("inplace_scatter_add")(self, dim, index, src)
 
     def scatter_sub(self, indices, updates):
         """
@@ -2634,12 +2496,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('diff')(self, n, axis, prepend, append)
 
-    def frac(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.frac`.
-        """
-        return tensor_operator_registry.get('frac')(self)
-
     def argwhere(self):
         r"""
         For details, please refer to :func:`mindspore.ops.argwhere`.
@@ -2950,75 +2806,50 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('uniform')(self, from_, to, generator)
 
-    def var(self, axis=None, ddof=0, keepdims=False):
-        """
-        Compute the variance along the specified axis.
+    def uniform_(self, from_=0, to=1, *, generator=None):
+        r"""
+        Update the `self` tensor in place by generating random numbers sampled from uniform distribution in the
+        half-open interval :math:`[from\_, to)`.
 
-        The variance is the average of the squared deviations from the mean, i.e.,
-        :math:`var = mean(abs(x - x.mean())**2)`.
+        .. math::
+            P(x)= \frac{1}{to - from\_}
 
-        Return the variance, which is computed for the flattened array by default,
-        otherwise over the specified axis.
-
-        Note:
-            Numpy arguments `dtype`, `out` and `where` are not supported.
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
 
         Args:
-            axis (Union[None, int, tuple(int)]): Axis or axes along which the variance is computed.
-                The default is to compute the variance of the flattened array. Default: ``None`` .
-            ddof (int): Means Delta Degrees of Freedom. Default: ``0`` .
-                The divisor used in calculations is :math:`N - ddof`, where :math:`N` represents the number of elements.
-            keepdims (bool): Default: ``False`` .
+            from\_ (Union[number.Number, Tensor], optional): The lower bound of the uniform distribution, it can be a
+                scalar value or a tensor of any dimension with a single element. Default: ``0``.
+            to (Union[number.Number, Tensor], optional): The upper bound of the uniform distribution, it can be a
+                scalar value or a tensor of any dimension with a single element. Default: ``1``.
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None``, uses the default pseudorandom number generator.
 
         Returns:
-            Variance tensor.
+            Return `self` Tensor.
 
-        See also:
-            - :func:`mindspore.Tensor.mean`: Reduce a dimension of a tensor by averaging all elements in the dimension.
-            - :func:`mindspore.Tensor.std`: Compute the standard deviation along the specified axis.
+        Raises:
+            TypeError: If `from_` or `to` is neither a number nor a Tensor.
+            TypeError: If dtype of `from` or `to` is not one of: bool, int8, int16, int32, int64, uint8, float32,
+                float64.
+            ValueError: If `from_` or `to` is Tensor but contains multiple elements.
+            RuntimeError: If `from_` is larger than `to`.
 
         Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
+            ``Ascend``
 
         Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input_x = Tensor(np.array([1., 2., 3., 4.], np.float32))
-            >>> output = input_x.var()
-            >>> print(output)
-            1.25
+            >>> import mindspore
+            >>> x = mindspore.ops.ones((4, 2))
+            >>> generator = mindspore.Generator()
+            >>> generator.manual_seed(100)
+            >>> output = x.uniform_(1., 2., generator)
+            >>> print(output.shape)
+            (4, 2)
         """
-        if 0 in self.shape:
-            return Tensor(float('nan'), self.dtype)
-        if not isinstance(ddof, int):
-            raise TypeError("For 'Tensor.var', the type of the argument 'ddof' must be int, but got "
-                            "{}.".format(type(ddof)))
-        if not isinstance(keepdims, bool):
-            raise TypeError("For 'Tensor.var', the type of the argument 'keepdims' must be bool, but "
-                            "got {}.".format(type(keepdims)))
-
-        if axis is None:
-            axis = ()
-        else:
-            axis = validator.check_and_canonicalize_axes(axis, self.ndim)
-        x_mean = tensor_operator_registry.get('mean')(self, axis, True)
-        x_sub = tensor_operator_registry.get('__sub__')(self, x_mean)
-        x_pow = tensor_operator_registry.get('__pow__')(x_sub, 2)
-        x_sum = tensor_operator_registry.get('reducesum')(bool(keepdims))(x_pow, axis)
-        nums = 1
-        if axis == ():
-            nums = self.size
-        else:
-            for ax in axis:
-                nums *= self.shape[ax]
-        return tensor_operator_registry.get('__truediv__')(x_sum, nums - ddof)
-
-    def std(self, axis=None, ddof=0, keepdims=False):
-        """
-        For details, please refer to :func:`mindspore.ops.std`.
-        """
-        x_var = self.var(axis, ddof, keepdims)
-        return tensor_operator_registry.get('__pow__')(x_var, 0.5)
+        return tensor_operator_registry.get('uniform_')(self, from_=from_, to=to, generator=generator)
 
     def sum_to_size(self, *size):
         r"""
@@ -3063,12 +2894,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         if axes:
             return x.sum(tuple(axes), keepdims=True)
         return x
-
-    def nansum(self, axis=None, keepdims=False, dtype=None):
-        """
-        For details, please refer to :func:`mindspore.ops.nansum`.
-        """
-        return tensor_operator_registry.get('nansum')(self, axis=axis, keepdims=keepdims, dtype=dtype)
 
     def nanmean(self, axis=None, keepdims=False, *, dtype=None):
         r"""
@@ -3161,6 +2986,46 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bernoulli')(self, p, seed)
 
+    def random_(self, from_=0, to=None, *, generator=None):
+        r"""
+        Fill the tensor with numbers sampled from a discrete uniform distribution over an
+        interval :math:`[from\_, to-1]`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            from\_ (Union[number.Number, Tensor], optional): the lower bound of the generated random number.
+                It can be a scalar value or a tensor of any dimension with only a single element. Default: 0.
+            to (Union[number.Number, Tensor], optional): the upper bound of the generated random number.
+                By default it's the upper limit of the input data type.
+                It can be a scalar value or a tensor of any dimension with only a single element.
+                Default: ``None``.
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None``, uses the default pseudorandom number generator.
+
+        Returns:
+            The input tensor.
+
+        Raises:
+            TypeError: If `from_` or `to` is not integer.
+            RuntimeError: If `from_` >= `to`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
+            >>> from_ = 0
+            >>> to = 5
+            >>> print(a.random_(low, high).shape)
+            (2, 3)
+        """
+        return tensor_operator_registry.get('random_')(self, from_=from_, to=to, generator=generator)
+
     def random_categorical(self, num_sample, seed=0, dtype=mstype.int64):
         r"""
         For details, please refer to :func:`mindspore.ops.random_categorical`.
@@ -3176,11 +3041,61 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_value_type('index', index, (Tensor, Tensor_,), 'Tensor.gather_elements')
         return tensor_operator_registry.get('gather_elements')(self, dim, index)
 
-    def nonzero(self, as_tuple=False):
+    def nonzero(self, *, as_tuple=False):
+        r"""
+        Return the positions of all non-zero values.
+
+        Note:
+           The rank of `self` should be greater than or equal to 1.
+
+        Keyword Args:
+            as_tuple (bool, optional): Whether the output is tuple.
+                If ``False`` , return Tensor. Default: ``False`` .
+                If ``True`` , return Tuple of Tensor, only support ``Ascend`` .
+
+        Returns:
+            - If `as_tuple` is ``False``, return the Tensor, a 2-D Tensor whose data type is int64,
+              containing the positions of all non-zero values of the `self` .
+            - If `as_tuple` is ``True``, return the Tuple of Tensor and data type is int64.
+              The Tuple length is the dimension of the `self` tensor,
+              and each element is the 1D tensor of the subscript of all non-zero elements of
+              the `self` tensor in that dimension.
+
+        Raises:
+            TypeError: If `self` is not Tensor.
+            TypeError: If `as_tuple` is not bool.
+            ValueError: If dim of `self` equals to 0.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
+            >>> output = x.nonzero()
+            >>> print(output)
+            [[0 0 0]
+            [0 1 0]]
+            >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
+            >>> output = x.nonzero(as_tuple=False)
+            >>> print(output)
+            [[0]
+            [2]
+            [4]]
+            >>> x = Tensor(np.array([[[1,  0], [-5, 0]]]), mindspore.int32)
+            >>> output = x.nonzero(as_tuple=True)
+            >>> print(output)
+            (Tensor(shape=[2], dtype=Int64, value=[0, 0]),
+            Tensor(shape=[2], dtype=Int64, value=[0, 1]),
+            Tensor(shape=[2], dtype=Int64, value=[0, 0]))
+            >>> x = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
+            >>> output = x.nonzero(as_tuple=True)
+            >>> print(output)
+            (Tensor(shape=[3], dtype=Int64, value=[0, 2, 4]), )
         """
-        For details, please refer to :func:`mindspore.ops.nonzero`.
-        """
-        return tensor_operator_registry.get('nonzero')(self, as_tuple)
+        return tensor_operator_registry.get('nonzero')(self, as_tuple=as_tuple)
 
     def svd(self, full_matrices=False, compute_uv=True):
         """
@@ -3192,12 +3107,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         s, _, _ = svd_op(full_matrices, compute_uv)(self)
         return s
-
-    def hardshrink(self, lambd=0.5):
-        r"""
-        For details, please refer to :func:`mindspore.ops.hardshrink`.
-        """
-        return tensor_operator_registry.get('hardshrink')(self, lambd)
 
     def heaviside(self, values):
         r"""
@@ -3316,12 +3225,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.asnumpy().tolist()
 
-    def unbind(self, dim=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.unbind`.
-        """
-        return tensor_operator_registry.get('unbind')(self, dim)
-
     def unsorted_segment_min(self, segment_ids, num_segments):
         r"""
         For details, please refer to :func:`mindspore.ops.unsorted_segment_min`.
@@ -3417,12 +3320,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("eigvals")()(self)
 
-    def erfc(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.erfc`.
-        """
-        return tensor_operator_registry.get("erfc")(self)
-
     def top_k(self, k, sorted=True):
         r"""
         `Tensor.top_k` is deprecated, please use `Tensor.topk` instead.
@@ -3431,54 +3328,46 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_bool(sorted, 'sorted')
         return tensor_operator_registry.get("top_k")(self, k, sorted)
 
-    def median(self, axis=-1, keepdims=False):
-        r"""
-        For details, please refer to :func:`mindspore.ops.median`.
-        """
-        validator.check_axis_in_range(axis, self.ndim)
-        return tensor_operator_registry.get('median')(False, axis, keepdims)(self)
-
-    def addmv(self, mat, vec, beta=1, alpha=1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.addmv`.
-        """
-        return tensor_operator_registry.get('addmv')(self, mat, vec, beta=beta, alpha=alpha)
-
-    def asinh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.asinh`.
-        """
-        return tensor_operator_registry.get('asinh')(self)
-
-    def arcsinh(self):
-        r"""
-        Alias for :func:`mindspore.Tensor.asinh`.
-        """
-        return tensor_operator_registry.get('arcsinh')(self)
-
-    def atan(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.atan`.
-        """
-        return tensor_operator_registry.get('atan')(self)
-
-    def atanh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.atanh`.
-        """
-        return tensor_operator_registry.get('atanh')(self)
-
-    def arctanh(self):
-        r"""
-        Alias for :func:`mindspore.Tensor.atanh`.
-        """
-        return tensor_operator_registry.get('arctanh')(self)
-
     def bmm(self, mat2):
         r"""
         For details, please refer to :func:`mindspore.ops.bmm`.
         """
         return tensor_operator_registry.get('bmm')(self, mat2)
+
+    def to(self, dtype):
+        r"""
+        Performs tensor dtype conversion.
+
+        Note:
+            - If the `self` Tensor already has the correct `mindspore.dtype`, then self is returned.
+              Otherwise, the returned tensor is a copy of `self` with the desired mindspore.dtype.
+            - When converting complex numbers to boolean type, the imaginary part of the complex number is not
+              taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+
+        Args:
+            dtype (dtype.Number): The valid data type of the output tensor. Only constant value is allowed.
+
+        Returns:
+            Tensor, converted to the specified `dtype`.
+
+        Raises:
+            TypeError: If `dtype` is not a Number.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+            >>> input_x = Tensor(input_np)
+            >>> dtype = mindspore.int32
+            >>> output = input_x.to(dtype)
+            >>> print(output.dtype)
+            Int32
+        """
+        return self if self.dtype == dtype else self._to(dtype)
 
     def type(self, dtype=None):
         r"""
@@ -3508,29 +3397,49 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return str(self.dtype)
         return self.astype(dtype)
 
+
     def type_as(self, other):
         r"""
-        Change the dtype of the Tensor to the dtype of `other`.
+        Returns self tensor cast to the type of the with the input other tensor.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Note:
+            When converting complex numbers to boolean type, the imaginary part of the complex number is not
+            taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
 
         Args:
-            other (Tensor): The return tensor has the same dtype as `other`.
+            other (Tensor): The tensor whose data type is specified.
+                The shape of tensor is :math:`(x_0, x_1, ..., x_R)`.
 
         Returns:
-            Tensor, has the same dtype as `other`.
+            Tensor, the shape of tensor is the same as `self`, :math:`(x_0, x_1, ..., x_R)`.
+
+        Raises:
+            TypeError: If `other` is not a Tensor.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore
+            >>> import numpy as np
             >>> from mindspore import Tensor
-            >>> x = Tensor([[1, 2], [3, 4]], dtype=mindspore.float32)
-            >>> y = Tensor([[1, 2], [3, 4]], dtype=mindspore.int32)
-            >>> x = x.type_as(y)
-            >>> print(x.dtype)
+            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+            >>> self = Tensor(input_np)
+            >>> other_np = np.random.randn(2, 3, 4).astype(np.int32)
+            >>> other = Tensor(other_np)
+            >>> output = self.type_as(other)
+            >>> print(output.dtype)
             Int32
+            >>> print(output.shape)
+            (2, 3, 4, 5)
         """
-        return self.astype(other.dtype)
+        if self.dtype == other.dtype:
+            return self
+        return Tensor_.type_as(self, other)
+
 
     def bool(self):
         r"""
@@ -3574,6 +3483,48 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             Float32
         """
         return self.to(mstype.float32)
+
+    def bfloat16(self):
+        r"""
+        Converts input tensor dtype to `bfloat16`.
+
+        Returns:
+            Tensor, converted to the `bfloat16` dtype.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> input_x = Tensor(np.ones([2,2]), mindspore.int32)
+            >>> output = input_x.bfloat16()
+            >>> print(output.dtype)
+            BFloat16
+        """
+        return self.to(mstype.bfloat16)
+
+    def double(self):
+        r"""
+        Converts input tensor dtype to `float64`.
+
+        Returns:
+            Tensor, converted to the `float64` dtype.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> input_x = Tensor(np.ones([2,2]), mindspore.int32)
+            >>> output = input_x.double()
+            >>> print(output.dtype)
+            Float64
+        """
+        return self.to(mstype.float64)
 
     def half(self):
         r"""
@@ -3634,7 +3585,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> input_x = Tensor(np.ones([2,2]), mindspore.float32)
             >>> output = input_x.byte()
             >>> print(output.dtype)
-            uint8
+            UInt8
         """
         return self.to(mstype.uint8)
 
@@ -3726,6 +3677,15 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('erfinv')(self)
 
+    def erfinv_(self):
+        r"""
+        In-place version of erfinv(), for details, please refer to :func:`mindspore.ops.erfinv`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+        """
+        return tensor_operator_registry.get('erfinv_')(self)
+
     def lcm(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.lcm`.
@@ -3780,12 +3740,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('equal')(self, other)
 
-    def expm1(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.expm1`.
-        """
-        return tensor_operator_registry.get('expm1')(self)
-
     def index_add(self, dim, index, source, *, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.index_add`.
@@ -3794,11 +3748,69 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         source = tensor_operator_registry.get('__mul__')(source, alpha)
         return tensor_operator_registry.get('index_add')(self, indices=index, y=source, axis=dim)
 
-    def greater_equal(self, other):
+    def index_add_(self, dim, index, source, *, alpha=1):
         r"""
-        For details, please refer to :func:`mindspore.ops.greater_equal`.
+        Accumulate the elements of `alpha` times `source` into the `self` by adding to the index
+        in the order given in `index`. For example, if `dim == 0`, `index[i] == j`, and `alpha = -1`,
+        then the `i` th row of `source` is subtracted from the `j` th row of `self` .
+        The `dim` th dimension of `source` must have the same size as the length of `index` ,
+        and all other dimensions must match `self`, or an error will be raised.
+        For a 3-D tensor the output is defined as follows:
+
+        .. math::
+            \begin{array}{ll}
+            self[index[i],\ :,\ :]\ +=\ alpha * src[i,\ :,\ :]  \qquad \#if\ dim == 0 \\
+            self[:,\ \ index[i],\ :]\ +=\ alpha * src[:,\ \ i,\ :]  \qquad \#if\ dim == 1 \\
+            self[:,\ :,\ \ index[i]]\ +=\ alpha * src[:,\ :,\ \ i]  \qquad\#if\ dim == 2 \\
+            \end{array}
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            dim (int): The dimension along which to index.
+            index (Tensor): Add the value of `self` and `source` along the dimension of the `dim` according to
+                the specified index value, with data type int32. The `index` must be 1D with the same size as
+                the size of `source` in the `dim` dimension. The values of `index` should be in [0, b),
+                where the b is the size of `self` in the `dim` dimension.
+            source (Tensor): The input tensor with the value to add. Must have same data type as `self`.
+                The shape must be the same as `self` except the `dim` th dimension.
+
+        Keyword Args:
+            alpha (number, optional): The scalar multiplier for source. Default: ``1``.
+
+        Returns:
+            Tensor, has the same shape and dtype as `self`.
+
+        Raises:
+            TypeError: If neither `index` nor `source` is a Tensor.
+            ValueError: If dim is out of `self` rank's range.
+            ValueError: If `self` rank is not the same as `source` rank.
+            ValueError: If shape of `index` is not 1D or size of `index` is not equal to dimension
+                of `source[dim]`.
+            ValueError: If `source`'s shape is not the same as `self` except the `dim` th dimension.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
+            >>> index = Tensor(np.array([0, 2]), mindspore.int32)
+            >>> y = Tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
+            >>> output = x.index_add_(1, index, y, 1)
+            >>> print(output)
+            [[ 1.5  2.   4. ]
+             [ 5.   5.   7.5]
+             [ 9.   8.  11.5]]
+            >>> print(x)
+            [[ 1.5  2.   4. ]
+             [ 5.   5.   7.5]
+             [ 9.   8.  11.5]]
         """
-        return tensor_operator_registry.get('greater_equal')(self, other)
+        return tensor_operator_registry.get('index_add_')(self, dim, index, source, alpha)
 
     def igamma(self, other):
         r"""
@@ -3811,12 +3823,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.igammac`.
         """
         return tensor_operator_registry.get('igammac')(self, other)
-
-    def isinf(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.isinf`.
-        """
-        return tensor_operator_registry.get('isinf')(self)
 
     def isnan(self):
         r"""
@@ -3888,6 +3894,15 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         Accessing this property is equivalent to Calling self.adjoint().
         For details, please refer to :func:`mindspore.ops.adjoint`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[0. + 0.j, 1. + 1.j], [2. + 2.j, 3. + 3.j]]))
+            >>> output = x.mH
+            >>> print(output)
+            [[0.-0.j 2.-2.j]
+             [1.-1.j 3.-3.j]]
         """
         return self.adjoint()
 
@@ -3897,6 +3912,14 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Returns the Tensor that exchanges the last two dimensions.
         Accessing the attribute, x.mT, is equal to calling the method, x.swapaxes(-2, -1).
         For details, please refer to :func:`mindspore.Tensor.swapaxes`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.ones((2, 3, 4)))
+            >>> output = x.mT
+            >>> print(output.shape)
+            (2, 4, 3)
         """
         return self.swapaxes(-2, -1)
 
@@ -3905,7 +3928,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.mvlgamma`.
         """
         return tensor_operator_registry.get('mvlgamma')(self, p)
-
 
     def inner(self, other):
         r"""
@@ -3928,12 +3950,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         """
         return tensor_operator_registry.get('matrix_power')(self, n)
-
-    def mm(self, mat2):
-        r"""
-        For details, please refer to :func:`mindspore.ops.mm`.
-        """
-        return tensor_operator_registry.get('mm')(self, mat2)
 
     def msort(self):
         r"""
@@ -3966,6 +3982,49 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('zero_')(self)
 
+    def new_empty(self, size, *, dtype=None, device=None):
+        r"""
+        Returns an uninitialized Tensor of `size`. Its dtype is specified by `dtype` and its
+        device is specified by `device`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            size (Union[tuple[int], list[int], int]): The specified shape of output tensor. Only positive integer or
+                tuple or list containing positive integers are allowed.
+
+        Keyword Args:
+            dtype (:class:`mindspore.dtype`, optional): The specified dtype of the output tensor. If `dtype = None`,
+                the tensor will have the same dtype as `self`. Default ``None``.
+            device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
+                `device = None`, the tensor will have the same device as `self` and if the device of `self` is not
+                defined, the value set by `mindspore.set_device` will be used. Default ``None``.
+
+        Returns:
+            Tensor, the shape, dtype and device is defined above but with uninitialized data (May be a random value).
+
+        Raises:
+            TypeError: If `size` is neither an int nor a tuple or list of int.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> x = Tensor([[1, 2, 3], [4, 5, 6]])
+            >>> output1 = x.new_empty((2, 3))
+            >>> print(output1)
+            [[0 0 0]
+             [0 0 0]]
+            >>> output2 = x.new_empty((2, 3), dtype=mindspore.float64)
+            >>> print(output2)
+            [[0. 0. 0.]
+             [0. 0. 0.]]
+        """
+        return tensor_operator_registry.get('new_empty')(self, size, dtype, device)
+
     def sign(self):
         r"""
         For details, please refer to :func:`mindspore.ops.sign`.
@@ -3983,24 +4042,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.sgn`.
         """
         return tensor_operator_registry.get('sgn')(self)
-
-    def sinc(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sinc`.
-        """
-        return tensor_operator_registry.get('sinc')(self)
-
-    def sinh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sinh`.
-        """
-        return tensor_operator_registry.get('sinh')(self)
-
-    def argsort(self, axis=-1, descending=False):
-        """
-        For details, please refer to :func:`mindspore.ops.argsort`.
-        """
-        return tensor_operator_registry.get('argsort')(self, axis, descending)
 
     def imag(self):
         r"""
@@ -4147,7 +4188,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         _index_put = tensor_operator_registry.get('index_put')(0 if accumulate is False else 1)
         return _index_put(self, values, indices)
 
-
     def index_put_(self, indices, values, accumulate=False):
         r"""
         Returns a Tensor. According to the index number of `indices` ,
@@ -4157,6 +4197,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             indices (tuple[Tensor], list[Tensor]): the indices of type is bool, uint8, int32 or int64,
                 used to index into the "self Tensor". The rank of tensors in indices should be 1-D,
                 size of indices should <=  the rank of "self Tensor" and the tensors in indices should be broadcastable.
+                When tensor type is bool and uint8, the shape will be the match as the input dimension in turn.
+                For example, the first tensor of `indices` is a bool, shape (1, 2),
+                `input` shape (1, 2, 3), and then (1, 2) matches the shape of `input` (1, 2) at index 0, 1.
             values (Tensor): 1-D Tensor of the same type as "self Tensor". If size == 1, it will be broadcastable.
             accumulate (bool, optional): If `accumulate` is True, the elements in values are added to "self Tensor",
                 else the elements in `values` replace the corresponding element in the "self Tensor".
@@ -4169,7 +4212,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             TypeError: If the dtype of the "self Tensor" is not equal to the dtype of `values`.
             TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
             TypeError: If the dtype of tensors in `indices` are not bool, uint8, int32 or int64.
-            TypeError: If the dtype of tensors in `indices` are inconsistent.
+            TypeError: If the dtypes of tensors in `indices` are inconsistent.
             TypeError: If the dtype of `accumulate` is not bool.
             ValueError: If rank(`values`) is not 1-D.
             ValueError: If size(`values`) is not 1 or max size of the tensors in `indices` when
@@ -4198,7 +4241,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         index_put_ = tensor_operator_registry.get('index_put_')
         return index_put_(self, indices, values, accumulate)
-
 
     def move_to(self, to, blocking=True):
         r"""
@@ -4249,6 +4291,62 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> x._offload()
         """
         return Tensor_._offload(self)
+
+    def _data_ptr(self):
+        r"""
+        Get the data ptr address of tensor, for CPU is host address, GPU/NPU is device address.
+        User should know how to use the data ptr address.
+        Note: this api is an experimental api, users need understatnd it before use.
+
+        Supported Platforms:
+            ``CPU/GPU/Ascend``
+
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor
+            >>> x = ms.Tensor([1, 2, 3], ms.int64)
+            >>> data_ptr = x._data_ptr()
+        """
+        return Tensor_._data_ptr(self)
+
+    def normal_(self, mean=0, std=1, *, generator=None):
+        r"""
+        Update the `self` tensor in place by generating random numbers sampled from the normal
+        distribution which constructed by the parameters `mean` and `std`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            mean (number, optional): the mean of normal distribution. With float data type.
+                Default: ``0``.
+            std (number, optional): the std of normal distribution. With float data type.
+                Default: ``1``.
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None``, uses the default pseudorandom number generator.
+
+        Returns:
+            A tensor that is filled with random numbers that follow a normal distribution and
+            that has the same type and shape as the `self` tensor.
+
+        Raises:
+            TypeError: If the dtype of `mean` or `std` is not one of: bool, int, float, complex.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> x = mindspore.Tensor(np.array([[1, 2], [3, 4]]), dtype=mindspore.float32)
+            >>> output = x.normal_()
+            >>> print(output)
+            [[0.2788825 1.3305743]
+             [1.244194 1.16303174]]
+        """
+        return tensor_operator_registry.get('normal_')(self, mean=mean, std=std, generator=generator)
 
 
 def _vm_compare(*args):

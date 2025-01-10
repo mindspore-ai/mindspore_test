@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <mutex>
 #include <set>
+#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
 #include "utils/ms_context.h"
 #include "transform/acl_ir/acl_convert.h"
 #include "transform/acl_ir/acl_allocator.h"
@@ -231,7 +232,21 @@ void AclAttrMaker::SetAttr(const string &attr_name, const std::vector<::ge::Data
   }
 }
 
-AclRunner::~AclRunner() { Reset(); }
+AclRunner::~AclRunner() {
+  (void)std::for_each(acl_param_.input_desc.begin(), acl_param_.input_desc.end(),
+                      [&](const aclTensorDesc *desc) { CALL_ASCEND_API(aclDestroyTensorDesc, desc); });
+  (void)std::for_each(acl_param_.input_buffer.begin(), acl_param_.input_buffer.end(),
+                      [&](const aclDataBuffer *dataBuffer) { CALL_ASCEND_API(aclDestroyDataBuffer, dataBuffer); });
+  (void)std::for_each(acl_param_.output_desc.begin(), acl_param_.output_desc.end(),
+                      [&](const aclTensorDesc *desc) { CALL_ASCEND_API(aclDestroyTensorDesc, desc); });
+  (void)std::for_each(acl_param_.output_buffer.begin(), acl_param_.output_buffer.end(),
+                      [&](const aclDataBuffer *dataBuffer) { CALL_ASCEND_API(aclDestroyDataBuffer, dataBuffer); });
+
+  acl_param_.input_desc.clear();
+  acl_param_.input_buffer.clear();
+  acl_param_.output_desc.clear();
+  acl_param_.output_buffer.clear();
+}
 
 void AclRunner::Reset() {
   (void)std::for_each(acl_param_.output_desc.begin(), acl_param_.output_desc.end(),
@@ -282,9 +297,9 @@ void AclRunner::SetPrecisionMode(const AclPrecisionMode mode) {
 
 void AclRunner::AoeDump() {
   // Dump acl graph for aoe.
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->EnableAoeOffline()) {
+  auto op_tuning_conf = device::ascend::OpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  if (op_tuning_conf->EnableAoeOffline()) {
     auto file_path = GetSaveGraphsPathName("acl_dump");
     auto real_path = FileUtils::CreateNotExistDirs(file_path, true);
     if (!real_path.has_value()) {

@@ -117,7 +117,7 @@ def sparse_to_dense_1D(i_type, v_type):
 indices_types = (np.int32, np.int64)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparse_to_dense_dyn():
     """

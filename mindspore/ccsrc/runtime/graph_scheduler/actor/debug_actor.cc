@@ -29,6 +29,7 @@
 #include "debug/debugger/debugger_utils.h"
 #endif
 #include "debug/data_dump/data_dumper.h"
+#include "debug/hooker/hook_debugger.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -250,6 +251,8 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
     if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1") {
       ACLDump(device_id, graphs, is_kbyk);
     }
+    auto &hookDebugger = hooker::HookDebugger::GetInstance();
+    hookDebugger.HookOnStepBegin(device_id, graphs, step_count_, is_kbyk);
   }
   if (DumpJsonParser::GetInstance().e2e_dump_enabled() && !graphs.empty()) {
     // First graph is the dataset graph when dataset_sink_mode = True
@@ -325,6 +328,9 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
     }
     dump_flag_ = false;
   }
+  auto &hookDebugger = hooker::HookDebugger::GetInstance();
+  hookDebugger.HookOnStepEnd();
+
   device_ctx_->device_res_manager_->SyncAllStreams();
   std::lock_guard<std::mutex> locker(debug_mutex_);
 

@@ -14,7 +14,7 @@ any:
               Suppose the rank of `self` is r, `axis` must be in the range [-r, r).
               Default: ``None`` , all dimensions are reduced.
           keep_dims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
-              If ``False`` , don't keep these dimensions. Default : ``False`` .
+              If ``False`` , don't keep these dimensions. Default: ``False`` .
   
       Returns:
           Tensor, the dtype is bool.
@@ -37,7 +37,7 @@ any:
   
       Examples:
           >>> import numpy as np
-          >>> from mindspore import Tensor, ops
+          >>> from mindspore import Tensor
           >>> x = Tensor(np.array([[True, False], [True, True]]))
           >>> # case 1: Reduces a dimension by the "logical OR" of all elements in the dimension.
           >>> output = Tensor.any(x, keep_dims=True)  # x.any(keep_dims=True)
@@ -51,5 +51,60 @@ any:
           [ True True]
           >>> # case 3: Reduces a dimension along axis 1.
           >>> output = Tensor.any(x, axis=1)  # x.any(axis=1)
+          >>> print(output)
+          [ True True]
+      
+      .. method:: Tensor.any(dim=None, keepdim=False) -> Tensor
+          :noindex:
+      
+      Reduces a dimension of `self` by the "logical OR" of all elements in the dimension, by default. And also can
+      reduce a dimension of `self` along the `dim`. Determine whether the dimensions of the output and `self` are the
+      same by controlling `keepdim`.
+  
+      Note:
+          The `dim` with tensor type is only used for compatibility with older versions and is not recommended.
+  
+      Args:
+          dim (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce. Only constant values are allowed.
+              Suppose the rank of `self` is r, `dim` must be in the range [-r, r).
+              Default: ``None`` , all dimensions are reduced.
+          keepdim (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
+              If ``False`` , don't keep these dimensions. Default: ``False`` .
+  
+      Returns:
+          Tensor, the dtype is bool.
+    
+          - If `dim` is ``None`` , and `keepdim` is ``False`` ,
+            the output is a 0-D Tensor representing the "logical OR" of all elements in `self`.
+          - If `dim` is int, such as 2, and `keepdim` is ``False`` ,
+            the shape of output is :math:`(self_1, self_3, ..., self_R)`.
+          - If `dim` is tuple(int) or list(int), such as (2, 3), and `keepdim` is ``False`` ,
+            the shape of output is :math:`(self_1, self_4, ..., self_R)`.
+          - If `dim` is 1-D Tensor, such as [2, 3], and `keepdim` is ``False`` ,
+            the shape of output is :math:`(self_1, self_4, ..., self_R)`.
+  
+      Raises:
+          TypeError: If `keepdim` is not a bool.
+          TypeError: If `dim` is not one of the following: int, tuple, list or Tensor.
+  
+      Supported Platforms:
+          ``Ascend`` ``GPU`` ``CPU``
+  
+      Examples:
+          >>> import numpy as np
+          >>> from mindspore import Tensor
+          >>> x = Tensor(np.array([[True, False], [True, True]]))
+          >>> # case 1: Reduces a dimension by the "logical OR" of all elements in the dimension.
+          >>> output = Tensor.any(x, keepdim=True)  # x.any(keepdim=True)
+          >>> print(output)
+          [[ True]]
+          >>> print(output.shape)
+          (1, 1)
+          >>> # case 2: Reduces a dimension along dim 0.
+          >>> output = Tensor.any(x, dim=0)  # x.any(dim=0)
+          >>> print(output)
+          [ True True]
+          >>> # case 3: Reduces a dimension along dim 1.
+          >>> output = Tensor.any(x, dim=1)  # x.any(dim=1)
           >>> print(output)
           [ True True]

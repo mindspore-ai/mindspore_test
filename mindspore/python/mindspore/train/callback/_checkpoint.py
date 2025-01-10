@@ -18,14 +18,14 @@ from __future__ import absolute_import
 import os
 import stat
 import time
-import threading
 
 import mindspore.context as context
 from mindspore import log as logger
 from mindspore import nn
 from mindspore import _checkparam as Validator
 from mindspore.train._utils import _make_directory
-from mindspore.train.serialization import save_checkpoint, _save_graph
+from mindspore.train.serialization import save_checkpoint, _save_graph, _wait_async_process_save_ckpt, \
+    _wait_async_thread_save_ckpt, _check_async_save
 from mindspore.parallel._cell_wrapper import destroy_allgather_cell
 from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
@@ -42,15 +42,6 @@ from mindspore._c_expression import collect_host_info, get_clock_syscnt
 _cur_dir = os.getcwd()
 SAVE_DIR = _cur_dir
 _info_list = ["epoch_num", "step_num"]
-
-
-def _wait_async_save_ckpt(async_save=False):
-    """Waiting for asynchronous saving of ckpt to complete."""
-    if async_save:
-        thread_list = threading.enumerate()
-        for thread in thread_list:
-            if thread.getName() == "asyn_save_ckpt":
-                thread.join()
 
 
 def _get_dp_tp_from_redundancy(redundancy_tuple):
@@ -74,6 +65,15 @@ def _get_dp_tp_from_layout(parameter_redundancy_dict):
             value_len = len(value)
             dp, tp = _get_dp_tp_from_redundancy(value)
     return dp, tp
+
+
+def _wait_async_save_ckpt(async_save=False):
+    """Waiting for asynchronous saving of ckpt to complete."""
+    if async_save:
+        if async_save == "process":
+            _wait_async_process_save_ckpt()
+        else:
+            _wait_async_thread_save_ckpt()
 
 
 def _chg_ckpt_file_name_if_same_exist(directory, prefix, exception=False):
@@ -139,7 +139,10 @@ class CheckpointConfig:
         integrated_save (bool): Whether to merge and save the split Tensor in the automatic parallel scenario.
             Integrated save function is only supported in automatic parallel scene, not supported
             in manual parallel. Default: ``True`` .
-        async_save (bool): Whether asynchronous execution saves the checkpoint to a file. Default: ``False`` .
+        async_save (Union[bool, str]):Whether to use asynchronous saving of the checkpoint file, if True,
+                                    the asynchronous thread is used by default. If the type is string,
+                                    the method of asynchronous saving, it can be "process" or "thread".
+                                    Default: ``False`` .
         saved_network (Cell): Network to be saved in checkpoint file. If the saved_network has no relation
             with the network in training, the initial value of saved_network will be saved. Default: ``None`` .
         append_info (list): The information save to checkpoint file. Support "epoch_num", "step_num" and
@@ -247,7 +250,7 @@ class CheckpointConfig:
                 self._keep_checkpoint_max = 1
 
         self._integrated_save = Validator.check_bool(integrated_save)
-        self._async_save = Validator.check_bool(async_save)
+        self._async_save = _check_async_save(async_save)
         self._saved_network = saved_network
         self._append_dict = self._handle_append_info(append_info)
         self._enc_key = Validator.check_isinstance('enc_key', enc_key, (type(None), bytes))
@@ -313,10 +316,10 @@ class CheckpointConfig:
     @property
     def async_save(self):
         """
-        Get the value of whether asynchronous execution saves the checkpoint to a file.
+        Get the value of whether or how asynchronous execution saves the checkpoint to a file.
 
         Returns:
-            bool, whether asynchronous execution saves the checkpoint to a file.
+            (bool, str), whether or how asynchronous execution saves the checkpoint to a file.
         """
         return self._async_save
 
@@ -538,6 +541,8 @@ class ModelCheckpoint(Callback):
         self._graph_saved = False
         self._need_flush_from_cache = True
         self._map_param_inc = self._config.map_param_inc
+        self._d2h_async = os.environ.get("MS_ENABLE_CKPT_D2H_ASYNC") == "1"
+        self._run_mode = context.get_context("mode")
 
     def step_end(self, run_context):
         """
@@ -632,6 +637,13 @@ class ModelCheckpoint(Callback):
         if "step_num" in self._append_dict:
             self._append_dict["step_num"] = self._append_step_num + step_num
 
+    def _update_save_step(self, cb_params):
+        """update step if used async d2h copy"""
+        step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
+        if self._d2h_async and self._run_mode == context.GRAPH_MODE:
+            step_num_in_epoch -= 1
+        return step_num_in_epoch
+
     def _save_ckpt(self, cb_params, force_to_save=False):
         """Save checkpoint files."""
         if cb_params.cur_step_num == self._last_triggered_step:
@@ -642,10 +654,12 @@ class ModelCheckpoint(Callback):
             self._flush_from_cache(cb_params)
 
         save_ckpt = self._check_save_ckpt(cb_params, force_to_save)
-        step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
+        step_num_in_epoch = self._update_save_step(cb_params)
 
         if save_ckpt:
+
             _wait_async_save_ckpt(self._config.async_save)
+
             if self._prefix_func:
                 cur_ckpoint_file = self._prefix + f".{self._config.format}"
             else:
@@ -704,14 +718,14 @@ class ModelCheckpoint(Callback):
                             f"For remove_redundancy save checkpoint, the saved parameters are non-redundant.")
 
                     def choice_func(x):
-                        return x not in param_layout_set or x in save_param_names
+                        return x not in param_layout_set or (save_param_names is not None and x in save_param_names)
                 else:
                     param_redundancy_dict = get_parameter_redundancy(network)
                     single_params = remove_param_redundancy(param_redundancy_dict)
                     save_param_names = single_params.get(rank_id)
 
                     def choice_func(x):
-                        return x in save_param_names
+                        return save_param_names is not None and x in save_param_names
                 save_checkpoint(network, cur_file, False, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
                                 crc_check=self._config.crc_check, format=self._config.format,

@@ -14,7 +14,7 @@
 # ============================================================================
 import os
 import stat
-
+import time
 import pytest
 
 import mindspore as ms
@@ -128,3 +128,44 @@ def test_load_checkpoint_async(mode):
     assert 'conv2.weight' in output_param_dict
     assert 'conv1.weight' not in output_param_dict
     assert 'fc1.bias' not in output_param_dict
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_save_checkpoint_async(mode):
+    """
+    Feature: mindspore.save_checkpoint async
+    Description: save checkpoint async.
+    Expectation:success
+    """
+    net = LeNet5()
+    ms.save_checkpoint(net, "./lenet.ckpt",
+                       choice_func=lambda x: x.startswith("conv") and not x.startswith("conv1"), async_save=True)
+    time.sleep(5)
+    output_param_dict1 = ms.load_checkpoint("./lenet.ckpt")
+    remove_ckpt("./lenet.ckpt")
+
+    assert 'conv2.weight' in output_param_dict1
+    assert 'conv1.weight' not in output_param_dict1
+    assert 'fc1.bias' not in output_param_dict1
+
+    ms.save_checkpoint(net, "./lenet.ckpt",
+                       choice_func=lambda x: x.startswith("conv") and not x.startswith("conv1"), async_save="process")
+    time.sleep(5)
+    output_param_dict2 = ms.load_checkpoint("./lenet.ckpt")
+    remove_ckpt("./lenet.ckpt")
+
+    assert 'conv2.weight' in output_param_dict2
+    assert 'conv1.weight' not in output_param_dict2
+    assert 'fc1.bias' not in output_param_dict2
+
+    ms.save_checkpoint(net, "./lenet.ckpt",
+                       choice_func=lambda x: x.startswith("conv") and not x.startswith("conv1"), async_save="thread")
+    time.sleep(5)
+    output_param_dict3 = ms.load_checkpoint("./lenet.ckpt")
+    remove_ckpt("./lenet.ckpt")
+
+    assert 'conv2.weight' in output_param_dict3
+    assert 'conv1.weight' not in output_param_dict3
+    assert 'fc1.bias' not in output_param_dict3
+    

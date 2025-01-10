@@ -60,10 +60,10 @@ bool SigmoidCrossEntropyWithLogitsGradCpuKernelMod::Launch(const std::vector<ker
 template <typename T>
 void SigmoidCrossEntropyWithLogitsGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                                  const std::vector<KernelTensor *> &outputs) const {
-  auto *logits_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *labels_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto *dloss_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *logits_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *labels_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto *dloss_addr = GetDeviceAddress<T>(inputs, kIndex2);
+  auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   auto zero = static_cast<T>(0.0);
   auto one = static_cast<T>(1.0);
   for (uint64_t i = 0; i < tensor_size_; ++i) {

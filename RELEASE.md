@@ -2,6 +2,27 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.4.1 Release Notes
+
+### Major Features and Improvements
+
+#### AutoParallel
+
+- [STABLE] Split/concat branch communication computation parallel is supported. Users split input data to form parallelizable branches. Automatic communication computing parallelism is performed between branches, reducing communication overhead.
+- [STABLE] Sequence pipelines are supported. The LLama series models for the dev branch of MindFormers reduces the Bubble as well as the memory overhead of pipeline parallelism by introducing Sequence dimension splitting.
+
+#### PyNative
+
+- [STABLE] In PyNative mode, communication operators are assigned streams by default based on the communication domain. They support concurrent execution of communication operators, optimize collaborative parallel strategies, provide fine-grained communication masking, and enhance model performance.
+
+### Bug Fixes
+
+- [IB0R4N](https://gitee.com/mindspore/mindspore/issues/IB0R4N): Fixed the problem of loading distributed weights with inaccurate accuracy under certain splitting strategies.
+
+### Contributors
+
+bantao;caifubi;candanzg;chaijinwei;changzherui;chengbin;chujinjin;DeshiChen;dingjinshan;fary86;fuhouyu;gaoyong10;GuoZhibin;halo;haozhang;hedongdong;huangbingjian;hujiahui8;huoxinyou;jiangshanfeng;jiaorui;jiaxueyu;jshawjc;kisnwang;lichen;limingqi107;liubuyu;looop5;luochao60;luoyang;machenggui;MengXiangyu;Mrtutu;NaCN;panzhihui;qiuzhongya;shenhaojing;shilishan;tanghuikang;TuDouNi;wang_ziqi;weiyang;wujueying;XianglongZeng;xuxinglei;yang guodong;yanghaoran;yao_yf;yide12;yihangchen;YijieChen;YingtongHu;yuchaojie;YuJianfeng;zhangdanyang;ZhangZGC;zhengzuohe;zong_shuai;ZPaC;冯一航;胡彬;宦晓玲;李林杰;刘崇鸣;刘勇琪;任新;王禹程;王振邦;熊攀;俞涵;张栩浩;周一航;
+
 ## MindSpore 2.4.0 Release Notes
 
 ### Major Features and Improvements
@@ -632,7 +653,7 @@ When converting Ascend backend models, the [input_shape](https://www.mindspore.c
 
 #### Runtime
 
-- [Stable] Supports multi-level compilation of the staic graph by setting [mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/en/r2.3.0/api_python/mindspore/mindspore.set_context.html). The default value is empty, the framework automatically selects the optimization level according to the product category, O2 for Altas training products and O0 for the rest of the products.
+- [Stable] Supports multi-level compilation of the staic graph by setting [mindspore.set_context(jit_config={"jit_level": "O0/O1/O2"})](https://www.mindspore.cn/docs/en/r2.3.0/api_python/mindspore/mindspore.set_context.html). The default value is empty, the framework automatically selects the optimization level according to the product category, O2 for Atlas training products and O0 for the rest of the products.
 - [Stable] Staic graph supports multi-stream concurrent execution of communication calculations in O0/O1.
 - [STABLE] Add memory management API [mindspore.hal.memory](https://www.mindspore.cn/docs/en/r2.3.0/api_python/mindspore.hal.html#memory).
 - [Beta] The memory pool supports virtual memory defragmentation, and virtual memory is enabled by default under graph O0/O1.

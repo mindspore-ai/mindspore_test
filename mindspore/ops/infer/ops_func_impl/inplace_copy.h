@@ -19,7 +19,6 @@
 #include <vector>
 #include <memory>
 #include "ops/ops_func_impl/op_func_impl.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 class InplaceCopyFuncImpl : public OpFuncImpl {

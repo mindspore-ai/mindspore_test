@@ -25,7 +25,7 @@
 #include "ops/base_operator.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

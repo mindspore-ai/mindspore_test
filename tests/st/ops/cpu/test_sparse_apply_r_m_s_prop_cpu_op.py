@@ -39,7 +39,7 @@ class SparseApplyRMSPropNet(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparse_apply_rms_prop():
     """
@@ -67,7 +67,7 @@ def test_sparse_apply_rms_prop():
     assert (abs(output_mom.asnumpy() - expect_mom) <= tol).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparse_apply_rms_prop_fp32():
     """
@@ -198,7 +198,7 @@ def test_sparse_apply_rms_prop_fp32():
     assert (abs(net.mom.asnumpy() - expect_mom) <= tol).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparse_apply_rms_prop_update_fp16():
     """
@@ -238,7 +238,7 @@ def test_sparse_apply_rms_prop_update_fp16():
     assert (abs(net.mom.asnumpy() - expect_mom) <= tol).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparse_apply_rms_prop_grad0():
     """

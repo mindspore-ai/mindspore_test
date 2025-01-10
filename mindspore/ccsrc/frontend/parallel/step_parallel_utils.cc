@@ -59,6 +59,7 @@
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "symbolic_shape/int_symbol.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace parallel {
@@ -1245,8 +1246,8 @@ bool IsSplittableOperator(const std::string &op_name) {
   // clang-format off
   static const std::set<std::string> splittable_op =
     {MATMUL, TRANSPOSE, GELU, FAST_GELU, TANH, SOFTMAX, SUB, MUL, DIV, RESHAPE, GREATER, LOG_SOFTMAX, ACTIVATION, PRELU,
-     BATCH_MATMUL_EXT, MATMUL_EXT, LAYER_NORM_V3,
-     FLOORDIV, L2_NORMALIZE, ADD, MAXPOOL, AVGPOOL, MAXPOOLV2, VIRTUAL_DATA_SET, RELU, ONEHOT, DROPOUT_DO_MASK,
+     BATCH_MATMUL_EXT, MATMUL_EXT, LAYER_NORM_V3, FLOORDIV, L2_NORMALIZE, ADD, MAXPOOL,
+     AVGPOOL, MAXPOOLV2, INDEX_INFO, VIRTUAL_DATA_SET, RELU, ONEHOT, DROPOUT_DO_MASK,
      REDUCE_MAX, REDUCE_MIN, ARGMAXWITHVALUE, ARGMINWITHVALUE, REDUCE_SUM, CONV2D, FUSE_BATCH_NORM, POOLING, STACK_EXT,
      MAX_POOL_WITH_ARGMAX, SIMPLE_MEAN, FLATTEN, BATCH_NORM, LAYER_NORM, BIAS_ADD, ASSIGN_SUB, COS, ACOS, EXP, STACK,
      LOG, REDUCE_MEAN, REAL_DIV, SIGMOID, POW, MAXIMUM, MINIMUM, EQUAL, NOT_EQUAL, LOGICALNOT, GATHERV2, SQRT, CONCAT,
@@ -2665,7 +2666,7 @@ void ConvertLayoutToStrategy(Dimensions *sub_strategy_vec, const std::vector<std
                              const std::vector<int64_t> &device_matrix,
                              const std::vector<std::vector<int64_t>> &tensor_map) {
   const int64_t alias_len = (int64_t)alias_name.size() - 1;
-  for (const auto sub_tensor_map : tensor_map) {
+  for (const auto &sub_tensor_map : tensor_map) {
     auto dim_strategy = 1;
     for (const int64_t tensor_ind : sub_tensor_map) {
       if (tensor_ind == -1) {
@@ -2898,7 +2899,8 @@ static bool IsCohesiveNode(const CNodePtr &cnode) {
          IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimAllGather) ||
          IsPrimitiveCNode(cnode, prim::kPrimMiniStepAllGather) || IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) ||
          IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather) || IsPrimitiveCNode(cnode, prim::kPrimMirror) ||
-         IsPrimitiveCNode(cnode, prim::kPrimMirrorMiniStep) || IsPrimitiveCNode(cnode, prim::kPrimVirtualDiv);
+         IsPrimitiveCNode(cnode, prim::kPrimMirrorMiniStep) || IsPrimitiveCNode(cnode, prim::kPrimVirtualDiv) ||
+         IsPrimitiveCNode(cnode, prim::kPrimInsertGradientOf);
 }
 
 ParameterMap NodeParameterName(const CNodePtr &node, int64_t index, size_t curr_depth) {
@@ -3273,7 +3275,7 @@ size_t GetDeviceCapacity() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   size_t size_from_context;
-  auto max_device_memory = context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  auto max_device_memory = runtime::RuntimeConf::GetInstance()->mem_max_size();
   float total_device_memory = 32.0f;
   if (context->ascend_soc_version() == kAscendVersion910b || context->ascend_soc_version() == kAscendVersion910_93) {
     total_device_memory = 64.0f;
@@ -3427,8 +3429,9 @@ TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info) {
     return ret;
   }
 
-  TensorInfo loss_grad_tensor_info;
-  size_t op_output_size = operator_info->outputs_tensor_info().size();
+  auto op_output_size = operator_info->outputs_tensor_info_new().empty()
+                          ? operator_info->outputs_tensor_info().size()
+                          : operator_info->outputs_tensor_info_new().size();
   MS_LOG(INFO) << "The loss name is " << operator_info->name() << ", the has tuple item is  "
                << node_info.has_tuple_getitem << ", the output size is  " << op_output_size << ", the dout_index is  "
                << node_info.dout_index;
@@ -3442,8 +3445,17 @@ TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info) {
     MS_LOG_WITH_NODE(EXCEPTION, loss_cnode) << "Currently, it is not supported that the sens is a tuple.";
   }
 
-  loss_grad_tensor_info = operator_info->outputs_tensor_info()[LongToSize(node_info.dout_index)];
-  ret.push_back(loss_grad_tensor_info.tensor_layout());
+  if (operator_info->outputs_tensor_info_new().empty()) {
+    auto loss_grad_tensor_info = operator_info->outputs_tensor_info()[LongToSize(node_info.dout_index)];
+    ret.push_back(loss_grad_tensor_info.tensor_layout());
+  } else {
+    auto loss_grad_tensor_info = operator_info->outputs_tensor_info_new()[LongToSize(node_info.dout_index)];
+    if (loss_grad_tensor_info->is_list()) {
+      MS_LOG_WITH_NODE(EXCEPTION, loss_cnode) << "For" << operator_info->name() << ": the" << node_info.dout_index
+                                              << " out tensorinfo is a list, which does not support yet";
+    }
+    ret.push_back(loss_grad_tensor_info->GetValue().tensor_layout());
+  }
   return ret;
 }
 
@@ -3452,14 +3464,13 @@ LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   CNodePtr return_node = func_graph->get_return();
   MS_EXCEPTION_IF_NULL(return_node);
-  if (return_node->size() < 2) {
+  if (return_node->size() <= 1) {
     MS_LOG_WITH_NODE(EXCEPTION, return_node) << "Failure: " << return_node->DebugString() << " size is smaller than 2";
   }
   auto pre_node_pair = GetRealKernelNode(return_node->input(1), -1, nullptr);
   auto pre_node = pre_node_pair.first;
   MS_EXCEPTION_IF_NULL(pre_node);
   auto pre_cnode = pre_node->cast<CNodePtr>();
-
   if (pre_cnode == nullptr || !IsValueNode<Primitive>(pre_cnode->input(0))) {
     return loss_node_info;
   }
@@ -3572,7 +3583,6 @@ void MarkForwardCNode(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(ret);
   auto all_nodes = TopoSort(ret, SuccDeeperSimple);
   auto graph_set = FindForwardGraphByRootNodes(all_nodes);
-
   if (graph_set.empty()) {
     MS_LOG(INFO) << "Can not find the forward graph, so mark the ops in root graph";
     auto fgs = root->manager()->func_graphs();
@@ -3624,13 +3634,18 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
   OperatorAttrs attrs;
   OperatorArgs args = std::make_pair(attrs, params);
   Operator op = std::make_pair(VIRTUAL_OUTPUT, args);
+  bool full_batch = ParallelContext::GetInstance()->full_batch();
+  int64_t dev_num = 1;
+  if (!full_batch && ParallelContext::GetInstance()->dataset_strategy().empty()) {
+    dev_num = g_device_manager->stage_device_num();
+  }
   if (IsPrimitiveCNode(out_node, prim::kPrimMakeTuple)) {
     auto tuple = out_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(tuple);
     for (size_t i = 1; i < tuple->size(); ++i) {
       auto cur_input = tuple->input(i);
       Shapes shape_outputs = GetNodeShape(cur_input);
-      if (shape_outputs[0].empty()) {
+      if (shape_outputs[0].empty() || shape_outputs[0][0] % dev_num != 0) {
         continue;
       }
       InsertNode(op, tuple, i, cur_input, tuple->func_graph(), VIRTUAL_OUTPUT);
@@ -3642,7 +3657,7 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
     }
   } else {
     Shapes shape_outputs = GetNodeShape(out_node);
-    if (shape_outputs[0].empty() || out_node->isa<Parameter>()) {
+    if (shape_outputs[0].empty() || shape_outputs[0][0] % dev_num != 0 || out_node->isa<Parameter>()) {
       return;
     }
     auto node_input = CreateInput(op, out_node, VIRTUAL_OUTPUT);

@@ -1,0 +1,7 @@
+subtract:
+  - op_yaml: sub_ext_op.yaml
+    py_method: tensor_subtract
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor

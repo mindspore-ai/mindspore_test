@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
+import shutil
+import subprocess
+
 import numpy as np
 
 import mindspore.common.dtype as mstype
@@ -23,6 +27,7 @@ from mindspore import context, Tensor
 
 
 grad = C.GradOperation(get_all=True)
+_IR_PATTERN = 'hwopt_d_after_stream_assign*.ir'
 
 
 class Net(nn.Cell):
@@ -118,6 +123,11 @@ class GradNet(nn.Cell):
         return gout
 
 
+def check_ir(pattern: str, keyword: str) -> None:
+    output = subprocess.check_output(f"grep -r '{keyword}' {pattern} | wc -l", shell=True)
+    assert int(output) > 0, f'No match found for {keyword} in {pattern}'
+
+
 def test_all_gather_matmul_forward():
     '''
     Feature: MC2 fusion.
@@ -170,11 +180,18 @@ def test_all_gather_matmul_enable_all_kbk_mode():
     Description: Test test_all_gather_matmul_enable_all_kbk_mode fusion in forward and backward.
     Expectation: Run success
     '''
-    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    context.set_context(jit_config={"jit_level": "O0"})
+    D.init()
+    rank = D.get_rank()
+    graph_path = f'./all_gather_matmul_graphs_rank{rank}'
+    context.set_context(
+        mode=context.GRAPH_MODE,
+        jit_config={'jit_level': 'O0'},
+        device_target='Ascend',
+        save_graphs=True,
+        save_graphs_path=graph_path,
+    )
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
 
-    D.init()
     seq_len, hidden_size = 4096, 12288
     dp, mp = 1, 8
     x = Tensor(np.random.uniform(-3, 3, [seq_len, hidden_size]), dtype=mstype.float16)
@@ -187,6 +204,9 @@ def test_all_gather_matmul_enable_all_kbk_mode():
     mc2_out = mc2_net(x).asnumpy()
 
     assert np.allclose(expect_out, mc2_out, 1e-2, 1e-2)
+    check_ir(f'{graph_path}/rank_{rank}/{_IR_PATTERN}', 'PrimFunc_AllGatherMatmul')
+    shutil.rmtree(graph_path)
+
 
 def test_matmul_reduce_scatter_enable_all_kbk_mode():
     '''
@@ -194,11 +214,18 @@ def test_matmul_reduce_scatter_enable_all_kbk_mode():
     Description: Test test_matmul_reduce_scatter_enable_all_kbk_mode fusion in forward and backward.
     Expectation: Run success
     '''
-    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    context.set_context(jit_config={"jit_level": "O0"})
+    D.init()
+    rank = D.get_rank()
+    graph_path = f'./matmul_reduce_scatter_graphs_rank{rank}'
+    context.set_context(
+        mode=context.GRAPH_MODE,
+        jit_config={'jit_level': 'O0'},
+        device_target='Ascend',
+        save_graphs=True,
+        save_graphs_path=graph_path,
+    )
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy="full_batch")
 
-    D.init()
     seq_len, hidden_size = 4096, 12288
     dp, mp = 1, 8
     x = Tensor(np.random.uniform(-3, 3, [seq_len, hidden_size]), dtype=mstype.float16)
@@ -211,6 +238,9 @@ def test_matmul_reduce_scatter_enable_all_kbk_mode():
     mc2_out = mc2_net(x).asnumpy()
 
     assert np.allclose(expect_out, mc2_out, 1e-2, 1e-2)
+    check_ir(f'{graph_path}/rank_{rank}/{_IR_PATTERN}', 'PrimFunc_MatmulReduceScatter')
+    shutil.rmtree(graph_path)
+
 
 def test_matmul_all_reduce_enable_all_kbk_mode():
     '''

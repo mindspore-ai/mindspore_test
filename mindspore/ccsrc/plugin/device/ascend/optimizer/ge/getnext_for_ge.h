@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_OPTIMIZER_IRPASS_GETNEXT_FOR_GE_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_OPTIMIZER_IRPASS_GETNEXT_FOR_GE_H_
 
+#include <vector>
+#include <string>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -28,6 +30,9 @@ class GetNextForGE : public PatternProcessPass {
 
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

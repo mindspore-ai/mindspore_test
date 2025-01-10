@@ -190,7 +190,7 @@ def test_concurrent_with_while():
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_parameter_set_data():
     """
     Feature: Runtime performance optimize of data prepare.

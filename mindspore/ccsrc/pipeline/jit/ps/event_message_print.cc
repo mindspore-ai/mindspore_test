@@ -27,6 +27,7 @@ void EventMessage::PrintCompileStartMsg(const std::string &phase, const std::str
   }
   PrintEventMessage("Start compiling " + obj_desc + " and it will take a while. Please wait...");
   PrintCompileStatusMessage("Start compiling " + obj_desc + ".");
+  MS_VLOG(VL_FLOW) << "[MsProfile] Start compiling " + obj_desc + ".";
 }
 
 void EventMessage::PrintCompileEndMsg(const std::string &phase, const std::string &obj_desc) {
@@ -35,6 +36,7 @@ void EventMessage::PrintCompileEndMsg(const std::string &phase, const std::strin
   }
   PrintEventMessage("End compiling " + obj_desc + ".");
   PrintCompileStatusMessage("End compiling " + obj_desc + ".");
+  MS_VLOG(VL_FLOW) << "[MsProfile] End compiling " + obj_desc + ".";
 }
 
 void EventMessage::PrintEventMessage(const std::string &message) { MS_LOG(INFO) << message; }

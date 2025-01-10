@@ -13,35 +13,24 @@ convolution_grad:
     stride:
       dtype: tuple[int]
       default: 1
-      prim_init: True
-      arg_handler: to_strides
     padding:
       dtype: tuple[int]
       default: 0
-      prim_init: True
-      arg_handler: to_2d_paddings
     dilation:
       dtype: tuple[int]
       default: (1, 1)
-      prim_init: True
-      arg_handler: to_dilations
     transposed:
       dtype: bool
       default: False
-      prim_init: True
     output_padding:
       dtype: tuple[int]
       default: 0
-      prim_init: True
-      arg_handler: to_output_padding
     groups:
       dtype: int
       default: 1
-      prim_init: True
     output_mask:
       dtype: tuple[int]
       default: ()
-      prim_init: True
   returns:
     dx:
       dtype: tensor

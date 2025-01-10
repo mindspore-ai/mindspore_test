@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 #include <functional>
+#include <map>
 
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/device_matrix.h"
@@ -420,9 +421,7 @@ Status ReshapeInfo::ComputeReplaceOp() {
     tensor_redistribution->SetPreAndNextCNode(reshape_input, this->cnode_);
     Shape output_tensor_shape = this->output_layout_.tensor_shape().array();
 
-    bool is_multi_dynamic_reshape =
-      this->input_layout_.tensor_shape().array().size() != this->output_layout_.tensor_shape().array().size() &&
-      std::count(output_tensor_shape.begin(), output_tensor_shape.end(), -1) > 1;
+    bool is_multi_dynamic_reshape = std::count(output_tensor_shape.begin(), output_tensor_shape.end(), -1) > 1;
     if (tensor_redistribution->Init(input_layout_, output_layout_, dev_list, is_multi_dynamic_reshape) == FAILED) {
       if (is_generating_costs_) {
         MS_LOG(DEBUG) << name_ << ": tensor_redistribution init failed.";
@@ -436,6 +435,8 @@ Status ReshapeInfo::ComputeReplaceOp() {
     MS_LOG(DEBUG) << name_ << ": dev_list " << dev_list.size();
     RedistributionOpListPtr redistribution_oplist_ptr;
     if (is_multi_dynamic_reshape) {
+      MS_LOG(INFO) << this->name_
+                   << " has more than 1 dynamic axis. shape: " << this->cnode_->input(INDEX_TWO)->fullname_with_scope();
       // If only one axis is sharded, and it's const axis, use past solution.
       if (SpecialPatternInTransformer(this->input_layout_, this->output_layout_)) {
         MS_LOG(INFO) << "Match special pattern in transformer.";
@@ -452,8 +453,6 @@ Status ReshapeInfo::ComputeReplaceOp() {
       }
       // use naive method. Do AllGather on each dim.
       tensor_redistribution->set_original_reshape_shape(this->cnode_->input(INDEX_TWO));
-      MS_LOG(INFO) << this->name_
-                   << " has more than 1 dynamic axis. shape: " << this->cnode_->input(INDEX_TWO)->fullname_with_scope();
       redistribution_oplist_ptr = tensor_redistribution->InferTensorRedistributionOperatorListForMultiDynamicReshape();
     } else {
       tensor_redistribution->set_original_reshape_shape(nullptr);
@@ -703,7 +702,13 @@ Status ReshapeInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out_
 }
 
 Status ReshapeInfo::SetCostUnderStrategy(const mindspore::parallel::StrategyPtr &strategy) {
-  return SetCostUnderStrategyBase(strategy);
+  StrategyPtr out_strategy = out_strategy_;
+  if (InitForCostModel(strategy, out_strategy) == FAILED) {
+    MS_LOG(DEBUG) << name_ << ": Initialization under the strategy failed.";
+    return FAILED;
+  }
+  SetCostForReshape(strategy);
+  return SUCCESS;
 }
 
 void ReshapeInfo::SetCostForReshapeWithParameter() {
@@ -720,20 +725,29 @@ void ReshapeInfo::SetCostForReshapeWithParameter() {
 void ReshapeInfo::SetCostForReshape(const mindspore::parallel::StrategyPtr &strategy) {
   MS_EXCEPTION_IF_NULL(strategy);
   int64_t stage_id = strategy->GetInputStage();
-  double computation_cost =
-    operator_cost()->GetForwardComputationCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-  double communication_cost = operator_cost()->GetCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-  const auto gamma = CostModelContext::GetInstance()->costmodel_gamma();
-  std::shared_ptr<Cost> result = std::make_shared<Cost>(computation_cost, communication_cost);
-  result->communication_without_parameter_ =
-    operator_cost()->GetForwardCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-  result->communication_with_partial_para_ =
-    result->communication_without_parameter_ + gamma * (communication_cost - result->communication_without_parameter_);
+  TensorLayout from_ = inputs_tensor_info_[0].tensor_layout();
+  TensorLayout to_ = outputs_tensor_info_[0].tensor_layout();
 
-  // Breaking ties for preferring data parallelization
-  BreakingTiesForPreferringDataParallel(strategy, result);
-  // refine communication cost calculation for practice
-  RefineForPracticalCost(result, false);
+  CostPtr result;
+  if (entire_costgraph->FindReshapeCostInCache(from_, to_, &result)) {
+    MS_LOG(INFO) << "Find the same cost in cache, skip calculation.";
+  } else {
+    double computation_cost =
+      operator_cost()->GetForwardComputationCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
+    double communication_cost = operator_cost()->GetCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
+    const auto gamma = CostModelContext::GetInstance()->costmodel_gamma();
+    result = std::make_shared<Cost>(computation_cost, communication_cost);
+    result->communication_without_parameter_ =
+      operator_cost()->GetForwardCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
+    result->communication_with_partial_para_ = result->communication_without_parameter_ +
+                                               gamma * (communication_cost - result->communication_without_parameter_);
+
+    // Breaking ties for preferring data parallelization
+    BreakingTiesForPreferringDataParallel(strategy, result);
+    // refine communication cost calculation for practice
+    RefineForPracticalCost(result, false);
+    entire_costgraph->SaveReshapeCostToCache(from_, to_, result);
+  }
 
   std::shared_ptr<StrategyWithCost> swc =
     std::make_shared<StrategyWithCost>(strategy, inputs_tensor_info_, outputs_tensor_info_);
@@ -762,6 +776,8 @@ Status ReshapeInfo::GenerateStrategyCosts(
   std::vector<std::pair<std::vector<std::shared_ptr<StrategyWithCost>>, int64_t>> next_costs_index, int64_t out_index,
   bool is_prev_param, bool is_next_reshape) {
   is_generating_costs_ = true;
+  std::vector<std::pair<StrategyPtr, TensorLayout>> pre_out_tensor_layouts;
+  std::vector<TensorLayout> next_in_tensor_layouts;
   for (auto pre_stra_cost : pre_stra_costs) {
     std::vector<TensorInfo> pre_out_tensor_infos;
     if (is_prev_param) {
@@ -774,7 +790,7 @@ Status ReshapeInfo::GenerateStrategyCosts(
       return FAILED;
     }
     TensorInfo pre_out_tensor_info = pre_out_tensor_infos[LongToSize(out_index)];
-    SetInputLayout(pre_out_tensor_info.tensor_layout());
+    TensorLayout pre_out_tensor_layout = pre_out_tensor_info.tensor_layout();
     // infer pre_node output strategy from output_layout.
     Dimensions stra = pre_out_tensor_info.InferStrategy();
     if (stra.empty()) {
@@ -783,12 +799,32 @@ Status ReshapeInfo::GenerateStrategyCosts(
     }
     Strategies stra_inputs = {stra};
     StrategyPtr reshape_stra = std::make_shared<Strategy>(pre_stra_cost->strategy_ptr->GetInputStage(), stra_inputs);
+    pre_out_tensor_layouts.emplace_back(std::make_pair(reshape_stra, pre_out_tensor_layout));
+  }
+  for (auto &next_cost_index_pair : next_costs_index) {
+    auto in_index = next_cost_index_pair.second;
+    auto next_stra_costs = next_cost_index_pair.first;
+    for (auto &next_stra_cost : next_stra_costs) {
+      std::vector<TensorInfo> next_in_tensor_infos = next_stra_cost->inputs_ptr;
+      if (next_in_tensor_infos.size() <= LongToSize(in_index)) {
+        MS_LOG(ERROR) << "in_index is out of range of the tensor_infos in setting reshape's output_layout";
+        return FAILED;
+      }
+      TensorInfo next_in_tensor_info = next_in_tensor_infos[LongToSize(in_index)];
+      TensorLayout next_in_tensor_layout = next_in_tensor_info.tensor_layout();
+      next_in_tensor_layouts.emplace_back(next_in_tensor_layout);
+    }
+  }
+  for (auto &pre_out_layout : pre_out_tensor_layouts) {
+    StrategyPtr reshape_stra = pre_out_layout.first;
+    TensorLayout pre_out_tensor_layout = pre_out_layout.second;
+    SetInputLayout(pre_out_tensor_layout);
     if (is_next_reshape) {
-      SetOutputLayout(pre_out_tensor_info.tensor_layout());
+      SetOutputLayout(pre_out_tensor_layout);
       ResetQueueMember();
       InferTensorInfoByLayout();
       SetCostForReshape(reshape_stra);
-    } else if (next_costs_index.empty()) {
+    } else if (next_in_tensor_layouts.empty()) {
       if (Init(nullptr, nullptr) == FAILED) {
         MS_LOG(ERROR) << "Failure:operator reshape init failed";
         return FAILED;
@@ -796,22 +832,11 @@ Status ReshapeInfo::GenerateStrategyCosts(
       SetCostForReshape(reshape_stra);
       continue;
     }
-    for (auto next_cost_index_pair : next_costs_index) {
-      auto in_index = next_cost_index_pair.second;
-      auto next_stra_costs = next_cost_index_pair.first;
-      for (auto next_stra_cost : next_stra_costs) {
-        std::vector<TensorInfo> next_in_tensor_infos = next_stra_cost->inputs_ptr;
-        if (next_in_tensor_infos.size() <= LongToSize(in_index)) {
-          MS_LOG(ERROR) << "in_index is out of range of the tensor_infos in setting reshape's output_layout";
-          return FAILED;
-        }
-        TensorInfo next_in_tensor_info = next_in_tensor_infos[LongToSize(in_index)];
-
-        SetOutputLayout(next_in_tensor_info.tensor_layout());
-        ResetQueueMember();
-        InferTensorInfoByLayout();
-        SetCostForReshape(reshape_stra);
-      }
+    for (auto &next_in_layout : next_in_tensor_layouts) {
+      SetOutputLayout(next_in_layout);
+      ResetQueueMember();
+      InferTensorInfoByLayout();
+      SetCostForReshape(reshape_stra);
     }
   }
   is_generating_costs_ = false;

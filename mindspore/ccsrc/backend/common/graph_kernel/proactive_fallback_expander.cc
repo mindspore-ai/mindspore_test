@@ -25,6 +25,7 @@
 #include "utils/ms_context.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/utils/anfalgo.h"
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
 
 namespace mindspore::graphkernel {
@@ -48,7 +49,7 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
   auto nodes = TopoSort(func_graph->get_return());
   const auto &need_fallback_ops = GetFallbackOps();
   for (const auto &node : nodes) {
-    if (!node->isa<CNode>()) {
+    if (!node->isa<CNode>() || common::AnfAlgo::IsDynamicRankNode(node)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
@@ -91,11 +92,8 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
             std::vector<kernel::KernelObjectType>{kernel::KernelObjectType::SCALAR});
         } else if (value->isa<ValueSequence>()) {
           auto vec = value->cast<ValueSequencePtr>()->value();
-          if (vec.size() > 0) {
-            info_builder->SetOutputsDeviceType(std::vector<TypeId>{vec[0]->type()->type_id()});
-          } else {
-            info_builder->SetOutputsDeviceType(std::vector<TypeId>{TypeId::kNumberTypeInt64});
-          }
+          auto dtype = vec.size() > 0 ? vec[0]->type()->type_id() : TypeId::kNumberTypeInt64;
+          info_builder->SetOutputsDeviceType(std::vector<TypeId>{dtype});
           info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
           info_builder->SetOutputsKernelObjectType(
             std::vector<kernel::KernelObjectType>{kernel::KernelObjectType::TUPLE});

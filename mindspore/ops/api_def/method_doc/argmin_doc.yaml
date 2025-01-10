@@ -25,7 +25,7 @@ argmin:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input_x = Tensor(np.array([2.0, 3.1, 1.2]), mindspore.float32)
         >>> index = Tensor.argmin(input_x) # input_x.argmin()
         >>> print(index)
@@ -34,10 +34,10 @@ argmin:
     .. method:: Tensor.argmin(dim=None, keepdim=False) -> Tensor
         :noindex:
     
-    Returns the indices of the minimum value of `self` across the axis.
+    Returns the indices of the minimum value of `self` across the dim.
     
     If the shape of `self` is :math:`(self_1, ..., self_N)`, the shape of the output tensor is
-    :math:`(self_1, ..., self_{axis-1}, self_{axis+1}, ..., self_N)`.
+    :math:`(self_1, ..., self_{dim-1}, self_{dim+1}, ..., self_N)`.
     
     Args:
         dim (Union[int, None], optional): Dimension where the Argmin operation applies to. If None, it will return the index 
@@ -46,7 +46,7 @@ argmin:
            dimension. Ignored if `dim` is None. Default: ``False`` .
 
     Returns:
-        Tensor, indices of the min value of `self` tensor across the dimension.
+        Tensor, indices of the min value of `self` across the dimension.
 
     Raises:
         TypeError: If `dim` is not an int.
@@ -57,7 +57,7 @@ argmin:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input_x = Tensor(np.array([2.0, 3.1, 1.2]), mindspore.float32)
         >>> index = Tensor.argmin(input_x) # input_x.argmin()
         >>> print(index)

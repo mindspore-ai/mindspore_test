@@ -74,12 +74,12 @@ int EllipsisToSliceCpuKernelMod::Resize(const std::vector<KernelTensor *> &input
 bool EllipsisToSliceCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &workspace,
                                                const std::vector<KernelTensor *> &outputs) {
-  const auto begin_addr = reinterpret_cast<int64_t *>(inputs[kIndex1]->device_ptr());
-  const auto end_addr = reinterpret_cast<int64_t *>(inputs[kIndex2]->device_ptr());
-  const auto step_addr = reinterpret_cast<int64_t *>(inputs[kIndex3]->device_ptr());
-  auto output_addr0 = reinterpret_cast<int64_t *>(outputs[kIndex0]->device_ptr());
-  auto output_addr1 = reinterpret_cast<int64_t *>(outputs[kIndex1]->device_ptr());
-  auto output_addr2 = reinterpret_cast<int64_t *>(outputs[kIndex2]->device_ptr());
+  const auto begin_addr = GetDeviceAddress<int64_t>(inputs, kIndex1);
+  const auto end_addr = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  const auto step_addr = GetDeviceAddress<int64_t>(inputs, kIndex3);
+  auto output_addr0 = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto output_addr1 = GetDeviceAddress<int64_t>(outputs, kIndex1);
+  auto output_addr2 = GetDeviceAddress<int64_t>(outputs, kIndex2);
   ShapeVector data_shape = data_shapes_[0];
   size_t dim_size = data_shape.size();
   size_t slice_nums = data_shapes_[kIndex1][kIndex0];

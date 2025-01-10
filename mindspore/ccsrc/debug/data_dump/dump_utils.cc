@@ -98,8 +98,8 @@ void SplitUint1x8ToUint8s(const void *in_data, size_t in_data_len, ShapeVector s
   const int64_t elemnum_per_byte = 8;
   auto elemnum_last_byte = element_num % elemnum_per_byte;
 
-  const uint8_t *src_data = reinterpret_cast<const uint8_t *>(in_data);
-  uint8_t *dst_data = reinterpret_cast<uint8_t *>(out_data);
+  const uint8_t *src_data = static_cast<const uint8_t *>(in_data);
+  uint8_t *dst_data = static_cast<uint8_t *>(out_data);
   for (size_t i = 0; i < in_data_len - 1; ++i) {
     for (int j = 7; j >= 0; --j) {
       *dst_data = (*src_data >> j) & 1;

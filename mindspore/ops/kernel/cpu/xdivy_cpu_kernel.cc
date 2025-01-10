@@ -73,9 +73,9 @@ bool XdivyCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
   if (has_null_input_) {
     return true;
   }
-  auto x_addr = static_cast<T *>(inputs[0]->device_ptr());
-  auto y_addr = static_cast<T *>(inputs[1]->device_ptr());
-  auto output_addr = static_cast<T *>(outputs[0]->device_ptr());
+  auto x_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto y_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   size_t output_size = outputs[0]->size() / sizeof(T);
   auto sameShapeTask = [&x_addr, &y_addr, &output_addr](size_t start, size_t end) {
     XDivySameShapeTask(x_addr, y_addr, output_addr, start, end);

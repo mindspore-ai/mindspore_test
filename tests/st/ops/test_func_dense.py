@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import numpy as np
 import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
+from tests.device_utils import set_device, get_device
+from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):
@@ -36,8 +37,9 @@ def test_ops_dense(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
-    if mode == ms.GRAPH_MODE:
-        ms.set_context(ascend_config={"precision_mode": "force_fp32"})
+    set_device()
+    if mode == ms.GRAPH_MODE and get_device() == "Ascend":
+        ms.device_context.ascend.op_precision.precision_mode("force_fp32")
     x = ms.Tensor([[[195, 41, 17],
                     [-15, 26, 160],
                     [-182, -95, 104]],

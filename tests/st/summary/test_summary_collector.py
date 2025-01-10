@@ -276,7 +276,7 @@ def test_summarycollector_user_defind():
     assert set(expected_files) == set(file_list)
 
 
-@arg_mark(plat_marks=["platform_gpu"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_gpu"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_summary_collector_landscape():
     """
     Feature: Summary collector with landscape.

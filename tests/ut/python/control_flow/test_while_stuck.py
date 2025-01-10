@@ -12,10 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
 import mindspore as ms
 from mindspore import jit, mutable, Tensor, vmap, ops
 from mindspore.nn import Cell
 import numpy as np
+
+reserved_env = None
+
+
+def setup_module():
+    global reserved_env
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+
+
+def teardown_module():
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
 
 
 def test_mutable_scalar_in_while():
@@ -34,7 +50,6 @@ def test_mutable_scalar_in_while():
             i = i + 2
         return j
 
-    ms.context.set_context(precompile_only=True)
     mutable_scalar_while()
 
 
@@ -58,7 +73,6 @@ def test_mutable_scalar_in_while_grad():
     def mutable_scalar_while_grad(x):
         return ms.ops.grad(mutable_scalar_while)(x)
 
-    ms.context.set_context(precompile_only=True)
     mutable_scalar_while_grad(Tensor([1]))
 
 
@@ -78,7 +92,6 @@ def test_auto_broaden_scalar_in_while():
             i = i + 2
         return j
 
-    ms.context.set_context(precompile_only=True)
     scalar_add_in_while()
 
 
@@ -105,7 +118,6 @@ def test_auto_broaden_scalar_in_while_and_getitem():
         j = j + 1
         return out
 
-    ms.context.set_context(precompile_only=True)
     i = Tensor(np.array(0), dtype=ms.int32)
     x = Tensor(np.array(0), dtype=ms.int32)
     y = Tensor(np.array(1), dtype=ms.int32)
@@ -130,7 +142,6 @@ def test_mutable_list_in_while():
             i = i + 1
         return list1
 
-    ms.context.set_context(precompile_only=True)
     out = scalar_add_in_while()
     print("out:", out)
 
@@ -153,7 +164,6 @@ def test_auto_broaden_list_in_while():
             i = i + 1
         return list1
 
-    ms.context.set_context(precompile_only=True)
     out = scalar_add_in_while()
     print("out:", out)
 
@@ -175,7 +185,6 @@ def test_auto_broaden_tensor_in_if():
         out = j + j
         return out
 
-    ms.context.set_context(precompile_only=True)
     out = scalar_add_in_if(Tensor([1]))
     print("out:", out)
 
@@ -200,7 +209,6 @@ def test_auto_broaden_scalar_in_while_grad():
     def scalar_add_in_while_grad(x):
         return ms.ops.grad(scalar_add_in_while)(x)
 
-    ms.context.set_context(precompile_only=True)
     scalar_add_in_while_grad(Tensor([1]))
 
 
@@ -224,7 +232,6 @@ def test_auto_broaden_scalar_in_while_grad_grad():
     def scalar_add_in_while_grad_grad(x):
         return ms.ops.grad(ms.ops.grad(scalar_add_in_while))(x)
 
-    ms.context.set_context(precompile_only=True)
     scalar_add_in_while_grad_grad(Tensor([1]))
 
 
@@ -248,7 +255,6 @@ def test_recursive_func():
         init_x = Tensor([0])
         return recursive_func(init_x, max_num)
 
-    ms.context.set_context(precompile_only=True)
     test_net(Tensor(2))
 
 
@@ -272,5 +278,4 @@ def test_vmap_while():
     net = Net()
     x = Tensor([0], ms.dtype.float32)
     y = Tensor(np.ones([3, 4]), ms.dtype.float32)
-    ms.context.set_context(precompile_only=True)
     vmap(net, in_axes=(None, 1), out_axes=1)(x, y)

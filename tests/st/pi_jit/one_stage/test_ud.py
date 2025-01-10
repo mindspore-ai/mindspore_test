@@ -38,7 +38,7 @@ cfg = {
 }
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_return_dict():
     """
     Feature: One stage basic operation.
@@ -59,7 +59,7 @@ def test_return_dict():
     assert ret == {"1": Tensor([2]), "2": Tensor([3])}
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_return_dict_2():
     """
     Feature: One stage basic operation.
@@ -110,7 +110,7 @@ def test_break_in_subgraph():
     assert not ret
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_break_in_subgraph_2():
     """
     Feature: One stage basic operation.
@@ -133,7 +133,7 @@ def test_break_in_subgraph_2():
     assert np.allclose(ret.asnumpy(), 5.5524473)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_break_in_subgraph_3():
     """
     Feature: One stage basic operation.

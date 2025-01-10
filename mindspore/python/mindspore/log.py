@@ -26,6 +26,7 @@ from logging.handlers import RotatingFileHandler
 import traceback
 import threading
 import platform
+from datetime import datetime
 
 if platform.system() != "Windows":
     import fcntl
@@ -223,6 +224,17 @@ def warning(msg, *args, **kwargs):
 def critical(msg, *args, **kwargs):
     """Log a message with severity 'CRITICAL' on the MindSpore logger."""
     _get_logger().critical(msg, *args, **kwargs)
+
+
+def vlog_print(level, module, file, line, message):
+    '''Read environment variable VLOG_v and print to log'''
+    if os.environ.get("VLOG_v") == level:
+        now = datetime.now()
+        formatted_time = now.strftime("%Y-%m-%d-%H:%M:%S.%f")[:-3] + f".{now.microsecond // 1000}"
+        path = 'mindspore' + file.split("mindspore")[-1]
+        pid = os.getpid()
+        thread_id = threading.get_ident()
+        print(f"[V{level}] {module}({pid},{thread_id},python):{formatted_time} [{path}:{line}] {message}", flush=True)
 
 
 def get_level():

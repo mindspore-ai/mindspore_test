@@ -15,7 +15,7 @@ mindspore.mint.distributed.gather
         - **tensor** (Tensor) - 输入待聚合的Tensor。
         - **gather_list** (list[Tensor]) - 聚合后的Tensor列表。
         - **dst** (int，可选) - 表示发送源的进程编号。只有该进程会接收聚合后的张量。默认值： ``0`` 。
-        - **group** (str，可选) - 通信组名称，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：
@@ -23,7 +23,7 @@ mindspore.mint.distributed.gather
 
     异常：
         - **TypeError** - 输入 `tensor` 的数据类型不为Tensor， `gather_list` 不为Tensor列表。
-        - **TypeError** - `dst`不是int， `group` 不是str或  `async_op` 不是bool。
+        - **TypeError** - `dst` 不是int， `group` 不是str或  `async_op` 不是bool。
         - **TypeError** - `gather_list` 的大小不为通信组大小。
         - **TypeError** -  `tensor` 的数据类型和shape与 `gather_list` 中所有元素存在不一致。
         - **RuntimeError** - 如果目标设备无效，或者后端无效，或者分布式初始化失败。

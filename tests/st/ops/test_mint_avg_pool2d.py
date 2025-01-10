@@ -20,6 +20,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import ops, context, mint
+from mindspore.device_context.cpu.op_tuning import threads_num
 
 
 @test_utils.run_with_cell
@@ -63,8 +64,6 @@ def compare_result(actual, expected):
     assert np.all(diff < error)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_avg_pool2d_and_double_backward(mode):
     """
@@ -108,9 +107,7 @@ def test_avg_pool2d_dynamic():
     Description: test op AvgPool2D and AvgPool2DGrad.
     Expectation: expect AvgPool2D and AvgPool2DGrad. result.
     """
-    context.set_context(
-        runtime_num_threads=1
-    )  # multi-threads have none-initialized bug now.
+    threads_num(1)
     input_case1 = Tensor(np.random.randn(10, 2, 5, 60), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(5, 4, 20, 15), dtype=ms.float32)
     TEST_OP(

@@ -24,10 +24,23 @@
 #include "pipeline/pynative/forward/forward_task.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pybind_api/hal/comm_handle_py.h"
-#include "pybind_api/ir/tensor_func_reg.h"
+#include "pybind_api/ir/tensor_register/auto_generate/tensor_func_utils.h"
+#include "frontend/expander/bprop/bprop_irbuilder.h"
+#include "mindspore/ops/kernel/functions/auto_grad_guard.h"
+#include "mindspore/ops/kernel/functions/auto_generate/functions.h"
 ${include_op_header}
 
 namespace mindspore::pynative {
+AsyncStatus GetAsyncStatus() {
+  const auto &op_status = kernel::pyboost::OpRunStatus::Get().op_status();
+  AsyncStatus status = {
+    op_status.disable_mix_precision,
+    op_status.is_jit_compiling,
+    op_status.custom_bprop_cell_count,
+  };
+  return status;
+}
+
 ${function_body}
 
 ${register_function_body}

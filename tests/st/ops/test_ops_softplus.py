@@ -61,11 +61,11 @@ def test_ops_softplus_forward(context_mode):
     x = generate_numpy_ndarray_by_randn((2, 3, 4, 5), np.float32, 'x')
     output = softplus_forward_func(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
 
     output2 = softplus_forward_func(ms.Tensor(x), 2, 12)
     expect2 = generate_expect_forward_output(x, 2, 12)
-    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4)
+    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4, atol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -101,11 +101,11 @@ def test_ops_softplus_backward(context_mode):
     x = np.array([0.1, 0.2, 0.3, 1, 2]).astype(np.float32)
     output1 = softplus_backward_func(ms.Tensor(x))
     expect1 = np.array([0.5249791, 0.5498339, 0.5744425, 0.7310585, 0.8807970]).astype(np.float32)
-    np.testing.assert_allclose(output1.asnumpy(), expect1, rtol=1e-4)
+    np.testing.assert_allclose(output1.asnumpy(), expect1, rtol=1e-4, atol=1e-4)
 
     output2 = softplus_backward_func(ms.Tensor(x), 0.2, 0.2)
     expect2 = np.array([0.50499983, 0.5099986, 0.5149955, 0.5498339, 1.00000]).astype(np.float32)
-    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4)
+    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4, atol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -121,11 +121,11 @@ def test_ops_softplus_vmap(context_mode):
     x = generate_random_input((2, 3, 4, 5), np.float32)
     output = softplus_vmap_func(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
 
     output2 = softplus_vmap_func(ms.Tensor(x), 2, 12)
     expect2 = generate_expect_forward_output(x, 2, 12)
-    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4)
+    np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4, atol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

@@ -40,10 +40,10 @@ from ..auto_generate import (
     Argmax, ArgMaxExt, ReverseV2, Diag, Eye, ScatterNd,
     ResizeNearestNeighborV2, GatherNd, GatherD, Range, MaskedFill, RightShift,
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
-    MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum,
+    MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, TypeAs, Meshgrid, Squeeze, Slice)
-from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
+    SearchSorted, Meshgrid, Squeeze, Slice)
+from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros, TypeAs
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
 
@@ -511,8 +511,8 @@ class ConjugateTranspose(Primitive):
         >>> conjugate_transpose = ops.ConjugateTranspose()
         >>> output = conjugate_transpose(x, perm)
         >>> print(output)
-            [[1.-1.j 3.-3.j]
-            [2.-2.j 4.-4.j]]
+        [[1.-1.j 3.-3.j]
+         [2.-2.j 4.-4.j]]
     """
 
     @prim_attr_register
@@ -583,65 +583,6 @@ class Unique(Primitive):
     @prim_attr_register
     def __init__(self):
         self.init_prim_io_names(inputs=['x'], outputs=['output'])
-
-
-class UniqueConsecutive(Primitive):
-    """
-    Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Refer to :func:`mindspore.ops.unique_consecutive` for more details.
-
-    Args:
-        return_idx (bool, optional): Whether to return the index of where the element in the original input
-            maps to the position in the output. Default: ``False`` .
-        return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
-        axis (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
-            returned. If specified, it must be int32 or int64. Default: ``None`` .
-
-    Inputs:
-        - **x** (Tensor) - The input tensor.
-
-    Outputs:
-        A tensor or a tuple of tensors containing tensor objects (`output`, `idx`, `counts`).
-
-        - `output` has the same type as `x` and is used to represent the output list of unique scalar elements.
-        - If `return_idx` is True, there will be an additional returned tensor, `idx`,
-          which has the same shape as `x` and represents
-          the index of where the element in the original input maps to the position in the output.
-        - If `return_counts` is True, there will be an additional returned tensor, `counts`,
-          which represents the number of occurrences for each unique value or tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.array([1, 1, 2, 2, 3, 1, 1, 2]), mstype.int32)
-        >>> unique_consecutive = ops.UniqueConsecutive(True, True, None)
-        >>> output, idx, counts = unique_consecutive(x)
-        >>> print(output)
-        [1 2 3 1 2]
-        >>> print(idx)
-        [0 0 1 1 2 3 3 4]
-        >>> print(counts)
-        [2 2 1 2 1]
-    """
-
-    @prim_attr_register
-    def __init__(self, return_idx=False, return_counts=False, axis=None):
-        """Initialize UniqueConsecutive"""
-        self.init_prim_io_names(inputs=['x'], outputs=['output'])
-        validator.check_value_type("return_idx", return_idx, [bool], self.name)
-        validator.check_value_type("return_counts", return_counts, [bool], self.name)
-        validator.check_value_type("axis", axis, [int, type(None)], self.name)
-        self.add_prim_attr("return_idx", return_idx)
-        self.add_prim_attr("return_counts", return_counts)
-        self.add_prim_attr("axis", axis)
 
 
 class SparseGatherV2(Primitive):
@@ -2104,7 +2045,7 @@ class ScatterUpdate(Primitive):
         use_locking (bool): Whether to protect the assignment by a lock. Default: ``True`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is 0-D or :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index of input tensor. With int32 data type.
           If there are duplicates in indices, the order for updating is undefined.
@@ -2118,8 +2059,8 @@ class ScatterUpdate(Primitive):
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2176,7 +2117,7 @@ class ScatterNdUpdate(Primitive):
         use_locking (bool): Whether to protect the assignment by a lock. Default: ``True`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index of input tensor, with int32 or int64 data type.
         - **updates** (Tensor) - N-D(2D or 3D) Tensor The tensor to be updated to the input tensor,
@@ -2188,8 +2129,8 @@ class ScatterNdUpdate(Primitive):
     Raises:
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32 or an int64.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2246,7 +2187,7 @@ class ScatterMax(_ScatterOpDynamic):
         use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do max operation whose data type must be mindspore.int32 or
           mindspore.int64.
@@ -2260,8 +2201,8 @@ class ScatterMax(_ScatterOpDynamic):
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2307,7 +2248,7 @@ class ScatterMin(_ScatterOpDynamic):
         use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do min operation whose data type must be mindspore.int32 or
           mindspore.int64.
@@ -2321,8 +2262,8 @@ class ScatterMin(_ScatterOpDynamic):
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2371,7 +2312,7 @@ class ScatterAdd(Primitive):
             Otherwise, the calculation result is undefined. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
         - **indices** (Tensor) - The index to do min operation whose data type must be mindspore.int32 or
           mindspore.int64.
         - **updates** (Tensor) - The tensor doing the min operation with `input_x`,
@@ -2384,8 +2325,8 @@ class ScatterAdd(Primitive):
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2489,7 +2430,7 @@ class ScatterSub(Primitive):
         use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do min operation whose data type must be mindspore.int32 or
           mindspore.int64.
@@ -2503,8 +2444,8 @@ class ScatterSub(Primitive):
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32.
         ValueError: If the shape of `updates` is not equal to `indices_shape + x_shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2608,7 +2549,7 @@ class ScatterMul(_ScatterOpDynamic):
         use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do multiply operation whose data type must be mstype.int32 or
           mstype.int64.
@@ -2622,8 +2563,8 @@ class ScatterMul(_ScatterOpDynamic):
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2716,7 +2657,7 @@ class ScatterDiv(_ScatterOpDynamic):
         use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do divide operation whose data type must be mstype.int32 or
           mstype.int64.
@@ -2730,8 +2671,8 @@ class ScatterDiv(_ScatterOpDynamic):
         TypeError: If `use_locking` is not a bool.
         TypeError: If `indices` is not an int32 or an int64.
         ValueError: If the shape of `updates` is not equal to `indices.shape + input_x.shape[1:]`.
-        RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
-                      is required when data type conversion of Parameter is not supported.
+        RuntimeError: If the data type of `input_x` and `updates` conversion is required when data type conversion
+                      is not supported.
         RuntimeError: On the Ascend platform, the input data dimension of `input_x` , `indices`
                       and `updates` is greater than 8 dimensions.
 
@@ -2820,7 +2761,7 @@ class ScatterNdAdd(Primitive):
         use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do add operation whose data type must be mindspore.int32.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
@@ -2897,7 +2838,7 @@ class ScatterNdSub(Primitive):
         use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
           The shape is :math:`(N, *)` where :math:`*` means any number of additional dimensions.
         - **indices** (Tensor) - The index to do sub operation whose data type must be mindspore.int32.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
@@ -2978,7 +2919,7 @@ class ScatterNdMul(_ScatterNdOp):
         use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
         - **indices** (Tensor) - The index to do mul operation whose data type must be int32 or int64.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor to do the mul operation with `input_x`.
@@ -3043,7 +2984,7 @@ class ScatterNdDiv(_ScatterNdOp):
         use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) - The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
         - **indices** (Tensor) - The index to do div operation whose data type must be int32 or int64.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor to do the div operation with `input_x`.
@@ -3108,7 +3049,7 @@ class ScatterNdMax(_ScatterNdOp):
         use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) -The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
         - **indices** (Tensor) - The index to do maximum operation whose data type must be int32 or int64.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor to do the max operation with `input_x`.
@@ -3175,7 +3116,7 @@ class ScatterNdMin(_ScatterNdOp):
         use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
-        - **input_x** (Parameter) -The target tensor, with data type of Parameter.
+        - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
         - **indices** (Tensor) - The index to do minimum operation whose data type must be int32 or int64.
           The rank of indices must be at least 2 and `indices.shape[-1] <= len(shape)`.
         - **updates** (Tensor) - The tensor to do the max operation with `input_x`.
@@ -5039,7 +4980,7 @@ class Tril(Primitive):
             indicating the main diagonal.
 
     Inputs:
-        - **x** (Tensor) - The input tensor with shape :math:`(M, N, *)`
+        - **x** (Tensor) - The input tensor with shape :math:`(*, M, N)`
           where :math:`*` means any number of additional dimensions.
 
     Outputs:
@@ -5189,7 +5130,7 @@ class IndexPut(Primitive):
         >>> op = ops.IndexPut(accumulate = accumulate)
         >>> output = op(x1, x2, indices)
         >>> print(output)
-         [[4 5 3]
+        [[4 5 3]
          [4 5 6]]
     """
 

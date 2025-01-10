@@ -51,6 +51,7 @@ namespace py = pybind11;
 
 const char kStepParallelGraph[] = "step_parallel";
 const char kOutput[] = "output";
+const char kCkptOutput[] = "checkpoint_output";
 const char kPynativeGraphId[] = "graph_id";
 const char kActorInfo[] = "actor_info";
 const char kCompiler[] = "Compiler";
@@ -72,6 +73,7 @@ const char kAutoMonadReorder[] = "auto_monad_reorder";
 const char kGetJitBpropGraph[] = "get_jit_bprop_graph";
 const char kRewriterAfterJitBprop[] = "rewriter_after_jit_bprop_graph";
 const char kEliminateSpecialOpNode[] = "eliminate_special_op_node";
+const char kWaitDistCommInitDone[] = "wait_dist_comm_init_done";
 const char kValidate[] = "validate";
 const char kLoadMindir[] = "load_mindir";
 const char kInferMindir[] = "infer_mindir";
@@ -143,6 +145,8 @@ class Resource : public ResourceBase {
 
   // Get the backend object. if the backend is being initialized, wait until it completes.
   compile::BackendPtr GetBackend() const;
+
+  void CleanBackend() { backend_ = nullptr; }
 
   // Set backend asynchronously, the input function should return a Backend pointer,
   // and it will be called in a background thread.

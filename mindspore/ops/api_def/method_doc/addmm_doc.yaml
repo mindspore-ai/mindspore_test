@@ -1,0 +1,5 @@
+addmm:
+  description: |
+    addmm(mat1, mat2, *, beta=1, alpha=1) -> Tensor
+
+    For details, please refer to :func:`mindspore.ops.addmm`.

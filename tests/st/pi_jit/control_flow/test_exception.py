@@ -52,7 +52,7 @@ def test_exception_case_1():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_2():
     """
     Feature: Test exception syntax
@@ -82,7 +82,7 @@ def test_exception_case_2():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_3():
     """
     Feature: Test exception syntax
@@ -112,7 +112,7 @@ def test_exception_case_3():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_4():
     """
     Feature: Test exception syntax
@@ -142,7 +142,7 @@ def test_exception_case_4():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_5():
     """
     Feature: Test exception syntax
@@ -172,7 +172,7 @@ def test_exception_case_5():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_6():
     """
     Feature: Test exception syntax
@@ -208,7 +208,7 @@ def test_exception_case_6():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_7():
     """
     Feature: Test exception syntax
@@ -246,7 +246,7 @@ def test_exception_case_7():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_8():
     """
     Feature: Test exception syntax
@@ -303,7 +303,7 @@ class TestWithContext:
         test_value = test_value - 1
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_9():
     """
     Feature: Test exception syntax
@@ -432,7 +432,7 @@ def test_exception_case_12():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_13():
     """
     Feature: Test exception syntax
@@ -469,7 +469,7 @@ def test_exception_case_13():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_14():
     """
     Feature: Test exception syntax
@@ -509,7 +509,7 @@ def test_exception_case_14():
     assert expected == res
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_exception_case_15():
     """
     Feature: Test exception syntax

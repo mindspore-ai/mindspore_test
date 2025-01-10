@@ -16,7 +16,6 @@ from tests.mark_utils import arg_mark
 
 import sys
 import numpy as np
-import pytest
 import mindspore.nn as nn
 import mindspore.context as context
 import mindspore.common.dtype as mstype
@@ -34,7 +33,7 @@ class ConcatOffsetNetV1(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_concat_offset_v1():
     """

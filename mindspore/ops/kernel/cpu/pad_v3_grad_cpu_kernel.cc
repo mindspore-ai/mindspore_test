@@ -98,6 +98,7 @@ template <typename S>
 bool PadV3GradCpuKernelMod::GetPaddings(const std::vector<KernelTensor *> &inputs) {
   // get paddings
   auto paddings_arg = static_cast<S *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(paddings_arg);
   if (paddings_num_ == 1) {
     paddings_num_ = k2Num * (input_dim_ - k2Num);
     for (int64_t i = 0; i < paddings_num_; ++i) {
@@ -241,7 +242,9 @@ bool PadV3GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
   }
 
   auto input = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input);
   auto output = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output);
 
   if (dtype_ == kNumberTypeComplex64 || dtype_ == kNumberTypeComplex128) {
     for (size_t i = 0; i < LongToSize(output_num_); ++i) {

@@ -22,11 +22,11 @@ from mindspore.ops.auto_generate import assign, assign_add, assign_sub
 
 def index_add(x, indices, y, axis, use_lock=True, check_index_bound=True):
     """
-    Adds tensor `y` to specified axis and indices of Parameter `x`. The axis should be in [0,  len(x.dim) - 1],
+    Adds tensor `y` to specified axis and indices of `x`. The axis should be in [0,  len(x.dim) - 1],
     and indices should be in [0, x.shape[axis] - 1] at the axis dimension.
 
     Args:
-        x (Parameter): The input Parameter to add to.
+        x (Union[Parameter, Tensor]): The input Parameter or Tensor to add to.
         indices (Tensor): Add the value of `x` and `y` along the dimension of the `axis` according to the
             specified index value, with data type int32.
             The `indices` must be 1D with the same size as the size of `y` in the `axis` dimension. The values
@@ -45,7 +45,6 @@ def index_add(x, indices, y, axis, use_lock=True, check_index_bound=True):
         Tensor, has the same shape and dtype as `x`.
 
     Raises:
-        TypeError: If `x` is not a Parameter.
         TypeError: If neither `indices` nor `y` is a Tensor.
         ValueError: If axis is out of `x` rank's range.
         ValueError: If `x` rank is not the same as `y` rank.

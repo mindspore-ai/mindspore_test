@@ -17,18 +17,11 @@
 #ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_STR_H_
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_STR_H_
 
-#include <memory>
-#include <vector>
-#include "mindapi/base/types.h"
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/conv_padding.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API ConvolutionStrFuncImpl : public OpFuncImpl {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
+class OPS_API ConvolutionStrFuncImpl final : public ConvPaddingFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

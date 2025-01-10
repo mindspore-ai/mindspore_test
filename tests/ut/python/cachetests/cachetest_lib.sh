@@ -28,8 +28,8 @@ fi
 echo "Using test path: ${TESTPATH}"
 echo "Using build path: ${BUILD_PATH}"
 
-# Point to the cache_admin from the build path.  The user may also have installed the wheel file but we don't know that.
-CACHE_ADMIN="${BUILD_PATH}/package/mindspore/bin/cache_admin"
+# Point to the dataset-cache from the build path.  The user may also have installed the wheel file but we don't know that.
+CACHE_ADMIN="${BUILD_PATH}/package/mindspore/utils/bin/dataset-cache"
 PYTHON_PYTEST="python -m pytest ${TESTPATH}/"
 
 # These are globals that all testcases use and may get updated during testcase running
@@ -37,10 +37,10 @@ failed_tests=0
 test_count=0
 session_id=0
 
-# sanity check on the cache_admin
+# sanity check on the dataset-cache
 
 if [ ! -f ${CACHE_ADMIN} ]; then
-   echo "Could not find cache_admin binary. ${CACHE_ADMIN}"
+   echo "Could not find dataset-cache binary. ${CACHE_ADMIN}"
    exit 1
 fi
 
@@ -114,7 +114,7 @@ MsgError()
 ServerCleanup()
 {
    echo "ServerCleanup is running"
-   server_pid=$(ps -elf | grep ${USER} | grep cache_server | grep -v grep | awk '{print $4}')
+   server_pid=$(ps -elf | grep ${USER} | grep dataset-cache-server | grep -v grep | awk '{print $4}')
    if [ "x${server_pid}" != "x" ]; then
       echo "Found a running cache server pid ${server_pid}.  Killing this process"
       kill -9 ${server_pid}
@@ -132,7 +132,7 @@ ServerCleanup()
 
 #################################################################################
 #  Function: CacheAdminCmd                                                      #
-#  Description: Wrapper function for executing cache_admin commands             #
+#  Description: Wrapper function for executing dataset-cache commands             #
 #               Caller must use HandleRcExit to process the return code.        #
 #                                                                               #
 #  Arguments:   arg 1: The command to run                                       #
@@ -156,7 +156,7 @@ CacheAdminCmd()
    rc=$?
    if [ "${expect_fail}" -eq 0 ] && [ "${rc}" -ne 0 ]; then
       MsgFail "FAILED"
-      MsgError "cache_admin command failure!" "${rc}" "${result}"
+      MsgError "dataset-cache command failure!" "${rc}" "${result}"
       return 1
    elif [ "${expect_fail}" -eq 1 ] && [ "${rc}" -eq 0 ]; then
       MsgFail "FAILED"
@@ -214,7 +214,7 @@ PytestCmd()
 
 #################################################################################
 #  Function: StartServer                                                        #
-#  Description: Helper function to call cache_admin to start a default server   #
+#  Description: Helper function to call dataset-cache to start a default server   #
 #               Caller must use HandleRcExit to process the return code.        #
 #################################################################################
 StartServer()
@@ -227,7 +227,7 @@ StartServer()
 
 #################################################################################
 #  Function: StopServer                                                         #
-#  Description: Helper function to call cache_admin to stop cache server        #
+#  Description: Helper function to call dataset-cache to stop cache server        #
 #               Caller must use HandleRcExit to process the return code.        #
 #################################################################################
 StopServer()
@@ -239,7 +239,7 @@ StopServer()
 
 #################################################################################
 #  Function: GetSession                                                         #
-#  Description: Helper function to call cache_admin to generate a session       #
+#  Description: Helper function to call dataset-cache to generate a session       #
 #               Caller must use HandleRcExit to process the return code.        #
 #################################################################################
 GetSession()
@@ -256,7 +256,7 @@ GetSession()
    rc=$?
    if [ ${rc} -ne 0 ]; then
       MsgFail "FAILED"
-      MsgError "cache_admin command failure!" "${rc}" "${result}"
+      MsgError "dataset-cache command failure!" "${rc}" "${result}"
       return 1
    else
       session_id=$(echo $result | awk '{print $NF}')
@@ -271,7 +271,7 @@ GetSession()
 
 #################################################################################
 #  Function: DestroySession                                                     #
-#  Description: Helper function to call cache_admin to destroy a session        #
+#  Description: Helper function to call dataset-cache to destroy a session        #
 #               Caller must use HandleRcExit to process the return code.        #
 #################################################################################
 DestroySession()

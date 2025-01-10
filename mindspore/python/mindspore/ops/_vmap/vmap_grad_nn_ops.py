@@ -26,6 +26,7 @@ from mindspore.ops.function import _VmapGeneralRule
 from mindspore.ops._vmap.vmap_base import vmap_rules_getters, vmap_general_preprocess, _raise_value_error, \
     _bdim_at_front, _vmap_clone_prim, _bdim_at_any, _handle_broadcasting
 from mindspore.ops.auto_generate.gen_arg_handler import Format, Reduction
+from mindspore.ops import auto_generate as gen
 
 
 @vmap_rules_getters.register(G.NLLLossGrad)
@@ -225,33 +226,35 @@ def get_max_pool3d_grad_with_argmax_vmap_rule(prim, axis_size):
     return vmap_rule
 
 
-@vmap_rules_getters.register(G.CdistGrad)
+@vmap_rules_getters.register(gen.CdistGrad)
 def get_cdist_grad_vmap_rule(prim, axis_size):
     """VmapRule for `cdist grad` operation."""
-    if hasattr(prim, 'batch_rank'):
-        batch_rank = prim.batch_rank + 1
+    if prim.has_label("batch_rank"):
+        batch_rank = prim.get_label("batch_rank") + 1
     else:
         batch_rank = 1
 
-    batch_prim = _vmap_clone_prim(prim)
-    batch_prim.add_prim_attr("batch_rank", batch_rank)
+    prim = prim.clone()
+    prim.set_label('batch_rank', batch_rank)
 
-    def vmap_rule(grad_bdim, x_bdim, y_bdim, cdist_bdim):
-        is_all_none, result = vmap_general_preprocess(prim,
-                                                      grad_bdim, x_bdim, y_bdim, cdist_bdim)
+    def vmap_rule(grad_bdim, x_bdim, y_bdim, cdist_bdim, p_bdim):
+        is_all_none, result = vmap_general_preprocess(
+            prim, grad_bdim, x_bdim, y_bdim, cdist_bdim, p_bdim
+        )
         if is_all_none:
             return result
         grad, grad_dim = grad_bdim
         x, x_dim = x_bdim
         y, y_dim = y_bdim
         cdist, cdist_dim = cdist_bdim
+        p, _ = p_bdim
 
         grad = _bdim_at_front(grad, grad_dim, axis_size)
         x = _bdim_at_front(x, x_dim, axis_size)
         y = _bdim_at_front(y, y_dim, axis_size)
         cdist = _bdim_at_front(cdist, cdist_dim, axis_size)
 
-        out = batch_prim(grad, x, y, cdist)
+        out = prim(grad, x, y, cdist, p)
         return out, 0
 
     return vmap_rule

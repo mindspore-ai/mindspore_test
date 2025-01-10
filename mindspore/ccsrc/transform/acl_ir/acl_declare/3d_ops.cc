@@ -18,7 +18,7 @@
 
 namespace mindspore {
 namespace transform {
-REGISTER_ACL_OP(Conv3D).set_is_3d_ops().set_extra_supported_datatype({ge::DT_FLOAT, ge::DT_BF16});
+REGISTER_ACL_OP(Conv3D).set_is_3d_ops().set_run_mode(false).set_extra_supported_datatype({ge::DT_FLOAT, ge::DT_BF16});
 
 REGISTER_ACL_OP(Conv3DTranspose).set_is_3d_ops().set_extra_supported_datatype({ge::DT_FLOAT});
 
@@ -28,7 +28,9 @@ REGISTER_ACL_OP(Conv3DBackpropFilter).set_run_mode(false).set_extra_supported_da
 
 REGISTER_ACL_OP(GridSampler3D).set_is_3d_ops();
 
-REGISTER_ACL_OP(AvgPool3D).set_is_3d_ops();
+REGISTER_ACL_OP(AvgPool3D).set_run_mode(false).set_is_3d_ops();
+
+REGISTER_ACL_OP(AvgPool3DGrad).set_run_mode(false).set_is_3d_ops();
 
 REGISTER_ACL_OP(MaxPool3D).set_is_3d_ops();
 

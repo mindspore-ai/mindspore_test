@@ -144,14 +144,33 @@ class StubTensor:
         """
         return self.ndim
 
+
+    def is_contiguous(self):
+        if self.stub:
+            return self.stub.get_value().is_contiguous()
+        return self.tensor.is_contiguous()
+
+    def set_cast_dtype(self):
+        if self.stub:
+            return self.stub.get_value().set_cast_dtype()
+        return self.tensor.set_cast_dtype()
+
+    def storage_offset(self):
+        if self.stub:
+            return self.stub.get_value().storage_offset()
+        return self.tensor.storage_offset()
+
+    def _need_contiguous(self):
+        if self.stub:
+            return self.stub.get_value()._need_contiguous()  # pylint: disable=protected-access
+        return self.tensor._need_contiguous()  # pylint: disable=protected-access
+
     asnumpy = _stub_method(Tensor.asnumpy)
     is_persistent_data = _stub_method(Tensor.is_persistent_data)
     asnumpy_of_slice_persistent_data = _stub_method(Tensor.asnumpy_of_slice_persistent_data)
     slice_num_of_persistent_data = _stub_method(Tensor.slice_num_of_persistent_data)
     slice_shape_of_persistent_data = _stub_method(Tensor.slice_shape_of_persistent_data)
     flush_from_cache = _stub_method(Tensor.flush_from_cache)
-    contiguous = _stub_method(Tensor.contiguous)
-    is_contiguous = _stub_method(Tensor.is_contiguous)
     register_hook = _stub_method(Tensor.register_hook)
 
     def stub_sync(self):
@@ -176,6 +195,7 @@ class StubTensor:
         self.stub = None
         self.tensor = Tensor(value, internal=True)
 
+no_stub_sync_cpp_api = ["set_cast_dtype", "storage_offset", "is_contiguous", "_need_contiguous"]
 
 def _init_stub_tensor_api():
     """adapt to python tensor and cpp tensor api"""
@@ -186,7 +206,7 @@ def _init_stub_tensor_api():
         if attr in cpp_tensor_func and attr not in tensor_cpp_methods:
             # for cpp tensor api, we always need to sync for real tensor first
             setattr(StubTensor, attr, _stub_method(func))
-        else:
+        elif attr not in no_stub_sync_cpp_api:
             setattr(StubTensor, attr, func)
 
 

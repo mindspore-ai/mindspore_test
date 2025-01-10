@@ -27,6 +27,7 @@
 
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/param_info.h"
@@ -53,7 +54,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/remove_value_node_dup.h"
 #include "pipeline/jit/ps/event_message_print.h"
-#include "pipeline/jit/ps/silent_check_v2.h"
+#include "pipeline/jit/ps/silent_check.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
@@ -77,6 +78,7 @@
 #endif
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "include/common/profiler.h"
+#include "availability/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -92,8 +94,9 @@ bool ExistControlFlow(const FuncGraphPtr &func_graph) {
 
 bool EnableGradForScalar(const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
-  return MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) && abs->BuildType() != nullptr &&
-         abs->BuildType()->isa<Number>();
+  return (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) ||
+          common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") &&
+         abs->BuildType() != nullptr && abs->BuildType()->isa<Number>();
 }
 
 bool EnableSequenceBroaden(const abstract::AbstractBasePtr &abs) {
@@ -120,6 +123,54 @@ bool ContainsAbstractFunction(const abstract::AbstractBasePtr &abs) {
   return false;
 }
 
+ValuePtr CreateInsertGradientOf(const py::function &hook_fn) {
+  auto ops_mod = python_adapter::GetPyModule("mindspore.ops.operations.debug_ops");
+  auto op_class = python_adapter::GetPyObjAttr(ops_mod, "InsertGradientOf");
+
+  auto params = py::tuple(1);
+  params[0] = *hook_fn;
+
+  auto obj = parse::data_converter::CreatePythonObject(op_class, params);
+  if (py::isinstance<py::none>(obj)) {
+    MS_LOG(EXCEPTION) << "Create python object `" << py::str(op_class)
+                      << "` failed, only support to create 'Cell', 'Primitive' or "
+                      << "user-defined class decorated with 'jit_class'.";
+  }
+
+  ValuePtr converted_res = nullptr;
+  bool converted = parse::ConvertData(obj, &converted_res, false);
+  if (!converted) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Convert the python object failed.";
+  }
+  MS_EXCEPTION_IF_NULL(converted_res);
+
+  return converted_res;
+}
+
+void AddHookNodeForParameter(const FuncGraphPtr &func_graph, const ParameterPtr &param_node) {
+  if (!(param_node->has_default() && param_node->default_param()->has_user_data("backward_hook"))) {
+    return;
+  }
+
+  auto hook_map = param_node->default_param()->user_data<std::map<uint64_t, py::function>>("backward_hook");
+  if (hook_map == nullptr) {
+    MS_LOG(EXCEPTION) << "Invalid hook map for abs: " << param_node->default_param()->ToString() << ".";
+  }
+  for (auto iter = hook_map->begin(); iter != hook_map->end(); iter++) {
+    const auto &hook_fn = iter->second;
+    const auto insert_grad_of = CreateInsertGradientOf(hook_fn);
+    auto value_node = NewValueNode(insert_grad_of);
+    value_node->set_abstract(insert_grad_of->ToAbstract());
+    const auto node_users = func_graph->manager()->node_users()[param_node];
+    for (const auto &node_and_index : node_users) {
+      const auto &fg = node_and_index.first->func_graph();
+      auto new_node = fg->NewCNode({value_node, param_node});
+      new_node->set_abstract(param_node->abstract());
+      func_graph->manager()->SetEdge(node_and_index.first, node_and_index.second, new_node);
+    }
+  }
+}
+
 void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<ValuePtr> &arguments) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> new_paras;
@@ -127,6 +178,10 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
     const auto &param = func_graph->parameters()[i];
     auto param_node = param->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(param_node);
+    if (i >= arguments.size()) {
+      AddHookNodeForParameter(func_graph, param_node);
+    }
+
     if (param_node->has_default()) {
       new_paras.push_back(param_node);
       continue;
@@ -192,7 +247,7 @@ void TaskEmitActionForMindRT(const ResourcePtr &resource) {
 
 void ExecuteActionForMindRT(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
-  const auto actor_info = resource->GetResult(kOutput).cast<compile::ActorInfo>();
+  auto actor_info = resource->GetResult(kOutput).cast<compile::ActorInfo>();
   // Get the mindRT backend.
   auto bc_ptr = resource->GetBackend();
   auto mindrt_bc_ptr = (std::dynamic_pointer_cast<compile::MindRTBackend>(bc_ptr)).get();
@@ -212,6 +267,17 @@ void ExecuteActionForMindRT(const ResourcePtr &resource) {
       }
     });
   resource->SetResult(kOutput, run);
+  if (MsContext::GetInstance()->backend_policy() == "ge") {
+    compile::VmEvalFuncPtr ckpt_run =
+      std::make_shared<compile::VmEvalFunc>([mindrt_bc_ptr, actor_info](const VectorRef &args) -> BaseRef {
+        MS_LOG(DEBUG) << "Execute args size " << args.size();
+        auto ckpt_actor_info = "save." + actor_info;
+        VectorRef outputs;
+        mindrt_bc_ptr->RunGraph(ckpt_actor_info, args, &outputs);
+        return VectorRef();
+      });
+    resource->SetResult(kCkptOutput, ckpt_run);
+  }
 }
 
 FuncGraphPtr ConstructGraphForEval(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
@@ -340,7 +406,7 @@ void SetMindIRLoadFlag(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(manager);
   FuncGraphPtr loaded_graph = nullptr;
   size_t loaded_graph_num = 0;
-  auto all_graphs = manager->func_graphs();
+  const auto &all_graphs = manager->func_graphs();
   for (auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->has_attr("is_load")) {
@@ -766,7 +832,7 @@ void GenerateTopGraphParams(const FuncGraphPtr &fg, std::vector<AnfNodePtr> *par
   auto wrapper = dyn_cast_ptr<parse::PyObjectWrapper>(obj_value);
   MS_EXCEPTION_IF_NULL(wrapper);
   auto obj = wrapper->obj();
-  auto trainable_parameters = py::getattr(obj, "parameters_and_names", py::none())();
+  auto trainable_parameters = py::getattr(obj, parse::CELL_PARAMETERS_AND_NAMES, py::none())();
   for (auto tr : trainable_parameters) {
     auto item = py::cast<py::tuple>(tr);
     auto value = item[1];
@@ -1108,6 +1174,57 @@ abstract::AbstractBasePtrList GetArgsAbs(const ResourcePtr &resource) {
   }
   return args_abs;
 }
+
+void AddHookNodeForArgs(const ResourcePtr &resource, const FuncGraphPtr &new_fg) {
+  AnfNodePtr j_node = nullptr;
+  for (const auto &node : resource->manager()->all_nodes()) {
+    if (IsPrimitiveCNode(node, prim::kPrimJ)) {
+      j_node = node;
+      break;
+    }
+  }
+
+  if (j_node == nullptr) {
+    MS_LOG(DEBUG) << "No J node is found, so no hook will be added.";
+    return;
+  }
+
+  auto forward_graph = GetValueNode<FuncGraphPtr>(j_node->cast<CNodePtr>()->input(1));
+  for (const auto &param : forward_graph->parameters()) {
+    auto abs = param->abstract();
+    if (abs == nullptr) {
+      MS_LOG(DEBUG) << "Param: " << param->ToString() << " has no abstract.";
+      continue;
+    }
+    if (!((abs->isa<abstract::AbstractTensor>() && abs->has_user_data("backward_hook")) ||
+          (abs->isa<abstract::AbstractKeywordArg>() &&
+           abs->cast<abstract::AbstractKeywordArgPtr>()->get_arg()->has_user_data("backward_hook")))) {
+      MS_LOG(DEBUG) << "param: " << param->ToString() << " with abs(" << abs.get() << "): " << abs
+                    << " has no backward hook or not support register hook.";
+      continue;
+    }
+    MS_LOG(DEBUG) << "Add hooks for param: " << param->ToString() << " with abs(" << abs.get() << "): " << abs;
+
+    AbstractBasePtr tensor_abs;
+    if (abs->isa<abstract::AbstractTensor>()) {
+      tensor_abs = abs;
+    } else if (abs->isa<abstract::AbstractKeywordArg>()) {
+      tensor_abs = abs->cast<abstract::AbstractKeywordArgPtr>()->get_arg();
+    }
+
+    auto hook_vec = tensor_abs->user_data<std::vector<py::function>>("backward_hook");
+    if (hook_vec == nullptr) {
+      MS_LOG(EXCEPTION) << "Invalid hook list for tensor abs: " << tensor_abs->ToString();
+    }
+    for (size_t idx = 0; idx < hook_vec->size(); idx++) {
+      const auto &hook_fn = hook_vec->at(idx);
+      const auto insert_grad_of = CreateInsertGradientOf(hook_fn);
+      auto new_node = forward_graph->NewCNodeInFront({NewValueNode(insert_grad_of), param});
+      new_node->set_abstract(param->abstract());
+      resource->manager()->Replace(param, new_node);
+    }
+  }
+}
 }  // namespace
 
 bool TypeInferenceAction(const ResourcePtr &resource) {
@@ -1159,6 +1276,9 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
 
   UpdateFuncGraphParameter(new_fg, resource->arguments());
   SetMindIRLoadFlag(resource);
+
+  AddHookNodeForArgs(resource, new_fg);
+
   MS_LOG(DEBUG) << "End graph: " << new_fg->ToString() << ", return: " << new_fg->get_return()->DebugString(true);
   return true;
 }
@@ -1167,6 +1287,8 @@ bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &pa
   MS_EXCEPTION_IF_NULL(resource);
   size_t counter = 0;
   for (auto &pass : passes) {
+    std::string pass_name = pass.first;
+    MsProfileStatGuard stat_guard(std::move(pass_name), "compile_irpass", true);
     ProcessStatus::GetInstance().RecordStart(pass.first);
     uint64_t start_time = profiler::GetClockSyscnt();
     auto profile_context = MsProfile::GetProfile()->Step(pass.first);
@@ -1564,8 +1686,8 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
   if (common::AnfAlgo::IsDynamicGraph(func_graph) && (context_ptr->backend_policy() != "ge")) {
     if (kbk_reason != nullptr) {
       *kbk_reason =
-        "Run graph mode with kernel by kernel because graph exist dynamic shape. Call "
-        "'set_context(save_graphs=True)' to check graph irs.";
+        "Run graph mode with kernel by kernel because graph exist dynamic shape. set env variable "
+        "'MS_DEV_SAVE_GRAPHS=2' to check graph irs.";
       MS_LOG(INFO) << *kbk_reason;
     }
     set_ctx(false, false, false);
@@ -1911,6 +2033,8 @@ bool SetMindIRGraphAction(const ResourcePtr &resource) {
 
   if (!is_equal_input_args) {
     // Use InferMindir which will find c++ infer in eval_map and backend_eval_map;
+    ModifyGraphs(resource->func_graph());
+    resource->func_graph()->set_flag("generated_from_mindir_with_prim_func", true);
     (void)InferMindir(resource->func_graph(), args_abs_list, true);
   }
   return true;
@@ -1966,6 +2090,7 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   (void)actions.emplace_back(std::make_pair(kInline, OptInlineAction));
 
   (void)actions.emplace_back(std::make_pair("parallel-infer-symbol", AutoParallelSymbolWithReNormalizeAction));
+
   // Do prepositive auto parallel.
   (void)actions.emplace_back(std::make_pair(kPreAutoParallel, AutoParallelAction));
   // insert virtual dataset
@@ -2018,15 +2143,10 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     if (!pipeline::IsPhaseExport(phase)) {
       (void)actions.emplace_back(std::make_pair(kDistributedSplit, DistributedSplitAction));
     }
-    if (IsNpuAsdEnable()) {
-      (void)actions.emplace_back(std::make_pair(kSilentCheckV2, SilentCheckAction));
-    }
-    if (ps::PSContext::instance()->is_worker()) {
-      if (distributed::cluster::ClusterContext::instance()->initialized()) {
-        MS_LOG(INFO) << "This worker is initialized. No need to add worker action.";
-      } else {
-        std::string server_mode = ps::PSContext::instance()->server_mode();
-      }
+    auto checker = silentcheck::SilentCheckerBase::GetInstance();
+    if (checker != nullptr && checker->IsNpuAsdEnable() &&
+        MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+      (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));
     }
 #endif
 
@@ -2038,7 +2158,8 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     actions = EraseParseActions(actions);
   }
 
-  auto is_precompile_only = MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY);
+  auto is_precompile_only = MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) ||
+                            common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1";
   if (is_precompile_only) {
     MS_LOG(INFO) << "PrecompileOnly, stop run graph";
     return actions;

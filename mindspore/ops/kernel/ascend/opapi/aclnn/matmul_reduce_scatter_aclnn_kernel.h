@@ -24,7 +24,6 @@
 
 namespace mindspore {
 namespace kernel {
-
 class MatmulReduceScatterAscend : public AclnnKernelMod {
  public:
   MatmulReduceScatterAscend() : AclnnKernelMod(std::move("aclnnMatmulReduceScatter")) {}
@@ -35,15 +34,14 @@ class MatmulReduceScatterAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  std::pair<KernelTensor *, bool> input_a_;
-  std::pair<KernelTensor *, bool> input_b_;
-  bool trans_a_;
-  bool trans_b_;
-  void InitializeCommonAttributes();
+  std::pair<KernelTensor *, bool> input_;
+  std::pair<KernelTensor *, bool> x2_;
   std::string group_;
   std::string hccl_inner_comm_name_;
   std::string reduce_op_;
   int64_t comm_turn_;
+  bool trans_input_;
+  bool trans_x2_;
   int64_t stream_mode_ = 1;
 };
 }  // namespace kernel

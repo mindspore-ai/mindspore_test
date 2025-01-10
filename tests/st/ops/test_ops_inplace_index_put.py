@@ -17,10 +17,12 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import nn
+from mindspore.common import mutable
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs
+
 
 class InplaceIndexPutNet(nn.Cell):
     def construct(self, x, indices, values, accumulate):
@@ -50,18 +52,21 @@ def generate_expect_backward_output(x, indices, values, accumulate):
 
 @test_utils.run_with_cell
 def inplace_index_put_forward_func(x, indices, values, accumulate=False):
-    return x.index_put_(indices, values, accumulate)
+    net = InplaceIndexPutNet()
+    return net(x, indices, values, accumulate)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
-def test_inplace_index_put_forward(mode):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_inplace_index_put_forward(context_mode):
     """
     Feature: mint
     Description: Verify the result of mint function
     Expectation: success
     """
+    ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
     test_shape = (2, 3, 4)
     indices = [np.array([0, 1, 1]).astype(np.int32), np.array([1, 0, 1]).astype(np.int32),
                np.array([1, 2, 1]).astype(np.int32)]
@@ -76,7 +81,6 @@ def test_inplace_index_put_forward(mode):
     expect_forward = generate_expect_forward_output(x, indices, values, accumulate)
     expect_forward2 = generate_expect_forward_output(x, indices2, values2, accumulate2)
 
-    ms.set_context(mode=mode)
     output_forward = inplace_index_put_forward_func(
         ms.Tensor(x), [ms.Tensor(i) for i in indices], ms.Tensor(values), accumulate)
     output_forward2 = inplace_index_put_forward_func(
@@ -86,15 +90,17 @@ def test_inplace_index_put_forward(mode):
     np.testing.assert_allclose(output_forward2.asnumpy(), expect_forward2, rtol=1e-5)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
-def test_inplace_index_put_backward(mode):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_inplace_index_put_backward(context_mode):
     """
     Feature: mint
     Description: Verify the result of mint function
     Expectation: success
     """
+    ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
     test_shape = (2, 3, 4)
     indices = [np.array([0, 1, 1]).astype(np.int32), np.array([1, 0, 1]).astype(np.int32),
                np.array([1, 2, 1]).astype(np.int32)]
@@ -109,9 +115,7 @@ def test_inplace_index_put_backward(mode):
     expect_grad, expect_v_grad = generate_expect_backward_output(x, indices, values, accumulate)
     expect_grad2, expect_v_grad2 = generate_expect_backward_output(x, indices2, values2, accumulate2)
 
-    ms.set_context(mode=mode)
     test_cell = InplaceIndexPutNet()
-    test_cell.set_inputs()
     grad_func = GradOfAllInputs(test_cell, sens_param=False)
     output_grad, output_v_grad = grad_func(ms.Tensor(x),
                                            [ms.Tensor(i) for i in indices], ms.Tensor(values), accumulate)
@@ -125,14 +129,16 @@ def test_inplace_index_put_backward(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
-def test_inplace_index_put_bfloat16(mode):
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_inplace_index_put_bfloat16(context_mode):
     """
     Feature: test ne functional API.
     Description: testcase for ne functional API.
     Expectation: the result match with expected result.
     """
-    ms.set_context(mode=mode, device_target="Ascend")
+    ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
     test_shape = (2, 3)
     indices = [np.array([0, 1]).astype(np.int64), np.array([1, 2]).astype(np.int64)]
     values = np.array([3.23]).astype(np.float32)
@@ -158,11 +164,11 @@ def test_inplace_index_put_dynamic_shape():
                np.array([1, 2, 1]).astype(np.int32)]
     values = np.array([3]).astype(np.float32)
     accumulate = False
-    x2 = generate_random_input((2, 8), np.float32)
-    indices2 = [np.array([[0, 1]]).astype(np.int64), np.array([[2, 3]]).astype(np.int64)]
+    x2 = generate_random_input((2, 3), np.float32)
+    indices2 = [np.array([[1, 1, 1], [1, 0, 1]]).astype(np.bool_)]
     values2 = np.array([[2, 3]]).astype(np.float32)
     accumulate2 = True
     TEST_OP(inplace_index_put_forward_func, [
-        [ms.Tensor(x), [ms.Tensor(i) for i in indices], ms.Tensor(values), accumulate],
-        [ms.Tensor(x2), [ms.Tensor(i) for i in indices2], ms.Tensor(values2), accumulate2]],
-            'inplace_index_put', disable_grad=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+        [ms.Tensor(x), mutable([ms.Tensor(i) for i in indices]), ms.Tensor(values), accumulate],
+        [ms.Tensor(x2), mutable([ms.Tensor(i) for i in indices2]), ms.Tensor(values2), accumulate2]],
+            'inplace_index_put', disable_mode=['GRAPH_MODE'], disable_resize=True)

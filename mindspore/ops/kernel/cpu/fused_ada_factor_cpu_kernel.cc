@@ -124,12 +124,12 @@ float FusedAdaFactorCpuKernelMod::CalcRMS(const T *input, size_t elem_num) const
 template <typename T>
 void FusedAdaFactorCpuKernelMod::FactorUpdate(float *update, const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &workspaces) const {
-  auto beta2t = reinterpret_cast<float *>(inputs[kBeta2tIndex]->device_ptr())[kScalarIndex];
-  auto grad = reinterpret_cast<T *>(inputs[kGradIndex]->device_ptr());
-  auto exp_avg_sq_row = reinterpret_cast<T *>(inputs[kExpAvgSQRowIndex]->device_ptr());
-  auto exp_avg_sq_col = reinterpret_cast<T *>(inputs[kExpAvgSQColIndex]->device_ptr());
-  auto r_factor = reinterpret_cast<float *>(workspaces[kWorkSpaceRFactorIndex]->device_ptr());
-  auto c_factor = reinterpret_cast<float *>(workspaces[kWorkSpaceCFactorIndex]->device_ptr());
+  auto beta2t = GetDeviceAddress<float>(inputs, kBeta2tIndex)[kScalarIndex];
+  auto grad = GetDeviceAddress<T>(inputs, kGradIndex);
+  auto exp_avg_sq_row = GetDeviceAddress<T>(inputs, kExpAvgSQRowIndex);
+  auto exp_avg_sq_col = GetDeviceAddress<T>(inputs, kExpAvgSQColIndex);
+  auto r_factor = GetDeviceAddress<float>(workspaces, kWorkSpaceRFactorIndex);
+  auto c_factor = GetDeviceAddress<float>(workspaces, kWorkSpaceCFactorIndex);
   auto one_minus_beta2t = 1 - beta2t;
 
   std::function<void(size_t, size_t)> task;
@@ -204,17 +204,17 @@ template <typename T>
 void FusedAdaFactorCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &workspaces,
                                               const std::vector<KernelTensor *> &) {
-  auto epsilon = reinterpret_cast<float *>(inputs[kEpsIndex]->device_ptr());
-  auto clip_threshold = reinterpret_cast<float *>(inputs[kClipThresholdIndex]->device_ptr())[kScalarIndex];
-  auto beta1 = reinterpret_cast<float *>(inputs[kBeta1Index]->device_ptr())[kScalarIndex];
-  auto beta2t = reinterpret_cast<float *>(inputs[kBeta2tIndex]->device_ptr())[kScalarIndex];
-  auto weight_decay = reinterpret_cast<float *>(inputs[kWeightDecayIndex]->device_ptr())[kScalarIndex];
-  auto learning_rate = reinterpret_cast<float *>(inputs[kLearningRateIndex]->device_ptr())[kScalarIndex];
-  auto grad = reinterpret_cast<T *>(inputs[kGradIndex]->device_ptr());
-  auto param = reinterpret_cast<T *>(inputs[kParamIndex]->device_ptr());
-  auto exp_avg = reinterpret_cast<T *>(inputs[kExpAvgIndex]->device_ptr());
-  auto exp_avg_sq = reinterpret_cast<T *>(inputs[kExpAvgSQIndex]->device_ptr());
-  auto update = reinterpret_cast<float *>(workspaces[kWorkSpaceUpdateIndex]->device_ptr());
+  auto epsilon = GetDeviceAddress<float>(inputs, kEpsIndex);
+  auto clip_threshold = GetDeviceAddress<float>(inputs, kClipThresholdIndex)[kScalarIndex];
+  auto beta1 = GetDeviceAddress<float>(inputs, kBeta1Index)[kScalarIndex];
+  auto beta2t = GetDeviceAddress<float>(inputs, kBeta2tIndex)[kScalarIndex];
+  auto weight_decay = GetDeviceAddress<float>(inputs, kWeightDecayIndex)[kScalarIndex];
+  auto learning_rate = GetDeviceAddress<float>(inputs, kLearningRateIndex)[kScalarIndex];
+  auto grad = GetDeviceAddress<T>(inputs, kGradIndex);
+  auto param = GetDeviceAddress<T>(inputs, kParamIndex);
+  auto exp_avg = GetDeviceAddress<T>(inputs, kExpAvgIndex);
+  auto exp_avg_sq = GetDeviceAddress<T>(inputs, kExpAvgSQIndex);
+  auto update = GetDeviceAddress<float>(workspaces, kWorkSpaceUpdateIndex);
   auto one_minus_beta1 = 1 - beta1;
   auto one_minus_beta2t = 1 - beta2t;
   if (clip_threshold <= 0) {
@@ -288,7 +288,7 @@ bool FusedAdaFactorCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *
                                         const std::vector<kernel::KernelTensor *> &workspaces,
                                         const std::vector<kernel::KernelTensor *> &outputs) {
   if (inputs.size() == kStandardInputNum + 1) {
-    auto global_norm = reinterpret_cast<float *>(inputs[kGlobalNormIndex]->device_ptr())[kScalarIndex];
+    auto global_norm = GetDeviceAddress<float>(inputs, kGlobalNormIndex)[kScalarIndex];
     if (global_norm < kEps) {
       global_norm_reciprocal_ = 1.0f;
     } else {

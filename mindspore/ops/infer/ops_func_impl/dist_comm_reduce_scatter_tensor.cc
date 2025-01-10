@@ -31,6 +31,9 @@ ShapeArray DistCommReduceScatterTensorFuncImpl::InferShape(const PrimitivePtr &p
   auto rank_size = CheckRankSize(primitive->name(), value);
 
   auto input_shape = input_infos[kIndex1]->GetShape();
+  if (input_shape.size() == 0) {
+    MS_EXCEPTION(ValueError) << "the shape size of 'input_shape' can not be 0.";
+  }
   if (input_shape[0] % rank_size != 0) {
     MS_EXCEPTION(ValueError)
       << "the first dimension for 'input_shape' must be divided by 'rank_size', but got input_shape[0]: "
@@ -47,7 +50,7 @@ std::vector<TypeId> DistCommReduceScatterTensorFuncImpl::InferType(const Primiti
                                                                    const InferInfoPtrList &input_infos) const {
   auto type = input_infos[kIndex1]->GetType();
   auto out_type = input_infos[kIndex0]->GetType();
-  return {CheckInferTypes(primitive->name(), type, out_type)};
+  return {CheckInferTypes(primitive->name(), type, out_type, true)};
 }
 }  // namespace ops
 }  // namespace mindspore

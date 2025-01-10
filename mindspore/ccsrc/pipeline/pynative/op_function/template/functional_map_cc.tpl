@@ -42,6 +42,14 @@ std::map<std::string, std::set<std::string>> function_kwonlyargs_map = {
   ${mint_kwonlyargs_map}
 };
 
+std::map<std::string, size_t> tensor_method_varargs_map = {
+  ${tensor_varargs_map}
+};
+
+std::map<std::string, size_t> function_varargs_map = {
+  ${mint_varargs_map}
+};
+
 std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map = {
   ${tensor_method_sigs_map}
 };

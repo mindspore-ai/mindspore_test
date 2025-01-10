@@ -1,0 +1,55 @@
+expand_as:
+  description: |
+    expand_as(other) -> Tensor
+
+    Expand the shape of the input tensor to be the same as the another input tensor. The dim of the
+    input shape must be smaller than or equal to that of another and the broadcast rules must be met.
+
+    Args:
+        other (Tensor): The target Tensor. It's shape is the target shape that input tensor need to be expanded.
+
+    Returns:
+        Tensor, with the given shape of `other` and the same data type as `self`.
+
+    Raises:
+        TypeError: If `other` is not a tensor.
+        ValueError: If the shapes of `other` and `self` are incompatible.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[1, 2, 3], [1, 2, 3]]).astype(np.float32))
+        >>> other = Tensor(np.array([[1, 1, 1], [1, 1, 1]]).astype(np.float32))
+        >>> output = x.expand_as(other)
+        >>> print(output)
+        [[1. 2. 3.]
+         [1. 2. 3.]]
+
+    .. method:: Tensor.expand_as(x) -> Tensor
+        :noindex:
+
+    Expand the dimension of input tensor to the dimension of target tensor.
+
+    Args:
+        x (Tensor): The target tensor. The shape of the target tensor must obey
+            the broadcasting rule.
+
+    Returns:
+        Tensor, has the same dimension as target tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import dtype as mstype
+        >>> input = Tensor([1, 2, 3], dtype=mstype.float32)
+        >>> x = Tensor(np.ones((2, 3)), dtype=mstype.float32)
+        >>> output = input.expand_as(x=x)
+        >>> print(output)
+        [[1. 2. 3.]
+         [1. 2. 3.]]

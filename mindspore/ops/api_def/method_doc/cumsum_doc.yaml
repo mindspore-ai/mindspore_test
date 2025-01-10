@@ -1,6 +1,6 @@
 cumsum:
   description: |
-    cumsum(dim, dtype=None) -> Tensor
+    cumsum(dim, *, dtype=None) -> Tensor
 
     Computes the cumulative sum of self Tensor along `dim`.
 
@@ -10,6 +10,8 @@ cumsum:
 
     Args:
         dim (int): Dim along which the cumulative sum is computed.
+
+    Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): The desired dtype of returned Tensor. If specified,
             the self Tensor will be cast to `dtype` before the computation. This is useful for preventing overflows.
             If not specified, stay the same as original Tensor. Default: ``None`` .

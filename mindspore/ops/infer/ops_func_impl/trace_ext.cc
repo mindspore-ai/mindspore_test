@@ -31,7 +31,7 @@
 #include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore::ops {
-static inline bool IsValidType(TypeId t) {
+static inline bool IsValidTraceExtType(TypeId t) {
   static const std::set<TypeId> valid_types = {kNumberTypeBool,     kNumberTypeInt8,      kNumberTypeInt16,
                                                kNumberTypeInt32,    kNumberTypeInt64,     kNumberTypeUInt8,
                                                kNumberTypeFloat16,  kNumberTypeFloat32,   kNumberTypeFloat64,
@@ -39,7 +39,7 @@ static inline bool IsValidType(TypeId t) {
   return valid_types.find(t) != valid_types.end();
 }
 
-static inline bool IsIntegralType(TypeId t) {
+static inline bool IsIntegralTraceExtType(TypeId t) {
   static const std::set<TypeId> integral_types = {kNumberTypeBool,   kNumberTypeInt8,   kNumberTypeInt16,
                                                   kNumberTypeInt32,  kNumberTypeInt64,  kNumberTypeUInt8,
                                                   kNumberTypeUInt16, kNumberTypeUInt32, kNumberTypeUInt64};
@@ -68,12 +68,12 @@ TypePtr TraceExtFuncImpl::InferType(const PrimitivePtr &primitive,
   auto element = input_type->cast<TensorTypePtr>()->element();
   MS_EXCEPTION_IF_NULL(element);
   auto input_type_id = element->type_id();
-  if (!IsValidType(input_type_id)) {
+  if (!IsValidTraceExtType(input_type_id)) {
     MS_EXCEPTION(TypeError) << "For Primitive[TraceExt], the type of the input must be [Bool , Uint8, Int8, Int16, "
                                "Int32, Int64, Float16, Float32, Float64, BFloat16, Complex64, Complex128], but got "
                             << input_type << "!";
   }
-  if (IsIntegralType(input_type_id)) {
+  if (IsIntegralTraceExtType(input_type_id)) {
     return std::make_shared<TensorType>(kInt64);
   }
   return input_type;
@@ -95,12 +95,12 @@ TypePtrList TraceExtFuncImpl::InferType(const PrimitivePtr &primitive, const Val
   MS_EXCEPTION_IF_NULL(input);
   const auto &input_type = input->Dtype();
   const auto &input_type_id = input->Dtype()->type_id();
-  if (!IsValidType(input_type_id)) {
+  if (!IsValidTraceExtType(input_type_id)) {
     MS_EXCEPTION(TypeError) << "For Primitive[TraceExt], the type of the input must be [Bool , Uint8, Int8, Int16, "
                                "Int32, Int64, Float16, Float32, Float64, BFloat16, Complex64, Complex128], but got "
                             << input_type << "!";
   }
-  if (IsIntegralType(input_type_id)) {
+  if (IsIntegralTraceExtType(input_type_id)) {
     return {kInt64};
   }
   return {input_type};

@@ -1,12 +1,13 @@
 mean:
   - op_yaml: mean_ext_op.yaml
     py_method: tensor_mean_ext # callback to python function "def tensor_mean_ext"
+    kwonlyargs: dtype
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/mean_op.yaml
+  - op_yaml: deprecated/mean_method.yaml
     py_method: deprecated_tensor_mean # callback to python function "def deprecated_tensor_mean"
     Ascend: py_method
     CPU: py_method

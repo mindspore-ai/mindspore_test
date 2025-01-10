@@ -35,10 +35,23 @@ void StackActor::Init() {
   // 4. Local tensor.
   // 5. Call input data.
   // 6. Call input partial.
+  if (enable_input_optimize_) {
+    for (auto &parameter_index : parameter_indexs_) {
+      auto node = parameter_index.second.first.first;
+      MS_EXCEPTION_IF_NULL(node);
+      auto parameter = node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(parameter);
+      if (common::AnfAlgo::IsParameterWeight(parameter)) {
+        weights_size_++;
+      } else {
+        MS_LOG(EXCEPTION) << "There is non weight parameter.";
+      }
+    }
+  }
   input_datas_num_ = formal_parameters_.size() - input_stack_data_num_ - input_stack_partials_num_;
-  if (input_stack_data_num_ < device_tensor_store_keys_.size() + local_device_tensors_.size()) {
+  if (input_stack_data_num_ < device_tensor_store_keys_.size() + local_device_tensors_.size() + weights_size_) {
     MS_LOG(EXCEPTION) << "Invalid input stack data num:" << input_stack_data_num_
-                      << " device store num:" << device_tensor_store_keys_.size()
+                      << " device store num:" << device_tensor_store_keys_.size() << "weights num:" << weights_size_
                       << " local device tensor num:" << local_device_tensors_.size()
                       << " input stack data num:" << input_stack_data_num_
                       << " input stack partial num:" << input_stack_partials_num_ << " for actor:" << GetAID();
@@ -61,21 +74,22 @@ void StackActor::Init() {
   input_datas_num_ = formal_parameters_.size() - total_partials_num - input_stack_data_num_;
   input_partials_num_ = total_partials_num - input_stack_partials_num_;
   // Fetch call input partial num.
-  input_stack_data_num_ -= (device_tensor_store_keys_.size() + local_device_tensors_.size());
+  input_stack_data_num_ -= (device_tensor_store_keys_.size() + weights_size_ + local_device_tensors_.size());
   // Check if the input num is valid.
   if (input_stack_data_num_ + input_stack_partials_num_ + input_datas_num_ + input_partials_num_ +
-        device_tensor_store_keys_.size() + local_device_tensors_.size() !=
+        device_tensor_store_keys_.size() + weights_size_ + local_device_tensors_.size() !=
       formal_parameters_.size()) {
     MS_LOG(EXCEPTION) << "Invalid input num, input stack data num:" << input_stack_data_num_
                       << " input stack partial num:" << input_stack_partials_num_
                       << " input data num:" << input_datas_num_ << " input partial num:" << input_partials_num_
                       << " device tensor store size:" << device_tensor_store_keys_.size()
-                      << " need total size:" << formal_parameters_.size() << " for actor:" << GetAID();
+                      << " weights size:" << weights_size_ << " need total size:" << formal_parameters_.size()
+                      << " for actor:" << GetAID();
   }
   MS_LOG(DEBUG) << "Stack actor input stack data num:" << input_stack_data_num_
                 << " stack partial num:" << input_stack_partials_num_ << " input data num:" << input_datas_num_
                 << " input partial num:" << input_partials_num_
-                << " device tensor store num:" << device_tensor_store_keys_.size()
+                << " device tensor store num:" << device_tensor_store_keys_.size() << " weights num:" << weights_size_
                 << " local tensor num:" << local_device_tensors_.size()
                 << " formal parameter num:" << formal_parameters_.size();
 }
@@ -92,7 +106,7 @@ void StackActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<Dev
                 << ", dynamic ref count:" << input_data->data_->dynamic_ref_count()
                 << ", flag:" << input_data->data_->flag() << " user data:" << input_data->data_->user_data();
   // The parameters from the inside of the subgraph need to be put into the stack.
-  if (IntToSize(input_data->index_) < input_stack_data_num_ + device_tensor_store_keys_.size() +
+  if (IntToSize(input_data->index_) < input_stack_data_num_ + device_tensor_store_keys_.size() + weights_size_ +
                                         input_stack_partials_num_ + local_device_tensors_.size()) {
     input_stack_data_[context->sequential_num_][input_data->index_].push(input_data->data_);
     MS_LOG(DEBUG) << "Actor:" << GetAID()
@@ -134,7 +148,7 @@ void StackActor::RunOpPartial(const OpPartialPtr &partial, size_t position, OpCo
   auto self_partial = std::make_shared<OpPartial>();
   *self_partial = *partial;
   // The parameters from the inside of the subgraph need to be put into the stack.
-  if (position < input_stack_data_num_ + device_tensor_store_keys_.size() + input_stack_partials_num_ +
+  if (position < input_stack_data_num_ + device_tensor_store_keys_.size() + weights_size_ + input_stack_partials_num_ +
                    local_device_tensors_.size()) {
     input_stack_partials_[context->sequential_num_][position].push(self_partial);
   } else {
@@ -292,8 +306,8 @@ void StackActor::FetchInput(OpContext<DeviceTensor> *const context) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
     for (const auto &one_stack : data_iter->second) {
-      if (one_stack.first >= input_stack_data_num_ + device_tensor_store_keys_.size() + local_device_tensors_.size() +
-                               input_stack_partials_num_) {
+      if (one_stack.first >= input_stack_data_num_ + device_tensor_store_keys_.size() + weights_size_ +
+                               local_device_tensors_.size() + input_stack_partials_num_) {
         std::string error_info = "Invalid input index:" + std::to_string(one_stack.first) +
                                  " need:" + std::to_string(input_stack_data_num_) + " for actor:" + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
@@ -311,8 +325,8 @@ void StackActor::FetchInput(OpContext<DeviceTensor> *const context) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
     for (const auto &one_stack : partial_iter->second) {
-      if (one_stack.first >= input_stack_data_num_ + device_tensor_store_keys_.size() + local_device_tensors_.size() +
-                               input_stack_partials_num_) {
+      if (one_stack.first >= input_stack_data_num_ + device_tensor_store_keys_.size() + weights_size_ +
+                               local_device_tensors_.size() + input_stack_partials_num_) {
         std::string error_info = "Invalid input index:" + std::to_string(one_stack.first) +
                                  " need:" + std::to_string(input_stack_partials_num_) + " for actor:" + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);

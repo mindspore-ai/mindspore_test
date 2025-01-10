@@ -25,9 +25,10 @@ PrimArgList g_SetDtypeOptList = {PrimArg("ReduceProd", {}), PrimArg("Softmax", {
                                  PrimArg("CumProd", {}),    PrimArg("CumSum", {}),  PrimArg("CumsumExt", {}),
                                  PrimArg("ProdExt", {}),    PrimArg("SumExt", {})};
 PrimArgList g_SetDtypeList = {PrimArg("Norm", {})};
-PrimArgList g_AutoPromoteList = {PrimArg("Addcdiv", {}),           PrimArg("Addcmul", {}), PrimArg("Cross", {}),
-                                 PrimArg("_PyboostCrossPrim", {}), PrimArg("Dot", {}),     PrimArg("GridSampler2D", {}),
-                                 PrimArg("GridSampler3D", {}),     PrimArg("BiasAdd", {}), PrimArg("AddN", {})};
+PrimArgList g_AutoPromoteList = {
+  PrimArg("Addcdiv", {}),       PrimArg("Addcmul", {}),       PrimArg("Cross", {}),   PrimArg("_PyboostCrossPrim", {}),
+  PrimArg("GridSampler2D", {}), PrimArg("GridSampler3D", {}), PrimArg("BiasAdd", {}), PrimArg("AddN", {}),
+  PrimArg("Dot", {}),           PrimArg("Concat", {})};
 
 PrimCastStrategyInfo GetPrimCastStrategyInfo(const AmpStrategyPtr &amp_strategy, const std::string &op_name) {
   PrimCastStrategyInfo strategy_info = {PrimCastStrategy::Ignore, kFloat32, {}};

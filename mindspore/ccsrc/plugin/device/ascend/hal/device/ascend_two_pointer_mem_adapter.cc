@@ -111,8 +111,8 @@ uint8_t *AscendTwoPointerMemAdapter::MallocStaticDevMem(size_t size, const std::
     return nullptr;
   }
   size = GetRoundUpAlignSize(size);
-  if (!common::IsNeedProfileMemory() && (static_mem_offset_ < static_cast<int64_t>(size) ||
-                                         (static_mem_offset_ - static_cast<int64_t>(size)) < max_dynamic_mem_offset_)) {
+  if (!common::IsDryRun() && (static_mem_offset_ < static_cast<int64_t>(size) ||
+                              (static_mem_offset_ - static_cast<int64_t>(size)) < max_dynamic_mem_offset_)) {
     MS_LOG(INFO) << DevMemDetailInfo();
     MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Out of Memory!!! Request memory size: " << size
                       << "B, Memory Statistic:" << DevMemStatistics()
@@ -136,7 +136,7 @@ uint8_t *AscendTwoPointerMemAdapter::MallocDynamicDevMem(size_t size, const std:
   }
   size = GetRoundUpAlignSize(size);
   int64_t new_dynamic_offset = cur_dynamic_mem_offset_ + static_cast<int64_t>(size);
-  if (!common::IsNeedProfileMemory() && new_dynamic_offset > static_mem_offset_) {
+  if (!common::IsDryRun() && new_dynamic_offset > static_mem_offset_) {
     MS_LOG(INFO) << DevMemDetailInfo();
     MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Out of Memory!!! Request memory size: " << size
                       << "B, Memory Statistic:" << DevMemStatistics()
@@ -173,7 +173,7 @@ std::string AscendTwoPointerMemAdapter::DevMemStatistics() const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   std::ostringstream oss;
-  oss << "\nDevice HBM memory size: " << device_hbm_total_size_ / kMBToByte << "M";
+  oss << "\nDevice MOC memory size: " << device_hbm_total_size_ / kMBToByte << "M";
   oss << "\nMindSpore Used memory size: " << ms_used_hbm_size_ / kMBToByte << "M";
   oss << "\nMindSpore memory base address: " << reinterpret_cast<void *>(device_mem_base_addr_);
   if (!context->IsKByKExecutorMode()) {

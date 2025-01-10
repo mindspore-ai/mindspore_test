@@ -35,6 +35,16 @@ bool IsAscend() {
 BaseShapePtr PReLUFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
   auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
+  auto weight_shape_ptr = input_args[kInputIndex1]->GetShape();
+  MS_EXCEPTION_IF_NULL(weight_shape_ptr);
+  auto weight_shape = weight_shape_ptr->GetShapeVector();
+  if (!IsDynamicRank(weight_shape)) {
+    auto weight_rank = weight_shape.size();
+    if (weight_rank > 1) {
+      MS_EXCEPTION(ValueError) << "The dimension of 'weight' must be less than or equal to 1";
+    }
+  }
+
   return x_shape_ptr->Clone();
 }
 
@@ -42,38 +52,12 @@ TypePtr PReLUFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
   auto prim_name = primitive->name();
   auto x_type = input_args[kInputIndex0]->GetType();
   auto weight_type = input_args[kInputIndex1]->GetType();
-  auto weight_shape_ptr = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(weight_shape_ptr);
-  auto weight_shape = weight_shape_ptr->GetShapeVector();
-  auto weight_rank = weight_shape.size();
-  if (weight_rank > 1) {
-    MS_EXCEPTION(ValueError) << "The dimension of 'weight' must be less than or equal to 1";
-  }
   auto valid_types = {kFloat16, kFloat32};
   if (!IsAscend()) {
     (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, prim_name);
     (void)CheckAndConvertUtils::CheckTensorTypeValid("weight", weight_type, valid_types, prim_name);
   }
   return x_type->Clone();
-}
-
-int32_t PReLUFuncImpl::CheckValidation(const PrimitivePtr &primitive,
-                                       const std::vector<AbstractBasePtr> &input_args) const {
-  auto prim_name = primitive->name();
-  auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape_ptr);
-  auto x_shape = x_shape_ptr->GetShapeVector();
-  auto x_rank = x_shape.size();
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  int execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (IsAscend() && x_rank <= 1 && execution_mode == kGraphMode && !context->IsKByKExecutorMode()) {
-    MS_EXCEPTION(ValueError)
-      << "For '" << prim_name
-      << "', the dimension of 'x' can not be 0-D or 1-D when the platform is \"Ascend\", but got dimension of 'x' is "
-      << x_rank << ".";
-  }
-  return OP_CHECK_SUCCESS;
 }
 
 TypePtrList PReLUFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

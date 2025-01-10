@@ -245,13 +245,13 @@ template <typename T>
 bool NMSWithMaskCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                            const std::vector<kernel::KernelTensor *> &workspace,
                                            const std::vector<kernel::KernelTensor *> &outputs) {
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto data_buff = reinterpret_cast<T *>(workspace[kIndexDataBuff]->device_ptr());
-  auto index_buff = reinterpret_cast<int *>(workspace[kIndexIndexBuff]->device_ptr());
-  auto row_mask = reinterpret_cast<bool *>(workspace[kIndexRowMask]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[kIndexOutput]->device_ptr());
-  auto sel_idx = reinterpret_cast<int *>(outputs[kIndexSelIdx]->device_ptr());
-  auto sel_boxes = reinterpret_cast<bool *>(outputs[kIndexSelBoxes]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto data_buff = GetDeviceAddress<T>(workspace, kIndexDataBuff);
+  auto index_buff = GetDeviceAddress<int>(workspace, kIndexIndexBuff);
+  auto row_mask = GetDeviceAddress<bool>(workspace, kIndexRowMask);
+  auto output = GetDeviceAddress<T>(outputs, kIndexOutput);
+  auto sel_idx = GetDeviceAddress<int>(outputs, kIndexSelIdx);
+  auto sel_boxes = GetDeviceAddress<bool>(outputs, kIndexSelBoxes);
 
   NmsBitonicSortByKeyKernel<T>(num_input_, ceil_power_2_, input, data_buff, index_buff, box_size_);
   size_t total_val = IntToSize(num_input_ * num_input_);

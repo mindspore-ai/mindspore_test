@@ -1,6 +1,6 @@
 sub:
   description: |
-    sub(other, alpha=1) -> Tensor
+    sub(other, *, alpha=1) -> Tensor
 
     Subtracts scaled other value from self Tensor.
     
@@ -19,14 +19,16 @@ sub:
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        alpha (number.Number): A scaling factor applied to `other`, default 1.
-    
+
+    Keyword Args:
+        alpha (number.Number, optional): A scaling factor applied to `other`, default ``1``.
+
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the self `self` and `other`,
         and the data type is the one with higher precision or higher digits among the two inputs and alpha.
     
     Raises:
-        TypeError: If the type of `self`, `other`, or `alpha` is not one of the following: Tensor, number.Number, bool.
+        TypeError: If the type of `other` or `alpha` is not one of the following: Tensor, number.Number, bool.
         TypeError: If `alpha` is of type float but `self` and `other` are not of type float.
         TypeError: If `alpha` is of type bool but `self` and `other` are not of type bool.
     
@@ -39,8 +41,7 @@ sub:
         >>> from mindspore import Tensor
         >>> x = Tensor(np.array([4, 5, 6]).astype(np.float32))
         >>> y = Tensor(1, mindspore.int32)
-        >>> alpha = 0.5
-        >>> output = Tensor.sub(x, y, alpha)
+        >>> output = Tensor.sub(x, y, alpha=0.5)
         >>> print(output)
         [3.5 4.5 5.5]
         >>> # the data type of x is float32, the data type of y is int32,
@@ -49,6 +50,7 @@ sub:
         Float32
 
 
-    .. function:: mindspore.Tenspr.sub(y) -> Tensor
+    .. method:: Tensor.sub(y) -> Tensor
+        :noindex:
 
     For details, please refer to `mindspore.ops.sub()` .

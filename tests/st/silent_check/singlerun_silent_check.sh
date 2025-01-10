@@ -21,6 +21,7 @@ if [ $# -lt 1 ]; then
 fi
 
 py_file=$1
+shift
 
 LOG_PATH="ascend_log"
 export ASCEND_PROCESS_LOG_PATH=`pwd`/${LOG_PATH}
@@ -33,4 +34,4 @@ export NPU_ASD_ENABLE=3
 
 rm -rf ${LOG_PATH}
 
-python ${py_file}
+python -u ${py_file} "$@"

@@ -23,34 +23,69 @@ from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
+    def construct(self, x, other):
+        return x.remainder(other)
+
+
+class Net1(nn.Cell):
+    def construct(self, x, other):
+        return x.remainder(other=other)
+
+
+class Net2(nn.Cell):
     def construct(self, x, divisor):
-        return x.remainder(divisor)
+        return x.remainder(divisor=divisor)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_tensor_remainder(mode):
+def test_tensor_remainder_pyboost(mode):
     """
     Feature: tensor.remainder
-    Description: Verify the result of remainder
+    Description: Verify the result of remainder in pyboost
     Expectation: success
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net1 = Net1()
     x = Tensor(np.array([-3, -2, -1, 1, 2, 3]), ms.float32)
-    net = Net()
-    if ms.get_context('device_target') != 'Ascend':
+    if ms.get_context('device_target') != 'Ascend' and ms.get_context('mode') == ms.GRAPH_MODE:
         with pytest.raises(RuntimeError):
-            net(x, -1.5)
+            net1(x, -1.5)
             _pynative_executor.sync()
         return
+    net = Net()
     output = net(x, -1.5)
     expect_output1 = [0, -0.5, -1, -0.5, -1, 0]
     assert np.allclose(output.asnumpy(), expect_output1)
     x = Tensor(np.array([-30, -17, -3, 61, 17, 30]), ms.float32)
     y = Tensor(np.array([-1.5, -2, -3.5, 1.5, 2, 3.5]), ms.float32)
     output = net(x, y)
+    expect_output2 = [0, -1, -3, 1, 1, 2]
+    assert np.allclose(output.asnumpy(), expect_output2)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_tensor_remainder_python(mode):
+    """
+    Feature: tensor.remainder
+    Description: Verify the result of remainder in python
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    x = Tensor(np.array([-3, -2, -1, 1, 2, 3]), ms.float32)
+    net2 = Net2()
+    output = net2(x, -1.5)
+    expect_output1 = [0, -0.5, -1, -0.5, -1, 0]
+    assert np.allclose(output.asnumpy(), expect_output1)
+    x = Tensor(np.array([-30, -17, -3, 61, 17, 30]), ms.float32)
+    y = Tensor(np.array([-1.5, -2, -3.5, 1.5, 2, 3.5]), ms.float32)
+    output = net2(x, y)
     expect_output2 = [0, -1, -3, 1, 1, 2]
     assert np.allclose(output.asnumpy(), expect_output2)

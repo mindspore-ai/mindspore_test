@@ -6,6 +6,9 @@ mindspore.hal.get_device_name
     返回指定卡号设备的设备名称。
 
     .. note::
+        - 接口即将废弃。
+
+    .. note::
         - 若用户不指定 `device_target` ，将此参数设置为当前已经设置的后端类型。
         - 对于CPU 后端，总是返回 ``"CPU"`` 。
 

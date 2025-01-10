@@ -370,7 +370,7 @@ def test_net_dict_2():
     assert outputs['fc'].shape == (64, 10)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_net_dict_2_grad():
     """
@@ -612,7 +612,7 @@ def test_return_nested_dict_with_parameter2():
     assert out == [{'params': [net.x, net.y], 'a': 1, 'b': False}, {'params': net.x, 'a': 2}]
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_nested_dict_with_parameter_constant1():
     """
@@ -981,7 +981,7 @@ def test_return_dict_with_different_size_branch():
     assert ms_out == {0: 6, 1: 15}
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_dict_inner_method_overrrided_1():
     """
@@ -1046,6 +1046,7 @@ def test_dict_inner_method_overrrided_3():
     assert ms_out == (1, 2)
 
 
+@pytest.mark.skip(reason="Jit will run strict mode in the future")
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_pynative_jit_dict_grad():

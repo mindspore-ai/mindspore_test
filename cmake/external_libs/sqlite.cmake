@@ -1,29 +1,23 @@
-if(ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/sqlite/repository/archive/version-3.36.0.tar.gz")
-    set(SHA256 "a0989fc6e890ac1b1b28661490636617154da064b6bfe6c71100d23a9e7298fd")
-else()
-    set(REQ_URL "https://github.com/sqlite/sqlite/archive/version-3.36.0.tar.gz")
-    set(SHA256 "a0989fc6e890ac1b1b28661490636617154da064b6bfe6c71100d23a9e7298fd")
-endif()
-
+set(REQ_URL "https://github.com/sqlite/sqlite/archive/version-3.46.1.tar.gz")
+set(SHA256 "99c578c9326b12374a64dedae88a63d17557b5d2b0ac65122be67cb3fa2703da")
 
 if(WIN32)
     if(MSVC)
         mindspore_add_pkg(sqlite
-            VER 3.36.0
+            VER 3.46.1
             LIBS sqlite3
-            URL https://sqlite.org/2021/sqlite-amalgamation-3360000.zip
-            SHA256 999826fe4c871f18919fdb8ed7ec9dd8217180854dd1fe21eea96aed36186729
-            PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/sqlite.windows.msvc.patch001
+            URL https://sqlite.org/2024/sqlite-amalgamation-3460100.zip
+            SHA256 77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784
+            PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/sqlite_windows_msvc.patch
             CMAKE_OPTION " "
         )
     else()
         mindspore_add_pkg(sqlite
-            VER 3.36.0
+            VER 3.46.1
             LIBS sqlite3
-            URL https://sqlite.org/2021/sqlite-amalgamation-3360000.zip
-            SHA256 999826fe4c871f18919fdb8ed7ec9dd8217180854dd1fe21eea96aed36186729
-            PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/sqlite.windows.patch002
+            URL https://sqlite.org/2024/sqlite-amalgamation-3460100.zip
+            SHA256 77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784
+            PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/sqlite_windows.patch
             CMAKE_OPTION " "
         )
     endif()
@@ -39,13 +33,10 @@ else()
         set(sqlite_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
     endif()
     mindspore_add_pkg(sqlite
-        VER 3.36.0
+        VER 3.46.1
         LIBS sqlite3
         URL ${REQ_URL}
         SHA256 ${SHA256}
-        PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2022-35737.patch
-        PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2021-36690.patch
-        PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2023-7104.patch
         CONFIGURE_COMMAND ./configure --enable-shared=no --disable-tcl --disable-editline --enable-json1)
 endif()
 

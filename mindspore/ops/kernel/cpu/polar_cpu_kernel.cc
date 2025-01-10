@@ -60,8 +60,11 @@ template <typename T>
 bool PolarCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   const auto abs = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(abs);
   const auto angle = static_cast<T *>(inputs[1]->device_ptr());
+  MS_EXCEPTION_IF_NULL(angle);
   auto output_addr = static_cast<std::complex<T> *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   size_t output_size = outputs[0]->size() / sizeof(std::complex<T>);
   auto task = [output_addr, abs, angle](size_t start, size_t end) {
     for (size_t i = start; i < end; ++i) {

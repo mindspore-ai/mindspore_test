@@ -102,9 +102,9 @@ bool DropoutGradBwdCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kDropoutGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kDropoutGradOutputsNum, kernel_name_);
 
-  T *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  const T *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  const T *mask = reinterpret_cast<T *>(inputs[1]->device_ptr());
+  T *output = GetDeviceAddress<T>(outputs, kIndex0);
+  const T *input = GetDeviceAddress<T>(inputs, kIndex0);
+  const T *mask = GetDeviceAddress<T>(inputs, kIndex1);
   auto task = DoDropOutGrad<T>(input, mask, output, keep_prob_);
   ParallelLaunchAutoSearch(task, num_count_, this, &parallel_search_info_);
   return true;

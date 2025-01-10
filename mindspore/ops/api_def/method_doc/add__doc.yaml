@@ -1,0 +1,94 @@
+add_:
+  description: |
+    add_(other) -> Tensor
+
+    Adds other value to `self` element-wise, `self` will updated in place.
+
+    .. math::
+
+        out_{i} = self_{i} + other_{i}
+
+    Note:
+        - When `self` and `other` have different shapes,
+          they must be able to broadcast to a common shape.
+        - `self` and `other` can not be bool type at the same time,
+          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
+        - `self` and `other` comply with the implicit type conversion rules to make the data types
+          consistent.
+        - The dimension of `self` should be greater than or equal to 1.
+        - all modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
+          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          in-place updates yet. `self` will not updated in place.
+
+    Args:
+        other (Union[Tensor, number.Number, bool]): `other` is a number.Number or a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+
+    Returns:
+        Tensor with a shape that is the same as the broadcasted shape of `self` and `other`,
+        and the data type is the one with higher precision or higher digits between `self` and `other`.
+
+    Raises:
+        TypeError: If `other` is not one of the following: Tensor, number.Number, bool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> a = Tensor(np.ones((2, 3)).astype("float32"))
+        >>> b = Tensor(np.ones((2, 3)).astype("float32"))
+        >>> a.add_(b)
+        >>> print(a)
+        [[2. 2. 2.]
+         [2. 2. 2.]]
+
+    .. method:: Tensor.add_(other, *, alpha=1) -> Tensor
+        :noindex:
+    
+    Adds scaled other value to `self`, `self` will updated in place.
+
+    .. math::
+
+        out_{i} = self_{i} + alpha \times other_{i}
+
+    Note:
+        - When `self` and `other` have different shapes,
+          they must be able to broadcast to a common shape.
+        - `self`, `other` and `alpha` comply with the implicit type conversion rules to make the data types
+          consistent.
+        - all modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
+          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          in-place updates yet. `self` will not updated in place.
+
+    Args:
+        other (Union[Tensor, number.Number, bool]): `other` is a number.Number or a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        
+    Keyword Args:
+        alpha (number.Number, optional): A scaling factor applied to `other`, default: ``1``.
+
+    Returns:
+        Tensor with a shape that is the same as the broadcasted shape of the `self` and `other`,
+        and the data type is the one with higher precision or higher digits among `self`, `other` and `alpha`.
+
+    Raises:
+        TypeError: If the type of `other` or `alpha` is not one of the following: Tensor, number.Number, bool.
+        TypeError: If `alpha` is of type float but `self` and `other` are not of type float.
+        TypeError: If `alpha` is of type bool but `self` and `other` are not of type bool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> a = Tensor(np.ones((2, 3)).astype("float32"))
+        >>> b = Tensor(np.ones((2, 3)).astype("float32"))
+        >>> a.add_(b, alpha=2.0)
+        >>> print(a)
+        [[3. 3. 3.]
+         [3. 3. 3.]]

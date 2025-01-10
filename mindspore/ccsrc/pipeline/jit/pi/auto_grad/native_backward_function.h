@@ -79,14 +79,22 @@ class NativeBackwardFunc : public BackwardFunc {
   /// \param[in] value The input value.
   ///
   /// \return The value filled with one.
-  ValuePtr Ones(const ValuePtr &value) const override { return ir_builder_->Ones(value); }
+  ValuePtr Ones(const ValuePtr &value) const override {
+    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    return ir_builder_->Ones(tensor);
+  }
 
   /// \brief Create the value filled with zero, shape like the input.
   ///
   /// \param[in] value The input value.
   ///
   /// \return The value filled with zero.
-  ValuePtr Zeros(const ValuePtr &value) const override { return ir_builder_->Zeros(value); }
+  ValuePtr Zeros(const ValuePtr &value) const override {
+    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    return ir_builder_->Zeros(tensor);
+  }
 
   /// \brief Calculate the sum of inputs.
   ///

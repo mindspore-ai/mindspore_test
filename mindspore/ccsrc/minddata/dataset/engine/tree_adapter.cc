@@ -53,6 +53,11 @@
 #include "minddata/dataset/util/gil_scoped.h"
 #include "minddata/dataset/util/ftok_key.h"
 #endif
+#ifdef WITH_BACKEND
+#include "runtime/hardware/device_context.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "utils/ms_context.h"
+#endif
 
 namespace mindspore {
 namespace dataset {
@@ -375,7 +380,7 @@ Status TreeAdapter::Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t i
 Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs, int64_t global_step,
                             int64_t dataset_size, bool independent_dataset) {
   RETURN_UNEXPECTED_IF_NULL(input_ir);
-  VLOG_FLOW("Dataset Pipeline TreeAdapter Complie start.");
+  VLOG_FLOW("Dataset Pipeline TreeAdapter Compile started.");
   uint64_t start_time = GetSyscnt();
   input_ir_ = input_ir;
   tree_state_ = kCompileStateIRGraphBuilt;
@@ -435,7 +440,7 @@ Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_
   RETURN_IF_NOT_OK(Build(root_ir_, init_epoch));
   tree_state_ = kCompileStateReady;
   RETURN_IF_NOT_OK(CollectPipelineInfo("Pipeline", "Compile", start_time));
-  VLOG_FLOW("Dataset Pipeline TreeAdapter Complie finished.");
+  VLOG_FLOW("Dataset Pipeline TreeAdapter Compile finished.");
   return Status::OK();
 }
 
@@ -538,11 +543,62 @@ void TreeAdapter::SubprocessExit(int exit_code) {
   }
   MS_LOG(INFO) << "[Independent Dataset Process] End waiting for all pipeline threads exit.";
 
+  // wait for python multiprocessing exit
+  for (auto itr = tree_->begin(); itr != tree_->end(); ++itr) {
+    if (itr->Name() == "GeneratorOp") {
+      auto generator_op = dynamic_cast<GeneratorOp *>(itr.get().get());
+      if (generator_op->Terminate() != Status::OK()) {
+        MS_LOG(ERROR) << "Terminate GeneratorOp python multiprocessing failed.";
+      }
+    }
+    if (itr->Name() == kMapOp) {
+      auto map_op = dynamic_cast<MapOp *>(itr.get().get());
+      if (map_op->Terminate() != Status::OK()) {
+        MS_LOG(ERROR) << "Terminate MapOp python multiprocessing failed.";
+      }
+    }
+    if (itr->Name() == kBatchOp) {
+      auto batch_op = dynamic_cast<BatchOp *>(itr.get().get());
+      if (batch_op->Terminate() != Status::OK()) {
+        MS_LOG(ERROR) << "Terminate BatchOp python multiprocessing failed.";
+      }
+    }
+  }
+  MS_LOG(INFO) << "[Independent Dataset Process] The child processes of the independent process have all exited.";
+
   // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
   ret = shared_memmory_queue.ReleaseCurrentShm();
   if (ret != Status::OK()) {
     MS_LOG(ERROR) << ret.ToString();
   }
+
+  MS_LOG(INFO) << "[Independent Dataset Process] The shared memory had been released.";
+
+  // need acquire gil before destroy device
+  GilAcquireWithCheck gil_acquire_with_check;
+
+#if !defined(BUILD_LITE) && defined(ENABLE_D)
+  // If the main process has exited, the independent dataset process does not need to release the device.
+  auto ms_context = MsContext::GetInstance();
+  if (ms_context != nullptr) {
+    device::DeviceContextKey device_context_key = {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET),
+                                                   ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)};
+    auto device_context = device::DeviceContextManager::GetInstance().GetDeviceContext(device_context_key.device_name_);
+
+    // destroy the device context when independent dataset exit
+    if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && device_context &&
+        device_context->initialized()) {
+      // Destroy the device context
+      device_context->Destroy();
+    }
+    MS_LOG(INFO) << "Destroy device context successful.";
+  } else {
+    MS_LOG(ERROR) << "Get ms context failed by MsContext::GetInstance()";
+  }
+#endif
+
+  // release the gil
+  py::gil_scoped_release release;
 
   // independent will exit
   _exit(exit_code);
@@ -662,7 +718,7 @@ Status TreeAdapter::LaunchSubprocess() {
 #endif
 
 Status TreeAdapter::Launch() {
-  VLOG_FLOW("Dataset Pipeline Launch.");
+  VLOG_FLOW("Dataset Pipeline launched.");
   RETURN_IF_NOT_OK(CheckTreeIfNull());
 
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
@@ -676,9 +732,6 @@ Status TreeAdapter::Launch() {
                  << ", PyGILState_Check: " << PyGILState_Check();
     GilAcquireWithCheck gil_acquire_with_check;
     PyOS_BeforeFork();
-
-    // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
-    signal(SIGCHLD, SIG_IGN);
 
     // launch the sub-process to detach dataset with send
     pid_t fpid = fork();
@@ -771,6 +824,14 @@ Status TreeAdapter::Launch() {
 #endif
 
   RETURN_IF_NOT_OK(tree_->Launch());
+
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+  if (independent_dataset_) {
+    // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
+    signal(SIGCHLD, SIG_IGN);
+  }
+#endif
+
   launched_ = true;
   return Status::OK();
 }

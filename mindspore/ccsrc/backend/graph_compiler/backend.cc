@@ -44,6 +44,7 @@
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/graph_adapter.h"
+#include "runtime/graph_scheduler/actor/actor_common.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "runtime/pynative/op_function/pyboost_grad_functions.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -100,7 +101,8 @@ LinConvertResult MsBackend::MsConvert(const GraphSegmentPtr &segment, const std:
     MS_LOG(INFO) << "Link graph " << pre_segment->graph_id_ << " to " << graph_id;
   }
 
-  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY)) {
+  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) ||
+      common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1") {
     MS_LOG(INFO) << "PrecompileOnly, stop run graph";
     return result;
   }
@@ -379,7 +381,7 @@ void CreateKernelTensor(const std::vector<std::vector<tensor::TensorPtr>> &input
         auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
         MS_EXCEPTION_IF_NULL(device_address);
         if (device_address->kernel_tensor() == nullptr) {
-          runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
+          runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
         }
       }
     }
@@ -392,7 +394,7 @@ void CreateKernelTensor(const BaseRef &arg) {
     MS_EXCEPTION_IF_NULL(tensor);
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
     if (device_address != nullptr) {
-      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
+      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
     }
   } else if (utils::isa<ValueSequencePtr>(arg)) {
     auto value_sequence = utils::cast<ValueSequencePtr>(arg);
@@ -410,7 +412,7 @@ void CreateKernelTensor(const BaseRef &arg) {
     MS_EXCEPTION_IF_NULL(tensor);
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
     if (device_address != nullptr) {
-      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
+      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
     }
   } else {
     MS_LOG(DEBUG) << "Only tensor need create KernelTensor";
@@ -494,6 +496,7 @@ runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphComp
     MS_LOG(INFO) << "Actor Multithreading is turned off!";
   }
   runtime::GraphScheduler::GetInstance().Schedule(actor_set);
+  runtime::GraphScheduler::GetInstance().RemoveNodeAddr(graph_compiler_info);
 
   for (size_t i = 0; i < graphs.size(); ++i) {
     pynative::GraphAdapter::ClearForwardOutputValueNodeDeviceAddress(graphs[i], device_contexts[i]);
@@ -580,18 +583,23 @@ void MindRTBackend::RunActorSet(const ActorInfo &actor_info, runtime::ActorSet *
     }
   }
 
-  auto input_tensors = GetRunGraphInputs(graph_compiler_info, args);
-  if (graphs.size() > input_tensors.size()) {
-    MS_LOG(EXCEPTION) << "The actor_set " << actor_info << " graphs size " << graphs.size()
-                      << " should less than or equal to inputs size " << input_tensors.size();
+  std::vector<std::vector<tensor::TensorPtr>> input_tensors;
+  if (!runtime::EnableInputOptimize()) {
+    input_tensors = GetRunGraphInputs(graph_compiler_info, args);
+    if (graphs.size() > input_tensors.size()) {
+      MS_LOG(EXCEPTION) << "The actor_set " << actor_set->name_ << " graphs size " << graphs.size()
+                        << " should less than or equal to inputs size " << input_tensors.size();
+    }
+    pynative::GraphAdapter::HandleHeterogeneousTensors(input_tensors, device_contexts, actor_set);
+    CreateKernelTensor(input_tensors, device_contexts);
+    // Release GIL and run actor DAG.
+    GilReleaseWithCheck release_gil;
+    VectorRef empty_args;
+    runtime::GraphScheduler::GetInstance().Run(actor_set, input_tensors, empty_args);
+  } else {
+    GilReleaseWithCheck release_gil;
+    runtime::GraphScheduler::GetInstance().Run(actor_set, input_tensors, args);
   }
-  pynative::GraphAdapter::HandleHeterogeneousTensors(input_tensors, device_contexts, actor_set);
-  CreateKernelTensor(input_tensors, device_contexts);
-
-  // Release GIL and run actor DAG.
-  GilReleaseWithCheck release_gil;
-  VectorRef empty_args;
-  runtime::GraphScheduler::GetInstance().Run(actor_set, input_tensors, empty_args);
 
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   graph_compiler_->Summary(graph_compiler_info.graphs_);

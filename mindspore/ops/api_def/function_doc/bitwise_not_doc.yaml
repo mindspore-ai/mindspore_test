@@ -1,0 +1,30 @@
+bitwise_not:
+  description: |
+    bitwise_not(input) -> Tensor
+
+    Returns bitwise `not` of the input tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor must be of integral or Boolean types.
+
+    Returns:
+        Tensor, has the same shape and type as `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        RuntimeError: If dtype of `input` is not int or bool.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([True, False, True, False]))
+        >>> y = mint.bitwise_not(x)
+        >>> print(y)
+        [False True False True]

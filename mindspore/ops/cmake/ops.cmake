@@ -31,11 +31,11 @@ else()
     # ------- LITE merge_files -----
     include(${TOP_DIR}/mindspore/lite/cmake/merge.cmake)
     merge_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge "")
-    merge_files(${CMAKE_CURRENT_SOURCE_DIR}/op_def/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops op_def_merge "")
     merge_files(${CMAKE_CURRENT_SOURCE_DIR}/view/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops view_merge "")
     merge_files(${CMAKE_CURRENT_SOURCE_DIR}/ops_utils/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops utils_merge "")
     file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_BINARY_DIR}/merge/mindspore/ops/*.cc")
+    list(APPEND CORE_OPS_LIST ${OP_DEF_SRC})
 endif()
 
 
@@ -67,7 +67,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
   if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes -DHAVE_SNPRINTF")
   endif()
-  add_compile_definitions(OPS_DLL)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
     -Wno-overloaded-virtual -Wno-user-defined-warnings -Winconsistent-missing-override -Wno-delete-non-virtual-dtor \
@@ -82,6 +81,9 @@ src_separate_compile(
     SRC_LIST ${CORE_OPS_LIST})
 foreach(number RANGE 1 ${OPS_OBJECT_COUNT})
     list(APPEND OPS_OBJECT_LIST $<TARGET_OBJECTS:ops_obj_${number}>)
+    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+        target_compile_definitions(ops_obj_${number} PRIVATE OPS_DLL)
+    endif()
 endforeach()
 
 set(OPS_OBJECT_COUNT "${OPS_OBJECT_COUNT}" PARENT_SCOPE)

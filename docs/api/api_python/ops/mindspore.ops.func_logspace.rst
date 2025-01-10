@@ -16,6 +16,8 @@ mindspore.ops.logspace
         - **end** (Union[float, Tensor]) - 间隔的结束值。
         - **steps** (int) - `steps` 必须为非负整数。
         - **base** (int，可选) - `base` 必须为非负整数。默认值： ``10`` 。
+
+    关键字参数：
         - **dtype** (mindspore.dtype，可选) - 输出的数据类型。默认值： ``mstype.float32`` 。
 
     返回：

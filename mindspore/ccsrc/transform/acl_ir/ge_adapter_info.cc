@@ -28,9 +28,6 @@ void GeAdapterInfo::InitOpType() { info_.op_type = adapter_->getOpType(); }
 void GeAdapterInfo::InitAclInputsAndOutputs() {
   InitParametersMap(adapter_->getInputMap(), adapter_->getDynInputMap(), true);
   InitParametersMap(adapter_->getOutputMap(), adapter_->getDynOutputMap(), false);
-  for (auto &[ms_input_idx, attr_name] : adapter_->getInputAttrMap()) {
-    max_input_ms_proto_idx_ = std::max(max_input_ms_proto_idx_, static_cast<int>(ms_input_idx) - 1);
-  }
 }
 
 void GeAdapterInfo::InitRefMap() {

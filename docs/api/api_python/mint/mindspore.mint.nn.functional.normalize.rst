@@ -5,7 +5,7 @@ mindspore.mint.nn.functional.normalize
 
     将输入的张量按照指定维度进行归一化。
 
-    对于一个输入的张量，它的维度为:math:`(n_{0},..., n_{dim},..., n_{k})`，对于第:math:`n_{dim}`个向量 `v`，它沿着维度 `dim` 按照如下公式进行转换
+    对于一个输入的张量，它的维度为 :math:`(n_{0},..., n_{dim},..., n_{k})`，对于第 :math:`n_{dim}` 个向量 `v`，它沿着维度 `dim` 按照如下公式进行转换
 
     .. math::
         v=\frac{v}{\max(\left \| v \right \| _{p},\in )}

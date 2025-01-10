@@ -3,6 +3,7 @@ rand_ext:
     args:
         shape:
             dtype: tuple[int]
+            type_cast: list[int]
         seed:
             dtype: tensor
         offset:
@@ -19,3 +20,5 @@ rand_ext:
     dispatch:
         enable: True
         Ascend: RandExtAscend
+        CPU: None
+        GPU: None

@@ -48,6 +48,8 @@ mindspore
 .. mscnautosummary::
     :toctree: mindspore
 
+    mindspore.set_device
+    mindspore.set_deterministic
     mindspore.set_context
     mindspore.get_context
     mindspore.set_auto_parallel_context
@@ -155,6 +157,7 @@ mindspore
     mindspore.reshard
     mindspore.shard
     mindspore.sync_pipeline_shared_parameters
+    mindspore.parallel.set_op_strategy_config
 
 即时编译
 --------
@@ -172,6 +175,7 @@ mindspore
     mindspore.constexpr
     mindspore.lazy_inline
     mindspore.no_inline
+    mindspore.set_recursion_limit
 
 工具
 -----
@@ -194,7 +198,10 @@ mindspore
     :toctree: mindspore
 
     mindspore.Profiler
+    mindspore.profiler.mstx
     mindspore.profiler.DynamicProfilerMonitor
+    mindspore.profiler.schedule
+    mindspore.profiler.tensor_board_trace_handler
     mindspore.SummaryCollector
     mindspore.SummaryLandscape
     mindspore.SummaryRecord

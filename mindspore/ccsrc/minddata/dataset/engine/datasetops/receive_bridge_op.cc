@@ -199,6 +199,9 @@ Status ReceiveBridgeOp::operator()() {
         } else {
           // if the pipeline had been interrupted, ignore the MsgRcv error
           RETURN_IF_INTERRUPTED();
+          if (tree_->isFinished()) {
+            return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
+          }
           return status;
         }
       }
@@ -228,6 +231,9 @@ Status ReceiveBridgeOp::operator()() {
       } else {
         // if the pipeline had been interrupted, ignore the MsgRcv error
         RETURN_IF_INTERRUPTED();
+        if (tree_->isFinished()) {
+          return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
+        }
         return status;
       }
     }

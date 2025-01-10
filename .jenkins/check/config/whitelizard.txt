@@ -22,7 +22,6 @@ mindspore/mindspore/core/include/ir/base_tensor.h:mindspore::tensor::MakeTensorD
 mindspore/mindspore/core/ir/dtype_extends.cc:mindspore::UnitSizeInBytes
 mindspore/mindspore/ccsrc/frontend/optimizer/irpass.cc:mindspore::opt::irpass::OptimizeIRPassLib::OptimizeIRPassLib
 mindspore/mindspore/ccsrc/frontend/parallel/ops_info/gather_v2_p_info.cc:mindspore::parallel::GatherV2PInfo::CheckStrategy
-mindspore/mindspore/ccsrc/frontend/parallel/parallel_preprocessor.cc:mindspore::parallel::ParallelPreprocessor::FindNextLayout
 mindspore/mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_kernel_runtime.cc:mindspore::device::gpu::GPUKernelRuntime::LaunchKernelDynamic
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::BuildKernelActors
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::RunGraphKernelByKernel
@@ -59,6 +58,7 @@ mindspore/mindspore/python/mindspore/ops/function/nn_func.py:max_unpool1d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:pad
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv1d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d_ext
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv2d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:cross_entropy_ext
 mindspore/mindspore/python/mindspore/ops/function/math_func.py:cov
@@ -329,6 +329,7 @@ mindspore/mindspore/ops/kernel/gpu/math/cumprod_gpu_kernel.cc:mindspore::kernel:
 mindspore/mindspore/ops/kernel/cpu/cumprod_cpu_kernel.cc:mindspore::kernel::CumProdCpuKernelMod::GetFuncList
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel.cc:mindspore::kernel::PoolingCpuKernelMod::InitPoolingFields
 mindspore/mindspore/ops/kernel/cpu/mkldnn/pooling_cpu_kernel_nnacl.cc:mindspore::kernel::PoolingCpuKernelNnaclMod::Resize
+mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::TensorPy::Item
 
 # AICPU migration
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/bias_add_grad.cc:aicpu::BiasAddGradCpuKernel::BiasAddGradCompute
@@ -473,3 +474,4 @@ mindspore/mindspore/python/mindspore/train/dataset_helper.py:connect_network_wit
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_utils.cc:mindspore::parallel::IntroduceConstraints
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/tensor_redistribution.cc:mindspore::parallel::TensorRedistribution::CalculateFromTensorShape
 mindspore/mindspore/lite/providers/nnie/src/custom_infer.cc:mindspore::nnie::CustomInterface::Infer
+mindspore/mindspore/ops/infer/ops_func_impl/convolution_str.cc::mindspore::ops::ConvolutionStrFuncImpl::InferShape

@@ -27,3 +27,10 @@
 [submodule "tests/st/networks/golden-stick"]
 	path = tests/st/networks/golden-stick
 	url = https://gitee.com/mindspore/golden-stick.git
+[submodule "mstt"]
+	path = mstt
+	url = https://gitee.com/ascend/mstt.git
+	branch = master
+[submodule "tests/st/networks/llm_parallel_feature/mindformers"]
+	path = tests/st/networks/llm_parallel_feature/mindformers
+	url = https://gitee.com/mindspore/mindformers.git

@@ -19,21 +19,10 @@
 #include <string>
 #include <vector>
 #include "kernel/kernel.h"
-#include "./internal_kernel.h"
 
 namespace mindspore {
 namespace kernel {
-class InternalKernelUtils {
- public:
-  static internal::TensorFormat ToInternalFormat(Format format);
-  static internal::TensorDType ToInternalDType(TypeId type);
-  static int ToInternalOpId(std::string);
-  static void ToInternalTensor(internal::Tensor *internal_tensor, const KernelTensor *kernel_tensor);
-
-  static internal::DeviceRawBuf ToDeviceRawBuf(const KernelTensor *kernel_tensor);
-};
-
-bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std::string &tensor_name,
+bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std::vector<std::string> &tensor_name_list,
                                        std::vector<int32_t> *seq_len);
 bool ConvertSeqLenToVectorAndCheckUpadate(KernelTensor *const actual_seq_length_ptr, std::vector<int32_t> *seq_len);
 }  // namespace kernel

@@ -974,7 +974,6 @@ OPERATOR_ONNX_CONVERT_DEFINE(BatchNorm, BatchNormalization,
                              OpNameInfo()
                                .Attr("epsilon", "epsilon", onnx::AttributeProto_AttributeType_FLOAT,
                                      SetAttrValueToProto<FP32Imm>)
-                               .CastInput(0, onnx::TensorProto_DataType_FLOAT16, onnx::TensorProto_DataType_FLOAT)
                                .CastOutputToInputType(0))
 
 OPERATOR_ONNX_CONVERT_DEFINE(Reshape, Reshape, OpNameInfo())

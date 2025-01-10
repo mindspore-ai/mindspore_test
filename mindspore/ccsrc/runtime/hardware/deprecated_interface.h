@@ -21,7 +21,6 @@
 #include <string>
 #include <memory>
 #include "ir/func_graph.h"
-#include "pybind11/pytypes.h"
 #include "utils/ms_context.h"
 #include "nlohmann/json.hpp"
 
@@ -30,19 +29,6 @@ namespace device {
 class DeprecatedInterface {
  public:
   virtual ~DeprecatedInterface() = default;
-
-  // ge
-  virtual void DoExecNonInputGraph(const std::string &phase) {}
-  virtual void ExportDFGraph(const std::string &file_name, const std::string &phase, const pybind11::object &encrypt,
-                             char *key) {}
-
-  virtual FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph, const pybind11::dict &init_params) {
-    return nullptr;
-  }
-  virtual bool RunInitGraph(const FuncGraphPtr &anf_graph, const pybind11::dict &init_params) { return true; }
-  virtual void ClearGraphWrapper() {}
-  virtual void ClearOpAdapterMap() {}
-  virtual void UnregisterExternalAllocator() {}
 
   // ascend
   virtual void DumpProfileParallelStrategy(const FuncGraphPtr &func_graph) {}

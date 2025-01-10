@@ -76,24 +76,11 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             'py::object res = fn(*args, **kwargs);\n'
             'return res;\n'
         )
-        self.arg_handler_prt_template = Template(
-            "arg_list[${idx}] = "
-            "(*${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
-        )
-        self.arg_handler_template = Template(
-            "arg_list[${idx}] = "
-            "${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]);\n"
-        )
-        self.arg_handler_optional_template = Template(
-            'if (!py::isinstance<py::none>(arg_list[${idx}])) {\n'
-            '  ${arg_handler_str}\n'
-            '}\n'
-        )
         self.pybind_register_template = Template(
-            '(void)py::class_ <${cpp_func_name}Functional, Functional, std::shared_ptr<${cpp_func_name}Functional>>(\n'
-            '*m, "${mint_func_name}Functional_")\n'
-            '.def(py::init<>())\n'
-            '.def("__call__", &${cpp_func_name}Functional::Call, "Call ${mint_func_name} functional.");\n'
+            '(void)py::class_<${cpp_func_name}Functional, Functional, std::shared_ptr<${cpp_func_name}Functional>>\n'
+            '  (*m, "${cpp_func_name}Functional_")\n'
+            '  .def("__call__", &${cpp_func_name}Functional::Call, "Call ${cpp_func_name} functional.");\n'
+            'm->attr("_${mint_func_name}_instance") = ${mint_func_name}_instance;'
         )
         self.callback_python_in_ut_template = Template(
             'MS_LOG(INFO) << "Callback python method in UT: ${py_method}";\n'
@@ -105,18 +92,6 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             'case ${case_id}:\n'
             '  ${device_dispatcher}\n'
         )
-        # The format of arg_handler_map is {arg_handler_name : list of supported types}.
-        # The first one of type list is the target dtype. Types corresponds to type_str_map.
-        self.arg_handler_map = {"to_2d_paddings": "int|tuple[int]|list[int]",
-                                "dtype_to_type_id": "type",
-                                "to_kernel_size": "int|tuple[int]|list[int]",
-                                "to_strides": "int|tuple[int]|list[int]",
-                                "str_to_enum": "str",
-                                "to_pair": "int|tuple[int]|list[int]|float",
-                                "to_dilations": "tuple[int]|list[int]|int",
-                                "to_output_padding": "int|tuple[int]|list[int]",
-                                "to_rates": "int|tuple[int]|list[int]"}
-        self.input_args_name = {"input", "x", "input_x"}
 
     def generate(self, work_path, op_protos, mint_func_protos_data, alias_func_mapping):
         """
@@ -129,7 +104,8 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         Args:
             work_path (str): The file path where the generated files will be saved.
             op_protos (list): A list of operator prototypes containing information about the operators to be processed.
-            mint_func_protos_data(dict): A dict of tensor prototypes containing device-related information.
+            mint_func_protos_data (dict): A dict of tensor prototypes containing device-related information.
+            alias_func_mapping (dict): A dict mapping from api name to its alias api name.
 
         Returns:
             None
@@ -138,10 +114,17 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         mint_classes_def_list = []
 
         _, single_mint_func_data, overload_mint_func_data = op_api_proto.categorize_func_data(mint_func_protos_data)
+        single_func_call_body_list, single_cpp_class_name_list = (
+            self._get_single_func_call_body_list(single_mint_func_data))
+        overload_func_call_body_list, overload_cpp_class_name_list = (
+            self._get_overload_func_call_body_list(overload_mint_func_data))
 
-        mint_classes_def_list.extend(self._get_single_func_call_body_list(single_mint_func_data))
-        mint_classes_def_list.extend(self._get_overload_func_call_body_list(overload_mint_func_data))
-        mint_classes_reg_list = self._get_mint_func_reg_list(mint_func_protos_data, alias_func_mapping)
+        mint_classes_def_list.extend(single_func_call_body_list)
+        mint_classes_def_list.extend(overload_func_call_body_list)
+
+        cpp_class_name_list = single_cpp_class_name_list + overload_cpp_class_name_list
+        mint_classes_reg_list = (
+            self._get_mint_func_reg_list(single_mint_func_data, overload_mint_func_data, cpp_class_name_list))
 
         pyboost_overload_file_str = (
             self.PYBOOST_OVERLOAD_FUNCTIONS_TEMPLATE.replace(mint_func_classes_def=mint_classes_def_list,
@@ -158,14 +141,16 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
 
         Returns:
-            list: Updated str list for generating C++ function call bodies.
+            func_call_body_list (list): Updated str list for generating C++ function call bodies.
+            cpp_class_name_list (list): The list of non-overloaded c++ functional classes' names.
         """
-        func_call_body_list = []
+        func_call_body_list, cpp_class_name_list = [], []
         for _, func_proto in single_op_func_data.items():
             func_name = func_proto.func_name
             class_name = func_proto.op_proto.op_class.name
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
-            signature_str = self._generate_single_signature_str(func_proto.op_proto)
+            signature_str = self._generate_single_signature_str(
+                func_proto.op_proto, func_proto.kw_only_args, func_proto.varargs)
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
             ut_body = self.TENSOR_FUNC_UT_BODY.replace(py_method=func_proto.py_method)
@@ -176,7 +161,8 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
                 signatures=signature_str,
                 max_args=max_size,
                 ut_body=ut_body))
-        return func_call_body_list
+            cpp_class_name_list.append(class_name)
+        return func_call_body_list, cpp_class_name_list
 
     def _get_overload_func_call_body_list(self, overload_op_func_data):
         """
@@ -186,14 +172,16 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
 
         Returns:
-            list: Updated str list for generating C++ function call bodies.
+            func_call_body_list (list): Updated str list for generating C++ function call bodies.
+            cpp_class_name_list (list): The list of overloaded c++ functional classes' names.
         """
-        func_call_body_list = []
+        func_call_body_list, cpp_class_name_list = [], []
         for func_api_name, func_protos in overload_op_func_data.items():
-            func_call_body_list.append(self._get_overload_func_call_str(func_api_name, func_protos))
-        return func_call_body_list
+            func_call_body_list.append(
+                self._get_overload_func_call_str(func_api_name, func_protos, cpp_class_name_list))
+        return func_call_body_list, cpp_class_name_list
 
-    def _get_overload_func_call_str(self, func_api_name, func_protos):
+    def _get_overload_func_call_str(self, func_api_name, func_protos, cpp_class_name_list):
         """
         Generates C++ call body string for overloaded tensor functions.
 
@@ -214,8 +202,9 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             op_proto = tensor_proto.op_proto
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
-        formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
-        overload_func_call_str = self.PYBOOST_OVERLOAD_MINT_CLASS_DEF.replace(class_name=formatted_class_name,
+        cpp_func_name = pyboost_utils.format_func_api_name(func_api_name)
+        cpp_class_name_list.append(cpp_func_name)
+        overload_func_call_str = self.PYBOOST_OVERLOAD_MINT_CLASS_DEF.replace(cpp_func_name=cpp_func_name,
                                                                               func_name=func_api_name,
                                                                               signatures=signatures_str,
                                                                               dispatch_cases=dispatch_cases,
@@ -240,46 +229,12 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             if not first_sig:
                 sig_str += ',\n'
             first_sig = False
-            sig_str += self._generate_single_signature_str(op_proto)
+            sig_str += self._generate_single_signature_str(op_proto, tensor_proto.kw_only_args, tensor_proto.varargs)
         return sig_str
 
-    def _generate_single_signature_str(self, op_proto: OpProto) -> str:
-        """
-        Generates a single function signature string for the given operation prototype.
-
-        Args:
-            op_proto (OpProto): Operation prototype to generate the signature for.
-
-        Returns:
-            str: Generated function signature string.
-        """
-        args_str = f'"{op_proto.op_class.name}('
-        first_arg = True
-        for _, arg in enumerate(op_proto.op_args):
-            single_arg = ''
-            if not first_arg:
-                single_arg = ', '
-            first_arg = False
-            arg_handler = arg.arg_handler
-            if arg_handler != '':
-                if arg_handler in self.arg_handler_map:
-                    arg_dtype = self.arg_handler_map[arg_handler]
-                else:
-                    raise ValueError("Generate failed. Check if {} is registered in TensorFuncRegCppGenerator."
-                                     .format(arg_handler))
-            else:
-                arg_dtype = arg.arg_dtype
-                for cast_type in arg.type_cast:
-                    arg_dtype += '|'
-                    arg_dtype += cast_type
-            arg_name = arg.arg_name
-            single_arg += f"{arg_dtype} {arg_name}"
-            if arg.as_init_arg:
-                arg_default = str(arg.default)
-                single_arg += '='
-                single_arg += arg_default
-            args_str += single_arg
-        return args_str + ')"'
+    def _generate_single_signature_str(self, op_proto: OpProto, kw_only_args, varargs) -> str:
+        op_parser = OpTemplateParser(op_proto)
+        return op_parser.generate_signature_str(kw_only_args, varargs, is_tensor_api=False)
 
     def _get_dispatch_cases(self, func_protos):
         """
@@ -350,77 +305,40 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         """
         func_proto_device = getattr(func_proto, device)
         if func_proto_device == 'pyboost':
-            arg_handler_processor_str = self._get_arg_handler_processor(func_proto)
+            arg_handler_processor_str = self._get_arg_handler_processor(func_proto.func_name, func_proto.op_proto)
             op_parser = OpTemplateParser(func_proto.op_proto)
             op_pyboost_func_name = op_parser.get_pyboost_func_name()
             prim_name = f"prim::kPrim{func_proto.op_proto.op_class.name}"
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                         class_name=func_proto.op_proto.op_class.name,
                                                         prim_name=prim_name,
-                                                        pyboost_base_func_name=op_pyboost_func_name,)
-
+                                                        pyboost_base_func_name=op_pyboost_func_name)
         if func_proto_device == 'py_method':
             return self.callback_python_template.replace(py_method=func_proto.py_method)
 
         raise TypeError("Only support pyboost or python_method.")
 
-    def _get_arg_handler_processor(self, func_proto):
-        """
-        Generates argument handler processing code for the given function prototype.
+    def _get_arg_handler_processor(self, func_name, op_proto):
+        op_parser = OpTemplateParser(op_proto)
+        return op_parser.get_arg_handler_processor(func_name, op_proto, is_tensor_api=False)
 
-        Args:
-            func_proto (TensorFuncProto): Function prototype to generate argument processing for.
-
-        Returns:
-            str: Generated argument handler processing code.
-        """
-        arg_handler_processor = []
-        op_proto = func_proto.op_proto
-        op_args = op_proto.op_args
-        for idx, op_arg in enumerate(op_args):
-            arg_handler = op_arg.arg_handler
-            func_str = ''.join(word.capitalize() for word in arg_handler.split('_'))
-            if arg_handler:
-                func_name = func_proto.func_name
-                op_arg_name = op_arg.arg_name
-                if func_str in ("StrToEnum", "DtypeToTypeId"):
-                    arg_handler_str = self.arg_handler_prt_template.replace(func_str=func_str,
-                                                                            func_name=func_name,
-                                                                            op_arg_name=op_arg_name,
-                                                                            idx=idx)
-                else:
-                    arg_handler_str = self.arg_handler_template.replace(func_str=func_str,
-                                                                        func_name=func_name,
-                                                                        op_arg_name=op_arg_name,
-                                                                        idx=idx)
-
-                if op_arg.default == "None":
-                    arg_handler_str = self.arg_handler_optional_template.replace(idx=idx,
-                                                                                 arg_handler_str=arg_handler_str)
-                arg_handler_processor.append(arg_handler_str)
-
-        return arg_handler_processor
-
-    def _get_mint_func_reg_list(self, mint_func_protos_data, alias_func_mapping):
+    def _get_mint_func_reg_list(self, single_mint_func_data, overload_mint_func_data, cpp_class_names):
         """
         Generates the list of pybind definition strings for mint functions.
 
         Args:
-            mint_func_protos_data (dict): Dictionary of tensor function prototypes with only one definition.
-            alias_func_mapping (dict): A dict of tensor prototypes containing device-related information.
+            single_mint_func_data (dict): Dictionary of single mint function data.
+            overload_mint_func_data (dict): Dictionary of overload mint function data.
+            cpp_class_names (list): List of C++ class names.
 
         Returns:
             list: list of strs for generating pybind definitions of mint functions' API.
         """
-        mint_func_reg_list = []
-        for func_name in mint_func_protos_data.keys():
-            api_def_list = mint_func_protos_data[func_name]
-            mint_func_name = pyboost_utils.format_func_api_name(func_name)
-            if len(api_def_list) == 1:
-                cpp_func_name = pyboost_utils.format_func_api_name(mint_func_protos_data[func_name][0].op_proto.op_name)
-            elif len(api_def_list) > 1:
-                cpp_func_name = pyboost_utils.format_func_api_name(func_name)
+        # the order of single_mint_func_data/overload_mint_func_data matters
+        mint_func_names = list(single_mint_func_data.keys()) + list(overload_mint_func_data.keys())
 
+        mint_func_reg_list = []
+        for mint_func_name, cpp_func_name in zip(mint_func_names, cpp_class_names):
             mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=mint_func_name,
                                                                             cpp_func_name=cpp_func_name))
         return mint_func_reg_list

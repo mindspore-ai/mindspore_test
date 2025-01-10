@@ -27,6 +27,7 @@
 #include <optional>
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
+#include "utils/device_manager_conf.h"
 
 namespace mindspore {
 enum MsBackendPolicy {
@@ -49,6 +50,12 @@ enum JitSyntaxLevel : int {
   kStrict,      // JIT Fallback disabled.
   kCompatible,  // JIT Fallback partial enabled for Python basic type only, such as scalar, dict.
   kLax,         // JIT Fallback fully enabled.
+};
+
+enum JitStatus : int {
+  kNotJit,        // Not Jit.
+  kJitCompiling,  // Jit Compiling.
+  kJitRunning,    // Jit Running.
 };
 
 enum DebugLevel : int {
@@ -92,7 +99,6 @@ enum MsCtxParam : unsigned {
   // parameter of type bool
   MS_CTX_TYPE_BOOL_BEGIN,
   MS_CTX_CHECK_BPROP_FLAG = MS_CTX_TYPE_BOOL_BEGIN,
-  MS_CTX_ENABLE_DUMP,
   MS_CTX_ENABLE_DYNAMIC_MEM_POOL,
   MS_CTX_ENABLE_GPU_SUMMARY,
   MS_CTX_ENABLE_GRAPH_KERNEL,
@@ -136,6 +142,7 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_FLASH_ATTENTION_LOAD_BALANCE,
   MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER,
   MS_CTX_ENABLE_INTERLEAVE_SPLIT_CONCAT_BRANCH,
+  MS_CTX_ENABLE_INTERLEAVE_PARALLEL_BRANCH,
   MS_CTX_ENABLE_FUSED_CAST_ADD_OPT,
   MS_CTX_NEED_CKPT,
   MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS,
@@ -179,7 +186,6 @@ enum MsCtxParam : unsigned {
   MS_CTX_GRAPH_MEMORY_MAX_SIZE,
   MS_CTX_PRINT_FILE_PATH,
   MS_CTX_PROFILING_OPTIONS,
-  MS_CTX_SAVE_DUMP_PATH,
   MS_CTX_SAVE_GRAPHS_PATH,
   MS_CTX_COMPILE_CACHE_PATH,
   MS_CTX_VARIABLE_MEMORY_MAX_SIZE,
@@ -310,8 +316,8 @@ class MS_CORE_API MsContext {
   void set_not_convert_jit(bool not_convert_jit) { not_convert_jit_ = not_convert_jit; }
   bool not_convert_jit() { return not_convert_jit_; }
 
-  void set_jit_running(bool jit_running) { jit_running_ = jit_running; }
-  bool jit_running() const { return jit_running_; }
+  void set_jit_status(const JitStatus &status) { jit_status_ = status; }
+  enum JitStatus jit_status() const { return jit_status_; }
 
  private:
   void RefreshExecutionMode();
@@ -351,7 +357,7 @@ class MS_CORE_API MsContext {
   static std::map<std::string, std::string> &PluginPathMap();
   enum CellReuseLevel cell_reuse_level_ = CellReuseLevel::kNoCellReuse;
   bool not_convert_jit_{false};
-  bool jit_running_{false};
+  enum JitStatus jit_status_ = JitStatus::kNotJit;
 
   std::optional<bool> enable_infer_boost_ = std::nullopt;
   std::set<std::string> ms_internal_enable_custom_kernel_list_;
@@ -403,6 +409,11 @@ inline const int &MsContext::get_param<int>(MsCtxParam param) const {
 template <>
 inline const uint32_t &MsContext::get_param<uint32_t>(MsCtxParam param) const {
   MarkReadStatus(param);
+  // The configuration of api interface takes priority effect.
+  if (param == MS_CTX_DEVICE_ID && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
+    return DeviceManagerConf::GetInstance()->device_id();
+  }
+
   return uint32_params_[param - MS_CTX_TYPE_UINT32_BEGIN];
 }
 
@@ -415,6 +426,14 @@ inline const float &MsContext::get_param<float>(MsCtxParam param) const {
 template <>
 inline const std::string &MsContext::get_param<std::string>(MsCtxParam param) const {
   MarkReadStatus(param);
+  // The configuration of api interface takes priority effect.
+  if (param == MS_CTX_DEVICE_TARGET && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
+    return DeviceManagerConf::GetInstance()->device_target();
+  }
+  if (param == MS_CTX_DETERMINISTIC && DeviceManagerConf::GetInstance()->IsDeterministicConfigured()) {
+    return DeviceManagerConf::GetInstance()->deterministic();
+  }
+
   return string_params_[param - MS_CTX_TYPE_STRING_BEGIN];
 }
 

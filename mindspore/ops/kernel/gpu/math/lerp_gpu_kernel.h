@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <functional>
 #include <map>
-#include "mindspore/ops/infer/lerp.h"
+#include "mindspore/ops/infer/ops_func_impl/lerp.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/lerp_helper.h"

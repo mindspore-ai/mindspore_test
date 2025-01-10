@@ -499,3 +499,8 @@ def _destroy_group_helper(group):
         hccl.create_group(group)
     else:
         CollectiveManager.get_instance().destroy_group(group)
+
+
+def _get_group_map():
+    """Get the group map"""
+    return CollectiveManager.get_instance().get_group_map()

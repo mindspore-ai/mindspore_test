@@ -75,11 +75,13 @@ class HookBackwardNode : public BackwardNode {
 class GraphBackwardNode : public BackwardNode {
  public:
   explicit GraphBackwardNode(const string &name, FuncGraphPtr func_graph, const VectorRef &args,
-                             const ValuePtr &op_output, size_t output_size, std::string cache_key, bool is_control_flow,
-                             bool is_jit_graph, bool is_dynamic_shape_process, bool jit_out_has_dict)
+                             const VectorRef &added_args, const ValuePtr &op_output, size_t output_size,
+                             std::string cache_key, bool is_control_flow, bool is_jit_graph,
+                             bool is_dynamic_shape_process, bool jit_out_has_dict)
       : BackwardNode(name, output_size),
         func_graph_(std::move(func_graph)),
         args_(args),
+        added_args_(added_args),
         cache_key_(std::move(cache_key)),
         graph_call_condition_(is_control_flow, is_jit_graph, is_dynamic_shape_process, jit_out_has_dict, true) {
     op_output_ = op_output;
@@ -89,6 +91,7 @@ class GraphBackwardNode : public BackwardNode {
  private:
   FuncGraphPtr func_graph_;
   VectorRef args_;
+  VectorRef added_args_;
   std::string cache_key_{false};
   GraphCallCondition graph_call_condition_;
 };
@@ -125,8 +128,8 @@ class CopySliceNode : public BackwardNode {
   }
   ~CopySliceNode() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override;
-  NodePtrList CallBackwardImpl(const NodePtr &grad_node, const tensor::BaseTensorPtr &view_tensor);
   std::string inplace_op_name() const { return inplace_op_name_; }
+  NodePtrList CallBackwardImpl(const NodePtr &grad_node, const tensor::BaseTensorPtr &view_tensor);
   void Release() override;
 
  private:
@@ -149,7 +152,7 @@ class FuncGrad : public AutoGrad {
   void UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) override;
   // Reverse connect jit or higher order sub bprop funcgraph
   bool KPynativeWithFProp(const GradParamPtr &grad_param) override;
-  void CallCustomBprop(const CustomContext &context) override;
+  void CallCustomBprop(const std::shared_ptr<CustomContext> &context) override;
   // Save get and update variable of tensor.
   VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) override;
 
@@ -174,7 +177,7 @@ class FuncGrad : public AutoGrad {
                                         const OpGradInfoPtr &op_grad_info, size_t flatten_output_size);
   BackwardNodePtr BuildFakeBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
                                         const OpGradInfoPtr &op_grad_info, size_t flatten_output_size);
-  BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param, size_t flatten_output_size);
+  BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param);
   ValuePtr GetGrads(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
                     const GradAttr &grad_attr);
   ValuePtr GetInputGrads(bool grad_all_inputs, bool get_by_position, const std::vector<size_t> &grad_position);

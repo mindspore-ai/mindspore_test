@@ -17,6 +17,8 @@
 #include "transform/graph_ir/op_declare/fusion_ops_declare.h"
 #include <vector>
 #include <string>
+#include "mindspore/ops/infer/ops_func_impl/all_gather_matmul.h"
+#include "mindspore/ops/infer/ops_func_impl/matmul_reduce_scatter.h"
 
 namespace mindspore::transform {
 // PromptFlashAttention
@@ -157,21 +159,29 @@ INPUT_ATTR_MAP(FusedInferAttentionScore) = {
 OUTPUT_MAP(FusedInferAttentionScore) = {{kIndex0, OUTPUT_DESC(attention_out)}, {kIndex1, OUTPUT_DESC(softmax_lse)}};
 REG_ADPT_DESC(FusedInferAttentionScore, "FusedInferAttentionScore", ADPT_DESC(FusedInferAttentionScore))
 
-// MatmulReduceScatter
-INPUT_MAP(MatmulReduceScatter) = {{1, INPUT_DESC(x1)}, {2, INPUT_DESC(x2)}, {3, INPUT_DESC(bias)}};
-ATTR_MAP(MatmulReduceScatter) = {{"reduce_op", ATTR_DESC(reduce_op, AnyTraits<std::string>())},
-                                 {"is_trans_a", ATTR_DESC(is_trans_a, AnyTraits<bool>())},
-                                 {"is_trans_b", ATTR_DESC(is_trans_b, AnyTraits<bool>())},
-                                 {"comm_turn", ATTR_DESC(comm_turn, AnyTraits<int64_t>())}};
+const std::vector<std::string> MatmulReduceScatterReduceOp = {"sum"};
+INPUT_MAP(MatmulReduceScatter) = {{mindspore::ops::kMatmulReduceScatterInputInputIndex + 1, INPUT_DESC(x1)},
+                                  {mindspore::ops::kMatmulReduceScatterInputX2Index + 1, INPUT_DESC(x2)},
+                                  {mindspore::ops::kMatmulReduceScatterInputBiasIndex + 1, INPUT_DESC(bias)}};
+INPUT_ATTR_MAP(MatmulReduceScatter) = {
+  {mindspore::ops::kMatmulReduceScatterInputReduceOpIndex + 1,
+   ATTR_DESC(reduce_op, AnyTraits<GEEnumToStr>(), MatmulReduceScatterReduceOp)},
+  {mindspore::ops::kMatmulReduceScatterInputCommTurnIndex + 1, ATTR_DESC(comm_turn, AnyTraits<int64_t>())},
+  {mindspore::ops::kMatmulReduceScatterInputTransInputIndex + 1, ATTR_DESC(is_trans_a, AnyTraits<bool>())},
+  {mindspore::ops::kMatmulReduceScatterInputTransX2Index + 1, ATTR_DESC(is_trans_b, AnyTraits<bool>())}};
+ATTR_MAP(MatmulReduceScatter) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(MatmulReduceScatter) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(MatmulReduceScatter, kNameMatmulReduceScatter, ADPT_DESC(MatmulReduceScatter))
 
-// AllGatherMatmul
-INPUT_MAP(AllGatherMatmul) = {{1, INPUT_DESC(x1)}, {2, INPUT_DESC(x2)}, {3, INPUT_DESC(bias)}};
-ATTR_MAP(AllGatherMatmul) = {{"is_trans_a", ATTR_DESC(is_trans_a, AnyTraits<bool>())},
-                             {"is_trans_b", ATTR_DESC(is_trans_b, AnyTraits<bool>())},
-                             {"gather_index", ATTR_DESC(gather_index, AnyTraits<int64_t>())},
-                             {"comm_turn", ATTR_DESC(comm_turn, AnyTraits<int64_t>())}};
+INPUT_MAP(AllGatherMatmul) = {{mindspore::ops::kAllGatherMatmulInputInputIndex + 1, INPUT_DESC(x1)},
+                              {mindspore::ops::kAllGatherMatmulInputX2Index + 1, INPUT_DESC(x2)},
+                              {mindspore::ops::kAllGatherMatmulInputBiasIndex + 1, INPUT_DESC(bias)}};
+INPUT_ATTR_MAP(AllGatherMatmul) = {
+  {mindspore::ops::kAllGatherMatmulInputGatherIndexIndex + 1, ATTR_DESC(gather_index, AnyTraits<int64_t>())},
+  {mindspore::ops::kAllGatherMatmulInputCommTurnIndex + 1, ATTR_DESC(comm_turn, AnyTraits<int64_t>())},
+  {mindspore::ops::kAllGatherMatmulInputTransInputIndex + 1, ATTR_DESC(is_trans_a, AnyTraits<bool>())},
+  {mindspore::ops::kAllGatherMatmulInputTransX2Index + 1, ATTR_DESC(is_trans_b, AnyTraits<bool>())}};
+ATTR_MAP(AllGatherMatmul) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(AllGatherMatmul) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(gather_out)}};
 REG_ADPT_DESC(AllGatherMatmul, kNameAllGatherMatmul, ADPT_DESC(AllGatherMatmul))
 
@@ -190,6 +200,14 @@ ATTR_MAP(GroupedMatmul) = EMPTY_ATTR_MAP;
 DYN_OUTPUT_MAP(GroupedMatmul) = {{0, DYN_OUTPUT_DESC(y)}};
 REG_ADPT_DESC(GroupedMatmul, kNameGroupedMatmul, ADPT_DESC(GroupedMatmul))
 
+// MoeInitRouting
+INPUT_MAP(MoeInitRouting) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(row_idx)}, {3, INPUT_DESC(expert_idx)}};
+ATTR_MAP(MoeInitRouting) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(MoeInitRouting) = {{4, ATTR_DESC(active_num, AnyTraits<int64_t>())}};
+OUTPUT_MAP(MoeInitRouting) = {
+  {0, OUTPUT_DESC(expanded_x)}, {1, OUTPUT_DESC(expanded_row_idx)}, {2, OUTPUT_DESC(expanded_expert_idx)}};
+REG_ADPT_DESC(MoeInitRouting, kNameMoeInitRouting, ADPT_DESC(MoeInitRouting))
+
 // MoeFinalizeRouting
 INPUT_MAP(MoeFinalizeRouting) = {{1, INPUT_DESC(expanded_x)},
                                  {2, INPUT_DESC(x1)},
@@ -202,6 +220,13 @@ ATTR_MAP(MoeFinalizeRouting) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(MoeFinalizeRouting) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(MoeFinalizeRouting, kNameMoeFinalizeRouting, ADPT_DESC(MoeFinalizeRouting))
 
+// MoeComputeExpertTokens
+INPUT_MAP(MoeComputeExpertTokens) = {{1, INPUT_DESC(sorted_experts)}};
+INPUT_ATTR_MAP(MoeComputeExpertTokens) = {{2, ATTR_DESC(num_experts, AnyTraits<int64_t>())}};
+ATTR_MAP(MoeComputeExpertTokens) = EMPTY_ATTR_MAP;
+OUTPUT_MAP(MoeComputeExpertTokens) = {{0, OUTPUT_DESC(total_rows_before_expert)}};
+REG_ADPT_DESC(MoeComputeExpertTokens, kNameMoeComputeExpertTokens, ADPT_DESC(MoeComputeExpertTokens))
+
 // GeGluV2
 INPUT_MAP(GeGluV2) = {{1, INPUT_DESC(x)}};
 ATTR_MAP(GeGluV2) = {{"dim", ATTR_DESC(dim, AnyTraits<int64_t>())},
@@ -209,4 +234,12 @@ ATTR_MAP(GeGluV2) = {{"dim", ATTR_DESC(dim, AnyTraits<int64_t>())},
                      {"activate_left", ATTR_DESC(activate_left, AnyTraits<bool>())}};
 OUTPUT_MAP(GeGluV2) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(gelu)}};
 REG_ADPT_DESC(GeGluV2, "GeGluV2", ADPT_DESC(GeGluV2))
+
+// MoeGatingTopKSoftmax
+INPUT_MAP(MoeGatingTopKSoftmax) = {{kIndex1, INPUT_DESC(x)}, {kIndex2, INPUT_DESC(finished)}};
+ATTR_MAP(MoeGatingTopKSoftmax) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(MoeGatingTopKSoftmax) = {{kIndex3, ATTR_DESC(k, AnyTraits<int64_t>())}};
+OUTPUT_MAP(MoeGatingTopKSoftmax) = {
+  {kIndex0, OUTPUT_DESC(y)}, {kIndex1, OUTPUT_DESC(expert_idx)}, {kIndex2, OUTPUT_DESC(row_idx)}};
+REG_ADPT_DESC(MoeGatingTopKSoftmax, kNameMoeGatingTopKSoftmax, ADPT_DESC(MoeGatingTopKSoftmax))
 }  // namespace mindspore::transform

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,53 +17,28 @@
 #include "plugin/device/ascend/kernel/internal/matmul.h"
 
 #include <memory>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "param/matmul_ext_param.h"
+#include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalMatMul::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                   const std::vector<KernelTensor *> &outputs) {
-  auto param_ptr = std::make_shared<internal::MatMulExtParam>();
-  internal::MatMulParam matmul_param;
-  param_ptr->opId = internal::OpId::MatMul;
-  // setup matmul param from inputs
-  bool transpose_a = false;
-  bool transpose_b = false;
-  if (primitive_->HasAttr("transpose_a") && primitive_->HasAttr("transpose_b")) {
-    transpose_a = GetValue<bool>(primitive_->GetAttr("transpose_a"));
-    transpose_b = GetValue<bool>(primitive_->GetAttr("transpose_b"));
-  } else {
-    transpose_a = inputs[inputs.size() - 2]->GetValueWithCheck<bool>();
-    transpose_b = inputs[inputs.size() - 1]->GetValueWithCheck<bool>();
-  }
-  auto shape_a = inputs[kIndex0]->GetShapeVector();
-  auto shape_b = inputs[kIndex1]->GetShapeVector();
-  int m = (!transpose_a) ? shape_a[kIndex0] : shape_a[kIndex1];
-  int k = (!transpose_a) ? shape_a[kIndex1] : shape_a[kIndex0];
-  int n = (!transpose_b) ? shape_b[kIndex1] : shape_b[kIndex0];
-
-  param_ptr->input_dtype = InternalKernelUtils::ToInternalDType(inputs[kIndex0]->dtype_id());
-  param_ptr->weight_dtype = InternalKernelUtils::ToInternalDType(inputs[kIndex1]->dtype_id());
-  param_ptr->output_dtype = InternalKernelUtils::ToInternalDType(outputs[kIndex0]->dtype_id());
-
-  matmul_param = {
-    transpose_a,  // transposeA
-    transpose_b,  // transposeB
-    {m, k, n},    // oriShape
-    false,        // withBias
-    false,        // enDequant
-    0,            // tilingN
-    0,            // tilingK
-    false,        // enShuffleK
-  };
-  param_ptr->specificParam = matmul_param;
-  return std::static_pointer_cast<internal::OpParam>(param_ptr);
+internal::InternalOpPtr InternalMatmul::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                     const internal::OutputsImmutableInfoList &outputs,
+                                                     const std::vector<KernelTensor *> &ms_inputs,
+                                                     const std::vector<KernelTensor *> &ms_outputs) {
+  internal::MatmulParam param;
+  auto input_len = ms_inputs.size();
+  param.transpose_a = ms_inputs[input_len - kIndex2]->GetValueWithCheck<bool>();
+  param.transpose_b = ms_inputs[input_len - kIndex1]->GetValueWithCheck<bool>();
+  output_format_ = outputs[0].GetFormat();
+  return internal::CreateMatmulOp(inputs, outputs, param, internal::kInternalMatMulOpName);
 }
 
-MS_INTERNAL_KERNEL_FACTORY_REG(MatMul, InternalMatMul);
+uint64_t InternalMatmul::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, output_format_);
+}
+MS_INTERNAL_KERNEL_FACTORY_REG(MatMul, internal::kInternalMatMulOpName, InternalMatmul);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(MatMul, INPUT_NUM_2, INDEX_0, INDEX_1);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(MatMul, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel

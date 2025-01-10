@@ -17,8 +17,8 @@
         - **gradient_scale** (float) - 梯度的缩放比例。默认值： ``1.0`` 。
 
     输入：
-        - **variable** (Parameter) - 要更新的权重。数据类型必须为float。
-        - **accumulation** (Parameter) - 按动量权重计算的累加梯度值，数据类型与 `variable` 相同。
+        - **variable** (Union[Parameter, Tensor]) - 要更新的权重。数据类型必须为float。
+        - **accumulation** (Union[Parameter, Tensor]) - 按动量权重计算的累加梯度值，数据类型与 `variable` 相同。
         - **learning_rate** (Union[Number, Tensor]) - 学习率，必须是float或为float数据类型的Scalar的Tensor。
         - **gradient** (Tensor) - 梯度，数据类型与 `variable` 相同。
         - **momentum** (Union[Number, Tensor]) - 动量，必须是float或为float数据类型的Scalar的Tensor。

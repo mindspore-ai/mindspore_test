@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_DATASETOPS_SOURCE_GENERATOR_OP_H_
 
 #include <condition_variable>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -46,7 +47,7 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
  public:
   GeneratorOp(const py::function &generator_function, std::vector<std::string> column_names,
               std::vector<DataType> column_types, int32_t prefetch_size, int32_t connector_size,
-              std::shared_ptr<SamplerRT> sampler, int32_t num_parallel_workers);
+              std::shared_ptr<SamplerRT> sampler, int32_t num_parallel_workers, bool has_batch_sampler);
 
   ~GeneratorOp() override;
 
@@ -104,6 +105,10 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   /// \return Status The status code returned
   Status GetNextRowPullMode(TensorRow *const row) override;
 
+  /// Used by independent dataset mode to stop the subprocess
+  /// \return Status The status code returned
+  Status Terminate() override;
+
  protected:
   /// \brief Launch subprocesses in multiprocessing mode.
   /// \return Status Status code.
@@ -121,6 +126,10 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   int64_t generator_counter_;
   int32_t num_parallel_workers_;
   int64_t num_rows_sampled_;
+  bool has_batch_sampler_;
+  int64_t num_samples_collected_;
+  int64_t size_of_this_batch_;
+  std::deque<int64_t> batch_sizes_of_epoch_;
 
   py::object generator_;
   std::vector<int64_t> sample_ids_;
@@ -153,6 +162,18 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   /// Check whether the target number of samples has been retrieved when eoe is hit.
   /// \return Status The status code returned
   Status CheckNumSamples() const;
+
+  /// \brief Get the size for next batch.
+  /// \return Status The status code returned.
+  Status GetNextBatchSize();
+
+  /// \brief Get the sizes of each batch for next epoch.
+  /// \return Status The status code returned.
+  Status GetNextEpochBatchSizes();
+
+  /// \brief Check whether the number of samples collected and send EOB.
+  /// \return Status The status code returned.
+  Status CheckAndSendEOB();
 };
 
 #ifndef _MSC_VER

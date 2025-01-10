@@ -44,14 +44,15 @@ class Net2(nn.Cell):
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sort_pyboost(mode):
     """
-    Feature: tensor.scatter_add
+    Feature: tensor.sort
     Description: Verify the result of sort in pyboost
     Expectation: success
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), ms.float16)
     net = Net()
-    if ms.get_context('device_target') != 'Ascend':
+    # For the time being, cpu or gpu is not ok in graph mode.
+    if ms.get_context('device_target') != 'Ascend' and ms.get_context('mode') == ms.GRAPH_MODE:
         with pytest.raises(RuntimeError):
             net(x, -1)
             _pynative_executor.sync()
@@ -89,7 +90,7 @@ class Net4(nn.Cell):
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sort_python(mode):
     """
-    Feature: tensor.scatter_add
+    Feature: tensor.sort
     Description: Verify the result of sort in python
     Expectation: success
     """

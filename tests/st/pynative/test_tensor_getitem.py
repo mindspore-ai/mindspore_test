@@ -26,7 +26,6 @@ from mindspore.ops import composite as C
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
-
 grad_by_list_with_sens = C.GradOperation(get_by_list=True, sens_param=True)
 
 
@@ -56,7 +55,7 @@ class NetWorkSlicePositive(Cell):
           essential_mark='essential')
 def test_slice_positive():
     net = NetWorkSlicePositive()
-    input_np = np.arange(6*8*10).reshape(6, 8, 10).astype(np.int32)
+    input_np = np.arange(6 * 8 * 10).reshape(6, 8, 10).astype(np.int32)
     input_0 = Tensor(input_np)
     output0, output1, output2, output3 = net(input_0)
     assert np.all(output0.asnumpy() == input_np[3:4:1, 1:5:2, 3:6:1] + np.ones([1, 2, 3]))
@@ -86,7 +85,7 @@ class NetWorkSliceEllipsis(Cell):
           essential_mark='essential')
 def test_slice_ellipsis():
     net = NetWorkSliceEllipsis()
-    input_np = np.arange(6*7*8*9).reshape(6, 7, 8, 9).astype(np.int32)
+    input_np = np.arange(6 * 7 * 8 * 9).reshape(6, 7, 8, 9).astype(np.int32)
     input_0 = Tensor(input_np)
     output0, output1, output2, output3 = net(input_0)
     assert np.all(output0.asnumpy() == input_np[0:4:2, ..., 1] + np.ones([2, 7, 8]))
@@ -117,7 +116,7 @@ class NetWorkReduceDimension(Cell):
           essential_mark='essential')
 def test_reduce_dimension():
     net = NetWorkReduceDimension()
-    input_np = np.arange(6*8*10).reshape(6, 8, 10).astype(np.int32)
+    input_np = np.arange(6 * 8 * 10).reshape(6, 8, 10).astype(np.int32)
     input_0 = Tensor(input_np)
     output1, output2, output3, output4 = net(input_0)
     assert np.all(output1.asnumpy() == input_np[::2, 1, ::1] + np.ones([3, 10]))
@@ -144,7 +143,7 @@ class NetWorkSliceStep(Cell):
           essential_mark='essential')
 def test_step_negative():
     net = NetWorkSliceStep()
-    input_np = np.arange(6*8*10).reshape(6, 8, 10).astype(np.int32)
+    input_np = np.arange(6 * 8 * 10).reshape(6, 8, 10).astype(np.int32)
     input_0 = Tensor(input_np)
     output1, output2 = net(input_0)
     assert np.all(output1.asnumpy() == input_np[::1, -5::, ::-1] + np.ones([6, 5, 10]))
@@ -172,7 +171,7 @@ class TensorGetItemByThreeTensors(Cell):
 def test_getitem_by_tensors():
     """This testcase may encounter a sync stream error occasionally"""
     net = TensorGetItemByThreeTensors()
-    input_x = np.arange(6*8*10).reshape(6, 8, 10).astype(np.int32)
+    input_x = np.arange(6 * 8 * 10).reshape(6, 8, 10).astype(np.int32)
     index_0 = np.random.randint(6, size=(3, 4, 5)).astype(np.int32)
     index_1 = np.random.randint(6, size=(4, 5)).astype(np.int32)
     index_2 = np.random.randint(6, size=(5, 3, 4, 5)).astype(np.int32)
@@ -262,84 +261,6 @@ class TensorItemByItem(Cell):
     def construct(self, tensor, index):
         ret = tensor.item(index)
         return ret
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_item_by_int():
-    net = TensorItemByItem()
-    input_1d_np = np.array([1]).astype(np.float32)
-    input_1d_ms = Tensor(input_1d_np, mstype.float32)
-
-    input_3d_np = np.random.randint(3, size=(3, 4, 5)).astype(np.int32)
-    input_3d_ms = Tensor(input_3d_np, mstype.float32)
-
-    index_np_1, index_np_2, index_np_3, index_np_4 = 0, 1.0, 30, 60
-
-    output_1d_ms = net(input_1d_ms, index_np_1)
-    output_3d_ms_1 = net(input_3d_ms, index_np_1)
-    output_3d_ms_2 = net(input_3d_ms, index_np_3)
-
-    assert np.all(output_1d_ms == input_1d_np.item(index_np_1))
-    assert np.all(output_3d_ms_1 == input_3d_np.item(index_np_1))
-    assert np.all(output_3d_ms_2 == input_3d_np.item(index_np_3))
-
-    with pytest.raises(TypeError):
-        net(input_1d_ms, index_np_2)
-        _pynative_executor.sync()
-
-    with pytest.raises(IndexError):
-        net(input_1d_ms, index_np_3)
-        _pynative_executor.sync()
-
-    with pytest.raises(TypeError):
-        net(input_3d_ms, index_np_2)
-        _pynative_executor.sync()
-
-    with pytest.raises(IndexError):
-        net(input_3d_ms, index_np_4)
-        _pynative_executor.sync()
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_item_by_tuple():
-    net = TensorItemByItem()
-    input_1d_np = np.array([1]).astype(np.float32)
-    input_1d_ms = Tensor(input_1d_np, mstype.float32)
-    input_3d_np = np.random.randint(3, size=(3, 4, 5)).astype(np.int32)
-    input_3d_ms = Tensor(input_3d_np, mstype.float32)
-
-    index_np_1 = (0,)
-    index_np_2 = (1, 2)
-    index_np_3 = (1, 2, 3)
-    index_np_4 = (3, 4, 4)
-    index_np_5 = (1, 2, 3, 4)
-
-    output_1d_ms = net(input_1d_ms, index_np_1)
-    output_3d_ms = net(input_3d_ms, index_np_3)
-    assert np.all(output_1d_ms == input_1d_np.item(index_np_1))
-    assert np.all(output_3d_ms == input_3d_np.item(index_np_3))
-
-    with pytest.raises(ValueError):
-        net(input_1d_ms, index_np_2)
-        _pynative_executor.sync()
-
-    with pytest.raises(ValueError):
-        net(input_3d_ms, index_np_2)
-        _pynative_executor.sync()
-
-    with pytest.raises(IndexError):
-        net(input_3d_ms, index_np_4)
-        _pynative_executor.sync()
-
-    with pytest.raises(ValueError):
-        net(input_3d_ms, index_np_5)
-        _pynative_executor.sync()
 
 
 class TensorSetItemByMixedTensors_0(Cell):
@@ -575,7 +496,7 @@ def test_setitem_by_one_tensor_with_tuple_tensors():
     input_data = np.arange(6 * 3 * 8).reshape((6, 3, 8)).astype(np.float32)
     value_0_np = np.zeros((8,), np.float32)
     value_1_np = np.ones((8,), np.float32)
-    value_2_np = np.ones((8,), np.float32)*2
+    value_2_np = np.ones((8,), np.float32) * 2
     value_0 = Tensor(value_0_np)
     value_1 = Tensor(value_1_np)
     value_2 = Tensor(value_2_np)
@@ -803,6 +724,7 @@ def test_setitem_grad():
 
         def construct(self, x, y, sens):
             return grad_by_list_with_sens(self.net, self.weights)(x, y, sens)
+
     net = GradNet(Net())
     x = Tensor(np.ones([4, 4, 5]).astype(np.float32), mstype.float32)
     y = Tensor(np.array([3]).astype(np.float32), mstype.float32)
@@ -1239,7 +1161,7 @@ def test_tensor_slice_reduce_out_of_bounds_positive():
           card_mark='onecard',
           essential_mark='essential')
 def test_tensor_range():
-    a = np.arange(4*5*6).reshape(4, 5, 6).astype(np.float32)
+    a = np.arange(4 * 5 * 6).reshape(4, 5, 6).astype(np.float32)
     ta = Tensor(a, mstype.float32)
     ms_out = []
     for item in ta:

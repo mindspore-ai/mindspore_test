@@ -64,7 +64,7 @@ def func(self, x):
     return {e: d, **self, "rec_tuple": x}
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_self_reference():
     """
     Feature: Self Reference Test
@@ -109,7 +109,7 @@ def dict_test(self: dict, **kwvargs):
     return self
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dict_update():
     """
     Feature: Dictionary Update Test
@@ -165,7 +165,7 @@ def slice_test(x):
     return a, b, c, d, e, f
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_slice():
     """
     Feature: Slice Test
@@ -198,7 +198,7 @@ def builtin_func_test(x, *args):
     return a, b, c, d, e, f, g, h, i, k, l, m
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_builtin_func():
     """
     Feature: Builtin Function Test
@@ -216,7 +216,7 @@ def test_builtin_func():
     assert a == b
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('intep', [True, False])
 def test_attr(intep):
     """
@@ -284,7 +284,7 @@ class MyTuple(MyDict):
         return iter(self.__dict__.values())
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('test_user_defined_dict', [True, False])
 def test_unpack_call(test_user_defined_dict):
     """
@@ -324,7 +324,7 @@ def test_unpack_call(test_user_defined_dict):
     assert res2 == {1: 1, 2: 2}
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_super_call():
     """
     Feature: Test super call.
@@ -380,7 +380,7 @@ def cast_tensor(x):
     return x
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [True, False])
 def test_mix_0(mode: int):
     """

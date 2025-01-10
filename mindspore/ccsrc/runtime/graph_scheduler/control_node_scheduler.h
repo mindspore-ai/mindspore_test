@@ -42,6 +42,9 @@ class ControlNodeScheduler {
   // Link control actors.
   void Link(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
 
+  void BuildGraphParameterStoreForControlNode(const GraphCompilerInfo &graph_compiler_info,
+                                              const AID &memory_manager_aid) const;
+
   void BuildDataSourceActorForControlNode(const GraphCompilerInfo &graph_compiler_info,
                                           const HostTensorQueuePtr &host_queue,
                                           const HostQueueDSActorPtr &host_queue_ds_actor, const AID &memory_manager_aid,
@@ -96,7 +99,8 @@ class ControlNodeScheduler {
                                   const ControlNodeParserPtr &parser) const;
   void LinkDataArrowByKernelGraphInSinkMode(const KernelGraphPtr &graph, ControlActor *const from_actor,
                                             const ControlNodeParserPtr &parser) const;
-  void LinkArrowForRootGraphEntranceActor(const GraphCompilerInfo &graph_compiler_info) const;
+  void LinkArrowForRootGraphEntranceActor(const ActorSet *actor_set,
+                                          const GraphCompilerInfo &graph_compiler_info) const;
   void LinkControlArrowForLoopCountActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkDataArrowForOutputActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void LinkControlArrowForKernelActor(ActorSet *const actor_set, const GraphCompilerInfo &graph_compiler_info) const;

@@ -20,6 +20,7 @@
 #include <vector>
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "include/backend/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -36,6 +37,7 @@ void RegFunctional(const py::module *m);
 void RegSignatureEnumRW(const py::module *m);
 void RegValues(const py::module *m);
 void RegMsContext(const py::module *m);
+void RegDeviceManagerConf(const py::module *m);
 void RegSecurity(py::module *m);
 void RegForkUtils(py::module *m);
 void RegRandomSeededGenerator(py::module *m);
@@ -44,6 +46,7 @@ void RegSendRecv(py::module *m);
 void RegCleanTdtChannel(py::module *m);
 void RegTFT(py::module *m);
 void RegTensorDoc(py::module *m);
+void RegReuseDataPtr(py::module *m);
 
 namespace hal {
 void RegStream(py::module *m);
@@ -56,9 +59,14 @@ namespace initializer {
 void RegRandomNormal(py::module *m);
 }
 
+namespace runtime {
+BACKEND_EXPORT void RegRuntimeConf(py::module *m);
+}  // namespace runtime
+
 namespace pynative {
 void RegPyNativeExecutor(const py::module *m);
 void RegisterPyBoostFunction(py::module *m);
+void RegisterCustomizeFunction(py::module *m);
 void RegisterFunctional(py::module *m);
 }  // namespace pynative
 namespace kernel::pyboost {
@@ -81,6 +89,10 @@ namespace profiler {
 void RegProfilerManager(const py::module *m);
 void RegProfiler(const py::module *m);
 }  // namespace profiler
+
+namespace dump {
+void RegDumpControl(py::module *m);
+}
 
 namespace prim {
 void RegCompositeOpsGroup(const py::module *m);

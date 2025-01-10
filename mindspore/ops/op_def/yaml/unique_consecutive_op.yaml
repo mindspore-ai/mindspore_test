@@ -1,0 +1,31 @@
+#operator unique_consecutive
+unique_consecutive:
+  args:
+    input:
+      dtype: tensor
+    return_idx:
+      dtype: bool
+      prim_init: True
+      default: False
+    return_counts:
+      dtype: bool
+      prim_init: True
+      default: False
+    axis:
+      dtype: int
+      prim_init: True
+      default: None
+  returns:
+    output:
+      dtype: tensor
+    inverse_indices:
+      dtype: tensor
+    counts:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: UniqueConsecutiveAscend
+    CPU: UniqueConsecutiveCPU
+    GPU: None

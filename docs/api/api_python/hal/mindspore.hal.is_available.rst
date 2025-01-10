@@ -6,6 +6,12 @@ mindspore.hal.is_available
     查询指定后端是否可用。
     若指定后端是可用的，那么所有依赖库需要被成功加载。
 
+    .. note::
+        - 接口即将废弃。
+        - CPU环境，请使用接口 :func:`mindspore.device_context.cpu.is_available` 代替。
+        - GPU环境，请使用接口 :func:`mindspore.device_context.gpu.is_available` 代替。
+        - Ascend环境，请使用接口 :func:`mindspore.device_context.ascend.is_available` 代替。
+
     参数：
         - **device_target** (str) - 用户指定的后端类型，必须是 ``"CPU"`` ， ``"GPU"`` 以及 ``"Ascend"`` 的其中一个。
 

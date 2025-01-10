@@ -1,26 +1,24 @@
 split:
   description: |
-    split(self, split_size_or_sections, axis=0) -> Tensor
+    split(split_size_or_sections, axis=0) -> tuple(Tensor)
     
     Splits the Tensor into chunks along the given axis.
     
     Args:
-        tensor (Tensor): A Tensor to be divided.
         split_size_or_sections (Union[int, tuple(int), list(int)]):
             If `split_size_or_sections` is an int type, `tensor` will be split into equally sized chunks,
             each chunk with size `split_size_or_sections`. Last chunk will be smaller than `split_size_or_sections`
             if `tensor.shape[axis]` is not divisible by `split_size_or_sections`.
             If `split_size_or_sections` is a list type, then `tensor` will be split into len(split_size_or_sections)
             chunks with sizes `split_size_or_sections` along the given `axis`.
-        axis (int): The axis along which to split. Default: ``0`` .
+        axis (int, optional): The axis along which to split. Default: ``0`` .
     
     Returns:
         A tuple of sub-tensors.
     
     Raises:
-        TypeError: If argument `tensor` is not Tensor.
         TypeError: If argument `axis` is not int.
-        ValueError: If argument `axis` is out of range of :[-tensor.ndim, tensor.ndim).
+        ValueError: If argument `axis` is out of range of :math:`[-tensor.ndim, tensor.ndim)`.
         TypeError: If each element in `split_size_or_sections` is not integer.
         TypeError: If argument `split_size_or_sections` is not int, tuple(int) or list(int).
         ValueError: The sum of `split_size_or_sections` is not equal to x.shape[axis].

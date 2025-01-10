@@ -19,6 +19,7 @@ from mindspore import mint, Tensor, context
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
+
 def allclose_forward_func(x, y, rtol, atol, equal_nan):
     return mint.allclose(x, y, rtol, atol, equal_nan)
 
@@ -32,7 +33,8 @@ def generate_random_input(*shape):
 
 
 def compare_with_numpy(x, y, rtol=1e-05, atol=1e-08, equal_nan=False):
-    ms_result = allclose_forward_func(Tensor(x), Tensor(y), rtol, atol, equal_nan)
+    ms_result = allclose_forward_func(
+        Tensor(x), Tensor(y), rtol, atol, equal_nan)
     np_result = np.allclose(x, y, rtol, atol, equal_nan)
     print(ms_result)
     print(np_result)
@@ -110,11 +112,13 @@ def test_allclose_dynamic_shape_testop():
     """
     x1 = generate_random_input(3, 4, 5)
     y1 = generate_random_input(3, 4, 5)
-    x2 = generate_random_input(3, 7, 8, 3)
-    y2 = generate_random_input(3, 7, 8, 3)
+    x2 = generate_random_input(3, 7, 8)
+    y2 = generate_random_input(3, 7, 8)
     rtol = 1e-05
     atol = 1e-08
     equal_nan = False
     TEST_OP(allclose_forward_func,
-            [[Tensor(x1), Tensor(y1), rtol, atol, equal_nan], [Tensor(x2), Tensor(y2), rtol, atol, equal_nan]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_grad=True)
+            [[Tensor(x1), Tensor(y1), rtol, atol, equal_nan], [
+                Tensor(x2), Tensor(y2), rtol, atol, equal_nan]],
+            '', disable_input_check=True, disable_yaml_check=True, disable_grad=True,
+            disable_tensor_dynamic_type='DYNAMIC_RANK', disable_mode=['GRAPH_MODE'])

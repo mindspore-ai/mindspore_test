@@ -50,7 +50,7 @@ class SequenceLenCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
                     const std::vector<KernelTensor *> &outputs);
 
  private:
-  ShapeVector input_shape_;
+  ShapeVector input_shape_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

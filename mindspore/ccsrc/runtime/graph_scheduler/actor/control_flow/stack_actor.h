@@ -83,6 +83,7 @@ class StackActor : public ControlActor {
   size_t input_stack_partials_num_{0};
   size_t input_stack_controls_num_{0};
   bool is_branch_id_enable_{true};
+  size_t weights_size_{0};
 };
 
 using StackActorPtr = std::shared_ptr<StackActor>;

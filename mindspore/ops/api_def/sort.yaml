@@ -1,14 +1,14 @@
 sort:
-  - op_yaml: deprecated/sort_op.yaml
-    py_method: deprecated_tensor_sort
-    Ascend: py_method
+  - op_yaml: sort_ext_op.yaml
+    py_method: tensor_sort
+    Ascend: pyboost
     CPU: py_method
     GPU: py_method
     interface: tensor
 
-  - op_yaml: sort_ext_op.yaml
-    py_method: tensor_sort_ext
-    Ascend: pyboost
+  - op_yaml: deprecated/sort_method.yaml
+    py_method: deprecated_tensor_sort
+    Ascend: py_method
     CPU: py_method
     GPU: py_method
     interface: tensor

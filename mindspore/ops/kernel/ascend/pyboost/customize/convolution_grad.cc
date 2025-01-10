@@ -24,6 +24,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+}  // namespace
 std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> ConvolutionGradAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor, const BaseTensorPtr &input_tensor,
   const BaseTensorPtr &weight_tensor, const std::optional<BaseTensorPtr> &bias_tensor, const ValueTuplePtr &stride,
@@ -32,10 +39,16 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   OpRunner::InferOpOutput(op, dout_tensor, input_tensor, weight_tensor, bias_tensor, stride, pad, dilation, transposed,
                           output_padding, group, output_mask);
   // Convert ValueTuple to std::vector
+  const auto &weihgt_shape = weight_tensor->shape();
+  auto spatial_len = weihgt_shape.size() - kIndex2;
   std::vector<int64_t> pad_vector = ConvertValueTupleToVector<int64_t>(pad);
+  ExpandParamIfNeeded(&pad_vector, spatial_len);
   std::vector<int64_t> stride_vector = ConvertValueTupleToVector<int64_t>(stride);
+  ExpandParamIfNeeded(&stride_vector, spatial_len);
   std::vector<int64_t> dilation_vector = ConvertValueTupleToVector<int64_t>(dilation);
+  ExpandParamIfNeeded(&dilation_vector, spatial_len);
   std::vector<int64_t> output_padding_vector = ConvertValueTupleToVector<int64_t>(output_padding);
+  ExpandParamIfNeeded(&output_padding_vector, spatial_len);
   std::vector<int64_t> output_mask_vector = ConvertValueTupleToVector<int64_t>(output_mask);
   std::vector<uint8_t> output_mask_u8_vec;
   std::transform(output_mask_vector.begin(), output_mask_vector.end(), std::back_inserter(output_mask_u8_vec),
@@ -61,11 +74,6 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
       PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
       const auto &dout_shape = dout_tensor->shape();
-      const size_t dout_dims = 4;
-      if (dout_shape.size() != dout_dims) {
-        MS_LOG(EXCEPTION) << "dout_shape must be 4, but got:" << dout_shape;
-      }
-
       const size_t c_axis = 1;
       // Only `NCHW` support in Ascend, so the index of `C` is 1.
       std::vector<int64_t> bias_size = {dout_shape[c_axis]};

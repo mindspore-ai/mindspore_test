@@ -13,6 +13,10 @@ mindspore.ops.squeeze
     .. note::
         - 请注意，在动态图模式下，输出Tensor将与输入Tensor共享数据，并且没有Tensor数据复制过程。
         - 维度索引从0开始，并且必须在 `[-input.ndim, input.ndim)` 范围内。
+        - 在GE模式下，只支持对input shape中大小为1的维度进行压缩。
+
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **input** (Tensor) - 用于计算Squeeze的输入Tensor，shape为 :math:`(x_1, x_2, ..., x_R)` 。
@@ -25,4 +29,3 @@ mindspore.ops.squeeze
         - **TypeError** - `input` 不是tensor。
         - **TypeError** - `axis` 不是int、tuple或list。
         - **TypeError** - `axis` 是tuple或list，但其元素不全是int。
-        - **ValueError** - 指定 `axis` 的对应维度不等于1。

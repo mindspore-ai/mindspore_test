@@ -235,3 +235,63 @@ def test_assign_value_after_asnumpy():
     t.assign_value(ms.Tensor(np.array([6, 6, 6, 6, 6]), ms.float32))
     assert np.allclose(n, c)
     assert np.allclose(t.asnumpy(), np.array([6, 6, 6, 6, 6], np.float32))
+
+
+def test_create_np_array_from_tensor():
+    """
+    Feature: Tensor __array__ method.
+    Description: Create numpy array from tensor.
+    Expectation: Success.
+    """
+    n = np.array(ms.Tensor(0))
+    assert n.dtype == np.int64
+    assert n.shape == ()
+    assert np.allclose(n, np.array(0))
+
+    n = np.array(ms.Tensor(0, ms.float32))
+    assert n.dtype == np.float32
+    assert n.shape == ()
+    assert np.allclose(n, np.array(0, np.float32))
+
+    n = np.array(ms.Tensor([1, 2, 3], ms.float32))
+    assert n.dtype == np.float32
+    assert n.shape == (3,)
+    assert np.allclose(n, np.array([1, 2, 3], np.float32))
+
+    n = np.array([1, 2, ms.Tensor(3)])
+    assert n.dtype == np.int64
+    assert n.shape == (3,)
+    assert np.allclose(n, np.array([1, 2, 3], np.float32))
+
+    n = np.array([1, 2, ms.Tensor(3, ms.float32)], dtype=np.int64)
+    assert n.dtype == np.int64
+    assert n.shape == (3,)
+    assert np.allclose(n, np.array([1, 2, 3]))
+
+    n = np.array([[1, 2], ms.Tensor([3, 4])])
+    assert n.dtype == np.int64
+    assert n.shape == (2, 2)
+    assert np.allclose(n, np.array([[1, 2], [3, 4]]))
+
+    n = np.array([[1, 2], [ms.Tensor(3), 4]])
+    assert n.dtype == np.int64
+    assert n.shape == (2, 2)
+    assert np.allclose(n, np.array([[1, 2], [3, 4]]))
+
+
+def test_tensor_contains():
+    """
+    Feature: Tensor __contains__ method.
+    Description: Test tensor __contains__ method.
+    Expectation: Success.
+    """
+    t = ms.Tensor([1, 2])
+    assert 1 in t
+    assert ms.Tensor(1) in t
+    assert ms.Tensor([1]) in t
+    assert 3 not in t
+    assert ms.Tensor(3) not in t
+    assert ms.Tensor([3]) not in t
+    assert 'a' not in t
+    assert [1] not in t
+    assert np.array(1) not in t

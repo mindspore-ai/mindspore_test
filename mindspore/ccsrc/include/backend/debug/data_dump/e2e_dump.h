@@ -31,11 +31,14 @@
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #include "include/backend/visible.h"
+#include "runtime/hardware/device_context.h"
 
 #ifndef ENABLE_DEBUGGER
 class Debugger;
 #endif
 namespace mindspore {
+using mindspore::device::DeviceContext;
+
 class BACKEND_EXPORT E2eDump {
  public:
   E2eDump() = default;
@@ -56,14 +59,16 @@ class BACKEND_EXPORT E2eDump {
   static void DumpParametersData(uint32_t rank_id, const Debugger *debugger);
 
   static bool DumpSingleNodeData(const CNodePtr &node, uint32_t graph_id, uint32_t rank_id,
-                                 const Debugger *debugger = nullptr);
+                                 const Debugger *debugger = nullptr, const DeviceContext *device_context = nullptr);
 
   // Dump data when task error.
   static void DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
-                            std::string *kernel_name, const Debugger *debugger);
+                            std::string *kernel_name, const Debugger *debugger,
+                            const DeviceContext *device_context = nullptr);
 
   static void DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
-                             std::string *kernel_name, const Debugger *debugger);
+                             std::string *kernel_name, const Debugger *debugger,
+                             const DeviceContext *device_context = nullptr);
   // Dump input/output data without additional check, used for exception case only
   static void DumpInputData(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
                             std::string *kernel_name);
@@ -79,11 +84,13 @@ class BACKEND_EXPORT E2eDump {
  private:
   static void DumpOutput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger);
 
-  static void DumpOutputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger);
+  static void DumpOutputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger,
+                                   const DeviceContext *device_context = nullptr);
 
   static void DumpInput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger);
 
-  static void DumpInputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger);
+  static void DumpInputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger,
+                                  const DeviceContext *device_context = nullptr);
 
   static void DumpParameters(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger);
 

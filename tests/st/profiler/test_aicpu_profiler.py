@@ -13,13 +13,16 @@
 # limitations under the License.
 # ============================================================================
 """Test custom aicpu profiling."""
+import os.path
 import tempfile
 import numpy as np
+import glob
 
 import mindspore.context as context
 import mindspore.common.dtype as mstype
 from mindspore import Profiler
 from mindspore import Tensor
+from mindspore.profiler import ProfilerLevel
 from tests.mark_utils import arg_mark
 from model_zoo import CustomAICpuNet
 from file_check import FileChecker
@@ -35,9 +38,11 @@ def test_collect_custom_aicpu():
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     context.set_context(jit_level="O2")
     with tempfile.TemporaryDirectory(suffix="profiler_ai_cpu") as tmpdir:
-        profiler = Profiler(output_path=tmpdir)
+        profiler = Profiler(output_path=tmpdir, profiler_level=ProfilerLevel.Level1)
         net = CustomAICpuNet()
         net(Tensor(np.random.random((6,)), mstype.float64))
         profiler.analyse()
-        op_dict = {"kernel_type": ["Cast", "Select", "Xlogy"]}
-        FileChecker.check_csv_items(f"{tmpdir}/profiler/aicpu_intermediate_0.csv", op_dict, fuzzy_match=False)
+        op_dict = {"OP Type": ["Cast", "Select", "Xlogy"]}
+        ascend_profiler_output_path = glob.glob(f"{tmpdir}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+        FileChecker.check_csv_items(os.path.join(ascend_profiler_output_path, "op_statistic.csv"),
+                                    op_dict, fuzzy_match=False)

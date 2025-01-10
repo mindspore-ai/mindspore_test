@@ -83,7 +83,7 @@ class ShapeAdd(Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_dynamic_shape_jit_shape_add():
@@ -219,7 +219,7 @@ class ListInsert(Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_set_inputs_shape_list_insert():
@@ -340,7 +340,7 @@ class TupleIndex(Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_set_inputs_shape_tuple_index():
@@ -398,7 +398,7 @@ class GetItemNeg(Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_set_inputs_shape_getitem_neg():

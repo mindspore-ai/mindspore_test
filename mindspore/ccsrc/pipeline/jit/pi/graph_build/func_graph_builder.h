@@ -144,8 +144,6 @@ class FuncGraphBuilder {
   /// \param[in] name The func_graph name to set.
   void SetGraphName(const std::string &name);
 
-  static ValuePtr ConvertPyObjToValue(const py::object &obj);
-
   static AbstractBasePtr EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list);
 
   static bool IsParameterSequence(const py::object &object);
@@ -205,6 +203,8 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
                                 const AbstractWrapperPtrList &inputs, bool need_unpack);
+
+  static AbstractBasePtr BuildAbstractForInputObject(const py::object &object);
 
   AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) const;
 

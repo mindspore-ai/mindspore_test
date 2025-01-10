@@ -55,7 +55,7 @@ class ListTest():
 
 
 @pytest.mark.skip(reason="self.list can't be as constant !!!")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_list():
     """
     Feature: ALL TO ALL
@@ -111,7 +111,7 @@ def test_celllist(input_x):
 
 
 @pytest.mark.skip(reason="the pointer[GetDevicePtr] is null")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('input_x', [Tensor(ops.fill(np.float32, (2, 2), 4))])
 def test_sideeffect(input_x):
     """

@@ -22,34 +22,39 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def generate_expect_forward_output(input_tensor, repeats, dim=None):
     return np.repeat(input_tensor, repeats, dim)
+
 
 def generate_expect_backward_output(input_tensor, repeats, dim):
     if isinstance(repeats, int):
         repeats = [repeats,]
     output = []
     if len(repeats) == 1:
-        output = repeats[0]*np.ones_like(input_tensor, np.float32)
+        output = repeats[0] * np.ones_like(input_tensor, np.float32)
     else:
         if dim == 0:
-            output = [r*np.ones_like(input_tensor[0], np.float32) for r in repeats]
+            output = [r * np.ones_like(input_tensor[0], np.float32) for r in repeats]
         elif dim == 1:
             output = [repeats for i in range(input_tensor.shape[0])]
         elif dim is None:
             output = np.reshape(repeats, input_tensor.shape)
     return output
 
+
 @test_utils.run_with_cell
 def repeat_interleave_forward(input_tensor, repeats, dim, output_size=None):
-    return mint.repeat_interleave(input_tensor, repeats, dim, output_size)
+    return mint.repeat_interleave(input_tensor, repeats, dim, output_size=output_size)
+
 
 @test_utils.run_with_cell
 def repeat_interleave_backward(input_tensor, repeats, dim, output_size=None):
-    input_grad = ops.grad(repeat_interleave_forward)(input_tensor, repeats, dim, output_size)
+    input_grad = ops.grad(repeat_interleave_forward)(input_tensor, repeats, dim, output_size=output_size)
     return input_grad
 
 
@@ -126,6 +131,7 @@ def test_repeat_interleave_forward_backward_tensor(mode, dim):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
     np.testing.assert_allclose(output2.asnumpy(), expect, rtol=1e-3)
 
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize('dim', [None, 1])
@@ -165,6 +171,7 @@ def test_repeat_interleave_dynamic_shape_int():
     repeats2 = 7
     TEST_OP(repeat_interleave_forward, [[input_case1, repeats1, dim1], [input_case2, repeats2, dim2]],
             '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_repeat_interleave_dynamic_shape_tensor():

@@ -50,6 +50,11 @@ def where_backward_func(condition, x, y):
 
 
 @test_utils.run_with_cell
+def where_overload_forward_func(condition):
+    return where(condition)
+
+
+@test_utils.run_with_cell
 def where_vmap_func(condition, x, y, in_axes=0):
     return ops.vmap(where_forward_func, in_axes, out_axes=0)(condition, x, y)
 
@@ -70,6 +75,24 @@ def test_ops_where(mode):
     output = where_forward_func(condition, x, y)
     expected = np.array([[0, 1], [2, 1]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_ops_where_overload(mode):
+    """
+    Feature: ops.where(condition)
+    Description: Verify the result of ops.where(condition)
+    Expectation: success
+    """
+    context.set_context(mode=mode, jit_level="O0")
+    x = Tensor([[0, 1], [2, 3]], dtype=ms.float32)
+    indices1, indices2 = where_overload_forward_func(x)
+    expected_indices1 = np.array([0, 1, 1], dtype=np.int64)
+    expected_indices2 = np.array([1, 0, 1], dtype=np.int64)
+    assert np.allclose(indices1.asnumpy(), expected_indices1)
+    assert np.allclose(indices2.asnumpy(), expected_indices2)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

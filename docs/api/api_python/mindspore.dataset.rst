@@ -1,22 +1,20 @@
 mindspore.dataset
 =================
 
-该模块提供了加载和处理各种通用数据集的API，如MNIST、CIFAR-10、CIFAR-100、VOC、COCO、ImageNet、CelebA、CLUE等，
-也支持加载业界标准格式的数据集，包括MindRecord、TFRecord、Manifest等。此外，用户还可以使用此模块定义和加载自己的数据集。
+MindSpore的核心数据加载模块是Dataset，是一种基于Pipeline设计的 `数据引擎 <https://www.mindspore.cn/docs/zh-CN/master/design/data_engine.html>`_ 。
 
-该模块还提供了在加载时进行数据采样的API，如SequentialSample、RandomSampler、DistributedSampler等。
+该模块提供了以下几种数据加载方式，帮助用户加载数据集到MindSpore中。
 
-大多数数据集可以通过指定参数 `cache` 启用缓存服务，以提升整体数据处理效率。
-请注意Windows平台上还不支持缓存服务，因此在Windows上加载和处理数据时，请勿使用。更多介绍和限制，
-请参考 `Single-Node Tensor Cache <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。
+- 自定义数据集加载：允许用户通过Python定义 `可随机访问(Map-style)数据集 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可随机访问数据集>`_ 
+  和 `可迭代(Iterable-style)数据集 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/dataset.html#可迭代数据集>`_ 自定义数据读取、处理逻辑。
+- 标准格式数据集加载：支持加载业界标准数据格式的数据集文件，包括 `MindRecord <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/record.html>`_ 、`TFRecord <https://tensorflow.google.cn/tutorials/load_data/tfrecord.md?hl=zh-cn>`_ 等。
+- 开源数据集加载：支持部分 `开源数据集 <#开源数据集加载>`_ 的解析读取，如MNIST、CIFAR-10、CLUE、LJSpeech等。
 
-在API示例中，常用的模块导入方法如下：
+此外，该模块也提供了对数据进行采样、增强变换、批处理等功能，以及随机种子、并行数等基础配置，与数据集加载API配合使用。
 
-.. code-block::
-
-    import mindspore.dataset as ds
-    import mindspore.dataset.transforms as transforms
-    import mindspore.dataset.vision as vision
+- 数据采样器：提供了多种常见 `采样器 <#采样器-1>`_ ，如RandomSampler、DistributedSampler等。
+- 数据增强变换：提供了多种 `数据集操作 <https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/mindspore.dataset.GeneratorDataset.html#预处理操作>`_ ，以此对数据进行增强，批处理等。
+- 基础配置：提供了 `Pipeline配置 <#配置>`_ 用于随机种子设置、并行数设置、数据恢复模式等功能。
 
 常用数据集术语说明如下：
 
@@ -41,7 +39,7 @@ mindspore.dataset
   （`vision类 <https://mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#视觉>`_ ，
   `nlp类 <https://mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#文本>`_ ，
   `audio类 <https://mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.transforms.html#音频>`_ ）
-  添加到map操作中执行，数据预处理过程中可以定义多个map操作，用于执行不同增强操作，数据增强操作也可以是
+  添加到map操作中执行，数据预处理过程中可以定义多个map操作，用于执行不同增强操作，数据增强操作也可以是\
   用户自定义增强的 `PyFunc` ；
 - 批（batch）：用户在样本完成增强后，使用 `.batch` 操作将多个样本组织成batch，也可以通过batch的参数 `per_batch_map`
   来自定义batch逻辑；
@@ -53,8 +51,34 @@ mindspore.dataset
 
 如何快速使用Dataset Pipeline，可以将 `使用数据Pipeline加载 & 处理数据集 <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_ 下载到本地，按照顺序执行并观察输出结果。
 
-视觉
------
+自定义数据集加载
+-----------------
+
+.. mscnautosummary::
+    :toctree: dataset
+    :nosignatures:
+    :template: classtemplate_inherited.rst
+
+    mindspore.dataset.GeneratorDataset
+
+标准格式数据集加载
+-------------------
+
+.. mscnautosummary::
+    :toctree: dataset
+    :nosignatures:
+    :template: classtemplate_inherited.rst
+
+    mindspore.dataset.MindDataset
+    mindspore.dataset.OBSMindDataset
+    mindspore.dataset.TFRecordDataset
+
+
+开源数据集加载
+---------------
+
+视觉数据集
+^^^^^^^^^^^
 
 .. mscnautosummary::
     :toctree: dataset
@@ -97,8 +121,8 @@ mindspore.dataset
     mindspore.dataset.VOCDataset
     mindspore.dataset.WIDERFaceDataset
 
-文本
-----
+文本数据集
+^^^^^^^^^^^
 
 .. mscnautosummary::
     :toctree: dataset
@@ -108,6 +132,7 @@ mindspore.dataset
     mindspore.dataset.AGNewsDataset
     mindspore.dataset.AmazonReviewDataset
     mindspore.dataset.CLUEDataset
+    mindspore.dataset.CSVDataset
     mindspore.dataset.CoNLL2000Dataset
     mindspore.dataset.DBpediaDataset
     mindspore.dataset.EnWik9Dataset
@@ -125,8 +150,8 @@ mindspore.dataset
     mindspore.dataset.YahooAnswersDataset
     mindspore.dataset.YelpReviewDataset
 
-音频
-------
+音频数据集
+^^^^^^^^^^^
 
 .. mscnautosummary::
     :toctree: dataset
@@ -141,20 +166,7 @@ mindspore.dataset
     mindspore.dataset.TedliumDataset
     mindspore.dataset.YesNoDataset
 
-标准格式
---------
-
-.. mscnautosummary::
-    :toctree: dataset
-    :nosignatures:
-    :template: classtemplate_inherited.rst
-
-    mindspore.dataset.CSVDataset
-    mindspore.dataset.MindDataset
-    mindspore.dataset.OBSMindDataset
-    mindspore.dataset.TFRecordDataset
-
-用户自定义
+其他数据集
 ----------
 
 .. mscnautosummary::
@@ -162,7 +174,6 @@ mindspore.dataset
     :nosignatures:
     :template: classtemplate_inherited.rst
 
-    mindspore.dataset.GeneratorDataset
     mindspore.dataset.NumpySlicesDataset
     mindspore.dataset.PaddedDataset
     mindspore.dataset.RandomDataset
@@ -224,8 +235,10 @@ config模块能够设置或获取数据处理的全局配置参数。
     mindspore.dataset.config.ErrorSamplesMode
     mindspore.dataset.config.set_debug_mode
     mindspore.dataset.config.get_debug_mode
+    mindspore.dataset.config.set_multiprocessing_start_method
+    mindspore.dataset.config.get_multiprocessing_start_method
 
-其他
+工具
 -----
 
 .. mscnautosummary::

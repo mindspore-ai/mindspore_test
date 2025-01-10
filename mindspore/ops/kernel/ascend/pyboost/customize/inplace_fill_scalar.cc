@@ -28,7 +28,6 @@ namespace kernel {
 namespace pyboost {
 tensor::BaseTensorPtr InplaceFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
                                                        const ScalarPtr &value) {
-  OpRunner::InferOpOutput(op, input, value);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   op->set_outputs({input});
   // Async

@@ -32,7 +32,8 @@ std::vector<BaseTensorPtr> ConvertEmptyTensor(const ValueTuplePtr &tuple) {
   for (const auto &value : values) {
     auto tensor = GetValue<BaseTensorPtr>(value);
     auto shape = tensor->shape();
-    if (shape.size() == 9 && std::all_of(shape.begin(), shape.end(), [](int i) { return i == 0; })) {
+    constexpr auto kSize9 = 9;
+    if (shape.size() == kSize9 && std::all_of(shape.begin(), shape.end(), [](int i) { return i == 0; })) {
       auto type_id = tensor->data_type();
       std::vector<int64_t> empty_shape({0});
       result.push_back(std::make_shared<tensor::BaseTensor>(type_id, empty_shape));

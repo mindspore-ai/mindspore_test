@@ -24,6 +24,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+}  // namespace
 tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                     const BaseTensorPtr &input_tensor,
                                                     const BaseTensorPtr &weight_tensor,
@@ -34,19 +41,24 @@ tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunn
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, padding_enum, dilation, transposed,
                           output_padding, group);
   // Convert ValueTuple to std::vector
+  const auto &weight_shape = weight_tensor->shape();
+  auto spatial_len = weight_shape.size() - kIndex2;
   std::vector<int64_t> stride_vector = ConvertValueTupleToVector<int64_t>(stride);
+  ExpandParamIfNeeded(&stride_vector, spatial_len);
   std::vector<int64_t> dilation_vector = ConvertValueTupleToVector<int64_t>(dilation);
+  ExpandParamIfNeeded(&dilation_vector, spatial_len);
   std::vector<int64_t> output_padding_vector = ConvertValueTupleToVector<int64_t>(output_padding);
+  ExpandParamIfNeeded(&output_padding_vector, spatial_len);
   // Convert ValuePtr to c++ scalar
   auto transposed_imm = GetValue<bool>(transposed);
   auto group_imm = GetValue<int64_t>(group);
   auto padding_enum_imm = GetValue<int64_t>(padding_enum);
 
   BaseTensorPtr input_tensor_new = input_tensor;
-  std::vector<int64_t> pad_vector = {0, 0};
+  auto k = weight_tensor->data().ndim();
+  auto dim = static_cast<size_t>(k - 2);
+  std::vector<int64_t> pad_vector = std::vector<int64_t>(dim, 0);
   if (padding_enum_imm == PadMode::SAME) {
-    auto k = weight_tensor->data().ndim();
-    auto dim = static_cast<size_t>(k - 2);
     auto weight_sizes = weight_tensor->shape();
     auto input_sizes = input_tensor->shape();
 
@@ -75,8 +87,10 @@ tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunn
       }
     }
     if (symmetric_padding) {
+      MS_LOG(INFO) << "ConvolutionStr: symmetric padding is True.";
       pad_vector = padding_l;
     } else {
+      MS_LOG(INFO) << "ConvolutionStr: symmetric padding is False.";
       std::vector<ValuePtr> pad_nd(2 * dim, std::make_shared<Int64Imm>(0));
       for (size_t i = 0; i < dim; ++i) {
         // Apply padding by the difference, leaving only a symmetric padding
@@ -93,11 +107,14 @@ tensor::BaseTensorPtr ConvolutionStrAscendCustomize(const std::shared_ptr<OpRunn
       auto device_context = op->device_context();
       const auto &device_name = device_context->device_context_key_.device_name_;
       auto constant_pad_nd_op = CREATE_PYBOOST_OP(ConstantPadND, device_name);
-      input_tensor_new = constant_pad_nd_op->Call(input_tensor, std::make_shared<ValueTuple>(pad_nd), zero);
+      MS_LOG(INFO) << "ConvolutionStr: pad_nd is " << pad_nd;
+      input_tensor_new =
+        constant_pad_nd_op->Call(input_tensor, std::make_shared<ValueTuple>(pad_nd), zero);  // 注意是否可用
+
       pad_vector = padding_l;
     }
   } else if (padding_enum_imm == PadMode::VALID) {
-    pad_vector = {0, 0};
+    MS_LOG(INFO) << "For Primitive[ConvolutionStr], paddingmode is value.";
   } else {
     MS_LOG(EXCEPTION) << "Input padding string must be one of {'same', 'valid'}";
   }

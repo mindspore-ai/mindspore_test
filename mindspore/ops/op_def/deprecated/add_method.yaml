@@ -1,0 +1,11 @@
+#deprecated add
+add:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+      type_cast: any
+  returns:
+    output:
+      dtype: tensor

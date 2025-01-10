@@ -93,7 +93,7 @@ void DistCommAllToAllVAscendCustomize(const std::shared_ptr<OpRunner> &op, const
                                       const BaseTensorPtr &input_tensor, const StringImmPtr &group,
                                       const ValueTuplePtr &send_numel_list, const ValueTuplePtr &recv_numel_list,
                                       const Int64ImmPtr &rank_size) {
-  OpRunner::InferOpOutput(op, outputs, input_tensor, group, send_numel_list, recv_numel_list);
+  OpRunner::InferOpOutput(op, outputs, input_tensor, group, send_numel_list, recv_numel_list, rank_size);
 
   std::vector<BaseTensorPtr> output_tensors = ConvertValueTupleToVector<BaseTensorPtr>(outputs);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, output_tensors, input_tensor);

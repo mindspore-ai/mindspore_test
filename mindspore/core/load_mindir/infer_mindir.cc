@@ -191,6 +191,13 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
       if (infer.IsImplInferShapeAndType()) {
         return infer.InferShapeAndType(nullptr, prim, args_abs_list);
       }
+    } else {
+#if !defined(BUILD_LITE)
+      auto infer_res = abstract::InferAbstractByFuncImpl(prim, args_abs_list);
+      if (infer_res.has_value()) {
+        return infer_res.value();
+      }
+#endif
     }
 
     if (raise_exception_) {

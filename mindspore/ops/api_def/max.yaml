@@ -4,9 +4,23 @@ max:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor
+    interface: tensor, function
 
-  - op_yaml: deprecated/max_op.yaml
+  - op_yaml: max_dim_op.yaml
+    py_method: tensor_maxdim
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function
+
+  - op_yaml: maximum_op.yaml
+    py_method: tensor_maximum
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: function
+
+  - op_yaml: deprecated/max_method.yaml
     py_method: deprecated_tensor_max
     kwonlyargs: initial, where, return_indices
     Ascend: py_method

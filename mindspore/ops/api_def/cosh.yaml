@@ -1,0 +1,7 @@
+cosh:
+  op_yaml: cosh_op.yaml
+  py_method: tensor_cosh
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

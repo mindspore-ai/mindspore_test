@@ -1,0 +1,7 @@
+sinh:
+  op_yaml: sinh_op.yaml
+  py_method: tensor_sinh
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

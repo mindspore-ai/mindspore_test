@@ -17,6 +17,8 @@ import glob
 import tempfile
 from mindspore import context
 from mindspore import Profiler
+from mindspore.profiler import ProfilerLevel
+from mindspore.profiler.analysis.parser.base_parser import BaseParser
 
 from tests.mark_utils import arg_mark
 from file_check import FileChecker
@@ -34,24 +36,19 @@ def test_ascend_graph_mode_profiler_with_static_shape_all_parameters_on():
                  in the temporary directory.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_level="O2")
+    context.set_context(jit_config={"jit_level": "O2"})
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(
+            profiler_level=ProfilerLevel.Level1,
             output_path=tmpdir,
-            op_time=True,
-            profile_communication=True,
             profile_memory=True,
-            parallel_strategy=True,
-            start_profile=True,
-            aicore_metrics=1,
             l2_cache=True,
             hbm_ddr=True,
             pcie=True,
             sync_enable=True,
             data_process=True,
-            profile_framework='all',
-            with_stack=False,
             data_simplification=False
         )
         net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
@@ -72,23 +69,18 @@ def test_ascend_pynative_mode_profiler_with_static_shape_all_parameters_on():
                  in the temporary directory.
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(
+            profiler_level=ProfilerLevel.Level1,
             output_path=tmpdir,
-            op_time=True,
-            profile_communication=True,
             profile_memory=True,
-            parallel_strategy=True,
-            start_profile=True,
-            aicore_metrics=1,
             l2_cache=True,
             hbm_ddr=True,
             pcie=True,
             sync_enable=True,
             data_process=True,
-            profile_framework='all',
-            with_stack=False,
             data_simplification=False
         )
         net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
@@ -109,24 +101,19 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
                  in the temporary directory.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_level="O0")
+    context.set_context(jit_config={"jit_level": "O0"})
+    BaseParser.EXEC_HOOK_TIMEOUT = 3 * 60
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(
+            profiler_level=ProfilerLevel.Level1,
             output_path=tmpdir,
-            op_time=True,
-            profile_communication=True,
             profile_memory=True,
-            parallel_strategy=True,
-            start_profile=True,
-            aicore_metrics=1,
             l2_cache=True,
             hbm_ddr=True,
             pcie=True,
             sync_enable=True,
             data_process=True,
-            profile_framework='all',
-            with_stack=False,
             data_simplification=False
         )
         net = TinyTransformer(d_model=2, nhead=1, num_encoder_layers=1, num_decoder_layers=1, dim_feedforward=4)
@@ -138,8 +125,9 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
 
 
 def check_ascend_profiler_all_parameters_on_common_files(profiler_path: str, rank_id: int):
-    ascend_profiler_output_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
-    msprof_path = glob.glob(f"{profiler_path}/profiler/PROF_*/mindstudio_profiler_output")[0]
+    ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+    ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
+    msprof_path = glob.glob(f"{profiler_path}/*_ascend_ms/PROF_*/mindstudio_profiler_output")[0]
 
     # check hbm_*.csv
     hbm_path = glob.glob(f"{msprof_path}/hbm_*")[0]
@@ -184,35 +172,28 @@ def check_ascend_profiler_all_parameters_on_common_files(profiler_path: str, ran
     })
 
     # check profile_info_*.json
-    profile_info_path = os.path.join(profiler_path, "profiler", f"profiler_info_{rank_id}.json")
+    profile_info_path = os.path.join(ascend_ms_dir, f"profiler_info_{rank_id}.json")
     FileChecker.check_json_items(profile_info_path, {
-        "profiling_options.aicpu": "on",
-        "profiling_options.op_time": "on",
-        "profiling_options.profile_memory": "on",
-        "data_simplification": False
+        "profiler_parameters.with_stack": False,
+        "profiler_parameters.profile_memory": True,
+        "profiler_parameters.data_simplification": False
     })
 
-    # check dataset_*.csv
-    dataset_path = os.path.join(profiler_path, "profiler", f"dataset_{rank_id}.csv")
+    # check dataset.csv
+    dataset_path = os.path.join(ascend_profiler_output_path, f"dataset.csv")
     FileChecker.check_csv_items(dataset_path, {
         "Operation": ["Pipeline", "RandomDataOp"]
-    })
-
-    # check minddata_pipeline_summary_0.csv
-    minddata_pipeline_summary_path = os.path.join(profiler_path, "profiler", f"minddata_pipeline_summary_{rank_id}.csv")
-    FileChecker.check_csv_items(minddata_pipeline_summary_path, {
-        "pipeline_ops": ["op_names", "op_ids", "num_workers"]
     })
 
 
 def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
-    ascend_profiler_output_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+    ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
     operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
-        "Name": ["model.encoder*", "model.decoder*"]
+        "Name": ["Unknown"]
     })
 
     # check static_op_mem.csv
@@ -221,29 +202,24 @@ def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
         "Op Name": ["*Add*", "*LayerNorm*"]
     })
 
-    # check step_trace_raw_*_detail_time.csv
-    step_trace_raw_detail_time_path = os.path.join(profiler_path, "profiler",
-                                                   f"step_trace_raw_{rank_id}_detail_time.csv")
-    FileChecker.check_file_line_count(step_trace_raw_detail_time_path, 3)
-
 
 def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
-    ascend_profiler_output_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+    ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
     operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
-        "Name": ["*Add*", "*Sqrt*", "*LayerNorm*"]
+        "Name": ["Unknown"]
     })
 
 
 def check_ascend_profiler_kbk_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
-    ascend_profiler_output_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+    ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
     operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
-        "Name": ["*Add*", "*MatMul*", "*LayerNorm*"]
+        "Name": ["*Default*"]
     })

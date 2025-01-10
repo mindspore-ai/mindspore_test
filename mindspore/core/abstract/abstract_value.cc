@@ -284,7 +284,7 @@ AbstractBasePtr AbstractScalar::Broaden() const {
   }
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR)) {
+  if (context->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) || common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") {
     return AbstractBase::Broaden();
   }
   auto type_id = GetTypeTrack()->type_id();
@@ -1861,6 +1861,8 @@ TypePtr AbstractAny::BuildType() const {
   TypePtr element_type = element_->BuildType();
   return std::make_shared<AnyType>(element_type);
 }
+
+AbstractNegligible::AbstractNegligible() : AbstractTensor(kFloat64, std::make_shared<Shape>(ShapeVector({1}))) {}
 
 AbstractBasePtr AbstractNegligible::Join(const AbstractBasePtr &other) {
   MS_EXCEPTION_IF_NULL(other);

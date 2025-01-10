@@ -43,7 +43,7 @@ def fr(x):
     return z
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('fun', [fr])
 def test_tensor_spec_case(fun):
     """

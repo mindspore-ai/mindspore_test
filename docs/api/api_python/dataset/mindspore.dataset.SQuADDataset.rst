@@ -24,7 +24,7 @@ mindspore.dataset.SQuADDataset
           - ``Shuffle.GLOBAL`` ：混洗文件和文件中的数据。
           - ``Shuffle.FILES`` ：仅混洗文件。
 
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
         - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
@@ -44,8 +44,8 @@ mindspore.dataset.SQuADDataset
     SQuAD（Stanford Question Answering Dataset）是一个阅读理解数据集，由众人对一组维基百科文章提出的问题组成，
     每个问题的答案都是相应阅读段落中的一段文字或范围，否则问题可能无法回答。
 
-    SQuAD 1.1，即SQuAD数据集的前一个版本，包含500多篇文章的100,000多个问题-答案对。SQuAD 2.0除包含SQuAD 1.1中的
-    100,000个问题外，还补充了超过50,000个由贡献者编写的不可回答的对抗性问题，它们看起来与可回答的问题类似。为了
+    SQuAD 1.1，即SQuAD数据集的前一个版本，包含500多篇文章的100,000多个问题-答案对。SQuAD 2.0除包含SQuAD 1.1中的\
+    100,000个问题外，还补充了超过50,000个由贡献者编写的不可回答的对抗性问题，它们看起来与可回答的问题类似。为了\
     在SQuAD 2.0中取得好成绩，系统不仅要尽量回答可回答的问题，而且要能够在段落中不存在答案时放弃回答。
 
     您可以将数据集解压并构建成以下目录结构，并通过MindSpore的API进行读取。

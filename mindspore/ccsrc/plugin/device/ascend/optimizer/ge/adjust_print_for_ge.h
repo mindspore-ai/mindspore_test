@@ -18,6 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_ADJUST_PRINT_FOR_GE_H_
 
 #include <vector>
+#include <string>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -33,6 +34,7 @@ class AdjustPrintForGe : public PatternProcessPass {
 
  private:
   void UnfoldMakeTuple(const AnfNodePtr &input, int64_t *ptr_num_inputs, std::vector<AnfNodePtr> *ptr_new_inputs) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

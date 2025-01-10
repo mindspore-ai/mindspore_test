@@ -45,6 +45,7 @@ bool OnesCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &i
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kOnesInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOnesOutputsNum, kernel_name_);
   auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   size_t output_size = outputs[0]->size() / sizeof(T);
   auto task = [this, output_addr](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {

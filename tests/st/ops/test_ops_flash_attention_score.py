@@ -134,7 +134,6 @@ def generate_inputs(B, N1, N2, S1, S2, D, input_layout, dtype, return_tensor=Tru
     return query, key, value, real_shift, attn_mask, prefix
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [mstype.float16, mstype.bfloat16])
 def test_ops_flash_attention_score(mode, dtype):

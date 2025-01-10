@@ -48,6 +48,24 @@ REG_FALLBACK_BUILDER("AddExt").SetBody(BODYFUNC(ib) {
   return {x + y * alpha_tensor};
 });
 
+REG_FALLBACK_BUILDER("InplaceAddExt").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  auto y_cast = ib->Cast(y, x->dtype());
+  return {x + y_cast * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceAddsExt").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  return {x + other_tensor * alpha_tensor};
+});
+
 REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
@@ -394,6 +412,24 @@ REG_FALLBACK_BUILDER("EqualCount").SetBody(BODYFUNC(ib) {
     result = ib->Cast(result, dtype->type_id());
   }
   return {result};
+});
+
+REG_FALLBACK_BUILDER("PowTensorScalar").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto exponent = ib->GetInput(kIndex1);
+
+  auto exp_tensor = ib->ScalarToTensor(exponent, exponent->dtype());
+  auto out = ib->Pow(input, exp_tensor);
+  return {out};
+});
+
+REG_FALLBACK_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto exponent = ib->GetInput(kIndex1);
+
+  auto input_tensor = ib->ScalarToTensor(input, input->dtype());
+  auto out = ib->Pow(input_tensor, exponent);
+  return {out};
 });
 }  // namespace expander
 }  // namespace mindspore

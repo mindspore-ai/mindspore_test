@@ -83,7 +83,7 @@ c = [Tensor(np.array([[6, 6, 6, 6], [6, 6, 6, 6]]), ms.float32),
      Tensor(np.array([[6, 6, 6, 6], [6, 6, 6, 6]]), ms.float32)]
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_BufferSample():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')
@@ -93,7 +93,7 @@ def test_BufferSample():
     print(ss, aa, rr, ss_)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_BufferGet():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')
@@ -110,7 +110,7 @@ def test_BufferGet():
     np.testing.assert_almost_equal(ss_.asnumpy(), expect_s_)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_BufferAppend():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')

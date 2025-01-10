@@ -37,7 +37,7 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
   bool enable_infer_boost = ms_context->IsEnableInferBoost();
   auto op_name = primitive->name();
 
-  std::set<TypePtr> valid_types = {kFloat16};
+  std::set<TypePtr> valid_types = {kFloat16, kBFloat16};
   std::map<std::string, TypePtr> types;
   (void)types.emplace("query", input_args[kPagedAttentionInputQueryIndex]->GetType());
 
@@ -55,7 +55,6 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
     (void)CheckAndConvertUtils::CheckTensorTypeSame(kvcache_types, {kInt8}, op_name);
   } else {
     // else q, k, v should have same dtypes, fp16 or bf16
-    (void)valid_types.emplace(kBFloat16);
     (void)types.emplace("key_cache", key_type);
     (void)types.emplace("value_cache", value_type);
   }
@@ -73,7 +72,8 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
     MS_EXCEPTION_IF_NULL(offset_type);
     auto offset_type_id = offset_type->element()->type_id();
     if ((scale_type_id == TypeId::kNumberTypeFloat16 && offset_type_id == TypeId::kNumberTypeFloat16) ||
-        (scale_type_id == TypeId::kNumberTypeInt64 && offset_type_id == TypeId::kNumberTypeInt32)) {
+        (scale_type_id == TypeId::kNumberTypeInt64 && offset_type_id == TypeId::kNumberTypeInt32) ||
+        (scale_type_id == TypeId::kNumberTypeFloat32 && offset_type_id == TypeId::kNumberTypeInt32)) {
       valid_flag = true;
     }
     if (!valid_flag) {

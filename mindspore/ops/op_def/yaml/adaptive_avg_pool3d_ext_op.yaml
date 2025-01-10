@@ -1,0 +1,18 @@
+#operator adaptive_avg_pool3d_ext
+adaptive_avg_pool3d_ext:
+  args:
+    input:
+      dtype: tensor
+    output_size:
+      dtype: tuple[int]
+      type_cast: int, list[int]
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: AdaptiveAvgPool3DExt
+  dispatch:
+    enable: True
+    Ascend: AdaptiveAvgPool3DExtAscend
+    CPU: None
+    GPU: None

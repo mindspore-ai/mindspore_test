@@ -17,7 +17,8 @@ import os
 import numpy as np
 import time
 import mindspore.context as context
-from mindspore import Tensor, nn, load_checkpoint
+import mindspore.runtime as rt
+from mindspore import Tensor, nn, load_checkpoint, set_recursion_limit
 from tests.st.mindscience.mindsponge.mindsponge.cell.amp import amp_convert
 from tests.st.mindscience.mindsponge.mindsponge.common.config_load import load_config
 from tests.mark_utils import arg_mark
@@ -75,9 +76,9 @@ def test_910B_Ascend_fold():
     """
     os.environ["MS_ASCEND_CHECK_OVERFLOW_MODE"] = "SATURATION_MODE"
     context.set_context(mode=context.GRAPH_MODE,
-                        device_target="Ascend",
-                        memory_optimize_level="O1",
-                        max_call_depth=6000)
+                        device_target="Ascend")
+    rt.set_memory(optimize_level="O1")
+    set_recursion_limit(6000)
     mixed_precision = 1
     crop_size = 512
     confidence, time_list = fold_infer(mixed_precision, crop_size)
@@ -96,9 +97,9 @@ def test_910A_Ascend_fold():
     Expectation: success
     """
     context.set_context(mode=context.GRAPH_MODE,
-                        device_target="Ascend",
-                        memory_optimize_level="O1",
-                        max_call_depth=6000)
+                        device_target="Ascend")
+    rt.set_memory(optimize_level="O1")
+    set_recursion_limit(6000)
     context.set_context(jit_level="O2")
     mixed_precision = 1
     crop_size = 1024

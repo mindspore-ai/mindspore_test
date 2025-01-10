@@ -1,0 +1,27 @@
+#operator std
+std:
+  args:
+    input:
+      dtype: tensor
+    dim:
+      dtype: tuple[int]
+      type_cast: int, list[int]
+      default: None
+    correction:
+      dtype: int
+      default: 1
+    keepdim:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: Std
+  function:
+      disable: True
+  dispatch:
+    enable: True
+    Ascend: StdAscend
+    CPU: None
+    GPU: None

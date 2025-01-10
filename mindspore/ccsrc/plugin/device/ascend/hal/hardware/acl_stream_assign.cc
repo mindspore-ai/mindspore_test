@@ -64,45 +64,13 @@ void SetForSwitchInline(const NotNull<KernelGraphPtr> &kernel_graph, const CNode
                 << " for kernel graph:" << kernel_graph->ToString();
 }
 
-void AddStreamIdForSendRecv(const AnfNodePtr &node, bool is_pp_interleave) {
-  static const auto enable_less_mem_vpp = common::GetEnv("ENABLE_LESS_MEM_VPP");
-  if (!is_pp_interleave || enable_less_mem_vpp != "1") {
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(node);
-  auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kSendOpName))) {
-    if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-      AnfAlgo::SetStreamId(kBackwardSendStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardSendStreamIndex), node);
-    } else {
-      AnfAlgo::SetStreamId(kForwardSendStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardSendStreamIndex), node);
-    }
-    MS_LOG(INFO) << "Set stream id for vpp send op " << node->fullname_with_scope()
-                 << ", stream id: " << AnfAlgo::GetStreamId(node);
-  } else if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kReceiveOpName))) {
-    if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-      AnfAlgo::SetStreamId(kBackwardReceiveStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardReceiveStreamIndex), node);
-    } else {
-      AnfAlgo::SetStreamId(kForwardReceiveStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardReceiveStreamIndex), node);
-    }
-    MS_LOG(INFO) << "Set stream id for vpp recv op " << node->fullname_with_scope()
-                 << ", stream id: " << AnfAlgo::GetStreamId(node);
-  }
-}
-
-void AddStreamIdForCommunicationOp(const AnfNodePtr &node, bool is_pp_interleave) {
+void AddStreamIdForCommunicationOp(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   AnfAlgo::SetStreamId(kWorldGroupStreamIndex, node.get());
   common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
-  AddStreamIdForSendRecv(node, is_pp_interleave);
 }
 
-void AddStreamIdByGroup(const AnfNodePtr &node, bool is_pp_interleave, DeviceResManager *device_res_manager) {
+void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_manager) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     MS_LOG(EXCEPTION) << "Node is not a cnode: " << node->DebugString();
@@ -132,7 +100,6 @@ void AddStreamIdByGroup(const AnfNodePtr &node, bool is_pp_interleave, DeviceRes
                    << group_value->ToString();
     }
   }
-  AddStreamIdForSendRecv(node, is_pp_interleave);
 }
 }  // namespace
 
@@ -148,6 +115,10 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     return;
   }
   std::set<uint32_t> stream_ids;
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto ms_context_exec_order = ms_context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  const std::string kExecOrderGpto = "gpto";
   for (const auto &node : kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(node)) {
       continue;
@@ -170,12 +141,12 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     }
     auto parallel_context = parallel::ParallelContext::GetInstance();
     MS_EXCEPTION_IF_NULL(parallel_context);
-    auto is_pp_interleave = parallel_context->pipeline_interleave();
-    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+    // gpto not support multi_stream of communication group now.
+    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream) || ms_context_exec_order == kExecOrderGpto) {
       // multi_stream:true, all communication op use the same communication stream.
       MS_LOG(INFO) << "Set stream id by no group for node " << node->fullname_with_scope();
       if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
-        AddStreamIdForCommunicationOp(node, is_pp_interleave);
+        AddStreamIdForCommunicationOp(node);
       } else {
         AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
         common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
@@ -183,7 +154,7 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     } else {
       // Default scene, multi_stream:group, all communication op use the communication stream by group
       MS_LOG(INFO) << "Set stream id by group for node " << node->fullname_with_scope();
-      AddStreamIdByGroup(node, is_pp_interleave, device_res_manager);
+      AddStreamIdByGroup(node, device_res_manager);
     }
     stream_ids.insert(AnfAlgo::GetStreamId(node));
   }
@@ -549,122 +520,14 @@ void AclStreamAssign::InsertEvents(const NotNull<KernelGraphPtr> &kernel_graph, 
   SetForSwitchInline(kernel_graph, send_cnode, recv_cnode, node_before_send, node_after_recv);
 }
 
-CNodePtr AclStreamAssign::GetTargetRecvKernel(const std::vector<CNodePtr> &recv_ops, int64_t target_micro,
-                                              int64_t target_chunk, bool target_phase) {
-  for (const auto &recv : recv_ops) {
-    auto micro_attr = recv->GetPrimalAttr(kPrimalAttrMicro);
-    MS_EXCEPTION_IF_NULL(micro_attr);
-    auto micro = GetValue<int64_t>(micro_attr);
-    if (micro != target_micro) {
-      continue;
-    }
-    auto chunk_attr = recv->GetPrimalAttr(kPrimalAttrChunk);
-    MS_EXCEPTION_IF_NULL(chunk_attr);
-    auto chunk = GetValue<int64_t>(chunk_attr);
-    if (chunk != target_chunk) {
-      continue;
-    }
-    auto phase = recv->HasPrimalAttr(kPrimalAttrForwardNodeName);
-    if (phase != target_phase) {
-      continue;
-    }
-    return recv;
-  }
-  return nullptr;
-}
-
-void AclStreamAssign::InsertEventsForSendOp(const NotNull<KernelGraphPtr> &kernel_graph, const CNodePtr &kernel,
-                                            const std::vector<CNodePtr> &recv_ops, int64_t chunk_num,
-                                            int64_t micro_size,
-                                            mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_send,
-                                            mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_recv) {
-  auto parallel_context = parallel::ParallelContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(parallel_context);
-  auto is_pp_interleave = parallel_context->pipeline_interleave();
-  auto pp_scheduler = parallel_context->pipeline_scheduler();
-  static const auto enable_less_mem_vpp = common::GetEnv("ENABLE_LESS_MEM_VPP");
-  if (!is_pp_interleave || pp_scheduler != parallel::kPipeline1F1B || enable_less_mem_vpp != "1") {
-    return;
-  }
-  if (!IsPrimitiveCNode(kernel, std::make_shared<Primitive>(kSendOpName))) {
-    return;
-  }
-  auto micro_attr = kernel->GetPrimalAttr(kPrimalAttrMicro);
-  MS_EXCEPTION_IF_NULL(micro_attr);
-  auto micro = GetValue<int64_t>(micro_attr);
-  auto chunk_attr = kernel->GetPrimalAttr(kPrimalAttrChunk);
-  MS_EXCEPTION_IF_NULL(chunk_attr);
-  auto chunk = GetValue<int64_t>(chunk_attr);
-  auto is_backward = kernel->HasPrimalAttr(kPrimalAttrForwardNodeName);
-  auto is_param = kernel->HasPrimalAttr(kPrimalAttrPipelineParam);
-  auto stage_num = parallel::ParallelContext::GetInstance()->pipeline_stage_split_num();
-  auto bias = micro_size % stage_num;
-  auto loop_index = micro / (stage_num + bias);
-  auto offset = (loop_index != 0) ? 0 : bias;
-  CNodePtr recv = nullptr;
-  if (!is_backward) {
-    if (is_param) {
-      recv = GetTargetRecvKernel(recv_ops, 0, 1, false);
-    } else {
-      recv = (chunk != chunk_num - 1) ? GetTargetRecvKernel(recv_ops, micro, chunk + 1, false)
-                                      : GetTargetRecvKernel(recv_ops, micro, chunk, true);
-    }
-  } else {
-    if (is_param) {
-      return;
-    } else {
-      recv = (chunk != 0) ? GetTargetRecvKernel(recv_ops, micro, chunk - 1, true)
-                          : GetTargetRecvKernel(recv_ops, micro + stage_num + offset, chunk_num - 1, true);
-    }
-  }
-  if (recv == nullptr) {
-    return;
-  }
-  InsertEvents(kernel_graph, kernel, kernel, kernel_send, kernel_recv, recv);
-}
-
-static std::tuple<std::vector<CNodePtr>, int64_t, int64_t> GetAllRecvs(const std::vector<CNodePtr> &exec_kernels) {
-  int64_t chunk_num = 1;
-  int64_t micro_size = 1;
-  std::vector<CNodePtr> recv_ops;
-  auto parallel_context = parallel::ParallelContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(parallel_context);
-  auto is_pp_interleave = parallel_context->pipeline_interleave();
-  auto pp_scheduler = parallel_context->pipeline_scheduler();
-  static const auto enable_less_mem_vpp = common::GetEnv("ENABLE_LESS_MEM_VPP");
-  if (!is_pp_interleave || pp_scheduler != parallel::kPipeline1F1B || enable_less_mem_vpp != "1") {
-    return std::make_tuple(recv_ops, chunk_num, micro_size);
-  }
-  for (const auto &process_kernel : exec_kernels) {
-    if (!IsPrimitiveCNode(process_kernel, std::make_shared<Primitive>(kReceiveOpName))) {
-      continue;
-    }
-    if (process_kernel->HasPrimalAttr(kPrimalAttrPipelineParam)) {
-      continue;
-    }
-    recv_ops.emplace_back(process_kernel);
-    auto chunk_attr = process_kernel->GetPrimalAttr(kPrimalAttrChunk);
-    MS_EXCEPTION_IF_NULL(chunk_attr);
-    auto chunk = GetValue<int64_t>(chunk_attr) + 1;
-    chunk_num = chunk_num > chunk ? chunk_num : chunk;
-    auto micro_attr = process_kernel->GetPrimalAttr(kPrimalAttrMicro);
-    MS_EXCEPTION_IF_NULL(micro_attr);
-    auto micro = GetValue<int64_t>(micro_attr) + 1;
-    micro_size = micro_size > micro ? micro_size : micro;
-  }
-  return std::make_tuple(recv_ops, chunk_num, micro_size);
-}
-
 void AclStreamAssign::GenEventsForParallelOp(const NotNull<KernelGraphPtr> &kernel_graph,
                                              mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_send,
                                              mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_recv,
                                              mindspore::HashMap<AnfNodePtr, std::set<size_t>> *producer_streams) {
   MS_LOG(DEBUG) << "Start GenEventsForParallelOp...";
-  constexpr size_t INDEX_TWO = 2;
   auto exec_kernels = kernel_graph->execution_order();
   mindspore::HashMap<CNodePtr, NodeIoExecInfoPtr> kernel_io_exec_info_map;
   GenKernelIoExecInfoMap(kernel_graph, &kernel_io_exec_info_map);
-  auto recvs = GetAllRecvs(exec_kernels);
   for (auto &process_kernel : exec_kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(process_kernel)) {
       continue;
@@ -684,8 +547,6 @@ void AclStreamAssign::GenEventsForParallelOp(const NotNull<KernelGraphPtr> &kern
     ProcessStreamForInputs(kernel_graph, process_kernel, process_io_exec_info, kernel_send, kernel_recv,
                            producer_streams);
     InsertEventsForOutputs(kernel_graph, process_kernel, process_io_exec_info, kernel_send, kernel_recv);
-    InsertEventsForSendOp(kernel_graph, process_kernel, std::get<0>(recvs), std::get<1>(recvs),
-                          std::get<INDEX_TWO>(recvs), kernel_send, kernel_recv);
   }
   MS_LOG(DEBUG) << "Finish GenEventsForParallelOp.";
 }

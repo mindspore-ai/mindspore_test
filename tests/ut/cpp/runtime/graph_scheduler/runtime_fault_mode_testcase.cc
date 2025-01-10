@@ -604,7 +604,7 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
     nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "CPU", 0, 0);
   AnfAlgo::SetOutputAddr(device_tensor, 0, add_node.get());
 
-  std::vector<tensor::Tensor> tensors;
+  std::vector<tensor::TensorPtr> tensors;
   std::map<string, string> compile_options;
   device_context->graph_executor_->RunGraph(kernel_graph, tensors, &tensors, compile_options);
 

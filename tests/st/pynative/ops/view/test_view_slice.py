@@ -55,7 +55,7 @@ def test_broadcast_to_single_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_broadcast_to_multiple_op():
@@ -114,7 +114,7 @@ def test_strided_slice_single_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_strided_slice_multiple_op():
@@ -172,7 +172,7 @@ def test_expand_dim_single_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_expand_dim_multiple_op():
@@ -252,7 +252,7 @@ def test_copy_with_slice():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_transpose_single_op():
@@ -316,7 +316,7 @@ def test_transpose_multiple_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_gather_single_op():
@@ -380,7 +380,7 @@ def test_large_conv_slice_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_small_conv_slice_op():
@@ -413,7 +413,7 @@ def test_small_conv_slice_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_small_conv_tranpose_op():
@@ -478,7 +478,7 @@ def test_large_conv_tranpose_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_small_mix_op():
@@ -540,7 +540,7 @@ def test_large_mix_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_small_conv_mix_op():
@@ -606,7 +606,7 @@ def test_large_conv_mix_op():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_slice_single_op():
@@ -637,7 +637,7 @@ def test_slice_single_op():
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_slice_multiple_op():

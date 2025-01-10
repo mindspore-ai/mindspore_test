@@ -91,7 +91,7 @@ class NestedNetWork2(nn.Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_no_grad_with_parameter():
@@ -148,7 +148,7 @@ def test_no_grad_decorator():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_no_grad_exception():

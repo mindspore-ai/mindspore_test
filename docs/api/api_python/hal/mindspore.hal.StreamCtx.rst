@@ -7,6 +7,9 @@ mindspore.hal.StreamCtx
 
     上下文范围内的所有算子，都将在指定流上执行。
 
+    .. note::
+        - 接口即将废弃，请使用接口 :class:`mindspore.runtime.StreamCtx` 代替。
+
     参数：
         - **ctx_stream** (Stream) - 指定的流。如果是 `None` ，这个上下文管理器无操作。
 

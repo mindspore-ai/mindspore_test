@@ -26,29 +26,44 @@
 #include "utils/check_convert_utils.h"
 
 namespace mindspore::ops {
-BaseShapePtr MulsFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_shape = input_args[kIndex0]->GetShape();
-  return input_shape->Clone();
+
+constexpr int typeLevelBool = 0;
+constexpr int typeLevelInt = 1;
+constexpr int typeLevelFloat = 2;
+constexpr int typeLevelComplex = 3;
+
+static inline bool IsBoolType(TypeId t) { return t == kNumberTypeBool; }
+
+static inline bool IsIntegralType(TypeId t) {
+  return t == kNumberTypeInt8 || t == kNumberTypeInt16 || t == kNumberTypeInt32 || t == kNumberTypeInt64 ||
+         t == kNumberTypeUInt8 || t == kNumberTypeUInt16 || t == kNumberTypeUInt32 || t == kNumberTypeUInt64;
 }
 
-TypePtr MulsFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kIndex0]->GetType();
-  return input_type;
+static inline bool IsFloatingType(TypeId t) {
+  return t == kNumberTypeFloat16 || t == kNumberTypeFloat32 || t == kNumberTypeFloat64 || t == kNumberTypeBFloat16;
 }
 
-TypePtrList MulsFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  const auto &input_type = input_tensor->Dtype();
-  return {input_type};
+static inline int TypeToLevel(TypeId t) {
+  if (IsBoolType(t)) {
+    return typeLevelBool;
+  } else if (IsIntegralType(t)) {
+    return typeLevelInt;
+  } else if (IsFloatingType(t)) {
+    return typeLevelFloat;
+  } else {
+    return typeLevelComplex;
+  }
 }
 
-ShapeArray MulsFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  return {input_tensor->shape()};
+ShapeArray MulsFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex0]->GetShape()};
 }
 
-REGISTER_SIMPLE_INFER(kNameMuls, MulsFuncImpl)
+std::vector<TypeId> MulsFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  TypeId input_type_id = input_infos[kInputIndex0]->GetType();
+  TypeId other_type_id = input_infos[kInputIndex1]->GetType();
+
+  auto promote_type_id = (TypeToLevel(input_type_id) < TypeToLevel(other_type_id)) ? other_type_id : input_type_id;
+  return {promote_type_id};
+}
 }  // namespace mindspore::ops

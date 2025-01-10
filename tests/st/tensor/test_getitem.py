@@ -29,7 +29,7 @@ class Net_index3(nn.Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -57,7 +57,7 @@ class Net_index2_slice(nn.Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -151,6 +151,8 @@ def test_getitem_refactor(mode):
     ms_y = ms_x[0, [0, 1], [0, 1]]
     assert np.allclose(np_y, ms_y.asnumpy()), f"y:{np_y} {np_y.shape}, ms_y:{ms_y} {ms_y.shape}"
     ms_y = ms_x[Tensor(0), Tensor([0, 1]), Tensor([0, 1])]
+    assert np.allclose(np_y, ms_y.asnumpy()), f"y:{np_y} {np_y.shape}, ms_y:{ms_y} {ms_y.shape}"
+    ms_y = ms_x[Tensor(0), [0, Tensor(1)], [Tensor(0), Tensor(1)]]
     assert np.allclose(np_y, ms_y.asnumpy()), f"y:{np_y} {np_y.shape}, ms_y:{ms_y} {ms_y.shape}"
 
     np_y = np.array([[0, 4], [13, 17]])

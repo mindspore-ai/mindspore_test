@@ -4,16 +4,16 @@ split:
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: tensor, function
+    interface: tensor
 
   - op_yaml: split_with_size_op.yaml
     py_method: deprecated_tensor_split # callback to python function "def deprecated_tensor_split"
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: tensor, function
+    interface: tensor
 
-  - op_yaml: deprecated/split_op.yaml
+  - op_yaml: deprecated/split_method.yaml
     py_method: deprecated_tensor_split # callback to python function "def deprecated_tensor_split"
     Ascend: py_method
     CPU: py_method

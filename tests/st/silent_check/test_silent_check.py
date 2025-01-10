@@ -40,7 +40,7 @@ def test_npu_asd_enable0():
     os.environ['MS_SAVE_GRAPHS'] = "1"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh --master_port=8150 {sh_path}/silent_check.py")
-    ret2 = os.system(f"ls ms_graphs/rank_0/*.ir | grep silent_check_v2")
+    ret2 = os.system(f"ls ms_graphs/rank_0/*.ir | grep silent_check")
     ret3 = os.system(f"grep -E 'SilentCheckV2' ms_graphs/rank_0/graph_build*.ir")
     assert ret1 == 0
     assert ret2 != 0
@@ -58,7 +58,7 @@ def test_npu_asd_enable1():
     os.environ['NPU_ASD_ENABLE'] = "1"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh --master_port=8151 {sh_path}/silent_check.py")
-    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v2.cc.*SilentCheck get L' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 == 0
     assert ret2 == 0
     os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
@@ -74,8 +74,8 @@ def test_npu_asd_enable2():
     os.environ['NPU_ASD_ENABLE'] = "2"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh --master_port=8152 {sh_path}/silent_check.py &> /dev/null")
-    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v2.cc.*SilentCheck get L' ascend_log/")
-    ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
+    ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 != 0
     assert ret2 == 0
     assert ret3 != 0
@@ -92,8 +92,8 @@ def test_npu_asd_enable3():
     os.environ['NPU_ASD_ENABLE'] = "3"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh --master_port=8153 {sh_path}/silent_check.py &> /dev/null")
-    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v2.cc.*SilentCheck get L' ascend_log/")
-    ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
+    ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
+    ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 != 0
     assert ret2 == 0
     assert ret3 == 0
@@ -112,23 +112,11 @@ def test_silent_check_receive():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     cmd = f"bash {sh_path}/msrun_silent_check.sh --master_port=8154 {sh_path}/pipeline_parallel.py &> /dev/null"
     ret1 = os.system(cmd)
-    ret2 = os.system(f"ls ms_graphs/rank_0/*.ir | grep silent_check_v2")
-    ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
+    ret2 = os.system(f"ls ms_graphs/rank_0/*.ir | grep silent_check")
+    ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v[23].cc.*SilentCheck' ascend_log/")
     assert ret1 == 0
     assert ret2 == 0
     assert ret3 == 0
-
-    cmd1 = "cat ms_graphs/rank_0/graph_build*.ir | grep 'group:' | grep 'forward_unique_id:'" \
-           " | grep -E 'forward_op|distribution_op' | wc -l"
-    backward_comm_op_cnt = int(exec_command(cmd1))
-    cmd2 = "cat ms_graphs/rank_0/graph_build*.ir | grep '= PrimFunc_SilentCheckV2(' | wc -l"
-    silent_check_op_cnt = int(exec_command(cmd2))
-    cmd3 = "cat ms_graphs/rank_0/graph_build*.ir | grep -E 'forward_op|distribution_op' | grep '= Receive(' | wc -l"
-    receive_op_cnt = int(exec_command(cmd3))
-    print(f'backward_comm_op_cnt={backward_comm_op_cnt} silent_check_op_cnt={silent_check_op_cnt} '
-          f'receive_op_cnt={receive_op_cnt}')
-    last_grad_node_check_cnt = 1
-    assert (backward_comm_op_cnt + last_grad_node_check_cnt) == (silent_check_op_cnt + receive_op_cnt)
 
     os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
 

@@ -22,13 +22,20 @@
 
 namespace mindspore {
 namespace kernel {
+namespace {
+constexpr char kArgMinWithValueOpName[] = "ArgMinWithValue";
+constexpr char kArgMaxWithValueOpName[] = "ArgMaxWithValue";
+constexpr char kMinDim[] = "MinDim";
+constexpr char kMaxDim[] = "MaxDim";
+}  // namespace
+
 template <typename T, typename S>
 bool ArgMaxAndMinWithValueGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   T *input = GetDeviceAddress<T>(inputs, 0);
-  T *output = GetDeviceAddress<T>(outputs, 1);
-  S *index = GetDeviceAddress<S>(outputs, 0);
+  T *output = GetDeviceAddress<T>(outputs, value_output_idx);
+  S *index = GetDeviceAddress<S>(outputs, index_output_idx);
   auto status = CalGeneralReduction(small_, input, bound_, outer_size_, inner_size_, index, output,
                                     reinterpret_cast<cudaStream_t>(stream_ptr));
   CHECK_CUDA_STATUS(status, kernel_name_);
@@ -126,10 +133,6 @@ std::vector<KernelAttr> ArgMaxAndMinWithValueGpuKernelMod::GetOpSupport() {
 
 bool ArgMaxAndMinWithValueGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  if (kernel_name_ != "ArgMaxWithValue" && kernel_name_ != "ArgMinWithValue") {
-    MS_EXCEPTION(ArgumentError) << "The kernel must be either ArgMaxWithValue or ArgMinWithValue.";
-  }
-
   // Check inputs and outputs size.
   if (inputs.size() != kInputNum) {
     MS_EXCEPTION(ArgumentError)
@@ -141,7 +144,12 @@ bool ArgMaxAndMinWithValueGpuKernelMod::Init(const std::vector<KernelTensor *> &
       << outputs.size();
   }
 
-  small_ = (kernel_name_ == "ArgMinWithValue") ? true : false;
+  small_ = (kernel_name_ == kArgMinWithValueOpName || kernel_name_ == kMinDim) ? true : false;
+
+  if (kernel_name_ == kMinDim || kernel_name_ == kMaxDim) {
+    index_output_idx = 1;
+    value_output_idx = 0;
+  }
 
   auto tensor_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(tensor_attr, GetOpSupport());

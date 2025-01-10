@@ -176,17 +176,17 @@ bool LstmCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
   size_t offset = 0;
   SetDataHandle(user_weights_memory_, inputs[kInputWeightIndex]->device_ptr());
   offset += weight_size_;
-  SetDataHandle(user_weights_h_memory_, reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + offset);
+  SetDataHandle(user_weights_h_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + offset);
   offset += weight_h_size_;
   Reorder(&user_weights_memory_, &weights_memory_);
   Reorder(&user_weights_h_memory_, &weights_h_memory_);
   if (proj_size_ > 0) {
-    SetDataHandle(user_weights_r_memory_, reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + offset);
+    SetDataHandle(user_weights_r_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + offset);
     Reorder(&user_weights_r_memory_, &weights_r_memory_);
     offset += weight_r_size_;
   }
   if (has_bias_) {
-    SetDataHandle(bias_memory_, reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + offset);
+    SetDataHandle(bias_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + offset);
   } else {
     auto size = GetSize(bias_desc_);
     if (memset_s(GetDataHandle(bias_memory_), size, 0, size) != EOK) {

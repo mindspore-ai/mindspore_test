@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
@@ -30,7 +30,11 @@ CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const 
   std::string prim_name = "QuantBatchMatmul";
   auto qbmm_prim = std::make_shared<Primitive>(prim_name);
   const bool with_allreduce = false;
-  auto bias_int32_node = ConvertFp16BiasToInt32(bias_tensor_node_, scale_node_, with_allreduce);
+  TypeId dtype = static_cast<TypeId>(GetValue<int64_t>(out_dtype_node_->cast<ValueNodePtr>()->value()));
+  auto bias_int32_node = ConvertBiasToInt32(bias_tensor_node_, scale_node_, with_allreduce, dtype);
+  if (!bias_int32_node) {
+    return nullptr;
+  }
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   kernel_graph->AddValueNodeToGraph(bias_int32_node);
 
@@ -45,6 +49,11 @@ CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const 
   }
   MS_LOG(DEBUG) << "create QbmmAddFusion node success.";
   return new_qbmm_node;
+}
+
+std::vector<std::string> QbmmAddFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimAdd->name()};
+  return ret;
 }
 
 const BaseRef QbmmAddFusion::DefinePattern() const {

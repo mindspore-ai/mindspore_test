@@ -1084,7 +1084,7 @@ ParameterPtr BuildInt64ValueParameterNode(const FuncGraphPtr &func_graph, const 
   return param_node;
 }
 
-ParameterPtr BuildFloat16ValueParameterNode(const FuncGraphPtr &func_graph, const float &data,
+ParameterPtr BuildFloat16ValueParameterNode(const FuncGraphPtr &func_graph, const uint16_t &data,
                                             const std::string &node_name, bool empty_shape) {
   MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
   auto param_node = func_graph->add_parameter();

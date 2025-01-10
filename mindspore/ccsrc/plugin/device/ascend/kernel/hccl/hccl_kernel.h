@@ -23,6 +23,7 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include "ir/anf.h"
 #include "kernel/kernel.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "hccl/hcom.h"
@@ -51,6 +52,7 @@ class HcclKernel : public KernelMod {
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 
   void SetIsGraphMode(bool is_graph_mode) { is_graph_mode_ = is_graph_mode; }
+  void SetPrimitive(const PrimitivePtr &prim) { primitive_ = prim; }
 
   std::vector<KernelAttr> GetOpSupport() override {
     MS_LOG(EXCEPTION) << "This interface is not support in hccl kernel module.";
@@ -67,6 +69,7 @@ class HcclKernel : public KernelMod {
   std::vector<std::string> hccl_format_list_;
   uint64_t hccl_count_;
   HcclReduceOp op_type_;
+  device::CollectiveOpReduceType collective_reduce_type_;
   uint32_t root_id_;
   uint32_t src_rank_;
   uint32_t dest_rank_;

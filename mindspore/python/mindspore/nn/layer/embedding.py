@@ -179,7 +179,7 @@ class EmbeddingExt(Cell):
             `[-num_embeddings, num_embeddings)` if it's not ``None``. Default ``None``.
         max_norm (float, optional): If the value is not None, firstly get the p-norm result of the embedding
             vector specified by `input` where p is specified by `norm_type`; if the result is larger then `max_norm`,
-            update the embedding vector` with :math:`\frac{max\_norm}{result+1e^{-7}}`. Default ``None``.
+            update the embedding vector with :math:`\frac{max\_norm}{result+1e^{-7}}`. Default ``None``.
         norm_type (float, optional): Indicated the value of p in p-norm. Default ``2.0``.
         scale_grad_by_freq (bool, optional): If ``True`` the gradients will be scaled by the inverse of frequency
             of the index in `input`. Default ``False``.

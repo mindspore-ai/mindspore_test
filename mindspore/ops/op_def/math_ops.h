@@ -56,7 +56,6 @@ GVAR_DEF(PrimitivePtr, kPrimLuUnpackGrad, std::make_shared<Primitive>("LuUnpackG
 GVAR_DEF(PrimitivePtr, kPrimTensorAdd, std::make_shared<Primitive>("TensorAdd"));
 GVAR_DEF(PrimitivePtr, kPrimAddV2, std::make_shared<Primitive>(kAddV2OpName));
 GVAR_DEF(PrimitivePtr, kPrimAddLayerNorm, std::make_shared<Primitive>("AddLayerNorm"));
-GVAR_DEF(PrimitivePtr, kPrimAddRmsNorm, std::make_shared<Primitive>("AddRmsNorm"));
 GVAR_DEF(PrimitivePtr, kPrimMatMulV2, std::make_shared<Primitive>("MatMulV2"));
 GVAR_DEF(PrimitivePtr, kPrimMatrixDiag, std::make_shared<Primitive>("MatrixDiag"));
 GVAR_DEF(PrimitivePtr, kPrimBatchMatMulV2, std::make_shared<Primitive>("BatchMatMulV2"));
@@ -98,8 +97,6 @@ GVAR_DEF(PrimitivePtr, kPrimRint, std::make_shared<Primitive>("Rint"));
 GVAR_DEF(PrimitivePtr, kPrimLogGrad, std::make_shared<Primitive>(kLogGradOpName));
 GVAR_DEF(PrimitivePtr, kPrimNonMaxSuppression, std::make_shared<Primitive>("NonMaxSuppression"));
 GVAR_DEF(PrimitivePtr, kPrimMatrixSolveLs, std::make_shared<Primitive>(kMatrixSolveLsOpName));
-GVAR_DEF(PrimitivePtr, kPrimCdist, std::make_shared<Primitive>(kCdistOpName));
-GVAR_DEF(PrimitivePtr, kPrimCdistGrad, std::make_shared<Primitive>(kCdistGradOpName));
 GVAR_DEF(PrimitivePtr, kPrimWhere, std::make_shared<Primitive>("Where"));
 GVAR_DEF(PrimitivePtr, kPrimMatrixInverse, std::make_shared<Primitive>(kMatrixInverseOpName));
 GVAR_DEF(PrimitivePtr, kPrimMatrixPower, std::make_shared<Primitive>(kMatrixPowerOpName));
@@ -110,7 +107,6 @@ GVAR_DEF(PrimitivePtr, kPrimInvGrad, std::make_shared<Primitive>("InvGrad"));
 GVAR_DEF(PrimitivePtr, kPrimFloatStatus, std::make_shared<Primitive>("FloatStatus"));
 GVAR_DEF(PrimitivePtr, kPrimIsNan, std::make_shared<Primitive>("IsNan"));
 GVAR_DEF(PrimitivePtr, kPrimComplexAbs, std::make_shared<Primitive>("ComplexAbs"));
-GVAR_DEF(PrimitivePtr, kPrimLerp, std::make_shared<Primitive>("Lerp"));
 GVAR_DEF(PrimitivePtr, kPrimEuclideanNorm, std::make_shared<Primitive>("EuclideanNorm"));
 GVAR_DEF(PrimitivePtr, kPrimSquareSumAll, std::make_shared<Primitive>("SquareSumAll"));
 GVAR_DEF(PrimitivePtr, kPrimSquareSumV1, std::make_shared<Primitive>("SquareSumV1"));
@@ -149,9 +145,11 @@ GVAR_DEF(PrimitivePtr, kPrimMatrixTriangularSolve, std::make_shared<Primitive>(k
 GVAR_DEF(PrimitivePtr, kPrimSelfAdjointEig, std::make_shared<Primitive>("SelfAdjointEig"));
 GVAR_DEF(PrimitivePtr, kPrimOrmqr, std::make_shared<Primitive>("Ormqr"));
 GVAR_DEF(PrimitivePtr, kPrimEps, std::make_shared<Primitive>(kEpsOpName));
-GVAR_DEF(PrimitivePtr, kPrimMatmulReduceScatter, std::make_shared<Primitive>(kMatmulReduceScatterOpName));
-GVAR_DEF(PrimitivePtr, kPrimAllGatherMatmul, std::make_shared<Primitive>(kAllGatherMatmulOpName));
 GVAR_DEF(PrimitivePtr, kPrimQuantBatchMatmulAllReduce, std::make_shared<Primitive>(kQuantBatchMatmulAllReduceOpName));
+GVAR_DEF(PrimitivePtr, kPrimAlltoAllAllGatherBatchMatMul,
+         std::make_shared<Primitive>(kAlltoAllAllGatherBatchMatMulOpName));
+GVAR_DEF(PrimitivePtr, kPrimBatchMatMulReduceScatterAlltoAll,
+         std::make_shared<Primitive>(kBatchMatMulReduceScatterAlltoAllOpName));
 }  // namespace prim
 }  // namespace mindspore
 

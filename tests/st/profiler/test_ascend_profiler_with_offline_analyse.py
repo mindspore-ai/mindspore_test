@@ -20,6 +20,7 @@ import mindspore
 from mindspore import context
 from mindspore import Profiler
 from mindspore import Tensor
+from mindspore.profiler.profiler_interface import ProfilerInterface
 
 from tests.mark_utils import arg_mark
 from file_check import FileChecker
@@ -37,16 +38,17 @@ def test_ascend_profiler_offline_analyse_with_single_device():
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     with tempfile.TemporaryDirectory() as tmpdir:
-        rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(output_path=tmpdir)
         net = TinyAddNet()
         t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
         t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
         net(t0, t1)
         profiler.stop()
-        profiler._ascend_profiler.finalize()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
         profiler.offline_analyse(path=tmpdir, data_simplification=False)
-        check_ascend_offline_analyse_files(tmpdir, rank_id)
+        ascend_ms_dir = glob.glob(f"{tmpdir}/*_ascend_ms")[0]
+        check_ascend_offline_analyse_files(ascend_ms_dir)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -60,30 +62,28 @@ def test_ascend_profiler_offline_analyse_with_multi_devices():
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     with tempfile.TemporaryDirectory() as tmpdir:
-        rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(output_path=tmpdir)
         net = TinyAddNet()
         t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
         t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
         net(t0, t1)
         profiler.stop()
-        profiler._ascend_profiler.finalize()
+        ProfilerInterface.finalize()
+        ProfilerInterface.clear()
         # copy profiler data to rank0 and rank1
-        rank0_path = os.path.join(tmpdir, 'rank0')
-        rank1_path = os.path.join(tmpdir, 'rank1')
-        os.makedirs(rank0_path, exist_ok=True)
-        os.makedirs(rank1_path, exist_ok=True)
-        profiler_dir = os.path.join(tmpdir, 'profiler')
-        shutil.copytree(profiler_dir, os.path.join(rank0_path, 'profiler'))
-        shutil.copytree(profiler_dir, os.path.join(rank1_path, 'profiler'))
-        shutil.rmtree(profiler_dir)  # remove the original profiler data.
+        raw_ascend_ms_dir = glob.glob(f"{tmpdir}/*_ascend_ms")[0]
+        copy_ascend_ms_dir = os.path.join(tmpdir, 'copy_ascend_ms')
+        shutil.copytree(raw_ascend_ms_dir, copy_ascend_ms_dir)
         profiler.offline_analyse(path=tmpdir, data_simplification=False)
-        check_ascend_offline_analyse_files(rank0_path, rank_id)
-        check_ascend_offline_analyse_files(rank1_path, rank_id)
+        check_ascend_offline_analyse_files(raw_ascend_ms_dir)
+        check_ascend_offline_analyse_files(copy_ascend_ms_dir)
 
 
-def check_ascend_offline_analyse_files(profiler_path: str, rank_id: int):
-    ascend_profiler_output_path = glob.glob(f"{profiler_path}/profiler/rank-*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+def check_ascend_offline_analyse_files(ascend_ms_dir: str):
+    """
+    Check the Ascend offline analysis files.
+    """
+    ascend_profiler_output_path = os.path.join(ascend_ms_dir, "ASCEND_PROFILER_OUTPUT")
 
     # Check trace_view.json
     trace_view_path = os.path.join(ascend_profiler_output_path, "trace_view.json")
@@ -97,15 +97,6 @@ def check_ascend_offline_analyse_files(profiler_path: str, rank_id: int):
         fuzzy_match=True
     )
 
-    # check op_statistic.csv
-    op_statistic_path = os.path.join(ascend_profiler_output_path, "op_statistic.csv")
-    FileChecker.check_csv_items(op_statistic_path, {"OP Type": ["*Add*"]})
-
-    # check aicore_intermediate_*_type.csv
-    aicore_intermediate_type_path = os.path.join(profiler_path, "profiler", f"aicore_intermediate_{rank_id}_type.csv")
-    FileChecker.check_csv_items(aicore_intermediate_type_path, {"kernel_type": ["*Add*"]})
-
-    # check aicore_intermediate_*_detail.csv
-    aicore_intermediate_detail_path = os.path.join(profiler_path, "profiler",
-                                                   f"aicore_intermediate_{rank_id}_detail.csv")
-    FileChecker.check_csv_items(aicore_intermediate_detail_path, {"full_kernel_name": "*Add*"})
+    # check kernel_details.csv
+    kernel_details_path = os.path.join(ascend_profiler_output_path, f"kernel_details.csv")
+    FileChecker.check_csv_items(kernel_details_path, {"Name": ["*Add*"]})

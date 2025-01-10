@@ -1,0 +1,20 @@
+moe_init_routing:
+    description: |
+        Performs routing on the computation result of MoeGatingTopKSoftmax.
+
+        Inputs:
+            - **x** (Tensor) - 2D tensor, which contains input feature tokens. The shape is (NUM_ROWS, H).
+            - **row_idx** (Tensor) - Original row ID of each position. The shape must be the same as that of expertForSourceRow.
+            - **expert_idx** (Tensor) - 2D tensor, indicating k experts corresponding to each row of features in the output of aclnnMoeGatingTopKSoftmax. The shape is (NUM_ROWS, K). 
+            active_num (int64): maximum number of rows that can be processed, that is, the maximum number of rows that are valid in expandedXOut.
+
+        Outputs:
+            - **expanded_x** (Tensor) - 2D tensor, indicating features extended based on expertIdx. The shape is (min(NUM_ROWS, activeNum) * k, H).
+            - **expanded_row_idx** (Tensor) - 1D tensor, indicating mapping between expandedX and x. The shape is (NUM_ROWS*K).
+            - **expanded_expert_idx** (Tensor) - sorted result of expertIdx.
+
+        Raises:
+            ShapeError: If the shape of input Tensor does not match the description in args.
+
+        Supported Platforms:
+            ``Ascend``

@@ -14,6 +14,7 @@
 # ============================================================================
 """lenet_export."""
 
+import os
 import numpy as np
 from mindspore import context, Tensor
 import mindspore.common.dtype as mstype
@@ -23,8 +24,8 @@ from train_utils import train_wrap
 
 n = LeNet5()
 n.set_train()
-context.set_context(mode=context.GRAPH_MODE, device_target="CPU", save_graphs=False)
-
+context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
+os.environ["MS_DEV_SAVE_GRAPHS"] = "0"
 BATCH_SIZE = 4
 x = Tensor(np.ones((BATCH_SIZE, 1, 32, 32)), mstype.float32)
 label = Tensor(np.zeros([BATCH_SIZE]).astype(np.int32))

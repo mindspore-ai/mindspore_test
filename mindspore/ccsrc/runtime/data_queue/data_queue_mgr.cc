@@ -21,6 +21,7 @@
 #include "utils/ms_utils.h"
 #include "utils/ms_context.h"
 #include "pybind11/pybind11.h"
+#include "runtime/hardware/device_context_manager.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/data_queue/blocking_queue.h"
 #include "include/backend/kernel_info.h"

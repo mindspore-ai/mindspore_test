@@ -190,6 +190,9 @@ REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
   auto input1 = ib->input(kIndex0);
   auto input2 = ib->input(kIndex1);
   auto rounding_mode = ib->input(kIndex2);
+  if (rounding_mode->GetDtype() == TypeIdToType(kMetaTypeNone)) {
+    return {ib->Div(input1, input2)};
+  }
   auto rounding_mode_value = GetValue<int64_t>(rounding_mode->GetValue());
   auto f32 = TypeIdToType(kNumberTypeFloat32);
   auto out_type = input1->GetDtype();
@@ -342,6 +345,9 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
   auto x0_type = x0->GetDtype()->type_id();
   auto x1_type = x1->GetDtype()->type_id();
   auto alpha_type = alpha->GetDtype()->type_id();
+  if (x0_type == kNumberTypeBool) {
+    return {};
+  }
   if (x1_type != x0_type) {
     MS_LOG(DEBUG) << "x0 and x1 have different data type: " << TypeIdToString(x0_type) << " vs "
                   << TypeIdToString(x1_type);
@@ -354,7 +360,7 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
       x0 = ib->Cast(x0, alpha_type);
       x1 = ib->Cast(x1, alpha_type);
     } else {
-      alpha = ib->Cast(alpha, x0_type);
+      alpha = ib->ScalarToTensor(alpha, x0->GetDtype());
     }
   }
   x1 = ib->Mul(x1, alpha);

@@ -28,6 +28,7 @@ def test_graph_mode_parallel_complex_input():
     os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = '1'
     os.environ['ASCEND_SLOG_PRINT_TO_STDOUT'] = '0'
     os.environ['GLOG_v'] = '1'
+    os.environ['MS_SUBMODULE_LOG_v'] = r'{RUNTIME_FRAMEWORK:0}'
 
     # print("netstat")
     # os.system(f"netstat")
@@ -36,10 +37,16 @@ def test_graph_mode_parallel_complex_input():
     os.system("netstat -tunlp > netstat.txt")
 
     os.system("rm -rf ~/ascend")
-    ret = os.system("mpirun -n 8 "
-                    "--allow-run-as-root "
-                    "--output-filename log_output "
-                    "pytest -s -v parallel_complex_input.py::test_graph_mode")
+    cmd = ("msrun "
+           "--worker_num=8 "
+           "--local_worker_num=8 "
+           "--master_port=10001 "
+           "--join=True "
+           "--log_dir=log_output "
+           "python parallel_complex_input.py")
+    print(f"cmd is:\n{cmd}")
+    ret = os.system(cmd)
+
     if ret != 0:
         import datetime
         t = datetime.datetime.now()

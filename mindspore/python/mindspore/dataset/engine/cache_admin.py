@@ -25,14 +25,14 @@ import mindspore
 
 def main():
     """Entry point for cache service"""
-    cache_admin_dir = os.path.join(os.path.dirname(mindspore.__file__), "bin")
+    cache_admin_dir = os.path.join(os.path.dirname(mindspore.__file__), "utils/bin")
     os.chdir(cache_admin_dir)
-    cache_admin = os.path.join(cache_admin_dir, "cache_admin")
+    cache_admin = os.path.join(cache_admin_dir, "dataset-cache")
 
     if not os.path.exists(cache_admin):
         raise RuntimeError("Dataset cache is not supported on your mindspore version.")
 
-    cache_server = os.path.join(cache_admin_dir, "cache_server")
+    cache_server = os.path.join(cache_admin_dir, "dataset-cache-server")
     os.chmod(cache_admin, stat.S_IRWXU)
     os.chmod(cache_server, stat.S_IRWXU)
 

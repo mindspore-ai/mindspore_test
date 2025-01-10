@@ -24,6 +24,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
 double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
   if (scalar->isa<BoolImm>()) {
     return GetValue<bool>(scalar);
@@ -39,6 +40,7 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
     MS_EXCEPTION(TypeError) << "Unsupported type: " << scalar->type_name();
   }
 }
+}  // namespace
 
 tensor::BaseTensorPtr UniformExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor_tensor,
                                                 const ScalarPtr &a, const ScalarPtr &b, const BaseTensorPtr &seed,

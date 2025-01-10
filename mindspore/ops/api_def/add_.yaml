@@ -1,0 +1,16 @@
+add_:
+  - op_yaml: inplace_adds_ext_op.yaml
+    py_method: tensor_add_ext # callback to python function "def tensor_add_ext"
+    kwonlyargs: alpha
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: inplace_add_ext_op.yaml
+    py_method: tensor_add_ext # callback to python function "def tensor_add_ext"
+    kwonlyargs: alpha
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

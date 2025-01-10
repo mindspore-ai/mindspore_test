@@ -1384,7 +1384,7 @@ def test_gather_tensor(data_type):
     np.allclose(out.asnumpy(), y_expect)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint64, np.uint16, np.int64, np.complex64, np.complex128])
 def test_gather_tensor_outofbound(data_type):
     """

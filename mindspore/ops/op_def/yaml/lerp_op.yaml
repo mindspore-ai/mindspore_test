@@ -1,0 +1,16 @@
+#operator lerp
+lerp:
+  args:
+    input:
+      dtype: tensor
+    end:
+      dtype: tensor
+    weight:
+      dtype: tensor
+      type_cast: float
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: LerpAscend

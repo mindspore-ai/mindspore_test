@@ -23,3 +23,4 @@ dist_comm_gather:
         enable: True
         is_comm_op: True
         Ascend: DistCommGatherAscend
+        CPU: DistCommGatherCPU

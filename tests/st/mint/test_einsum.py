@@ -102,6 +102,25 @@ def mint_einsum_binary_case7(input_binary_data=None, output_binary_data=None):
     mint_einsum_binary_case_compare('a ... dcb, c...d, ba -> ba', input_binary_data, output_binary_data, 4e-3)
 
 
+@ops_binary_cases(OpsBinaryCase(input_info=[((32, 1), np.float32), ((1, 16), np.float32)],
+                                output_info=[((32, 16), np.float32), ((32, 1), np.float32), ((1, 16), np.float32)]))
+def mint_einsum_binary_case8(input_binary_data=None, output_binary_data=None):
+    mint_einsum_binary_case_compare('ab, ab -> ab', input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((32, 1), np.float32), ((1, 16), np.float32)],
+                                output_info=[((), np.float32), ((32, 1), np.float32), ((1, 16), np.float32)]))
+def mint_einsum_binary_case9(input_binary_data=None, output_binary_data=None):
+    mint_einsum_binary_case_compare('ab, ab -> ', input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((32, 1, 8), np.float32), ((16, 1, 12), np.float32)],
+                                output_info=[((32, 12), np.float32), ((32, 1, 8), np.float32),
+                                             ((16, 1, 12), np.float32)]))
+def mint_einsum_binary_case10(input_binary_data=None, output_binary_data=None):
+    mint_einsum_binary_case_compare('a..., ...d -> ad', input_binary_data, output_binary_data, 4e-3)
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_mint_einsum_binary_cases(mode):
@@ -120,6 +139,9 @@ def test_mint_einsum_binary_cases(mode):
     mint_einsum_binary_case3()
     mint_einsum_binary_case4()
     mint_einsum_binary_case5()
+    mint_einsum_binary_case8()
+    mint_einsum_binary_case9()
+    mint_einsum_binary_case10()
 
 
 class EinsumSubListNet(nn.Cell):

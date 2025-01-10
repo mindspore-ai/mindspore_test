@@ -19,7 +19,7 @@
 
 #include <string>
 #include <vector>
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "mindapi/base/format.h"
 #include "ops/base_operator.h"
 

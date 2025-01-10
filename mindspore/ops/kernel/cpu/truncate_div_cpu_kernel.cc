@@ -65,8 +65,11 @@ bool TruncateDivCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kTruncateDivInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kTruncateDivOutputsNum, kernel_name_);
   auto *input_addr_a = reinterpret_cast<T *>(inputs[kZero]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr_a);
   auto *input_addr_b = reinterpret_cast<T *>(inputs[kOne]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr_b);
   auto *output_addr = reinterpret_cast<T *>(outputs[kZero]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   size_t output_size = outputs[0]->size() / sizeof(T);
 
   if (input_shape_1_ == input_shape_2_) {

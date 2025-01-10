@@ -37,12 +37,14 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/common/profiler.h"
-
+#include "mindspore/ops/op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::session::KernelWithIndex;
 using tensor::TensorPtr;
 using DeviceTensor = mindspore::device::DeviceAddress;
+using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
 using mindspore::device::DeviceContext;
 using mindspore::device::KernelInfo;
 using CompileFunc = std::function<KernelGraphPtr(
@@ -62,7 +64,8 @@ static const std::map<GraphExecutionStrategy, std::string> kGraphExecutionStrate
   {GraphExecutionStrategy::kStep, "step"},
   {GraphExecutionStrategy::kPipelineWithExecutionOrder, "pipeline_with_execution_order"},
 };
-
+static const std::set<std::string> no_dyn_need_update_ops = {kDynamicGetNextV2OpName, kDynamicGetNextAscendOpName,
+                                                             kGetNextOpName, kGetNextFromQueueOpName, kReceiveOpName};
 const char kDataPrepareActorNameSuffix[] = "_DataPrepareActor";
 const char kHostDSActorNameSuffix[] = "_HostDSActor";
 const char kDeviceDSActorNameSuffix[] = "_DeviceDSActor";
@@ -77,6 +80,7 @@ const char kFusionActorNameSuffix[] = "_FusionActor";
 const char kMemoryAllocActorNameSuffix[] = "_MemoryAllocActor";
 const char kMemoryFreeActorNameSuffix[] = "_MemoryFreeActor";
 const char kCopyActorNameSignFromStore[] = "_device_tensor_store:";
+const char kReplaceDSActorStore[] = "_graph_parameter_store:";
 const char kMemSwapInActorNameSuffix[] = "_MemorySwapInActor";
 const char kMemSwapOutActorNameSuffix[] = "_MemorySwapOutActor";
 const char kMemSwapActorNamePrefix[] = "MemorySwapActor_";
@@ -100,6 +104,7 @@ enum class KernelTransformType {
   kLoopCountActor,
   kOutputActor,
   kDeviceTensorStore,
+  kGraphParameterStore,
   // Internal parameter is the output of previous kernel graph which is related to the input of next kernel graph.
   kInternalParameter,
   // Control flow actor type.
@@ -364,6 +369,11 @@ class ActorDispatcher {
   }
   static bool enable_use_trace_memory() { return enable_use_trace_memory_; }
 
+  static void set_enable_input_optimize_for_cur_actor_set(bool enable_input_optimize) {
+    enable_input_optimize_for_cur_actor_set_ = enable_input_optimize;
+  }
+  static bool enable_input_optimize_for_cur_actor_set() { return enable_input_optimize_for_cur_actor_set_; }
+
   // The first five executions are for warm-up, the next five executions are statistics of multi thread execution
   // time, and the next next five executions are statistics of single thread execution time. The first 30 step which
   // do search if there are cpu kernels.
@@ -402,6 +412,7 @@ class ActorDispatcher {
   static bool enable_sub_graph_execute_for_cur_actor_set_;
   static bool enable_trace_dynamic_memory_;
   static bool enable_use_trace_memory_;
+  static bool enable_input_optimize_for_cur_actor_set_;
 };
 
 bool IsRunningFailed(const OpContext<DeviceTensor> *context);
@@ -413,6 +424,10 @@ bool IsDeviceQueueDSActor(const AnfNodePtr &node, GraphExecutionStrategy strateg
 bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph = nullptr,
                         const std::vector<AnfNodePtr> &host_parameters = {},
                         GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
+
+bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph = nullptr,
+                          const std::vector<AnfNodePtr> &host_parameters = {},
+                          GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
 
 bool IsCustomActor(const AnfNodePtr &node);
 
@@ -450,6 +465,10 @@ void ResetPipelineAndTraceMemoryStatus();
 // Kernel by kernel sub graph execute mode need not send actor message by kernel actor, just launch all kernels in
 // super kernel actor directly.
 bool EnableKbkSubGraphExecute();
+
+// Input optimization is to distribute the data prepare process to operators.
+// Graph sink and any type are not supported.
+bool EnableInputOptimize();
 
 // Whether enable async launch kernel or infer->resize->launch pipeline.
 // Set ture will enable async launch, and also enable infer->resize->launch pipeline if actor set contains dynamic
@@ -495,6 +514,11 @@ mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::ve
 
 // Check a graph is from inference phase.
 bool IsInferPhase(const std::string &phase);
+TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
+DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
+                             OpContext<DeviceTensor> *const context, const DeviceContext *device_context,
+                             const AID &from_aid);
+bool IsEmptySequenceTensor(tensor::Tensor *tensor);
 }  // namespace runtime
 }  // namespace mindspore
 

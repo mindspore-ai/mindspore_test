@@ -460,7 +460,7 @@ bool NuclearNormCpuKernelMod::ComputeTensorNuclearNorm(const std::vector<kernel:
                                                        const std::vector<kernel::KernelTensor *> &workspace,
                                                        const std::vector<kernel::KernelTensor *> &outputs) {
   const size_t input_dimnum = input_shape.size();
-  T *input_data_ptr = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  T *input_data_ptr = GetDeviceAddress<T>(inputs, 0);
   size_t value_num_ = 1;
   for (size_t i = 0; i < input_dimnum; i++) {
     value_num_ *= static_cast<size_t>(input_shape[i]);
@@ -506,7 +506,7 @@ bool NuclearNormCpuKernelMod::ComputeTensorNuclearNorm(const std::vector<kernel:
   dim_array_last.at(DIM_INDEX2) = dimsize1;
   Eigen::Tensor<T, DIM_SIZE3, Eigen::RowMajor> permuted_tensor = shuffled_tensor.reshape(dim_array_last);
 
-  auto output_data_ptr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto output_data_ptr = GetDeviceAddress<T>(outputs, 0);
   size_t copy_size = (dimsize0 * dimsize1) * sizeof(T);
   auto task = [&](size_t start, size_t end) {
     for (size_t i = start; i < end; ++i) {

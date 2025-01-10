@@ -207,7 +207,7 @@ class BatchNorm1d(_BatchNorm):
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        TypeError: If `num_features` is not a int number.
+        TypeError: If `num_features` is not an int number.
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
 
@@ -274,7 +274,7 @@ class BatchNorm2d(_BatchNorm):
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        TypeError: If `num_features` is not a int number.
+        TypeError: If `num_features` is not an int number.
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
 
@@ -344,7 +344,7 @@ class BatchNorm3d(_BatchNorm):
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        TypeError: If `num_features` is not a int number.
+        TypeError: If `num_features` is not an int number.
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
 
@@ -496,8 +496,8 @@ class SyncBatchNorm(_BatchNorm):
             cell tracks the running mean and variance, and when set to ``False``,
             this cell does not track such statistics. And this cell always uses batch statistics
             in both training and eval modes. Default: ``True`` .
-        process_group (:class:`mindspore.communication._comm_helper.GlobalComm`, optional): synchronization of stats
-            happen within each process group individually. Default behavior is synchronization across the whole world.
+        process_group (str, optional): synchronization of stats happen within each process group individually.
+            Default behavior is synchronization across the whole world. Default: ``None`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
@@ -511,10 +511,44 @@ class SyncBatchNorm(_BatchNorm):
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
-        ValueError: If rank_id in `process_groups` is not in range [0, rank_size).
+        ValueError: If rank_id in `process_group` is not in range [0, rank_size).
 
     Supported Platforms:
         ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For the Ascend devices, users need to prepare the rank table, set rank_id and device_id.
+            Here, examples use msrun to pull multi-process distributed tasks across nodes with a single command
+            line instruction.
+            Please see the `Ascend tutorial
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with multiple devices.
+
+        >>> # Firstly, preparing test_syncbn.py:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> import mindspore.context as context
+        >>> from mindspore.mint.nn.layer import SyncBatchNorm
+        >>> from mindspore import Tensor
+        >>> from mindspore.communication import init, create_group, get_local_rank
+        >>> init()
+        >>> context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+        >>> group = "0-1"
+        >>> rank_ids = [0, 1]
+        >>> create_group(group, rank_ids)
+        >>> sync_batch_norm = SyncBatchNorm(num_features=2, process_group=group, dtype=mindspore.float32)
+        >>> sync_batch_norm.set_train(False)
+        >>> input_x = Tensor(np.linspace(0, 5, 2*2*2*2), mindspore.float32).reshape(2, 2, 2, 2)
+        >>> output_data = sync_batch_norm(input_x)
+        >>> # Then, executing the command such as the following:
+        >>> # msrun --worker_num=2 --local_worker_num=2 --master_port=8975 --log_dir=msrun_log --join=True
+        >>> # --cluster_time_out=100 pytest -s -v test_syncbn.py
+
     """
     def __init__(self,
                  num_features: int,
@@ -560,7 +594,6 @@ class SyncBatchNorm(_BatchNorm):
             exponential_average_factor = self.momentum
 
         if self.training and self.track_running_stats:
-            assert self.num_batches_tracked is not None
             one_tensor = Tensor(1, dtype=ms.float32)
             ops.assign_add(self.num_batches_tracked, one_tensor)
             if self.momentum is None:  # use cumulative moving average
@@ -618,7 +651,6 @@ class SyncBatchNorm(_BatchNorm):
                               exponential_average_factor,
                               self.eps)
         else:
-            assert bn_training
             output = self.sync_batch_norm(input,
                                           self.weight,
                                           self.bias,

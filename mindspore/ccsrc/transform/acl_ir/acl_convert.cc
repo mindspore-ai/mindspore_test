@@ -829,6 +829,7 @@ void AclConverter::ConvertMsIdxToGeIdx(const PrimitivePtr &prim, const std::vect
   size_t attr_offset = 0;
   size_t num_real_inputs = inputs.size();
   bool dynamic_tuple_flag = false;
+  std::unordered_map<size_t, size_t> idx_dyn_input_num_map;
   for (int ms_idx = 0; ms_idx <= info->GetMaxMsProtoIndexOfInputMap(); ++ms_idx) {
     // Input to attr.
     auto opt_ge_input_info = info->GetOptGeInputByMsInputIndex(ms_idx);
@@ -886,6 +887,7 @@ void AclConverter::ConvertMsIdxToGeIdx(const PrimitivePtr &prim, const std::vect
         std::iota(ms_index.begin(), ms_index.end(), input_idx);
         ms_and_ge_inputs_sort_info_.emplace(std::make_pair(static_cast<size_t>(ms_idx), ge_input_info.index),
                                             std::make_pair(ms_index, ms_index));
+        idx_dyn_input_num_map[ms_idx] = ms_input_num;
         ms_real_idx += ms_input_num;
       }
     } else {
@@ -899,9 +901,16 @@ void AclConverter::ConvertMsIdxToGeIdx(const PrimitivePtr &prim, const std::vect
     if (input_idx >= num_real_inputs) {
       break;
     }
+    size_t dyn_input_offset =
+      std::accumulate(idx_dyn_input_num_map.begin(), idx_dyn_input_num_map.end(), 0,
+                      [input_idx](size_t value, const std::unordered_map<size_t, size_t>::value_type &idx_num) {
+                        return idx_num.first < input_idx ? value + idx_num.second - 1 : value;
+                      });
+
     if (static_cast<int>(input_idx) > info->GetMaxMsProtoIndexOfInputMap()) {
-      ms_and_ge_inputs_sort_info_.emplace(std::make_pair(input_idx, std::numeric_limits<size_t>::max()),
-                                          std::make_pair(std::vector<size_t>{input_idx}, std::vector<size_t>{}));
+      ms_and_ge_inputs_sort_info_.emplace(
+        std::make_pair(input_idx, std::numeric_limits<size_t>::max()),
+        std::make_pair(std::vector<size_t>{input_idx + dyn_input_offset}, std::vector<size_t>{}));
     }
   }
 

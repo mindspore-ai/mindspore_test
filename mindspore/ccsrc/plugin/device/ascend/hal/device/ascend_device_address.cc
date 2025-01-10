@@ -187,7 +187,7 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
     if (!ret) {
       MS_LOG(EXCEPTION) << "Sync stream error!";
     }
-    if (!common::IsNeedProfileMemory()) {
+    if (!common::IsDryRun()) {
       auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, dst, size, src, size, kind);
       if (ret_rt_memcpy != ACL_ERROR_NONE) {
         MS_EXCEPTION(DeviceProcessError) << "aclrtMemcpy failed";
@@ -617,7 +617,7 @@ bool AscendDeviceAddress::SyncHostToDeviceImpl(const ShapeVector &shape, size_t 
       auto host_tmp = std::vector<uint8_t>(GetSize());
       sync_ok = trans::TransDataType(type_args, host_tmp.data());
       if (!sync_ok) {
-        MS_LOG(ERROR) << "Trans data type failed.";
+        MS_LOG(ERROR) << "Trans data type failed for device address:" << this;
         return false;
       }
       CopyHostToDevice(host_tmp.data(), GetSize(), tensor_data);
@@ -780,6 +780,19 @@ bool AscendDeviceAddress::AsyncDeviceToDevice(const ShapeVector & /* shape */, s
     MS_LOG(ERROR) << "MemcpyAsync failed!";
   }
   return ret;
+}
+
+bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                            const std::string &host_format) const {
+  MS_LOG(DEBUG) << "Async host to device, size: " << size << ", host ptr: " << tensor_data->data()
+                << ", device format: " << format() << ", tensor format: " << host_format
+                << ", device type id: " << TypeIdToString(type_id()) << ", tensor type id: " << TypeIdToString(type)
+                << ", device shape: " << GetShapeVector();
+  if (format() != host_format || type_id() != type) {
+    return SyncHostToDeviceImpl(GetShapeVector(), size, type, tensor_data->data(), host_format, tensor_data);
+  }
+
+  return AsyncHostToDevice(size, type, tensor_data->data());
 }
 
 bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const {
@@ -1197,21 +1210,26 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
     MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
     return false;
   }
-  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+  ShapeVector corrected_host_shape = host_shape;
+  if (host_type == kNumberTypeInt4 && !corrected_host_shape.empty()) {
+    constexpr int64_t kNumber2 = 2;
+    corrected_host_shape.back() *= kNumber2;
+  }
+  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, corrected_host_shape);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = LongToSize(out_tensor->data().nbytes());
-  if (host_type == kNumberTypeInt4) {
-    int int4_nums_per_byte = 2;
-    host_size = out_tensor->DataSize() / int4_nums_per_byte;
-  }
   if (host_size == 0) {
     MS_LOG(INFO) << "Tensor size is 0 for tensor: " << tensor_name;
     return true;
   }
+  if (host_type == kNumberTypeInt4) {
+    const int int4_nums_per_byte = 2;
+    host_size = out_tensor->DataSize() / int4_nums_per_byte;
+  }
   bool ret_sync = false;
   if (async_copy) {
     if (trans_flag) {
-      ret_sync = SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
+      ret_sync = SyncDeviceToHost(corrected_host_shape, host_size, host_type, out_tensor->data_c());
     } else {
       ret_sync = SyncDeviceToHost(host_size, out_tensor->data_c());
     }

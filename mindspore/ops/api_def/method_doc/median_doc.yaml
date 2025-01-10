@@ -1,0 +1,88 @@
+median:
+  description: |
+    median(axis=-1, keepdims=False) -> Tuple of Tensors
+
+    Computes the median and indices of input tensor.
+
+    .. warning::
+        - `indices` does not necessarily contain the first occurrence of each median value found in the `input`,
+          unless it is unique. The specific implementation of this API is device-specific.
+          The results may be different on CPU and GPU.
+
+    Args:
+        axis (int, optional): Specify the axis for calculation. Default: ``-1`` .
+        keepdims (bool, optional): Whether the output tensor need to retain `axis` dimension or not.
+            Default: ``False`` .
+
+    Returns:
+        - y (Tensor) - Returns the median value along the specified dimension.
+          And It has the same dtype as the `input`.
+
+        - indices (Tensor) - The index of the median. And the dtype is int64.
+
+    Raises:
+        TypeError: If `axis` is not an int.
+        TypeError: If `keepdims` is not a bool.
+        ValueError: If `axis` is not in range of [-x.dim, x.dim-1].
+
+    Supported Platforms:
+        ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[0.57, 0.11, 0.21],[0.38, 0.50, 0.57], [0.36, 0.16, 0.44]]).astype(np.float32))
+        >>> y = x.median(axis=0, keepdims=False)
+        >>> print(y)
+        (Tensor(shape=[3], dtype=Float32, value= [ 3.79999995e-01,  1.59999996e-01,  4.39999998e-01]),
+        Tensor(shape=[3], dtype=Int64, value= [1, 2, 2]))
+
+
+    .. method:: Tensor.median() -> Tensor
+        :noindex:
+
+    Return the median of the input.
+
+    Returns:
+        - y (Tensor) - Output median.
+
+    Supported Platforms:
+        ``Ascend``
+
+    .. method:: Tensor.median(dim=-1, keepdim=False) -> Tuple of Tensors
+        :noindex:
+    
+    Output the median on the specified dimension ``dim`` and its corresponding index.
+    If ``dim`` is None, calculate the median of all elements in the Tensor.
+
+    Args:
+        dim (int, optional): Specify the axis for calculation. Default: ``None`` .
+        keepdim (bool, optional): Whether the output tensor need to retain ``dim`` dimension or not.
+            Default: ``False`` .
+
+    Returns:
+        - y (Tensor) - Output median, with the same data type as ``input`` .
+
+          - If ``dim`` is ``None`` , ``y`` only has one element.
+          - If ``keepdim`` is ``True`` , the ``y`` has the same shape as the ``input`` except the shape
+            of ``y`` in dimension `dim` is size 1.
+          - Otherwise, the ``y`` lacks `dim` dimension than input.
+
+        - indices (Tensor) - The index of the median. Shape is consistent with ``y`` , with a data type of int64.
+
+    Raises:
+        TypeError: If ``dim`` is not an int.
+        TypeError: If ``keepdim`` is not a bool.
+        ValueError: If ``dim`` is not in range of [-x.dim, x.dim-1].
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[0.57, 0.11, 0.21],[0.38, 0.50, 0.57], [0.36, 0.16, 0.44]]).astype(np.float32))
+        >>> y = x.median(dim=0, keepdim=False)
+        >>> print(y)
+        (Tensor(shape=[3], dtype=Float32, value= [ 3.79999995e-01,  1.59999996e-01,  4.39999998e-01]),
+        Tensor(shape=[3], dtype=Int64, value= [1, 2, 2]))

@@ -796,8 +796,9 @@ bool EnableGradFirstForTuple(const AbstractTuplePtr &tuple_arg, bool enable_tupl
 }
 
 bool EnableGradForScalar(const AbstractBasePtr &abs) {
-  return MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) && abs->BuildType() != nullptr &&
-         abs->BuildType()->isa<Number>();
+  return (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) ||
+          common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") &&
+         abs->BuildType() != nullptr && abs->BuildType()->isa<Number>();
 }
 
 bool CanGradArgument(const AbstractTuplePtr &tuple_arg, size_t pos) {
@@ -1078,8 +1079,7 @@ GradOperation::GradOperation(const std::string &name, bool get_all, bool get_by_
 }
 
 FuncGraphPtr GradOperation::GetGrad(const AnfNodePtr &j, const AnfNodePtr &weights, const AnfNodePtr &position,
-                                    const std::vector<AnfNodePtr> &forward_graph_params, bool enable_tuple_grad,
-                                    bool is_weights_none) const {
+                                    const FuncGraphPtr &forward_graph, bool is_weights_none) const {
   FuncGraphPtr k_child = std::make_shared<FuncGraph>();
   k_child->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   k_child->set_flag(FUNC_GRAPH_FLAG_K_GRAPH, true);
@@ -1091,7 +1091,7 @@ FuncGraphPtr GradOperation::GetGrad(const AnfNodePtr &j, const AnfNodePtr &weigh
 
   std::vector<AnfNodePtr> inputs;
   inputs.push_back(j);
-  for (size_t i = 0; i < forward_graph_params.size(); ++i) {
+  for (size_t i = 0; i < forward_graph->parameters().size(); ++i) {
     inputs.push_back(k_child->add_parameter());
   }
   auto k_app = k_child->NewCNodeInOrder(inputs);
@@ -1100,7 +1100,7 @@ FuncGraphPtr GradOperation::GetGrad(const AnfNodePtr &j, const AnfNodePtr &weigh
   auto f_app = k_child->NewCNodeInOrder({tuple_get_item, k_app, NewValueNode(static_cast<int64_t>(0))});
   auto bprop = k_child->NewCNodeInOrder({tuple_get_item, k_app, NewValueNode(static_cast<int64_t>(1))});
 
-  GradByParameter(k_child, f_app, bprop, weights, position_node, enable_tuple_grad, is_weights_none);
+  GradByParameter(k_child, f_app, bprop, weights, position_node, forward_graph, is_weights_none);
   return k_child;
 }
 
@@ -1140,10 +1140,132 @@ CNodePtr GradOperation::SetNodeByParameter(const CNodePtr &grad, const FuncGraph
   return fv_bprop;
 }
 
+namespace {
+using BackwardCallbackInputs = std::map<FuncGraphPtr, std::pair<AnfNodePtrList, std::vector<std::string>>>;
+BackwardCallbackInputs CollectBackwardCallbackInputs(const FuncGraphPtr &k_child,
+                                                     const abstract::AbstractBasePtr &weight_value,
+                                                     const CNodePtr &fv_bprop) {
+  BackwardCallbackInputs backward_cb_inputs;
+  auto add_backward_cb_inputs_node = [&](const abstract::AbstractBasePtr &weight, size_t idx) {
+    auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(weight);
+    if (weight_ref == nullptr) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Invalid type of weight: " << weight->ToString();
+      return;
+    }
+
+    auto weight_key = weight_ref->ref_key_value()->cast<RefKeyPtr>();
+    const auto &param_name = weight_key->value();
+    if (!weight_ref->has_user_data(parse::REF_TENSOR_BACKWARD_HOOK)) {
+      MS_LOG(DEBUG) << param_name << " has no backward callback. weight(" << weight_ref << "), idx(" << idx << ").";
+      return;
+    }
+    auto bwd_cb_graph = weight_ref->user_data<FuncGraph>(parse::REF_TENSOR_BACKWARD_HOOK);
+    if (bwd_cb_graph == nullptr) {
+      MS_LOG(DEBUG) << param_name << " has null backward callback. weight(" << weight_ref << "), idx(" << idx << ").";
+      return;
+    }
+
+    MS_LOG(DEBUG) << param_name << " has backward callback. weight(" << weight_ref << "), idx(" << idx << ").";
+    auto getitem = k_child->NewCNodeInOrder(prim::kPrimTupleGetItem, {fv_bprop, NewValueNode(SizeToLong(idx))});
+    auto maketuple = k_child->NewCNodeInOrder(prim::kPrimMakeTuple, {NewValueNode(param_name), getitem});
+    backward_cb_inputs[bwd_cb_graph].first.push_back(maketuple);
+    backward_cb_inputs[bwd_cb_graph].second.push_back(param_name);
+  };
+
+  if (!weight_value->isa<abstract::AbstractSequence>()) {
+    add_backward_cb_inputs_node(weight_value, 0);
+  } else {
+    AbstractSequencePtr weight_seq = weight_value->cast<AbstractSequencePtr>();
+    const AbstractBasePtrList &elements = weight_seq->elements();
+    for (size_t idx = 0; idx < weight_seq->size(); idx++) {
+      add_backward_cb_inputs_node(elements[idx], idx);
+    }
+  }
+
+  return backward_cb_inputs;
+}
+
+using CallBackwardCallbackMap = std::map<std::string, std::pair<size_t, CNodePtr>>;
+CallBackwardCallbackMap CollectCallBackwardCallback(const FuncGraphPtr &k_child,
+                                                    const BackwardCallbackInputs &backward_cb_inputs) {
+  CallBackwardCallbackMap call_backward_cb_map;
+  for (auto &item : backward_cb_inputs) {
+    auto &backward_cb_graph = item.first;
+    auto &cb_input = item.second.first;
+    auto maketuple = k_child->NewCNodeInOrder(prim::kPrimMakeTuple, cb_input);
+    auto call_backward_cb = k_child->NewCNodeInOrder({NewValueNode(backward_cb_graph), maketuple});
+    auto &param_names = item.second.second;
+    for (size_t idx = 0; idx < param_names.size(); idx++) {
+      const auto &param_name = param_names[idx];
+      call_backward_cb_map[param_name] = std::make_pair(idx, call_backward_cb);
+    }
+  }
+  return call_backward_cb_map;
+}
+
+CNodePtr MakeBackwardFgOutputTuple(const FuncGraphPtr &k_child, const CallBackwardCallbackMap &call_backward_cb_map,
+                                   const AbstractBasePtr &weight_value, const CNodePtr &fv_bprop) {
+  AnfNodePtrList inputs;
+  auto add_getitem_nodes = [&](const abstract::AbstractBasePtr &weight, const size_t idx) {
+    auto weight_ref = dyn_cast<abstract::AbstractRefTensor>(weight);
+    if (weight_ref == nullptr) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Invalid type of weight: " << weight->ToString();
+    }
+    auto weight_key = weight_ref->ref_key_value()->cast<RefKeyPtr>();
+    const auto &param_name = weight_key->value();
+
+    AnfNodePtr getitem = nullptr;
+    auto iter = call_backward_cb_map.find(param_name);
+    if (iter == call_backward_cb_map.end()) {
+      MS_LOG(DEBUG) << param_name << " has no backward callback.";
+      getitem = k_child->NewCNodeInOrder(prim::kPrimTupleGetItem, {fv_bprop, NewValueNode(SizeToLong(idx))});
+    } else {
+      MS_LOG(DEBUG) << param_name << " has backward callback.";
+      auto index = iter->second.first;
+      auto call_backward_cb = iter->second.second;
+      getitem = k_child->NewCNodeInOrder(prim::kPrimTupleGetItem, {call_backward_cb, NewValueNode(SizeToLong(index))});
+    }
+    inputs.push_back(getitem);
+  };
+
+  if (!weight_value->isa<abstract::AbstractSequence>()) {
+    add_getitem_nodes(weight_value, 0);
+  } else {
+    AbstractSequencePtr weight_seq = weight_value->cast<AbstractSequencePtr>();
+    const AbstractBasePtrList &elements = weight_seq->elements();
+    for (size_t idx = 0; idx < weight_seq->size(); idx++) {
+      add_getitem_nodes(elements[idx], idx);
+    }
+  }
+
+  if (inputs.size() == 0) {
+    MS_LOG(DEBUG) << "No inputs for make backward funcgraph output tuple.";
+    return fv_bprop;
+  }
+
+  return k_child->NewCNodeInOrder(prim::kPrimMakeTuple, inputs);
+}
+
+}  // namespace
+
+CNodePtr GradOperation::AddBackwardCallbackToFuncGraph(const FuncGraphPtr &k_child, const FuncGraphPtr &forward_graph,
+                                                       const CNodePtr &fv_bprop) const {
+  if (!weight_value_) {
+    MS_LOG(DEBUG) << "No weight value was set, all backward callbacks will be ignored.";
+    return fv_bprop;
+  }
+
+  BackwardCallbackInputs backward_cb_inputs = CollectBackwardCallbackInputs(k_child, weight_value_, fv_bprop);
+
+  CallBackwardCallbackMap call_backward_cb_map = CollectCallBackwardCallback(k_child, backward_cb_inputs);
+
+  return MakeBackwardFgOutputTuple(k_child, call_backward_cb_map, weight_value_, fv_bprop);
+}
+
 // Do grad by the parameter of GradOperation.
 void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePtr &f_app, const AnfNodePtr &bprop,
-                                    const AnfNodePtr &weights, const AnfNodePtr &position, bool enable_tuple_grad,
-                                    bool is_weights_none) const {
+                                    const AnfNodePtr &weights, const AnfNodePtr &position,
+                                    const FuncGraphPtr &forward_graph, bool is_weights_none) const {
   MS_EXCEPTION_IF_NULL(k_child);
 
   AnfNodePtr bprop_arg = nullptr;
@@ -1171,6 +1293,9 @@ void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePt
         k_child->NewCNodeInOrder({NewValueNode(prim::kPrimPartial), NewValueNode(prim::GetPythonOps("env_get")), env});
       MetaFuncGraphPtr hyper_map = std::make_shared<HyperMap>();
       fv_bprop = k_child->NewCNodeInOrder({NewValueNode(hyper_map), partial_env_get, weights});
+      if (common::GetCompileConfig("CELL_PARAMETERS_HOOK") == "1") {
+        fv_bprop = AddBackwardCallbackToFuncGraph(k_child, forward_graph, fv_bprop);
+      }
       if (return_ids_) {
         fv_bprop = SetNodeByParameter(fv_bprop, k_child);
       }
@@ -1208,7 +1333,7 @@ void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePt
   // b_app returns (EnvInstance(grads wrt params), grads wrt input0, grads wrt input1, ...),
   // so obtain first input grad by setting tail_type of Tail to kGradFirst.
   TailPtr tail_grad_first = std::make_shared<Tail>("tail_grad_first", kGradFirst);
-  tail_grad_first->set_enable_tuple_grad_first(enable_tuple_grad);
+  tail_grad_first->set_enable_tuple_grad_first(forward_graph->has_flag("enable_tuple_grad_first"));
   auto tail_grad_first_cnode = k_child->NewCNodeInOrder({NewValueNode(tail_grad_first), b_app});
   k_child->set_output(CreateGradOutputs(k_child, tail_grad_first_cnode, f_app, has_aux_, get_value_));
 }
@@ -1257,7 +1382,7 @@ FuncGraphPtr GradOperation::GenerateFuncGraph(const AbstractBasePtrList &args_ab
   auto fn_abs = args_abs_list[fn_index];
   constexpr size_t len_with_weight = 2;
   constexpr size_t weights_index = 1;
-  if (return_ids_ && args_abs_list.size() >= len_with_weight) {
+  if (args_abs_list.size() >= len_with_weight) {
     weight_value_ = args_abs_list[weights_index];
   }
   MS_EXCEPTION_IF_NULL(fn_abs);
@@ -1350,8 +1475,7 @@ FuncGraphPtr GradOperation::GenerateFuncGraph(const AbstractBasePtrList &args_ab
   FuncGraphPtr k_child = nullptr;
   {
     TraceGuard guard(MakeTraceInfo<TraceGradOperation>(forward_graph->debug_info()));
-    k_child = GetGrad(j, weights, position, forward_graph->parameters(),
-                      forward_graph->has_flag("enable_tuple_grad_first"), is_weights_empty_or_none);
+    k_child = GetGrad(j, weights, position, forward_graph, is_weights_empty_or_none);
     k_child->set_flag(FUNC_GRAPH_FLAG_ARGS_NO_EXPAND, true);
     auto k_child_output = k_child->output();
     k_child_output->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(true));

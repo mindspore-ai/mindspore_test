@@ -1,6 +1,6 @@
 isfinite:
   description: |
-    isfinite(input) -> Tensor
+    isfinite() -> Tensor
     
     Determine which elements are finite for each position. If elements are not ``NaN`` , ``-INF`` , ``INF``,
     they are finite.
@@ -12,14 +12,8 @@ isfinite:
           & \text{ if } x_{i} \ne \text{Finite},\ \ False
         \end{cases}
     
-    Args:
-      x (Tensor): The input tensor.
-    
     Returns:
         Tensor, has the same shape of input, and the dtype is bool.
-    
-    Raises:
-        TypeError: If x is not a Tensor.
     
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

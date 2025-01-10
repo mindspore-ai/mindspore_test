@@ -41,8 +41,7 @@ tensor::BaseTensorPtr ScatterAddExtAscendCustomize(const std::shared_ptr<OpRunne
       PyBoostUtils::MallocOpInputs(device_context, input_tensor, index_tensor, src_tensor);
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
       MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-      LAUNCH_ACLNN(aclnnInplaceCopy, device_context, op->stream_id(), outputs[0], input_tensor);
-      LAUNCH_ACLNN(aclnnScatterAdd, device_context, op->stream_id(), outputs[0], dim_imm, index_tensor, src_tensor,
+      LAUNCH_ACLNN(aclnnScatterAdd, device_context, op->stream_id(), input_tensor, dim_imm, index_tensor, src_tensor,
                    op->output(0));
       MS_LOG(DEBUG) << op->primitive()->name() << " Launch end";
     }));

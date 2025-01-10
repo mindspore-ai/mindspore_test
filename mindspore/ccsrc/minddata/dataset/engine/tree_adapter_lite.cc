@@ -78,7 +78,7 @@ Status TreeAdapterLite::BuildTree(std::shared_ptr<DatasetNode> root_ir) {
 Status TreeAdapterLite::GetNextRow(TensorRow *const row) {
   RETURN_UNEXPECTED_IF_NULL(row);
   RETURN_UNEXPECTED_IF_NULL(root_);
-  VLOG_FLOW("Dataset Pipeline TreeAdapterLite GetNextRow start.");
+  VLOG_FLOW("Dataset Pipeline TreeAdapterLite GetNextRow started.");
   row->reset();  // Ensure TensorRow is empty and flags are initialized
   RETURN_IF_NOT_OK(root_->GetNextRowPullMode(row));
   if (row->eoe()) {  // return empty tensor if 1st buf is a ctrl buf (no rows)
@@ -144,7 +144,7 @@ Status TreeAdapterLite::PostPass(std::shared_ptr<DatasetNode> ir) const {
 
 Status TreeAdapterLite::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs) {
   RETURN_UNEXPECTED_IF_NULL(input_ir);
-  VLOG_FLOW("Dataset Pipeline TreeAdapterLite Complie start.");
+  VLOG_FLOW("Dataset Pipeline TreeAdapterLite Compile started.");
   input_ir_ = input_ir;
   MS_LOG(INFO) << "Input plan:" << '\n' << *input_ir << '\n';
 
@@ -171,7 +171,7 @@ Status TreeAdapterLite::Compile(const std::shared_ptr<DatasetNode> &input_ir, in
   root_ir_ = root_ir;
 
   RETURN_IF_NOT_OK(BuildTree(root_ir));
-  VLOG_FLOW("Dataset Pipeline TreeAdapterLite Complie finished.");
+  VLOG_FLOW("Dataset Pipeline TreeAdapterLite Compile finished.");
   return Status::OK();
 }
 

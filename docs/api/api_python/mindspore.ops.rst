@@ -1,7 +1,15 @@
 mindspore.ops
 =============================
 
+mindspore.ops提供了大量的function接口，包括神经网络函数、数学运算函数、Tensor操作函数、Parameter操作函数、微分函数等。
+
 动态shape的支持情况详见 `ops接口动态shape支持情况 <https://mindspore.cn/docs/zh-CN/master/api_python/dynamic_shape_func.html>`_ 。
+
+模块导入方法如下：
+
+.. code-block::
+
+    from mindspore import ops
 
 MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支持平台的变化信息请参考 `mindspore.ops API接口变更 <https://gitee.com/mindspore/docs/blob/master/resource/api_updates/func_api_updates_cn.md>`_ 。
 
@@ -51,6 +59,7 @@ MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支
     mindspore.ops.max_unpool1d
     mindspore.ops.max_unpool2d
     mindspore.ops.max_unpool3d
+    mindspore.ops.incre_flash_attention
     mindspore.ops.prompt_flash_attention
     mindspore.ops.rms_norm
     mindspore.ops.unfold
@@ -801,3 +810,17 @@ CSR函数
     mindspore.ops.csr_square
     mindspore.ops.csr_tan
     mindspore.ops.csr_tanh
+
+MC2 函数
+----------------
+
+.. warning::
+    这些是实验性API，后续可能修改或删除。
+
+.. mscnplatwarnautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.all_gather_matmul
+    mindspore.ops.matmul_reduce_scatter

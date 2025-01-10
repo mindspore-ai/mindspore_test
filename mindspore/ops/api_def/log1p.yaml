@@ -1,0 +1,7 @@
+log1p:
+    op_yaml: log1p_op.yaml
+    py_method: tensor_log1p
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor

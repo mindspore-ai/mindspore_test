@@ -1,0 +1,79 @@
+# Copyright 2024 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+import os
+from multiprocessing.pool import Pool
+from tests.mark_utils import arg_mark
+from tests.st.networks.utils import get_num_from_log
+
+os.environ["GLOG_v"] = "1"
+os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+os.environ['MS_ENABLE_LCCL'] = "off"
+TOELERANCE = 5e-2
+PEAK_MEMORY_NAME = "Actual peak memory usage (with fragments):"
+
+
+def run_command(command):
+    ret = os.system(command)
+    return command, ret
+
+
+def check_results(results, check_rules):
+    # check error
+    failed_command = []
+    for i, rules in enumerate(check_rules):
+        if results[i][1] == 0:
+            continue
+        failed_command.append(results[i][0])
+        os.system(f"cat {rules[0]}")
+    if failed_command:
+        print(failed_command)
+        raise RuntimeError("Run above commands failed, please check error in log.")
+
+    # check peak_memory
+    check_memory = True
+    for log_path, expect_peak_memory in check_rules:
+        peak_memory = get_num_from_log(log_path, PEAK_MEMORY_NAME)
+        if peak_memory <= expect_peak_memory * (1 + TOELERANCE):
+            continue
+        check_memory = False
+        print(f"The peak_memory in log {log_path} is {peak_memory}, "
+              f"the error between {peak_memory} and standard value {expect_peak_memory} is greater than {TOELERANCE}.")
+    if not check_memory:
+        raise RuntimeError("run above commands failed, please check error in log.")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_predict_llama_4p_bs4_qwen_4p_bs4():
+    """
+    Feature: Trainer.predict()
+    Description: Test trainer for predict.
+    Expectation: AssertionError
+    """
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    commands = [
+        f"bash {sh_path}/msrun_launch.sh {sh_path}/llama/configs/predict_llama_70b.yaml test_llama_4p_bs4 "
+        f"llama infer_llama.py 4 8319 0,1,2,3",
+        f"bash {sh_path}/msrun_launch.sh {sh_path}/qwen/configs/predict_qwen1.5.yaml test_qwen_4p_bs4 "
+        f"qwen infer_qwen.py 4 8320 4,5,6,7"
+    ]
+    check_rules = [
+        (f"{sh_path}/test_llama_4p_bs4.log", 4177),
+        (f"{sh_path}/test_qwen_4p_bs4.log", 4931)
+    ]
+    assert len(commands) == len(check_rules)
+
+    with Pool(len(commands)) as pool:
+        results = list(pool.imap(run_command, commands))
+    check_results(results, check_rules)

@@ -19,8 +19,9 @@ for different devices (Ascend, CPU, GPU) and manages residual files associated w
 """
 
 import os
+import re
 
-from pyboost_utils import is_cube, AclnnUtils, get_return_type
+from pyboost_utils import is_cube, AclnnUtils, get_return_type, merge_strings_by_chunk_size, is_op_multi_output
 import template
 import gen_constants as K
 from gen_utils import save_file
@@ -58,10 +59,13 @@ class PyboostCommonOpHeaderGenerator(BaseGenerator):
             op_name_str = op_proto.op_class.name
             call_args_with_type = op_parser.parse_call_args_with_types()
             cpp_func_return = _generate_cpp_func_return(op_proto)
+            output_is_tuple = "bool output_is_tuple() const override { return true; }" \
+                if is_op_multi_output(op_proto.op_returns) else ''
             pyboost_op_header_str = template.PYBOOST_BASE_OP_DEFINE_TEMPLATE.replace(op_name=op_name_str,
                                                                                      op_name_upper=op_name_str.upper(),
                                                                                      call_args=call_args_with_type,
-                                                                                     return_type=cpp_func_return)
+                                                                                     return_type=cpp_func_return,
+                                                                                     output_is_tuple=output_is_tuple)
             save_path = os.path.join(work_path, f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
             file_name = f"{op_proto.op_name}.h"
             save_file(save_path, file_name, pyboost_op_header_str)
@@ -92,6 +96,7 @@ class PyboostOpHeaderGenerator(BaseGenerator):
             raise ValueError(f"Device must be ascend, gpu, or cpu, {device} is not supported")
         self.PYBOOST_OP_HEADER_TEMPLATE = template_dict[device]
         self.code_generate_path = f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/"
+        self.device = device
 
     def generate(self, work_path, op_protos):
         """
@@ -106,6 +111,8 @@ class PyboostOpHeaderGenerator(BaseGenerator):
         """
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_name_str = op_proto.op_class.name
@@ -123,7 +130,7 @@ class PyboostOpHeaderGenerator(BaseGenerator):
             save_file(save_path, file_name, pyboost_op_str)
 
 
-class PyboostOpCppGenerator(BaseGenerator):
+class PyboostOpCppGenerator:
     """
     Generates C++ source files for PyBoost operations.
 
@@ -143,38 +150,46 @@ class PyboostOpCppGenerator(BaseGenerator):
         """
         if device == 'ascend':
             PYBOOST_CUSTOMIZE_CALL_TEMPLATE = template.PYBOOST_ASCEND_CUSTOMIZE_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
         elif device == 'cpu':
             PYBOOST_CUSTOMIZE_CALL_TEMPLATE = template.PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_CPU_SINGLE_OP_HEADER_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
         elif device == 'gpu':
             PYBOOST_CUSTOMIZE_CALL_TEMPLATE = template.PYBOOST_GPU_CUSTOMIZE_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_GPU_SINGLE_OP_HEADER_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
         else:
             raise ValueError(f"Device must be ascend, gpu, or cpu, {device} is not supported")
         self.PYBOOST_CUSTOMIZE_CALL_TEMPLATE = PYBOOST_CUSTOMIZE_CALL_TEMPLATE
-        self.PYBOOST_OP_SOURCE_TEMPLATE = PYBOOST_OP_SOURCE_TEMPLATE
+        self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = PYBOOST_SINGLE_OP_HEADER_TEMPLATE
+        self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
         self.gen_path = gen_path
         self.device = device
 
-    def generate(self, work_path, op_protos):
+    def generate_customize_op_cpp_code(self, op_protos, merge_op_header, merge_op_function):
         """
-        Generates C++ source files for the provided operator prototypes.
+        Generate C++ code for PyBoost operations using the provided operation prototypes.
+
+        This method processes a list of operation prototypes, generates customized function call
+        implementations, and updates the merged headers and functions for the specified device.
 
         Args:
-            work_path (str): The directory path where the source files will be saved.
-            op_protos (list): A list of operator prototypes containing information about the operators.
-
-        Returns:
-            None
+            op_protos (list): A list of operation prototypes to process. Each prototype contains
+                              metadata about the operation, including dispatch settings and arguments.
+            merge_op_header (list): A list to store the generated C++ header code for operations.
+            merge_op_function (list): A list to store the generated C++ source code for operations.
         """
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
             if getattr(op_proto.op_dispatch, self.device) == 'default':
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
             op_parser = OpTemplateParser(op_proto)
             call_args = op_parser.parse_original_call_args(op_proto.op_args)
@@ -194,21 +209,16 @@ class PyboostOpCppGenerator(BaseGenerator):
                 check_expression=check_inplace_func,
             )
             customize_include = \
-                f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"'
-            register_custom_kernel = self._get_register_custom_kernel(op_proto)
+                f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"\n'
+            register_custom = self._get_register_custom_kernel(op_proto)
             cpp_func_return = _generate_cpp_func_return(op_proto)
-            pyboost_op_source_str = self.PYBOOST_OP_SOURCE_TEMPLATE.replace(
-                op_name=op_name_str,
-                operator_name=operator_name,
-                call_args_with_type=call_args_with_type,
-                return_type=cpp_func_return,
-                customize_include=customize_include,
-                call_impl=call_impl,
-                register_custom_kernel=register_custom_kernel)
-
-            save_path = os.path.join(work_path, self.gen_path)
-            file_name = f"{operator_name.lower()}.cc"
-            save_file(save_path, file_name, pyboost_op_source_str)
+            merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=operator_name,
+                                                                                  customize_include=customize_include))
+            merge_op_function.append(
+                self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE.replace(op_name=op_name_str,
+                                                               call_args_with_type=call_args_with_type,
+                                                               return_type=cpp_func_return, call_impl=call_impl,
+                                                               register_custom_kernel=register_custom))
 
     def _get_register_custom_kernel(self, op_proto: OpProto):
         """
@@ -231,7 +241,7 @@ class PyboostOpCppGenerator(BaseGenerator):
         return register_custom_kernel
 
 
-class PyboostViewOpCppGenerator(BaseGenerator):
+class PyboostViewOpCppGenerator:
     """
     Generates C++ source files for view operations in PyBoost.
 
@@ -251,38 +261,47 @@ class PyboostViewOpCppGenerator(BaseGenerator):
         """
         if device == 'ascend':
             PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_ASCEND_VIEW_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_HEADER_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
         elif device == 'cpu':
             PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_CPU_VIEW_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_CPU_SINGLE_OP_HEADER_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
         elif device == 'gpu':
             PYBOOST_VIEW_CALL_TEMPLATE = template.PYBOOST_GPU_VIEW_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.PYBOOST_GPU_SINGLE_OP_HEADER_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
         else:
             raise ValueError(f"Device must be ascend, gpu, or cpu, {device} is not supported")
         self.PYBOOST_VIEW_CALL_TEMPLATE = PYBOOST_VIEW_CALL_TEMPLATE
-        self.PYBOOST_OP_SOURCE_TEMPLATE = PYBOOST_OP_SOURCE_TEMPLATE
+        self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = PYBOOST_SINGLE_OP_HEADER_TEMPLATE
+        self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
         self.gen_path = gen_path
         self.device = device
 
-    def generate(self, work_path, op_protos):
+    def generate_view_op_cpp_code(self, op_protos, merge_op_header, merge_op_function):
         """
-        Generates C++ source files for view operations based on the provided operator prototypes.
+        Generate C++ code for view operations in PyBoost.
+
+        This method processes a list of operation prototypes (`op_protos`) and generates C++ code
+        for view operations where `op_view` is set to `True` and the dispatch setting for the target
+        device is `'default'`.
 
         Args:
-            work_path (str): The directory path where the source files will be saved.
-            op_protos (list): A list of operator prototypes containing information about the operators.
-
-        Returns:
-            None
+            op_protos (list): A list of operation prototypes to process. Each prototype includes
+                              metadata such as dispatch settings, arguments, and view-specific attributes.
+            merge_op_header (list): A list to store the generated C++ header code for view operations.
+            merge_op_function (list): A list to store the generated C++ source code for view operations.
         """
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
             if getattr(op_proto.op_dispatch, self.device) != 'default':
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
             if not op_proto.op_view:
                 continue
@@ -297,23 +316,20 @@ class PyboostViewOpCppGenerator(BaseGenerator):
                                                                 call_tensors=call_args_tensor,
                                                                 return_values=call_func_outputs,
                                                                 input=call_args[0])
-            customize_include = f'#include "{K.MS_OPS_VIEW_PATH}/{op_proto.op_name}_strides_calc.h"'
+            customize_include = f'#include "{K.MS_OPS_VIEW_PATH}/{op_proto.op_name}_strides_calc.h"\n'
             cpp_func_return = _generate_cpp_func_return(op_proto)
-            pyboost_op_source_str = self.PYBOOST_OP_SOURCE_TEMPLATE.replace(
-                op_name=op_proto.op_class.name,
-                operator_name=op_proto.op_name,
-                call_args_with_type=call_args_with_type,
-                return_type=cpp_func_return,
-                customize_include=customize_include,
-                call_impl=call_impl,
-                register_custom_kernel="")
+            merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=op_proto.op_name,
+                                                                                  customize_include=customize_include))
 
-            save_path = os.path.join(work_path, self.gen_path)
-            file_name = f"{op_proto.op_name.lower()}.cc"
-            save_file(save_path, file_name, pyboost_op_source_str)
+            merge_op_function.append(
+                self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE.replace(op_name=op_proto.op_class.name,
+                                                               call_args_with_type=call_args_with_type,
+                                                               return_type=cpp_func_return,
+                                                               call_impl=call_impl,
+                                                               register_custom_kernel=""))
 
 
-class AclnnOpCppCodeGenerator(BaseGenerator):
+class AclnnOpCppCodeGenerator:
     """
     Generates C++ source files for ACLNN operations in PyBoost.
 
@@ -339,38 +355,47 @@ class AclnnOpCppCodeGenerator(BaseGenerator):
         """
         if device == 'ascend':
             PYBOOST_CALL_TEMPLATE = template.PYBOOST_ASCEND_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
         elif device == 'cpu':
             PYBOOST_CALL_TEMPLATE = template.PYBOOST_CPU_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
         elif device == 'gpu':
             PYBOOST_CALL_TEMPLATE = template.PYBOOST_GPU_CALL_TEMPLATE
-            PYBOOST_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_OP_SOURCE_TEMPLATE
+            PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_SINGLE_OP_SOURCE_TEMPLATE
             gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
         else:
             raise ValueError(f"Device must be ascend, gpu, or cpu, {device} is not supported")
         self.PYBOOST_CALL_TEMPLATE = PYBOOST_CALL_TEMPLATE
-        self.PYBOOST_OP_SOURCE_TEMPLATE = PYBOOST_OP_SOURCE_TEMPLATE
+        self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE = template.Template(
+            '#include "kernel/${device}/pyboost/auto_generate/${operator_name}.h"\n'
+        )
+        self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE = PYBOOST_SINGLE_OP_SOURCE_TEMPLATE
         self.gen_path = gen_path
         self.device = device
 
-    def generate(self, work_path, op_protos):
+    def generate_aclnn_op_cpp_code(self, op_protos, merge_op_header, merge_op_function):
         """
-        Generates C++ source files for ACLNN operations based on the provided operator prototypes.
+        Generate C++ code for ACLNN operations in PyBoost.
+
+        This method processes a list of operation prototypes (`op_protos`) and generates C++ code
+        for aclnn operations. The method filters the operation
+        prototypes based on their dispatch and view settings, and then uses templates and metadata
+        to generate the necessary implementation and header files.
 
         Args:
-            work_path (str): The directory path where the source files will be saved.
-            op_protos (list): A list of operator prototypes containing information about the operators.
-
-        Returns:
-            None
+            op_protos (list): A list of operation prototypes. Each prototype includes metadata
+                              such as operation name, dispatch settings, view attributes, and arguments.
+            merge_op_header (list): A list to store the generated C++ header code for ACLNN operations.
+            merge_op_function (list): A list to store the generated C++ source code for ACLNN operations.
         """
         for op_proto in op_protos:
             if op_proto.op_dispatch is None:
                 continue
             if getattr(op_proto.op_dispatch, self.device) != 'default':
+                continue
+            if getattr(op_proto.op_dispatch, self.device) == 'None':
                 continue
             if op_proto.op_view:
                 continue
@@ -395,7 +420,6 @@ class AclnnOpCppCodeGenerator(BaseGenerator):
 
             cast_input_code, real_call_args_tensor = self._generate_tensor_cpu_cast_input_code(
                 op_parser)
-            customize_include = f'#include "{K.MS_OP_DEF_AUTO_GENERATE_PATH}/gen_ops_primitive.h"'
             cpp_func_return = _generate_cpp_func_return(op_proto)
             _, tensor_list_convert, call_args_with_tensor = op_parser.parse_need_malloc_tensors()
             call_args_after_convert, value_tuple_convert, const_number_convert = op_parser.op_args_converter()
@@ -423,16 +447,15 @@ class AclnnOpCppCodeGenerator(BaseGenerator):
                                                            class_name=op_proto.op_class.name,
                                                            op_name_str=op_proto.op_class.name)
 
-            pyboost_op_source_str = self.PYBOOST_OP_SOURCE_TEMPLATE.replace(op_name=op_proto.op_class.name,
-                                                                            operator_name=op_proto.op_name,
-                                                                            call_args_with_type=call_args_with_type,
-                                                                            return_type=cpp_func_return,
-                                                                            customize_include=customize_include,
-                                                                            call_impl=call_impl,
-                                                                            register_custom_kernel='')
-            save_path = os.path.join(work_path, self.gen_path)
-            file_name = f"{op_proto.op_name.lower()}.cc"
-            save_file(save_path, file_name, pyboost_op_source_str)
+            merge_op_header.append(self.PYBOOST_SINGLE_OP_HEADER_TEMPLATE.replace(operator_name=op_proto.op_name,
+                                                                                  device=self.device))
+
+            merge_op_function.append(
+                self.PYBOOST_SINGLE_OP_SOURCE_TEMPLATE.replace(op_name=op_proto.op_class.name,
+                                                               call_args_with_type=call_args_with_type,
+                                                               return_type=cpp_func_return,
+                                                               call_impl=call_impl,
+                                                               register_custom_kernel=''))
 
     def _generate_tensor_cpu_cast_input_code(self, op_parser: OpTemplateParser):
         """
@@ -517,6 +540,176 @@ class AclnnOpCppCodeGenerator(BaseGenerator):
         return inputs_kernel_tensors
 
 
+class PyboostOpFunctionGenerator(BaseGenerator):
+    """
+    Generates C++ source files for ACLNN operations in PyBoost.
+
+    This class handles the generation of source files for operations that utilize the ACLNN framework,
+    including customized calls and tensor management.
+
+    Attributes:
+        PYBOOST_CALL_TEMPLATE (Template): Template for generating ACLNN operation calls.
+        PYBOOST_OP_SOURCE_TEMPLATE (Template): Template for generating operation source files.
+        gen_path (str): Path for saving the generated C++ source files.
+        device (str): The target device (ascend, cpu, or gpu).
+    """
+
+    def __init__(self):
+        self.ascend_op_cpp_generator = PyboostOpCppGenerator('ascend')
+        self.ascend_view_op_cpp_generator = PyboostViewOpCppGenerator('ascend')
+        self.ascend_aclnn_cpp_generator = AclnnOpCppCodeGenerator('ascend')
+
+        self.cpu_op_cpp_generator = PyboostOpCppGenerator('cpu')
+        self.cpu_view_op_cpp_generator = PyboostViewOpCppGenerator('cpu')
+        self.cpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('cpu')
+
+        self.gpu_op_cpp_generator = PyboostOpCppGenerator('gpu')
+        self.gpu_view_op_cpp_generator = PyboostViewOpCppGenerator('gpu')
+        self.gpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('gpu')
+
+        self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = template.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE
+        self.PYBOOST_CPU_OP_SOURCE_TEMPLATE = template.PYBOOST_CPU_OP_SOURCE_TEMPLATE
+        self.PYBOOST_GPU_OP_SOURCE_TEMPLATE = template.PYBOOST_GPU_OP_SOURCE_TEMPLATE
+        self.ascend_gen_path = f"{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/auto_generate/"
+        self.cpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/auto_generate/"
+        self.gpu_gen_path = f"{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/auto_generate/"
+
+    def generate(self, work_path, op_protos):
+        """
+        Generate and save C++ source code for PyBoost operations across different devices.
+
+        This method generates C++ source files for operations (`op_protos`) tailored to Ascend, CPU,
+        and GPU devices. It combines headers and function implementations for each device, and then
+        saves the final source files to the appropriate paths.
+
+        Args:
+            op_protos (list): A list of operation prototypes containing metadata such as
+                              operation name, dispatch settings, arguments, and view attributes.
+            work_path (str): The base working directory where the generated files will be saved.
+
+        Generated Files:
+            - Ascend: `pyboost_ascend_ops.cc`
+            - CPU: `pyboost_cpu_ops.cc`
+            - GPU: `pyboost_gpu_ops.cc`
+        """
+        self._generate_pyboost_ascend_ops(work_path, op_protos)
+        self._generate_pyboost_cpu_ops(work_path, op_protos)
+        self._generate_pyboost_gpu_ops(work_path, op_protos)
+
+    def _generate_pyboost_ascend_ops(self, work_path, op_protos):
+        """
+        Generates Ascend PyBoost ops functions source files after being merged into specific chunk sizes.
+
+        Args:
+            work_path (str): The directory path where the generated C++ source files will be saved.
+            op_protos (list): A list of operation prototypes that define the operations for which
+                              the C++ code will be generated.
+        """
+        ascend_merge_op_header = []
+        ascend_merge_op_function = []
+        self.ascend_op_cpp_generator.generate_customize_op_cpp_code(op_protos, ascend_merge_op_header,
+                                                                    ascend_merge_op_function)
+        self.ascend_view_op_cpp_generator.generate_view_op_cpp_code(op_protos, ascend_merge_op_header,
+                                                                    ascend_merge_op_function)
+        self.ascend_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, ascend_merge_op_header,
+                                                                   ascend_merge_op_function)
+
+        ascend_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(ascend_merge_op_header, chunk_size=120)
+        ascend_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(ascend_merge_op_function, chunk_size=120)
+
+        new_gen_num = len(ascend_op_header_merge_by_chunk_size)
+        self._delete_residual_merged_ops_files(os.path.join(work_path, self.ascend_gen_path), new_gen_num)
+
+        for i, op_header, op_function in zip(range(len(ascend_op_header_merge_by_chunk_size)),
+                                             ascend_op_header_merge_by_chunk_size,
+                                             ascend_op_function_merge_by_chunk_size):
+            ascend_pyboost_op_source = self.PYBOOST_ASCEND_OP_SOURCE_TEMPLATE.replace(
+                merge_op_header=op_header, merge_op_function=op_function)
+            save_file(os.path.join(work_path, self.ascend_gen_path), f"pyboost_ascend_ops_{i}.cc",
+                      ascend_pyboost_op_source)
+
+    def _generate_pyboost_cpu_ops(self, work_path, op_protos):
+        """
+        Generates CPU PyBoost ops functions source files after being merged into specific chunk sizes.
+
+        Args:
+            work_path (str): The directory path where the generated C++ source files will be saved.
+            op_protos (list): A list of operation prototypes that define the operations for which
+                              the C++ code will be generated.
+        """
+        cpu_merge_op_header = []
+        cpu_merge_op_function = []
+        self.cpu_op_cpp_generator.generate_customize_op_cpp_code(op_protos, cpu_merge_op_header, cpu_merge_op_function)
+        self.cpu_view_op_cpp_generator.generate_view_op_cpp_code(op_protos, cpu_merge_op_header, cpu_merge_op_function)
+        self.cpu_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, cpu_merge_op_header, cpu_merge_op_function)
+        cpu_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(cpu_merge_op_header, chunk_size=120)
+        cpu_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(cpu_merge_op_function, chunk_size=120)
+
+        new_gen_num = len(cpu_op_header_merge_by_chunk_size)
+        self._delete_residual_merged_ops_files(os.path.join(work_path, self.cpu_gen_path), new_gen_num)
+
+        for i, op_header, op_function in zip(range(len(cpu_op_header_merge_by_chunk_size)),
+                                             cpu_op_header_merge_by_chunk_size,
+                                             cpu_op_function_merge_by_chunk_size):
+            cpu_pyboost_op_source = self.PYBOOST_CPU_OP_SOURCE_TEMPLATE.replace(
+                merge_op_header=op_header, merge_op_function=op_function)
+            save_file(os.path.join(work_path, self.cpu_gen_path), f"pyboost_cpu_ops_{i}.cc",
+                      cpu_pyboost_op_source)
+
+    def _generate_pyboost_gpu_ops(self, work_path, op_protos):
+        """
+        Generates GPU PyBoost ops functions source files after being merged into specific chunk sizes.
+
+        Args:
+            work_path (str): The directory path where the generated C++ source files will be saved.
+            op_protos (list): A list of operation prototypes that define the operations for which
+                              the C++ code will be generated.
+        """
+        gpu_merge_op_header = []
+        gpu_merge_op_function = []
+        self.gpu_op_cpp_generator.generate_customize_op_cpp_code(op_protos, gpu_merge_op_header, gpu_merge_op_function)
+        self.gpu_view_op_cpp_generator.generate_view_op_cpp_code(op_protos, gpu_merge_op_header, gpu_merge_op_function)
+        self.gpu_aclnn_cpp_generator.generate_aclnn_op_cpp_code(op_protos, gpu_merge_op_header, gpu_merge_op_function)
+        gpu_op_header_merge_by_chunk_size = merge_strings_by_chunk_size(gpu_merge_op_header, chunk_size=120)
+        gpu_op_function_merge_by_chunk_size = merge_strings_by_chunk_size(gpu_merge_op_function, chunk_size=120)
+
+        new_gen_num = len(gpu_op_header_merge_by_chunk_size)
+        self._delete_residual_merged_ops_files(os.path.join(work_path, self.gpu_gen_path), new_gen_num)
+
+        for i, op_header, op_function in zip(range(len(gpu_op_header_merge_by_chunk_size)),
+                                             gpu_op_header_merge_by_chunk_size,
+                                             gpu_op_function_merge_by_chunk_size):
+            gpu_pyboost_op_source = self.PYBOOST_GPU_OP_SOURCE_TEMPLATE.replace(
+                merge_op_header=op_header, merge_op_function=op_function)
+            save_file(os.path.join(work_path, self.gpu_gen_path), f"pyboost_gpu_ops_{i}.cc",
+                      gpu_pyboost_op_source)
+
+    def _delete_residual_merged_ops_files(self, files_path, new_gen_num):
+        """
+        Deletes residual merged operation files in the specified directory if the number of
+        newly generated files does not match the number of existing ones.
+
+        This method first lists all files in the specified directory, then filters out the files
+        that match the pattern `pyboost_.*_ops_.*.cc` (i.e., files related to pyboost ops). It compares
+        the number of such files (`old_files_num`) with the `new_gen_num` argument, which represents
+        the expected number of new pyboost ops files. If the counts do not match, the method will
+        delete all the existing pyboost ops files in the directory before any new ones can be generated.
+
+        Args:
+            files_path (str): The path to the directory containing the files to be checked and deleted.
+            new_gen_num (int): The number of newly generated pyboost ops files expected to be in the directory.
+
+        Returns:
+            None
+        """
+        all_files = os.listdir(files_path)
+        old_pyboost_ops_files = [file for file in all_files if re.match(r'pyboost_.*_ops_.*\.cc', file)]
+        old_files_num = len(old_pyboost_ops_files)
+        if new_gen_num != old_files_num:
+            for file in old_pyboost_ops_files:
+                os.remove(os.path.join(files_path, file))
+
+
 def _generate_cpp_func_return(op_proto):
     """Generates the C++ return type for the given operator prototype.
 
@@ -531,8 +724,8 @@ def _generate_cpp_func_return(op_proto):
     """
     returns_type = []
     type_convert_to_base = {
-        'std::vector<tensor::TensorPtr>': 'std::vector<tensor::BaseTensorPtr>',
-        'tensor::TensorPtr': 'tensor::BaseTensorPtr'
+        'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::BaseTensorPtr>',
+        'mindspore::tensor::TensorPtr': 'mindspore::tensor::BaseTensorPtr'
     }
     for return_obj in op_proto.op_returns:
         temp_return = get_return_type(return_obj.arg_dtype)
@@ -591,21 +784,23 @@ def delete_residual_files(work_path, op_protos):
                                ["ascend", "gpu", "cpu"]]
     code_generate_path_list.append(f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
     for code_generate_path in code_generate_path_list:
-        all_files_name = []
+        filter_files = []
         code_generate_path = os.path.join(work_path, code_generate_path)
         if os.path.exists(code_generate_path):
-            all_files_name = os.listdir(code_generate_path)
-        all_registered_op = set(item.split(".")[0] for item in all_files_name)
-        need_clean_op = all_registered_op - set(all_operator_name)
-        for file in all_files_name:
-            if file == "op_register.cc":
-                continue
-            for clean_name in need_clean_op:
-                judge_file = file.split(".")[0]
-                if judge_file == clean_name:
-                    file_path = os.path.join(code_generate_path, file)
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
+            all_files = os.listdir(code_generate_path)
+            # No need to delete pyboost_.*_ops_.*.cc files and op_register.cc.
+            # These residual files will be deleted before new files generate.
+            filter_files = [file for file in all_files if
+                            not re.match(r'pyboost_.*_ops_.*\.cc', file) and file != "op_register.cc"]
+        registered_op_name = set(item.split(".")[0] for item in filter_files)
+        need_clean_op = registered_op_name - set(all_operator_name)
+
+        for file in filter_files:
+            file_name = file.split(".")[0]
+            if file_name in need_clean_op:
+                file_path = os.path.join(code_generate_path, file)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
 
 
 class PyboostOpRegisterCppCodeGenerator:

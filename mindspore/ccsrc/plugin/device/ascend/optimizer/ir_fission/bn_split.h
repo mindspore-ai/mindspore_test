@@ -53,8 +53,8 @@ class SyncBnSplit : public BnSplit {
   AnfNodePtr CreateOutputsOfBNTrainingUpdate(const FuncGraphPtr &graph, const CNodePtr &bn_cnode,
                                              const std::vector<AnfNodePtr> &bn_training_reduce_outputs,
                                              bool is_dynamic) const;
-
   AnfNodePtr SyncBNSplitForTBE(const FuncGraphPtr &func_graph, const AnfNodePtr &node) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 AnfNodePtr CreateValueNodeOfDeviceNumReciprocal(const FuncGraphPtr &graph, const CNodePtr &sync_bn_cnode);

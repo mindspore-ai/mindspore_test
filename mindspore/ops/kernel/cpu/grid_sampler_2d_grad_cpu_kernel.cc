@@ -88,11 +88,11 @@ void GridSampler2DGradCpuKernelMod::ComputeTask(const std::vector<KernelTensor *
   GridSamplerPadding padding;
   bool align_corners = align_corners_;
 
-  auto grad_data_addr = static_cast<T *>(inputs[kZero]->device_ptr());
-  auto x_data_addr = static_cast<T *>(inputs[kOne]->device_ptr());
-  auto grid_data_addr = static_cast<T *>(inputs[kTwo]->device_ptr());
-  auto dx_data_addr = static_cast<T *>(outputs[kZero]->device_ptr());
-  auto dgrid_data_addr = static_cast<T *>(outputs[kOne]->device_ptr());
+  auto grad_data_addr = GetDeviceAddress<T>(inputs, kZero);
+  auto x_data_addr = GetDeviceAddress<T>(inputs, kOne);
+  auto grid_data_addr = GetDeviceAddress<T>(inputs, kTwo);
+  auto dx_data_addr = GetDeviceAddress<T>(outputs, kZero);
+  auto dgrid_data_addr = GetDeviceAddress<T>(outputs, kOne);
   if (interpolation_mode_ == static_cast<int64_t>(ops::InterpolationMode::BILINEAR)) {
     interp = GridSamplerInterpolation::Bilinear;
   } else if (interpolation_mode_ == static_cast<int64_t>(ops::InterpolationMode::NEAREST)) {
@@ -164,8 +164,8 @@ void GridSampler2DGradCpuKernelMod::ComputeTask(const std::vector<KernelTensor *
 template <typename T>
 void GridSampler2DGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
-  auto dx_data_addr = static_cast<T *>(outputs[kZero]->device_ptr());
-  auto dgrid_data_addr = static_cast<T *>(outputs[kOne]->device_ptr());
+  auto dx_data_addr = GetDeviceAddress<T>(outputs, kZero);
+  auto dgrid_data_addr = GetDeviceAddress<T>(outputs, kOne);
   for (size_t i = kZero; i < dx_size_; i++) {
     dx_data_addr[i] = static_cast<T>(kZero);
   }

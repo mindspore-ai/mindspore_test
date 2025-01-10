@@ -18,12 +18,13 @@ from mindspore import context, Tensor
 from mindspore.ops.function.array_func import max_ext as max_
 
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.test_ops_min_dim import (argmin_with_value_argmax_case, argmin_with_value_argmax_case_dyn,
-                                           argmin_with_value_argmax_case_vmap)
+from tests.st.ops.test_ops_min_dim import (
+    min_max_dim_case, min_max_dim_case_dyn)
+
 from tests.mark_utils import arg_mark
 
 
-def np_argmax_with_value(input_x, axis, keepdims):
+def np_max(input_x, axis, keepdims):
     value = np.max(input_x, axis)
     index = np.argmax(input_x, axis).astype(np.int32)
     if keepdims:
@@ -35,59 +36,46 @@ def np_argmax_with_value(input_x, axis, keepdims):
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_argmax_with_value(mode):
+def test_max(mode):
     """
-    Feature: Test argmax_with_value op.
-    Description: Test argmax_with_value.
+    Feature: Test max op.
+    Description: Test max.
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    argmin_with_value_argmax_case(max_, np_argmax_with_value)
+    min_max_dim_case(max_, np_max)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_argmax_with_value_vmap(mode):
+def test_max_dyn(mode):
     """
-    Feature: Test argmax_with_value op.
-    Description: Test argmax_with_value vmap.
+    Feature: Test max op.
+    Description: Test max dynamic shape.
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    argmin_with_value_argmax_case_vmap(max_)
+    min_max_dim_case_dyn(max_, np_max)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_argmax_with_value_dyn(mode):
+def test_max_dyn_rank(mode):
     """
-    Feature: Test argmax_with_value op.
-    Description: Test argmax_with_value dynamic shape.
+    Feature: Test max op.
+    Description: Test max dynamic rank.
     Expectation: the result match with expected result.
     """
     context.set_context(mode=mode)
-    argmin_with_value_argmax_case_dyn(max_, np_argmax_with_value)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_argmax_with_value_dyn_rank(mode):
-    """
-    Feature: Test argmax_with_value op.
-    Description: Test argmax_with_value dynamic rank.
-    Expectation: the result match with expected result.
-    """
-    context.set_context(mode=mode)
-    argmin_with_value_argmax_case_dyn(max_, np_argmax_with_value, True)
+    min_max_dim_case_dyn(max_, np_max, True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_argmax_with_value_all_dynamic():
+def test_max_all_dynamic():
     """
-    Feature: Test argmax_with_value op.
+    Feature: Test max op.
     Description: Test argmin_with_value with both input and axis are dynamic.
     Expectation: the result match with expected result.
     """
@@ -95,4 +83,5 @@ def test_argmax_with_value_all_dynamic():
     input_case1 = [t1, -1]
     t2 = Tensor(np.array([[[1, 20, 5], [67, 8, 9]], [[130, 24, 15], [16, 64, 32]]], dtype=np.float32))
     input_case2 = [t2, 0]
-    TEST_OP(max_, [input_case1, input_case2], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(max_, [input_case1, input_case2], '', disable_yaml_check=True,
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])

@@ -14,18 +14,18 @@ bincount_ext:
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        - **input** (Tensor) - A one-dimensional Tensor.
-        - **weights** (Tensor, optional) - Weights with the same shape as the input. Default: `None`.
-        - **minlength** (int, optional) - The minimum length of output Tensor. Should be non-negative. Default: `0`.
+        input (Tensor): A one-dimensional Tensor.
+        weights (Tensor, optional): Weights with the same shape as the input. Default: ``None``.
+        minlength (int, optional): The minimum length of output Tensor. Should be non-negative. Default: ``0``.
 
     Returns:
         Tensor, If input is non-empty, the output shape is :math:`(max(max(input)+1, minlength), )`,
         otherwise the shape is :math:`(0, )`.
 
     Raises:
-        - **TypeError** - If `input` or `weights` is not a Tensor.
-        - **ValueError** - If `input` contains negative values.
-        - **ValueError** - If `input` is not one-dimensional or `input` and `weights` do not have the same shape.
+        TypeError: If `input` or `weights` is not a Tensor.
+        ValueError: If `input` contains negative values.
+        ValueError: If `input` is not one-dimensional or `input` and `weights` do not have the same shape.
 
     Supported Platforms:
         ``Ascend``

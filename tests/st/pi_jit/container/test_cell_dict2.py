@@ -25,7 +25,7 @@ class TestGetitemMethodNet(nn.Cell):
         return self.cell_dict['conv']
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_getitem_method(mode):
     """
@@ -56,7 +56,7 @@ class TestSetitemMethodNet(nn.Cell):
         return self.cell_dict['conv']
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_setitem_method(mode):
     """
@@ -87,7 +87,7 @@ class TestSetitemMethodErrCaseNet(nn.Cell):
         return self.cell_dict[key]
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_setitem_error_case_method(mode):
     """
@@ -142,7 +142,7 @@ class TestDelitemMethodNet(nn.Cell):
         return len(self.cell_dict)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_delitem_method(mode):
     """
@@ -171,7 +171,7 @@ class TestContainsMethodNet(nn.Cell):
         return ret1, ret2
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_contains_method(mode):
     """
@@ -201,7 +201,7 @@ class TestClearMethodNet(nn.Cell):
         return len(self.cell_dict)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_clear_method(mode):
     """
@@ -230,7 +230,7 @@ class TestPopMethodNet(nn.Cell):
         return op, cell_dict_len
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_pop_method(mode):
     """
@@ -262,7 +262,7 @@ class TestKeysMethodNet(nn.Cell):
         return self.cell_dict.keys()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_keys_method(mode):
     """
@@ -290,7 +290,7 @@ class TestValuesMethodNet(nn.Cell):
         return self.cell_dict.values()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_values_method(mode):
     """
@@ -327,7 +327,7 @@ class TestItemsMethodNet(nn.Cell):
         return self.cell_dict.items()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_items_method(mode):
     """
@@ -399,7 +399,7 @@ class TestUpdateMethodNet(nn.Cell):
         return output1, output2, output3
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_update_method(mode):
     """
@@ -444,7 +444,8 @@ class TestUpdateMethodEmbeddedNet(nn.Cell):
     def construct(self, object_list):
         self.cell_dict.update(object_list)
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_celldict_update_method_embedded_case(mode):
     """
@@ -502,7 +503,7 @@ class DupParaNameNet2(nn.Cell):
         return a + b
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_duplicate_para_name_case(mode):
     """

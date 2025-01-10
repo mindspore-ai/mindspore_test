@@ -60,6 +60,11 @@ Status DvppEraseOp::Compute(const std::shared_ptr<DeviceTensorAscend910B> &input
     }
   }
 
+  // Ensure that the dvpp erase operator does not report an error when its argument `value` is the default value
+  if (value_.size() == 1) {
+    std::vector<float> val(input->GetShape().AsVector()[kChannelIndexNHWC], value_[0]);
+    value_ = val;
+  }
   if (input->GetShape().AsVector()[kChannelIndexNHWC] != value_.size()) {
     std::string error = "The length of value should be the same as the value of channel";
     RETURN_STATUS_UNEXPECTED(error);

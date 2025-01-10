@@ -31,7 +31,10 @@ else()
 endif()
 
 list(APPEND _DEBUG_SRC_LIST
-        "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc")
+        "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_debugger.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/adapter.cc"
+    )
 
 list(APPEND _DEBUG_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/cpu_e2e_dump.cc"
@@ -44,11 +47,17 @@ list(APPEND _DEBUG_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/common/csv_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/summary/summary.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/acl_dump_json_writer.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensordump_control.cc"
     )
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(APPEND _DEBUG_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/e2e_dump.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensor_statistic.cc"
+        )
+    list(APPEND _DEBUG_SRC_LIST
+        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/acl_data_adapter.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_dynamic_loader.cc"
         )
     file(GLOB_RECURSE _DEVICE_STATISTIC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/device_statistic/*.cc")
 endif()
@@ -66,32 +75,4 @@ if(${debug_files_size} GREATER 0)
       target_compile_definitions(_mindspore_debug_obj PRIVATE BACKEND_DLL)
   endif()
   add_dependencies(_mindspore_debug_obj proto_input)
-endif()
-
-set(_DUMP_CONTROL_SRC_LIST
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control_py.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/utils.cc"
-)
-if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
-    set_property(SOURCE ${_DUMP_CONTROL_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
-                SUBMODULE_ID=mindspore::SubModuleId::SM_OFFLINE_DEBUG)
-    add_library(_data_dump SHARED ${_DUMP_CONTROL_SRC_LIST})
-    target_link_libraries(_data_dump PUBLIC
-                mindspore::pybind11_module
-                mindspore_core
-                mindspore_ops
-                mindspore::ssl mindspore::crypto
-    )
-    set_target_properties(_data_dump PROPERTIES
-                PREFIX "${PYTHON_MODULE_PREFIX}"
-                SUFFIX "${PYTHON_MODULE_EXTENSION}"
-    )
-    if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-        set_target_properties(_data_dump PROPERTIES MACOSX_RPATH ON)
-        set_target_properties(_data_dump PROPERTIES INSTALL_RPATH @loader_path/lib)
-    else()
-        set_target_properties(_data_dump PROPERTIES INSTALL_RPATH $ORIGIN/lib)
-        target_link_options(_data_dump PRIVATE -Wl,-init,common_log_init)
-    endif()
 endif()

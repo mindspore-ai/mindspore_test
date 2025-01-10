@@ -39,7 +39,7 @@ class NetAssign0002(Cell):
         return x
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_store_subscr_side_effect_1():
     """
     Feature: STORE SUBSCR + HAS_ARGS
@@ -62,7 +62,7 @@ def test_store_subscr_side_effect_1():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_store_subscr_side_effect_2():
     """
     Feature: STORE_SUBSCR + NO_ARGS + OPERATION
@@ -78,7 +78,7 @@ def test_store_subscr_side_effect_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_del_subscr_side_effect_3():
     """
     Feature: DEL_SUBSCR + NO_ARGS + OPERATION
@@ -99,7 +99,7 @@ def test_del_subscr_side_effect_3():
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.skip(reason="fix later, error because of bytecode reorder")
 def test_dict_pop_side_effect_4():
     """
@@ -116,7 +116,7 @@ def test_dict_pop_side_effect_4():
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dict_pop_side_effect_5():
     """
     Feature: DICT POP side effect 2
@@ -131,7 +131,7 @@ def test_dict_pop_side_effect_5():
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_store_global_side_effect_6():
     """
     Feature: STORE_GLOBAL
@@ -149,7 +149,7 @@ def test_store_global_side_effect_6():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_del_global_side_effect_7():
     """
     Feature: DEL GLOBAL side effect
@@ -170,7 +170,7 @@ def test_del_global_side_effect_7():
 
 
 @pytest.mark.skip(reason="fix later")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_fix_bug_store_subscr_side_effect_1():
     """
     Feature: STORE SUBSCR + FIX BUGS

@@ -17,201 +17,311 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
 
 #include <functional>
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include <utility>
+#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "runtime/device/ms_device_shape_transfer.h"
-#include "acl/acl_rt.h"
+#include "transform/acl_ir/op_api_cache.h"
 
 namespace mindspore {
 namespace kernel {
-InternalKernelMod::~InternalKernelMod() {
-  for (auto t : inputs_) {
-    delete t;
-  }
-  inputs_.clear();
-  for (auto t : outputs_) {
-    delete t;
-  }
-  outputs_.clear();
-}
+bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  internal_to_ms_input_indices_mapper_.clear();
+  internal_to_ms_output_indices_mapper_.clear();
 
-int InternalKernelMod::Build(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  auto param = CreateOpParam(inputs, outputs);
-  param->op_fullname_ = fullname_;
-
-  // abstract validation info from inputs
-  internal::ValidateInfo info;
-  info.input_num_ = inputsIdxMap_.size();
-  info.output_num_ = outputsIdxMap_.size();
-  param->in_dtypes_.resize(info.input_num_);
-  param->out_dtypes_.resize(info.output_num_);
-
-  for (auto iter = inputsIdxMap_.begin(); iter != inputsIdxMap_.end(); iter++) {
-    info.input_dtype_.emplace_back(InternalKernelUtils::ToInternalDType(inputs[iter->first]->dtype_id()));
-    info.input_format_.emplace_back(InternalKernelUtils::ToInternalFormat(inputs[iter->first]->format()));
-    param->in_dtypes_[iter->second] = InternalKernelUtils::ToInternalDType(inputs[iter->first]->dtype_id());
-  }
-
-  for (auto iter = outputsIdxMap_.begin(); iter != outputsIdxMap_.end(); iter++) {
-    info.output_dtype_.emplace_back(InternalKernelUtils::ToInternalDType(outputs[iter->first]->dtype_id()));
-    info.output_format_.emplace_back(InternalKernelUtils::ToInternalFormat(outputs[iter->first]->format()));
-    param->out_dtypes_[iter->second] = InternalKernelUtils::ToInternalDType(outputs[iter->first]->dtype_id());
-  }
-
-  impl_ = internal::CreateInternalKernelImpl(param);
-  if (impl_ == nullptr) {
-    MS_LOG(ERROR) << "Internal Op '" << kernel_name_ << "' create FAILED.";
-    return KRET_RESIZE_FAILED;
-  }
-
-  if (!impl_->Init(info)) {
-    MS_LOG(ERROR) << "Internal Op '" << kernel_name_ << "' is initialized FAILED.";
-    return KRET_RESIZE_FAILED;
-  }
-  for (auto iter = inputsIdxMap_.begin(); iter != inputsIdxMap_.end(); iter++) {
-    InternalKernelUtils::ToInternalTensor(inputs_[iter->second], inputs[iter->first]);
-  }
-  impl_->SetInputs(inputs_);
-
-  return KRET_OK;
-}
-
-uint64_t InternalKernelMod::GenTilingCacheKey(const std::vector<KernelTensor *> &inputs,
-                                              const std::vector<KernelTensor *> &outputs) {
-  return TilingCacheMgr::GetInstance().GenTilingCacheKey(kernel_name_, primitive_, inputs);
-}
-
-void InternalKernelMod::SetTilingInfo(const uint64_t key) {
-  size_t tiling_size = impl_->GetTilingBufSize();
-  auto tiling_func = [this](internal::HostRawBuf &host_buf, internal::CacheInfo &cache_info) {
-    auto ret = this->impl_->Tiling(host_buf);
-    cache_info = this->impl_->GetCacheInfo();
-    return ret;
-  };
-  if (tiling_info_.need_free_device_buf_) {
-    free(tiling_info_.host_buf_.addr_);
-    device::ascend::AscendMemoryPool::GetInstance().FreeTensorMem(tiling_info_.device_buf_.addr_);
-  }
-  tiling_info_ = TilingCacheMgr::GetInstance().GetOrCreateTilingInfo(key, tiling_func, tiling_size);
-  impl_->SetCacheInfo(tiling_info_.cache_info_);
-  impl_->SetDeviceTilingBuf(tiling_info_.device_buf_);
-}
-
-void InternalKernelMod::SetInOutIdx(size_t in_count, size_t out_count) {
   bool input_mutable = false;
   auto in_idx_list = InternalKernelModInOutMap::GetInstance()->GetKernelInMap(kernel_name_, &input_mutable);
   if (input_mutable) {
-    for (size_t i = 0; i < in_count; i++) {
-      inputsIdxMap_[i] = i;
+    for (size_t i = 0; i < inputs.size(); i++) {
+      (void)internal_to_ms_input_indices_mapper_.emplace_back(i);
     }
   } else {
     for (size_t i = 0; i < in_idx_list.size(); i++) {
-      inputsIdxMap_[in_idx_list.at(i)] = i;
+      (void)internal_to_ms_input_indices_mapper_.emplace_back(static_cast<size_t>(in_idx_list.at(i)));
     }
   }
 
   bool output_mutable = false;
   auto out_idx_list = InternalKernelModInOutMap::GetInstance()->GetKernelOutMap(kernel_name_, &output_mutable);
   if (output_mutable) {
-    for (size_t i = 0; i < out_count; i++) {
-      outputsIdxMap_[i] = i;
+    for (size_t i = 0; i < outputs.size(); i++) {
+      (void)internal_to_ms_output_indices_mapper_.emplace_back(i);
     }
   } else {
     for (size_t i = 0; i < out_idx_list.size(); i++) {
-      outputsIdxMap_[out_idx_list.at(i)] = i;
+      (void)internal_to_ms_output_indices_mapper_.emplace_back(out_idx_list.at(i));
     }
   }
+
+  for (size_t i = 0; i < internal_to_ms_input_indices_mapper_.size(); i++) {
+    internal_inputs_addr_.emplace_back(nullptr);
+    internal_inputs_shape_.emplace_back(internal::ShapeInfo{0});
+  }
+
+  for (size_t i = 0; i < internal_to_ms_output_indices_mapper_.size(); i++) {
+    internal_outputs_addr_.emplace_back(nullptr);
+    internal_outputs_shape_.emplace_back(internal::ShapeInfo{0});
+  }
+
+  for (size_t i = 0; i < inputs.size(); i++) {
+    for (auto idx : in_idx_list) {
+      if (i == static_cast<size_t>(idx)) {
+        continue;
+      }
+
+      recreate_cared_indices_.emplace_back(idx);
+    }
+  }
+
+  // find NZ format output to do extra resize
+  for (size_t i = 0; i < outputs.size(); i++) {
+    if (outputs[i]->GetStringFormat() == kOpFormat_FRAC_NZ) {
+      nz_output_indices_.emplace_back(i);
+    }
+  }
+
+  return true;
 }
 
-bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  SetInOutIdx(inputs.size(), outputs.size());
-  inputs_.resize(inputsIdxMap_.size());
-  std::generate(inputs_.begin(), inputs_.end(), []() { return new internal::Tensor(); });
-  outputs_.resize(outputsIdxMap_.size());
-  std::generate(outputs_.begin(), outputs_.end(), []() { return new internal::Tensor(); });
-  tiling_info_.device_buf_.size_ = 0;
-  tiling_info_.device_buf_.addr_ = nullptr;
-  return true;
+bool InternalKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
+                                       const std::vector<KernelTensor *> &outputs) {
+  if (internal_op_ == nullptr) {
+    return true;
+  }
+  transform::g_hash_offset = 0;
+  for (auto idx : recreate_cared_indices_) {
+    auto input = inputs[idx];
+    auto type = input->type_id();
+    if (type == kObjectTypeNumber) {
+      auto data_type = input->dtype_id();
+      switch (data_type) {
+        case kNumberTypeBool: {
+          auto value = input->GetValueWithCheck<bool>();
+          transform::GatherHash(value);
+          break;
+        }
+        case kNumberTypeInt32: {
+          auto value = input->GetValueWithCheck<int32_t>();
+          transform::GatherHash(value);
+          break;
+        }
+        case kNumberTypeInt64: {
+          auto value = input->GetValueWithCheck<int64_t>();
+          transform::GatherHash(value);
+          break;
+        }
+        case kNumberTypeFloat32: {
+          auto value = input->GetValueWithCheck<float>();
+          transform::GatherHash(value);
+          break;
+        }
+        case kNumberTypeFloat64: {
+          auto value = input->GetValueWithCheck<double>();
+          transform::GatherHash(value);
+          break;
+        }
+        default:
+          MS_LOG(INTERNAL_EXCEPTION) << "Unsupported dtype " << data_type << ", kenrel_name: " << kernel_name_
+                                     << ", index: " << idx;
+      }
+    } else if (type == kObjectTypeTuple || type == kObjectTypeList) {
+      auto data_type = input->dtype_id();
+      switch (data_type) {
+        case kNumberTypeInt32: {
+          auto value = input->GetValueWithCheck<std::vector<int32_t>>();
+          transform::GatherHash(value);
+          break;
+        }
+        case kNumberTypeInt64: {
+          auto value = input->GetValueWithCheck<std::vector<int64_t>>();
+          transform::GatherHash(value);
+          break;
+        }
+        default:
+          MS_LOG(INTERNAL_EXCEPTION) << "Unsupported dtype " << data_type << ", kenrel_name: " << kernel_name_
+                                     << ", index: " << idx;
+      }
+    } else if (type == kMetaTypeNone) {
+      transform::GatherHash(type);
+    } else if (type != kObjectTypeTensorType) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Unsupported type: " << type << ", kenrel_name: " << kernel_name_
+                                 << ", index: " << idx;
+    }
+  }
+
+  if (transform::g_hash_offset == 0) {
+    return false;
+  }
+
+  auto hash_id = transform::calc_hash_id();
+  if (hash_id != last_key_) {
+    last_key_ = hash_id;
+    return true;
+  }
+  return false;
+}
+
+uint64_t InternalKernelMod::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs);
+}
+
+void InternalKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &inputs,
+                                            const std::vector<KernelTensor *> &outputs) {
+  auto key = GenerateTilingKey(inputs);
+  std::lock_guard<SimpleSpinLock> lock(lock_);
+  auto tiling_cache_item = InternalTilingCache::GetInstance().Bind(key);
+  InternalTilingCache::GetInstance().Unbind(last_item_);
+  if (tiling_cache_item == nullptr) {
+    auto tiling_size = internal_op_->GetTilingSize();
+    auto host_addr = TilingMemMgr::GetInstance().pool_host_.Malloc(tiling_size);
+    internal::HostRunInfoPtr host_run_info_ptr = nullptr;
+    auto status = internal_op_->Tiling(host_addr, &host_run_info_ptr);
+    if (status != internal::kInternalOk || host_run_info_ptr == nullptr) {
+      MS_LOG(EXCEPTION) << "Tiling error for " << kernel_name_ << ", status: " << status
+                        << ", host_run_info_ptr: " << host_run_info_ptr;
+    }
+
+    auto device_addr = TilingMemMgr::GetInstance().pool_device_.Malloc(tiling_size);
+    TilingMemMgr::GetInstance().CopyAsync(host_addr, device_addr, tiling_size);
+    auto tiling_info = std::make_shared<internal::TilingInfo>(device_addr, nullptr);
+    internal_op_->SetTilingInfo(tiling_info);
+    tiling_info->host_run_info_ = host_run_info_ptr;
+    workspace_size_list_ = internal_op_->GetWorkspaceSize();
+    tiling_info->host_run_info_->SetWorkSpaceSize(workspace_size_list_);
+    auto tiling_info_ptr = std::make_shared<TilingCacheItem>(tiling_info, host_addr, tiling_size);
+    if (TilingMemMgr::GetInstance().pool_device_.IsOneOffMem(device_addr)) {
+      // tiling mem pool is full, comb out some items which are not recently used with high probability
+      auto erased_items = InternalTilingCache::GetInstance().CombOutSuspectedUselessItems();
+      if (!erased_items.empty()) {
+        for (auto &item : erased_items) {
+          TilingMemMgr::GetInstance().pool_device_.Free(item->tiling_info_->tiling_addr_, item->size_);
+          TilingMemMgr::GetInstance().pool_host_.Free(item->host_addr_, item->size_);
+        }
+        TilingMemMgr::GetInstance().pool_device_.Rearrange();
+        TilingMemMgr::GetInstance().pool_host_.Rearrange();
+      }
+      MS_LOG(INFO) << "The tiling memory pool is full, comb out not used items: " << erased_items.size();
+    }
+    (void)InternalTilingCache::GetInstance().Insert(key, tiling_info_ptr);
+    last_item_ = tiling_info_ptr;
+  } else {
+    internal_op_->SetTilingInfo(tiling_cache_item->tiling_info_);
+    workspace_size_list_ = tiling_cache_item->tiling_info_->host_run_info_->GetWorkSpaceSize();
+    last_item_ = tiling_cache_item;
+  }
+  internal_wss_addr_.resize(workspace_size_list_.size());
+}
+
+void InternalKernelMod::GetInternalKernel(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &outputs) {
+  if (IsNeedRecreate(inputs, outputs)) {
+    internal::InputsImmutableInfoList inputs_ii;
+    internal::OutputsImmutableInfoList outputs_ii;
+    for (size_t i = 0; i < internal_to_ms_input_indices_mapper_.size(); i++) {
+      auto ms_index = internal_to_ms_input_indices_mapper_[i];
+      auto dtype = TransInternalDataType(inputs[ms_index]->dtype_id());
+      auto format = TransInternalFormat(inputs[ms_index]->format());
+      inputs_ii.emplace_back(dtype, format);
+    }
+
+    for (size_t i = 0; i < internal_to_ms_output_indices_mapper_.size(); i++) {
+      auto ms_index = internal_to_ms_output_indices_mapper_[i];
+      auto dtype = TransInternalDataType(outputs[ms_index]->dtype_id());
+      auto format = TransInternalFormat(outputs[ms_index]->format());
+      outputs_ii.emplace_back(dtype, format);
+    }
+    internal_op_ = CreateKernel(inputs_ii, outputs_ii, inputs, outputs);
+    MS_EXCEPTION_IF_NULL(internal_op_);
+    auto status = internal_op_->Init();
+    if (status != internal::kInternalOk) {
+      internal_op_ = nullptr;
+      MS_LOG(ERROR) << "Init InternalKernel failed, kenrel_name: " << kernel_name_;
+    }
+  }
 }
 
 int InternalKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto ret = KernelMod::Resize(inputs, outputs);
-  if (ret != 0) {
-    MS_LOG(ERROR) << "op " << op_type_ << " invoke resize failed";
+  if (ret != KRET_OK) {
+    MS_LOG(ERROR) << "Kernel " << kernel_name_ << " Resize failed";
+    return ret;
+  }
+
+  // update NZ format output output_size
+  for (size_t i = 0; i < nz_output_indices_.size(); ++i) {
+    auto index = nz_output_indices_[i];
+    auto &output = outputs[index];
+    MS_EXCEPTION_IF_NULL(output);
+    auto shape = output->GetShapeVector();
+    auto dev_shape = trans::TransShapeToDevice(shape, kOpFormat_FRAC_NZ, output->dtype_id());
+    auto type_size = GetTypeByte(TypeIdToType(output->dtype_id()));
+    auto tensor_size = dev_shape.empty()
+                         ? std::accumulate(shape.begin(), shape.end(), type_size, std::multiplies<size_t>())
+                         : std::accumulate(dev_shape.begin(), dev_shape.end(), type_size, std::multiplies<size_t>());
+    output_size_list_[index] = tensor_size;
+  }
+
+  GetInternalKernel(inputs, outputs);
+  if (internal_op_ == nullptr) {
     return KRET_RESIZE_FAILED;
   }
 
-  // update output_size_list_
-  for (size_t i = 0; i < output_size_list_.size(); ++i) {
-    if (outputs[i]->GetStringFormat() == kOpFormat_FRAC_NZ) {
-      auto &output = outputs[i];
-      MS_EXCEPTION_IF_NULL(output);
-      auto shape = output->GetShapeVector();
-      auto dev_shape = trans::TransShapeToDevice(shape, output->GetStringFormat(), output->dtype_id());
-      auto type_size = GetTypeByte(TypeIdToType(output->dtype_id()));
-      auto tensor_size = dev_shape.empty()
-                           ? std::accumulate(shape.begin(), shape.end(), type_size, std::multiplies<size_t>())
-                           : std::accumulate(dev_shape.begin(), dev_shape.end(), type_size, std::multiplies<size_t>());
-      output_size_list_[i] = tensor_size;
+  for (size_t i = 0; i < internal_to_ms_input_indices_mapper_.size(); i++) {
+    auto ms_index = internal_to_ms_input_indices_mapper_[i];
+    auto shape = TransInternalShape(inputs[ms_index]->GetShapeVector());
+    if (inputs[ms_index]->dtype_id() == kMetaTypeNone) {
+      shape = {};
     }
+    internal_inputs_shape_[i] = std::move(shape);
   }
 
-  if (impl_ == nullptr) {
-    ret = Build(inputs, outputs);
-    if (ret != 0) {
-      MS_LOG(ERROR) << "op " << op_type_ << " build kernel failed";
-      return KRET_RESIZE_FAILED;
+  for (size_t i = 0; i < internal_to_ms_output_indices_mapper_.size(); i++) {
+    auto ms_index = internal_to_ms_output_indices_mapper_[i];
+    auto shape = TransInternalShape(outputs[ms_index]->GetShapeVector());
+    if (outputs[ms_index]->dtype_id() == kMetaTypeNone) {
+      shape = {};
     }
+    internal_outputs_shape_[i] = std::move(shape);
   }
 
-  if (op_type_ == "PagedAttention" || op_type_ == "MatMul" || op_type_ == "QuantBatchMatmul" ||
-      op_type_ == "QuantLinearSparse" || op_type_ == "FlashAttentionScore") {
-    MS_LOG(INFO) << "Create and update op param for Internal Op: " << op_type_;
-    auto param = CreateOpParam(inputs, outputs);
-    impl_->UpdateParam(param);
+  if (!UpdateParam(inputs, outputs)) {
+    MS_LOG(ERROR) << "UpdateParam failed, kernel_name: " << kernel_name_;
+    return KRET_RESIZE_FAILED;
   }
 
-  std::vector<internal::DIMS> input_shapes(inputs_.size());
-  for (auto iter = inputsIdxMap_.begin(); iter != inputsIdxMap_.end(); iter++) {
-    InternalKernelUtils::ToInternalTensor(inputs_[iter->second], inputs[iter->first]);
-    input_shapes[iter->second] = inputs_[iter->second]->desc.dims;
-  }
-  impl_->SetInputs(inputs_);
-  for (auto iter = outputsIdxMap_.begin(); iter != outputsIdxMap_.end(); iter++) {
-    InternalKernelUtils::ToInternalTensor(outputs_[iter->second], outputs[iter->first]);
-  }
-  impl_->SetOutputs(outputs_);
-  auto key = GenTilingCacheKey(inputs, outputs);
-  SetTilingInfo(key);
-  // update workspace_size list
-  auto workspace_size_list = impl_->GetWorkSpaceSize();
-  workspace_size_list_.resize(workspace_size_list.size());
-  for (size_t i = 0; i < workspace_size_list.size(); ++i) {
-    workspace_size_list_[i] = static_cast<size_t>(workspace_size_list[i]);
+  auto internal_ret = internal_op_->UpdateShape(internal_inputs_shape_, internal_outputs_shape_);
+  if (internal_ret != internal::kInternalOk) {
+    MS_LOG(ERROR) << "InternalKernel UpdateShape failed, kernel_name: " << kernel_name_;
+    return KRET_RESIZE_FAILED;
   }
 
+  GetOrGenerateTiling(inputs, outputs);
   return KRET_OK;
+}
+
+void InternalKernelMod::UpdateAddr(const std::vector<KernelTensor *> &inputs,
+                                   const std::vector<KernelTensor *> &outputs,
+                                   const std::vector<KernelTensor *> &workspace) {
+  for (size_t i = 0; i < internal_to_ms_input_indices_mapper_.size(); i++) {
+    auto ms_index = internal_to_ms_input_indices_mapper_[i];
+    internal_inputs_addr_[i] = inputs[ms_index]->device_ptr();
+  }
+
+  for (size_t i = 0; i < internal_to_ms_output_indices_mapper_.size(); i++) {
+    auto ms_index = internal_to_ms_output_indices_mapper_[i];
+    internal_outputs_addr_[i] = outputs[ms_index]->device_ptr();
+  }
+
+  for (size_t i = 0; i < workspace.size(); i++) {
+    internal_wss_addr_[i] = workspace[i]->device_ptr();
+  }
 }
 
 bool InternalKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  for (auto iter = inputsIdxMap_.begin(); iter != inputsIdxMap_.end(); ++iter) {
-    inputs_[iter->second]->data = inputs[iter->first]->device_ptr();
-  }
-  impl_->SetInputs(inputs_);
-  impl_->SetStream(stream_ptr);
-  std::vector<internal::DeviceRawBuf> ws_raw_bufs(workspace.size());
-  for (size_t i = 0; i < workspace.size(); ++i) {
-    ws_raw_bufs[i] = InternalKernelUtils::ToDeviceRawBuf(workspace[i]);
-  }
-  impl_->SetWorkSpace(ws_raw_bufs);
-  for (auto iter = outputsIdxMap_.begin(); iter != outputsIdxMap_.end(); ++iter) {
-    InternalKernelUtils::ToInternalTensor(outputs_[iter->second], outputs[iter->first]);
-  }
-  impl_->SetOutputs(outputs_);
-  int ret = impl_->LaunchOperator();
-  return (ret == 0);
+  UpdateAddr(inputs, outputs, workspace);
+  internal::InternalStatus status =
+    internal_op_->Launch(internal_inputs_addr_, internal_outputs_addr_, internal_wss_addr_, stream_ptr, fullname_);
+  return (status == internal::InternalStatus::kInternalOk);
 }
 }  // namespace kernel
 }  // namespace mindspore

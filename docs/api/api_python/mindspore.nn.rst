@@ -307,7 +307,6 @@ Dropout层
     mindspore.nn.RMSProp
     mindspore.nn.Rprop
     mindspore.nn.SGD
-    mindspore.nn.thor
 
 动态学习率
 -----------
@@ -398,3 +397,4 @@ Dynamic LR函数
     mindspore.nn.Flatten
     mindspore.nn.Identity
     mindspore.nn.Unflatten
+    mindspore.nn.utils.no_init_parameters

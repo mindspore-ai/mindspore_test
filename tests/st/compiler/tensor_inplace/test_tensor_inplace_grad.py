@@ -21,8 +21,10 @@ from mindspore import Tensor, nn, context, Parameter, ParameterTuple
 from mindspore import dtype as mstype
 from mindspore import ops
 from mindspore.ops import operations as P
+from mindspore.nn import Cell, BatchNorm2d, Conv2d, ParameterUpdate
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs, GradOfAllParams
+from tests.st.utils import test_utils
 
 
 context.set_context(mode=ms.GRAPH_MODE)
@@ -298,6 +300,67 @@ def test_tensor_inplace_after_forward_add_param_grad_error():
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
+def test_tensor_inplace_grad_error():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Assert RuntimeError with correct error message and error line.
+    Expectation: Run success.
+    """
+    class MixControlNet(Cell):
+        def __init__(self, in_channel, x):
+            super().__init__()
+            self.biasadd = P.BiasAdd()
+            self.addn = P.AddN()
+            self.conv = Conv2d(in_channels=in_channel, out_channels=in_channel,
+                               kernel_size=1, stride=1, has_bias=False,
+                               weight_init='ones', pad_mode='same')
+            self.bn = BatchNorm2d(num_features=in_channel)
+            self.mean = P.ReduceMean(keep_dims=False)
+            self.bias = Parameter(Tensor(np.random.randint(2, size=(3,)).astype((np.float32))),
+                                  name="bias")
+            self.bias2 = Parameter(Tensor(np.ones([3,]).astype(np.float32)),
+                                   name="bias2")
+            self.parameterupdate = ParameterUpdate(self.bias)
+            self.x = x
+
+        def construct(self, input_x):
+            x = self.x
+            z = self.x
+            out = self.biasadd(input_x, self.bias)
+            while x < 20:
+                update = self.parameterupdate(self.bias2)
+                out = self.biasadd(out, update)
+                if x < 10:
+                    out = self.addn((input_x, out))
+                    while z < 20:
+                        out = self.conv(out)
+                        z = z + 1
+                if x < 20:
+                    out = self.biasadd(out, self.bias)
+                    if x % 2 == 0:
+                        out = self.biasadd(out, self.bias)
+                        out = self.bn(out)
+                    else:
+                        out = self.conv(out)
+                x = x + 1
+            out = self.addn((out, out))
+            out = self.mean(out, (2, 3))
+            return out
+
+    net = MixControlNet(3, 5)
+    input_x = Tensor(np.random.randint(2, size=(1, 3, 2, 2)).astype((np.float32)))
+    label = Tensor(np.zeros([1, 3]).astype(np.float32))
+    with pytest.raises(RuntimeError) as info:
+        opt = nn.Momentum(learning_rate=0.0001, momentum=0.009, params=net.trainable_params())
+        loss = nn.SoftmaxCrossEntropyWithLogits(sparse=False, reduction='mean')
+        train_network = ms.amp.build_train_network(net, opt, loss, level="auto")
+        train_network(input_x, label)
+    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
+    assert "update = self.parameterupdate(self.bias2)" in str(info.value)
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_grad_first_input():
     """
     Feature: Support tensor inplace in grad.
@@ -476,3 +539,38 @@ def test_tensor_inplace_control_flow_grad_param():
         print("output:", output)
     assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
             in str(info.value))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+          card_mark='onecard', essential_mark='unessential')
+def test_tensor_inplace_scatter_grad():
+    """
+    Feature: Support tensor scatter_ method in grad.
+    Description: Support tensor scatter_ method in grad.
+    Expectation: Run success.
+    """
+    class ScatterGrad(nn.Cell):
+        def __init__(self, net: nn.Cell, sens: Tensor):
+            super().__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation(get_all=True, sens_param=True)
+            self.grad_wrt_output = sens
+
+        def construct(self, x, dim, index, src_or_val, reduce):
+            return self.grad_op(self.net)(x, dim, index, src_or_val, reduce, self.grad_wrt_output)
+
+    @test_utils.run_with_cell
+    def scatter_val_with_grad(x, dim, index, value, reduce):
+        return (x * True).scatter_(dim=dim, index=index, value=value,
+                                   **(dict(reduce=reduce) if reduce != 'none' else {}))
+    ## inplace backward
+    context.set_context(jit_level='O0')
+    slf = Tensor([[2] * 4] * 3, dtype=ms.float32)
+    value = np.random.rand() * 10
+    index = Tensor(np.array([list(range(3)) + [2]] * 3, dtype=np.int64))  # slf[:, 3] is reserved
+    grad = Tensor(np.random.rand(3, 4), dtype=ms.float32)
+    grad_np = grad.asnumpy().copy().astype(np.float32)
+    grads = ScatterGrad(scatter_val_with_grad, grad)(slf, 1, index, value, 'none')
+    # only self has grad
+    grad_np[:, :3] = 0
+    assert np.allclose(grads[0].asnumpy().astype(np.float32), grad_np)

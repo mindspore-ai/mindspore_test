@@ -31,6 +31,11 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+static const std::map<CollectiveOpReduceType, HcclReduceOp> kHcomOpReduceTypeMap = {
+  {device::CollectiveOpReduceType::Reduce_Max, HCCL_REDUCE_MAX},
+  {device::CollectiveOpReduceType::Reduce_Min, HCCL_REDUCE_MIN},
+  {device::CollectiveOpReduceType::Reduce_Prod, HCCL_REDUCE_PROD},
+  {device::CollectiveOpReduceType::Reduce_Sum, HCCL_REDUCE_SUM}};
 
 class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib {
  public:
@@ -76,6 +81,24 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
   std::map<std::string, HcclComm> GetAllCommunicationGroup();
 
   bool ResumeHcclComm() override;
+
+  bool AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
+                 const std::string &group_name, void *stream = nullptr) override;
+
+  bool AllReduce(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
+                 CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override;
+
+  bool Broadcast(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
+                 const std::string &group_name, void *stream = nullptr) override;
+
+  bool ReduceScatter(const void *send_buff, void *recv_buff, size_t recv_count, TypeId data_type,
+                     CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override;
+
+  bool Send(const void *send_buff, size_t count, TypeId data_type, uint32_t peer, const std::string &group_name,
+            void *stream = nullptr) override;
+
+  bool Recv(void *recv_buff, size_t count, TypeId data_type, uint32_t peer, const std::string &group_name,
+            void *stream = nullptr) override;
 
  private:
   AscendCollectiveCommLib();

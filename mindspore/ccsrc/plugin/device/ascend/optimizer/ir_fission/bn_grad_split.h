@@ -54,8 +54,8 @@ class SyncBnGradSplit : public BnGradSplit {
   void CreateOutputsOfReduceGrad(const FuncGraphPtr &graph, const CNodePtr &bn_grad_node,
                                  const std::vector<AnfNodePtr> &bn_update_grad_outputs,
                                  std::vector<AnfNodePtr> *bn_reduce_grad_outputs, bool is_dynamic) const;
-
   CNodePtr SyncBNGradSplitForTBE(const FuncGraphPtr &func_graph, const CNodePtr &cnode) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

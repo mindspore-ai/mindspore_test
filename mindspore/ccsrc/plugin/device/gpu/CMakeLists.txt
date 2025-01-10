@@ -2,24 +2,19 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CUPTI_INCLUDE_DIRS})
-add_subdirectory(${MS_OPS_KERNEL_DIR}/gpu/cuda_impl kernel/cuda_impl)
 
 ########### mindspore_gpu.so #####
 set(GPU_SUB_COMP
+        device_context_conf
         hal/device
         hal/hardware
         hal/profiler
-        kernel
         optimizer
         )
 
 if(ENABLE_GPU)
     foreach(g_comp ${GPU_SUB_COMP})
-        if(g_comp STREQUAL "kernel")
-            add_subdirectory(${MS_OPS_KERNEL_DIR}/gpu kernel)
-        else()
-            add_subdirectory(${g_comp})
-        endif()
+        add_subdirectory(${g_comp})
         string(REPLACE "/" "_" sub ${g_comp})
         if(TARGET _mindspore_plugin_device_gpu_${sub}_obj)
             list(APPEND GPU_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_gpu_${sub}_obj>)
@@ -39,6 +34,7 @@ if(MSVC)
 target_link_options(mindspore_gpu PRIVATE /FORCE:UNRESOLVED)
 endif()
 target_link_libraries(mindspore_gpu PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
+target_link_libraries(mindspore_gpu PRIVATE -Wl,--whole-archive mindspore_ops_gpu -Wl,--no-whole-archive)
 target_link_libraries(mindspore_gpu PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_gpu PRIVATE securec)
 set_target_properties(mindspore_gpu PROPERTIES INSTALL_RPATH
@@ -54,7 +50,7 @@ endif()
 if(ENABLE_GPU)
     message("add gpu lib to mindspore_gpu")
     if(WIN32)
-    target_link_libraries(mindspore_gpu PRIVATE cuda_ops
+    target_link_libraries(mindspore_gpu PRIVATE
             ${CUBLAS_LIBRARY_PATH}
             ${CUDA_PATH}/lib/x64/curand.lib
             ${CUDNN_LIBRARY_PATH}
@@ -66,7 +62,7 @@ if(ENABLE_GPU)
             ${CUDA_PATH}/lib/x64/nvrtc.lib
             )
     else()
-    target_link_libraries(mindspore_gpu PRIVATE cuda_ops
+    target_link_libraries(mindspore_gpu PRIVATE
             ${CUBLAS_LIBRARY_PATH}
             ${CUDA_PATH}/lib64/libcurand.so
             ${CUDNN_LIBRARY_PATH}

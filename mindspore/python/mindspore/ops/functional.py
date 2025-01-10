@@ -20,8 +20,8 @@ from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
-from mindspore.ops.function.math_func import all, argmax_ext
-from mindspore.ops.function.random_func import uniform_ext
+from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_
+from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
 from mindspore.ops.operations._sequence_ops import TensorToTuple
@@ -33,6 +33,7 @@ from mindspore.ops.operations.nn_ops import AdaptiveMaxPool2D
 from mindspore.ops.operations.math_ops import Roll
 from mindspore.ops.composite.math_ops import mm
 from mindspore.ops.function.math_func import dot
+from mindspore.ops.function.array_func import new_empty
 from mindspore.ops import auto_generate
 from mindspore.ops.auto_generate import cast
 from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
@@ -191,7 +192,7 @@ setattr(tensor_operator_registry, 'index_select', index_select)
 setattr(tensor_operator_registry, 'flip', flip)
 setattr(tensor_operator_registry, 'fliplr', fliplr)
 setattr(tensor_operator_registry, 'flipud', flipud)
-setattr(tensor_operator_registry, 'float_power', float_power)
+setattr(tensor_operator_registry, 'float_power', float_power_ext)
 setattr(tensor_operator_registry, 'fmax', fmax)
 setattr(tensor_operator_registry, 'fmin', fmin)
 setattr(tensor_operator_registry, 'fmod', fmod)
@@ -204,6 +205,7 @@ setattr(tensor_operator_registry, 'bitwise_right_shift', bitwise_right_shift)
 setattr(tensor_operator_registry, 'ger', ger)
 setattr(tensor_operator_registry, 'reduce_max', P.ReduceMax)
 setattr(tensor_operator_registry, 'reduce_min', P.ReduceMin)
+setattr(tensor_operator_registry, 'random_', random_)
 setattr(tensor_operator_registry, 'random_categorical', random_categorical)
 setattr(tensor_operator_registry, 'mirror_pad', P.MirrorPad)
 setattr(tensor_operator_registry, 'minimum', minimum)
@@ -266,6 +268,7 @@ setattr(tensor_operator_registry, 'standard_normal', P.StandardNormal)
 setattr(tensor_operator_registry, 'sigmoid', sigmoid)
 setattr(tensor_operator_registry, 'median', Median)
 setattr(tensor_operator_registry, 'tanh', tanh)
+setattr(tensor_operator_registry, 'tanh_', tanh_)
 setattr(tensor_operator_registry, 'exp', exp)
 setattr(tensor_operator_registry, 'addbmm', addbmm)
 setattr(tensor_operator_registry, 'addmm', addmm)
@@ -281,6 +284,7 @@ setattr(tensor_operator_registry, 'bmm', bmm)
 setattr(tensor_operator_registry, 'conj', conj)
 setattr(tensor_operator_registry, 'cross', cross)
 setattr(tensor_operator_registry, 'erfinv', erfinv)
+setattr(tensor_operator_registry, 'erfinv_', erfinv_)
 setattr(tensor_operator_registry, 'less_equal', less_equal)
 setattr(tensor_operator_registry, 'lcm', lcm)
 setattr(tensor_operator_registry, 'ldexp', ldexp)
@@ -291,6 +295,7 @@ setattr(tensor_operator_registry, 'unfold', unfold)
 setattr(tensor_operator_registry, 'diagonal', diagonal)
 setattr(tensor_operator_registry, 'diagonal_scatter', diagonal_scatter)
 setattr(tensor_operator_registry, 'index_add', index_add)
+setattr(tensor_operator_registry, 'index_add_', auto_generate.inplace_index_add_op)
 setattr(tensor_operator_registry, 'greater', greater)
 setattr(tensor_operator_registry, 'greater_equal', greater_equal)
 setattr(tensor_operator_registry, 'igamma', igamma)
@@ -335,6 +340,7 @@ setattr(tensor_operator_registry, 'reducesum', P.ReduceSum)
 setattr(tensor_operator_registry, 'tensor_slice', tensor_slice)
 setattr(tensor_operator_registry, 'select', select)
 setattr(tensor_operator_registry, 'uniform', uniform_ext)
+setattr(tensor_operator_registry, 'uniform_', uniform_)
 setattr(tensor_operator_registry, 'gather', gather)
 setattr(tensor_operator_registry, 'gather_d', gather_d)
 setattr(tensor_operator_registry, 'gather_elements', gather_elements)
@@ -374,6 +380,7 @@ setattr(tensor_operator_registry, 'nanmedian', nanmedian)
 setattr(tensor_operator_registry, 'csr_to_coo', csr_to_coo)
 setattr(tensor_operator_registry, 'zeros', zeros)
 setattr(tensor_operator_registry, 'ones', ones)
+setattr(tensor_operator_registry, 'new_empty', new_empty)
 setattr(tensor_operator_registry, 'unsorted_segment_min', unsorted_segment_min)
 setattr(tensor_operator_registry, 'unsorted_segment_max', unsorted_segment_max)
 setattr(tensor_operator_registry, 'unsorted_segment_prod', unsorted_segment_prod)
@@ -385,6 +392,7 @@ setattr(tensor_operator_registry, 'tensor_scatter_min', tensor_scatter_min)
 setattr(tensor_operator_registry, 'tensor_scatter_max', tensor_scatter_max)
 setattr(tensor_operator_registry, 'tensor_scatter_sub', tensor_scatter_sub)
 setattr(tensor_operator_registry, 'tensor_scatter_add', tensor_scatter_add)
+setattr(tensor_operator_registry, 'inplace_scatter_add', auto_generate.inplace_scatter_add)
 setattr(tensor_operator_registry, 'slice_scatter', slice_scatter)
 setattr(tensor_operator_registry, 'select_scatter', select_scatter)
 setattr(tensor_operator_registry, 'bernoulli', bernoulli)
@@ -461,6 +469,7 @@ setattr(tensor_operator_registry, 'swapaxes', swapaxes)
 setattr(tensor_operator_registry, 'swapdims', swapdims)
 setattr(tensor_operator_registry, 'repeat_elements', repeat_elements)
 setattr(tensor_operator_registry, 'top_k', top_k)
+setattr(tensor_operator_registry, 'normal_', normal_)
 
 __all__ = [name for name in dir() if name[0] != "_"]
 __all__.remove('Primitive')

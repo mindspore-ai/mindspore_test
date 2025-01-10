@@ -167,6 +167,10 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   /// \return vector of int
   std::vector<int32_t> GetMPWorkerPIDs() const override;
 
+  // @Used by independent dataset mode to stop the subprocess
+  // @return Status The status code returned
+  Status Terminate() override;
+
  private:
   // Worker thread for doing the memcpy of batch
   // @param int32_t param workerId
@@ -220,6 +224,8 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   // @return Status The status code returned
   Status InvokeBatchMapFunc(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch);
 #endif
+
+  void UpdateCounterAndSendEOE(TensorRow *const row);
 
   int32_t start_batch_size_;
   const bool drop_;                                     // bool for whether to drop remainder or not

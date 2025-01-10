@@ -22,12 +22,12 @@
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeKernelInfoMatmul::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                   const acme::OutputsImmutableInfoList &outputs) {
-  acme::MatmulParam param;
+internal::InternalOpPtr AcmeKernelInfoMatmul::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                   const internal::OutputsImmutableInfoList &outputs) {
+  internal::MatmulParam param;
   param.transpose_a = transpose_a_;
   param.transpose_b = transpose_b_;
-  return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
+  return internal::CreateMatmulOp(inputs, outputs, param, internal::kInternalMatMulOpName);
 }
 
 void AcmeKernelInfoMatmul::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
@@ -40,6 +40,6 @@ void AcmeKernelInfoMatmul::Call(const std::shared_ptr<pyboost::OpRunner> &op, co
   auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, transpose_a_, transpose_b_);
   CallAcmeOp(op, inputs, op_key);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(MatMul, acme::kAcmeMatMulOpName, AcmeKernelInfoMatmul);
+MS_ACME_KERNEL_INFO_FACTORY_REG(MatMul, internal::kInternalMatMulOpName, AcmeKernelInfoMatmul);
 }  // namespace kernel
 }  // namespace mindspore

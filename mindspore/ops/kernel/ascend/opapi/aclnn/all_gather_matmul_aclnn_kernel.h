@@ -35,16 +35,15 @@ class AllGatherMatmulAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  std::pair<KernelTensor *, bool> input_a_;
-  std::pair<KernelTensor *, bool> input_b_;
-  bool trans_a_;
-  bool trans_b_;
-  void InitializeCommunicationAttributes();
+  void InitializeInputs(const std::vector<KernelTensor *> &inputs);
+  std::pair<KernelTensor *, bool> input_;
+  std::pair<KernelTensor *, bool> x2_;
   std::string group_;
   std::string hccl_inner_comm_name_;
   int64_t gather_index_;
   int64_t comm_turn_;
-  //  Integer on the host side, enumeration of acl flow mode, currently only supports 1
+  bool trans_input_;
+  bool trans_x2_;
   const int64_t stream_mode_ = 1;
 };
 }  // namespace kernel

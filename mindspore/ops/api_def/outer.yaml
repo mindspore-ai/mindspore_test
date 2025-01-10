@@ -1,0 +1,14 @@
+outer:
+  - op_yaml: outer_op.yaml
+    py_method: deprecated_tensor_outer
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/outer_method.yaml
+    py_method: deprecated_tensor_outer
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

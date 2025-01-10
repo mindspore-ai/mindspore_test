@@ -85,21 +85,22 @@ bool ShiftCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of outputs must be 1, but got " << outputs.size()
                       << " output(s).";
   }
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  const auto fill_value = reinterpret_cast<T *>(inputs[1]->device_ptr())[0];
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
+  const auto fill_value = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr())[0];
+  auto output = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
 
-  if (outputs[0]->size() != inputs[0]->size()) {
+  if (outputs[kIndex0]->size() != inputs[kIndex0]->size()) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_
                       << "', the memory size of output must be equal to the memory size "
                          "of the first input, but got the memory size of output: "
-                      << outputs[0]->size() << " and the memory size of the first input: " << inputs[0]->size();
+                      << outputs[kIndex0]->size()
+                      << " and the memory size of the first input: " << inputs[kIndex0]->size();
   }
 
   // if periods_ is 0, do nothing
   if (periods_ == 0) {
     // directly copy input to output
-    auto ret = memcpy_s(output, outputs[0]->size(), input, inputs[0]->size());
+    auto ret = memcpy_s(output, outputs[kIndex0]->size(), input, inputs[kIndex0]->size());
     if (ret != EOK) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy failed";
     }
@@ -124,7 +125,7 @@ bool ShiftCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
   if ((inner_size == 1) && (outer_size == 1)) {
     // treat it as a simple 1D array
     size_t copy_size = copy_size_ * sizeof(T);
-    size_t dst_max_size = outputs[0]->size() - copy_dst_begin_;
+    size_t dst_max_size = outputs[kIndex0]->size() - copy_dst_begin_;
     auto ret = memcpy_s(output + copy_dst_begin_, dst_max_size, input + copy_src_begin_, copy_size);
     if (ret != EOK) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy failed";

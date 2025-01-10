@@ -17,12 +17,12 @@
 #include "kernel/cpu/glu_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/infer/glu.h"
+#include <vector>
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 
 namespace mindspore::kernel {
 namespace {
-constexpr const size_t kGLUInputsNum = 1;
+constexpr const size_t kGLUInputsNum = 2;
 constexpr const size_t kGLUOutputsNum = 1;
 constexpr const int64_t kParallelDataNum = 16 * 1024;
 const int64_t kEvenNum = 2;
@@ -37,8 +37,8 @@ bool GLUCpuKernelMod::SplitWithDimZero(T *input_data_ptr, T *output_data_ptr) {
   int64_t copy_num = shape_value_ / value_shape_vec_[0];
   T *input_copy_ptr = input_data_ptr;
   if (value_shape_vec_[0] % kEvenNum != 0) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', x.shape[0] must be even, but got " << value_shape_vec_[0] << ".";
-    return false;
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', x.shape[0] must be even, but got " << value_shape_vec_[0]
+                      << ".";
   }
   int64_t size_split = value_shape_vec_[0] / kEvenNum;
   int64_t copy_size_per = size_split * copy_num;
@@ -66,9 +66,8 @@ bool GLUCpuKernelMod::SplitCompute(T *input_data_ptr, T *output_data_ptr) {
   }
   int64_t midfix = value_shape_vec_[split_dim_];
   if (midfix % kEvenNum != 0) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', x.shape[" << split_dim_ << "] must be even, but got " << midfix
-                  << ".";
-    return false;
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', x.shape[" << split_dim_ << "] must be even, but got " << midfix
+                      << ".";
   }
   int64_t size_split = midfix / kEvenNum;
   int64_t subfix = 1;
@@ -117,36 +116,51 @@ bool GLUCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &in
 
 const std::vector<std::pair<KernelAttr, GLUCpuKernelMod::KernelRunFunc>> &GLUCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, GLUCpuKernelMod::KernelRunFunc>> func_list = {
-    {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat16)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat16),
      &GLUCpuKernelMod::LaunchKernel<float16>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat32),
      &GLUCpuKernelMod::LaunchKernel<float>},
-    {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeFloat64),
      &GLUCpuKernelMod::LaunchKernel<double>},
   };
   return func_list;
 }
 
 bool GLUCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  split_dim_ = GetValue<int64_t>(primitive_->GetAttr(ops::kAxis));
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kGLUInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kGLUOutputsNum, kernel_name_);
+  return MatchKernelFunc(kernel_name_, inputs, outputs);
+}
+
+int GLUCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+  split_dim_ = inputs.at(kIndex1)->GetValueWithCheck<int64_t>();
   value_shape_vec_ = inputs.at(kIndex0)->GetShapeVector();
   int64_t dim_value = SizeToLong(value_shape_vec_.size());
+  shape_value_ = 1;
   for (auto &k : value_shape_vec_) {
     shape_value_ *= k;
   }
 
   if (split_dim_ < -dim_value || split_dim_ >= dim_value) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'axis' must be in range [" << -dim_value << ", " << dim_value
-                  << "), but got " << split_dim_ << ".";
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'axis' must be in range [" << -dim_value << ", "
+                      << dim_value << "), but got " << split_dim_ << ".";
   }
   if (split_dim_ < 0) {
     split_dim_ += dim_value;
   }
-  if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
-    return false;
-  }
-
-  return true;
+  return KRET_OK;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GLU, GLUCpuKernelMod);

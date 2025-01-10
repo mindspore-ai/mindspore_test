@@ -30,6 +30,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (inner_comm_all_reduce_op, 
 from mindspore._c_expression import CommHandle as CommHandle_
 from mindspore._c_expression.typing import Type
 from mindspore import jit_class
+from mindspore.common.api import _pynative_executor
 
 __all__ = [
     'all_reduce',
@@ -219,7 +220,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -230,7 +231,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async
         >>>
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = comm.comm_func.all_reduce(input_tensor)
+        >>> output, _ = comm.comm_func.all_reduce(input_tensor)
         >>> print(output)
         [[2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]]
@@ -284,7 +285,7 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=F
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -296,7 +297,7 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=F
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = comm.comm_func.all_gather_into_tensor(input_tensor)
+        >>> output, _ = comm.comm_func.all_gather_into_tensor(input_tensor)
         >>> print(output)
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]
@@ -355,7 +356,7 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -367,7 +368,7 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> comm.init()
         >>> input_tensor = ms.Tensor(np.ones([8, 8]).astype(np.float32))
-        >>> output = comm.comm_func.reduce_scatter_tensor(input_tensor)
+        >>> output, _ = comm.comm_func.reduce_scatter_tensor(input_tensor)
         >>> print(output)
         [[2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]
@@ -425,7 +426,7 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 4 devices.
@@ -562,7 +563,7 @@ def batch_isend_irecv(p2p_op_list):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -680,7 +681,7 @@ def scatter_tensor(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -745,7 +746,7 @@ def gather_into_tensor(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -806,7 +807,7 @@ def broadcast(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -859,7 +860,7 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -881,10 +882,15 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
     return _op()
 
 
-def _deal_comm_outputs(output, async_op):
+def _deal_comm_outputs(output, async_op, exec_sync=False):
+    """
+    deal with comm ops outputs.
+    """
     if isinstance(output, tuple):
         if not async_op:
             output[1].wait()
+            if exec_sync:
+                _pynative_executor.sync()
             return (output[0], None)
         return output
 
@@ -922,7 +928,7 @@ def send(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -980,7 +986,7 @@ def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1047,7 +1053,7 @@ def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1109,7 +1115,7 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1177,7 +1183,7 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1194,7 +1200,7 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
         >>> if this_rank == 1:
         >>>     send_tensor_list = [ms.Tensor([2, 2.]), ms.Tensor([4, 5, 6, 7.])]
         >>>     recv_tensor_list = [(2, 2), (4,)]
-        >>> output = comm.comm_func.all_to_all_with_output_shape(recv_tensor_list, send_tensor_list)
+        >>> output, _ = comm.comm_func.all_to_all_with_output_shape(recv_tensor_list, send_tensor_list)
         >>> print(output)
         rank 0:
         (Tensor(shape=[], dtype=Float32, value= 1),
@@ -1245,17 +1251,17 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
     return (tuple(result), handle)
 
 
-def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group):
+def _get_all_to_all_single_numel_list(tensor_shape, output_shape, output_split_sizes, input_split_sizes, group):
     """get numel list for all_to_all_single."""
     global _GROPU_SIZE_CACHE
     if _is_split_sizes_empty(input_split_sizes):
         if group not in _GROPU_SIZE_CACHE:
             _GROPU_SIZE_CACHE[group] = get_group_size(group)
         _world_size = _GROPU_SIZE_CACHE[group]
-        if tensor.shape[0] % _world_size != 0:
+        if tensor_shape[0] % _world_size != 0:
             raise ValueError("input shape at dim 0 must be divided by world_size, "
-                             f"but got {tensor.shape[0]} and {_world_size}.")
-        _split_size = tensor.shape[0] // _world_size
+                             f"but got {tensor_shape[0]} and {_world_size}.")
+        _split_size = tensor_shape[0] // _world_size
         input_split_sizes = (_split_size,) * _world_size
     if _is_split_sizes_empty(output_split_sizes):
         if group not in _GROPU_SIZE_CACHE:
@@ -1272,7 +1278,7 @@ def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, 
         _split_size = shape_dim_0 // _world_size
         output_split_sizes = (_split_size,) * _world_size
 
-    send_size_without_first_dim = _get_size(tensor.shape[1:])
+    send_size_without_first_dim = _get_size(tensor_shape[1:])
     send_numel_list = [size * send_size_without_first_dim for size in input_split_sizes]
 
     recv_size_without_first_dim = None
@@ -1285,6 +1291,9 @@ def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, 
         recv_size_without_first_dim = _get_size(recv_shape_without_first_dim)
     recv_numel_list = [size * recv_size_without_first_dim for size in output_split_sizes]
     return send_numel_list, recv_numel_list, recv_shape_without_first_dim
+
+
+_ALL_TO_ALL_CACHE = {}
 
 
 def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes=None,
@@ -1328,7 +1337,7 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1346,7 +1355,7 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         >>> if this_rank == 1:
         >>>     output_shape = (2, 3)
         >>>     tensor = ms.Tensor([[9, 10., 11], [12, 13, 14]])
-        >>>     result = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor)
+        >>>     result, _ = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor)
         >>> print(result)
         rank 0:
         [[ 0.  1.  2.]
@@ -1364,8 +1373,17 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         group = GlobalComm.WORLD_COMM_GROUP
 
     split_sizes_empty = _is_split_sizes_empty(output_split_sizes) and _is_split_sizes_empty(input_split_sizes)
-    send_numel_list, recv_numel_list, recv_shape_without_first_dim = \
-        _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group)
+    if isinstance(output_split_sizes, list):
+        output_split_sizes = tuple(output_split_sizes)
+    if isinstance(input_split_sizes, list):
+        input_split_sizes = tuple(input_split_sizes)
+    global _ALL_TO_ALL_CACHE
+    tensor_shape = output_shape
+    cache_key = (tensor_shape, output_shape, output_split_sizes, input_split_sizes, group)
+    if cache_key not in _ALL_TO_ALL_CACHE:
+        _ALL_TO_ALL_CACHE[cache_key] = _get_all_to_all_single_numel_list(*cache_key)
+    send_numel_list, recv_numel_list, recv_shape_without_first_dim = _ALL_TO_ALL_CACHE[cache_key]
+
     tensor = _contiguous(tensor)
     _input = tensor.reshape(-1)
     group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)

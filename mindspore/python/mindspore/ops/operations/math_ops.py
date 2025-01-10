@@ -31,7 +31,7 @@ from mindspore.ops.primitive import Primitive, PrimitiveWithInfer, PrimitiveWith
 from mindspore._c_expression import Tensor as Tensor_
 from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, ReduceAll, ReduceAny,
                              ReduceMax, ReduceMin, ReduceProd, Betainc, Neg, MatMul, BatchMatMul,
-                             Mul, Square, Rsqrt, Sqrt, Reciprocal, Pow, Exp,
+                             Mul, Square, Rsqrt, Sqrt, Reciprocal, Pow, Exp, Cdist,
                              Logit, ReduceStd, Expm1, Log, Log1p, Erf, Erfc,
                              Minimum, RealDiv, FloorDiv, Floor, FloorMod, Ceil,
                              Acosh, Cosh, Asinh, Sinc, Sinh, Equal, NotEqual,
@@ -41,7 +41,7 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
                              CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc, Sign, Polar,
-                             IsInf)
+                             IsInf, Lerp, LerpScalar)
 
 
 def _infer_shape_reduce(x, axis, keep_dims, prim_name):
@@ -500,50 +500,6 @@ class Lcm(Primitive):
         self.init_prim_io_names(inputs=['x1', 'x2'], outputs=['y'])
 
 
-class Cdist(Primitive):
-    """
-    Computes batched the p-norm distance between each pair of the two collections of row vectors.
-
-    Refer to :func:`mindspore.ops.cdist` for more details.
-
-    Args:
-        p (float, optional): P value for the p-norm distance to calculate between each vector pair, P ∈ [0,∞].
-            Default: ``2.0`` .
-
-    Inputs:
-        - **input_x** (Tensor) - Input tensor of shape :math:`(B, P, M)`.
-          When :math:`B` is equal to 0, it means this dimension can be ignored,
-          i.e. shape of the tensor is :math:`(P, M)`.
-        - **input_y** (Tensor) - Input tensor of shape :math:`(B, R, M)` with the same dtype as `input_x`.
-
-    Outputs:
-        Tensor, has the same dtype as `input_x`, which shape is :math:`(B, P, R)`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
-        >>> input_y = Tensor(np.array([[[3.0, 3.0], [3.0, 3.0]]]).astype(np.float32))
-        >>> op = ops.Cdist(p=2.0)
-        >>> output = op(input_x, input_y)
-        >>> print(output)
-        [[[2.8284273 2.8284273]
-          [1.4142137 1.4142137]]]
-    """
-
-    @prim_attr_register
-    def __init__(self, p=2.0):
-        """Initialize Cdist"""
-        validator.check_value_type("p", p, [float], self.name)
-        if (p < 0 or np.isnan(p)):
-            raise ValueError('Cdist p must be a non-negative value, but got `{p}`.')
-        self.init_prim_io_names(inputs=['input_x', 'input_y'], outputs=['output'])
-
-
 class LpNorm(Primitive):
     r"""
     Return the p-norm of a matrix or vector.
@@ -823,8 +779,8 @@ class InplaceIndexAdd(Primitive):
         axis (int): The dimension along which to index. It should be in range :math:`[0, len(var.dim))`.
 
     Inputs:
-        - **var** (Parameter) - The input Parameter to add to, with data type uint8, int8, int16, int32,
-          float16, float32, float64.
+        - **var** (Union[Parameter, Tensor]) - The input Parameter or Tensor to add to, with data type uint8, int8,
+          int16, int32, float16, float32, float64.
         - **indices** (Tensor) - The indies along `axis` to perform the addition. A 1D Tensor
           of shape :math:`(updates.shape[axis],)`, every value of it
           should be in range :math:`[0, var.shape[axis])` with data type int32.
@@ -1854,41 +1810,6 @@ class EqualCount(PrimitiveWithInfer):
     def __init__(self):
         """Initialize EqualCount"""
         self.init_prim_io_names(inputs=['x', 'y'], outputs=['output'])
-
-
-class Lerp(Primitive):
-    """
-    Does a linear interpolation of two tensors start and end based on a float or tensor weight.
-
-    Refer to :func:`mindspore.ops.lerp` for more details.
-
-    Inputs:
-        - **start** (Tensor) - The tensor with the starting points. Data type must be float16, float32 or float64.
-        - **end** (Tensor) - The tensor with the ending points. Data type must be the same as `start`.
-        - **weight** (Union[float, Tensor]) - The weight for the interpolation formula. Must be a float
-          or a scalar tensor with float16 or float32 data type.
-
-    Outputs:
-        Tensor, has the same type and shape as input `start`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> start = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-        >>> end = Tensor(np.array([10., 10., 10., 10.]), mindspore.float32)
-        >>> lerp = ops.Lerp()
-        >>> output = lerp(start, end, 0.5)
-        >>> print(output)
-        [5.5 6. 6.5 7. ]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        self.init_prim_io_names(inputs=['start', 'end', 'weight'], outputs=['output'])
 
 
 class IsNan(Primitive):
@@ -3339,7 +3260,7 @@ class IndexAdd(Primitive):
             don't check index boundary. Default: ``True`` .
 
     Inputs:
-        - **x** (Parameter) - The input Parameter to add to.
+        - **x** (Union[Parameter, Tensor]) - The input Parameter or Tensor to add to.
         - **indices** (Tensor) - Add the value of `x` and `y` along the dimension of the `axis` according to the
           specified index value, with data type int32.
           The `indices` must be 1D with the same size as the size of `y` in the `axis` dimension. The values
@@ -3351,7 +3272,6 @@ class IndexAdd(Primitive):
         Tensor, has the same shape and dtype as `x`.
 
     Raises:
-        TypeError: If `x` is not a Parameter.
         TypeError: If neither `indices` nor `y` is a Tensor.
         ValueError: If axis is out of `x` rank's range.
         ValueError: If `x` rank is not the same as `y` rank.

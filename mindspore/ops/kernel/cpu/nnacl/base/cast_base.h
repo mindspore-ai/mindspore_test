@@ -49,6 +49,8 @@ void Fp16ToFloat32(const uint16_t *input, float *output, int number);
 void Float32ToFp16(const float *input, uint16_t *output, int number);
 #endif
 
+uint16_t Float32ToFloat16_(float f);
+
 void Float32ToInt32(const float *input, int32_t *output, int number);
 
 void Float32ToInt64(const float *input, int64_t *output, int number);

@@ -54,10 +54,10 @@ class BatchToSpaceNDCpuKernelMod : public NativeCpuKernelMod, public MatchKernel
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 
-  std::vector<std::vector<int64_t>> crops_;
-  std::vector<int64_t> block_shape_;
-  std::vector<int64_t> input_shape_;
-  std::vector<int64_t> output_shape_;
+  std::vector<std::vector<int64_t>> crops_{};
+  std::vector<int64_t> block_shape_{};
+  std::vector<int64_t> input_shape_{};
+  std::vector<int64_t> output_shape_{};
   size_t block_rank_{0};
   size_t off_set_{0};
   int64_t input_size_{0};

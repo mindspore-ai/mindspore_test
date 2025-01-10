@@ -75,11 +75,13 @@
 #include "frontend/parallel/pass/overlap_grad_ring_attention.h"
 #include "frontend/parallel/pass/overlap_grad_flash_sp.h"
 #include "frontend/parallel/pass/interleave_split_concat_branches.h"
+#include "frontend/parallel/pass/interleave_parallel_branches.h"
 #include "frontend/parallel/pass/begin_end_overlap_inline.h"
 #include "frontend/parallel/pass/split_matmul_comm_elementwise_fp.h"
 #include "frontend/parallel/pass/split_layernorm_comm_fp.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_transformer.h"
 #include "frontend/parallel/pass/overlap_grad_comm.h"
+#include "frontend/parallel/pass/overlap_param_gather.h"
 #include "frontend/optimizer/recompute.h"
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/slice_activation_in_recompute.h"
@@ -312,6 +314,20 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   return graph_opt->step(func_graph, false);
 }
 
+FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource) {
+  opt::irpass::OptimizeIRPassLib irpass;
+  opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
+    irpass.pynative_gradjit_primitivepy_eliminate_,
+  });
+  OptPassGroupMap map({
+    {"grad_graph_opt", grad_graph_opt},
+  });
+  MS_EXCEPTION_IF_NULL(resource);
+  auto func_graph = resource->func_graph();
+  auto graph_opt = opt::Optimizer::MakeOptimizer("high_grad_bprop_graph_opt", resource, map);
+  return graph_opt->step(func_graph, false);
+}
+
 FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_flow) {
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
@@ -361,6 +377,10 @@ bool parallel_mode() {
 }
 
 void AddParallelRenormalize(OptPassGroupMap *map_a) {
+  auto update_top_fg = [](const FuncGraphPtr &root, const opt::OptimizerPtr &) {
+    parse::Parser::UpdateTopFuncGraph(root);
+    return false;
+  };
   if (parallel_mode()) {
     auto parallel_end_opt =
       find_if(map_a->begin(), map_a->end(), [](auto opt_pair) { return opt_pair.first == "meta_fg_expand"; });
@@ -368,6 +388,7 @@ void AddParallelRenormalize(OptPassGroupMap *map_a) {
       opt::irpass::OptimizeIRPassLib irpass;
       opt::OptPassConfig cast_eliminate_pass = opt::OptPassConfig({irpass.cast_eliminate_});
       auto iter = map_a->insert(parallel_end_opt, {"cast_eliminate", cast_eliminate_pass});
+      iter = map_a->insert(iter, {"update_top_fg", opt::OptPassConfig(update_top_fg)});
       (void)map_a->insert(iter, {"parallel_renormalize", opt::OptPassConfig::Renormalize(true)});
     }
   }
@@ -557,6 +578,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
      {"after_resolve", after_resolve_pass},
      {"a_after_grad", a_after_grad},
+     {"special_op_eliminate", opt::OptPassConfig({irpass.special_op_eliminate_})},
      {"renormalize", opt::OptPassConfig::Renormalize()},
      {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
      {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
@@ -870,9 +892,21 @@ bool InterleaveSplitConcatBranches(const ResourcePtr &resource) {
   return true;
 }
 
+bool InterleaveParallelBranches(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  parallel::InterleaveParallelBranches(resource->func_graph());
+  return true;
+}
+
 bool OptimizeParallelAllGatherCommPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   parallel::OptimizeParallelAllGatherComm(resource->func_graph());
+  return true;
+}
+
+bool OptimizeParamGatherPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  parallel::OverlapParamGather(resource->func_graph());
   return true;
 }
 
@@ -1365,6 +1399,7 @@ std::vector<PassItem> kVmPasses = {
   {"order_py_execute_after_rewriter", OrderPyExecuteAfterRewriterPass},
   {"opt_b", OptPassBGroup},
   {"optimize_parallel_all_gather_comm", OptimizeParallelAllGatherCommPass},
+  {"overlap_param_gather", OptimizeParamGatherPass},
   {"cconv", CconvPass},
   {"loop_unroll", LoopUnrollPass},
   {"opt_after_cconv", OptPassAfterCconvGroup},
@@ -1390,6 +1425,7 @@ std::vector<PassItem> kVmPasses = {
   {"comm_op_add_attrs", CommOpAddAttrs},
   {"add_comm_op_reuse_tag", AddCommOpReusePass},
   {"interleave_split_concat_branches", InterleaveSplitConcatBranches},
+  {"interleave_parallel_branches", InterleaveParallelBranches},
   {"overlap_opt_shard_in_pipeline", OverlapOptShardInPipelinePass},
   {"overlap_opt_shard_grad_in_pipeline", OverlapOptShardGradInPipelinePass},
   {"control_data_broadcast_order", ControlDataBroadcastOrderPass},
@@ -1401,7 +1437,6 @@ std::vector<PassItem> kVmPasses = {
   {"overlap_grad_ring_attention", OverlapGradRingAttentionPass},
   {"overlap_grad_flash_sp", OverlapGradFlashSP},
   {"begin_end_overlap_inline", BeginEndOverlapInlinePass},
-  {"overlap_grad_comm", OverlapGradCommPass},
   {"split_matmul_comm_elemetwise", SplitMatmulCommElementwiseOpFpPass},
   {"split_layernorm_comm", SplitLayerNormCommFpPass},
   // The pass cache hccl group, so the hccl group should be created before the pass

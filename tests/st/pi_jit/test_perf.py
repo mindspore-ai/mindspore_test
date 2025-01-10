@@ -83,7 +83,7 @@ def perf_bytecode_complex(a, b):
     return a
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize('func_param', [(perf_statistic_simple, True), (perf_statistic_complex, True),
                                         (perf_bytecode_simple, True), (perf_bytecode_complex, True)])

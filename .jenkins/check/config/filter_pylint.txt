@@ -6,13 +6,14 @@
 "mindspore/model_zoo/"                                                                                  "import-self"
 "mindspore/tests/"                                                                                      "missing-docstring"
 "mindspore/tests/"                                                                                      "import-self"
-"mindspore/tests/st/ops"                                                                                "unexpected-keyword-arg" 
+"mindspore/tests/st/ops"                                                                                "unexpected-keyword-arg"
 "mindspore/"                                                                                            "consider-using-in"
 
 # Mindspore
 "mindspore/mindspore/python/mindspore/_check_deps_version.py"                                                            "broad-except"
 "mindspore/mindspore/python/mindspore/_check_version.py"                                                                 "unused-import"
 "mindspore/mindspore/python/mindspore/_check_version.py"                                                                 "broad-except"
+"mindspore/mindspore/python/mindspore/run_check/_check_version.py"                                                       "protected-access"
 "mindspore/mindspore/python/mindspore/common/api.py"                                                                     "protected-access"
 "mindspore/mindspore/python/mindspore/common/api.py"                                                                     "not-callable"
 "mindspore/mindspore/python/mindspore/common/parameter.py"                                                               "protected-access"
@@ -54,6 +55,7 @@
 "mindspore/mindspore/python/mindspore/ops/primitive.py"                                                                  "assignment-from-none"
 "mindspore/mindspore/python/mindspore/ops/primitive.py"                                                                  "protected-access"
 "mindspore/mindspore/python/mindspore/ops/_tracefunc.py"                                                                 "protected-access"
+"mindspore/mindspore/python/mindspore/utils/dryrun.py"                                                                   "protected-access"
 "mindspore/mindspore/python/mindspore/ops/_tracefunc.py"                                                                 "function-redefined"
 "mindspore/mindspore/python/mindspore/nn/cell.py"                                                                        "assignment-from-none"
 "mindspore/mindspore/python/mindspore/nn/cell.py"                                                                        "assignment-from-no-return"
@@ -69,6 +71,7 @@
 "mindspore/mindspore/python/mindspore/train/amp.py"                                                                      "protected-access"
 "mindspore/mindspore/python/mindspore/train/serialization.py"                                                            "protected-access"
 "mindspore/mindspore/python/mindspore/train/model.py"                                                                    "protected-access"
+"mindspore/mindspore/python/mindspore/train/callback/_flops_collector.py"                                                "broad-except"
 "mindspore/mindspore/python/mindspore/log.py"                                                                            "protected-access"
 "mindspore/mindspore/python/mindspore/rewrite/api/node.py"                                                               "protected-access"
 "mindspore/mindspore/python/mindspore/rewrite/node.py"                                                                   "protected-access"
@@ -126,6 +129,7 @@
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "singleton-comparison"
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "inconsistent-return-statements"
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "superfluous-parens"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/conv.py"
 
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "missing-docstring"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "len-as-condition"
@@ -236,6 +240,7 @@
 "mindspore/tests/st/networks/test_gpu_lstm.py"                                                          "redefined-outer-name"
 "mindspore/tests/st/networks/test_gpu_lstm.py"                                                          "superfluous-parens"
 "mindspore/tests/st/networks/test_gpu_alexnet.py"                                                       "unused-variable"
+"mindspore/tests/st/common/multi_process_actuator.py"                                                   "broad-except"
 "mindspore/tests/st/networks/test_lenet.py"                                                         "unused-variable"
 "mindspore/tests/st/ops/custom_ops_tbe/cus_add3.py"                                                     "unused-import"
 "mindspore/tests/st/ops/ascend/test_aicpu_ops/test_strided_slice.py"                                    "redefined-outer-name"
@@ -261,6 +266,7 @@
 "mindspore/tests/st/ops/dynamic_shape/"                                                                 "too-many-locals"
 "mindspore/tests/st/ops/test_ops_concat.py"                                                             "not-callable"
 "mindspore/tests/st/ops/test_ops_matmul_ext.py"                                                         "not-callable"
+"mindspore/tests/st/ops/test_mint_avg_pool1d.py"                                                        "not-callable"
 "mindspore/tests/ut/python/graph_syntax/test_invalid_attribute.py"                                      "misplaced-bare-raise"
 "mindspore/tests/st/dump/dump_test_utils.py"                                                            "too-many-nested-blocks"
 "mindspore/tests/ut/python/parallel/test_dynamic_shape_graph_utils.py"                                  "too-many-function-args"
@@ -275,7 +281,8 @@
 "mindspore/tests/st/ops/test_ops_sinh.py"
 "mindspore/tests/st/mint/test_syncbatchnorm_msrun.py"                                                   "line-too-long"
 "mindspore/tests/st/mint/test_inner_syncbatchnorm_msrun.py"                                             "line-too-long"
-"mindspore/tests/st/ops/ascend/test_batch_norm_gather_stats_with_counts.py"                             "too-many-function-args"
+"mindspore/tests/st/ops/ascend/test_batch_norm_gather_stats_with_counts.py"
+"mindspore/tests/st/nn/test_mint_conv3d_ext.py"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"
@@ -308,3 +315,5 @@
 "mindspore/mindspore/python/mindspore/profiler/dynamic_profiler.py"                                 "protected-access"
 "mindspore/mindspore/python/mindspore/profiler/dynamic_profiler.py"                                 "useless-super-delegation"
 "mindspore/mindspore/python/mindspore/profiler/dynamic_profiler.py"                                 "ungrouped-imports"
+
+"mindspore/mindspore/python/mindspore/parallel/cluster/process_entity/_api.py"                                "subprocess-popen-preexec-fn"

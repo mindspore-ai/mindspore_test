@@ -19,11 +19,22 @@ import numpy as np
 import pytest
 
 from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.utils import test_utils
 
 
 class TrilNet(nn.Cell):
     def construct(self, x, diagonal=0):
         return x.tril(diagonal)
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
+
+
+@test_utils.run_with_cell
+def tril_forward_func(x, diagonal=0):
+    return x.tril(diagonal)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -62,3 +73,29 @@ def test_method_tril(mode):
                               [10, 11, 0, 0],
                               [14, 15, 16, 0]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
+    x = ms.Tensor([[-1.8297, -0.8474, 1.0292], [-1.2167, 0.5574, -0.6753], [-0.6702, 0.2276, 1.2421]])
+    output = net(x)
+    expect_output = np.array([[-1.8297, 0., 0.], [-1.2167, 0.5574, 0.], [-0.6702, 0.2276, 1.2421]], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expect_output)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_tril_dynamic():
+    """
+    Feature: Test tril op.
+    Description: Test tril dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
+    diagonal1 = 1
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    diagonal2 = 2
+    TEST_OP(tril_forward_func,
+            [[ms_data1, diagonal1], [ms_data2, diagonal2]], 'tril',
+            disable_yaml_check=True, disable_nontensor_dynamic_type='STATIC_LEN', disable_resize=True)
+    TEST_OP(tril_forward_func,
+            [[ms_data1, diagonal1], [ms_data2, diagonal2]], 'tril_ext',
+            disable_nontensor_dynamic_type='STATIC_LEN', disable_resize=True)

@@ -93,7 +93,7 @@ def test_lerp_model_parallel_with_weight_float():
     Expectation: compile success
     """
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
-    strategy = ((2, 2, 2), (2,))
+    strategy = ((2, 2, 2), (2,), ())
     net = NetWithWeightFloat(input_weight_float_, strategy)
     compile_net(net, input_start_, input_end_)
 
@@ -119,11 +119,12 @@ def test_lerp_model_parallel_repeated_cal_with_weight_float():
     Expectation: compile success
     """
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
-    strategy = ((1, 2, 2), (2,))
+    strategy = ((1, 2, 2), (2,), ())
     net = GradWrap(NetWithWeightFloat(input_weight_float_, strategy))
     phase = compile_net(net, input_start_, input_end_)
     validator = ParallelValidator(net, phase)
-    assert validator.check_node_inputs("Lerp-0", ["_VirtualDiv-0", "_VirtualDiv-1", input_weight_float_])
+    assert validator.check_node_inputs("Lerp-0", ["_VirtualDiv-0", "_VirtualDiv-1",
+                                                  "Tensor(shape=[], dtype=Float32, value=0.5)"])
 
 
 def test_lerp_data_parallel_with_weight_tensor():
@@ -168,7 +169,7 @@ def test_lerp_strategy_error_with_weight_float():
     Expectation: raise RuntimeError
     """
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
-    strategy = ((4, 1, 2), (1,))
+    strategy = ((4, 1, 2), (1,), ())
     net = NetWithWeightFloat(input_weight_float_, strategy)
     with pytest.raises(RuntimeError):
         compile_net(net, input_start_, input_end_)

@@ -547,10 +547,14 @@ constexpr const char kNameCoalesce[] = "Coalesce";
 constexpr const char kNameFFTWithSize[] = "FFTWithSize";
 constexpr const char kNameCumulativeLogsumexp[] = "CumulativeLogsumexp";
 constexpr const char kNameMatmulReduceScatter[] = "MatmulReduceScatter";
+constexpr const char kNameIndex[] = "Index";
 constexpr const char kNameAllGatherMatmul[] = "AllGatherMatmul";
 constexpr const char kNameGroupedMatmul[] = "GroupedMatmul";
+constexpr const char kNameMoeInitRouting[] = "MoeInitRouting";
 constexpr const char kNameMoeFinalizeRouting[] = "MoeFinalizeRouting";
+constexpr const char kNameMoeComputeExpertTokens[] = "MoeComputeExpertTokens";
 constexpr const char kNameUniformCandidateSampler[] = "UniformCandidateSampler";
+constexpr const char kNameMoeGatingTopKSoftmax[] = "MoeGatingTopKSoftmax";
 constexpr const char kNameAllFinite[] = "AllFinite";
 constexpr const char kNameInitPartitionMap[] = "InitPartitionMap";
 constexpr const char kNameInitEmbeddingHashmap[] = "InitEmbeddingHashmap";
@@ -561,6 +565,9 @@ constexpr const char kNameEmbeddingComputeVarExport[] = "EmbeddingComputeVarExpo
 constexpr const char kNameEmbeddingComputeVarImport[] = "EmbeddingComputeVarImport";
 constexpr const char kNameEmbeddingTableExport[] = "EmbeddingTableExport";
 constexpr const char kNameFakeRemoteLookupUniqued[] = "FakeRemoteLookupUniqued";
+constexpr const char kNameNonMaxSuppression[] = "NonMaxSuppression";
+constexpr const char kNameAlltoAllAllGatherBatchMatMul[] = "AlltoAllAllGatherBatchMatMul";
+constexpr const char kNameBatchMatMulReduceScatterAlltoAll[] = "BatchMatMulReduceScatterAlltoAll";
 
 class OpAdapterDesc;
 

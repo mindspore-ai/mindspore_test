@@ -17,7 +17,7 @@
 #include <memory>
 #include <set>
 #include <vector>
-
+#include <string>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
@@ -112,6 +112,11 @@ const AnfNodePtr ConvertConstInputToTensorInput::Process(const FuncGraphPtr &fun
   }
 
   return ConstInputToTensorInput(func_graph, node->cast<CNodePtr>());
+}
+
+std::vector<std::string> ConvertConstInputToTensorInputForPrint::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimPrint->name()};
+  return ret;
 }
 
 const AnfNodePtr ConvertConstInputToTensorInputForPrint::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,

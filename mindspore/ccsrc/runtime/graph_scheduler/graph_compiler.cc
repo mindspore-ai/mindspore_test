@@ -58,6 +58,7 @@
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -152,7 +153,7 @@ bool IsSwitchInlineNopNode(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     return std::find_if(cnode->inputs().begin(), cnode->inputs().end(), [](const auto &input) {
              return common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimConditionGather) ||
                     common::AnfAlgo::CheckPrimitiveType(common::AnfAlgo::VisitKernelWithReturnType(input, 0).first,
@@ -522,6 +523,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
 
   auto new_graph_inputs = new_kernel_graph->MutableInputs();
   MS_EXCEPTION_IF_NULL(new_graph_inputs);
+  std::vector<AnfNodePtr> new_parameters;
   // the weight index that will update through rungraph
   std::vector<uint32_t> need_update_inputs_index;
   size_t index = 0;
@@ -557,6 +559,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
       MS_LOG(EXCEPTION) << "node not in map, node: " << input->DebugString() << ", ptr:" << input;
     }
     call_inline_inputs.emplace_back(new_node);
+    new_parameters.push_back(new_node);
     new_graph_inputs->push_back(new_node);
     MS_LOG(DEBUG) << "Create new node: " << new_node->DebugString() << " for old node: " << input->DebugString();
     // for need_update_inputs_index, for parameter copy in heterogeneous
@@ -609,6 +612,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
                                call_inline);
 
   kernel_graph->set_flag(kFlagGeKernel, true);
+  new_kernel_graph->set_parameters(new_parameters);
   new_kernel_graph->SetInputNodes();
   new_kernel_graph->set_output(call_inline);
   new_kernel_graph->SetExecOrderByDefault();
@@ -715,11 +719,12 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
     kernel_executor->AddMindIRPass(kernel_graph);
   }
   kernel_graph->SetInputNodes();
+  kernel_graph->SetExecOrderByDefault();
   auto context_ptr = MsContext::GetInstance();
   session_->SetInputNodeUsage(kernel_graph, manager);
   MS_EXCEPTION_IF_NULL(context_ptr);
   if (context_ptr->backend_policy() == "ge" && device_context->GetDeviceType() == device::DeviceType::kAscend &&
-      !IsEnableRefMode()) {
+      kernel_graph->is_graph_run_mode() && !IsEnableRefMode()) {
     MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
     device_context->GetKernelExecutor(false)->OptimizeGraph(kernel_graph);
     if (!device_context->graph_executor_->CompileGraph(kernel_graph, {})) {
@@ -840,6 +845,7 @@ KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGrap
     kernel_executor->AddMindIRPass(root_graph);
   }
 
+  root_graph->SetExecOrderByDefault();
   // todo: waiting for GraphExecutor
   MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
   if (MsContext::GetInstance()->backend_policy() == "ge") {
@@ -881,6 +887,27 @@ KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGrap
   return root_graph;
 }
 
+void BuildStreamForCompileCache(const KernelGraphPtr &kernel_graph, const DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  uint32_t max_stream_id = 0;
+  for (const auto &node : kernel_graph->execution_order()) {
+    MS_EXCEPTION_IF_NULL(node);
+    const auto &device_kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+    if (device_kernel_info == nullptr) {
+      MS_LOG(INFO) << "The node " << node->DebugString() << " has no device_kernel_info.";
+      continue;
+    }
+    uint32_t stream_id = device_kernel_info->stream_id();
+    max_stream_id = std::max(stream_id, max_stream_id);
+  }
+  size_t stream_id = 0;
+  while (max_stream_id >= device_context->device_res_manager_->QueryStreamSize()) {
+    device_context->device_res_manager_->CreateStream(&stream_id);
+    MS_LOG(INFO) << "Success to create stream id:" << stream_id << ".";
+  }
+}
+
 void GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) { session_->CacheKernelGraph(graphs); }
 
 bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
@@ -897,6 +924,7 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
   const auto &context = MsContext::GetInstance();
   auto post_compile = [this, device_context, context](const KernelGraphPtr &graph) {
     use_cache_to_compile_graph_ = true;
+    BuildStreamForCompileCache(graph, device_context);
     // Create event before create kernelmod
     device_context->GetKernelExecutor(false)->CreateEventForCache(graph);
     PROF_START(CreateKernel);
@@ -1031,6 +1059,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
     // 'KernelMod' is real executive object of kernel.
     start_time = profiler::GetClockSyscnt();
     PROF_START(CreateKernel);
+    graph->SetExecOrderByDefault();
     device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
     PROF_END(CreateKernel);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,
@@ -1053,14 +1082,12 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
     AnfAlgo::AddOutInRefToGraph(graph);
 
     // Optimize the nop node.
-    if (!run_in_pynative) {
-      OptimizeNopNode(graph.get());
+    OptimizeNopNode(graph.get());
 #ifdef ENABLE_DUMP_IR
-      if (context->CanDump(kIntroductory)) {
-        DumpIR("hwopt_comm_after_eliminate_nopnode_" + graph->ToString() + ".ir", graph, true);
-      }
-#endif
+    if (context->CanDump(kIntroductory)) {
+      DumpIR("hwopt_comm_after_eliminate_nopnode_" + graph->ToString() + ".ir", graph, true);
     }
+#endif
 
     session_->RecurseSetSummaryNodesForAllGraphs(graph.get());
     // Update needed dump kernels for mindRT.

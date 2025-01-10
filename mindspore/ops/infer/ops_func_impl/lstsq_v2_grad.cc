@@ -15,7 +15,7 @@
  */
 #include "infer/ops_func_impl/lstsq_v2_grad.h"
 #include <memory>
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {

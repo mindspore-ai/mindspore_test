@@ -39,7 +39,7 @@ def test_tensor_dtype_fp32_to_bool():
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_tensor_dtype_int8_to_bool():

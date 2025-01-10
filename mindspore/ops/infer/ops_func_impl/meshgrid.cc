@@ -19,7 +19,7 @@
 #include <memory>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+
 #include "utils/check_convert_utils.h"
 #include "op_def/op_enum.h"
 

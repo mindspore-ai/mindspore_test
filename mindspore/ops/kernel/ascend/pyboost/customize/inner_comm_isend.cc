@@ -22,6 +22,7 @@
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "kernel/ascend/pyboost/customize/comm_common.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,7 +32,7 @@ void InnerCommIsendAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ba
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
 
   op->set_outputs({input_tensor});
-  op->CreateOutputSimpleInfoForView();
+  op->CreateOutputSimpleInfo();
 
   auto run_func = [op, input_tensor, dst, group]() {
     auto device_context = op->device_context();
@@ -41,14 +42,16 @@ void InnerCommIsendAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ba
 
     auto dst_imm = GetValue<int64_t>(dst);
 
-    auto [hccl_count, hccl_data_type] = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor);
+    auto hccl_count = HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor).first;
     auto input_data_ptr = GetDevicePtrFromTensor(op->primitive()->name(), input_tensor);
-    auto launch_func = [input_data_ptr, hccl_count, hccl_data_type, dst_imm](const HcclComm &hccl_comm,
-                                                                             void *comm_stream_ptr) {
-      auto hccl_result = hccl::HcclAdapter::GetInstance().HcclSend(input_data_ptr, hccl_count, hccl_data_type, dst_imm,
-                                                                   comm_stream_ptr, hccl_comm);
-      if (hccl_result != HCCL_SUCCESS) {
-        MS_LOG(EXCEPTION) << "HcomRecv failed, ret:" << hccl_result;
+    auto input_dtype = input_tensor->data_type();
+    std::string group_name = GetValue<std::string>(group);
+    auto launch_func = [input_data_ptr, hccl_count, input_dtype, dst_imm, group_name](const HcclComm &,
+                                                                                      void *comm_stream_ptr) {
+      auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+      auto comm_result = comm_lib->Send(input_data_ptr, hccl_count, input_dtype, dst_imm, group_name, comm_stream_ptr);
+      if (!comm_result) {
+        MS_LOG(EXCEPTION) << "InnerCommIsend failed, ret:" << comm_result;
       }
     };
 

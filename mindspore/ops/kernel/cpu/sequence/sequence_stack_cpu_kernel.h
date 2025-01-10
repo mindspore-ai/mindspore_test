@@ -52,7 +52,7 @@ class SequenceStackFwdCpuKernelMod : public NativeCpuKernelMod, public MatchKern
   template <typename T>
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
-  std::vector<int64_t> tuple_shape_;
+  std::vector<int64_t> tuple_shape_{};
   int axis_{0};
   size_t input_num_{1};
   size_t output_size_{0};

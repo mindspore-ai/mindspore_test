@@ -32,16 +32,18 @@ SET MSYS64_PATH=%file_path:~0,-12%
 SET FFMPEG_DLL_SOURCE_PATH=%MSYS64_PATH%\home\ffmpeg\install_ffmpeg_lib\bin
 SET FFMPEG_COMPILE_SOURCE_PATH=%MSYS64_PATH%\home\ffmpeg\install_ffmpeg_lib
 SET FFMPEG_DLL_PATH=%BASE_PATH%\build\mindspore\ffmpeg_lib
-SET FFMPEG_ERROR_LOG=%MSYS64_PATH%\home\ffmpeg\ffbuild\config.log
+SET MINDSPORE_FFMPEG_PATCH_PATH=%BASE_PATH%\third_party\patch\ffmpeg
+SET MSYS_FFMPEG_PATCH_PATH=%MSYS64_PATH%\home\patch
+SET FFMPEG_ERROR_LOG=%MSYS64_PATH%\home\ffmpeg\build\ffbuild\config.log
 
 
 SET SOFTWARE_NAME=FFmpeg
-SET SOFTWARE_VERSION=5.1.2
+SET SOFTWARE_VERSION=5.1.4
 SET FFMPEG_GITHUB_DOWNLOAD_PATH=https://ffmpeg.org/releases/ffmpeg-%SOFTWARE_VERSION%.tar.gz
 SET FFMPEG_MINDSPORE_DOWNLOAD_PATH=https://tools.mindspore.cn/libs/ffmpeg/ffmpeg-%SOFTWARE_VERSION%.tar.gz
 SET FFMPEG_DOWNLOAD_PATH=%FFMPEG_MINDSPORE_DOWNLOAD_PATH%
 SET FFMPEG_COMPILATION_OPTIONS=--disable-programs --disable-doc --disable-postproc --disable-libxcb --disable-hwaccels --disable-static --enable-shared --disable-decoder=av1 --toolchain=msvc
-SET FFMPEG_SHA256_CONTEXT=%SOFTWARE_NAME%-%SOFTWARE_VERSION%-%FFMPEG_GITHUB_DOWNLOAD_PATH%-%FFMPEG_MINDSPORE_DOWNLOAD_PATH%-%FFMPEG_COMPILATION_OPTIONS%
+SET FFMPEG_INFO_CONTEXT=%SOFTWARE_NAME%-%SOFTWARE_VERSION%-%FFMPEG_GITHUB_DOWNLOAD_PATH%-%FFMPEG_MINDSPORE_DOWNLOAD_PATH%-%FFMPEG_COMPILATION_OPTIONS%
 SET FFMPEG_LIB_NAME=avcodec-avdevice-avfilter-avformat-avutil-swresample-swscale
 
 
@@ -51,28 +53,55 @@ IF "%ENABLE_FFMPEG_DOWNLOAD%"=="ON" (
     SET FFMPEG_DOWNLOAD_PATH=%FFMPEG_GITHUB_DOWNLOAD_PATH%
 )
 
+rem move Mindspore patch to msys directory.
+if exist %MSYS_FFMPEG_PATCH_PATH% (
+    rd /s /q %MSYS_FFMPEG_PATCH_PATH%
+)
+xcopy %MINDSPORE_FFMPEG_PATCH_PATH%\*.* %MSYS_FFMPEG_PATCH_PATH% /E /I /Y
 
 pushd %MSYS64_PATH%
 
-rem calculate the hash value of the ffmpeg cache
-SET HASH_TEMP_FILE="hash_temp.txt"
-SET HASH_FILE="hash_file.txt"
-echo %FFMPEG_SHA256_CONTEXT% > %HASH_FILE%
-certutil -hashfile "%HASH_FILE%" SHA256 > %HASH_TEMP_FILE%
+rem calculate cve hash
+SET CVE_PATH=%MSYS_FFMPEG_PATCH_PATH%
+SET CVE_HASH_FILE="cve_hash.txt"
+SET CVE_HASH_TEMP_FILE="cve_hash_temp.txt"
 
-for /f "skip=1 delims=" %%i in (hash_temp.txt) do (
-    SET OUT_HASH_VALUE=%%i
-    goto :endloop
-)
+(for /r "%CVE_PATH%" %%f in (*) do (
+    certutil -hashfile "%%f" SHA256
+)) > "%CVE_HASH_FILE%"
+
+SET CVE_OUT_HASH_VALUE=
+rem call :CalculateHash %CVE_HASH_FILE% %CVE_HASH_TEMP_FILE% CVE_OUT_HASH_VALUE
+certutil -hashfile %CVE_HASH_FILE% SHA256 > %CVE_HASH_TEMP_FILE%
+for /f "usebackq skip=1 delims=" %%i in (%CVE_HASH_TEMP_FILE% ) do (
+        SET CVE_OUT_HASH_VALUE=%%i
+        goto :endloop
+    )
 :endloop
-echo Finish calculate sha256
+echo Finish calculate CVE sha256
+echo CVE OUT HASH VALUE: %CVE_OUT_HASH_VALUE%
 
-echo The hash value of FFmpeg is: %OUT_HASH_VALUE%
-del %HASH_TEMP_FILE%
-del %HASH_FILE%
+SET FFMPEG_SHA256_CONTEXT=%FFMPEG_INFO_CONTEXT%-%CVE_OUT_HASH_VALUE%
+echo FFMPEG_SHA256_CONTEXT: %FFMPEG_SHA256_CONTEXT%
+
+rem calculate the hash value of the ffmpeg cache
+SET OUT_HASH_VALUE=
+SET HASH_FILE="hash_file.txt"
+SET HASH_TEMP_FILE="hash_temp.txt"
+echo %FFMPEG_SHA256_CONTEXT% > %HASH_FILE%
+rem call :CalculateHash %HASH_FILE% %HASH_TEMP_FILE% OUT_HASH_VALUE
+certutil -hashfile %HASH_FILE% SHA256 > %HASH_TEMP_FILE%
+for /f "usebackq skip=1 delims=" %%i in (%HASH_TEMP_FILE% ) do (
+        SET OUT_HASH_VALUE=%%i
+        goto :endloop
+    )
+:endloop
+echo Finish calculate FFmpeg sha256
+echo FFMPEG OUT HASH VALUE: %OUT_HASH_VALUE%
 
 SET FFMPEG_CACHE_DIR=%MSYS64_PATH%\home\mslib\%SOFTWARE_NAME%_%SOFTWARE_VERSION%_%OUT_HASH_VALUE%
 echo Get cache dir is: %FFMPEG_CACHE_DIR%
+
 
 rem Check whether the cache directory exists
 IF EXIST %FFMPEG_CACHE_DIR% (
@@ -94,9 +123,20 @@ IF EXIST %FFMPEG_CACHE_DIR% (
     mkdir %FFMPEG_CACHE_DIR%
 )
 
+rem Create the patch script
+SET MSYS_FFMPEG_PATCH_SHELL=%MSYS64_PATH%\home\shell
+if exist %MSYS_FFMPEG_PATCH_SHELL% (
+    rd /s /q %MSYS_FFMPEG_PATCH_SHELL%
+)
+mkdir %MSYS_FFMPEG_PATCH_SHELL%
+echo cd /home/ffmpeg/ffmpeg-%SOFTWARE_VERSION% >> %MSYS_FFMPEG_PATCH_SHELL%\patch_script.sh
+echo for patch in /home/patch/*.patch >> %MSYS_FFMPEG_PATCH_SHELL%\patch_script.sh
+echo do echo "Applying $patch" >> %MSYS_FFMPEG_PATCH_SHELL%\patch_script.sh
+echo patch -p1 ^< "$patch" >> %MSYS_FFMPEG_PATCH_SHELL%\patch_script.sh
+echo done >> %MSYS_FFMPEG_PATCH_SHELL%\patch_script.sh
 
 rem Execute compilation
-start cmd /c "msys2_shell.cmd -mingw64 -no-start -c 'cd /home; rm -rf ffmpeg; mkdir ffmpeg; cd /home/ffmpeg; wget %FFMPEG_DOWNLOAD_PATH%; tar -xzvf ffmpeg-%SOFTWARE_VERSION%.tar.gz; mkdir build; mkdir install_ffmpeg_lib; cd build; ../ffmpeg-%SOFTWARE_VERSION%/configure --prefix=/home/ffmpeg/install_ffmpeg_lib %FFMPEG_COMPILATION_OPTIONS%; make -j4; make install'"
+start cmd /c "msys2_shell.cmd -mingw64 -no-start -c 'cd /home; rm -rf ffmpeg; mkdir ffmpeg; cd /home/ffmpeg; wget %FFMPEG_DOWNLOAD_PATH%; tar -xzvf ffmpeg-%SOFTWARE_VERSION%.tar.gz; cd /home/shell; bash patch_script.sh; cd /home/ffmpeg; mkdir build; mkdir install_ffmpeg_lib; cd build; ../ffmpeg-%SOFTWARE_VERSION%/configure --prefix=/home/ffmpeg/install_ffmpeg_lib %FFMPEG_COMPILATION_OPTIONS%; make -j4; make install'"
 
 
 ping 127.0.0.1 -n 10 >nul
@@ -134,6 +174,7 @@ popd
 echo End complie FFmpeg software at: %date% %time%
 EXIT /b 0
 
+
 :dll_file_exist
     for %%a in ("%FFMPEG_LIB_NAME:-=" "%") do (
         echo Checking for %%a...
@@ -145,3 +186,4 @@ EXIT /b 0
             EXIT /b 1
         )
     )
+    EXIT /b 0

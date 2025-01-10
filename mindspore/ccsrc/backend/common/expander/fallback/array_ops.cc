@@ -143,7 +143,11 @@ REG_FALLBACK_BUILDER("ZerosLikeExt").SetBody(BODYFUNC(ib) {
     dtype = ib->Value(static_cast<int64_t>(input_type));
   }
   auto dtype_type = GetValue<int64_t>(dtype->BuildValue());
-  auto out = ib->Cast(org_out, static_cast<TypeId>(dtype_type));
+  auto dtype_id = static_cast<TypeId>(dtype_type);
+  if (dtype_id == kNumberTypeUInt64) {
+    return {};
+  }
+  auto out = ib->Cast(org_out, dtype_id);
   return {out};
 });
 

@@ -192,6 +192,9 @@ class PointerRefCount {
   // Set pointer resource destructor.
   void set_deleter(const Deleter &deleter) { deleter_ = deleter; }
 
+  bool is_ptr_persisted() const { return is_ptr_persisted_; }
+  void set_is_ptr_persisted(bool is_ptr_persisted) { is_ptr_persisted_ = is_ptr_persisted; }
+
  private:
   void *ptr_{nullptr};
 
@@ -209,6 +212,11 @@ class PointerRefCount {
 
   // The pointer resource destructor.
   Deleter deleter_;
+
+  // The device address of the node that owns the device address cannot be updated and replaced.
+  // Application scenario: set to true when the hardware execution mode requires that ptr cannot be changed during
+  // execution.
+  bool is_ptr_persisted_{false};
 };
 using PointerRefCountPtr = std::shared_ptr<PointerRefCount>;
 

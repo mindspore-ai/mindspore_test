@@ -46,8 +46,8 @@ bool EyeCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &in
                                    const std::vector<KernelTensor *> &,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
   size_t data_size = outputs[0]->size();
-  S tmp_n = static_cast<S *>(inputs[0]->device_ptr())[0];
-  S tmp_m = static_cast<S *>(inputs[1]->device_ptr())[0];
+  S tmp_n = GetDeviceAddress<S>(inputs, 0)[0];
+  S tmp_m = GetDeviceAddress<S>(inputs, 1)[0];
   num_n_ = static_cast<int64_t>(tmp_n);
   num_m_ = static_cast<int64_t>(tmp_m);
 
@@ -57,7 +57,7 @@ bool EyeCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &in
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
   }
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *output_addr = GetDeviceAddress<T>(outputs, 0);
   T num = static_cast<T>(1);
   for (int64_t i = 0; i < num_min; i++) {
     *(output_addr + (num_m_ + 1) * i) = static_cast<T>(num);

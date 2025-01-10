@@ -15,50 +15,36 @@
  */
 
 #include "infer/ops_func_impl/convolution_grad.h"
+
 #include <string>
 #include <set>
+#include <utility>
+
+#include "include/common/utils/utils.h"
+#include "mindapi/base/shape_vector.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "utils/shape_utils.h"
 
 namespace mindspore {
 namespace ops {
-namespace {
-constexpr size_t kConvolutionGradInputArgsSize = 11;
-constexpr size_t kConvolutionGradInputDims = 4;
-}  // namespace
-BaseShapePtr ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  if (input_args.size() != kConvolutionGradInputArgsSize) {
-    MS_LOG(EXCEPTION) << "input args size should be " << kConvolutionGradInputArgsSize << ", but got "
-                      << input_args.size();
-  }
-
-  auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
-  auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
-  auto dout_shape_ptr = input_args[kInputIndex0]->GetShape();
-  const auto &dout_shape = dout_shape_ptr->GetShapeVector();
-
-  auto get_bias_grad_shape = [dout_shape]() {
-    if (IsDynamicRank(dout_shape) || IsDynamic(dout_shape)) {
-      return abstract::Shape::kShapeDimAny;
-    }
-    if (dout_shape.size() != kConvolutionGradInputDims) {
-      MS_LOG(EXCEPTION) << "dout_shape size should be " << kConvolutionGradInputDims << ", but got "
-                        << dout_shape.size();
-    }
-    return dout_shape[1];
-  };
-
-  ShapeVector bias_grad_shape = {get_bias_grad_shape()};
-  return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{
-    x_shape_ptr, weight_shape_ptr, std::make_shared<abstract::Shape>(bias_grad_shape)});
+ShapeArray ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                               const InferInfoPtrList &input_infos) const {
+  const auto &dout_info = input_infos[kIndex0];
+  const auto &dout_shape = dout_info->GetShape();
+  auto x_shape = input_infos[kIndex1]->GetShape();
+  auto weight_shape = input_infos[kIndex2]->GetShape();
+  auto out_channels = dout_info->IsDynamicRank() ? abstract::Shape::kShapeDimAny : dout_shape.at(kIndex1);
+  ShapeVector bias_shape{out_channels};
+  ShapeArray output_shapes{std::move(x_shape), std::move(weight_shape), std::move(bias_shape)};
+  return output_shapes;
 }
 
-TypePtr ConvolutionGradFuncImpl::InferType(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_type_ptr = input_args[kInputIndex1]->GetType();
-  auto weight_type_ptr = input_args[kInputIndex2]->GetType();
-  return std::make_shared<Tuple>(std::vector<TypePtr>{x_type_ptr, weight_type_ptr, x_type_ptr});
+std::vector<TypeId> ConvolutionGradFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                       const InferInfoPtrList &input_infos) const {
+  auto x_type_ptr = input_infos[kInputIndex1]->GetType();
+  auto weight_type_ptr = input_infos[kInputIndex2]->GetType();
+  return {x_type_ptr, weight_type_ptr, x_type_ptr};
 }
 }  // namespace ops
 }  // namespace mindspore

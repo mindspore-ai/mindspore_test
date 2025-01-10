@@ -91,6 +91,48 @@ bool TensorArgMutable(const py::object &obj, const ValuePtr &value) {
   return !py::hasattr(obj, const_arg_attr) || !py::cast<bool>(py::getattr(obj, const_arg_attr));
 }
 
+ValuePtr ConvertPyObjToValue(const py::object &obj) {
+  if (obj.ptr() == nullptr) {
+    return nullptr;
+  }
+  ValuePtr ret = nullptr;
+  try {
+    MS_LOG_TRY_CATCH_SCOPE;
+    if (py::isinstance<Cell>(obj)) {
+      return std::make_shared<parse::InterpretedObject>(obj);
+    }
+    if (!parse::ConvertData(obj, &ret)) {
+      return nullptr;
+    }
+  } catch (const std::exception &e) {
+    MS_LOG(DEBUG) << "Failed to convert python object << " << py::str(obj) << " to value. The exception:\n" << e.what();
+    return nullptr;
+  }
+  return ret;
+}
+
+bool HasTensorWithGradData(const ValuePtr &val) {
+  if (val == nullptr) {
+    return false;
+  }
+  if (val->isa<ValueSequence>()) {
+    const auto &elements = val->cast<ValueSequencePtr>()->value();
+    return std::any_of(elements.begin(), elements.end(), [](const auto &e) { return HasTensorWithGradData(e); });
+  }
+
+  if (val->isa<ValueDictionary>()) {
+    const auto &elements = val->cast<ValueDictionaryPtr>()->value();
+    return std::any_of(elements.begin(), elements.end(), [](const auto &e) { return HasTensorWithGradData(e.second); });
+  }
+
+  if (!val->isa<tensor::BaseTensor>()) {
+    return false;
+  }
+  auto val_tensor = val->cast<tensor::BaseTensorPtr>();
+  auto grad_data = val_tensor->auto_grad_meta_data();
+  return grad_data != nullptr && grad_data->input_type() == InputType::kOpOutput;
+}
+
 bool NeedBroaden(const py::object &obj, const ValuePtr &value) {
   return TensorArgMutable(obj, value) || Mutable(obj, value) || value->isa<tensor::MetaSparseTensor>();
 }
@@ -117,26 +159,6 @@ bool FunctionShouldBeParseInAst(const py::object &obj) {
   return func_names.find(py::cast<std::string>(obj.attr("__name__"))) != func_names.end();
 }
 }  // namespace
-
-ValuePtr FuncGraphBuilder::ConvertPyObjToValue(const py::object &obj) {
-  if (obj.ptr() == nullptr) {
-    return nullptr;
-  }
-  ValuePtr ret = nullptr;
-  try {
-    MS_LOG_TRY_CATCH_SCOPE;
-    if (py::isinstance<Cell>(obj)) {
-      return std::make_shared<parse::InterpretedObject>(obj);
-    }
-    if (!parse::ConvertData(obj, &ret)) {
-      return nullptr;
-    }
-  } catch (const std::exception &e) {
-    MS_LOG(DEBUG) << "Failed to convert python object << " << py::str(obj) << " to value. The exception:\n" << e.what();
-    return nullptr;
-  }
-  return ret;
-}
 
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
   if (!IsParameterSequence(input_obj)) {
@@ -329,7 +351,7 @@ bool FuncGraphBuilder::IsParameterSequence(const py::object &object) {
   return true;
 }
 
-AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &object) {
+AbstractBasePtr FuncGraphBuilder::BuildAbstractForInputObject(const py::object &object) {
   if (object.ptr() == nullptr) {
     MS_LOG(INFO) << "Get top graph arg input failed.";
     return nullptr;
@@ -342,7 +364,25 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
   AbstractBasePtr abs = abstract::ToAbstract(value, nullptr, nullptr);
   if (broaden) {
     abs = AbstractBroaden(abs);
+  } else if (HasTensorWithGradData(value)) {
+    py::object can_be_mutable = python_adapter::CallPyFn("mindspore.common.mutable", "_check_element_type", object);
+    // Mutable can only handle scene when all element in python object can be braoden.
+    // If input sequence contains element such as None, string, mutable can not add be the input sequence.
+    if (!py::bool_(can_be_mutable)) {
+      MS_LOG(EXCEPTION) << "Input " << py::str(object) << " contains tensor with gradient but can not mutable.";
+    }
+    MS_LOG(INFO) << "Input object " << py::str(object) << " has tensor with auto grad data, need broaden";
+    abs = AbstractBroaden(abs);
   }
+  return abs;
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &object) {
+  if (object.ptr() == nullptr) {
+    MS_LOG(INFO) << "Get top graph arg input failed.";
+    return nullptr;
+  }
+  auto abs = BuildAbstractForInputObject(object);
   if (abs == nullptr) {
     MS_LOG(INFO) << "Failed to add input for python object: " << std::string(py::str(object)) << "  " << object.ptr();
     return nullptr;
@@ -384,14 +424,9 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   auto para = graph_->add_parameter();
   for (size_t i = 0; i < elements.size(); ++i) {
     auto cur_obj = vargs_tuple[i].cast<py::object>();
-    auto cur_val = elements[i];
-    bool broaden = NeedBroaden(cur_obj, cur_val);
-    auto cur_abs = abstract::ToAbstract(cur_val, nullptr, nullptr);
-    if (broaden) {
-      cur_abs = AbstractBroaden(cur_abs);
-    }
+    auto cur_abs = BuildAbstractForInputObject(cur_obj);
     if (cur_abs == nullptr) {
-      MS_LOG(INFO) << "Fail to convert args element " << cur_val->ToString();
+      MS_LOG(INFO) << "Fail to convert args element " << py::str(cur_obj);
       return nullptr;
     }
     new_elements.push_back(cur_abs);
@@ -438,13 +473,9 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphKwargsInputs(const py::object &k
       return nullptr;
     }
     auto cur_val_obj = kwargs_dict[cur_key_obj];
-    auto cur_value_abs = abstract::ToAbstract(cur_val, nullptr, nullptr);
-    bool broaden = NeedBroaden(cur_val_obj, cur_val);
-    if (broaden) {
-      cur_value_abs = AbstractBroaden(cur_value_abs);
-    }
+    auto cur_value_abs = BuildAbstractForInputObject(cur_val_obj);
     if (cur_value_abs == nullptr) {
-      MS_LOG(INFO) << "Fail to convert kwargs value element " << cur_val->ToString();
+      MS_LOG(INFO) << "Fail to convert kwargs value element " << py::str(cur_val_obj);
       return nullptr;
     }
     auto cur_key_abs = abstract::ToAbstract(cur_key_val, nullptr, nullptr);

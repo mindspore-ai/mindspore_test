@@ -7,8 +7,9 @@ mindspore.mint.remainder
 
     支持广播和隐式数据类型提升。
 
-    .. math::
-        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+    .. code:: python
+
+        remainder(input, other) == input - input.div(other, rounding_mode="floor") * other
 
     .. note::
         输入不支持复数类型。至少一个输入为tensor，且不能都为布尔型tensor。

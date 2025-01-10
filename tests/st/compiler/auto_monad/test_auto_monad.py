@@ -1536,7 +1536,7 @@ def test_auto_mixed_precision_controlflow_auto(pynative_save_graphs):
                                                        label, cast_num)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_if_cast():
     """
@@ -1569,7 +1569,7 @@ def test_if_cast():
     np.testing.assert_array_equal(r1.asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @test_utils.run_test_with_On
 def test_while_forward():

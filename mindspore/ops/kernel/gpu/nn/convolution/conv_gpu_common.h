@@ -23,6 +23,8 @@
 #include <utility>
 #include <map>
 #include <unordered_map>
+#include "mindspore/ccsrc/plugin/device/gpu/device_context_conf/op_precision_conf.h"
+#include "mindspore/ccsrc/plugin/device/gpu/device_context_conf/op_tuning_conf.h"
 
 namespace mindspore {
 namespace kernel {
@@ -254,8 +256,8 @@ static std::string GetConvBwdFilterInfo(const std::string &msg, const cudnnTenso
 
 static void SetConvolutionMathType(const cudnnConvolutionDescriptor_t &conv_desc,
                                    const cudnnDataType_t &cudnn_data_type) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto op_precision_conf = device::gpu::GPUOpPrecisionConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_precision_conf);
   auto math_type = CUDNN_DEFAULT_MATH;
   // for gpu volta architecture
   if (cudnn_data_type == CUDNN_DATA_HALF) {
@@ -263,7 +265,7 @@ static void SetConvolutionMathType(const cudnnConvolutionDescriptor_t &conv_desc
   } else if (cudnn_data_type == CUDNN_DATA_FLOAT) {
 // for gpu amper architecture
 #if CUDNN_VERSION >= 8000
-    auto conv_allow_tf32 = context_ptr->get_param<bool>(MS_CTX_CONV_ALLOW_TF32);
+    auto conv_allow_tf32 = op_precision_conf->conv_allow_tf32();
     if (conv_allow_tf32) {
       math_type = CUDNN_TENSOR_OP_MATH;
     } else {
@@ -281,9 +283,9 @@ static cudnnConvolutionFwdAlgo_t SelectForwardAlgorithm(const cudnnHandle_t &han
                                                         const cudnnFilterDescriptor_t &w_desc,
                                                         const cudnnConvolutionDescriptor_t &conv_desc,
                                                         const cudnnTensorDescriptor_t &y_desc, const int &group) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto algo = context_ptr->get_param<std::string>(MS_CTX_CONV_FPROP_ALGO);
+  auto op_tuning_conf = device::gpu::GPUOpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  auto algo = op_tuning_conf->conv_fprop_algo();
   constexpr int requested_algo_count = 1;
   int returned_algo_count = 0;
   cudnnConvolutionFwdAlgoPerf_t perf_results;
@@ -324,9 +326,9 @@ static cudnnConvolutionBwdDataAlgo_t SelectBackwardDataAlgorithm(
   const cudnnHandle_t &handle, const cudnnDataType_t &cudnn_data_type, const cudnnFilterDescriptor_t &w_desc,
   const cudnnTensorDescriptor_t &dy_desc, const cudnnConvolutionDescriptor_t &conv_desc,
   const cudnnTensorDescriptor_t &dx_desc, const int &group) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto algo = context_ptr->get_param<std::string>(MS_CTX_CONV_DGRAD_ALGO);
+  auto op_tuning_conf = device::gpu::GPUOpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  auto algo = op_tuning_conf->conv_dgrad_algo();
   cudnnConvolutionBwdDataAlgo_t conv_algorithm = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
   if (cudnn_data_type == CUDNN_DATA_HALF) {
     if (cudnn_bwd_data_algos.find(algo) != cudnn_bwd_data_algos.end()) {
@@ -370,9 +372,9 @@ static cudnnConvolutionBwdFilterAlgo_t SelectBackwardFilterAlgorithm(
   const cudnnHandle_t &handle, const cudnnDataType_t &cudnn_data_type, const cudnnTensorDescriptor_t x_desc,
   const cudnnTensorDescriptor_t dy_desc, const cudnnConvolutionDescriptor_t conv_desc,
   const cudnnFilterDescriptor_t dw_desc, const int &group) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto algo = context_ptr->get_param<std::string>(MS_CTX_CONV_WGRAD_ALGO);
+  auto op_tuning_conf = device::gpu::GPUOpTuningConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(op_tuning_conf);
+  auto algo = op_tuning_conf->conv_wgrad_algo();
   constexpr int requested_algo_count = 1;
   int returned_algo_count = 0;
   cudnnConvolutionBwdFilterAlgoPerf_t perf_results;

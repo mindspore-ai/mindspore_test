@@ -12,11 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
 import mindspore as ms
 from mindspore import jit
 from mindspore import Tensor
 from mindspore import mutable
 import numpy as np
+
+reserved_env = None
+
+
+def setup_module():
+    global reserved_env
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+
+
+def teardown_module():
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
 
 
 def test_initial_scalar_body_tensor1():
@@ -49,7 +65,6 @@ def test_initial_scalar_body_tensor1():
     input_me_x = Tensor(input_np_x)
     input_me_a = Tensor(2, ms.float32)
     input_me_b = Tensor(6, ms.float32)
-    ms.context.set_context(precompile_only=True)
     test_net(input_me_x, input_me_a, input_me_b)
 
 
@@ -69,7 +84,7 @@ def test_initial_scalar_body_tensor2():
                 a += 1
             return x + y
 
-    ms.context.set_context(precompile_only=True, mode=ms.context.GRAPH_MODE)
+    ms.context.set_context(mode=ms.context.GRAPH_MODE)
     input_np_x = np.random.rand(2, 3, 4, 5).astype(np.float32)
     input_me_x = Tensor(input_np_x)
     input_me_a = Tensor(2, ms.float32)
@@ -103,7 +118,7 @@ def test_initial_scalar_body_tensor3():
                     finish_flg = self.true_flg
             return x, y
 
-    ms.context.set_context(precompile_only=True, mode=ms.context.GRAPH_MODE)
+    ms.context.set_context(mode=ms.context.GRAPH_MODE)
     x_arg = Tensor([0], ms.int32)
     y_arg = Tensor([10], ms.int32)
     net = Net()
@@ -132,7 +147,7 @@ def test_initial_tensor_body_ref():
             return out
 
     test_net = Net()
-    ms.context.set_context(precompile_only=True, mode=ms.context.GRAPH_MODE)
+    ms.context.set_context(mode=ms.context.GRAPH_MODE)
     input_a = Tensor([2])
     input_b = Tensor([6])
     test_net(input_a, input_b)
@@ -167,7 +182,7 @@ def test_initial_ref_body_tensor():
             return out
 
     test_net = Net()
-    ms.context.set_context(precompile_only=True, mode=ms.context.GRAPH_MODE)
+    ms.context.set_context(mode=ms.context.GRAPH_MODE)
     input_a = Tensor([2])
     input_b = Tensor([6])
     test_net(input_a, input_b)
@@ -196,5 +211,5 @@ def test_initial_emtpy_list_body_list():
             y.append(i)
         return y
 
-    ms.context.set_context(precompile_only=True, mode=ms.context.GRAPH_MODE)
+    ms.context.set_context(mode=ms.context.GRAPH_MODE)
     test_net()

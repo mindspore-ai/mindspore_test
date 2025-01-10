@@ -33,7 +33,7 @@
 
 namespace mindspore {
 namespace dataset {
-const char CacheAdminArgHandler::kServerBinary[] = "cache_server";
+const char CacheAdminArgHandler::kServerBinary[] = "dataset-cache-server";
 
 CacheAdminArgHandler::CacheAdminArgHandler()
     : command_id_(CommandId::kCmdUnknown),
@@ -360,7 +360,7 @@ Status CacheAdminArgHandler::Validate() {
   // Any unhandled arguments at this point is an error.
   if (!trailing_args_.empty()) {
     std::string err_msg = "Invalid arguments provided: " + trailing_args_;
-    err_msg += "\nPlease try `cache_admin --help` for more information";
+    err_msg += "\nPlease try `dataset-cache --help` for more information";
     return Status(StatusCode::kMDSyntaxError, err_msg);
   }
 
@@ -368,7 +368,7 @@ Status CacheAdminArgHandler::Validate() {
   // run.
   if (command_id_ == CommandId::kCmdUnknown) {
     std::string err_msg = "No command provided";
-    err_msg += "\nPlease try `cache_admin --help` for more information";
+    err_msg += "\nPlease try `dataset-cache --help` for more information";
     return Status(StatusCode::kMDSyntaxError, err_msg);
   }
 
@@ -519,7 +519,7 @@ Status CacheAdminArgHandler::ShowServerInfo() {
     for (auto session_id : session_ids) {
       std::cout << session_id << "  ";
     }
-    std::cout << std::endl << "(Please use 'cache_admin --list_sessions' to get detailed info of sessions.)\n";
+    std::cout << std::endl << "(Please use 'dataset-cache --list_sessions' to get detailed info of sessions.)\n";
   } else {
     std::cout << "No active sessions." << std::endl;
   }
@@ -560,7 +560,7 @@ Status CacheAdminArgHandler::StopServer() {
 Status CacheAdminArgHandler::StartServer() {
   // There currently does not exist any "install path" or method to identify which path the installed binaries will
   // exist in. As a temporary approach, we will assume that the server binary shall exist in the same path as the
-  // cache_admin binary (this process).
+  // dataset-cache binary (this process).
   const std::string self_proc = "/proc/self/exe";
   std::string canonical_path;
   canonical_path.resize(400);  // PATH_MAX is large. This value should be big enough for our use.
@@ -574,7 +574,7 @@ Status CacheAdminArgHandler::StartServer() {
   canonical_path.resize(strlen(canonical_path.data()));
   uint64_t last_separator = canonical_path.find_last_of('/');
   CHECK_FAIL_RETURN_UNEXPECTED(last_separator != std::string::npos, "No / found");
-  // truncate the binary name so we are left with the absolute path of cache_admin binary
+  // truncate the binary name so we are left with the absolute path of dataset-cache binary
   canonical_path.resize(last_separator + 1);
   std::string cache_server_binary = canonical_path + std::string(kServerBinary);
 
@@ -667,7 +667,7 @@ Status CacheAdminArgHandler::StartServer() {
 
 void CacheAdminArgHandler::Help() {
   std::cerr << "Syntax:\n";
-  std::cerr << "cache_admin [--start | --stop]\n";
+  std::cerr << "dataset-cache [--start | --stop]\n";
   std::cerr << "                [[-h | --hostname] <hostname>]            Default is " << kCfgDefaultCacheHost << ".\n";
   std::cerr << "                [[-p | --port] <port number>]             Default is " << kCfgDefaultCachePort << ".\n";
   std::cerr << "                [[-w | --workers] <number of workers>]    Default is " << kDefaultNumWorkers << ".\n";

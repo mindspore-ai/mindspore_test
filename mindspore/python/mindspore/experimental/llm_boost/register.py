@@ -23,6 +23,7 @@ class LlmBoostType:
         pass
 
     BUILDIN = 'BuildIn'
+    ASCEND_NATIVE = 'LLMBoost'
 
 
 class LlmBoostRegister:

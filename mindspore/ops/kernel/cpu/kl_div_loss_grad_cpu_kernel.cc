@@ -132,9 +132,9 @@ template <typename T>
 bool KLDivLossGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &,
                                              const std::vector<KernelTensor *> &outputs) {
-  auto *input_grad = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto *input_target = reinterpret_cast<T *>(inputs[kIndex2]->device_ptr());
-  auto *y = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto *input_grad = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *input_target = GetDeviceAddress<T>(inputs, kIndex2);
+  auto *y = GetDeviceAddress<T>(outputs, kIndex0);
 
   Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> array_grad(input_grad, input_grad_shape_size_, 1);
   Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> array_target(input_target, input_target_shape_size_, 1);
@@ -157,11 +157,7 @@ bool KLDivLossGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
 
   auto task = [&](size_t start, size_t end) {
     for (size_t i = start; i < end; ++i) {
-      if (static_cast<double>(array_target[i]) <= 0.0) {
-        array_y[i] = static_cast<T>(0);
-      } else {
-        array_y[i] *= (static_cast<T>(coefficient) * static_cast<T>(bcast));
-      }
+      array_y[i] *= (static_cast<T>(coefficient) * static_cast<T>(bcast));
     }
   };
   ParallelLaunchAutoSearch(task, input_x_shape_size_, this, &parallel_search_info_);

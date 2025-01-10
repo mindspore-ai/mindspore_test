@@ -44,6 +44,7 @@
 #include "include/common/pynative/abstract_converter.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
+#include "kernel/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace pynative {
@@ -140,14 +141,54 @@ void PlantTupleParam(const FuncGraphPtr &bprop_graph, const abstract::AbstractSe
   MS_EXCEPTION_IF_NULL(new_param);
   MS_EXCEPTION_IF_NULL(abs_seq);
   for (size_t i = 0; i < abs_seq->size(); ++i) {
-    if (abs_seq->elements()[i]->isa<abstract::AbstractSequence>()) {
-      PlantTupleParam(bprop_graph, abs_seq->elements()[i]->cast<abstract::AbstractSequencePtr>(), make_tuple,
-                      new_param);
-    } else if (abs_seq->elements()[i]->isa<abstract::AbstractTensor>()) {
+    const auto &cur_abs = abs_seq->elements()[i];
+    if (cur_abs->isa<abstract::AbstractSequence>()) {
+      auto is_tuple = cur_abs->isa<abstract::AbstractTuple>();
+      AnfNodePtrList cur_make_tuple_inputs;
+      auto prim = is_tuple ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+      (void)cur_make_tuple_inputs.emplace_back(NewValueNode(prim));
+      PlantTupleParam(bprop_graph, cur_abs->cast<abstract::AbstractSequencePtr>(), &cur_make_tuple_inputs, new_param);
+      auto cur_make_tuple_node = bprop_graph->NewCNode(cur_make_tuple_inputs);
+      AbstractBasePtrList cur_abstract_elements;
+      (void)std::transform(cur_make_tuple_inputs.begin() + 1, cur_make_tuple_inputs.end(),
+                           std::back_inserter(cur_abstract_elements), [](const auto &e) { return e->abstract(); });
+      AbstractBasePtr cur_abstract;
+      if (is_tuple) {
+        cur_abstract = std::make_shared<abstract::AbstractTuple>(cur_abstract_elements);
+      } else {
+        cur_abstract = std::make_shared<abstract::AbstractList>(cur_abstract_elements);
+      }
+      cur_make_tuple_node->set_abstract(cur_abstract);
+      (void)make_tuple->emplace_back(cur_make_tuple_node);
+    } else if (cur_abs->isa<abstract::AbstractTensor>()) {
       auto plant_param = bprop_graph->add_parameter();
-      plant_param->set_abstract(abs_seq->elements()[i]);
+      plant_param->set_abstract(cur_abs);
       (void)make_tuple->emplace_back(plant_param);
       (void)new_param->emplace_back(plant_param);
+    } else if (cur_abs->isa<abstract::AbstractDictionary>()) {
+      // Support output type of tuple contains dict
+      const auto &abs_dict = cur_abs->cast<abstract::AbstractDictionaryPtr>();
+      abstract::AbstractBasePtrList local_key_abs_inputs;
+      abstract::AbstractBasePtrList local_value_abs_inputs;
+      for (const auto &element : abs_dict->elements()) {
+        (void)local_key_abs_inputs.emplace_back(element.first);
+        (void)local_value_abs_inputs.emplace_back(element.second);
+      }
+      auto key_param = bprop_graph->add_parameter();
+      key_param->set_abstract(std::make_shared<abstract::AbstractTuple>(local_key_abs_inputs));
+      auto value_param = bprop_graph->add_parameter();
+      value_param->set_abstract(std::make_shared<abstract::AbstractTuple>(local_value_abs_inputs));
+      (void)new_param->emplace_back(key_param);
+      (void)new_param->emplace_back(value_param);
+      // Add Makedict node as tuple element
+      auto dict_node = bprop_graph->NewCNode({NewValueNode(prim::kPrimMakeDict), key_param, value_param});
+      dict_node->set_abstract(abs_dict);
+      (void)make_tuple->emplace_back(dict_node);
+    } else {
+      auto value = MakeValue(static_cast<int64_t>(0));
+      auto value_node = NewValueNode(value);
+      value_node->set_abstract(value->ToAbstract());
+      (void)make_tuple->emplace_back(value_node);
     }
   }
 }
@@ -176,19 +217,21 @@ tensor::BaseTensorPtr GetContiguousTensor(const tensor::BaseTensorPtr &input_ten
   auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_target);
   auto contiguous_tensor = contiguous_op->Call(input_tensor);
   if (requires_grad) {
-    contiguous_op->CreateOutputSimpleInfoForView();
+    contiguous_op->CreateOutputSimpleInfo();
     const auto &contiguous_run_info = std::make_shared<FrontendOpRunInfo>();
     contiguous_run_info->requires_grad = true;
-    AutoGradUtil::MakeOutput(contiguous_run_info, contiguous_op,
-                             PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index());
-    PyBoost::UpdateStubOutput(contiguous_run_info, contiguous_op->output_abs(), contiguous_op);
+    auto real_output = AutoGradUtil::MakeOutput(
+      true, contiguous_op, PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index());
+    PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(contiguous_run_info->op_grad_info, contiguous_op);
+    PyBoost::UpdateStubOutput(contiguous_op, contiguous_run_info->stub_output, contiguous_op->output_abs(),
+                              real_output);
     contiguous_run_info->base_op_run_info.device_target = device_target;
     contiguous_run_info->input_size = 1;
     contiguous_run_info->base_op_run_info.op_name = ops::kNameContiguous;
     contiguous_run_info->op_grad_info->op_prim = prim::kPrimContiguous;
 
     contiguous_run_info->op_grad_info->input_value = {input_tensor};
-    contiguous_run_info->op_grad_info->out_value = contiguous_run_info->real_out;
+    contiguous_run_info->op_grad_info->out_value = real_output;
     PyBoost::DoGrad(contiguous_op, contiguous_run_info->op_grad_info, contiguous_run_info->async_status);
   }
   return contiguous_tensor;
@@ -564,7 +607,7 @@ void Common::ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph) {
   DumpGraphIR("replace_cnode_with_valuenode.ir", bprop_graph);
 }
 
-ValuePtr Common::StubNodeToValueInner(const ValuePtr &v) {
+ValuePtr Common::StubNodeToValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (utils::isa<stub::StubNode>(v)) {
     auto stub = utils::cast<stub::StubNodePtr>(v);
@@ -578,7 +621,7 @@ ValuePtr Common::StubNodeToValueInner(const ValuePtr &v) {
     }
     ValuePtrList value_list;
     (void)std::transform(values.begin(), values.end(), std::back_inserter(value_list),
-                         [](const ValuePtr &value) { return StubNodeToValueInner(value); });
+                         [](const ValuePtr &value) { return StubNodeToValue(value); });
     if (utils::isa<ValueTuple>(v)) {
       return std::make_shared<ValueTuple>(value_list);
     }
@@ -596,7 +639,7 @@ void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
   auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
   for (size_t i = 0; i < op_run_info->input_size; i++) {
-    op_run_info->op_grad_info->input_value[i] = StubNodeToValueInner(op_run_info->op_grad_info->input_value[i]);
+    op_run_info->op_grad_info->input_value[i] = StubNodeToValue(op_run_info->op_grad_info->input_value[i]);
     // Contiguous tensor in Backend RunOp.
     kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
     runtime::DeviceAddressUtils::CreateKernelTensor(op_run_info->op_grad_info->input_value[i]);
@@ -897,7 +940,11 @@ void Common::ProcessTupleParam(const FuncGraphPtr &bprop_graph, size_t position)
   (void)bprop_params.insert(it, new_param.begin(), new_param.end());
   bprop_graph->set_parameters(bprop_params);
   auto make_tuple_param = bprop_graph->NewCNode(make_tuple);
-  make_tuple_param->set_abstract(target_abstract);
+  AbstractBasePtrList cur_abstract_elements;
+  (void)std::transform(make_tuple.begin() + 1, make_tuple.end(), std::back_inserter(cur_abstract_elements),
+                       [](const auto &e) { return e->abstract(); });
+  AbstractBasePtr cur_abstract = std::make_shared<abstract::AbstractTuple>(cur_abstract_elements);
+  make_tuple_param->set_abstract(cur_abstract);
   auto manager = bprop_graph->manager();
   if (manager == nullptr) {
     manager = MakeManager({bprop_graph}, false);
@@ -1420,30 +1467,29 @@ FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &arg
   return op_run_info;
 }
 
-void PyBoost::UpdateStubOutput(const FrontendOpRunInfoPtr &op_run_info, const AbstractBasePtr &abstract,
-                               const kernel::pyboost::OpPtr &op) {
+void PyBoost::UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
+                               const AbstractBasePtr &abstract, const ValuePtr &real_out) {
   MS_EXCEPTION_IF_NULL(op);
-  if (op_run_info->stub_output == nullptr || op_run_info->stub_output->isa<stub::NoneTypeNode>()) {
+  if (stub_output == nullptr || stub_output->isa<stub::NoneTypeNode>()) {
     return;
   }
   if (MS_UNLIKELY(op->output_value_simple_info() != nullptr)) {
-    op_run_info->stub_output->SetValueSimpleInfo(op->output_value_simple_info());
+    stub_output->SetValueSimpleInfo(op->output_value_simple_info());
   } else {
     MS_EXCEPTION_IF_NULL(abstract);
-    auto success = op_run_info->stub_output->SetAbstract(abstract);
+    auto success = stub_output->SetAbstract(abstract);
     if (!success) {
-      const auto &op_name = op_run_info->base_op_run_info.op_name;
       MS_EXCEPTION(TypeError) << "The predict type and infer type is not match, predict type is "
-                              << PredictOutType(op_run_info) << ", infer type is " << abstract->BuildType()
-                              << ", the name of operator is [" << op_name
+                              << PredictOutTypeByName(op->primitive()->name()) << ", infer type is "
+                              << abstract->BuildType() << ", the name of operator is [" << op->primitive()->name()
                               << "]. Please modify or add predict type of operator in predict_out_type_map.h.";
     }
     MS_LOG(DEBUG) << "Update StubNode abstract " << abstract->ToString();
   }
-  op_run_info->stub_output->SetValue(op_run_info->real_out);
+  stub_output->SetValue(real_out);
 }
 
-void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&op_inputs) {
+void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
@@ -1455,18 +1501,8 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&
       if (device_address == nullptr) {
         continue;
       }
-      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output);
+      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output.get());
       output->data_sync(true);
-    }
-    for (const auto &input : op_inputs) {
-      if (input->isa<tensor::BaseTensor>()) {
-        auto tensor = input->cast<tensor::BaseTensorPtr>();
-        auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
-        if (device_address == nullptr) {
-          continue;
-        }
-        runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
-      }
     }
   }
 }
@@ -1532,7 +1568,8 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad
   if (op->output_value_simple_info() == nullptr) {
     MS_LOG(EXCEPTION) << "The simple info of " << op->primitive()->name() << " infer is null";
   }
-
+  // Inplace op need save clone tensor.
+  grad_info->clone_value = op->clone_tensor();
   // Check and set input auto grad meta info and InputType
   if (MS_LIKELY(!forward->grad()->top_cell()->is_bprop_need_get_forward_graph())) {
     MarkPyBoostInputs(grad_info, forward->grad()->top_cell());
@@ -1547,28 +1584,25 @@ void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCell
   for (size_t index = 0; index < input_size; ++index) {
     const auto &v = op_grad_info->input_value[index];
     if (v->isa<tensor::BaseTensor>()) {
-      op_grad_info->input_value_grad_type[index] =
-        AutoGradUtil::SetTensorGradInfo(v->cast<tensor::BaseTensorPtr>(), op_grad_info->operator_type);
+      op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(v->cast<tensor::BaseTensorPtr>());
     } else if (v->isa<ValueSequence>()) {
       const auto &value_sequence = v->cast<ValueSequencePtr>();
       const auto &tuple_inputs = value_sequence->value();
       if (!tuple_inputs.empty() && tuple_inputs[0]->isa<tensor::BaseTensor>()) {
         op_grad_info->input_value_grad_type[index] = InputType::kOpOutput;
         for (const auto &elem : tuple_inputs) {
-          auto grad_type =
-            AutoGradUtil::SetTensorGradInfo(elem->cast<tensor::BaseTensorPtr>(), op_grad_info->operator_type);
+          auto grad_type = AutoGradUtil::SetTensorGradInfo(elem->cast<tensor::BaseTensorPtr>());
           if (AutoGradUtil::IsParam(grad_type)) {
             op_grad_info->input_value_grad_type[index] = InputType::kParameter;
           }
         }
       }
     } else if (v->isa<tensor::MapTensor>()) {
-      op_grad_info->input_value_grad_type[index] =
-        AutoGradUtil::SetTensorGradInfo(v->cast<tensor::MapTensorPtr>(), op_grad_info->operator_type);
+      op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(v->cast<tensor::MapTensorPtr>());
     } else if (v->isa<tensor::CSRTensor>()) {
       const auto &csr_tensor = v->cast<tensor::CSRTensorPtr>();
       auto fn = [&op_grad_info, index](const auto &csr_tensor_input) {
-        auto grad_type = AutoGradUtil::SetTensorGradInfo(csr_tensor_input, op_grad_info->operator_type);
+        auto grad_type = AutoGradUtil::SetTensorGradInfo(csr_tensor_input);
         if (AutoGradUtil::IsParam(grad_type)) {
           op_grad_info->input_value_grad_type[index] = InputType::kParameter;
         }
@@ -1665,8 +1699,7 @@ void DataConvert::ConvertMapTensor(const FrontendOpRunInfoPtr &op_run_info, cons
   const auto it = op_run_info->base_op_run_info.input_types.end();
   (void)op_run_info->base_op_run_info.input_types.insert(it, input_num, InputType::kParameter);
   if (op_run_info->requires_grad) {
-    op_run_info->op_grad_info->input_value_grad_type[index] =
-      AutoGradUtil::SetTensorGradInfo(map_tensor, op_run_info->op_grad_info->operator_type);
+    op_run_info->op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(map_tensor);
   }
 }
 
@@ -1746,8 +1779,7 @@ void DataConvert::MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const Valu
       input_type = InputType::kParameter;
     }
     if (op_run_info->requires_grad) {
-      op_run_info->op_grad_info->input_value_grad_type[index] =
-        AutoGradUtil::SetTensorGradInfo(tensor_ptr, op_run_info->op_grad_info->operator_type);
+      op_run_info->op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(tensor_ptr);
     }
   } else if (v->isa<BoolImm>() || v->isa<FloatImm>() || v->isa<Type>() || v->isa<StringImm>() || v->isa<None>()) {
     (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(v);

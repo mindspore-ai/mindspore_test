@@ -197,6 +197,15 @@ const char CUSTOM_BPROP_NAME[] = "bprop";
 const char STAGE_NAME[] = "_pipeline_stage";
 const char SEGMENT_NAME[] = "_pipeline_segment";
 
+// Define python cell attributes and methods
+const char CELL_PARAMETERS_FORWARD_HOOK[] = "_parameters_forward_hook";
+const char CELL_PARAMETERS_BACKWARD_HOOK[] = "_parameters_backward_hook";
+const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";
+const char CELL_CELLS_AND_NAMES[] = "cells_and_names";
+
+// Define ref tensor user data keys.
+const char REF_TENSOR_BACKWARD_HOOK[] = "backward_hook";
+
 // Define the Namespace name.
 const char RESOLVE_NAMESPACE_NAME_AST[] = "Ast";                   // For ast type namespace.
 const char RESOLVE_NAMESPACE_NAME_ENTRY[] = "Entry";               // For entry object namespace.
@@ -257,6 +266,7 @@ FuncGraphPtr ConvertToFuncGraph(const py::object &obj, const ValuePtrList &args_
 FuncGraphPtr ParsePythonCode(const py::object &obj,
                              const std::string &python_mod_get_parse_method = PYTHON_MOD_GET_PARSE_METHOD,
                              const ValuePtrList &args_value_list = {});
+py::object GetPrimDefaultDict(const std::string &prim_name);
 ValuePtr GetArgDefaultValue(const std::string &prim_name, const std::string &arg_name);
 AnfNodePtr TransPropertyToFunc(const FuncGraphPtr &fg, const AnfNodePtr &node, const py::object &property_net_obj,
                                std::string attr_str);

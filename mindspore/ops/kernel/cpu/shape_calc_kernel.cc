@@ -57,7 +57,7 @@ bool ShapeCalcCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
     }
 
     for (size_t i = 0; i < outputs.size(); ++i) {
-      auto output_addr = reinterpret_cast<int64_t *>(outputs[i]->device_ptr());
+      auto output_addr = GetDeviceAddress<int64_t>(outputs, i);
       for (size_t j = 0; j < outs_shape_[i].size(); ++j) {
         output_addr[j] = outs_shape_[i][j];
       }
@@ -70,7 +70,7 @@ bool ShapeCalcCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
       return false;
     }
 
-    auto output_addr = reinterpret_cast<int64_t *>(outputs[0]->device_ptr());
+    auto output_addr = GetDeviceAddress<int64_t>(outputs, 0);
     size_t offset_inner = outs_shape_[0].size();
     for (size_t i = 0; i < outs_shape_.size(); ++i) {
       for (size_t j = 0; j < outs_shape_[i].size(); ++j) {

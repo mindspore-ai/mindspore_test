@@ -16,7 +16,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_ALLREDUCE_ADD_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_ALLREDUCE_ADD_FUSION_H_
 
-#include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_fusion_base.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_fusion_base.h"
+#include <vector>
 #include <string>
 
 namespace mindspore {
@@ -35,6 +36,7 @@ class QbmmAllReduceAddFusion : public QbmmFusionBase {
  private:
   CNodePtr CreateQbmmAllReduceAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                       const EquivPtr &equiv) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

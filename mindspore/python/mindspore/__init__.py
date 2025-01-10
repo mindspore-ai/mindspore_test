@@ -17,7 +17,7 @@ from __future__ import absolute_import
 
 from mindspore.run_check import run_check
 from mindspore import common, dataset, mindrecord, train, log, amp
-from mindspore import profiler, communication, numpy, parallel, hal
+from mindspore import profiler, communication, numpy, parallel, hal, runtime, device_context
 from mindspore.common import *
 from mindspore.common import _tensor_docs
 del _tensor_docs
@@ -26,6 +26,8 @@ from mindspore.ops import _op_impl, grad, value_and_grad, vjp, jvp, jacfwd, jacr
 from mindspore.train import *
 from mindspore.log import *
 from mindspore.utils import *
+from mindspore.device_manager import *
+from mindspore.runtime import *
 from mindspore.context import GRAPH_MODE, PYNATIVE_MODE, set_context, get_context, set_auto_parallel_context, \
     get_auto_parallel_context, reset_auto_parallel_context, ParallelMode, set_ps_context, \
     get_ps_context, reset_ps_context, set_offload_context, get_offload_context, STRICT, COMPATIBLE, LAX
@@ -51,4 +53,6 @@ __all__.extend(context.__all__)
 __all__.extend(parallel.__all__)
 __all__.extend(rewrite.__all__)
 __all__.extend(safeguard.__all__)
+__all__.extend(device_manager.__all__)
+__all__.extend(runtime.__all__)
 __all__.append("Profiler")

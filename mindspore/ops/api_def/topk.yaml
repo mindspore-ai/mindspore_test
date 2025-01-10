@@ -6,7 +6,7 @@ topk:
     GPU: py_method
     interface: tensor
 
-  - op_yaml: deprecated/topk_op.yaml
+  - op_yaml: deprecated/topk_method.yaml
     py_method: deprecated_tensor_topk # callback to python function "def deprecated_tensor_topk"
     Ascend: py_method
     CPU: py_method

@@ -30,6 +30,7 @@
 #include "runtime/device/memory_offload_strategy.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -180,7 +181,7 @@ std::shared_ptr<device::SwapContext> GetSwapContext() {
   const auto &offload_context = OffloadContext::GetInstance();
   MS_EXCEPTION_IF_NULL(offload_context);
   const auto &swap_context = std::make_shared<device::SwapContext>();
-  const auto max_hbm_size = context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  const auto max_hbm_size = runtime::RuntimeConf::GetInstance()->mem_max_size();
   swap_context->hbm_mem_size_ = FloatToSize(max_hbm_size * kGBToByte * offload_context->hbm_ratio());
   auto cpu_mem_size = offload_context->offload_cpu_size();
   if (!mindspore::IsStandAlone() && !offload_context->cpu_size_configured()) {
@@ -189,7 +190,7 @@ std::shared_ptr<device::SwapContext> GetSwapContext() {
   }
   swap_context->cpu_mem_size_ = static_cast<size_t>(cpu_mem_size * offload_context->cpu_ratio());
   swap_context->disk_mem_size_ = offload_context->offload_disk_size();
-  MS_LOG(INFO) << "Hbm size:" << swap_context->hbm_mem_size_ << ", cpu memory size:" << swap_context->cpu_mem_size_
+  MS_LOG(INFO) << "MOC size:" << swap_context->hbm_mem_size_ << ", cpu memory size:" << swap_context->cpu_mem_size_
                << ", disk size:" << swap_context->disk_mem_size_ << " to generate the offload strategy";
   if (!offload_context->auto_offload()) {
     const auto &offload_param = offload_context->offload_param();

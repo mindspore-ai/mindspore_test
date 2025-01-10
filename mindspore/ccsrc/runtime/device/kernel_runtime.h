@@ -116,7 +116,6 @@ class BACKEND_EXPORT KernelRuntime {
   virtual std::shared_ptr<DeviceEvent> CreateDeviceTimeEvent() { return nullptr; }
   virtual DeviceType GetTargetDeviceType() const = 0;
   virtual void *compute_stream() const { return nullptr; }
-  virtual void *copy_data_stream() const { return nullptr; }
   virtual void *communication_stream() const { return nullptr; }
   virtual size_t communication_stream_id() const { return communication_stream_id_; }
   virtual size_t GetCommunicationStreamIDByGroup(const std::string & /**/) { return communication_stream_id(); }
@@ -211,11 +210,6 @@ class BACKEND_EXPORT KernelRuntime {
   size_t communication_stream_id_{kDefaultStreamIndex};
   void *stream_{nullptr};
   void *communication_stream_{nullptr};
-  void *copy_data_stream_{nullptr};
-  void *forward_send_stream_{nullptr};
-  void *backward_send_stream_{nullptr};
-  void *forward_recv_stream_{nullptr};
-  void *backward_recv_stream_{nullptr};
   void *swap_in_steam_{nullptr};
   void *swap_out_steam_{nullptr};
   std::map<std::string, size_t> group_comm_stream_{};

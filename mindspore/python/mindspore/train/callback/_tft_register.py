@@ -22,10 +22,11 @@ from mindspore.train.callback._callback import Callback
 from mindspore import context
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
+from mindspore.ops import functional as F
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
-from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post
+from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv
 from mindspore._c_expression import CollectiveManager
@@ -90,6 +91,7 @@ def _tft_exit_cb(ctx):
     _tft_sem_post()
     os._exit(1)   # pylint: disable=W0212
 
+
 def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_ctx):
     """ Callback used for TFT repair function."""
     logger.info("Enter _tft_repair_callback repair type: {}".format(repair_info["repair_type"]))
@@ -105,7 +107,7 @@ or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
         cb_params = args
         src_rank = repair_info["src"][0]
         dst_rank = repair_info["dst"][0]
-        send_recv(cb_params.network.trainable_params(), src_rank, dst_rank)
+        send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank)
     logger.info("Finish _tft_repair_callback")
 
 
@@ -134,8 +136,9 @@ def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
     logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
     _stop_device(cb_ctx.device_id)
-    if not cb_ctx._is_params_consistent():    # pylint: disable=W0212
+    if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):    # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
+    cb_ctx.is_uce_rank = False
     logger.info("Finish _tft_stop_callback")
 
 
@@ -160,13 +163,23 @@ class TFTRegister(Callback):
         ModuleNotFoundError: Mindio TFT whl package is not installed.
 
     Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            It's recommended to use the msrun startup method.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 4 devices.
+
         >>> import numpy as np
         >>> import os
         >>> import math
         >>> import mindspore as ms
         >>> import mindspore.dataset as ds
         >>> from mindspore import nn, ops, Parameter, train
-        >>> from mindspore.communication import init
+        >>> from mindspore.communication import init, get_rank
         >>> from mindspore.common.initializer import initializer, HeUniform
         >>> from mindspore.train import Model, TFTRegister
         >>> from mindspore import dataset as ds
@@ -175,7 +188,7 @@ class TFTRegister(Callback):
         >>> init()
         >>> ms.set_seed(1)
         >>> ms.set_auto_parallel_context(strategy_ckpt_config={"save_file":
-        >>>                             "./src_pipeline_strategys/src_strategy_{}.ckpt".format(get_rank())})
+        ...                             "./src_pipeline_strategys/src_strategy_{}.ckpt".format(get_rank())})
         >>> class MatMulCell(nn.Cell):
         ...     def __init__(self, param=None, shape=None):
         ...         super().__init__()
@@ -233,7 +246,7 @@ class TFTRegister(Callback):
         ...     dataset = dataset.batch(batch_size)
         ...     return dataset
         >>>
-        >>> data_set = create_dataset(32)
+        >>> dataset = create_dataset(32)
         >>>
         >>> optimizer = nn.SGD(net.trainable_params(), 1e-2)
         >>> optimizer_wrapper = nn.OptTFTWrapper(optimizer)
@@ -241,8 +254,8 @@ class TFTRegister(Callback):
         >>>
         >>> net_with_loss = nn.PipelineCell(nn.WithLossCell(net, loss_fn), 4)
         >>> net_with_loss.set_train()
-        >>> model = Model(net_with_loss, optimizer=optimizer)
-        >>> tft_cb = TFTRegister("192.168.0.1", 2000, "./tft_checkpoint/")
+        >>> model = Model(net_with_loss, optimizer=optimizer_wrapper)
+        >>> tft_cb = TFTRegister(0, "192.168.0.1", 2000, "./tft_checkpoint/")
         >>> loss_cb = train.LossMonitor(1)
         >>> model.train(1, dataset, callbacks=[tft_cb, loss_cb])
     """
@@ -264,6 +277,7 @@ class TFTRegister(Callback):
         self.global_step = 0
         Validator.check_non_negative_int(ctrl_port)
         self.has_init_replica = False
+        self.is_uce_rank = False
         self._controller_ip = ctrl_ip
         self._controller_rank_id = ctrl_rank_id
         self._controller_port = ctrl_port
@@ -274,6 +288,7 @@ class TFTRegister(Callback):
         self.assign = mindspore.ops.Assign()
         self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
         self.s1 = mindspore.hal.Stream()
+        _tft_sem_enable()
 
     def _is_params_consistent(self):
         for key, param in self.cb_params.train_network.parameters_and_names():
@@ -321,13 +336,12 @@ class TFTRegister(Callback):
         cur_rank = get_rank()
         enable_local_copy = False
         enable_arf = False
-        enable_zit = False
         enable_tls = False
         tls_key_dir = ""
 
         if cur_rank == self._controller_rank_id:
             logger.info(f"Begin to start tft controller on rank_id:{cur_rank}")
-            self.tft.tft_init_controller(cur_rank, world_size, enable_local_copy, enable_arf, enable_zit)
+            self.tft.tft_init_controller(cur_rank, world_size, enable_local_copy, enable_arf)
             self.tft.tft_start_controller(self._controller_ip, self._controller_port, enable_tls, tls_key_dir)
             logger.info("Finish start tft controller.")
 
@@ -335,6 +349,14 @@ class TFTRegister(Callback):
         self.tft.tft_init_processor(cur_rank, world_size, enable_local_copy, enable_tls, tls_key_dir)
         self.tft.tft_start_processor(self._controller_ip, self._controller_port)
         logger.info("Finished start tft processor.")
+
+    def _reset_acc_grads(self):
+        for key, param in self.cb_params.train_network.parameters_and_names():
+            if 'accu_grad' in key:
+                accu_grad = param
+                grad_val = F.cast(F.equal(accu_grad, accu_grad), F.dtype(accu_grad))
+                zeros = F.mul(grad_val, 0)
+                F.assign(accu_grad, zeros)
 
     def on_train_step_end(self, run_context):
         """
@@ -349,13 +371,13 @@ class TFTRegister(Callback):
             self._set_tft_optimizer_replica(run_context)
         cb_params = run_context.original_args()
         logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
-        self.tft.tft_end_updating_os(cb_params.cur_step_num)
         if cb_params.optimizer is not None:
             self.global_step = int(cb_params.optimizer.global_step.data)
             self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
         else:
             self.global_step = int(cb_params.network.optimizer.global_step.data)
             self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
+        self.tft.tft_end_updating_os(cb_params.cur_step_num)
         logger.info("END Set optimizer finish step status to TFT.")
 
 

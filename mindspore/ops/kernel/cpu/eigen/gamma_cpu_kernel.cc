@@ -52,7 +52,7 @@ bool GammaCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
 
 template <typename T>
 void GammaCpuKernelMod::InferShape(const std::vector<KernelTensor *> &inputs) {
-  const auto *shape_value = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  const auto *shape_value = GetDeviceAddress<T>(inputs, 0);
   for (int64_t i = 0; i < shape_shape_[0]; i++) {
     output_shape_.emplace_back(static_cast<int64_t>(shape_value[i]));
   }
@@ -80,8 +80,8 @@ int GammaCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
 template <typename T>
 void GammaCpuKernelMod::Generate(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
-  const auto *alpha_flat = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto *samples_flat = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const auto *alpha_flat = GetDeviceAddress<T>(inputs, 1);
+  auto *samples_flat = GetDeviceAddress<T>(outputs, 0);
 
   int64_t num_samples = std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<int64_t>());
   if (num_samples == 0) {

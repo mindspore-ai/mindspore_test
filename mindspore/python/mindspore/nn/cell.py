@@ -32,7 +32,8 @@ from mindspore import context
 from mindspore._c_expression import init_pipeline, update_func_graph_hyper_params, Cell_, FuncGraph, MixedPrecisionType
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
-from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, _no_grad
+from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, \
+    _no_grad
 from mindspore.common.api import _generate_branch_control_input, _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import Parameter, ParameterTuple
@@ -44,6 +45,7 @@ from mindspore.parallel.shard import Shard
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
+
 
 class Cell(Cell_):
     """
@@ -103,7 +105,8 @@ class Cell(Cell_):
                    '_func_graph_flags', '_parameter_layout_dict', '_params_list', '_phase', '_bprop_debug',
                    '_forward_pre_hook', '_forward_hook', '_backward_pre_hook', '_backward_hook',
                    '_cell_backward_pre_hook', '_cell_backward_hook', '_is_run', '_param_prefix',
-                   '_attr_synced', 'pynative', 'requires_grad', 'cell_type']
+                   '_attr_synced', 'pynative', 'requires_grad', 'cell_type',
+                   '_parameters_forward_hook', '_parameters_backward_hook']
     total_instance_count = 0
 
     def __init__(self, auto_prefix=True, flags=None):
@@ -141,6 +144,8 @@ class Cell(Cell_):
 
         # call gc to release GE session resources used by non-used cell objects
         if os.getenv('GC_COLLECT_IN_CELL') == '1':
+            logger.warning("The convenient environment 'GC_COLLECT_IN_CELL' is deprecated from version 2.5 "
+                           "and will be removed in a future version.")
             gc.collect()
 
         if flags:
@@ -155,6 +160,10 @@ class Cell(Cell_):
         self._backward_hook = OrderedDict()
         self._cell_backward_hook = None
         self._is_recursion_hook = False
+
+        # parameters hook
+        self._parameters_forward_hook = None
+        self._parameters_backward_hook = None
 
         self.cell_type = None
         self.cast = Cast()
@@ -1351,7 +1360,7 @@ class Cell(Cell_):
         def _updata(param):
             if param in replace:
                 return replace.get(param)
-            new_p = param.init_data(None, set_sliced=False)
+            new_p = param.init_data(None, set_sliced=param.sliced)
             replace[param] = new_p
             return new_p
 
@@ -2220,6 +2229,8 @@ class Cell(Cell_):
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]), Tensor(shape=[1], dtype=Float32,
             value= [ 2.00000000e+00]))
         """
+        if self.has_bprop:
+            return HookHandle()
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
         if not check_hook_fn("register_forward_hook", hook_fn):
@@ -2459,10 +2470,13 @@ class Cell(Cell_):
             else:
                 outputs = self.construct(outputs, **kwargs)
         if isinstance(outputs, tuple):
-            outputs = self._cell_backward_hook(*outputs)
+            new_outputs = self._cell_backward_hook(*outputs)
         else:
-            outputs = self._cell_backward_hook(outputs)
-        return outputs
+            new_outputs = self._cell_backward_hook(outputs)
+        # if outputs is (X,) and new_outpus is X
+        if isinstance(outputs, tuple) and not isinstance(new_outputs, tuple):
+            new_outputs = (new_outputs,)
+        return new_outputs
 
     def set_param_ps(self, recurse=True, init_in_server=False):
         """
@@ -2592,6 +2606,7 @@ class Cell(Cell_):
         """
         if context.get_context("mode") == context.PYNATIVE_MODE:
             self._recompute_cell = recompute_registry.get()(self.construct)
+            self._add_recompute_flag()
             return
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
@@ -2694,6 +2709,103 @@ class Cell(Cell_):
         if hasattr(network, "_amp_level"):
             self._amp_level = getattr(network, "_amp_level")
 
+    def _add_recompute_flag(self):
+        """
+        Set pynative cell recomputed.
+        """
+        if not self._has_config_recompute:
+            self._has_config_recompute = True
+        else:
+            logger.info("The recompute interface can be configured only once."
+                        " If the parent cell is configured, the child cell should not be configured")
+        for cell in self.cells():
+            cell._add_recompute_flag()
+
+    def _register_parameters_hook(self, forward_hook=None, backward_hook=None, all=False):
+        """
+        Register the forward hook for parameters and register the backward hook for the corresponding gradient.
+
+        .. warning::
+            This is an experimental prototype that is subject to change and/or deletion.
+
+        Note:
+            - The `_register_parameters_hook(forward_hook, backward_hook)` only work in graph mode
+            - The `forward_hook` must be defined as the following code.
+              `parameters`: the tuple of the trainble parameters of the Cell, each element in the tuple shuould be
+               in the format of `(param_name, Parameter)`.
+            - The `forward_hook` should have the following signature:
+              forward_hook(parameters) -> None.
+            - The `backward_hook` must be defined as the following code.
+              `gradients`: the tuple of the gradients corresponding to the trainble parameters of the Cell, each
+               element in the tuple shuould be in the format of `(param_name, gradient)`.
+            - The `backward_hook` should have the following signature:
+              backward_hook(parameters) -> New gradients.
+
+        Args:
+            forward_hook (function, optional): Python function or ``None``, Forward hook function. Default: ``None``
+            backward_hook (function, optional): Python function or ``None``, Backward hook function. Default ``None``
+            all (bool, optional): bool, whether to set hooks for all sub cells recursively. Default: ``False``
+
+        Returns:
+            None
+
+        Raises:
+            RuntimeError: If the `forward_hook` or `backward_hook ` has unspoorted syntax under GRAPH MODE.
+            TypeError: If the `forward_hook` or `backward_hook` is not defined as required.
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor, nn, ops, Parameter
+            >>>
+            >>> ms.set_context(mode=ms.GRAPH_MODE)
+            >>> def parameter_hook(parameters):
+            ...     print("--- enter parameter hook ---")
+            ...     for name, param in parameters:
+            ...         print (name, param)
+            ...     print("--- leave parameter hook ---")
+            ...
+            >>> def gradient_hook(gradients):
+            ...     print("--- enter gradient hook ---")
+            ...     outs = []
+            ...     for name, gradient in gradients:
+            ...         print(name, gradient)
+            ...         outs.append(gradient * 2) # double gradient
+            ...     print("--- leave gradient hook ---")
+            ...     return outs
+            ...
+            >>> class Net(nn.Cell):
+            ...     def __init__(self)
+            ...         super(Net, self).__init__()
+            ...         self.w = Parameter(Tensor(np.array([3.0], np.float32)), name='w')
+            ...     def construct(self, x):
+            ...         return self.w * x
+            ...
+            >>> grad = ops.GradOperation(get_by_list=True)
+            >>> net = Net()
+            >>> net._register_parameters_hook(forward_hook=parameter_hook, backward_hook=gradient_hook)
+            >>> x = Tensor(np.array([4.0]).astype(np.float32))
+            >>> output = grad(net, net.trainable_params())(x)
+            --- enter parameter hook ---
+            w
+            Tensor(shape=[1], dtype=Float32, value=[ 3.00000000e+00])
+            --- leave parameter hook ---
+            --- enter gradient hook ---
+            w
+            Tensor(shape=[1], dtype=Float32, value=[ 4.00000000e+00])
+            --- leave gradient hook ---
+            >>> print("doubled grad: ", output)
+            doubled grad: (Tensor(shape=[1], dtype=Float32, value=[ 8.00000000e+00]),)
+        """
+        if not all:
+            self._parameters_forward_hook = forward_hook
+            self._parameters_backward_hook = backward_hook
+        else:
+            for _, cell in self.cells_and_names():
+                cell._parameters_forward_hook = forward_hook
+                cell._parameters_backward_hook = backward_hook
 
 class GraphCell(Cell):
     """

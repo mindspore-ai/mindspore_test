@@ -42,10 +42,13 @@
 
     mindspore.Tensor.__abs__
     mindspore.Tensor.__add__
+    mindspore.Tensor.__isub__
+    mindspore.Tensor.__sub__
     mindspore.Tensor.abs
     mindspore.Tensor.absolute
     mindspore.Tensor.acos
     mindspore.Tensor.acosh
+    mindspore.Tensor.add_
     mindspore.Tensor.add
     mindspore.Tensor.addbmm
     mindspore.Tensor.addcdiv
@@ -56,6 +59,7 @@
     mindspore.Tensor.addr
     mindspore.Tensor.adjoint
     mindspore.Tensor.all
+    mindspore.Tensor.allclose
     mindspore.Tensor.amax
     mindspore.Tensor.amin
     mindspore.Tensor.aminmax
@@ -85,8 +89,10 @@
     mindspore.Tensor.atanh
     mindspore.Tensor.baddbmm
     mindspore.Tensor.bernoulli
+    mindspore.Tensor.bfloat16
     mindspore.Tensor.bincount
     mindspore.Tensor.bitwise_and
+    mindspore.Tensor.bitwise_not
     mindspore.Tensor.bitwise_left_shift
     mindspore.Tensor.bitwise_or
     mindspore.Tensor.bitwise_right_shift
@@ -98,15 +104,19 @@
     mindspore.Tensor.cauchy
     mindspore.Tensor.ceil
     mindspore.Tensor.cholesky
+    mindspore.Tensor.cholesky_inverse
     mindspore.Tensor.cholesky_solve
     mindspore.Tensor.choose
     mindspore.Tensor.chunk
     mindspore.Tensor.clamp
+    mindspore.Tensor.clamp_
     mindspore.Tensor.clip
+    mindspore.Tensor.clone
     mindspore.Tensor.col2im
     mindspore.Tensor.conj
     mindspore.Tensor.contiguous
     mindspore.Tensor.copy
+    mindspore.Tensor.copy_
     mindspore.Tensor.copysign
     mindspore.Tensor.cos
     mindspore.Tensor.cosh
@@ -118,6 +128,7 @@
     mindspore.Tensor.cumprod
     mindspore.Tensor.cumsum
     mindspore.Tensor.deg2rad
+    mindspore.Tensor.det
     mindspore.Tensor.diag
     mindspore.Tensor.diagflat
     mindspore.Tensor.diagonal
@@ -125,20 +136,24 @@
     mindspore.Tensor.diff
     mindspore.Tensor.digamma
     mindspore.Tensor.div
+    mindspore.Tensor.div_
     mindspore.Tensor.divide
     mindspore.Tensor.dot
+    mindspore.Tensor.double
     mindspore.Tensor.dsplit
     mindspore.Tensor.dtype
+    mindspore.Tensor.eigvals
     mindspore.Tensor.eq
     mindspore.Tensor.equal
     mindspore.Tensor.erf
     mindspore.Tensor.erfc
     mindspore.Tensor.erfinv
-    mindspore.Tensor.eigvals
     mindspore.Tensor.exp
+    mindspore.Tensor.expand
     mindspore.Tensor.expand_as
     mindspore.Tensor.expand_dims
     mindspore.Tensor.expm1
+    mindspore.Tensor.fill_
     mindspore.Tensor.fill_diagonal
     mindspore.Tensor.flatten
     mindspore.Tensor.flip
@@ -147,16 +162,19 @@
     mindspore.Tensor.float
     mindspore.Tensor.float_power
     mindspore.Tensor.floor
+    mindspore.Tensor.floor_
     mindspore.Tensor.floor_divide
     mindspore.Tensor.flush_from_cache
-    mindspore.Tensor.fold
     mindspore.Tensor.fmax
+    mindspore.Tensor.fmin
     mindspore.Tensor.fmod
+    mindspore.Tensor.fold
     mindspore.Tensor.frac
     mindspore.Tensor.from_numpy
     mindspore.Tensor.gather
     mindspore.Tensor.gather_elements
     mindspore.Tensor.gather_nd
+    mindspore.Tensor.gcd
     mindspore.Tensor.ge
     mindspore.Tensor.geqrf
     mindspore.Tensor.ger
@@ -176,6 +194,7 @@
     mindspore.Tensor.igammac
     mindspore.Tensor.imag
     mindspore.Tensor.index_add
+    mindspore.Tensor.index_add_
     mindspore.Tensor.index_fill
     mindspore.Tensor.index_put
     mindspore.Tensor.index_put_
@@ -189,6 +208,8 @@
     mindspore.Tensor.invert
     mindspore.Tensor.isclose
     mindspore.Tensor.isfinite
+    mindspore.Tensor.is_complex
+    mindspore.Tensor.is_contiguous
     mindspore.Tensor.is_floating_point
     mindspore.Tensor.isinf
     mindspore.Tensor.isnan
@@ -196,8 +217,6 @@
     mindspore.Tensor.isposinf
     mindspore.Tensor.isreal
     mindspore.Tensor.is_signed
-    mindspore.Tensor.is_complex
-    mindspore.Tensor.is_contiguous
     mindspore.Tensor.item
     mindspore.Tensor.itemset
     mindspore.Tensor.itemsize
@@ -207,6 +226,7 @@
     mindspore.Tensor.lerp
     mindspore.Tensor.less
     mindspore.Tensor.less_equal
+    mindspore.Tensor.lgamma
     mindspore.Tensor.log
     mindspore.Tensor.log10
     mindspore.Tensor.log1p
@@ -223,22 +243,26 @@
     mindspore.Tensor.logsumexp
     mindspore.Tensor.log_normal
     mindspore.Tensor.long
+    mindspore.Tensor.lstsq
     mindspore.Tensor.lt
     mindspore.Tensor.lu_solve
     mindspore.Tensor.masked_fill
+    mindspore.Tensor.masked_fill_
     mindspore.Tensor.masked_scatter
     mindspore.Tensor.masked_select
     mindspore.Tensor.matmul
+    mindspore.Tensor.matrix_power
     mindspore.Tensor.max
     mindspore.Tensor.maximum
     mindspore.Tensor.mean
     mindspore.Tensor.median
+    mindspore.Tensor.t
     mindspore.Tensor.mH
     mindspore.Tensor.min
     mindspore.Tensor.minimum
     mindspore.Tensor.mm
-    mindspore.Tensor.movedim
     mindspore.Tensor.moveaxis
+    mindspore.Tensor.movedim
     mindspore.Tensor.move_to
     mindspore.Tensor.msort
     mindspore.Tensor.mT
@@ -249,6 +273,7 @@
     mindspore.Tensor.nan_to_num
     mindspore.Tensor.nanmean
     mindspore.Tensor.nanmedian
+    mindspore.Tensor.nanquantile
     mindspore.Tensor.nansum
     mindspore.Tensor.narrow
     mindspore.Tensor.nbytes
@@ -261,24 +286,29 @@
     mindspore.Tensor.new_ones
     mindspore.Tensor.new_zeros
     mindspore.Tensor.nextafter
-    mindspore.Tensor.numel
-    mindspore.Tensor.numpy
     mindspore.Tensor.nonzero
     mindspore.Tensor.norm
+    mindspore.Tensor.normal_
     mindspore.Tensor.not_equal
-    mindspore.Tensor.outer
+    mindspore.Tensor.numel
+    mindspore.Tensor.numpy
     mindspore.Tensor.orgqr
     mindspore.Tensor.ormqr
+    mindspore.Tensor.outer
     mindspore.Tensor.permute
     mindspore.Tensor.positive
     mindspore.Tensor.pow
     mindspore.Tensor.prod
     mindspore.Tensor.ptp
+    mindspore.Tensor.qr
+    mindspore.Tensor.quantile
     mindspore.Tensor.rad2deg
+    mindspore.Tensor.random_
     mindspore.Tensor.random_categorical
     mindspore.Tensor.ravel
     mindspore.Tensor.real
     mindspore.Tensor.reciprocal
+    mindspore.Tensor.register_hook
     mindspore.Tensor.remainder
     mindspore.Tensor.renorm
     mindspore.Tensor.repeat
@@ -289,12 +319,13 @@
     mindspore.Tensor.reverse
     mindspore.Tensor.reverse_sequence
     mindspore.Tensor.roll
-    mindspore.Tensor.round
     mindspore.Tensor.rot90
+    mindspore.Tensor.round
     mindspore.Tensor.rsqrt
-    mindspore.Tensor.register_hook
     mindspore.Tensor.scatter
+    mindspore.Tensor.scatter_
     mindspore.Tensor.scatter_add
+    mindspore.Tensor.scatter_add_
     mindspore.Tensor.scatter_div
     mindspore.Tensor.scatter_max
     mindspore.Tensor.scatter_min
@@ -327,6 +358,7 @@
     mindspore.Tensor.stride
     mindspore.Tensor.strides
     mindspore.Tensor.sub
+    mindspore.Tensor.sub_
     mindspore.Tensor.subtract
     mindspore.Tensor.sum
     mindspore.Tensor.sum_to_size
@@ -338,6 +370,7 @@
     mindspore.Tensor.take
     mindspore.Tensor.tan
     mindspore.Tensor.tanh
+    mindspore.Tensor.tanh_
     mindspore.Tensor.tensor_split
     mindspore.Tensor.tile
     mindspore.Tensor.to
@@ -356,6 +389,8 @@
     mindspore.Tensor.unbind
     mindspore.Tensor.unfold
     mindspore.Tensor.uniform
+    mindspore.Tensor.uniform_
+    mindspore.Tensor.unique
     mindspore.Tensor.unique_consecutive
     mindspore.Tensor.unique_with_pad
     mindspore.Tensor.unsorted_segment_max
@@ -365,10 +400,11 @@
     mindspore.Tensor.var
     mindspore.Tensor.view
     mindspore.Tensor.view_as
+    mindspore.Tensor.vsplit
     mindspore.Tensor.where
     mindspore.Tensor.xdivy
     mindspore.Tensor.xlogy
-    mindspore.Tensor.vsplit
+    mindspore.Tensor.zero_
 
 {% elif fullname=="mindspore.nn.Cell" %}
 {{ fullname | underline }}
@@ -384,6 +420,21 @@
     :exclude-members: infer_value, infer_shape, infer_dtype, get_bprop
     :members:
 
+{% elif fullname=="mindspore.profiler.DynamicProfilerMonitor" %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :members:
+    :inherited-members: Callback
+    :exclude-members: on_train_end, step_begin, step_end
+
+{% elif fullname in ["mindspore.profiler.schedule", "mindspore.profiler.mstx"] %}
+{{ fullname | underline }}
+
+.. autoclass:: {{ name }}
+    :exclude-members: infer_value, infer_shape, infer_dtype
+    :members:
+
 {% elif objname[0].istitle() %}
 {{ fullname | underline }}
 
@@ -392,7 +443,7 @@
     :members:
 
 {% else %}
-{{ fullname | underline }}
+{{ fullname | escape | underline }}
 
 .. autofunction:: {{ fullname }}
 

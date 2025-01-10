@@ -1,0 +1,14 @@
+lerp:
+  - op_yaml: lerp_op.yaml
+    py_method: tensor_lerp
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function
+
+  - op_yaml: lerp_scalar_op.yaml
+    py_method: tensor_lerp
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor, function

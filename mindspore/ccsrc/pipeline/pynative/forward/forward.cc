@@ -27,6 +27,7 @@
 #include "include/common/amp/amp.h"
 #include "include/common/utils/python_fallback_running.h"
 #include "backend/graph_compiler/transform.h"
+#include "symbolic_shape/symbol.h"
 #include "utils/ms_context.h"
 #include "pipeline/pynative/forward/forward_task.h"
 #include "pipeline/pynative/predict_out_type_map.h"
@@ -37,7 +38,9 @@ using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/device/device_address_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "pipeline/pynative/grad/grad_utils.h"
+#include "kernel/functions/auto_grad_reg.h"
 
 namespace mindspore {
 namespace pynative {
@@ -96,6 +99,14 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", op_run_info->base_op_run_info.op_name, "");
   runtime::DeviceAddressUtils::MallocForInput(device_context, tensor, false);
+  static bool enable_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  if (MS_UNLIKELY(enable_tracker)) {
+    auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    MS_EXCEPTION_IF_NULL(device_address);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsInput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
+      device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
+  }
 }
 #endif
 
@@ -115,9 +126,6 @@ ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const
     new_tensor->set_device_address(tensor->device_address());
     new_tensor->set_contiguous_callback(tensor->contiguous_callback());
     new_tensor->set_sync_status(tensor->sync_status());
-    if (op_run_info->requires_grad) {
-      PyNativeAlgo::AutoGradUtil::BuildViewAutoGradMeta(tensor, new_tensor, 0, autograd::CreationType::kCustomBprop);
-    }
     return new_tensor;
   }
   if (v->isa<ValueTuple>()) {
@@ -342,7 +350,8 @@ void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
 
 void ForwardExecutor::ReInit() {
   device_target_ = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  enable_async_ = !MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
+  enable_async_ = !sync_stream;
 }
 
 void ForwardExecutor::Init() {
@@ -800,10 +809,14 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
       result[i] = CopyTensorValueWithNewId(op_run_info, op_run_info->op_grad_info->input_value[i]);
     }
     auto result_v = ConstructOutputInVM(result);
+    if (op_run_info->requires_grad) {
+      // Later we need modify hook op to view op.
+      (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
+    }
     MS_LOG(DEBUG) << "RunOpInVM end";
     return result_v;
   }
-
+  py::gil_scoped_acquire gil_acquire;
   MS_EXCEPTION_IF_NULL(op_run_info->op_grad_info->op_prim);
   py::list vm_op_inputs = py::list(op_run_info->input_size);
   for (size_t i = 0; i < op_run_info->input_size; ++i) {
@@ -854,11 +867,13 @@ std::string ForwardExecutor::GetCurrentDeviceTarget(const PrimitivePtr &op_prim)
   return device_target_;
 }
 
-void ForwardExecutor::Sync() {
+void ForwardExecutor::Sync(const bool &) {
+  GilReleaseWithCheck release_gil;
   ExecuteLazyTask();
-
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kSyncStream);
   device::DeviceContextManager::GetInstance().SyncAllStreams();
+  runtime::ProfilerAnalyzer::GetInstance().EndStep();
+  runtime::ProfilerAnalyzer::GetInstance().StartStep();
 }
 
 ValuePtr ForwardExecutor::RunOpInMs(const FrontendOpRunInfoPtr &op_run_info,

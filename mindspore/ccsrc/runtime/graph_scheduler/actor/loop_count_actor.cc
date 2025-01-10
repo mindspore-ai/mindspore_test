@@ -93,6 +93,7 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
         current_count_ = loop_count_;
       }
     }
+    MS_LOG(INFO) << "Sync stream success.";
   }
 
   PostRun(context);

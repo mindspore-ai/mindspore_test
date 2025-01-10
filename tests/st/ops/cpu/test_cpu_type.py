@@ -22,7 +22,7 @@ class Net(nn.Cell):
         return self.bias_add1(self.bias_add(x, b), c)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_bias_add1():
     x = np.ones([2, 2]).astype(np.float16)

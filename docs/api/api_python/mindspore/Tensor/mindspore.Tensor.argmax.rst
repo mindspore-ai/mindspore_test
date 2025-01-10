@@ -7,10 +7,10 @@ mindspore.Tensor.argmax
 
     参数：
         - **axis** (Union[int, None]，可选) - 指定计算轴。如果是 ``None`` ，将会返回扁平化Tensor在指定轴上的最大值索引。不能超过 `self` 的维度。默认值： ``None`` 。
-        - **keepdims** (bool，可选) - 输出Tensor是否保留指定轴。如果 `dim` 是 ``None`` ，忽略该选项。默认值： ``False`` 。
+        - **keepdims** (bool，可选) - 输出Tensor是否保留指定轴。如果 `axis` 是 ``None`` ，忽略该选项。默认值： ``False`` 。
 
     返回：
-        Tensor，输出为指定轴上输入Tensor最大值的索引。
+        Tensor，输出为 `self` 在指定轴上最大值的索引。
 
     异常：
         - **TypeError** - 如果入参 `keepdims` 的类型不是布尔值。
@@ -26,7 +26,7 @@ mindspore.Tensor.argmax
         - **keepdim** (bool，可选) - 输出Tensor是否保留指定轴。如果 `dim` 是 ``None`` ，忽略该选项。默认值： ``False`` 。
 
     返回：
-        Tensor，输出为指定轴上输入Tensor最大值的索引。
+        Tensor，输出为 `self` 在指定轴上的最大值索引。
 
     异常：
         - **TypeError** - 如果入参 `keepdim` 的类型不是布尔值。

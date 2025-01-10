@@ -15,9 +15,11 @@
  */
 
 #include "pipeline/pynative/pynative_execute.h"
+#include "availability/silent_check/silent_check.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/ir/ir_bprop.h"
 #include "pipeline/pynative/predict_out_type_map.h"
+#include "pipeline/pynative/op_function/auto_grad_register.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
@@ -29,6 +31,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_compiler.h"
 #include "runtime/pynative/op_runner.h"
+#include "runtime/pynative/lazy_fusion_kernel.h"
 #include "include/common/profiler.h"
 #include "ir/cell.h"
 #include "include/common/utils/stub_tensor.h"
@@ -112,10 +115,12 @@ py::object PyNativeExecutor::RunOpStub(const py::args &args) const {
   // 3. create top stub node
   auto node = stub::MakeTopNode(top_type);
   // The task in the AsyncQueue may need to acquire gil.
-  GilReleaseWithCheck release_gil;
-  // 4. set abstract and value in asynchronous thread after infer and run
-  op_run_info->stub_output = node.second;
-  forward_executor()->DispatchFrontendTask(op_run_info);
+  {
+    GilReleaseWithCheck release_gil;
+    // 4. set abstract and value in asynchronous thread after infer and run
+    op_run_info->stub_output = node.second;
+    forward_executor()->DispatchFrontendTask(op_run_info);
+  }
   // 5. return stub node
   return node.first;
 }
@@ -135,8 +140,11 @@ py::object PyNativeExecutor::RunSliceOpStub(const std::vector<ValuePtr> &input_v
   }
   auto top_type = kTensorType;
   auto node = stub::MakeTopNode(top_type);
-  GilReleaseWithCheck release_gil;
-  forward_executor()->DispatchSilceOpFrontendTask(input_values, slice_op_infos, requires_grad, node.second, stream_id);
+  {
+    GilReleaseWithCheck release_gil;
+    forward_executor()->DispatchSilceOpFrontendTask(input_values, slice_op_infos, requires_grad, node.second,
+                                                    stream_id);
+  }
   return node.first;
 }
 
@@ -175,6 +183,7 @@ void PyNativeExecutor::set_kernel_build_server_dir(const py::object &kernel_buil
 
 void PyNativeExecutor::ClearRes() const {
   runtime::Pipeline::Get().WaitAll();
+  silentcheck::SilentCheckerBase::ClearAll();
   // Clear forward tasks before clear op graphs cache.
   pynative::OpCompiler::GetInstance().ClearAllCache();
   kernel::KernelModCache::GetInstance().ClearAllCache();
@@ -208,13 +217,11 @@ void PyNativeExecutor::Init() {
   forward_executor_->set_grad_executor(grad_executor_);
   forward_executor_->RefreshForwardCallback();
   runtime::ProfilerAnalyzer::GetInstance().SetThreadIdToName(std::this_thread::get_id(), "Python");
+  LazyFusionInit();
+  OpsAutoGradImplRegister();
 }
 
-void PyNativeExecutor::Sync() const {
-  forward_executor()->Sync();
-  runtime::ProfilerAnalyzer::GetInstance().EndStep();
-  runtime::ProfilerAnalyzer::GetInstance().StartStep();
-}
+void PyNativeExecutor::Sync() const { PyNativeExecutorTry(forward_executor()->SyncData, true); }
 
 bool PyNativeExecutor::grad_flag() const { return grad_executor()->grad_flag(); }
 
@@ -251,14 +258,13 @@ py::object PyNativeExecutor::RunGrad(const prim::GradOperationPtr &grad, const p
   return PyNativeExecutorTry(grad_executor()->Run, grad, cell, weights, grad_position, args);
 }
 
-py::object PyNativeExecutor::GradJit(const py::object &out, const py::args &args) const {
-  const auto &ret = grad_executor()->jit()->GradJit(out, args);
-  return ret;
+py::object PyNativeExecutor::GradJit(const py::args &args) const {
+  return PyNativeExecutorTry(grad_executor()->GradJit, args);
 }
 
 void PyNativeExecutor::CallCustomBprop(const py::object &cell_obj, const py::object &out, const py::args &args) const {
   MS_EXCEPTION_IF_NULL(grad_executor()->top_cell());
-  grad_executor()->CallCustomBprop(cell_obj, out, args);
+  PyNativeExecutorTry(grad_executor()->CallCustomBpropFunc, cell_obj, out, args);
 }
 
 void PyNativeExecutor::SetMixedPrecisionType(const MixedPrecisionType mix_type, bool is_push) const {
@@ -329,6 +335,7 @@ void PyNativeExecutor::ChildAfterFork() {
     grad_executor_->ChildAfterFork();
   }
   runtime::OpRunner::ChildAfterFork();
+  OpsAutoGradImplRegister();
   MS_LOG(DEBUG) << "PyNativeExecutor reinitialize after fork done.";
 }
 

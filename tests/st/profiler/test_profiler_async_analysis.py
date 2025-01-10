@@ -13,7 +13,9 @@
 # limitations under the License.
 # ============================================================================
 import os
+import glob
 import shutil
+import tempfile
 from tests.mark_utils import arg_mark
 
 
@@ -30,11 +32,9 @@ def cleanup():
 
 
 class CheckProfilerFiles:
-    def __init__(self, device_id, rank_id, profiler_path, device_target, profile_framework='all'):
+    def __init__(self, profiler_path, device_target, profile_framework='all'):
         """Args init."""
-        self.device_id = device_id
-        self.rank_id = rank_id
-        self.profiler_path = os.path.join(profiler_path, 'profiler')
+        self.profiler_path = profiler_path
         self.device_target = device_target
         if device_target == "Ascend":
             self._check_d_profiling_file()
@@ -42,44 +42,33 @@ class CheckProfilerFiles:
 
     def _check_d_profiling_file(self):
         """Check Ascend profiling file."""
-        aicore_file = f'aicore_intermediate_{self.rank_id}_detail.csv'
-        timeline_file = f'ascend_timeline_display_{self.rank_id}.json'
-        aicpu_file = f'aicpu_intermediate_{self.rank_id}.csv'
-        minddata_pipeline_file = f'minddata_pipeline_raw_{self.rank_id}.csv'
-        queue_profiling_file = f'device_queue_profiling_{self.rank_id}.txt'
+        kernel_details_file = f'kernel_details.csv'
+        trace_viewer_file = f'trace_view.json'
 
-        d_profiler_files = (aicore_file, timeline_file, aicpu_file, minddata_pipeline_file, queue_profiling_file)
+        d_profiler_files = (kernel_details_file, trace_viewer_file)
         for _file in d_profiler_files:
             result_file = os.path.join(self.profiler_path, _file)
             assert os.path.isfile(result_file)
 
     def _check_host_profiling_file(self, profile_framework='all'):
-        dataset_csv = os.path.join(self.profiler_path, f'dataset_{self.rank_id}.csv')
+        dataset_csv = os.path.join(self.profiler_path, f'dataset.csv')
         if profile_framework in ['all', 'time']:
             assert os.path.isfile(dataset_csv)
         else:
             assert not os.path.exists(dataset_csv)
 
 
-class TestProfilerAsyncAnalysis:
-    profiler_path = os.path.join(os.getcwd(), f'data')
-    device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
-    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
-
-    @classmethod
-    def setup_class(cls):
-        """Run begin all test case start."""
-        cleanup()
-
-    @staticmethod
-    def teardown():
-        """Run after each test case end."""
-        cleanup()
-
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-    def test_ascend_profiler(self):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_ascend_profiler():
+    """
+    Feature: Ascend Profiler
+    Description: Test Ascend Profiler with step profiler.
+    Expectation: The profiler successfully collects data and generates the expected files.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
         status = os.system(
-            """python ./run_net_with_profiler.py --target=Ascend --mode=0 --output_path=%s""" % self.profiler_path
+            """python ./run_net_with_profiler.py --target=Ascend --mode=0 --output_path=%s""" % tmpdir
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend")
+        ascend_profiler_output_path = glob.glob(f"{tmpdir}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
+        CheckProfilerFiles(ascend_profiler_output_path, "Ascend")
         assert status == 0

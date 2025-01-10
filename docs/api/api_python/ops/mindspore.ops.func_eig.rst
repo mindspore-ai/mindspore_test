@@ -9,7 +9,7 @@ mindspore.ops.eig
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **A** (Tensor) - 方阵。shape为 :math:`(*, N, N)`，数据类型支持
+        - **A** (Tensor) - 方阵。shape为 :math:`(*, N, N)`，数据类型支持\
           float32、float64、complex64、complex128。
 
     返回：

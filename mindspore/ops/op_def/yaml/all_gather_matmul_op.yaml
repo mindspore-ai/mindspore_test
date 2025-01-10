@@ -1,0 +1,40 @@
+all_gather_matmul:
+  args:
+    input:
+      dtype: tensor
+    x2:
+      dtype: tensor
+    group:
+      dtype: str
+    world_size:
+      dtype: int
+    bias:
+      dtype: tensor
+      default: None
+    gather_index:
+      dtype: int
+      default: 0
+    gather_output:
+      dtype: bool
+      default: True
+    comm_turn:
+      dtype: int
+      default: 0
+    trans_input:
+      dtype: bool
+      default: False
+    trans_x2:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+    gather_out:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: AllGatherMatmulAscend
+    CPU: None
+    GPU: None
+  function:
+    disable: True

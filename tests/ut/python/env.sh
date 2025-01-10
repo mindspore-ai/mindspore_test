@@ -28,4 +28,3 @@ MINDSPORE_PYTHON=${PROJECT_PATH}/mindspore/python
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${BUILD_PATH}/third_party/gtest/lib
 export PYTHONPATH=$PYTHONPATH:${MINDSPORE_PYTHON}:${PROJECT_PATH}/tests/ut/cpp/python_input:${PROJECT_PATH}/tests/ut/python
 echo "export PYTHONPATH=$PYTHONPATH"
-export GC_COLLECT_IN_CELL=1

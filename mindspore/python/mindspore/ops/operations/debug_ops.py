@@ -13,13 +13,14 @@
 # limitations under the License.
 # ============================================================================
 """debug_ops"""
-import os
 import stat
+from pathlib import Path
 
 import numpy as np
 from mindspore import log as logger
 from mindspore._c_expression import security, HookType
 from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import _tensordump_process_file
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
@@ -30,7 +31,6 @@ from mindspore.ops import operations as P
 
 
 SUMMARY_TENSOR_CACHE = []
-TENSORDUMP_ID = 0
 
 
 def _cache_summary_data(op_name, define_name, tensor):
@@ -65,8 +65,8 @@ class ScalarSummary(Primitive):
     which specify the directory of the summary file. The summary file can
     be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
-    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    to solve operator execution failure when calling this operator intensively.
+    In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    can be set to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable, it must not be an empty string.
@@ -125,8 +125,8 @@ class ImageSummary(Primitive):
     SummaryRecord or SummaryCollector, which specify the directory of the summary file. The summary file can
     be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
-    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    to solve operator execution failure when calling this operator intensively.
+    In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    can be set to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable, it must not be an empty string.
@@ -178,8 +178,8 @@ class TensorSummary(Primitive):
     or SummaryCollector, which specify the directory of the summary file. The summary file can
     be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
-    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    to solve operator execution failure when calling this operator intensively.
+    In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    can be set to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable.
@@ -235,13 +235,16 @@ class TensorDump(Primitive):
     """
     Save the Tensor as an npy file in numpy format.
 
+    .. warning::
+        - The parameter input_output will no longer support the value 'all'.
+
     .. note::
-        In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-        to solve operator execution failure when outputting big tensor or outputting tensor intensively.
+        In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+        can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
 
     Args:
         input_output (str, optional): Used to control Tensordump behavior.
-            Available value is one of ['in', 'out', 'all']. Default value is ``out``.
+            Available value is one of ['in', 'out']. Default value is ``out``.
 
             In case of OpA --> RedistributionOps --> OpB,
             The dump data of OpA's output is not equal to OpB's input (Due to the redistribution operators).
@@ -251,20 +254,17 @@ class TensorDump(Primitive):
             Different requirements of saving dump data can be achieved by configuring parameter input_output:
 
             - If the input_output is 'out', the dump data contains only OpA's output slice.
-            - If the input_output is 'all', the dump data contains both OpA's output slice and OpB's input slice.
             - If the input_output is 'in', the dump data contains only OpB's input slice.
 
-            For input_output is 'all' or 'in', the input slice npy file format is:
-            fileName_cNodeID_dumpMode_rankID_dtype_id.npy.
+            For input_output is 'in', the input slice npy file format is:
+            fileName_dumpMode_dtype_id.npy.
 
-            For input_output is 'out' or 'all' the output slice npy file format is:
+            For input_output is 'out', the output slice npy file format is:
             fileName_dtype_id.npy.
 
             - fileName: Value of the parameter file
               (if parameter file_name is a user-specified path, the value of fileName is the last level of the path).
-            - cNodeID: The node ID of the Tensordump node in the step_parallel_end.ir file.
             - dumpMode: Value of the parameter input_output.
-            - rankID: Logical device id.
             - dtype: The original data type. Data of type bfloat16 stored in the .npy file will be converted to float32.
             - id: An auto increment ID.
 
@@ -284,7 +284,8 @@ class TensorDump(Primitive):
         >>> import mindspore as ms
         >>> import time
         >>> from mindspore import nn, Tensor, ops
-        >>> ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super(Net, self).__init__()
@@ -317,30 +318,26 @@ class TensorDump(Primitive):
         self.add_prim_attr("side_effect_io", True)
         self.add_prim_attr("channel_name", "ms_tensor_dump")
 
+    def _save_file(self, file, data):
+        file = Path(file)
+        if file.exists():
+            file.chmod(stat.S_IWUSR)
+        np.save(file, data)
+        file.chmod(stat.S_IRUSR)
+
     def __call__(self, file, input_x):
         validator.check_value_type('file', file, [str], self.__class__.__name__)
         if not file:
             raise ValueError("For 'TensorDump', the input argument[file] cannot be an empty string.")
         validator.check_value_type('input_x', input_x, [Tensor], self.__class__.__name__)
-        global TENSORDUMP_ID
-        npy_suffix = ".npy"
+
         dtype = input_x.dtype
+        file = _tensordump_process_file(file, str(dtype))
+        if not file:
+            return
         if dtype == mstype.bfloat16:
             input_x = P.Cast()(input_x, mstype.float32)
-        dtype = str(dtype).lower()
-        directory, filename = os.path.split(file)
-        if directory and not os.path.exists(directory):
-            os.makedirs(directory, mode=0o700, exist_ok=True)
-        if filename.endswith(npy_suffix):
-            filename = filename[:-len(npy_suffix)]
-        new_filename = f"{filename}_{dtype}_{TENSORDUMP_ID}"
-        new_file = os.path.join(directory, new_filename)
-        new_file += npy_suffix
-        if os.path.exists(new_file):
-            os.chmod(new_file, stat.S_IWUSR)
-        np.save(new_file, input_x.asnumpy())
-        os.chmod(new_file, stat.S_IRUSR)
-        TENSORDUMP_ID += 1
+        self._save_file(file, input_x.asnumpy())
 
 
 class HistogramSummary(Primitive):
@@ -349,8 +346,8 @@ class HistogramSummary(Primitive):
     It must be used with SummaryRecord or SummaryCollector, which specify the directory of the summary file.
     The summary file can be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
-    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    to solve operator execution failure when calling this operator intensively.
+    In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    can be set to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable.
@@ -402,7 +399,7 @@ class HistogramSummary(Primitive):
         _cache_summary_data(self.name, args[0], args[1])
 
 
-class InsertGradientOf(PrimitiveWithInfer):
+class InsertGradientOf(Primitive):
     """
     Attaches callback to the graph node that will be invoked on the node's gradient.
 
@@ -467,12 +464,6 @@ class InsertGradientOf(PrimitiveWithInfer):
         """Initialize InsertGradientOf."""
         self.add_prim_attr('side_effect_backprop', True)
         self.f = f
-
-    def infer_shape(self, x_shape):
-        return x_shape
-
-    def infer_dtype(self, x_type):
-        return x_type
 
 
 class HookBackward(PrimitiveWithInfer):

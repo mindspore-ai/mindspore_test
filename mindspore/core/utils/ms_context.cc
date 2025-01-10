@@ -369,7 +369,7 @@ int MsContext::GetSaveGraphsLevel() const {
 bool MsContext::CanDump(const DumpLevel &level) const { return GetSaveGraphsLevel() >= level; }
 
 void MsContext::MarkReadStatus(MsCtxParam param) const {
-#if !(defined(ENABLE_TEST) || defined(BUILD_LITE))
+#if !(defined(ENABLE_TEST))
   // unit tests will set device_id many times in one process
   if (static_cast<size_t>(param) < params_read_status_.size()) {
     params_read_status_[static_cast<size_t>(param)] = true;
@@ -385,7 +385,7 @@ void MsContext::MarkWriteStatus(MsCtxParam param) const {
 
 template <typename T>
 void MsContext::CheckReadStatus(MsCtxParam param, const T &value) const {
-#if !(defined(ENABLE_TEST) || defined(BUILD_LITE))
+#if !(defined(ENABLE_TEST))
   // unit tests will set device_id many times in one process
   if (static_cast<size_t>(param) >= params_read_status_.size()) {
     return;
@@ -429,6 +429,7 @@ void MsContext::ChildAfterFork() {
     // set device_target to 'CPU' as default.
     MS_LOG(INFO) << "Process " << getpid() << " config changed: 'device_target' is reset to 'CPU'.";
     SetDeviceTargetFromUser("CPU");
+    DeviceManagerConf::GetInstance()->set_device("CPU", 0, false);
   }
 }
 
@@ -595,7 +596,6 @@ void MsContext::SetAscendConfig() {
 }
 
 void MsContext::InitBoolTypeDefaultValue() {
-  set_param<bool>(MS_CTX_ENABLE_DUMP, false);
   set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
   set_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT, false);
   set_param<bool>(MS_CTX_ENABLE_REDUCE_PRECISION, true);
@@ -641,12 +641,12 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_FLASH_ATTENTION_LOAD_BALANCE, false);
   set_param<bool>(MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER, false);
   set_param<bool>(MS_CTX_ENABLE_INTERLEAVE_SPLIT_CONCAT_BRANCH, false);
+  set_param<bool>(MS_CTX_ENABLE_INTERLEAVE_PARALLEL_BRANCH, false);
 }
 
 void MsContext::InitStringTypeDefaultValue() {
   set_param<std::string>(MS_CTX_PYTHON_EXE_PATH, "python");
   set_param<std::string>(MS_CTX_KERNEL_BUILD_SERVER_DIR, "");
-  set_param<std::string>(MS_CTX_SAVE_DUMP_PATH, ".");
   set_param<std::string>(MS_CTX_DETERMINISTIC, "OFF");
   set_param<std::string>(MS_CTX_ENV_CONFIG_PATH, "");
   set_param<std::string>(MS_CTX_AOE_TUNE_MODE, "");
@@ -716,8 +716,9 @@ inline std::string SetToString(const std::set<std::string> &kernel_list) {
 void MsContext::SetMsInternalEnableCustomKernelList() {
   const std::string kDefaultEnabledOpList =
     "MatMul,RmsNorm,Add,Sub,FlashAttentionScore,PagedAttention,PagedAttentionMask,AddRmsNorm,AddLayerNorm,"
-    "MatMulAllReduce,InferenceMatmulSplit,AddRmsNormQuantV2,InferenceSwiGLU,QbmmAllReduceAdd,QbmmAdd";
-  const std::string k310pDefaultEnabledOpList = "QbmmAllReduceAdd,QbmmAdd";
+    "MatMulAllReduce,InferenceMatmulSplit,AddRmsNormQuantV2,InferenceSwiGLU,QbmmAllReduceAdd,QbmmAdd,"
+    "AddRmsNormDynamicQuant,MatMulElemwise";
+  const std::string k310pDefaultEnabledOpList = "MatMul,QuantBatchMatmul,QuantLinearSparse,QbmmAllReduceAdd,QbmmAdd";
   auto internal_op_boost_env = common::GetEnv("MS_ENABLE_INTERNAL_BOOST");
   bool is_enable_internal_op = true;
   bool is_310p = ascend_soc_version() == "ascend310p";
@@ -756,10 +757,6 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 }
 
 bool MsContext::IsEnableInferBoost() {
-  if (enable_infer_boost_.has_value()) {
-    return enable_infer_boost_.value();
-  }
-
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
   auto iter = jit_config.find("infer_boost");
   if (iter != jit_config.end() && iter->second == "on") {

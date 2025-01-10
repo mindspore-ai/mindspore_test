@@ -15,12 +15,8 @@
 import pytest
 import numpy as np
 import mindspore as ms
-import mindspore.ops.function as F
 import mindspore.common.dtype as mstype
-from mindspore import nn
-from mindspore import Tensor
-from mindspore.ops.function import prod
-from mindspore.ops.function.math_func import mean_ext as mean
+from mindspore import nn, Tensor, mint
 from mindspore.ops.composite import GradOperation
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -48,7 +44,7 @@ class ProdNet(nn.Cell):
         self.dtype = dtype
 
     def construct(self, x, keep_dims=False):
-        return prod(x, self.axis, keep_dims, self.dtype)
+        return mint.prod(x, self.axis, keep_dims, dtype=self.dtype)
 
 
 class ProdGradNet(nn.Cell):
@@ -62,15 +58,15 @@ class ProdGradNet(nn.Cell):
 
 
 def mean_func(x, axis=None, keep_dims=False, dtype=None):
-    return mean(x, axis, keep_dims, dtype)
+    return mint.mean(x, axis, keep_dims, dtype=dtype)
 
 
 def sum_func(x, axis=None, keep_dims=False, dtype=None):
-    return F.sum(x, axis, keep_dims, dtype=dtype)
+    return mint.sum(x, axis, keep_dims, dtype=dtype)
 
 
 def prod_func(x, axis=None, keep_dims=False, dtype=None):
-    return prod(x, axis, keep_dims, dtype)
+    return mint.prod(x, axis, keep_dims, dtype=dtype)
 
 
 @test_utils.run_with_cell
@@ -169,7 +165,7 @@ def test_mean_dynamic():
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('keep_dims', [False, True])
 @pytest.mark.parametrize('in_dtype', [mstype.float16])
 @pytest.mark.parametrize('out_dtype', [mstype.float32])
@@ -288,7 +284,7 @@ def test_sum_default_dtype(axis, in_dtype, context_mode):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('keep_dims', [False, True])
 @pytest.mark.parametrize('in_dtype', [mstype.float32])
 @pytest.mark.parametrize('out_dtype', [mstype.float32])

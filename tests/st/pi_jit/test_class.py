@@ -113,7 +113,7 @@ def ms_class_method():
     return net.func()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [call_class])
 @pytest.mark.parametrize('ms_func', [ms_call_class])
 def test_parser_class1(func, ms_func):
@@ -129,7 +129,7 @@ def test_parser_class1(func, ms_func):
     match_array(result_static, result_ms)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [class_attribute])
 @pytest.mark.parametrize('ms_func', [ms_class_attribute])
 def test_parser_class2(func, ms_func):
@@ -145,7 +145,7 @@ def test_parser_class2(func, ms_func):
     match_array(result_static, result_ms)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [class_attribute2])
 @pytest.mark.parametrize('ms_func', [ms_class_attribute2])
 def test_parser_class3(func, ms_func):

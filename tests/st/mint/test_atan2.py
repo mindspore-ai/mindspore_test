@@ -134,4 +134,4 @@ def test_atan2_binary_cases(mode):
     Expectation: expect correct result.
     """
 
-    mint_atan2_binary_case1()
+    mint_atan2_binary_case1(mode)

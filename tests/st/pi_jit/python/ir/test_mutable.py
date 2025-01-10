@@ -29,7 +29,7 @@ def skip_if_python_version_too_high():
 
 
 @pytest.mark.skip(reason="tmp skip")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_mutable_with_scalar():
     """
     Feature: Set Constants mutable.

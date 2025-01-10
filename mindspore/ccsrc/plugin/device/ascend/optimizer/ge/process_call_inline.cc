@@ -34,6 +34,11 @@ bool CheckCallInline(const CNodePtr &cnode) {
 }
 }  // namespace
 
+std::vector<std::string> ProcessCallInline::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimCall->name()};
+  return ret;
+}
+
 const BaseRef ProcessCallInline::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimCall, Xs});

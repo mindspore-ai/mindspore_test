@@ -19,4 +19,6 @@ argmin_ext:
   dispatch:
     enable: True
     Ascend: ArgMinAscend
+    CPU: None
+    GPU: None
 

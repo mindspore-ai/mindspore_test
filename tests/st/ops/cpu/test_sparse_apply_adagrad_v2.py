@@ -40,7 +40,7 @@ class Net(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparseapplyadagradv2op_fp32():
     """
@@ -80,7 +80,7 @@ def test_sparseapplyadagradv2op_fp32():
     assert np.allclose(accum_out.asnumpy(), expect_accum, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparseapplyadagradv2op_update_slot_false():
     """
@@ -100,7 +100,7 @@ def test_sparseapplyadagradv2op_update_slot_false():
     assert np.all(accum_out.asnumpy() == expect_accum)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_sparseapplyadagradv2_dtype_not_supported():
     """

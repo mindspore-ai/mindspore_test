@@ -1,0 +1,49 @@
+unique:
+  description: |
+    unique(sorted=True, return_inverse=False, return_counts=False, dim=None) -> tuple(Tensor)
+    
+    Returns the unique elements of `self`.
+
+    when `return_inverse=True`, also return a tensor containing the index of each value of `self`
+    corresponding to the output unique tensor.
+    when `return_counts=True`, also return a tensor containing the number of occurrences for each
+    unique value or tensor.
+
+    Args:
+        sorted(bool, optional): Whether to sort the unique elements in ascending order before returning as output.
+            Default: ``True`` .
+        return_inverse(bool, optional): Whether to also return the indices for where elements in `self` ended up in
+            the returned unique list. Default: ``False`` .
+        return_counts(bool, optional): Whether to also return the counts for each unique element. Default: ``False`` .
+        dim(int, optional): the dimension to operate upon. If ``None``, the unique of the flattened `self` is returned.
+            Otherwise, each of the tensors indexed by the given dimension is treated as one of the elements to apply the
+            unique operation upon. Default: ``None`` .
+
+    Returns:
+        A tensor or a tuple of tensors containing some of tensor objects (`output`, `inverse_indices`, `counts`).
+
+        - **output** (Tensor) - The output tensor including the unique elements of `self`, it has same dtype as `self`.
+        - **inverse_indices** (Tensor, optional) - Return when ``return_inverse`` is True. It represents the indices for where
+          elements in `self` map to in the output. When ``dim`` is ``None``, it has same shape as `self`,
+          otherwise, the shape is self.shape[dim].
+        - **counts** (Tensor, optional) - Return when ``return_counts`` is True. It represents the number of occurrences for each
+          unique value or tensor. When ``dim`` is ``None``, it has same shape as output, otherwise, the shape is
+          output.shape(dim).
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([1, 2, 5, 2]), mindspore.int32)
+        >>> output = x.unique(return_inverse=True)
+        >>> print(output)
+        (Tensor(shape=[3], dtype=Int32, value= [1, 2, 5]), Tensor(shape=[4], dtype=Int64, value= [0, 1, 2, 1]))
+        >>> y = output[0]
+        >>> print(y)
+        [1 2 5]
+        >>> idx = output[1]
+        >>> print(idx)
+        [0 1 2 1]

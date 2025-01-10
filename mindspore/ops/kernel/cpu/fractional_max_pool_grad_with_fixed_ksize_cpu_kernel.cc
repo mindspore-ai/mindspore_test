@@ -135,9 +135,9 @@ bool FractionalMaxPoolGradWithFixedKsizeCPUKernelMod::Launch(const std::vector<K
 template <typename backprop_t>
 bool FractionalMaxPoolGradWithFixedKsizeCPUKernelMod::GradComputeTemplate(
   const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) const {
-  backprop_t *out_backprop_ptr = static_cast<backprop_t *>(inputs[1]->device_ptr());
-  int64_t *argmax_ptr = static_cast<int64_t *>(inputs[2]->device_ptr());
-  backprop_t *output_ptr = static_cast<backprop_t *>(outputs[0]->device_ptr());
+  backprop_t *out_backprop_ptr = GetDeviceAddress<backprop_t>(inputs, kIndex1);
+  int64_t *argmax_ptr = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  backprop_t *output_ptr = GetDeviceAddress<backprop_t>(outputs, kIndex0);
 
   auto shard_fractional_max_pool_grad_with_fixed_ksize = [&](size_t start, size_t end) {
     for (size_t n = start; n < end; n++) {

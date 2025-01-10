@@ -13,17 +13,18 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, jit, JitConfig
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
 
 class Net(ms.nn.Cell):
     def construct(self, x, y):
-        x.copy_(y)
-        return x
+        z = x * 1
+        return z.copy_(y)
 
 
 def generate_random_input(shape, dtype):
@@ -35,12 +36,12 @@ def copy_forward_func(x, y):
 
 
 def copy_backward_func(x, y):
-    grad = ops.GradOperation(get_all=True)
-    return grad(Net())(x, y)
+    return ops.grad(copy_forward_func, grad_position=(0, 1))(x, y)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_copy_std():
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_copy_std(mode):
     """
     Feature: standard forward, backward features.
     Description: test function copy.
@@ -50,23 +51,28 @@ def test_copy_std():
     y = generate_random_input((2, 2, 3, 4), np.float32)
     z = generate_random_input((2, 1, 4), np.float32)  # broadcast
 
-    # expect_y_grad = np.ones_like(y, dtype=np.float32)
-
+    expect_y_grad = np.ones_like(y, dtype=np.float32)
     expect_z = np.expand_dims(z.repeat(3, axis=1), axis=0).repeat(2, axis=0)
-    # expect_z_grad = np.ones_like(z, dtype=np.float32) * 6
+    expect_z_grad = np.ones_like(z, dtype=np.float32) * 6
 
-    ms.context.set_context(mode=ms.PYNATIVE_MODE)
-    output_y = copy_forward_func(ms.Tensor(x), ms.Tensor(y))
-    # output_y_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(y))
+    if mode == 'pynative':
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+        output_y = copy_forward_func(ms.Tensor(x), ms.Tensor(y))
+        output_y_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(y))
 
-    output_z = copy_forward_func(ms.Tensor(x), ms.Tensor(z))
-    # output_z_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(z))
+        output_z = copy_forward_func(ms.Tensor(x), ms.Tensor(z))
+        output_z_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(z))
+    else:
+        output_y = (jit(copy_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(y))
+        output_y_grad = (jit(copy_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(y))
 
+        output_z = (jit(copy_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(z))
+        output_z_grad = (jit(copy_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(z))
     np.allclose(output_y.asnumpy(), y, rtol=1e-5, equal_nan=True)
-    # np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
+    np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
 
     np.allclose(output_z.asnumpy(), expect_z, rtol=1e-5, equal_nan=True)
-    # np.allclose(output_z_grad[1].asnumpy(), expect_z_grad, rtol=1e-5, equal_nan=True)
+    np.allclose(output_z_grad[1].asnumpy(), expect_z_grad, rtol=1e-5, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -82,7 +88,9 @@ def test_copy_dynamic_shape():
     tensor_y2 = ms.Tensor(generate_random_input((1, 1, 5), np.float32))  # broadcast
 
     TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'inplace_copy',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_grad=True)
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'inplace_copy', disable_grad=True,
+            disable_mode=['GRAPH_MODE'])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -96,11 +104,11 @@ def test_copy_bfloat16():
     y = generate_random_input((2, 1, 4), np.float32)
 
     expect = np.expand_dims(y.repeat(5, axis=1), axis=0).repeat(3, axis=0)
-    # expect_grad = np.ones_like(y).astype(np.float32) * 15
+    expect_grad = np.ones_like(y).astype(np.float32) * 15
 
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     output = copy_forward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
-    # output_grad = copy_backward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
+    output_grad = copy_backward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
 
     np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
-    # np.allclose(output_grad[1].float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)
+    np.allclose(output_grad[1].float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)

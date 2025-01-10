@@ -252,7 +252,7 @@ REG_BPROP_BUILDER("SparseTensorDenseMatmul").SetUnusedInputs({i4}).SetBody(BODYF
   return {ib->OutZeros(indices), values_grad, ib->OutZeros(dense_shape), dense_grad};
 });
 
-REG_BPROP_BUILDER("SparseAdd").SetUnusedInputs({i1, i2, i4, i5, i6}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SparseAdd").FreeUselessValues_IO({i1, i2, i4, i5, i6}, {i1, i2}).SetBody(BODYFUNC(ib) {
   auto x1_indices = ib->GetInput(kIndex0);
   auto x1_values = ib->GetInput(kIndex1);
   auto x1_shape = ib->GetInput(kIndex2);
@@ -476,7 +476,7 @@ REG_BPROP_BUILDER("CSRSparseMatrixToDense").SetUnusedInputs({i5}).SetBody(BODYFU
           ib->TupleGetItem(res, kIndex3), ib->TupleGetItem(res, kIndex4)};
 });
 
-REG_BPROP_BUILDER("DenseToCSRSparseMatrix").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("DenseToCSRSparseMatrix").FreeUselessValues_IO({i0, i1}, {i0, i4}).SetBody(BODYFUNC(ib) {
   auto indices = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);

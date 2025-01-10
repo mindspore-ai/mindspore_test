@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,24 +12,78 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_PROFILER_ASCEND_PROFILING_H
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_PROFILER_ASCEND_PROFILING_H
 #include <string>
 #include <memory>
 #include <map>
-#include "include/backend/debug/profiler/profiling.h"
 #include "acl/acl_prof.h"
 #include "include/backend/kernel_graph.h"
 #include "kernel/kernel.h"
 #include "common/debug/profiler/profiling_data_dumper.h"
+#include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace profiler {
 namespace ascend {
+constexpr uint64_t LevelNone = 0;
 constexpr uint64_t Level0 = ACL_PROF_TASK_TIME_L0 | ACL_PROF_ACL_API;
 constexpr uint64_t Level1 = ACL_PROF_TASK_TIME | ACL_PROF_ACL_API | ACL_PROF_HCCL_TRACE | ACL_PROF_AICORE_METRICS;
 constexpr uint64_t Level2 = Level1 | ACL_PROF_AICPU | ACL_PROF_RUNTIME_API;
+
+struct AscendProfilerConfig {
+  uint32_t deviceId{0};
+  uint32_t rankId{0};
+  bool profileMemory{false};
+  bool l2Cache{false};
+  bool hbmDdr{false};
+  bool pcie{false};
+  bool withStack{false};
+  bool mstx{false};
+  bool parallelStrategy{false};
+  bool cpuTrace{false};
+  bool npuTrace{false};
+  std::string profilerLevel;
+  std::string aicoreMetrics;
+  std::string outputPath;
+  std::string frameworkDataPath;
+
+  AscendProfilerConfig() = default;
+  AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool pcie,
+                       bool withStack, bool mstx, bool parallelStrategy, const std::string &profilerLevel,
+                       const std::string &aicoreMetrics, const std::string &outputPath,
+                       const std::string &frameworkDataPath)
+      : deviceId(deviceId),
+        rankId(rankId),
+        profileMemory(profileMemory),
+        l2Cache(l2Cache),
+        hbmDdr(hbmDdr),
+        pcie(pcie),
+        withStack(withStack),
+        mstx(mstx),
+        parallelStrategy(parallelStrategy),
+        profilerLevel(profilerLevel),
+        aicoreMetrics(aicoreMetrics),
+        outputPath(outputPath),
+        frameworkDataPath(frameworkDataPath) {}
+
+  void Clear() {
+    deviceId = 0;
+    rankId = 0;
+    profileMemory = false;
+    l2Cache = false;
+    hbmDdr = false;
+    pcie = false;
+    withStack = false;
+    parallelStrategy = false;
+    cpuTrace = false;
+    npuTrace = false;
+    profilerLevel.clear();
+    aicoreMetrics.clear();
+    outputPath.clear();
+    frameworkDataPath.clear();
+  }
+};
 
 class AscendProfiler : public Profiler {
  public:
@@ -47,27 +101,35 @@ class AscendProfiler : public Profiler {
   void StepStop() override;
   void StepProfilingEnable(const bool enable_flag) override;
   void OpDataProducerEnd() override { return; }
-  uint64_t GetOptionsMask(aclprofAicoreMetrics aic_metrics) const;
-  void MsprofInitProfiler() const;
-  void MsprofStopProfiler() const;
-  aclprofAicoreMetrics GetAicMetrics() const;
-  std::map<std::thread::id, uint32_t> last_tid_;
-  std::map<std::thread::id, uint32_t> last_streamid_;
+  void MstxMark(const std::string &message, void *stream = nullptr) override;
+  int MstxRangeStart(const std::string &message, void *stream = nullptr) override;
+  void MstxRangeEnd(int range_id) override;
 
  protected:
   void SaveProfileData() override { return; }
-  void ClearInst() override { return; }
+  void ClearInst() override {
+    config_.Clear();
+    init_flag_ = false;
+    aclConfig_ = nullptr;
+    StepProfilingEnable(false);
+  }
 
  private:
-  uint32_t device_id_ = 0;
-  uint32_t rank_id_ = 0;
-  uint32_t max_op_taskid_limit_ = 65536;
-  aclprofConfig *acl_config_{nullptr};
-  aclprofStepInfo *acl_prof_step_info_{nullptr};
-  aclrtStream acl_stream_{nullptr};
-  bool enable_prof_mem_{false};
+  void InitAscendProfilerConfig(const std::string &profiling_path, uint32_t device_id,
+                                const std::string &profiling_options);
+  void InitAclConfig();
+  aclprofAicoreMetrics GetAicMetrics() const;
+  uint64_t GetAclProfMask(aclprofAicoreMetrics aicMetrics);
+  void InitFwkMemProfiling();
+  void StartFwkMemProfiling();
+  void StopFwkMemProfiling();
+  AscendProfilerConfig config_;
+  aclprofStepInfo *aclProfStepInfo_{nullptr};
+  aclprofConfig *aclConfig_{nullptr};
+  aclrtStream aclStream_{nullptr};
 };
 }  // namespace ascend
 }  // namespace profiler
 }  // namespace mindspore
+
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_PROFILER_ASCEND_PROFILING_H

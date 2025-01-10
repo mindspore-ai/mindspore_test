@@ -15,3 +15,5 @@ ones_like_ext:
     dispatch:
         enable: True
         Ascend: OnesLikeExtAscend
+        CPU: None
+        GPU: None

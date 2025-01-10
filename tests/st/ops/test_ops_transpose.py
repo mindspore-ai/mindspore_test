@@ -41,8 +41,7 @@ def transpose_vmap_func(x, dim0, dim1):
     return ops.vmap(transpose_forward_func, in_axes=(0, None, None), out_axes=0)(x, dim0, dim1)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_transpose_normal(context_mode):

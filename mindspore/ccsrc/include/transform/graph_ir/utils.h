@@ -116,6 +116,7 @@ Status RegisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, con
 Status UnregisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, const void *const stream);
 
 transform::Status CompileDatasetGraph(const DatasetGraphParam &param, const std::string &phase = "dataset");
+string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file);
 }  // namespace transform
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_TRANSFORM_GRAPH_IR_UTILS_H_

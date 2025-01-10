@@ -1,7 +1,7 @@
 mindspore.load_distributed_checkpoint
 ======================================
 
-.. py:function:: mindspore.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None, output_format='safetensors', name_map=None, max_process_num=64)
+.. py:function:: mindspore.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None, output_format='safetensors', name_map=None, max_process_num=64, return_param_dict=False)
 
     给分布式预测加载checkpoint文件到网络。用于分布式推理。关于分布式推理的细节，请参考： `分布式模型加载 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/model_loading.html>`_ 。
 
@@ -23,6 +23,7 @@ mindspore.load_distributed_checkpoint
         - **output_format** (str, 可选) - 控制转换后输出的 checkpoint 格式。可以设置为 "ckpt" 或 "safetensors"。默认值："safetensors"。
         - **name_map** (dict) - 权重映射字典，切分完的权重加载到网络或保存之前，会按照映射字典修改权重名字。默认值：None。
         - **max_process_num** (int) - 最大进程数。默认值：64。
+        - **return_param_dict** (bool) - 是否返回 `param_dict`。默认值：``False`` 。
 
     异常：
         - **TypeError** - 输入类型不符合要求。

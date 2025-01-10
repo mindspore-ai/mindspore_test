@@ -1,6 +1,7 @@
 mindspore.utils
 ====================
 
+.. currentmodule::mindspore.utils
 
 .. py:function:: mindspore.utils.stress_detect()
 
@@ -8,13 +9,17 @@ mindspore.utils
 
     Returns
         int, the return value represents the error type: zero indicates normal operation; non-zero values indicate a hardware failure.
-    
+
     Supported Platforms:
         ``Ascend``
-    
+
     **Examples**
-    
+
         >>> from mindspore.utils import stress_detect
         >>> ret = stress_detect()
         >>> print(ret)
         0
+
+.. autofunction:: mindspore.utils.dryrun.set_simulation
+
+.. autofunction:: mindspore.utils.dryrun.mock

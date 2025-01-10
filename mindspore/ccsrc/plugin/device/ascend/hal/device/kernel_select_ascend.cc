@@ -366,12 +366,21 @@ bool ReadAclnnEnableEnv(const std::string &op_name) {
     }
   }
 
-  static std::set<std::string> kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatmulReduceScatter",
-                                                     "QuantBatchMatmulAllReduce"};
+  static std::set<std::string> kAscendcKernelList = {"AllFinite",
+                                                     "AllGatherMatmul",
+                                                     "MatmulReduceScatter",
+                                                     "QuantBatchMatmulAllReduce",
+                                                     "AlltoAllAllGatherBatchMatMul",
+                                                     "BatchMatMulReduceScatterAlltoAll"};
   //  In the current kbk, MatMulAllReduce can also be implemented using LCCL operator.
   bool enable_lccl = device::ascend::EnableLccl();
   if (!enable_lccl) {
-    kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatMulAllReduce", "MatmulReduceScatter",
+    kAscendcKernelList = {"AllFinite",
+                          "AllGatherMatmul",
+                          "MatMulAllReduce",
+                          "MatmulReduceScatter",
+                          "AlltoAllAllGatherBatchMatMul",
+                          "BatchMatMulReduceScatterAlltoAll",
                           "QuantBatchMatmulAllReduce"};
   }
 
@@ -644,8 +653,8 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   // for backend inline
   if (IsOneOfPrimitiveCNode(
         node, {prim::kPrimCallInline, prim::kPrimSwitch, prim::kPrimPartialInline, prim::kPrimConditionSwitch,
-               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimMoveTo, prim::kPrimMoveAssign,
-               prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
+               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimMoveTo,
+               prim::kPrimMoveAssign, prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }

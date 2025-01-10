@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@
 
 #include <string>
 
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -56,23 +55,17 @@ bool HcomAllGatherKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
     if (lccl_result != Lcal::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL AllGather failed.";
     }
+    return true;
   } else {
-    auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(
-      inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], stream_ptr, comm_);
-    if (hccl_result != HCCL_SUCCESS) {
-      MS_LOG(ERROR) << "HcclAllGather failed, ret:" << hccl_result;
-      return false;
-    }
+    auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+    return comm_lib->AllGather(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_, inputs[0]->dtype_id(),
+                               group_, stream_ptr);
   }
 #else
-  auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(
-    inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], stream_ptr, comm_);
-  if (hccl_result != HCCL_SUCCESS) {
-    MS_LOG(ERROR) << "HcclAllGather failed, ret:" << hccl_result;
-    return false;
-  }
+  auto comm_lib = distributed::collective::CollectiveManager::instance()->device_comm_lib();
+  return comm_lib->AllGather(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_, inputs[0]->dtype_id(),
+                             group_, stream_ptr);
 #endif
-  return true;
 }
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,6 +20,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -39,7 +40,7 @@ size_t GPUSomas::GetAlignSize(size_t original_size) const {
 bool GPUSomas::GetDependExecOrderFlag(const session::KernelGraph &graph) const {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     return true;
   } else {
     return false;

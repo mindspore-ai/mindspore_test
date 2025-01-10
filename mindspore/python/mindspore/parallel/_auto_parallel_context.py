@@ -187,6 +187,44 @@ class _AutoParallelContext:
         self.check_context_handle()
         return self._context_handle.get_dump_local_norm()
 
+    def set_dump_local_norm_path(self, dump_local_norm_path):
+        """
+        Set dump local norm path for auto parallel.
+
+        Args:
+            dump_local_norm_path (str): User need to specify the path to save dump files
+                                        if he want to dump local norm.  Default: ''
+
+        Raises:
+            KeyError: When the value of dump_local_norm_path is not a str value.
+        """
+        self.check_context_handle()
+        self._context_handle.set_dump_local_norm_path(dump_local_norm_path)
+
+    def get_dump_local_norm_path(self):
+        """Get dump local norm path."""
+        self.check_context_handle()
+        return self._context_handle.get_dump_local_norm_path()
+
+    def set_dump_device_local_norm(self, dump_device_local_norm):
+        """
+        Set dump device local norm for auto parallel.
+
+        Args:
+            dump_device_local_norm (bool): User need to specify if he want to dump device local norm.  Default: False
+
+        Raises:
+            ValueError: If the dump_device_local_norm is not a bool value.
+        """
+        self.check_context_handle()
+        self._context_handle.set_dump_device_local_norm(dump_device_local_norm)
+
+    def get_dump_device_local_norm(self):
+        """Get dump device local norm."""
+        self.check_context_handle()
+        return self._context_handle.get_dump_device_local_norm()
+
+
     def set_fusion_threshold_mb(self, fusion_threshold=64, comm_type="allreduce"):
         """
         Set fusion threshold (MB) for auto parallel.
@@ -1070,13 +1108,6 @@ class _AutoParallelContext:
         self.check_context_handle()
         return self._context_handle.get_optimizer_weight_shard_size()
 
-    def set_ops_strategy_json_config(self, type, path, mode):
-        """
-         Set configuration of saving ops strategy in file .json.
-        """
-        self.check_context_handle()
-        self._context_handle.set_ops_strategy_json_config(type, path, mode)
-
     def set_optimizer_weight_shard_aggregated_save(self, optimizer_weight_shard_aggregated_save):
         """
         Set optimizer_weight_shard_aggregated_save.
@@ -1214,31 +1245,6 @@ class _AutoParallelContext:
             self.set_enable_all_gather_fusion(openstate)
             self.set_enable_reduce_scatter_fusion(openstate)
 
-
-def _set_ops_strategy_json_config(type="SAVE", path="", mode="all"):
-    """
-    Set strategy json configuration.
-
-    Args:
-        type (str): The parameter for choosing save or load .json file.
-        path (str): Path to save or load parallel strategy json.
-        mode (str): The parameter for choosing save all or important operators.
-
-    Raises:
-        KeyError: When type is not 'SAVE' or 'LOAD'.
-        KeyError: When mode is not 'all' or 'principal'.
-    """
-    dir_path = os.path.dirname(path)
-    if dir_path and not os.path.exists(dir_path):
-        os.makedirs(dir_path, mode=0o700, exist_ok=True)
-    check_type = ["SAVE", "LOAD"]
-    check_mode = ["all", "principal"]
-    if type in check_type and mode in check_mode:
-        auto_parallel_context().set_ops_strategy_json_config(type, path, mode)
-    else:
-        raise KeyError("Type must be 'SAVE' or 'LOAD' and mode must be 'all' or 'principal'")
-
-
 _AUTO_PARALLEL_CONTEXT = None
 
 
@@ -1287,7 +1293,9 @@ _set_auto_parallel_context_func_map = {
     "enable_alltoall": auto_parallel_context().set_enable_alltoall,
     "strategy_ckpt_config": auto_parallel_context().set_strategy_ckpt_config,
     "comm_fusion": auto_parallel_context().set_comm_fusion,
-    "dump_local_norm": auto_parallel_context().set_dump_local_norm}
+    "dump_local_norm": auto_parallel_context().set_dump_local_norm,
+    "dump_local_norm_path": auto_parallel_context().set_dump_local_norm_path,
+    "dump_device_local_norm": auto_parallel_context().set_dump_device_local_norm}
 
 _get_auto_parallel_context_func_map = {
     "device_num": auto_parallel_context().get_device_num,
@@ -1320,7 +1328,9 @@ _get_auto_parallel_context_func_map = {
     "comm_fusion": auto_parallel_context().get_comm_fusion,
     "strategy_ckpt_config": auto_parallel_context().get_strategy_ckpt_config,
     "full_batch_is_set": auto_parallel_context().get_full_batch_is_set,
-    "dump_local_norm": auto_parallel_context().get_dump_local_norm}
+    "dump_local_norm": auto_parallel_context().get_dump_local_norm,
+    "dump_local_norm_path": auto_parallel_context().get_dump_local_norm_path,
+    "dump_device_local_norm": auto_parallel_context().get_dump_device_local_norm}
 
 
 @args_type_check(device_num=int, global_rank=int, gradients_mean=bool, gradient_fp32_sync=bool,

@@ -36,15 +36,15 @@ sum_ext:
             >>> x = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],
             ...                      [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
             ...                      [[7, 7, 7, 7, 7, 7], [8, 8, 8, 8, 8, 8], [9, 9, 9, 9, 9, 9]]]), mstype.float32)
-            >>> out = ops.sum(x)
+            >>> out = ops.sum_ext(x)
             >>> print(out)
             270.0
-            >>> out = ops.sum(x, dim=2)
+            >>> out = ops.sum_ext(x, dim=2)
             >>> print(out)
             [[ 6. 12. 18.]
             [24. 30. 36.]
             [42. 48. 54.]]
-            >>> out = ops.sum(x, dim=2, keepdim=True)
+            >>> out = ops.sum_ext(x, dim=2, keepdim=True)
             >>> print(out)
             [[[ 6.]
             [12.]

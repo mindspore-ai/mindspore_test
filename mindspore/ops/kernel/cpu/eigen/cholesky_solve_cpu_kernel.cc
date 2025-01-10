@@ -73,9 +73,9 @@ template <typename T>
 bool CholeskySolveCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &,
                                              const std::vector<KernelTensor *> &outputs) {
-  T *rhsptr = reinterpret_cast<T *>(inputs[kInputIndex0]->device_ptr());
-  T *lhsptr = reinterpret_cast<T *>(inputs[kInputIndex1]->device_ptr());
-  T *outptr = reinterpret_cast<T *>(outputs[kOutputIndex]->device_ptr());
+  T *rhsptr = GetDeviceAddress<T>(inputs, kInputIndex0);
+  T *lhsptr = GetDeviceAddress<T>(inputs, kInputIndex1);
+  T *outptr = GetDeviceAddress<T>(outputs, kOutputIndex);
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RHS(dim, rhs_dim);
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> LHS(dim, dim);
   for (size_t k = 0; k < batch_size; k++) {

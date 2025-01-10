@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <fstream>
 #include "nlohmann/json.hpp"
+#include "utils/ms_context.h"
 #include "utils/ms_exception.h"
 #include "proto/topology.pb.h"
 #include "include/backend/distributed/ps/ps_context.h"
@@ -48,6 +49,7 @@ constexpr char kDeviceId[] = "device_id";
 
 // The keys for parsed information of rank table file.
 constexpr char kRankTableServerList[] = "server_list";
+constexpr char kRankTableClusterList[] = "cluster_list";
 constexpr char kRankTableDevice[] = "device";
 constexpr char kRankTablePodIp[] = "pod_ip";
 constexpr char kRankTableRankId[] = "rank_id";
@@ -237,13 +239,9 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
     node_info->state = NodeState::kRegistered;
     (void)time(&(node_info->last_update));
     nodes_[node_id] = node_info;
-    rank_role_to_node_info_[std::make_pair(rank_id, role)] = node_info;
-    MS_LOG(WARNING) << "The new node: " << node_id << "(role: " << role << ")"
-                    << ", rank id: " << rank_id << ", device id: " << device_id
-                    << ", hostname: " << node_info->host_name << ", ip: " << host_ip
-                    << " is registered successfully. Currently registered node number: " << nodes_.size()
-                    << ", expected node number: " << total_node_num_;
+    size_t nodes_size = nodes_.size();
     (void)TransitionToInitialized();
+    lock.unlock();
 
     RegistrationRespMessage reg_resp_msg;
     reg_resp_msg.set_success(true);
@@ -253,6 +251,11 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
 
     auto message = CreateMessage(meta_server_addr_.GetUrl(), MessageName::kSuccess, content);
     MS_EXCEPTION_IF_NULL(message);
+    MS_LOG(WARNING) << "The new node: " << node_id << "(role: " << role << ")"
+                    << ", rank id: " << rank_id << ", device id: " << node_info->device_id
+                    << ", hostname: " << node_info->host_name << ", ip: " << host_ip
+                    << " is registered successfully. Currently registered node number: " << nodes_size
+                    << ", expected node number: " << total_node_num_;
     return message.release();
   } else {
     if (!recovery::IsEnableRecovery()) {
@@ -321,6 +324,7 @@ MessageBase *const MetaServerNode::ProcessUnregister(MessageBase *const message)
   if (nodes_.size() == 0) {
     topo_state_ = TopoState::kFinished;
   }
+  lock.unlock();
   auto response = CreateMessage(meta_server_addr_.GetUrl(), MessageName::kSuccess,
                                 std::to_string(static_cast<int>(MessageName::kSuccess)));
   MS_EXCEPTION_IF_NULL(response);
@@ -341,6 +345,7 @@ MessageBase *const MetaServerNode::ProcessHeartbeat(MessageBase *const message) 
     MS_ERROR_IF_NULL_W_RET_VAL(node, rpc::NULL_MSG);
     (void)time(&(node->last_update));
     node->state = NodeState::kRegistered;
+    lock.unlock();
 
     HeartbeatRespMessage resp_msg;
     resp_msg.set_success(static_cast<bool>(MessageName::kSuccess));
@@ -449,6 +454,7 @@ MessageBase *const MetaServerNode::ProcessGetHostNames(MessageBase *const messag
         continue;
       }
     }
+    lock.unlock();
 
     // The hostname of the node whose role name not match is empty, and should be skipped.
     for (size_t i = 0; i < tmp_hostnames.size(); ++i) {
@@ -475,6 +481,7 @@ void MetaServerNode::UpdateTopoState() {
       // Update the state of topology.
       if (topo_state_ == TopoState::kInitializing) {
         if (TransitionToInitialized()) {
+          nodes_mutex_.unlock();
           continue;
         }
         MS_LOG(INFO) << "The cluster topology is in the process of constructing, current alive node num: ("
@@ -538,41 +545,10 @@ bool MetaServerNode::TransitionToInitialized() {
     }
     topo_state_ = TopoState::kInitialized;
     MS_LOG(INFO) << "The cluster topology has been constructed successfully.";
+    MS_VLOG(VL_DISTRIBUTED_TRACE) << "Distribute networking cost : " << ElapsedTime(start_time_).count() << " ms.";
     return true;
   }
   return false;
-}
-
-void MetaServerNode::AssignPortRange() {
-  MS_LOG(DEBUG) << "Start assigning port range for nodes...";
-  std::unordered_map<std::string, uint32_t> each_host_node_num;
-  std::unordered_map<std::string, uint32_t> node_index_map;
-  // Assign computing graph nodes' port range according to their hosts.
-  for (const auto &n : nodes_) {
-    std::string node_id = n.first;
-    const auto &node_info = n.second;
-
-    uint32_t &host_node_num = each_host_node_num[node_info->host_name];
-    node_index_map[node_info->node_id] = host_node_num;
-    host_node_num++;
-  }
-
-  NodePortRanges node_ranges;
-  for (const auto &n : nodes_) {
-    std::string node_id = n.first;
-    const auto &node_info = n.second;
-    uint32_t node_index = node_index_map[node_id];
-    uint32_t each_node_range = kNodePortRangeNum / each_host_node_num[node_info->host_name];
-    uint32_t min_port = kStartPort + each_node_range * node_index;
-    uint32_t max_port = min_port + each_node_range - 1;
-    PortRange range;
-    range.set_min_port(min_port);
-    range.set_max_port(max_port);
-    (void)node_ranges.mutable_data()->insert({node_id, range});
-    MS_LOG(INFO) << "The port range for node " << node_id << ", rank id: " << node_info->rank_id
-                 << ", min port: " << min_port << ", max port: " << max_port;
-  }
-  (void)metadata_.insert({kNodePortRange, node_ranges.SerializeAsString()});
 }
 
 bool MetaServerNode::Recovery() {

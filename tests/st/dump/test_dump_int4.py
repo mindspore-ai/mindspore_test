@@ -119,6 +119,7 @@ def run_dump_int4(dump_scene):
         int4_input_file_path = os.popen(find_int4_input_cmd).read()
         int4_input_file_path = int4_input_file_path.replace('\n', '')
         dump_int4 = np.load(int4_input_file_path)
+        assert dump_int4.shape == (8, 8)
         expect_data = np_int8_data.flatten()[:dump_int4.size].reshape(dump_int4.shape)
         np.testing.assert_allclose(dump_int4, expect_data, rtol=1e-3)
         find_statistic_cmd = 'find {0} -name "statistic.csv"'.format(dump_path)
@@ -165,7 +166,7 @@ def test_ge_dump_int4():
     run_dump_int4("ge_dump")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_e2e_dump_int4():
     """
@@ -177,7 +178,7 @@ def test_e2e_dump_int4():
     run_dump_int4("e2e_dump")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_e2e_async_dump_int4():
     """

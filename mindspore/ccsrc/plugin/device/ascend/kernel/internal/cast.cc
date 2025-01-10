@@ -17,34 +17,23 @@
 #include "plugin/device/ascend/kernel/internal/cast.h"
 
 #include <memory>
-
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
-#include "param/cast_param.h"
+#include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalCast::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                 const std::vector<KernelTensor *> &outputs) {
-  auto param_ptr = std::make_shared<internal::CastParam>();
-  param_ptr->in_dtype_ = InternalKernelUtils::ToInternalDType(inputs[kIndex0]->dtype_id());
-  param_ptr->out_dtype_ = InternalKernelUtils::ToInternalDType(outputs[kIndex0]->dtype_id());
-  param_ptr->opId = internal::OpId::Cast;
-  internal::ElewiseParam op_param;
-  op_param.elewiseType = internal::ElewiseParam::ELEWISE_CAST;
-  param_ptr->specificParam = op_param;
-  return std::static_pointer_cast<internal::OpParam>(param_ptr);
+internal::InternalOpPtr InternalCast::CreateKernel(const internal::InputsImmutableInfoList &inputs_ii,
+                                                   const internal::OutputsImmutableInfoList &outputs_ii,
+                                                   const std::vector<KernelTensor *> &ms_inputs,
+                                                   const std::vector<KernelTensor *> &ms_outputs) {
+  dst_type_ = ms_outputs[kIndex0]->dtype_id();
+  return internal::CreateCastOp(inputs_ii, outputs_ii, internal::kInternalCastOpName);
 }
 
-uint64_t InternalCast::GenTilingCacheKey(const std::vector<KernelTensor *> &inputs,
-                                         const std::vector<KernelTensor *> &outputs) {
-  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
-  return TilingCacheMgr::GetInstance().GenTilingCacheKey(
-    kernel_name_, inputs[kIndex0]->GetShapeVector(), inputs[kIndex0]->dtype_id(), outputs[kIndex0]->GetShapeVector(),
-    outputs[kIndex0]->dtype_id());
+uint64_t InternalCast::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  return InternalTilingCache::GenerateKey(kernel_name_, inputs, dst_type_);
 }
 
-MS_INTERNAL_KERNEL_FACTORY_REG(Cast, InternalCast);
+MS_INTERNAL_KERNEL_FACTORY_REG(Cast, internal::kInternalCastOpName, InternalCast);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(Cast, INPUT_NUM_1, INDEX_0);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(Cast, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel

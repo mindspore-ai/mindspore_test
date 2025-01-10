@@ -14,15 +14,18 @@ paged_attention:
             context_lens (Tensor): The context length of each sequence with data type of int32.
               :math:`(num\_tokens,)`.
             antiquant_scale (Tensor): The antiquant scale of key_cache and value_cache
-              with data type of float16. key_cache and value_cache will be the type of int8.
-              :math:`(2, num\_head * head\_dim,)`.
+              with data type of float16 or int64. key_cache and value_cache will be the type of int8.
+              :math:`(2, num\_head * head\_dim,)` for kv_cache_quant_mode `DEFAULT`; 
+              :math:`(2, num\_tokens,)` for kv_cache_quant_mode `PERTOKEN`.
             antiquant_offset (Tensor): The antiquant offset of key_cache and value_cache
-              with data type of float16. key_cache and value_cache will be the type of int8.
-              :math:`(2, num\_head * head\_dim,)`.
+              with data type of float16 or int32. key_cache and value_cache will be the type of int8.
+              :math:`(2, num\_head * head\_dim,)` for kv_cache_quant_mode `DEFAULT`; 
+              :math:`(2, num\_tokens,)` for kv_cache_quant_mode `PERTOKEN`.
             attn_mask (Tensor): The lookahead mask with data type of float16. Default is None.
               :math:`(num\_tokens, max_context_lens)`.
             q_seq_lens (Tensor): The query length of each sequence with data type of int32. Default is None.
               :math:`(batch,)`.
+            kv_cache_quant_mode (String): The mode of kv cache quant, `DEFAULT` and `PERTOKEN` are supported.
 
         Outputs:
             attention output.

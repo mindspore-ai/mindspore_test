@@ -25,6 +25,7 @@
 #include <memory>
 #include <utility>
 #include <tuple>
+#include <map>
 
 #include "utils/hash_map.h"
 #include "ir/meta_func_graph.h"
@@ -52,7 +53,7 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
 
   FuncGraphPtr func_graph() { return func_graph_; }
   std::string ToString() const { return func_graph_->ToString(); }
-  void WriteVariable(const std::string &var_name, const AnfNodePtr &node);
+  void WriteVariable(const std::string &var_name, const AnfNodePtr &node, bool need_reorder = false);
   AnfNodePtr ReadVariable(const std::string &var_name);
   AnfNodePtr ReadLocalVariable(const std::string &var_name);
   bool CheckHasVariable(const std::string &var_name);
@@ -173,6 +174,9 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   // Isolated nodes.
   const OrderedSet<AnfNodePtr> isolated_nodes() const { return isolated_nodes_; }
 
+  // Repalce node with its hook
+  void ReplaceNodeWithItsHook();
+
  private:
   // Block graph
   FuncGraphPtr func_graph_;
@@ -229,6 +233,7 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   bool is_dead_block_{false};
 
   std::pair<AnfNodePtr, bool> FindPredInterpretNode(const std::string &var_name);
+
   // Flags help for determine if parallel-if transformation can be performed or not.
   // If inside this block include all inner block there is a return statement.
   // This flag will propagate beyond outer if/else or while/for loop, but not if-by-if;
@@ -238,6 +243,9 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   bool is_break_continue_statement_inside_{false};
   // Set block name for control flow block.
   std::string block_name_{""};
+
+  // variable name -> {old_node: hooked_node}
+  std::map<std::string, std::map<AnfNodePtr, AnfNodePtr>> assigned_hook_;
 };
 }  // namespace parse
 }  // namespace mindspore

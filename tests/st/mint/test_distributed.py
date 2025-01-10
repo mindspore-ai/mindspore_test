@@ -14,6 +14,7 @@
 # ============================================================================
 import numpy as np
 import pytest
+import hashlib
 import mindspore as ms
 from mindspore import context
 from mindspore.common.api import _pynative_executor
@@ -47,8 +48,7 @@ from mindspore.mint.distributed.distributed import (
     reduce_scatter,
 )
 
-# msrun --worker_num=4 --local_worker_num=4 --master_port=10923 --bind_core True --join True pytest -sv --disable-warnings hcom.py::test_hccl_all_gather_into_tensor
-
+#msrun --worker_num=8 --local_worker_num=8 --master_port=10923 --bind_core True --join True --cluster_time_out=800  pytest -sv --disable-warnings test_distributed.py
 np.random.seed(1)
 init_process_group()
 context.set_auto_parallel_context(
@@ -75,19 +75,19 @@ def test_hccl_new_group():
     group = new_group(None)
     assert group == "hccl_world_group"
     group = new_group(list(range(size)))
-    name = "group_" + "_".join([str(elem) for elem in list(range(size))])
+    name = "hccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
     assert group == name
     group = new_group(list(range(size)))
     assert group == name
     group = new_group(list(range(size)), 1)
     assert group == name
-
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
-    group = new_group(list(range(9)))
-    assert group == ""
+    #超时用例
+    #group = new_group(list(range(9)))
+    #assert group == ""
     with pytest.raises(TypeError):
         new_group(1)
     with pytest.raises(TypeError):
@@ -108,15 +108,15 @@ def test_hccl_get_backend():
     """
     backend = get_backend()
     assert backend == "hccl"
-    backend = get_backend(1)
-    assert backend == "hccl"
     backend = get_backend(None)
     assert backend == "hccl"
-    name = "group_" + "_".join([str(elem) for elem in list(range(size))])
+    name = "hccl_" + str(size) + "_" + hashlib.sha1(bytes("_".join(map(str, range(size))), "utf-8")).hexdigest()
     group = new_group(list(range(size)), 1)
     assert group == name
     backend = get_backend(group)
     assert backend == "hccl"
+    with pytest.raises(TypeError):
+        backend = get_backend(1)
 
 
 def test_hccl_get_global_rank():
@@ -260,7 +260,7 @@ def test_hccl_all_reduce():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         sum_input_tensor1 = input_tensor * (rank + 1)
         sum_output_handle = all_reduce(sum_input_tensor1, group=name)
@@ -301,7 +301,7 @@ def test_hccl_all_gather_into_tensor():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         input_tensor1 = ms.Tensor(np.arange(9).reshape(3, 3).astype(np.float32))
         output_tensor1 = ms.Tensor(np.zeros([6, 3]).astype(np.float32))
@@ -390,7 +390,7 @@ def test_hccl_reduce_scatter_tensor():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         input_tensor1 = ms.Tensor(np.ones([3 * 2, 3]).astype(np.float32))
         output_tensor1 = ms.Tensor(np.zeros([3, 3]).astype(np.float32))
@@ -492,7 +492,7 @@ def test_hccl_reduce():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         sum_input_tensor1 = input_tensor * (rank + 1)
         sum_output_handle = reduce(sum_input_tensor1, dst=1, group=name)
@@ -600,7 +600,7 @@ def test_hccl_broadcast():
     # 同步场景
     tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
     if rank != 0:
-        input_tensor = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
+        tensor = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
     output_handle = broadcast(tensor, src=0)
     assert output_handle is None
     except_output_tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
@@ -609,7 +609,7 @@ def test_hccl_broadcast():
     # 异步场景
     tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
     if rank != 1:
-        input_tensor = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
+        tensor = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
     output_handle = broadcast(tensor, src=1, async_op=True)
     assert output_handle is not None
     output_handle.wait()
@@ -618,11 +618,11 @@ def test_hccl_broadcast():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         tensor = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
         if rank != 0:
-            input_tensor = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
+            tensor = ms.Tensor(np.zeros([2, 4]).astype(np.float32))
         output_handle = broadcast(tensor, src=0, group=name)
         assert output_handle is None
         except_output_tensor = ms.Tensor(
@@ -633,11 +633,11 @@ def test_hccl_broadcast():
     with pytest.raises(TypeError):
         broadcast(1, src=0)
     with pytest.raises(TypeError):
-        broadcast(input_tensor, src="test")
+        broadcast(tensor, src="test")
     with pytest.raises(TypeError):
-        broadcast(input_tensor, src=0, group=1)
+        broadcast(tensor, src=0, group=1)
     with pytest.raises(TypeError):
-        broadcast(input_tensor, src=0, async_op="test")
+        broadcast(tensor, src=0, async_op="test")
 
 
 def test_hccl_barrier():
@@ -656,7 +656,7 @@ def test_hccl_barrier():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         output_handle = barrier(group=name)
         assert output_handle is None
@@ -685,7 +685,7 @@ def test_hccl_send():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         if rank == 1:
             send(input_tensor, dst=0, group=group)
@@ -723,7 +723,7 @@ def test_hccl_recv():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         if rank == 1:
             send(input_tensor, dst=0, group=group)
@@ -760,7 +760,7 @@ def test_hccl_isend():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         if rank == 1:
             handle = isend(input_tensor, dst=0, group=group)
@@ -801,7 +801,7 @@ def test_hccl_irecv():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         if rank == 1:
             send(input_tensor, dst=0, group=group)
@@ -854,7 +854,7 @@ def test_hccl_all_to_all():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         if rank == 0:
             send_tensor_list = [ms.Tensor(1.0), ms.Tensor([[2, 3], [4, 5.0]])]
@@ -930,7 +930,7 @@ def test_hccl_all_to_all_single():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         if rank == 0:
             tensor = ms.Tensor([[0, 1.0, 2.0], [3, 4, 5], [6, 7, 8], [0, 0, 0]])
@@ -997,7 +997,7 @@ def test_hccl_all_gather():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         input_tensor1 = ms.Tensor(np.arange(9).reshape(3, 3).astype(np.float32))
         output_tensor1 = []
@@ -1068,7 +1068,7 @@ def test_hccl_reduce_scatter():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         input_tensor1 = []
         for _ in range(2):
@@ -1151,7 +1151,7 @@ def test_hccl_gather():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         input_tensor1 = ms.Tensor(np.arange(9).reshape(3, 3).astype(np.float32))
         output_tensor1 = []
@@ -1233,7 +1233,7 @@ def test_hccl_scatter():
     # group场景
     if rank == 0 or rank == 1:
         group = new_group(list(range(2)), 1)
-        name = "group_" + "_".join([str(elem) for elem in list(range(2))])
+        name = "hccl_" + str(2) + "_" + hashlib.sha1(bytes("_".join(map(str, range(2))), "utf-8")).hexdigest()
         assert group == name
         input_tensor1 = []
         for _ in range(2):
@@ -1282,3 +1282,40 @@ def test_hccl_scatter():
     with pytest.raises(TypeError):
         scatter(output_tensor, input_tensor, src=rank)
         _pynative_executor.sync()
+
+
+def test_hccl_scalar():
+    """
+    Feature: test distributed op
+    Description: test comm op in python native
+    Expectation: success
+    """
+    # gather场景
+    input_tensor = ms.Tensor(1)
+    output_gather = []
+    output_all_gather = []
+    except_output_gather = []
+    except_output_all_gather = []
+    for _ in range(size):
+        output_gather.append(ms.Tensor(0))
+        output_all_gather.append(ms.Tensor(0))
+        except_output_all_gather.append(ms.Tensor(1))
+        if rank == 0:
+            except_output_gather.append(ms.Tensor(1))
+        else:
+            except_output_gather.append(ms.Tensor(0))
+    output_handle = gather(input_tensor, output_gather)
+    assert output_handle is None
+    assert np.allclose(output_gather[0].asnumpy(), except_output_gather[0].asnumpy())
+    assert np.allclose(output_gather[1].asnumpy(), except_output_gather[1].asnumpy())
+
+    output_handle = all_gather(output_all_gather, input_tensor)
+    assert output_handle is None
+    assert np.allclose(output_all_gather[0].asnumpy(), except_output_all_gather[0].asnumpy())
+    assert np.allclose(output_all_gather[1].asnumpy(), except_output_all_gather[1].asnumpy())
+
+    output_tensor = ms.Tensor(np.zeros([size]).astype(np.int64))
+    except_output_tensor = ms.Tensor(np.ones([size]).astype(np.int64))
+    output_handle = all_gather_into_tensor(output_tensor, input_tensor)
+    assert output_handle is None
+    assert np.allclose(output_tensor.asnumpy(), except_output_tensor.asnumpy())

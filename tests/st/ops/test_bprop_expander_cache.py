@@ -15,24 +15,25 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import os
 
 import mindspore as ms
+import mindspore.runtime as rt
 from mindspore import nn, Tensor
 from mindspore.ops import operations as P
 from mindspore.nn import TrainOneStepCell, WithLossCell
 from mindspore.nn.optim import Adam
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_adam_bporp_with_cache():
     """
     Feature: cache of bprop expander
     Description: Verify if the loss is converged
     Expectation: success
     """
-    ms.set_context(mode=ms.PYNATIVE_MODE, pynative_synchronize=True)
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+    rt.launch_blocking()
 
     class NetAdam(nn.Cell):
         def __init__(self):

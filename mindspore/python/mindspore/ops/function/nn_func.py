@@ -32,7 +32,6 @@ from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
-from mindspore._checkparam import twice
 from mindspore.ops.composite.multitype_ops._constexpr_utils import raise_value_error
 from mindspore.ops.operations.nn_ops import MaxUnpool2D, MaxUnpool3D
 from mindspore.ops.operations.nn_ops import FractionalMaxPoolWithFixedKsize, FractionalMaxPool3DWithFixedKsize
@@ -44,7 +43,8 @@ from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, fast_gelu, silu, elu, sigmoid, relu6, \
     softmax_impl, swiglu, logsigmoid_op
 from mindspore.ops.auto_generate import relu_op, inplace_relu_op
-from mindspore.ops.auto_generate import group_norm_op, rms_norm, layer_norm_ext_op, batch_norm_ext_op, mse_loss_ext
+from mindspore.ops.auto_generate import group_norm_op, rms_norm, add_rms_norm, layer_norm_ext_op, batch_norm_ext_op,\
+    mse_loss_ext
 from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op, add_layernorm_v2_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
                                          replication_pad_1d_op, replication_pad_2d_op, replication_pad_3d_op,
@@ -52,9 +52,10 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_nearest1d_op, upsample_nearest2d_op, upsample_nearest3d_op,
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
-                                         masked_fill_op, masked_select, ones, flatten_ext, convolution)
-from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, ConstantPadND, MaxPoolWithIndices, \
-    PromptFlashAttention, MaxPoolWithMask, ConvolutionStr
+                                         masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d)
+from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
+    PromptFlashAttention, MaxPoolWithMask
+from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_padding_op, conv2d_ext_op, conv2d_padding_op
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
@@ -252,11 +253,11 @@ def adaptive_avg_pool2d_ext(input, output_size):
     .. math::
 
         out\_shape = \begin{cases}
-        input\_shape[-2] + output\_size[1], & \text{if } output\_size text{ is (None, w);}\\
-        output\_size[0] + input\_shape[-1], & \text{if } output\_size text{ is (h, None);}\\
-        input\_shape[-2:], & \text{if } output\_size text{ is (None, None);}\\
-        (h, h), & \text{if } output\_size text{ is h;}\\
-        (h, w), & \text{if } output\_size text{ is (h, w)}
+        input\_shape[-2] + output\_size[1], & \text{if } output\_size \text{ is (None, w);}\\
+        output\_size[0] + input\_shape[-1], & \text{if } output\_size \text{ is (h, None);}\\
+        input\_shape[-2:], & \text{if } output\_size \text{ is (None, None);}\\
+        (h, h), & \text{if } output\_size \text{ is h;}\\
+        (h, w), & \text{if } output\_size \text{ is (h, w)}
         \end{cases}
 
     Raises:
@@ -625,12 +626,12 @@ def avg_pool2d_ext(input, kernel_size, stride=None, padding=0, ceil_mode=False, 
         outputs regional average in the :math:`(H_{in}, W_{in})` -dimension.
         Given kernel size :math:`(kH, kW)` and `stride` , the operation is as follows.
 
-        .. note::
-            On the Atlas platform, when calculating the input, the precision is degraded from float32 to float16.
-
         .. math::
             \text{output}(N_i, C_j, h, w) = \frac{1}{kH * kW} \sum_{m=0}^{kH-1} \sum_{n=0}^{kW-1}
             \text{input}(N_i, C_j, stride[0] \times h + m, stride[1] \times w + n)
+
+        .. note::
+            On the Atlas platform, when calculating the input, the precision is degraded from float32 to float16.
 
         Args:
             input (Tensor): Tensor of shape :math:`(N, C, H_{in}, W_{in})` or :math:`(C, H_{in}, W_{in})`.
@@ -2425,8 +2426,8 @@ def interpolate(input,
         >>> input = Tensor([[[1, 2, 3], [4, 5, 6]]], mindspore.float32)
         >>> output = ops.interpolate(input, size=(6,), mode='nearest')
         >>> print(output)
-            [[[1. 1. 2. 2. 3. 3.]
-              [4. 4. 5. 5. 6. 6.]]]
+        [[[1. 1. 2. 2. 3. 3.]
+          [4. 4. 5. 5. 6. 6.]]]
     """
 
     def run_nearest(x, size, align_corners=None, scale_factor=None):
@@ -2677,7 +2678,7 @@ def interpolate_ext(input,
     r"""
     Samples the input Tensor to the given size or scale_factor by using one of the interpolate algorithms.
 
-    .. warnings:
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     .. note::
@@ -2781,12 +2782,12 @@ def interpolate_ext(input,
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, mint
+        >>> from mindspore import Tensor, ops
         >>> input = Tensor([[[1, 2, 3], [4, 5, 6]]], mindspore.float32)
-        >>> output = mint.interpolate(input, size=(6,), mode='nearest')
+        >>> output = ops.interpolate_ext(input, size=(6,), mode='nearest')
         >>> print(output)
-            [[[1. 1. 2. 2. 3. 3.]
-              [4. 4. 5. 5. 6. 6.]]]
+        [[[1. 1. 2. 2. 3. 3.]
+          [4. 4. 5. 5. 6. 6.]]]
     """
 
     def run_nearest(x, size, align_corners=None, scale_factor=None):
@@ -3641,7 +3642,7 @@ def _replication_pad(input, pad):
     return out
 
 
-def pad_ext(input, pad, mode='constant', value=0.0):
+def pad_ext(input, pad, mode='constant', value=None):
     r"""
     Pads the input tensor according to the pad.
 
@@ -3689,7 +3690,7 @@ def pad_ext(input, pad, mode='constant', value=0.0):
 
         value (Union[int, float, None], optional): Valid only in ``'constant'`` mode.
             Set the padding value in ``'constant'`` mode. If the value is None, 0 is used as the default padding value.
-            Default: ``0.0`` .
+            Default: ``None`` .
 
     Returns:
         Tensor, the tensor after padding.
@@ -3699,7 +3700,7 @@ def pad_ext(input, pad, mode='constant', value=0.0):
         TypeError: If `input` is not a Tensor.
         ValueError: If length of `pad` is not even.
         ValueError: If length of `pad` is greater than 6.
-        ValueError: If `mode` is not ``'constant'`` and `value` not ``None``.
+        ValueError: If `mode` is not ``'constant'`` and `value` is neither ``None`` nor 0.
 
     Supported Platforms:
         ``Ascend``
@@ -3727,7 +3728,7 @@ def pad_ext(input, pad, mode='constant', value=0.0):
         value = 0 if value is None else value
         out = constant_pad_nd_op(input, pad, value)
     else:
-        if value != 0.0:
+        if value is not None and value != 0:
             raise ValueError(f"Padding mode {mode} doesn\'t take in value argument.")
         if mode == "circular":
             out = _circular_pad(input, pad)
@@ -4311,13 +4312,14 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
-            in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
+        input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` , `N = batch size` ,
+            or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
             `input` is expected to be log-probabilities.
             Data type only supports float32 or float16 or bfloat16(only supported by
             Atlas A2 training series products).
-        target (Tensor): :math:`(N)` or :math:`(N, d_1, d_2, ..., d_K)` for
-            high-dimensional loss, data type must be int32, int64, uint8.
+        target (Tensor): :math:`()` or :math:`(N)` ,
+          where the value range is :math:`[0, C-1]`, or :math:`(N, d_1, d_2, ..., d_K)` for
+          high-dimensional loss, data type must be int32 or int64 or uint8.
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, the shape is :math:`(C,)`.
             The data type must be float16 or float32 or bfloat16(only supported by Atlas A2 training series products).
@@ -4428,7 +4430,7 @@ def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduct
         smooth_loss = masked_fill_op(smooth_loss, ignore_mask, 0)
         if reduction == "mean":
             true_mask = ~ignore_mask
-            if  weight is not None:
+            if weight is not None:
                 weight_sum = gather_ext(weight, 0, flatten_ext(masked_select(target, true_mask))).sum()
                 if weight_sum == 0:
                     ret = smooth_loss.sum()
@@ -4678,9 +4680,9 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
             - CPU/GPU: float16, float32, float64.
         target (Tensor): Ground truth data, tensor of shape :math:`(N, *)`.
 
-            - Ascend: has the same shape as the `input`, `target` and `input`
+            - CPU/Ascend: has the same shape as the `input`, `target` and `input`
               comply with the implicit type conversion rules to make the data types consistent.
-            - CPU/GPU: has the same shape and dtype as the `input`.
+            - GPU: has the same shape and dtype as the `input`.
 
         beta (number, optional): A parameter used to control the point where the function will change between
             L1 to L2 loss. Default: ``1.0`` .
@@ -4704,7 +4706,7 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
         ValueError: If shape of `input` is not the same as `target`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
         TypeError: If `beta` is not a float, int or bool.
-        ValueError: If `beta` is less than or equal to 0.
+        RuntimeError: If `beta` is less than or equal to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -6176,8 +6178,6 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     the `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_,
     , :math:`weight` is the convolution kernel value and :math:`X` represents the input feature map.
 
-    Here are the indices' meanings:
-
     - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`,
       where :math:`N` is the batch size of the input.
 
@@ -6204,9 +6204,8 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ and
     `ConvNets <http://cs231n.github.io/convolutional-networks/>`_.
 
-    Note:
-        On Ascend platform, only group convolution in depthwise convolution scenarios is supported.
-        That is, when `groups>1`, condition :math:`C_{in}` = :math:`C_{out}` = `groups` must be satisfied.
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
@@ -6218,26 +6217,31 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         stride (Union(int, tuple[int]), optional): The distance of kernel moving, an int number that represents
             the height and width of movement are both strides, or a tuple of two int numbers that
             represent height and width of movement respectively. Default: ``1`` .
-        padding (Union(int, tuple[int], list[int], str), optional): Implicit paddings on both sides of the input `x`.
-            Can be a string, one integer or a tuple/list with 2 integers.
-            If `padding` is a string, the optional values are ``"same"`` , ``"valid"``.
+        padding (Union[int, tuple[int], str], optional): The number of padding
+            on the height and width directions of the input.
+            The data type is an integer or a tuple of four integers or string {`valid`, `same`}. If `padding` is an
+            integer, then the top, bottom, left, and right padding are all equal to `padding`.
+            If `padding` is a tuple of 4 integers, then the top, bottom, left, and right padding
+            is equal to `padding[0]`, `padding[1]`, `padding[2]`, and `padding[3]` respectively.
+            The value should be greater than or equal to 0. Default: ``0`` .
 
-            - same: Adopts the way of completion. The height and width of the output will be equal to
-              the input `x` divided by stride. The padding will be evenly calculated in top and bottom,
-              left and right possiblily. Otherwise, the last extra padding will be calculated from the bottom
-              and the right side. If this mode is set, `padding` must be 0.
+            - ``"same"``: Pad the input around its edges so that the shape of input and output
+              are the same when `stride` is set to ``1``.
+              The amount of padding to is calculated by the operator internally, If the amount is even, it is
+              uniformly distributed around the input, if it is odd, the excess amount goes to the right/bottom side.
+              If this mode is set, `stride` must be 1.
 
-            - valid: Adopts the way of discarding. The possible largest height and width of output will be returned
-              without padding. Extra pixels will be discarded. If this mode is set, `padding` must be 0.
+            - ``"valid"``: No padding is applied to the input, and the output returns the maximum
+              possible height and width. Extra pixels that could not complete a full stride will
+              be discarded.
 
-            If `padding` is one integer, the paddings of top, bottom, left and right are the same, equal to padding.
-            If `padding` is a tuple/list with 2 integers, the padding of top adn bottom is padding[0],
-            and the padding of left and right is padding[1]. Default: ``0`` .
         dilation (Union(int, tuple[int]), optional): Gaps between kernel elements.The data type is int or a tuple of
             2 integers. Specifies the dilation rate to use for dilated convolution. If set to be :math:`k > 1`,
             there will be :math:`k - 1` pixels skipped for each sampling location. Its value must
             be greater than or equal to 1 and bounded by the height and width of the input `x`. Default: ``1`` .
         groups (int, optional): Splits `input` into groups. Default: ``1`` .
+            :math:`C_{in} % groups == 0` , :math:`C_{out} % groups == 0` , :math:`C_{out} >= groups` ,
+            :math:`\text{kernel_size[1]} = C_{in} / groups`
 
     Returns:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.
@@ -6251,8 +6255,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         TypeError: If `bias` is not a Tensor.
         ValueError: If  the shape of `bias` is not :math:`(C_{out})` .
         ValueError: If `stride` or `dilation` is less than 1.
-        ValueError: If `pad_mode` is not one of 'same', 'valid' or 'pad'.
-        ValueError: If `padding` is a tuple/list whose length is not equal to 2.
+        ValueError: If `padding` is `same` , but `stride` is not equal 1.
 
     Supported Platforms:
         ``Ascend``
@@ -6260,115 +6263,19 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.nn_func import conv2d_ext
+        >>> from mindspore import Tensor, ops, mint
         >>> x = Tensor(np.ones([10, 32, 32, 32]), mindspore.float32)
         >>> weight = Tensor(np.ones([32, 32, 3, 3]), mindspore.float32)
-        >>> output = conv2d_ext(x, weight)
+        >>> output = mint.nn.functional.conv2d(x, weight)
         >>> print(output.shape)
         (10, 32, 30, 30)
     """
-
-    if isinstance(stride, int):
-        stride = twice(stride)
-    if isinstance(dilation, int):
-        dilation = twice(dilation)
-    if isinstance(padding, int):
-        padding = twice(padding)
-    if isinstance(padding, (tuple, list)):
-        conv = _get_cache_prim(Convolution)()
-        return conv(input, weight, bias, stride, padding, dilation, False, (0, 0), groups)
+    if isinstance(padding, (int, tuple, list)):
+        return conv2d_ext_op(input, weight, bias, stride, padding, dilation, groups)
     if isinstance(padding, str):
-        conv = _get_cache_prim(ConvolutionStr)()
-        return conv(input, weight, bias, stride, padding, dilation, False, (0, 0), groups)
+        return conv2d_padding_op(input, weight, bias, stride, padding, dilation, groups)
     raise TypeError(f"For conv2d, the parameter 'padding' must be a tuple/list " \
                     f"or a string, but got {type(padding)}")
-
-
-def _batchify(input, num_spatial_dims, ops_name):
-    """Conv input batchify"""
-    dim_count_no_batch = num_spatial_dims + 1
-    dim_count_batch = dim_count_no_batch + 1
-    input_rank = F.rank(input)
-    is_batched = (input_rank == dim_count_batch)
-    if  F.isconstant(input_rank) and not (input_rank == dim_count_no_batch or is_batched):
-        raise TypeError(f"For {ops_name}, Expected {dim_count_no_batch}D (unbatched) or {dim_count_batch}D (batched)," \
-                        f"but got input of ndim: {input_rank}D")
-    if is_batched:
-        return input, is_batched
-    return input.unsqueeze(0), is_batched
-
-
-def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1):
-    r"""
-    Calculates a 2D transposed convolution, which can be regarded as Conv2d for the gradient of the input,
-    also called deconvolution (although it is not an actual deconvolution).
-
-    The input is typically of shape :math:`(N, C_{in}, H_{in}, W_{in})`,
-    where :math:`N` is batch size, :math:`C_{in}` is space dimension,
-    :math:`H_{in}, W_{in}` are the height and width of the feature layer respectively.
-
-    When Conv2d and Conv2dTranspose are initialized with the same parameters, and `pad_mode` is set to 'pad',
-    :math:`dilation * (kernel\_size - 1) - padding` amount of zero will be paded to the height and width
-    directions of the input, they are inverses of each other in regard to the input and output shapes in this case.
-    However, when `stride` > 1, Conv2d maps multiple input shapes to the same output shape. Deconvolutional network
-    can refer to `Deconvolutional Networks <https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf>`_.
-
-    Args:
-        input (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
-        weight (Tensor): Tensor of shape
-            :math:`(N, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`, then the size of kernel
-            is :math:`(\text{kernel_size[0]}, \text{kernel_size[1]})`.
-        bias (Tensor, optional): Bias Tensor with shape :math:`(C_{out})`.
-            When bias is ``None`` , zeros will be used. Default: ``None`` .
-        stride (Union(int, tuple[int]), optional): The distance of kernel moving, an int number that represents
-            the height and width of movement are both strides, or a tuple of two int numbers that
-            represent height and width of movement respectively. Default: ``1`` .
-        padding (Union(int, tuple[int], list[int]), optional): Implicit paddings on both sides of the input `x`.
-            Can be an integer or a tuple/list with 2 integers.
-        output_padding (Union[int, tuple[int]]): The number of padding on the height and width directions of the output.
-            The data type is an integer or a tuple of two integers. If `output_padding` is an integer,
-            then the bottom and right padding are all equal to `output_padding`. If `output_padding` is a tuple of
-            2 integers, then the bottom and right padding is equal to `output_padding[0]`, `output_padding[1]`
-            respectively.
-        groups (int, optional): Splits `input` into groups. Default: ``1`` .
-        dilation (Union(int, tuple[int]), optional): Gaps between kernel elements.The data type is int or a tuple of
-            2 integers. Specifies the dilation rate to use for dilated convolution. If set to be :math:`k > 1`,
-            there will be :math:`k - 1` pixels skipped for each sampling location. Its value must
-            be greater than or equal to 1 and bounded by the height and width of the input `x`. Default: ``1`` .
-
-    Returns:
-        Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.
-        To see how different pad modes affect the output shape, please refer to
-        :class:`mindspore.nn.Conv2dTranspose` for more details.
-
-
-    Raises:
-        TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.
-        TypeError: `groups` is not an int.
-        TypeError: If `bias` is not a Tensor.
-        ValueError: If  the shape of `bias` is not :math:`(C_{out})` .
-        ValueError: If `stride` or `dilation` is less than 1.
-        ValueError: If `padding` is a tuple/list whose length is not equal to 2.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.ones([1, 6, 32, 32]), mindspore.float32)
-        >>> weight = Tensor(np.ones([6, 3, 5, 5]), mindspore.float32)
-        >>> output = ops.conv_transpose2d(x, weight)
-        >>> print(output.shape)
-        (1, 3, 36, 36)
-    """
-    input_, is_batched = _batchify(input, 2, "conv_transpose2d")
-    output = convolution(input_, weight, bias, stride, padding, dilation, True, output_padding, groups)
-    if is_batched:
-        return output
-    return output.squeeze(0)
 
 
 def hardtanh(input, min_val=-1.0, max_val=1.0):
@@ -7197,6 +7104,136 @@ def conv3d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
     return output
 
 
+def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    r"""
+    Applies a 3D convolution over an input tensor. The input tensor is typically of
+    shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` or :math:`(C_{in}, D_{in}, H_{in}, W_{in})`,
+    where :math:`N` is batch size, :math:`C` is channel number, :math:`D, H, W` are the depth,
+    height and width of the feature graph, respectively.
+
+    The output is calculated based on formula:
+
+    .. math::
+
+        \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
+        \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
+
+    where :math:`bias` is the output channel bias, :math:`ccor` is
+    the `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_
+    , :math:`weight` is the convolution kernel value and :math:`X` represents the input feature map.
+
+    Here are the indices' meanings:
+
+    - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`,
+      where :math:`N` is the batch size of the input.
+
+    - :math:`j` corresponds to the output channel, the range is :math:`[0, C_{out}-1]`,
+      where :math:`C_{out}` is the number of
+      output channels, which is also equal to the number of kernels.
+
+    - :math:`k` corresponds to the input channel, the range is :math:`[0, C_{in}-1]`,
+      where :math:`C_{in}` is the number of
+      input channels, which is also equal to the number of channels in the convolutional kernels.
+
+    Therefore, in the above formula, :math:`{bias}(C_{\text{out}_j})` represents the bias of the :math:`j`-th
+    output channel, :math:`{weight}(C_{\text{out}_j}, k)` represents the slice of the :math:`j`-th convolutional
+    kernel in the :math:`k`-th channel, and :math:`{X}(N_i, k)` represents the slice of the :math:`k`-th input
+    channel in the :math:`i`-th batch of the input feature map.
+
+    The shape of the convolutional kernel is given by :math:`(kd, kh, kw)` where :math:`kd` , :math:`kd` and\
+    :math:`kw` are the depth, height and width of the kernel, respectively.
+    If we consider the input and output channels as well as the `group` parameter, the complete kernel shape
+    will be :math:`(C_{out}, C_{in} / \text{group}, kd, kh, kw)`,
+    where `group` is the number of groups dividing `x`'s input channel when applying group convolution.
+
+    For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
+    <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
+
+    The following lists some of the limitations of the parameters.
+
+    - input -- The input to the conv3d. The input must have each dimension size within the range [1, int32_max].
+    - weight -- Filters of shape :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`. The value of :math:`kh`
+      and :math:`kw` is in the range [1, 511]. The remaining values are in the range [1, int32_max].
+      And :math:`kh*kw*k0` is less 65536 (k0 is 16. If data type is float32, k0 is 8).
+    - bias -- Bias Tensor with shape :math:`(C_{out})`. The shape must equal the first dimension of the weight.
+    - stride -- The distance of kernel moving. It can be an int number or
+      tuple (noted by :math:`(stride_d, stride_h, stride_w)`). stride_h and stride_w are in the range [1, 63].
+      stride_d is in the range [1, 255].
+    - padding -- If padding is an int number, it is in the range [0, 255].
+    - dilation -- The value is in the range [1, 255].
+    - groups -- The value is in the range [1, 65535].
+    - :math:`C_{in} \% \text{groups} == 0 \quad \text{and} \quad C_{out} \% \text{groups} == 0` .
+    - :math:`weight[1] == C_{in} / groups` .
+    - :math:`H_{in} + PadUp + PadDown >= (kh - 1) * DilationH + 1` .
+    - :math:`W_{in} + PadLeft + PadRight >= (kw - 1) * DilationW + 1` .
+    - :math:`D_{in} + PadFront + PadBack >= (kd - 1) * DilationD + 1` .
+    - :math:`H_{out} = (H_{in} + PadUp + PadDown - ((kh - 1) * DilationH + 1)) / StrideH + 1` .
+    - :math:`W_{out} = (W_{in} + PadLeft + PadRight - ((kw - 1) * DilationW + 1)) / StrideW + 1` .
+    - :math:`D_{out} = (D_{in} + PadFront + PadBack - ((kd - 1) * DilationD + 1)) / StrideD + 1` .
+    - :math:`(D_{in}+PadFront+PadBack - ((kd-1)*DilationD+1)) % StrideD <= PadBack` .
+    - :math:`(H_{in}+PadUp+PadDown - ((kh-1)*Dilationh+1)) % StrideH <= PadDown` .
+    - :math:`stride_d <= kernel_d` .
+    - :math:`PadUp < kh` and :math:`PadDown < kh` . When padding='valid', both `PadUp` and `PadDown` are zeros.
+      When padding='same', pad can be calculated by
+      :math:`floor(((H_{out}-1) * strideH + (kh - 1) * DilationH + 1 - H_{in}) / 2)` for high dimension.
+      It is similar way to calculate the padding for depth and width dimension. And the depth and width
+      dimensions also have the same constraints.
+    - :math:`((kh - 1) * DilationH - PadUp)` should be in [0, 255]. It is the same constraint for depth
+      and width dimension.
+    - :math:`groups == 1 \quad \text{or} \quad groups == C_{in}`.
+    - If `padding` is ``same``, `stride` must be 1.
+
+    .. warning::
+        This API does not support Atlas series products.
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`.
+        weight (Tensor): Set size of kernel is :math:`(kd, kh,
+            kw)`, then the shape is :math:`(C_{out}, C_{in} / groups, kd, kh, kw)`.
+        bias (Tensor, optional): Bias Tensor with shape :math:`(C_{out})`.
+            When bias is ``None`` , zeros will be used. Default: ``None`` .
+        stride (Union(int, tuple[int]), optional): The distance of kernel moving, an int number that represents
+            the depth, the height and width of movement are both strides, or a tuple of triple int numbers that
+            represent the depth, height and width of movement respectively. Default: ``1`` .
+        padding (Union(int, tuple[int], str), optional): Implicit paddings on both sides of the input `x`.
+            Can be a string, one integer or a tuple/list with 3 integers.
+            If `padding` is a string, the optional values are ``"same"`` , ``"valid"``.
+
+            - same: Adopts the way of completion. The height and width of the output will be equal to
+              the input `x` divided by stride. The padding will be evenly calculated in top and bottom,
+              left and right possiblily. Otherwise, the last extra padding will be calculated from the bottom
+              and the right side. If this mode is set, `stride` must be 1.
+
+            - valid: Adopts the way of discarding. The possible largest height and width of output will be returned
+              without padding. Extra pixels will be discarded.
+
+            If `padding` is one integer, the paddings of top, bottom, left and right are the same, equal to padding.
+            If `padding` is a tuple/list with 3 integers, the padding of head, tail, top, bottom,
+            left and right equal to pad[0], pad[0], pad[1], pad[1], pad[2] and pad[2] correspondingly. Default: ``0`` .
+        dilation (Union[int, tuple[int]], optional): Controlling the space between the kernel points. Default: ``1`` .
+        groups (int, optional): Splits `input` into groups. Default: ``1`` .
+
+    Returns:
+        Tensor
+
+    Raises:
+        TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.
+        TypeError: `groups` is not an int.
+        TypeError: If `bias` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+
+    if isinstance(padding, (tuple, list, int)):
+        return conv3d_ext_op(input, weight, bias, stride, padding, dilation, groups)
+    if isinstance(padding, str):
+        return conv3d_padding_op(input, weight, bias, stride, padding, dilation, groups)
+    raise TypeError(f"For conv3d, the parameter 'padding' must be a tuple/list " \
+                    f"or a string, but got {type(padding)}")
+
+
 @_primexpr
 def _check_positive_int(arg_value, arg_name=None, prim_name=None):
     validator.check_positive_int(arg_value, arg_name=arg_name, prim_name=prim_name)
@@ -7375,6 +7412,50 @@ def glu(x, axis=-1):
     x, y = spilt(x)
     y = sigmoid_(y)
     return x * y
+
+
+def glu_ext(input, dim=-1):
+    r"""
+    Computes GLU (Gated Linear Unit activation function) of the input tensor.
+
+    .. math::
+        {GLU}(a, b)= a \otimes \sigma(b)
+
+    where :math:`a` is the first half of the `input` Tensor after `input` is split and :math:`b` is the second half.
+
+    Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
+    See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor to be calculated. Dtype is floating point and the shape
+            is :math:`(\ast_1, N, \ast_2)` where `*` means, any number of additional dimensions. :math:`N`
+            is required to be an even number, where :math:`N` is the size of `input` on the dimension
+            selected by `dim`.
+        dim (int, optional): The dimension to split the input `input`. The value range is `[-r, r)` where `r`
+            is the number of dimensions of `input`. Default: ``-1`` , the last dimension in `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor or `dim` is not an int.
+        IndexError: If the value of `dim` is out of the range of `[-r, r)`, where `r` is the number
+            of dimensions of `input`.
+        RuntimeError: If dtype of `input` is not supported.
+        RuntimeError: If the length of `input` in the dimension selected by `dim` is not even.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor([[0.1,0.2,0.3,0.4],[0.5,0.6,0.7,0.8]])
+        >>> output = mint.nn.functional.glu(input)
+        >>> print(output)
+        [[0.05744425 0.11973753]
+         [0.33409387 0.41398472]]
+    """
+    return _get_cache_prim(P.GLU)(axis=dim)(input)
 
 
 def multi_margin_loss(input, target, p=1, margin=1, weight=None, reduction='mean'):
@@ -7624,7 +7705,7 @@ def gelu(input, approximate='none'):
         >>> import mindspore
         >>> from mindspore import Tensor, ops
         >>> x = Tensor([1.0, 2.0, 3.0], mindspore.float32)
-        >>> result = ops.gelu(x)
+        >>> result = ops.gelu(x, approximate='none')
         >>> print(result)
         [0.8413447 1.9544997 2.9959505]
     """
@@ -7649,7 +7730,8 @@ def gelu(input, approximate='none'):
 def channel_shuffle(x, groups):
     r"""
     Divide the channels in a tensor of shape :math:`(*, C, H, W)` into :math:`g` groups and
-    rearrange them as :math:`(*, \frac{C}{g}, g, H*W)`, while keeping the original tensor shapes.
+    rearrange them as :math:`(*, \frac{C}{g}, g, H*W)`, while retaining the original tensor
+    shape in the final output.
 
     Args:
         x (Tensor): Tensor to be divided, it has shape :math:`(*, C, H, W)`,
@@ -7926,7 +8008,7 @@ def relu_(input):
     .. image:: ../images/ReLU.png
         :align: center
 
-    warning:
+    .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
@@ -8537,7 +8619,7 @@ def max_pool2d(x, kernel_size, stride=None, padding=0, dilation=1, return_indice
     return out
 
 
-def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, *, ceil_mode=False, return_indices=False):
+def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False):
     r"""
     Performs a 2D max pooling on the input Tensor.
 
@@ -8604,10 +8686,9 @@ def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, *, ce
         >>> import mindspore
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.nn_func import max_pool2d_ext
         >>> input = Tensor(np.arange(20 * 16 * 50 * 32).reshape((20, 16, 50, 32)), mindspore.float32)
-        >>> output_tensor, argmax = max_pool2d_ext(input, kernel_size=(3, 2), stride=(2, 1),
-                                                          ceil_mode=False, return_indices=True)
+        >>> output_tensor, argmax = ops.function.nn_func.max_pool2d_ext(input, kernel_size=(3, 2), stride=(2, 1),
+        ...                                                             ceil_mode=False, return_indices=True)
         >>> print(output_tensor.shape)
         (20, 16, 24, 31)
         >>> print(argmax.shape)
@@ -8632,15 +8713,11 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
     r"""
     The interface for fully inference.
 
-    B -- Batch size
-
-    N -- Num heads
-
-    S -- Sequence length
-
-    D -- Head dim
-
-    H -- Hidden size
+    - B: Batch size
+    - N: Num of attention heads
+    - S: Sequence length
+    - D: Head dim
+    - H: Hidden layer size
 
     Self attention constructs an attention model based on the relationship between input samples themselves. The
     principle is to assume that there is an input sample sequence :math:`x` of length :math:`n`, and each
@@ -8700,6 +8777,9 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
           - When `query` dtype is bfloat16, D axis should align with 16.
           - Each element of `actual_seq_lengths` must not exceed q_S and element
             of `actual_seq_lengths_kv` must not exceed kv_S.
+
+    .. warning::
+        Only support on Atlas A2 training series.
 
     Args:
         query (Tensor): The query tensor with data type of int8, float16 or bfloat16.
@@ -8818,8 +8898,7 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
         ``Ascend``
 
     Examples:
-        >>> from mindspore.ops.function.nn_func import prompt_flash_attention
-        >>> from mindspore import Tensor
+        >>> from mindspore import Tensor, ops
         >>> import numpy as np
         >>> B = 1
         >>> N = 16
@@ -8828,8 +8907,8 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
         >>> query = Tensor(np.ones((B, N, S, D), dtype=np.float16))
         >>> key = Tensor(np.ones((B, N, S, D), dtype=np.float16))
         >>> value = Tensor(np.ones((B, N, S, D), dtype=np.float16))
-        >>> out = prompt_flash_attention(query, key, value, None, None, None, None, None, None, None, None,
-                                             None, N, input_layout='BNSD')
+        >>> out = ops.prompt_flash_attention(query, key, value, None, None, None, None, None, None, None, None,
+        ...                                  None, N, input_layout='BNSD')
         >>> print(out.shape)
         (1, 16, 256, 16)
     """
@@ -8846,21 +8925,17 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
                           num_heads=1, input_layout='BSH', scale_value=1.0, num_key_value_heads=0,
                           block_size=0, inner_precise=1, kv_padding_size=None):
     r"""
-    B -- Batch size
+    The interface for incremental inference.
 
-    N -- Num heads
+    - B: Batch size
+    - N: Num of attention heads
+    - kvN: Num of `key` / `value` heads
+    - S: Sequence length
+    - D: Head dim
+    - H: Hidden layer size
+    - kvH: Hidden size of `key` / `value`
 
-    kvN -- Num key value heads
-
-    S -- Sequence length
-
-    D -- Head dim
-
-    H -- Hidden size
-
-    kvH -- Hidden size of key value
-
-    where :math:`H=N\times D`, :math:`kvH=kvN\times D`
+    where :math:`H=N\times D`, :math:`kvH=kvN\times D`.
 
     Self attention constructs an attention model based on the relationship between input samples themselves. The
     principle is to assume that there is a length of the input sample sequence :math:`x` of :math:`n`, and each
@@ -8875,62 +8950,62 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
     becoming too large, it is usually scaled by dividing it by the square root of :math:`d` and perform softmax
     normalization on each row, yields a matrix of :math:`n\times d` after multiplying :math:`V`.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Note:
-      - If there is no input parameter and no default value, None needs to be passed.
-      - The shape of the tensor corresponding to the key and value parameters needs to be completely consistent.
-      - :math:`N` of parameter query is equal with num_heads. :math:`N` of parameter key and parameter value is equal
-        with num_key_value_heads. num_heads is a multiple of num_key_value_heads.
+      - If there is no input parameter and no default value, ``None`` needs to be passed.
+      - The shape of the tensor corresponding to the `key` and `value` parameters needs to be completely consistent.
+      - :math:`N` of parameter `query` is equal with `num_heads`. :math:`N` of parameter `key` and parameter `value`
+        is equal with `num_key_value_heads`. `num_heads` is a multiple of `num_key_value_heads`.
       - Quantization
 
-        - When the data type of query, key, and value is float16 and the data type of output is int8, the input
-          parameter quant_scale2 is required and quant_offset2 is optional.
-        - When antiquant_scale exists, key and value need to be passed by int8. antiquant_offset is optional.
-        - The data type of antiquant_scale and antiquant_offset should be consistency with that of query.
-      - pse_shift
+        - When the data type of `query`, `key`, and `value` is float16 and the data type of output is int8, the input
+          parameter `quant_scale2` is required and `quant_offset2` is optional.
+        - When `antiquant_scale` exists, `key` and `value` need to be passed by int8. `antiquant_offset` is optional.
+        - The data type of `antiquant_scale` and `antiquant_offset` should be consistenct with that of `query`.
+      - `pse_shift`
 
-        - The pse_shift data type needs to be consistent with the query data type, and only supports D-axis alignment,
+        - The `pse_shift` data type needs to be consistent with `query`, and only supports D-axis alignment,
           which means that the D-axis can be divided by 16.
       - Page attention:
 
-        - The necessary condition for enabling page attention is that the block_table exists, and the key
-          and value are arranged in a contiguous memory according to the index in the block_table. The support for
-          key and value dtypes is float16/bfloat16/int8.
-        - In the enabling scenario of page attention, 16 alignment is required when input types of key and value are
-          float16/bfloat16, and 32 alignment is required when input types of key and value are int8. It is
-          recommended to use 128.
+        - The necessary condition for enabling page attention is that the `block_table` exists, and the `key`
+          and `value` are arranged in a contiguous memory according to the index in the `block_table`. The support
+          dtype for `key` and `value` is float16/bfloat16/int8.
+        - In the enabling scenario of page attention, 16 alignment is required when input types of `key`
+          and `value` are float16/bfloat16, and 32 alignment is required when input dtype of `key` and `value`
+          is int8. It is recommended to use 128.
         - The maximum max_block_num_per_seq currently supported by blocktable is 16k, and exceeding 16k will result
           in interception and error messages; If you encounter :math:`S` being too large and causing
-          max_block_num_per_seq to exceed 16k, you can increase the block_size to solve the problem.
-        - The multiplication of all dimensions of the shape of the parameters key and value in the page attention
+          max_block_num_per_seq to exceed 16k, you can increase the `block_size` to solve the problem.
+        - The multiplication of all dimensions of the shape of the parameters `key` and `value` in the page attention
           scenario cannot exceed the representation range of int32.
         - When performing per-channel post quantization, page attention cannot be enabled simultaneously.
-      - kv_padding_size:
+      - `kv_padding_size`:
 
         - The calculation formula for the starting point of KV cache transfer is
           :math:`S-kv\_padding\_size-actual\_seq\_lengths`. The calculation formula for the transfer endpoint of KV
           cache is :math:`S-kv\_padding\_size`. When the starting or ending point of the KV cache transfer is less
           than 0, the returned data result is all 0.
-        - When kv_padding_size is less than 0, it will be set to 0.
-        - kv_padding_size needs to be enabled together with the actual_seq_lengths parameter, otherwise it is
+        - When `kv_padding_size` is less than 0, it will be set to 0.
+        - `kv_padding_size` needs to be enabled together with the `actual_seq_lengths` parameter, otherwise it is
           considered as the KV right padding scene.
         - It needs to be enabled together with the atten_mask parameter and ensure that the meaning of atten_mask is
           correct, that is, it can correctly hide invalid data. Otherwise, it will introduce accuracy issues.
-        - kv_padding_size does not support page attention scenarios
+        - `kv_padding_size` does not support page attention scenarios.
+
+    .. warning::
+        Only support on Atlas A2 training series.
 
     Args:
         query (Tensor): The query tensor with data type of float16 or bfloat16.
             The shape is :math:`(B, 1, H)` / :math:`(B, N, 1, D)`.
-        key (TensorList): The key tensor with data type of float16 or bfloat16 or int8.
+        key (Union[tuple, list]): The key tensor with data type of float16 or bfloat16 or int8.
             The shape is :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)`.
-        value (TensorList): The value tensor with data type of float16 or bfloat16 or int8.
+        value (Union[tuple, list]): The value tensor with data type of float16 or bfloat16 or int8.
             The shape is :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)`.
         attn_mask (Tensor, optional): The attention mask tensor with data type of bool or int8 or uint8.
             The shape is :math:`(B, S)` / :math:`(B, 1, S)` / :math:`(B, 1, 1, S)`. Default: ``None``.
         actual_seq_lengths (Union[Tensor, tuple[int], list[int]], optional): Describe actual sequence length of each
-            input with data type of int32 or int64. The shape is :math:`(B, )`. Default: ``None``.
+            input with data type of int64. The shape is :math:`(B, )`. Default: ``None``.
         pse_shift (Tensor, optional): The position encoding tensor with data type of float16 or bfloat16. Input tensor
             of shape :math:`(1, N, 1, S)` / :math:`(B, N, 1, S)`. Default: ``None``.
         dequant_scale1 (Tensor, optional): Quantitative parametor, the tensor with data type of uint64 or float32. It
@@ -8945,28 +9020,50 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
             The shape is :math:`(1,)`. Default: ``None``.
         antiquant_scale (Tensor, optional): Pseudo Quantitative parametor, the tensor with data type of float16 or
             bfloat16. The shape is :math:`(2, kvN, 1, D)` when input_layout is 'BNSD' or :math:`(2, kvH)` when
-          input_layout is 'BSH'. Default: ``None``.
+            input_layout is 'BSH'. Default: ``None``.
         antiquant_offset (Tensor, optional): Pseudo Quantitative parametor, the tensor with data type of float16 or
             bfloat16. The shape is :math:`(2, kvN, 1, D)` when input_layout is 'BNSD' or :math:`(2, kvH)` when
-          input_layout is 'BSH'. Default: ``None``.
+            input_layout is 'BSH'. Default: ``None``.
         block_table (Tensor, optional): The tensor with data type of int32. The shape is
             :math:`(B, max\_block\_num\_per\_seq)`,
             where :math:`max\_block\_num\_per\_seq = ceil(\frac{max(actual\_seq\_length)}{block\_size} )`.
             Default: ``None``.
-        num_heads (int): The number of heads.
-        input_layout (str): The data layout of the input qkv, support 'BSH' and 'BNSD'. Default ``'BSH'``.
-        scale_value (double): The scale value indicating the scale coefficient, which is used as the scalar of
-            Muls in the calculation. Default: ``1.0``.
-        num_key_value_heads (int): Head numbers of key/value which are used in GQA algorithm.
-            The value 0 indicates if the key and value have the same head nums, use numHeads.  Default: ``0``.
-        block_size (int): The maximum number of tokens stored in each block of KV in page attention. Default: ``0``.
-        inner_precise (int): Default: ``1``.
+        num_heads (int, optional): The number of heads.  Default: ``1``.
+        input_layout (str, optional): The data layout of the input qkv, support 'BSH' and 'BNSD'. Default ``'BSH'``.
+        scale_value (double, optional): The scale value indicating the scale coefficient, which is used as
+            the scalar of Muls in the calculation. Default: ``1.0``.
+        num_key_value_heads (int, optional): Head numbers of `key`/`value` which are used in GQA algorithm.
+            The value 0 indicates if the `key` and `value` have the same head nums, use numHeads.  Default: ``0``.
+        block_size (int, optional): The maximum number of tokens stored in each block of KV in page attention.
+            Default: ``0``.
+        inner_precise (int, optional): An int number from {0, 1} indicates computing mode.
+            ``0`` for high precision mode for float16 dtype. ``1`` for high performance mode.
+            Default: ``1``.
         kv_padding_size (Tensor, optional): The tensor with data type of int64. The range of values is
             :math:`0\le kv\_padding\_size \le  S-max(actual\_seq\_length)`. The shape is :math:`()` or :math:`(1,)`.
             Default: ``None``.
 
     Returns:
         attention_out (Tensor), the shape is :math:`(B, 1, H)` / :math:`(B, N, 1, D)`.
+
+    Raises:
+        TypeError: dtype of `query` is not float16 or bfloat16.
+        TypeError: `key` and `value` don't have the same dtype.
+        TypeError: dtype of `attn_mask` is not bool, int8 or uint8.
+        TypeError: dtype of `pse_shift` is not bfloat16 or float16.
+        TypeError: `scale_value` is not a double number.
+        TypeError: `input_layout` is not a string.
+        TypeError: `num_key_value_heads` or `num_heads` is not an int.
+        TypeError: `inner_precise` is not an int.
+        TypeError: `quant_scale1` is not Tensor of type float32.
+        TypeError: `quant_scale2` is not Tensor of type float32.
+        TypeError: `quant_offset2` is not Tensor of type float32.
+        ValueError: size of `actual_seq_lengths` is not 1 or B.
+        ValueError: `input_layout` is a string but of `(BSH)` or `(BNSD)`.
+        ValueError: `num_heads` is not divisible by Q_H.
+        ValueError: `num_heads` is not divisible by `num_key_value_heads`.
+        RuntimeError: `num_heads` is not greater than 0.
+        RuntimeError: `attn_mask` shape is not valid.
 
     Supported Platforms:
         ``Ascend``
@@ -8980,7 +9077,7 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
         >>> query = Tensor(np.random.randn(B, 1, N * D), mstype.float16)
         >>> key = [Tensor(np.random.randn(B, S, kvN * D), mstype.float16)]
         >>> value = [Tensor(np.random.randn(B, S, kvN * D), mstype.float16)]
-        >>> ifa_ms = ops.functional.incre_flash_attention
+        >>> ifa_ms = ops.incre_flash_attention
         >>> attn_out = ifa_ms(query, key, value, num_heads=N, num_key_value_heads=kvN)
         >>> attn_out
         Tensor(shape=[1, 1, 512], dtype=Float16, value=
@@ -9003,7 +9100,7 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
     Args:
         input (Tensor): The indices used to lookup in the `weight`. The data type must be mindspore.int32 or
             mindspore.int64, and the value should be in range `[0, weight.shape[0])`.
-        weight (Parameter): The matrix where to lookup from. The shape must be 2D.
+        weight (Union[Parameter, Tensor]): The matrix where to lookup from. The shape must be 2D.
         padding_idx (int, optional): If the value is not None, the corresponding row of `weight` will not be updated
             in training. The value should be in range `[-weight.shape[0], weight.shape[0])` if it's not ``None``.
             Default ``None``.
@@ -9020,7 +9117,6 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
     Raises:
         ValueError: If `padding_idx` is out of valid range.
         ValueError: If the shape of `weight` is invalid.
-        TypeError: `weight` is not a :class:`mindspore.Parameter`.
 
     Supported Platforms:
         ``Ascend``
@@ -9151,5 +9247,6 @@ __all__ = [
     'add_layer_norm',
     'group_norm',
     'rms_norm',
+    'add_rms_norm',
 ]
 __all__.sort()

@@ -122,12 +122,11 @@ mindspore/python/mindspore/ops_generate/deprecated_ops.yaml
 mindspore/python/mindspore/ops_generate/ops_doc.yaml
 mindspore/python/mindspore/ops_generate/api_def.yaml
 mindspore/python/mindspore/ops_generate/tensor_method_doc.yaml
+mindspore/python/mindspore/ops_generate/mint_func_doc.yaml
 mindspore/python/mindspore/ops_generate/inner_ops.yaml
 mindspore/python/mindspore/ops_generate/inner_ops_doc.yaml
-mindspore/python/mindspore/mint/functional_overload.py
+mindspore/python/mindspore/ops/functional_overload.py
 mindspore/ops/kernel/ascend/opapi/aclnn_kernel_register_auto.cc
-mindspore/ccsrc/pybind_api/ir/tensor_func_reg.h
-mindspore/ccsrc/pybind_api/ir/tensor_func_reg.cc
 mindspore/ccsrc/pipeline/pynative/op_function/auto_generate/functional_map.cc
 mindspore/python/mindspore/common/_tensor_docs.py
 mindspore/python/mindspore/common/_tensor_cpp_method.py
@@ -137,3 +136,9 @@ mindspore/ops/kernel/ascend/opapi/aclnn_auto_gen/
 mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910
 mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910b
 custom_workspace
+
+# leftover internal kernel files after extraction
+mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/ms_kernels_internal
+mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/ms_kernels_dependency
+mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/ms_kernels_internal
+mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/ms_kernels_dependency

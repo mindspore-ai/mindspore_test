@@ -36,7 +36,7 @@ class SingleWhileNet(nn.Cell):
         y += 2 * x
         return y
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_jit_function_while():
     """
     Features: Control flow.

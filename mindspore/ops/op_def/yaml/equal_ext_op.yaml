@@ -1,0 +1,14 @@
+#operator equal_ext
+equal_ext:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  function: 
+    disable: True      
+  dispatch: 
+    enable: True

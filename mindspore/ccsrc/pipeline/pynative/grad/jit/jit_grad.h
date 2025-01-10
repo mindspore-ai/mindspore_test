@@ -42,21 +42,18 @@ class Jit {
   Jit() = default;
   ~Jit() = default;
   inline void set_graph_phase(const std::string &graph_phase) { graph_phase_ = graph_phase; }
-  py::object GradJit(const py::object &out, const py::args &args);
+  py::object GradJit(const py::args &args);
+  bool GetJitGradGraph(const pipeline::ResourcePtr &resource);
+  void Clear();
+  // Functions for valuenode replacement method
   void SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &func_graph, const std::string &graph_phase);
   void ProcessCnodeFromAdGrad(const CNodePtr &k_app, const CNodePtr &cnode_morph);
-  bool GetJitGradGraph(const pipeline::ResourcePtr &resource);
   inline bool eliminate_forward() const { return eliminate_forward_; }
   inline void set_eliminate_forward(bool eliminate_forward) { eliminate_forward_ = eliminate_forward; }
-  void Clear();
 
  private:
   void GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
-                    const FuncGraphPtr &primal_func_graph, const FuncGraphPtr &jit_grad_graph,
-                    const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase);
-  // Update device address of value node in grad graph by forward tensors.
-  void RunReplace(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const;
-  void ReplaceAddedCnodeActualOutput(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const;
+                    const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph);
   // Make CNode for jit forward graph.
   void GetInputArgsNode(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                         AnfNodePtrList *input_nodes) const;
@@ -66,16 +63,26 @@ class Jit {
                        const FuncGraphPtr &ms_func_graph, CNodePtr *jit_cnode) const;
   // create grad param for jit fprop graph and connect it with previous op
   GradParamPtr CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
+                                  const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph);
+  void RecordForwardGraphForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
+                                const FuncGraphPtr &ms_func_graph) const;
+  void Reset();
+
+  // Functions for valuenode replacement method
+  void GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
+                    const FuncGraphPtr &primal_func_graph, const FuncGraphPtr &jit_grad_graph,
+                    const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase);
+  // Update device address of value node in grad graph by forward tensors.
+  void RunReplace(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const;
+  void ReplaceAddedCnodeActualOutput(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const;
+  GradParamPtr CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                                   const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph,
                                   const std::string &graph_phase);
   void UpdateAddCnodeFoward(const OpGradInfoPtr &op_grad_info, const GradExecutor *grad_executor,
                             const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase);
-  void RecordForwardGraphForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
-                                const FuncGraphPtr &ms_func_graph) const;
   void UpdateJitForwardTensorInfoInBpropGraph(const std::string &op_info, const ValuePtr &v,
                                               const std::string &graph_phase);
   FuncGraphPtr GetJitForwardGraphCNodeInfo(const FuncGraphPtr &jit_forward_graph);
-  void Reset();
 
   bool eliminate_forward_{true};
   // The graph phase is used to obtain backend graph that is complied by jit

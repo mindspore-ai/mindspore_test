@@ -649,6 +649,9 @@ class SmoothL1Loss(LossBase):
           often leads to faster convergence but it is less
           robust to outliers, and the loss function has better robustness.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         beta (number, optional): The loss function calculates the threshold of the transformation
             between L1Loss and L2Loss. Default: ``1.0`` .
@@ -669,9 +672,9 @@ class SmoothL1Loss(LossBase):
           - CPU/GPU: float16, float32, float64.
         - **labels** (Tensor) - Ground truth data.
 
-          - Ascend: has the same shape as the `logits`,
+          - CPU/Ascend: has the same shape as the `logits`,
             `logits` and `labels` comply with the implicit type conversion rules to make the data types consistent.
-          - CPU/GPU: has the same shape and dtype as the `logits`.
+          - GPU: has the same shape and dtype as the `logits`.
     Outputs:
         Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `logits`.
         Otherwise the shape of output tensor is :math:`()`.
@@ -682,7 +685,7 @@ class SmoothL1Loss(LossBase):
         ValueError: If shape of `logits` is not the same as `labels`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
         TypeError: If `beta` is not a float, int or bool.
-        ValueError: If `beta` is less than or equal to 0.
+        RuntimeError: If `beta` is less than or equal to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1722,22 +1725,11 @@ class BCELoss(LossBase):
     def __init__(self, weight=None, reduction='mean'):
         """Initialize BCELoss."""
         super(BCELoss, self).__init__(reduction)
-        self.binary_cross_entropy = P.BinaryCrossEntropy(reduction=reduction)
-        self.weight_one = weight is None
-        if not self.weight_one:
-            self.weight = weight
-        else:
-            self.ones = P.OnesLike()
+        self.reduction = reduction
+        self.weight = weight
 
     def construct(self, logits, labels):
-        _check_is_tensor('logits', logits, self.cls_name)
-        _check_is_tensor('labels', labels, self.cls_name)
-        if self.weight_one:
-            weight = self.ones(logits)
-        else:
-            weight = self.weight
-        loss = self.binary_cross_entropy(logits, labels, weight)
-        return loss
+        return F.binary_cross_entropy(logits, labels, self.weight, self.reduction)
 
 
 class CosineEmbeddingLoss(LossBase):

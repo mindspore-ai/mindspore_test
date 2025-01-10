@@ -2,7 +2,7 @@ repeat_interleave:
   description: |
     repeat_interleave(repeats, dim=None, *, output_size=None) -> Tensor
 
-    Repeat elements of a tensor along a dim, like `numpy.repeat`.
+    Repeat elements of a tensor along a dim, like :func:`mindspore.numpy.repeat`.
 
     .. warning::
         Only support on Atlas A2 training series.
@@ -31,7 +31,7 @@ repeat_interleave:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input1 = Tensor(np.array([[0, 1, 2], [3, 4, 5]]), mindspore.int32)
         >>> output1 = input1.repeat_interleave(repeats=2, dim=0, output_size=None)
         >>> input2 = Tensor(np.array([[1, 2], [3, 4]]), mindspore.int32)
@@ -46,9 +46,10 @@ repeat_interleave:
          [3 4]
          [3 4]]
 
-    .. method:: Tensor.repeat_interleave(repeats, dim=None):
+    .. method:: Tensor.repeat_interleave(repeats, dim=None) -> Tensor
+        :noindex:
 
-    Repeat elements of a tensor along an dim, like `numpy.repeat`.
+    Repeat elements of a tensor along an dim, like :func:`mindspore.numpy.repeat`.
 
     .. note::
         The tensor to repeat values for. Must be of type: float16,
@@ -70,7 +71,7 @@ repeat_interleave:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input1 = Tensor(np.array([[0, 1, 2], [3, 4, 5]]), mindspore.int32)
         >>> output1 = input1.repeat_interleave(repeats=2, dim=0)
         >>> input2 = Tensor(np.array([[1, 2], [3, 4]]), mindspore.int32)

@@ -27,7 +27,6 @@
 #include "runtime/device/memory_manager.h"
 #include "runtime/device/kernel_runtime.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
-#include "plugin/device/ascend/hal/hardware/ge_graph_executor.h"
 
 namespace mindspore {
 namespace device {
@@ -67,7 +66,6 @@ class GeKernelExecutor : public KernelExecutor {
   void UnifyMindIR(const KernelGraphPtr &graph) const override;
   void AddMindIRPass(const KernelGraphPtr &graph) const override;
   void OptimizeExecutionOrder(const FuncGraphPtr &graph) const;
-  void AllocGraphFixedMemory() const override;
 
   // Get rank id for distributed training.
   uint32_t GetRankID() const override { return 0; }
@@ -98,13 +96,11 @@ class GeKernelExecutor : public KernelExecutor {
   // launch
   bool MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
                        const vector<KernelTensor *> &outputs) const;
-  bool PySyncRuning(void *stream) const;
   void DoAsyncCkpt(const CNodePtr &kernel) const;
 
   mutable std::set<CNodePtr> nop_op_to_memcpy_;
   // Maybe AscendDeviceResManager and GEDeviceResManager now
   DeviceResManager *res_manager_{nullptr};
-  GeGraphExecutor *graph_executor_{nullptr};
   bool initialized_ = false;
 };
 }  // namespace ascend

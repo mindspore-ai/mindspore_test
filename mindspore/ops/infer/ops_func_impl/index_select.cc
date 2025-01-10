@@ -17,7 +17,7 @@
 #include "infer/ops_func_impl/index_select.h"
 #include <memory>
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {
@@ -32,6 +32,9 @@ BaseShapePtr IndexSelectFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto axis_opt = GetScalarValue<int64_t>(input_args[kIndex1]->GetValue());
   if (MS_UNLIKELY(!axis_opt.has_value())) {
     return std::make_shared<abstract::TensorShape>(ShapeVector(input_rank, abstract::TensorShape::kShapeDimAny));
+  }
+  if (input_rank == 0 && axis_opt.value() == 0) {
+    return std::make_shared<abstract::TensorShape>(ShapeVector{});
   }
   if (MS_UNLIKELY(axis_opt.value() >= input_rank || axis_opt.value() < -input_rank)) {
     MS_EXCEPTION(ValueError) << "For 'IndexSelect', the axis must be in '[" << -input_rank << ", " << input_rank

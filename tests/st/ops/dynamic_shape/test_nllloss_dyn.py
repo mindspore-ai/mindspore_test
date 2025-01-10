@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 """test NLLLoss forward and backward dynamic shape"""
 
-import pytest
 import numpy as np
 
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor
 from mindspore import nn

@@ -30,21 +30,8 @@ namespace dataset {
 PYBIND_REGISTER(GlobalContext, 0, ([](const py::module *m) {
                   (void)py::class_<GlobalContext>(*m, "GlobalContext")
                     .def_static("config_manager", &GlobalContext::config_manager, py::return_value_policy::reference)
-                    .def_static(
-                      "profiling_manager",
-                      []() {
-                        // todo in Dataset Independent mode
-                        std::string env_independent_dataset = common::GetEnv("MS_INDEPENDENT_DATASET");
-                        transform(env_independent_dataset.begin(), env_independent_dataset.end(),
-                                  env_independent_dataset.begin(), ::tolower);
-                        if (env_independent_dataset == "true") {
-                          THROW_IF_ERROR(
-                            STATUS_ERROR(mindspore::StatusCode::kMDUnexpectedError,
-                                         "Dataset Profiling is not supported in Dataset Independent mode."));
-                        }
-                        return GlobalContext::profiling_manager();
-                      },
-                      py::return_value_policy::reference);
+                    .def_static("profiling_manager", &GlobalContext::profiling_manager,
+                                py::return_value_policy::reference);
                 }));
 
 PYBIND_REGISTER(ConfigManager, 0, ([](const py::module *m) {
@@ -94,6 +81,10 @@ PYBIND_REGISTER(ConfigManager, 0, ([](const py::module *m) {
                     .def("get_debug_mode", &ConfigManager::get_debug_mode)
                     .def("set_error_samples_mode", &ConfigManager::set_error_samples_mode)
                     .def("get_error_samples_mode", &ConfigManager::get_error_samples_mode)
+                    .def("set_iterator_mode", &ConfigManager::set_iterator_mode)
+                    .def("get_iterator_mode", &ConfigManager::get_iterator_mode)
+                    .def("set_multiprocessing_start_method", &ConfigManager::set_multiprocessing_start_method)
+                    .def("get_multiprocessing_start_method", &ConfigManager::get_multiprocessing_start_method)
                     .def("load", [](ConfigManager &c, const std::string &s) { THROW_IF_ERROR(c.LoadFile(s)); });
                 }));
 

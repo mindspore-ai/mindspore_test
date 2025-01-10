@@ -185,6 +185,10 @@ void ReduceMin(const T *in, T *out, size_t start, size_t end, TransposeIterator 
 
 template <typename T>
 void ReduceAll(const T *in, T *out, size_t start, size_t end, TransposeIterator *iter) {
+  if (end == 0) {
+    *out = static_cast<T>(1);
+    return;
+  }
   if (iter != nullptr) {
     for (size_t i = start; i < end; i++) {
       *out = *out && in[iter->GetPos()];
@@ -378,8 +382,8 @@ bool ReduceCpuKernelFunc<T>::RunFunc(const std::vector<kernel::KernelTensor *> &
                                      const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kReduceOutputsNum, kernel_name_);
   size_t input_size = inputs[0]->size() / sizeof(T);
-  auto *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   if (need_skip_execute_) {
     auto ret = memcpy_s(output_addr, outputs[0]->size(), input_addr, inputs[0]->size());
     if (ret != EOK) {

@@ -1,0 +1,5 @@
+__pow__:
+  description: |
+    __pow__() -> Tensor
+    
+    Alias for :func:`mindspore.Tensor.pow`.

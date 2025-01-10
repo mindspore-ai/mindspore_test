@@ -54,10 +54,10 @@ bool PadAndShiftCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &
 template <typename T>
 void PadAndShiftCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<kernel::KernelTensor *> &outputs) {
-  T *input_x = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  T *cum_sum_arr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  T shift_idx = *reinterpret_cast<T *>(inputs[2]->device_ptr());
-  T *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  T *input_x = GetDeviceAddress<T>(inputs, kIndex0);
+  T *cum_sum_arr = GetDeviceAddress<T>(inputs, kIndex1);
+  T shift_idx = *GetDeviceAddress<T>(inputs, kIndex2);
+  T *output = GetDeviceAddress<T>(outputs, kIndex0);
 
   if (shift_idx < 0 || shift_idx >= static_cast<T>(cum_sum_size_)) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_

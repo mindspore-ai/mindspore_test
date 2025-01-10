@@ -107,6 +107,9 @@ class BACKEND_EXPORT Profiler {
   virtual void OpDataProducerEnd() = 0;
   virtual void RecordMemoryPoolInfo(const size_t total_allocated, const size_t total_reserved,
                                     const size_t total_active) {}
+  virtual void MstxMark(const std::string &message, void *stream = nullptr) {}
+  virtual int MstxRangeStart(const std::string &message, void *stream = nullptr) { return 0; }
+  virtual void MstxRangeEnd(int range_id) {}
   void RecordOneStepStartEndInfo();
   bool GetEnableFlag() const { return enable_flag_; }
   void EnableOpTime() { op_time_ = true; }

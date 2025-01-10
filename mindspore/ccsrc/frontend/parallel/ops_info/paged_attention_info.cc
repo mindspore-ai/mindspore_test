@@ -136,12 +136,20 @@ Status PagedAttentionInfo::InferTensorMap() {
   inputs_tensor_map_.emplace_back(block_tensor_map);
   inputs_tensor_map_.emplace_back(context_tensor_map);
 
+  const int kQuantModeIndex = 12;
+  const int64_t per_token_quant_mode = 1;
+  auto quant_mode = GetValue<int64_t>(input_value_[kQuantModeIndex]);
+  Shape antiquant_tensor_map;
+  if (quant_mode == per_token_quant_mode) {
+    antiquant_tensor_map = {-1, -1, -1};
+  } else {
+    antiquant_tensor_map = {-1, 0};
+  }
+
   if (optional_inputs_[kQuantScaleIndex]) {
-    Shape antiquant_tensor_map{-1, 0};
     inputs_tensor_map_.emplace_back(antiquant_tensor_map);
   }
   if (optional_inputs_[kQuantOffsetIndex]) {
-    Shape antiquant_tensor_map{-1, 0};
     inputs_tensor_map_.emplace_back(antiquant_tensor_map);
   }
   if (optional_inputs_[kAttenMaskIndex]) {

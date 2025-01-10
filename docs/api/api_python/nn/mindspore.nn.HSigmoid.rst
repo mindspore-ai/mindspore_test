@@ -8,7 +8,7 @@ mindspore.nn.HSigmoid
     Hard Sigmoid定义为：
 
     .. math::
-        \text{Hardsigmoid}(input) =
+        \text{HSigmoid}(input) =
         \begin{cases}
         0, & \text{ if } input \leq -3, \\
         1, & \text{ if } input \geq +3, \\

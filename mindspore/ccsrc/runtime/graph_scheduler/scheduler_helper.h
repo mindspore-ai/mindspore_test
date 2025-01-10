@@ -36,9 +36,9 @@ class SchedulerHelper {
   static std::vector<AbstractActorPtr> CollectActors(const ActorSet *actor_set);
 
   // Judge the input node whether need the control arrow.
-  static bool HasMonadControl(const AnfNodePtr &input_node, const KernelGraphPtr &graph);
+  static bool HasMonadControl(const AnfNodePtr &anf_node, const KernelGraphPtr &graph);
 
-  static void AddDeviceTensorStore(const AnfNode *anf_node, const DeviceTensorPtr &device_tensor);
+  static void AddDeviceTensorStore(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor);
 
   static void AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
                                         const KernelGraphPtr &graph);
@@ -51,6 +51,13 @@ class SchedulerHelper {
   // Add the arrow between from actor and to actor.
   static void AddDataArrow(AbstractActor *const from_actor, AbstractActor *const to_actor, size_t from_output_index,
                            size_t to_input_index, const AnfNodePtr &from_kernel = nullptr);
+  static void InsertParameterIndexsForActor(AbstractActor *const to_actor, const KernelWithIndex &front_node_with_idx,
+                                            const KernelWithIndex &from_kernel_with_output_idx,
+                                            const KernelWithIndex &to_kernel_with_input_idx,
+                                            const KernelGraphPtr &graph);
+  static void AddResultParameter(AbstractActor *const from_actor, OutputActor *const to_actor,
+                                 const KernelWithIndex &kernel_with_index, DeviceContext *device_context,
+                                 size_t output_position);
   static void AddResultArrow(AbstractActor *const from_actor, OutputActor *const to_actor,
                              const AnfNodePtr &from_kernel, size_t from_output_index, size_t output_position);
   static void AddControlArrow(AbstractActor *const from_actor, AbstractActor *const to_actor);

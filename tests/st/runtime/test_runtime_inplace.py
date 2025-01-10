@@ -21,8 +21,8 @@ from mindspore.ops.operations import _sequence_ops as S
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
-context.set_context(save_graphs=True, save_graphs_path='./log/')
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_add():
     """
     Feature: Support tensor inplace.
@@ -52,6 +52,7 @@ def test_heter_add():
     assert out == 11
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_add_cnode1():
     """
     Feature: Support tensor inplace.
@@ -83,6 +84,7 @@ def test_heter_add_cnode1():
     assert out == 15
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_add_cnode2():
     """
     Feature: Support tensor inplace.
@@ -113,6 +115,7 @@ def test_heter_add_cnode2():
 
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_add_cnode3():
     """
     Feature: Support tensor inplace.
@@ -142,6 +145,7 @@ def test_heter_add_cnode3():
     assert out == 17
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_add_cnode4():
     """
     Feature: Support tensor inplace.
@@ -173,6 +177,7 @@ def test_heter_add_cnode4():
 
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_add_cnode4():
     """
     Feature: Support tensor inplace.
@@ -205,6 +210,7 @@ def test_heter_control_flow_add_cnode4():
     assert out == 19
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_add_cnode5():
     """
     Feature: Support tensor inplace.
@@ -236,6 +242,7 @@ def test_heter_add_cnode5():
     assert out == 15
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_add_cnode():
     """
     Feature: Support tensor inplace.
@@ -269,6 +276,7 @@ def test_heter_control_flow_add_cnode():
     assert out == 15
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_control_flow_inplace_add():
     """
     Feature: Support tensor inplace.
@@ -299,6 +307,7 @@ def test_control_flow_inplace_add():
     assert out2 == 4
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_control_flow_assign_for_stack_input():
     """
     Feature: Support tensor inplace.
@@ -331,6 +340,7 @@ def test_control_flow_assign_for_stack_input():
     assert out2[1] == 2
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_control_flow_inplace_for_stack_input():
     """
     Feature: Support tensor inplace.
@@ -359,6 +369,7 @@ def test_control_flow_inplace_for_stack_input():
     assert out2 == 12
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_control_flow_assign_for_entrance_input():
     """
     Feature: Support tensor inplace.
@@ -392,6 +403,7 @@ def test_control_flow_assign_for_entrance_input():
     assert out2[1] == 5
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_add():
     """
     Feature: Support tensor inplace.
@@ -422,6 +434,7 @@ def test_heter_control_flow_add():
     assert out == 11
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_for_root_entrance_actor():
     """
     Feature: Support tensor inplace.
@@ -455,6 +468,7 @@ def test_heter_control_flow_for_root_entrance_actor():
     assert out == 18
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_inplace_add_parameter():
     """
     Feature: Support tensor inplace.
@@ -484,6 +498,7 @@ def test_heter_inplace_add_parameter():
     assert out == 11
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_input_heter_for_assign():
     """
     Feature: Support tensor inplace.
@@ -546,6 +561,7 @@ def test_heter_inplace_add_input():
     assert out == 24
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_inplace_add_cnode():
     """
     Feature: Support tensor inplace.
@@ -575,6 +591,7 @@ def test_heter_inplace_add_cnode():
     assert out == 15
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_inplace_add_self():
     """
     Feature: Support tensor inplace.
@@ -603,6 +620,7 @@ def test_heter_inplace_add_self():
     assert out == 17
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_inplace_add_self_multi_heter():
     """
     Feature: Support tensor inplace.
@@ -635,6 +653,7 @@ def test_heter_inplace_add_self_multi_heter():
     assert out == 77
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_inplace_from_entrance_actor():
     """
     Feature: Support tensor inplace.
@@ -693,6 +712,7 @@ def test_heter_inplace_by_output():
     assert out == 17
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_inplace_from_entrance_actor_by_output():
     """
     Feature: Support tensor inplace.
@@ -723,6 +743,7 @@ def test_heter_control_flow_inplace_from_entrance_actor_by_output():
     assert out == 17
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_control_flow_inplace_from_stack_actor():
     """
     Feature: Support tensor inplace.
@@ -789,6 +810,7 @@ def test_heter_backoff_inplace_in_super_kernel_actor():
     assert out2 == 10
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_heter_backoff_control_flow_inplace_in_super_kernel_actor():
     """
     Feature: Support tensor inplace.
@@ -821,6 +843,7 @@ def test_heter_backoff_control_flow_inplace_in_super_kernel_actor():
     assert out == 7
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_control_flow_inplace_in_super_kernel_actor():
     """
     Feature: Support tensor inplace.
@@ -852,6 +875,7 @@ def test_control_flow_inplace_in_super_kernel_actor():
     assert out == 7
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_inplace_nopnode():
     """
     Feature: Support tensor inplace.
@@ -876,6 +900,7 @@ def test_inplace_nopnode():
     assert np.all(out.asnumpy() == [2, 2, 2, 2])
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_nopnode_inplace():
     """
     Feature: Support tensor inplace.
@@ -900,6 +925,7 @@ def test_nopnode_inplace():
     assert np.all(out.asnumpy() == [2, 2, 2, 2])
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_inplace_parameter_multi_output():
     """
     Feature: Support tensor inplace.
@@ -946,6 +972,7 @@ def test_inplace_cnode_multi_output():
     assert out[1] == 4
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_inplace_control_flow_parameter_multi_output():
     """
     Feature: Support tensor inplace.
@@ -997,6 +1024,7 @@ def test_inplace_control_flow_cnode_multi_output():
     assert out[1] == 5
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cnode_nopnode_inplace():
     """
     Feature: Support tensor inplace.
@@ -1024,6 +1052,7 @@ def test_cnode_nopnode_inplace():
     assert np.all(out[1].asnumpy() == [5, 5, 5, 5])
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cnode_double_nopnode_inplace1():
     """
     Feature: Support tensor inplace.
@@ -1054,6 +1083,7 @@ def test_cnode_double_nopnode_inplace1():
 
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cnode_double_nopnode_inplace2():
     """
     Feature: Support tensor inplace.
@@ -1082,6 +1112,7 @@ def test_cnode_double_nopnode_inplace2():
     assert np.all(out[1].asnumpy() == [5, 5, 5, 5])
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cnode_inplace_nopnode1():
     """
     Feature: Support tensor inplace.
@@ -1112,6 +1143,7 @@ def test_cnode_inplace_nopnode1():
     assert np.all(out[2].asnumpy() == [5, 5, 5, 5])
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cnode_inplace_nopnode2():
     """
     Feature: Support tensor inplace.
@@ -1183,3 +1215,86 @@ def test_heter_inplace_dynamic_shape():
 
     assert out1 == 37
     assert np.all(out2.asnumpy() == [37, 37, 37])
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cnode_execute_twice():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x, y):
+            return self.assignadd(x, y)
+
+    x1 = ms.Tensor(2)
+    y1 = ms.Tensor(3)
+    x2 = ms.Tensor(4)
+    y2 = ms.Tensor(6)
+    net = Net()
+    out1 = net(x1, y1)
+    assert out1 == 5
+    out2 = net(x2, y2)
+    assert out2 == 10
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_output_input_device_address():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x, y):
+            return self.assignadd(x, y)
+
+    x1 = ms.Tensor(2)
+    y1 = ms.Tensor(3)
+    y2 = ms.Tensor(6)
+    net = Net()
+    context.set_context(device_target="Ascend")
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x2 = net(x1, y1)
+    context.set_context(mode=context.GRAPH_MODE)
+    out = net(x2, y2)
+    assert out == 11
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_output_input_device_address_for_control_flow():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x, y):
+            z = self.assignadd(x, y)
+            if z < 10:
+                return z + 1
+            return z + 2
+
+    x1 = ms.Tensor(2)
+    y1 = ms.Tensor(3)
+    y2 = ms.Tensor(6)
+    net = Net()
+    context.set_context(device_target="Ascend")
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x2 = net(x1, y1)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    out = net(x2, y2)
+    assert out == 14

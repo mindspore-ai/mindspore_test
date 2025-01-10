@@ -193,6 +193,9 @@ void SspaddmmCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *> &input
     SparseMulDense<int64_t, T>(mat1_indices_addr, mat1_values_addr_bak, mat1_values_num_, mat2_addr, y_indices_addr,
                                y_values_addr, y_values_num_, col);
   }
+
+  delete[] input_values_addr_bak;
+  delete[] mat1_values_addr_bak;
 }
 
 template <typename T, typename S>

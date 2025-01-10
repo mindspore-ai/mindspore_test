@@ -111,11 +111,11 @@ bool SoftmaxCrossEntropyWithLogitsCpuKernelMod::Launch(const std::vector<kernel:
     MS_LOG(EXCEPTION) << "Error output data size!";
   }
 
-  const auto *logits = reinterpret_cast<float *>(inputs[0]->device_ptr());
-  const auto *labels = reinterpret_cast<float *>(inputs[1]->device_ptr());
-  auto *work = reinterpret_cast<float *>(workspace[0]->device_ptr());
-  auto *output1 = reinterpret_cast<float *>(outputs[0]->device_ptr());
-  auto *output2 = reinterpret_cast<float *>(outputs[1]->device_ptr());
+  const auto *logits = GetDeviceAddress<float>(inputs, kIndex0);
+  const auto *labels = GetDeviceAddress<float>(inputs, kIndex1);
+  auto *work = GetDeviceAddress<float>(workspace, kIndex0);
+  auto *output1 = GetDeviceAddress<float>(outputs, kIndex0);
+  auto *output2 = GetDeviceAddress<float>(outputs, kIndex1);
   ForwardPostExecute(logits, labels, output1, output2, work);
   return true;
 }

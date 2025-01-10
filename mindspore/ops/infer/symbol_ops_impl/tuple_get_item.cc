@@ -18,7 +18,7 @@
 #include "mindspore/ops/infer/symbol_ops_impl/common.h"
 #include "symbolic_shape/symbol.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace symshape {

@@ -1,14 +1,14 @@
 flatten:
-  - op_yaml: deprecated/flatten_op.yaml
-    py_method: deprecated_tensor_flatten
-    Ascend: py_method
+  - op_yaml: flatten_ext_op.yaml
+    py_method: tensor_flatten
+    Ascend: pyboost
     CPU: py_method
     GPU: py_method
     interface: tensor
 
-  - op_yaml: flatten_ext_op.yaml
-    py_method: tensor_flatten_ext
-    Ascend: pyboost
+  - op_yaml: deprecated/flatten_method.yaml
+    py_method: deprecated_tensor_flatten
+    Ascend: py_method
     CPU: py_method
     GPU: py_method
     interface: tensor

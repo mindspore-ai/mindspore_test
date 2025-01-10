@@ -40,6 +40,7 @@ class OperatorConnector : public Queue<TensorRow> {
     out_rows_count_++;
     return Queue::PopFront(row);
   }
+
   Status SendEOE() noexcept {
     TensorRow eoe = TensorRow(TensorRow::kFlagEOE);
     return Add(std::move(eoe));
@@ -49,6 +50,12 @@ class OperatorConnector : public Queue<TensorRow> {
     TensorRow eof = TensorRow(TensorRow::kFlagEOF);
     return Add(std::move(eof));
   }
+
+  Status SendEOB() noexcept {
+    TensorRow eob = TensorRow(TensorRow::kFlagEOB);
+    return Add(std::move(eob));
+  }
+
   auto out_rows_count() const { return out_rows_count_; }
 
  private:

@@ -25,6 +25,7 @@ from mindspore.nn.wrap.cell_wrapper import WithLossCell
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P
+import mindspore.runtime as rt
 
 from tests.mark_utils import arg_mark
 
@@ -129,6 +130,7 @@ class GradWrap(nn.Cell):
 
 
 def test_ascend_lenet():
+    np.random.seed(1)
     epoch_size = 20
     batch_size = 32
     inputs = Tensor(np.ones([batch_size, 1, 32, 32]).astype(np.float32))
@@ -183,7 +185,8 @@ def test_ascend_lenet3():
     Expectation: No exception.
     """
     context.set_context(jit_level='O0')
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", memory_optimize_level='O1')
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    rt.set_memory(optimize_level="O1")
     loss_output = test_ascend_lenet()
     assert loss_output.asnumpy() < 0.004
     assert loss_output.asnumpy() > 0.003
@@ -241,6 +244,7 @@ def test_ascend_lenet_grad_by_list_tuple():
     Description: Grad with Parameters as input type and fv. list or tuple as fv of grad.
     Expectation: No exception.
     """
+    np.random.seed(1)
     epoch_size = 20
     batch_size = 32
     inputs = Tensor(np.ones([batch_size, 1, 32, 32]).astype(np.float32))
@@ -291,7 +295,8 @@ def test_ascend_lenet_grad_by_list_tuple2():
     Expectation: No exception.
     """
     context.set_context(jit_level='O0')
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", memory_optimize_level='O1')
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    rt.set_memory(optimize_level="O1")
     loss_output = test_ascend_lenet_grad_by_list_tuple()
     assert loss_output.asnumpy() < 0.004
     assert loss_output.asnumpy() > 0.003

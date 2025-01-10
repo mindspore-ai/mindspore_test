@@ -103,7 +103,8 @@ required_package = [
     'packaging >= 20.0',
     'psutil >= 5.6.1',
     'astunparse >= 1.6.3',
-    'safetensors >= 0.4.0'
+    'safetensors >= 0.4.0',
+    'dill >=0.3.7'
 ]
 
 package_data = {
@@ -112,7 +113,7 @@ package_data = {
         '*.pyd',
         '*.dll',
         '*.pdb',
-        'bin/*',
+        'utils/bin/*',
         'lib/plugin/*',
         'lib/plugin/*/*',
         'lib/plugin/*/*/*',
@@ -201,7 +202,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'cache_admin=mindspore.dataset.engine.cache_admin:main',
+            'dataset-cache=mindspore.dataset.engine.cache_admin:main',
             'msrun=mindspore.parallel.cluster.run:main'
         ],
     },

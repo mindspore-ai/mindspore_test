@@ -10,3 +10,5 @@ asin_ext:
         name: AsinExt
     dispatch:
         enable: True
+        CPU: None
+        GPU: None

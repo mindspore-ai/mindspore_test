@@ -1,0 +1,14 @@
+view_as:
+  - op_yaml: view_as_op.yaml
+    py_method: tensor_view_as
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/view_as_method.yaml
+    py_method: deprecated_tensor_view_as
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

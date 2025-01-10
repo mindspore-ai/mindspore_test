@@ -86,7 +86,6 @@ bool RaggedTensorToSparseCpuKernelMod::Launch(const std::vector<KernelTensor *> 
           MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the dtype of input_values "
                             << TypeIdToType(values_type_)->ToString() << " not support.";
       }
-      break;
     case kNumberTypeInt64:
       switch (values_type_) {
         ALL_CASE_CHOOSE(int64_t)
@@ -94,12 +93,10 @@ bool RaggedTensorToSparseCpuKernelMod::Launch(const std::vector<KernelTensor *> 
           MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the dtype of input_values "
                             << TypeIdToType(values_type_)->ToString() << " not support.";
       }
-      break;
     default:
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the dtype of input_splits "
                         << TypeIdToType(splits_type_)->ToString() << " not support.";
   }
-  return true;
 }
 
 int RaggedTensorToSparseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
@@ -156,7 +153,7 @@ void RaggedTensorToSparseCpuKernelMod::Update(const std::vector<std::vector<T1>>
   int64_t max_final_pos = static_cast<int64_t>(input1.back().size() - 1);
 
   for (; final_pos < max_final_pos; ++final_pos) {
-    for (int64_t dim = n_ - 2; dim >= 0; --dim) {
+    for (int64_t dim = n_ - kDim2; dim >= 0; --dim) {
       int64_t current_child = pos[dim + 1];
       int64_t limit_child = input1[dim][pos[dim] + 1];
       while (current_child >= limit_child) {
@@ -231,7 +228,7 @@ bool RaggedTensorToSparseCpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
                                                     const std::vector<kernel::KernelTensor *> &workspace,
                                                     const std::vector<kernel::KernelTensor *> &outputs) {
   auto *output1_ptr = static_cast<int64_t *>(outputs[0]->device_ptr());
-  auto *output3_ptr = static_cast<int64_t *>(outputs[2]->device_ptr());
+  auto *output3_ptr = static_cast<int64_t *>(outputs[kIndex2]->device_ptr());
   auto input_num = inputs.size();
   n_ = static_cast<int64_t>(input_num - 1);
   if (n_ <= 0) {

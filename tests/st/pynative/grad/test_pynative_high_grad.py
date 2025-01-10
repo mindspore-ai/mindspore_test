@@ -13,11 +13,13 @@
 # limitations under the License.
 # ============================================================================
 
+import pytest
 import numpy as np
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore import jit
+from mindspore.common.api import _pynative_executor
 from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputs, HighGrad
 from tests.mark_utils import arg_mark
 
@@ -143,3 +145,36 @@ def test_pynative_ms_function_highgrad_one_input_sec_grad():
     grad_net = HighGrad(net, [GradOfFirstInput, GradOfFirstInput])
     dxdx = grad_net(x)
     assert (dxdx.asnumpy() == np.array([5, 5]).astype(np.float32)).all()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_exception_handler():
+    """
+    Feature: Test exception handle correctly after raise exception
+    Description: An exception followed a test case that should run normally, with no errors
+    Expectation: Success
+    """
+
+    class OneInputJitBprop(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.op = P.ReLU()
+
+        def construct(self, x):
+            return self.op(x)
+
+        @jit
+        def bprop(self, x, out, dout):
+            return 5 * x
+
+    net = OneInputJitBprop()
+    x = Tensor(np.array([2, 2]).astype(np.float32))
+    grad_net = HighGrad(net, [GradOfFirstInput, GradOfFirstInput])
+    with pytest.raises(RuntimeError):
+        grad_net(x)
+        _pynative_executor.sync()
+
+    test_pynative_ms_function_highgrad_one_input_sec_grad()

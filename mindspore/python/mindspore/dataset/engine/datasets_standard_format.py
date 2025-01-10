@@ -75,6 +75,8 @@ class CSVDataset(SourceDataset, UnionBaseDataset):
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
+            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
+            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None``. This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
@@ -143,6 +145,8 @@ class MindDataset(MappableDataset, UnionBaseDataset):
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
+            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
+            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         sampler (Sampler, optional): Object used to choose samples from the
@@ -353,6 +357,8 @@ class TFRecordDataset(SourceDataset, UnionBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided
             into. Default: ``None`` . When this argument is specified, `num_samples` reflects
             the maximum sample number per shard.
+            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
+            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         shard_equal_rows (bool, optional): Get equal rows for all shards. Default: ``False``. If `shard_equal_rows`
@@ -468,6 +474,8 @@ class OBSMindDataset(GeneratorDataset):
 
         num_shards (int, optional): Number of shards that the dataset will be divided
             into. Default: ``None`` .
+            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
+            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
         shard_id (int, optional): The shard ID within num_shards. Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         shard_equal_rows (bool, optional): Get equal rows for all shards. Default: ``True``. If shard_equal_rows

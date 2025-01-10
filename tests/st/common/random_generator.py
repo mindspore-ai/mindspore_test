@@ -16,7 +16,7 @@ def _generate_numpy_random_input(shape, dtype, name='', method='', *, low=None, 
         numpy.ndarray
     """
     if seed is None:
-        seed = get_numpy_random_seed()
+        seed = get_numpy_global_seed()
     np.random.seed(seed)
     print(f"random_generator: generate a numpy.ndarray(shape={shape}, dtype={dtype}, seed={seed}) by "
           f"numpy.random.{method}, will be used as {name}")
@@ -29,6 +29,14 @@ def _generate_numpy_random_input(shape, dtype, name='', method='', *, low=None, 
     raise TypeError(f"numpy.random.{method} is not impl.")
 
 
+def get_numpy_global_seed():
+    return 1967515154
+
+
+def set_numpy_global_seed():
+    np.random.seed(get_numpy_global_seed())
+
+
 def get_numpy_random_seed():
     ii32 = np.iinfo(np.int32)
     seed = np.random.randint(0, ii32.max, size=1).astype(np.int32)
@@ -37,9 +45,10 @@ def get_numpy_random_seed():
 
 def set_numpy_random_seed(seed=None):
     if seed is None:
-        seed = get_numpy_random_seed()
-    print(f"random_generator: set random seed={seed} for numpy.random.method.")
-    np.random.seed(seed)
+        set_numpy_global_seed()
+    else:
+        print(f"random_generator: set random seed={seed} for numpy.random.method.")
+        np.random.seed(seed)
 
 
 def generate_numpy_ndarray_by_randn(shape, dtype, name='', seed=None):

@@ -15,6 +15,7 @@
  */
 #include "kernel/ascend/opapi/aclnn/all_finite_aclnn_kernel.h"
 #include "ir/tensor.h"
+#include "utils/log_adapter.h"
 #include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
@@ -30,7 +31,11 @@ bool AllFiniteAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
-  aclrtMemsetAsync(outputs[kIndex0]->device_ptr(), kAlignSize, 0, kAlignSize, stream_ptr);
+  auto ret = aclrtMemsetAsync(outputs[kIndex0]->device_ptr(), kAlignSize, 0, kAlignSize, stream_ptr);
+  if (ret != ACL_SUCCESS) {
+    MS_LOG(ERROR) << "Call runtime aclrtMemsetAsync error, ret[" << ret << "]";
+    return false;
+  }
   release_func_ = nullptr;
   for (size_t i = 0; i < inputs.size(); ++i) {
     auto res = GEN_EXECUTOR_CUST(op_type_, inputs[i], outputs[kIndex0]);

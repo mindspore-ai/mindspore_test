@@ -16,4 +16,5 @@
 """Operator of infer net"""
 # pylint: disable=unused-import
 from ..auto_generate import (QuantV2, DynamicQuantExt, QuantBatchMatmul, WeightQuantBatchMatmul, KVCacheScatterUpdate,
-                             FusedInferAttentionScore, GroupedMatmul, MoeFinalizeRouting, QuantLinearSparse)
+                             FusedInferAttentionScore, GroupedMatmul, MoeFinalizeRouting, QuantLinearSparse,
+                             MatmulAllReduceAddRmsNorm, MoeGatingTopKSoftmax)

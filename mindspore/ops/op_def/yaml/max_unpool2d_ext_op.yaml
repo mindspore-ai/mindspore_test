@@ -27,3 +27,5 @@ max_unpool2d_ext:
     dispatch:
         enable: True
         Ascend: MaxUnpool2DExtAscend
+        CPU: None
+        GPU: None

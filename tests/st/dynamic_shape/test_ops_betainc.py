@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import os
 import pytest
 import numpy as np
 import mindspore as ms
@@ -21,8 +22,6 @@ from mindspore import Tensor
 from mindspore.ops.operations import math_ops as P
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-
-context.set_context(precompile_only=True)
 
 
 @test_utils.run_with_cell
@@ -39,6 +38,8 @@ def test_betainc(mode):
     Description: Test of input fp64 graph
     Expectation: match to tf.raw_ops.Betainc
     """
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
     context.set_context(mode=mode)
     a_np = np.array([[1, 2], [3, 4]]).astype(np.float32)
     b_np = np.array([[2, 3], [4, 5]]).astype(np.float32)
@@ -47,5 +48,9 @@ def test_betainc(mode):
     b = Tensor(b_np)
     x = Tensor(x_np)
     _ = betainc_forward_func(a, b, x)
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
     #expect = np.array([[0.75, 0.6875], [0.45568, 0.19410435]], dtype=np.float32)
     #assert np.allclose(output_ms.asnumpy(), expect, 1e-4, 1e-4)

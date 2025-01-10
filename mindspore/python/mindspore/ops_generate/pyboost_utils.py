@@ -164,11 +164,11 @@ def tuple_input_to_cpp_type(dtype: str):
         'tuple[float]': 'float',
         'tuple[bool]': 'bool',
         'tuple[str]': 'string',
-        'tuple[tensor]': 'TensorPtr',
+        'tuple[tensor]': 'mindspore::tensor::TensorPtr',
         'list[int]': 'int64_t',
         'list[float]': 'float',
         'list[bool]': 'bool',
-        'list[tensor]': 'TensorPtr',
+        'list[tensor]': 'mindspore::tensor::TensorPtr',
     }
     return types_map.get(dtype)
 
@@ -188,14 +188,14 @@ def get_input_dtype(dtype: str, optional):
     Convert type
     """
     # add more type here
-    value_tuple = 'ValueTuplePtr'
+    value_tuple = 'mindspore::ValueTuplePtr'
     type_convert = {
-        'int': 'Int64ImmPtr',
-        'float': 'FP32ImmPtr',
-        'bool': 'BoolImmPtr',
-        'number': 'ScalarPtr',
-        'str': 'StringImmPtr',
-        'tensor': 'BaseTensorPtr',
+        'int': 'mindspore::Int64ImmPtr',
+        'float': 'mindspore::FP32ImmPtr',
+        'bool': 'mindspore::BoolImmPtr',
+        'number': 'mindspore::ScalarPtr',
+        'str': 'mindspore::StringImmPtr',
+        'tensor': 'mindspore::tensor::BaseTensorPtr',
         'tuple[int]': value_tuple,
         'tuple[float]': value_tuple,
         'tuple[bool]': value_tuple,
@@ -205,14 +205,14 @@ def get_input_dtype(dtype: str, optional):
         'list[bool]': value_tuple,
         'list[tensor]': value_tuple,
     }
-    value_tuple_optional = 'std::optional<ValueTuplePtr>'
+    value_tuple_optional = 'std::optional<mindspore::ValueTuplePtr>'
     optional_type_convert = {
-        'int': 'std::optional<Int64ImmPtr>',
-        'float': 'std::optional<FP32ImmPtr>',
-        'bool': 'std::optional<BoolImmPtr>',
-        'number': 'std::optional<ScalarPtr>',
-        'str': 'std::optional<StringImmPtr>',
-        'tensor': 'std::optional<BaseTensorPtr>',
+        'int': 'std::optional<mindspore::Int64ImmPtr>',
+        'float': 'std::optional<mindspore::FP32ImmPtr>',
+        'bool': 'std::optional<mindspore::BoolImmPtr>',
+        'number': 'std::optional<mindspore::ScalarPtr>',
+        'str': 'std::optional<mindspore::StringImmPtr>',
+        'tensor': 'std::optional<mindspore::tensor::BaseTensorPtr>',
         'tuple[int]': value_tuple_optional,
         'tuple[float]': value_tuple_optional,
         'tuple[bool]': value_tuple_optional,
@@ -240,9 +240,9 @@ def get_return_type(dtype: str):
     """
     # add more type here
     type_convert = {
-        'tuple[tensor]': 'std::vector<tensor::TensorPtr>',
-        'list[tensor]': 'std::vector<tensor::TensorPtr>',
-        'tensor': 'tensor::TensorPtr',
+        'tuple[tensor]': 'std::vector<mindspore::tensor::TensorPtr>',
+        'list[tensor]': 'std::vector<mindspore::tensor::TensorPtr>',
+        'tensor': 'mindspore::tensor::TensorPtr',
     }
     if dtype in type_convert:
         return type_convert[dtype]
@@ -293,8 +293,8 @@ def get_tuple_input_convert(arg_name, arg_type):
     :return:
     """
     cpp_type = tuple_input_to_cpp_type(arg_type)
-    if cpp_type == "TensorPtr":
-        cpp_type = "BaseTensorPtr"
+    if cpp_type == "mindspore::tensor::TensorPtr":
+        cpp_type = "mindspore::tensor::BaseTensorPtr"
     return f"std::vector<{cpp_type}> {arg_name}_vector = ConvertValueTupleToVector<{cpp_type}>({arg_name});\n"
 
 
@@ -309,12 +309,41 @@ def is_pyboost_enable(operator_data):
 
 def format_func_api_name(func_api_name):
     """
-    Generates formatted string for function names, e.g., add_ext -> AddExt.
+    Converts a snake_case string to PascalCase format with the first letter capitalized.
+    Additionally, it preserves the trailing underscore. In special cases, such as double
+    underscore names (e.g., __add__), it converts them into PascalCase.
+
+    Args:
+        func_api_name (str): The input snake_case string.
+
+    Returns:
+        str: The converted PascalCase string.
     """
-    if '_' in func_api_name:
-        formatted_func_api_name = ''.join([name.capitalize() for name in func_api_name.split('_')])
-    else:
-        formatted_func_api_name = func_api_name.capitalize()
+    # Check if the string ends with '_'
+    is_one_underscore = func_api_name.endswith('_')
+
+    # Check if it is a double-underscore name (special method names)
+    is_double_underscore = func_api_name.startswith('__') and func_api_name.endswith('__')
+
+    # If it is a double-underscore name, remove the leading and trailing underscores
+    if is_double_underscore:
+        func_api_name = func_api_name[2:-2]
+
+    # If the original name ends with '_' but is not a double-underscore name, remove the trailing '_'
+    if is_one_underscore and not is_double_underscore:
+        func_api_name = func_api_name[:-1]
+
+    # Convert snake_case to PascalCase
+    formatted_func_api_name = ''.join(x.capitalize() for x in func_api_name.split('_'))
+
+    # If the original name ends with '_' but is not a double-underscore name, append the trailing underscore
+    if is_one_underscore and not is_double_underscore:
+        formatted_func_api_name += '_'
+
+    # If the original name is a double-underscore name, add a 'Magic' suffix.
+    if is_double_underscore:
+        formatted_func_api_name += 'Magic'
+
     return formatted_func_api_name
 
 
@@ -353,6 +382,29 @@ def get_dtypes(op_proto: OpProto):
     outputs_dtypes, flag_out = convert_types(outputs)
     none_tensor_exist = (flag_in or flag_out)
     return inputs_dtypes, outputs_dtypes, none_tensor_exist
+
+
+def merge_strings_by_chunk_size(string_list, chunk_size=50):
+    """
+    Merges a list of strings into smaller chunks, with each chunk having a specified maximum size.
+
+    Args:
+        string_list (list of str): A list of strings to be merged.
+        chunk_size (int, optional): The maximum size of each merged chunk. Defaults to 50.
+
+    Returns:
+        list of str: A list of merged strings, where each string contains up to `chunk_size` characters.
+
+    Example:
+        >>> strings = ["Hello", "world", "this", "is", "a", "test"]
+        >>> merge_strings_by_chunk_size(strings, chunk_size=2)
+        ['Helloworld', 'thisis', 'atest']
+    """
+    merged_strings = [
+        "".join(string_list[i:i + chunk_size])  # Merge the current grouped string
+        for i in range(0, len(string_list), chunk_size)
+    ]
+    return merged_strings
 
 
 class AclnnUtils:

@@ -30,6 +30,7 @@
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
@@ -69,6 +70,13 @@ inline bool IsForwardNode(const CNodePtr &node) {
   return node->fullname_with_scope().find(kGradFlag) != 0;
 }
 
+inline bool IsNotMatMul(const std::string &node_name) {
+  if (node_name != kMatMulOpName && node_name != kBatchMatMulOpName && node_name != ops::kNameGroupedMatmul) {
+    return true;
+  }
+  return false;
+}
+
 // Branch id propagation to mask split independent branches
 void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePtr &seed_node, size_t branch_id) {
   MS_EXCEPTION_IF_NULL(interleave_scope);
@@ -88,7 +96,12 @@ void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePt
     if (node == interleave_scope->fork_node) {
       continue;
     }
-
+    bool is_branch_node = true;
+    bool is_depend = IsPrimitiveCNode(node, prim::kPrimDepend);
+    if (node->HasAttr(kInterleaveBranchId) &&
+        GetValue<size_t>(node->GetAttr(kInterleaveBranchId)) == kInterleaveSharedBranchId) {
+      is_branch_node = false;
+    }
     for (auto &input : node->inputs()) {
       MS_EXCEPTION_IF_NULL(input);
       if (!input->isa<CNode>()) {
@@ -97,7 +110,11 @@ void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePt
 
       auto input_cnode = input->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(input_cnode);
-      if (is_backward_scope && IsForwardNode(input_cnode)) {
+      if (is_depend && node->input(1) != input) {
+        continue;
+      }
+
+      if (is_backward_scope && common::AnfAlgo::IsRecompute(input_cnode)) {
         continue;
       }
 
@@ -108,14 +125,19 @@ void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePt
       }
 
       if (!input_cnode->HasAttr(kInterleaveBranchId)) {
-        input_cnode->AddAttr(kInterleaveBranchId, branch_id_value);
+        if (is_branch_node) {
+          input_cnode->AddAttr(kInterleaveBranchId, branch_id_value);
+        } else {
+          input_cnode->AddAttr(kInterleaveBranchId, kSharedBranchIdValue);
+        }
         to_visit.emplace(input_cnode);
         continue;
       }
 
       auto input_branch_id = GetValue<size_t>(input_cnode->GetAttr(kInterleaveBranchId));
-      if (input_branch_id != branch_id) {
+      if (input_branch_id != branch_id && input_branch_id != kInterleaveSharedBranchId) {
         input_cnode->AddAttr(kInterleaveBranchId, kSharedBranchIdValue);
+        to_visit.emplace(input_cnode);
       }
     }
   }
@@ -168,6 +190,30 @@ mindspore::HashMap<CNodePtr, size_t> GetBranchNodesRefCount(const InterLeaveScop
     }
   }
   return ref_count;
+}
+
+void AppendMatMulGradDwNode(std::vector<CNodePtr> *ordered_nodes_ptr,
+                            HashMap<CNodePtr, CNodePtr> *matmul_grad_dual_map_ptr) {
+  MS_EXCEPTION_IF_NULL(ordered_nodes_ptr);
+  if (matmul_grad_dual_map_ptr == nullptr) {
+    return;
+  }
+  auto &matmul_grad_dual_map = *matmul_grad_dual_map_ptr;
+  auto &nodes = *ordered_nodes_ptr;
+  auto node_size = nodes.size();
+  for (size_t i = 0; i < node_size; ++i) {
+    auto node_name = common::AnfAlgo::GetCNodeName(nodes[i]);
+    if (IsNotMatMul(node_name)) {
+      continue;
+    }
+
+    auto iter = matmul_grad_dual_map.find(nodes[i]);
+    if (iter != matmul_grad_dual_map.end() && iter->second != nullptr) {
+      if (!iter->second->HasAttr(kInterleaveBranchId)) {
+        (void)nodes.emplace_back(iter->second);
+      }
+    }
+  }
 }
 
 // Get ordered branch nodes
@@ -240,6 +286,7 @@ std::vector<CNodePtr> GetBranchOrderedNodes(const InterLeaveScopePtr &interleave
   }
 
   std::reverse(ordered_nodes.begin(), ordered_nodes.end());
+  AppendMatMulGradDwNode(&ordered_nodes, interleave_scope->matmul_grad_dual_map);
   return ordered_nodes;
 }
 
@@ -247,9 +294,9 @@ float GetNodeCost(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   static const float kDefaultCost = 0.1f;
   static const std::unordered_map<std::string, float> kBaseCostMap = {
-    {kAllReduceOpName, 8.0f},    {kReduceScatterOpName, 8.0f}, {kAllGatherOpName, 8.0f}, {kAllToAllOpName, 8.0f},
-    {kAlltoAllOpName, 8.0f},     {kAllToAllvOpName, 8.0f},     {kAlltoAllVOpName, 8.0f}, {kReshapeOpName, 0.01f},
-    {kBatchMatMulOpName, 10.0f}, {kMatMulOpName, 10.0f}};
+    {kAllReduceOpName, 8.0f},    {kReduceScatterOpName, 8.0f}, {kAllGatherOpName, 8.0f},        {kAllToAllOpName, 8.0f},
+    {kAlltoAllOpName, 8.0f},     {kAllToAllvOpName, 8.0f},     {kAlltoAllVOpName, 8.0f},        {kReshapeOpName, 0.01f},
+    {kBatchMatMulOpName, 10.0f}, {kMatMulOpName, 10.0f},       {ops::kNameGroupedMatmul, 10.0f}};
   auto node_name = common::AnfAlgo::GetCNodeName(node);
   auto iter = kBaseCostMap.find(node_name);
   if (iter != kBaseCostMap.end()) {
@@ -267,12 +314,19 @@ float GetNodeCost(const CNodePtr &node) {
 }
 
 // Interleave node is a range of the same compute type nodes
-std::vector<BranchInterleaveNodePtr> GetInterleaveNodes(std::vector<CNodePtr> *node_vec_ptr, size_t branch_id) {
+std::vector<BranchInterleaveNodePtr> GetInterleaveNodes(std::vector<CNodePtr> *node_vec_ptr, size_t branch_id,
+                                                        bool filter_cost) {
   MS_EXCEPTION_IF_NULL(node_vec_ptr);
   auto &node_vec = *node_vec_ptr;
   BranchInterleaveNodePtr current_node = nullptr;
   std::vector<BranchInterleaveNodePtr> result;
   auto current_node_type = InterleaveNodeType::kVirtual;
+  auto add_result = [filter_cost, &result](const BranchInterleaveNodePtr &current_node) {
+    if (!filter_cost || current_node->cost >= kFilterCost) {
+      result.emplace_back(current_node);
+    }
+  };
+
   for (size_t i = 0; i < node_vec.size(); ++i) {
     auto &node = node_vec[i];
     MS_EXCEPTION_IF_NULL(node);
@@ -295,7 +349,7 @@ std::vector<BranchInterleaveNodePtr> GetInterleaveNodes(std::vector<CNodePtr> *n
     }
 
     if (current_node != nullptr && (current_node_type != node_type || exceed_threshold)) {
-      result.emplace_back(current_node);
+      add_result(current_node);
       current_node = nullptr;
     }
 
@@ -317,8 +371,8 @@ std::vector<BranchInterleaveNodePtr> GetInterleaveNodes(std::vector<CNodePtr> *n
     current_node->end = i;
   }
 
-  if (current_node != nullptr && current_node->cost >= kFilterCost) {
-    result.emplace_back(current_node);
+  if (current_node != nullptr) {
+    add_result(current_node);
   }
   return result;
 }
@@ -395,7 +449,14 @@ void AddDependForOverlap(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr, 
       if (!node_user.first->isa<CNode>() || IsPrimitiveCNode(node_user.first, prim::kPrimPartial)) {
         continue;
       }
-      AddDependNode(graph, node_user.first->cast<CNodePtr>(), pre_cnode);
+      auto cnode_user = node_user.first->cast<CNodePtr>();
+      if (cnode_user == nullptr) {
+        continue;
+      }
+      if (IsPrimitiveCNode(node_user.first, prim::kPrimDepend) && cnode_user->input(1) != post_cnode) {
+        continue;
+      }
+      AddDependNode(graph, cnode_user, pre_cnode);
     }
   };
 
@@ -430,10 +491,11 @@ void AddDependForOverlap(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr, 
 
   // 1.Avoid communication users node block comm/comp parallel
   // 2.Insert communication nodes before computation nodes for kbk
-  // lhs-begin      <----    rhs-allnode-input
-  // lhs-end-users  <----    rhs-end
-  // lhs-end        ----->   rhs-begin       for kbk
-  // lhs-end        ----->   rhs-begin       for ge
+  // lhs-begin              <----    rhs-allnode-input
+  // lhs-end-users          <----    rhs-end
+  // lhs-end                ----->   rhs-end-users
+  // lhs-end                ----->   rhs-begin       for kbk
+  // lhs-begin-input        ----->   rhs-begin       for ge
 
   if (ms_context->IsKByKExecutorMode()) {
     auto mm_begin = rhs_node->begin;
@@ -446,10 +508,12 @@ void AddDependForOverlap(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr, 
     rhs_begin_cnode = rhs_cnodes[mm_begin];
     add_input_depend(lhs_begin_cnode, rhs_begin_cnode);
     add_user_depend(lhs_end_cnode, rhs_end_cnode);
+    add_user_depend(rhs_end_cnode, lhs_end_cnode);
     AddDependNode(graph, rhs_begin_cnode, lhs_end_cnode, true);
   } else {
     add_input_depend(lhs_begin_cnode, rhs_begin_cnode);
     add_user_depend(lhs_end_cnode, rhs_end_cnode);
+    add_user_depend(rhs_end_cnode, lhs_end_cnode);
     AddDependNode(graph, rhs_begin_cnode, lhs_begin_cnode->input(1));
   }
 }
@@ -523,20 +587,17 @@ std::vector<BranchInterleaveNodePtr> InterleaveTwoBranch(std::vector<std::vector
   return unoverlapped_nodes;
 }
 
-// Interleave two branches nodes to overlap comm/comp using dynamic programming
-// Return unoverlapped nodes
-std::vector<BranchInterleaveNodePtr> InterleaveTwoBranchDP(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr,
-                                                           std::vector<BranchInterleaveNodePtr> *pre_nodes_ptr,
-                                                           std::vector<BranchInterleaveNodePtr> *cur_nodes_ptr,
-                                                           const FuncGraphPtr &graph) {
+void FillBranchDPTraceMap(std::vector<BranchInterleaveNodePtr> *pre_nodes_ptr,
+                          std::vector<BranchInterleaveNodePtr> *cur_nodes_ptr,
+                          std::vector<std::vector<InterleaveNodeTrace>> *trace_map_ptr) {
   MS_EXCEPTION_IF_NULL(pre_nodes_ptr);
   MS_EXCEPTION_IF_NULL(cur_nodes_ptr);
+  MS_EXCEPTION_IF_NULL(trace_map_ptr);
   auto &pre_nodes = *pre_nodes_ptr;
   auto &cur_nodes = *cur_nodes_ptr;
-  std::vector<BranchInterleaveNodePtr> unoverlapped_nodes;
+  auto &trace_map = *trace_map_ptr;
   std::vector<std::vector<float>> cost_map(pre_nodes.size(), std::vector<float>(cur_nodes.size(), 0.0f));
-  std::vector<std::vector<InterleaveNodeTrace>> trace_map(
-    pre_nodes.size(), std::vector<InterleaveNodeTrace>(cur_nodes.size(), InterleaveNodeTrace::kUp));
+
   for (size_t i = 0; i < pre_nodes.size(); ++i) {
     auto &pre_node = pre_nodes[i];
     for (size_t j = 0; j < cur_nodes.size(); ++j) {
@@ -571,7 +632,23 @@ std::vector<BranchInterleaveNodePtr> InterleaveTwoBranchDP(std::vector<std::vect
       }
     }
   }
+}
 
+// Interleave two branches nodes to overlap comm/comp using dynamic programming
+// Return unoverlapped nodes
+std::vector<BranchInterleaveNodePtr> InterleaveTwoBranchDP(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr,
+                                                           std::vector<BranchInterleaveNodePtr> *pre_nodes_ptr,
+                                                           std::vector<BranchInterleaveNodePtr> *cur_nodes_ptr,
+                                                           const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(pre_nodes_ptr);
+  MS_EXCEPTION_IF_NULL(cur_nodes_ptr);
+  auto &pre_nodes = *pre_nodes_ptr;
+  auto &cur_nodes = *cur_nodes_ptr;
+  std::vector<std::vector<InterleaveNodeTrace>> trace_map(
+    pre_nodes.size(), std::vector<InterleaveNodeTrace>(cur_nodes.size(), InterleaveNodeTrace::kUp));
+  FillBranchDPTraceMap(pre_nodes_ptr, cur_nodes_ptr, &trace_map);
+
+  std::vector<BranchInterleaveNodePtr> unoverlapped_nodes;
   auto pre_index = SizeToLong(pre_nodes.size() - 1);
   auto cur_index = SizeToLong(cur_nodes.size() - 1);
   auto pre_last_index = pre_index;
@@ -630,8 +707,8 @@ void InterleaveParallelBranches(const InterLeaveScopePtr &interleave_scope, bool
   MS_EXCEPTION_IF_NULL(interleave_scope);
   MS_EXCEPTION_IF_NULL(interleave_scope->merge_node);
   auto entry_node = interleave_scope->merge_node;
-  if (IsPrimitiveCNode(interleave_scope->merge_node, prim::kPrimConcat)) {
-    auto make_tuple = interleave_scope->merge_node->input(1);
+  if (IsPrimitiveCNode(entry_node, prim::kPrimConcat) || IsPrimitiveCNode(entry_node, prim::kPrimAddN)) {
+    auto make_tuple = entry_node->input(1);
     MS_EXCEPTION_IF_NULL(make_tuple);
     entry_node = make_tuple->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(entry_node);
@@ -670,9 +747,10 @@ void InterleaveParallelBranches(const InterLeaveScopePtr &interleave_scope, bool
   }
 
   size_t cur_index = 1;
-  auto pre_nodes = GetInterleaveNodes(&total_branch_nodes[0], 0);
+  auto filter_cost = !use_dp;
+  auto pre_nodes = GetInterleaveNodes(&total_branch_nodes[0], 0, filter_cost);
   while (cur_index < total_branch_nodes.size()) {
-    auto cur_nodes = GetInterleaveNodes(&total_branch_nodes[cur_index], cur_index);
+    auto cur_nodes = GetInterleaveNodes(&total_branch_nodes[cur_index], cur_index, filter_cost);
     // Interleave two branches nodes to overlap comm/comp
     if (pre_nodes.empty()) {
       pre_nodes = cur_nodes;
@@ -694,6 +772,43 @@ void EraseInterLeaveBranchAttr(const CNodePtr &node) {
     if (node->HasAttr(kInterleaveBranchId)) {
       node->EraseAttr(kInterleaveBranchId);
     }
+  }
+}
+
+void UpdateMatMulGradDualMap(const CNodePtr &node, HashMap<std::string, CNodePtr> *matmul_unique_id_map_ptr,
+                             HashMap<CNodePtr, CNodePtr> *matmul_grad_dual_map_ptr) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(matmul_unique_id_map_ptr);
+  MS_EXCEPTION_IF_NULL(matmul_grad_dual_map_ptr);
+  auto node_name = common::AnfAlgo::GetCNodeName(node);
+  if (IsNotMatMul(node_name)) {
+    return;
+  }
+
+  auto &matmul_unique_id_map = *matmul_unique_id_map_ptr;
+  if (IsForwardNode(node)) {
+    if (node->HasPrimalAttr(kPrimalAttrUniqueId)) {
+      matmul_unique_id_map[GetValue<std::string>(node->GetPrimalAttr(kPrimalAttrUniqueId))] = nullptr;
+    }
+    return;
+  }
+
+  if (!node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+    return;
+  }
+
+  auto iter_first_node =
+    matmul_unique_id_map.find(GetValue<std::string>(node->GetPrimalAttr(kPrimalAttrForwardUniqueId)));
+  if (iter_first_node == matmul_unique_id_map.end()) {
+    return;
+  }
+
+  if (iter_first_node->second == nullptr) {
+    iter_first_node->second = node;
+  } else {
+    auto &matmul_grad_dual_map = *matmul_grad_dual_map_ptr;
+    matmul_grad_dual_map[node] = iter_first_node->second;
+    matmul_grad_dual_map[iter_first_node->second] = node;
   }
 }
 }  // namespace parallel

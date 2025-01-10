@@ -13,29 +13,50 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_PAGED_ATTENTION_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_PAGED_ATTENTION_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PAGED_ATTENTION_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PAGED_ATTENTION_H_
 
+#include <string>
 #include <vector>
+#include <utility>
 
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "include/internal.h"
 
 namespace mindspore {
 namespace kernel {
 class InternalPagedAttention : public InternalKernelMod {
  public:
-  InternalPagedAttention() : InternalKernelMod("PagedAttention") {}
+  InternalPagedAttention() : InternalKernelMod() {}
   ~InternalPagedAttention() = default;
 
  protected:
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
-  internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                     const std::vector<KernelTensor *> &outputs);
-  uint64_t GenTilingCacheKey(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
-  bool enable_custom_pa_{false};
-  std::vector<int32_t> q_seq_len_;
-  std::vector<int32_t> kv_seq_len_;
+  internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                       const internal::OutputsImmutableInfoList &outputs,
+                                       const std::vector<KernelTensor *> &ms_inputs,
+                                       const std::vector<KernelTensor *> &ms_outputs) override;
+  bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
+
+ private:
+  inline void CheckLookahead() {
+    param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeNone;
+    auto enable_lookahead =
+      std::any_of(param_.q_seq_len.begin(), param_.q_seq_len.end(), [](int32_t seq_len) { return seq_len > 1; });
+    if (enable_lookahead) {
+      if (has_attn_mask_) {
+        param_.mask_type = internal::PagedAttentionParam::MaskType::kMaskTypeLookAhead;
+      }
+    } else {
+      param_.q_seq_len.clear();
+    }
+  }
+
+  internal::PagedAttentionParam param_;
+  bool created_flag_{false};
+  bool has_attn_mask_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_PAGED_ATTENTION_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PAGED_ATTENTION_H_

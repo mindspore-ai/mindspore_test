@@ -20,7 +20,12 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <queue>
 #include <atomic>
+#include <utility>
+#include <thread>
+#include <functional>
+#include <mutex>
 #include <unordered_map>
 #include "utils/ms_utils.h"
 #include "include/backend/distributed/constants.h"
@@ -44,6 +49,29 @@ using DeviceContextManager = device::DeviceContextManager;
 using CollectiveCommunicationLib = device::CollectiveCommunicationLib;
 using CommunicationGroupPtr = device::CommunicationGroupPtr;
 
+// Data types for creating communication groups function.
+
+// Creating communicator function object, refers to CollectiveManager::CreateDeviceCommunicator.
+using CreateDeviceCommFunc = std::function<bool(const std::string &)>;
+// FIFO queue of communicator initialization tasks. The element is a pair and group name and its communicator's buffer
+// size.
+using InitCommTaskQueue = std::queue<std::pair<std::string, int32_t>>;
+// Group list to be initialized in order. The element will not be deleted.
+using InitCommTaskList = std::vector<std::string>;
+// Initialization task results for each group.
+// Key is group name. Value is a pair of result(true/flase) and error info(if false).
+using GroupToResultMap = std::unordered_map<std::string, std::pair<bool, std::string>>;
+
+// Interval of initializing each communicator in queue is 300 milliseconds.
+const uint32_t kInitCommInterval = 300;
+
+// This the config passed to 'CreateCommunicationGroup' method. It controls initialization mode for communication group.
+struct CreateGroupConfig {
+  bool async = false;      // Whether creating communication group asynchonizely.
+  bool submit_now = true;  // For sync manner, this key means whether submit init task immediately for this group. If
+                           // set to false, caller has to call 'SubmitCreateDeviceCommTask' itself.
+};
+
 // The collective communication API.
 // MindSpore uses OpenMPI on CPU, NCCL on GPU, HCCL on Ascend, to achieve distributed training.
 // Besides, MindSpore also has its own communication library which is implemented on the CPU side.
@@ -60,7 +88,8 @@ class BACKEND_EXPORT CollectiveManager {
   bool Finalize();
 
   // Create communication group.
-  bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks);
+  bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
+                                const CreateGroupConfig &config = {});
 
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
@@ -91,6 +120,7 @@ class BACKEND_EXPORT CollectiveManager {
   uint32_t global_rank_id() const;
   uint32_t local_rank_id() const;
   uint32_t global_rank_size() const;
+  uint32_t local_rank_size() const;
 
   bool need_init() const { return need_init_.load(); }
 
@@ -103,11 +133,31 @@ class BACKEND_EXPORT CollectiveManager {
   bool initialized() const { return inited_.load(); }
   std::unordered_map<std::string, std::vector<uint32_t>> get_group_map() { return group_map_; }
 
+  CollectiveCommunicationLib *device_comm_lib() { return device_comm_lib_instance_; }
+
   // Initialize and finalize Dummy communication lib.
   bool InitializeDummyCommLib();
   bool FinalizeDummyCommLib();
 
   bool ResumeHcclComm();
+
+  // Return whether initializing global comm asynchronizely.
+  bool IsAsyncInitGlobalComm();
+
+  // This interface will create communicator handle, including preprocessing like root info generating.
+  bool CreateDeviceCommunicator(const std::string &group_name, const int32_t buffsize = -1);
+
+  // Submit init task to init_comm_task_queue_.
+  void SubmitCreateDeviceCommTask(const std::string &group_name, const int32_t hccl_buffsize = -1);
+
+  // Wait all communicator to be initialized.
+  bool WaitAllCommInitDone();
+
+  // Wait specified group's communicator to be initialized.
+  bool WaitCommInitDone(const std::string &group_name);
+
+  // Set device id by DeviceManagerConf::set_device.
+  void SetDeviceIDEnvByRuntimeConf();
 
  private:
   CollectiveManager();
@@ -130,6 +180,11 @@ class BACKEND_EXPORT CollectiveManager {
 
   // Get timeout window for communicator initialization.
   int64_t GetCommunicatorInitTimeout();
+
+  void SetCommBuffSize(const std::string &group_name, const int32_t buffsize);
+
+  // This method will consume the tasks in init_comm_task_queue_.
+  void RunInitCommTasks();
 
   std::atomic_bool inited_;
   std::atomic_bool finalized_;
@@ -171,6 +226,9 @@ class BACKEND_EXPORT CollectiveManager {
   // The global rank size. Normally this is equal to `total process number`.
   uint32_t global_rank_size_;
 
+  // The num of processes on this local node.
+  uint32_t local_rank_size_;
+
   // Global group ranks.
   std::vector<uint32_t> global_group_ranks_;
 
@@ -189,6 +247,22 @@ class BACKEND_EXPORT CollectiveManager {
   // This member uses to assign local rank and size for each group.
   std::vector<size_t> all_host_hashs_;
   std::unordered_map<std::string, std::vector<uint32_t>> group_map_;
+
+  // This thread launches tasks in init_comm_task_queue_ in FIFO order.
+  std::thread run_init_comm_task_thread_;
+  std::atomic<bool> stop_init_comm_{false};
+
+  // Initializing task for every asynchronizely initialized communication group.
+  // For each asynchronizely initialized comm, we need to store and wait for them in order to avoid dead lock.
+  mutable std::mutex task_queue_mutex_;
+  std::condition_variable task_queue_blocker_;
+  InitCommTaskQueue init_comm_task_queue_;
+  InitCommTaskList task_list_;
+
+  // Group name to each init comm result map.
+  mutable std::mutex init_result_mutex_;
+  std::condition_variable result_blocker_;
+  GroupToResultMap group_name_to_result_;
 };
 
 // For scheduler node, CollectiveManager is not initialized. Return 0 as rank id.

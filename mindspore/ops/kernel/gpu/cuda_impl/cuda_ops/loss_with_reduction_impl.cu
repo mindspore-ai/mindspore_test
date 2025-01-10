@@ -317,17 +317,16 @@ __global__ void InitZero(T *array, int size) {
 template <typename T>
 __global__ void KLDivLossKernel(const int input_size, const ReductionMode reduction, const T *input_x, const T *input_y,
                                 T *loss, T *tmp_loss) {
-  T epsilon = 1e-6;
   if (reduction == ReductionMode::kNone) {
     for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < input_size; i += blockDim.x * gridDim.x) {
-      T denominator = maxT(input_y[i], epsilon);
-      T value = input_y[i] * (logT(denominator) - input_x[i]);
+      T out_before_clip = input_y[i] * (logT(input_y[i]) - input_x[i]);
+      T value = std::isnan(static_cast<float>(out_before_clip)) ? static_cast<T>(0) : out_before_clip;
       loss[i] = value;
     }
   } else {
     for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < input_size; i += blockDim.x * gridDim.x) {
-      T denominator = maxT(input_y[i], epsilon);
-      T value = input_y[i] * (logT(denominator) - input_x[i]);
+      T out_before_clip = input_y[i] * (logT(input_y[i]) - input_x[i]);
+      T value = std::isnan(static_cast<float>(out_before_clip)) ? static_cast<T>(0) : out_before_clip;
       tmp_loss[i] = value;
     }
   }
@@ -357,10 +356,8 @@ cudaError_t KLDivLoss(const int &input_size, const ReductionMode &reduction, con
 template <typename T>
 __global__ void KLDivLossGradKernel(const int input_size, const ReductionMode reduction, const T *input_x,
                                     const T *input_y, const T *dloss, T *dx) {
-  T epsilon = 1e-6;
   if (reduction == ReductionMode::kNone) {
     for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < input_size; i += blockDim.x * gridDim.x) {
-      T denominator = maxT(input_y[i], epsilon);
       dx[i] = -input_y[i] * dloss[i];
     }
   } else {
@@ -369,7 +366,6 @@ __global__ void KLDivLossGradKernel(const int input_size, const ReductionMode re
       dloss1 = dloss[0] / castT(dloss[0], input_size);
     }
     for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < input_size; i += blockDim.x * gridDim.x) {
-      T denominator = maxT(input_y[i], epsilon);
       dx[i] = -input_y[i] * dloss1;
     }
   }

@@ -14,15 +14,17 @@
 # ============================================================================
 import mindspore as ms
 import mindspore.dataset as ds
+import mindspore.runtime as rt
 from mindspore import nn, ops
 from mindspore.communication import init, get_rank
 from mindspore.common.initializer import initializer
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindspore.train import Model, CheckpointConfig, ModelCheckpoint
 from mindspore.train._utils import get_parameter_redundancy
+from mindspore.nn.utils import no_init_parameters
 
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_context(max_device_memory="28GB")
+rt.set_memory(max_size="28GB")
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
 init()
 ms.set_seed(1)
@@ -175,3 +177,25 @@ def test_remove_redundancy_strategy():
     model = Model(net, loss_fn=loss, optimizer=optim)
     model.train(1, dataset, callbacks=cbpoint_cb)
     get_parameter_redundancy(strategy_path)
+
+
+def test_no_init_parameters():
+    '''
+    Feature: no_init_parameters.
+    Description: no_init_parameters with init_parameters_data.
+    Expectation: success.
+    '''
+    print("distribute network shard.", flush=True)
+    with no_init_parameters():
+        net = Network()
+    print("distribute network create dataset.", flush=True)
+    net.init_parameters_data()
+    dataset = create_dataset(32)
+    optim = nn.SGD(net.trainable_params(), 1e-2)
+    loss = nn.CrossEntropyLoss()
+    rank_id = get_rank()
+    config = CheckpointConfig()
+    cbpoint_cb = ModelCheckpoint(prefix="delay", directory=f"./device{rank_id}_no_init_parameters", config=config)
+    print("distribute network train.", flush=True)
+    model = Model(net, loss_fn=loss, optimizer=optim)
+    model.train(1, dataset, callbacks=cbpoint_cb)

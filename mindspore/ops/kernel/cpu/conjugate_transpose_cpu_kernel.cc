@@ -96,9 +96,11 @@ template <typename T>
 void ConjugateTransposeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
   const auto *input_addr = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr);
 
   if (perm_type_ == kNumberTypeInt32) {
     auto perm_addr = static_cast<int32_t *>(inputs[1]->device_ptr());
+    MS_EXCEPTION_IF_NULL(perm_addr);
     auto perm_size = SizeToInt(inputs[1]->size() / sizeof(int32_t));
     for (int i = 0; i < perm_size; ++i) {
       auto p = perm_addr[i];
@@ -111,6 +113,7 @@ void ConjugateTransposeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor
     }
   } else if (perm_type_ == kNumberTypeInt64) {
     auto perm_addr = static_cast<int64_t *>(inputs[1]->device_ptr());
+    MS_EXCEPTION_IF_NULL(perm_addr);
     auto perm_size = SizeToInt(inputs[1]->size() / sizeof(int64_t));
     for (int i = 0; i < perm_size; ++i) {
       auto p = perm_addr[i];
@@ -144,6 +147,7 @@ void ConjugateTransposeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor
   }
 
   auto *output_addr = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   transpose_param_.data_num_ = SizeToInt(inputs[0]->size() / sizeof(T));
   std::vector<int> output_shape(SizeToInt(output_shape_.size()));
   for (size_t i = 0; i < output_shape_.size(); ++i) {
@@ -172,9 +176,11 @@ template <typename T>
 void ConjugateTransposeCpuKernelMod::LaunchComplexKernel(const std::vector<KernelTensor *> &inputs,
                                                          const std::vector<KernelTensor *> &outputs) {
   auto *input_addr = static_cast<T *>(inputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(input_addr);
 
   if (perm_type_ == kNumberTypeInt32) {
     auto perm_addr = static_cast<int32_t *>(inputs[1]->device_ptr());
+    MS_EXCEPTION_IF_NULL(perm_addr);
     auto perm_size = SizeToInt(inputs[1]->size() / sizeof(int32_t));
     for (int i = 0; i < perm_size; ++i) {
       auto p = perm_addr[i];
@@ -187,6 +193,7 @@ void ConjugateTransposeCpuKernelMod::LaunchComplexKernel(const std::vector<Kerne
     }
   } else if (perm_type_ == kNumberTypeInt64) {
     auto perm_addr = static_cast<int64_t *>(inputs[1]->device_ptr());
+    MS_EXCEPTION_IF_NULL(perm_addr);
     auto perm_size = SizeToInt(inputs[1]->size() / sizeof(int64_t));
     for (int i = 0; i < perm_size; ++i) {
       auto p = perm_addr[i];
@@ -220,6 +227,7 @@ void ConjugateTransposeCpuKernelMod::LaunchComplexKernel(const std::vector<Kerne
   }
 
   auto *output_addr = static_cast<T *>(outputs[0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_addr);
   transpose_param_.data_num_ = SizeToInt(inputs[0]->size() / sizeof(T));
   auto task = std::bind(ConjComplexFunc<T>, input_addr, input_addr, 0, transpose_param_.data_num_);
   ParallelLaunchAutoSearch(task, transpose_param_.data_num_, this, &parallel_search_info_);

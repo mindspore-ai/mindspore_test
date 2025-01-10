@@ -225,7 +225,7 @@ def test_set_inputs_cell_before_top_cell_unknown_shape():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_set_inputs_cell_after_top_cell_unknown_shape():

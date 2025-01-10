@@ -96,7 +96,7 @@ int SparseApplyAdagradDACpuKernelMod::Resize(const std::vector<KernelTensor *> &
   if (var_shape.empty()) {
     MS_LOG(EXCEPTION) << "For SparseApplyAdagradDA, var must be at least 1D.";
   } else {
-    var_first_dim_size_ = LongToSize(var_shape[0]);
+    var_first_dim_size_ = LongToSize(var_shape[kIndex0]);
   }
   if (var_shape.size() != grad_shape.size()) {
     MS_LOG(EXCEPTION) << "For SparseApplyAdagradDA, rank(grad) should be same as rank(var), but got rank(grad): "
@@ -149,17 +149,17 @@ bool SparseApplyAdagradDACpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSparseApplyAdagradDAInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSparseApplyAdagradDAOutputsNum, kernel_name_);
 
-  auto var = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto ga = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto da = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto g = reinterpret_cast<T *>(inputs[3]->device_ptr());
-  auto indices = reinterpret_cast<I *>(inputs[4]->device_ptr());
-  auto lr_scalar = reinterpret_cast<T *>(inputs[5]->device_ptr())[0];
-  auto l1_scalar = reinterpret_cast<T *>(inputs[6]->device_ptr())[0];
-  auto l2_scalar = reinterpret_cast<T *>(inputs[7]->device_ptr())[0];
-  int64_t global_step_scalar_int64 = reinterpret_cast<int64_t *>(inputs[8]->device_ptr())[0];
+  auto var = GetDeviceAddress<T>(inputs, kIndex0);
+  auto ga = GetDeviceAddress<T>(inputs, kIndex1);
+  auto da = GetDeviceAddress<T>(inputs, kIndex2);
+  auto g = GetDeviceAddress<T>(inputs, kIndex3);
+  auto indices = GetDeviceAddress<I>(inputs, kIndex4);
+  auto lr_scalar = GetDeviceAddress<T>(inputs, kIndex5)[kIndex0];
+  auto l1_scalar = GetDeviceAddress<T>(inputs, kIndex6)[kIndex0];
+  auto l2_scalar = GetDeviceAddress<T>(inputs, kIndex7)[kIndex0];
+  int64_t global_step_scalar_int64 = GetDeviceAddress<int64_t>(inputs, kIndex8)[kIndex0];
   T global_step_scalar = static_cast<T>(global_step_scalar_int64);
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
 
   auto gs_lr = global_step_scalar * lr_scalar;
   for (size_t i = 0; i < indices_size_; ++i) {

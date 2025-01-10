@@ -25,7 +25,8 @@ import re
 import pyboost_utils
 from pyboost_utils import get_input_dtype, tuple_input_to_cpp_type, get_return_type, \
     number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param
-
+import gen_constants as K
+from template import Template
 from op_proto import OpProto
 
 
@@ -41,12 +42,6 @@ class OpTemplateParser:
     """
 
     def __init__(self, op_proto: OpProto):
-        """
-        Initializes the OpTemplateParser with the given operator prototype.
-
-        Args:
-            op_proto (OpProto): The operator prototype to be parsed.
-        """
         self.op_proto = op_proto
 
     def _parse_call_args_types(self, op_args):
@@ -222,8 +217,8 @@ class OpTemplateParser:
         call_args_tensor = []
         call_args_types = self._parse_call_args_types(self.op_proto.op_args)
         call_args = self.parse_original_call_args(self.op_proto.op_args)
-        for type, arg_name in zip(call_args_types, call_args):
-            if type in ("BaseTensorPtr", "std::optional<BaseTensorPtr>"):
+        for _type, arg_name in zip(call_args_types, call_args):
+            if _type in ("mindspore::tensor::BaseTensorPtr", "std::optional<mindspore::tensor::BaseTensorPtr>"):
                 call_args_tensor.append(arg_name)
         return call_args_tensor
 
@@ -255,8 +250,8 @@ class OpTemplateParser:
         """
         returns_type = []
         type_convert_to_base = {
-            'std::vector<tensor::TensorPtr>': 'std::vector<tensor::BaseTensorPtr>',
-            'tensor::TensorPtr': 'tensor::BaseTensorPtr'
+            'std::vector<mindspore::tensor::TensorPtr>': 'std::vector<mindspore::tensor::BaseTensorPtr>',
+            'mindspore::tensor::TensorPtr': 'mindspore::tensor::BaseTensorPtr'
         }
         for return_obj in self.op_proto.op_returns:
             temp_return = get_return_type(return_obj.arg_dtype)
@@ -290,10 +285,10 @@ class OpTemplateParser:
             returns_type.append(get_return_type(return_obj.arg_dtype))
 
         if len(returns_type) == 1:
-            if returns_type[0] == 'tensor::TensorPtr':
+            if returns_type[0] == 'mindspore::tensor::TensorPtr':
                 op_outputs = 'outputs[0]'
                 call_outputs = 'outputs_[0]'
-            elif returns_type[0] == "std::vector<tensor::TensorPtr>":
+            elif returns_type[0] == "std::vector<mindspore::tensor::TensorPtr>":
                 op_outputs = 'outputs'
                 call_outputs = 'outputs_'
             else:
@@ -311,3 +306,131 @@ class OpTemplateParser:
             call_outputs = "std::make_tuple(" + outputs_str + ")"
 
         return op_outputs, call_outputs
+
+    def _is_input_arg(self, arg_name, op_name):
+        res = False
+        if op_name in K.INPUT_NAME_MAP and arg_name == K.INPUT_NAME_MAP[op_name]:
+            res = True
+        elif op_name not in K.INPUT_NAME_MAP and arg_name in K.INPUT_ARGS_NAME:
+            res = True
+        return res
+
+    def generate_signature_str(self, kw_only_args=None, varargs=None, *, is_tensor_api: bool) -> str:
+        """
+        Generates a single function signature string for the given operation prototype.
+
+        Args:
+            kw_only_args (list[str]): List of keyword-only argument names.
+            varargs (list[str]): List of variable args names.
+
+        Kwargs:
+            is_tensor_api (bool): Whether this function is used in the Tensor API scenario.
+
+        Returns:
+            str: Generated function signature string.
+        """
+
+        op_name = self.op_proto.op_class.name
+        args_str = f'"{op_name}('
+        first_arg = True
+        kw_args_init_flag = False
+
+        arg_index = 0
+        for arg in self.op_proto.op_args:
+            arg_name = arg.arg_name
+
+            if is_tensor_api and self._is_input_arg(arg_name, op_name):
+                continue
+
+            single_arg = ''
+            if not first_arg:
+                single_arg = ', '
+
+            arg_handler = arg.arg_handler
+            if arg_handler:
+                if arg_handler in K.ARG_HANDLER_MAP:
+                    arg_dtype = K.ARG_HANDLER_MAP[arg_handler]
+                else:
+                    raise ValueError(
+                        f"Generate failed. Check if {arg_handler} is registered in TensorFuncRegCppGenerator.")
+            else:
+                arg_dtype = arg.arg_dtype
+                for cast_type in arg.type_cast:
+                    arg_dtype += f'|{cast_type}'
+
+            # handle varargs params
+            if varargs and arg_name in varargs and arg_index == 0:
+                single_arg += f"{arg_dtype} *{arg_name}"
+            else:
+                single_arg += f"{arg_dtype} {arg_name}"
+
+            if arg.as_init_arg:
+                single_arg += f"={arg.default}"
+
+            # handle keyword-only params
+            if kw_only_args and not kw_args_init_flag and arg_name == kw_only_args[0]:
+                single_arg = ("*, " if first_arg else ", *") + single_arg
+                kw_args_init_flag = True
+
+            args_str += single_arg
+            first_arg = False
+            arg_index += 1
+
+        return args_str + ')"'
+
+    def get_arg_handler_processor(self, func_name, op_proto, *, is_tensor_api):
+        """
+        Generates argument handler processing code for the given function prototype.
+
+        Args:
+            func_name (str): The name of the function.
+            op_proto (OpProto): Operator prototype instance to generate argument processing for.
+
+        Returns:
+            str: Generated argument handler processing code.
+        """
+        tensor_arg_handler_prt_template = Template(
+            "arg_list[${idx}] = "
+            "(*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
+        )
+        function_arg_handler_prt_template = Template(
+            "arg_list[${idx}] = "
+            "(*${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
+        )
+        arg_handler_prt_template = (
+            tensor_arg_handler_prt_template) if is_tensor_api else function_arg_handler_prt_template
+
+        arg_handler_template = Template(
+            "arg_list[${idx}] = "
+            "pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]);\n"
+        )
+        arg_handler_optional_template = Template(
+            'if (!py::isinstance<py::none>(arg_list[${idx}])) {\n'
+            '  ${arg_handler_str}\n'
+            '}\n'
+        )
+
+        arg_handler_processor = []
+        op_args = op_proto.op_args
+        for idx, op_arg in enumerate(op_args):
+            arg_handler = op_arg.arg_handler
+            func_str = ''.join(word.capitalize() for word in arg_handler.split('_'))
+            if arg_handler:
+                op_arg_name = op_arg.arg_name
+                if func_str in ("StrToEnum", "DtypeToTypeId"):
+                    arg_handler_str = arg_handler_prt_template.replace(func_str=func_str,
+                                                                       func_name=func_name,
+                                                                       op_arg_name=op_arg_name,
+                                                                       idx=idx)
+                else:
+                    arg_handler_str = arg_handler_template.replace(func_str=func_str,
+                                                                   func_name=func_name,
+                                                                   op_arg_name=op_arg_name,
+                                                                   idx=idx)
+
+                if op_arg.default == "None":
+                    arg_handler_str = arg_handler_optional_template.replace(idx=idx,
+                                                                            arg_handler_str=arg_handler_str)
+                arg_handler_processor.append(arg_handler_str)
+
+        return arg_handler_processor

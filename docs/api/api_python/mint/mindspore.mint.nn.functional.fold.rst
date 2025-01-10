@@ -13,11 +13,11 @@ mindspore.mint.nn.functional.fold
         L = \prod_d \left\lfloor\frac{\text{output_size}[d] + 2 \times \text{padding}[d] %
             - \text{dilation}[d] \times (\text{kernel_size}[d] - 1) - 1}{\text{stride}[d]} + 1\right\rfloor,
 
-    其中, :math:`d` 遍历所有的空间维度。
+    其中， :math:`d` 遍历所有的空间维度。
 
     因此，在最后一个维度(列维度)上 `output` 包含特定块内的所有值。
 
-    `dilation`， `padding` 和 `stride` 决定了滑块如何被取出。˝
+    `dilation`， `padding` 和 `stride` 决定了滑块如何被取出。
 
     .. warning::
         - 目前，只支持3-D或4-D（包含批维度）的类图像输出Tensor。
@@ -39,7 +39,7 @@ mindspore.mint.nn.functional.fold
 
     异常：
         - **TypeError** - 如果 `output_size`、 `kernel_size` 、 `stride` 、 `dilation` 、 `padding` 的数据类型不是int、tuple或者list。
-        - **ValueError** - 如果 `output_size` 、 `kernel_size`, `dilation`, `stride` 包含元素的值小于等于0或者元素个数不合法。
+        - **ValueError** - 如果 `output_size` 、 `kernel_size`、 `dilation`、 `stride` 包含元素的值小于等于0或者元素个数不合法。
         - **ValueError** - 如果 `padding` 包含元素的值小于零或者元素个数不合法。
         - **ValueError** - 如果 `input.shape[-2]` 无法被 `kernel_size` 的乘积整除。
         - **ValueError** - 如果 `input.shape[-1]` 不等于计算出的滑块数量 `L` 。

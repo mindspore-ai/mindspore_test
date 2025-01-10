@@ -133,6 +133,8 @@ class TensorPy {
   static TensorPtr ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims,
                                         const TypePtr &type_ptr = nullptr);
 
+  static py::object Item(const Tensor &tensor);
+
   static py::array SyncAsNumpy(const Tensor &tensor);
 
   static py::array AsNumpy(const Tensor &tensor);
@@ -162,12 +164,14 @@ class TensorPy {
 
   static void SetDeviceAddress(const Tensor &tensor, uintptr_t addr, const ShapeVector &shape, const TypePtr type_ptr);
 
+  static uintptr_t DataPtr(const Tensor &tensor);
+
   struct TensorPyUserData {
     py::object obj;
     ~TensorPyUserData() {
       // cppcheck-suppress unreadVariable
       py::gil_scoped_acquire acquire_gil;
-      obj = py::none();
+      obj = py::object();
     }
   };
 

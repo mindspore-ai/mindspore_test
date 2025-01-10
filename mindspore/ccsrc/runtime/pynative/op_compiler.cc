@@ -198,7 +198,7 @@ OpCompilerInfoPtr OpCompiler::Compile(const session::BackendOpRunInfoPtr &op_run
   opt::OptimizationWithoutBackend(graph);
   // Unify the MindIR, must be before of the graph optimization.
   kernel_executor->AddMindIRPass(graph);
-
+  graph->SetExecOrderByDefault();
   // Select kernel and optimize
   kernel_executor->OptimizeGraph(graph);
 
@@ -369,7 +369,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
   }
 
   if (get_graph_info_func_) {
-    MS_LOG(INFO) << "Call reg get graph info func.";
+    MS_LOG(DEBUG) << "Call reg get graph info func.";
     graph_info = get_graph_info_func_(op_info, op_prim, graph_info);
   }
   // Special process for avgpoolgrad op, because that ge input 0 needs shape rather than tensor.

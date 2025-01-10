@@ -251,23 +251,27 @@ uint32_t TridiagonalSolveCpuKernel::DoCompute1(CpuKernelContext &ctx, size_t nth
         return KERNEL_STATUS_PARAM_INVALID;
       }
       const T factor = subdiag(i + 1) / u(i, 0);
-      u(i + 1, 0) = diag(i + 1) - factor * u(i, 1);
-      x.row(i + 1) = rhs.row(i + 1) - factor * x.row(i);
+      auto u_factor = factor * u(i, 1);
+      u(i + 1, 0) = diag(i + 1) - u_factor;
+      auto row_factor = factor * x.row(i);
+      x.row(i + 1) = rhs.row(i + 1) - row_factor;
       if (i != n - 2) {
-        u(i + 1, 1) = superdiag(i + 1);
         u(i, 2) = 0;
+        u(i + 1, 1) = superdiag(i + 1);
       }
     } else {
-      // Interchange rows i and i + 1.
+      // change rows
       const T factor = u(i, 0) / subdiag(i + 1);
       u(i, 0) = subdiag(i + 1);
-      u(i + 1, 0) = u(i, 1) - factor * diag(i + 1);
+      auto diag_factor = factor * diag(i + 1);
+      u(i + 1, 0) = u(i, 1) - diag_factor;
       u(i, 1) = diag(i + 1);
-      x.row(i + 1) = x.row(i) - factor * rhs.row(i + 1);
+      auto rhs_row_factor = factor * rhs.row(i + 1);
+      x.row(i + 1) = x.row(i) - rhs_row_factor;
       x.row(i) = rhs.row(i + 1);
       if (i != n - 2) {
-        u(i, 2) = superdiag(i + 1);
         u(i + 1, 1) = -factor * superdiag(i + 1);
+        u(i, 2) = superdiag(i + 1);
       }
     }
   }

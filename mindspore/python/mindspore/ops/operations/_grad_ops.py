@@ -30,7 +30,7 @@ from mindspore.communication.management import GlobalComm
 from mindspore.common._utils import is_shape_unknown, is_dim_unknown
 from ..auto_generate import (AbsGrad, ACosGrad, LogitGrad, AcoshGrad, AsinGrad, AsinhGrad, ReciprocalGrad, RsqrtGrad,
                              SqrtGrad, BatchNormGrad, BatchNormGradGrad, BiasAddGrad, GeLUGrad, FastGeLUGrad,
-                             AvgPoolGrad, MinimumGrad, LogSoftmaxGrad, PReLUGrad, ReluGrad, ReLU6Grad, EluGrad,
+                             AvgPoolGrad, MinimumGrad, LogSoftmaxGrad, GluGrad, PReLUGrad, ReluGrad, ReLU6Grad, EluGrad,
                              GatherDGradV2, ResizeBilinearGrad, ResizeLinear1DGrad, ResizeNearestNeighborV2Grad,
                              SigmoidGrad, HSwishGrad, NLLLossGrad, AtanGrad, GridSampler3DGrad, GridSampler2DGrad,
                              ResizeBicubicGrad, HSigmoidGrad, CholeskyGrad, ResizeNearestNeighborGrad, LayerNormGrad,
@@ -1952,15 +1952,6 @@ class MvlgammaGrad(Primitive):
         self.p = validator.check_value_type('p', p, [int], self.name)
 
 
-class CdistGrad(Primitive):
-    """Computes gradient for Cdist."""
-
-    @prim_attr_register
-    def __init__(self, p=2.0):
-        validator.check_value_type("p", p, [float], self.name)
-        self.init_prim_io_names(inputs=['grad', 'input_x', 'input_y', 'cdist'], outputs=['output'])
-
-
 class PdistGrad(Primitive):
     """Computes gradient for Pdist operation.
 
@@ -2896,19 +2887,6 @@ class AffineGridGrad(Primitive):
         """Initialize AffineGridGrad."""
         validator.check_value_type("align_corners", align_corners, [bool], self.name)
         self.init_prim_io_names(inputs=['y_grad', 'x_size'], outputs=['x_grad'])
-
-
-
-class GluGrad(Primitive):
-    """
-    Computes grad for Glu operation.
-    """
-
-    @prim_attr_register
-    def __init__(self, axis):
-        self.add_prim_attr("cust_aicpu", self.name)
-        self.init_prim_io_names(inputs=["grads", "x"], outputs=["y"])
-        validator.check_value_type("axis", axis, [int], self.name)
 
 
 class MapTensorGetGrad(Primitive):

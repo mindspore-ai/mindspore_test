@@ -83,8 +83,10 @@ class Edge {
   std::string edge_name() const { return edge_name_; }
   // Init cost_map_: for each output layout and input layout, calculate the cost
   Status InitEdgeCost();
+  void InitIdentityEdgeCost(bool *has_available_cost);
+  void InitNotIdentityEdgeCost(bool *has_available_cost);
   std::map<CostPtrKey, CostPtrList> GetCostMap() { return cost_map_; }
-  CostPtr GetCostByStrategyPair(const CostPtrKey &stra_pair);
+  CostPtr GetCostByStrategyPair(const StrategyPtr &output_str, const StrategyPtr &input_str);
   StrategyPtr GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy);
   StrategyPtr GetNextOpStrategyByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra);
   StrategyPtr GetPrevOpStrategyByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra);
@@ -102,22 +104,18 @@ class Edge {
   Status GetRedistributionCost(const TensorLayout &prev_op_output_layout, const TensorLayout &next_op_input_layout,
                                size_t type_length, const TypePtr &type, CostPtr *cost);
 
-  void set_pre_op_output(const std::vector<std::pair<std::shared_ptr<Strategy>, std::vector<TensorInfo>>> &output_set) {
+  void set_pre_op_output(const std::vector<std::pair<StrategyPtr, TensorLayout>> &output_set) {
     pre_op_output_ = output_set;
   }
-  void set_next_op_input(const std::vector<std::pair<std::shared_ptr<Strategy>, std::vector<TensorInfo>>> &input_set) {
+  void set_next_op_input(const std::vector<std::pair<StrategyPtr, TensorLayout>> &input_set) {
     next_op_input_ = input_set;
   }
 
   // Given a pair of output strategy and input strategy, return the corresponding costlist
   CostPtrList GetCostList(StrategyPtr output_str, StrategyPtr input_str);
 
-  std::vector<std::pair<std::shared_ptr<Strategy>, std::vector<TensorInfo>>> prev_op_output() const {
-    return pre_op_output_;
-  }
-  std::vector<std::pair<std::shared_ptr<Strategy>, std::vector<TensorInfo>>> next_op_input() const {
-    return next_op_input_;
-  }
+  std::vector<std::pair<StrategyPtr, TensorLayout>> prev_op_output() const { return pre_op_output_; }
+  std::vector<std::pair<StrategyPtr, TensorLayout>> next_op_input() const { return next_op_input_; }
 
   bool is_combined() const { return is_combined_; }
   size_t prev_op_output_index() const { return prev_op_output_index_; }
@@ -162,8 +160,8 @@ class Edge {
   std::shared_ptr<OperatorInfo> prev_op_, next_op_;
   std::map<CostPtrKey, CostPtrList> cost_map_;
   // pre_op_output_
-  std::vector<std::pair<std::shared_ptr<Strategy>, std::vector<TensorInfo>>> pre_op_output_;
-  std::vector<std::pair<std::shared_ptr<Strategy>, std::vector<TensorInfo>>> next_op_input_;
+  std::vector<std::pair<StrategyPtr, TensorLayout>> pre_op_output_;
+  std::vector<std::pair<StrategyPtr, TensorLayout>> next_op_input_;
   // the index of outputs of prev_op, and the index of inputs of next_op
   size_t prev_op_output_index_, next_op_input_index_;
 
@@ -186,6 +184,9 @@ class Edge {
 
   // Returns whether two double variable are equal.
   bool IsDoubleEqual(double x, double y) const { return std::abs(x - y) < EPS; }
+
+  // For edge_name_ = "ReshapeInfo44-MulInfo1010", will return "ReshapeInfo-MulInfo"
+  std::string GetEdgeNameNoDigit();
 };
 }  // namespace parallel
 }  // namespace mindspore

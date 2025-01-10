@@ -107,7 +107,22 @@ MODULE_FROM_USER_WORKSPACE = 2
 # Process expr statement white list
 # Add as needed, eg: "clear", "extend", "insert", "remove", "reverse"
 parse_expr_statement_white_list = (
-    "append", "insert", "clear", "reverse", "extend", "update",
+    "append", "insert", "clear", "reverse", "extend", "update", "register_hook",
+)
+
+# Methods that need to reorder after it's caller is used before
+# e.g. We need to reorder `x.register_hook` after x is used in `out = x + 1` when `register_hook` is called.
+# def construct(x):
+#     out = x + 1
+#     x.register_hook(hook_fn)
+#     return out
+# equals to:
+# def construct(x):
+#     x = x.register_hook(hook_fn) # register_hook will return itself when it is called in the graph (in `GRAPH_MODE`).
+#     out = x + 1
+#     return out
+_need_reorder_methods = (
+    "register_hook",
 )
 
 _builtin_function_or_method_type = type(abs)
@@ -666,7 +681,7 @@ def expand_expr_statement(node):
     Process the expr statement and expand it.
 
     Returns:
-        tuple, (True, expr.value, x)/(False, None, None).
+        (False,)/(True, expr.value, target, bool)/(True, expr.value).
     """
     if isinstance(node, ast.Expr):
         expr_value = node.value
@@ -679,7 +694,7 @@ def expand_expr_statement(node):
                 target = func.value
                 if method in parse_expr_statement_white_list:
                     logger.debug("Expand expr, target:%s, method:%s", target, method)
-                    return True, expr_value, target
+                    return True, expr_value, target, method in _need_reorder_methods
         if not isinstance(expr_value, ast.Str):
             return True, expr_value
     return (False,)

@@ -38,20 +38,6 @@ input_apple_jpg = "/home/workspace/mindspore_dataset/910B_dvpp/apple.jpg"
 result_data_dir = "/home/workspace/mindspore_dataset/910B_dvpp/testAscend910BDvpp"
 
 
-def test_disable_dvpp_in_independent_mode():
-    """
-    Feature: Disable dvpp in independent mode.
-    Description: Test dvpp is disable in independent mode.
-    Expectation: Exception raised to notify feature not supported.
-    """
-    os.environ["MS_INDEPENDENT_DATASET"] = "True"
-    with pytest.raises(RuntimeError) as err:
-        img = np.ones([224, 224, 3], dtype=np.uint8)
-        _ = vision.Resize((30, 30)).device("Ascend")(img)
-    assert "Transform in Ascend mode is not supported in Dataset Independent mode" in str(err.value)
-    os.environ["MS_INDEPENDENT_DATASET"] = "False"
-
-
 def test_eager_decode_dvpp():
     """
     Feature: Decode op when Ascend910B
@@ -1749,6 +1735,14 @@ def test_eager_erase_dvpp():
     check_img = vision.Erase(10, 10, 10, 10, (100, 100, 100)).device("CPU")(img_copy)
     assert (img_transformed == check_img).all()
 
+    # verify that no error is reported when the parameter `value` is equal to the default value
+    img = np.random.randint(0, 255, size=(300, 400, 3), dtype=np.uint8)
+    img_copy = copy.copy(img)
+    img_transformed = vision.Erase(10, 10, 10, 10).device("Ascend")(img)
+    # check the result
+    check_img = vision.Erase(10, 10, 10, 10).device("CPU")(img_copy)
+    assert (img_transformed == check_img).all()
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_eager_erase_dvpp_exception():
@@ -2003,6 +1997,79 @@ def test_eager_solarize_dvpp_exception():
     assert "the input shape should be from [4, 6] to [8192, 4096]" in str(error_info.value)
 
 
+def test_eager_invert_dvpp():
+    """
+    Feature: Invert op on Ascend910B
+    Description: Test eager support for Invert with Dvpp
+    Expectation: Output image info from op is correct
+    """
+    ms.set_context(device_target="Ascend")
+
+    img = cv2.imread(input_apple_jpg)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    logger.info("Image.type: {}, Image.shape: {}".format(type(img), img.shape))
+
+    img_transformed = vision.Invert().device("Ascend")(img)
+    logger.info("Image.type: {}, Image.shape: {}".format(img_transformed.dtype, img_transformed.shape))
+
+    assert img_transformed.shape == (2268, 4032, 3)
+
+    img_transformed2 = vision.Invert().device("CPU")(img)
+    logger.info("Image2.type: {}, Image2.shape: {}".format(img_transformed2.dtype, img_transformed2.shape))
+
+    assert img_transformed2.shape == (2268, 4032, 3)
+
+    assert (img_transformed == img_transformed2).all()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_eager_invert_dvpp_exception():
+    """
+    Feature: Invert op on Ascend910B
+    Description: Test eager support for Invert with Dvpp when invalid input
+    Expectation: The result is equal to the expected
+    """
+    ms.set_context(device_target="Ascend")
+    # the input is list
+    img = np.ones([1024], dtype=np.uint8)
+    with pytest.raises(RuntimeError) as error_info:
+        img = vision.Invert().device("Ascend")(img)
+    assert "invalid input shape, only support NHWC input," in str(error_info.value)
+
+    # the input is HW2
+    img = np.ones([224, 224, 2], dtype=np.uint8)
+    with pytest.raises(RuntimeError) as error_info:
+        img = vision.Invert().device("Ascend")(img)
+    assert "The channel of the input tensor of shape [H,W,C] is not 1, 3" in str(error_info.value)
+
+    # the input is 23HW3
+    img = np.ones([2, 3, 224, 224, 3], dtype=np.uint8)
+    with pytest.raises(RuntimeError) as error_info:
+        img = vision.Invert().device("Ascend")(img)
+    assert "The input tensor is not of shape [H,W], [H,W,C] or [N,H,W,C]." in str(error_info.value)
+
+    # the input is 3HW1
+    img = np.ones([3, 224, 224, 1], dtype=np.uint8)
+    with pytest.raises(RuntimeError) as error_info:
+        _ = vision.Invert().device("Ascend")(img)
+    assert "The input tensor NHWC should be 1HWC or HWC." in str(error_info.value)
+
+    # the input is out of [4, 6] to [8192, 4096]
+    img = np.ones([3, 6, 3], dtype=np.uint8)
+    with pytest.raises(RuntimeError) as error_info:
+        img = vision.Invert().device("Ascend")(img)
+    assert "the input shape should be from [4, 6] to [8192, 4096]" in str(error_info.value)
+
+    # the device(device_target) is invalid
+    with pytest.raises(TypeError) as error_info:
+        _ = vision.Invert().device(123)
+    assert "Argument device_target with value 123 is not of type [<class 'str'>]" in str(error_info.value)
+
+    with pytest.raises(ValueError) as error_info:
+        _ = vision.Invert().device("Asscend")
+    assert "Input device_target is not within the valid set of ['CPU', 'Ascend']" in str(error_info.value)
+
+
 @pytest.mark.skip(reason="similar with ut test_resize.py::test_resize_performance")
 def test_resize_performance():
     """
@@ -2048,7 +2115,7 @@ def test_basic_transforms_dvpp():
     test_eager_rotate_dvpp()
     test_eager_posterize_dvpp()
     test_eager_solarize_dvpp()
-    test_disable_dvpp_in_independent_mode()
+    test_eager_invert_dvpp()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -2100,3 +2167,5 @@ if __name__ == '__main__':
     test_eager_posterize_dvpp_exception()
     test_eager_solarize_dvpp()
     test_eager_solarize_dvpp_exception()
+    test_eager_invert_dvpp()
+    test_eager_invert_dvpp_exception()

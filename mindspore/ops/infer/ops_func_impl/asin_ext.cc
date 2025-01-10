@@ -19,7 +19,7 @@
 #include <memory>
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
 BaseShapePtr AsinExtFuncImpl::InferShape(const PrimitivePtr &primitive,

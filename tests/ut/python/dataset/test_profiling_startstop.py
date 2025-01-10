@@ -93,13 +93,17 @@ class TestMindDataProfilingStartStop:
         # Confirm there are 4 lines for each batch in the dataset iterator file
         assert actual_num_lines == 4 * num_batches
 
-    def test_profiling_early_stop(self, tmp_path):
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_early_stop(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with early stop; profile for some iterations and then
             stop profiling
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         def source1():
             for i in range(8000):
                 yield (np.array([i]),)
@@ -135,16 +139,28 @@ class TestMindDataProfilingStartStop:
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
 
         # Confirm the content of the profiling files, including 4 ops in the pipeline JSON file
-        self.confirm_pipeline_file(pipeline_file, 4, ["GeneratorOp", "BatchOp", "MapOp", "EpochCtrlOp"])
-        self.confirm_cpuutil_file(cpu_util_file, 4)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_pipeline_file(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil_file(cpu_util_file, 1)
+        else:
+            self.confirm_pipeline_file(pipeline_file, 4, ["GeneratorOp", "BatchOp", "MapOp", "EpochCtrlOp"])
+            self.confirm_cpuutil_file(cpu_util_file, 4)
+
         self.confirm_dataset_iterator_file(dataset_iterator_file, 401)
 
-    def test_profiling_delayed_start(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_delayed_start(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with delayed start; profile for subset of iterations
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         def source1():
             for i in range(8000):
                 yield (np.array([i]),)
@@ -179,16 +195,27 @@ class TestMindDataProfilingStartStop:
         cpu_util_file = str(tmp_path) + "/minddata_cpu_utilization_0.json"
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
         # Confirm the content of the profiling files, including 3 ops in the pipeline JSON file
-        self.confirm_pipeline_file(pipeline_file, 3, ["GeneratorOp", "BatchOp", "MapOp"])
-        self.confirm_cpuutil_file(cpu_util_file, 3)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_pipeline_file(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil_file(cpu_util_file, 1)
+        else:
+            self.confirm_pipeline_file(pipeline_file, 3, ["GeneratorOp", "BatchOp", "MapOp"])
+            self.confirm_cpuutil_file(cpu_util_file, 3)
         self.confirm_dataset_iterator_file(dataset_iterator_file, 395)
 
-    def test_profiling_multiple_start_stop(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_multiple_start_stop(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with delayed start and multiple start-stop sequences
         Expectation: Runs successfully
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         def source1():
             for i in range(8000):
                 yield (np.array([i]),)
@@ -231,17 +258,28 @@ class TestMindDataProfilingStartStop:
         cpu_util_file = str(tmp_path) + "/minddata_cpu_utilization_0.json"
         dataset_iterator_file = str(tmp_path) + "/dataset_iterator_profiling_0.txt"
         # Confirm the content of the profiling files, including 3 ops in the pipeline JSON file
-        self.confirm_pipeline_file(pipeline_file, 3, ["GeneratorOp", "BatchOp", "MapOp"])
-        self.confirm_cpuutil_file(cpu_util_file, 3)
+        independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+        if independent_process_env is not None and independent_process_env.strip() in ['True', 'true']:
+            self.confirm_pipeline_file(pipeline_file, 1, ["ReceiveBridgeOp"])
+            self.confirm_cpuutil_file(cpu_util_file, 1)
+        else:
+            self.confirm_pipeline_file(pipeline_file, 3, ["GeneratorOp", "BatchOp", "MapOp"])
+            self.confirm_cpuutil_file(cpu_util_file, 3)
         # Note: The dataset iterator file should only contain data for batches 200 to 400
         self.confirm_dataset_iterator_file(dataset_iterator_file, 200)
 
-    def test_profiling_start_start(self):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_start_start(self, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with start followed by start
         Expectation: Error is raised as expected
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         # Initialize MindData profiling manager
         self.md_profiler.init()
 
@@ -257,12 +295,18 @@ class TestMindDataProfilingStartStop:
         # Stop MindData Profiling
         self.md_profiler.stop()
 
-    def test_profiling_stop_stop(self, tmp_path):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_stop_stop(self, tmp_path, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with stop followed by stop
         Expectation: Warning is produced
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         # Initialize MindData profiling manager
         self.md_profiler.init()
 
@@ -277,12 +321,18 @@ class TestMindDataProfilingStartStop:
         # A warning "MD ProfilingManager had already stopped" is produced.
         self.md_profiler.stop()
 
-    def test_profiling_stop_nostart(self):
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"
+
+    @pytest.mark.parametrize("independent_dataset", (True, False))
+    def test_profiling_stop_nostart(self, independent_dataset):
         """
         Feature: MindData Profiling Manager
         Description: Test MindData profiling with stop not without prior start
         Expectation: Error is raised as expected
         """
+        if independent_dataset is True:
+            os.environ['MS_INDEPENDENT_DATASET'] = "True"
+
         # Initialize MindData profiling manager
         self.md_profiler.init()
 
@@ -296,3 +346,5 @@ class TestMindDataProfilingStartStop:
         self.md_profiler.start()
         # Stop MindData Profiling - to return profiler to a healthy state
         self.md_profiler.stop()
+
+        os.environ['MS_INDEPENDENT_DATASET'] = "False"

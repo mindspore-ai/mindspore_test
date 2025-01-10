@@ -1,0 +1,12 @@
+#operator moe_compute_expert_tokens
+moe_compute_expert_tokens:
+  args:
+    sorted_experts:
+      dtype: tensor
+    num_expert:
+      dtype: int
+  returns:
+    expert_tokens:
+      dtype: tensor
+  dispatch:
+    enable: True

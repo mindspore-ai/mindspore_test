@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/ops/kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {

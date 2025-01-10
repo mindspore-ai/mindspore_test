@@ -1,0 +1,11 @@
+#deprecated fmod
+fmod:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+      type_cast: number
+  returns:
+    output:
+      dtype: tensor

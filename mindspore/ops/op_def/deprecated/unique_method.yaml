@@ -1,0 +1,24 @@
+#deprecated unique
+unique:
+  args:
+    input:
+      dtype: tensor
+    sorted:
+      dtype: bool
+      default: True
+    return_inverse:
+      dtype: bool
+      default: False
+    return_counts:
+      dtype: bool
+      default: False
+    dim:
+      dtype: number
+      default: None
+  returns:
+    output:
+      dtype: tensor
+    inverse_indices:
+      dtype: tensor
+    counts:
+      dtype: tensor

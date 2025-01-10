@@ -68,6 +68,7 @@ using kernel::AddressCommon;
 using kernel::AddressCommonPtr;
 using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
+using TensorPtr = std::shared_ptr<tensor::Tensor>;
 struct StorageInfo {
   void *host_ptr_{nullptr};
   std::string file_name_{""};
@@ -188,6 +189,10 @@ class DeviceAddress : public mindspore::DeviceSync {
     return true;
   }
   virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const { return true; }
+  virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                 const std::string &format) const {
+    return true;
+  }
 
   virtual bool AsyncHostToDevice(size_t size, const void *host_ptr) const { return true; }
   virtual bool AsyncDeviceToHost(size_t size, void *host_ptr) const { return true; }
@@ -255,8 +260,10 @@ class DeviceAddress : public mindspore::DeviceSync {
     address_common_->pointer_ref_count_->set_from_mem_pool(from_mem_pool);
   }
   virtual void set_communication_ptr(uint8_t *communication_ptr) { MS_LOG(EXCEPTION) << "Not implemented error."; }
-  bool is_ptr_persisted() const { return is_ptr_persisted_; }
-  void set_is_ptr_persisted(bool is_ptr_persisted) { is_ptr_persisted_ = is_ptr_persisted; }
+  bool is_ptr_persisted() const { return address_common_->pointer_ref_count_->is_ptr_persisted(); }
+  void set_is_ptr_persisted(bool is_ptr_persisted) {
+    address_common_->pointer_ref_count_->set_is_ptr_persisted(is_ptr_persisted);
+  }
   void set_host_shape(const ShapeVector &shape) { kernel_tensor_->set_host_shape(shape); }
   const ShapeVector &host_shape() const { return kernel_tensor_->host_shape(); }
   void set_device_shape(const ShapeVector &shape) { device_shape_ = shape; }
@@ -499,10 +506,6 @@ class DeviceAddress : public mindspore::DeviceSync {
   // The DeviceAddress is held by ValueNodes. These ValueNodes are outputs of forward network.
   // We need to release the device memory when the reference count of the device address in bprop graph is 0.
   std::vector<std::weak_ptr<ValueNode>> held_by_nodes_;
-  // The device address of the node that owns the device address cannot be updated and replaced.
-  // Application scenario: set to true when the hardware execution mode requires that ptr cannot be changed during
-  // execution.
-  bool is_ptr_persisted_{false};
   // Thread lock for ptr_.
   mutable std::recursive_mutex ptr_mutex_;
 

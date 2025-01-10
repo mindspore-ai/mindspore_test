@@ -252,23 +252,46 @@ std::pair<std::vector<TypeId>, std::vector<bool>> GetTypeInfo(const FrontendOpRu
   MS_EXCEPTION_IF_NULL(op_run_info);
   std::vector<TypeId> args_type_id;
   std::vector<bool> args_has_tensor;
-  args_type_id.resize(op_run_info->input_size);
-  args_has_tensor.resize(op_run_info->input_size, false);
+  args_type_id.reserve(op_run_info->input_size);
+  args_has_tensor.reserve(op_run_info->input_size);
 
   const auto &input_value = op_run_info->op_grad_info->input_value;
   for (size_t i = 0; i < op_run_info->input_size; ++i) {
-    if (input_value[i]->isa<tensor::BaseTensor>()) {
-      args_type_id[i] = input_value[i]->cast<tensor::BaseTensorPtr>()->data_type();
+    const auto &value = input_value[i];
+    MS_EXCEPTION_IF_NULL(value);
+    MS_LOG(DEBUG) << "Get type info of input_value " << i << " is " << value->ToString() << " source type "
+                  << op_run_info->source_type[i];
+    if (value->isa<tensor::BaseTensor>()) {
+      args_type_id.push_back(value->cast<tensor::BaseTensorPtr>()->data_type());
       if (op_run_info->source_type[i] == ops::OP_DTYPE::DT_BEGIN) {
-        args_has_tensor[i] = true;
+        // The arg is Tensor and not cast from scalar.
+        args_has_tensor.push_back(true);
+      } else {
+        args_has_tensor.push_back(false);
       }
-    } else if (input_value[i]->isa<Scalar>()) {
-      const auto type = input_value[i]->cast<ScalarPtr>()->type();
+    } else if (value->isa<Scalar>()) {
+      const auto type = value->cast<ScalarPtr>()->type();
       MS_EXCEPTION_IF_NULL(type);
-      args_type_id[i] = type->type_id();
+      args_type_id.push_back(type->type_id());
+      args_has_tensor.push_back(false);
+    } else if (value->isa<ValueSequence>()) {
+      const auto &value_seq = value->cast<ValueSequencePtr>();
+      MS_EXCEPTION_IF_NULL(value_seq);
+      const auto &elements = value_seq->value();
+      // Not support tuple(tuple<Tensor>) yet.
+      for (const auto &element : elements) {
+        MS_EXCEPTION_IF_NULL(element);
+        MS_LOG(DEBUG) << "Get tuple element " << element->ToString();
+        if (element->isa<tensor::BaseTensor>()) {
+          args_type_id.push_back(element->cast<tensor::BaseTensorPtr>()->data_type());
+          // No tuple[int] to tuple[Tensor] type_cast yet.
+          args_has_tensor.push_back(true);
+        }
+      }
     } else {
       MS_LOG(DEBUG) << "Get input value " << input_value[i]->ToString();
-      args_type_id[i] = kTypeUnknown;
+      args_type_id.push_back(kTypeUnknown);
+      args_has_tensor.push_back(false);
     }
   }
   return {args_type_id, args_has_tensor};

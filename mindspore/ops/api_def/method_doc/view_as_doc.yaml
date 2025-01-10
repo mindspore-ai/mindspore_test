@@ -1,0 +1,26 @@
+view_as:
+  description: |
+    view_as(other) -> Tensor
+
+    View `self` Tensor as the same shape as `other` .
+
+    Args:
+        other(Tensor): The returned Tensor has the same shape as `other`.
+
+    Returns:
+        Tensor, has the same shape as `other`.
+
+    Raises:
+        TypeError: If `other` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> from mindspore import Tensor
+        >>> from mindspore import dtype as mstype
+        >>> a = Tensor([[1, 2, 3], [2, 3, 4]], mstype.float32)
+        >>> b = Tensor([1, 1, 1, 1, 1, 1], mstype.float32)
+        >>> output = a.view_as(b)
+        >>> print(output)
+        [1. 2. 3. 2. 3. 4.]

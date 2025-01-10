@@ -39,6 +39,7 @@ class TensorRedistribution {
  public:
   explicit TensorRedistribution(bool construct_op_flag = true, bool keep_reshape = false)
       : is_inited_(false),
+        is_computed_(false),
         reshape_flag_(false),
         comm_cost_(0.0),
         forward_comm_cost_(0.0),
@@ -72,6 +73,7 @@ class TensorRedistribution {
   OperatorList operator_list() const { return operator_list_; }
   bool reshape_flag() const { return reshape_flag_; }
   bool IsInited() const { return this->is_inited_; }
+  bool IsComputed() const { return this->is_computed_; }
   Status ComputeCost();
   double comm_cost() const { return comm_cost_; }
   double computation_cost() const { return computation_cost_; }
@@ -127,6 +129,7 @@ class TensorRedistribution {
   TensorLayout to_;
   TensorLayout assembled_static_origin_from_;
   bool is_inited_;
+  bool is_computed_;
   RankList dev_list_;
   OperatorList operator_list_;
   bool reshape_flag_;

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_ASCEND_UTILS_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_ASCEND_UTILS_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_COMMON_ASCEND_UTILS_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_COMMON_ASCEND_UTILS_H_
 
 #include <pthread.h>
 
@@ -27,24 +27,11 @@
 
 #include "include/backend/kernel_graph.h"
 #include "utils/ms_context.h"
+#include "acl/acl_rt.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-template <typename Map, typename K = typename Map::key_type, typename V = typename Map::mapped_type>
-std::string MapToString(const Map &value) {
-  std::stringstream buffer;
-  buffer << "{";
-  for (auto it = value.begin(); it != value.end(); it++) {
-    if (it != value.begin()) {
-      buffer << ", ";
-    }
-    buffer << it->first << ": " << it->second;
-  }
-  buffer << "}";
-  return buffer.str();
-}
-
 class ErrorManagerAdapter {
  public:
   ErrorManagerAdapter() = default;
@@ -91,8 +78,10 @@ bool EnableLccl();
 void InitializeAcl();
 
 BACKEND_EXPORT std::string GetFormatMode();
+
+void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream);
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_ASCEND_UTILS_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_COMMON_ASCEND_UTILS_H_

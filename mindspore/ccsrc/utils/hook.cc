@@ -34,44 +34,34 @@ ValuePtr GetCValue(const py::object &output) {
   return ConvertPyObjectToCTensor(output);
 }
 
-py::object RunHook(std::map<uint64_t, py::function> *hook_map, const py::object &arg) {
-  MS_EXCEPTION_IF_NULL(hook_map);
-  py::object grad_out = arg;
-  for (auto it = hook_map->begin(); it != hook_map->end();) {
-    if (it->second.ptr() == nullptr) {
-      MS_LOG(DEBUG) << "Hook id " << it->first << " have been delete by python";
-      hook_map->erase(it++);
-    } else {
-      MS_LOG(DEBUG) << "Run hook id " << it->first << " and its value " << ConvertPyObjToString(it->second);
-      auto res = (it->second)(grad_out);
-      if (py::isinstance<py::none>(res)) {
-        ++it;
-        continue;
-      }
-      if (MS_UNLIKELY(py::isinstance<py::tuple>(res) || py::isinstance<py::list>(res))) {
-        MS_LOG(EXCEPTION) << "Tensor hook should be return None or a single value";
-      }
-      ++it;
-      grad_out = res;
-    }
+py::object RunHook(uint64_t tensor_id, const py::function &hook, const py::object &arg) {
+  if (hook.ptr() == nullptr) {
+    MS_LOG(DEBUG) << "Hook for tensor id " << tensor_id << " have been deleted by python";
+    return arg;
   }
-  return grad_out;
+
+  MS_LOG(DEBUG) << "Run hook for tensor id: " << tensor_id << ", hook: " << ConvertPyObjToString(hook);
+  auto res = hook(arg);
+  if (py::isinstance<py::none>(res)) {
+    return arg;
+  }
+
+  if (MS_UNLIKELY(py::isinstance<py::tuple>(res) || py::isinstance<py::list>(res))) {
+    MS_LOG(EXCEPTION) << "Tensor hook should be return None or a single value";
+  }
+  return res;
 }
 }  // namespace
 
-TensorBackwardHook::TensorBackwardHook(uint64_t tensor_id, const py::function &obj) {
-  (void)hook_map_.emplace(tensor_id, obj);
-}
+TensorBackwardHook::TensorBackwardHook(uint64_t tensor_id, const py::function &obj)
+    : tensor_id_(tensor_id), hook_(obj) {}
 
-TensorBackwardHook::~TensorBackwardHook() {
-  py::gil_scoped_acquire acquire_gil;
-  hook_map_.clear();
-}
+TensorBackwardHook::~TensorBackwardHook() { py::gil_scoped_acquire acquire_gil; }
 
 ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   py::gil_scoped_acquire acquire_gil;
   auto py_args = GetPythonArg(grad);
-  auto ret = RunHook(&hook_map_, py_args);
+  auto ret = RunHook(tensor_id_, hook_, py_args);
   return GetCValue(ret);
 }
 }  // namespace mindspore

@@ -89,9 +89,9 @@ bool LeftShiftCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 template <typename T>
 bool LeftShiftCpuKernelMod::IntCompute(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  auto *input1 = static_cast<T *>(inputs[0]->device_ptr());
-  const auto *input2 = static_cast<T *>(inputs[1]->device_ptr());
-  auto *output = static_cast<T *>(outputs[0]->device_ptr());
+  auto *input1 = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *input2 = GetDeviceAddress<T>(inputs, kIndex1);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
   if (output_shape_.size() == 0) {
     (void)output_shape_.insert(output_shape_.begin(), 1);
   }

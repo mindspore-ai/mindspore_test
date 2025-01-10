@@ -104,6 +104,91 @@ class AdaptiveAvgPool2d(_AdaptiveAvgPoolNd):
         return mint.nn.functional.adaptive_avg_pool2d(input, self.output_size)
 
 
+class AdaptiveAvgPool3d(Cell):
+    r"""
+    This operator applies a 3D adaptive average pooling to an input signal composed of multiple input planes.
+    That is, for any input size, the size of the specified output is :math:`(D, H, W)`.
+    The number of output features is equal to the number of input planes.
+
+    Suppose the last 3 dimension size of input is :math:`(inD, inH, inW)`, then the last 3 dimension size of output is
+    :math:`(outD, outH, outW)`.
+
+    .. math::
+        \begin{array}{ll} \\
+            \forall \quad od \in [0,outD-1], oh \in [0,outH-1], ow \in [0,outW-1]\\
+            output[od,oh,ow] = \\
+            \qquad mean(input[istartD:iendD+1,istartH:iendH+1,istartW:iendW+1])\\
+            where,\\
+            \qquad istartD= \left\lceil \frac{od * inD}{outD} \right\rceil \\
+            \qquad iendD=\left\lfloor \frac{(od+1)* inD}{outD} \right\rfloor \\
+            \qquad istartH=\left\lceil \frac{oh * inH}{outH} \right\rceil \\
+            \qquad iendH=\left\lfloor \frac{(oh+1) * inH}{outH} \right\rfloor \\
+            \qquad istartW=\left\lceil \frac{ow * inW}{outW} \right\rceil \\
+            \qquad iendW=\left\lfloor \frac{(ow+1) * inW}{outW} \right\rfloor
+        \end{array}
+
+    .. warning::
+        For Ascend, it is only supported on Atlas A2 Training Series Products.
+        This is an experimental optimizer API that is subject to change or deletion.
+
+    Args:
+        output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(D, H, W)`,
+            or an int D for :math:`(D, D, D)`. :math:`D`, :math:`H` and :math:`W` can be int or None
+            which means the output size is the same as that of the input.
+
+    Inputs:
+        - **input** (Tensor) - The input of AdaptiveAvgPool3d, which is a 5D or 4D Tensor.
+
+    Outputs:
+        Tensor, with the same type as the `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        ValueError: If the dimension of `input` is not 4D or 5D.
+        ValueError: If `output_size` value is not positive.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import mint
+        >>> import numpy as np
+        >>> # case 1: output_size=(3, 3, 4)
+        >>> output_size=(3, 3, 4)
+        >>> input_x_val = np.random.randn(4, 3, 5, 6, 7)
+        >>> input_x = ms.Tensor(input_x_val, ms.float32)
+        >>> net = mint.nn.AdaptiveAvgPool3d(output_size)
+        >>> output = net(input_x)
+        >>> print(output.shape)
+        (4, 3, 3, 3, 4)
+        >>> # case 2: output_size=4
+        >>> output_size=5
+        >>> input_x_val = np.random.randn(2, 3, 8, 6, 12)
+        >>> input_x = ms.Tensor(input_x_val, ms.float32)
+        >>> net = mint.nn.AdaptiveAvgPool3d(output_size)
+        >>> output = net(input_x)
+        >>> print(output.shape)
+        (2, 3, 5, 5, 5)
+        >>> # case 3: output_size=(None, 4, 5)
+        >>> output_size=(None, 4, 5)
+        >>> input_x_val = np.random.randn(4, 1, 9, 10, 8)
+        >>> input_x = ms.Tensor(input_x_val, ms.float32)
+        >>> net = mint.nn.AdaptiveAvgPool3d(output_size)
+        >>> output = net(input_x)
+        >>> print(output.shape)
+        (4, 1, 9, 4, 5)
+    """
+
+    def __init__(self, output_size):
+        """Initialize AdaptiveAvgPool3d."""
+        super(AdaptiveAvgPool3d, self).__init__()
+        self.output_size = output_size
+
+    def construct(self, input):
+        return mint.nn.functional.adaptive_avg_pool3d(input, self.output_size)
+
+
 class MaxUnpool2d(Cell):
     r"""
     Computes the inverse of `Maxpool2d`.
@@ -115,8 +200,8 @@ class MaxUnpool2d(Cell):
 
     .. math::
         \begin{array}{ll} \\
-        H_{out} = (H{in} - 1) \times stride[0] - 2 \times padding[0] + kernel\_size[0] \\
-        W_{out} = (W{in} - 1) \times stride[1] - 2 \times padding[1] + kernel\_size[1] \\
+        H_{out} = (H_{in} - 1) \times stride[0] - 2 \times padding[0] + kernel\_size[0] \\
+        W_{out} = (W_{in} - 1) \times stride[1] - 2 \times padding[1] + kernel\_size[1] \\
         \end{array}
 
     .. warning::
@@ -145,8 +230,8 @@ class MaxUnpool2d(Cell):
         - **output_size** (tuple[int], optional) - The target output size. Default: ``None`` .
           If output_size == (), then the shape of output computed by `kernel_size`, `stride` and `padding`.
           If output_size != (), then output_size must be :math:`(N, C, H, W)` , :math:`(C, H, W)` or :math:`(H, W)`
-          and output_size must belong to :math:
-          `[(N, C, H_{out} - stride[0], W_{out} - stride[1]), (N, C, H_{out} + stride[0], W_{out} + stride[1])]`.
+          and output_size must belong to
+          :math:`[(N, C, H_{out} - stride[0], W_{out} - stride[1]), (N, C, H_{out} + stride[0], W_{out} + stride[1])]`.
 
     Returns:
         Tensor, with shape :math:`(N, C, H_{out}, W_{out})` or :math:`(C, H_{out}, W_{out})`,
@@ -188,6 +273,7 @@ class MaxUnpool2d(Cell):
                                                self.padding, output_size)
 
 __all__ = [
+    'AdaptiveAvgPool3d',
     'AdaptiveAvgPool2d',
     'AdaptiveAvgPool1d',
     'MaxUnpool2d',

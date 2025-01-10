@@ -13,12 +13,21 @@
 # limitations under the License.
 # ============================================================================
 
-import inspect
 from functools import wraps
-from mindspore import nn
-import mindspore as ms
-from mindspore import Tensor, jit, JitConfig
+import inspect
+import sys
+from typing import Sequence
+
 import numpy as np
+
+import mindspore as ms
+from mindspore import jit, JitConfig, nn, Tensor
+
+if sys.version_info >= (3, 9):
+    list_annotation = list
+else:
+    from typing import List
+    list_annotation = List
 
 ms.set_context(jit_syntax_level=ms.STRICT)
 
@@ -108,11 +117,28 @@ def compare(output, expect):
             raise ValueError(f"compare failed \n output: {output.asnumpy()}\n expect: {expect}")
 
 
+def generate_random_input(shape: Sequence[int], dtype: type = None) -> np.ndarray:
+    array = np.random.randn(*shape)
+    if dtype:
+        array = array.astype(dtype)
+    return array
+
+
+def generate_random_tensor(shape: Sequence[int], dtype: ms.dtype) -> ms.Tensor:
+    # Q: Why use `numpy.random.randn` to generate a random `numpy.ndarray` and then convert it into a
+    #    `mindspore.Tensor` instead of directly using `mindspore.ops.StandardNormal` to generate a random
+    #    `mindspore.Tensor`?
+    # A: Because `mindspore.ops.StandardNormal` does not support the random seed reproduction function on the Ascend
+    #    backend, which is not conducive to reproduct results. Reference
+    #    https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.StandardNormal.html .
+    return ms.Tensor(generate_random_input(shape)).type(dtype)
+
+
 def get_inputs_np(shapes, dtypes):
     np.random.seed(10)
     inputs_np = []
     for shape, dtype in zip(shapes, dtypes):
-        inputs_np.append(np.random.randn(*shape).astype(dtype))
+        inputs_np.append(generate_random_input(shape, dtype))
     return inputs_np
 
 
@@ -121,6 +147,16 @@ def get_inputs_tensor(inputs_np):
     for input_np in inputs_np:
         inputs.append(Tensor(input_np))
     return inputs
+
+
+def convert_ms_tensor_to_numpy_array(tensor: ms.Tensor) -> np.ndarray:
+    if tensor.dtype == ms.bfloat16:
+        tensor = tensor.astype(ms.float32)
+    return tensor.asnumpy()
+
+
+def convert_ms_tensors_to_numpy_arrays(tensors: Sequence[ms.Tensor]) -> list_annotation[np.ndarray]:
+    return [convert_ms_tensor_to_numpy_array(tensor) for tensor in tensors]
 
 
 def need_run_graph_op_mode(func, args, kwargs):

@@ -88,16 +88,30 @@ Status BatchOp::operator()() {
         total_step++;
         RETURN_IF_NOT_OK(callback_manager_.StepBegin(CallbackParam(op_current_epochs_ + 1, ep_step, total_step)));
       }
-      (void)table->emplace_back(std::move(new_row));
-      // if # of rows is enough to make 1 batch, send it to worker_queue
-      if (table->size() == static_cast<size_t>(cur_batch_size)) {
+      if (new_row.eob()) {
         RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->EmplaceBack(
           std::make_pair(std::move(table), CBatchInfo(op_current_epochs_, batch_num++, cnt++))));
         table = std::make_unique<TensorQTable>();
-        RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
+        RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+      } else {
+        (void)table->emplace_back(std::move(new_row));
+        // if # of rows is enough to make 1 batch, send it to worker_queue
+        if (table->size() == static_cast<size_t>(cur_batch_size)) {
+          RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->EmplaceBack(
+            std::make_pair(std::move(table), CBatchInfo(op_current_epochs_, batch_num++, cnt++))));
+          table = std::make_unique<TensorQTable>();
+          RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+          if (!new_row.eoe()) {
+            RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
+          }
+        } else {
+          RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+        }
       }
-      RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
     }
+    // There should be no leftover samples when using batch sampler
+    CHECK_FAIL_RETURN_UNEXPECTED(cur_batch_size != -1 || table->empty(),
+                                 "Batch size cannot be -1 without using batch sampler.");
     // Reminder logic, execute only when there is a remainder (table is non empty) and don't drop
     if (!drop_ && !table->empty()) {
       RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->EmplaceBack(
@@ -109,8 +123,10 @@ Status BatchOp::operator()() {
     RETURN_IF_NOT_OK(
       worker_in_queues_[NextWorkerID()]->EmplaceBack(std::make_pair(nullptr, CBatchInfo(BatchCtrl::kEOE))));
     UpdateRepeatAndEpochCounter();
-    RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
     RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+    if (!new_row.eof()) {
+      RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
+    }
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && defined(ENABLE_PYTHON)
     if ((num_workers_ > 1 || batch_map_func_) && GetMemoryUsage() > MAX_MEMORY_USAGE_THRESHOLD) {
@@ -156,7 +172,26 @@ Status BatchOp::BatchRows(const std::unique_ptr<TensorQTable> *tensor_row_dequeu
     for (const auto &tensor : (*batched_tensor_row)) {
       // If concat batch rows, the result should not be expend dimension.
       if (!concat_batch) {
+#ifdef ENABLE_PYTHON
+        if (tensor->type() == DataType::DE_PYTHON) {
+          py::gil_scoped_acquire gil_acquire;
+          py::dict python_dict;
+          RETURN_IF_NOT_OK(tensor->GetDataAsPythonObject(&python_dict));
+          for (const auto &[key, value] : python_dict) {
+            py::list list;
+            list.append(value);
+            try {
+              python_dict[key] = py::array(list);
+            } catch (const py::error_already_set &e) {
+              RETURN_STATUS_UNEXPECTED("Failed to batch data in type of Python dictionary: " + std::string(e.what()));
+            }
+          }
+        } else {
+          RETURN_IF_NOT_OK(tensor->ExpandDim(0));
+        }
+#else
         RETURN_IF_NOT_OK(tensor->ExpandDim(0));
+#endif
       }
     }
     return Status::OK();
@@ -176,12 +211,17 @@ Status CopyTensorToBatch(const std::shared_ptr<Tensor> &element_tensor, std::sha
                          size_t index) {
   RETURN_UNEXPECTED_IF_NULL(batched_tensor);
   // ConvertRowsToTensor has confirmed that the shape of element_tensor matches the expected shape of batch_tensor
-  auto element_size = element_tensor->SizeInBytes();
-  errno_t copy_status =
-    memcpy_s(reinterpret_cast<void *>((*batched_tensor)->GetMutableBuffer() + index * element_size),
-             element_tensor->SizeInBytes(), element_tensor->GetBuffer(), element_tensor->SizeInBytes());
-  CHECK_FAIL_RETURN_UNEXPECTED(copy_status == EOK,
-                               "Failed to copy tensor to batch, got error_t: " + std::to_string(copy_status));
+  auto element_size = static_cast<size_t>(element_tensor->SizeInBytes());
+  auto src = reinterpret_cast<const void *>(element_tensor->GetBuffer());
+  auto dest = reinterpret_cast<void *>((*batched_tensor)->GetMutableBuffer() + index * element_size);
+  if (element_size < SECUREC_MEM_MAX_LEN) {
+    errno_t copy_status = memcpy_s(dest, element_size, src, element_size);
+    CHECK_FAIL_RETURN_UNEXPECTED(copy_status == EOK,
+                                 "Failed to copy tensor to batch, got error_t: " + std::to_string(copy_status));
+  } else {
+    void *ptr = std::memcpy(dest, src, element_size);
+    CHECK_FAIL_RETURN_UNEXPECTED(ptr == dest, "Failed to copy tensor to batch.");
+  }
   return Status::OK();
 }
 
@@ -848,15 +888,18 @@ int64_t BatchOp::GetTreeBatchSize() {
   return start_batch_size_;
 }
 
+void BatchOp::UpdateCounterAndSendEOE(TensorRow *const row) {
+  *row = TensorRow(TensorRow::kFlagEOE);
+  UpdateRepeatAndEpochCounter();
+  batch_num_ = 0;
+}
+
 Status BatchOp::GetNextRowPullMode(TensorRow *const row) {
   RETURN_UNEXPECTED_IF_NULL(row);
   row->clear();
   if (eoe_received_) {
-    UpdateRepeatAndEpochCounter();
-    *row = TensorRow(TensorRow::kFlagEOE);
+    UpdateCounterAndSendEOE(row);
     eoe_received_ = false;
-    // Reset batch_num_
-    batch_num_ = 0;
     return Status::OK();
   }
   std::unique_ptr<TensorQTable> table = std::make_unique<TensorQTable>();
@@ -866,29 +909,44 @@ Status BatchOp::GetNextRowPullMode(TensorRow *const row) {
   child_iterator_ = std::make_unique<ChildIterator>(this, 0, 0);
   int32_t cur_batch_size = 0;
   RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, table_pair.second));
-  for (int i = 0; i < cur_batch_size; i++) {
+  if (cur_batch_size == -1) {
     TensorRow new_row;
     RETURN_IF_NOT_OK(child_[0]->GetNextRowPullMode(&new_row));
     if (new_row.eoe()) {
-      if (drop_ || table_pair.first->empty()) {
-        *row = TensorRow(TensorRow::kFlagEOE);
-        UpdateRepeatAndEpochCounter();
-        // Reset batch_num_
-        batch_num_ = 0;
-        return Status::OK();
-      } else {
-        eoe_received_ = true;
-      }
-      break;
+      UpdateCounterAndSendEOE(row);
+      return Status::OK();
     }
-    if (!new_row.empty()) {
+    if (new_row.eof()) {
+      *row = TensorRow(TensorRow::kFlagEOF);
+      return Status::OK();
+    }
+    while (!new_row.eob()) {
+      CHECK_FAIL_RETURN_UNEXPECTED(!new_row.empty(), "Expect EOB flag, but got: " + new_row.FlagName());
       (void)table_pair.first->emplace_back(new_row);
-      if (table_pair.first->size() == static_cast<size_t>(cur_batch_size)) {
+      RETURN_IF_NOT_OK(child_[0]->GetNextRowPullMode(&new_row));
+    }
+  } else {
+    for (int i = 0; i < cur_batch_size; i++) {
+      TensorRow new_row;
+      RETURN_IF_NOT_OK(child_[0]->GetNextRowPullMode(&new_row));
+      if (new_row.eoe()) {
+        if (drop_ || table_pair.first->empty()) {
+          UpdateCounterAndSendEOE(row);
+          return Status::OK();
+        } else {
+          eoe_received_ = true;
+        }
         break;
       }
-    } else {
-      if (drop_ || table_pair.first->empty()) {
-        table_pair.first = std::make_unique<TensorQTable>();  // this drops when drop == true
+      if (!new_row.empty()) {
+        (void)table_pair.first->emplace_back(new_row);
+        if (table_pair.first->size() == static_cast<size_t>(cur_batch_size)) {
+          break;
+        }
+      } else {
+        if (drop_ || table_pair.first->empty()) {
+          table_pair.first = std::make_unique<TensorQTable>();  // this drops when drop == true
+        }
       }
     }
   }
@@ -942,6 +1000,15 @@ Status BatchOp::Launch() {
     python_multiprocessing_runtime_->launch(id());
   }
   return DatasetOp::Launch();
+}
+
+Status BatchOp::Terminate() {
+  // Terminate Python multiprocessing. This will stop the MP pooa.
+  if (python_multiprocessing_runtime_) {
+    MS_LOG(INFO) << "Terminate Python Multiprocessing for BatchOp:" << id();
+    python_multiprocessing_runtime_->terminate();
+  }
+  return Status::OK();
 }
 
 std::vector<int32_t> BatchOp::GetMPWorkerPIDs() const {

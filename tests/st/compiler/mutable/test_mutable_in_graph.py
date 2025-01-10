@@ -22,9 +22,18 @@ from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
 from mindspore.common import mutable
 from mindspore import context
+from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE, grad_for_scalar=True)
+context.set_context(mode=context.GRAPH_MODE)
+
+
+def setup_module():
+    compile_config.GRAD_FOR_SCALAR = 1
+
+
+def teardown_module():
+    compile_config.GRAD_FOR_SCALAR = ''
 
 
 def compare(a, b):
@@ -927,7 +936,7 @@ def test_grad_const_dict_tensor_to_mutable():
     assert compare(output['b'], expect[1])
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_grad_const_dict_tensor_arg_to_mutable():
     """
@@ -1347,7 +1356,7 @@ def test_grad_const_tuple_or_list_any_arg_to_mutable():
     assert id(m_x.__ms_origin_object__) == id(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_grad_const_dict_any_to_mutable():
     """
@@ -1414,7 +1423,7 @@ def test_grad_const_dict_any_to_mutable():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_grad_const_dict_any_arg_to_mutable():
     """
@@ -1482,7 +1491,7 @@ def test_grad_const_dict_any_arg_to_mutable():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_grad_const_dict_any_to_mutable_with_fallback():
     """
@@ -1550,7 +1559,7 @@ def test_grad_const_dict_any_to_mutable_with_fallback():
     assert dict_compare(output, expect)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_grad_const_dict_any_arg_to_mutable_with_fallback():
     """

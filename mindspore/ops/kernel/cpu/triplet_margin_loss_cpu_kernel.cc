@@ -125,7 +125,7 @@ bool TripletMarginLossCPUKernelMod::Launch(const std::vector<kernel::KernelTenso
 template <typename T>
 void TripletMarginLossCPUKernelMod::TripletMarginLossCompute_realtype(
   const std::vector<kernel::KernelTensor *> &inputs, const std::vector<kernel::KernelTensor *> &outputs) {
-  auto out_data = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  auto out_data = GetDeviceAddress<float>(outputs, 0);
   Eigen::Array<float, Eigen::Dynamic, 1> out(data_num_, 1);
   float *output_reduction_none_data = reinterpret_cast<float *>(out.data());
   auto task_nobroadcast = [&](size_t start, size_t end) {
@@ -176,7 +176,7 @@ void TripletMarginLossCPUKernelMod::TripletMarginLossCompute_realtype(
 template <typename T>
 void TripletMarginLossCPUKernelMod::TripletMarginLossCompute_complextype(
   const std::vector<kernel::KernelTensor *> &inputs, const std::vector<kernel::KernelTensor *> &outputs) {
-  auto out_data = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  auto out_data = GetDeviceAddress<float>(outputs, 0);
   Eigen::Array<float, Eigen::Dynamic, 1> out(data_num_, 1);
   float *output_reduction_none_data = reinterpret_cast<float *>(out.data());
   auto task_nobroadcast = [&](size_t start, size_t end) {
@@ -230,10 +230,10 @@ void TripletMarginLossCPUKernelMod::realtype_nobroadcast_task(size_t start, size
                                                               float *output_reduction_none_data,
                                                               const std::vector<kernel::KernelTensor *> &inputs,
                                                               const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   const size_t kNoBroadcastValue = 1;
   start *= data_num_each_batch_;
   end *= data_num_each_batch_;
@@ -307,10 +307,10 @@ template <typename T>
 void TripletMarginLossCPUKernelMod::realtype_broadcast_task(size_t start, size_t end, float *output_reduction_none_data,
                                                             const std::vector<kernel::KernelTensor *> &inputs,
                                                             const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   start *= data_num_each_batch_;
   end *= data_num_each_batch_;
   float positive_distance;
@@ -384,10 +384,10 @@ template <typename T>
 void TripletMarginLossCPUKernelMod::realtype_broadcast_compute(float *output_reduction_none_data,
                                                                const std::vector<kernel::KernelTensor *> &inputs,
                                                                const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   float positive_distance;
   float negative_distance;
   float swap_distance;
@@ -459,10 +459,10 @@ template <typename T>
 void TripletMarginLossCPUKernelMod::realtype_nobroadcast_compute(float *output_reduction_none_data,
                                                                  const std::vector<kernel::KernelTensor *> &inputs,
                                                                  const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   const size_t kNoBroadcastValue = 1;
   Eigen::Array<float, Eigen::Dynamic, 1> calculate_positive(once_compute_size_, kNoBroadcastValue);
   Eigen::Array<float, Eigen::Dynamic, 1> calculate_negative(once_compute_size_, kNoBroadcastValue);
@@ -532,10 +532,10 @@ void TripletMarginLossCPUKernelMod::complextype_nobroadcast_task(size_t start, s
                                                                  float *output_reduction_none_data,
                                                                  const std::vector<kernel::KernelTensor *> &inputs,
                                                                  const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   const size_t kNoBroadcastValue = 1;
   start *= data_num_each_batch_;
   end *= data_num_each_batch_;
@@ -591,10 +591,10 @@ void TripletMarginLossCPUKernelMod::complextype_broadcast_task(size_t start, siz
                                                                float *output_reduction_none_data,
                                                                const std::vector<kernel::KernelTensor *> &inputs,
                                                                const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   start *= data_num_each_batch_;
   end *= data_num_each_batch_;
   float positive_distance;
@@ -674,10 +674,10 @@ template <typename T>
 void TripletMarginLossCPUKernelMod::complextype_broadcast_compute(float *output_reduction_none_data,
                                                                   const std::vector<kernel::KernelTensor *> &inputs,
                                                                   const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   float positive_distance;
   float negative_distance;
   float swap_distance;
@@ -753,10 +753,10 @@ template <typename T>
 void TripletMarginLossCPUKernelMod::complextype_nobroadcast_compute(
   float *output_reduction_none_data, const std::vector<kernel::KernelTensor *> &inputs,
   const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto positive_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto negative_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto margin = *(reinterpret_cast<float *>(inputs[3]->device_ptr()));
+  auto x_addr = GetDeviceAddress<T>(inputs, 0);
+  auto positive_addr = GetDeviceAddress<T>(inputs, 1);
+  auto negative_addr = GetDeviceAddress<T>(inputs, 2);
+  auto margin = *(GetDeviceAddress<float>(inputs, 3));
   const size_t kNoBroadcastValue = 1;
   Eigen::Array<T, Eigen::Dynamic, 1> calculate_positive(once_compute_size_, kNoBroadcastValue);
   Eigen::Array<T, Eigen::Dynamic, 1> calculate_negative(once_compute_size_, kNoBroadcastValue);

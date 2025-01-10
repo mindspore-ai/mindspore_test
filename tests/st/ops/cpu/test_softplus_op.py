@@ -38,7 +38,7 @@ def SoftplusCompute(x):
     return np.log(1 + np.exp(x))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_softplus_0d_fp32():
     """
@@ -56,7 +56,7 @@ def test_softplus_0d_fp32():
     assert np.allclose(y_np, y_ms.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_softplus_1d_fp32():
     """
@@ -74,7 +74,7 @@ def test_softplus_1d_fp32():
     assert np.allclose(y_np, y_ms.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_softplus_2d_fp32():
     """

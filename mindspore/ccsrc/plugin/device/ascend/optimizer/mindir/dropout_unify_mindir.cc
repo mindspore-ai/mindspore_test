@@ -738,6 +738,11 @@ std::vector<std::string> DropoutExtUnifyMindIR1::MustExistPrimitiveName() const 
   return ret;
 }
 
+std::vector<std::string> DropoutGradExtUnifyMindIR::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimDropoutGradExt->name()};
+  return ret;
+}
+
 const BaseRef DropoutGradExtUnifyMindIR::DefinePattern() const {
   VarPtr X = std::make_shared<Var>();
   VarPtr M = std::make_shared<Var>();

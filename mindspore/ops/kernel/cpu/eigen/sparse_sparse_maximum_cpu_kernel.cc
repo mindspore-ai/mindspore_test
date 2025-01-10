@@ -229,31 +229,31 @@ bool SparseSparseMaximumCpuKernelMod::LaunchKernel(const std::vector<kernel::Ker
   const int64_t b_nnz = b_nnz_;
   CheckShapeMatch(inputs);
 
-  auto a_values_ptr = reinterpret_cast<T *>(inputs[kInputa_values]->device_ptr());
+  auto a_values_ptr = GetDeviceAddress<T>(inputs, kInputa_values);
   Eigen::DSizes<Eigen::DenseIndex, 1> a_values_size(EIGEN_SHAPE_CAST(a_values_shape0_));
   Eigen::TensorMap<Eigen::Tensor<T, 1, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> a_values(a_values_ptr,
                                                                                                      a_values_size);
-  auto b_values_ptr = reinterpret_cast<T *>(inputs[kInputb_values]->device_ptr());
+  auto b_values_ptr = GetDeviceAddress<T>(inputs, kInputb_values);
   Eigen::DSizes<Eigen::DenseIndex, 1> b_values_size(EIGEN_SHAPE_CAST(b_values_shape0_));
   Eigen::TensorMap<Eigen::Tensor<T, 1, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> b_values(b_values_ptr,
                                                                                                      b_values_size);
-  auto a_indices_ptr = reinterpret_cast<int64_t *>(inputs[kInputa_indices]->device_ptr());
+  auto a_indices_ptr = GetDeviceAddress<int64_t>(inputs, kInputa_indices);
   Eigen::DSizes<Eigen::DenseIndex, kIndex2> a_indices_size(EIGEN_SHAPE_CAST(a_values_shape0_),
                                                            EIGEN_SHAPE_CAST(a_shapes_shape0_));
   Eigen::TensorMap<Eigen::Tensor<int64_t, kIndex2, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> a_indices_mat(
     a_indices_ptr, a_indices_size);
 
-  auto b_indices_ptr = reinterpret_cast<int64_t *>(inputs[kInputb_indices]->device_ptr());
+  auto b_indices_ptr = GetDeviceAddress<int64_t>(inputs, kInputb_indices);
   Eigen::DSizes<Eigen::DenseIndex, kIndex2> b_indices_size(EIGEN_SHAPE_CAST(b_values_shape0_),
                                                            EIGEN_SHAPE_CAST(b_shapes_shape0_));
   Eigen::TensorMap<Eigen::Tensor<int64_t, kIndex2, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> b_indices_mat(
     b_indices_ptr, b_indices_size);
 
-  auto a_shape_ptr = reinterpret_cast<int64_t *>(inputs[kInputa_shapes]->device_ptr());
+  auto a_shape_ptr = GetDeviceAddress<int64_t>(inputs, kInputa_shapes);
   Eigen::DSizes<Eigen::DenseIndex, 1> a_shape_size(EIGEN_SHAPE_CAST(a_shapes_shape0_));
   Eigen::TensorMap<Eigen::Tensor<int64_t, 1, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> a_shape(a_shape_ptr,
                                                                                                           a_shape_size);
-  auto b_shape_ptr = reinterpret_cast<int64_t *>(inputs[kInputb_shapes]->device_ptr());
+  auto b_shape_ptr = GetDeviceAddress<int64_t>(inputs, kInputb_shapes);
   Eigen::DSizes<Eigen::DenseIndex, 1> b_shape_size(EIGEN_SHAPE_CAST(b_shapes_shape0_));
   Eigen::TensorMap<Eigen::Tensor<int64_t, 1, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> b_shape(b_shape_ptr,
                                                                                                           b_shape_size);
@@ -264,7 +264,7 @@ bool SparseSparseMaximumCpuKernelMod::LaunchKernel(const std::vector<kernel::Ker
                               &a_augmented_values, &b_augmented_values, &entries_to_copy);
   const int64_t sum_nnz = SizeToLong(a_augmented_values.size());
   sum_nnz_ = sum_nnz;
-  auto output_indices_ptr = reinterpret_cast<int64_t *>(outputs[kOutput_indices]->device_ptr());
+  auto output_indices_ptr = GetDeviceAddress<int64_t>(outputs, kOutput_indices);
   Eigen::DSizes<Eigen::DenseIndex, kIndex2> output_indices_size(static_cast<Eigen::DenseIndex>(sum_nnz),
                                                                 static_cast<Eigen::DenseIndex>(num_dims));
   Eigen::TensorMap<Eigen::Tensor<int64_t, kIndex2, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned>
@@ -279,7 +279,7 @@ bool SparseSparseMaximumCpuKernelMod::LaunchKernel(const std::vector<kernel::Ker
   using UnalignedTensorMap = Eigen::TensorMap<Eigen::Tensor<const T, 1, Eigen::RowMajor>, Eigen::Unaligned>;
   auto a_augmented_values_t = UnalignedTensorMap(a_augmented_values.data(), sum_nnz);
   auto b_augmented_values_t = UnalignedTensorMap(b_augmented_values.data(), sum_nnz);
-  auto output_values_ptr = reinterpret_cast<T *>(outputs[kOutput_values]->device_ptr());
+  auto output_values_ptr = GetDeviceAddress<T>(outputs, kOutput_values);
   Eigen::DSizes<Eigen::DenseIndex, 1> output_values_size(static_cast<Eigen::DenseIndex>(sum_nnz));
   Eigen::TensorMap<Eigen::Tensor<T, 1, Eigen::RowMajor, Eigen::DenseIndex>, Eigen::Aligned> output_values(
     output_values_ptr, output_values_size);

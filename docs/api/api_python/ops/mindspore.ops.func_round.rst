@@ -15,10 +15,11 @@ mindspore.ops.round
         - **input** (Tensor) - 输入Tensor。
 
     关键字参数：
-        - **decimals** (int, 可选) - 要舍入到的小数位数（默认值：0）。如果为负数，则指定小数点左侧的位数。支持输入单元素Tensor转换为int。
+        - **decimals** (int, 可选) - 要舍入到的小数位数（默认值： ``0`` ）。如果为负数，则指定小数点左侧的位数。支持输入单元素Tensor转换为int。 `input` 类型为int32或int64时， `decimals` 参数值必须为0。
 
     返回：
         Tensor，shape和数据类型与输入 `input` 相同。
 
     异常：
         - **TypeError** - `input` 不是Tensor。
+        - **RuntimeError** - `input` 为int32或int64类型时， `decimals` 值不为0。

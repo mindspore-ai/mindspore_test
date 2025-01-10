@@ -8,15 +8,17 @@ sum:
         The `dim` with tensor type is only used for compatibility with older versions and is not recommended.
     
     Args:
-        dim (Union[None, int, tuple(int), list(int), Tensor]): Dimensions along which a sum is performed.
+        dim (Union[None, int, tuple(int), list(int), Tensor], optional): Dimensions along which a sum is performed.
             If ``None`` , sum all the elements of the self tensor.
             If the `dim` is a tuple or list of ints, a sum is performed on all the dimensions specified in the tuple.
             Must be in the range :math:`[-self.ndim, self.ndim)` . Default: ``None`` .
-        keepdim (bool): Whether the output tensor has `dim` retained or not.
+        keepdim (bool, optional): Whether the output tensor has `dim` retained or not.
             If ``True`` , keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions. Default: ``False`` .
-        dtype (:class:`mindspore.dtype`): The desired data type of returned Tensor. Default: ``None`` .
-    
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired data type of returned Tensor. Default: ``None`` .
+
     Returns:
         A Tensor, sum of elements over a given `dim` in `self`.
     
@@ -39,7 +41,7 @@ sum:
         >>> out = Tensor.sum(x)
         >>> print(out)
         270.0
-        >>> out = oTensorps.sum(x, dim=2)
+        >>> out = Tensor.sum(x, dim=2)
         >>> print(out)
         [[ 6. 12. 18.]
         [24. 30. 36.]
@@ -57,7 +59,8 @@ sum:
         [54.]]]
 
 
-    .. function:: sum(axis=None, dtype=None, keepdims=False, initial=None) -> Tensor
+    .. method:: Tensor.sum(axis=None, dtype=None, keepdims=False, initial=None) -> Tensor
+        :noindex:
 
     Return sum of tensor elements over a given axis.
 
@@ -66,20 +69,20 @@ sum:
         The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
 
     Args:
-        axis (Union[None, int, tuple(int), list(int), Tensor]): Axis or axes along which a sum is performed.
+        axis (Union[None, int, tuple(int), list(int), Tensor], optional): Axis or axes along which a sum is performed.
             Default: ``None`` .
             If ``None`` , sum all the elements of the self tensor.
             If the `axis` is negative, it counts from the last to the first `axis`.
             If the `axis` is a tuple or list of ints, a sum is performed on all the axes specified in the tuple
             or list instead of a single `axis` or all the axes as before.
-        dtype (:class:`mindspore.dtype`, optional): defaults to ``None`` . Overrides the dtype of the
+        dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
-        keepdims (bool): If this is set to ``True`` , the axes which are reduced are left in the result as
+        keepdims (bool, optional): If this is set to ``True`` , the axes which are reduced are left in the result as
             dimensions with size one. With this option, the result will broadcast correctly against the self
             array. If the default value is passed, then `keepdims` will not be passed through to the sum method
             of sub-classes of ndarray, however any non-default value will be. If the sub-class method does not
             implement `keepdims` any exceptions will be raised. Default: ``False`` .
-        initial (scalar): Starting value for the sum. Default: ``None`` .
+        initial (scalar, optional): Starting value for the sum. Default: ``None`` .
 
     Returns:
         Tensor. A tensor with the same shape as self, with the specified `axis` removed.

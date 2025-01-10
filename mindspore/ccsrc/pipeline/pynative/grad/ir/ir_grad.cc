@@ -24,6 +24,7 @@
 #include <vector>
 #include "frontend/expander/bprop/bprop.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "frontend/optimizer/ad/pynative_jit_grad.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/profiler.h"
@@ -132,25 +133,25 @@ bool IsConstant(const ValuePtr &value) {
   return true;
 }
 
-GradParamPtr ConstructCustomBpropInputs(const CustomContext &context) {
+GradParamPtr ConstructCustomBpropInputs(const std::shared_ptr<CustomContext> &context) {
   MS_LOG(DEBUG) << "Begin ConstructCustomBpropInputs";
   py::gil_scoped_acquire gil_acquire;
   auto fake_prim = std::make_shared<PrimitivePy>(prim::kPrimHookBackward->name());
-  fake_prim->set_bprop_cls_name(context.cell_name);
-  fake_prim->SetHookFn(context.bprop_fn, HookType::kCellCustomBprop);
-  (void)fake_prim->AddAttr("cell_name", MakeValue(context.cell_name));
+  fake_prim->set_bprop_cls_name(context->cell_name);
+  fake_prim->SetHookFn(context->bprop_fn, HookType::kCellCustomBprop);
+  (void)fake_prim->AddAttr("cell_name", MakeValue(context->cell_name));
   (void)fake_prim->AddAttr(parse::CUSTOM_BPROP_NAME, MakeValue(true));
   auto op_grad_info = std::make_shared<OpGradInfo>();
   op_grad_info->op_prim = fake_prim;
-  op_grad_info->is_need_recompute = context.is_recompute;
-  op_grad_info->input_value = context.inputs;
+  op_grad_info->is_need_recompute = context->is_recompute;
+  op_grad_info->input_value = context->inputs;
   std::transform(
-    context.inputs.begin(), context.inputs.end(), std::back_inserter(op_grad_info->input_abs),
+    context->inputs.begin(), context->inputs.end(), std::back_inserter(op_grad_info->input_abs),
     [](const auto &value) { return PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract()); });
-  op_grad_info->out_value = context.output;
-  op_grad_info->out_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(context.output->ToAbstract());
-  op_grad_info->input_value_grad_type = context.input_value_grad_type;
-  op_grad_info->weight_size = context.weight_size;
+  op_grad_info->out_value = context->output;
+  op_grad_info->out_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(context->output->ToAbstract());
+  op_grad_info->input_value_grad_type = context->input_value_grad_type;
+  op_grad_info->weight_size = context->weight_size;
   auto grad_param = std::make_shared<GradParam>(op_grad_info, true);
   MS_LOG(DEBUG) << "End ConstructCustomBpropInputs";
   return grad_param;
@@ -371,7 +372,8 @@ CNodePtr IrGrad::GetBPropCNode(const GradParamPtr &grad_param, const AnfNodePtrL
   AnfNodePtrList bprop_inputs(args.begin(), args.end());
   bool is_jit_dynamic_shape = grad_param->is_jit_graph && grad_param->use_dynamic_shape_process;
   // Save replace info in first time
-  if (!cache_hit && is_jit_dynamic_shape && grad_param->has_added_v) {
+  if (!cache_hit && is_jit_dynamic_shape && grad_param->has_added_v &&
+      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
     const auto &jit = PyNativeExecutor::grad_executor()->jit();
     jit->SaveForwardOutputTensorInfoInBpropGraph(bprop_graph, grad_param->graph_cache_key);
   }
@@ -416,10 +418,8 @@ CNodePtr IrGrad::GetBPropCNode(const GradParamPtr &grad_param, const AnfNodePtrL
 CNodePtr IrGrad::GetBpropGraphCNode(const GradParamPtr &grad_param, const AnfNodePtrList &args,
                                     AnfNodePtr *const tape_dout) {
   MS_EXCEPTION_IF_NULL(grad_param);
-  auto [cache_hit, bprop_graph] = ir_bprop_->GetBpropGraph(grad_param);
-  if (grad_param->is_control_flow || grad_param->is_jit_self_dynamic_shape) {
-    need_do_manager_replace_ = true;
-  }
+  auto [cache_hit, bprop_graph] = mindspore::ad::GetBpropGraph(grad_param);
+  need_do_manager_replace_ = true;
   return GetBPropCNode(grad_param, args, bprop_graph, cache_hit, tape_dout);
 }
 
@@ -434,7 +434,7 @@ void IrGrad::UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) {
   UpdateSensParameter(ad_param()->sens_value_);
 }
 
-void IrGrad::CallCustomBprop(const CustomContext &context) {
+void IrGrad::CallCustomBprop(const std::shared_ptr<CustomContext> &context) {
   auto grad_param = ConstructCustomBpropInputs(context);
   (void)KPynativeOp(grad_param);
 }

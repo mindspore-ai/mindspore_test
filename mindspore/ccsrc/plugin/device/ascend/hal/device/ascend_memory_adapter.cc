@@ -15,6 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/ascend/hal/device/ascend_two_pointer_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_dynamic_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
@@ -22,6 +23,7 @@
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "utils/ms_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -39,9 +41,9 @@ AscendMemAdapterPtr AscendMemAdapter::instance_ = nullptr;
 
 AscendMemAdapterPtr AscendMemAdapter::GetInstance() {
   if (instance_ == nullptr) {
-    auto context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context);
-    if (IsDisableGeKernel() || common::IsNeedProfileMemory() || context->EnableAoeOnline()) {
+    auto op_tuning_conf = OpTuningConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(op_tuning_conf);
+    if (IsDisableGeKernel() || common::IsDryRun() || op_tuning_conf->EnableAoeOnline()) {
       // disable ge kernel or dry run.
       instance_ = std::make_shared<AscendTwoPointerMemAdapter>();
     } else {
@@ -63,7 +65,7 @@ size_t AscendMemAdapter::GetDeviceMemSizeFromContext() const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   size_t size_from_context;
-  auto max_device_memory = context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  auto max_device_memory = runtime::RuntimeConf::GetInstance()->mem_max_size();
   float total_device_memory = 32.0f;
   if (context->ascend_soc_version() == kAscendVersion910b || context->ascend_soc_version() == kAscendVersion910_93) {
     total_device_memory = 64.0f;
@@ -107,16 +109,16 @@ bool AscendMemAdapter::Initialize() {
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size_, &device_hbm_total_size_);
   if (ret != ACL_ERROR_NONE || device_hbm_total_size_ == 0) {
-    MS_LOG(EXCEPTION) << "Internal Error: Get Device HBM memory size failed, ret = " << ret
-                      << ", total HBM size :" << device_hbm_total_size_;
+    MS_LOG(EXCEPTION) << "Internal Error: Get Device MOC memory size failed, ret = " << ret
+                      << ", total MOC size :" << device_hbm_total_size_;
   }
 
   if (device_hbm_free_size_ < LongToSize(DoubleToLong(device_hbm_total_size_ * kHalfRatio))) {
     unsigned int device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     MS_LOG(WARNING) << "Free memory size is less "
                        "than half of total memory size."
-                    << "Device " << device_id << " Device HBM total size:" << device_hbm_total_size_
-                    << " Device HBM free size:" << device_hbm_free_size_
+                    << "Device " << device_id << " Device MOC total size:" << device_hbm_total_size_
+                    << " Device MOC free size:" << device_hbm_free_size_
                     << " may be other processes occupying this card, check as: ps -ef|grep python";
   }
 
@@ -161,12 +163,12 @@ bool AscendMemAdapter::Initialize() {
   auto get_init_info = [this, &reserved_mem_size_for_others, &recommend_mem_size_for_others,
                         &user_define_ms_size]() -> std::string {
     std::ostringstream oss;
-    oss << "Device HBM Size:" << device_hbm_total_size_ / kMBToByte
-        << "M, Device free HBM Size:" << device_hbm_free_size_ / kMBToByte
-        << "M, Reserved HBM size for Other Components(HCCL/rts/etc.):" << reserved_mem_size_for_others / kMBToByte
-        << "M, Recommend Reserved HBM size for Other Components:" << recommend_mem_size_for_others / kMBToByte
-        << "M, User define MindSpore HBM Size:" << user_define_ms_size / kGBToByte
-        << "G, MindSpore Used HBM Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
+    oss << "Device MOC Size:" << device_hbm_total_size_ / kMBToByte
+        << "M, Device free MOC Size:" << device_hbm_free_size_ / kMBToByte
+        << "M, Reserved MOC size for Other Components(HCCL/rts/etc.):" << reserved_mem_size_for_others / kMBToByte
+        << "M, Recommend Reserved MOC size for Other Components:" << recommend_mem_size_for_others / kMBToByte
+        << "M, User define MindSpore MOC Size:" << user_define_ms_size / kGBToByte
+        << "G, MindSpore Used MOC Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
     return oss.str();
   };
 
@@ -195,12 +197,12 @@ void AscendMemAdapter::SimulationInitialize() {
     reserved_mem_size_for_others = device_hbm_total_size_ - user_define_ms_size;
   }
 
-  MS_LOG(INFO) << "Simulation Device HBM Size:" << device_hbm_total_size_ / kMBToByte
-               << "M, Device free HBM Size:" << device_hbm_free_size_ / kMBToByte
-               << "M, Reserved HBM size for Other Components(HCCL/rts/etc.):"
+  MS_LOG(INFO) << "Simulation Device MOC Size:" << device_hbm_total_size_ / kMBToByte
+               << "M, Device free MOC Size:" << device_hbm_free_size_ / kMBToByte
+               << "M, Reserved MOC size for Other Components(HCCL/rts/etc.):"
                << reserved_mem_size_for_others / kMBToByte
-               << "M, User define MindSpore HBM Size:" << user_define_ms_size / kGBToByte
-               << "G, MindSpore Used HBM Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
+               << "M, User define MindSpore MOC Size:" << user_define_ms_size / kGBToByte
+               << "G, MindSpore Used MOC Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
   max_available_ms_hbm_size_ = ms_used_hbm_size_;
   initialized_ = true;
 }
@@ -213,7 +215,7 @@ bool AscendMemAdapter::DeInitialize() {
   std::ostringstream oss_buf;
   oss_buf << "Ascend Memory Adapter deinitialize success, statistics:" << DevMemStatistics();
   MS_LOG(INFO) << oss_buf.str();
-  if (common::IsNeedProfileMemory() || common::IsNeedMemoryStatistic()) {
+  if (common::IsDryRun() || common::IsNeedMemoryStatistic()) {
     MS_LOG(WARNING) << oss_buf.str();
   }
   if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
@@ -247,7 +249,7 @@ uint8_t *AscendMemAdapter::MallocFromRts(size_t size) const {
       (void)CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &free, &total);
       MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Malloc device memory failed, size[" << size << "], ret["
                         << ret << "], "
-                        << "Device " << device_id << " Available HBM size:" << total << " free size:" << free
+                        << "Device " << device_id << " Available MOC size:" << total << " free size:" << free
                         << " may be other processes occupying this card, check as: ps -ef|grep python";
     } else {
       MS_EXCEPTION(DeviceProcessError) << "rtMalloc mem size[" << size << "] fail, ret[" << ret << "]";

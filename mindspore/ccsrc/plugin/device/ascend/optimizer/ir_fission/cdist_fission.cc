@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <string>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -27,8 +28,8 @@
 namespace mindspore {
 namespace opt {
 namespace {
-constexpr size_t kCdistInputNum = 2;
-constexpr size_t kCdistGradInputNum = 4;
+constexpr size_t kCdistInputNum = 3;
+constexpr size_t kCdistGradInputNum = 5;
 constexpr int64_t kInputXDimP = -1;
 constexpr int64_t kInputYDimR = -2;
 
@@ -86,6 +87,16 @@ AnfNodePtr AddBroadCastToNode(const FuncGraphPtr &func_graph, const AnfNodePtr &
 }
 }  // namespace
 
+std::vector<std::string> CdistFission::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimCdist->name()};
+  return ret;
+}
+
+std::vector<std::string> CdistGradFission::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimCdistGrad->name()};
+  return ret;
+}
+
 const BaseRef CdistFission::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   auto cdist_prim = std::make_shared<Primitive>(prim::kPrimCdist->name());
@@ -125,7 +136,7 @@ const AnfNodePtr CdistFission::Process(const FuncGraphPtr &graph, const AnfNodeP
   auto broadcast_input_x = AddBroadCastToNode(graph, cdist_inputs[kDim1], kInputXDimP, broadcast_to_shape, *this);
   auto broadcast_input_y = AddBroadCastToNode(graph, cdist_inputs[kDim2], kInputYDimR, broadcast_to_shape, *this);
   std::vector<AnfNodePtr> new_inputs{NewValueNode(std::make_shared<Primitive>(prim::kPrimCdist->name())),
-                                     broadcast_input_x, broadcast_input_y};
+                                     broadcast_input_x, broadcast_input_y, cdist_inputs[kDim3]};
   CNodePtr new_cnode = NewCNode(new_inputs, graph);
   MS_EXCEPTION_IF_NULL(new_cnode);
   new_cnode->set_abstract(cdist_cnode->abstract());
@@ -162,7 +173,11 @@ const AnfNodePtr CdistGradFission::Process(const FuncGraphPtr &graph, const AnfN
   auto broadcast_input_y = AddBroadCastToNode(graph, cdist_grad_inputs[kDim3], kInputYDimR, broadcast_to_shape, *this);
   auto broadcast_out = AddBroadCastToNode(graph, cdist_grad_inputs[kDim4], 0, broadcast_to_shape, *this);
   std::vector<AnfNodePtr> new_inputs{NewValueNode(std::make_shared<Primitive>(prim::kPrimCdistGrad->name())),
-                                     broadcast_grad, broadcast_input_x, broadcast_input_y, broadcast_out};
+                                     broadcast_grad,
+                                     broadcast_input_x,
+                                     broadcast_input_y,
+                                     broadcast_out,
+                                     cdist_grad_inputs[kDim5]};
   CNodePtr new_cnode = NewCNode(new_inputs, graph);
   MS_EXCEPTION_IF_NULL(new_cnode);
   new_cnode->set_abstract(cdist_grad_cnode->abstract());

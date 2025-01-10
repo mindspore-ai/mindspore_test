@@ -151,8 +151,8 @@ def test_output_shapes_exception():
 
 
 if __name__ == "__main__":
-    test_get_dynamic_min_max_shapes_0()
-    test_get_dynamic_min_max_shapes_1()
-    test_get_dynamic_min_max_shapes_2()
-    test_get_dynamic_min_max_shapes_3()
+    test_output_shapes_0()
+    test_output_shapes_1()
+    test_output_shapes_2()
+    test_output_shapes_3()
     test_output_shapes_exception()

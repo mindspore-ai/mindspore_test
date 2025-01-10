@@ -371,9 +371,19 @@ void ConvertPadV3GradPaddings::ReduceOutputDims(const FuncGraphPtr &graph, const
   (void)manager->Replace(node, reshape_node);
 }
 
+std::vector<std::string> ConvertPadV3Paddings::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimPadV3->name()};
+  return ret;
+}
+
 const BaseRef ConvertPadV3Paddings::DefinePattern() const {
   VarPtr inputs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimPadV3, inputs});
+}
+
+std::vector<std::string> ConvertPadV3GradPaddings::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimPadV3Grad->name()};
+  return ret;
 }
 
 const BaseRef ConvertPadV3GradPaddings::DefinePattern() const {

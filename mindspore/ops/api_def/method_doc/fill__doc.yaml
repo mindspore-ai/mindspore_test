@@ -1,0 +1,39 @@
+fill_:
+    description: |
+        fill_(value) -> Tensor
+
+        Fills `self` tensor with the specified `value` .
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            value (Union[Tensor, number.Number, bool]): Value to fill the `self` .
+
+        Returns:
+            Tensor.
+
+        Raises:
+            RunTimeError: The data type of `self` or `value` is not supported.
+            RunTimeError: When the `value` is Tensor, it should be 0-D Tensor or 1-D Tensor with shape=[1].
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import ops
+            >>> x = ops.zeros((3, 3))
+            >>> print(x)
+            [[0. 0. 0.]
+             [0. 0. 0.]
+             [0. 0. 0.]]
+            >>> output = x.fill_(1.0)
+            >>> print(output)
+            [[1. 1. 1.]
+             [1. 1. 1.]
+             [1. 1. 1.]]
+            >>> print(x)
+            [[1. 1. 1.]
+             [1. 1. 1.]
+             [1. 1. 1.]]

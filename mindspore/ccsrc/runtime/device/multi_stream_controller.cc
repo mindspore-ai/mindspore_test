@@ -186,6 +186,25 @@ bool MultiStreamController::SyncNotDefaultStreams(const DeviceContext *device_co
   return ret;
 }
 
+bool MultiStreamController::WaitMultiStream(const DeviceContext *device_context, size_t wait_stream_id) {
+  MS_LOG(INFO) << "Wait multi stream on wait stream id : " << wait_stream_id << ".";
+  auto &&iter = event_pools_.find(device_context);
+  if (iter == event_pools_.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "device context has not initialized.";
+  }
+  auto &device_res_manager = device_context->device_res_manager_;
+  auto stream_ids = device_res_manager->GetStreamIds();
+  auto &event_pool = iter->second;
+  auto event = event_pool->Get();
+  for (auto stream_id : stream_ids) {
+    if (stream_id != wait_stream_id) {
+      event->RecordEvent(stream_id);
+      event->WaitEvent(wait_stream_id);
+    }
+  }
+  return true;
+}
+
 void TaskIdOnStreamManager::Resize(uint32_t stream_size) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (initialized_ && stream_size <= initialize_size_) {

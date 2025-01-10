@@ -79,6 +79,7 @@ DeviceContext *GetDeviceCtx() {
 
 py::object AllocDeviceMemoryForTensorList(const py::object &object, bool enable_mem_align) {
   Synchronize();
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "AllocDeviceMemoryForTensorList", "");
   auto device_ctx = GetDeviceCtx();
   ValuePtrList value_list;
   ConvertPyObjectToCTensor(object, &value_list);

@@ -64,7 +64,8 @@ def set_dump(target, enabled=True):
         >>> import mindspore.nn as nn
         >>> from mindspore import Tensor, set_dump
         >>>
-        >>> ms.set_context(device_target="Ascend", mode=ms.GRAPH_MODE)
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_device(device_target="Ascend")
         >>>
         >>> class MyNet(nn.Cell):
         ...     def __init__(self):
