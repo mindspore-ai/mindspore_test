@@ -237,6 +237,7 @@ void ParallelContext::SetAllReduceFusionSplitIndices(const std::vector<uint32_t>
     all_reduce_fusion_split_indices_[group + TypeIdLabel(kNumberTypeFloat32)] = indices;
   }
   all_reduce_fusion_split_indices_[group] = indices;
+  enable_all_reduce_fusion_ = true;
 }
 
 std::vector<uint32_t> ParallelContext::GetAllReduceFusionSplitIndices(const std::string &group) const {
