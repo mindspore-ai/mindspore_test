@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import platform
 import stat
 import re
 import json
@@ -42,6 +43,9 @@ from mindspore.nn.loss.loss import LossBase
 from mindspore.train._utils import check_value_type, _make_directory
 from mindspore._c_expression import security
 from mindspore._c_expression import collect_host_info, get_clock_syscnt
+
+if platform.system() == "Linux":
+    import fcntl
 
 HYPER_CONFIG_ENV_NAME = "MINDINSIGHT_HYPER_CONFIG"
 HYPER_CONFIG_LEN_LIMIT = 100000
@@ -606,13 +610,32 @@ class SummaryCollector(Callback):
             "landscape_size": landscape_size,
             "create_landscape": create_landscape
         }
+
         meta_path = os.path.join(self._ckpt_dir, 'train_metadata.json')
+        if platform.system() != "Linux":
+            try:
+                with open(meta_path, 'w') as file:
+                    json.dump(data, file)
+                os.chmod(meta_path, stat.S_IRUSR)
+            except OSError as e:
+                logger.error("Write meta data %s failed, detail: %s" % (meta_path, str(e)))
+            return
+
+        lock_file = f"{meta_path}.lock"
         try:
-            with open(meta_path, 'w') as file:
-                json.dump(data, file)
-            os.chmod(meta_path, stat.S_IRUSR)
+            with os.fdopen(os.open(lock_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IWUSR), 'w') as f:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                if not os.path.isfile(meta_path):
+                    with open(meta_path, 'w') as file:
+                        json.dump(data, file)
+                    os.chmod(meta_path, stat.S_IRUSR)
         except OSError as e:
             logger.error("Write meta data %s failed, detail: %s" % (meta_path, str(e)))
+        try:
+            if os.path.isfile(lock_file):
+                os.remove(lock_file)
+        except OSError:
+            logger.warning("The lock file %s has been removed.", lock_file)
 
     def _save_model_params(self, cur_num, unit, backbone):
         """Save model params."""
@@ -629,12 +652,27 @@ class SummaryCollector(Callback):
 
         ckpt_file_name = f"{type(backbone).__name__}_{cur_num}_{unit}.ckpt"
         file_path = os.path.join(self._ckpt_dir, ckpt_file_name)
+        self._model_params_file_map[str(cur_num)] = file_path
+        if platform.system() != "Linux":
+            try:
+                save_checkpoint(param_list, file_path)
+            except OSError as e:
+                logger.error(str(e))
+            return
+
+        lock_file = f"{file_path}.lock"
         try:
-            save_checkpoint(param_list, file_path)
+            with os.fdopen(os.open(lock_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IWUSR), 'w') as f:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                if not os.path.isfile(file_path):
+                    save_checkpoint(param_list, file_path)
         except OSError as e:
             logger.error(str(e))
-
-        self._model_params_file_map[str(cur_num)] = file_path
+        try:
+            if os.path.isfile(lock_file):
+                os.remove(lock_file)
+        except OSError:
+            logger.warning("The lock file %s has been removed.", lock_file)
 
     def _save_model_params_for_landscape(self, cb_params):
         """Save model params for landscape."""
