@@ -2353,7 +2353,7 @@ class Cell(Cell_):
         else:
             ret = self._cell_backward_pre_hook(outputs)
         if isinstance(outputs, tuple):
-            if not isinstance(ret, tuple):
+            if len(outputs) == 1:
                 ret = (ret,)
             if len(ret) != len(outputs):
                 raise TypeError(
@@ -2474,7 +2474,7 @@ class Cell(Cell_):
         else:
             new_outputs = self._cell_backward_hook(outputs)
         # if outputs is (X,) and new_outpus is X
-        if isinstance(outputs, tuple) and not isinstance(new_outputs, tuple):
+        if isinstance(outputs, tuple) and len(outputs) == 1:
             new_outputs = (new_outputs,)
         return new_outputs
 
