@@ -109,9 +109,8 @@ class GraphAnalyzer {
   }
   auto &GetCaptureInfo() { return info_; }
   const auto &GetCaptureInfo() const { return info_; }
-  virtual void Analyze();
-  bool HasTensorOperation() const;
-  virtual bool NeedInterpret() const { return need_interpret_; }
+  virtual void Analyze() { MS_LOG(ERROR) << "dead code"; }
+  bool NeedInterpret() const { return need_interpret_; }
 
   const auto &alive_locals() const { return alive_locals_; }
 
@@ -122,28 +121,21 @@ class GraphAnalyzer {
   // rollback
   virtual void ResetSideEffectRecord() const;
 
-  void AddToEscaped(ValueNode *value);
   // UD analyze
-  virtual void UseDefAnalyze();
+  virtual void UseDefAnalyze() { MS_LOG(ERROR) << "dead code"; }
   std::vector<ValueNode *> GetAliveLocals(Graph *g);
-  virtual bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes);
-  virtual void CollectCapturedInputs();
-  virtual void CollectCapturedAndInterpret();
-  virtual void CollectGraphInputs();
-  bool ProduceInterpretValue(ValueNode *v);
+  virtual bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
+    MS_LOG(ERROR) << "dead code";
+    return false;
+  }
+  virtual void CollectCapturedInputs() { MS_LOG(ERROR) << "dead code"; }
+  virtual void CollectCapturedAndInterpret() { MS_LOG(ERROR) << "dead code"; }
+  virtual void CollectGraphInputs() { MS_LOG(ERROR) << "dead code"; }
 
   bool need_interpret_;
   Graph *graph_;
   CapturedInfo info_;
   std::vector<int> alive_locals_;
-
- private:
-  bool AnalyzeRecursive(Graph *g);
-  bool AnalyzeCall(CallNode *);
-  bool TryToCapture(AbstractNode *value);
-  bool AddToCaptured(ValueNode *value);
-  bool HandleCallableToGraph(AObject *f);
-  void CleanCapturedValue();
 };
 
 class MindGraphAnalyzer : public GraphAnalyzer {

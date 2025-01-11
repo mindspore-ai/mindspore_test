@@ -47,7 +47,6 @@
 #include "runtime/pynative/op_executor.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/pi/graph_capture/code_generator.h"
-#include "pipeline/jit/pi/graph_capture/bytecode_inliner.h"
 #include "utils/convert_utils_base.h"
 #include "pipeline/jit/pi/eval_frame_hook.h"
 #include "include/common/utils/tensor_py.h"
@@ -60,42 +59,6 @@ void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 void AddGuardForGlobals(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach);
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode);
-
-class ByteCodeRunStatistic {
- public:
-  ~ByteCodeRunStatistic() {
-    if (py_.empty() && graph_.empty()) {
-      return;
-    }
-    std::cout << ToString() << std::endl;
-  }
-
-  void Count(PyObject *code, bool graph_preferred) {
-    if (graph_preferred) {
-      graph_[PyBytes_GET_SIZE(code)]++;
-    } else {
-      py_[PyBytes_GET_SIZE(code)]++;
-    }
-  }
-
-  std::string ToString() {
-    const auto SumFunc = [](size_t sum, const std::pair<uint64_t, size_t> &i) { return sum + (i.first * i.second); };
-    size_t sum_py = std::accumulate(py_.begin(), py_.end(), 0, SumFunc);
-    size_t sum_graph = std::accumulate(graph_.begin(), graph_.end(), 0, SumFunc);
-    double ratio = static_cast<double>(sum_graph) / (sum_graph + sum_py);
-    return "execute code ratio (graph / (graph + python)): " + std::to_string(ratio);
-  }
-
-  static ByteCodeRunStatistic *GetInstance() {
-    static ByteCodeRunStatistic instance;
-    return &instance;
-  }
-
- private:
-  ByteCodeRunStatistic() = default;
-  std::map<uint64_t, size_t> py_;
-  std::map<uint64_t, size_t> graph_;
-};
 
 class StaticAnalysisExceptionCleaner {
  public:
@@ -466,16 +429,6 @@ static auto TraceRun(JitCompileResults *jcr) {
   return g;
 }
 
-static void Inline(JitCompileResults *jcr, const GraphBuilderPtr &g) {
-  TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-  GraphJitConfig &conf = *jcr->conf();
-  // One stage should skip inline process.
-  if (!conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-    BytecodeInliner inliner(g->GetGraph(), py::cast<py::dict>(jcr->origin_frame().Globals()));
-    inliner.Run();
-  }
-}
-
 static auto Analyze(const GraphBuilderPtr &g) {
   TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
@@ -503,7 +456,6 @@ static void GraphCapture(JitCompileResults *jcr) {
     jcr->set_stat(JitCompileResults::NEVER_COMPILE);
     return;
   }
-  Inline(jcr, g);
   GraphAnalyzerPtr analyzer = Analyze(g);
   if (HandleBreakAtLoop(jcr, g)) {
     return;
@@ -1129,13 +1081,6 @@ static py::object CallCompiledResults(PyThreadState *tstate, const PyFrameWrappe
     }
   }
   c->code()->Inc();
-
-  if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf)) {
-    PyCodeObject *new_code = c->code()->GetPythonCode() ? c->code()->GetPythonCode() : f.GetCode().ptr();
-    PyCodeObject *cur_code = graph_preferred ? f.GetCode().ptr() : new_code;
-    py::object bytes = PyCodeWrapper(cur_code).Code();
-    ByteCodeRunStatistic::GetInstance()->Count(bytes.ptr(), graph_preferred);
-  }
 
   // dump traceback
   if (c->conf()->GetBoolConfig(GraphJitConfig::kPrintTraceback)) {

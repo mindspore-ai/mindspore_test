@@ -1571,7 +1571,7 @@ py::object MindCodeBreakGenerator::MakeCapturedCode() const {
 
 void MindCodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, int co_kwonlyargcount, int co_flags,
                                      const py::object &stub) const {
-  TimeRecorder compile_time("MindCodeCompile", kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogGuardPerf));
+  TimeRecorder compile_time("MindCodeCompile", kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
   // Compile graph.
   auto b = std::dynamic_pointer_cast<MindGraphBuilder>(builder_);
