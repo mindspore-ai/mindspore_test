@@ -49,7 +49,7 @@ class AutoGrad {
   virtual void UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) {}
 
   // Call custom bprop procedure
-  virtual void CallCustomBprop(const std::shared_ptr<CustomContext> &context) {}
+  virtual void CallCustomBprop(const CustomContext &context) {}
   virtual VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) { return nullptr; }
 
   // Store grad meta grad info
