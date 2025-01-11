@@ -57,11 +57,6 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
     module_name_ = "";
     PyErr_Clear();
   }
-
-  if (conf_.GetBoolConfig(GraphJitConfig::kLoopUnrolling)) {
-    LoopFinder loop_finder(this);
-    loop_finder.FormSimpleLoopInfo();
-  }
 }
 
 bool Graph::PrepareParameter(ValueNode *node) {

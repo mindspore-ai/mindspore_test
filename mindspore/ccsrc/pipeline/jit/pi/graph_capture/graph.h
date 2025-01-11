@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 #include "pipeline/jit/pi/graph_capture/cfg.h"
-#include "pipeline/jit/pi/graph_capture/loop.h"
 #include "pipeline/jit/pi/graph_capture/node.h"
 #include "pipeline/jit/pi/utils/allocator.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
@@ -149,8 +148,6 @@ class Graph {
 
   ParamNode *NewParamNode(AObject *, int index, const std::string &name = "");
   CallNode *NewCallNode(int op, int arg, const std::vector<ValueNode *> &);
-  const std::vector<LoopInfo *> &loops() const { return loops_; }
-  void AddLoop(LoopInfo *loop) { loops_.emplace_back(loop); }
 
   // only func name
   std::string GetCodeName() const {
@@ -205,7 +202,6 @@ class Graph {
   void PrintFrame(std::ostream *out, const std::string &prefix) const;
 
   std::unique_ptr<CFG> cfg_;
-  std::vector<LoopInfo *> loops_;
 
   // frame status
   std::map<int, std::unique_ptr<FrameStates>> frame_states_;

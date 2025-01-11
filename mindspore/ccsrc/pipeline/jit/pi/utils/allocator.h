@@ -50,21 +50,12 @@ class Allocator {
     return v;
   }
 
-  template <class T, typename... Args>
-  T *NewLoopInfo(Args &&... args) {
-    T *v = new T(std::forward<Args>(args)...);
-    AddLoopPool(v);
-    return v;
-  }
-
  private:
   void AddInstrPool(Instr *v) { instr_pool_.push_back(v); }
   void AddNodePool(AbstractNode *v) { node_pool_.push_back(v); }
-  void AddLoopPool(LoopInfo *v) { loop_pool_.push_back(v); }
 
   std::vector<Instr *> instr_pool_;
   std::vector<AbstractNode *> node_pool_;
-  std::vector<LoopInfo *> loop_pool_;
 };
 }  // namespace pijit
 }  // namespace mindspore
