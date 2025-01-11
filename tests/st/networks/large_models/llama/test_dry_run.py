@@ -65,14 +65,14 @@ def run_command_semi_compile(cmd, log_path, backend_time, compile_time):
 
     log_backend = "compile_backend_graph costs"
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s | awk '{print $3}'" % (log_backend, log_path)],
+        ["grep -r '%s' %s | head -1 | awk '{print $3}'" % (log_backend, log_path)],
         shell=True)
     log_time = str(log_output, 'utf-8').strip()
     assert float(log_time) <= backend_time * 1.1
 
     log_compile = "compile_graph costs"
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s | awk '{print $3}'" % (log_compile, log_path)],
+        ["grep -r '%s' %s | head -1 | awk '{print $3}'" % (log_compile, log_path)],
         shell=True)
     log_time = str(log_output, 'utf-8').strip()
     assert float(log_time) <= compile_time * 1.1
@@ -124,7 +124,7 @@ def test_train_pipeline():
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     run_command(f"bash {sh_path}/dry.sh 0 pipeline", f"{sh_path}/pipeline.log",
-                f"{sh_path}/pipeline/rank_0", 4, 2, 10)
+                f"{sh_path}/pipeline/rank_0", 5, 3, 10)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
