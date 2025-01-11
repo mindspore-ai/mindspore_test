@@ -160,9 +160,11 @@ class Primitive(Primitive_):
 
     def _check_shard_strategy(self, strategy, log_info):
         """Check shard strategy is validate or not"""
-        is_layout = []
         if not isinstance(strategy, tuple):
             raise TypeError(f'{log_info} must be tuple type, but got:{type(strategy)}')
+        if strategy == ():
+            return None
+        is_layout = []
         for in_ele in strategy:
             if not isinstance(in_ele, tuple) and not isinstance(in_ele, Layout):
                 raise TypeError(f'The element of strategy must be tuple/Layout type, but got:{type(in_ele)}')
@@ -179,9 +181,9 @@ class Primitive(Primitive_):
             is_layout.append(True)
         if not is_layout:
             np_is_layout = np.array(is_layout)
-            if not (np_is_layout == np_is_layout[0]).all():
+            if (np_is_layout == np_is_layout[0]).all():
                 raise TypeError(f'{log_info} item must be all tuple type or all Layout type.')
-        return np.array(is_layout)
+        return is_layout[0]
 
     def _extract_layout_value(self, layout, log_info):
         """Extract parallel layout value"""
@@ -302,34 +304,34 @@ class Primitive(Primitive_):
             Prim[MatMul]<in_layout=({'device_matrix': (2, 2, 2), 'tensor_map': (2, 1)},
             {'device_matrix': (2, 2, 2), 'tensor_map': (1, -1)})>
         """
+        if in_strategy is None and out_strategy is None:
+            return self
+
         in_is_layout = None
         out_is_layout = None
         if in_strategy is not None:
             in_is_layout = self._check_shard_strategy(in_strategy, "in_strategy")
-
         if out_strategy is not None:
             out_is_layout = self._check_shard_strategy(out_strategy, "out_strategy")
-        self._check_shard_strategy_in_out_match(in_strategy, out_strategy)
-        if in_is_layout is not None and out_is_layout is not None and (
-                (in_is_layout[0] != out_is_layout[0]) and (self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY)):
+        is_layout = in_is_layout if in_is_layout is not None else out_is_layout
+        if out_is_layout is not None and is_layout != out_is_layout and \
+                self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY:
             raise ValueError(f'The in_strategy type must equal to the out_strategy type, '
                              f'one using tuple(tuple) and the other using tuple(Layout) is not allowed.')
-        in_layout_value = None
-        out_layout_value = None
-        if in_is_layout is not None and in_is_layout[0]:
+
+        self._check_shard_strategy_in_out_match(in_strategy, out_strategy)
+        if is_layout:
             in_layout_value = self._extract_layout_value(in_strategy, "in_strategy")
-        if out_is_layout is not None and out_is_layout[0]:
             out_layout_value = self._extract_layout_value(out_strategy, "out_strategy")
-
-
-        if in_is_layout is not None and not in_is_layout[0]:
-            self.add_prim_attr("in_strategy", in_strategy)
-        if out_is_layout is not None and not out_is_layout[0]:
-            self.add_prim_attr("out_strategy", out_strategy)
-        if in_layout_value:
-            self.add_prim_attr("in_layout", in_layout_value)
-        if out_layout_value:
-            self.add_prim_attr("out_layout", out_layout_value)
+            if in_layout_value is not None:
+                self.add_prim_attr("in_layout", in_layout_value)
+            if out_layout_value is not None:
+                self.add_prim_attr("out_layout", out_layout_value)
+        else:
+            if in_strategy is not None:
+                self.add_prim_attr("in_strategy", in_strategy)
+            if out_strategy is not None:
+                self.add_prim_attr("out_strategy", out_strategy)
         return self
 
     def set_prim_instance_name(self, instance_name):
