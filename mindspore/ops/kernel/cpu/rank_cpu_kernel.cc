@@ -78,6 +78,7 @@ std::vector<KernelAttr> RankCpuKernelMod::GetOpSupport() {
     KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
+    KernelAttr().AddInputAttr(kNumberTypeBFloat16).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeComplex).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeComplex128).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
