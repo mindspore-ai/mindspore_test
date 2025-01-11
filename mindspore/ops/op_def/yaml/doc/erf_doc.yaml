@@ -4,14 +4,14 @@ erf:
 
         .. math::
 
-            erf(x)=\frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
+            \text{erf}(x)=\frac{2} {\sqrt{\pi}} \int\limits_0^{x} e^{-t^{2}} dt
 
         Args:
             input (Tensor): The input tensor of Gaussian error function. :math:`x` in the following formula.
                 Supported dtypes: 
 
                 - GPU/CPU: float16, float32, float64.
-                - Ascend: float16, float32, float64, int64, bool.
+                - Ascend: float16, float32, float64, int64, bool, bfloat16.
 
         Returns:
             Tensor, has the same shape as the `input`. 
@@ -21,7 +21,7 @@ erf:
         :raise TypeError: If `input` is not a Tensor.
         :raise TypeError:
                 * GPU/CPU: If dtype of `input` is not float16, float32, float64.
-                * Ascend: If dtype of `input` is not float16, float32, float64, int64, bool.
+                * Ascend: If dtype of `input` is not float16, float32, float64, int64, bool, bfloat16.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

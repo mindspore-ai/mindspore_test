@@ -625,11 +625,11 @@ class SmoothL1Loss(LossBase):
     .. math::
         L_{i} =
         \begin{cases}
-        \frac{0.5 (x_i - y_i)^{2}}{\beta}, & \text{if } |x_i - y_i| < {\beta} \\
-        |x_i - y_i| - 0.5 {\beta}, & \text{otherwise.}
+        \frac{0.5 (x_i - y_i)^{2}}{\text{beta}}, & \text{if } |x_i - y_i| < \text{beta} \\
+        |x_i - y_i| - 0.5 * {\text{beta}}, & \text{otherwise.}
         \end{cases}
 
-    Where :math:`{\beta}` represents the threshold `beta`.
+    Where :math:`{\text{beta}}` represents the threshold `beta`.
 
     If `reduction` is not `none`, then:
 

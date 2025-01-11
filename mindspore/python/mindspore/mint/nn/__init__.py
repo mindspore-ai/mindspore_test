@@ -835,6 +835,29 @@ class SmoothL1Loss(Cell):
 
     Supported Platforms:
         ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.array([2, 2, 3]), mindspore.float32)
+        >>> target = Tensor(np.array([2, 2, 2]), mindspore.float32)
+        >>> beta = 1.0
+        >>> reduction_1 = 'none'
+        >>> loss1 = mint.nn.SmoothL1Loss(reduction=reduction_1, beta=beta)
+        >>> output = loss1(input, target)
+        >>> print(output)
+        [0.  0.  0.5]
+        >>> reduction_2 = 'mean'
+        >>> loss2 = mint.nn.SmoothL1Loss(reduction=reduction_2, beta=beta)
+        >>> output = loss2(input, target)
+        >>> print(output)
+        0.16666667
+        >>> reduction_3 = 'sum'
+        >>> loss3 = mint.nn.SmoothL1Loss(reduction=reduction_3, beta=beta)
+        >>> output = loss2(loss3, target)
+        >>> print(output)
+        0.5
     """
 
     def __init__(self, reduction='mean', beta=1.0):

@@ -10,7 +10,7 @@ mindspore.mint.nn.Linear
     .. math::
         \text{outputs} = X * kernel + bias
 
-    其中  :math:`X` 是输入Tensor， :math:`\text{kernel}` 是一个权重矩阵，其数据类型与 :math:`X` 相同， :math:`\text{bias}` 是一个偏置向量，其数据类型与 :math:`X` 相同（仅当has_bias为True时）。
+    其中  :math:`X` 是输入Tensor， :math:`\text{kernel}` 是一个权重矩阵，其数据类型与 :math:`X` 相同， :math:`\text{bias}` 是一个偏置向量，其数据类型与 :math:`X` 相同（仅当参数 `bias` 为True时）。
 
     .. warning::
         在PyNative模式下，如果 `bias` 为 ``False``， `x` 不可以大于6D。
