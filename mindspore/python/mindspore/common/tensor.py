@@ -428,9 +428,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __rmatmul__(self, other):
         return tensor_operator_registry.get('__matmul__')(other, self)
 
-    def __imatmul__(self, other):
-        return self.__matmul__(other)
-
     def __truediv__(self, other):
         return tensor_operator_registry.get('__truediv__')(self, other)
 
