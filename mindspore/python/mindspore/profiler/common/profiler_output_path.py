@@ -15,6 +15,7 @@
 """Profiler output path"""
 import os
 from typing import Any, Dict, Optional
+from mindspore.profiler.common.path_manager import PathManager
 
 
 class ProfilerOutputPath:
@@ -241,7 +242,9 @@ class ProfilerOutputPath:
     @output_path.setter
     def output_path(self, value: str):
         """Set the output path."""
-        self._output_path = value
+        PathManager.check_input_directory_path(value)
+        real_path = PathManager.get_real_path(value)
+        self._output_path = real_path
 
     @ascend_ms_dir.setter
     def ascend_ms_dir(self, value: str):
