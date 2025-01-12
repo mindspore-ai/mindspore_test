@@ -29,4 +29,6 @@ def test_pynative_resnet50_ascend_8p_mpi():
     os.system("mpirun -n 8 pytest -s test_pynative_resnet50_ascend.py::test_train_tensor"
               " >stdout.log 2>&1")
     return_code = os.system(r"grep '1 passed' stdout.log")
+    if return_code != 0:
+        os.system(r"cat stdout.log")
     assert return_code == 0
