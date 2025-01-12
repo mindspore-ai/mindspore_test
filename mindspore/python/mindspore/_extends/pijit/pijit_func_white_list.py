@@ -127,7 +127,7 @@ from mindspore.dataset.vision.transforms import AdjustBrightness, AdjustContrast
     RandomVerticalFlipWithBBox as VRandomVerticalFlipWithBBox, Rescale as VRescale, Resize as VResize, ResizedCrop, \
     ResizeWithBBox as VResizeWithBBox, Rotate as VRotate, SlicePatches as VSlicePatches, Solarize, ToTensor,\
     TrivialAugmentWide, UniformAugment as VUniformAugment, VerticalFlip as VVerticalFlip
-from mindspore.profiler.profiling import Profiler
+from mindspore.profiler.profiler import Profiler
 from mindspore.communication._hccl_management import get_rank_size, get_rank_id
 from mindspore.communication._comm_helper import _create_group_helper, _destroy_group_helper
 from mindspore.communication.management import _set_rank_from_mpi, init as cinit, release as crelease
