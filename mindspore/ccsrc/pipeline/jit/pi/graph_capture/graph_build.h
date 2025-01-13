@@ -65,18 +65,14 @@ class GraphBuilder {
     }
     graph_pool_.clear();
   }
-  static GraphBuilderPtr Creator(const PyFrameWrapper &f, bool trace_flag) {
-    return trace_flag ? std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(f))
-                      : std::make_shared<GraphBuilder>(f);
+  static GraphBuilderPtr Creator(const PyFrameWrapper &f) {
+    return std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(f));
   }
-  static GraphBuilderPtr Creator(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals,
-                                 bool trace_flag) {
-    return trace_flag ? std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(r, p, co, globals))
-                      : std::make_shared<GraphBuilder>(r, p, co, globals);
+  static GraphBuilderPtr Creator(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals) {
+    return std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(r, p, co, globals));
   }
 
   StopTraceReason TraceRun();
-  virtual bool trace_flag() { return false; }
 
   void CollectInlineInfo(CallNode *node, int depth);
   Graph *GetGraph() const { return graph_; }
@@ -344,7 +340,6 @@ class MindGraphBuilder : public GraphBuilder {
  public:
   explicit MindGraphBuilder(const PyFrameWrapper &f);
   MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
-  bool trace_flag() override { return true; }
   mindspore::FuncGraphBuilderPtr FGBuilder() const { return graph_->func_graph_builder(); }
   void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);

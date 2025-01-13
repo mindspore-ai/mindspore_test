@@ -104,8 +104,7 @@ class GraphAnalyzer {
 
   explicit GraphAnalyzer(Graph *g) : graph_(g) {}
   static GraphAnalyzerPtr Creator(const GraphBuilderPtr &g) {
-    return g->trace_flag() ? std::static_pointer_cast<GraphAnalyzer>(std::make_shared<MindGraphAnalyzer>(g))
-                           : std::make_shared<GraphAnalyzer>(g->GetGraph());
+    return std::static_pointer_cast<GraphAnalyzer>(std::make_shared<MindGraphAnalyzer>(g));
   }
   auto &GetCaptureInfo() { return info_; }
   const auto &GetCaptureInfo() const { return info_; }

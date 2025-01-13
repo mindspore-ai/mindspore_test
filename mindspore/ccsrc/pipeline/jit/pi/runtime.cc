@@ -422,9 +422,7 @@ static auto HandleUnsupportedSyntax(JitCompileResults *jcr, const GraphBuilderPt
 
 static auto TraceRun(JitCompileResults *jcr) {
   TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-
-  GraphJitConfig &conf = *jcr->conf();
-  GraphBuilderPtr g = GraphBuilder::Creator(jcr->origin_frame(), conf.GetBoolConfig(GraphJitConfig::kTraceFlag));
+  GraphBuilderPtr g = GraphBuilder::Creator(jcr->origin_frame());
   (void)g->TraceRun();
   return g;
 }
