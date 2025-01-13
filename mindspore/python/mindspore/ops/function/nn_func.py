@@ -8763,8 +8763,8 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
 
             - `quant_scale2` and `quant_offset2` in per-channel format do not support scenarios with
               left padding, Ring Attention, or non-32-byte aligned D-axis.
-            - In GE mode: `quant_scale2` and `quant_offset2` in per-tensor format and input dtype is bfloat16
-              do not support scenarios with non-32-byte aligned D-axis when `input_layout` is "BSH".
+            - In GE mode: `quant_scale2` and `quant_offset2` in per-tensor format do not support scenarios
+              with non-32-byte aligned D-axis.
             - Does not support sparse as band and `pre_tokens`/`next_tokens` being negative.
 
           - `quant_scale2` and `quant_offset2` can be bfloat16 only when `query` is bfloat16.
