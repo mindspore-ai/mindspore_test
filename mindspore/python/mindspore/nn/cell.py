@@ -41,9 +41,11 @@ from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.parallel.shard import Shard
+from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
+
 
 
 class Cell(Cell_):
@@ -1149,9 +1151,11 @@ class Cell(Cell_):
             args (tuple): Args of the Cell object.
             kwargs (dict): Kwargs of the Cell object.
         """
+        _init_auto_parallel_context(self)
         self._compile_args = self._get_compile_args(args)
         _cell_graph_executor.compile(self, *self._compile_args, phase=self.phase,
                                      jit_config_dict=self._jit_config_dict, **kwargs)
+        _clear_auto_parallel_context(self)
 
     def compile_and_run(self, *args, **kwargs):
         """

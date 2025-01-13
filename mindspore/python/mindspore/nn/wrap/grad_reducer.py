@@ -576,7 +576,7 @@ class PipelineGradReducer(Cell):
         >>> print(loss)
         46.36721
     """
-    def __init__(self, parameters, scale_sense=1.0):
+    def __init__(self, parameters, scale_sense=1.0, opt_shard=None):
         super(PipelineGradReducer, self).__init__(auto_prefix=False)
         self._check_mode()
         self.accu_grads = parameters.clone(prefix="accu_grads", init="zeros")
@@ -584,7 +584,10 @@ class PipelineGradReducer(Cell):
         self.degree = Tensor(1, mstype.float32)
         self.scale_sense = Parameter(scale_sense, name='scale_sense')
         self.hyper_map = C.HyperMap()
-        self.opt_shard = _get_enable_parallel_optimizer()
+        if opt_shard is None:
+            self.opt_shard = _get_enable_parallel_optimizer()
+        else:
+            self.opt_shard = opt_shard
 
     @jit
     def construct(self, grads):

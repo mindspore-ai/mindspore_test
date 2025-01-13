@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import numpy as np
-import pytest
 from mindspore import context
 import mindspore.nn as nn
 from mindspore.ops import operations as P
@@ -108,24 +107,6 @@ def test_initializer_weight_slice():
     for init_name in initializers:
         check_initializer_weight_slice(init_name, using_seed=True)
         set_seed(0)
-
-
-def test_wrong_order_set_parallel_mode_with_initializer():
-    """
-    Feature: test parameter initialize in auto parallel.
-    Description: test parameter initialize in auto parallel applying initializer before setting auto parallel mode.
-    Expectation: without any assert error.
-    """
-    weight1 = initializer("Normal", [32, 32], ms.float32)
-    weight2 = initializer("Normal", [32, 32], ms.float32)
-    strategy1 = ((2, 1), (4, 1))
-    strategy2 = ((2, 4),)
-    net = Net(strategy1, strategy2, weight1, weight2)
-    exe = me._cell_graph_executor
-    x = Tensor(np.ones([32, 32]), dtype=ms.float32)
-    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
-    with pytest.raises(RuntimeError):
-        exe.compile(net, x, phase='train')
 
 
 def test_wrong_order_set_same_parallel_mode_with_initializer():
