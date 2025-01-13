@@ -2,7 +2,7 @@ mindspore.mint.nn.NLLLoss
 ==========================
 
 .. py:class:: mindspore.mint.nn.NLLLoss(weight=None, ignore_index=-100, reduction='mean')
-        
+  
     获取预测值和目标值之间的负对数似然损失。
 
     reduction为'none'时，负对数似然损失公式如下：
