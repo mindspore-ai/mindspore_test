@@ -699,10 +699,9 @@ py::object TraceRecorder::InitTraceGraphInputs(const AbstractBasePtr &abs, const
     MS_EXCEPTION_IF_NULL(shape_ptr);
     auto shape_vec = shape_ptr->GetShapeVector();
     auto tensor_ptr = std::make_shared<tensor::Tensor>(type_id, shape_vec);
-    auto tensor_py = std::make_shared<tensor::TensorPy>(tensor_ptr);
-    auto py_tensor = py::cast(tensor_py);
-    SetNode(py_tensor, param, param->debug_info());
-    return py_tensor;
+    py::object tensorpyObject = PackTensorToPyObject(tensor_ptr);
+    SetNode(tensorpyObject, param, param->debug_info());
+    return tensorpyObject;
   } else {
     param->set_abstract(abs);
     auto py_data = ValueToPyData(val);

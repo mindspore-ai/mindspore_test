@@ -538,7 +538,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
     return nullptr;
   }
   if (py::isinstance<Cell>(object) || PyFunction_Check(object.ptr()) || PyMethod_Check(object.ptr()) ||
-      object.ptr() == Py_None) {
+      object.ptr() == Py_None || PyCFunction_Check(object.ptr())) {
     return nullptr;
   }
   auto abs = BuildAbstractForInputObject(object);

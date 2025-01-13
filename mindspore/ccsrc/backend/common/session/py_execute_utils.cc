@@ -84,6 +84,16 @@ bool CheckSequenceElementSame(const py::sequence &obj) {
   return true;
 }
 
+bool CheckSequenceElementSameTensor(const py::sequence &obj) {
+  // Check from second element, the type of first element is determined by T.
+  for (size_t i = 1; i < py::len(obj); ++i) {
+    if (!tensor::IsTensorPy(obj[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool CheckSequenceToMemory(const py::sequence &obj) {
   // A sequence object can be passed to raw memory and used by other operator if:
   //   1. The length of sequence is not empty.
@@ -101,7 +111,7 @@ bool CheckSequenceToMemory(const py::sequence &obj) {
   } else if (py::isinstance<py::float_>(first_obj)) {
     return CheckSequenceElementSame<py::float_>(obj);
   } else if (tensor::IsTensorPy(first_obj)) {
-    return CheckSequenceElementSame<tensor::TensorPy>(obj);
+    return CheckSequenceElementSameTensor(obj);
   }
   return false;
 }

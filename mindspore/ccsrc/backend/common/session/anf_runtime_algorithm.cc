@@ -48,6 +48,7 @@
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "ir/tensor_py_base.h"
+#include "ir/tensor_py_wrapperbase.h"
 
 namespace mindspore::session {
 using abstract::AbstractTensor;
@@ -2414,8 +2415,8 @@ void AnfRuntimeAlgorithm::FlattenInputArg(const BaseRef &arg, const AnfNodePtr &
     return;
   }
 
-  if (utils::isa<tensor::TensorPyBase>(arg)) {
-    auto base_tensor = utils::cast<tensor::TensorPyBasePtr>(arg)->GetBaseTensor();
+  if (utils::isa<tensor::TensorPyWrapperBase>(arg)) {
+    auto base_tensor = utils::cast<tensor::TensorPyWrapperBasePtr>(arg)->GetBaseTensorWrapper();
     tensor::TensorPtr tensor = utils::cast<tensor::TensorPtr>(base_tensor);
     if (tensor == nullptr) {
       tensor = std::make_shared<tensor::Tensor>(*base_tensor);

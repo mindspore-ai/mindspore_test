@@ -62,6 +62,7 @@ RESOLVE_TYPE_NUMPY_FLOAT_NUMBER = 7     # Resolve numpy float number.
 RESOLVE_TYPE_NUMPY_BOOL_NUMBER = 8      # Resolve numpy bool number.
 RESOLVE_TYPE_TUPLE = 9                  # Resolve builtin tuple type.
 RESOLVE_TYPE_LIST = 10                  # Resolve builtin list type.
+RESOLVE_TYPE_BUILTIN_METHOD = 11        # Resolve builtin type.
 RESOLVE_TYPE_INVALID = 0xFF             # Resolve invalid.
 
 # Define the class instance detail type
@@ -311,7 +312,8 @@ def get_object_key(obj):
     logger.debug("obj_key: %s, obj_id: %s", obj_key, obj_id)
 
     # Method has same id of different instance
-    if isinstance(obj, types.MethodType):
+    if isinstance(obj, types.MethodType) or \
+        (isinstance(obj, types.BuiltinMethodType) and obj.__qualname__.split('.')[0] == Tensor.__name__):
         method_instance = obj.__self__
         instance_id = "%s_ID%d" % (str(method_instance.__class__.__name__), id(method_instance))
         if isinstance(method_instance, (tuple, list, dict)):
@@ -386,6 +388,8 @@ def get_obj_type(obj):
         obj_type = RESOLVE_TYPE_NUMPY_FLOAT_NUMBER
     elif _is_numpy_bool_number(obj):
         obj_type = RESOLVE_TYPE_NUMPY_BOOL_NUMBER
+    elif isinstance(obj, types.BuiltinMethodType) and obj.__qualname__.split('.')[0] == Tensor.__name__:
+        obj_type = RESOLVE_TYPE_BUILTIN_METHOD
     else:
         obj_type = RESOLVE_TYPE_INVALID
     return obj_type
@@ -957,7 +961,11 @@ def is_ms_tensor_method(obj):
     fn = inspect.unwrap(obj.__func__ if isinstance(obj, types.MethodType) else obj)
     tensor_method = getattr(Tensor, obj.__name__)
     tensor_method = tensor_method.__func__ if hasattr(tensor_method, "__func__") else tensor_method
-    return fn == tensor_method
+    is_builtin_tensor = False
+    if inspect.isbuiltin(obj):
+        class_name_and_method_name = obj.__qualname__.split('.')
+        is_builtin_tensor = obj.__module__ is None and class_name_and_method_name[0] == Tensor.__name__
+    return fn == tensor_method or is_builtin_tensor
 
 
 def can_constant_fold(obj):

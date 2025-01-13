@@ -1424,8 +1424,8 @@ class MetaTensorData : public ItemData {
     return data_type;
   }
 
-  mindspore::tensor::TensorPyPtr MakeTensor() {
-    return std::make_shared<tensor::TensorPy>(data_type_->type_id(), shape_);
+  py::object MakeTensor() {
+    return PackTensorToPyObject(std::make_shared<mindspore::tensor::Tensor>(data_type_->type_id(), shape_));
   }
 
   bool IsDynamicShape() const {
@@ -2568,7 +2568,7 @@ class EqGuard : public GuardItem {
     }
     auto item = (MetaTensorData &)(*dp_);
     if (item.IsDynamicShape()) {
-      return py::cast(item.MakeTensor()).inc_ref().ptr();
+      return item.MakeTensor().inc_ref().ptr();
     } else {
       return nullptr;
     }

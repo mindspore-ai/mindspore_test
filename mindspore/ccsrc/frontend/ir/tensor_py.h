@@ -192,25 +192,25 @@ class FRONTEND_EXPORT TensorPybind {
 class FRONTEND_EXPORT CSRTensorPy {
  public:
   static py::tuple GetPyTupleShape(const CSRTensor &csr_tensor);
-  static TensorPyPtr GetIndptr(const CSRTensorPtr &csr_tensor);
-  static TensorPyPtr GetIndices(const CSRTensorPtr &csr_tensor);
-  static TensorPyPtr GetValues(const CSRTensorPtr &csr_tensor);
+  static py::object GetIndptr(const CSRTensorPtr &csr_tensor);
+  static py::object GetIndices(const CSRTensorPtr &csr_tensor);
+  static py::object GetValues(const CSRTensorPtr &csr_tensor);
 };
 
 // COOTensor python wrapper and adapter class.
 class FRONTEND_EXPORT COOTensorPy {
  public:
   static py::tuple GetPyTupleShape(const COOTensor &coo_tensor);
-  static TensorPyPtr GetIndices(const COOTensorPtr &coo_tensor);
-  static TensorPyPtr GetValues(const COOTensorPtr &coo_tensor);
+  static py::object GetIndices(const COOTensorPtr &coo_tensor);
+  static py::object GetValues(const COOTensorPtr &coo_tensor);
 };
 
 // RowTensor python wrapper and adapter class.
 class FRONTEND_EXPORT RowTensorPy {
  public:
   static py::tuple GetPyTupleShape(const RowTensor &row_tensor);
-  static TensorPyPtr GetIndices(const RowTensorPtr &row_tensor);
-  static TensorPyPtr GetValues(const RowTensorPtr &row_tensor);
+  static py::object GetIndices(const RowTensorPtr &row_tensor);
+  static py::object GetValues(const RowTensorPtr &row_tensor);
 };
 
 class FRONTEND_EXPORT TensorPyImpl {

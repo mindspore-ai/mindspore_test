@@ -60,17 +60,14 @@ def gen_pyboost_code(resource_mgr):
     work_path = K.WORK_DIR
     op_protos = resource_mgr.get_resource(ResourceType.OP_PROTO)
     doc_yaml_data = resource_mgr.get_resource(ResourceType.OP_DOC_YAML)
-    tensor_method_protos = resource_mgr.get_resource(ResourceType.TENSOR_METHOD_PROTOS)
     mint_func_protos = resource_mgr.get_resource(ResourceType.MINT_FUNC_PROTOS)
     alias_func_mapping = resource_mgr.get_resource(ResourceType.ALIAS_API_MAPPING)
     clear_old_generated_code(work_path)
     call_pyboost_inner_prim_generator(work_path, op_protos)
     call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data)
     call_pyboost_functions_h_generator(work_path, op_protos)
-    call_pyboost_functions_cpp_generator(
-        work_path, op_protos, tensor_method_protos)
-    call_pyboost_overload_functions_cpp_generator(
-        work_path, op_protos, mint_func_protos, alias_func_mapping)
+    call_pyboost_functions_cpp_generator(work_path, op_protos)
+    call_pyboost_overload_functions_cpp_generator(work_path, op_protos, mint_func_protos, alias_func_mapping)
     call_pyboost_grad_functions_cpp_generator(work_path, op_protos)
     call_pyboost_native_grad_functions_generator(work_path, op_protos)
     call_pyboost_op_cpp_code_generator(work_path, op_protos)
@@ -120,9 +117,9 @@ def call_pyboost_functions_h_generator(work_path, op_protos):
     generator.generate(work_path, op_protos)
 
 
-def call_pyboost_functions_cpp_generator(work_path, op_protos, tensor_method_protos):
+def call_pyboost_functions_cpp_generator(work_path, op_protos):
     generator = PyboostFunctionsGenerator()
-    generator.generate(work_path, op_protos, tensor_method_protos)
+    generator.generate(work_path, op_protos)
 
 
 def call_pyboost_overload_functions_cpp_generator(work_path, op_protos, mint_func_protos, alias_func_mapping):

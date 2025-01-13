@@ -120,6 +120,8 @@ auto_generate/
 gen_file_lists.json
 mindspore/python/mindspore/ops/functional_overload.py
 mindspore/ccsrc/pynative/op_function/auto_generate/functional_map.cc
+mindspore/ccsrc/pybind_api/ir/tensor_register/auto_generate/tensor_py_gen.cc
+mindspore/ccsrc/pybind_api/ir/tensor_register/auto_generate/tensor_py_gen.h
 mindspore/python/mindspore/common/_tensor_docs.py
 mindspore/python/mindspore/common/_tensor_cpp_method.py
 mindspore/ops/kernel/ascend/opapi/aclnn_auto_gen/

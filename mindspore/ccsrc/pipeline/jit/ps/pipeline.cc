@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,6 +119,7 @@
 #include "frontend/ir/py_execute_py.h"   // Only include one-time in the whole project.
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/utils/tensor_py_wrapper.h"
 #include "backend/common/somas/somas.h"
 
 namespace mindspore {
@@ -2009,8 +2010,8 @@ void GraphExecutorPy::ConvertObjectToTensors(const py::dict &dict,
   }
 }
 
-void GraphExecutorPy::UpdataParamNodeDefaultInput(
-  const std::string &phase, const std::unordered_map<std::string, tensor::TensorPyPtr> &params_value) {
+void GraphExecutorPy::UpdataParamNodeDefaultInput(const std::string &phase,
+                                                  const std::unordered_map<std::string, py::object> &params_value) {
   FuncGraphPtr func_graph = info_[phase]->resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(DEBUG) << "UpdataParamNodeDefaultInput for func graph(" << func_graph->ToString() << ") phase(" << phase
@@ -2022,7 +2023,7 @@ void GraphExecutorPy::UpdataParamNodeDefaultInput(
     MS_EXCEPTION_IF_NULL(param_cast);
     auto iter = params_value.find(param_cast->name());
     if (iter != params_value.end()) {
-      auto value_ptr = iter->second;
+      auto value_ptr = tensor::ConvertToTensorPyWrapper(iter->second);
       param_cast->set_default_param(value_ptr);
     }
   }
@@ -2038,7 +2039,7 @@ py::dict ExecutorPy::GetParams(const std::string &phase) {
     auto param_ptr = std::static_pointer_cast<Parameter>(param);
     std::string name = param_ptr->name();
     auto tensorpy = tensor::GetTensorPyFromValue(param_ptr->default_param_raw());
-    if (tensorpy != nullptr) {
+    if (tensorpy != py::none()) {
       parameter_dict[py::str(name)] = tensorpy;
     }
   }
@@ -2623,9 +2624,10 @@ void FinalizeCluster() {
 #endif
 }
 
-void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &device,
-               const tensor::TensorPyPtr &block_mapping, const bool &is_device_to_host) {
-  auto block_mapping_shape = block_mapping->GetShape();
+void SwapCache(const py::object &host_, const py::object &device_, const py::object &block_mapping_,
+               const bool &is_device_to_host) {
+  tensor::TensorPtr block_mapping = tensor::ConvertToTensor(block_mapping_);
+  auto block_mapping_shape = block_mapping->shape();
   const size_t num_two = 2;
   if (block_mapping_shape.size() != num_two) {
     MS_LOG_EXCEPTION << "The shape size of Cache input mapping tensor should be 2, but got: "
@@ -2636,19 +2638,21 @@ void SwapCache(const tensor::TensorPyPtr &host, const tensor::TensorPyPtr &devic
                      << block_mapping_shape[0];
   }
 
-  auto in_shape = device->GetShape();
-  auto type_byte = GetTypeByte(TypeIdToType(host->GetDataType()));
+  tensor::TensorPtr device = tensor::ConvertToTensor(device_);
+  auto in_shape = device->shape();
+  tensor::TensorPtr host = tensor::ConvertToTensor(host_);
+  auto type_byte = GetTypeByte(TypeIdToType(host->data_type()));
   size_t block_size_in_bytes = LongToSize(
     std::accumulate(in_shape.begin() + kIndex1, in_shape.end(), SizeToLong(type_byte), std::multiplies<int64_t>()));
 
-  uint8_t *host_ptr = reinterpret_cast<uint8_t *>(host->GetTensorDataObject());
+  uint8_t *host_ptr = reinterpret_cast<uint8_t *>(host->data_c());
   MS_EXCEPTION_IF_NULL(host_ptr);
-  auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device->GetDeviceAddress());
+  auto device_addr = std::dynamic_pointer_cast<device::DeviceAddress>(device->device_address());
   MS_EXCEPTION_IF_NULL(device_addr);
   uint8_t *device_ptr = reinterpret_cast<uint8_t *>(const_cast<void *>(device_addr->GetPtr()));
   MS_EXCEPTION_IF_NULL(device_ptr);
 
-  auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->GetTensorDataObject());
+  auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->data_c());
   for (size_t i = 0; i < LongToSize(block_mapping_shape[0]); i++) {
     int64_t src_block_num = block_mapping_data[num_two * i];
     int64_t dst_block_num = block_mapping_data[num_two * i + kIndex1];

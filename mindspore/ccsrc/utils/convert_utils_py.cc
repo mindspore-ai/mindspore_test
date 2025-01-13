@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/utils/tensor_py_wrapper.h"
 
 namespace mindspore {
 namespace {
@@ -199,10 +200,9 @@ py::object TensorToPyData(const tensor::BaseTensorPtr &tensor, const AbstractBas
   if (!py::isinstance<py::none>(scalar_obj)) {
     return scalar_obj;
   }
-  auto tensorpy = std::make_shared<tensor::TensorPy>(tensor);
-  auto py_tensorpy = tensor::GetPythonTensor().attr("Tensor")(tensorpy);
-  py_tensorpy = SetAdaptedAttrToTensor(py_tensorpy, abs);
-  return py_tensorpy;
+  // use steal to transfer the lifetime to Python
+  py::object tensorpyObject = PackTensorToPyObject(tensor);
+  return SetAdaptedAttrToTensor(tensorpyObject, abs);
 }
 
 py::object TensorPyToPyData(const tensor::TensorPyPtr &tensorpy, const AbstractBasePtr &abs) {
@@ -211,9 +211,9 @@ py::object TensorPyToPyData(const tensor::TensorPyPtr &tensorpy, const AbstractB
   if (!py::isinstance<py::none>(scalar_obj)) {
     return scalar_obj;
   }
-  auto py_tensorpy = tensor::GetPythonTensor().attr("Tensor")(tensorpy);
-  py_tensorpy = SetAdaptedAttrToTensor(py_tensorpy, abs);
-  return py_tensorpy;
+  // use steal to transfer the lifetime to Python
+  py::object tensorpyObject = PackTensorToPyObject(tensorpy->GetTensor());
+  return SetAdaptedAttrToTensor(tensorpyObject, abs);
 }
 
 py::object ScalarPtrToPyData(const ScalarPtr &value) {
@@ -794,7 +794,7 @@ bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, const py::tuple
       }
 
       auto tensorpy = tensor::GetTensorPyFromValue(param->default_param_raw());
-      *ret_val = py::cast(tensorpy);
+      *ret_val = tensorpy;
     }
     *ret_val = SetAdaptedAttrToTensor(*ret_val, output->abstract());
     auto abs = output->abstract();

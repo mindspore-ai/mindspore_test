@@ -4893,7 +4893,7 @@ bool ParseFunctionAst::InitParseAstInfo(const std::string &python_mod_get_parse_
   if (type == RESOLVE_TYPE_FUNCTION) {
     target_type_ = PARSE_TARGET_FUNCTION;
     function_ = obj_;
-  } else if (type == RESOLVE_TYPE_METHOD) {
+  } else if (type == RESOLVE_TYPE_METHOD || type == RESOLVE_TYPE_BUILTIN_METHOD) {
     // Process the method ,need get the method's self obj
     target_type_ = PARSE_TARGET_METHOD;
     py::object method_object = python_adapter::GetPyObjAttr(obj_, PYTHON_GET_METHOD_SELF_CLASS);

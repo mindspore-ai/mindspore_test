@@ -229,6 +229,7 @@ enum ResolveType : int64_t {
   RESOLVE_TYPE_NUMPY_BOOL_NUMBER = 8,   // Resolve numpy bool number.
   RESOLVE_TYPE_TUPLE = 9,               // Resolve builtin tuple type.
   RESOLVE_TYPE_LIST = 10,               // Resolve builtin list type.
+  RESOLVE_TYPE_BUILTIN_METHOD = 11,     // Resolve builtin method.
   RESOLVE_TYPE_INVALID = 0xFF           // Resolve invalid.
 };
 

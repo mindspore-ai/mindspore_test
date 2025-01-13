@@ -44,7 +44,7 @@ int64_t LlmBoostBinder::Init(const std::string &param) {
   return impl_->Init(param);
 }
 
-std::vector<tensor::TensorPyPtr> LlmBoostBinder::Forward(const py::list &py_inputs, const std::string &param) {
+std::vector<py::object> LlmBoostBinder::Forward(const py::list &py_inputs, const std::string &param) {
   MS_LOG(INFO) << "TransformerBoost forward";
   std::vector<tensor::TensorPtr> inputs;
   for (auto &obj : py_inputs) {
@@ -52,9 +52,9 @@ std::vector<tensor::TensorPyPtr> LlmBoostBinder::Forward(const py::list &py_inpu
     inputs.emplace_back(tensor);
   }
   std::vector<tensor::TensorPtr> outputs = impl_->Forward(inputs, param);
-  std::vector<tensor::TensorPyPtr> py_outputs;
+  std::vector<py::object> py_outputs;
   (void)std::transform(outputs.begin(), outputs.end(), std::back_inserter(py_outputs),
-                       [](const tensor::TensorPtr &p) { return std::make_shared<tensor::TensorPy>(p); });
+                       [](const tensor::TensorPtr &p) { return PackTensorToPyObject(p); });
   return py_outputs;
 }
 

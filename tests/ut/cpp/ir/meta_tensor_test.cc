@@ -368,14 +368,15 @@ TEST_F(TestTensor, TensorDataTest) {
 
 TEST_F(TestTensor, TensorPyCast) {
   std::vector<int64_t> shape{2, 3, 4, 5};
-  py::tuple py_tuple = py::make_tuple(std::make_shared<TensorPy>(kNumberTypeFloat32, shape));
-  auto shape1 = py::cast<TensorPy &>(py_tuple[0]).GetShape();
+  auto tensor = std::make_shared<Tensor>(kNumberTypeFloat32, shape);
+  PyObject *tensor_py = TensorPythonInit(tensor);
+  py::object tensor_obj = py::reinterpret_borrow<py::object>(tensor_py);
+  py::tuple py_tuple = py::make_tuple(tensor_obj);
+  auto shape1 = ConvertToTensor(py_tuple[0])->shape();
   const py::tuple &t = py_tuple;
-  auto shape2 = py::cast<const TensorPy &>(t[0]).GetShape();
-  auto shape3 = py::cast<TensorPy &>(t[0]).GetShape();
+  auto shape2 = ConvertToTensor(t[0])->shape();
   ASSERT_EQ(shape, shape1);
   ASSERT_EQ(shape, shape2);
-  ASSERT_EQ(shape, shape3);
 }
 
 /// Feature: Tensor
