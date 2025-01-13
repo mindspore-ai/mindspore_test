@@ -39,6 +39,7 @@ from mindspore.common import generator
 from mindspore.common.generator import (
     Generator, default_generator, seed, manual_seed, initial_seed, get_rng_state, set_rng_state)
 from mindspore.ops.function.array_func import is_tensor, from_numpy
+from mindspore.common.grad_function import Function
 
 # symbols from dtype
 __all__ = [
@@ -83,6 +84,6 @@ __all__.extend([
     "no_inline",
     "Symbol",
     "recompute",
-    "is_tensor", "from_numpy",
+    "is_tensor", "from_numpy", "Function"
 ])
 __all__.extend(generator.__all__)

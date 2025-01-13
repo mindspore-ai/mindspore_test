@@ -285,7 +285,7 @@ void CheckInplace(const OpGradInfoPtr &op_grad_info) {
       ss << "This case is forbidden, you can put them both in no_grad mode or both in grad enabled.";
     } else if (view_meta->creation_type() == CreationType::kMultiOutput && variable) {
       ss << "the " << view_meta->output_index() << "'s  output of " << variable->func_node()->name()
-         << "is a view and inplace modified. ";
+         << " is a view and inplace modified. ";
     }
     if (view_meta->creation_type() == CreationType::kMultiOutput) {
       ss << "This view is one of output for multi output operator, "
@@ -696,7 +696,8 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
     SetVariable(flatten_outputs, variable);
   } else {
     CheckInplace(grad_param->op_grad_info);
-    RebaseVariable(grad_param->op_grad_info, variable);
+    auto dirty_tensor = grad_param->op_grad_info->input_value[kIndex0]->cast<tensor::BaseTensorPtr>();
+    RebaseVariable(grad_param->op_grad_info, variable, dirty_tensor, kIndex0);
   }
   return true;
 }
@@ -742,6 +743,8 @@ bool FuncGrad::KPynativeWithFProp(const GradParamPtr &grad_param) {
 
 void FuncGrad::CallCustomBprop(const CustomContext &context) {
   MS_LOG(DEBUG) << "Begin Call CallCustomBprop";
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kEmitOp,
+                                     "ConstructCustomFunctionEdge", false);
   BackwardNodePtr custom_fn;
   PyNativeAlgo::AutoGradUtil::CheckRecomputeInputs(context.inputs, context.is_recompute);
   auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(context.inputs);
@@ -764,6 +767,123 @@ void FuncGrad::CallCustomBprop(const CustomContext &context) {
   (void)variable_set_.insert(variable);
   SetVariable(flatten_outputs, variable);
   MS_LOG(DEBUG) << "End update next edge for custom bprop, " << variable->ToString();
+}
+
+OpGradInfoPtr GenerateOpGradInfoForCustomFunction(const ValuePtrList &inputs,
+                                                  const std::vector<InputType> &input_value_grad_type) {
+  OpGradInfoPtr info = std::make_shared<OpGradInfo>();
+  info->input_value = inputs;
+  info->op_prim = prim::kPrimCellBackwardHook;
+  info->input_abs.resize(info->input_value.size());
+  for (size_t i = 0; i < info->input_value.size(); i++) {
+    info->input_abs[i] = PyNativeAlgo::Common::SetAbstractValueToAnyValue(info->input_value[i]->ToAbstract());
+  }
+
+  info->input_value_grad_type = input_value_grad_type;
+
+  return info;
+}
+
+void ProcessPost(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &dirty_tensors,
+                 const BaseTensorPtrSet &output_tensors, int num_diff_tensors) {
+  if (num_diff_tensors > 1) {
+    for (size_t i = 0; i < flatten_outputs.size(); i++) {
+      if (flatten_outputs[i]->isa<tensor::BaseTensor>()) {
+        auto base_tensor = flatten_outputs[i]->cast<tensor::BaseTensorPtr>();
+        auto view_meta = impl::get_view_autograd_meta_impl(base_tensor);
+        if (view_meta) {
+          MS_LOG(DEBUG) << "Set creation type kMultiOutput for tensor " << base_tensor->id();
+          view_meta->set_creation_type(CreationType::kMultiOutput);
+        }
+      }
+    }
+  }
+
+  for (auto &dirty_tensor : dirty_tensors) {
+    if (output_tensors.count(dirty_tensor) == 0) {
+      MS_LOG(EXCEPTION) << "The dirty tensors must all be outputs of the forward function.";
+    }
+  }
+}
+
+void FuncGrad::ProcessForwardOutput(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &input_base_tensors,
+                                    const BaseTensorPtrSet &dirty_tensors, const BaseTensorPtrSet &non_diff_tensors,
+                                    const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
+                                    const FuncVariablePtr &variable) {
+  BaseTensorPtrSet output_tensors;
+  int num_diff_tensors = 0;
+  for (size_t i = 0; i < flatten_outputs.size(); i++) {
+    if (!flatten_outputs[i]->isa<tensor::BaseTensor>()) {
+      continue;
+    }
+    auto base_tensor = flatten_outputs[i]->cast<tensor::BaseTensorPtr>();
+    bool is_input = input_base_tensors.count(base_tensor) > 0;
+    bool is_dirty = dirty_tensors.count(base_tensor) > 0;
+    bool is_diff = non_diff_tensors.count(base_tensor) == 0;
+    MS_LOG(DEBUG) << "Output tensor info, index: " << i << " is_input: " << is_input << " is_dirty: " << is_dirty
+                  << " is_diff: " << is_diff;
+
+    if (is_dirty) {
+      auto meta_data = impl::get_autograd_meta_impl(base_tensor);
+      // tensor is leaf and need grad could not inplace.
+      bool is_leaf = meta_data && meta_data->UnsafeGetVariableImpl() && meta_data->UnsafeGetVariableImpl()->is_leaf();
+      bool need_grad = PyNativeAlgo::AutoGradUtil::NeedGrad(base_tensor);
+      MS_LOG(DEBUG) << "Dirty tensor info, index: " << i << " is_leaf: " << is_leaf << " need_grad: " << need_grad;
+      if (is_leaf && need_grad) {
+        MS_LOG(EXCEPTION) << "A leaf tensor that need grad is being used in an inplace operator.";
+      }
+
+      if (!is_input) {
+        MS_LOG(WARNING) << "A tensor is not an input, but is given to mark_dirty function.";
+      }
+
+      auto view_meta = impl::get_view_autograd_meta_impl(base_tensor);
+      if (view_meta != nullptr && flatten_outputs.size() > 1) {
+        MS_LOG(EXCEPTION) << "A view is one of output for multi output operator, "
+                          << "which is forbidden. You can use out-of-place op to repalce.";
+      }
+      // For dirty input tensor, we should rebase variable to new tensor.
+      OpGradInfoPtr info = GenerateOpGradInfoForCustomFunction(inputs, input_value_grad_type);
+      info->out_value = flatten_outputs[i];
+      info->out_abs = GenerateFlattenAbs(flatten_outputs);
+      RebaseVariable(info, variable, base_tensor, i);
+    } else {
+      // For the tensor is input and output, we don't need to make a view for it.
+      SetTensorGradMetaData(flatten_outputs[i], variable, i);
+    }
+
+    auto view_meta = impl::get_view_autograd_meta_impl(base_tensor);
+    if (view_meta && !(is_input && is_dirty)) {
+      MS_LOG(DEBUG) << "Set creation type kCustomBprop for tensor " << base_tensor->id();
+      view_meta->set_creation_type(CreationType::kCustomBprop);
+    }
+
+    if (is_diff) {
+      ++num_diff_tensors;
+    }
+
+    output_tensors.insert(base_tensor);
+  }
+  MS_LOG(DEBUG) << "output tensor size: " << output_tensors.size() << " dirty tensor size: " << dirty_tensors.size()
+                << "diff tensor num: " << num_diff_tensors;
+  ProcessPost(flatten_outputs, dirty_tensors, output_tensors, num_diff_tensors);
+}
+
+void FuncGrad::CallCustomFunction(const std::shared_ptr<FunctionContext> &context) {
+  MS_LOG(DEBUG) << "Begin Call CallCustomFunction";
+
+  BackwardNodePtr custom_fn;
+  custom_fn = std::make_shared<PyBackwardNode>("FunctionCustomBackward", context->backward_fn, context->obj,
+                                               context->flatten_outputs.size());
+  UpdateNextEdges(custom_fn, context->inputs);
+  auto variable = std::make_shared<FuncVariable>(custom_fn, false);
+  variable->set_is_custom_op_variable(true);
+  (void)variable_set_.insert(variable);
+
+  ProcessForwardOutput(context->flatten_outputs, context->input_base_tensors, context->dirty_tensors,
+                       context->non_diff_tensors, context->inputs, context->input_value_grad_type, variable);
+
+  MS_LOG(DEBUG) << "End Call CallCustomFunction, " << variable->ToString();
 }
 
 VariablePtr FuncGrad::SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) {
@@ -840,8 +960,8 @@ BackwardNodePtr FuncGrad::BuildGraphBackwardNode(const GradParamPtr &grad_param)
   return fn;
 }
 
-void FuncGrad::RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable) {
-  auto input_tensor = op_grad_info->input_value[kIndex0]->cast<tensor::BaseTensorPtr>();
+void FuncGrad::RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable,
+                              const BaseTensorPtr &input_tensor, size_t output_index) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto view_meta = impl::get_view_autograd_meta_impl(input_tensor);
   if (view_meta != nullptr) {
@@ -874,7 +994,7 @@ void FuncGrad::RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariableP
   // inplace op input tensor is also output tensor.
   auto auto_grad_meta = impl::get_autograd_meta_impl(input_tensor);
   auto_grad_meta->set_variable(variable);
-  auto_grad_meta->set_output_index(0);
+  auto_grad_meta->set_output_index(output_index);
   MS_LOG(DEBUG) << "End update next edge for " << variable->ToString();
 }
 
@@ -1331,6 +1451,7 @@ ValuePtr FuncGrad::Finish(const tensor::BaseTensorPtrList &weights, const std::v
   GilReleaseWithCheck gil_release;
   BuildForwardLastNode(sens);
   PruningGradGraph(weights, grad_attr, grad_position);
+  MS_LOG(DEBUG) << "FuncGrad finish" << last_variable_->is_need_grad();
   if (last_variable_->is_need_grad()) {
     BackPropagate();
   }

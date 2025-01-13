@@ -18,6 +18,7 @@
 #include "availability/silent_check/silent_check.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/ir/ir_bprop.h"
+#include "pipeline/pynative/grad/function_py.h"
 #include "pipeline/pynative/predict_out_type_map.h"
 #include "pipeline/pynative/op_function/auto_grad_register.h"
 #include "pipeline/jit/ps/debug/trace.h"
@@ -355,6 +356,7 @@ void PyNativeExecutor::SetAsyncForGraph(bool flag) const {
 
 void RegPyNativeExecutor(const py::module *m) {
   stub::RegStubNodes(m);
+  autograd::RegFunctionBase(m);
 
   (void)py::class_<PyNativeExecutor, std::shared_ptr<PyNativeExecutor>>(*m, "PyNativeExecutor_")
     .def_static("get_instance", &PyNativeExecutor::GetInstance, "PyNativeExecutor get_instance.")
