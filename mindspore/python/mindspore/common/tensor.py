@@ -2529,8 +2529,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def diagonal(self, offset=0, axis1=0, axis2=1):
         """
-        For details, please refer to :func:`mindspore.ops.diagonal`,
-        the parameter `axis1` of the current interface is the same as the parameter `dim1` of the reference interface,
+        For details, please refer to :func:`mindspore.ops.diagonal`.
+        The parameter `axis1` of the current interface is the same as the parameter `dim1` of the reference interface,
         the parameter `axis2` of the current interface is the same as the parameter `dim2` of the reference interface.
         """
         return tensor_operator_registry.get('diagonal')(self, offset, axis1, axis2)
