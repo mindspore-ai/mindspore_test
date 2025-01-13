@@ -25,6 +25,7 @@
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
 #include "pipeline/jit/ps/pipeline_jit.h"
+#include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/pynative/pynative_execute.h"
 
 namespace mindspore {
@@ -175,6 +176,7 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   auto executor = pynative::PyNativeExecutor::GetInstance();
   if (mode == kPynativeMode && executor->RequiresGrad()) {
     MS_LOG(INFO) << "Do GradJit";
+    JitSyntaxLevelScope jit_syntax_level_scope;
     executor->grad_executor()->jit()->set_graph_phase(phase);
     ret = executor->GradJit(args_tuple);
   } else {

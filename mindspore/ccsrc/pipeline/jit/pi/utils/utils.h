@@ -174,6 +174,19 @@ class ReprRecursionScope {
   int stat_;
 };
 
+/// \brief Change the jit-syntax-level to strict mode, and revert it back after the scope ends.
+class JitSyntaxLevelScope {
+ public:
+  JitSyntaxLevelScope() {
+    origin_jit_syntax_level_ = common::GetEnv("MS_DEV_JIT_SYNTAX_LEVEL");
+    common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", "0");
+  }
+  ~JitSyntaxLevelScope() { common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", origin_jit_syntax_level_.c_str()); }
+
+ private:
+  std::string origin_jit_syntax_level_;
+};
+
 bool HasMutableOrConstAttr(PyObject *obj);
 bool IsMutableObj(const py::object &obj);
 bool CheckMutableOrNonConstAttr(PyObject *obj);
