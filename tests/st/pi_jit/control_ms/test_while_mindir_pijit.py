@@ -14,6 +14,7 @@
 # ============================================================================
 """test while with mindir in PIJit and pynative mode"""
 import os
+import pytest
 import numpy as np
 import mindspore.nn as nn
 from mindspore import context, jit
