@@ -159,7 +159,7 @@ def test_ops_conv2d(mode, pad_mode):
         assert np.allclose(output.asnumpy(), expected, atol=1e-5, rtol=1e-5)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_conv3d(mode):
