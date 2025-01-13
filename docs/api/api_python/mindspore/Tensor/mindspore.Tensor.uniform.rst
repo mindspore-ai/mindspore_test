@@ -3,7 +3,10 @@ mindspore.Tensor.uniform
 
 .. py:method:: mindspore.Tensor.uniform(from_=0., to=1., generator=None)
 
-    在半开区间 [from\_, to) 内生成随机数。
+    在半开区间 :math:`[from\_, to)` 内生成服从均匀分布的随机数。
+
+    .. math::
+        P(x)= \frac{1}{to - from\_}
 
     参数：
         - **from_** (number) - 区间的下界。

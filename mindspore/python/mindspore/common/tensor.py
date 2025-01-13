@@ -2782,7 +2782,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def uniform(self, from_=0., to=1., generator=None):
         r"""
-        Generates random numbers in the half-open interval [from\_, to).
+        Generates random numbers that follows a uniform distribution within the half-open interval :math:`[from\_, to)`.
+
+        .. math::
+            P(x)= \frac{1}{to - from\_}
 
         Args:
             from\_ (number): The lower bound of the interval.
