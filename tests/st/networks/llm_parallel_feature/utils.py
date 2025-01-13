@@ -95,7 +95,6 @@ def replace_config(net_config, file_path):
                 print(f"Failed to insert use_ring_attention in {file_path}")
                 return False
 
-
     # insert pipeline interleaved
     if net_config.pipeline_interleave:
         if net_config.pipeline_scheduler is None or net_config.pp_interleave_num == -1:
@@ -148,6 +147,11 @@ def check_log(file_path, check_pairs=None):
         ["grep -r '%s' %s | wc -l" % ("ERROR", file_path)],
         shell=True)
     log_cnt = str(log_error_count, 'utf-8').strip()
+    if log_cnt != "0":
+        log_context = subprocess.check_output(
+            ["cat %s" % file_path], shell=True
+        )
+        print(f"log context is {log_context}")
     assert log_cnt == "0", f"Error found in {file_path}"
     if check_pairs is not None:
         for key_word, value in check_pairs.items():
@@ -396,7 +400,7 @@ def check_compile_time(log_file, percentage):
     for value in result:
         compile_time += float(value[:-1])
     compile_time = round(compile_time, 2)
-    print('Parallel compilation time is : %s%%' %compile_time)
+    print('Parallel compilation time is : %s%%' % compile_time)
     assert compile_time <= percentage, "Compile time is too long!"
 
 
@@ -520,3 +524,244 @@ class LLMConfig:
         # recompute
         self.recompute = recompute
         self.select_recompute = select_recompute
+
+
+class MixtralConfig:
+    # add default config for LLM
+    def __init__(self,
+                 case_name,
+                 dataset_dir="/home/workspace/mindspore_dataset/wiki4096/wiki4096.mindrecord",
+                 enable_parallel_optimizer=True,
+                 vocab_emb_dp=True,
+                 full_batch=True,
+                 num_layers=4,
+                 gradient_accumulation_steps=1,
+                 batch_size=1,
+                 micro_batch_num=1,
+                 data_parallel=8,
+                 model_parallel=1,
+                 pipeline_stage=1,
+                 expert_parallel=1,
+                 epochs=1,
+                 sink_size=1,
+                 recompute=False,
+                 select_recompute=False,
+                 use_seq_parallel=False,
+                 offset=0,
+                 output_dir="./output",
+                 save_graphs=True,
+                 num_samples=64,
+                 fine_grain_interleave=1,
+                 context_parallel=False,
+                 pipeline_interleave=False,
+                 pipeline_scheduler=None,
+                 pp_interleave_num=-1,
+                 parallel_speed_up_json=None,
+                 optimizer_weight_shard_size=-1,
+                 parallel_mode=1,
+                 use_ring_attention=False,
+                 group_wise_a2a=False,
+                 jit_level="O1",
+                 use_fused_ops_topkrouter=False):
+        # output dir
+        self.output_dir = output_dir
+
+        # context
+        self.jit_level = jit_level
+        self.save_graphs = save_graphs
+        self.save_graphs_path = f"{case_name}/graphs"
+        self.parallel_speed_up_json = parallel_speed_up_json
+
+        # dataset
+        self.dataset_dir = dataset_dir
+        self.num_samples = num_samples
+
+        # parallel context
+        self.enable_parallel_optimizer = enable_parallel_optimizer
+        self.full_batch = full_batch
+        self.pipeline_interleave = pipeline_interleave
+        self.pipeline_scheduler = pipeline_scheduler
+
+        # parallel
+        self.parallel_mode = parallel_mode
+        self.data_parallel = data_parallel
+        self.model_parallel = model_parallel
+        self.pipeline_stage = pipeline_stage
+        self.expert_parallel = expert_parallel
+        self.context_parallel = context_parallel
+        self.vocab_emb_dp = vocab_emb_dp
+        self.micro_batch_num = micro_batch_num
+        self.use_seq_parallel = use_seq_parallel
+        self.optimizer_weight_shard_size = optimizer_weight_shard_size
+
+        # model config
+        self.num_layers = num_layers
+        self.fine_grain_interleave = fine_grain_interleave
+        self.offset = offset
+        self.pp_interleave_num = pp_interleave_num
+        self.use_ring_attention = use_ring_attention
+
+        # runner config
+        self.batch_size = batch_size
+        self.gradient_accumulation_steps = gradient_accumulation_steps
+        self.epochs = epochs
+        self.sink_size = sink_size
+
+        # recompute
+        self.recompute = recompute
+        self.select_recompute = select_recompute
+
+        # moe config
+        self.group_wise_a2a = group_wise_a2a
+        self.use_fused_ops_topkrouter = use_fused_ops_topkrouter
+
+
+def prepare_mixtral_testcase_env(testcase_name, net_config):
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    # 1. create testcase folder
+    os.makedirs(os.path.join(sh_path, testcase_name), exist_ok=True)
+    # 2. clear folder (if exist)
+    clear_directory(f"{sh_path}/{testcase_name}")
+    # 3. copy yaml to testcase folder
+    os.system(f"cp {sh_path}/mindformers/research/mixtral/pretrain_mixtral-8x7b.yaml ./{testcase_name}")
+    # 4. replace config in yaml
+    file_path = f'{sh_path}/{testcase_name}/pretrain_mixtral-8x7b.yaml'
+    status = replace_mixtral_config(net_config, file_path)
+    run_mindformers_path = f'{sh_path}/mindformers/run_mindformer.py'
+    # 5. mock tiktoken
+    mock_third_party_pkg("tiktoken", run_mindformers_path)
+    # 6. update parallel_speed_up.json if needed
+    if net_config.parallel_speed_up_json is not None:
+        if not update_parallel_speed_up_json(testcase_name, net_config, file_path):
+            raise ValueError("Failed to update parallel_speed_up.json")
+    if not status:
+        raise Exception("Failed to replace config in {}".format(file_path))
+    output_file = f"./{testcase_name}_output.log"
+    return output_file, file_path
+
+
+def replace_mixtral_config(net_config, file_path):
+    old_list = [
+        'jit_level: "O2"',
+        'dataset_dir: "/../wikitext-2/wiki4096.mindrecord"', 'enable_parallel_optimizer: True', 'vocab_emb_dp: True',
+        'full_batch: True', 'num_layers: 32', 'batch_size: 1', 'batch_size: 6', 'micro_batch_num: 16',
+        'data_parallel: 8', 'model_parallel: 1', 'pipeline_stage: 2', 'expert_parallel: 8',
+        'epochs: 10', 'sink_size: 1', 'recompute: True', 'select_recompute: False', 'use_seq_parallel: False',
+        'offset: 0', "output_dir: './output'", 'save_graphs: False', 'save_graphs_path: "./graph"',
+        "parallel_mode: 1", 'use_fused_ops_topkrouter: False', 'max_device_memory: "58GB"'
+    ]
+
+    new_list = [
+        f'jit_level: {net_config.jit_level}',
+        f'dataset_dir: {net_config.dataset_dir}', f'enable_parallel_optimizer: {net_config.enable_parallel_optimizer}',
+        f'vocab_emb_dp: {net_config.vocab_emb_dp}', f'full_batch: {net_config.full_batch}',
+        f'num_layers: {net_config.num_layers}',
+        f'batch_size: {net_config.batch_size}', f'batch_size: {net_config.batch_size}',
+        f'micro_batch_num: {net_config.micro_batch_num}', f'data_parallel: {net_config.data_parallel}',
+        f'model_parallel: {net_config.model_parallel}', f'pipeline_stage: {net_config.pipeline_stage}',
+        f'expert_parallel: {net_config.expert_parallel}',
+        f'epochs: {net_config.epochs}', f'sink_size: {net_config.sink_size}', f'recompute: {net_config.recompute}',
+        f'select_recompute: {net_config.select_recompute}', f'use_seq_parallel: {net_config.use_seq_parallel}',
+        f'offset: {net_config.offset}', f"output_dir: '{net_config.output_dir}'",
+        f'save_graphs: {net_config.save_graphs}', f'save_graphs_path: "{net_config.save_graphs_path}"',
+        f"parallel_mode: {net_config.parallel_mode}",
+        f"use_fused_ops_topkrouter: {net_config.use_fused_ops_topkrouter}", 'max_device_memory: "0.1GB"'
+    ]
+
+    if len(old_list) != len(new_list):
+        print(f"Old list and new list have different lengths: {len(old_list)} and {len(new_list)}")
+        return False
+    for i in range(len(old_list)):
+        if "'" in old_list[i]:
+            sed_cmd = """sed -i "s#{}#{}#g" {}""".format(old_list[i], new_list[i], file_path)
+        else:
+            sed_cmd = """sed -i 's#{}#{}#g' {}""".format(old_list[i], new_list[i], file_path)
+        status, _ = subprocess.getstatusoutput(sed_cmd)
+        if status != 0:
+            print(f"Failed to replace {old_list[i]} with {new_list[i]} in {file_path}")
+            return False
+    # add num_samples of dataset to control the total steps
+    insert_num_samples = r"sed -i '/shuffle:/a\    num_samples: {}' {}".format(net_config.num_samples, file_path)
+    status, _ = subprocess.getstatusoutput(insert_num_samples)
+    if status != 0:
+        print(f"Failed to insert num_samples to {file_path}")
+        return False
+    # remove checkpoint monitor to prevent saving ckpt
+    remove_checkpoint_monitor = f"sed -i '/CheckpointMonitor/,+4d' {file_path}"
+    status, _ = subprocess.getstatusoutput(remove_checkpoint_monitor)
+    if status != 0:
+        print(f"Failed to remove CheckpointMonitor in {file_path}")
+        return False
+
+    # insert gradient accumulation steps
+    if net_config.gradient_accumulation_steps:
+        insert_gradient_accumulation_steps = r"sed -i '/runner_config:/a\  gradient_accumulation_steps: {}' {}".format(
+            net_config.gradient_accumulation_steps, file_path
+        )
+        status, _ = subprocess.getstatusoutput(insert_gradient_accumulation_steps)
+        if status != 0:
+            print(f"Failed to insert gradient_accumulation_steps in {file_path}")
+
+    # insert group_wise_a2a
+    if net_config.group_wise_a2a:
+        insert_group_wise_a2a = r"sed -i '/moe_config:/a\  group_wise_a2a: {}' {}".format(
+            net_config.group_wise_a2a, file_path
+        )
+        status, _ = subprocess.getstatusoutput(insert_group_wise_a2a)
+        if status != 0:
+            print(f"Failed to insert group_wise_a2a in {file_path}")
+
+    # insert fine grain interleaved
+    if net_config.fine_grain_interleave > 1:
+        insert_fine_grain_interleave = r"sed -i '/model_config:/a\    fine_grain_interleave: {}' {}".format(
+            net_config.fine_grain_interleave, file_path
+        )
+        status, _ = subprocess.getstatusoutput(insert_fine_grain_interleave)
+        if status != 0:
+            print(f"Failed to insert fine grain interleave in {file_path}")
+
+    # insert context parallel
+    if net_config.context_parallel:
+        insert_context_parallel = r"sed -i '/vocab_emb_dp:/i\  context_parallel: {}' {}".format(
+            net_config.context_parallel, file_path
+        )
+        status, _ = subprocess.getstatusoutput(insert_context_parallel)
+        if status != 0:
+            print(f"Failed to insert context parallel in {file_path}")
+            return False
+        # insert ring attention flag
+        if net_config.use_ring_attention:
+            insert_use_ring_attention = r"sed -i '/model_config:/a\    use_ring_attention: {}' {}".format(
+                net_config.use_ring_attention, file_path
+            )
+            status, _ = subprocess.getstatusoutput(insert_use_ring_attention)
+            if status != 0:
+                print(f"Failed to insert use_ring_attention in {file_path}")
+                return False
+
+    # insert pipeline interleaved
+    if net_config.pipeline_interleave:
+        if net_config.pipeline_scheduler is None or net_config.pp_interleave_num == -1:
+            print("pipeline_scheduler and pp_interleave_num should be set together")
+            return False
+        insert_pipeline_config = r"sed -i '/full_batch:/i\  pipeline_config:' {}".format(file_path)
+        insert_pipeline_interleave = r"sed -i '/full_batch:/i\    pipeline_interleave: {}' {}".format(
+            net_config.pipeline_interleave, file_path)
+        insert_pipeline_scheduler = r"""sed -i '/full_batch:/i\    pipeline_scheduler: "{}"' {}""".format(
+            net_config.pipeline_scheduler, file_path)
+        insert_pp_interleave_num = r"""sed -i '/model_config:/a\    pp_interleave_num: {}' {}""".format(
+            net_config.pp_interleave_num, file_path)
+        for cmd in [insert_pipeline_config, insert_pipeline_interleave, insert_pipeline_scheduler,
+                    insert_pp_interleave_num]:
+            status, _ = subprocess.getstatusoutput(cmd)
+            if status != 0:
+                print(f"Failed to execute cmd {cmd} in {file_path}")
+    # insert optimizer_weight_shard_size
+    if net_config.optimizer_weight_shard_size != -1:
+        insert_optimizer_weight_shard_size = (r"sed -i '/parallel_optimizer_config:/a\    optimizer_weight_shard_size: "
+                                              r"{}' {}").format(net_config.optimizer_weight_shard_size, file_path)
+        status, _ = subprocess.getstatusoutput(insert_optimizer_weight_shard_size)
+        if status != 0:
+            print(f"Failed to insert optimizer_weight_shard_size in {file_path}")
+
+    return True
