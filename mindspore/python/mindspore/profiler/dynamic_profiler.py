@@ -30,7 +30,7 @@ from mindspore.communication import get_rank
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.profiler_interface import ProfilerInterface
-from mindspore.profiler.common.constant import ProfilerActivity, ProfilerLevel
+from mindspore.profiler.common.constant import ProfilerActivity, ProfilerLevel, AicoreMetrics
 from mindspore.profiler.common.util import no_exception_func
 
 
@@ -156,6 +156,7 @@ class DynamicProfilerArgs:
         """ get all args in DynamicProfilerArgs."""
         self._profiler_level = self._convert_profiler_level(self._profiler_level)
         self._activities = self._convert_activities(self._activities)
+        self._aicore_metrics = self._convert_aicore_metrics(self._aicore_metrics)
         not_supported_args = ['_start_step', '_stop_step', '_analyse_mode', '_is_valid']
         res = {}
         for key, value in self.__dict__.items():
@@ -204,6 +205,25 @@ class DynamicProfilerArgs:
             return [ProfilerActivity.NPU]
         return [ProfilerActivity.CPU, ProfilerActivity.NPU]
 
+    def _convert_aicore_metrics(self, aicore_metrics: int) -> AicoreMetrics:
+        """ convert aicore_metrics to real args in Profiler."""
+        if aicore_metrics == -1:
+            return AicoreMetrics.AiCoreNone
+        if aicore_metrics == 0:
+            return AicoreMetrics.PipeUtilization
+        if aicore_metrics == 1:
+            return AicoreMetrics.ArithmeticUtilization
+        if aicore_metrics == 2:
+            return AicoreMetrics.Memory
+        if aicore_metrics == 3:
+            return AicoreMetrics.MemoryL0
+        if aicore_metrics == 4:
+            return AicoreMetrics.MemoryUB
+        if aicore_metrics == 5:
+            return AicoreMetrics.ResourceConflictRatio
+        if aicore_metrics == 6:
+            return AicoreMetrics.L2Cache
+        return AicoreMetrics.AiCoreNone
 
 class DynamicProfilerMonitorBase(Callback):
     """
@@ -615,8 +635,10 @@ if sys.version_info >= (3, 8):
                   a relative value, with the first step of training being 1. The stop_step must be greater than or
                   equal to start_step. The default value is -1, indicating that data collection will not start during
                   the entire training process.
-                - aicore_metrics (int, optional) - Sets the collection of AI Core metric data, with the same range of
-                  values as the Profiler. The default value is -1, indicating that AI Core metrics are not collected.
+                - aicore_metrics (int, optional) - The range of values corresponds to the Profiler. The default value -1
+                  indicates that AI Core utilization is not collected, and 0 indicates PipeUtilization. 1 indicates
+                  ArithmeticUtilization. 2 stands for Memory; 3 stands for MemoryL0; 4 stands for MemoryUB; 5 indicates
+                  ResourceConflictRatio. 6 indicates L2Cache.
                 - profiler_level (int, optional) - Sets the level of performance data collection, where 0 represents
                   ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and 2 represents ProfilerLevel.Level2. The
                   default value is 0, indicating the ProfilerLevel.Level0 collection level.
