@@ -94,7 +94,7 @@ def aoe_job_type(config):
             - ``"1"``: Set to subgraph tuning.
             - ``"2"``: Set to operator tuning.
 
-     Examples:
+    Examples:
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_tuning.aoe_job_type("1")
     """
