@@ -514,7 +514,7 @@ def deprecated_tensor_argmin(input, axis=None, keepdims=False):
 
 
 # 12 argsort
-def tensor_argsort(input, dim=-1, descending=False):
+def tensor_argsort(input, dim=-1, descending=False, stable=False):
     return argsort(input, dim, descending)
 
 
