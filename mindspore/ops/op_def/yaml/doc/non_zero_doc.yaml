@@ -10,7 +10,7 @@ non_zero:
 
         Outputs:
             Tensor, a 2-D Tensor whose data type is int64, containing the positions of all non-zero values of the input.
-            If the dimension of `input` is `D` and the number of non-zero in `input` is `N`, then the shape of output is `N*D` .
+            If the dimension of `input` is `D` and the number of non-zero in `input` is `N` , then the shape of output is :math:`(N, D)` .
 
         Raises:
             TypeError: If `input` is not Tensor.
