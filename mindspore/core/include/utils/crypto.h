@@ -38,7 +38,7 @@ constexpr unsigned int GCM_MAGIC_NUM = 0x7F3A5ED8;                              
 constexpr unsigned int CBC_MAGIC_NUM = 0x7F3A5ED9;                                   // Magic number
 constexpr unsigned int SM4_CBC_MAGIC_NUM = 0x7F3A5EDA;                               // Magic number
 constexpr size_t Byte16 = 16;
-constexpr size_t RAND_SEED_LENGTH = 128;
+constexpr size_t RAND_SEED_LENGTH = 48;
 constexpr char kRandomPath[] = "/dev/random";
 
 MS_CORE_API std::unique_ptr<Byte[]> Encrypt(size_t *encrypt_len, const Byte *plain_data, size_t plain_len,
