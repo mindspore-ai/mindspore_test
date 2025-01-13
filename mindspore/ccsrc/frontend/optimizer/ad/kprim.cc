@@ -643,7 +643,18 @@ FuncGraphPtr KPrim::FakeBprop(const ValueNodePtr &value_node, const pipeline::Re
     auto param = func_graph->add_parameter();
     // Mock derivatives for each inputs
     if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
-      outputs.push_back(func_graph->NewCNode({NewValueNode(prim::GetPythonOps("zeros_like")), param}));
+      auto input = cnode_first->input(i + 1);
+      MS_EXCEPTION_IF_NULL(input);
+      auto abs = input->abstract();
+      // Only do back propagate when the input is a tensor.
+      if (i == 0 || (abs != nullptr &&
+                     (abs->isa<abstract::AbstractTuple>() || abs->IsSameTypeId(abstract::AbstractTensor::kTypeId) ||
+                      abs->IsSameTypeId(abstract::AbstractRefTensor::kTypeId)))) {
+        (void)outputs.emplace_back(func_graph->NewCNode({NewValueNode(prim::GetPythonOps("zeros_like")), param}));
+      } else {
+        // Add a placeholder.
+        (void)outputs.emplace_back(NewValueNode(MakeValue<int64_t>(0)));
+      }
     } else {
       outputs.push_back(func_graph->NewCNode({NewValueNode(fake_bprop), param}));
     }

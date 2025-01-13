@@ -67,8 +67,14 @@ GVAR_DEF(PrimitivePtr, kPrimDtypeToEnum, std::make_shared<Primitive>("DtypeToEnu
 
 // Statements
 GVAR_DEF(PrimitivePtr, kPrimUnroll, std::make_shared<Primitive>("Unroll"));
-GVAR_DEF(PrimitivePtr, kPrimVmapStackAssign, std::make_shared<Primitive>(kVmapStackAssignOpName));
-GVAR_DEF(PrimitivePtr, kPrimVmapUnstackAssign, std::make_shared<Primitive>(kVmapUnstackAssignOpName));
+GVAR_DEF(PrimitivePtr, kPrimVmapStackAssign,
+         std::make_shared<Primitive>(
+           kVmapStackAssignOpName,
+           mindspore::HashMap<std::string, ValuePtr>({{std::string(GRAPH_FLAG_SIDE_EFFECT_MEM), MakeValue(true)}})));
+GVAR_DEF(PrimitivePtr, kPrimVmapUnstackAssign,
+         std::make_shared<Primitive>(
+           kVmapUnstackAssignOpName,
+           mindspore::HashMap<std::string, ValuePtr>({{std::string(GRAPH_FLAG_SIDE_EFFECT_MEM), MakeValue(true)}})));
 GVAR_DEF(PrimitivePtr, kPrimMakeSlice, std::make_shared<Primitive>(kMakeSliceOpName));
 GVAR_DEF(PrimitivePtr, kPrimSliceGetItem, std::make_shared<Primitive>(kSliceGetItemOpName));
 GVAR_DEF(PrimitivePtr, kPrimGetAttr, std::make_shared<Primitive>("getattr"));

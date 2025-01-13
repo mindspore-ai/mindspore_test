@@ -27,7 +27,7 @@ from tests.st.networks.llm_parallel_feature.utils import prepare_testcase_env, c
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp2mp4pp1_recompute():
     """
     Feature: test llama2 dp2mp4pp1 full_recompute
@@ -58,7 +58,7 @@ def test_llama2_dp2mp4pp1_recompute():
         check_compile_time(log_path, 15)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp4mp4pp1op_recompute():
     """
     Feature: test llama2 dp4mp4pp1op full_recompute
@@ -76,14 +76,13 @@ def test_llama2_dp4mp4pp1op_recompute():
 
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name}")
     check_pair = {"Training Over": 1}
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     validate_name = find_graph_file_name(real_graph_path[0], "validate")
     hwopt_after_inline_name = find_graph_file_name(real_graph_path[0], "hwopt_d_after_inline_graph_0")
     graph_path = real_graph_path[0]
-    attrs_check_pairs = {", recompute: Bool(1)": 207}
+    attrs_check_pairs = {", recompute: Bool(1)": 235}
     check_graph(graph_path, validate_name, attrs_check_pairs)
     param_parallel_speed_up_check_pairs = {'last_grad_comm_compute_depend: Bool(1)': '39',
                                            'grad_comm_dx_depend: Bool(1)': '1'}
@@ -93,10 +92,9 @@ def test_llama2_dp4mp4pp1op_recompute():
         check_log(log_path, check_pair)
         check_peak_memory(log_path, "3972")
         check_compile_time(log_path, 15)
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp4pp1op_grad_accu():
     """
     Feature: test llama2 cell_dp2mp4pp1op_grad_accu
@@ -116,7 +114,7 @@ def test_llama2_cell_dp2mp4pp1op_grad_accu():
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 8 {rank_list} {file_path} {output_file} {case_name} no_pp")
     check_pair = {"Training Over": 1}
-    ops_check_pairs = {"VirtualAssignAdd": 39}
+    ops_check_pairs = {"VirtualAssignAdd": 78}
     graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)[0]
     validate_name = find_graph_file_name(graph_path, "validate")
     step_parallel_end_name = find_graph_file_name(graph_path, "step_parallel_end")
@@ -144,7 +142,7 @@ def test_llama2_cell_dp2mp4pp1op_grad_accu():
         check_compile_time(log_path, 15)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     """
     Feature: test llama2_cell_dp2mp4pp2vpp4op_1f1b
@@ -204,7 +202,7 @@ def test_llama2_cell_dp2mp4pp2vpp4op_1f1b():
     check_peak_memory(real_log_path[1], "8200")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute():
     """
     Feature: test lama2_cell_dp2mp1pp2vpp2cp4_1f1b_select_recompute
@@ -306,7 +304,7 @@ def test_llama2_cell_dp2mp1pp2vpp2cpring_1f1b_recompute():
 
 
 @pytest.mark.skip(reason="has bug need fix")
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2vpp2cpulysse_1f1b_select_recompute():
     """
     Feature: test llama2 cell_dp2mp1pp2vpp2cpulysse_1f1b_select_recompute
@@ -376,7 +374,7 @@ def test_llama2_cell_dp2mp1pp2vpp2cpulysse_1f1b_select_recompute():
     #                                       parm2_dependency_list)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp4pp2_fgi():
     """
     Feature: test llama2 cell_dp2mp4pp2_fgi
@@ -413,9 +411,9 @@ def test_llama2_cell_dp2mp4pp2_fgi():
     parm_reducescatter_allgather_check_pairs = {'ReduceScatter': '48',
                                                 'AllGather': '48'}
     # 反向掩盖（mp/cp场景都开启）控制边名字个数
-    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '20',
-                                          'matmul_grad_depend2: Bool(1)': '10',
-                                          'matmul_grad_depend3: Bool(1)': '10'}
+    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '22',
+                                          'matmul_grad_depend2: Bool(1)': '11',
+                                          'matmul_grad_depend3: Bool(1)': '11'}
     real_log_path = log_path_preprocess(output_file, rank_list, case_name)
     for log_path in real_log_path:
         check_log(log_path, check_pair)
@@ -439,7 +437,7 @@ def test_llama2_cell_dp2mp4pp2_fgi():
                 parm_parallel_speed_up_check_pairs)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
     """
     Feature: test llama2 cell_dp2mp4pp2_fgi
@@ -455,7 +453,6 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
                               parallel_speed_up_json={'matmul_grad_comm_overlap': 'true'})
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name} pp")
     check_pair = {"Training Over": 1}
     # 返回路径 list
@@ -478,10 +475,9 @@ def test_llama2_cell_dp2mp1pp2cp4_fgi_grad_accu_select_recompute():
                 parm_recompute_graph_check_pairs)
     check_peak_memory(real_log_path[0], '8200')
     check_peak_memory(real_log_path[1], '9800')
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 @pytest.mark.skip(reason="Scalar")
 def test_llama2_cell_dp2mp2pp1opcp2_fgi_grad_accu():
     """
@@ -560,7 +556,7 @@ def test_llama2_cell_dp2mp2pp1opcp2_fgi_grad_accu():
     # check_node_dependency_backward_search(graph_path[0], parallel_end_ir_graph_name, 200, parm2_dependency_list)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 @pytest.mark.skip(reason="Scalar")
 def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b_grad_accu():
     """
@@ -640,7 +636,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b_grad_accu():
     # check_node_dependency_backward_search(graph_path[0], parallel_end_ir_graph_name, 100, parm2_dependency_list)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 @pytest.mark.skip(reason="Scalar")
 def test_llama2_dp2mp2pp2opcp2_fgi_grad_accu_select_recompute():
     """
@@ -673,7 +669,7 @@ def test_llama2_dp2mp2pp2opcp2_fgi_grad_accu_select_recompute():
         check_log(log_path, check_pair)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
     """
     Feature: test llama2 cell_dp2mp2pp2vpp4opcp2_1f1b
@@ -758,7 +754,7 @@ def test_llama2_cell_dp2mp2pp2vpp4opcp2_1f1b():
 
 
 @pytest.mark.skip(reason="has bug")
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp2mp2pp2cp2_fgi_grad_accu():
     """
     Feature: test llama2 cell_dp2mp2pp2vpp4opcp2_1f1b
@@ -790,7 +786,7 @@ def test_llama2_dp2mp2pp2cp2_fgi_grad_accu():
         check_log(log_path, check_pair)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp4mp4pp1op_recompute_2():
     """
     Feature: test llama2 dp4mp4pp1op_recompute_2
@@ -811,7 +807,6 @@ def test_llama2_dp4mp4pp1op_recompute_2():
                               recompute=True)
     output_file, file_path = prepare_testcase_env(case_name, llama2_config)
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "1"
     os.system(f"bash {sh_path}/run_llm_dryrun.sh 16 {rank_list} {file_path} {output_file} {case_name}")
     real_graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
     graph_path = real_graph_path[0]
@@ -847,10 +842,9 @@ def test_llama2_dp4mp4pp1op_recompute_2():
         check_log(log_path, check_pair)
     check_peak_memory(log_path, "4100")
     check_compile_time(log_path, 15)
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='dryrun_only', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_llama2_dp8mp1pp1op():
     """
     Feature: test llama2 dp8mp1pp1op

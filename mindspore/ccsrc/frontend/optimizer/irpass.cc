@@ -76,9 +76,10 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 OptimizeIRPassLib::OptimizeIRPassLib() {
-  arithmetic_simplify_ = MakeSubstitution(std::make_shared<ArithmeticSimplify>(), "arithmetic_simplify",
-                                          {prim::kPrimScalarAdd, prim::kPrimScalarMul, prim::kPrimAdd,
-                                           prim::kPrimidentity, prim::kPrimMomentum, prim::kPrimMul, prim::kPrimPow});
+  arithmetic_simplify_ =
+    MakeSubstitution(std::make_shared<ArithmeticSimplify>(), "arithmetic_simplify",
+                     {prim::kPrimScalarAdd, prim::kPrimScalarMul, prim::kPrimAdd, prim::kPrimAssignAdd,
+                      prim::kPrimidentity, prim::kPrimMomentum, prim::kPrimMul, prim::kPrimPow});
   special_op_eliminate_ = MakeSubstitution(
     std::make_shared<SpecialOpEliminater>(), "special_op_eliminate",
     {prim::kPrimInsertGradientOf, prim::kPrimHookBackward, prim::kPrimCellBackwardHook, prim::kPrimPrintShapeType});

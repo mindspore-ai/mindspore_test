@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
@@ -500,7 +499,6 @@ def test_pynative_jit_with_kwargs_inputs():
     assert foo(x, **data).asnumpy() == [4]
 
 
-@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',

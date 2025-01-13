@@ -43,5 +43,21 @@ REG_BPROP_BUILDER("HistogramSummary").SetUnusedInputs({i1, i2, i3}).SetBody(BODY
   auto x = ib->GetInput(kIndex1);
   return {tag, ib->OutZeros(x)};
 });
+
+REG_BPROP_BUILDER("VmapStackAssign").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  const auto &all_inputs = ib->GetInputs();
+  NodePtrList gradients;
+  std::transform(all_inputs.begin(), all_inputs.end() - i2, std::back_inserter(gradients),
+                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+  return gradients;
+});
+
+REG_BPROP_BUILDER("VmapUnstackAssign").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  const auto &all_inputs = ib->GetInputs();
+  NodePtrList gradients;
+  std::transform(all_inputs.begin(), all_inputs.end() - i2, std::back_inserter(gradients),
+                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+  return gradients;
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
