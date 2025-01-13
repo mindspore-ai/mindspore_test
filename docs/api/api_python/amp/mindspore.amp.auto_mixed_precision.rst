@@ -26,7 +26,7 @@ mindspore.amp.auto_mixed_precision
 
     `auto_blacklist` 名单里的算子包括：
 
-    ``Pow`` 、 ``ACos`` 、 ``Asin`` 、 ``Cosh`` 、 ``Erfinv`` 、 ``Exp`` 、 ``Expm1`` 、 ``Log`` 、 ``Log1p`` 、 ``Reciprocal`` 、 ``Rsqrt`` 、 ``Sinh`` 、 ``Tan`` 、 ``Softplus`` 、 ``SoftplusExt`` 、 ``LayerNorm`` 、 ``LayerNormExt`` 、 ``BatchNorm`` 、 ``GroupNorm`` 、 ``KLDivLoss`` 、 ``SmoothL1Loss`` 、 ``MultilabelMarginLoss`` 、 ``SoftMarginLoss`` 、 ``TripletMarginLoss`` 、 ``MultiMarginLoss`` 、 ``BCEWithLogitsLoss`` 、 ``Pdist`` 、 ``Cdist`` 、 ``Renorm`` 、 ``ReduceProd`` 、 ``Softmax`` 、 ``LogSoftmax`` 、 ``CumProd`` 、 ``CumSum`` 、 ``CumsumExt`` 、 ``ProdExt`` 、 ``SumExt`` 、 ``Norm``
+    ``Pow`` 、 ``ACos`` 、 ``Asin`` 、 ``Cosh`` 、 ``Erfinv`` 、 ``Exp`` 、 ``Expm1`` 、 ``Log`` 、 ``Log1p`` 、 ``Reciprocal`` 、 ``Rsqrt`` 、 ``Sinh`` 、 ``Tan`` 、 ``Softplus`` 、 ``SoftplusExt`` 、 ``LayerNorm`` 、 ``LayerNormExt`` 、 ``BatchNorm`` 、 ``BatchNormExt`` 、 ``GroupNorm`` 、 ``KLDivLoss`` 、 ``SmoothL1Loss`` 、 ``MultilabelMarginLoss`` 、 ``SoftMarginLoss`` 、 ``TripletMarginLoss`` 、 ``MultiMarginLoss`` 、 ``BCEWithLogitsLoss`` 、 ``Pdist`` 、 ``Cdist`` 、 ``Renorm`` 、 ``ReduceProd`` 、 ``Softmax`` 、 ``LogSoftmax`` 、 ``CumProd`` 、 ``CumSum`` 、 ``CumsumExt`` 、 ``ProdExt`` 、 ``SumExt`` 、 ``Norm`` 、 ``MSELossExt``
 
     `promote_list` 名单里的算子包括：
 
