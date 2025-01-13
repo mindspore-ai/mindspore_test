@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
@@ -108,3 +109,18 @@ def test_empty_like_dynamic_shape():
 
     TEST_OP(empty_like_forward_func_dyn_test, [[tensor_1], [tensor_2]], '', disable_yaml_check=True,
             disable_grad=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("device_name", ['npu', 'ascend', 'cpu', 'Ascend', 'CPU'])
+def test_empty_like_device(device_name):
+    """
+    Feature: Ops.
+    Description: test empty_like.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    input_tensor = Tensor(np.arange(6).reshape(1, 2, 3), dtype=mstype.float32)
+
+    y = mint.empty_like(input_tensor, device=device_name)
+    np.testing.assert_equal(y.shape, (1, 2, 3))
+    np.testing.assert_equal(y.dtype, mstype.float32)

@@ -50,8 +50,15 @@ py::object EmptyLike(const py::list &args) {
       std::string device_name;
       if (device.has_value()) {
         device_name = device.value()->value();
+        std::string device_lower_name = device_name;
+        (void)std::transform(device_name.begin(), device_name.end(), device_lower_name.begin(), ::tolower);
+        if (device_lower_name == "cpu") {
+          device_name = "CPU";
+        } else if (device_lower_name == "npu" || device_lower_name == "ascend") {
+          device_name = "Ascend";
+        }
         if (device_name != "CPU" && device_name != "Ascend") {
-          MS_LOG(EXCEPTION) << "Only support ['CPU', 'Ascend'] for device, but get '" << device_name << "'";
+          MS_LOG(EXCEPTION) << "Only support ['CPU', 'Ascend'/'NPU'] for device, but get '" << device_name << "'";
         }
         MS_LOG(DEBUG) << "Using input device_name: " << device_name;
       } else {
