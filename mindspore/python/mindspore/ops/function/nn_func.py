@@ -3041,8 +3041,6 @@ def softmax_ext(input, dim=None, dtype=None):
         input (Tensor): Tensor of shape :math:`(N, *)`, where :math:`*` means, any number of
             additional dimensions.
         dim (int, optional): The dim to perform the Softmax operation. Default: ``None`` .
-
-    Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): When set, `input` will be converted to the specified type,
             `dtype`, before execution, and dtype of returned Tensor will also be `dtype`. Default: ``None`` .
 
