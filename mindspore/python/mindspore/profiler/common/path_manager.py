@@ -341,4 +341,7 @@ class PathManager:
     @classmethod
     def get_real_path(cls, path: str):
         expanded_path = os.path.expanduser(path)
+        if os.path.islink(path):
+            msg = f"Invalid input path is a soft link: {path}"
+            raise ProfilerPathErrorException(msg)
         return os.path.realpath(expanded_path)
