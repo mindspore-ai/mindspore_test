@@ -1477,7 +1477,7 @@ Status OperatorInfo::InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_st
 }
 
 Status OperatorInfo::InitWithAutoRepeatCalc(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy) {
-  if (in_strategy == nullptr) {
+  if (!is_layout_config_ && in_strategy == nullptr) {
     MS_LOG(ERROR) << name_ << ": The input strategy is null.";
     return FAILED;
   }

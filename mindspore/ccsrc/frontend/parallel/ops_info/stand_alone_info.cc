@@ -60,10 +60,6 @@ Status StandAloneInfo::InferTensorMap() {
 }
 
 Status StandAloneInfo::InferTensorInfo() {
-  if (inputs_shape_.empty() || outputs_shape_.empty() || inputs_tensor_map_.empty() || outputs_tensor_map_.empty()) {
-    MS_LOG(ERROR) << name_ << ": Invalid args";
-    return FAILED;
-  }
   if (IsSomePrimitiveList(cnode_, INPUT_IS_TUPLE_OR_LIST_OPS)) {
     return OperatorInfo::InferTensorInfo();
   }
@@ -72,7 +68,9 @@ Status StandAloneInfo::InferTensorInfo() {
   for (size_t i = 0; i < input_value_.size(); ++i) {
     if (!input_value_[i]) {
       TensorLayout input_layout;
-      if (input_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_[temp], inputs_shape_[temp]) != SUCCESS) {
+      if (temp >= inputs_tensor_map_.size() ||
+          input_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_.at(temp), inputs_shape_.at(temp)) !=
+            SUCCESS) {
         MS_LOG(ERROR) << name_ << ": Infer input tensor layout failed, the index is " << i;
         return FAILED;
       }
@@ -87,7 +85,7 @@ Status StandAloneInfo::InferTensorInfo() {
   // infer output TensorInfo
   for (size_t j = 0; j < outputs_shape_.size(); ++j) {
     TensorLayout output_layout;
-    if (output_layout.InitFromVector(dev_matrix_shape_, outputs_tensor_map_[j], outputs_shape_[j]) != SUCCESS) {
+    if (output_layout.InitFromVector(dev_matrix_shape_, outputs_tensor_map_.at(j), outputs_shape_.at(j)) != SUCCESS) {
       return FAILED;
     }
     TensorInfo out_tensor_info(output_layout);
