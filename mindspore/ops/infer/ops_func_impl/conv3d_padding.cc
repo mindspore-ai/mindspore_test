@@ -88,6 +88,9 @@ int64_t GetOutputHWPadding(const ShapeVector &input_shape, const ShapeVector &we
 inline void IndicesCheckPositiveVectorPadding(const string &arg_name, const ArrayValue<int64_t> &array,
                                               const string &prim_name, bool exclude_zeros) {
   for (size_t i = 0; i < array.size(); ++i) {
+    if (array.IsValueUnknown(i)) {
+      continue;
+    }
     if (exclude_zeros) {
       if (MS_UNLIKELY(array[i] <= 0)) {
         MS_EXCEPTION(ValueError) << "For " << prim_name << ", '" << arg_name << "' must be positive, but it's "
