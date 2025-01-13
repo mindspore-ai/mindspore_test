@@ -61,6 +61,7 @@ constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
 constexpr auto kCustomExtOpName = "CustomExt";
 // View op
 constexpr auto kBroadcastToViewOpName = "BroadcastToView";
+constexpr auto kTransposeExtViewOpName = "TransposeExtView";
 constexpr auto kTransposeViewOpName = "TransposeView";
 constexpr auto kReshapeViewOpName = "ReshapeView";
 constexpr auto kSplitViewOpName = "SplitView";

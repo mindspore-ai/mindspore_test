@@ -30,6 +30,20 @@
 #include "utils/simple_info.h"
 
 namespace mindspore::ops {
+namespace {
+constexpr size_t kSingleTensor = 1;
+inline bool IsTupleOutput(const OpDefPtr &op_def) {
+  MS_EXCEPTION_IF_NULL(op_def);
+  const auto &returns = op_def->returns_;
+  if (returns.size() == 0) {
+    MS_LOG(EXCEPTION) << op_def->name_ << "'s output is empty, which is not allowed.";
+  }
+  auto output_type = returns[0].arg_dtype_;
+  auto is_tuple_output = (returns.size() > kSingleTensor) ||
+                         (output_type <= OP_DTYPE::DT_LIST_ANY && output_type >= OP_DTYPE::DT_TUPLE_BOOL);
+  return is_tuple_output;
+}
+}  // namespace
 /*
   Deal with dynamic sequence.
   Dynamic sequence would be split to tensors, so abstract_list.size() might not match the defined input size.
@@ -102,10 +116,7 @@ AbstractBasePtr DoGeneralInfer(const PrimitivePtr primitive, const AbstractBaseP
   const auto op_def = GetOpDef(op_type);
   MS_EXCEPTION_IF_NULL(op_def);
   const std::vector<InferInfoPtr> &infer_infos = ConvertAbstractListToInferInfoList(abstract_list, op_def);
-  auto ret = op_def->func_impl_.CheckValidation(primitive, infer_infos);
-  if (ret != OP_CHECK_SUCCESS) {
-    MS_LOG(EXCEPTION) << "CheckValidation failed for op " << op_type;
-  }
+  (void)op_def->func_impl_.CheckValidation(primitive, infer_infos);
   if (frontend_func_impl != nullptr) {
     auto infer_result = frontend_func_impl->InferAbstract(primitive, abstract_list);
     if (infer_result != nullptr) {
@@ -118,7 +129,7 @@ AbstractBasePtr DoGeneralInfer(const PrimitivePtr primitive, const AbstractBaseP
     MS_LOG(EXCEPTION) << "Infer shape size " << shapes.size() << " not equal to infer type size " << types.size()
                       << " for op " << op_type;
   }
-  return abstract::MakeAbstract(shapes, types);
+  return abstract::MakeAbstract(shapes, types, IsTupleOutput(op_def));
 }
 
 ValueSimpleInfoPtr DoGeneralInfer(const PrimitivePtr &prim, const ValuePtrList &values) {
@@ -136,9 +147,7 @@ ValueSimpleInfoPtr DoGeneralInfer(const PrimitivePtr &prim, const ValuePtrList &
   for (size_t i = 0; i < values.size(); ++i) {
     input_infos[i] = std::make_unique<ops::ValueInferInfoAdapter>(values[i], op_type, op_def->args_[i].arg_name_);
   }
-  if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(prim, input_infos)) {
-    MS_LOG(EXCEPTION) << "CheckValidation failed for op " << op_type;
-  }
+  (void)op_def->func_impl_.CheckValidation(prim, input_infos);
   auto &&shapes = op_def->func_impl_.InferShape(prim, input_infos);
   const auto &types = op_def->func_impl_.InferType(prim, input_infos);
   if (shapes.size() != types.size()) {
@@ -146,6 +155,7 @@ ValueSimpleInfoPtr DoGeneralInfer(const PrimitivePtr &prim, const ValuePtrList &
                       << " for op " << prim->name();
   }
   auto value_simple_info = std::make_shared<ValueSimpleInfo>();
+  value_simple_info->is_tuple_output_ = IsTupleOutput(op_def);
   value_simple_info->shape_vector_ = std::move(shapes);
   std::transform(types.begin(), types.end(), std::back_inserter(value_simple_info->dtype_vector_),
                  [](const TypeId &type) { return TypeIdToType(type); });

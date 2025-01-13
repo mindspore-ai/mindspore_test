@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_EXT_STRIDES_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_EXT_STRIDES_CALC_H
 
-#include <vector>
-#include "view/view_strides_calculator.h"
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V2_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V2_H_
+
+#include <set>
+#include "infer/ops_func_impl/grouped_matmul.h"
 
 namespace mindspore {
 namespace ops {
-
-OPS_API TensorStorageInfoPtrList TransposeExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-OPS_API TensorStorageInfoPtrList TransposeExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim0,
-                                                         const int64_t &dim1);
-
+class OPS_API GroupedMatmulV2FuncImpl final : public GroupedMatmulFuncImpl {
+ protected:
+  int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+};
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_EXT_STRIDES_CALC_H
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V2_H_

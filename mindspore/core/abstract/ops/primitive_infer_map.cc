@@ -360,9 +360,7 @@ std::optional<BaseShapePtr> InferShapeByFuncImpl(const PrimitivePtr &primitive, 
   }
   if (op_def->func_impl_.GeneralInferRegistered()) {
     const auto &infer_infos = ops::ConvertAbstractListToInferInfoList(input_args, op_def);
-    if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(primitive, input_args)) {
-      MS_LOG(EXCEPTION) << "CheckValidation failed for " << op_name;
-    }
+    (void)op_def->func_impl_.CheckValidation(primitive, infer_infos);
     auto &&shapes = op_def->func_impl_.InferShape(primitive, infer_infos);
     return ShapePtrFromShapeArray(shapes);
   }
@@ -403,9 +401,7 @@ std::optional<TypePtr> InferTypeByFuncImpl(const PrimitivePtr &primitive, const 
   }
   if (op_def->func_impl_.GeneralInferRegistered()) {
     const auto &infer_infos = ops::ConvertAbstractListToInferInfoList(input_args, op_def);
-    if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(primitive, input_args)) {
-      MS_LOG(EXCEPTION) << "CheckValidation failed for " << op_name;
-    }
+    (void)op_def->func_impl_.CheckValidation(primitive, infer_infos);
     auto &&type_ids = op_def->func_impl_.InferType(primitive, infer_infos);
     return TypePtrFromTypeIds(type_ids);
   }

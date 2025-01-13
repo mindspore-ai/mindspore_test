@@ -309,11 +309,15 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
 }
 
 // map used for pass to identify and replace the op by aclnnview
-static const std::map<std::string, std::string> op_enabled_aclnn = {
-  {kTransposeOpName, kTransposeViewOpName}, {kSplitOpName, kSplitViewOpName}, {kConcatOpName, kConcatViewOpName}};
+static const std::map<std::string, std::string> op_enabled_aclnn = {{kTransposeExtOpName, kTransposeExtViewOpName},
+                                                                    {kTransposeOpName, kTransposeViewOpName},
+                                                                    {kSplitOpName, kSplitViewOpName},
+                                                                    {kConcatOpName, kConcatViewOpName}};
 // map used for aclnn kernel select, because aclnnview op is not register by yaml.
-static const std::map<std::string, std::string> aclnn_view_to_op = {
-  {kTransposeViewOpName, kTransposeOpName}, {kSplitViewOpName, kSplitOpName}, {kConcatViewOpName, kConcatOpName}};
+static const std::map<std::string, std::string> aclnn_view_to_op = {{kTransposeViewOpName, kTransposeOpName},
+                                                                    {kSplitViewOpName, kSplitOpName},
+                                                                    {kConcatViewOpName, kConcatOpName},
+                                                                    {kTransposeExtViewOpName, kTransposeExtOpName}};
 
 void CheckTensorScalarRank(const PrimitivePtr &primitive, const AbstractBasePtr input_arg, const std::string &arg_name);
 bool IsFloatType(TypePtr type);

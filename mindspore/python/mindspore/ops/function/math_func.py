@@ -54,7 +54,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
-                                         addbmm_op, addmm_op)
+                                         addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext, grouped_matmul_v4)
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
@@ -147,6 +147,7 @@ xdivy_ = P.Xdivy()
 tensor_div_ = P.Div()
 tensor_divmod_ = DivMod()
 generator_step_ = Tensor(12, mstype.int64)
+tuple_to_tensor_ = TupleToTensor()
 
 #####################################
 # Private Operation Functions.
@@ -13140,6 +13141,215 @@ def mul_ext(input, other):
     if isinstance(other, (float, int, bool)) and isinstance(input, Tensor):
         return muls(input, other)
     return mul(input, other)
+
+
+def _for_each_transpose(inputs):
+    inputs_t = []
+    for input_i in inputs:
+        input_i_t = transpose_ext(input_i, -1, -2)
+        inputs_t.append(input_i_t)
+    return inputs_t
+
+
+def _is_transposed(input_tensor):
+    dim = input_tensor.dim()
+    if dim < 2 or dim > 3:
+        raise ValueError("input tensor of _is_transposed should be either 2- or 3-dimensional.")
+    input_shape = input_tensor.shape
+    input_strides = input_tensor.stride()
+    if input_strides[-2] == 1 and input_strides[-1] == input_shape[-2]:
+        return True
+    return False
+
+
+def gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
+    r"""
+    Grouping matrix multiplication.
+
+    .. warning::
+        - This is an experimental API that is subject to change or deletion.
+        - `group_type` must be constant.
+
+    .. note::
+        - When 'group_type' is 2, 'weight' must be a non-continuous tensor after transpose.
+        - Only when 'group_type' is 0 and 'bias' is None, the reverse derivative is supported.
+
+    Args:
+        x (tuple[Tensor]): The first tensors to be multiplied.
+        weight (tuple[Tensor]): The second tensors to be multiplied.
+
+    Keyword Args:
+        bias (tuple[Tensor], optional): Biases added to outputs. In the training scenario,
+            the bias only supoorts None. Default: ``None`` .
+
+        group_list (Union[list[int], tuple(int)], optional): Represents the index of
+            the different groups on the grouping axis.  It must be a non-negative ascending
+            sequence . Default: ``None`` .
+
+            If `group_type` is 0, the last element in `group_list` should be equal to the
+            first dimension of the tensor in `x` .
+
+            If `group_type` is 2, the last element in `group_list` should be equal to the
+            second dimension of the tensor in `x` .
+
+        group_type (int, optional): Represents the dim that need to be grouped. Default: ``0`` .
+            For example, :math: `C[m,n] = A[m,k] \times B[k,n]`.
+
+            If `group_type` is 0, it means that the m-axis is grouped, where tensors in `x`
+            should be 2-D, tensors in `weight` should be 3-D, and the tensors of result would
+            be 2-D.
+
+            If `group_type` is 2, it means that the k-axis is grouped, where each tensor in `x`
+            and `weight` should be 2-D, and the tensors of result would be 3-D.
+
+        group_list_type (int, optional): Useless arg, which would be ignored.
+
+    Returns:
+        tuple[Tensor], the results of grouping matrix multiplication.
+
+    Raises:
+        TypeError: If `group_type` is not a int.
+        ValueError: If `group_type` is invalid.
+        ValueError: If the length of `x` or `weight` is not 1.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.random.uniform(0,1, (10, 20)).astype(np.float32))
+        >>> weight = Tensor(np.random.uniform(0,1, (4, 20, 8)).astype(np.float32))
+        >>> group_list = [2, 6, 8, 10]
+        >>> y = ops.function.math_func.gmm([x,], [weight,], group_list=group_list)
+        >>> print(y[0].shape)
+        >>> [10, 8]
+    """
+    return grouped_matmul_v2(x, weight, bias=bias, group_list=group_list,
+                             split_item=3, group_type=group_type)
+
+
+def gmm_backward(grad, x, weight, *, group_list=None, group_list_type=0):
+    r"""
+    the grad of gmm
+    """
+    num_w = len(weight)
+
+    xt = _for_each_transpose(x)
+    wt = _for_each_transpose(weight)
+
+    dx = gmm(grad, wt, bias=None, group_list=group_list, group_type=0)
+    dw = gmm(xt, grad, bias=None, group_list=group_list, group_type=2)
+
+    dw_output = []
+    for i in range(num_w):
+        dw_i_tensor = dw[i].reshape(weight[i].shape)
+        dw_output.append(dw_i_tensor)
+
+    db = []
+
+    return dx, dw_output, db
+
+
+def gmm_v2(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
+    r"""
+    Grouping matrix multiplication.
+
+    .. warning::
+        - This is an experimental API that is subject to change or deletion.
+        - `group_type` must be constant.
+
+    .. note::
+        - When 'group_type' is 2, 'weight' must be a non-continuous tensor after transpose.
+        - Only when 'group_type' is 0 and 'bias' is None, the reverse derivative is supported.
+
+    Args:
+        x (tuple[Tensor]): The first tensors to be multiplied.
+        weight (tuple[Tensor]): The second tensors to be multiplied.
+
+    Keyword Args:
+        bias (tuple[Tensor], optional): Biases added to outputs. In the training scenario,
+            the bias only supoorts None. Default: ``None`` .
+
+        group_list (Tensor, optional): Represents the index of the different groups on
+            the grouping axis. Supported dtypes: int64. Default: ``None`` .
+
+            If `group_list_type` is 0, it must be a non-negative ascending sequence.
+            And when `group_type` is 0, the last element in `group_list` should be equal to
+            the first dimension of the tensor in `x` . When `group_type` is 2, the last element
+            in `group_list` should be equal to the second dimension of the tensor in `x` .
+
+            If `group_list_type` is 1, the value in `group_list` are the size of each group.
+
+        group_type (int, optional): Represents the axes that need to be grouped. For example,
+            :math: `C[m,n] = A[m,k] \times B[k,n]`. Default: ``0`` .
+
+            If `group_type` is 0, it means that the m-axis is grouped, where tensors in `x`
+            should be 2-D, tensors in `weight` should be 3-D, and the tensors of result would be
+            2-D.
+
+            If `group_type` is 2, it means that the k-axis is grouped, where each tensor in `x`
+            and `weight` should be 2-D, and the tensors of result would be 3-D.
+
+        group_list_type (int, optional): If it's 0, the value in `group_list` are the cumsum
+            result of the size of each group. If it's 1, the value in `group_list` are the size
+            of each group.
+
+    Returns:
+        tuple[Tensor], the results of grouping matrix multiplication.
+
+    Raises:
+        TypeError: If `group_type` is not a int.
+        ValueError: If `group_type` is invalid.
+        ValueError: If the length of `x` or `weight` is not 1.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.random.uniform(0,1, (10, 20)).astype(np.float32))
+        >>> weight = Tensor(np.random.uniform(0,1, (4, 20, 8)).astype(np.float32))
+        >>> group_list = Tensor([2, 4, 2, 2])
+        >>> y = ops.function.math_func.gmm_v2([x,], [weight,], group_list=group_list, group_list_type=1)
+        >>> print(y[0].shape)
+        >>> [10, 8]
+    """
+    return grouped_matmul_v4(x, weight, bias=bias, group_list=group_list, split_item=3,
+                              group_type=group_type, group_list_type=group_list_type, act_type=0)
+
+
+def gmm_v2_backward(grad, x, weight, *, group_list=0, group_list_type=0):
+    r"""
+    the grad of gmm_v2
+    """
+    num_w = len(weight)
+    wt = _for_each_transpose(weight)
+
+    dx = gmm_v2(grad, wt, bias=None, group_list=group_list, group_type=0, group_list_type=group_list_type)
+
+    w0 = weight[0]
+    if _is_transposed(w0):
+        grad_tensor = grad[0].contiguous()
+        gradt = _for_each_transpose([grad_tensor,])
+        dwt = gmm_v2(gradt, x, bias=None, group_list=group_list, group_type=2, group_list_type=group_list_type)
+        dw = _for_each_transpose(dwt)
+    else:
+        xt = _for_each_transpose(x)
+        dw = gmm_v2(xt, grad, bias=None, group_list=group_list, group_type=2, group_list_type=group_list_type)
+
+    dw_output = []
+    for i in range(num_w):
+        dw_i_tensor = dw[i].reshape(weight[i].shape)
+        dw_output.append(dw_i_tensor)
+
+    db = []
+
+    return dx, dw_output, db
+
 
 __all__ = [
     'addn',

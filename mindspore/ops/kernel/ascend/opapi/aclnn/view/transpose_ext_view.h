@@ -13,34 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_TRANSPOSEEXT_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_TRANSPOSEEXT_KERNEL_MOD_H_
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
+#include "ir/tensor_storage_info.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
 
-class GroupedMatmulAscend : public AclnnKernelMod {
+class TransposeExtView : public AclnnKernelMod {
  public:
-  GroupedMatmulAscend() : AclnnKernelMod(std::move("aclnnGroupedMatmulV3")) {}
-  ~GroupedMatmulAscend() = default;
+  TransposeExtView() : AclnnKernelMod("InnerTransposeExtView") {}
+  ~TransposeExtView() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  void UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 
  private:
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
-
-  int64_t group_type_{0};
-  int64_t split_item_{0};
-  std::vector<int64_t> group_info_{};
-  std::vector<int64_t> start_idxs_{};
+  mindspore::TensorStorageInfoPtrList info_;
 };
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GROUPED_MATMUL_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_TRANSPOSEEXT_KERNEL_MOD_H_

@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/core/include/utils/ms_utils.h"
 
@@ -72,7 +73,9 @@ bool IsOutSuit(const AnfNodePtr &node, const mindspore::FuncGraphManagerPtr &man
     }
     // Out is not aclnn kernel: OPAPI_KERNEL
     auto out_name = AnfUtils::GetCNodeName(out);
-    if (out_name != kMatMulOpName && out_name != "GroupedMatmul") {
+    std::set<std::string> white_list{ops::kNameMatMul, ops::kNameGroupedMatmul, ops::kNameGroupedMatmulV2,
+                                     ops::kNameGroupedMatmulV4};
+    if (white_list.find(out_name) == white_list.end()) {
       return false;
     }
   }

@@ -44,6 +44,7 @@ constexpr auto kParallelConcatOpName = "ParallelConcat";
 constexpr auto kFlattenConcatOpName = "FlattenConcat";
 constexpr auto kConjugateTransposeOpName = "ConjugateTranspose";
 constexpr auto kTransposeOpName = "Transpose";
+constexpr auto kTransposeExtOpName = "TransposeExt";
 constexpr auto kGatherDGradOpName = "GatherDGrad";
 constexpr auto kGatherDGradV2OpName = "GatherDGradV2";
 constexpr auto kCoalesceOpName = "Coalesce";

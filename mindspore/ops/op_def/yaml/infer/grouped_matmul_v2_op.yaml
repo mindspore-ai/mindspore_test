@@ -1,0 +1,45 @@
+#operator grouped_matmul_v2
+grouped_matmul_v2:
+    args:
+        x:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        weight:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        bias:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+            default: None
+        scale:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+            default: None
+        offset:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+            default: None
+        antiquant_scale:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+            default: None
+        antiquant_offset:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+            default: None
+        group_list:
+            dtype: tuple[int]
+            type_cast: list[int]
+            default: None
+        split_item:
+            dtype: int
+            default: 0
+        group_type:
+            dtype: int
+            default: -1
+    returns:
+        y:
+            dtype: tuple[tensor]
+    dispatch:
+        enable: True
+        Ascend: GroupedMatmulV2Ascend

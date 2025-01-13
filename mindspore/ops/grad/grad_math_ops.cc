@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <algorithm>
+#include <cstddef>
 #include <unordered_set>
+#include <vector>
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/bprop/common_utils.h"
+#include "include/common/expander/core/node.h"
 #include "include/common/utils/utils.h"
 #include "ir/functor.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "utils/ms_context.h"
+#include "op_def/op_enum.h"
+#include "op_def/math_ops.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "mindspore/ops/op_def/op_enum.h"
+#include "abstract/dshape.h"
+#include "utils/ms_context.h"
 
 namespace mindspore::expander::bprop {
 NodePtrList AddnGradFunc(BpropBuilder *ib) {
@@ -694,6 +698,93 @@ void FreeTensorsOfDiv(const PynativeCallback &cb) {
   }
 }
 
+inline std::pair<size_t, size_t> GroupedMatmulBackwardParamsCheck(const NodePtr &x, const NodePtr &weight,
+                                                                  const NodePtr &split_item, const NodePtr &scale,
+                                                                  const NodePtr &offset, const NodePtr &antiquant_scale,
+                                                                  const NodePtr &antiquant_offset,
+                                                                  const NodePtr &group_type) {
+  auto x_abs = x->abstract();
+  MS_EXCEPTION_IF_NULL(x_abs);
+  auto x_base_shape = x_abs->GetShape();
+  MS_EXCEPTION_IF_NULL(x_base_shape);
+  auto x_is_dyn_seq = x_base_shape->isa<abstract::DynamicSequenceShape>();
+  if (x_is_dyn_seq) {
+    MS_LOG(EXCEPTION)
+      << "For GroupedMatmul's backward,, the tensor num in x should not be dynamic, which is not supported.";
+  }
+  auto x_sequence_shape = x_base_shape->cast<abstract::TupleShapePtr>();
+  MS_EXCEPTION_IF_NULL(x_sequence_shape);
+  auto num_x = x_sequence_shape->size();
+
+  auto weight_abs = weight->abstract();
+  MS_EXCEPTION_IF_NULL(weight_abs);
+  auto weight_base_shape = weight_abs->GetShape();
+  MS_EXCEPTION_IF_NULL(weight_base_shape);
+  auto weight_is_dyn_seq = weight_base_shape->isa<abstract::DynamicSequenceShape>();
+  if (weight_is_dyn_seq) {
+    MS_LOG(EXCEPTION)
+      << "For GroupedMatmul's backward, the tensor num in weight should not be dynamic, which is not supported.";
+  }
+  auto weight_sequence_shape = weight_base_shape->cast<abstract::TupleShapePtr>();
+  MS_EXCEPTION_IF_NULL(weight_sequence_shape);
+  auto num_w = weight_sequence_shape->size();
+
+  auto split_item_value = mindspore::GetScalarValue<int64_t>(split_item->BuildValue());
+  if (!split_item_value.has_value() || split_item_value.value() != SizeToLong(kIndex3)) {
+    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, split_item only support 3, but got "
+                      << split_item_value.value();
+  }
+
+  auto group_type_value = mindspore::GetScalarValue<int64_t>(group_type->BuildValue());
+  if (!group_type_value.has_value() || group_type_value.value() != SizeToLong(kIndex0)) {
+    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, group_type only support 0, but got "
+                      << group_type_value.value();
+  }
+
+  auto is_none_func = [](const NodePtr &node) {
+    auto type = node->abstract()->BuildType();
+    return type->isa<TypeNone>();
+  };
+  std::vector<NodePtr> none_args{scale, offset, antiquant_scale, antiquant_offset};
+  if (!std::all_of(none_args.begin(), none_args.end(), is_none_func)) {
+    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, scale, offset, antiquant_scale and antiquant_offset "
+                         "should all be None.";
+  }
+
+  return std::make_pair(num_x, num_w);
+}
+
+inline NodePtr ForEachTransposeLastTwoDim(BpropBuilder *ib, const NodePtr &node, size_t num) {
+  std::vector<NodePtr> new_tensors;
+  for (size_t i = 0; i < num; ++i) {
+    auto tensor_i = ib->TupleGetItem(node, i);
+    auto tensor_i_t = ib->Transpose(tensor_i, -1, -2);
+    new_tensors.emplace_back(tensor_i_t);
+  }
+  return ib->MakeTuple(new_tensors);
+}
+
+inline NodePtr ForEachOutZeros(BpropBuilder *ib, const NodePtr &node) {
+  auto abs = node->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  auto base_shape = abs->GetShape();
+  MS_EXCEPTION_IF_NULL(base_shape);
+  auto is_dyn_seq = base_shape->isa<abstract::DynamicSequenceShape>();
+  if (is_dyn_seq) {
+    MS_LOG(EXCEPTION) << "The tensor num of tuple[tensor] should not be dynamic, which is not supported.";
+  }
+  auto sequence_shape = base_shape->cast<abstract::SequenceShapePtr>();
+  MS_EXCEPTION_IF_NULL(sequence_shape);
+  auto num = sequence_shape->size();
+  std::vector<NodePtr> new_nodes;
+  for (size_t i = 0; i < num; ++i) {
+    auto tensor_i = ib->TupleGetItem(node, i);
+    new_nodes.push_back(ib->OutZeros(tensor_i));
+  }
+  auto zeros_node = ib->MakeTuple(new_nodes);
+  return zeros_node;
+}
+
 REG_BPROP_BUILDERS_BEGIN(GradMathOps)
 REG_BPROP_BUILDER("MatMul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -918,6 +1009,77 @@ REG_BPROP_BUILDER("Mm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
     dw = ib->OutZeros(mat2);
   }
   return {dx, dw};
+});
+
+REG_BPROP_BUILDER("GroupedMatmul").SetUnusedInputs({i2, i10}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto weight = ib->GetInput(kIndex1);
+  auto bias = ib->GetInput(kIndex2);
+  auto group_list = ib->GetInput(kIndex7);
+  auto group_type = ib->GetInput(kIndex9);
+
+  auto scale = ib->GetInput(kIndex3);
+  auto offset = ib->GetInput(kIndex4);
+  auto antiquant_scale = ib->GetInput(kIndex5);
+  auto antiquant_offset = ib->GetInput(kIndex6);
+
+  auto split_item = ib->GetInput(kIndex8);
+  auto dout = ib->GetInput(kIndex11);
+  auto [num_x, num_w] = GroupedMatmulBackwardParamsCheck(x, weight, split_item, scale, offset, antiquant_scale,
+                                                         antiquant_offset, group_type);
+
+  auto xt = ForEachTransposeLastTwoDim(ib, x, num_x);
+  auto wt = ForEachTransposeLastTwoDim(ib, weight, num_w);
+
+  auto none_node = ib->EmitValue(mindspore::kNone);
+
+  NodePtr dx{nullptr};
+  if (x->need_compute_grad_out()) {
+    dx = ib->Emit("GroupedMatmul", {dout, wt, none_node, scale, offset, antiquant_scale, antiquant_offset, group_list,
+                                    split_item, ib->Value<int64_t>(0)});
+  } else {
+    dx = ForEachOutZeros(ib, x);
+  }
+
+  NodePtr dw{nullptr};
+  if (weight->need_compute_grad_out()) {
+    auto dw_tmp = ib->Emit("GroupedMatmul", {xt, dout, none_node, scale, offset, antiquant_scale, antiquant_offset,
+                                             group_list, split_item, ib->Value<int64_t>(2)});
+    std::vector<NodePtr> dw_nodes;
+    for (size_t i = 0; i < num_w; i++) {
+      auto weight_i = ib->TupleGetItem(weight, i);
+      auto dw_tmp_i = ib->TupleGetItem(dw_tmp, i);
+      dw_nodes.push_back(ib->Reshape(dw_tmp_i, ib->Shape(weight_i)));
+    }
+    dw = ib->MakeTuple(dw_nodes);
+  } else {
+    dw = ForEachOutZeros(ib, weight);
+  }
+
+  auto bias_abs = bias->abstract();
+  MS_EXCEPTION_IF_NULL(bias_abs);
+  auto bias_type = bias_abs->BuildType();
+  auto is_bias_none = bias_type->isa<TypeNone>();
+  if (bias->need_compute_grad_out() && !is_bias_none) {
+    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, bias was expected to be None, but got " << bias_abs->ToString();
+  }
+  NodePtr dbias{nullptr};
+  if (is_bias_none) {
+    dbias = ib->OutZeros(bias);
+  } else {
+    dbias = ForEachOutZeros(ib, bias);
+  }
+
+  return {dx,
+          dw,
+          dbias,
+          ib->OutZeros(scale),
+          ib->OutZeros(offset),
+          ib->OutZeros(antiquant_scale),
+          ib->OutZeros(antiquant_offset),
+          ib->OutZeros(group_list),
+          ib->OutZeros(split_item),
+          ib->OutZeros(group_type)};
 });
 
 REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {

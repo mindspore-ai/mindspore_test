@@ -34,7 +34,7 @@ void GroupedMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
                                   const std::optional<ValueTuplePtr> &offset_tensor_list,
                                   const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
                                   const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
-                                  const std::optional<BaseTensorPtr> &group_list, const Int64ImmPtr &split_item,
+                                  const std::optional<BaseTensorPtr> &group_list_tensor, const Int64ImmPtr &split_item,
                                   const Int64ImmPtr &group_type);
 }  // namespace pyboost
 }  // namespace kernel
