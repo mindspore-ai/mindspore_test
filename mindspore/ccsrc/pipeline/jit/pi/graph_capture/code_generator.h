@@ -193,9 +193,7 @@ class CodeBreakGenerator {
  public:
   explicit CodeBreakGenerator(PyCodeObject *co) : co_(co), cfg_(nullptr), break_bci_(-1), extra_local_(-1) {}
   static CodeBreakGeneratorPtr Creator(const GraphBuilderPtr &builder, PyCodeObject *co) {
-    return builder->trace_flag()
-             ? std::static_pointer_cast<CodeBreakGenerator>(std::make_shared<MindCodeBreakGenerator>(builder, co))
-             : std::make_shared<CodeBreakGenerator>(co);
+    return std::static_pointer_cast<CodeBreakGenerator>(std::make_shared<MindCodeBreakGenerator>(builder, co));
   }
 
   void SetGlobals(const py::dict &dict) { globals_ = dict; }

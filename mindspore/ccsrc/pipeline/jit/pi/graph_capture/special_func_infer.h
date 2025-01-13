@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace pijit {
 using InferFunc = bool (*)(CallNode *, GraphBuilder *);
-InferFunc FindInferFunc(const py::object &callable, bool trace_flag = false);
+InferFunc FindInferFunc(const py::object &callable);
 
 void HandleGradFuncCall(CallNode *call_node, AObject *decorated, bool sens_param,
                         const py::object &after_grad = py::object());

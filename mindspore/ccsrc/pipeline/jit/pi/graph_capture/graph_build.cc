@@ -1390,9 +1390,6 @@ ValueNode *GraphBuilder::MakeTensorCopy(ValueNode *tensor) {
   DoAttrAccess({LOAD_ATTR, 0, "dtype"});
   DoCall({CALL_FUNCTION, 2});
   ValueNode *node = pop();
-  if (!trace_flag()) {  // one stage can't use same object
-    node->SetVobj(tensor->GetVobj());
-  }
   return node;
 }
 
@@ -2146,7 +2143,7 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
     return true;
   }
 
-  InferFunc infer_func = FindInferFunc(callable, trace_flag());
+  InferFunc infer_func = FindInferFunc(callable);
   if (infer_func == nullptr) {
     return false;
   }
@@ -2406,10 +2403,6 @@ ValueNode *GraphBuilder::HandleCallClass(CallNode *call_node) {
   }
   auto *t = static_cast<AbstractType *>(vobj);
   AObject::Type type = t->GetTypeType();
-  if (!trace_flag() && ClassInstantiationFold(call_node, type)) {
-    MS_LOG(INFO) << "Class instantiation folded";
-    return call_node;
-  }
   if (type == AObject::kTypeTensor && HandleCallTensorClass(call_node)) {
     return call_node;
   }
@@ -3214,7 +3207,7 @@ ValueNode *GraphBuilder::GetBoundSelf(CallNode *call_node) {
 bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
-  auto vobj = trace_flag() ? AObject::Convert(func.ptr()) : call_node->input(0)->GetVobj();
+  auto vobj = AObject::Convert(func.ptr());
   AObject::Type callable_type = vobj->GetType();
 
   ValueNode *self = GetBoundSelf(call_node);
@@ -3425,11 +3418,8 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
     for (int i = 0; i < ncells; i++) {
       auto obj_info = AObject::Convert(py::reinterpret_steal<py::object>(PyCell_New(nullptr)));
       CellVarNode *cell_node = graph_->NewCellNode(obj_info, CALL_FUNCTION, 0, {type_node});
-      if (trace_flag()) {
-        // return type is InterpretObjectPtr->ToAbstract();
-        auto abs = static_cast<MindGraphBuilder *>(this)->FGBuilder()->AddLocalVariable(obj_info->GetPyObject());
-        cell_node->set_abstract_wrapper(abs);
-      }
+      auto abs = static_cast<MindGraphBuilder *>(this)->FGBuilder()->AddLocalVariable(obj_info->GetPyObject());
+      cell_node->set_abstract_wrapper(abs);
       call_node->AddParam(cell_node);
       frame->SetClosure(i, cell_node);
     }
@@ -3557,7 +3547,7 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
   // unsupported check
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(callable_info.ptr()));
   PyObject *globals = PyFunction_GET_GLOBALS(callable_info.ptr());
-  auto subgraph = GraphBuilder::Creator(this->root_ ? this->root_ : this, this, co, globals, trace_flag());
+  auto subgraph = GraphBuilder::Creator(this->root_ ? this->root_ : this, this, co, globals);
   this->sub_graph = subgraph;
 
   // frame build
@@ -3572,11 +3562,6 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
   // build sub-graph
   stop_reason = BuildSubGraph(call_node, depth, callable_info, subgraph);
   CollectInlineInfo(call_node, depth);
-
-  if (!trace_flag() && call_node->GetSubGraph() && call_node->GetInlineReason() == InlineReason::kInline) {
-    MS_EXCEPTION_IF_NULL(call_node->GetSubGraph()->GetRetVal());
-    seek(0) = call_node->GetSubGraph()->GetRetVal();
-  }
   return stop_reason;
 }
 
@@ -3743,31 +3728,20 @@ bool GraphBuilder::TraceRunForIterEnumerate(int jump_bci) {
   auto tuple = py::reinterpret_steal<py::tuple>(obj);
   py::object index = tuple[0];
   ValueNode *result_node;
-  if (trace_flag()) {
-    DoLoadConst({LOAD_CONST, 0, index});
-    ValueNode *index_node = pop();
-    push(seq_node);
-    push(index_node);
-    if (!DoItemAccess({BINARY_SUBSCR, 0})) {
-      return false;
-    }
-    ValueNode *item_node = pop();
-    push(index_node);
-    push(item_node);
-    if (!DoBuildOp({BUILD_TUPLE, 2})) {
-      return false;
-    }
-    result_node = pop();
-  } else {
-    DoLoadConst({LOAD_CONST, -1, py::int_(index)});
-    ValueNode *index_node = pop();
-    push(index_node);
-    push(seq_node);
-    push(index_node);
-    DoItemAccess({BINARY_SUBSCR, 0});
-    DoBuildOp({BUILD_TUPLE, 2});
-    result_node = pop();
+  DoLoadConst({LOAD_CONST, 0, index});
+  ValueNode *index_node = pop();
+  push(seq_node);
+  push(index_node);
+  if (!DoItemAccess({BINARY_SUBSCR, 0})) {
+    return false;
   }
+  ValueNode *item_node = pop();
+  push(index_node);
+  push(item_node);
+  if (!DoBuildOp({BUILD_TUPLE, 2})) {
+    return false;
+  }
+  result_node = pop();
 
   push(result_node);
   cur_bci_ = cur_bci_ + 1;
@@ -3830,27 +3804,17 @@ bool GraphBuilder::TraceRunForIterZip(int jump_bci) {
     return true;
   }
 
-  if (trace_flag()) {
-    for (auto seq_node : iterable_nodes) {
-      DoLoadConst({LOAD_CONST, 0, py::int_(*index)});
-      ValueNode *index_node = pop();
-      push(seq_node);
-      push(index_node);
-      if (!DoItemAccess({BINARY_SUBSCR, 0})) {
-        return false;
-      }
-    }
-    if (!DoBuildOp({BUILD_TUPLE, SizeToInt(iterable_nodes.size())})) {
+  for (auto seq_node : iterable_nodes) {
+    DoLoadConst({LOAD_CONST, 0, py::int_(*index)});
+    ValueNode *index_node = pop();
+    push(seq_node);
+    push(index_node);
+    if (!DoItemAccess({BINARY_SUBSCR, 0})) {
       return false;
     }
-  } else {
-    for (size_t tuple_index = 0; tuple_index < iterable_nodes.size(); ++tuple_index) {
-      ValueNode *seq_node = iterable_nodes[tuple_index];
-      push(seq_node);
-      DoLoadConst({LOAD_CONST, -1, py::int_(*index)});
-      DoItemAccess({BINARY_SUBSCR, 0});
-    }
-    DoBuildOp({BUILD_TUPLE, static_cast<int>(iterable_nodes.size())});
+  }
+  if (!DoBuildOp({BUILD_TUPLE, SizeToInt(iterable_nodes.size())})) {
+    return false;
   }
 
   (*index)++;
@@ -4174,56 +4138,6 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
   return true;
 }
 
-static void EliminateCellAccess(Graph *g) {
-  PyCodeWrapper co(g->GetCodeObj());
-  int ncells = co.CellVarsSize();
-  if (ncells == 0) {
-    return;
-  }
-  ValueNode *ret_node = g->GetRetVal();
-  if (ret_node == nullptr) {
-    return;
-  }
-  std::set<ValueNode *> escaped;
-  auto CollectClosure = [&escaped](ValueNode *node) {
-    if (node->GetOpcode() == MAKE_FUNCTION && (node->GetOparg() & 0x08)) {
-      const auto &in = (*(node->getInputs().end() - 3))->getInputs();
-      escaped.insert(in.begin(), in.end());
-    }
-  };
-  for (auto i : g->GetTracedNodes()) {
-    int op = i->GetOpcode();
-    if (op == STORE_DEREF && i->GetOparg() < ncells) {
-      // exclude STORE_DEREF
-      continue;
-    }
-    auto begin = i->getInputs().begin();
-    if (Opcode(op).IsCall() && static_cast<CallNode *>(i)->GetInlineReason() == InlineReason::kInline) {
-      begin++;
-    }
-    std::for_each(begin, i->getInputs().end(), CollectClosure);
-  }
-  CollectClosure(ret_node);
-  // collect STORE_DEREF with MAKE_FUNCTION ...
-
-  const auto &closures = g->GetFrame(0).GetClosures();
-  for (int i = 0; i < ncells; ++i) {
-    if (escaped.find(closures[i]) != escaped.end()) {
-      continue;
-    }
-    for (auto node : closures[i]->GetCellOper()) {
-      if (node->GetOpcode() != STORE_DEREF) {
-        // closure access before assign, raise UnboundLocalError
-        return;
-      }
-      node->SetOpcode(LOAD_CONST);
-      node->SetVobj(AObject::Convert(Py_None));
-      node->ClearInputs();
-    }
-    closures[i]->GetCellOper().clear();
-  }
-}
-
 StopTraceReason GraphBuilder::TraceRun() {
   current_block_ = graph_->GetCFG()->GetFirstBB();
   cur_bci_ = 0;
@@ -4235,9 +4149,6 @@ StopTraceReason GraphBuilder::TraceRun() {
     if (!DoByteCode(*instrs[cur_bci_])) {
       break;
     }
-  }
-  if (!trace_flag()) {
-    EliminateCellAccess(this->graph_);
   }
   return graph_->GetStopTraceReason();
 }
@@ -5349,8 +5260,6 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   if (!FGBuilder()->ValidateCallableObject(callable_info)) {
     return py::object();
   }
-  MS_LOG(INFO) << "trace_flag for: " << py::str(callable_info);
-
   if (FGBuilder()->CanConstantFoldFunc(callable_info)) {
     const auto &res = GetConstantInputsObject(call_node);
     if (res.first) {
@@ -6113,7 +6022,7 @@ bool MindGraphBuilder::HandlePositionParams(const py::object &func, std::vector<
                                             FrameStates *frame) {
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
-  auto vobj = trace_flag() ? AObject::Convert(func.ptr()) : call_node->input(0)->GetVobj();
+  auto vobj = AObject::Convert(func.ptr());
   AObject::Type callable_type = vobj->GetType();
 
   ValueNode *self = GetBoundSelf(call_node);
