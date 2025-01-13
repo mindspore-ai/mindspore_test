@@ -21,7 +21,7 @@ from mindspore.nn.wrap import TrainOneStepCell
 import mindspore.context as context
 from mindspore.context import ParallelMode
 from mindspore.parallel._utils import _get_global_rank, _get_device_num, _get_gradients_mean
-from mindspore.communication.management import get_group_size, create_group
+from mindspore.communication.management import get_rank, get_group_size, create_group
 from mindspore.nn.cell import Cell
 from mindspore.nn import SequentialCell
 from mindspore.common import Tensor
@@ -388,7 +388,7 @@ class BoostTrainOneStepCell(TrainOneStepCell):
         gamma = self.auto_boost.gamma
         alpha = self.auto_boost.alpha
         sigma = self.auto_boost.sigma
-        _rank = _get_global_rank()
+        _rank = get_rank()
         _rank_size = 1 if self.parallel_mode == ParallelMode.STAND_ALONE else get_group_size()
         n_components = self.auto_boost.n_components
         timeout = self.auto_boost.timeout

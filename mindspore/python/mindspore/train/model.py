@@ -56,7 +56,7 @@ from mindspore.dataset.core.config import get_debug_mode
 from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_training_dataset
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
-
+from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 
 def _transfer_tensor_to_tuple(inputs):
     """
@@ -435,6 +435,7 @@ class Model:
     def __init__(self, network, loss_fn=None, optimizer=None, metrics=None, eval_network=None, eval_indexes=None,
                  amp_level="O0", boost_level="O0", **kwargs):
         self._network = network
+        _init_auto_parallel_context(self._network)
         self._loss_fn = loss_fn
         self._optimizer = optimizer
         self._loss_scale_manager = None
@@ -469,6 +470,7 @@ class Model:
         self._lite_infer = True  # if backend lite infer fails, set False
         self._mindspore_lite_model_group_id = id(self) & 0xFFFF
         self.batch_num = -1
+        _clear_auto_parallel_context(self._network)
 
     def _check_for_graph_cell(self, kwargs):
         """Check for graph cell"""
@@ -764,7 +766,7 @@ class Model:
                 break
             logger.warning(f"Waiting for the dataset warmup, current device queue size: {mbuf_size}")
 
-    def _init(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1):
+    def _init(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True):
         """
         Initialize compute graphs and data graphs with the sink mode.
 
@@ -790,10 +792,6 @@ class Model:
         _device_number_check(self._parallel_mode, self._device_number)
 
         if train_dataset:
-            if not isinstance(train_dataset, mindspore.dataset.Dataset):
-                raise TypeError("The type of 'train_dataset' must be `Dataset`, "
-                                "but got {}.".format(type(train_dataset)))
-
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                        "Begin to check parameter broadcast in model.build().")
             logger.info("Begin to check parameter broadcast in model.build() procedure.")
@@ -806,23 +804,24 @@ class Model:
             train_dataset.__no_send__ = True
             train_dataset_helper, train_network = self._exec_preprocess(is_train=True,
                                                                         dataset=train_dataset,
-                                                                        dataset_sink_mode=True,
+                                                                        dataset_sink_mode=sink_mode,
                                                                         sink_size=sink_size)
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to warmup dataset in model.build().")
-            logger.info("Begin to warmup dataset in model.build() procedure.")
-            self._warmup_dataset(epoch, train_dataset, sink_size)
+            if sink_mode:
+                logger.info("Begin to warmup dataset in model.build() procedure.")
+                self._warmup_dataset(epoch, train_dataset, sink_size)
 
-            # Since dataset pipeline has been triggered, delete flag
-            delattr(train_dataset, "__no_send__")
+                # Since dataset pipeline has been triggered, delete flag
+                delattr(train_dataset, "__no_send__")
 
-            # Waiting for the dataset warmup ready
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
-                       "Begin waiting for dataset warmup in model.build().")
-            logger.info("Begin waiting for dataset warmup in model.build() procedure.")
-            self._waiting_for_dataset_warmup_ready(train_dataset)
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
-                       "The dataset warmup was successful in model.build().")
-            logger.info("The dataset warmup was successful in model.build() procedure.")
+                # Waiting for the dataset warmup ready
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           "Begin waiting for dataset warmup in model.build().")
+                logger.info("Begin waiting for dataset warmup in model.build() procedure.")
+                self._waiting_for_dataset_warmup_ready(train_dataset)
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           "The dataset warmup was successful in model.build().")
+                logger.info("The dataset warmup was successful in model.build() procedure.")
 
             if context.get_auto_parallel_context("pipeline_stages") > 1 and valid_dataset:
                 train_network.add_flags_recursive(is_first_iteration=True)
@@ -832,6 +831,7 @@ class Model:
                 logger.info("Begin to compile train network in model.build() procedure.")
                 train_network.compile(*inputs)
                 self._train_network.parameter_layout_dict = train_network.parameter_layout_dict
+                train_dataset.reset()
                 break
 
         if valid_dataset:
@@ -845,7 +845,7 @@ class Model:
             valid_dataset.__no_send__ = True
             valid_dataset_helper, eval_network = self._exec_preprocess(is_train=False,
                                                                        dataset=valid_dataset,
-                                                                       dataset_sink_mode=True)
+                                                                       dataset_sink_mode=sink_mode)
             if context.get_auto_parallel_context("pipeline_stages") > 1:
                 eval_network.add_flags_recursive(is_first_iteration=False)
             for inputs in valid_dataset_helper:
@@ -853,6 +853,7 @@ class Model:
                            "Begin to compile eval network in model.build().")
                 logger.info("Begin to compile eval network in model.build() procedure.")
                 eval_network.compile(*inputs)
+                valid_dataset.reset()
                 break
 
     @staticmethod
@@ -1331,6 +1332,7 @@ class Model:
             ...                  loss_scale_manager=loss_scale_manager)
             >>> model.train(2, dataset)
         """
+        _init_auto_parallel_context(self._network)
         _check_tft()
         device_target = context.get_context("device_target")
         if _is_ps_mode() and not _cache_enable() and (device_target in ["Ascend", "CPU"]) and dataset_sink_mode:
@@ -1387,6 +1389,8 @@ class Model:
         # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
         if _enable_distributed_mindrt():
             _reset_op_id_with_offset()
+
+        _clear_auto_parallel_context(self._network)
 
     @staticmethod
     def _check_sink_mode_for_ds_debug_mode(dataset_sink_mode):
@@ -1486,6 +1490,7 @@ class Model:
             - `Advanced Encapsulation: Model - Train and Save Model
               <https://www.mindspore.cn/docs/en/master/model_train/train_process/model.html#training-and-saving-model>`_
         """
+        _init_auto_parallel_context(self._network)
         device_target = context.get_context("device_target")
         if _is_ps_mode() and not _cache_enable() and (device_target in ["Ascend", "CPU"]) and dataset_sink_mode:
             logger.info("For PS mode, reset datasink mode to False when using Ascend or CPU backend.")
@@ -1537,8 +1542,9 @@ class Model:
                     valid_dataset=valid_dataset,
                     valid_frequency=valid_frequency,
                     valid_dataset_sink_mode=valid_dataset_sink_mode)
+        _clear_auto_parallel_context(self._network)
 
-    def build(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1):
+    def build(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True):
         """
         Build computational graphs and data graphs with the sink mode.
 
@@ -1577,16 +1583,18 @@ class Model:
             >>> model.build(dataset, epoch=2)
             >>> model.train(2, dataset)
         """
+        _init_auto_parallel_context(self._network)
         epoch = Validator.check_positive_int(epoch)
         if hasattr(self._train_network, '_is_check_and_refresh') and not self._train_network._is_check_and_refresh:
             self._train_network.check_names_and_refresh_name()
             self._train_network._is_check_and_refresh = True
         vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to init dataset in model.build().")
         logger.info("Begin to init dataset in model.build() procedure.")
-        self._init(train_dataset, valid_dataset, sink_size, epoch)
+        self._init(train_dataset, valid_dataset, sink_size, epoch, sink_mode)
         vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                    "The model.build() which contains dataset warmup and network compile is success.")
         logger.info("The model.build() which contains dataset warmup and network compile is success.")
+        _clear_auto_parallel_context(self._network)
 
     def _eval_in_fit(self, valid_dataset, callbacks=None, dataset_sink_mode=True, cb_params=None):
         """
@@ -1761,6 +1769,7 @@ class Model:
             - `Advanced Encapsulation: Model - Train and Save Model
               <https://www.mindspore.cn/docs/en/master/model_train/train_process/model.html#training-and-saving-model>`_
         """
+        _init_auto_parallel_context(self._network)
         dataset_sink_mode = Validator.check_bool(dataset_sink_mode)
 
         _device_number_check(self._parallel_mode, self._device_number)
@@ -1805,6 +1814,7 @@ class Model:
         # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
         if _enable_distributed_mindrt():
             _reset_op_id_with_offset()
+        _clear_auto_parallel_context(self._network)
 
         return eval_result
 
@@ -2008,6 +2018,7 @@ class Model:
             >>> model = Model(LeNet5())
             >>> result = model.predict(input_data)
         """
+        _init_auto_parallel_context(self._network)
         if backend not in ['lite', None]:
             raise ValueError(f"For Model.predict, `backend` should be 'lite' or None, but got {backend}")
         if backend == "lite" and self._lite_infer:
@@ -2023,6 +2034,7 @@ class Model:
             except BaseException as e:
                 self._lite_infer = False
                 logger.warning(f"Lite inference failed, {e.__str__()}, fallback to original inference!")
+        _clear_auto_parallel_context(self._network)
 
         def _check_input_data():
             """Input data check."""
@@ -2141,6 +2153,7 @@ class Model:
             ...                  loss_scale_manager=loss_scale_manager)
             >>> layout_dict = model.infer_train_layout(dataset)
         """
+        _init_auto_parallel_context(self._network)
         self._infer_train_check(train_dataset, dataset_sink_mode, sink_size)
 
         train_dataset.__no_send__ = True
@@ -2152,6 +2165,7 @@ class Model:
             train_network.compile(*inputs)
             break
         train_dataset.__model_hash__ = hash(self)
+        _clear_auto_parallel_context(self._network)
         return train_network.parameter_layout_dict
 
     def infer_predict_layout(self, *predict_data, skip_backend_compile=False):
@@ -2194,6 +2208,7 @@ class Model:
             >>> model = Model(Net())
             >>> predict_map = model.infer_predict_layout(input_data)
         """
+        _init_auto_parallel_context(self._network)
         if context.get_context("mode") != context.GRAPH_MODE:
             raise RuntimeError("Pre-compile process that generate parameter layout for the predict network "
                                "only supports GRAPH MODE and Ascend target currently.")
@@ -2213,6 +2228,7 @@ class Model:
             predict_net.phase = origin_phase
         else:
             predict_net.compile(*predict_data)
+        _clear_auto_parallel_context(self._network)
         return predict_net.parameter_layout_dict
 
     def _flush_from_cache(self, cb_params):

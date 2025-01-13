@@ -26,6 +26,8 @@ from mindspore.common import dtype as mstype
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.communication._comm_helper import _is_initialized
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
+from mindspore.parallel._auto_parallel_context import _set_auto_parallel_context
+from mindspore.parallel._auto_parallel_context import _reset_auto_parallel_context
 from mindspore.parallel.shard import Layout
 from mindspore.common.seed import get_seed
 from mindspore._c_expression import GraphExecutor_
@@ -33,6 +35,83 @@ from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shap
 
 SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom", "Index"]
 
+# disable pylint too broad Exception
+# pylint: disable=W0212
+def _init_auto_parallel_context(net):
+    """Parse the member variables of AutoParallel(cell) to the auto parallel context. """
+    if net is None or net.__class__.__name__ != "AutoParallel":
+        pass
+    else:
+        parallel_mode = "semi_auto_parallel"
+        search_mode = "recursive_programming"
+        if net._device_num == 1:
+            parallel_mode = "stand_alone"
+        elif net._parallel_mode in ["recursive_programming", "sharding_propagation"]:
+            search_mode = net._parallel_mode
+            parallel_mode = "auto_parallel"
+        params = {
+            "device_num": net._device_num,
+            "global_rank": net._global_rank,
+            "parallel_mode": parallel_mode,
+            "search_mode": search_mode,
+            "comm_fusion": net._comm_fusion_config,
+            "strategy_ckpt_load_file": net._load_strategy_file_path,
+            "strategy_ckpt_save_file": net._save_strategy_file_path,
+            "strategy_ckpt_config": {
+                "load_file": net._load_strategy_file_path,
+                "save_file": net._save_strategy_file_path,
+                "only_trainable_params": net._only_trainable_params
+            },
+            "dataset_strategy": net._dataset_strategy_config,
+            "full_batch": net._full_batch,
+            "force_fp32_communication": net._force_fp32_communication,
+            "enable_alltoall": net._enable_alltoall,
+            "parameter_broadcast": net._parameter_broadcast,
+            "group_ckpt_save_file": net._group_ckpt_save_file,
+            "dump_local_norm": net._dump_local_norm,
+            "dump_local_norm_path": net._dump_local_norm_path,
+            "dump_device_local_norm": net._dump_device_local_norm,
+            "gradients_mean": net._gradients_mean,
+            "gradient_fp32_sync": net._gradient_fp32_sync,
+            "loss_repeated_mean": net._loss_repeated_mean
+        }
+
+        # hsdp
+        params["enable_parallel_optimizer"] = net._enable_parallel_optimizer
+        if params["enable_parallel_optimizer"]:
+            parallel_optimizer_config = {}
+            if net._parallel_optimizer_threshold != -1:
+                parallel_optimizer_config["parallel_optimizer_threshold"] = net._parallel_optimizer_threshold
+            if net._optimizer_weight_shard_size != -1:
+                parallel_optimizer_config["optimizer_weight_shard_size"] = net._optimizer_weight_shard_size
+            parallel_optimizer_config["optimizer_level"] = net._optimizer_level
+            params['parallel_optimizer_config'] = parallel_optimizer_config
+
+        # pipeline
+        params["pipeline_stages"] = net._pipeline_stages
+        if params["pipeline_stages"] > 1:
+            params['pipeline_result_broadcast'] = net._pipeline_result_broadcast
+            params['pipeline_config'] = {
+                "pipeline_interleave": net._pipeline_interleave,
+                "pipeline_scheduler": net._pipeline_scheduler
+            }
+
+        # set_op_strategy_config
+        if parallel_mode == "auto_parallel" and search_mode == "sharding_propagation":
+            from mindspore.parallel.checkpoint_transform import set_op_strategy_config
+            if net._load_operator_strategy_file != "":
+                set_op_strategy_config(mode="LOAD", path=net._load_operator_strategy_file)
+            if net._save_operator_strategy_file != "":
+                set_op_strategy_config(mode="SAVE", path=net._save_operator_strategy_file)
+
+        _set_auto_parallel_context(**params)
+
+
+def _clear_auto_parallel_context(net):
+    if net is None or net.__class__.__name__ != "AutoParallel":
+        pass
+    else:
+        _reset_auto_parallel_context()
 
 def _get_parallel_mode():
     """Get parallel mode."""
@@ -128,7 +207,7 @@ class ParallelParamInitProfCtx:
 
 def _slice_parameter(parameter, phase, layout):
     """Slice python parameter obj according to the layout."""
-    if getattr(parameter, "init_param", False):
+    if getattr(parameter, "init_param", False) and parameter.has_init:
         if layout is None:
             parameter.sliced = True
             return

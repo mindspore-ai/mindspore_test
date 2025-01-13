@@ -16,7 +16,6 @@
 
 import os
 from mindspore.train.serialization import save_checkpoint
-from mindspore.parallel._utils import _get_device_num
 from mindspore import _checkparam as Validator
 from mindspore.train.callback._callback import Callback
 from mindspore import context
@@ -332,7 +331,7 @@ class TFTRegister(Callback):
         self.tft.tft_register_clean_handler(_tft_clean_callback, self)
         self.tft.tft_register_repair_handler(_tft_repair_callback, self)
 
-        world_size = _get_device_num()
+        world_size = get_group_size()
         cur_rank = get_rank()
         enable_local_copy = False
         enable_arf = False

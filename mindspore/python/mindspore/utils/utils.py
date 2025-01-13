@@ -19,8 +19,6 @@ from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P
-from mindspore.context import ParallelMode
-from mindspore.parallel._utils import _get_parallel_mode
 from mindspore.common.api import jit_class
 
 
@@ -37,9 +35,9 @@ class ExitByRequest:
         self.equal = P.Equal()
         self.assign = P.Assign()
         self.reduce_all = P.ReduceAll(keep_dims=False)
-        self.is_distributed = _get_parallel_mode() != ParallelMode.STAND_ALONE
+        self.group_size = get_group_size()
+        self.is_distributed = self.group_size > 1
         if self.is_distributed:
-            self.group_size = get_group_size()
             self.base = Tensor([self.group_size], dtype=mstype.int32)
         self.base1 = Tensor([1], mstype.int32)
         self.true = Tensor(True, mstype.bool_)
