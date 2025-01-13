@@ -242,8 +242,8 @@ class ProfilerOutputPath:
     @output_path.setter
     def output_path(self, value: str):
         """Set the output path."""
-        PathManager.check_input_directory_path(value)
         real_path = PathManager.get_real_path(value)
+        PathManager.check_input_directory_path(real_path)
         self._output_path = real_path
 
     @ascend_ms_dir.setter
