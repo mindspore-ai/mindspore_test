@@ -16,6 +16,7 @@
 import os
 import re
 import shutil
+import glob
 
 from mindspore import log as logger
 from mindspore.profiler.common.constant import FileConstant
@@ -337,6 +338,29 @@ class PathManager:
             if os.path.isdir(sub_path) and re.match(FileConstant.CANN_FILE_REGEX, sub_dir):
                 return sub_path
         return ""
+
+    @classmethod
+    def get_profiler_info_path(cls, ascend_ms_dir: str) -> str:
+        """
+        Function Description:
+            Get profiler_info_*.json path from ascend_ms_dir
+        Parameter:
+            ascend_ms_dir: the directory path of profiler data, eg: xxx_ascend_ms
+        Return:
+            str type profiler_info_*.json path
+        """
+        prof_info_path_pattern = os.path.join(ascend_ms_dir, "profiler_info_*.json")
+        prof_info_paths = glob.glob(prof_info_path_pattern)
+
+        if not prof_info_paths:
+            raise ValueError(f"Cannot find profiler_info.json in the {ascend_ms_dir}")
+
+        if len(prof_info_paths) > 1:
+            logger.warning(
+                f"There are more than one profiler_info.json in the {ascend_ms_dir}, "
+                f"use the first one: {prof_info_paths[0]}"
+            )
+        return prof_info_paths[0]
 
     @classmethod
     def get_real_path(cls, path: str):
