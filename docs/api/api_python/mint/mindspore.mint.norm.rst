@@ -28,7 +28,7 @@ mindspore.mint.norm
         - **dtype** (:class:`mindspore.dtype`, 可选) - 如果设置此参数，则会在执行之前将 `input` 转换为指定的类型，返回的Tensor类型也将为指定类型 `dtype`。默认值： ``None`` 。
 
     返回：
-        Tensor，在指定维度 `dim` 上进行范数计算的结果，与输入 `input` 的数据类型相同。
+        Tensor，在指定维度 `dim` 上进行范数计算的结果。
 
     异常：
         - **TypeError** - `input` 不是一个Tensor。
