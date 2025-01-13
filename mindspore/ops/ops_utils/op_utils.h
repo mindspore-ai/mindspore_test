@@ -327,6 +327,7 @@ OPS_API std::vector<int64_t> CalBroadCastShapeV3(const std::vector<int64_t> &x_s
 OPS_API int ConvertReductionForAclnn(Reduction reduction);
 OPS_API size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size);
 OPS_API ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector);
+OPS_API int64_t GetCacheCapaticy();
 
 static inline void CheckRank(const InferInfoPtr &infer_info, size_t supported_rank, const std::string &op_name,
                              const std::string &input_name) {

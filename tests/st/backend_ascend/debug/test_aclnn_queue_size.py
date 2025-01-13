@@ -61,10 +61,10 @@ def test_aclnn_queue_length_pyboost():
     Description: set aclnn cache queue failed
     Expectation: success set aclnn cache queue
     """
-    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:0"
+    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:5"
     os.environ["GLOG_v"] = "1"
     os.system("pytest -sv test_aclnn_queue_size.py::test_clone_pyboost > log_pyboost.txt 2>&1")
-    ret = os.system("grep -i 'Set aclnn cache queue length of pyboost to 0' log_pyboost.txt")
+    ret = os.system("grep -i 'Set aclnn cache queue length of pyboost to 5' log_pyboost.txt")
     assert ret == 0
     os.system("rm -rf log_pyboost.txt")
     del os.environ["MS_DEV_RUNTIME_CONF"]
@@ -78,10 +78,10 @@ def test_aclnn_queue_length_kbyk():
     Description: set aclnn cache queue failed
     Expectation: success set aclnn cache queue
     """
-    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:0"
+    os.environ["MS_DEV_RUNTIME_CONF"] = "aclnn_cache_queue_length:5"
     os.environ["GLOG_v"] = "1"
     os.system("pytest -sv test_aclnn_queue_size.py::test_clone_kbyk > log_kbyk.txt 2>&1")
-    ret = os.system("grep -i 'Set aclnn cache queue length of kbyk to 0' log_kbyk.txt")
+    ret = os.system("grep -i 'Set aclnn cache queue length of kbyk to 5' log_kbyk.txt")
     assert ret == 0
     os.system("rm -rf log_kbyk.txt")
     del os.environ["MS_DEV_RUNTIME_CONF"]

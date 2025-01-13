@@ -135,10 +135,10 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
     static std::list<CacheTuple> hash_cache_;                                                                     \
     static size_t capacity_{1024};                                                                                \
     static std::mutex mutex_;                                                                                     \
-    static std::string capaticy_from_user = common::GetCacheCapaticy();                                           \
+    static int64_t capaticy_from_user = ops::GetCacheCapaticy();                                                  \
     static bool not_set_capaticy = true;                                                                          \
-    if (!capaticy_from_user.empty() && not_set_capaticy) {                                                        \
-      capacity_ = std::stoull(capaticy_from_user);                                                                \
+    if (capaticy_from_user >= 0 && not_set_capaticy) {                                                            \
+      capacity_ = LongToSize(capaticy_from_user);                                                                 \
       not_set_capaticy = false;                                                                                   \
       MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                                 \
     }                                                                                                             \
@@ -190,10 +190,10 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
     static std::list<CacheTuple> hash_cache_;                                                                 \
     static size_t capacity_{1024};                                                                            \
     static std::mutex mutex_;                                                                                 \
-    static std::string capaticy_from_user = common::GetCacheCapaticy();                                       \
+    static int64_t capaticy_from_user = ops::GetCacheCapaticy();                                              \
     static bool not_set_capaticy = true;                                                                      \
-    if (!capaticy_from_user.empty() && not_set_capaticy) {                                                    \
-      capacity_ = std::stoull(capaticy_from_user);                                                            \
+    if (capaticy_from_user >= 0 && not_set_capaticy) {                                                        \
+      capacity_ = LongToSize(capaticy_from_user);                                                             \
       not_set_capaticy = false;                                                                               \
       MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                             \
     }                                                                                                         \

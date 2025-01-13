@@ -237,9 +237,9 @@ class EmptyKernelTensor {
 class AclnnKernelMod : public KernelMod {
  public:
   explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {
-    auto capaticy_from_user = common::GetCacheCapaticy();
-    if (!capaticy_from_user.empty()) {
-      capacity_ = std::stoull(capaticy_from_user);
+    auto capaticy_from_user = ops::GetCacheCapaticy();
+    if (capaticy_from_user >= 0) {
+      capacity_ = LongToSize(capaticy_from_user);
       MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity_;
     }
   }
