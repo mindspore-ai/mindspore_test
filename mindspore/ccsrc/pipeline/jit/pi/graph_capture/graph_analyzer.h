@@ -109,7 +109,7 @@ class GraphAnalyzer {
   }
   auto &GetCaptureInfo() { return info_; }
   const auto &GetCaptureInfo() const { return info_; }
-  virtual void Analyze() { MS_LOG(ERROR) << "dead code"; }
+  virtual void Analyze() { MS_LOG(EXCEPTION) << "dead code"; }
   bool NeedInterpret() const { return need_interpret_; }
 
   const auto &alive_locals() const { return alive_locals_; }
@@ -122,15 +122,15 @@ class GraphAnalyzer {
   virtual void ResetSideEffectRecord() const;
 
   // UD analyze
-  virtual void UseDefAnalyze() { MS_LOG(ERROR) << "dead code"; }
+  virtual void UseDefAnalyze() { MS_LOG(EXCEPTION) << "dead code"; }
   std::vector<ValueNode *> GetAliveLocals(Graph *g);
   virtual bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
-    MS_LOG(ERROR) << "dead code";
+    MS_LOG(EXCEPTION) << "dead code";
     return false;
   }
-  virtual void CollectCapturedInputs() { MS_LOG(ERROR) << "dead code"; }
-  virtual void CollectCapturedAndInterpret() { MS_LOG(ERROR) << "dead code"; }
-  virtual void CollectGraphInputs() { MS_LOG(ERROR) << "dead code"; }
+  virtual void CollectCapturedInputs() { MS_LOG(EXCEPTION) << "dead code"; }
+  virtual void CollectCapturedAndInterpret() { MS_LOG(EXCEPTION) << "dead code"; }
+  virtual void CollectGraphInputs() { MS_LOG(EXCEPTION) << "dead code"; }
 
   bool need_interpret_;
   Graph *graph_;

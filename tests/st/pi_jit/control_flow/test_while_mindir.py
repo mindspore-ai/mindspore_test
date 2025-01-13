@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import numpy as np
+import pytest
 
 import mindspore.nn as nn
 from mindspore import context, jit
