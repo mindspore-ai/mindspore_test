@@ -13162,7 +13162,7 @@ def _is_transposed(input_tensor):
     return False
 
 
-def gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
+def gmm(x, weight, *, bias=None, group_list=None, group_type=0):
     r"""
     Grouping matrix multiplication.
 
@@ -13171,8 +13171,9 @@ def gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=
         - `group_type` must be constant.
 
     .. note::
-        - When 'group_type' is 2, 'weight' must be a non-continuous tensor after transpose.
-        - Only when 'group_type' is 0 and 'bias' is None, the reverse derivative is supported.
+        - When `group_type` is 2, `weight` must be a non-continuous tensor after transpose.
+        - Only when `group_type` is 0 and `bias` is None, the reverse derivative is supported，
+          which is implemented by the function gmm_backward.
 
     Args:
         x (tuple[Tensor]): The first tensors to be multiplied.
@@ -13202,8 +13203,6 @@ def gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=
             If `group_type` is 2, it means that the k-axis is grouped, where each tensor in `x`
             and `weight` should be 2-D, and the tensors of result would be 3-D.
 
-        group_list_type (int, optional): Useless arg, which would be ignored.
-
     Returns:
         tuple[Tensor], the results of grouping matrix multiplication.
 
@@ -13230,26 +13229,15 @@ def gmm(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=
                              split_item=3, group_type=group_type)
 
 
-def gmm_backward(grad, x, weight, *, group_list=None, group_list_type=0):
+def gmm_backward(grad, x, weight, *, group_list=None):
     r"""
     the grad of gmm
     """
-    num_w = len(weight)
-
-    xt = _for_each_transpose(x)
-    wt = _for_each_transpose(weight)
-
-    dx = gmm(grad, wt, bias=None, group_list=group_list, group_type=0)
-    dw = gmm(xt, grad, bias=None, group_list=group_list, group_type=2)
-
-    dw_output = []
-    for i in range(num_w):
-        dw_i_tensor = dw[i].reshape(weight[i].shape)
-        dw_output.append(dw_i_tensor)
-
+    gradients = ops.auto_generate.gmm_backward(grad, x, weight, group_list)
+    dx = gradients[:len(x)]
+    dw = gradients[-len(weight):]
     db = []
-
-    return dx, dw_output, db
+    return dx, dw, db
 
 
 def gmm_v2(x, weight, *, bias=None, group_list=None, group_type=0, group_list_type=0):
@@ -13261,8 +13249,10 @@ def gmm_v2(x, weight, *, bias=None, group_list=None, group_type=0, group_list_ty
         - `group_type` must be constant.
 
     .. note::
-        - When 'group_type' is 2, 'weight' must be a non-continuous tensor after transpose.
-        - Only when 'group_type' is 0 and 'bias' is None, the reverse derivative is supported.
+        - When `group_type` is 2, the tensors in `weight` must be non-continuous tensors after
+          transpose.
+        - Only when `group_type` is 0 and `bias` is None, the reverse derivative is supported,
+          which is implemented by the function gmm_v2_backward.
 
     Args:
         x (tuple[Tensor]): The first tensors to be multiplied.
@@ -13322,33 +13312,16 @@ def gmm_v2(x, weight, *, bias=None, group_list=None, group_type=0, group_list_ty
                               group_type=group_type, group_list_type=group_list_type, act_type=0)
 
 
-def gmm_v2_backward(grad, x, weight, *, group_list=0, group_list_type=0):
+def gmm_v2_backward(grad, x, weight, *, group_list=None, group_list_type=0):
     r"""
     the grad of gmm_v2
     """
-    num_w = len(weight)
-    wt = _for_each_transpose(weight)
-
-    dx = gmm_v2(grad, wt, bias=None, group_list=group_list, group_type=0, group_list_type=group_list_type)
-
-    w0 = weight[0]
-    if _is_transposed(w0):
-        grad_tensor = grad[0].contiguous()
-        gradt = _for_each_transpose([grad_tensor,])
-        dwt = gmm_v2(gradt, x, bias=None, group_list=group_list, group_type=2, group_list_type=group_list_type)
-        dw = _for_each_transpose(dwt)
-    else:
-        xt = _for_each_transpose(x)
-        dw = gmm_v2(xt, grad, bias=None, group_list=group_list, group_type=2, group_list_type=group_list_type)
-
-    dw_output = []
-    for i in range(num_w):
-        dw_i_tensor = dw[i].reshape(weight[i].shape)
-        dw_output.append(dw_i_tensor)
-
+    gradients = ops.auto_generate.gmm_v2_backward(grad, x, weight, group_list, group_list_type)
+    dx = gradients[:len(x)]
+    dw = gradients[-len(weight):]
     db = []
 
-    return dx, dw_output, db
+    return dx, dw, db
 
 
 __all__ = [

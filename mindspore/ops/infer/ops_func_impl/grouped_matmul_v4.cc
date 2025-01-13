@@ -44,7 +44,7 @@ void GroupedMatmulV4FuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, cons
         << "For '" << primitive->name()
         << "', all inputs which is list[tensor] should not be dynamic sequence, which is not supported.";
     }
-    auto elements = tensors->GetSequenceElements();
+    const auto &elements = tensors->GetSequenceElements();
     dyn_input_sizes.push_back(SizeToLong(elements.size()));
   }
   primitive->set_attr("group_info", MakeValue(dyn_input_sizes));  // len of tuple input
