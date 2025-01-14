@@ -435,6 +435,7 @@ void AnyTypeKernelActor::RunForGraphInput(OpContext<DeviceTensor> *const context
       AnfNodePtrList inputs{};
       AnfNodePtrList outputs{return_node->cast<CNodePtr>()->input(1)};
       auto io_nodes = std::make_pair(inputs, outputs);
+      device_contexts()[0]->device_res_manager_->BindDeviceToCurrentThread(false);
       auto new_graph =
         compile_func_(BuildSegmentByGraph(graph()), io_nodes, device_contexts()[0], device::RunMode::kKernelMode);
       MS_EXCEPTION_IF_NULL(new_graph);
