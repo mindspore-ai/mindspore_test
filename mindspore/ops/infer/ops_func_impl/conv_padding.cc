@@ -146,6 +146,9 @@ void ConvPaddingFuncImpl::IndicesCheckPositiveVec(const string &arg_name, const 
                                                   const string &prim_name, bool exclude_zeros,
                                                   bool padding_stride) const {
   for (size_t i = 0; i < array.size(); ++i) {
+    if (array.IsValueUnknown(i)) {
+      continue;
+    }
     if (padding_stride) {
       if (MS_UNLIKELY(array[i] != 1)) {
         MS_EXCEPTION(ValueError) << "For " << prim_name << ", '" << arg_name

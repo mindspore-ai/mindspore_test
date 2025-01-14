@@ -6217,10 +6217,10 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
             represent height and width of movement respectively. Default: ``1`` .
         padding (Union[int, tuple[int], str], optional): The number of padding
             on the height and width directions of the input.
-            The data type is an integer or a tuple of four integers or string {`valid`, `same`}. If `padding` is an
-            integer, then the top, bottom, left, and right padding are all equal to `padding`.
-            If `padding` is a tuple of 4 integers, then the top, bottom, left, and right padding
-            is equal to `padding[0]`, `padding[1]`, `padding[2]`, and `padding[3]` respectively.
+            The data type is an integer or a tuple of two integers or string {`valid`, `same`}. If `padding` is an
+            integer, then `padding_{H}` and `padding_{W}` are all equal to `padding`.
+            If `padding` is a tuple of 2 integers, then `padding_{H}` and `padding_{W}`
+            is equal to `padding[0]` and `padding[1]` respectively.
             The value should be greater than or equal to 0. Default: ``0`` .
 
             - ``"same"``: Pad the input around its edges so that the shape of input and output
