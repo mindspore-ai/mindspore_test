@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -657,6 +657,7 @@ constexpr char RANDOM_CHOICE_WITH_MASK[] = "RandomChoiceWithMask";
 constexpr char CROP_AND_RESIZE[] = "CropAndResize";
 constexpr char MASKED_FILL[] = "MaskedFill";
 constexpr char MAX[] = "Max";
+constexpr char MAXDIM[] = "MaxDim";
 constexpr char ROI_ALIGN[] = "ROIAlign";
 constexpr char SQUARE_SUM_ALL[] = "SquareSumAll";
 constexpr char IS_FINITE[] = "IsFinite";

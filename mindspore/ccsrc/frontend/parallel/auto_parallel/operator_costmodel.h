@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -249,6 +249,7 @@ using RsqrtCost = SqrtCost;
 using AsinhCost = SqrtCost;
 using AcoshCost = SqrtCost;
 using TopKCost = SqrtCost;
+using MaxDimCost = SqrtCost;
 using HShrinkCost = SqrtCost;
 using HSigmoidCost = SqrtCost;
 using MishCost = SqrtCost;

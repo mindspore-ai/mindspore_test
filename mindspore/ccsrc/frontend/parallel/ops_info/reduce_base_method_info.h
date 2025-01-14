@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,6 +132,25 @@ class SumExtInfo : public ReduceBaseMethod {
  protected:
   std::vector<int64_t> reduce_dim() override;
   Status GetAttrs() override;
+};
+
+class MaxInfo : public ReduceMaxInfo {
+ public:
+  MaxInfo(const std::string &name, const Shapes &input_shape, const Shapes &output_shape, const PrimitiveAttrs &attrs)
+      : ReduceMaxInfo(name, input_shape, output_shape, attrs) {}
+  ~MaxInfo() = default;
+
+ protected:
+  Status GetAttrs() override { return SUCCESS; }
+  std::vector<int64_t> reduce_dim() override;
+  Status CheckInputLayout() override;
+  Status InferOutputTensorInfo() override;
+  Status CheckOutputLayout() override;
+  Status InferForwardCommunicationByLayout() override;
+
+ private:
+  // Check if the output layout is derived by the framework based on the input layout
+  bool is_infer_out_layout_ = false;
 };
 }  // namespace parallel
 }  // namespace mindspore
