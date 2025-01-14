@@ -616,7 +616,9 @@ ValuePtr Common::StubNodeToValue(const ValuePtr &v) {
   if (utils::isa<ValueSequence>(v)) {
     const auto &value_seq = utils::cast<ValueSequencePtr>(v);
     const auto &values = value_seq->value();
-    if (!values.empty() && utils::isa<Scalar>(values[0])) {
+    bool has_stub =
+      std::any_of(values.begin(), values.end(), [](const auto &v) { return utils::isa<stub::StubNode>(v); });
+    if (!has_stub) {
       return v;
     }
     ValuePtrList value_list;
