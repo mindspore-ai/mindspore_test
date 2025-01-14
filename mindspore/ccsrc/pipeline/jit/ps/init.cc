@@ -392,6 +392,8 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("set_global_rank", &ParallelContext::set_global_rank, "Set global rank.")
     .def("get_grad_accumulation_shard", &ParallelContext::grad_accumulation_shard, "Get grad_accumulation_shard.")
     .def("set_grad_accumulation_shard", &ParallelContext::set_grad_accumulation_shard, "Set grad_accumulation_shard.")
+    .def("get_zero3", &ParallelContext::zero3, "Get zero3.")
+    .def("set_zero3", &ParallelContext::set_zero3, "Set zero3.")
     .def("get_parallel_optimizer_threshold", &ParallelContext::get_parallel_optimizer_threshold, "Get opt threshold.")
     .def("set_parallel_optimizer_threshold", &ParallelContext::set_parallel_optimizer_threshold, "Set opt threshold.")
     .def("get_global_rank_is_set", &ParallelContext::global_rank_is_set, "Get global rank is set.")

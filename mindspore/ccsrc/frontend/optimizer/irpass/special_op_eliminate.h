@@ -270,8 +270,9 @@ class MicroStepAllGatherPass : public AnfVisitor {
     bool recompute = contain_recompute && GetValue<bool>(attrs[parallel::RECOMPUTE]);
     ValuePtr segment = contain_segment ? attrs[parallel::SEGMENT] : nullptr;
     parallel::Operator op = parallel::CreateAllGatherOp(group);
-    std::vector<AnfNodePtr> node_input =
-      parallel::CreateInput(op, inputs[1], parallel::PARALLEL_OPTIMIZER_ALLGATHER_NOT_COMPUTE);
+    auto op_instance_name =
+      recompute ? parallel::PARALLEL_OPTIMIZER_ALLGATHER : parallel::PARALLEL_OPTIMIZER_ALLGATHER_NOT_COMPUTE;
+    std::vector<AnfNodePtr> node_input = parallel::CreateInput(op, inputs[1], op_instance_name);
     auto prim_anf_node = node_input[0]->cast<ValueNodePtr>();
     prim = GetValueNode<PrimitivePtr>(prim_anf_node);
     MS_EXCEPTION_IF_NULL(prim);

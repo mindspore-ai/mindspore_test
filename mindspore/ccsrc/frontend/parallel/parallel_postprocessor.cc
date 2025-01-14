@@ -77,6 +77,14 @@
 namespace mindspore {
 namespace parallel {
 namespace {
+AnfNodePtr ParamNodeForMoveMirror(const CNodePtr &micro_mirror) {
+  return GetInputNodeWithFilter(micro_mirror, [&](const CNodePtr &cnode) {
+    bool filter = IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                  IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather);
+    return std::make_pair(filter, 1);
+  });
+}
+
 static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
   AnfNodePtr ret_after = root->get_return();
   MS_EXCEPTION_IF_NULL(ret_after);
@@ -87,11 +95,7 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
       continue;
     }
     auto micro_mirror = node->cast<CNodePtr>();
-    auto param_anf_node = GetInputNodeWithFilter(micro_mirror, [&](const CNodePtr &cnode) {
-      bool filter = IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
-                    IsPrimitiveCNode(cnode, prim::kPrimDepend);
-      return std::make_pair(filter, 1);
-    });
+    auto param_anf_node = ParamNodeForMoveMirror(micro_mirror);
     if (!param_anf_node->isa<Parameter>()) {
       continue;
     }

@@ -1032,7 +1032,9 @@ def set_auto_parallel_context(**kwargs):
                         mindspore.set_auto_parallel_context(enable_parallel_optimizer=True).
                         It supports the following keys.
 
-                        - gradient_accumulation_shard(bool): If ``true`` , the accumulation gradient parameters will be
+                        - gradient_accumulation_shard(bool): Please using optimizer_level: ``level2`` to replace
+                          this config.
+                          If ``true`` , the accumulation gradient parameters will be
                           sharded across the data parallel devices. This will
                           introduce additional communication(ReduceScatter) at
                           each step when accumulate the gradients, but saves a
@@ -1053,6 +1055,17 @@ def set_auto_parallel_context(**kwargs):
                           of the parameter cannot be divided by `optimizer_weight_shard_size`, then the specified
                           communication group size will not take effect. Default value is ``-1`` , which means the
                           optimizer weight shard group size will be the size of data parallel group of each parameter.
+
+                        - optimizer_level(str, optional): optimizer_level configuration is used to specify
+                          the splitting level for optimizer sharding. It is important to note that the implementation
+                          of optimizer sharding in static graph is inconsistent with dynamic graph like megatron,
+                          but the memory optimization effect is the same. When optimizer_level=``level1``,
+                          splitting is performed on weights and optimizer state. When optimizer_level=``level2``,
+                          splitting is performed on weights, optimizer state, and gradients.
+                          When optimizer_level=``level3``, splitting is performed on weights, optimizer state,
+                          gradients, additionally, before the backward pass, the weights are further applied with
+                          allgather communication to release the memory used by the forward pass allgather.
+                          It must be one of [``level1``, ``level2``, ``level3``]. Default: ``level1``.
 
         comm_fusion (dict): A dict contains the types and configurations for setting the communication fusion. each
                         communication fusion config has two keys: "mode" and "config".
@@ -1128,7 +1141,7 @@ def set_auto_parallel_context(**kwargs):
         >>> ms.set_auto_parallel_context(pipeline_stages=2)
         >>> ms.set_auto_parallel_context(pipeline_stages=2, pipeline_result_broadcast=True)
         >>> parallel_config = {"gradient_accumulation_shard": True, "parallel_optimizer_threshold": 24,
-        ...                    "optimizer_weight_shard_size": 2}
+        ...                    "optimizer_weight_shard_size": 2, "optimizer_level": "level3"}
         >>> ms.set_auto_parallel_context(parallel_optimizer_config=parallel_config, enable_parallel_optimizer=True)
         >>> config = {"allreduce": {"mode": "size", "config": 32}, "allgather": {"mode": "size", "config": 32}}
         >>> ms.set_auto_parallel_context(comm_fusion=config)
