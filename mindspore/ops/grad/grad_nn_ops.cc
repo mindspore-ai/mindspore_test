@@ -1091,9 +1091,6 @@ REG_BPROP_BUILDER("Conv3DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   std::vector<int64_t> output_padding_vec = {0, 0, 0};
   auto output_padding_value = ib->EmitValue(MakeValue(output_padding_vec));
 
-  auto stride_values = GetValue<std::vector<int64_t>>(stride_value->BuildValue());
-  auto dilation_values = GetValue<std::vector<int64_t>>(dilation_value->BuildValue());
-
   auto pad_values = pad_value->BuildValue();
   auto pad_int_value = GetValue<int64_t>(pad_values);
 

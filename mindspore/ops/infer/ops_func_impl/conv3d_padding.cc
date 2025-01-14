@@ -37,8 +37,8 @@ void CheckConvPaddingRestrictions(mindspore::PadMode mode, const ShapeVector &in
               (weight_shape[i + kConv3dPaddingGap2] - 1) * dilation[i % dilation.size()] - 1 <
             0) {
           MS_EXCEPTION(ValueError)
-            << "For primitive[Conv3DPadding], (Hin + PadUp + PadDown - (Hk - 1) * DilationH - 1), "
-            << "(Win + PadLeft + PadRight - (Wk - 1) * DilationW - 1) and (Din + PadFront + PadBack - (Dk - 1) * "
+            << "For primitive[Conv3DPadding], (Hin + PadUp + PadDown - (kh - 1) * DilationH - 1), "
+            << "(Win + PadLeft + PadRight - (kw - 1) * DilationW - 1) and (Din + PadFront + PadBack - (kd - 1) * "
                "DilationD - 1)"
             << " must greater than 0.";
         }
@@ -173,6 +173,12 @@ ShapeArray Conv3DPaddingFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &pri
     IndicesCheckPositiveVectorPadding("dilation", dilation, prim_name, true);
 
     if (!IsDynamic(input_shape) && !IsDynamic(weight_shape)) {
+      auto weight_dim = SizeToLong(weight_shape.size());
+      if (weight_dim != kConv3dPaddingSize5) {
+        MS_LOG(EXCEPTION) << "The dim of argument[weight] must be equal 5, but got " << weight_dim;
+      }
+      (void)CheckAndConvertUtils::CheckInteger("The dim of weight", weight_shape.size(), kGreaterEqual,
+                                               kConv3dPaddingSize5);
       abstract::CheckShapeAnyAndPositive(prim_name + " x_shape", input_shape);
       abstract::CheckShapeAnyAndPositive(prim_name + " w_shape", weight_shape);
 
@@ -182,9 +188,12 @@ ShapeArray Conv3DPaddingFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &pri
         auto in_channels = input_shape[kIndex1];
         (void)CheckAndConvertUtils::CheckInteger("groups", groups, kGreaterEqual, 1);
         (void)CheckAndConvertUtils::CheckInteger("out_channels", nd_output_shape[1], kGreaterEqual, groups);
-        (void)CheckAndConvertUtils::CheckInteger("out_channels/groups", nd_output_shape[1] % groups, kEqual, 0);
-        (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
-                                                 weight_shape[kIndex1]);
+        (void)CheckAndConvertUtils::CheckInteger("out_channels mod groups", nd_output_shape[1] % groups, kEqual, 0);
+        if (in_channels / groups != weight_shape[kIndex1]) {
+          MS_EXCEPTION(ValueError) << "The argument error. in_channels/groups must be equal weight[1], "
+                                   << "but in_channels/groups is " << in_channels / groups << ", and weight[1] is "
+                                   << weight_shape[kIndex1];
+        }
       }
       CheckConvPaddingRestrictions(padding_enum, input_shape, weight_shape, stride, dilation);
     }
@@ -228,6 +237,11 @@ ShapeArray Conv3DPaddingFuncImpl::InferShape(const PrimitivePtr &primitive, cons
   const auto weight_shape = input_infos[kIndex1]->GetShape();
   if (IsDynamicRank(input_shape) || IsDynamicRank(weight_shape)) {
     return InferDynamicRank(input_shape, weight_shape);
+  }
+
+  int64_t input_rank = SizeToLong(input_shape.size());
+  if (input_rank != kConv3dPaddingSize5 && input_rank != kConv3dPaddingSize5 - 1) {
+    MS_EXCEPTION(ValueError) << "For [Conv3d], the dim of argument[input] must be equal to 4 or 5.";
   }
 
   int64_t weight_rank = SizeToLong(weight_shape.size());

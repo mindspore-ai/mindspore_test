@@ -129,9 +129,11 @@ ShapeArray ConvPaddingFuncImpl::ConvNdPaddingCommonInferShape(const PrimitivePtr
                        CheckAndConvertUtils::CheckInteger("out_channels", out_channels, kGreaterEqual, groups));
         MS_CHECK_VALUE(out_channels % groups == 0,
                        CheckAndConvertUtils::CheckInteger("out_channels//groups", out_channels % groups, kEqual, 0));
-        MS_CHECK_VALUE(in_channels / groups == weight_shape[kIndex1],
-                       CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
-                                                          weight_shape[kIndex1]));
+        if (in_channels / groups != weight_shape[kIndex1]) {
+          MS_EXCEPTION(ValueError) << "The argument error. in_channels/groups must be equal weight[1], "
+                                   << "but in_channels/groups is " << in_channels / groups << ", and weight[1] is "
+                                   << weight_shape[kIndex1];
+        }
       }
     }
     for (int i = 0; i < feature_len; i++) {

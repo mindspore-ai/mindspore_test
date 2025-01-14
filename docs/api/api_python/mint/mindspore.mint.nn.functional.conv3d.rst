@@ -57,7 +57,6 @@ mindspore.mint.nn.functional.conv3d
       :math:`floor(((H_{out}-1) * strideH + (kh - 1) * DilationH + 1 - H_{in}) / 2)` 计算得到。
       用类似的方法能计算得到关于depth和width维度的padding值。且depth和width维度也有相同的约束条件。
     - :math:`((kh - 1) * DilationH - PadUp)` 取值区间为[0, 255]。深度和宽度维度具有相同的约束。
-    - :math:`groups == 1 \quad \text{or} \quad groups == C_{in}`。
     - 如果 `padding` 为 ``'same'``， `stride` 必须为 1。
 
     .. warning::
@@ -75,13 +74,14 @@ mindspore.mint.nn.functional.conv3d
           - ``"valid"``：采用丢弃的方式。输出的可能最大高度和宽度将在没有填充的情况下返回。多余的像素将被丢弃。
           
           如果 `padding` 是一个整数，则top、bottom、left和right的padding是相同的，等于padding。
-          如果 `padding` 是一个包含3个整数的元组/列表，则head、tail、top、bottom、left和right的填充分别等于pad[0]、pad[0]、pad[1]、pad[2]和pad[2]。默认值： `0` 。
+          如果 `padding` 是一个包含3个整数的元组/列表，则head、tail、top、bottom、left和right的填充分别等于pad[0]、pad[0]、pad[1]、pad[1]、pad[2]和pad[2]。默认值： `0` 。
 
         - **dilation** (Union[int, tuple[int]]，可选) - 控制内核点之间的空间。默认值： ``1`` 。
         - **groups** (int，可选) - 将 `input` 拆分的组数。默认值： ``1`` 。
 
     返回：
-        Tensor。
+        Tensor，dtype与 `input` 相同，shape为:math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`
+            或:math:`(C_{out}, D_{out}, H_{out}, W_{out})` 。
 
     异常：
         - **TypeError** -  `stride` 、 `padding` 或 `dilation` 既不是int也不是tuple。

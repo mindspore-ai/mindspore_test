@@ -25,6 +25,7 @@ namespace ops {
 namespace {
 constexpr size_t kConv3dInputArgsSize = 7;
 constexpr size_t kConv3dStridePaddingDilationLen = 3;
+constexpr int64_t kConv3dExtSize5 = 5;
 
 int64_t GetOutputHWConv3d(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
                           const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &padding,
@@ -140,7 +141,10 @@ ShapeArray Conv3DExtFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &primiti
   if (!IsDynamic(input_shape) && !IsDynamic(weight_shape)) {
     abstract::CheckShapeAnyAndPositive(prim_name + " x_shape", input_shape);
     abstract::CheckShapeAnyAndPositive(prim_name + " w_shape", weight_shape);
-
+    auto weight_dim = SizeToLong(weight_shape.size());
+    if (weight_dim != kConv3dExtSize5) {
+      MS_LOG(EXCEPTION) << "The dim of argument[weight] must be equal 5, but got " << weight_dim;
+    }
     IndicesCheckPositiveVectorConv3d("stride", stride, prim_name, true);
     IndicesCheckPositiveVectorConv3d("padding", padding, prim_name, false);
     IndicesCheckPositiveVectorConv3d("dilation", dilation, prim_name, true);
@@ -150,13 +154,17 @@ ShapeArray Conv3DExtFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &primiti
     (void)CheckAndConvertUtils::CheckInteger("groups", groups, kGreaterEqual, 1);
     auto out_channels = weight_shape[kIndex0];
     (void)CheckAndConvertUtils::CheckInteger("out_channels", out_channels, kGreaterEqual, groups);
-    (void)CheckAndConvertUtils::CheckInteger("out_channels/groups", out_channels % groups, kEqual, 0);
+    (void)CheckAndConvertUtils::CheckInteger("out_channels mod groups", out_channels % groups, kEqual, 0);
 
     std::vector<int64_t> input_shape_with_padding;
     std::vector<int64_t> kernel_shape_with_dilation;
 
     auto in_channels = input_shape[kIndex1];
-    (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual, weight_shape[kIndex1]);
+    if (in_channels / groups != weight_shape[kIndex1]) {
+      MS_EXCEPTION(ValueError) << "The argument error. in_channels/groups must be equal weight[1], "
+                               << "but in_channels/groups is " << in_channels / groups << ", and weight[1] is "
+                               << weight_shape[kIndex1];
+    }
     int64_t input_rank = SizeToLong(input_shape.size());
     for (int64_t i = 2; i < input_rank; i++) {
       input_shape_with_padding.push_back(input_shape[i] + 2 * padding[(i - 2) % padding.size()]);
@@ -190,6 +198,11 @@ ShapeArray Conv3DExtFuncImpl::InferShape(const PrimitivePtr &primitive, const In
   auto weight_shape = weight_tensor->GetShape();
   if (IsDynamicRank(input_shape) || IsDynamicRank(weight_shape)) {
     return InferDynamicRank(input_shape, weight_shape);
+  }
+
+  int64_t input_rank = SizeToLong(input_shape.size());
+  if (input_rank != kConv3dExtSize5 && input_rank != kConv3dExtSize5 - 1) {
+    MS_EXCEPTION(ValueError) << "For [Conv3d], the dim of argument[input] must be equal to 4 or 5.";
   }
 
   int64_t weight_rank = SizeToLong(weight_shape.size());

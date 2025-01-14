@@ -124,10 +124,6 @@ void ConvBaseFunImpl::FetchSpatialDim(const PrimitivePtr &primitive, const Infer
   const auto &stride = stride_opt.value();
   const auto &padding = padding_opt.value();
   const auto &dilation = dilation_opt.value();
-  (void)CheckAndConvertUtils::CheckInteger("stride size", spatial_len, kGreaterEqual, SizeToLong(stride.size()),
-                                           prim_name);
-  (void)CheckAndConvertUtils::CheckInteger("dilation size", spatial_len, kGreaterEqual, SizeToLong(dilation.size()),
-                                           prim_name);
   conv_base::ConvBaseIndicesCheckPositiveVector("stride", stride, prim_name, true, spatial_len);
   conv_base::ConvBaseIndicesCheckPositiveVector("padding", padding, prim_name, false, spatial_len);
   conv_base::ConvBaseIndicesCheckPositiveVector("dilation", dilation, prim_name, true, spatial_len);
@@ -141,8 +137,11 @@ void ConvBaseFunImpl::FetchSpatialDim(const PrimitivePtr &primitive, const Infer
       std::vector<int64_t> kernel_shape_with_dilation;
       auto in_channels = input_shape[kIndex1];
       int64_t groups = groups_opt.value();
-      (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
-                                               weight_shape[kIndex1]);
+      if (in_channels / groups != weight_shape[kIndex1]) {
+        MS_EXCEPTION(ValueError) << "The argument error. in_channels/groups must be equal weight[1], "
+                                 << "but in_channels/groups is " << in_channels / groups << ", and weight[1] is "
+                                 << weight_shape[kIndex1];
+      }
       int64_t input_rank = SizeToLong(input_shape.size());
       for (int64_t i = 2; i < input_rank; i++) {
         if (dilation.IsValueUnknown(i - 2) || padding.IsValueUnknown(i - 2)) {
