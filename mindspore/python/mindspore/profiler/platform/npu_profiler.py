@@ -203,10 +203,10 @@ class NPUProfilerAnalysis:
             data_simplification: bool,
     ) -> None:
         """Pre-process profiling data for offline analysis."""
+        prof_ctx = ProfilerContext()
         prof_info = ProfilerInfo()
         prof_info_file_path = PathManager.get_profiler_info_path(ascend_ms_dir)
         prof_info.load_info(prof_info_file_path)
-        prof_ctx = ProfilerContext()
         prof_ctx.device_id = prof_info.ms_profiler_info["device_id"]
         prof_ctx.rank_id = prof_info.ms_profiler_info["rank_id"]
         prof_ctx.set_params()
