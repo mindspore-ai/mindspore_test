@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,6 +218,7 @@ constexpr const char kNameLRN[] = "LRN";
 constexpr const char kNameLRNGrad[] = "LRNGrad";
 constexpr const char kNameLSTMInputGrad[] = "LSTMInputGrad";
 constexpr const char kNameMatMul[] = "MatMul";
+constexpr const char kNameOuter[] = "Outer";
 constexpr const char kNameMatrixDiag[] = "MatrixDiag";
 constexpr const char kNameMatrixDiagV3[] = "MatrixDiagV3";
 constexpr const char kNameMatrixDiagPartD[] = "MatrixDiagPartD";
@@ -254,6 +255,7 @@ constexpr const char kNameScatterNonAliasingAdd[] = "ScatterNonAliasingAdd";
 constexpr const char kNameSeLU[] = "SeLU";
 constexpr const char kNameSoftsign[] = "Softsign";
 constexpr const char kNameSort[] = "Sort";
+constexpr const char kNameSortExt[] = "SortExt";
 constexpr const char kNameSpaceToBatchNDD[] = "SpaceToBatchNDD";
 constexpr const char kNameSparseApplyFtrlV2[] = "SparseApplyFtrlV2";
 constexpr const char kNameSparseApplyProximalAdagrad[] = "SparseApplyProximalAdagrad";
@@ -318,6 +320,7 @@ constexpr const char kNameHuberLoss[] = "HuberLoss";
 constexpr const char kNameCumSum[] = "CumSum";
 constexpr const char kNameCumsumD[] = "CumsumD";
 constexpr const char kNameCumsum[] = "Cumsum";
+constexpr const char kNameCumsumExt[] = "CumsumExt";
 constexpr const char kNameHuberLossGrad[] = "HuberLossGrad";
 constexpr const char kNameSparseSoftmaxCrossEntropy[] = "SparseSoftmaxCrossEntropy";
 constexpr const char kNameSparseSoftmaxCrossEntropyGrad[] = "SparseSoftmaxCrossEntropyGrad";
@@ -325,6 +328,8 @@ constexpr const char kNameNLLLoss[] = "NLLLoss";
 constexpr const char kNameNLLLossGrad[] = "NLLLossGrad";
 constexpr const char kNameTopK[] = "TopK";
 constexpr const char kNameSoftmaxGrad[] = "SoftmaxGrad";
+constexpr const char kNameMax[] = "Max";
+constexpr const char kNameMaxDim[] = "MaxDim";
 constexpr const char kNameMaxPool[] = "MaxPool";
 constexpr const char kNameAvgPool[] = "AvgPool";
 constexpr const char kNameMaxPoolWithArgmax[] = "MaxPoolWithArgmax";
@@ -503,6 +508,8 @@ constexpr const char kNameLeftShift[] = "LeftShift";
 constexpr const char kNameRightShift[] = "RightShift";
 constexpr const char kNameReduceLogSumExp[] = "ReduceLogSumExp";
 constexpr const char kNameReduceLogSum[] = "ReduceLogSum";
+constexpr const char kNameRepeatInterleaveInt[] = "RepeatInterleaveInt";
+constexpr const char kNameRepeatInterleaveTensor[] = "RepeatInterleaveTensor";
 constexpr const char kNameSize[] = "Size";
 constexpr const char kNameTfIdfVectorizer[] = "TfIdfVectorizer";
 constexpr const char kNameMVNV2[] = "MVNV2";

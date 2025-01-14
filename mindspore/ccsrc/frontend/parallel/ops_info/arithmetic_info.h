@@ -298,6 +298,22 @@ class XdivyInfo : public ArithmeticBase {
   ~XdivyInfo() = default;
 };
 
+class OuterInfo : public ArithmeticBase {
+ public:
+  OuterInfo(const std::string &name, const Shapes &input_shape, const Shapes &output_shape, const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, input_shape, output_shape, attrs, std::make_shared<OuterCost>()) {}
+  ~OuterInfo() = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
+
+ protected:
+  Status CheckStrategy(const StrategyPtr &strategy) override;
+  Status InferDevMatrixShape() override;
+  Status InferTensorMap() override;
+  std::shared_ptr<Strategies> GenerateBatchStrategies() override;
+  Status CheckInputLayout() override;
+  Status InferOutputTensorInfo() override;
+};
+
 class HypotInfo : public XdivyInfo {
  public:
   HypotInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
