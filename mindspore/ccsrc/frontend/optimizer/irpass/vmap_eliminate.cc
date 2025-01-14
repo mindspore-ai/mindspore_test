@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -404,13 +404,27 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
     if (vmap_rule_fg == nullptr) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Fail to parse vmap rule function for " << prim->name() << ".";
     }
-    auto vmap_rule_flag = GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_PROPAGATE);
-    if (vmap_rule_flag) {
-      vmap_rule_fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
-    }
+    vmap_rule_fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+    vmap_rule_fg->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
     pipeline::ResourceBasePtr res = (resource != nullptr) ? resource : std::make_shared<pipeline::Resource>();
     (void)parse::ResolveFuncGraph(vmap_rule_fg, res);
     vmap_rule_node = NewValueNode(vmap_rule_fg);
+    auto manager = resource->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    const auto &users = manager->node_users()[node];
+    if (users.size() < 1) {
+      MS_EXCEPTION_WITH_NODE(ValueError, node)
+        << "vmap_node could used by at least one CNode, but got users.size() = " << users.size() << ".";
+    }
+
+    for (const auto &user : users) {
+      auto vmap_app = user.first->cast<CNodePtr>();
+      const auto &params = vmap_rule_fg->parameters();
+      // Has monad input.
+      if (vmap_app->inputs().size() - 1 == params.size() + 1 && HasAbstractMonad(vmap_app->inputs().back())) {
+        vmap_rule_fg->add_parameter();
+      }
+    }
   }
 
   return vmap_rule_node;

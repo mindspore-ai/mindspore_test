@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -892,8 +892,10 @@ AbstractBasePtr GetLogicalViewAbs(const AbstractBasePtr &physical_view_abs, cons
                            }
                            return GetLogicalViewAbs(sub_abs, sub_in_axes, axis_size);
                          });
-    physical_view_abs_sequence->set_elements(logical_view_abs_list);
-    return physical_view_abs;
+    if (physical_view_abs->isa<AbstractList>()) {
+      return std::make_shared<AbstractList>(logical_view_abs_list, physical_view_abs_sequence->sequence_nodes());
+    }
+    return std::make_shared<AbstractTuple>(logical_view_abs_list, physical_view_abs_sequence->sequence_nodes());
   }
   ValuePtr in_axis = in_axes;
   if (in_axis->isa<Int64Imm>()) {

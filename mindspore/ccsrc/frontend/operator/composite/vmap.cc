@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2024 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,28 +44,31 @@ void GenerateFuncGraphAllNone(const FuncGraphPtr &fg, const AnfNodePtr &prim, in
     std::vector<AnfNodePtr> prim_inputs_cnode_inputs;
     (void)prim_inputs_cnode_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
     for (int64_t i = 0; i < tuple_elements_num; ++i) {
-      auto val_in_cnode = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), val_in_param, NewValueNode(i)});
-      auto val_cnode = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), val_in_cnode, NewValueNode(kValIndex)});
+      auto val_in_cnode = fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), val_in_param, NewValueNode(i)});
+      auto val_cnode =
+        fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), val_in_cnode, NewValueNode(kValIndex)});
       (void)prim_inputs_cnode_inputs.emplace_back(val_cnode);
     }
-    auto prim_inputs_cnode = fg->NewCNode(prim_inputs_cnode_inputs);
+    auto prim_inputs_cnode = fg->NewCNodeInOrder(prim_inputs_cnode_inputs);
     (void)prim_output_cnode_inputs.emplace_back(prim_inputs_cnode);
     args_size = args_size - tuple_elements_num;
   }
 
   for (int64_t i = 0; i < args_size; ++i) {
     auto val_in_param = fg->add_parameter();
-    auto val_cnode = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), val_in_param, NewValueNode(kValIndex)});
+    auto val_cnode =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), val_in_param, NewValueNode(kValIndex)});
     (void)prim_output_cnode_inputs.emplace_back(val_cnode);
   }
 
-  auto prim_output_cnode = fg->NewCNode(prim_output_cnode_inputs);
+  auto prim_output_cnode = fg->NewCNodeInOrder(prim_output_cnode_inputs);
   const py::function bind_all_none_fn = python_adapter::GetPyFn(kVmapFunctionModelName, "vmap_bind_all_none");
   auto bind_all_none_fg = parse::ParsePythonCode(bind_all_none_fn);
   MS_EXCEPTION_IF_NULL(bind_all_none_fg);
-  auto bind_all_none_cnode = fg->NewCNode({NewValueNode(bind_all_none_fg), prim_output_cnode});
+  auto bind_all_none_cnode = fg->NewCNodeInOrder({NewValueNode(bind_all_none_fg), prim_output_cnode});
   if (bind) {
-    auto output_cnode = fg->NewCNode({NewValueNode(prim::kPrimMakeTuple), NewValueNode(true), bind_all_none_cnode});
+    auto output_cnode =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), NewValueNode(true), bind_all_none_cnode});
     fg->set_output(output_cnode);
     return;
   }
@@ -80,12 +83,12 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerBroadcastAxis(
   (void)value_cnode_inputs.emplace_back(NewValueNode(prim::kPrimTupleGetItem));
   (void)value_cnode_inputs.emplace_back(inputs);
   (void)value_cnode_inputs.emplace_back(NewValueNode(static_cast<int64_t>(0)));
-  auto value_cnode = fg_->NewCNode(value_cnode_inputs);
+  auto value_cnode = fg_->NewCNodeInOrder(value_cnode_inputs);
   std::vector<AnfNodePtr> dim_cnode_inputs;
   (void)dim_cnode_inputs.emplace_back(NewValueNode(prim::kPrimTupleGetItem));
   (void)dim_cnode_inputs.emplace_back(inputs);
   (void)dim_cnode_inputs.emplace_back(NewValueNode(static_cast<int64_t>(1)));
-  auto dim_cnode = fg_->NewCNode(dim_cnode_inputs);
+  auto dim_cnode = fg_->NewCNodeInOrder(dim_cnode_inputs);
 
   std::vector<AnfNodePtr> sub_inputs_cnode_inputs;
   (void)sub_inputs_cnode_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
@@ -98,21 +101,21 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerBroadcastAxis(
     (void)cur_tuple_getitem_inputs.emplace_back(NewValueNode(prim::kPrimTupleGetItem));
     (void)cur_tuple_getitem_inputs.emplace_back(value_cnode);
     (void)cur_tuple_getitem_inputs.emplace_back(NewValueNode(i));
-    auto cur_value_cnode = fg_->NewCNode(cur_tuple_getitem_inputs);
+    auto cur_value_cnode = fg_->NewCNodeInOrder(cur_tuple_getitem_inputs);
     std::vector<AnfNodePtr> cur_make_tuple_cnode_inputs;
     (void)cur_make_tuple_cnode_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
     (void)cur_make_tuple_cnode_inputs.emplace_back(cur_value_cnode);
     (void)cur_make_tuple_cnode_inputs.emplace_back(dim_cnode);
-    auto cur_make_tuple_cnode = fg_->NewCNode(cur_make_tuple_cnode_inputs);
+    auto cur_make_tuple_cnode = fg_->NewCNodeInOrder(cur_make_tuple_cnode_inputs);
     (void)sub_inputs_cnode_inputs.emplace_back(cur_make_tuple_cnode);
   }
-  auto sub_inputs_cnode = fg_->NewCNode(sub_inputs_cnode_inputs);
+  auto sub_inputs_cnode = fg_->NewCNodeInOrder(sub_inputs_cnode_inputs);
   std::vector<AnfNodePtr> out_cnode_inputs;
   (void)out_cnode_inputs.emplace_back(NewValueNode(std::make_shared<VmapMatchOutAxis>("VmapMatchOutAxis")));
   (void)out_cnode_inputs.emplace_back(sub_inputs_cnode);
   (void)out_cnode_inputs.emplace_back(out_axis);
   (void)out_cnode_inputs.emplace_back(axis_size);
-  return fg_->NewCNode(out_cnode_inputs);
+  return fg_->NewCNodeInOrder(out_cnode_inputs);
 }
 
 CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerSingleElement(
@@ -122,7 +125,7 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerSingleElement(
   (void)value_cnode_inputs.emplace_back(NewValueNode(prim::kPrimTupleGetItem));
   (void)value_cnode_inputs.emplace_back(inputs);
   (void)value_cnode_inputs.emplace_back(NewValueNode(static_cast<int64_t>(0)));
-  auto value_cnode = fg_->NewCNode(value_cnode_inputs);
+  auto value_cnode = fg_->NewCNodeInOrder(value_cnode_inputs);
   std::vector<AnfNodePtr> out_cnode_inputs;
   if (inputs_abstract_elements_end->isa<abstract::AbstractNone>()) {
     const py::function broadcast_by_axis = python_adapter::GetPyFn(kVmapFunctionModelName, "_broadcast_by_axis");
@@ -137,7 +140,7 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerSingleElement(
     (void)dim_cnode_inputs.emplace_back(NewValueNode(prim::kPrimTupleGetItem));
     (void)dim_cnode_inputs.emplace_back(inputs);
     (void)dim_cnode_inputs.emplace_back(NewValueNode(static_cast<int64_t>(1)));
-    auto dim_cnode = fg_->NewCNode(dim_cnode_inputs);
+    auto dim_cnode = fg_->NewCNodeInOrder(dim_cnode_inputs);
     const py::function move_axis = python_adapter::GetPyFn(kNumpyModelName, "moveaxis");
     auto move_axis_fg = parse::ParsePythonCode(move_axis);
     MS_EXCEPTION_IF_NULL(move_axis_fg);
@@ -146,7 +149,7 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerSingleElement(
     (void)out_cnode_inputs.emplace_back(dim_cnode);
     (void)out_cnode_inputs.emplace_back(out_axis);
   }
-  return fg_->NewCNode(out_cnode_inputs);
+  return fg_->NewCNodeInOrder(out_cnode_inputs);
 }
 
 namespace {
@@ -183,10 +186,10 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerAllTuple(const AnfNodePtr &inpu
     (void)each_input_cnode_inputs.emplace_back(NewValueNode(prim::kPrimTupleGetItem));
     (void)each_input_cnode_inputs.emplace_back(inputs);
     (void)each_input_cnode_inputs.emplace_back(NewValueNode(i));
-    auto each_input_cnode = fg_->NewCNode(each_input_cnode_inputs);
+    auto each_input_cnode = fg_->NewCNodeInOrder(each_input_cnode_inputs);
     AnfNodePtr dst_cnode = nullptr;
     if (is_out_axes_tuple) {
-      dst_cnode = fg_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), out_axis, NewValueNode(i)});
+      dst_cnode = fg_->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), out_axis, NewValueNode(i)});
     } else {
       dst_cnode = out_axis;
     }
@@ -209,7 +212,7 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerAllTuple(const AnfNodePtr &inpu
         (void)out_cnode_inputs.emplace_back(each_input_cnode);
         (void)out_cnode_inputs.emplace_back(dst_cnode);
         (void)out_cnode_inputs.emplace_back(axis_size);
-        (void)vals_out_tuple_cnode_inputs.emplace_back(fg_->NewCNode(out_cnode_inputs));
+        (void)vals_out_tuple_cnode_inputs.emplace_back(fg_->NewCNodeInOrder(out_cnode_inputs));
       } else {
         // current each input: ((y1, y2), y_axis).
         auto out_cnode = GenerateFuncGraphInnerBroadcastAxis(each_input_cnode, dst_cnode, axis_size,
@@ -221,17 +224,17 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerAllTuple(const AnfNodePtr &inpu
       if (each_inputs_abstract_elements_size != kEachInputsSize) {
         MS_LOG(EXCEPTION) << "Each input with no tuple should have only two elements.";
       }
-      auto val_cnode =
-        fg_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), each_input_cnode, NewValueNode(static_cast<int64_t>(0))});
-      auto src_cnode =
-        fg_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), each_input_cnode, NewValueNode(static_cast<int64_t>(1))});
+      auto val_cnode = fg_->NewCNodeInOrder(
+        {NewValueNode(prim::kPrimTupleGetItem), each_input_cnode, NewValueNode(static_cast<int64_t>(0))});
+      auto src_cnode = fg_->NewCNodeInOrder(
+        {NewValueNode(prim::kPrimTupleGetItem), each_input_cnode, NewValueNode(static_cast<int64_t>(1))});
       auto src_abstract = each_inputs_abstract_elements[1];
       CNodePtr out_cnode = nullptr;
       if (src_abstract->isa<abstract::AbstractNone>() && !dst_abstract->isa<abstract::AbstractNone>()) {
         const py::function broadcast_by_axis = python_adapter::GetPyFn(kVmapFunctionModelName, "_broadcast_by_axis");
         auto broadcast_by_axis_fg = parse::ParsePythonCode(broadcast_by_axis);
         MS_EXCEPTION_IF_NULL(broadcast_by_axis_fg);
-        out_cnode = fg_->NewCNode({NewValueNode(broadcast_by_axis_fg), val_cnode, dst_cnode, axis_size});
+        out_cnode = fg_->NewCNodeInOrder({NewValueNode(broadcast_by_axis_fg), val_cnode, dst_cnode, axis_size});
       } else if (!src_abstract->isa<abstract::AbstractNone>() && dst_abstract->isa<abstract::AbstractNone>()) {
         MS_LOG(EXCEPTION) << "It is invalid that source is not None and dst is None.";
       } else if (src_abstract->isa<abstract::AbstractNone>() && dst_abstract->isa<abstract::AbstractNone>()) {
@@ -240,12 +243,12 @@ CNodePtr VmapMatchOutAxis::GenerateFuncGraphInnerAllTuple(const AnfNodePtr &inpu
         const py::function move_axis = python_adapter::GetPyFn(kNumpyModelName, "moveaxis");
         auto move_axis_fg = parse::ParsePythonCode(move_axis);
         MS_EXCEPTION_IF_NULL(move_axis_fg);
-        out_cnode = fg_->NewCNode({NewValueNode(move_axis_fg), val_cnode, src_cnode, dst_cnode});
+        out_cnode = fg_->NewCNodeInOrder({NewValueNode(move_axis_fg), val_cnode, src_cnode, dst_cnode});
       }
       (void)vals_out_tuple_cnode_inputs.emplace_back(out_cnode);
     }
   }
-  return fg_->NewCNode(vals_out_tuple_cnode_inputs);
+  return fg_->NewCNodeInOrder(vals_out_tuple_cnode_inputs);
 }
 
 FuncGraphPtr VmapMatchOutAxis::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
@@ -379,7 +382,8 @@ FuncGraphPtr VmapGeneralPreprocess::GenerateFuncGraph(const AbstractBasePtrList 
     for (size_t i = 1; i < args_size; ++i) {
       (void)fg->add_parameter();
     }
-    auto output_cnode = fg->NewCNode({NewValueNode(prim::kPrimMakeTuple), NewValueNode(false), NewValueNode(kNone)});
+    auto output_cnode =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), NewValueNode(false), NewValueNode(kNone)});
     fg->set_output(output_cnode);
   } else {
     GenerateFuncGraphAllNone(fg, prim, inputs_size, tuple_elements_num, true);
@@ -404,7 +408,7 @@ CNodeInpusList VmapGeneralRule::ConstructMapInput(const InputsAbstractList &unfo
   for (int64_t i = 0; i < args_size; ++i) {
     AnfNodePtr cur_arg_node = nullptr;
     if (i < tuple_elements_num) {
-      cur_arg_node = fg_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), single_input, NewValueNode(i)});
+      cur_arg_node = fg_->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), single_input, NewValueNode(i)});
     } else {
       cur_arg_node = fg_->add_parameter();
     }
@@ -412,7 +416,7 @@ CNodeInpusList VmapGeneralRule::ConstructMapInput(const InputsAbstractList &unfo
     auto val_abstract = unfold_element_abstract[kValIndex];
     auto dim_abstract = unfold_element_abstract[kDimIndex];
     AnfNodePtr val_cnode =
-      fg_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), cur_arg_node, NewValueNode(kValIndex)});
+      fg_->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), cur_arg_node, NewValueNode(kValIndex)});
 
     if (dim_abstract->isa<abstract::AbstractNone>()) {
       for (int64_t m = 0; m < axis_size_; ++m) {
@@ -423,13 +427,14 @@ CNodeInpusList VmapGeneralRule::ConstructMapInput(const InputsAbstractList &unfo
         MS_LOG(EXCEPTION) << "A variable of type other than `Tensor` is accepted, but the source axis is not `None`";
       }
       AnfNodePtr dim_cnode =
-        fg_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), cur_arg_node, NewValueNode(kDimIndex)});
+        fg_->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), cur_arg_node, NewValueNode(kDimIndex)});
       const py::function unstack_fn = python_adapter::GetPyFn(kVmapFunctionModelName, "vmap_unstack");
       auto unstack_fg_ = parse::ParsePythonCode(unstack_fn);
       MS_EXCEPTION_IF_NULL(unstack_fg_);
-      auto out_cnode = fg_->NewCNode({NewValueNode(unstack_fg_), dim_cnode, val_cnode});
+      auto out_cnode = fg_->NewCNodeInOrder({NewValueNode(unstack_fg_), dim_cnode, val_cnode});
       for (int64_t m = 0; m < axis_size_; ++m) {
-        auto out_element_cnode = fg_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), out_cnode, NewValueNode(m)});
+        auto out_element_cnode =
+          fg_->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), out_cnode, NewValueNode(m)});
         map_inputs[m].push_back(out_element_cnode);
       }
     }
@@ -524,7 +529,7 @@ FuncGraphPtr VmapGeneralRule::GenerateFuncGraph(const AbstractBasePtrList &args_
       std::vector<AnfNodePtr> tuple_cnode_inputs{NewValueNode(prim::kPrimMakeTuple)};
       (void)tuple_cnode_inputs.insert(tuple_cnode_inputs.cend(), map_input.cbegin(),
                                       map_input.cbegin() + tuple_elements_num);
-      auto tuple_cnode = fg_->NewCNode(tuple_cnode_inputs);
+      auto tuple_cnode = fg_->NewCNodeInOrder(tuple_cnode_inputs);
       output_element_cnode_inputs.push_back(NewValueNode(prim_));
       output_element_cnode_inputs.push_back(tuple_cnode);
       (void)output_element_cnode_inputs.insert(output_element_cnode_inputs.end(),
@@ -534,15 +539,15 @@ FuncGraphPtr VmapGeneralRule::GenerateFuncGraph(const AbstractBasePtrList &args_
       (void)output_element_cnode_inputs.insert(output_element_cnode_inputs.cend(), map_input.cbegin(),
                                                map_input.cend());
     }
-    auto output_element_cnode = fg_->NewCNode(output_element_cnode_inputs);
+    auto output_element_cnode = fg_->NewCNodeInOrder(output_element_cnode_inputs);
     (void)output_cnode_inputs.emplace_back(output_element_cnode);
   }
-  auto output_cnode = fg_->NewCNode(output_cnode_inputs);
+  auto output_cnode = fg_->NewCNodeInOrder(output_cnode_inputs);
   const py::function vmap_general_output_process_fn =
     python_adapter::GetPyFn(kVmapFunctionModelName, "vmap_general_output_process");
   auto vmap_general_output_process_fg_ = parse::ParsePythonCode(vmap_general_output_process_fn);
   MS_EXCEPTION_IF_NULL(vmap_general_output_process_fg_);
-  auto vmap_general_output = fg_->NewCNode({NewValueNode(vmap_general_output_process_fg_), output_cnode});
+  auto vmap_general_output = fg_->NewCNodeInOrder({NewValueNode(vmap_general_output_process_fg_), output_cnode});
   fg_->set_output(vmap_general_output);
   return fg_;
 }
