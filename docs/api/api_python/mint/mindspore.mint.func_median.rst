@@ -6,7 +6,7 @@ mindspore.mint.median
     输出指定维度 ``dim`` 上的中值与其对应的索引。如果 ``dim`` 为None，则计算Tensor中所有元素的中值。
 
     参数：
-        - **input** (Tensor) - 任意维度的Tensor，支持的数据类型为：uint8, int16, int32, int64, float16 or float32.
+        - **input** (Tensor) - 任意维度的Tensor，支持的数据类型为：uint8、int16、int32、int64、float16或float32。
         - **dim** (int, 可选) - 指定计算的轴。默认值： ``None`` 。
         - **keepdim** (bool, 可选) - 是否保留 ``dim`` 指定的维度。默认值： ``False`` 。
 

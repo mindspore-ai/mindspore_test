@@ -2952,7 +2952,7 @@ def linspace_ext(start, end, steps, *, dtype=None):
         Tensor, has the shape of :math:`(steps,)`, with dtype specified by `dtype`.
 
     Raises:
-        TypeError: If type of `start` or dtype of `end` is not supported.
+        TypeError: If dtype of `start` or dtype of `end` is not supported.
         ValueError: If `steps` is not positive integer.
 
     Supported Platforms:
@@ -8607,10 +8607,10 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         Tensor, the result of norm calculation on the specified dimension, `dim`.
 
     Raises:
-        TypeError: If `input` is not a Tensor
+        TypeError: If `input` is not a Tensor.
         ValueError: If `dim` is out of range.
         TypeError: If `dim` is neither an int nor a tuple of int.
-        ValueError: If two elements of `dim` is same after normalize.
+        ValueError: If two elements of `dim` is same after normalized.
         ValueError: If any elements of `dim` is out of range.
 
     Note:

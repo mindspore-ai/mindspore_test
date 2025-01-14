@@ -912,7 +912,8 @@ def full_ext(size, fill_value, *, dtype=None):  # pylint: disable=redefined-oute
             Tensor, or a 1-D Tensor with only one element.
 
     Keyword Args:
-        dtype (mindspore.dtype): The specified type of output tensor. `bool_` and `number` are supported, for details,
+        dtype (mindspore.dtype, optional): The specified type of output tensor.
+            `bool_` and `number` are supported, for details,
             please refer to :class:`mindspore.dtype` . Default: ``None`` .
 
     Returns:
