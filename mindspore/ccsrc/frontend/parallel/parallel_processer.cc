@@ -637,6 +637,28 @@ static bool NeedGradient(const ParameterPtr &param_ptr) {
   return false;
 }
 
+OperatorVector MirrorOpInOptShard(const ParameterPtr &param_ptr) {
+  OperatorVector backward_op;
+  std::string opt_shard_mirror_group;
+  if (param_ptr->user_data<TensorLayout>()) {
+    opt_shard_mirror_group = param_ptr->user_data<TensorLayout>()->opt_shard_mirror_group();
+  }
+  if (!opt_shard_mirror_group.empty()) {
+    // mirror ops is covered in not fully use opt shard case
+    uint32_t group_rank_size = 0;
+    if (!CommManager::GetInstance().GetRankSize(opt_shard_mirror_group, &group_rank_size)) {
+      MS_LOG(EXCEPTION) << "Got the group size from the group " << opt_shard_mirror_group << " failed";
+    }
+    backward_op = CreateMirrorOps(opt_shard_mirror_group, static_cast<size_t>(group_rank_size));
+  } else if (ParallelContext::GetInstance()->zero3() &&
+             !param_ptr->user_data<TensorLayout>()->opt_shard_group().empty()) {
+    Group local_rank_group;
+    (void)g_device_manager->CreateGroup({g_device_manager->global_rank()}, &local_rank_group);
+    backward_op = CreateMirrorOps(local_rank_group.name(), 1);
+  }
+  return backward_op;
+}
+
 static void DoInsertMirrorOps(const FuncGraphPtr &root, const MirrorOps &mirror_ops, const CNodePtr &node) {
   FuncGraphPtr func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -667,18 +689,12 @@ static void DoInsertMirrorOps(const FuncGraphPtr &root, const MirrorOps &mirror_
         MS_LOG(INFO) << param_name << " do not need gradient. Skip inserting mirror.";
         continue;
       }
-      std::string opt_shard_mirror_group;
       if (param_ptr->user_data<TensorLayout>()) {
-        opt_shard_mirror_group = param_ptr->user_data<TensorLayout>()->opt_shard_mirror_group();
         is_shared_param = param_ptr->user_data<TensorLayout>()->is_shared_param();
       }
-      if (!opt_shard_mirror_group.empty()) {
-        // mirror ops is covered in not fully use opt shard case
-        uint32_t group_rank_size = 0;
-        if (!CommManager::GetInstance().GetRankSize(opt_shard_mirror_group, &group_rank_size)) {
-          MS_LOG(EXCEPTION) << "Got the group size from the group " << opt_shard_mirror_group << " failed";
-        }
-        backward_op = CreateMirrorOps(opt_shard_mirror_group, static_cast<size_t>(group_rank_size));
+      auto opt_shard_mirror = MirrorOpInOptShard(param_ptr);
+      if (!opt_shard_mirror.empty()) {
+        backward_op = opt_shard_mirror;
       }
     }
     // not a RefKey

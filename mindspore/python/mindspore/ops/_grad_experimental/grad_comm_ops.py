@@ -192,7 +192,7 @@ def get_bprop_virtual_assign_add(self):
 
     def bprop(x, y, out, dout):
         if reduce_scatter:
-            dout = reduce_scatter(dout)
+            dout = reduce_scatter(cast(dout, dtype(y)))
         return F.depend((cast(out_tensor, dtype(x)), cast(out_tensor, dtype(y))), assign_add(y, dout))
 
     return bprop
@@ -451,7 +451,7 @@ def get_bprop_micro_step_all_gather(self):
         if with_mirror_operator:
             if not do_mirror:
                 return (dout, cast(out_tensor, dtype(z)))
-            real_grad = reduce_scatter(dout)
+            real_grad = reduce_scatter(cast(dout, dtype(z)))
             if mean_flag:
                 real_grad = F.tensor_mul(real_grad, scale)
             return (real_grad, cast(out_tensor, dtype(z)))
