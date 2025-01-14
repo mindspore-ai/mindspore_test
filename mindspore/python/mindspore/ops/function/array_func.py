@@ -2223,8 +2223,8 @@ def squeeze(input, axis=None):
     If `axis` is specified, it will remove the dimensions of size 1 in the given `axis`.
     For example, if the dimension is not specified :math:`axis=None`, input shape is (A, 1, B, C, 1, D),
     then the shape of the output Tensor is (A, B, C, D). If the dimension is specified, the squeeze operation
-    is only performed in the specified dimension. If input shape is (A, 1, B), input Tensor will be changed
-    to (A, B) when :math:`axis=1`, but when :math:`axis=0` or :math:`axis=2`, an error will occur.
+    is only performed in the specified dimension. If input shape is (A, 1, B), when :math:`axis=0` or :math:`axis=2`,
+    the input tensor is not changed, while when :math:`axis=1`, the input tensor shape is changed to (A, B).
 
     Note:
         - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
