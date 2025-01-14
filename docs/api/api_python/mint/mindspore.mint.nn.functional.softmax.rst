@@ -13,8 +13,6 @@ mindspore.mint.nn.functional.softmax
     参数：
         - **input** (Tensor) - Tensor，shape为 :math:`(N, *)` ，其中 :math:`*` 为任意额外维度。
         - **dim** (int，可选) - 指定Softmax操作的轴。默认值： ``None`` 。
-
-    关键字参数：
         - **dtype** (:class:`mindspore.dtype`, 可选) - 如果设置此参数，则会在执行之前将 `input` 转换为指定的类型，返回的Tensor类型也将为指定类型 `dtype`。默认值： ``None`` 。
 
     返回：
