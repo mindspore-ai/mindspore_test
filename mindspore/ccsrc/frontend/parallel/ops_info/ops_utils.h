@@ -706,6 +706,7 @@ constexpr char LIN_SPACE[] = "LinSpace";
 constexpr char LIN_SPACE_EXT[] = "LinSpaceExt";
 constexpr char ARANGE[] = "Arange";
 constexpr char SORT[] = "SORT";
+constexpr char SORT_EXT[] = "SortExt";
 constexpr char FILLV2[] = "FillV2";
 constexpr char WKV[] = "WKV";
 constexpr char FFN[] = "FFN";
