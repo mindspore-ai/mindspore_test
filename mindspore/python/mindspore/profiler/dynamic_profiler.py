@@ -636,9 +636,9 @@ if sys.version_info >= (3, 8):
                   equal to start_step. The default value is -1, indicating that data collection will not start during
                   the entire training process.
                 - aicore_metrics (int, optional) - The range of values corresponds to the Profiler. The default value -1
-                  indicates that AI Core utilization is not collected, and 0 indicates PipeUtilization. 1 indicates
-                  ArithmeticUtilization. 2 stands for Memory; 3 stands for MemoryL0; 4 stands for MemoryUB; 5 indicates
-                  ResourceConflictRatio. 6 indicates L2Cache.
+                  indicates that AI Core utilization is not collected, and 0 indicates PipeUtilization, 1 indicates
+                  ArithmeticUtilization, 2 stands for Memory, 3 stands for MemoryL0, 4 stands for MemoryUB, 5 indicates
+                  ResourceConflictRatio, 6 indicates L2Cache.
                 - profiler_level (int, optional) - Sets the level of performance data collection, where 0 represents
                   ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and 2 represents ProfilerLevel.Level2. The
                   default value is 0, indicating the ProfilerLevel.Level0 collection level.
