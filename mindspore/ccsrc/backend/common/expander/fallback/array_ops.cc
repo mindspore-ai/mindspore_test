@@ -224,12 +224,12 @@ NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input,
   constexpr int64_t SPLIT_LOOP_SIZE = 32;
   auto split_size_val = GetValue<int64_t>(split_size->BuildValue());
   const auto &input_shape = input->shape();
-  auto dimSize = input_shape[dim];
-  if (static_cast<int64_t>(split_size_val) == dimSize) {
+  auto dimShape = input_shape[dim];
+  if (static_cast<int64_t>(split_size_val) == dimShape) {
     return {input};
   } else {
-    int64_t numSplit = (split_size_val + dimSize - 1) / split_size_val;
-    int64_t lastSplitSize = split_size_val - (static_cast<int64_t>(split_size_val) * numSplit - dimSize);
+    int64_t numSplit = (split_size_val + dimShape - 1) / split_size_val;
+    int64_t lastSplitSize = split_size_val - (static_cast<int64_t>(split_size_val) * numSplit - dimShape);
     std::vector<int64_t> splitVector(numSplit, static_cast<int64_t>(split_size_val));
     splitVector[numSplit - 1] = lastSplitSize;
     // Using loop splitting in the AiCore scene of the SplitV operator or when the number of outputs exceeds 32
@@ -237,7 +237,7 @@ NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input,
       std::vector<mindspore::expander::NodePtr> subTensors;
       const int64_t loopSize = (SizeToLong(splitVector.size()) + SPLIT_LOOP_SIZE - 1) / SPLIT_LOOP_SIZE;
       const int64_t lastSize = SizeToLong(splitVector.size()) % SPLIT_LOOP_SIZE;
-      const size_t dim = input->shape().size();
+      const size_t dimSize = input->shape().size();
       // Construct splitsize as a new splitSize based on loopSize and lastSize
       std::vector<int64_t> newSplitSize;
       std::vector<int64_t> splitTmp;
@@ -266,12 +266,12 @@ NodePtrList SplitTensorFallbackFunc(FallbackIRBuilder *ib, const NodePtr &input,
       int64_t offsetVal = 0;
       for (size_t sliceIndex = 0; sliceIndex < newSplitSize.size(); sliceIndex++) {
         // Calculate offset, increasing offset block by block
-        std::vector<int64_t> offsetVector(dim, 0);
+        std::vector<int64_t> offsetVector(dimSize, 0);
         offsetVal += sliceIndex == 0 ? 0 : newSplitSize[sliceIndex - 1];
         offsetVector[static_cast<size_t>(dim)] = offsetVal;
         // Calculate size, which is consistent with the output block size
         std::vector<int64_t> sizeVector;
-        for (size_t selfIndex = 0; selfIndex < dim; selfIndex++) {
+        for (size_t selfIndex = 0; selfIndex < dimSize; selfIndex++) {
           int64_t sizeValue =
             selfIndex == static_cast<size_t>(dim) ? newSplitSize[sliceIndex] : input->shape()[selfIndex];
           sizeVector.emplace_back(sizeValue);
@@ -309,7 +309,7 @@ NodePtrList SplitWithSizeFallbackFunc(FallbackIRBuilder *ib, const NodePtr &inpu
     std::vector<mindspore::expander::NodePtr> subTensors;
     const int64_t loopSize = (SizeToLong(split_size_shape.size()) + SPLIT_LOOP_SIZE - 1) / SPLIT_LOOP_SIZE;
     const int64_t lastSize = SizeToLong(split_size_shape.size()) % SPLIT_LOOP_SIZE;
-    const size_t dim = input->shape().size();
+    const size_t dimSize = input->shape().size();
     // 1. Construct splitsize as a new splitSize based on loopSize and lastSize
     std::vector<int64_t> newSplitSize;
     std::vector<int64_t> splitTmp;
@@ -338,12 +338,12 @@ NodePtrList SplitWithSizeFallbackFunc(FallbackIRBuilder *ib, const NodePtr &inpu
     int64_t offsetVal = 0;
     for (size_t sliceIndex = 0; sliceIndex < newSplitSize.size(); sliceIndex++) {
       // Calculate offset, increasing offset block by block
-      std::vector<int64_t> offsetVector(dim, 0);
+      std::vector<int64_t> offsetVector(dimSize, 0);
       offsetVal += sliceIndex == 0 ? 0 : newSplitSize[sliceIndex - 1];
       offsetVector[static_cast<size_t>(dim)] = offsetVal;
       // Calculate size, which is consistent with the output block size
       std::vector<int64_t> sizeVector;
-      for (size_t selfIndex = 0; selfIndex < dim; selfIndex++) {
+      for (size_t selfIndex = 0; selfIndex < dimSize; selfIndex++) {
         int64_t sizeValue =
           selfIndex == static_cast<size_t>(dim) ? newSplitSize[sliceIndex] : input->shape()[selfIndex];
         sizeVector.emplace_back(sizeValue);
