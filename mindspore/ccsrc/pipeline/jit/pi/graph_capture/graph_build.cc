@@ -1974,8 +1974,20 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
   return true;
 }
 
+GraphBuilder::GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
+    : root_(r),
+      parent_(p),
+      graph_(NewGraph(co, globals)),
+      frame_(),
+      current_block_(nullptr),
+      no_grad_(r->no_grad_),
+      side_effect_outputs_() {
+  auto fg_builder = std::make_shared<FuncGraphBuilder>();
+  graph_->set_func_graph_builder(fg_builder);
+}
+
 GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
-    : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false) {
+    : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false), side_effect_outputs_() {
 #if IS_PYTHON_3_11_PLUS
   MS_LOG(ERROR) << "not implement in python3.11";
 #else
@@ -2028,6 +2040,13 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
       n->SetValue(param);
     }
   }
+  const char *name = co_wrapper.Name();
+  int first_line = co_wrapper.FirstLine();
+  auto fg_builder = std::make_shared<FuncGraphBuilder>(true);
+  fg_builder->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
+  co_name_ = name;
+
+  graph_->set_func_graph_builder(fg_builder);
 #endif
 }
 
@@ -2566,15 +2585,7 @@ bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) 
   return true;
 }
 
-MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f), side_effect_outputs_() {
-  auto co = f.GetCode();
-  const char *name = co.Name();
-  int first_line = co.FirstLine();
-  auto fg_builder = std::make_shared<FuncGraphBuilder>(true);
-  fg_builder->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
-  co_name_ = name;
-
-  graph_->set_func_graph_builder(fg_builder);
+MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f) {
   this->FGAddTopInputs();
   auto add_local = [this](ValueNode *node) {
     if (node != &ValueNode::kUnboundLocal && node->abstract_wrapper() == nullptr) {
@@ -2590,10 +2601,7 @@ MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f), s
 }
 
 MindGraphBuilder::MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-    : GraphBuilder(r, p, co, globals), side_effect_outputs_() {
-  auto fg_builder = std::make_shared<FuncGraphBuilder>();
-  graph_->set_func_graph_builder(fg_builder);
-}
+    : GraphBuilder(r, p, co, globals) {}
 
 namespace {
 std::string GetFuncGraphName(const py::object &func, const MindGraphBuilderPtr &subgraph) {
@@ -2671,7 +2679,7 @@ void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTrac
 }
 }  // namespace
 
-AbstractWrapperPtrList MindGraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
+AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
   AbstractWrapperPtrList ret;
   for (auto arg : args) {
     MS_EXCEPTION_IF_NULL(arg);
@@ -2700,7 +2708,7 @@ AbstractWrapperPtrList MindGraphBuilder::HandleInputArgs(const std::vector<Value
   return ret;
 }
 
-void MindGraphBuilder::HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const {
+void GraphBuilder::HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const {
   if (graph == nullptr || obj.ptr() == nullptr) {
     return;
   }
@@ -2783,7 +2791,7 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
   return reason;
 }
 
-void MindGraphBuilder::CollectSideEffectOutputs() {
+void GraphBuilder::CollectSideEffectOutputs() {
   const auto &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
   std::copy_if(side_effect_nodes.begin(), side_effect_nodes.end(), std::back_inserter(side_effect_outputs_),
                [this](ValueNode *node) { return node->GetGraph() == graph_; });
@@ -2803,7 +2811,7 @@ void CollectAllSubGraphs(Graph *cur_graph, std::unordered_set<Graph *> *graphs) 
 }
 }  // namespace
 
-void MindGraphBuilder::RollbackSideEffectRecords() {
+void GraphBuilder::RollbackSideEffectRecords() {
   if (side_effect_outputs_.empty()) {
     return;
   }
@@ -2821,8 +2829,8 @@ void MindGraphBuilder::RollbackSideEffectRecords() {
   graph_->GetSideEffect()->ResetRecord(new_side_effect_nodes);
 }
 
-FuncGraphPtr MindGraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder,
-                                                 const std::vector<ValueNode *> &args, CallNode *call_node) {
+FuncGraphPtr GraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder,
+                                             const std::vector<ValueNode *> &args, CallNode *call_node) {
   bool succ = subgraph_builder->FGAddOutput();
   if (!succ) {
     return nullptr;
@@ -2843,8 +2851,8 @@ FuncGraphPtr MindGraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subg
   return succ ? sub_graph : nullptr;
 }
 
-bool MindGraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output,
-                                            const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node) {
+bool GraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output, const MindGraphBuilderPtr &subgraph_builder,
+                                        CallNode *call_node) {
   if (subgraph_builder->FGBuilder()->GetOutputSize() == 1) {
     // Only the output of function call, no side effect output.
     call_node->SetVobj(AObject::Convert(output));
@@ -2875,7 +2883,7 @@ bool MindGraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output,
   return true;
 }
 
-AbstractWrapperPtr MindGraphBuilder::FGTupleGetItem(const AbstractWrapperPtr &tuple, int index) {
+AbstractWrapperPtr GraphBuilder::FGTupleGetItem(const AbstractWrapperPtr &tuple, int index) {
   MS_EXCEPTION_IF_NULL(tuple);
   AbstractWrapperPtr idx = FGBuilder()->AddLocalVariable(py::int_(index));
   AbstractWrapperPtr ret = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {tuple, idx});
@@ -4280,7 +4288,7 @@ static void SetGradFuncInfo(CallNode *call_node) {
 
 void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str()); }
 
-void MindGraphBuilder::AddInput(ValueNode *node) {
+void GraphBuilder::AddInput(ValueNode *node) {
   auto obj = node->GetVobj()->GetPyObject();
   // tuple list is expand, this branch always false
   if (FGBuilder()->IsParameterSequence(obj)) {
@@ -4331,7 +4339,7 @@ bool IsGradOperation(const ValueNode *node) {
 }
 }  // namespace
 
-void MindGraphBuilder::ExpandContainerParameters(ValueNode *node) {
+void GraphBuilder::ExpandContainerParameters(ValueNode *node) {
   auto expand_list_tuple = [this](ValueNode *node, const py::object &obj) {
     int index = 0;
     std::for_each(obj.begin(), obj.end(), [this, &index, node](const auto &item) {
@@ -4369,7 +4377,7 @@ void MindGraphBuilder::ExpandContainerParameters(ValueNode *node) {
   }
 }
 
-void MindGraphBuilder::FGAddTopInputsWithExpander() {
+void GraphBuilder::FGAddTopInputsWithExpander() {
   bool has_vargs = false;
   bool has_kwargs = false;
   int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
@@ -4398,7 +4406,7 @@ void MindGraphBuilder::FGAddTopInputsWithExpander() {
   }
 }
 
-void MindGraphBuilder::FGAddTopInputs() {
+void GraphBuilder::FGAddTopInputs() {
   if (graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphInput)) {
     FGAddTopInputsWithExpander();
   } else {
@@ -4445,7 +4453,7 @@ void MindGraphBuilder::FGAddTopInputs() {
   }
 }
 
-bool MindGraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
+bool GraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
   // Add function graph inputs.
   const auto &args_wrapper = HandleInputArgs(args);
   MS_EXCEPTION_IF_CHECK_FAIL(args_wrapper.size() == args.size(), "args size check failed.");
@@ -4461,7 +4469,7 @@ bool MindGraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
   return true;
 }
 
-bool MindGraphBuilder::FGAddOutput() {
+bool GraphBuilder::FGAddOutput() {
   if (GetGraph()->GetRetVal() == nullptr) {
     MS_LOG(INFO) << "Add output failed, graph ret value is null";
     return false;
@@ -4484,7 +4492,7 @@ bool MindGraphBuilder::FGAddOutput() {
   return succ;
 }
 
-bool MindGraphBuilder::FGAddSideEffectOutput() {
+bool GraphBuilder::FGAddSideEffectOutput() {
   for (ValueNode *node : side_effect_outputs_) {
     auto stop_gradient_node = FGBuilder()->AddNode(prim::kPrimStopGradient, {node->abstract_wrapper()});
     MS_EXCEPTION_IF_NULL(stop_gradient_node);
@@ -4500,8 +4508,8 @@ bool MindGraphBuilder::FGAddSideEffectOutput() {
   return true;
 }
 
-void MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_info,
-                                 const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
+void GraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
+                             StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << py::str(callable_info);
   AbstractWrapperPtr res;
   if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
@@ -4514,8 +4522,8 @@ void MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable
   UpdateNodeInfo(res, call_node, stop_reason);
 }
 
-void MindGraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_value,
-                                 const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
+void GraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
+                             StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "Try add node: " << callable_value->ToString();
   AbstractWrapperPtr res;
   if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
@@ -4528,8 +4536,7 @@ void MindGraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_v
   UpdateNodeInfo(res, call_node, stop_reason);
 }
 
-std::vector<ValueNode *> MindGraphBuilder::GetNewArgs(CallNode *call_node, AObject *vobj,
-                                                      const GraphBuilderPtr &subgraph) {
+std::vector<ValueNode *> GraphBuilder::GetNewArgs(CallNode *call_node, AObject *vobj, const GraphBuilderPtr &subgraph) {
   std::vector<ValueNode *> new_arg_value_nodes;
   vobj = (vobj && vobj->GetType() != AObject::kTypePrimitive) ? vobj : call_node->input(0)->GetVobj();
   if (vobj->GetType() == AObject::kTypeCFunction) {
@@ -4567,7 +4574,7 @@ std::vector<ValueNode *> MindGraphBuilder::GetNewArgs(CallNode *call_node, AObje
   return new_arg_value_nodes;
 }
 
-std::pair<bool, std::vector<py::object>> MindGraphBuilder::GetConstantInputsObject(CallNode *call_node) {
+std::pair<bool, std::vector<py::object>> GraphBuilder::GetConstantInputsObject(CallNode *call_node) {
   AObject *callable = call_node->input(0)->GetVobj();
   auto callable_info = callable->GetPyObject();
   if (callable_info.ptr() == nullptr) {
@@ -4601,9 +4608,9 @@ std::pair<bool, std::vector<py::object>> MindGraphBuilder::GetConstantInputsObje
   return std::pair<bool, std::vector<py::object>>(true, input_objects);
 }
 
-BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::object &obj, int op_code,
-                                                                     const std::vector<ValueNode *> &inputs,
-                                                                     ValueNode *self_node, bool eliminate_sens) {
+BindArgumentsHelper<ValueNode *> GraphBuilder::PackInputsForFunc(const py::object &obj, int op_code,
+                                                                 const std::vector<ValueNode *> &inputs,
+                                                                 ValueNode *self_node, bool eliminate_sens) {
   auto func_info = obj;
   func_info = FindPyFunc(AObject::Convert(func_info));
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
@@ -4685,7 +4692,7 @@ BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::o
   return bind_helper;
 }
 
-std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> MindGraphBuilder::BuildForwardGraph(CallNode *call_node) {
+std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GraphBuilder::BuildForwardGraph(CallNode *call_node) {
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   MS_EXCEPTION_IF_NULL(grad_net_node);
   constexpr size_t grad_operation_index = 0;
@@ -4817,8 +4824,8 @@ void GuardRegisterHook(ValueNode *node) {
   }
 }
 
-AbstractWrapperPtrList MindGraphBuilder::HandleInputsForGrad(CallNode *call_node,
-                                                             BindArgumentsHelper<ValueNode *> forward_inputs) {
+AbstractWrapperPtrList GraphBuilder::HandleInputsForGrad(CallNode *call_node,
+                                                         BindArgumentsHelper<ValueNode *> forward_inputs) {
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   MS_EXCEPTION_IF_NULL(grad_net_node);
   constexpr size_t grad_operation_index = 0;
@@ -4947,7 +4954,7 @@ void HandleRegisterHook(const FuncGraphPtr &func_graph, StopTraceReason *stop_re
   }
 }
 
-py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason) {
+py::object GraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason) {
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   if (grad_net_node == nullptr) {
     return py::object();
@@ -5005,8 +5012,8 @@ py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReaso
   return py::object();
 }
 
-void MindGraphBuilder::HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
-                                                   const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node) {
+void GraphBuilder::HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
+                                               const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node) {
   const auto &side_effect_outputs = subgraph_builder->side_effect_outputs();
   if (side_effect_outputs.empty() || !grad->grad_info().get_value_) {
     return;
@@ -5042,7 +5049,7 @@ void MindGraphBuilder::HandleGradForwardSideEffect(const FuncGraphPtr &forward_f
   call_node->set_abstract_wrapper(real_ret);
 }
 
-bool MindGraphBuilder::IsGradCallable(ValueNode *node) {
+bool GraphBuilder::IsGradCallable(ValueNode *node) {
   if (node == nullptr || !node->has_abstract_wrapper()) {
     return false;
   }
@@ -5059,7 +5066,7 @@ bool MindGraphBuilder::IsGradCallable(ValueNode *node) {
   return call_str.substr(0, fake_grad_prefix.size()) == fake_grad_prefix;
 }
 
-py::object MindGraphBuilder::GetPyObject(ValueNode *node) {
+py::object GraphBuilder::GetPyObject(ValueNode *node) {
   if (node == nullptr) {
     return py::object();
   }
@@ -5132,8 +5139,8 @@ py::object ConvertPythonBuiltInFunction(const py::object &obj, const std::string
   return callable_obj_ptr == nullptr ? py::object() : py::cast<py::object>(callable_obj_ptr);
 }
 
-bool MindGraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *call_node,
-                                        StopTraceReason *stop_reason) {
+bool GraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *call_node,
+                                    StopTraceReason *stop_reason) {
   // Iterator is not currently supported and will be considered later.
   if (PyIter_Check(callable_info.ptr())) {
     return false;
@@ -5168,7 +5175,7 @@ bool MindGraphBuilder::ConvertClassType(const py::object &callable_info, CallNod
   return false;
 }
 
-std::pair<bool, py::object> MindGraphBuilder::ConvertCallableObject(const py::object &callable_info) const {
+std::pair<bool, py::object> GraphBuilder::ConvertCallableObject(const py::object &callable_info) const {
   bool should_parse_in_ast = false;
   if (MindFGForbiddenConvertFunc(callable_info)) {
     return std::make_pair(should_parse_in_ast, callable_info);
@@ -5205,8 +5212,8 @@ std::pair<bool, py::object> MindGraphBuilder::ConvertCallableObject(const py::ob
   return std::make_pair(should_parse_in_ast, callable_info);
 }
 
-void MindGraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info,
-                                        const std::vector<ValueNode *> &args, StopTraceReason *stop_reason) {
+void GraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info,
+                                    const std::vector<ValueNode *> &args, StopTraceReason *stop_reason) {
   const auto &callable_object =
     py::isinstance<mindspore::Cell>(callable_info)
       ? py::reinterpret_steal<py::object>(PyObject_GetAttrString(callable_info.ptr(), "construct"))
@@ -5215,8 +5222,8 @@ void MindGraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &c
 }
 
 // fix cyclomatic complexity
-py::object MindGraphBuilder::HandleMSCallable(CallNode *call_node, const py::object &callable_info,
-                                              const py::object &original_callable, StopTraceReason *stop_reason) {
+py::object GraphBuilder::HandleMSCallable(CallNode *call_node, const py::object &callable_info,
+                                          const py::object &original_callable, StopTraceReason *stop_reason) {
   std::vector<ValueNode *> args;
   if (PyFunction_Check(callable_info.ptr())) {
     args = GetNewArgs(call_node);
@@ -5307,8 +5314,8 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   return FindPyFunc(AObject::Convert(callable_info));
 }
 
-py::object MindGraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
-                                                    StopTraceReason *stop_reason) {
+py::object GraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
+                                                StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
   MS_LOG(INFO) << "CanConstantFoldFunc for: " << call_node->ToString() << ", " << py::str(callable_info);
 
@@ -5457,7 +5464,7 @@ bool IsMakeNamedtuple(const CallNode *call_node) {
 }  // namespace
 
 // Do create namedtuple logic. Return node if success, else nullptr.
-ValueNode *MindGraphBuilder::HandleMakeNamedtuple(CallNode *call_node) {
+ValueNode *GraphBuilder::HandleMakeNamedtuple(CallNode *call_node) {
   MS_LOG(DEBUG) << "Start make namedtuple";
   AbstractNamedTuple *namedtuple_aobj = MakeNamedtupleAObj(call_node);
   if (namedtuple_aobj == nullptr) {
@@ -5501,8 +5508,8 @@ AbstractNamedTuple *MakeNamedtupleAObj(const CallNode *call_node) {
 }
 }  // namespace
 
-AbstractWrapperPtr MindGraphBuilder::MakeNamedtupleInGraph(const CallNode *call_node,
-                                                           const AbstractNamedTuple *namedtuple_aobj) {
+AbstractWrapperPtr GraphBuilder::MakeNamedtupleInGraph(const CallNode *call_node,
+                                                       const AbstractNamedTuple *namedtuple_aobj) {
   // 1.Collect all the tuple elements.
   std::vector<AbstractWrapperPtr> elems;
   bool succ = CollectNamedtupleElements(call_node, namedtuple_aobj, &elems);
@@ -5527,8 +5534,8 @@ AbstractWrapperPtr MindGraphBuilder::MakeNamedtupleInGraph(const CallNode *call_
   return new_abs_wrapper;
 }
 
-bool MindGraphBuilder::CollectNamedtupleElements(const CallNode *call_node, const AbstractNamedTuple *namedtuple_aobj,
-                                                 std::vector<AbstractWrapperPtr> *elems) {
+bool GraphBuilder::CollectNamedtupleElements(const CallNode *call_node, const AbstractNamedTuple *namedtuple_aobj,
+                                             std::vector<AbstractWrapperPtr> *elems) {
   // 1.Get the __new__ method of namedtuple
   PyTypeObject *type_obj = namedtuple_aobj->GetTypeObject();
   auto type_pyobj = py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(type_obj));
@@ -5586,7 +5593,7 @@ abstract::AbstractNamedTuplePtr ConvertToAbstractNamedTuple(const AbstractBasePt
 
 // Fix dynamic shape tensor get shape issue.
 // Guard and Renormalize strategy should be refactored later.
-AbstractWrapperPtr MindGraphBuilder::HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper) {
+AbstractWrapperPtr GraphBuilder::HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper) {
   auto anf_node = FGBuilder()->ReadLocalVariable(abstract_wrapper);
   if (anf_node == nullptr || anf_node->abstract() == nullptr) {
     return nullptr;
@@ -5630,7 +5637,7 @@ static bool IsMutableAttribute(ValueNode *node) {
   return false;
 }
 
-void MindGraphBuilder::GuardAttribute(ValueNode *attr_node) {
+void GraphBuilder::GuardAttribute(ValueNode *attr_node) {
   static constexpr auto const_type = {
     AObject::kTypeInt,   AObject::kTypeFloat, AObject::kTypeBool, AObject::kTypeMSDType,
     AObject::kTypeTuple, AObject::kTypeList,  AObject::kTypeDict,
@@ -5742,7 +5749,7 @@ bool IsNamedtupleGetElem(const ValueNode *node, const std::string &name) {
 }
 }  // namespace
 
-ValueNode *MindGraphBuilder::HandleNamedtupleGetElem(const Instr &instr, ValueNode *node) {
+ValueNode *GraphBuilder::HandleNamedtupleGetElem(const Instr &instr, ValueNode *node) {
   MS_LOG(DEBUG) << "Do namedtuple getattr '" << instr.name() << "'";
   // Convert namedtuple's getattr by name to tuple's getitem by index.
   auto *namedtuple_aobj = static_cast<AbstractNamedTuple *>(node->GetVobj());
@@ -5760,8 +5767,7 @@ ValueNode *MindGraphBuilder::HandleNamedtupleGetElem(const Instr &instr, ValueNo
   return ret;
 }
 
-AbstractWrapperPtr MindGraphBuilder::HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p,
-                                                   bool is_compare) {
+AbstractWrapperPtr GraphBuilder::HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare) {
   int opcode = instr.op();
   int oparg = instr.arg();
   std::string op_name;
@@ -5781,7 +5787,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleMultiOp(const Instr &instr, const std
   return wrapper;
 }
 
-AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p) {
+AbstractWrapperPtr GraphBuilder::HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p) {
   auto opcode = instr.op();
   AbstractWrapperPtrList inputs_wrapper = HandleInputArgs(p);
   if (inputs_wrapper.end() != std::find(inputs_wrapper.begin(), inputs_wrapper.end(), nullptr)) {
@@ -5831,8 +5837,8 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
   return wrapper;
 }
 
-AbstractWrapperPtr MindGraphBuilder::HandleBuildStringOp(const PrimitivePtr &primitive,
-                                                         const AbstractWrapperPtrList &inputs_wrapper) {
+AbstractWrapperPtr GraphBuilder::HandleBuildStringOp(const PrimitivePtr &primitive,
+                                                     const AbstractWrapperPtrList &inputs_wrapper) {
   // The string_concat primitive only supports concatenating two strings.
   // Thus, if we want to concatenate multiple strings, we need to call this primitive multiple times.
   MS_LOG(DEBUG) << "Handle BUILD_STRING op, concat " << inputs_wrapper.size() << " strings";

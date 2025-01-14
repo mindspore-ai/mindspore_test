@@ -55,8 +55,7 @@ class GraphBuilder {
   static const char *ID_construct;
 
   explicit GraphBuilder(const PyFrameWrapper &f);
-  GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-      : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr), no_grad_(r->no_grad_) {}
+  GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
   explicit GraphBuilder(GraphBuilder *r)
       : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(r->no_grad_) {}
   ~GraphBuilder() {
@@ -313,6 +312,20 @@ class GraphBuilder {
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }
 
+  mindspore::FuncGraphBuilderPtr FGBuilder() const { return graph_->func_graph_builder(); }
+  void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
+                 StopTraceReason *stop_reason);
+  void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
+                 StopTraceReason *stop_reason);
+  void FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info, const std::vector<ValueNode *> &args,
+                        StopTraceReason *stop_reason);
+  AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
+  void GuardAttribute(ValueNode *attr_node);
+
+  std::vector<ValueNode *> side_effect_outputs() { return side_effect_outputs_; }
+  void AddInput(ValueNode *node);
+  void ExpandContainerParameters(ValueNode *node);
+
  protected:
   GraphBuilderPtr sub_graph = nullptr;
   GraphBuilder *root_;
@@ -322,6 +335,8 @@ class GraphBuilder {
   Block *current_block_;
   int cur_bci_ = 0;
   bool no_grad_;
+  // Side effect outputs of this graph (including the side effect outputs of all its sub-graphs).
+  std::vector<ValueNode *> side_effect_outputs_;
   std::vector<TryBlock> tryBlockStacks_{};
   FrameStates excFrame_;
 
@@ -334,51 +349,9 @@ class GraphBuilder {
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
   bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
-};
 
-class MindGraphBuilder : public GraphBuilder {
- public:
-  explicit MindGraphBuilder(const PyFrameWrapper &f);
-  MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
-  mindspore::FuncGraphBuilderPtr FGBuilder() const { return graph_->func_graph_builder(); }
-  void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
-                 StopTraceReason *stop_reason);
-  void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
-                 StopTraceReason *stop_reason);
-  void FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info, const std::vector<ValueNode *> &args,
-                        StopTraceReason *stop_reason);
-  StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                const GraphBuilderPtr &subgraph) override;
-  py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
+  std::string co_name_;
 
-  AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
-  void GuardAttribute(ValueNode *attr_node);
-
- protected:
-  bool DoGetItem(const Instr &instr) override;
-  bool DoItemAccess(const Instr &instr) override;
-  bool DoUnary(const Instr &instr) override;
-  bool DoBinary(const Instr &instr) override;
-  bool DoIsOp(const Instr &instr) override;
-  bool DoContainsOp(const Instr &instr) override;
-  bool DoBinaryMul(const Instr &instr) override;
-  bool DoCompare(const Instr &instr) override;
-  bool DoBuildOp(const Instr &instr) override;
-  bool DoLoadConst(const Instr &instr) override;
-  void DoLoadGlobal(const Instr &instr) override;
-
-  ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr) override;
-  bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
-  bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
-                          CallNode *call_node) override;
-  bool HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
-  bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) override;
-  ValueNode *HandleCallClass(CallNode *call_node) override;
-  std::vector<ValueNode *> side_effect_outputs() { return side_effect_outputs_; }
-  void AddInput(ValueNode *node);
-  void ExpandContainerParameters(ValueNode *node);
-
- private:
   void FGAddTopInputsWithExpander();
   void FGAddTopInputs();
   bool FGAddInputs(const std::vector<ValueNode *> &args);
@@ -430,10 +403,36 @@ class MindGraphBuilder : public GraphBuilder {
   void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
   bool ConvertClassType(const py::object &callable_info, CallNode *call_node, StopTraceReason *stop_reason);
   std::pair<bool, py::object> ConvertCallableObject(const py::object &callable_info) const;
+};
 
-  std::string co_name_;
-  // Side effect outputs of this graph (including the side effect outputs of all its sub-graphs).
-  std::vector<ValueNode *> side_effect_outputs_;
+class MindGraphBuilder : public GraphBuilder {
+ public:
+  explicit MindGraphBuilder(const PyFrameWrapper &f);
+  MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
+  StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
+                                const GraphBuilderPtr &subgraph) override;
+  py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
+
+ protected:
+  bool DoGetItem(const Instr &instr) override;
+  bool DoItemAccess(const Instr &instr) override;
+  bool DoUnary(const Instr &instr) override;
+  bool DoBinary(const Instr &instr) override;
+  bool DoIsOp(const Instr &instr) override;
+  bool DoContainsOp(const Instr &instr) override;
+  bool DoBinaryMul(const Instr &instr) override;
+  bool DoCompare(const Instr &instr) override;
+  bool DoBuildOp(const Instr &instr) override;
+  bool DoLoadConst(const Instr &instr) override;
+  void DoLoadGlobal(const Instr &instr) override;
+
+  ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr) override;
+  bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
+  bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
+                          CallNode *call_node) override;
+  bool HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
+  bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) override;
+  ValueNode *HandleCallClass(CallNode *call_node) override;
 };
 }  // namespace pijit
 }  // namespace mindspore
