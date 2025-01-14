@@ -42,16 +42,15 @@ const AnfNodePtr SqueezeAxis(const FuncGraphPtr &graph, const AnfNodePtr &node) 
   }
   auto value_node = axis_value->cast<ValueNodePtr>();
   auto actual_value = value_node->value();
-  MS_EXCEPTION_IF_CHECK_FAIL(actual_value->isa<ValueSequence>(),
+  MS_EXCEPTION_IF_CHECK_FAIL(actual_value->isa<ValueSequence>() || actual_value->isa<None>(),
                              "Squeeze node axis attr error, squeeze node: " + squeeze_cnode->DebugString() +
                                ", axis value: " + axis_value->ToString());
-  auto &value_sequence = actual_value->cast<ValueSequencePtr>()->value();
   auto shape_vec = common::AnfAlgo::GetOutputInferShape(squeeze_cnode->input(kIndex1), 0);
   const auto dim = shape_vec.size();
   auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(graph);
   MS_EXCEPTION_IF_NULL(kernel_graph);
   std::vector<int64_t> axis;
-  if (value_sequence.empty()) {
+  if (actual_value->isa<None>()) {
     for (size_t i = 0; i < dim; ++i) {
       if (shape_vec[i] != 1) {
         continue;
@@ -62,7 +61,7 @@ const AnfNodePtr SqueezeAxis(const FuncGraphPtr &graph, const AnfNodePtr &node) 
     squeeze_cnode->set_input(kIndex2, new_node);
     return node;
   }
-
+  const auto &value_sequence = actual_value->cast<ValueSequencePtr>()->value();
   for (const auto &value : value_sequence) {
     auto axis_data = AnfUtils::GetIntValue(value);
     auto real_idx = (axis_data < 0) ? axis_data + SizeToLong(dim) : axis_data;

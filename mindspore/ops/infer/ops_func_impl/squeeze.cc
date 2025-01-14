@@ -34,16 +34,27 @@
 namespace mindspore {
 namespace ops {
 namespace {
-int64_t CalRealDim(const int64_t &axis, const size_t &dim_size) {
+std::vector<int64_t> CalRealDim(const std::vector<int64_t> &axes, const size_t &dim_size) {
   auto size = SizeToLong(dim_size);
-  if (size * -1 <= axis && axis < size) {
-    if (axis < 0) {
-      return axis + size;
+  std::set<int64_t> seen_axes;
+  std::vector<int64_t> real_axes;
+  for (const auto &axis : axes) {
+    // range validation
+    int64_t real_axis = 0;
+    if (size * -1 <= axis && axis < size) {
+      real_axis = axis < 0 ? axis + size : axis;
+    } else {
+      MS_EXCEPTION(ValueError) << "dim value error. dim:" << axis << ", dim value should be in [" << -size << ", "
+                               << size << ").";
     }
-    return axis;
+    // duplication validation
+    if (seen_axes.find(real_axis) != seen_axes.end()) {
+      MS_EXCEPTION(ValueError) << "dim value error. duplicate dim:" << real_axis;
+    }
+    seen_axes.insert(real_axis);
+    real_axes.push_back(real_axis);
   }
-  MS_EXCEPTION(ValueError) << "dim value error. dim:" << axis << ", dim value should be in [" << -size << ", " << size
-                           << ").";
+  return real_axes;
 }
 }  // namespace
 constexpr auto kSqueezeDim = 1;
@@ -58,8 +69,16 @@ BaseShapePtr SqueezeFuncImpl::InferShape(const PrimitivePtr &primitive,
     return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
   }
   if (!dim.has_value()) {
-    // dim is dynamic
-    return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
+    // dim is None
+    if (in_shape->IsDynamic()) {
+      return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
+    }
+    for (size_t i = 0; i < in_shape_vec.size(); i++) {
+      if (in_shape_vec[i] != kSqueezeDim) {
+        ret_shape.push_back(in_shape_vec[i]);
+      }
+    }
+    return std::make_shared<abstract::Shape>(ret_shape);
   }
   auto dim_array = dim.value();
   // if the dim has unknown value, the squeeze position could be any of the input dimensions.
@@ -70,22 +89,10 @@ BaseShapePtr SqueezeFuncImpl::InferShape(const PrimitivePtr &primitive,
   std::vector<int64_t> dim_vec = dim_array.ToVector();
   std::vector<int64_t> real_dim_vec;
   auto ndim = in_shape_vec.size();
-  (void)std::transform(dim_vec.begin(), dim_vec.end(), std::back_inserter(real_dim_vec),
-                       [&ndim](const int64_t &axis) { return CalRealDim(axis, ndim); });
-  std::sort(real_dim_vec.begin(), real_dim_vec.end());
-  auto last = std::unique(real_dim_vec.begin(), real_dim_vec.end());
-  real_dim_vec.erase(last, real_dim_vec.end());
+  real_dim_vec = CalRealDim(dim_vec, ndim);
   if (real_dim_vec.empty()) {
-    if (in_shape->IsDynamic()) {
-      return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
-    }
-    if (in_shape_vec.size() == 0) {
-      return std::make_shared<abstract::Shape>(ret_shape);
-    }
     for (size_t i = 0; i < in_shape_vec.size(); i++) {
-      if (in_shape_vec[i] != kSqueezeDim) {
-        ret_shape.push_back(in_shape_vec[i]);
-      }
+      ret_shape.push_back(in_shape_vec[i]);
     }
     return std::make_shared<abstract::Shape>(ret_shape);
   }
