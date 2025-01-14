@@ -100,7 +100,6 @@
     mindspore.Tensor.cauchy
     mindspore.Tensor.ceil
     mindspore.Tensor.cholesky
-    mindspore.Tensor.cholesky_inverse
     mindspore.Tensor.cholesky_solve
     mindspore.Tensor.choose
     mindspore.Tensor.chunk
@@ -124,7 +123,6 @@
     mindspore.Tensor.cumprod
     mindspore.Tensor.cumsum
     mindspore.Tensor.deg2rad
-    mindspore.Tensor.det
     mindspore.Tensor.diag
     mindspore.Tensor.diagflat
     mindspore.Tensor.diagonal
@@ -162,7 +160,6 @@
     mindspore.Tensor.floor_divide
     mindspore.Tensor.flush_from_cache
     mindspore.Tensor.fmax
-    mindspore.Tensor.fmin
     mindspore.Tensor.fmod
     mindspore.Tensor.fold
     mindspore.Tensor.frac
@@ -222,7 +219,6 @@
     mindspore.Tensor.lerp
     mindspore.Tensor.less
     mindspore.Tensor.less_equal
-    mindspore.Tensor.lgamma
     mindspore.Tensor.log
     mindspore.Tensor.log10
     mindspore.Tensor.log1p
@@ -239,7 +235,6 @@
     mindspore.Tensor.logsumexp
     mindspore.Tensor.log_normal
     mindspore.Tensor.long
-    mindspore.Tensor.lstsq
     mindspore.Tensor.lt
     mindspore.Tensor.lu_solve
     mindspore.Tensor.masked_fill
@@ -247,7 +242,6 @@
     mindspore.Tensor.masked_scatter
     mindspore.Tensor.masked_select
     mindspore.Tensor.matmul
-    mindspore.Tensor.matrix_power
     mindspore.Tensor.max
     mindspore.Tensor.maximum
     mindspore.Tensor.mean
@@ -269,7 +263,6 @@
     mindspore.Tensor.nan_to_num
     mindspore.Tensor.nanmean
     mindspore.Tensor.nanmedian
-    mindspore.Tensor.nanquantile
     mindspore.Tensor.nansum
     mindspore.Tensor.narrow
     mindspore.Tensor.nbytes
@@ -296,8 +289,6 @@
     mindspore.Tensor.pow
     mindspore.Tensor.prod
     mindspore.Tensor.ptp
-    mindspore.Tensor.qr
-    mindspore.Tensor.quantile
     mindspore.Tensor.rad2deg
     mindspore.Tensor.random_
     mindspore.Tensor.random_categorical
@@ -366,7 +357,6 @@
     mindspore.Tensor.take
     mindspore.Tensor.tan
     mindspore.Tensor.tanh
-    mindspore.Tensor.tanh_
     mindspore.Tensor.tensor_split
     mindspore.Tensor.tile
     mindspore.Tensor.to
