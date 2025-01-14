@@ -52,6 +52,7 @@ MS_SIMU_MEMCPY_REG(Reduce);
 MS_SIMU_MEMCPY_REG(Scatter);
 MS_SIMU_MEMCPY_REG(Broadcast);
 MS_SIMU_MEMCPY_REG(AllToAll);
+MS_SIMU_MEMCPY_REG(AlltoAllV);
 }  // namespace kernel
 }  // namespace mindspore
 
