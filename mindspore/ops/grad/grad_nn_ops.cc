@@ -1301,7 +1301,11 @@ DEF_PURE_SHAPE_CALC(g_dense_shapecalc0)
     if (b_shape.size() > 0) {
       b_reduce_shape.push_back(0);
     }
-
+    // Special handling of input tensor shape(0,) scenarios.
+    if (x_shape.size() == 1 && x_shape[0] == 0 && w_shape.size() == 1 && w_shape[0] == 0) {
+      x_2d_shape = {1, 0};
+      w_2d_shape = {1, 0};
+    }
     return {x_2d_shape, w_2d_shape, dout_2d_shape, b_reduce_shape, x_shape, w_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {

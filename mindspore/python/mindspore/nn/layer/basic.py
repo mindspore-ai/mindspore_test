@@ -634,7 +634,7 @@ class Dense(Cell):
     with the same data type as the :math:`X` created by the layer (only if has_bias is True).
 
     .. warning::
-        In PyNative mode, if `bias` is ``False`` , the `x` cannot be greater than 6D.
+        On the Ascend platform, if `bias` is ``False`` , the `x` cannot be greater than 6D in PYNATIVE or KBK mode.
 
     Args:
         in_channels (int): The number of channels in the input space.
@@ -668,7 +668,7 @@ class Dense(Cell):
                     is not equal to `out_channels` or shape[1] of `weight_init` is not equal to `in_channels`.
         ValueError: If length of shape of `bias_init` is not equal to 1
                     or shape[0] of `bias_init` is not equal to `out_channels`.
-        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PyNative mode.
+        RuntimeError: On the Ascend platform, if `bias` is ``False`` and `x` is greater than 6D in PYNATIVE or KBK mode.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -770,6 +770,9 @@ class Linear(Cell):
     .. math::
         \text{outputs} = X * kernel + bias
 
+    .. warning::
+        On the Ascend platform, if `bias` is ``False`` , the `x` cannot be greater than 6D in PYNATIVE or KBK mode.
+
     where :math:`X` is the input tensors, :math:`\text{kernel}` is a weight matrix with the same
     data type as the :math:`X` created by the layer, and :math:`\text{bias}` is a bias vector
     with the same data type as the :math:`X` created by the layer (only if the parameter `bias` is True).
@@ -808,7 +811,7 @@ class Linear(Cell):
                     is not equal to `out_features` or shape[1] of `weight_init` is not equal to `in_features`.
         ValueError: If length of shape of `bias_init` is not equal to 1
                     or shape[0] of `bias_init` is not equal to `out_features`.
-        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PyNative mode.
+        RuntimeError: On the Ascend platform, if `bias` is ``False`` and `x` is greater than 6D in PYNATIVE or KBK mode.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
