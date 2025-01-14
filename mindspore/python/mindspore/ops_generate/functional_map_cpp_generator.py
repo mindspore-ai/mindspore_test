@@ -138,13 +138,17 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Returns:
             str: Generated function signatures string.
         """
+        sig_set = set()
+        for tensor_proto in func_protos:
+            sig_set.add(self._generate_single_signature_str(func_api_name, tensor_proto, is_tensor_method))
+        sig_list = list(sig_set)
         sig_str = '{' + f'\"{func_api_name}\",\n ' + '{'
         first_sig = True
-        for tensor_proto in func_protos:
+        for sig in sig_list:
             if not first_sig:
                 sig_str += ',\n'
             first_sig = False
-            sig_str += self._generate_single_signature_str(func_api_name, tensor_proto, is_tensor_method)
+            sig_str += sig
         sig_str += '}\n},'
         return sig_str
 
