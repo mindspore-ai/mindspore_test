@@ -134,13 +134,6 @@ static bool EnableShareCell() {
     MS_LOG(EXCEPTION) << "The cell reuse cannot be used with communication reuse,"
                          " please unset environment variable 'MS_COMM_COMPILER_OPT'";
   }
-  MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
-  bool grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
-  if (grad_accumulation_shard && cell_reuse) {
-    MS_LOG(EXCEPTION)
-      << "The cell reuse cannot be used with sharding accumulate grad parameter with optimizer parallel,"
-         " please set_auto_parallel_context(parallel_optimizer_config={'gradient_accumulation_shard':False})";
-  }
   return cell_reuse;
 }
 
@@ -453,6 +446,9 @@ void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const F
     }
   }
   args1 = MakeValue(param_ptr->user_data<TensorLayout>()->opt_shard_group());
+  if (ParallelContext::GetInstance()->zero3()) {
+    args1 = MakeValue("");
+  }
   args2 = MakeValue(LongToSize(param_ptr->param_info()->comm_fusion()) + LongToSize(step) * PIPELINE_FUSTION_OFFSET);
   OperatorAttrs attrs = {};
   auto py_instance = CreateOpInstance(attrs, VIRTUAL_ASSIGN_ADD, VIRTUAL_ASSIGN_ADD);
@@ -461,6 +457,7 @@ void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const F
   auto new_prim = GetValueNode<PrimitivePtr>(value_node);
   MS_EXCEPTION_IF_NULL(new_prim);
   auto attrs_prim = new_prim->attrs();
+
   attrs_prim[GROUP] = args1;
   attrs_prim[kAttrFusion] = args2;
   if (cnode->HasPrimalAttr(PIPELINE_PARAM)) {
@@ -545,9 +542,12 @@ std::set<std::pair<AnfNodePtr, int>> FuncNodeUsersSet(const AnfNodePtr &paramete
   std::set<std::pair<AnfNodePtr, int>> all_node_users;
   for (auto &n_pair : node_users) {
     auto users_skip_virtual_nodes =
-      FindNextNode(n_pair, node_users_map,
-                   {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name(),
-                    prim::kPrimCast->name()});
+      !ParallelContext::GetInstance()->zero3()
+        ? FindNextNode(n_pair, node_users_map,
+                       {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(),
+                        prim::kPrimLoad->name(), prim::kPrimCast->name()})
+        : FindNextNode(n_pair, node_users_map,
+                       {prim::kPrimMirrorMicroStep->name(), prim::kPrimLoad->name(), prim::kPrimCast->name()});
     for (const auto &node_pair : users_skip_virtual_nodes) {
       auto func_node_users = FuncGraphNodeUsers(node_pair);
       if (func_node_users.empty()) {
@@ -636,13 +636,19 @@ void AddVirtualAssignAdd(const FuncGraphPtr &root) {
       if (IsPrimitiveCNode(temp_node.first, prim::kPrimCast)) {
         temp_node = *node_users_map[temp_node.first].begin();
       }
+      bool insert_before_ag_in_zero3 =
+        ParallelContext::GetInstance()->zero3() && IsPrimitiveCNode(temp_node.first, prim::kPrimMicroStepAllGather);
       if (!IsSomePrimitiveList(
             temp_node.first->cast<CNodePtr>(),
-            {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name()})) {
+            {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name()}) ||
+          insert_before_ag_in_zero3) {
         InsertVirtualAssignAdd(temp_node, root->manager(), accu_parameter, node_users_map);
         continue;
       }
-      auto node_set = FindNextNode(temp_node, node_users_map);
+      auto node_set =
+        !ParallelContext::GetInstance()->zero3()
+          ? FindNextNode(temp_node, node_users_map)
+          : FindNextNode(temp_node, node_users_map, {prim::kPrimMirrorMicroStep->name(), prim::kPrimLoad->name()});
       for (auto &node_user : node_set) {
         InsertVirtualAssignAdd(node_user, root->manager(), accu_parameter, node_users_map);
       }

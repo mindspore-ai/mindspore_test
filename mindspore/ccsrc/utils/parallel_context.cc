@@ -104,6 +104,7 @@ void ParallelContext::Reset() {
   dataset_strategy_devmat_.clear();
   dataset_strategy_tensormap_.clear();
   dataset_strategy_alias_name_.clear();
+  zero3_ = false;
 }
 
 void ParallelContext::set_device_num(int64_t device_num) {
@@ -352,6 +353,7 @@ void ParallelContext::set_do_transform(const bool do_transform) { do_transform_ 
 void ParallelContext::set_stra_file_only_trainable_params(const bool stra_file_only_trainable_params) {
   stra_file_only_trainable_params_ = stra_file_only_trainable_params;
 }
+void ParallelContext::set_zero3(const bool zero3) { zero3_ = zero3; }
 
 void ParallelContext::set_sharding_propagation(const bool stra_pto) { sharding_propagation_ = stra_pto; }
 

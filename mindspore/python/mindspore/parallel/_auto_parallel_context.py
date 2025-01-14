@@ -64,6 +64,7 @@ class _ParallelOptimizerConfig:
     GRADIENT_ACCUMULATION_SHARD = "gradient_accumulation_shard"
     PARALLEL_OPTIMIZER_THRESHOLD = "parallel_optimizer_threshold"
     OPTIMIZER_WEIGHT_SHARD_SIZE = "optimizer_weight_shard_size"
+    OPTIMIZER_LEVEL = "optimizer_level"
 
 
 class _PipelineConfig:
@@ -1040,10 +1041,12 @@ class _AutoParallelContext:
         grad_shard_name = _ParallelOptimizerConfig.GRADIENT_ACCUMULATION_SHARD
         threshold_name = _ParallelOptimizerConfig.PARALLEL_OPTIMIZER_THRESHOLD
         optimizer_weight_shard_size_name = _ParallelOptimizerConfig.OPTIMIZER_WEIGHT_SHARD_SIZE
+        optimizer_level_name = _ParallelOptimizerConfig.OPTIMIZER_LEVEL
 
         for config_name in parallel_optimizer_config:
             unknown_config = []
-            if config_name not in [grad_shard_name, threshold_name, optimizer_weight_shard_size_name]:
+            if config_name not in [grad_shard_name, threshold_name, optimizer_weight_shard_size_name,
+                                   optimizer_level_name]:
                 unknown_config.append(config_name)
 
             if unknown_config:
@@ -1054,6 +1057,10 @@ class _AutoParallelContext:
                 parallel_optimizer_config[grad_shard_name], grad_shard_name, grad_shard_name)
             self._context_handle.set_grad_accumulation_shard(
                 parallel_optimizer_config[grad_shard_name])
+            if optimizer_level_name in parallel_optimizer_config \
+                    and parallel_optimizer_config[optimizer_level_name] != "level2":
+                raise ValueError(f"The optimizer_level is set as {parallel_optimizer_config[optimizer_level_name]}, "
+                                 "thus cannot set grad_accumulation_shard as True.")
 
         if threshold_name in parallel_optimizer_config:
             Validator.check_non_negative_int(
@@ -1065,6 +1072,20 @@ class _AutoParallelContext:
             value = parallel_optimizer_config[optimizer_weight_shard_size_name]
             Validator.check_positive_int(value)
             self.set_optimizer_weight_shard_size(value)
+
+        if optimizer_level_name in parallel_optimizer_config:
+            optimizer_level = parallel_optimizer_config[optimizer_level_name]
+            if optimizer_level not in ["level1", "level2", "level3"]:
+                raise ValueError("Optimizer level should in ['level1', 'level2', 'level3'], but got {}"
+                                 .format(optimizer_level))
+
+            if self._context_handle.get_grad_accumulation_shard() and optimizer_level != "level2":
+                raise ValueError("The grad_accumulation shard is set, thus cannot set optimizer_level != 'level2'")
+            if optimizer_level == "level2":
+                self._context_handle.set_grad_accumulation_shard(True)
+            if optimizer_level == "level3":
+                self._context_handle.set_zero3(True)
+                self._context_handle.set_grad_accumulation_shard(False)
 
     def get_grad_accumulation_shard(self):
         """Get grad accumulation shard."""
