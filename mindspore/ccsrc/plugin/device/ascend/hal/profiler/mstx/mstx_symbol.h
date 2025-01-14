@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_PROFILER_MSTX_MSTXSYMBOL_H_
 #include <string>
 #include "acl/acl_prof.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "utils/dlopen_macro.h"
 
 namespace mindspore {

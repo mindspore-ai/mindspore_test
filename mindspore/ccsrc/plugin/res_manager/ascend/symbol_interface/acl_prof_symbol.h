@@ -19,8 +19,7 @@
 #include "acl/acl_prof.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 ORIGIN_METHOD(aclprofCreateConfig, aclprofConfig *, uint32_t *, uint32_t, aclprofAicoreMetrics,
               const aclprofAicoreEvents *, uint64_t)
 ORIGIN_METHOD(aclprofDestroyConfig, aclError, const aclprofConfig *)
@@ -43,7 +42,6 @@ extern aclprofGetStepTimestampFunObj aclprofGetStepTimestamp_;
 extern aclprofDestroyStepInfoFunObj aclprofDestroyStepInfo_;
 
 void LoadProfApiSymbol(const std::string &ascend_path);
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_PROF_SYMBOL_H_

@@ -28,8 +28,8 @@
 #include "backend/common/session/session_basic.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/distributed/init.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 API_GRAPH_REG(kAscendDevice, AscendGraphImpl);

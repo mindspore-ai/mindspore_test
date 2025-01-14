@@ -30,9 +30,9 @@
 #include "transform/acl_ir/op_api_cache.h"
 #include "transform/acl_ir/op_api_util.h"
 #include "transform/acl_ir/acl_allocator.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace transform {

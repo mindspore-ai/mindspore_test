@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_mdl_symbol.h"
 #include <string>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_mdl_symbol.h"
+#include "symbol_utils.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 aclmdlAddDatasetBufferFunObj aclmdlAddDatasetBuffer_ = nullptr;
 aclmdlCreateDatasetFunObj aclmdlCreateDataset_ = nullptr;
 aclmdlCreateDescFunObj aclmdlCreateDesc_ = nullptr;
@@ -115,5 +114,4 @@ void LoadAclMdlApiSymbol(const std::string &ascend_path) {
   aclmdlSetDynamicHWSize_ = DlsymAscendFuncObj(aclmdlSetDynamicHWSize, handler);
   MS_LOG(INFO) << "Load acl mdl api success!";
 }
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

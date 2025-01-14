@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "symbol_utils.h"
 #include <string>
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_compiler_symbol.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_op_symbol.h"
-#include "transform/symbol/acl_prof_symbol.h"
-#include "transform/symbol/acl_rt_allocator_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/acl_tdt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "acl_base_symbol.h"
+#include "acl_compiler_symbol.h"
+#include "acl_mdl_symbol.h"
+#include "acl_op_symbol.h"
+#include "acl_prof_symbol.h"
+#include "acl_rt_allocator_symbol.h"
+#include "acl_rt_symbol.h"
+#include "acl_symbol.h"
+#include "acl_tdt_symbol.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 
 static bool load_ascend_api = false;
 static bool load_simulation_api = false;
@@ -93,5 +92,4 @@ void LoadSimulationApiSymbols() {
   load_simulation_api = true;
   MS_LOG(INFO) << "Load simulation api success!";
 }
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

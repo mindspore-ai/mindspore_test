@@ -124,7 +124,7 @@ std::vector<std::string> ParseCustomPriority(std::string file_name) {
 
 void GetAscendDefaultCustomPath(std::vector<std::string> *cust_paths) {
   MS_EXCEPTION_IF_NULL(cust_paths);
-  auto ascend_path = mindspore::transform::GetAscendPath();
+  auto ascend_path = mindspore::device::ascend::GetAscendPath();
   std::string custom_path = ascend_path + "opp/vendors/";
   DIR *dir = opendir(custom_path.c_str());
   if (dir == nullptr) {
@@ -177,7 +177,7 @@ void LoadOpApiLib() {
     }
   }
 
-  auto ascend_path = mindspore::transform::GetAscendPath();
+  auto ascend_path = mindspore::device::ascend::GetAscendPath();
   const std::vector<std::string> depend_libs = {"libdummy_tls.so", "libnnopbase.so"};
   for (const auto &dep_lib : depend_libs) {
     (void)GetOpApiLibHandler(ascend_path + "lib64/" + dep_lib);

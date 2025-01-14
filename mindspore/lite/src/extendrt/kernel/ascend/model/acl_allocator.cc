@@ -17,14 +17,14 @@
 #include "src/extendrt/kernel/ascend/model/acl_allocator.h"
 #include <utility>
 #include "src/common/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {
 AclAllocator *CreateAclAllocator() {
   MS_LOG(INFO) << "LoadAscendApiSymbols for MindSpore lite.";
-  mindspore::transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   MS_LOG(INFO) << "CreateAclAllocator..";
   return new AclAllocator();
 }

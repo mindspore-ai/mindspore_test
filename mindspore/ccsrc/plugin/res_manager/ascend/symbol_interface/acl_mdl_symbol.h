@@ -19,8 +19,7 @@
 #include "acl/acl_mdl.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 ORIGIN_METHOD(aclmdlAddDatasetBuffer, aclError, aclmdlDataset *, aclDataBuffer *)
 ORIGIN_METHOD(aclmdlCreateDataset, aclmdlDataset *);
 ORIGIN_METHOD(aclmdlCreateDesc, aclmdlDesc *)
@@ -110,7 +109,6 @@ extern aclmdlGetDynamicBatchFunObj aclmdlGetDynamicBatch_;
 extern aclmdlSetDynamicHWSizeFunObj aclmdlSetDynamicHWSize_;
 
 void LoadAclMdlApiSymbol(const std::string &ascend_path);
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_MDL_SYMBOL_H_

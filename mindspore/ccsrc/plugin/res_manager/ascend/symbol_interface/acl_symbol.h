@@ -19,8 +19,8 @@
 #include "acl/acl_rt_allocator.h"
 #include "utils/dlopen_macro.h"
 #include "transform/symbol/acl_base_symbol.h"
-namespace mindspore {
-namespace transform {
+
+namespace mindspore::device::ascend {
 
 ORIGIN_METHOD(aclInit, aclError, const char *);
 ORIGIN_METHOD(aclFinalize, aclError);
@@ -29,7 +29,6 @@ extern aclInitFunObj aclInit_;
 extern aclFinalizeFunObj aclFinalize_;
 
 void LoadAclApiSymbol(const std::string &ascend_path);
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_SYMBOL_H_

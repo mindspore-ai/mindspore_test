@@ -23,8 +23,8 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/profiler/memory_profiling.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 using mindspore::profiler::ascend::MemoryProfiling;
 

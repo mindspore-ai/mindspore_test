@@ -19,8 +19,7 @@
 #include "acl/acl_base.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 ORIGIN_METHOD_WITH_SIMU(aclCreateDataBuffer, aclDataBuffer *, void *, size_t);
 ORIGIN_METHOD_WITH_SIMU(aclCreateTensorDesc, aclTensorDesc *, aclDataType, int, const int64_t *, aclFormat);
 ORIGIN_METHOD_WITH_SIMU(aclDataTypeSize, size_t, aclDataType);
@@ -41,7 +40,6 @@ ORIGIN_METHOD_WITH_SIMU(aclGetRecentErrMsg, const char *)
 
 void LoadAclBaseApiSymbol(const std::string &ascend_path);
 void LoadSimulationAclBaseApi();
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_BASE_SYMBOL_H_

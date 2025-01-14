@@ -55,8 +55,8 @@
 #include "backend/common/session/kernel_build_client.h"
 #include "transform/acl_ir/op_api_exec.h"
 #include "kernel/framework_utils.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 using std::vector;
 constexpr uint32_t kProfilingMaxTaskIdInStream = 65531;

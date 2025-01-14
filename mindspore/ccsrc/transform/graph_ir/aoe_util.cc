@@ -22,8 +22,8 @@
 #include "transform/graph_ir/aoe_util.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace transform {
@@ -50,7 +50,7 @@ void AoeUtil::Initialize() {
     return;
   }
   if (IsAscendServer()) {
-    std::string ascend_path = GetAscendPath();
+    std::string ascend_path = mindspore::device::ascend::GetAscendPath();
     auto ld_library_path = common::GetEnv("LD_LIBRARY_PATH");
     ld_library_path = ascend_path + "lib64:" + ld_library_path;
     common::SetEnv("LD_LIBRARY_PATH", ld_library_path.c_str());

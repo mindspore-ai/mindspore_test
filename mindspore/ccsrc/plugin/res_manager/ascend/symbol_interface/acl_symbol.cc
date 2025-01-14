@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_symbol.h"
 #include <string>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_symbol.h"
+#include "symbol_utils.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 
 aclInitFunObj aclInit_ = nullptr;
 aclFinalizeFunObj aclFinalize_ = nullptr;
@@ -35,5 +34,4 @@ void LoadAclApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl base api success!";
 }
 
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

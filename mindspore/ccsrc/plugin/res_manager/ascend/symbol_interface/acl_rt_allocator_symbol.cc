@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_rt_allocator_symbol.h"
 #include <string>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_rt_allocator_symbol.h"
+#include "symbol_utils.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 aclrtAllocatorCreateDescFunObj aclrtAllocatorCreateDesc_ = nullptr;
 aclrtAllocatorDestroyDescFunObj aclrtAllocatorDestroyDesc_ = nullptr;
 aclrtAllocatorRegisterFunObj aclrtAllocatorRegister_ = nullptr;
@@ -49,5 +48,4 @@ void LoadAclAllocatorApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl allocator api success!";
 }
 
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

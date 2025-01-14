@@ -20,9 +20,9 @@
 #include "debug/data_dump/data_dumper.h"
 #include "include/backend/debug/data_dump/acl_dump_json_writer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore {

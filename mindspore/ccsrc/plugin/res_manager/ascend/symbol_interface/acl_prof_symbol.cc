@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_prof_symbol.h"
 #include <string>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_prof_symbol.h"
+#include "symbol_utils.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 aclprofCreateConfigFunObj aclprofCreateConfig_ = nullptr;
 aclprofDestroyConfigFunObj aclprofDestroyConfig_ = nullptr;
 aclprofFinalizeFunObj aclprofFinalize_ = nullptr;
@@ -48,5 +47,4 @@ void LoadProfApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl prof api success!";
 }
 
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

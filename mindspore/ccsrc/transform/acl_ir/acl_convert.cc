@@ -27,9 +27,9 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "transform/acl_ir/op_api_util.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::transform {
 namespace {

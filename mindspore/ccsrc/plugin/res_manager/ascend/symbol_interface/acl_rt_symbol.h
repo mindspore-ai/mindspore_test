@@ -19,8 +19,7 @@
 #include "acl/acl_rt.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateContext, aclError, aclrtContext *, int32_t)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEvent, aclError, aclrtEvent *)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEventWithFlag, aclError, aclrtEvent *, uint32_t)
@@ -82,7 +81,6 @@ ORIGIN_METHOD_WITH_SIMU(aclrtMemUceRepair, aclError, int32_t, aclrtMemUceInfo *,
 
 void LoadAclRtApiSymbol(const std::string &ascend_path);
 void LoadSimulationRtApi();
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_RT_SYMBOL_H_

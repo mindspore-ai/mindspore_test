@@ -16,7 +16,7 @@
 #include <atomic>
 
 #include "common/common_test.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #define private public
 #define protected public
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"

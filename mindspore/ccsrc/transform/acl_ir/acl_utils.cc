@@ -26,12 +26,12 @@
 #include "utils/file_utils.h"
 #include "include/common/profiler.h"
 #include "transform/acl_ir/op_api_util.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_compiler_symbol.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_op_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_op_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace {
 /*

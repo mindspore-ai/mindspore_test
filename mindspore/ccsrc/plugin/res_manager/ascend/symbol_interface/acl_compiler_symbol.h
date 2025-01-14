@@ -19,8 +19,7 @@
 #include "acl/acl_op_compiler.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 
 ORIGIN_METHOD_WITH_SIMU(aclopCompileAndExecute, aclError, const char *, int, const aclTensorDesc *const[],
                         const aclDataBuffer *const[], int, const aclTensorDesc *const[], aclDataBuffer *const[],
@@ -36,7 +35,6 @@ ORIGIN_METHOD_WITH_SIMU(aclGenGraphAndDumpForOp, aclError, const char *, int, co
 
 void LoadAclOpCompilerApiSymbol(const std::string &ascend_path);
 void LoadSimulationAclOpCompilerApi();
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_COMPILER_SYMBOL_H_

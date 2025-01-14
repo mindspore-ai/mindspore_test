@@ -15,16 +15,16 @@
  */
 #include "common/common_test.h"
 #include "utils/ms_context.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_tdt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
 #define private public
 #define protected public
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
 #undef private
 #undef protected
-using namespace mindspore::transform;
+using namespace mindspore::device::ascend;
 namespace mindspore {
 namespace device {
 namespace ascend {

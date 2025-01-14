@@ -25,7 +25,7 @@ mstxRangeEndFunObj mstxRangeEnd_ = nullptr;
 
 void LoadMstxApiSymbol(const std::string &ascend_path) {
   std::string mstx_plugin_path = ascend_path + "lib64/libms_tools_ext.so";
-  auto handler = mindspore::transform::GetLibHandler(mstx_plugin_path);
+  auto handler = mindspore::device::ascend::GetLibHandler(mstx_plugin_path);
   if (handler == nullptr) {
     MS_LOG(WARNING) << "Dlopen " << mstx_plugin_path << " failed! " << dlerror();
     return;

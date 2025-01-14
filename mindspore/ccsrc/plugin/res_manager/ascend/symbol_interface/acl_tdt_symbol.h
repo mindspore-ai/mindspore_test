@@ -20,8 +20,7 @@
 #include "acl/acl_tdt.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 
 ORIGIN_METHOD_WITH_SIMU(acltdtAddDataItem, aclError, acltdtDataset *, acltdtDataItem *)
 ORIGIN_METHOD_WITH_SIMU(acltdtCleanChannel, aclError, acltdtChannelHandle *)
@@ -50,7 +49,6 @@ ORIGIN_METHOD_WITH_SIMU(acltdtStopChannel, aclError, acltdtChannelHandle *)
 
 void LoadAcltdtApiSymbol(const std::string &ascend_path);
 void LoadSimulationTdtApi();
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_TDT_SYMBOL_H_

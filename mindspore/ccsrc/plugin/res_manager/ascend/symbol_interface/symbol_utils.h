@@ -102,19 +102,17 @@ bool HasAscendApi(Function f) {
   return f != nullptr;
 }
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 
 #define CALL_ASCEND_API(func_name, ...) \
-  RunAscendApi(mindspore::transform::func_name##_, FILE_NAME, __LINE__, __FUNCTION__, #func_name, ##__VA_ARGS__)
+  RunAscendApi(mindspore::device::ascend::func_name##_, FILE_NAME, __LINE__, __FUNCTION__, #func_name, ##__VA_ARGS__)
 
-#define HAS_ASCEND_API(func_name) HasAscendApi(mindspore::transform::func_name##_)
+#define HAS_ASCEND_API(func_name) HasAscendApi(mindspore::device::ascend::func_name##_)
 
 std::string GetAscendPath();
 void *GetLibHandler(const std::string &lib_path, bool if_global = false);
 void LoadAscendApiSymbols();
 void LoadSimulationApiSymbols();
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_SYMBOL_UTILS_H_

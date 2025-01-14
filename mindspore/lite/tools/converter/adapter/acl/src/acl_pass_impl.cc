@@ -80,7 +80,7 @@
 #include "tools/optimizer/fusion/gnsnz_pass.h"
 #include "tools/optimizer/fusion/ffn_custom_pass.h"
 #include "tools/optimizer/fusion/gnbmm_pass.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
@@ -1235,7 +1235,7 @@ bool AclPassImpl::Run(const FuncGraphPtr &func_graph) {
     // func_graph is already acl custom node
     return true;
   }
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   MS_CHECK_TRUE_MSG(func_graph != nullptr, false, "func_graph is nullptr.");
 
   auto manager = Manage(func_graph, true);

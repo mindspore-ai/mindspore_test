@@ -26,9 +26,9 @@
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/ms_context.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_compiler_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
@@ -64,7 +64,7 @@ std::mutex set_opt_mutex;
 aclError SetCompileopt(aclCompileOpt opt, const char *value) { return CALL_ASCEND_API(aclSetCompileopt, opt, value); }
 
 void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
-  static auto ascend_path = mindspore::transform::GetAscendPath();
+  static auto ascend_path = mindspore::device::ascend::GetAscendPath();
   auto load_path = ascend_path + "/lib64/" + lib_path;
 
   auto handler = dlopen(load_path.c_str(), RTLD_LAZY);

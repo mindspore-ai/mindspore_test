@@ -19,8 +19,7 @@
 #include "acl/acl_op.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 
 ORIGIN_METHOD(aclopCreateAttr, aclopAttr *)
 ORIGIN_METHOD(aclopSetAttrBool, aclError, aclopAttr *, const char *, uint8_t)
@@ -51,7 +50,6 @@ extern aclopSetAttrStringFunObj aclopSetAttrString_;
 extern aclopSetModelDirFunObj aclopSetModelDir_;
 
 void LoadAclOpApiSymbol(const std::string &ascend_path);
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_OP_SYMBOL_H_

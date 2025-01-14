@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_compiler_symbol.h"
 #include <string>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_compiler_symbol.h"
+#include "symbol_utils.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 aclopCompileAndExecuteFunObj aclopCompileAndExecute_ = nullptr;
 aclopCompileAndExecuteV2FunObj aclopCompileAndExecuteV2_ = nullptr;
 aclSetCompileoptFunObj aclSetCompileopt_ = nullptr;
@@ -47,5 +46,4 @@ void LoadSimulationAclOpCompilerApi() {
   ASSIGN_SIMU(aclopSetCompileFlag);
   ASSIGN_SIMU(aclGenGraphAndDumpForOp);
 }
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

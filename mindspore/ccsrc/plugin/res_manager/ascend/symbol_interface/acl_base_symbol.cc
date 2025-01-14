@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_base_symbol.h"
 #include <string>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_base_symbol.h"
+#include "symbol_utils.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 aclCreateDataBufferFunObj aclCreateDataBuffer_ = nullptr;
 aclCreateTensorDescFunObj aclCreateTensorDesc_ = nullptr;
 aclDataTypeSizeFunObj aclDataTypeSize_ = nullptr;
@@ -82,5 +81,4 @@ void LoadSimulationAclBaseApi() {
   ASSIGN_SIMU(aclGetTensorDescSize);
   ASSIGN_SIMU(aclGetRecentErrMsg);
 }
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_tdt_symbol.h"
 #include <string>
 #include <vector>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_tdt_symbol.h"
+#include "symbol_utils.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 
 acltdtAddDataItemFunObj acltdtAddDataItem_ = nullptr;
 acltdtCleanChannelFunObj acltdtCleanChannel_ = nullptr;
@@ -120,5 +119,4 @@ void LoadSimulationTdtApi() {
   ASSIGN_SIMU(acltdtStopChannel);
   LoadSpecialSimulationTdtApi();
 }
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

@@ -17,8 +17,8 @@
 #include "extendrt/kernel/ascend/model/acl_env_guard.h"
 #include "extendrt/kernel/ascend/model/model_infer.h"
 #include "common/log_adapter.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {
@@ -38,7 +38,7 @@ aclError AclInitAdapter::AclInit(const char *config_file) {
   }
 
   init_flag_ = true;
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   auto ret = CALL_ASCEND_API(aclInit, config_file);
   if (ret == ACL_ERROR_REPEAT_INITIALIZE) {
     MS_LOG(WARNING) << "acl is repeat init";

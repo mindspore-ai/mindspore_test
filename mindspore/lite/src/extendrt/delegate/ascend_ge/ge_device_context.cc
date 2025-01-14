@@ -29,8 +29,8 @@
 #include "common/common.h"
 #include "extendrt/delegate/comm_group_info.h"
 #include "backend/common/session/executor.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 constexpr auto kHcclPluginFileName = "libhccl.so";
@@ -193,7 +193,7 @@ std::shared_ptr<AscendDeviceInfo> GeDeviceContext::GetGeAscendDeviceInfo(const s
 Status GeDeviceContext::Initialize(const std::shared_ptr<Context> &context, const ConfigInfos &config_info) {
   MsContext::GetInstance()->set_backend_policy("ge");
   std::string overflow_mode = common::GetEnv("MS_ASCEND_CHECK_OVERFLOW_MODE");
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   if (overflow_mode == "INFNAN_MODE") {
     auto mode = aclrtFloatOverflowMode::ACL_RT_OVERFLOW_MODE_INFNAN;
     auto ret = CALL_ASCEND_API(aclrtSetDeviceSatMode, mode);

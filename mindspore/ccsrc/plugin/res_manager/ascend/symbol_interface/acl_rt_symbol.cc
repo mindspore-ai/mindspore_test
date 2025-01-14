@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "acl_rt_symbol.h"
 #include <string>
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "symbol_utils.h"
 
 int (*aclrt_get_last_error)(int) = nullptr;
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 aclrtCreateContextFunObj aclrtCreateContext_ = nullptr;
 aclrtCreateEventFunObj aclrtCreateEvent_ = nullptr;
 aclrtCreateEventWithFlagFunObj aclrtCreateEventWithFlag_ = nullptr;
@@ -202,5 +201,4 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtReleaseMemAddress);
   ASSIGN_SIMU(aclrtCtxSetSysParamOpt);
 }
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

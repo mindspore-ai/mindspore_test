@@ -19,8 +19,7 @@
 #include "acl/acl_rt_allocator.h"
 #include "utils/dlopen_macro.h"
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 ORIGIN_METHOD(aclrtAllocatorCreateDesc, aclrtAllocatorDesc)
 ORIGIN_METHOD(aclrtAllocatorDestroyDesc, aclError, aclrtAllocatorDesc)
 ORIGIN_METHOD(aclrtAllocatorRegister, aclError, aclrtStream, aclrtAllocatorDesc)
@@ -43,7 +42,6 @@ extern aclrtAllocatorSetObjToDescFunObj aclrtAllocatorSetObjToDesc_;
 extern aclrtAllocatorUnregisterFunObj aclrtAllocatorUnregister_;
 
 void LoadAclAllocatorApiSymbol(const std::string &ascend_path);
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_TRANSFORM_SYMBOL_ACL_RT_ALLOCATOR_SYMBOL_H_

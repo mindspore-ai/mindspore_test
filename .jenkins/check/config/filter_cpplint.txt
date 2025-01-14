@@ -73,6 +73,16 @@
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv2d_padding.h"                  "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv3d_padding.cc"                  "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv3d_padding.h"                  "runtime/references"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_prof_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/symbol_utils.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_op_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_rt_allocator_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_base_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.cc"    "build/include_subdir"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"

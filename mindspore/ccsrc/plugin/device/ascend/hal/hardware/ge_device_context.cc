@@ -42,10 +42,10 @@
 #include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_compiler_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 
 namespace mindspore {
@@ -221,7 +221,7 @@ void GeDeviceContext::Initialize() {
 
   MS_LOG(INFO) << "Start initializing device context.";
   if (UseSimulationApi()) {
-    transform::LoadSimulationApiSymbols();
+    device::ascend::LoadSimulationApiSymbols();
   }
 
   // set overflow mode
@@ -439,7 +439,7 @@ MSCONTEXT_REGISTER_INIT_FUNC(kAscendDevice, [](MsContext *ctx) -> void {
     common::SetEnv("MS_FORMAT_MODE", format_mode.c_str());
   }
 
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   SetContextSocVersion(ctx);
 });
 #endif
