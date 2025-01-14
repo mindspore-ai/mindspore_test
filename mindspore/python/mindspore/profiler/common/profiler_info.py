@@ -84,11 +84,10 @@ class ProfilerInfo:
         self._clock_monotonic_raw_info = 0 # from start info file
         self._localtime_diff = 0
 
-    def load_info(self, ascend_ms_dir: str, rank_id: int) -> None:
+    def load_info(self, info_file_path: str) -> None:
         """"
-        Load profiler info from ascend ms dir.
+        Load profiler info from profiler_info_*.json path.
         """
-        info_file_path = os.path.join(ascend_ms_dir, self.PROFILER_INFO_FILE.format(rank_id))
         self._profiler_info = FileManager.read_json_file(info_file_path)
 
     def load_time_parameters(self, msprof_profile_path: str, msprof_profile_host_path: str) -> None:

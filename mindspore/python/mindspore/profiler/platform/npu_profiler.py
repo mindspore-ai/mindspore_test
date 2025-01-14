@@ -14,7 +14,6 @@
 # ============================================================================
 """NPU platform profiler."""
 import os
-import re
 import glob
 import json
 from typing import List, Optional
@@ -24,6 +23,7 @@ from mindspore import log as logger
 import mindspore._c_dataengine as cde
 import mindspore._c_expression as c_expression
 
+from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity, AnalysisMode
 
@@ -84,6 +84,7 @@ class NpuProfiler(BaseProfiler):
         self._prof_info.ms_profiler_info = {
             "context_mode": context.get_context("mode"),
             "rank_id": self._prof_ctx.rank_id,
+            "device_id": self._prof_ctx.device_id,
         }
 
         # initialize minddata profiler
@@ -203,9 +204,11 @@ class NPUProfilerAnalysis:
     ) -> None:
         """Pre-process profiling data for offline analysis."""
         prof_info = ProfilerInfo()
-        rank_id = cls.get_rank_id(ascend_ms_dir)
-        prof_info.load_info(ascend_ms_dir, rank_id)
+        prof_info_file_path = PathManager.get_profiler_info_path(ascend_ms_dir)
+        prof_info.load_info(prof_info_file_path)
         prof_ctx = ProfilerContext()
+        prof_ctx.device_id = prof_info.ms_profiler_info["device_id"]
+        prof_ctx.rank_id = prof_info.ms_profiler_info["rank_id"]
         prof_ctx.set_params()
         prof_ctx.load_offline_profiler_params(prof_info.profiler_parameters)
         prof_ctx.jit_level = prof_info.jit_level
@@ -216,7 +219,6 @@ class NPUProfilerAnalysis:
             if not prof_dir:
                 logger.error(f"No PROF_* directory found in {ascend_ms_dir}")
                 return
-            device_id = cls.get_device_id(prof_dir[0])
             prof_path_mgr = ProfilerPathManager()
 
             # set PROF_XXX path
@@ -225,8 +227,6 @@ class NPUProfilerAnalysis:
             prof_info.load_time_parameters(
                 prof_ctx.msprof_profile_path, prof_ctx.msprof_profile_host_path
             )
-            prof_ctx.rank_id = rank_id
-            prof_ctx.device_id = device_id
             prof_ctx.pretty = pretty
             prof_ctx.step_list = step_list
             prof_ctx.data_simplification = data_simplification
@@ -307,51 +307,3 @@ class NPUProfilerAnalysis:
             )
 
         return task_mgr
-
-    @staticmethod
-    def get_rank_id(ascend_ms_dir: str) -> str:
-        """
-        Function Description:
-            Get rank id from profiler_info_*.json
-        Parameter:
-            ascend_ms_dir: the directory path of profiler data, eg: xxx_ascend_ms
-        Return:
-            str type rank id
-        """
-        prof_info_path = os.path.join(ascend_ms_dir, "profiler_info_*.json")
-        prof_info_path = glob.glob(prof_info_path)
-        if not prof_info_path:
-            raise ValueError(f"Cannot find profiler_info.json in the {ascend_ms_dir}")
-
-        pattern = r"profiler_info_(\d+)\.json$"
-        match = re.search(pattern, prof_info_path[0])
-        rank_id = match.group(1) if match else None
-
-        if rank_id is None:
-            raise ValueError(f"Cannot find rank id in {prof_info_path[0]}")
-
-        return rank_id
-
-    @staticmethod
-    def get_device_id(prof_dir: str) -> str:
-        """
-        Function Description:
-            Get device id from PROF_XXX dir
-        Parameter:
-            prof_dir: the directory path of PROF_XXX
-        Return:
-            str type device id
-        """
-        device_dir = os.path.join(prof_dir, "device_*")
-        device_dir = glob.glob(device_dir)
-        if not device_dir:
-            raise ValueError(f"Cannot find device_* directory in the {prof_dir}")
-
-        pattern = r"device_(\d+)$"
-        match = re.search(pattern, device_dir[0])
-        device_id = match.group(1) if match else None
-
-        if device_id is None:
-            raise ValueError(f"Cannot find device id in {device_dir[0]}")
-
-        return device_id
