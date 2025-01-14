@@ -1035,7 +1035,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             self.init_data()
         return Tensor_.asnumpy(self)
 
-    def numpy(self, *, force=False):
+    def numpy(self):
         """
         Alias for :func:`mindspore.Tensor.asnumpy`.
         """
