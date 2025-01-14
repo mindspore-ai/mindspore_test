@@ -33,19 +33,20 @@ bool SimuReceiveKernel::Launch(const std::vector<KernelTensor *> &inputs, const 
   auto output_size = outputs[0]->size();
   auto output_type = outputs[0]->dtype_id();
   static const float kInitValue = 0.1f;
-  std::vector<float> init_value(output_size, kInitValue);
-  void *host_ptr = init_value.data();
+  static const size_t kFp32TypeSize = abstract::TypeIdSize(kNumberTypeFloat32);
+  init_value_.resize(output_size, kInitValue);
+  host_data_.resize(output_size, 0);
+  void *host_ptr = init_value_.data();
   if (output_type != kNumberTypeFloat32) {
-    std::vector<uint8_t> host_data(output_size, 0);
     auto elem_num = output_size / abstract::TypeIdSize(output_type);
-    const trans::TypeIdArgs type_args{init_value.data(), SizeToLong(elem_num), kNumberTypeFloat32,
-                                      outputs[0]->dtype_id(), output_size};
-    auto sync_ok = trans::TransDataType(type_args, host_data.data());
+    const trans::TypeIdArgs type_args{init_value_.data(), SizeToLong(elem_num), kNumberTypeFloat32,
+                                      outputs[0]->dtype_id(), elem_num * kFp32TypeSize};
+    auto sync_ok = trans::TransDataType(type_args, host_data_.data());
     if (!sync_ok) {
       MS_LOG(ERROR) << "simu receive trans data type failed.";
       return false;
     }
-    host_ptr = host_data.data();
+    host_ptr = host_data_.data();
   }
 
   auto cp_ret = CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), output_size, host_ptr, output_size,
