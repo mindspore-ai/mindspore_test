@@ -35,6 +35,7 @@
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "pipeline/jit/ps/compile_cache_manager.h"
 #include "pipeline/pynative/pynative_execute.h"
+#include "pipeline/pynative/op_function/converter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "include/common/utils/parallel_context.h"
@@ -2765,6 +2766,11 @@ void ClearResPart3() {
   MS_LOG(INFO) << "Start clear ProtobufLibrary...";
   google::protobuf::ShutdownProtobufLibrary();
   MS_LOG(INFO) << "End clear ProtobufLibrary...";
+
+  MS_LOG(INFO) << "Start clear ParserDefaultObjects ...";
+  pynative::ParserDefaultObjects::GetInstance().ClearRes();
+  MS_LOG(INFO) << "End clear ParserDefaultObjects...";
+
   // ResetPythonScope after all py::object is freed.
   MS_LOG(INFO) << "Start clear python_adapter...";
   python_adapter::ResetPythonScope();

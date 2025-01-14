@@ -56,16 +56,45 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_not_in_yaml_str_map =
   {"any", ops::OP_DTYPE::DT_ANY},
 };
 
+class ParserDefaultObjects {
+ public:
+  static ParserDefaultObjects &GetInstance() {
+    static ParserDefaultObjects default_objs_instance;
+    return default_objs_instance;
+  }
+
+  const py::object &Get(const std::string &default_str) {
+    auto iter = objects_.find(default_str);
+    if (iter != objects_.end()) {
+      return *(iter->second);
+    }
+    MS_LOG(EXCEPTION) << "The default value should be initialized before being fetched.";
+  }
+
+  void Set(const ops::OP_DTYPE &type, const std::string &value, const std::string &kw_str) {
+    objects_.try_emplace(kw_str, std::make_unique<py::object>(StrToPyObj(type, value)));
+  }
+
+  py::object StrToPyObj(const ops::OP_DTYPE &type, const std::string &str);
+
+  void ClearRes() { objects_.clear(); }
+
+ private:
+  ParserDefaultObjects() {}
+  ~ParserDefaultObjects() = default;
+  DISABLE_COPY_AND_ASSIGN(ParserDefaultObjects);
+  std::unordered_map<std::string, std::unique_ptr<py::object>> objects_;
+};
+
 // information of single parameter
 struct FunctionParameter {
   explicit FunctionParameter(const std::string &fmt, bool is_kw_only);
   bool Check(const py::object &obj) const;
-  void SetDefaultObj(const std::string &str);
-  const py::object &GetDefaultValue() { return default_obj_; }
+  const py::object &GetDefaultValue() { return ParserDefaultObjects::GetInstance().Get(default_str_); }
 
   ops::OP_DTYPE type_{ops::OP_DTYPE::DT_END};
   std::vector<ops::OP_DTYPE> cast_types_;
-  py::object default_obj_;
+  std::string default_str_{""};
   bool optional_{false};
   bool allow_none_{false};
   bool kw_only_{false};

@@ -650,13 +650,12 @@ FunctionParameter::FunctionParameter(const std::string &fmt, bool is_kw_only) {
   if (eq != std::string::npos) {
     name_ = name_str.substr(0, eq);
     optional_ = true;
-    auto type_str = name_str.substr(eq + 1);
-    if (type_str == "None") {
+    auto value_str = name_str.substr(eq + 1);
+    if (value_str == "None") {
       allow_none_ = true;
-      default_obj_ = py::none();
-    } else {
-      SetDefaultObj(type_str);
     }
+    default_str_.assign(substring).append(",").append(value_str);
+    ParserDefaultObjects::GetInstance().Set(type_, value_str, default_str_);
   } else {
     optional_ = false;
     name_ = name_str;
@@ -850,50 +849,43 @@ std::string RemoveQuotes(const std::string &str) {
   return str;
 }
 
-void FunctionParameter::SetDefaultObj(const std::string &str) {
-  switch (type_) {
+py::object ParserDefaultObjects::StrToPyObj(const ops::OP_DTYPE &type, const std::string &str) {
+  if (str == "None") {
+    return py::none();
+  }
+  switch (type) {
     case ops::OP_DTYPE::DT_INT:
-      default_obj_ = py::int_(stol(str));
-      break;
+      return py::int_(stol(str));
     case ops::OP_DTYPE::DT_FLOAT:
-      default_obj_ = py::float_(stof(str));
-      break;
+      return py::float_(stof(str));
     case ops::OP_DTYPE::DT_BOOL:
-      default_obj_ = py::bool_((str == "True" || str == "true"));
-      break;
+      return py::bool_((str == "True" || str == "true"));
     case ops::OP_DTYPE::DT_NUMBER:
-      default_obj_ = ParseNumber(str);
-      break;
+      return ParseNumber(str);
     case ops::OP_DTYPE::DT_TUPLE_INT:
-      default_obj_ = GetPyListInt<py::tuple>(ParseListInt(str));
-      break;
+      return GetPyListInt<py::tuple>(ParseListInt(str));
     case ops::OP_DTYPE::DT_TUPLE_TENSOR:
       // now only support default=None
       if (str != "None") {
         MS_LOG(EXCEPTION) << "default value for Tensor must be none, got: " << str;
       }
-      default_obj_ = py::none();
-      break;
+      return py::none();
     case ops::OP_DTYPE::DT_STR:
-      default_obj_ = py::str(RemoveQuotes(str));
-      break;
+      return py::str(RemoveQuotes(str));
     case ops::OP_DTYPE::DT_TENSOR:
       if (str != "None") {
         MS_LOG(EXCEPTION) << "default value for Tensor must be None, but got: " << str;
       }
-      default_obj_ = py::none();
-      break;
+      return py::none();
     case ops::OP_DTYPE::DT_LIST_INT:
-      default_obj_ = GetPyListInt<py::list>(ParseListInt(str));
-      break;
+      return GetPyListInt<py::list>(ParseListInt(str));
     case ops::OP_DTYPE::DT_LIST_FLOAT:
       if (str != "None") {
         MS_LOG(EXCEPTION) << "Defaults not supported for float[]";
       }
-      default_obj_ = py::none();
-      break;
+      return py::none();
     default:
-      MS_LOG(EXCEPTION) << "The" << type_ << " is an unknown type "
+      MS_LOG(EXCEPTION) << "The" << type << " is an unknown type "
                         << ", or the default value cannot be set.";
       break;
   }
