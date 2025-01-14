@@ -16,14 +16,12 @@
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include <algorithm>
 #include <list>
-#include <unordered_set>
 #include <utility>
 #include <string>
 #include <vector>
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
-#include "pipeline/jit/pi/graph_capture/special_func_infer.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
 
@@ -48,22 +46,28 @@ void GraphAnalyzer::OptimizeSideEffectRecord() const {
 }
 
 void GraphAnalyzer::ResetSideEffectRecord() const {
-  // if break point is changed, rollback graph nodes(only reset break bci) and side-effect record
+  // side-effect rollback, adapter later
+  // sub-graph side-effect rollback, adapter later
   int break_bci = graph_->GetStopTraceBci();
-  if (graph_->GetSideEffect()->IsEmpty()) {
+  if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
     return;
   }
-  const auto &nodes = graph_->GetTracedNodes();
-  if (break_bci == -1) {
-    graph_->GetSideEffect()->ResetRecord({nodes.begin(), nodes.end()});
-  } else {
-    auto iter = std::find_if(nodes.begin(), nodes.end(), [&break_bci](ValueNode *i) { return i->bci() > break_bci; });
-    graph_->GetSideEffect()->ResetRecord({nodes.begin(), iter});
+  const auto &side_effect_nodes = graph_->GetSideEffect()->nodes();
+  for (const auto &pair : side_effect_nodes) {
+    Graph *g = pair.first->GetGraph();
+    if (g != nullptr && g != graph_) {
+      MS_LOG(ERROR) << "function " << PyCodeWrapper(g->GetCodeObj()).Name()
+                    << " has side-effect but not implement side-effect rollback";
+      return;
+    }
   }
+
+  // if break point is changed, rollback graph nodes(only reset break bci) and side-effect record
+  const auto &nodes = graph_->GetTracedNodes();
+  auto iter = std::find_if(nodes.begin(), nodes.end(), [&break_bci](ValueNode *i) { return i->bci() > break_bci; });
+  graph_->GetSideEffect()->ResetRecord({nodes.begin(), iter});
   OptimizeSideEffectRecord();  // after reset record, rollback side-effect record status
 }
-
-FrameStates buildLastFrame(Graph *g) { return g->GetFrame(g->GetStopTraceBci()); }
 
 std::vector<ValueNode *> GraphAnalyzer::GetAliveLocals(Graph *g) {
   int bci = g->GetStopTraceBci();
@@ -166,12 +170,7 @@ std::string GraphAnalyzer::CapturedInfo::ToString() {
   return s.str();
 }
 
-void MindGraphAnalyzer::CollectCapturedInputs() {
-  GetCaptureInfo().captured_.inputs = graph_->prepare().inputs_;
-  // check inputs is valid if break point is rollback
-}
-
-void MindGraphAnalyzer::Analyze() {
+void GraphAnalyzer::Analyze() {
   auto collect_trace_nodes = [this]() {
     const auto &nodes = graph_->GetTracedNodes();
     if (graph_->GetStopTraceBci() == -1) {
@@ -226,7 +225,6 @@ void MindGraphAnalyzer::Analyze() {
 
   ResetSideEffectRecord();
   CollectCapturedAndInterpret();
-  CollectGraphInputs();
 
   need_interpret_ = true;
   if (graph_->GetStopTraceBci() != -1 || !GetCaptureInfo().interpret_.operations.empty()) {
@@ -247,7 +245,7 @@ void MindGraphAnalyzer::Analyze() {
   need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
 }
 
-void MindGraphAnalyzer::CollectClosureSideEffect() {
+void GraphAnalyzer::CollectClosureSideEffect() {
   if (graph_->GetFrame(0).GetClosures().empty()) {
     return;
   }
@@ -278,6 +276,7 @@ void MindGraphAnalyzer::CollectClosureSideEffect() {
   }
 }
 
+namespace {
 // check whether the node can be added to the output of the graph
 // or can be added to the output of the graph through transformation
 // support : none, scalar, tensor, tuple, list, dict, and combination during them
@@ -354,8 +353,9 @@ void UpdateUseDefOrder(std::vector<ValueNode *> *nodes) {
     }
   }
 }
+}  // namespace
 
-ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
+ValueNode *GraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   MS_EXCEPTION_IF_NULL(node);
   auto abstract_wrapper = node->abstract_wrapper();
   MS_EXCEPTION_IF_NULL(abstract_wrapper);
@@ -397,7 +397,7 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   return mutated_node;
 }
 
-ValueNode *MindGraphAnalyzer::MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node) {
+ValueNode *GraphAnalyzer::MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node) {
   MS_LOG(DEBUG) << "Start mutate namedtuple node, origin namedtuple node: " << namedtuple_node->ToString()
                 << ", tuple node: " << tuple_node->ToString();
   MS_EXCEPTION_IF_NULL(namedtuple_node->GetVobj());
@@ -416,7 +416,7 @@ ValueNode *MindGraphAnalyzer::MutateNamedtupleNode(ValueNode *tuple_node, ValueN
 }
 
 // return keys and values
-std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode *node) {
+std::pair<ValueNode *, ValueNode *> GraphAnalyzer::MutateDictNode(ValueNode *node) {
   MS_EXCEPTION_IF_NULL(node);
   auto abstract_wrapper = node->abstract_wrapper();
   MS_EXCEPTION_IF_NULL(abstract_wrapper);
@@ -481,7 +481,6 @@ std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode 
 
 namespace {
 constexpr auto kPiJitOutputDepthKey = "pi_jit_output_depth";
-constexpr int kAllowMaxDepth = 3;
 
 bool IsNeedExpand(const ValueNode *node) {
   auto wrapper = node->abstract_wrapper();
@@ -493,7 +492,7 @@ bool IsNeedExpand(const ValueNode *node) {
 }
 }  // namespace
 
-void MindGraphAnalyzer::ExpandGraphOutput() {
+void GraphAnalyzer::ExpandGraphOutput() {
   if (!graph_->Config().GetBoolConfig(GraphJitConfig::kExpandGraphOutput)) {
     return;
   }
@@ -550,7 +549,7 @@ void MindGraphAnalyzer::ExpandGraphOutput() {
   }
 }
 
-bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
+bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
   MS_EXCEPTION_IF_NULL(mind_graph_builder);
   auto func_graph_builder = mind_graph_builder->FGBuilder();
@@ -624,7 +623,7 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
   return true;
 }
 
-void MindGraphAnalyzer::UpdateCapturedOrder() {
+void GraphAnalyzer::UpdateCapturedOrder() {
   const auto &locals = graph_->GetFrame(0).GetLocals();
   GetCaptureInfo().interpret_.inputs = locals;
   GetCaptureInfo().interpret_.values.clear();
@@ -633,8 +632,9 @@ void MindGraphAnalyzer::UpdateCapturedOrder() {
   GetCaptureInfo().interpret_.values.insert(graph_->prepare().operations_.begin(), graph_->prepare().operations_.end());
 }
 
-void MindGraphAnalyzer::CollectCapturedAndInterpret() {
-  CollectCapturedInputs();
+void GraphAnalyzer::CollectCapturedAndInterpret() {
+  GetCaptureInfo().captured_.inputs = graph_->prepare().inputs_;
+  // check inputs is valid if break point is rollback
 
   GetCaptureInfo().outputs_optimize_.inputs = CollectInputs(GetCaptureInfo().outputs_optimize_.operations);
   GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
@@ -652,9 +652,13 @@ void MindGraphAnalyzer::CollectCapturedAndInterpret() {
   ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
   ops = &GetCaptureInfo().interpret_.operations;
   ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
+
+  // graph inputs is ordered by MindGraphBuilder, here do nothing
+  // not care variable args, variable key words
+  GetCaptureInfo().graph_inputs_.args = GetCaptureInfo().captured_.inputs;
 }
 
-void MindGraphAnalyzer::UseDefAnalyze() {
+void GraphAnalyzer::UseDefAnalyze() {
   // UD analyze: alive nodes analysis
   std::vector<ValueNode *> aliveLocals = GetAliveLocals(graph_);
   if (!aliveLocals.empty()) {
@@ -670,33 +674,9 @@ void MindGraphAnalyzer::UseDefAnalyze() {
   }
 }
 
-void MindGraphAnalyzer::CollectGraphInputs() {
-  // graph inputs is ordered by MindGraphBuilder, here do nothing
-  // not care variable args, variable key words
-  GetCaptureInfo().graph_inputs_.args = GetCaptureInfo().captured_.inputs;
-}
-
-void MindGraphAnalyzer::ResetSideEffectRecord() const {
-  // side-effect rollback, adapter later
-  // sub-graph side-effect rollback, adapter later
-  int break_bci = graph_->GetStopTraceBci();
-  if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
-    return;
-  }
-  const auto &nodes = graph_->GetSideEffect()->nodes();
-  for (const auto &pair : nodes) {
-    Graph *g = pair.first->GetGraph();
-    if (g != nullptr && g != graph_) {
-      MS_LOG(ERROR) << "function " << PyCodeWrapper(g->GetCodeObj()).Name()
-                    << " has side-effect but not implement side-effect rollback";
-      return;
-    }
-  }
-  this->GraphAnalyzer::ResetSideEffectRecord();
-}
-
+namespace {
 // specialize simple data, not all equal
-static bool IsDuplicateData(const AbstractBasePtr &left, const AbstractBasePtr &right) {
+bool IsDuplicateData(const AbstractBasePtr &left, const AbstractBasePtr &right) {
   if (left == nullptr || right == nullptr || left->tid() != right->tid()) {
     return false;
   }
@@ -727,7 +707,7 @@ static bool IsDuplicateData(const AbstractBasePtr &left, const AbstractBasePtr &
   return false;  // invalid output
 }
 
-static ValueNode *FindDuplicateData(const std::vector<ValueNode *> &nodes, size_t end_idx, ValueNode *node) {
+ValueNode *FindDuplicateData(const std::vector<ValueNode *> &nodes, size_t end_idx, ValueNode *node) {
   MS_EXCEPTION_IF_CHECK_FAIL(end_idx <= nodes.size(), "error arguments");
   const auto end_iter = nodes.begin() + end_idx;
   auto iter = std::find(nodes.begin(), end_iter, node);
@@ -744,8 +724,9 @@ static ValueNode *FindDuplicateData(const std::vector<ValueNode *> &nodes, size_
   }
   return nullptr;
 }
+}  // namespace
 
-bool MindGraphAnalyzer::NeedSkipAddGraphOutput(ValueNode *node) {
+bool GraphAnalyzer::NeedSkipAddGraphOutput(ValueNode *node) {
   const auto &values = GetCaptureInfo().interpret_.values;
   const auto &captured = GetCaptureInfo().captured_;
   const auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
@@ -810,8 +791,8 @@ bool MindGraphAnalyzer::NeedSkipAddGraphOutput(ValueNode *node) {
   return false;
 }
 
-ValueNode *MindGraphAnalyzer::GetBuiltinMethodNode(std::vector<ValueNode *> *out, const std::string &name,
-                                                   const std::string &cls) {
+ValueNode *GraphAnalyzer::GetBuiltinMethodNode(std::vector<ValueNode *> *out, const std::string &name,
+                                               const std::string &cls) {
   PyObject *builtin_module = PyEval_GetBuiltins();
   MS_EXCEPTION_IF_NULL(builtin_module);
   if (PyModule_Check(builtin_module)) {
@@ -834,8 +815,8 @@ ValueNode *MindGraphAnalyzer::GetBuiltinMethodNode(std::vector<ValueNode *> *out
   return method_node;
 }
 
-static void UpdateNodeInputs(Graph *graph, std::vector<ValueNode *> *nodes_p,
-                             std::map<ValueNode *, ValueNode *> *map_p) {
+namespace {
+void UpdateNodeInputs(Graph *graph, std::vector<ValueNode *> *nodes_p, std::map<ValueNode *, ValueNode *> *map_p) {
   const auto &map = *map_p;
   const auto &nodes = *nodes_p;
   auto latest = [&map](ValueNode *node) {
@@ -881,8 +862,9 @@ static void UpdateNodeInputs(Graph *graph, std::vector<ValueNode *> *nodes_p,
     }
   } while (changed);
 }
+}  // namespace
 
-void MindGraphAnalyzer::UpdateUseDefNode() {
+void GraphAnalyzer::UpdateUseDefNode() {
   auto &map = GetCaptureInfo().replaced_nodes_;
   auto &nodes = GetCaptureInfo().outputs_optimize_.operations;
   if (map.empty()) {
