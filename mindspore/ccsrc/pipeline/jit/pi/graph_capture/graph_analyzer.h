@@ -34,9 +34,7 @@ class AbstractNode;
 class ValueNode;
 class CallNode;
 class GraphAnalyzer;
-class MindGraphAnalyzer;
 using GraphAnalyzerPtr = std::shared_ptr<GraphAnalyzer>;
-using MindGraphAnalyzerPtr = std::shared_ptr<MindGraphAnalyzer>;
 
 class GraphAnalyzer {
  public:
@@ -102,73 +100,57 @@ class GraphAnalyzer {
     std::string ToString();
   };
 
-  explicit GraphAnalyzer(Graph *g) : graph_(g) {}
-  static GraphAnalyzerPtr Creator(const GraphBuilderPtr &g) {
-    return std::static_pointer_cast<GraphAnalyzer>(std::make_shared<MindGraphAnalyzer>(g));
-  }
+ public:
+  explicit GraphAnalyzer(const GraphBuilderPtr &graph_builder)
+      : graph_(graph_builder->GetGraph()), graph_builder_(graph_builder), info_() {}
+
+  static GraphAnalyzerPtr Creator(const GraphBuilderPtr &g) { return std::make_shared<GraphAnalyzer>(g); }
+
+  void Analyze();
+
   auto &GetCaptureInfo() { return info_; }
   const auto &GetCaptureInfo() const { return info_; }
-  virtual void Analyze() { MS_LOG(EXCEPTION) << "dead code"; }
+
   bool NeedInterpret() const { return need_interpret_; }
 
   const auto &alive_locals() const { return alive_locals_; }
 
- protected:
+ private:
+  // Collect top-graph closure side-effect nodes.
+  void CollectClosureSideEffect();
   // optimize
   void OptimizeSideEffectRecord() const;
-
   // rollback
-  virtual void ResetSideEffectRecord() const;
+  void ResetSideEffectRecord() const;
 
   // UD analyze
-  virtual void UseDefAnalyze() { MS_LOG(EXCEPTION) << "dead code"; }
+  void UseDefAnalyze();
+
   std::vector<ValueNode *> GetAliveLocals(Graph *g);
-  virtual bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
-    MS_LOG(EXCEPTION) << "dead code";
-    return false;
-  }
-  virtual void CollectCapturedInputs() { MS_LOG(EXCEPTION) << "dead code"; }
-  virtual void CollectCapturedAndInterpret() { MS_LOG(EXCEPTION) << "dead code"; }
-  virtual void CollectGraphInputs() { MS_LOG(EXCEPTION) << "dead code"; }
 
-  bool need_interpret_;
-  Graph *graph_;
-  CapturedInfo info_;
-  std::vector<int> alive_locals_;
-};
+  bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes);
 
-class MindGraphAnalyzer : public GraphAnalyzer {
- public:
-  explicit MindGraphAnalyzer(const GraphBuilderPtr &g) : GraphAnalyzer(g->GetGraph()), graph_builder_(g) {}
-  void Analyze() override;
-
- protected:
-  // UD analyze
-  void UseDefAnalyze() override;
-  void CollectCapturedInputs() override;
-  void CollectGraphInputs() override;
   void UpdateCapturedOrder();
-  void CollectCapturedAndInterpret() override;
+
+  void CollectCapturedAndInterpret();
+
   void ExpandGraphOutput();
-  bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
-  void ResetSideEffectRecord() const override;
   void UpdateUseDefNode();
 
   bool NeedSkipAddGraphOutput(ValueNode *node);
 
+  ValueNode *MutateSequenceNode(ValueNode *node);
+  ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
+  std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);
   // find or insert
   ValueNode *GetBuiltinMethodNode(std::vector<ValueNode *> *operations, const std::string &method,
                                   const std::string &cls_method = "");
 
-  GraphBuilderPtr graph_builder_ = nullptr;
-
- private:
-  // Collect top-graph closure side-effect nodes.
-  void CollectClosureSideEffect();
-
-  ValueNode *MutateSequenceNode(ValueNode *node);
-  ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
-  std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);
+  Graph *graph_;
+  GraphBuilderPtr graph_builder_;
+  CapturedInfo info_;
+  bool need_interpret_{false};
+  std::vector<int> alive_locals_{};
 };
 }  // namespace pijit
 }  // namespace mindspore
