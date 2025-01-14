@@ -905,9 +905,11 @@ NodePtr StaticBinopGradSelect(BpropBuilder *ib, const NodePtr &dx, const ShapeAr
       } else {
         reduce_dx = ib->SumExt(reduce_dx, ib->EmitValue(kNone), ib->Value(false));
       }
+      return reduce_dx;
     }
-  } else if (!IsDynamic(broadcast_shape[kIndex0]) && !IsDynamic(broadcast_shape[kIndex1]) &&
-             !IsDynamic(broadcast_shape[kIndex2]) && shape_dynamic_dims <= 1) {
+  }
+  if (!IsDynamic(broadcast_shape[kIndex0]) && !IsDynamic(broadcast_shape[kIndex1]) &&
+      !IsDynamic(broadcast_shape[kIndex2]) && shape_dynamic_dims <= 1) {
     std::vector<std::vector<int64_t>> bc_axis = BroadcastGradientArgsInferValueSelect(
       broadcast_shape[kIndex0], broadcast_shape[kIndex1], broadcast_shape[kIndex2]);
     if (!bc_axis[index].empty()) {
