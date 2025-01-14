@@ -51,6 +51,8 @@ namespace py = pybind11;
 
 const char kStepParallelGraph[] = "step_parallel";
 const char kOutput[] = "output";
+const char kBuildBackenkType[] = "backend_type";
+const char kBuildBackenkOutput[] = "backend_output";
 const char kCkptOutput[] = "checkpoint_output";
 const char kPynativeGraphId[] = "graph_id";
 const char kActorInfo[] = "actor_info";

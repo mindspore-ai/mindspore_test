@@ -79,6 +79,7 @@
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "include/common/profiler.h"
 #include "availability/silent_check/silent_check.h"
+#include "backend/backend_manager/backend_manager.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -1776,6 +1777,19 @@ bool TaskEmitAction(const ResourcePtr &resource) {
     return true;
   }
 
+  // The env MS_NEW_BACKEND and old backend will delete when new backend switch.
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
+    // is used to convert user data to device ptr in device address.
+    compile::set_pydata_converter(
+      [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
+    auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph());
+    resource->SetResult(kBuildBackenkType, backend_ret.first);
+    resource->SetResult(kBuildBackenkOutput, backend_ret.second);
+    return true;
+  }
+
   // In PyNative mode, multi target will generate in -1 shape in jit. But, jit in -1 shape will run as a call graph;
   // control flow not has flag kFlagJitCallGraph
   bool is_control_flow = !func_graph->func_graphs_used_total().empty();
@@ -1818,6 +1832,32 @@ bool ExecuteAction(const ResourcePtr &resource) {
       CheckGraphOutputConstOrParameter(resource->func_graph())) {
     return true;
   }
+
+  // The env MS_NEW_BACKEND and old backend will delete when new backend switch.
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    if (!resource->HasResult(kBuildBackenkType) || !resource->HasResult(kBuildBackenkOutput)) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
+    }
+    auto backend_type = resource->GetResult(kBuildBackenkType).cast<backend::BackendType>();
+    auto backend_graph_id = resource->GetResult(kBuildBackenkOutput).cast<backend::BackendGraphId>();
+    // Construct the graph run function ptr.
+    compile::VmEvalFuncPtr run =
+      std::make_shared<compile::VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
+        MS_LOG(DEBUG) << "Execute args size " << args.size();
+        VectorRef outputs;
+        backend::BackendManager::GetInstance().Run(backend_type, backend_graph_id, args, &outputs);
+        MS_LOG(DEBUG) << "out size " << outputs.size();
+        if (outputs.empty()) {
+          return VectorRef();
+        } else {
+          return outputs[0];
+        }
+      });
+    resource->SetResult(kOutput, run);
+    return true;
+  }
+
   if (!resource->HasResult(kOutput)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
   }

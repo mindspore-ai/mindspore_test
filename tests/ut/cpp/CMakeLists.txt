@@ -263,11 +263,11 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
 
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
 target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend mindspore_core _c_dataengine
-        mindspore_common)
+        mindspore_common mindspore_backend_manager)
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
 target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend mindspore_core
-        _c_dataengine mindspore_common)
+        _c_dataengine mindspore_common mindspore_backend_manager)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})
     list(APPEND CORE_OBJECT_LIST $<TARGET_OBJECTS:core_obj_${number}>)
@@ -278,7 +278,7 @@ endforeach()
 include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
-target_link_libraries(_ut_obj_static PRIVATE mindspore_backend mindspore_pyboost)
+target_link_libraries(_ut_obj_static PRIVATE mindspore_backend mindspore_pyboost mindspore_backend_manager)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
     # ci envs have no enough memory, so make link target sequentially
@@ -290,7 +290,8 @@ foreach(comp ${ALL_UT_COMPS})
     endif()
     target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static
             -Wl,--end-group)
-    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
+    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
+            mindspore_backend_manager)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::gtest mindspore::gmock mindspore::mockcpp
                 mindspore::event mindspore::event_pthreads mindspore::event_openssl mindspore::ssl mindspore::crypto
