@@ -184,7 +184,7 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *at
       if (softmax_max_map->count(flash_index) != 0 && !node->HasAttr("duplicated")) {
         return;
       }
-      softmax_max_map->insert({flash_index, node});
+      (*softmax_max_map)[flash_index] = node;
     }
 
     if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_SUM, node) && !node->HasPrimalAttr("forward_unique_id")) {
@@ -192,7 +192,7 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *at
       if (softmax_sum_map->count(flash_index) != 0 && !node->HasAttr("duplicated")) {
         return;
       }
-      softmax_sum_map->insert({flash_index, node});
+      (*softmax_sum_map)[flash_index] = node;
     }
 
     if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_ATTN, node) && !node->HasPrimalAttr("forward_unique_id")) {
@@ -200,7 +200,7 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *at
       if (attention_out_map->count(flash_index) != 0 && !node->HasAttr("duplicated")) {
         return;
       }
-      attention_out_map->insert({flash_index, node});
+      (*attention_out_map)[flash_index] = node;
     }
   }
 }
