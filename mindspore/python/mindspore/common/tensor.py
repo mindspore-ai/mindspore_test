@@ -1615,6 +1615,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def reverse(self, axis):
         """
         For details, please refer to :func:`mindspore.ops.flip`.
+        The `axis` parameter in `Tensor.reverse` is equivalent to the `dims` parameter in :func:`mindspore.ops.flip`.
         """
         return tensor_operator_registry.get('flip')(self, axis)
 
@@ -1754,6 +1755,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def permute(self, *axis):
         """
+        Tensor.permute supports unpacking the `axis` argument automatically when it is passed as an indefinite number of
+        positional arguments, which has a slight difference from the input parameter of :func:`mindspore.ops.permute`.
         For details, please refer to :func:`mindspore.ops.permute`.
         """
         perm = validator.check_transpose_axis(axis, self.ndim)
@@ -3751,6 +3754,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def index_add(self, dim, index, source, *, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.index_add`.
+        The corresponding relationships between the parameters of `Tensor.index_add` and :func:`mindspore.ops.index_add`
+        are as follows: `dim` -> `axis`, `index` -> `indices`, `source * alpha` -> `y`.
         """
         check_is_number(alpha, (int, float))
         source = tensor_operator_registry.get('__mul__')(source, alpha)
