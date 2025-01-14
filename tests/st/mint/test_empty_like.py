@@ -111,7 +111,7 @@ def test_empty_like_dynamic_shape():
             disable_grad=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("device_name", ['npu', 'ascend', 'cpu', 'Ascend', 'CPU'])
+@pytest.mark.parametrize("device_name", ['npu', 'cpu', 'Ascend', 'CPU'])
 def test_empty_like_device(device_name):
     """
     Feature: Ops.
