@@ -3,7 +3,7 @@ mindspore.mint.distributed.all_gather
 
 .. py:function:: mindspore.mint.distributed.all_gather(tensor_list, tensor, group=None, async_op=False)
 
-    汇聚指定的通信组中的Tensor，并返回汇聚后的张量。
+    汇聚指定的通信组中的Tensor，并返回汇聚后的Tensor列表。
 
     .. note::
         集合中所有进程的Tensor必须具有相同的shape和格式。

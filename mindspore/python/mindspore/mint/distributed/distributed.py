@@ -2114,7 +2114,7 @@ def _check_tensor_list(tensor_list, tensor, group_size):
 
 def all_gather(tensor_list, tensor, group=None, async_op=False):
     """
-    Gathers tensors from the specified communication group and returns the tensor which is all gathered.
+    Gathers tensors from the specified communication group and returns the tensor list which is all gathered.
 
     Note:
         The tensors must have the same shape and format in all processes of the collection.
