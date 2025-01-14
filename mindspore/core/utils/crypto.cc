@@ -319,12 +319,16 @@ int ReadRandomBytes(const char *randomPath, size_t len, char *buf) {
 }
 
 bool SetRandomSeed() {
-  char seed[RAND_SEED_LENGTH];
-  if (ReadRandomBytes(kRandomPath, sizeof(seed), seed) != 0) {
-    MS_LOG(ERROR) << "Read Random Bytes failed!";
-    return false;
+  static bool is_first_set = true;
+  if (is_first_set) {
+    char seed[RAND_SEED_LENGTH];
+    if (ReadRandomBytes(kRandomPath, sizeof(seed), seed) != 0) {
+      MS_LOG(ERROR) << "Read Random Bytes failed!";
+      return false;
+    }
+    RAND_seed(seed, RAND_SEED_LENGTH);
+    is_first_set = false;
   }
-  RAND_seed(seed, RAND_SEED_LENGTH);
   return true;
 }
 
