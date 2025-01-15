@@ -15,6 +15,8 @@ inplace_divmod:
         output:
             dtype: tensor
             inplace: input
+    labels:
+        side_effect_mem: True
     class:
         name: InplaceDivMod
     function:
