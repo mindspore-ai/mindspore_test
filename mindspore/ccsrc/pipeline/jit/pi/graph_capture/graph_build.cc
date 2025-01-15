@@ -82,7 +82,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {UNARY_NOT, &GraphBuilder::DoUnary},
   {UNARY_INVERT, &GraphBuilder::DoUnary},
   {BINARY_MATRIX_MULTIPLY, &GraphBuilder::DoBinary},
-  {BINARY_MULTIPLY, &GraphBuilder::DoBinaryMul},
+  {BINARY_MULTIPLY, &GraphBuilder::DoBinary},
   {BINARY_MODULO, &GraphBuilder::DoBinary},
   {BINARY_POWER, &GraphBuilder::DoBinary},
   {BINARY_ADD, &GraphBuilder::DoBinaryAdd},
@@ -1539,14 +1539,12 @@ bool GraphBuilder::DoMakeFunction(const Instr &instr) {
   return true;
 }
 
-AObject *GraphBuilder::InferUnary(ValueNode *node, const Instr &instr) { return node->GetVobj()->Unary(instr.op()); }
-
 bool GraphBuilder::DoUnary(const Instr &instr) {
-  ValueNode *node = pop();
-
-  AObject *object_info = InferUnary(node, instr);
-  ValueNode *new_node = NewValueNode(object_info, instr, {node});
-  push(new_node);
+  auto o = pop();
+  auto r = HandleMultiOp(instr, {o}, false);
+  auto v = NewValueNode(AObject::Convert(r), instr, {o});
+  v->set_abstract_wrapper(r);
+  push(v);
   return true;
 }
 
@@ -1554,67 +1552,13 @@ bool GraphBuilder::DoIsOp(const Instr &instr) { return DoBinary(instr); }
 
 bool GraphBuilder::DoContainsOp(const Instr &instr) { return DoBinary(instr); }
 
-AObject *GraphBuilder::InferBinary(ValueNode *left, ValueNode *right, const Instr &instr) {
-  AObject *object_info;
-  if (instr.op() == IS_OP || instr.op() == CONTAINS_OP) {
-    object_info = left->GetVobj()->Binary(right->GetVobj(), instr.op());
-    PyObject *object = object_info != nullptr ? object_info->GetPyObject().ptr() : nullptr;
-    if (object != nullptr) {
-      object_info = AObject::Convert(py::bool_((object == Py_True) ^ instr.arg()));
-    }
-  } else if (Opcode(instr.op()).IsBinaryMath()) {
-    if (left->IsConstantValue() && right->IsConstantValue()) {
-      // compute real tensor value, not infer fake value
-      AbstractObject *tensor = static_cast<AbstractObject *>(left->GetVobj());
-      object_info = tensor->AbstractObject::Binary(right->GetVobj(), instr.op());
-    } else {
-      object_info = left->GetVobj()->Binary(right->GetVobj(), instr.op());
-    }
-  } else {
-    return AObject::MakeAObject(AObject::kTypeAnyValue);
-  }
-  return object_info;
-}
-
 bool GraphBuilder::DoBinary(const Instr &instr) {
-  ValueNode *right = pop();
-  ValueNode *left = pop();
-
-  AObject *object_info = InferBinary(left, right, instr);
-  ValueNode *new_node = NewValueNode(object_info, instr, {left, right});
-  push(new_node);
-  return true;
-}
-
-static bool CheckTupleListMul(ValueNode *left, ValueNode *right) {
-  bool special = left->GetOpcode() == BUILD_LIST || left->GetOpcode() == BUILD_TUPLE;
-  if (!special && left->IsConstantValue()) {
-    AObject::Type l_type = left->GetVobj()->GetType();
-    special = l_type == AObject::kTypeTuple || l_type == AObject::kTypeList;
-  }
-  if (special && right->IsConstantValue()) {
-    PyObject *mul = right->GetVobj()->GetPyObject().ptr();
-    const int max = 2;
-    return PyLong_Check(mul) && Py_ABS(Py_SIZE(mul)) < max;
-  }
-  return false;
-}
-
-bool GraphBuilder::DoBinaryMul(const Instr &instr) {
-  if (!CheckTupleListMul(seek(1), seek(0))) {
-    return DoBinary(instr);
-  }
-
-  ValueNode *right = pop();
-  ValueNode *left = pop();
-  int l_op = left->GetVobj()->GetType() == AObject::kTypeTuple ? BUILD_TUPLE : BUILD_LIST;
-
-  Py_ssize_t mul = PyLong_AsSsize_t(right->GetVobj()->GetPyObject().ptr());
-  for (auto i = mul; i > 0; --i) {
-    UnpackElements(left);
-  }
-  int oparg = left->getInputs().size() * (mul < 0 ? 0 : size_t(mul));
-  DoBuildOp({l_op, oparg});
+  auto r = pop();
+  auto l = pop();
+  auto o = HandleMultiOp(instr, {l, r}, false);
+  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
+  v->set_abstract_wrapper(o);
+  push(v);
   return true;
 }
 
@@ -1727,35 +1671,19 @@ bool GraphBuilder::DoCompare(const Instr &instr) {
 }
 
 bool GraphBuilder::DoBuildOp(const Instr &instr) {
+  if (instr.op() == BUILD_SET) {
+    return false;
+  }
   int opcode = instr.op();
   int oparg = instr.arg();
   int tmp_arg = oparg;
   tmp_arg += opcode == BUILD_CONST_KEY_MAP;
   tmp_arg += opcode == BUILD_MAP ? tmp_arg : 0;
   std::vector<ValueNode *> p(frame_.GetStacks().end() - tmp_arg, frame_.GetStacks().end());
+  auto o = HandleBuildOp(instr, p);
   popn(tmp_arg);
-
-  ValueNode *v;
-  if (opcode == BUILD_CONST_KEY_MAP) {
-    PyObject *keys = p.back()->GetVobj()->GetPyObject().ptr();
-    MS_EXCEPTION_IF_CHECK_FAIL(keys && PyTuple_CheckExact(keys), "error bytecode BUILD_CONST_KEY_MAP");
-    Py_ssize_t size = PyTuple_GET_SIZE(keys);
-    MS_EXCEPTION_IF_CHECK_FAIL(size_t(size) + 1 == p.size(), "error args BUILD_CONST_KEY_MAP");
-    std::vector<ValueNode *> build_inputs;
-    for (Py_ssize_t i = 0; i < size; ++i) {
-      PyObject *item = PyTuple_GET_ITEM(keys, i);
-      DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(item)});
-      build_inputs.push_back(pop());
-      build_inputs.push_back(p[i]);
-    }
-    AObject *vo = AObject::BuildOperations(CollectObjects(build_inputs), BUILD_MAP);
-    v = NewValueNode(vo, instr, build_inputs);
-    v->SetOpcode(BUILD_MAP);
-    v->SetOparg(size);
-  } else {
-    AObject *vo = AObject::BuildOperations(CollectObjects(p), opcode);
-    v = NewValueNode(vo, instr, p);
-  }
+  auto v = NewValueNode(AObject::Convert(o), instr, p);
+  v->set_abstract_wrapper(o);
   push(v);
   return true;
 }
@@ -5894,35 +5822,6 @@ bool MindGraphBuilder::DoGetItem(const Instr &instr) {
   return false;
 }
 
-bool MindGraphBuilder::DoUnary(const Instr &instr) {
-  auto o = pop();
-  auto r = HandleMultiOp(instr, {o}, false);
-  auto v = NewValueNode(AObject::Convert(r), instr, {o});
-  v->set_abstract_wrapper(r);
-  push(v);
-  return true;
-}
-
-bool MindGraphBuilder::DoBinary(const Instr &instr) {
-  auto r = pop();
-  auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, false);
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
-  push(v);
-  return true;
-}
-
-bool MindGraphBuilder::DoBinaryMul(const Instr &instr) {
-  auto r = pop();
-  auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, false);
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
-  push(v);
-  return true;
-}
-
 bool MindGraphBuilder::DoCompare(const Instr &instr) {
   // python3.7 only
   Opcode opcode(instr.op());
@@ -5952,24 +5851,6 @@ bool MindGraphBuilder::DoCompare(const Instr &instr) {
   auto l = pop();
   auto o = HandleMultiOp(instr, {l, r}, true);
   auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
-  push(v);
-  return true;
-}
-
-bool MindGraphBuilder::DoBuildOp(const Instr &instr) {
-  if (instr.op() == BUILD_SET) {
-    return false;
-  }
-  int opcode = instr.op();
-  int oparg = instr.arg();
-  int tmp_arg = oparg;
-  tmp_arg += opcode == BUILD_CONST_KEY_MAP;
-  tmp_arg += opcode == BUILD_MAP ? tmp_arg : 0;
-  std::vector<ValueNode *> p(frame_.GetStacks().end() - tmp_arg, frame_.GetStacks().end());
-  auto o = HandleBuildOp(instr, p);
-  popn(tmp_arg);
-  auto v = NewValueNode(AObject::Convert(o), instr, p);
   v->set_abstract_wrapper(o);
   push(v);
   return true;

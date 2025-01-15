@@ -272,17 +272,14 @@ class GraphBuilder {
   bool DoListToTuple(const Instr &instr);
   bool DoGetIter(const Instr &instr);
   bool DoMakeFunction(const Instr &instr);
-  AObject *InferUnary(ValueNode *, const Instr &instr);
-  virtual bool DoUnary(const Instr &instr);
-  AObject *InferBinary(ValueNode *, ValueNode *, const Instr &instr);
-  virtual bool DoBinary(const Instr &instr);
+  bool DoUnary(const Instr &instr);
+  bool DoBinary(const Instr &instr);
   virtual bool DoIsOp(const Instr &instr);
   virtual bool DoContainsOp(const Instr &instr);
-  virtual bool DoBinaryMul(const Instr &instr);
   bool DoBinaryAdd(const Instr &instr);
   bool DoInplaceAdd(const Instr &instr);
   virtual bool DoCompare(const Instr &instr);
-  virtual bool DoBuildOp(const Instr &instr);
+  bool DoBuildOp(const Instr &instr);
   bool DoMergeOp(const Instr &instr);
   bool DoFormatValue(const Instr &instr);
   bool DoImport(const Instr &instr);
@@ -416,13 +413,9 @@ class MindGraphBuilder : public GraphBuilder {
  protected:
   bool DoGetItem(const Instr &instr) override;
   bool DoItemAccess(const Instr &instr) override;
-  bool DoUnary(const Instr &instr) override;
-  bool DoBinary(const Instr &instr) override;
   bool DoIsOp(const Instr &instr) override;
   bool DoContainsOp(const Instr &instr) override;
-  bool DoBinaryMul(const Instr &instr) override;
   bool DoCompare(const Instr &instr) override;
-  bool DoBuildOp(const Instr &instr) override;
   bool DoLoadConst(const Instr &instr) override;
   void DoLoadGlobal(const Instr &instr) override;
 
