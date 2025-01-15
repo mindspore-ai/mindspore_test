@@ -780,8 +780,8 @@ REG_BPROP_BUILDER("Conv2DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   return {squeeze_dx,
           dw,
           dbias,
-          ib->OutZeros(pad_value),
           ib->OutZeros(stride_value),
+          ib->OutZeros(pad_value),
           ib->OutZeros(dilation_value),
           ib->OutZeros(group_value)};
 });
@@ -1015,8 +1015,8 @@ REG_BPROP_BUILDER("ConvolutionStr").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
   return {dx,
           dw,
           dbias,
-          ib->OutZeros(pad_value),
           ib->OutZeros(stride_value),
+          ib->OutZeros(pad_value),
           ib->OutZeros(dilation_value),
           ib->OutZeros(transposed_value),
           ib->OutZeros(output_padding_value),
@@ -1177,8 +1177,8 @@ REG_BPROP_BUILDER("Conv3DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   return {s_dx,
           dw,
           dbias,
-          ib->OutZeros(pad_value),
           ib->OutZeros(stride_value),
+          ib->OutZeros(pad_value),
           ib->OutZeros(dilation_value),
           ib->OutZeros(group_value)};
 });
