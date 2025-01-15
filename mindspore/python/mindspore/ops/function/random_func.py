@@ -1451,7 +1451,7 @@ def randint_ext(*args, generator=None, dtype=None):
     args = list(args)
     if len(args) == 2:
         args = [0] + args
-    args.extend([seed, offset])
+    args += [seed, offset]
     return randint_(*args, dtype=dtype)
 
 
@@ -1499,7 +1499,7 @@ def randint_like_ext(*args, dtype=None):
     args = list(args)
     if len(args) == 2:
         args = [args[0], 0, args[1]]
-    args.extend([seed, offset])
+    args += [seed, offset]
     return randint_like_(*args, dtype=dtype)
 
 
