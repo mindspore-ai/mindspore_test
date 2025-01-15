@@ -33,6 +33,7 @@
 #include "abstract/utils.h"
 #include "ops/infer_info/abstract_infer_info_adapter.h"
 #include "ops/infer_info/value_infer_info_adapter.h"
+#include "ops/infer_info/infer_info_utils.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
@@ -42,7 +43,7 @@ static AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId type,
   if (value == mindspore::kNone) {
     return std::make_shared<abstract::AbstractNone>();
   }
-  auto abs = abstract::MakeAbstract(shape, type);
+  auto abs = MakeAbstract(shape, type);
   if (value) {
     abs->set_value(value);
   }

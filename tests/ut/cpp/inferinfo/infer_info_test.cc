@@ -27,6 +27,7 @@
 #include "abstract/utils.h"
 #include "ops/infer_info/abstract_infer_info_adapter.h"
 #include "ops/infer_info/value_infer_info_adapter.h"
+#include "ops/infer_info/infer_info_utils.h"
 
 namespace mindspore::ops {
 namespace {
@@ -146,14 +147,14 @@ TEST_F(TestInferInfo, test_dynamic_shape) {
   TypeId type = kNumberTypeFloat32;
   std::vector<float> value{1., 2., 3.};
 
-  auto abs = abstract::MakeAbstract({shape}, {type});
+  auto abs = MakeAbstract({shape}, {type});
   AbstractInferInfoAdapter infer_info(abs, kPrim, kArg0);
 
   EXPECT_TRUE(infer_info.IsDynamic());
   EXPECT_FALSE(infer_info.IsDynamicRank());
 
   shape = {-2};
-  abs = abstract::MakeAbstract({shape}, {type});
+  abs = MakeAbstract({shape}, {type});
   AbstractInferInfoAdapter infer_info2(abs, kPrim, kArg0);
 
   EXPECT_TRUE(infer_info2.IsDynamic());
@@ -202,7 +203,7 @@ TYPED_TEST(TypedTestInferInfo, test_get_value) {
 TEST_F(TestInferInfo, test_abstract_without_value) {
   ShapeVector shape{2, 2};
   TypeId type = kNumberTypeFloat32;
-  auto abs = abstract::MakeAbstract(shape, type);
+  auto abs = MakeAbstract(shape, type);
   AbstractInferInfoAdapter infer_info(abs, kPrim, kArg0);
   auto value = infer_info.GetArrayValue<float>();
   EXPECT_FALSE(value.has_value());
