@@ -1,0 +1,14 @@
+#operator divs
+divs:
+    args:
+        input:
+            dtype: tensor
+        other:
+            dtype: number
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: False
+    dispatch:
+        enable: True

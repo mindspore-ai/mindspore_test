@@ -1296,12 +1296,18 @@ REG_BPROP_BUILDER("Div").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib
   return result;
 });
 
+REG_BPROP_BUILDER("Divs").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto other = ib->GetInput(kIndex1);
+  auto grad = ib->GetInput(kIndex3);
+  auto dinput = ib->Divs(grad, other);
+  return {dinput, ib->OutZeros(other)};
+});
+
 REG_BPROP_BUILDER("DivMod").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto rounding_mode = ib->GetInput(kIndex2);
 
-  auto mode_value_ptr = rounding_mode->BuildValue();
   auto mode_type = rounding_mode->abstract()->BuildType();
   MS_EXCEPTION_IF_NULL(mode_type);
 
@@ -1326,6 +1332,25 @@ REG_BPROP_BUILDER("DivMod").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   } else {
     return {ib->OutZeros(x), ib->OutZeros(y), ib->OutZeros(rounding_mode)};
   }
+});
+
+REG_BPROP_BUILDER("DivMods").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto rounding_mode = ib->GetInput(kIndex2);
+  auto grad = ib->GetInput(kIndex4);
+
+  auto mode_type = rounding_mode->abstract()->BuildType();
+  MS_EXCEPTION_IF_NULL(mode_type);
+
+  NodePtr dinput{nullptr};
+  if (mode_type->isa<TypeNone>()) {
+    dinput = ib->Divs(grad, other);
+  } else {
+    dinput = ib->ZerosLikeExt(grad, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  }
+
+  return {dinput, ib->OutZeros(other), ib->OutZeros(rounding_mode)};
 });
 
 REG_BPROP_BUILDER("BitwiseAnd").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);

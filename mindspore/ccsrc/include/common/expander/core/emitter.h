@@ -883,6 +883,7 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr ZerosLikeExt(const NodePtr &input, const NodePtr &dtype) {
     return Emit("ZerosLikeExt", {input, dtype});
   }
+  virtual NodePtr Divs(const NodePtr &input, const NodePtr &other) { return Emit("Divs", {input, other}); }
   virtual NodePtr Zeros(const NodePtr &size, const NodePtr &dtype) { return Emit("Zeros", {size, dtype}); }
   virtual NodePtr DynamicQuantExt(const NodePtr &x, const NodePtr &smooth_scales) {
     return Emit("DynamicQuantExt", {x, smooth_scales});
