@@ -32,7 +32,7 @@
 #include "utils/ms_context.h"
 #include "runtime/device/kernel_runtime.h"
 #include "runtime/pynative/op_runtime_info.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "external/graph/types.h"

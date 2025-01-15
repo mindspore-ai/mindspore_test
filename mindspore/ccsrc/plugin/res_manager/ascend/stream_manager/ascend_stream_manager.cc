@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
-#include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "acl/error_codes/rt_error_codes.h"
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -28,6 +26,9 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+constexpr size_t kIndex0 = 0;
+}
 AscendStreamMng &AscendStreamMng::GetInstance() {
   static AscendStreamMng instance{};
   return instance;

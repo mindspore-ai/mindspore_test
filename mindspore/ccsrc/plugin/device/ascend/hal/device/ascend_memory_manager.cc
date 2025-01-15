@@ -20,7 +20,7 @@
 #include <unordered_map>
 
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/profiler/memory_profiling.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"

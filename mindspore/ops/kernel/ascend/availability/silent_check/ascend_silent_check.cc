@@ -44,7 +44,7 @@
 #include "mindapi/base/type_id.h"
 #include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/op_name.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"

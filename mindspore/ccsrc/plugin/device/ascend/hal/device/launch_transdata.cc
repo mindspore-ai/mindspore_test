@@ -24,7 +24,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "runtime/device/memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
 #include "acl/acl_rt.h"
 #include "mindspore/ops/op_def/array_op_name.h"

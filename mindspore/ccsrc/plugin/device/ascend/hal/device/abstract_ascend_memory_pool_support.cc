@@ -22,7 +22,7 @@
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"

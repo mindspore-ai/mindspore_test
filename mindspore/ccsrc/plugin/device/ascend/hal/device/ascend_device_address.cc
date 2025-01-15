@@ -25,7 +25,7 @@
 #include "runtime/device/memory_manager.h"
 #include "runtime/device/convert_tensor_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_event.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "ir/dtype/type.h"
 #include "ir/tensor.h"
 #include "abstract/utils.h"

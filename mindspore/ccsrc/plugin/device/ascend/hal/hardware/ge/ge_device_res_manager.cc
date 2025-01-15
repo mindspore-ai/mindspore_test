@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/hal/hardware/ge/ge_device_res_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

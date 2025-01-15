@@ -68,7 +68,7 @@
 #include "acldvppop/acldvpp_vertical_flip.h"
 #include "acldvppop/acldvpp_warp_affine.h"
 #include "acldvppop/acldvpp_warp_perspective.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace dataset {

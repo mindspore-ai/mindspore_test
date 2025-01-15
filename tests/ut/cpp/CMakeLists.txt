@@ -181,7 +181,7 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_memory_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_memory_pool.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_runtime_manager.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_stream_manager.cc"
+        "../../../mindspore/ccsrc/plugin/res_manager/ascend/stream_manager/ascend_stream_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_two_pointer_mem_adapter.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_vmm_adapter.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ge_runtime/*.cc"

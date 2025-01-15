@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_STREAM_MANAGER_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_STREAM_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_STREAM_MANAGER_ASCEND_STREAM_MANAGER_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_STREAM_MANAGER_ASCEND_STREAM_MANAGER_H_
 
 #include <memory>
 #include <vector>
@@ -23,7 +23,7 @@
 #include <mutex>
 
 #include "acl/acl_rt.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/callback_thread.h"
 #include "utils/hash_map.h"
 
 namespace mindspore {
@@ -152,4 +152,4 @@ class AscendStreamMng {
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_STREAM_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_ASCEND_STREAM_MANAGER_ASCEND_STREAM_MANAGER_H_

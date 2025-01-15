@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/common/utils/utils.h"
 #include "utils/log_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
