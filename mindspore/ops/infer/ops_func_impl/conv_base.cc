@@ -137,8 +137,11 @@ void ConvBaseFunImpl::FetchSpatialDim(const PrimitivePtr &primitive, const Infer
       std::vector<int64_t> kernel_shape_with_dilation;
       auto in_channels = input_shape[kIndex1];
       int64_t groups = groups_opt.value();
-      (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
-                                               weight_shape[kIndex1]);
+      if (in_channels / groups != weight_shape[kIndex1]) {
+        MS_EXCEPTION(ValueError) << "The argument error. in_channels/groups must be equal weight[1], "
+                                 << "but in_channels/groups is " << in_channels / groups << ", and weight[1] is "
+                                 << weight_shape[kIndex1];
+      }
       int64_t input_rank = SizeToLong(input_shape.size());
       for (int64_t i = 2; i < input_rank; i++) {
         if (dilation.IsValueUnknown(i - 2) || padding.IsValueUnknown(i - 2)) {

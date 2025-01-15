@@ -7187,7 +7187,6 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
       dimensions also have the same constraints.
     - :math:`((kh - 1) * DilationH - PadUp)` should be in [0, 255]. It is the same constraint for depth
       and width dimension.
-    - :math:`groups == 1 \quad \text{or} \quad groups == C_{in}`.
     - If `padding` is ``'same'``, `stride` must be 1.
 
     .. warning::
@@ -7222,7 +7221,8 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         groups (int, optional): Splits `input` into groups. Default: ``1`` .
 
     Returns:
-        Tensor
+        Tensor, the same dtype as the `input`, with the shape :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`
+            or :math:`(C_{out}, D_{out}, H_{out}, W_{out})`.
 
     Raises:
         TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.
@@ -7231,6 +7231,16 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
 
     Supported Platforms:
         ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import mint
+        >>> x = mindspore.Tensor(np.random.randn(12, 1, 60, 50, 8), mindspore.float16)
+        >>> w = mindspore.Tensor(np.random.randn(26, 1, 2, 4, 4), mindspore.float16)
+        >>> out = mint.nn.functional.conv3d(x, w)
+        >>> print(out.shape)
+        (12, 26, 59, 47, 5)
     """
 
     if isinstance(padding, (tuple, list, int)):
