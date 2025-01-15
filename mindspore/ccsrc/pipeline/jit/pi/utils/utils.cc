@@ -284,6 +284,29 @@ PyObject *Utils::MixedPrecisionTypeToDType(MixedPrecisionType mixed_type) {
   return dst_dtype;
 }
 
+std::vector<Py_ssize_t> Utils::FormatSubscript(const py::object &subscr, Py_ssize_t size) {
+  if (subscr.ptr() == nullptr || subscr.is_none()) {
+    return {};
+  }
+  if (PyIndex_Check(subscr.ptr())) {
+    Py_ssize_t index = PyNumber_AsSsize_t(subscr.ptr(), NULL);
+    if (index >= -size && index < size) {
+      return {(index + size) % size, 1, 1, 0};
+    }
+  }
+  if (PySlice_Check(subscr.ptr())) {
+    Py_ssize_t start = 0;
+    Py_ssize_t stop = 0;
+    Py_ssize_t step = 0;
+    if (PySlice_Unpack(subscr.ptr(), &start, &stop, &step) == 0) {
+      auto len = PySlice_AdjustIndices(size, &start, &stop, step);
+      return {start, step, (len < 0 ? 0 : len), 1};
+    }
+  }
+  PyErr_Clear();
+  return {};
+}
+
 bool HasMutableOrConstAttr(PyObject *obj) {
   auto pyObj = py::cast<py::object>(obj);
   return py::hasattr(pyObj, kMutableAttr) || py::hasattr(pyObj, kConstArgAttr);

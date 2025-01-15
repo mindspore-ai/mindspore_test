@@ -95,6 +95,15 @@ class Utils {
   static void PyBuiltinPrint(PyObject *, bool flush = false);
 
   static PyObject *MixedPrecisionTypeToDType(MixedPrecisionType mixedPrecisionType);
+
+  /// \brief Convert index and slice to {start, step, len, is_slice}
+  ///
+  /// \param subscr the index or slice
+  /// \param size the size of the object being accessed
+  ///
+  /// \return Format : {start, step, len, is_slice}, if the subscript is valid
+  ///                  {}, if the subscript is invalid
+  static std::vector<Py_ssize_t> FormatSubscript(const py::object &subscr, Py_ssize_t size);
 };
 
 /* use python format pattern */

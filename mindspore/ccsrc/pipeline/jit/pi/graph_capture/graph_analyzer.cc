@@ -282,9 +282,6 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
   if (abstract == nullptr) {
     return false;
   }
-  if (abstract->isa<abstract::AbstractSlice>() && abstract->BuildValue() != kValueAny) {
-    return true;
-  }
   if (abstract->isa<abstract::AbstractSequence>()) {
     const auto elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
     return std::all_of(elements.begin(), elements.end(), IsValidGraphOutput);
@@ -374,6 +371,7 @@ ValueNode *GraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   auto prim = is_tuple ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
   for (size_t index = 0; index < sequence->size(); index++) {
     auto graph_index = NewValueNode(SizeToLong(index));
+    graph_index->set_abstract(GetValueNode(graph_index)->ToAbstract());
     auto graph_item = func_graph->NewCNodeInOrder(prim, {graph_node, graph_index});
     graph_item->set_abstract(sequence->elements()[index]);
     auto item_abstract_wrapper = std::make_shared<AbstractWrapper>(sequence->elements()[index]);

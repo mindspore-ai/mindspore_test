@@ -289,7 +289,8 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
     }
   }
 
-  PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+  auto vobj = node->GetVobj() ? node->GetVobj()->GetBaseVersion() : nullptr;
+  PyObject *obj = vobj ? vobj->GetPyObject().ptr() : nullptr;
   int opcode = node->GetOpcode();
   int oparg = node->GetOparg();
   const std::string &name = node->GetName();

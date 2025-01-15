@@ -319,7 +319,6 @@ bool GraphBuilder::UnpackSequenceElements(ValueNode *node) {
   if (seq.ptr() == nullptr || !PySequence_Check(seq.ptr()) || !GuardLoopSequence(this->graph_, node)) {
     return false;
   }
-
   Py_ssize_t size = PySequence_Size(seq.ptr());
   for (Py_ssize_t index = 0; index < size; ++index) {
     push(node);
@@ -1297,13 +1296,36 @@ ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, Va
     elements = {frame_.GetStacks().end() - size * kNumberTwo, frame_.GetStacks().end()};
     popn(size * kNumberTwo);
   } else {
-    return nullptr;
+    // check type when cast
+    auto dict = dynamic_cast<AbstractDict *>(map->GetVobj());
+    MS_EXCEPTION_IF_NULL(dict);
+    for (const auto &item : dict->GetElements()) {
+      auto obj = item.first->GetPyObject();
+      MS_EXCEPTION_IF_NULL(obj.ptr());
+      Instr instr(LOAD_CONST, 0, obj);
+      this->DoLoadConst(instr);
+      this->push(map);
+      this->DoLoadConst(instr);
+      this->DoGetItem({BINARY_SUBSCR, 0});
+    }
+    elements = {frame_.GetStacks().end() - dict->size() * kNumberTwo, frame_.GetStacks().end()};
+    popn(dict->size() * kNumberTwo);
   }
 
   // set(delete) element
   if (value != nullptr) {
-    elements.push_back(key);
-    elements.push_back(value);
+    bool insert = false;
+    for (size_t index = 0; index < elements.size(); index += 2) {
+      if (elements[index]->GetVobj() == key->GetVobj()) {
+        elements[index + 1] = value;
+        insert = true;
+        break;
+      }
+    }
+    if (!insert) {
+      elements.push_back(key);
+      elements.push_back(value);
+    }
   } else {
     int index_of_key = -1;
     for (int i = elements.size() - kNumberTwo; i >= 0 && index_of_key == -1; i -= kNumberTwo) {
@@ -1321,13 +1343,14 @@ ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, Va
   int size = elements.size() / kNumberTwo;
   std::for_each(elements.begin(), elements.end(), [this](ValueNode *i) { this->push(i); });
   DoBuildOp({BUILD_MAP, size});
+  map->GetVobj()->SetNextVersion(seek(0)->GetVobj());
   return pop();
 }
 
 std::vector<Py_ssize_t> ListIndexCompute(PyObject *index_object, Py_ssize_t size) {
   if (PyIndex_Check(index_object)) {
     Py_ssize_t index = PyNumber_AsSsize_t(index_object, PyExc_IndexError);
-    if (!PyErr_Occurred() && index > -size && index < size) {
+    if (!PyErr_Occurred() && index >= -size && index < size) {
       index = index < 0 ? (index + size) : index;
       return {index, index + 1, 1, 1};
     }
@@ -1377,16 +1400,18 @@ static bool SetSlice(std::vector<T> *elements, const std::vector<Py_ssize_t> &co
 }
 
 ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, ValueNode *value) {
-  PyObject *index_object = key->GetVobj()->GetPyObject().ptr();
-  if (index_object == nullptr || !key->IsConstantValue()) {
+  auto index_object = key->GetVobj()->GetPyObject();
+  if (index_object.ptr() == nullptr || !key->IsConstantValue()) {
     return nullptr;  // only supported constant key
   }
-  PyObject *map_object = map->GetVobj()->GetPyObject().ptr();
   std::vector<ValueNode *> elements;
   if (map->GetOpcode() == BUILD_LIST) {
     elements = map->getInputs();
   } else if (UnpackElements(map)) {
-    Py_ssize_t size = PyList_GET_SIZE(map_object);
+    // check type when cast
+    auto seq = dynamic_cast<AbstractSequence *>(map->GetVobj());
+    MS_EXCEPTION_IF_NULL(seq);
+    Py_ssize_t size = seq->size();
     elements = {frame().GetStacks().end() - size, frame().GetStacks().end()};
     popn(size);
   } else {
@@ -1394,13 +1419,13 @@ ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, Va
   }
 
   // compute slice
-  auto slice = ListIndexCompute(index_object, elements.size());
+  auto slice = Utils::FormatSubscript(index_object, elements.size());
   if (slice.empty()) {
     return nullptr;
   }
   // set(delete) elements
   size_t stack_size = frame_.GetStacks().size();
-  if (!PySlice_Check(index_object)) {
+  if (!PySlice_Check(index_object.ptr())) {
     auto iter = elements.begin() + slice[0];
     (void)(value == nullptr ? elements.erase(iter) : (*iter = value, iter));
   } else if (value == nullptr && SetSlice(&elements, slice)) {
@@ -1420,6 +1445,7 @@ ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, Va
 
   std::for_each(elements.begin(), elements.end(), [this](ValueNode *i) { this->push(i); });
   DoBuildOp({BUILD_LIST, SizeToInt(elements.size())});
+  map->GetVobj()->SetNextVersion(seek(0)->GetVobj());
   return pop();
 }
 
@@ -1746,7 +1772,8 @@ bool GraphBuilder::DoBuildOp(const Instr &instr) {
   std::vector<ValueNode *> p(frame_.GetStacks().end() - tmp_arg, frame_.GetStacks().end());
   auto o = HandleBuildOp(instr, p);
   popn(tmp_arg);
-  auto v = NewValueNode(AObject::Convert(o), instr, p);
+  AObject *vo = AObject::BuildOperations(CollectObjects(p), opcode);
+  auto v = NewValueNode(vo, instr, p);
   v->set_abstract_wrapper(o);
   push(v);
   return true;
@@ -2886,9 +2913,6 @@ bool GraphBuilder::UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *p
     return false;
   }
   auto dict = static_cast<AbstractDict *>(dict_node->GetVobj());
-  if (!dict->IsElementValid()) {
-    return false;
-  }
   /**
    * must be guard this dict length
    */
@@ -2921,13 +2945,10 @@ bool GraphBuilder::UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *
     return false;
   }
   AbstractTuple *tuple = static_cast<AbstractTuple *>(args_node->GetVobj());
-  if (!tuple->IsElementValid()) {
-    return false;
-  }
   /**
    * must be guard this tuple length
    */
-  auto items = tuple->items();
+  auto items = tuple->GetElements();
   std::vector<ValueNode *> args;
   for (size_t i = 0; i < items.size(); i++) {
     ValueNode *idx_node = this->NewValueNode(AObject::Convert(py::int_(i)), LOAD_CONST, -1, {});
@@ -3389,12 +3410,26 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
 }
 
 static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size) {
+  if (graph == nullptr || seq_node == nullptr) {
+    MS_LOG(ERROR) << "Try to guard " << seq_node << " with graph " << graph << ".";
+    return false;
+  }
+  auto vobj = seq_node->GetVobj();
+  if (vobj == nullptr) {
+    MS_LOG(ERROR) << "Try to guard " << seq_node << " but vobj is nullptr.";
+    return false;
+  }
+  auto base_version = vobj->GetBaseVersion();
+  PyObject *seq = base_version->GetPyObject().ptr();
+  if (seq == nullptr || !PySequence_Check(seq)) {
+    MS_LOG(ERROR) << "Try to guard " << seq_node << " but no pyobject or not a sequence.";
+    return false;
+  }
   // guard length
-  PyObject *seq = seq_node->GetVobj()->GetPyObject().ptr();
-  if (seq != nullptr && seq_size == -1) {
+  if (seq_size == -1) {
     seq_size = PySequence_Size(seq);
   }
-  if (seq == nullptr || seq_size == -1) {
+  if (seq_size == -1) {
     PyErr_Clear();
     return false;
   }
