@@ -27,6 +27,12 @@ internal::InternalOpPtr InternalTranspose::CreateKernel(const internal::InputsIm
                                                         const std::vector<KernelTensor *> &ms_outputs) {
   internal::TransposeParam param;
   param.axes = ms_inputs[1]->GetValueWithCheck<std::vector<int64_t>>();
+  auto shape = ms_inputs[0]->GetShapeVector();
+  for (size_t i = 0; i < param.axes.size(); ++i) {
+    if (param.axes[i] < 0) {
+      param.axes[i] += shape.size();
+    }
+  }
   return internal::CreateTransposeOp(inputs_ii, outputs_ii, param, internal::kInternalTransposeOpName);
 }
 
