@@ -1488,11 +1488,12 @@ def dropout_ext(input, p=0.5, training=True, inplace=False):
 
     Args:
         input (Tensor): The input Tensor of shape :math:`(*, N)`.
-        p (float): The dropping rate of input neurons, between 0 and 1, e.g. `p` = 0.1,
+        p (float, optional): The dropping rate of input neurons, between 0 and 1, e.g. `p` = 0.1,
             means dropping out 10% of input neurons. Default: ``0.5`` .
-        training (bool): Apply dropout if it is ``True`` , if it is ``False`` , the input is returned directly,
+        training (bool, optional): Apply dropout if it is ``True`` ,
+            if it is ``False`` , the input is returned directly,
             and `p` is invalid. Default: ``True`` .
-        inplace (bool): If set to ``True`` , will do this operation in-place. Default: ``False`` .
+        inplace (bool, optional): If set to ``True`` , will do this operation in-place. Default: ``False`` .
 
     Returns:
         - **output** (Tensor) - Zeroed tensor, with the same shape and data type as `input`.
@@ -2686,7 +2687,7 @@ def interpolate_ext(input,
           is not supported.
         - In 'nearest' mode, there may exist precision problem in the scenarios, where input is 3-D/4-D Tensor
           and the image is scaled by scale_factor.
-        - `mode` and `scale_factor` should be constants.
+        - `mode` and `recompute_scale_factor` should be constants.
 
     Args:
         input (Tensor): Tensor to be resized.
@@ -2701,9 +2702,11 @@ def interpolate_ext(input,
             after removing the first two dimensions N, C.
             One and only one of size and scale_factor can be set to None. Default: ``None`` .
         mode (str): The sampling algorithm.
-            One of 'nearest', 'linear' (3D only), 'bilinear' (4D only), 'trilinear' (5D only), and 'bicubic' (4D only).
+            One of 'nearest', 'linear' (3D only),
+            'bilinear' (4D only), 'trilinear' (5D only), and 'bicubic' (4D only).
             Default: ``"nearest"`` .
-        align_corners (bool): Whether to use corner alignment for coordinate mapping. Assuming a transformation is
+        align_corners (bool, optional): Whether to use corner alignment for coordinate mapping.
+            Assuming a transformation is
             applied to the input Tensor along the x-axis, the specific calculation formula is as follows:
 
             .. code-block::
@@ -5279,7 +5282,7 @@ def grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corner
             H_{in}, W_{in})` (5-D case) and dtype of float32 or float64.
         grid (Tensor): flow-field with shape of :math:`(N, H_{out}, W_{out}, 2)` (4-D case) or :math:`(N, D_{out},
             H_{out}, W_{out}, 3)` (5-D case) and same dtype as `input`.
-        mode (str): An optional string specifying the interpolation method. The optional values are
+        mode (str, optional): An optional string specifying the interpolation method. The optional values are
             ``'bilinear'``, ``'nearest'``. Default: ``'bilinear'`` . Note: `bicubic` is not supported yet. When
             `mode="bilinear"` and the input is 5-D, the interpolation mode used internally will actually
             be trilinear. However, when the input is 4-D, the interpolation mode will legistimately be bilinear.
@@ -5294,9 +5297,10 @@ def grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corner
               It performs bilinear interpolation in the two spatial dimensions and linear interpolation along
               the third dimension. It is commonly used for volume or 3D image interpolation.
 
-        padding_mode (str): An optional string specifying the pad method. The optional values are "zeros", "border" or
+        padding_mode (str, optional): An optional string specifying the pad method.
+            The optional values are "zeros", "border" or
             "reflection". Default: ``'zeros'`` .
-        align_corners (bool): If set to `True`, the extrema (-1 and 1) are considered as referring to
+        align_corners (bool, optional): If set to `True`, the extrema (-1 and 1) are considered as referring to
             the center points of the input's corner pixels. If set to `False`, they are instead considered as referring
             to the corner points of the input's corner pixels, making the sampling more resolution agnostic. Default:
             ``False`` .
@@ -5976,7 +5980,7 @@ def conv1d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
 
 def conv2d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dilation=1, groups=1):
     r"""
-    Applies a 2D convolution over an input tensor. The input tenor is typically of
+    Applies a 2D convolution over an input tensor. The input tensor is typically of
     shape :math:`(N, C_{in}, H_{in}, W_{in})`, where :math:`N` is batch size, :math:`C` is
     channel number, :math:`H` is feature height, :math:`W` is feature width.
 
@@ -6161,7 +6165,7 @@ def _get_pad_nd_info(pad_l, pad_r):
 
 def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     r"""
-    Applies a 2D convolution over an input tensor. The input tenor is typically of
+    Applies a 2D convolution over an input tensor. The input tensor is typically of
     shape :math:`(N, C_{in}, H_{in}, W_{in})`, where :math:`N` is batch size, :math:`C` is
     channel number, :math:`H` is feature height, :math:`W` is feature width.
 
@@ -6247,11 +6251,10 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         To see how different pad modes affect the output shape, please refer to
         :class:`mindspore.nn.Conv2d` for more details.
 
-
     Raises:
         ValueError: Args and size of the input feature map should satisfy the output formula to ensure that the size of
             the output feature map is positive; otherwise, an error will be reported. For more details on the output
-            formula, please refer to :class:mindspore.mint.nn.Conv2d.
+            formula, please refer to :class:`mindspore.mint.nn.Conv2d`.
         RuntimeError: On Ascend, due to the limitation of the L1 cache size of different NPU chip, if input size or
             kernel size is too large, it may trigger an error.
         TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.
@@ -6259,7 +6262,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         TypeError: If `bias` is not a Tensor.
         ValueError: If  the shape of `bias` is not :math:`(C_{out})` .
         ValueError: If `stride` or `dilation` is less than 1.
-        ValueError: If `padding` is `same` , but `stride` is not equal 1.
+        ValueError: If `padding` is `same` , but `stride` is not equal to 1.
         ValueError: The input parameters do not satisfy the convolution output formula.
         ValueError: The KernelSize cannot exceed the size of the input feature map.
         ValueError: The value of padding cannot cause the calculation area to exceed the input size.
@@ -7694,7 +7697,8 @@ def gelu(input, approximate='none'):
 
     Args:
         input (Tensor): The input of the activation function GeLU, the data type is float16, float32 or float64.
-        approximate (str): the gelu approximation algorithm to use. Acceptable vaslues are ``'none'`` and ``'tanh'`` .
+        approximate (str, optional): the gelu approximation algorithm to use.
+            Acceptable vaslues are ``'none'`` and ``'tanh'`` .
             Default: ``'none'`` .
 
     Returns:
@@ -8648,21 +8652,23 @@ def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, ceil_
         kernel_size (Union[int, tuple[int]]): The size of kernel used to take the maximum value and arg
             value, is an int number that represents height and width of the kernel, or a tuple of
             two int numbers that represent height and width respectively.
-        stride (Union[int, tuple[int], None]): The distance of kernel moving, an int number that represents
+        stride (Union[int, tuple[int], None], optional): The distance of kernel moving, an int number that represents
             the height and width of movement are both stride, or a tuple of two int numbers that
             represent height and width of movement respectively.
             Default: ``None`` , which indicates the moving step is `kernel_size` .
-        padding (Union[int, tuple[int]]): An int number that represents the height and width of movement are both
+        padding (Union[int, tuple[int]], optional):
+            An int number that represents the height and width of movement are both
             strides, or a tuple of two int numbers that represent height and width of movement respectively.
             Default: ``0`` .
-        dilation (Union[int, tuple[int]]): Control the stride of elements in the kernel. Default: ``1`` .
-        ceil_mode (bool): Whether to use ceil instead of floor to calculate output shape. Default: ``False`` .
-        return_indices (bool): Whether to output the indices of max value. Default: ``False`` .
+        dilation (Union[int, tuple[int]], optional): Control the stride of elements in the kernel. Default: ``1`` .
+        ceil_mode (bool, optional): Whether to use ceil instead of floor to calculate output shape. Default: ``False`` .
+        return_indices (bool, optional): Whether to output the indices of max value. Default: ``False`` .
 
     Returns:
         If `return_indices` is ``False`` , return a Tensor `output`, else return a tuple (`output`, `argmax`).
 
-        - **output** (Tensor) - Maxpooling result, with shape :math:`(N_{out}, C_{out}, H_{out}, W_{out})`.
+        - **output** (Tensor) - Maxpooling result,
+          with shape :math:`(N_{out}, C_{out}, H_{out}, W_{out})`.
           It has the same data type as `input`.
 
         .. math::

@@ -19,11 +19,11 @@ mindspore.mint.nn.functional.max_pool2d
     参数：
         - **input** (Tensor) - shape为 :math:`(N_{in}, C_{in}, H_{in}, W_{in})` 的Tensor。在Ascend上，数据类型仅支持float32。
         - **kernel_size** (Union[int, tuple[int]]) - 池化核尺寸大小。可以是一个整数表示池化核的高度和宽度，或者包含两个整数的tuple，分别表示池化核的高度和宽度。
-        - **stride** (Union[int, tuple[int], None]) - 池化操作的移动步长。可以是一个整数表示在高度和宽度方向的移动步长，或者包含两个整数的tuple，分别表示在高度和宽度方向的移动步长。默认值： ``None`` ，表示移动步长为 `kernel_size` 。
-        - **padding** (Union[int, tuple[int]]) - 池化填充长度。可以是一个整数表示在高度和宽度方向的填充长度，或者包含两个整数的tuple，分别表示在高度和宽度方向的填充长度。默认为 ``0``。
-        - **dilation** (Union[int, tuple[int]]) - 控制池化核内元素的间距。默认为 ``1``。
-        - **ceil_mode** (bool) - 是否是用ceil代替floor来计算输出的shape。默认为 ``False``。
-        - **return_indices** (bool) - 是否输出最大值的索引。默认为 ``False``。
+        - **stride** (Union[int, tuple[int], None], 可选) - 池化操作的移动步长。可以是一个整数表示在高度和宽度方向的移动步长，或者包含两个整数的tuple，分别表示在高度和宽度方向的移动步长。默认值： ``None`` ，表示移动步长为 `kernel_size` 。
+        - **padding** (Union[int, tuple[int]], 可选) - 池化填充长度。可以是一个整数表示在高度和宽度方向的填充长度，或者包含两个整数的tuple，分别表示在高度和宽度方向的填充长度。默认为 ``0``。
+        - **dilation** (Union[int, tuple[int]], 可选) - 控制池化核内元素的间距。默认为 ``1``。
+        - **ceil_mode** (bool, 可选) - 是否是用ceil代替floor来计算输出的shape。默认为 ``False``。
+        - **return_indices** (bool, 可选) - 是否输出最大值的索引。默认为 ``False``。
 
     返回：
         当 `return_indices` 是 ``False`` 时，输出单个 `output` 张量，否则输出一个包含 `output` 张量和 `argmax` 张量的元组。

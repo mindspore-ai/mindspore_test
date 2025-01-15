@@ -183,8 +183,7 @@ def _check_infer_attr_reduce(axis, keep_dims, prim_name):
 
 class Expand(Primitive):
     """
-    :class:`mindspore.ops.Expand` will be deprecated in the future.
-    Please use :class:`mindspore.ops.BroadcastTo` instead.
+    This interface will be deprecated in the future, and use :class:`mindspore.ops.BroadcastTo` instead.
     """
 
     @deprecated("2.1", "BroadcastTo", False)

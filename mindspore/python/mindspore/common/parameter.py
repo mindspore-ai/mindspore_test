@@ -1009,7 +1009,7 @@ class Parameter(Tensor_):
 
     def register_hook(self, hook_fn):
         """
-        For details, please refer to :func: `mindspore.Tensor.register_hook`.
+        For details, please refer to :func:`mindspore.Tensor.register_hook`.
         """
         handle = Tensor.register_hook(self, hook_fn)
         set_parameter_hook_updated(True)
