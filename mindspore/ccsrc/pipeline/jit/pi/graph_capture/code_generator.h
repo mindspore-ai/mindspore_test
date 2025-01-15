@@ -71,7 +71,6 @@ class CodeGenerator {
   void set_missing_value_to_undefine(bool v) { missing_value_to_undefine_ = v; }
 
   void SetGlobals(const py::dict &dict) { globals_ = dict; }
-  std::vector<std::unique_ptr<Instr>> MoveCode() { return std::move(code_.co_code); }
   const py::dict &GetGlobals() const { return globals_; }
   const std::unordered_map<ValueNode *, int> &GetLocalsMap() const { return locals_map_; }
   const Code &GetCode() const { return code_; }
@@ -118,8 +117,6 @@ class CodeGenerator {
 
   // add node to locals map
   int AllocLocal(ValueNode *node, int index = INT_MAX);
-
-  std::string PrintAlive() const;
 
   /**
    * Transform code info to PyCodeObject
@@ -186,18 +183,22 @@ class CodeGenerator {
 };
 
 class CodeBreakGenerator;
-class MindCodeBreakGenerator;
 using CodeBreakGeneratorPtr = std::shared_ptr<CodeBreakGenerator>;
-using MindCodeBreakGeneratorPtr = std::shared_ptr<MindCodeBreakGenerator>;
+
 class CodeBreakGenerator {
  public:
-  explicit CodeBreakGenerator(PyCodeObject *co) : co_(co), cfg_(nullptr), break_bci_(-1), extra_local_(-1) {}
-  static CodeBreakGeneratorPtr Creator(const GraphBuilderPtr &builder, PyCodeObject *co) {
-    return std::static_pointer_cast<CodeBreakGenerator>(std::make_shared<MindCodeBreakGenerator>(builder, co));
-  }
+  CodeBreakGenerator(const GraphBuilderPtr &graph_builder, const py::dict &globals, PyCodeObject *co)
+      : fg_builder_(graph_builder->GetGraph()->func_graph_builder()),
+        co_(co),
+        cfg_(nullptr),
+        globals_(globals),
+        break_bci_(-1),
+        extra_local_(-1),
+        no_graph_(false) {}
 
-  void SetGlobals(const py::dict &dict) { globals_ = dict; }
-  const py::dict &GetGlobals() const { return globals_; }
+  static CodeBreakGeneratorPtr Creator(const GraphBuilderPtr &builder, const py::dict &globals, PyCodeObject *co) {
+    return std::make_shared<CodeBreakGenerator>(builder, globals, co);
+  }
 
   // collect nodes inputs and outputs at graph analyze
   void Init(const Graph *, const GraphAnalyzer &);
@@ -206,18 +207,20 @@ class CodeBreakGenerator {
   py::object MakeDispatchCode();
 
   // used to replace origin code, extend attribute from origin code.
-  virtual py::object MakeCapturedCode() const;
+  py::object MakeCapturedCode() const;
 
-  const CFG *GetCFG() const;
+ private:
+  const CFG *GetCFG() const { return cfg_; }
 
- protected:
   void ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) const;
 
   // rebuild parameters of graph, identify parameters that graph only support as constant
   void BuildGraphParameters(const std::unordered_map<ValueNode *, int> &locals, GraphParameterBuilder *);
 
+  py::object MakeInterpretCapturedCode() const;
+
   // rebuild captured nodes to bytecode, build parameters load operations
-  virtual py::object MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&sort, int argc, unsigned flag) const;
+  py::object MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&sort, int argc, unsigned flag) const;
 
   // make call operations of graph, build parameters load operations
   void CallCapturedCode(CodeGenerator *code_gen);
@@ -248,6 +251,14 @@ class CodeBreakGenerator {
 
   // return co_cellvars and co_freevars
   std::vector<std::string> GetClosureNames() const;
+
+  mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
+
+  void Compile(const std::string &name, int argc, int kw_only, int flags, const py::object &stub) const;
+
+ private:
+  // The FuncGraphBuilder of top-graph
+  FuncGraphBuilderPtr fg_builder_;
 
   // root function
   PyCodeObject *const co_;
@@ -290,24 +301,6 @@ class CodeBreakGenerator {
   bool no_graph_;
 };
 
-class MindCodeBreakGenerator : public CodeBreakGenerator {
- public:
-  MindCodeBreakGenerator(const GraphBuilderPtr &builder, PyCodeObject *co)
-      : CodeBreakGenerator(co), builder_(builder) {}
-
-  mindspore::FuncGraphBuilderPtr FGBuilder() const {
-    return std::dynamic_pointer_cast<MindGraphBuilder>(builder_)->FGBuilder();
-  }
-
-  py::object MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&, int argc, unsigned code_flag) const override;
-
-  py::object MakeCapturedCode() const override;
-
- private:
-  void Compile(const std::string &name, int argc, int kw_only, int flags, const py::object &stub) const;
-
-  GraphBuilderPtr builder_;
-};
 // add a key and value to py::dict, check key conflict or rename the key
 void MapAdd(const py::dict &dict, const std::string &key, const py::object &value, std::string *rename = nullptr);
 
