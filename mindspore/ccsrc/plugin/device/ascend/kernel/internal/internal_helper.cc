@@ -54,7 +54,8 @@ internal::DataType TransInternalDataType(TypeId ms_type) {
 
   auto iter = kMSTypeToInternalType.find(ms_type);
   if (iter == kMSTypeToInternalType.end()) {
-    MS_LOG(EXCEPTION) << "Type " << ms_type << " is not supported in Internal";
+    MS_LOG(INFO) << "Type " << ms_type << " is not supported in Internal";
+    return internal::DataType::kTypeUnknown;
   }
 
   return iter->second;

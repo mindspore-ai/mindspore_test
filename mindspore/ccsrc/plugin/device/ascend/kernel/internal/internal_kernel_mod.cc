@@ -63,12 +63,15 @@ bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const st
   }
 
   for (size_t i = 0; i < inputs.size(); i++) {
+    bool is_include = false;
     for (auto idx : in_idx_list) {
       if (i == static_cast<size_t>(idx)) {
-        continue;
+        is_include = true;
+        break;
       }
-
-      recreate_cared_indices_.emplace_back(idx);
+    }
+    if (!is_include) {
+      recreate_cared_indices_.emplace_back(i);
     }
   }
 
