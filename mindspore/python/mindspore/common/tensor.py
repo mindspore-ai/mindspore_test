@@ -2038,7 +2038,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def scatter_add_(self, dim, index, src):
         """
-        Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`.
+        Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`,
+        `scatter_add` is an in-place operation.
+        The ranks of `self`, `index` and `src` must be greater or equal to 1.
 
         For a 3-D tensor, the operation updates `self` as follows:
 
