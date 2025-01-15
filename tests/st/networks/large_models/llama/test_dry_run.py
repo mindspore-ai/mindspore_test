@@ -15,6 +15,7 @@
 """
 Test module for parallel training of Llama models using Mindformers at jit_level O2.
 """
+import pytest
 import os
 import subprocess
 from tests.mark_utils import arg_mark

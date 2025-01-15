@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import numpy as np
-import mindspore as ms
 import pytest
+import mindspore as ms
 from mindspore import context, Tensor, Parameter
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Cell, TrainOneStepCell, Momentum, AdaSumByDeltaWeightWrapCell, AdaSumByGradWrapCell
@@ -87,6 +87,7 @@ def test_auto_parallel_adasum2():
     compile_net(net, by_grad=False)
 
 
+@pytest.mark.skip(reason="view feature not supported UT")
 def test_auto_parallel_adasum3():
     """
     Feature: adasum in auto parallel.

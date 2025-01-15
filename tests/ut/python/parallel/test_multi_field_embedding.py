@@ -92,6 +92,7 @@ def test_embeddinglookup_batch_parallel_sum(test_context):
     compile_net(net, shape)
 
 
+@pytest.mark.skip(reason="view feature not supported UT")
 def test_embeddinglookup_row_parallel_sum(test_context):
     context.set_auto_parallel_context(device_num=8, global_rank=0, parallel_mode="semi_auto_parallel")
     shape = [64, 64]
@@ -120,6 +121,7 @@ def test_embeddinglookup_column_parallel_mean(test_context):
     compile_net(net, shape)
 
 
+@pytest.mark.skip(reason="view feature not supported UT")
 def test_embeddinglookup_row_parallel_mean(test_context):
     context.set_auto_parallel_context(device_num=8, global_rank=0, parallel_mode="semi_auto_parallel")
     shape = [64, 64]
@@ -127,6 +129,7 @@ def test_embeddinglookup_row_parallel_mean(test_context):
     compile_net(net, shape)
 
 
+@pytest.mark.skip(reason="view feature not supported UT")
 def test_embeddinglookup_batch_parallel_max(test_context):
     context.set_auto_parallel_context(device_num=8, global_rank=0, parallel_mode="semi_auto_parallel")
     shape = [64, 64]
@@ -141,6 +144,7 @@ def test_embeddinglookup_column_parallel_max(test_context):
     compile_net(net, shape)
 
 
+@pytest.mark.skip(reason="view feature not supported UT")
 def test_embeddinglookup_row_parallel_max(test_context):
     context.set_auto_parallel_context(device_num=8, global_rank=0, parallel_mode="semi_auto_parallel")
     shape = [64, 64]

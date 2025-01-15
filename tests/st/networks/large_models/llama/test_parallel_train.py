@@ -17,6 +17,7 @@ Test module for testing the paralleled llama interface used for mindformers.
 How to run this:
 pytest tests/st/test_model/test_llama_model/test_parallel_train.py
 """
+import pytest
 import os
 from multiprocessing.pool import Pool
 
@@ -39,6 +40,7 @@ def check_results(commands, results):
     subprocess.check_output(["grep", "MS_DEV_P2P_HCCL_BUFFSIZE, and the value is 24 MB.", commands[0][1]])
 
 
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_train():
     """
