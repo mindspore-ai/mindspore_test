@@ -743,3 +743,42 @@ def test_double_trace():
     res_double_trace = net(ms.Tensor(1), ms.Tensor(3), True)
     res_trace = net(ms.Tensor(1), ms.Tensor(3), False)
     assert res_double_trace == res_trace
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_trace_5():
+    """
+    Feature: JIT trace function nested by JIT ast
+    Description: JIT trace function nested by JIT ast
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        @ms.jit(capture_mode="trace")
+        def construct(self, inputs):
+            x, y, z = inputs
+            return x, y, z, x + y + z
+
+    class JitNet(ms.nn.Cell):
+        @ms.jit(capture_mode="ast")
+        def construct(self, inputs):
+            x, y, z = inputs
+            return x, y, z, x + y + z
+
+    class Net(ms.nn.Cell):
+        def __init__(self, net):
+            super(Net, self).__init__()
+            self.x = ms.Tensor(1)
+            self.net = net
+
+        @ms.jit(capture_mode="ast")
+        def construct(self, inputs):
+            return self.net(inputs) + self.x
+
+    inputs = ms.mutable([ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)])
+    jit_inner_net = JitNet()
+    trace_inner_net = TraceNet()
+    jit_net = Net(jit_inner_net)
+    trace_net = Net(trace_inner_net)
+    res_trace = trace_net(inputs)
+    res_jit = jit_net(inputs)
+    assert np.allclose(res_trace.asnumpy(), res_jit.asnumpy())

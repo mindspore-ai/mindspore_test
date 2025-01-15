@@ -657,6 +657,12 @@ void ConvertBackwardHookToFuncGraph(const py::object &obj) {
 }
 
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
+  if (py::hasattr(obj, "construct")) {
+    const auto &construct_obj = py::getattr(obj, "construct");
+    if (py::hasattr(construct_obj, "__trace_func__")) {
+      return prim::kPrimTraceGraph;
+    }
+  }
   FuncGraphPtr func_graph = ConvertToFuncGraph(obj, args_value_list);
   if (func_graph == nullptr) {
     MS_LOG(ERROR) << "Parse resolve function error.";

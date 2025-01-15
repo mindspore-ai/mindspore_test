@@ -18,6 +18,7 @@
 import inspect
 import re
 from functools import wraps
+import mindspore as ms
 from mindspore import log as logger
 from mindspore import context
 from mindspore.common.jit_context import JitContext, set_jit_context, jit_context
@@ -91,12 +92,15 @@ def _sync_stub_tensor(stub):
     return stub
 
 
-def nested_run(fn, *args):
+def nested_run(obj, *args):
     """Start a trace process nested in ast."""
     set_jit_context(_trace_jit_context)
     _trace_jit_context.set_is_nested(True)
     args = args[0]
-    res = fn.__wrapped__(*args)
+    if isinstance(obj, ms.nn.Cell):
+        res = obj.construct.__wrapped__(obj, *args)
+    else:
+        res = obj.__wrapped__(*args)
     if res is not tuple:
         res = (res,)
     file_names, linenos = _get_caller_lines()
