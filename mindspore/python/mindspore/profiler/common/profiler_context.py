@@ -115,6 +115,7 @@ class ProfilerContext:
                     value = profiler_parameters[param]
 
                 setattr(self._profiler_params_mgr, param, value)
+        setattr(self._profiler_params_mgr, "is_set_schedule", profiler_parameters["is_set_schedule"])
 
     @property
     def device_target_set(self) -> Set[str]:
