@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """File system registration management"""
+from mindspore import log as logger
 
 
 class FileSystem:
@@ -39,7 +40,13 @@ def _register_mindio_file_system(fs: FileSystem):
         import mindio
     except ImportError:
         return False
-    if mindio.initialize() != 0:
+    try:
+        ret = mindio.initialize()
+    except AttributeError as e:
+        logger.warning(f"Failed to initialize MindIO: {e}")
+        return False
+    if ret != 0:
+        logger.warning(f"Failed to initialize MindIO: ret = {ret}")
         return False
     fs.create = mindio.create_file
     fs.create_args = ()
