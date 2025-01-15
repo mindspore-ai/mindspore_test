@@ -30,6 +30,10 @@ class SimuReceiveKernel : public SimuKernel {
 
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+
+ private:
+  std::vector<float> init_value_;
+  std::vector<float> host_data_;
 };
 
 MS_SIMU_REG_KERNEL(Receive, SimuReceiveKernel);
