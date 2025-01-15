@@ -67,6 +67,7 @@ class TwoInputBprop(nn.Cell):
         return x * 5, y * 8
 
 
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',

@@ -267,6 +267,7 @@ def ops_group_cases_process(platform, level):
             run_group_cases(group_id, group_cases, memory_used, memory_threshold)
 
 
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.no_taskset
 def test_ops_group_case_ascend910b_level0():

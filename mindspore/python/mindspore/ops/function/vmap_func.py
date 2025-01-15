@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """Defines vmap function."""
-import os
 from mindspore.ops.composite import _Vmap
 from mindspore._c_expression import VmapGeneralPreprocess_, VmapGeneralRulePyAdapter_
 
@@ -96,7 +95,7 @@ def vmap(fn, in_axes=0, out_axes=0):
         [[-2  1  4]
          [ 8  9 10]]
     """
-    os.environ['MS_DEV_ENABLE_VIEW_OP'] = '0'
+
     return vmap_instance(fn, in_axes, out_axes)
 
 

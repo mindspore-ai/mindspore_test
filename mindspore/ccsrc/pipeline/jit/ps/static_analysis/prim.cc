@@ -1415,8 +1415,10 @@ AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const Abstract
 AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const AbstractBasePtrList &args,
                                                                        const AbstractBasePtr &res) {
   if (graph_view_prim()) {
-    static const bool enable_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "1");
-    if (enable_view_op) {
+    static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
+    if (close_view_op) {
+      prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
+    } else {
       auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
       if (ge_mode) {
         prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
@@ -1425,8 +1427,6 @@ AbstractBasePtr PrimitiveFunctionEvaluator::ProcessViewInplaceAbstract(const Abs
         MS_LOG(DEBUG) << "View prim infer.";
         return UpdateViewOpsAbstract(res, args);
       }
-    } else {
-      prim_func_->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(false));
     }
   }
   const auto &rw_write_indexes = rw_write_input_indexes();

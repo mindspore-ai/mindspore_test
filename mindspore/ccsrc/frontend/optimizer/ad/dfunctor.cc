@@ -103,8 +103,8 @@ bool StopGradientForUpdateState(const CNodePtr &cnode) {
   if (!cnode->IsApply(prim::kPrimUpdateState)) {
     return false;
   }
-  static const bool enable_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "1");
-  return !enable_view_op;
+  static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
+  return close_view_op;
 }
 }  // namespace
 

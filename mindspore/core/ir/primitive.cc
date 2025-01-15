@@ -30,11 +30,11 @@ static uint64_t MakeId() {
 }
 
 void Primitive::SetSideEffectFlag(const std::string &name, bool inplace_prim) {
-  static const bool enable_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "1");
+  static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
   const auto &op_def = mindspore::ops::GetOpDef(name);
   const auto &graph_view_prim = op_def != nullptr ? op_def->is_graph_view_ : false;
   graph_view_prim_ = graph_view_prim;
-  if ((graph_view_prim_ && enable_view_op) || inplace_prim) {
+  if ((graph_view_prim_ && !close_view_op) || inplace_prim) {
     set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
   }
 }
