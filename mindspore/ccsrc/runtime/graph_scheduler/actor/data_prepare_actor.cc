@@ -861,7 +861,7 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
                    << " for input parameter:" << origin_parameter->fullname_with_scope();
 
       if (!isDyn) {
-        if (host_tensors_[tensor_position] != input_tensor->shape()) {
+        if (host_tensors_[tensor_position] != input_tensor->shape() || input_tensor->shape().empty()) {
           isDyn = true;
         }
       }
