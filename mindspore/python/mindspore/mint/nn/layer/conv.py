@@ -355,11 +355,13 @@ class Conv3d(_Conv):
     kernel in the :math:`k`-th channel, and :math:`{X}(N_i, k)` represents the slice of the :math:`k`-th input
     channel in the :math:`i`-th batch of the input feature map.
 
-    The shape of the convolutional kernel is given by :math:`(\text{kernel_size[0]},\text{kernel_size[1]})`,
-    where :math:`\text{kernel_size[0]}`
-    and :math:`\text{kernel_size[1]}` are the height and width of the kernel, respectively.
+    The shape of the convolutional kernel is given by
+    :math:`(\text{kernel_size[0]},\text{kernel_size[1]},\text{kernel_size[2]})`,
+    where :math:`\text{kernel_size[0]}`, :math:`\text{kernel_size[1]}`
+    and :math:`\text{kernel_size[2]}` are the depth, height and width of the kernel, respectively.
     If we consider the input and output channels as well as the `groups` parameter, the complete kernel shape
-    will be :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`,
+    will be
+    :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})`,
     where `groups` is the number of groups dividing `x`'s input channel when applying groups convolution.
 
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
@@ -406,12 +408,13 @@ class Conv3d(_Conv):
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` \
-          or :math:`(N, H_{in}, D_{in}, W_{in}, C_{in})`.
+          or :math:`(C_{in}, D_{in}, H_{in}, W_{in})`.
 
     Outputs:
-        Tensor of shape :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`.
+        Tensor of shape :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`
+        or :math:`(C_{out}, D_{out}, H_{out}, W_{out})`.
 
-        padding is ``'same'``:
+        padding is ``"same"``:
 
         .. math::
             \begin{array}{ll} \\
@@ -420,7 +423,7 @@ class Conv3d(_Conv):
                 W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[2]}}} \right \rceil \\
             \end{array}
 
-        padding is ``'valid'``:
+        padding is ``"valid"``:
 
         .. math::
             \begin{array}{ll} \\
