@@ -46,7 +46,7 @@ std::vector<std::vector<KernelTensor *>> DealWithGroupedMatmulListTensors(const 
     if (group_info[i] > 0) {
       input_i.assign(inputs.begin() + start_idxs[i], inputs.begin() + start_idxs[i + 1]);
     }
-    (void)list_inputs.emplace_back(std::move(input_i));
+    list_inputs.emplace_back(std::move(input_i));
   }
   return list_inputs;
 }
@@ -56,7 +56,7 @@ void GroupedMatmulAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &outputs) {
   group_info_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr("group_info"));
   start_idxs_.clear();
-  (void)start_idxs_.emplace_back(0);
+  start_idxs_.emplace_back(0);
   int64_t cur_end_idx = 0;
   for (size_t i = 0; i < kIndex7; ++i) {
     cur_end_idx += (group_info_[i] == 0 ? 1 : group_info_[i]);
