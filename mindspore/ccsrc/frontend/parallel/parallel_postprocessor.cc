@@ -174,7 +174,6 @@ static void InsertAllReduceForNormValue(const AnfNodePtr &res_node) {
   MS_EXCEPTION_IF_NULL(graphs);
   auto manager = graphs->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  auto &node_user_map = manager->node_users();
   if (!IsSomePrimitive(cnode, EXPAND_DIMS)) {
     MS_LOG(ERROR) << "Expected the operator expand_dims, but found the " << GetPrimName(cnode)
                   << "This may cause the calculation of the global norm incorrect";
@@ -183,13 +182,28 @@ static void InsertAllReduceForNormValue(const AnfNodePtr &res_node) {
   auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
   auto find_node = res_node;
   uint32_t limits = 0;
-  const uint32_t MAX_BFS_DEPTH = 7;
-  while (!IsSomePrimitive(find_node->cast<CNodePtr>(), SQRT) && limits < MAX_BFS_DEPTH) {
-    auto users = node_user_map.at(find_node);
-    if (users.empty()) {
-      return;
+  const uint32_t MAX_BFS_DEPTH = 15;
+  bool find_sqrt = false;
+  std::queue<AnfNodePtr> anf_queue;
+  anf_queue.push(res_node);
+  while (!anf_queue.empty() && limits < MAX_BFS_DEPTH) {
+    auto queue_end = anf_queue.front();
+    anf_queue.pop();
+    const auto &user_set = manager->node_users()[queue_end];
+    if (user_set.empty()) {
+      continue;
     }
-    find_node = users.front().first;
+    for (const auto &pair : user_set) {
+      anf_queue.push(pair.first);
+      if (IsSomePrimitive(pair.first->cast<CNodePtr>(), SQRT)) {
+        find_node = pair.first;
+        find_sqrt = true;
+        break;
+      }
+    }
+    if (find_sqrt) {
+      break;
+    }
     ++limits;
   }
   if (!find_node || !IsSomePrimitive(find_node->cast<CNodePtr>(), SQRT)) {
