@@ -4869,17 +4869,20 @@ bool ApplyRegisterHook(const AnfNodePtr &node) {
   return true;
 }
 
-void HandleRegisterHook(const FuncGraphPtr &func_graph, StopTraceReason *stop_reason) {
+bool HandleRegisterHook(const FuncGraphPtr &func_graph) {
+  auto top_func_graph = parse::Parser::GetTopFuncGraph();
+  MS_EXCEPTION_IF_NULL(top_func_graph);
   if (func_graph->manager() == nullptr) {
-    auto mng = Manage(func_graph, true);
-    func_graph->set_manager(mng);
+    auto manager = top_func_graph->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    manager->AddFuncGraph(func_graph);
   }
-  AnfNodePtrList nodes(func_graph->parameters());
+  mindspore::CompactSet<AnfNodePtr> nodes;
+  nodes.insert(func_graph->parameters().begin(), func_graph->parameters().end());
   auto vars = func_graph->free_variables();
-  std::transform(vars.begin(), vars.end(), std::back_inserter(nodes), [](const auto &var) { return var.first; });
-  if (!std::all_of(nodes.begin(), nodes.end(), [](const auto &node) { return ApplyRegisterHook(node); })) {
-    *stop_reason = StopTraceReason::kStopTraceTensorHook;
-  }
+  std::for_each(vars.begin(), vars.end(), [&nodes](const auto &var) { nodes.insert(var.first); });
+  nodes.insert(top_func_graph->parameters().begin(), top_func_graph->parameters().end());
+  return std::all_of(nodes.begin(), nodes.end(), [](const auto &node) { return ApplyRegisterHook(node); });
 }
 
 py::object GraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason) {
@@ -4935,7 +4938,9 @@ py::object GraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *s
     call_node->set_abstract_wrapper(ret);
     *stop_reason = StopTraceReason::kNonStopTrace;
   }
-  HandleRegisterHook(forward_fg, stop_reason);
+  if (!HandleRegisterHook(forward_fg)) {
+    *stop_reason = StopTraceReason::kStopTraceTensorHook;
+  }
   HandleGradForwardSideEffect(forward_fg, ret, forward_graph_builder, call_node);
   return py::object();
 }
