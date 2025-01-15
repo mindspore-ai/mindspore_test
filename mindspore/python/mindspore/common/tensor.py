@@ -3727,6 +3727,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def expand(self, size):
         r"""
         For details, please refer to :func:`mindspore.ops.broadcast_to`.
+        The parameter `size` of the current interface is the same as the parameter `shape` of the reference interface.
         """
         if isinstance(size, Tensor):
             size = tensor_operator_registry.get('tensortotuple')()(size)
