@@ -18,18 +18,12 @@
 #define MINDSPORE_CORE_OPS_INFER_INFO_UTILS_H_
 
 #include <memory>
-#include <vector>
 #include "ops/infer_info/infer_info.h"
 #include "ops/infer_info/value_infer_info_adapter.h"
 #include "ops/op_def.h"
 #include "utils/simple_info.h"
 
 namespace mindspore::ops {
-MS_CORE_API AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId &type);
-
-MS_CORE_API AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId> &types,
-                                         bool is_tuple_output = false);
-
 InferInfoPtrList ConvertAbstractListToInferInfoList(const AbstractBasePtrList &abstract_list, const OpDefPtr op_def);
 
 class OpFrontendFuncImpl;

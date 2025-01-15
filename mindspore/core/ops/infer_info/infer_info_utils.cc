@@ -36,7 +36,7 @@ inline bool IsTupleOutput(const OpDefPtr &op_def) {
   MS_EXCEPTION_IF_NULL(op_def);
   const auto &returns = op_def->returns_;
   if (returns.size() == 0) {
-    return false;
+    MS_LOG(EXCEPTION) << op_def->name_ << "'s output is empty, which is not allowed.";
   }
   auto output_type = returns[0].arg_dtype_;
   auto is_tuple_output = (returns.size() > kSingleTensor) ||
@@ -44,34 +44,6 @@ inline bool IsTupleOutput(const OpDefPtr &op_def) {
   return is_tuple_output;
 }
 }  // namespace
-
-AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId &type) {
-  return std::make_shared<abstract::AbstractTensor>(TypeIdToType(type), std::make_shared<abstract::Shape>(shape));
-}
-
-AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId> &types, bool is_tuple_output) {
-  if (shapes.size() == 0 && types.size() == 0) {
-    return std::make_shared<abstract::AbstractNone>();
-  }
-
-  AbstractBasePtrList abstracts;
-  MS_ASSERT(shapes.size() == types.size());
-  for (size_t i = 0; i < shapes.size(); ++i) {
-    abstracts.push_back(MakeAbstract(shapes[i], types[i]));
-  }
-  if (!is_tuple_output && abstracts.size() == 1) {
-    return abstracts[0];
-  } else {
-    ValuePtrList values;
-    std::transform(abstracts.begin(), abstracts.end(), std::back_inserter(values),
-                   [](const AbstractBasePtr &abs) { return abs->GetValue(); });
-    auto sequence_value = std::make_shared<ValueSequence>(values);
-    auto sequence_abs = std::make_shared<abstract::AbstractTuple>(abstracts);
-    sequence_abs->set_value(sequence_value);
-    return sequence_abs;
-  }
-}
-
 /*
   Deal with dynamic sequence.
   Dynamic sequence would be split to tensors, so abstract_list.size() might not match the defined input size.
@@ -157,7 +129,7 @@ AbstractBasePtr DoGeneralInfer(const PrimitivePtr primitive, const AbstractBaseP
     MS_LOG(EXCEPTION) << "Infer shape size " << shapes.size() << " not equal to infer type size " << types.size()
                       << " for op " << op_type;
   }
-  return MakeAbstract(shapes, types, IsTupleOutput(op_def));
+  return abstract::MakeAbstract(shapes, types, IsTupleOutput(op_def));
 }
 
 ValueSimpleInfoPtr DoGeneralInfer(const PrimitivePtr &prim, const ValuePtrList &values) {
