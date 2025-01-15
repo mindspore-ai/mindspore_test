@@ -117,7 +117,7 @@ class ValueNode : public InstrNode {
   void ClearInputs() { inputs_.clear(); }
 
   void SetVobj(AObject *vobj);
-  const auto &GetVobj() const { return vobj_; }
+  const auto GetVobj() const { return vobj_ == nullptr ? vobj_ : vobj_->GetLatestVersion(); }
 
   AObject *get_attr(const std::string &nam);
 

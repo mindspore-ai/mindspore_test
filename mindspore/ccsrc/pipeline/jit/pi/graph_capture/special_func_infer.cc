@@ -425,6 +425,7 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   parent->DoBuildOp({BUILD_LIST, size});
   auto new_node = parent->pop();
   auto old_node = self;
+  old_node->GetVobj()->SetNextVersion(new_node->GetVobj());
 
   // constant fold and set node info
   // todo: this builder do not need to create.
@@ -483,6 +484,7 @@ static bool InferListMethodWithSideEffect(CallNode *call_node, GraphBuilder *par
   // update frame status and record side-effect
   auto new_node = parent->pop();
   auto old_node = self;
+  old_node->GetVobj()->SetNextVersion(new_node->GetVobj());
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
