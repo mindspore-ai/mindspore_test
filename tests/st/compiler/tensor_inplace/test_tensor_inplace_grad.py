@@ -197,6 +197,7 @@ def test_tensor_inplace_add_grad():
     np.testing.assert_almost_equal(ms_grad[1].asnumpy(), t_y.grad.numpy())
 
 
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_grad():

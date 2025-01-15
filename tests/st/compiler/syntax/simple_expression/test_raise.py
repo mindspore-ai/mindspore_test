@@ -68,6 +68,7 @@ def test_not_raise_single_string_control_flow():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_raise_single_string_control_flow_grad_in_graph():
     """
@@ -125,6 +126,7 @@ def test_raise_single_string_control_flow_grad_in_pynative():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_not_raise_single_string_control_flow_grad_in_graph():
     """

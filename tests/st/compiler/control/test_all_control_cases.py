@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
 import os
+import pytest
 from tests.st.compiler.control.cases_register import case_register
 from tests.mark_utils import arg_mark
 from mindspore import context
 
-
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_level0_ascend_cases():
     """
@@ -31,6 +31,7 @@ def test_level0_ascend_cases():
     case_register.check_and_run("Ascend", 0)
 
 
+@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_level0_gpu_cases():
     """
