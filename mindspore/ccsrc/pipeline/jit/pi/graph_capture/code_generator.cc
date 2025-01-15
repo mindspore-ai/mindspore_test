@@ -475,22 +475,6 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::RotStack(int stack) {
   return res;
 }
 
-std::string CodeGenerator::PrintAlive() const {
-  std::stringstream s;
-  std::unordered_map<int, std::vector<ValueNode *>> sorted;
-  for (const auto &i : nodes_alive_) {
-    sorted[i.second].push_back(i.first);
-  }
-  for (const auto &i : sorted) {
-    s << i.first << ": ";
-    for (const auto &node : i.second) {
-      s << node << " ";
-    }
-    s << "\n";
-  }
-  return s.str();
-}
-
 /**
  * traverse all values in reverse order, set alive time for each input value
  * the inputs of all values is before these values
@@ -749,7 +733,7 @@ py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Inst
                                                 int argc, unsigned code_flag) const {
   CodeGenerator code_gen(&captured_);
   code_gen.set_missing_value_to_undefine(true);
-  code_gen.SetGlobals(GetGlobals());
+  code_gen.SetGlobals(globals_);
   code_gen.Init();
   if (side_effect_handler_->IsEmpty()) {
     code_gen.AddInstrs(std::move(load_oper));
@@ -778,6 +762,13 @@ py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Inst
   child->set_stat(JitCompileResults::GRAPH_CAPTURED);
   child->set_conf(parent->conf());
   child->set_tbs(parent->tbs());
+
+  auto jcr = GetJitCompileResults(co_);
+  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kInterpretCapturedCode)) {
+    return code;
+  }
+  auto name = PyUnicode_AsUTF8(reinterpret_cast<PyCodeObject *>(code.ptr())->co_name);
+  Compile(name, argc, 0, code_flag, code);
   return code;
 }
 
@@ -1093,7 +1084,7 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
     code_gen.AddInstrs({std::make_move_iterator(instrs.rbegin()), std::make_move_iterator(instrs.rend())});
     std::swap(locals, interpret_.inputs);
   } else {
-    code_gen.SetGlobals(GetGlobals());
+    code_gen.SetGlobals(globals_);
     code_gen.Init();
     for (auto i : captured_.inputs) {
       code_gen.MarkAlive(i);
@@ -1152,11 +1143,11 @@ void CodeBreakGenerator::MakeReturn(CodeGenerator *code_gen) const {
   code_gen->NewInstr(RETURN_VALUE);
 }
 
-py::object CodeBreakGenerator::MakeCapturedCode() const {
+py::object CodeBreakGenerator::MakeInterpretCapturedCode() const {
   auto jcr = GetJitCompileResults(co_);
 
   CodeGenerator code_gen(&interpret_);
-  code_gen.SetGlobals(GetGlobals());
+  code_gen.SetGlobals(globals_);
   code_gen.Init();
   code_gen.Build();
   code_gen.GenReturn();
@@ -1241,8 +1232,6 @@ void CodeBreakGenerator::Init(const Graph *graph, const GraphAnalyzer &analyzer)
   captured_.outputs.clear();
   interpret_.operations = std::move(captured_.operations);
 }
-
-const CFG *CodeBreakGenerator::GetCFG() const { return cfg_; }
 
 void CodeBreakGenerator::BuildGraphParameters(const std::unordered_map<ValueNode *, int> &locals,
                                               GraphParameterBuilder *builder) {
@@ -1514,9 +1503,8 @@ py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyz
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
   auto graph = builder->GetGraph();
-  auto cg = CodeBreakGenerator::Creator(builder, graph->GetCodeObj());
+  auto cg = CodeBreakGenerator::Creator(builder, py::cast<py::dict>(globals), graph->GetCodeObj());
   cg->Init(graph, *analyzer);
-  cg->SetGlobals(py::cast<py::dict>(globals));
   py::object code = analyzer->NeedInterpret() ? cg->MakeDispatchCode() : cg->MakeCapturedCode();
   return code;
 }
@@ -1546,36 +1534,21 @@ std::string PrintNodeSet(const NodeSet &nodes) {
   return s.str();
 }
 
-py::object MindCodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&load, int argc,
-                                                    unsigned code_flag) const {
-  // a stub to call graph
-  py::object res = this->CodeBreakGenerator::MakeCapturedCode(std::move(load), argc, code_flag);
+py::object CodeBreakGenerator::MakeCapturedCode() const {
   auto jcr = GetJitCompileResults(co_);
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kInterpretCapturedCode)) {
-    return res;
-  }
-  auto name = PyUnicode_AsUTF8(reinterpret_cast<PyCodeObject *>(res.ptr())->co_name);
-  Compile(name, argc, 0, code_flag, res);
-  return res;
-}
-
-py::object MindCodeBreakGenerator::MakeCapturedCode() const {
-  auto jcr = GetJitCompileResults(co_);
-  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kInterpretCapturedCode)) {
-    return this->CodeBreakGenerator::MakeCapturedCode();
+    return MakeInterpretCapturedCode();
   }
   auto name = std::to_string(jcr->IncCodeCount()) + "R." + MakeCompiledName(PyUnicode_AsUTF8(co_->co_name));
   Compile(name, co_->co_argcount, co_->co_kwonlyargcount, co_->co_flags, py::object());
   return py::object();
 }
 
-void MindCodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, int co_kwonlyargcount, int co_flags,
-                                     const py::object &stub) const {
+void CodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, int co_kwonlyargcount, int co_flags,
+                                 const py::object &stub) const {
   TimeRecorder compile_time("MindCodeCompile", kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
   // Compile graph.
-  auto b = std::dynamic_pointer_cast<MindGraphBuilder>(builder_);
-  MS_EXCEPTION_IF_NULL(b);
   FGBuilder()->ClearNodeAbstract();
   FGBuilder()->SetGraphName(co_name);
   auto func_graph = FGBuilder()->graph();
