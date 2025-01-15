@@ -511,18 +511,6 @@ std::shared_ptr<OperatorInfo> GetAttentionInfo(const std::map<std::string, AnfNo
   return operator_info;
 }
 
-void WaitForAllInputs(CNodePtr *later_node, CNodePtr *fromer_node, const FuncGraphPtr &graph) {
-  auto manager = graph->manager();
-  auto later_node_input = (*later_node)->input(1);
-  for (size_t i = 0; i < (*fromer_node)->size(); i++) {
-    auto fromer_input_node = (*fromer_node)->input(i);
-    if (fromer_input_node != nullptr && fromer_input_node->func_graph() != nullptr) {
-      later_node_input = CreateDepend(later_node_input, fromer_input_node, (*later_node));
-    }
-  }
-  manager->SetEdge((*later_node), 1, later_node_input);
-}
-
 void GradFirstStepCommKV(const std::string &cur_str, std::map<std::string, AnfNodePtr> *fa_map,
                          const FuncGraphPtr &graph, CNodePtr *grad_fa_node, int64_t pos, int64_t send_rank_id,
                          int64_t recv_rank_id, const Shape &neigh_shape, TypeId output_type_id,
@@ -541,10 +529,6 @@ void GradFirstStepCommKV(const std::string &cur_str, std::map<std::string, AnfNo
   auto operator_info = fwd_last_fa_node->user_data<parallel::OperatorInfo>();
   auto fa_info = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
   auto rank_list = fa_info->GetSPRankList();
-  auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
-  if (pipeline_stages <= 1) {
-    dout = CreateDepend(dout, fwd_last_fa_node, fwd_last_fa_node);
-  }
   if (pos % kIndex2 == kIndex0) {
     send_node = NewSendNode(CreateDepend(kv_concat, dout, kv_concat), 0, send_rank_id, neigh_shape, output_type_id,
                             g_device_manager->world_group(), rank_list);
@@ -610,10 +594,7 @@ void CreateCommForRAGrad(const FuncGraphPtr &graph, const CNodePtr &pre_grad_rec
                                 g_device_manager->world_group(), rank_list);
     auto grad_send_input = (*grad_send_node)->input(1);
     grad_send_input = CreateDepend(grad_send_input, pre_grad_recv_kv_node, *grad_send_node);
-    grad_send_input = CreateDepend(grad_send_input, loss_node, *grad_send_node);
     manager->SetEdge(*grad_send_node, 1, grad_send_input);
-    WaitForAllInputs(grad_send_node, grad_fa_node, graph);
-    WaitForAllInputs(grad_fa_node, grad_send_node, graph);
 
     // ensure grad split which is output of receive(grad send) sort after fa
     manager->Replace(*grad_send_node, CreateDepend(*grad_send_node, *grad_fa_node, *grad_send_node));
@@ -635,10 +616,7 @@ void CreateCommForRAGrad(const FuncGraphPtr &graph, const CNodePtr &pre_grad_rec
                              output_type_id, g_device_manager->world_group(), rank_list);
     auto grad_recv_input = (*grad_recv_node)->input(1);
     grad_recv_input = CreateDepend(grad_recv_input, pre_grad_send_kv_node, *grad_recv_node);
-    grad_recv_input = CreateDepend(grad_recv_input, loss_node, *grad_recv_node);
     manager->SetEdge(*grad_recv_node, 1, grad_recv_input);
-    WaitForAllInputs(grad_recv_node, grad_fa_node, graph);
-    WaitForAllInputs(grad_fa_node, grad_recv_node, graph);
 
     // ensure grad split which is output of receive(grad send) sort after fa
     manager->Replace(*grad_send_node, CreateDepend(*grad_send_node, *grad_fa_node, *grad_send_node));
@@ -882,8 +860,7 @@ void PrepareFAGradInput(const FuncGraphPtr &graph,
       auto axis = input_layout == ops::FASInputLayoutMode::BSH ? kDim1 : kDim2;
       auto split_attn = NewSplitNode(full_info.attn_out, axis, kIndex2);
       half_info.attn_out = NewTupleGetItemNode(split_attn, kIndex1);
-      auto split_dout = NewSplitNode(full_info.dout, axis, kIndex2);
-      half_info.dout = NewTupleGetItemNode(split_dout, kIndex1);
+      half_info.dout = dout_node;
       last_fa_index = fa_index;
     }
 
@@ -1237,6 +1214,7 @@ bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
 
   ChangeFAGradInput(&grad_fa_map, graph, &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
 
+  ReplaceDqAdd(graph, grad_fa_map);
   for (auto it = grad_fa_map.rbegin(); it != grad_fa_map.rend(); ++it) {
     auto grad_fa_node = it->second->cast<CNodePtr>();
     auto output_type_id = common::AnfAlgo::GetOutputInferDataType(grad_fa_node, kIndex3);
