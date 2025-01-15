@@ -4111,7 +4111,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def masked_scatter(self, mask, x):
         r"""
-        Returns a Tensor. Updates the value in the "self Tensor" with the `tensor` value according to the mask.
+        Updates the value in the "self Tensor" with the `tensor` value according to the mask, and returns a Tensor.
         The shape of `mask` and the "self Tensor" must be the same or `mask` is broadcastable.
 
         .. warning::

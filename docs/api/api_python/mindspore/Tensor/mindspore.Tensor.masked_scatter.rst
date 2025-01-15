@@ -3,7 +3,7 @@ mindspore.Tensor.masked_scatter
 
 .. py:method:: mindspore.Tensor.masked_scatter(mask, x)
 
-    返回一个Tensor。根据mask, 使用 `tensor` 中的值，更新Tensor本身的值，`mask` 和Tensor本身的shape必须相等或者 `mask` 是可广播的。
+    根据mask，使用 `tensor` 中的值，更新Tensor本身的值，返回一个Tensor。`mask` 和Tensor本身的shape必须相等或者 `mask` 是可广播的。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
