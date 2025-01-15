@@ -698,48 +698,46 @@ void FreeTensorsOfDiv(const PynativeCallback &cb) {
   }
 }
 
+size_t FetchNumOfSequenceTensor(const NodePtr &input, const std::string &op_name, const std::string &arg_name) {
+  auto abs = input->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  auto base_shape = abs->GetShape();
+  MS_EXCEPTION_IF_NULL(base_shape);
+  auto is_dyn_seq = base_shape->isa<abstract::DynamicSequenceShape>();
+  if (is_dyn_seq) {
+    MS_LOG(EXCEPTION) << "For " << op_name << "'s backward, the tensor num in '" << arg_name
+                      << "' should not be dynamic, which is not supported.";
+  }
+  auto sequence_shape = base_shape->cast<abstract::TupleShapePtr>();
+  MS_EXCEPTION_IF_NULL(sequence_shape);
+  auto num = sequence_shape->size();
+  return num;
+}
+
+void CheckValueOfInt64Scalar(const NodePtr &node, const std::string &op_name, const std::string &arg_name,
+                             int64_t expect_value) {
+  auto value_opt = mindspore::GetScalarValue<int64_t>(node->BuildValue());
+  if (!value_opt.has_value()) {
+    MS_LOG(EXCEPTION) << "For " << op_name << "'s backward, '" << arg_name << "' should be const.";
+  }
+  auto real_value = value_opt.value();
+  if (real_value != expect_value) {
+    MS_LOG(EXCEPTION) << "For " << op_name << "'s backward, '" << arg_name << "' only support " << expect_value
+                      << ", but got " << real_value;
+  }
+}
+
 inline std::pair<size_t, size_t> GroupedMatmulBackwardParamsCheck(const NodePtr &x, const NodePtr &weight,
                                                                   const NodePtr &split_item, const NodePtr &scale,
                                                                   const NodePtr &offset, const NodePtr &antiquant_scale,
                                                                   const NodePtr &antiquant_offset,
                                                                   const NodePtr &group_type) {
-  auto x_abs = x->abstract();
-  MS_EXCEPTION_IF_NULL(x_abs);
-  auto x_base_shape = x_abs->GetShape();
-  MS_EXCEPTION_IF_NULL(x_base_shape);
-  auto x_is_dyn_seq = x_base_shape->isa<abstract::DynamicSequenceShape>();
-  if (x_is_dyn_seq) {
-    MS_LOG(EXCEPTION)
-      << "For GroupedMatmul's backward,, the tensor num in x should not be dynamic, which is not supported.";
-  }
-  auto x_sequence_shape = x_base_shape->cast<abstract::TupleShapePtr>();
-  MS_EXCEPTION_IF_NULL(x_sequence_shape);
-  auto num_x = x_sequence_shape->size();
+  const std::string op_name = "GroupedMatmul";
+  auto num_x = FetchNumOfSequenceTensor(x, op_name, "x");
+  auto num_w = FetchNumOfSequenceTensor(weight, op_name, "weight");
 
-  auto weight_abs = weight->abstract();
-  MS_EXCEPTION_IF_NULL(weight_abs);
-  auto weight_base_shape = weight_abs->GetShape();
-  MS_EXCEPTION_IF_NULL(weight_base_shape);
-  auto weight_is_dyn_seq = weight_base_shape->isa<abstract::DynamicSequenceShape>();
-  if (weight_is_dyn_seq) {
-    MS_LOG(EXCEPTION)
-      << "For GroupedMatmul's backward, the tensor num in weight should not be dynamic, which is not supported.";
-  }
-  auto weight_sequence_shape = weight_base_shape->cast<abstract::TupleShapePtr>();
-  MS_EXCEPTION_IF_NULL(weight_sequence_shape);
-  auto num_w = weight_sequence_shape->size();
-
-  auto split_item_value = mindspore::GetScalarValue<int64_t>(split_item->BuildValue());
-  if (!split_item_value.has_value() || split_item_value.value() != SizeToLong(kIndex3)) {
-    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, split_item only support 3, but got "
-                      << split_item_value.value();
-  }
-
-  auto group_type_value = mindspore::GetScalarValue<int64_t>(group_type->BuildValue());
-  if (!group_type_value.has_value() || group_type_value.value() != SizeToLong(kIndex0)) {
-    MS_LOG(EXCEPTION) << "For GroupedMatmul's backward, group_type only support 0, but got "
-                      << group_type_value.value();
-  }
+  CheckValueOfInt64Scalar(split_item, op_name, "split_item", SizeToLong(kIndex3));
+  CheckValueOfInt64Scalar(group_type, op_name, "group_type", SizeToLong(kIndex0));
 
   auto is_none_func = [](const NodePtr &node) {
     auto type = node->abstract()->BuildType();
@@ -759,7 +757,7 @@ inline NodePtr ForEachTransposeLastTwoDim(BpropBuilder *ib, const NodePtr &node,
   for (size_t i = 0; i < num; ++i) {
     auto tensor_i = ib->TupleGetItem(node, i);
     auto tensor_i_t = ib->Transpose(tensor_i, -1, -2);
-    new_tensors.emplace_back(tensor_i_t);
+    new_tensors.push_back(tensor_i_t);
   }
   return ib->MakeTuple(new_tensors);
 }

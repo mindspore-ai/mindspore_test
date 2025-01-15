@@ -39,7 +39,7 @@ split_item        inputs     weight      outputs
 void GroupedMatmulFuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   // for tensortuple(input arg) in backend split. (AscendConvertTupleInputToDynamicInput pass)
   std::vector<int64_t> dyn_input_sizes;
-  for (size_t i = 0; i < kIndex7; i++) {
+  for (size_t i = 0; i < kIndex7; ++i) {
     const auto &tensors = input_infos[i];
     if (tensors->IsNone()) {
       dyn_input_sizes.push_back(0);
@@ -50,7 +50,7 @@ void GroupedMatmulFuncImpl::FetchGroupInfo(const PrimitivePtr &primitive, const 
         << "For '" << primitive->name()
         << "', all inputs which is list[tensor] should not be dynamic sequence, which is not supported.";
     }
-    auto elements = tensors->GetSequenceElements();
+    const auto &elements = tensors->GetSequenceElements();
     dyn_input_sizes.push_back(SizeToLong(elements.size()));
   }
   primitive->set_attr("group_info", MakeValue(dyn_input_sizes));  // len of tuple input
