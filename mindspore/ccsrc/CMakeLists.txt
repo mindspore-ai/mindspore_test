@@ -114,6 +114,7 @@ set(BACKEND_SUB_COMP
         backend/common/somas
         backend/common/graph_kernel
         backend/common/expander
+        backend/ms_backend
         backend/graph_compiler
         backend/operator
         memory/mem_pool

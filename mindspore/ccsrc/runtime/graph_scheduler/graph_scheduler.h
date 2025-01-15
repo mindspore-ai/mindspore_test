@@ -80,6 +80,8 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Fetch the actor set by actor info.
   ActorSet *Fetch(const ActorInfo &actor_info) const;
+  // Fetch the actor set by actor_id.
+  ActorSet *Fetch(uint32_t actor_id) const;
 
   // Whether graph scheduler is initialized.
   bool initialized() const { return init_; }

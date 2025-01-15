@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <queue>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -1401,6 +1402,16 @@ ActorSet *GraphScheduler::Fetch(const ActorInfo &actor_info) const {
     MS_LOG(DEBUG) << "Can't find the actors map of " << actor_info;
     return nullptr;
   }
+}
+
+ActorSet *GraphScheduler::Fetch(uint32_t actor_id) const {
+  auto iter = std::find_if(actors_.begin(), actors_.end(),
+                           [actor_id](const auto &i) { return (i.second->actor_id_ == actor_id); });
+  if (iter != actors_.end()) {
+    return iter->second.get();
+  }
+  MS_LOG(DEBUG) << "Can't find the actors map of " << actor_id;
+  return nullptr;
 }
 
 ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) {

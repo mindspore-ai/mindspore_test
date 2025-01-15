@@ -79,6 +79,7 @@
 #include "backend/graph_compiler/segment_runner.h"
 #include "backend/common/session/executor_manager.h"
 #include "backend/common/session/session_factory.h"
+#include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/pynative/op_executor.h"
@@ -2602,6 +2603,7 @@ void ClearResPart1() {
   mindspore::RDR::Snapshot();
   mindspore::RDR::ResetRecorder();
 #endif
+  backend::BackendManager::GetInstance().Clear();
   runtime::GraphScheduler::GetInstance().Clear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();
   opt::PassConfigure::Instance().Clear();
