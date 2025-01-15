@@ -19,22 +19,22 @@
 #include <memory>
 #include "kernel/kernel.h"
 
-#include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr AcmeKernelInfoSub::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+internal::InternalOpPtr InternalKernelInfoSub::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                 const internal::OutputsImmutableInfoList &outputs) {
   return internal::CreateSubOp(inputs, outputs, internal::kInternalSubOpName);
 }
 
-void AcmeKernelInfoSub::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
-  const auto &input_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
-  const auto &other_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
-  const std::vector<BaseTensorPtr> inputs = {input_tensor, other_tensor};
-  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
-  CallAcmeOp(op, inputs, op_key);
+void InternalKernelInfoSub::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  GetInputAndOutputIndex(op, input_values);
+  std::vector<BaseTensorPtr> inputs;
+  std::vector<BaseTensorPtr> outputs;
+  Init(input_values, inputs, outputs, op->outputs());
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs);
+  GetOrCreateKernel(inputs, outputs, op_key);
+  LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Sub, internal::kInternalSubOpName, AcmeKernelInfoSub);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(Sub, internal::kInternalSubOpName, InternalKernelInfoSub);
 }  // namespace kernel
 }  // namespace mindspore

@@ -29,7 +29,7 @@ KernelModPtr InternalKernelBuild(const AnfNodePtr &anf_node);
 bool IsRegisteredInternalKernel(const AnfNodePtr &anf_node);
 void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                std::vector<std::string> *output_formats);
-void AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values);
+void InternalKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values);
 
 template <typename T>
 ValuePtr ConvertValue(const std::optional<T> &t) {
@@ -45,11 +45,11 @@ ValuePtr ConvertValue(const T &t) {
 }
 
 template <typename... Args>
-void AcmeAscendCall(const std::shared_ptr<pyboost::OpRunner> &op, const Args &... args) {
+void InternalAscendCall(const std::shared_ptr<pyboost::OpRunner> &op, const Args &...args) {
   ValuePtrList input_values;
   input_values.reserve(sizeof...(args));
   (input_values.emplace_back(ConvertValue(args)), ...);
-  return AcmeKernelCall(op, input_values);
+  return InternalKernelCall(op, input_values);
 }
 }  // namespace kernel
 }  // namespace mindspore

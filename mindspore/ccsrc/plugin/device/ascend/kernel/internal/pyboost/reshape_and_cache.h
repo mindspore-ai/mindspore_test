@@ -20,20 +20,20 @@
 #include <vector>
 #include <utility>
 
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
-class AcmeKernelInfoReshapeAndCache : public AcmeKernelInfo {
+class InternalKernelInfoReshapeAndCache : public InternalKernelInfo {
  public:
-  AcmeKernelInfoReshapeAndCache() : AcmeKernelInfo(std::move("ReshapeAndCache")) {}
-  ~AcmeKernelInfoReshapeAndCache() = default;
-  
+  InternalKernelInfoReshapeAndCache() : InternalKernelInfo(std::move("ReshapeAndCache")) {}
+  ~InternalKernelInfoReshapeAndCache() = default;
+
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
-                               const internal::OutputsImmutableInfoList &outputs) override;
+                                       const internal::OutputsImmutableInfoList &outputs) override;
 };
 }  // namespace kernel
 }  // namespace mindspore

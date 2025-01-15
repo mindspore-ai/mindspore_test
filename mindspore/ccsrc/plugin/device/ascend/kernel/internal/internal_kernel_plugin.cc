@@ -24,12 +24,8 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
-#include "plugin/device/ascend/kernel/internal/internal_helper.h"
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
-#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
-#include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/factory/ms_factory.h"
@@ -329,16 +325,17 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   }
 }
 
-void InternalKernelPlugin::AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op,
-                                          const ValuePtrList input_values) {
-  std::shared_ptr<AcmeKernelInfo> kernel_info = nullptr;
+void InternalKernelPlugin::InternalKernelCall(const std::shared_ptr<pyboost::OpRunner> &op,
+                                              const ValuePtrList input_values) {
+  std::shared_ptr<InternalKernelInfo> kernel_info = nullptr;
   const std::string kernelname = op->primitive()->name();
-  if (Factory<AcmeKernelInfo>::Instance().IsRegistered(kernelname)) {
-    MS_LOG(INFO) << "Supported by Acme Op: " << kernelname;
-    kernel_info = std::static_pointer_cast<AcmeKernelInfo>(Factory<AcmeKernelInfo>::Instance().Create(kernelname));
+  if (Factory<InternalKernelInfo>::Instance().IsRegistered(kernelname)) {
+    MS_LOG(INFO) << "Supported by Internal Op: " << kernelname;
+    kernel_info =
+      std::static_pointer_cast<InternalKernelInfo>(Factory<InternalKernelInfo>::Instance().Create(kernelname));
   }
   if (kernel_info == nullptr) {
-    MS_LOG(WARNING) << "Acme can't find op[" << kernelname << "]";
+    MS_LOG(WARNING) << "Internal can't find Op[" << kernelname << "]";
     return;
   }
 

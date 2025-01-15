@@ -13,31 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_SWIGLU_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_SWIGLU_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_SWIGLU_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_SWIGLU_H_
 
 #include <string>
 #include <vector>
 #include <utility>
 
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
-class AcmeKernelInfoSwiGLU : public AcmeKernelInfo {
+class InternalKernelInfoSwiGLU : public InternalKernelInfo {
  public:
-  AcmeKernelInfoSwiGLU() : AcmeKernelInfo(std::move("SwiGLU")) {}
-  ~AcmeKernelInfoSwiGLU() = default;
-  
+  InternalKernelInfoSwiGLU() : InternalKernelInfo(std::move("SwiGLU")) {}
+  ~InternalKernelInfoSwiGLU() = default;
+
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
-                               const internal::OutputsImmutableInfoList &outputs) override;
- 
+                                       const internal::OutputsImmutableInfoList &outputs) override;
+
  private:
   int64_t dim_ = -1;
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_SWIGLU_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_SWIGLU_H_

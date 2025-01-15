@@ -21,18 +21,21 @@
 
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr AcmeKernelInfoAdd::CreateKernel(const internal::InputsImmutableInfoList &inputs,
-                                                const internal::OutputsImmutableInfoList &outputs) {
+internal::InternalOpPtr InternalKernelInfoAdd::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+                                                            const internal::OutputsImmutableInfoList &outputs) {
   return internal::CreateAddOp(inputs, outputs, internal::kInternalAddOpName);
 }
 
-void AcmeKernelInfoAdd::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
-  const auto &x_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
-  const auto &y_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
-  const std::vector<BaseTensorPtr> inputs = {x_tensor, y_tensor};
-  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
-  CallAcmeOp(op, inputs, op_key);
+void InternalKernelInfoAdd::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  auto x_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
+  auto y_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
+  std::vector<BaseTensorPtr> inputs = {x_tensor, y_tensor};
+  std::vector<BaseTensorPtr> outputs = op->outputs();
+  Init(input_values, inputs, outputs, op->outputs());
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs);
+  GetOrCreateKernel(inputs, outputs, op_key);
+  LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Add, internal::kInternalAddOpName, AcmeKernelInfoAdd);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(Add, internal::kInternalAddOpName, InternalKernelInfoAdd);
 }  // namespace kernel
 }  // namespace mindspore

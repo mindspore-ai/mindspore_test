@@ -13,31 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_TRANSPOSE_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_TRANSPOSE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_TRANSPOSE_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_TRANSPOSE_H_
 
 #include <string>
 #include <vector>
 #include <utility>
 
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
-class AcmeKernelInfoTranspose : public AcmeKernelInfo {
+class InternalKernelInfoTranspose : public InternalKernelInfo {
  public:
-  AcmeKernelInfoTranspose() : AcmeKernelInfo(std::move("Transpose")) {}
-  ~AcmeKernelInfoTranspose() = default;
-  
+  InternalKernelInfoTranspose() : InternalKernelInfo(std::move("Transpose")) {}
+  ~InternalKernelInfoTranspose() = default;
+
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
-                               const internal::OutputsImmutableInfoList &outputs) override;
- 
+                                       const internal::OutputsImmutableInfoList &outputs) override;
+
  private:
-  std::vector<int> axis_{};
+  std::vector<int64_t> axis_{};
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_TRANSPOSE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_TRANSPOSE_H_

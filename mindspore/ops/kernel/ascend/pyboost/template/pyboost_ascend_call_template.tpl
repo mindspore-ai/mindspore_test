@@ -11,7 +11,7 @@ ${inplace_process}
 
 PyBoostUtils::PrepareOpOutputs(device_context_, op->stream_id(), outputs_);
 
-${acme_call}
+${internal_call}
 
 ProfileTrackerTask();
 

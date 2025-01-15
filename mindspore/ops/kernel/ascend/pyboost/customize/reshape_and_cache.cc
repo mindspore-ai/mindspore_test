@@ -34,7 +34,7 @@ tensor::BaseTensorPtr ReshapeAndCacheAscendCustomize(const std::shared_ptr<OpRun
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), key, value, key_cache, value_cache,
                                 slot_mapping);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  AcmeAscendCall(op, key, value, key_cache, value_cache, slot_mapping);
+  InternalAscendCall(op, key, value, key_cache, value_cache, slot_mapping);
   return op->output(0);
 }
 }  // namespace pyboost

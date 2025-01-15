@@ -13,28 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_QUANT_BATCH_MATMUL_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_QUANT_BATCH_MATMUL_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_QUANT_BATCH_MATMUL_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_QUANT_BATCH_MATMUL_H_
 
 #include <string>
 #include <vector>
 #include <utility>
 
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
-class AcmeKernelInfoQuantBatchMatmul : public AcmeKernelInfo {
+class InternalKernelInfoQuantBatchMatmul : public InternalKernelInfo {
  public:
-  AcmeKernelInfoQuantBatchMatmul() : AcmeKernelInfo(std::move("QuantBatchMatmul")) {}
-  ~AcmeKernelInfoQuantBatchMatmul() = default;
-  
+  InternalKernelInfoQuantBatchMatmul() : InternalKernelInfo(std::move("QuantBatchMatmul")) {}
+  ~InternalKernelInfoQuantBatchMatmul() = default;
+
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
-                               const internal::OutputsImmutableInfoList &outputs) override;
- 
+                                       const internal::OutputsImmutableInfoList &outputs) override;
+
  private:
   bool transpose_a_ = False;
   bool transpose_b_ = False;
@@ -42,4 +42,4 @@ class AcmeKernelInfoQuantBatchMatmul : public AcmeKernelInfo {
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_QUANT_BATCH_MATMUL_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_QUANT_BATCH_MATMUL_H_

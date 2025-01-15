@@ -35,7 +35,7 @@ class KernelPlugin {
   virtual void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node,
                                                          std::vector<std::string> *input_formats,
                                                          std::vector<std::string> *output_formats) = 0;
-  virtual void AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) = 0;
+  virtual void InternalKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) = 0;
 };
 
 #define MS_PLUGIN_FACTORY_REG(BASE, NAME, DERIVE)                                              \

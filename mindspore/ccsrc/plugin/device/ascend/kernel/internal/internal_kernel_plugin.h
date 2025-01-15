@@ -20,8 +20,7 @@
 #include <string>
 #include <vector>
 #include "plugin/device/ascend/kernel/internal/kernel_plugin.h"
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 
 namespace mindspore::kernel {
 class InternalKernelPlugin : public KernelPlugin {
@@ -33,7 +32,7 @@ class InternalKernelPlugin : public KernelPlugin {
   bool IsRegisteredKernel(const AnfNodePtr &anf_node) override;
   void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                  std::vector<std::string> *output_formats) override;
-  void AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
+  void InternalKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 };
 }  // namespace mindspore::kernel
 

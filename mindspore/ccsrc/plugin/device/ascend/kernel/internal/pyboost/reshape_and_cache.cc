@@ -21,22 +21,20 @@
 
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr AcmeKernelInfoReshapeAndCache::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+internal::InternalOpPtr InternalKernelInfoReshapeAndCache::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                             const internal::OutputsImmutableInfoList &outputs) {
   return internal::CreateReshapeAndCacheOp(inputs, outputs, internal::kInternalReshapeAndCacheOpName);
 }
 
-void AcmeKernelInfoReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
-  const auto &key_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
-  const auto &value_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
-  const auto &key_cache_tensor = input_values[kIndex2]->cast<BaseTensorPtr>();
-  const auto &value_cache_tensor = input_values[kIndex3]->cast<BaseTensorPtr>();
-  const auto &slot_mapping_tensor = input_values[kIndex4]->cast<BaseTensorPtr>();
-
-  const std::vector<BaseTensorPtr> inputs = {key_tensor, value_tensor, key_cache_tensor, value_cache_tensor, slot_mapping_tensor};
-  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs);
-  CallAcmeOp(op, inputs, op_key);
+void InternalKernelInfoReshapeAndCache::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  GetInputAndOutputIndex(op, input_values);
+  std::vector<BaseTensorPtr> inputs;
+  std::vector<BaseTensorPtr> outputs = op->outputs();
+  Init(input_values, inputs, outputs, op->outputs());
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs);
+  GetOrCreateKernel(inputs, outputs, op_key);
+  LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, internal::kInternalReshapeAndCacheOpName, AcmeKernelInfoReshapeAndCache);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, internal::kInternalReshapeAndCacheOpName, InternalKernelInfoReshapeAndCache);
 }  // namespace kernel
 }  // namespace mindspore
