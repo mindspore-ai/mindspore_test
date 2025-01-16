@@ -17,7 +17,7 @@
 
 import os
 from mindspore import log as logger
-from mindspore._c_expression import DeviceManagerConf, DeviceContextManager, MSContext
+from mindspore._c_expression import DeviceManagerConf, DeviceContextManager, MSContext, CollectiveManager
 from mindspore._checkparam import args_type_check
 from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 
@@ -84,6 +84,9 @@ def set_deterministic(deterministic):
 
     When deterministic computing is enabled, the same output is generated if an operator is executed
     for multiple times with the same hardware and input.This often slows down operator execution.
+    In distributed scenario, we suggest user to set deterministic mode before
+    calling :func:`mindspore.communication.init` to enable deterministic operation for
+    communication operators in the global communication group.
 
     The framework not enabled deterministic computation by default.
 
@@ -97,6 +100,10 @@ def set_deterministic(deterministic):
     # Check the configuration environment whether valid.
     if DeviceManagerConf.get_instance().is_deterministic_configured():
         raise RuntimeError("The 'mindspore.set_deterministic' can not be set repeatedly.")
+
+    # Must wait for all async created groups to be initialized so that
+    # deterministic feature could be consistent between all processes.
+    CollectiveManager.get_instance().wait_all_comm_init()
 
     # Check the hccl_deterministic and te_parallel_compiler.
     hccl_deterministic = os.getenv("HCCL_DETERMINISTIC")
