@@ -3,7 +3,7 @@ mindspore.Tensor.scatter_add\_
 
 .. py:method:: mindspore.Tensor.scatter_add_(dim, index, src)
 
-    将 `src` 中所有的元素添加到 `self` 中 `index` 指定的索引处。
+    将 `src` 中所有的元素添加到 `self` 中 `index` 指定的索引处（属于原地更新操作）。
     其中 `dim` 控制scatter add操作的轴。
     `self` 、 `index` 、 `src` 三者的rank都必须大于或等于1。
 
