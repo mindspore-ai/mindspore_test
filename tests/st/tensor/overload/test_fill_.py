@@ -18,7 +18,7 @@ import pytest
 import random
 
 import mindspore as ms
-from mindspore import ops, Tensor
+from mindspore import Tensor
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
@@ -80,16 +80,16 @@ def test_tensor_fill__normal(mode):
     Description: Verify the result of Tensor.fill_
     Expectation: success
     """
-    input_x = ops.full((100, 100), 0, dtype=ms.float32)
-    value = 10
-    except_out = ops.full((100, 100), 10, dtype=ms.float32)
-    except_x_grad = ops.full((100, 100), 0, dtype=ms.float32)
-    except_value_tensor_grad = Tensor(10000, ms.float32)
-
     if mode == "pynative":
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+
+    input_x = Tensor(np.full((100, 100), 0, dtype=np.float32))
+    value = 10
+    except_out = Tensor(np.full((100, 100), 10, dtype=np.float32))
+    except_x_grad = Tensor(np.full((100, 100), 0, dtype=np.float32))
+    except_value_tensor_grad = Tensor(10000, ms.float32)
     output_scalar = fill__forward_func(input_x, value)
     output_tensor = fill__forward_func(input_x, Tensor(value))
     allclose_nparray(output_scalar.asnumpy(), except_out.asnumpy(), 1e-04, 1e-04)
