@@ -22,8 +22,8 @@ import numpy as np
 import pytest
 
 import mindspore.dataset as ds
-from mindspore import dtype as mstype
 import mindspore.dataset.transforms as transforms
+from mindspore import dtype as mstype
 from mindspore import log as logger
 from mindspore.mindrecord import FileWriter, set_enc_key, set_enc_mode
 
@@ -666,23 +666,16 @@ def save_with_encode(file_name, enc_key, enc_mode):
     dataset = ds.MindDataset(dataset_files=[file_name])
     assert dataset.get_dataset_size() == 10
 
-    ## single file
-    if os.path.exists(file_name):
-        os.remove("{}".format(file_name))
-    if os.path.exists(file_name + ".db"):
-        os.remove("{}".format(file_name + ".db"))
-
     set_enc_key(None)
 
 
-def test_case_with_encode():
+@pytest.mark.parametrize("cleanup_tmp_file", [[".decrypt_mindrecord/*", "pipeline.mindrecord*"]], indirect=True)
+def test_case_with_encode(cleanup_tmp_file):
     """
     Feature: Save op
     Description: Save with encode
     Expectation: Success
     """
-    file_name = './'
-    file_name += os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
-
+    file_name = './pipeline.mindrecord'
     save_with_encode(file_name, None, "AES-GCM")
     save_with_encode(file_name, "abcdefghijklmnop01234567", "AES-GCM")

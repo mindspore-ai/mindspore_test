@@ -12,10 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import glob
+import os
+
+import pytest
+
 import mindspore.dataset as ds
 
 DATA_IWSLT2016_DIR = '../data/dataset/testIWSLT/IWSLT2016'
 DATA_IWSLT2017_DIR = '../data/dataset/testIWSLT/IWSLT2017'
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_fixture(request):
+    def cleanup_data_files():
+        files = glob.glob(os.path.join(DATA_IWSLT2016_DIR, "texts/de/en/de-en/*.de-en"))
+        for file in files:
+            if os.path.exists(file):
+                os.remove(file)
+        files = glob.glob(os.path.join(DATA_IWSLT2017_DIR, "texts/DeEnItNlRo/DeEnItNlRo-DeEnItNlRo/*.de-en"))
+        for file in files:
+            if os.path.exists(file):
+                os.remove(file)
+
+    request.addfinalizer(cleanup_data_files)
 
 
 def test_iwslt2016_dataset_basic():
@@ -109,6 +129,7 @@ def test_iwslt2016_dataset_exception():
     Description: Test the wrong input.
     Expectation: Unable to read in data.
     """
+
     def exception_func(item):
         raise Exception("Error occur!")
 
@@ -221,6 +242,7 @@ def test_iwslt2017_dataset_exception():
     Description: Test the wrong input.
     Expectation: Unable to read in data.
     """
+
     def exception_func(item):
         raise Exception("Error occur!")
 
