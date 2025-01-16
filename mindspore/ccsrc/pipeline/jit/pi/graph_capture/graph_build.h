@@ -261,24 +261,27 @@ class GraphBuilder {
   bool DoReturn(const Instr &instr);
   bool DoLocalAccess(const Instr &instr);
   bool DoCellAccess(const Instr &instr);
-  virtual void DoLoadGlobal(const Instr &instr);
+  void HandleLoadGlobalPythonCode(const Instr &instr);
+  void DoLoadGlobal(const Instr &instr);
   bool DoGlobalAccess(const Instr &instr);
   bool DoAttrAccess(const Instr &instr);
   virtual ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr);
-  virtual bool DoGetItem(const Instr &instr);
-  virtual bool DoItemAccess(const Instr &instr);
+  bool DoGetItem(const Instr &instr);
+  bool DoGetItemWithByteCode(const Instr &instr);
+
+  bool DoItemAccess(const Instr &instr);
   bool DoStackOp(const Instr &instr);
-  virtual bool DoLoadConst(const Instr &instr);
+  bool DoLoadConst(const Instr &instr);
   bool DoListToTuple(const Instr &instr);
   bool DoGetIter(const Instr &instr);
   bool DoMakeFunction(const Instr &instr);
   bool DoUnary(const Instr &instr);
   bool DoBinary(const Instr &instr);
-  virtual bool DoIsOp(const Instr &instr);
-  virtual bool DoContainsOp(const Instr &instr);
+  bool DoIsOp(const Instr &instr);
+  bool DoContainsOp(const Instr &instr);
   bool DoBinaryAdd(const Instr &instr);
   bool DoInplaceAdd(const Instr &instr);
-  virtual bool DoCompare(const Instr &instr);
+  bool DoCompare(const Instr &instr);
   bool DoBuildOp(const Instr &instr);
   bool DoMergeOp(const Instr &instr);
   bool DoFormatValue(const Instr &instr);
@@ -411,14 +414,6 @@ class MindGraphBuilder : public GraphBuilder {
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
 
  protected:
-  bool DoGetItem(const Instr &instr) override;
-  bool DoItemAccess(const Instr &instr) override;
-  bool DoIsOp(const Instr &instr) override;
-  bool DoContainsOp(const Instr &instr) override;
-  bool DoCompare(const Instr &instr) override;
-  bool DoLoadConst(const Instr &instr) override;
-  void DoLoadGlobal(const Instr &instr) override;
-
   ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr) override;
   bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
   bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,

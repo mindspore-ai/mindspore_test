@@ -958,7 +958,7 @@ TryBlock GraphBuilder::PopStack() {
   return tb;
 }
 
-void GraphBuilder::DoLoadGlobal(const Instr &instr) {
+void GraphBuilder::HandleLoadGlobalPythonCode(const Instr &instr) {
   py::object globals = graph_->GetGlobals();
   py::str key = instr.name();
 
@@ -974,6 +974,16 @@ void GraphBuilder::DoLoadGlobal(const Instr &instr) {
   auto n = NewValueNode(AObject::Convert(pyobj), instr, {});
   n->SetName(instr.name());
   push(n);
+}
+
+void GraphBuilder::DoLoadGlobal(const Instr &instr) {
+  HandleLoadGlobalPythonCode(instr);
+  ValueNode *node = seek(0);
+  py::object handle = node->GetVobj()->GetPyObject();
+  if (handle.ptr() == nullptr) {
+    return;  // name not define
+  }
+  node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(handle));
 }
 
 bool GraphBuilder::DoGlobalAccess(const Instr &instr) {
@@ -1193,7 +1203,8 @@ static ValueNode *TupleDictGetItem(ValueNode *container, ValueNode *index_node) 
   return nullptr;
 }
 
-bool GraphBuilder::DoGetItem(const Instr &instr) {
+// todo: this function should not be called later.
+bool GraphBuilder::DoGetItemWithByteCode(const Instr &instr) {
   constexpr const char *kNameGetItem = "__getitem__";
   auto r = pop();
   auto l = pop();
@@ -1230,6 +1241,41 @@ bool GraphBuilder::DoGetItem(const Instr &instr) {
   DoAttrAccess({LOAD_ATTR, 0, kNameGetItem});
   push(r);
   return DoCall({CALL_FUNCTION, 1});
+}
+
+bool GraphBuilder::DoGetItem(const Instr &instr) {
+  auto r = pop();
+  auto l = pop();
+  auto o = HandleMultiOp(instr, {l, r}, false);
+  if (o != nullptr) {
+    auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
+    v->set_abstract_wrapper(o);
+    push(v);
+    return true;
+  }
+  /*
+   * Currently, there are several known scenarios where MetaFuncGraph-getitem infer may fail:
+   * 1.Cell list getitem: The Cell to be retrieved fails to be parsed (e.g. due to side effects in Cell.construct(),
+   * such as STORE_ATTR).
+   * 2.Index Out-of-Bounds or Key not exist.
+   * In the first case, we can try to fallback to two-stages mode and do getitem from python object.
+   * But in the second case, fallback to two-stages is useless. However, we cannot distinguish which scenario caused
+   * getitem infer failure, so we always fallback to have a try.
+   */
+  MS_LOG(INFO) << "Getitem infer failed, fallback to do getitem from python obj. source: " << l->ToString()
+               << ", key: " << r->ToString();
+  push(l);
+  push(r);
+  if (DoGetItemWithByteCode(instr)) {
+    auto v = seek(0);
+    o = FGBuilder()->AddLocalVariable(v->GetVobj()->GetPyObject());
+    if (o != nullptr) {
+      v->set_abstract_wrapper(o);
+      return true;
+    }
+  }
+  MS_LOG(INFO) << "Failed to getitem from python obj, do break graph";
+  return false;
 }
 
 ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, ValueNode *value, bool ignore_key_error) {
@@ -1443,23 +1489,24 @@ bool GraphBuilder::DoSetItem(ValueNode *map, ValueNode *key, ValueNode *value) {
 
 bool GraphBuilder::DoItemAccess(const Instr &instr) {
   int opcode = instr.op();
+  bool res = false;
   if (opcode == BINARY_SUBSCR) {
-    DoGetItem(instr);
+    res = DoGetItem(instr);
   } else if (opcode == STORE_SUBSCR) {
     auto key = pop();
     auto map = pop();
     auto value = pop();
     NewValueNode(nullptr, instr, {value, map, key});
-    DoSetItem(map, key, value);
+    res = DoSetItem(map, key, value);
   } else if (opcode == DELETE_SUBSCR) {
     auto key = pop();
     auto map = pop();
     NewValueNode(nullptr, instr, {map, key});
-    DoSetItem(map, key, nullptr);
+    res = DoSetItem(map, key, nullptr);
   } else {
     MS_LOG(INTERNAL_EXCEPTION) << "parser got an error instruction " << instr.ToString();
   }
-  return true;
+  return res;
 }
 
 bool GraphBuilder::DoStackOp(const Instr &instr) {
@@ -1487,8 +1534,11 @@ bool GraphBuilder::DoStackOp(const Instr &instr) {
 }
 
 bool GraphBuilder::DoLoadConst(const Instr &instr) {
-  auto n = NewValueNode(AObject::Convert(instr.cnst()), instr, {});
-  push(n);
+  const py::object &const_obj = instr.cnst();
+  const AbstractWrapperPtr &abs = FGBuilder()->AddLocalVariable(const_obj);
+  auto node = NewValueNode(AObject::Convert(const_obj), instr, {});
+  node->set_abstract_wrapper(abs);
+  push(node);
   return true;
 }
 
@@ -1548,9 +1598,37 @@ bool GraphBuilder::DoUnary(const Instr &instr) {
   return true;
 }
 
-bool GraphBuilder::DoIsOp(const Instr &instr) { return DoBinary(instr); }
+// todo: IsOp should run in function graph builder.
+bool GraphBuilder::DoIsOp(const Instr &instr) {
+  bool invert;
+  if (!Opcode(instr.op()).CheckIsOp(instr.arg(), &invert)) {
+    return false;
+  }
+  auto r = pop();
+  auto l = pop();
+  int res = AObject::BinaryIs(l->GetVobj(), r->GetVobj());
+  auto o = res == -1 ? AObject::MakeAObject(AObject::kTypeBool) : AObject::Convert((res ^ invert) ? Py_True : Py_False);
+  auto v = NewValueNode(o, instr, {l, r});
+  push(v);
+  MS_LOG(INFO) << "unsupported IS_OP, try to constant fold. [" << v->ToString();
+  v->set_abstract_wrapper(FGBuilder()->AddLocalVariable(o->GetPyObject()));
+  return true;
+}
 
-bool GraphBuilder::DoContainsOp(const Instr &instr) { return DoBinary(instr); }
+bool GraphBuilder::DoContainsOp(const Instr &instr) {
+  auto r = pop();
+  auto l = pop();
+  auto o = HandleMultiOp(instr, {l, r}, false);
+  if (o == nullptr) {
+    // todo: all byte code should check the result wrapper.
+    MS_LOG(INFO) << "Failed to handle bytecode CONTAINS_OP";
+    return false;
+  }
+  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
+  v->set_abstract_wrapper(o);
+  push(v);
+  return true;
+}
 
 bool GraphBuilder::DoBinary(const Instr &instr) {
   auto r = pop();
@@ -1629,43 +1707,35 @@ bool GraphBuilder::DoBinaryAdd(const Instr &instr) {
 }
 
 bool GraphBuilder::DoCompare(const Instr &instr) {
+  // python3.7 only
   Opcode opcode(instr.op());
   int oparg = instr.arg();
-  auto r = pop();
-  auto l = pop();
-
-  bool invert;
-  AObject *o;
-  if (oparg >= Py_LT && oparg <= Py_GE) {
-    PyObject *left = l->GetVobj() ? l->GetVobj()->GetPyObject().ptr() : nullptr;
-    PyObject *right = r->GetVobj() ? r->GetVobj()->GetPyObject().ptr() : nullptr;
-    if (left && right) {
-      if (CheckValueValid(l->GetVobj()) && CheckValueValid(r->GetVobj())) {
-        o = AObject::Convert(PyObject_RichCompare(left, right, oparg));
-        PyErr_Clear();
-      } else if (l->GetVobj()->GetType() == AObject::kTypeTensor || r->GetVobj()->GetType() == AObject::kTypeTensor) {
-        o = l->GetVobj()->GetType() == AObject::kTypeTensor ? l->GetVobj() : r->GetVobj();
-        auto tensor_type = py::reinterpret_borrow<py::object>(GetMsTensorType());
-        py::object dtype_bool = Utils::GetModuleAttr("mindspore.common.dtype", "bool_");
-        auto result_tensor = tensor_type(o->GetPyObject(), dtype_bool);
-        o = AObject::Convert(result_tensor);
-      } else {
-        o = AObject::MakeAObject(AObject::kTypeBool);
-      }
-    } else {
-      o = AObject::MakeAObject(AObject::kTypeBool);
+  if (opcode.CheckIsOp(oparg)) {
+    return DoIsOp(instr);
+  }
+  if (opcode.IsExcMatch(oparg)) {
+    auto r = pop();
+    auto l = pop();
+    auto expectedErrs = r->GetVobj()->GetPyObject().ptr();
+    auto gotErr = l->GetVobj()->GetPyObject().ptr();
+    if (!PyTuple_Check(expectedErrs) && !PyExceptionClass_Check(expectedErrs)) {
+      MS_LOG(ERROR) << "unsupported except types: " << Py_TYPE(expectedErrs);
+      return false;
     }
-  } else if (opcode.CheckIsOp(oparg, &invert)) {
-    int res = AObject::BinaryIs(l->GetVobj(), r->GetVobj());
-    o = res == -1 ? AObject::MakeAObject(AObject::kTypeBool) : AObject::Convert((res ^ invert) ? Py_True : Py_False);
-  } else if (opcode.CheckContainsOp(oparg, &invert)) {
-    int res = AObject::BinaryContains(l->GetVobj(), r->GetVobj());
-    o = res == -1 ? AObject::MakeAObject(AObject::kTypeBool) : AObject::Convert((res ^ invert) ? Py_True : Py_False);
-  } else {
-    return false;
+
+    auto res = PyErr_GivenExceptionMatches(gotErr, expectedErrs);
+    auto v = NewValueNode(AObject::Convert(res ? Py_True : Py_False), instr, {l, r});
+    push(v);
+    MS_LOG(INFO) << "unsupported Exception Match, try to constant fold. [" << v->ToString();
+    v->set_abstract_wrapper(FGBuilder()->AddLocalVariable(py::bool_(res)));
+    return true;
   }
 
-  auto v = NewValueNode(o, instr, {l, r});
+  auto r = pop();
+  auto l = pop();
+  auto o = HandleMultiOp(instr, {l, r}, true);
+  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
+  v->set_abstract_wrapper(o);
   push(v);
   return true;
 }
@@ -5792,124 +5862,6 @@ AbstractWrapperPtr GraphBuilder::HandleBuildStringOp(const PrimitivePtr &primiti
   return result_str;
 }
 
-bool MindGraphBuilder::DoGetItem(const Instr &instr) {
-  auto r = pop();
-  auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, false);
-  if (o != nullptr) {
-    auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-    v->set_abstract_wrapper(o);
-    push(v);
-    return true;
-  }
-  /*
-   * Currently, there are several known scenarios where MetaFuncGraph-getitem infer may fail:
-   * 1.Cell list getitem: The Cell to be retrieved fails to be parsed (e.g. due to side effects in Cell.construct(),
-   * such as STORE_ATTR).
-   * 2.Index Out-of-Bounds or Key not exist.
-   * In the first case, we can try to fallback to two-stages mode and do getitem from python object.
-   * But in the second case, fallback to two-stages is useless. However, we cannot distinguish which scenario caused
-   * getitem infer failure, so we always fallback to have a try.
-   */
-  MS_LOG(INFO) << "Getitem infer failed, fallback to do getitem from python obj. source: " << l->ToString()
-               << ", key: " << r->ToString();
-  push(l);
-  push(r);
-  if (GraphBuilder::DoGetItem(instr)) {
-    auto v = seek(0);
-    o = FGBuilder()->AddLocalVariable(v->GetVobj()->GetPyObject());
-    if (o != nullptr) {
-      v->set_abstract_wrapper(o);
-      return true;
-    }
-  }
-  MS_LOG(INFO) << "Failed to getitem from python obj, do break graph";
-  return false;
-}
-
-bool MindGraphBuilder::DoCompare(const Instr &instr) {
-  // python3.7 only
-  Opcode opcode(instr.op());
-  int oparg = instr.arg();
-  if (opcode.CheckIsOp(oparg)) {
-    return DoIsOp(instr);
-  }
-  if (opcode.IsExcMatch(oparg)) {
-    auto r = pop();
-    auto l = pop();
-    auto expectedErrs = r->GetVobj()->GetPyObject().ptr();
-    auto gotErr = l->GetVobj()->GetPyObject().ptr();
-    if (!PyTuple_Check(expectedErrs) && !PyExceptionClass_Check(expectedErrs)) {
-      MS_LOG(ERROR) << "unsupported except types: " << Py_TYPE(expectedErrs);
-      return false;
-    }
-
-    auto res = PyErr_GivenExceptionMatches(gotErr, expectedErrs);
-    auto v = NewValueNode(AObject::Convert(res ? Py_True : Py_False), instr, {l, r});
-    push(v);
-    MS_LOG(INFO) << "unsupported Exception Match, try to constant fold. [" << v->ToString();
-    v->set_abstract_wrapper(FGBuilder()->AddLocalVariable(py::bool_(res)));
-    return true;
-  }
-
-  auto r = pop();
-  auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, true);
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
-  push(v);
-  return true;
-}
-
-bool MindGraphBuilder::DoIsOp(const Instr &instr) {
-  bool invert;
-  if (!Opcode(instr.op()).CheckIsOp(instr.arg(), &invert)) {
-    return false;
-  }
-  auto r = pop();
-  auto l = pop();
-  int res = AObject::BinaryIs(l->GetVobj(), r->GetVobj());
-  auto o = res == -1 ? AObject::MakeAObject(AObject::kTypeBool) : AObject::Convert((res ^ invert) ? Py_True : Py_False);
-  auto v = NewValueNode(o, instr, {l, r});
-  push(v);
-  MS_LOG(INFO) << "unsupported IS_OP, try to constant fold. [" << v->ToString();
-  v->set_abstract_wrapper(FGBuilder()->AddLocalVariable(o->GetPyObject()));
-  return true;
-}
-
-bool MindGraphBuilder::DoContainsOp(const Instr &instr) {
-  auto r = pop();
-  auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, false);
-  if (o == nullptr) {
-    MS_LOG(INFO) << "Failed to handle bytecode CONTAINS_OP";
-    return false;
-  }
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
-  push(v);
-  return true;
-}
-
-void MindGraphBuilder::DoLoadGlobal(const Instr &instr) {
-  this->GraphBuilder::DoLoadGlobal(instr);
-  ValueNode *node = seek(0);
-  py::object handle = node->GetVobj()->GetPyObject();
-  if (handle.ptr() == nullptr) {
-    return;  // name not define
-  }
-  node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(handle));
-}
-
-bool MindGraphBuilder::DoLoadConst(const Instr &instr) {
-  const py::object &const_obj = instr.cnst();
-  const AbstractWrapperPtr &abs = FGBuilder()->AddLocalVariable(const_obj);
-  auto node = NewValueNode(AObject::Convert(const_obj), instr, {});
-  node->set_abstract_wrapper(abs);
-  push(node);
-  return true;
-}
-
 bool MindGraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params,
                                             FrameStates *frame) {
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
@@ -6070,28 +6022,6 @@ bool MindGraphBuilder::UnpackCallExDict(std::vector<ValueNode *> *params, CallNo
   DoLoadConst({LOAD_CONST, -1, keys});
   params->push_back(pop());
   return true;
-}
-
-bool MindGraphBuilder::DoItemAccess(const Instr &instr) {
-  int opcode = instr.op();
-  bool res = false;
-  if (opcode == BINARY_SUBSCR) {
-    res = DoGetItem(instr);
-  } else if (opcode == STORE_SUBSCR) {
-    auto key = pop();
-    auto map = pop();
-    auto value = pop();
-    NewValueNode(nullptr, instr, {value, map, key});
-    res = DoSetItem(map, key, value);
-  } else if (opcode == DELETE_SUBSCR) {
-    auto key = pop();
-    auto map = pop();
-    NewValueNode(nullptr, instr, {map, key});
-    res = DoSetItem(map, key, nullptr);
-  } else {
-    MS_LOG(INTERNAL_EXCEPTION) << "parser got an error instruction " << instr.ToString();
-  }
-  return res;
 }
 }  // namespace pijit
 }  // namespace mindspore
