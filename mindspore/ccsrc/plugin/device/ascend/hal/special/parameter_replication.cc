@@ -126,8 +126,8 @@ int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExch
   }
 
   // copy local free device memory and memory info from host to device
-  if (aclrtMemcpy(addr.send_dev_addr, xchg_info_size, local_info->GetData(), xchg_info_size,
-                  ACL_MEMCPY_HOST_TO_DEVICE) != ACL_SUCCESS) {
+  if (CALL_ASCEND_API(aclrtMemcpy, addr.send_dev_addr, xchg_info_size, local_info->GetData(), xchg_info_size,
+                      ACL_MEMCPY_HOST_TO_DEVICE) != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Copy exchange info from host to device fail.";
     return 1;
   }
@@ -153,13 +153,14 @@ int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExch
   (void)res_mgr_->SyncStream(stream_id_);
 
   // copy remote free device memory and memory info from device to host
-  if (aclrtMemcpy(remote_info->GetData(), xchg_info_size, addr.recv_dev_addr, xchg_info_size,
-                  ACL_MEMCPY_DEVICE_TO_HOST) != ACL_SUCCESS) {
+  if (CALL_ASCEND_API(aclrtMemcpy, remote_info->GetData(), xchg_info_size, addr.recv_dev_addr, xchg_info_size,
+                      ACL_MEMCPY_DEVICE_TO_HOST) != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Copy exchange info from device to host fail.";
     return 1;
   }
 
   if (!local_info->IsParamInfoSame(*remote_info)) {
+    MS_LOG(ERROR) << "Sizes of parameters of local and remote are not same, can not do parameter replication.";
     for (size_t i = 0; i < local_info->GetSize(); ++i) {
       MS_LOG(INFO) << "rank " << rank_id_ << " [" << i << "]=" << local_info->GetData()[i] << "("
                    << remote_info->GetData()[i] << ")";
@@ -191,8 +192,8 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
       void *src_addr =
         is_send ? tensor->device_address()->GetMutablePtr() : reinterpret_cast<uint8_t *>(xchg_buf_addr) + sum_size;
 
-      if (aclrtMemcpyAsync(dst_addr, tensor->Size(), src_addr, tensor->Size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_) !=
-          ACL_SUCCESS) {
+      if (CALL_ASCEND_API(aclrtMemcpyAsync, dst_addr, tensor->Size(), src_addr, tensor->Size(),
+                          ACL_MEMCPY_DEVICE_TO_DEVICE, stream_) != ACL_SUCCESS) {
         MS_LOG(EXCEPTION) << "Copy data from device to device fail.";
       }
       sum_size += aligned_size;

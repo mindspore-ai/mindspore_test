@@ -43,6 +43,7 @@ void RegForkUtils(py::module *m);
 void RegRandomSeededGenerator(py::module *m);
 void RegStress(py::module *m);
 void RegSendRecv(py::module *m);
+void RegResetParams(py::module *m);
 void RegCleanTdtChannel(py::module *m);
 void RegTFT(py::module *m);
 void RegTensorDoc(py::module *m);

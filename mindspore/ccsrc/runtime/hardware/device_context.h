@@ -339,9 +339,15 @@ class BACKEND_EXPORT DeviceResManager {
 
   // Detect stress.
   virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
+
   // Send and receive parameters.
   virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
     MS_LOG(EXCEPTION) << "Send and receive parameters is not supported.";
+  }
+
+  // Reset parameters.
+  virtual int ResetParams(const std::vector<tensor::TensorPtr> &params) const {
+    MS_LOG(EXCEPTION) << "Reset parameters is not supported.";
   }
 
   // Clean tdt channel
