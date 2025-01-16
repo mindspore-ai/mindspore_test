@@ -1,45 +1,8 @@
 masked_fill_:
     description: |
         masked_fill_(mask, value) -> Tensor
-
-        Fills elements of `self` Tensor with `value` where `mask` is True.
-        The shapes of `self` and `mask` need to be the same or broadcastable.
+        
+        In-place version of :func:`mindspore.Tensor.masked_fill`.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
-
-        Args:
-            mask (Tensor[bool]): The boolean mask.
-            value (Union[Number, Tensor]): The value to fill in with.
-
-        Returns:
-            Tensor.
-
-        Raises:
-            TypeError: If the `mask` is not a tensor.
-            TypeError: If `value` is neither Number nor Tensor.
-            RunTimeError: If the data type of `self` or `value` is not supported.
-            RunTimeError: If the `value` is a tensor but not a 0-D tensor.
-            RunTimeError: If the shapes of `self` and `mask` could not be broadcast.
-
-        Supported Platforms:
-            ``Ascend``
-
-        Examples:
-            >>> import mindspore
-            >>> from mindspore import ops
-            >>> x = ops.zeros((3, 3))
-            >>> print(x)
-            [[0. 0. 0.]
-             [0. 0. 0.]
-             [0. 0. 0.]]
-            >>> mask = mindspore.Tensor([[True, False, False], [True, False, False], [True, False, False]])
-            >>> output = x.masked_fill_(mask, 1.0)
-            >>> print(output)
-            [[1. 0. 0.]
-             [1. 0. 0.]
-             [1. 0. 0.]]
-            >>> print(x)
-            [[1. 0. 0.]
-             [1. 0. 0.]
-             [1. 0. 0.]]
