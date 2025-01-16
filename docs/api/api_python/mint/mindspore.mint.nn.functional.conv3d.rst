@@ -15,6 +15,8 @@ mindspore.mint.nn.functional.conv3d
     其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作， 
     :math:`weight` 为卷积核的值， :math:`X` 为输入的特征图。
 
+    以下是索引的含义：
+
     - :math:`i` 对应batch数，其范围为 :math:`[0, N-1]` ，其中 :math:`N` 为输入batch。
 
     - :math:`j` 对应输出通道，其范围为 :math:`[0, C_{out}-1]` ，其中 :math:`C_{out}` 为输出通道数，该值也等于卷积核的个数。

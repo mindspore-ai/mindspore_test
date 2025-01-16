@@ -27,9 +27,9 @@ mindspore.mint.nn.Conv3d
     卷积核在第 :math:`k` 个输入通道的卷积核切片， :math:`{X}(N_i, k)` 为特征图第 :math:`i` 个batch第 :math:`k` 个输入通道的切片。
 
     卷积核shape为 :math:`(\text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})` ，其中 :math:`\text{kernel_size[0]}` 、
-    :math:`\text{kernel_size[1]}` 和 :math:`\text{kernel_size[2]}` 分别是卷积核的深度、高度和宽度。若考虑到输入输出通道以及 `group` ，则完整卷积核的shape为
-    :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})` ，
-    其中 `group` 是分组卷积时在通道上分割输入 `x` 的组数。
+    :math:`\text{kernel_size[1]}` 和 :math:`\text{kernel_size[2]}` 分别是卷积核的深度、高度和宽度。若考虑到输入输出通道以及 `groups` ，则完整卷积核的shape为
+    :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})` ，
+    其中 `groups` 是分组卷积时在通道上分割输入 `x` 的组数。
 
     想更深入了解卷积层，请参考论文 `Gradient Based Learning Applied to Document Recognition <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ 。
 
@@ -56,12 +56,12 @@ mindspore.mint.nn.Conv3d
         - **dtype** (:class:`mindspore.dtype`) - Parameters的dtype。默认值： ``mstype.float32`` 。
 
     输入：
-        - **x** (Tensor) - shape为 :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` 的Tensor。目前，CPU和GPU平台上输入数据类型支持float16和float32，Ascend平台上输入数据类型只支持float16。
+        - **x** (Tensor) - shape为 :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` 或 :math:`(C_{in}, D_{in}, H_{in}, W_{in})` 的Tensor。
 
     输出：
-        Tensor，shape为 :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})` 。
+        Tensor，shape为 :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})` 或 :math:`(C_{out}, D_{out}, H_{out}, W_{out})`。
 
-        pad_mode为 ``"same"`` 时：
+        padding为 ``"same"`` 时：
 
         .. math::
             \begin{array}{ll} \\
@@ -70,7 +70,7 @@ mindspore.mint.nn.Conv3d
                 W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[2]}}} \right \rceil \\
             \end{array}
 
-        pad_mode为 ``"valid"`` 时：
+        padding为 ``"valid"`` 时：
 
         .. math::
             \begin{array}{ll} \\
@@ -83,7 +83,7 @@ mindspore.mint.nn.Conv3d
             \end{array}
 
     异常：
-        - **TypeError** - `in_channels` 、 `out_channels` 或 `group` 不是int。
+        - **TypeError** - `in_channels` 、 `out_channels` 或 `groups` 不是int。
         - **TypeError** - `kernel_size` 、 `stride` 、 `padding` 或 `dilation` 既不是int也不是tuple。
-        - **ValueError** - `out_channels` 、 `kernel_size` 、 `stride` 或 `dilation` 小于1。
+        - **ValueError** - `in_channels` 、 `out_channels` 、 `kernel_size` 、 `stride` 或 `dilation` 小于1。
         - **ValueError** - `padding` 小于0。
