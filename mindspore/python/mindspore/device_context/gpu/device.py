@@ -14,6 +14,7 @@
 # ============================================================================
 
 """Device context GPU interfaces"""
+import mindspore as ms
 from mindspore import log as logger
 from mindspore._c_expression import MSContext
 try:
@@ -31,7 +32,7 @@ def device_count():
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_count.gpu.device.device_count()
+        >>> ms.device_context.gpu.device.device_count()
     """
     if not MSContext.get_instance().is_pkg_support_device("GPU") or not is_available():
         raise RuntimeError(f"Device_target GPU not exist.")
@@ -48,7 +49,7 @@ def is_available():
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_count.gpu.device.is_available()
+        >>> ms.device_context.gpu.device.is_available()
     """
     # MindSpore will try to load plugins in "import mindspore", and availability status will be stored.
     if not MSContext.get_instance().is_pkg_support_device("GPU"):
@@ -57,5 +58,13 @@ def is_available():
         if load_plugin_error != "":
             logger.warning(f"Here's error when loading plugin for MindSpore package."
                            f"Error message: {load_plugin_error}")
+        return False
+    return True
+
+
+def _is_supported():
+    device_target = ms.context.get_context("device_target")
+    if device_target == 'CPU' or device_target == 'Ascend':
+        logger.error(f"{device_target} device is not supported. Please use correct device")
         return False
     return True
