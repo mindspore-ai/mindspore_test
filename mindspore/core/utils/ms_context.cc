@@ -695,16 +695,6 @@ void MsContext::InitDigitalTypeDefaultValue() {
   set_param<uint32_t>(MS_CTX_OP_TIMEOUT, kOpTimeout);
 }
 
-inline void SplitString(const std::string &str, char delim, std::set<std::string> *output_list) {
-  std::stringstream ss(str);
-  std::string item;
-  while (std::getline(ss, item, delim)) {
-    if (!item.empty()) {
-      output_list->emplace(item);
-    }
-  }
-}
-
 inline std::string SetToString(const std::set<std::string> &kernel_list) {
   std::string out = "";
   for (auto &name : kernel_list) {
@@ -714,6 +704,9 @@ inline std::string SetToString(const std::set<std::string> &kernel_list) {
 }
 
 void MsContext::SetMsInternalEnableCustomKernelList() {
+  if (!ms_internal_enable_custom_kernel_list_.empty()) {
+    return;
+  }
   const std::string kDefaultEnabledOpList =
     "MatMul,RmsNorm,Add,Sub,FlashAttentionScore,PagedAttention,PagedAttentionMask,AddRmsNorm,AddLayerNorm,"
     "MatMulAllReduce,InferenceMatmulSplit,AddRmsNormQuantV2,InferenceSwiGLU,QbmmAllReduceAdd,QbmmAdd,"
@@ -729,21 +722,21 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 
   std::set<std::string> enable_fusion_list;
   if (is_enable_internal_op) {
-    SplitString(kDefaultEnabledOpList, ',', &enable_fusion_list);
+    common::SplitString(kDefaultEnabledOpList, ',', &enable_fusion_list);
   }
   if (is_310p) {
-    SplitString(k310pDefaultEnabledOpList, ',', &enable_fusion_list);
+    common::SplitString(k310pDefaultEnabledOpList, ',', &enable_fusion_list);
   }
 
   std::string env = common::GetEnv("MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST");
   if (!env.empty()) {
-    SplitString(env, ',', &enable_fusion_list);
+    common::SplitString(env, ',', &enable_fusion_list);
   }
 
   std::set<std::string> disable_fusion_list;
   env = common::GetEnv("MS_INTERNAL_DISABLE_CUSTOM_KERNEL_LIST");
   if (!env.empty()) {
-    SplitString(env, ',', &disable_fusion_list);
+    common::SplitString(env, ',', &disable_fusion_list);
   }
 
   ms_internal_enable_custom_kernel_list_.clear();

@@ -19,6 +19,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
+#include <set>
 #include <unordered_map>
 
 #include "plugin/device/ascend/kernel/internal/kernel_plugin.h"
@@ -75,6 +77,35 @@ void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vect
     return;
   }
   return internal_kernel_plugin_ptr->GetValidKernelBuildInfoWithInternalFormat(node, input_formats, output_formats);
+}
+
+bool IsEnableInternalNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (!context_ptr->IsEnableInferBoost()) {
+    return false;
+  }
+
+  std::string op_name = common::AnfAlgo::GetCNodeName(node);
+  if (op_name == "QuantBatchMatmul") {
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (!IsValueNode<None>(cnode->input(kIndex6))) {
+      return false;
+    }
+  }
+
+  std::string disable_op_env = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
+  std::set<std::string> disable_op_list;
+  common::SplitString(disable_op_env, ',', &disable_op_list);
+  bool disable_internal_op =
+    (std::find(disable_op_list.begin(), disable_op_list.end(), op_name) != disable_op_list.end());
+  if (disable_internal_op) {
+    return false;
+  }
+
+  return IsRegisteredInternalKernel(node);
 }
 }  // namespace kernel
 }  // namespace mindspore

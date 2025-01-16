@@ -27,6 +27,8 @@
 #include <chrono>
 #include <algorithm>
 #include <cctype>
+#include <set>
+#include <sstream>
 #include "mindapi/base/macros.h"
 namespace mindspore {
 class MSLogTime {
@@ -272,6 +274,16 @@ inline bool IsDryRun() {
   static const auto launch_skipped = GetEnv(kLaunchSkippedEnv);
   static const bool skip_launch = (launch_skipped == "all" || launch_skipped == "ALL" || IsCompileSimulation());
   return skip_launch;
+}
+
+inline void SplitString(const std::string &str, char delim, std::set<std::string> *output_list) {
+  std::stringstream ss(str);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    if (!item.empty()) {
+      output_list->emplace(item);
+    }
+  }
 }
 }  // namespace common
 }  // namespace mindspore
