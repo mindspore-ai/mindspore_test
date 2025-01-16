@@ -49,6 +49,7 @@ constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
 constexpr auto kMatMulWeightIdx = 2;           // primitive input weight ...
 constexpr auto kSingleTensor = 3;              // split_item mode
+constexpr SubModuleId kInternalSubModuleId = SubModuleId::SM_INTERNAL_KERNEL;
 
 static const std::unordered_map<mindspore::internal::LogLevel, mindspore::MsLogLevel> kLogLevelMap = {
   {mindspore::internal::LogLevel::DEBUG, mindspore::MsLogLevel::kDebug},
@@ -56,7 +57,6 @@ static const std::unordered_map<mindspore::internal::LogLevel, mindspore::MsLogL
   {mindspore::internal::LogLevel::WARNING, mindspore::MsLogLevel::kWarning},
   {mindspore::internal::LogLevel::ERROR, mindspore::MsLogLevel::kError},
   {mindspore::internal::LogLevel::EXCEPTION, mindspore::MsLogLevel::kException}};
-
 // unordered_map vector<vector<vector<size_t>>> represents:
 // list[op_name][0] for phase prefill, list[op_name][1] for phase increment;
 // list[op_name][][0] for input indices, list[op_name][][0] for output indices.
@@ -80,6 +80,27 @@ static const std::unordered_map<std::string, std::unordered_map<size_t, int64_t>
     {1, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {2, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {6, internal::TransDataParam::ATTENTION_INPUT_MASK}}}};
+
+void InternalLog(const std::string &value, const char *file_path, int32_t line, const char *func_name,
+                 mindspore::internal::LogLevel level) {
+  MsLogLevel ms_level;
+  auto it = kLogLevelMap.find(level);
+  if (it != kLogLevelMap.end()) {
+    ms_level = it->second;
+  } else {
+    ms_level = MsLogLevel::kWarning;
+    MS_LOG(WARNING) << "LogLevel can not find in MsLogLevel, LogLevel is '" << level << "', and set 'WARNING' level.";
+  }
+  if (ms_level == MsLogLevel::kException) {
+    mindspore::LogWriter(mindspore::LocationInfo(file_path, line, func_name), mindspore::kException,
+                         kInternalSubModuleId, mindspore::NoExceptionType, false, nullptr) ^
+      mindspore::LogStream() << value;
+  } else if (static_cast<int>(ms_level) >= mindspore::g_ms_submodule_log_levels[kInternalSubModuleId] &&
+             static_cast<int>(ms_level) <= static_cast<int>(mindspore::this_thread_max_log_level)) {
+    mindspore::LogWriter(mindspore::LocationInfo(file_path, line, func_name), ms_level, kInternalSubModuleId,
+                         mindspore::NoExceptionType, false, nullptr) < mindspore::LogStream() << value;
+  }
+}
 
 int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_node, const size_t input_idx) {
   MS_EXCEPTION_IF_NULL(cur_node);
@@ -174,6 +195,7 @@ void UpdateNzFormatOpsList(const AnfNodePtr &node) {
 }
 }  // namespace
 
+void InternalKernelPlugin::InitInternalLog() { SetLogFunction(&mindspore::kernel::InternalLog); }
 KernelModPtr InternalKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
 
