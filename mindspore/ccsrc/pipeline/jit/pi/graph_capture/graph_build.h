@@ -390,6 +390,7 @@ class GraphBuilder {
                                  std::vector<AbstractWrapperPtr> *elems);
   ValueNode *HandleNamedtupleGetElem(const Instr &instr, ValueNode *node);
 
+  ValueNode *BuildMultiOpValueNode(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare = false);
   AbstractWrapperPtr HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
   AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
   AbstractWrapperPtr HandleBuildStringOp(const PrimitivePtr &primitive, const AbstractWrapperPtrList &inputs_wrapper);

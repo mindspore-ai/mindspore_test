@@ -77,6 +77,7 @@ def test_invert_operation_bool():
     assert pynative_y == pijit_y
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_invert_operation_tensor():
     """
@@ -101,6 +102,7 @@ def test_invert_operation_tensor():
     ret = pynative_x == pijit_x
     assert ms.ops.all(ret).item()
     jit_mode_pi_disable()
+
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_invert_operation_tensor_bool():
@@ -127,6 +129,7 @@ def test_invert_operation_tensor_bool():
     assert ms.ops.all(ret).item()
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_invert_operation_float():
     """
@@ -146,6 +149,6 @@ def test_invert_operation_float():
     with pytest.raises(TypeError) as err:
         invert(x)
     jcr = get_code_extra(InvertNet.construct.__wrapped__)
-    assert jcr["break_count_"] == 0
+    assert jcr["break_count_"] == 1
     assert "bad operand type for unary ~:" in str(err)
     jit_mode_pi_disable()
