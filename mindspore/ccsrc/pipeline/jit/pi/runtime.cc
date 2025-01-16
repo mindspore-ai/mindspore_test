@@ -31,7 +31,6 @@
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include "pipeline/jit/pi/graph_compiler/abstract_type_deducer.h"
-#include "pipeline/jit/pi/graph_compiler/compiler.h"
 #include "pipeline/jit/pi/graph_compiler/cg/byte_code_generator.h"
 #include "pipeline/jit/pi/graph_compiler/inliner/func_inliner.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
@@ -363,21 +362,6 @@ static void MarkBreak(Graph *g) {
   }
 }
 
-std::vector<py::object> GetAllArgs(JitCompileResults *jcr) {
-  auto all_args = jcr->origin_frame().PackArgs();
-  constexpr size_t arg_index = 0;
-  constexpr size_t vargs_index = 1;
-  constexpr size_t kwargs_index = 2;
-  auto args = py::cast<py::list>(all_args[arg_index]);
-  if (all_args[vargs_index].ptr() != nullptr) {
-    PyList_Append(args.ptr(), all_args[vargs_index].ptr());  // args + vargs
-  }
-  if (all_args[kwargs_index].ptr() != nullptr) {
-    PyList_Append(args.ptr(), all_args[kwargs_index].ptr());  // args + kwargs
-  }
-  return args.cast<std::vector<py::object>>();
-}
-
 static void GraphCapture(JitCompileResults *jcr);
 static auto HandleBreakAtLoop(JitCompileResults *jcr, const GraphBuilderPtr &g) {
   // one stage need adapter
@@ -430,7 +414,7 @@ static auto TraceRun(JitCompileResults *jcr) {
 static auto Analyze(const GraphBuilderPtr &g) {
   TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
-  auto analyzer = GraphAnalyzer::Creator(g);
+  auto analyzer = std::make_shared<GraphAnalyzer>(g);
   analyzer->Analyze();
   return analyzer;
 }
@@ -497,24 +481,6 @@ static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_g
   std::string changed_name = Utils::GetPyName(code->co_name);
   int code_size = _PyCode_NBYTES(code);
   c->tbs()->PushTbs({name, changed_name, code_size, is_graph_mode});
-}
-
-std::string GetFuncGraphPhase(const PyFrameWrapper &frame, const OptCodePtr &oc) {
-  PyCodeObject *co = frame.GetCode().ptr();
-  const char *co_name = frame.GetCode().Name();
-  const char *co_filename = frame.GetCode().FileName();
-  std::string phase = std::string() + co_filename + "_" + std::to_string(co->co_firstlineno) + "_" + co_name;
-  if (oc != nullptr) {
-    phase += std::to_string(oc->GetGuard()->Info().Id());
-  } else {
-    py::dict locals = frame.Locals();
-    for (const auto &pair : locals) {
-      auto node = GraphUtils::ConvertPythonObjectToAnfNode(py::cast<py::object>(pair.second));
-      phase += "_" + node->abstract()->ToString();
-    }
-  }
-  phase += ".pi_jit";
-  return phase;
 }
 
 void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard) {
@@ -633,115 +599,6 @@ static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
   }
 }
 
-#if !IS_PYTHON_3_11_PLUS
-static std::string CallGraphCompiler(JitCompileResults *jcr, PyFunctionObject *func, const PyFrameWrapper &frame) {
-  std::string phase = GetFuncGraphPhase(frame, jcr->code());
-  MS_LOG(DEBUG) << "Phase is " << phase << "!";
-  CallableGraph callable = mindspore::pijit::Compiler::Compile(*func, frame, phase);
-  if (callable == nullptr) {
-    jcr->set_stat(JitCompileResults::NEVER_COMPILE);
-    return std::string();
-  }
-
-  ReleaseFunc rFunc = nullptr;
-  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kAutoCleanCache)) {
-    rFunc = [phase]() {
-      auto graph_executor = pipeline::GetExecutor();
-      if (graph_executor->HasCompiled(phase)) {
-        py::str p(phase);
-        py::set s;
-        s.add(phase);
-        py::object o = py::none();
-        graph_executor->DelNetRes(o, s);
-        MS_LOG(DEBUG) << "To release " << phase;
-      }
-    };
-  }
-  jcr->code()->SetNativeFunc(phase, callable, rFunc);
-  jcr->set_stat(JitCompileResults::GRAPH_CALLABLE);
-  return phase;
-}
-#endif
-
-std::string GraphToString(FuncGraphPtr graph) {
-  std::ostringstream graph_buffer;
-  DumpIR(graph_buffer, graph);
-  auto ret = graph_buffer.str();
-  std::regex regAddress("(0x)([0-9a-f]+)");
-  ret = std::regex_replace(ret, regAddress, "");
-  std::regex regFunc(std::string("(") + graph->ToString() + std::string(")"));
-  ret = std::regex_replace(ret, regFunc, "");
-  std::regex regVar("(\\%[0-9]+\\()([A-Za-z0-9_]+)(\\))");
-  ret = std::regex_replace(ret, regVar, "$1$3");
-  std::regex regNode("CNode_([0-9]+)");
-  ret = std::regex_replace(ret, regNode, "");
-  return ret;
-}
-
-static void GraphCompile(JitCompileResults *jcr, const PyFrameWrapper &frame) {
-#if IS_PYTHON_3_11_PLUS
-  MS_LOG(ERROR) << "not implement in python3.11";
-#else
-  TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-  GuardForFrame(frame, jcr->code(), *jcr->conf());
-  AddGuardForGlobals(frame, jcr->code()->GetGuard(), jcr->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
-
-  bool enable_dynamicshape = jcr->conf()->GetBoolConfig(GraphJitConfig::kEnableDynamicShape);
-  OptStrategy::MakeGCStrategy(jcr->codehub(), jcr->conf()->getIntConfig(GraphJitConfig::kLimitGraphSize),
-                              jcr->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
-                              jcr->code());
-  py::object func_handler = frame.GetFunction();
-  PyFunctionObject *func = reinterpret_cast<PyFunctionObject *>(func_handler.ptr());
-
-  std::vector<PyObject *> backup;
-  if (enable_dynamicshape) {
-    backup = jcr->code()->GetGuard()->ApplyDynamicShape(frame.frame());
-    PyFrame_FastToLocals(frame.frame());
-  }
-
-  RunEnvironment runEnvironment;
-  runEnvironment.fetchAndSetRunEnv(jcr);
-  std::string phase = CallGraphCompiler(jcr, func, frame);
-  runEnvironment.resumePreviousRunEnv();
-
-  if (enable_dynamicshape) {
-    jcr->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
-    PyFrame_FastToLocals(frame.frame());
-  }
-
-  if (jcr->conf()->GetBoolConfig(GraphJitConfig::kReuseGraph)) {
-    auto graph_executor = pipeline::GetExecutor();
-    FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(phase);
-    std::string key = GraphToString(ms_func_graph);
-    auto pcode = OptCodeHub::Filter(key, [jcr, graph_executor, ms_func_graph](OptCodePtr code) {
-      FuncGraphPtr func_graph = graph_executor->GetFuncGraph(code->GetPhase());
-      FuncGraphPairMapEquiv equiv_graph;
-      NodeMapEquiv equiv_node;
-      if (func_graph != nullptr && Isomorphic(ms_func_graph, func_graph, &equiv_graph, &equiv_node)) {
-        return true;
-      } else {
-        return false;
-      }
-    });
-    if (pcode != nullptr) {
-      if (jcr->conf()->GetBoolConfig(GraphJitConfig::kPrintReuseGraph)) {
-        std::ostringstream graph_buffer;
-        DumpIR(graph_buffer, ms_func_graph);
-        std::cout << "Graph Duplicated:" << std::endl;
-        std::cout << "  Graph:" << graph_buffer.str() << std::endl;
-        std::cout << "  Bytecode:" << std::endl;
-        Utils::DisFuncObject(PyFunction_GET_CODE(func));
-      }
-      // find duplicate graph and reuse it
-      pcode->Copy(jcr->code());
-    } else {
-      // current graph is a new one and register it
-      OptCodeHub::Register(key, jcr->code());
-    }
-  }
-#endif
-}
-
 extern bool UnsupportedCodeTypeCheck(PyCodeObject *co);
 static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
   const auto &frame = c->origin_frame();
@@ -789,14 +646,6 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     aobject_resource.Release();
   }
   sc.ApplySignature();
-
-  if (c->stat() == JitCompileResults::GRAPH_CAPTURED) {
-    TimeRecorder time_recorder("kTimeCompileGraph", kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kCapture, runtime::ProfilerEvent::kCaptureCompile,
-                                       "PIJitCompile");
-    c->set_stat(JitCompileResults::GRAPH_BUILDING);
-    GraphCompile(c, frame);
-  }
 
   if (c->conf()->getIntConfig(GraphJitConfig::kGuardRelaxCount) > 0) {
     auto guard = c->code()->GetGuard()->Optimize();

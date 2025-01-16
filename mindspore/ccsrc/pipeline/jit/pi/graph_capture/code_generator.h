@@ -196,10 +196,6 @@ class CodeBreakGenerator {
         extra_local_(-1),
         no_graph_(false) {}
 
-  static CodeBreakGeneratorPtr Creator(const GraphBuilderPtr &builder, const py::dict &globals, PyCodeObject *co) {
-    return std::make_shared<CodeBreakGenerator>(builder, globals, co);
-  }
-
   // collect nodes inputs and outputs at graph analyze
   void Init(const Graph *, const GraphAnalyzer &);
 

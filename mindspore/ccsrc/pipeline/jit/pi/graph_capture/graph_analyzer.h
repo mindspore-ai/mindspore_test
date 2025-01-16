@@ -104,8 +104,6 @@ class GraphAnalyzer {
   explicit GraphAnalyzer(const GraphBuilderPtr &graph_builder)
       : graph_(graph_builder->GetGraph()), graph_builder_(graph_builder), info_() {}
 
-  static GraphAnalyzerPtr Creator(const GraphBuilderPtr &g) { return std::make_shared<GraphAnalyzer>(g); }
-
   void Analyze();
 
   auto &GetCaptureInfo() { return info_; }
