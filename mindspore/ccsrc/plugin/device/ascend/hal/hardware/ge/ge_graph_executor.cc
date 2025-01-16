@@ -43,7 +43,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/singleton.h"
-#include "transform/graph_ir/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
 
@@ -486,7 +486,7 @@ void GeGraphExecutor::BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph)
     (void)device_addrs.emplace_back(output_addr.get());
     auto shapes = trans::GetRuntimePaddingShape(node, 0);
     auto host_type = common::AnfAlgo::GetOutputInferDataType(node, 0);
-    auto ge_tensor_desc = transform::TransformUtil::GetGeTensorDesc(shapes, host_type, kOpFormat_DEFAULT);
+    auto ge_tensor_desc = device::ascend::TransformUtil::GetGeTensorDesc(shapes, host_type, kOpFormat_DEFAULT);
     MS_EXCEPTION_IF_NULL(ge_tensor_desc);
     ge_tensor_desc->SetPlacement(::ge::kPlacementDevice);
     GeTensor ge_tensor(*ge_tensor_desc);
@@ -532,7 +532,7 @@ void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph
     (void)device_addrs.emplace_back(device_addr.get());
     auto shapes = trans::GetRuntimePaddingShape(output_node, real_index);
     auto host_type = common::AnfAlgo::GetOutputInferDataType(output_node, real_index);
-    auto ge_tensor_desc = transform::TransformUtil::GetGeTensorDesc(shapes, host_type, kOpFormat_DEFAULT);
+    auto ge_tensor_desc = device::ascend::TransformUtil::GetGeTensorDesc(shapes, host_type, kOpFormat_DEFAULT);
     MS_EXCEPTION_IF_NULL(ge_tensor_desc);
     ge_tensor_desc->SetPlacement(::ge::kPlacementDevice);
     GeTensor ge_tensor(*ge_tensor_desc);
@@ -1178,7 +1178,7 @@ std::vector<GeTensor> GeGraphExecutor::CreateInputGeTensorList(const std::vector
 
     if (is_dynamic_shape) {
       auto ge_tensor_desc =
-        transform::TransformUtil::GetGeTensorDesc(tensor->GetShapeVector(), tensor->dtype_id(), kOpFormat_DEFAULT);
+        device::ascend::TransformUtil::GetGeTensorDesc(tensor->GetShapeVector(), tensor->dtype_id(), kOpFormat_DEFAULT);
       MS_EXCEPTION_IF_NULL(ge_tensor_desc);
       ge_tensor_desc->SetPlacement(::ge::kPlacementDevice);
       (void)ge_inputs[index].SetTensorDesc(*ge_tensor_desc);
@@ -1463,8 +1463,8 @@ std::vector<GeTensor> GeGraphExecutor::GenerateInputGeTensor(const KernelGraphPt
     auto output_addr = iter->second.device_addrs[i];
     MS_EXCEPTION_IF_NULL(output_addr);
     if (is_dynamic_shape) {
-      auto ge_tensor_desc = transform::TransformUtil::GetGeTensorDesc(output_addr->kernel_tensor()->GetShapeVector(),
-                                                                      output_addr->type_id(), output_addr->format());
+      auto ge_tensor_desc = device::ascend::TransformUtil::GetGeTensorDesc(
+        output_addr->kernel_tensor()->GetShapeVector(), output_addr->type_id(), output_addr->format());
       MS_EXCEPTION_IF_NULL(ge_tensor_desc);
       ge_tensor_desc->SetPlacement(::ge::kPlacementDevice);
       (void)ge_inputs[i].SetTensorDesc(*ge_tensor_desc);
@@ -1640,7 +1640,7 @@ void GeGraphExecutor::Finalize() {
     return;
   }
   // clear ge op adapter
-  transform::OpAdapterMap::get().clear();
+  device::ascend::OpAdapterMap::get().clear();
   // remove ge graph
   transform::DfGraphManager::GetInstance().ClearGraph();
   // unregister allocator, before ResManager Destroy(use stream)

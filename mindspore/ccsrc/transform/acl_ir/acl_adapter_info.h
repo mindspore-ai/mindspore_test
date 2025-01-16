@@ -20,10 +20,10 @@
 #include <vector>
 #include <string>
 #include <map>
+#include "graph/types.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "include/transform/graph_ir/types.h"
 #include "mindapi/base/shape_vector.h"
 #include "kernel/kernel.h"
 
@@ -32,6 +32,11 @@ namespace transform {
 using AclFormatSelector = std::function<std::string(TypeId, const std::vector<ShapeVector> &shape)>;
 using KernelTensor = mindspore::kernel::KernelTensor;
 using AclCheckSkipSelector = std::function<bool(const std::vector<KernelTensor *> &inputs)>;
+
+typedef enum { DEFAULT_MODE, ALLOW_FP32_TO_FP16, FORCE_FP32, MUST_KEEP_ORIGIN_DTYPE } AclPrecisionMode;
+static std::map<AclPrecisionMode, std::string> acl_precision_map = {{ALLOW_FP32_TO_FP16, "allow_fp32_to_fp16"},
+                                                                    {FORCE_FP32, "force_fp32"},
+                                                                    {MUST_KEEP_ORIGIN_DTYPE, "must_keep_origin_dtype"}};
 
 struct AclSpecialInfo {
   std::vector<std::string> ori_format{};

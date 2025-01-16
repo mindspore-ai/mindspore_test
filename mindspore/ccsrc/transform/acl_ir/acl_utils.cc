@@ -214,7 +214,7 @@ void AclAttrMaker::SetAttr(const string &attr_name, const std::vector<std::vecto
 
 void AclAttrMaker::SetAttr(const string &attr_name, const ::ge::DataType value, aclopAttr *attr) {
   auto ret = CALL_ASCEND_API(aclopSetAttrDataType, attr, attr_name.c_str(),
-                             AclConverter::ConvertType(TransformUtil::ConvertGeDataType(value)));
+                             AclConverter::ConvertType(device::ascend::TransformUtil::ConvertGeDataType(value)));
   if (ret != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Set node attr '" << attr_name << "' with value " << value << " failed!";
   }
@@ -224,7 +224,7 @@ void AclAttrMaker::SetAttr(const string &attr_name, const std::vector<::ge::Data
   auto list_size = value.size();
   std::vector<aclDataType> data;
   (void)std::transform(value.begin(), value.end(), std::back_inserter(data), [](const ::ge::DataType &val) {
-    return AclConverter::ConvertType(TransformUtil::ConvertGeDataType(val));
+    return AclConverter::ConvertType(device::ascend::TransformUtil::ConvertGeDataType(val));
   });
   auto ret = CALL_ASCEND_API(aclopSetAttrListDataType, attr, attr_name.c_str(), list_size, data.data());
   if (ret != ACL_SUCCESS) {

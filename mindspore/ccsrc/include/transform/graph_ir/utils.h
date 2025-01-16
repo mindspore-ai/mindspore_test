@@ -23,7 +23,7 @@
 #include "transform/graph_ir/convert.h"
 #include "transform/graph_ir/graph_runner.h"
 #include "include/transform/graph_ir/types.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "include/common/utils/config_manager.h"
 #include "include/backend/visible.h"
 
@@ -31,19 +31,10 @@ namespace mindspore {
 constexpr char BROADCAST_GRAPH_NAME[] = "broadcast_subgraph";
 
 namespace transform {
-using OpAdapterPtr = std::shared_ptr<transform::BaseOpAdapter>;
+using OpAdapterPtr = std::shared_ptr<device::ascend::BaseOpAdapter>;
 using GraphRunnerPtr = std::shared_ptr<transform::GraphRunner>;
 using DfGraphConvertorPtr = std::shared_ptr<transform::DfGraphConvertor>;
-OpAdapterPtr FindAdapter(const std::string &op_name, bool train = false);
-OpAdapterPtr FindAdapter(AnfNodePtr node, bool train = false);
 
-bool IsPartialSuccNode(const AnfNodePtr node);
-bool IsWhileNode(const AnfNodePtr &node);
-bool IsCallNode(const AnfNodePtr &node);
-bool IsIfNode(const AnfNodePtr &node);
-bool IsCaseNode(const AnfNodePtr &node);
-std::string GetCNodeTargetFuncName(const CNodePtr cnode);
-bool IsPartialCNode(const AnfNodePtr node);
 bool IsInitDataSetQueueNode(const AnfNodePtr &node);
 
 void ClearGeSessionAndRunner();

@@ -30,7 +30,7 @@ const char kSummary[] = "Summary";
 const char kCheckPoint[] = "Save";
 const int ONE_SHAPE = 1;
 
-using mindspore::transform::Status;
+using mindspore::device::ascend::Status;
 
 bool GetParameterShape(const FuncGraphPtr &graph, const std::string &param_name,
                        const std::shared_ptr<ShapeVector> &shape) {

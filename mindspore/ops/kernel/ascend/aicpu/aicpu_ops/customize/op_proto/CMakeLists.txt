@@ -17,6 +17,7 @@ aux_source_directory(. SRCS)
 aux_source_directory(utils UTILS_SRCS)
 
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/transform/graph_ir/)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/)
 
 add_library(${OP_PROTO_TARGET} SHARED ${SRCS} ${UTILS_SRCS})
 

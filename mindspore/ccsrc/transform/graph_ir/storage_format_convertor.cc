@@ -27,7 +27,7 @@
 #include "ir/func_graph.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
-#include "transform/graph_ir/transform_util.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -312,7 +312,7 @@ int32_t StorageFormatConvertor::GetGeFormat(const AnfNodePtr &src_node, const An
     groups = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, kAttrGroups);
     param->set_fracz_group(groups);
   }
-  auto primary_format = TransformUtil::ConvertFormat(storage_format, origin_dim);
+  auto primary_format = device::ascend::TransformUtil::ConvertFormat(storage_format, origin_dim);
   auto format = ::ge::GetFormatFromSub(static_cast<int32_t>(primary_format), LongToInt(groups));
   return format;
 }
@@ -322,7 +322,7 @@ int32_t StorageFormatConvertor::GetGeFormat(const AnfNodePtr &src_node, const st
   MS_EXCEPTION_IF_NULL(src_node);
   auto param = src_node->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(param);
-  auto primary_format = TransformUtil::ConvertFormat(storage_format, origin_dim);
+  auto primary_format = device::ascend::TransformUtil::ConvertFormat(storage_format, origin_dim);
   auto format = ::ge::GetFormatFromSub(static_cast<int32_t>(primary_format), LongToInt(param->fracz_group()));
   return format;
 }

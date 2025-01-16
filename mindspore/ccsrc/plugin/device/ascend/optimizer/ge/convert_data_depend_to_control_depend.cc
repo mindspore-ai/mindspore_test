@@ -22,8 +22,8 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/transform/graph_ir/utils.h"
-#include "mindspore/ccsrc/transform/graph_ir/op_adapter_map.h"
-#include "mindspore/ccsrc/transform/graph_ir/op_adapter_desc.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"
 
 namespace mindspore {
 namespace opt {
@@ -52,8 +52,8 @@ const AnfNodePtr ConvertDataDependToControlDepend::Process(const FuncGraphPtr &f
     return nullptr;
   }
 
-  auto it = transform::OpAdapterMap::get().find(transform::GetCNodeTargetFuncName(cnode));
-  if (it == transform::OpAdapterMap::get().end()) {
+  auto it = device::ascend::OpAdapterMap::get().find(device::ascend::GetCNodeTargetFuncName(cnode));
+  if (it == device::ascend::OpAdapterMap::get().end()) {
     return nullptr;
   }
 

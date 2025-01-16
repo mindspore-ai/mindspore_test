@@ -83,6 +83,8 @@
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_rt_allocator_symbol.cc"    "build/include_subdir"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_base_symbol.cc"    "build/include_subdir"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.cc"    "build/include_subdir"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_adapter.cc"                             "runtime/references"
+"mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/custom_op_infer.cc"                        "runtime/references"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"

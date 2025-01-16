@@ -34,7 +34,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/graph/remove_load_pass.h"
 #include "src/extendrt/utils/func_graph_utils.h"
-#include "transform/graph_ir/transform_util.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "flow_graph/data_flow.h"
 #ifdef MSLITE_ENABLE_GRAPH_KERNEL
 #include "tools/graph_kernel/converter/graph_kernel_optimization.h"
@@ -325,8 +325,8 @@ void GeGraphExecutor::UpdateOutputShapeInfo(std::vector<::ge::Tensor> *ge_output
     auto &output_info = outputs_buffer_infos_[i];
     auto &ge_output = ge_outputs->at(i);
     auto ge_tensor_desc = ge_output.GetTensorDesc();
-    output_info.shape = transform::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
-    output_info.dtype = transform::TransformUtil::ConvertGeDataType(ge_tensor_desc.GetDataType());
+    output_info.shape = device::ascend::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
+    output_info.dtype = device::ascend::TransformUtil::ConvertGeDataType(ge_tensor_desc.GetDataType());
     output_info.max_size = SizeOf(output_info.shape) * GetDataTypeSize(output_info.dtype);
     auto out_device = ge_output.GetData();
     if (dyn_kv_cache_info_.is_ge_graph_static_ && out_device != output_info.device_addr) {
@@ -962,7 +962,7 @@ bool GeGraphExecutor::InitRefDataDeviceTensor() {
     item.host_data = nullptr;  // release host memory
     ShapeVector ref_data_shape = tensor->shape_c();
     SetRefShape(&ref_data_shape, true, item.name);
-    auto desc = transform::TransformUtil::GetGeTensorDesc(ref_data_shape, tensor->data_type(), kOpFormat_NCHW);
+    auto desc = device::ascend::TransformUtil::GetGeTensorDesc(ref_data_shape, tensor->data_type(), kOpFormat_NCHW);
     if (desc == nullptr) {
       MS_LOG(ERROR) << "Failed to get Tensor Desc";
       return false;
@@ -1026,7 +1026,7 @@ bool GeGraphExecutor::InitInOutDeviceBuffer(const std::string &name, const Shape
                                             InOutBufferInfo *buffer_info) {
   MS_CHECK_TRUE_RET(buffer_info != nullptr, false);
   auto &info = *buffer_info;
-  auto desc = transform::TransformUtil::GetGeTensorDesc(shape, dtype, kOpFormat_NCHW);
+  auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape, dtype, kOpFormat_NCHW);
   if (desc == nullptr) {
     MS_LOG(ERROR) << "Failed to get Tensor Desc";
     return false;
@@ -1185,7 +1185,7 @@ bool GeGraphExecutor::UpdateWeights(const std::vector<std::vector<std::shared_pt
     // cppcheck-suppress cppcheckError
     for (size_t j = 0; j < new_weight_tensors[i].size(); j++) {
       auto &input = new_weight_tensors[i][j];
-      auto ge_tensor = transform::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
+      auto ge_tensor = device::ascend::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
       if (ge_tensor == nullptr) {
         MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
         return false;
@@ -1468,7 +1468,7 @@ bool GeGraphExecutor::GetOneRealInputs(const FuncGraphPtr &anf_graph, std::vecto
       return false;
     }
     MS_LOG(INFO) << "Input " << i << " shape " << input->shape_c() << ", datatype " << input->data_type();
-    auto ge_tensor = transform::TransformUtil::ConvertTensor(input, kOpFormat_NCHW);
+    auto ge_tensor = device::ascend::TransformUtil::ConvertTensor(input, kOpFormat_NCHW);
     if (ge_tensor == nullptr) {
       MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
       return false;
@@ -1520,7 +1520,7 @@ bool GeGraphExecutor::RunGeInitGraph(uint32_t init_graph_id, const std::vector<s
   std::vector<::ge::Tensor> ge_inputs;
   for (size_t i = 0; i < init_data_tensors.size(); i++) {
     auto &input = init_data_tensors[i];
-    auto ge_tensor = transform::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
+    auto ge_tensor = device::ascend::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
     if (ge_tensor == nullptr) {
       MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
       return false;
@@ -1621,7 +1621,8 @@ bool GeGraphExecutor::InitInputDataTensor(const std::vector<tensor::Tensor> &inp
   }
   for (auto &item : ref_data_infos_) {
     if (dyn_kv_cache_info_.dynamic_kv_cache) {
-      ShapeVector ref_real_shape = transform::TransformUtil::ConvertGeShape(item.ge_tensor.GetTensorDesc().GetShape());
+      ShapeVector ref_real_shape =
+        device::ascend::TransformUtil::ConvertGeShape(item.ge_tensor.GetTensorDesc().GetShape());
       SetRefShape(&ref_real_shape, false, item.name);
       SetGeTensorShape(&item.ge_tensor, ref_real_shape);
       MS_LOG(INFO) << "Update RefData Input " << item.name << " shape to " << tensor::ShapeToString(ref_real_shape);
@@ -1760,7 +1761,7 @@ bool GeGraphExecutor::RunGraphWithStreamAsync(uint32_t graph_id, void *stream, c
   for (auto ge_input : inputs) {
     MS_LOG(INFO) << "In ge graph " << graph_id << ", input for RunGraphWithStreamAsync : "
                  << tensor::ShapeToString(
-                      transform::TransformUtil::ConvertGeShape(ge_input.GetTensorDesc().GetShape()));
+                      device::ascend::TransformUtil::ConvertGeShape(ge_input.GetTensorDesc().GetShape()));
   }
   MS_LOG(INFO) << "Run the graph in GE with " << inputs.size() << " inputs";
   struct timeval start_time;
@@ -1806,7 +1807,7 @@ bool GeGraphExecutor::RunGraph(uint32_t graph_id, const std::vector<tensor::Tens
   for (size_t i = 0; i < inputs.size(); i++) {
     auto &input = inputs[i];
     auto ge_tensor =
-      transform::TransformUtil::ConvertTensor(std::make_shared<tensor::Tensor>(input), kOpFormat_NCHW, false);
+      device::ascend::TransformUtil::ConvertTensor(std::make_shared<tensor::Tensor>(input), kOpFormat_NCHW, false);
     if (ge_tensor == nullptr) {
       MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
       return false;
@@ -1882,7 +1883,7 @@ tensor::TensorPtr GeGraphExecutor::ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor
   MS_CHECK_TRUE_RET(ge_tensor_ptr != nullptr, nullptr);
   auto &ge_tensor = *ge_tensor_ptr;
   auto ge_tensor_desc = ge_tensor.GetTensorDesc();
-  auto me_shape = transform::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
+  auto me_shape = device::ascend::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
   if (original_graph_outputs_.find(graph_id) == original_graph_outputs_.end()) {
     MS_LOG(ERROR) << "Graph original outputs with the given graph id is not found.";
     return nullptr;

@@ -27,10 +27,12 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 
 namespace mindspore::transform {
 using TensorPtr = mindspore::tensor::TensorPtr;
+using OpAdapterPtr = device::ascend::OpAdapterPtr;
 
 struct ValuePairHasher {
   template <typename T>

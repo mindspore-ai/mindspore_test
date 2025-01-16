@@ -48,9 +48,10 @@
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "transform/graph_ir/op_adapter.h"
-#include "transform/graph_ir/op_adapter_desc.h"
-#include "transform/graph_ir/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/io_format_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "transform/graph_ir/storage_format_convertor.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
@@ -320,7 +321,7 @@ int64_t GetDynInputNum(const OpAdapterPtr &adpt, bool is_call, std::vector<int64
   return dyn_input_num;
 }
 
-bool IsBranchNode(const AnfNodePtr &node) { return IsIfNode(node) || IsCaseNode(node); }
+bool IsBranchNode(const AnfNodePtr &node) { return device::ascend::IsIfNode(node) || device::ascend::IsCaseNode(node); }
 
 std::vector<AnfNodePtr> GetAnfCallInputs(bool is_kernel_graph, const CNodePtr &c_node) {
   std::vector<AnfNodePtr> inputs;
@@ -388,7 +389,7 @@ std::string SelectParamOriFormat(const FuncGraphManagerPtr &manager, const AnfNo
       if (IsPrimitiveCNode(node_pair.first, prim::kPrimLoad)) {
         todo.emplace_back(node_pair.first);
       } else if (node_pair.first->isa<CNode>()) {
-        auto visited_format = GetOpIOFormat(node_pair.first);
+        auto visited_format = device::ascend::GetOpIOFormat(node_pair.first);
         if (visited_format != kOpFormat_DEFAULT) {
           return visited_format;
         }
@@ -864,8 +865,8 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
     if (as_ref_data && dyn_ref_data_func_ != nullptr) {
       shape = dyn_ref_data_func_(node, shape);
     }
-    auto desc =
-      TransformUtil::GetGeTensorDesc(shape, it.second->data_type(), SelectParamOriFormat(graph_manager_, node));
+    auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape, it.second->data_type(),
+                                                               SelectParamOriFormat(graph_manager_, node));
     if (desc == nullptr) {
       MS_LOG(WARNING) << "Create const " << name << " output descriptor failed!";
       continue;
@@ -884,7 +885,7 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
       op_itor->second = ref_data;  // replace parameter with ref_data
       vars_[name] = ref_data;      // prevent the ref_data operator from being freed
     } else if (as_constant) {
-      auto adpt_const = FindAdapter(kNameConst, training_);
+      auto adpt_const = device::ascend::FindAdapter(device::ascend::kNameConst, training_);
       if (adpt_const == nullptr) {
         continue;
       }
@@ -901,7 +902,7 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
         Singleton<mindspore::device::ascend::InferNeedUpdateParaNames>::Instance().GetInferParameterNames();
       // we need three variable ops for each graph with same name
       // build init subgraph
-      auto adpt = FindAdapter(kNameParam, training_);
+      auto adpt = device::ascend::FindAdapter(device::ascend::kNameParam, training_);
       if (adpt == nullptr) {
         continue;
       }
@@ -968,7 +969,8 @@ void DfGraphConvertor::ReplaceAllParameterToRefData() {
       }
       auto ref_data = std::make_shared<RefData>(name);
       MS_EXCEPTION_IF_NULL(ref_data);
-      auto desc = TransformUtil::GetGeTensorDesc(shape, type, SelectParamOriFormat(graph_manager_, para));
+      auto desc =
+        device::ascend::TransformUtil::GetGeTensorDesc(shape, type, SelectParamOriFormat(graph_manager_, para));
       if (!desc) {
         MS_LOG(ERROR) << "Create ge node desc failed, node name:" << name << ", shape: " << shape << ", type: " << type;
         continue;
@@ -1094,7 +1096,7 @@ DfGraphConvertor &DfGraphConvertor::GenerateBroadcastGraph(const TensorOrderMap 
   // collect the operators create for broadcast sub graph, in order to avoid auto release
   std::vector<Operator> broadcast_input;
   std::vector<GeTensorDesc> broadcast_desc;
-  auto adpt = FindAdapter(kNameBroadcast);
+  auto adpt = device::ascend::FindAdapter(device::ascend::kNameBroadcast);
   if (!adpt) {
     MS_LOG(EXCEPTION) << "Get adpt failed, node type: HcomBroadcast";
   }
@@ -1115,7 +1117,7 @@ DfGraphConvertor &DfGraphConvertor::GenerateBroadcastGraph(const TensorOrderMap 
         auto shape_ge = tensor->shape_c();
 
         // create tensor descriptor for output descriptor
-        auto desc = TransformUtil::GetGeTensorDesc(shape_ge, tensor->data_type(), kOpFormat_DEFAULT);
+        auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape_ge, tensor->data_type(), kOpFormat_DEFAULT);
         if (desc == nullptr) {
           MS_LOG(ERROR) << "Create variable " << name << " output descriptor failed!";
           continue;
@@ -1216,7 +1218,7 @@ DfGraphConvertor &DfGraphConvertor::ConvertAllNode() {
     if (IsSubGraph() && it->isa<Parameter>()) {
       continue;
     }
-    if (IsSubGraph() && (IsPartialSuccNode(it) || IsPartialCNode(it))) {
+    if (IsSubGraph() && (device::ascend::IsPartialSuccNode(it) || device::ascend::IsPartialCNode(it))) {
       continue;
     }
     (void)Convert(it);
@@ -1266,7 +1268,8 @@ std::vector<Operator> DfGraphConvertor::GetWhileBodyOutputs() {
   const auto &node = anf_graph_->get_return()->input(1);
   AnfNodePtr real_ret = node;
   MS_EXCEPTION_IF_NULL(real_ret);
-  while (real_ret->isa<CNode>() && GetCNodeTargetFuncName(real_ret->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
+  while (real_ret->isa<CNode>() &&
+         device::ascend::GetCNodeTargetFuncName(real_ret->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
     real_ret = real_ret->cast<CNodePtr>()->input(1);
   }
 
@@ -1337,14 +1340,15 @@ std::shared_ptr<std::vector<Operator>> DfGraphConvertor::GetWhileSubGraphInput()
       auto name = temp->GetName();
       auto value = const_op_to_value_[temp];
       MS_EXCEPTION_IF_NULL(value);
-      auto adpt_const = FindAdapter(kNameConst, training_);
+      auto adpt_const = device::ascend::FindAdapter(device::ascend::kNameConst, training_);
       if (adpt_const == nullptr) {
         continue;
       }
       name += name_app;
       auto const_op = adpt_const->generate(name);
       (void)adpt_const->setAttr(const_op, "value", value);
-      auto const_op_desc = TransformUtil::GetGeTensorDesc(value->shape_c(), value->data_type(), kOpFormat_DEFAULT);
+      auto const_op_desc =
+        device::ascend::TransformUtil::GetGeTensorDesc(value->shape_c(), value->data_type(), kOpFormat_DEFAULT);
       if (const_op_desc == nullptr) {
         MS_LOG(WARNING) << "Create variable " << name << " output descriptor failed!";
         continue;
@@ -1371,7 +1375,8 @@ void DfGraphConvertor::BuildWhileSubGraph() {
   auto nodes = GetOrderedCNodes(anf_graph_, while_cond_node_);
 
   AnfNodePtr real_ret = anf_graph_->get_return()->input(1);
-  while (real_ret->isa<CNode>() && GetCNodeTargetFuncName(real_ret->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
+  while (real_ret->isa<CNode>() &&
+         device::ascend::GetCNodeTargetFuncName(real_ret->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
     real_ret = real_ret->cast<CNodePtr>()->input(1);
   }
   for (auto &it : nodes) {
@@ -1390,7 +1395,7 @@ void DfGraphConvertor::BuildWhileSubGraph() {
     UpdateOpDesc(it);
   }
   std::vector<Operator> graph_out;
-  auto graph_name = TransformUtil::NormOpName(cur_while_node_->fullname_with_scope());
+  auto graph_name = device::ascend::TransformUtil::NormOpName(cur_while_node_->fullname_with_scope());
   if (graph_type_ == GraphType::kCond) {
     if (op_cache_.find(while_cond_node_.get()) == op_cache_.end()) {
       return;
@@ -1506,7 +1511,8 @@ void DfGraphConvertor::GetWhileUsedInputIndex(const std::vector<AnfNodePtr> &gra
   const auto &body_params = graph->parameters();
 
   auto real_ret = graph->get_return()->input(1);
-  while (real_ret->isa<CNode>() && GetCNodeTargetFuncName(real_ret->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
+  while (real_ret->isa<CNode>() &&
+         device::ascend::GetCNodeTargetFuncName(real_ret->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
     real_ret = real_ret->cast<CNodePtr>()->input(1);
   }
 
@@ -1689,7 +1695,7 @@ void DfGraphConvertor::ConvertWhileNode(const CNodePtr &node) {
   auto body_graph_node = while_graph[1];
   ConvertWhileBody(body_graph_node);
 
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     MS_LOG(DEBUG) << "Not found adapter";
     return;
@@ -1707,7 +1713,7 @@ void DfGraphConvertor::ConvertWhileNode(const CNodePtr &node) {
 
 std::shared_ptr<std::vector<DfGraph>> DfGraphConvertor::BuildBranchGraphs(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
-  bool is_case = IsCaseNode(cnode);
+  bool is_case = device::ascend::IsCaseNode(cnode);
   std::shared_ptr<std::vector<DfGraph>> df_branches = std::make_shared<std::vector<DfGraph>>();
   MS_EXCEPTION_IF_NULL(df_branches);
   if (IsNormalGraph() || IsBodyGraph() || IsBranchGraph()) {
@@ -1796,7 +1802,7 @@ void DfGraphConvertor::SetSubgraph(const AnfNodePtr &node) {
     return;
   }
   auto cnode = node->cast<CNodePtr>();
-  if (IsWhileNode(cnode)) {
+  if (device::ascend::IsWhileNode(cnode)) {
     MS_LOG(DEBUG) << "Start to set while's sub graph.";
     CacheWhileGraph(cnode);
     ConvertWhileNode(cnode);
@@ -1811,14 +1817,14 @@ void DfGraphConvertor::SetSubgraph(const AnfNodePtr &node) {
       return;
     }
 
-    OpAdapterPtr adpt = FindAdapter(node, training_);
+    OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
     if (adpt == nullptr) {
       MS_LOG(DEBUG) << "Not found adapter";
       return;
     }
 
     OperatorPtr op = Convert(node);
-    bool is_case = IsCaseNode(node);
+    bool is_case = device::ascend::IsCaseNode(node);
     if (is_case) {
       adpt->setSubgraph(op, 0, df_branches);
     } else {
@@ -1828,13 +1834,13 @@ void DfGraphConvertor::SetSubgraph(const AnfNodePtr &node) {
     return;
   }
 
-  if (IsCallNode(cnode)) {
+  if (device::ascend::IsCallNode(cnode)) {
     MS_LOG(DEBUG) << "Start to set call's sub graph.";
     BuildCallSubGraphs(node);
     if (op_cache_.find(node.get()) == op_cache_.end()) {
       return;
     }
-    OpAdapterPtr adpt = FindAdapter(node, training_);
+    OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
     if (adpt == nullptr) {
       MS_LOG(EXCEPTION) << "Not found adapter";
       return;
@@ -1851,7 +1857,7 @@ void DfGraphConvertor::GetBranchNodeInput(const CNodePtr node) {
   if (branch_input_handle_cache_.find(node.get()) != branch_input_handle_cache_.end()) {
     return;
   }
-  bool is_case = IsCaseNode(node);
+  bool is_case = device::ascend::IsCaseNode(node);
   std::vector<AnfNodePtr> branch_inputs;
   const size_t branch_index = 1;
 
@@ -1988,7 +1994,7 @@ void DfGraphConvertor::GetCallNodeInputs(const CNodePtr &node) {
   }
 
   auto op = Convert(node);
-  auto adpt = FindAdapter(node, training_);
+  auto adpt = device::ascend::FindAdapter(node, training_);
   MS_EXCEPTION_IF_NULL(adpt);
   adpt->setDynamicOutputNum(op, cur_while_node_out_size_);
   call_input_handle_cache_[node] = call_input_items;
@@ -2236,7 +2242,7 @@ void DfGraphConvertor::FillEmptyInputsWithNoInputOp(std::vector<Operator> *input
         name == prim::kPrimPartial->name()) {
       continue;
     }
-    auto adpt = FindAdapter(it, training_);
+    auto adpt = device::ascend::FindAdapter(it, training_);
     if (adpt == nullptr) {
       continue;
     }
@@ -2293,7 +2299,7 @@ void DfGraphConvertor::SetupInputFormat(const FuncGraphManagerPtr &manager, cons
     format = param_format->second;
     MS_LOG(DEBUG) << "Parameter debug info: " << param_debug_info << ", format is " << format;
   }
-  auto desc = TransformUtil::GetGeTensorDesc(shape, type, format);
+  auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape, type, format);
   StorageFormatConvertor::SetupStorageFormat(anf_graph_, node, desc);
 }
 
@@ -2499,7 +2505,7 @@ void DfGraphConvertor::SetGraphOutputs(bool is_main_graph) {
     }
     for (const auto &output_node : return_nodes) {
       MS_EXCEPTION_IF_NULL(output_node);
-      auto adpt = FindAdapter(output_node, training_);
+      auto adpt = device::ascend::FindAdapter(output_node, training_);
       MS_EXCEPTION_IF_NULL(adpt);
       auto op_ptr = Convert(output_node);
       std::vector<OutHandler> handles;
@@ -2550,7 +2556,7 @@ void DfGraphConvertor::UpdateConstOpDesc(const AnfNodePtr &it, const OperatorPtr
   MS_EXCEPTION_IF_NULL(value);
   auto tensor = value->cast<std::shared_ptr<tensor::Tensor>>();
   MS_EXCEPTION_IF_NULL(tensor);
-  auto const_op_desc = TransformUtil::GetGeTensorDesc(tensor->shape_c(), tensor->data_type(), format);
+  auto const_op_desc = device::ascend::TransformUtil::GetGeTensorDesc(tensor->shape_c(), tensor->data_type(), format);
   StorageFormatConvertor::SetupStorageFormat(anf_graph_, it, const_op_desc, format);
   if (const_op_desc == nullptr) {
     MS_LOG(WARNING) << "Create parameter " << para->name() << " output descriptor failed!";
@@ -2597,7 +2603,7 @@ void DfGraphConvertor::UpdateDataOpDesc(const AnfNodePtr &it, const OperatorPtr 
       MS_LOG(DEBUG) << "parameter: " << param_name << ", format is " << format;
     }
   }
-  auto desc = TransformUtil::GetGeTensorDesc(shape, me_type, format);
+  auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape, me_type, format);
   StorageFormatConvertor::SetupStorageFormat(anf_graph_, it, desc, format);
   if (desc == nullptr) {
     MS_LOG(ERROR) << "Update data op descriptor failed! TensorDesc is null.";
@@ -2616,7 +2622,8 @@ DfGraphPtr DfGraphConvertor::GetSaveCheckpointGraph() { return save_ckp_graph_; 
 
 DfGraphPtr DfGraphConvertor::GetBroadcastGraph() { return broadcast_graph_; }
 
-const std::vector<std::string> trans_var_list = {string(kNameAssign), string(kNameAssignAdd), string(kNameAssignSub)};
+const std::vector<std::string> trans_var_list = {
+  string(device::ascend::kNameAssign), string(device::ascend::kNameAssignAdd), string(device::ascend::kNameAssignSub)};
 
 AnfNodePtr DfGraphConvertor::ParseLoadInput(const CNodePtr &cnode) const {
   MS_EXCEPTION_IF_NULL(cnode);
@@ -2630,7 +2637,7 @@ AnfNodePtr DfGraphConvertor::ParseLoadInput(const CNodePtr &cnode) const {
 
 void DfGraphConvertor::TransformConstOp(const CNodePtr &node, const AnfNodePtr &pred) {
   // transform "Const" op to "Variable" op when the next node is "Assign" op.
-  std::string c_name = GetCNodeTargetFuncName(node);
+  std::string c_name = device::ascend::GetCNodeTargetFuncName(node);
   auto pos = std::find(trans_var_list.begin(), trans_var_list.end(), c_name);
   if (!training_ && !IsSubGraph() && pos != trans_var_list.end() && pred->isa<Parameter>()) {
     std::string name = std::static_pointer_cast<Parameter>(pred)->name();
@@ -2671,7 +2678,8 @@ AnfNodePtr DfGraphConvertor::GetRealInputNode(const CNodePtr &node, const AnfNod
     return nullptr;
   }
   AnfNodePtr pred = input;
-  while (pred->isa<CNode>() && GetCNodeTargetFuncName(pred->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
+  while (pred->isa<CNode>() &&
+         device::ascend::GetCNodeTargetFuncName(pred->cast<CNodePtr>()) == prim::kPrimDepend->name()) {
     pred = pred->cast<CNodePtr>()->input(1);
   }
 
@@ -2788,7 +2796,8 @@ OutHandler DfGraphConvertor::GetNormalOpInput(const AnfNodePtr &node, const AnfN
 
 void DfGraphConvertor::DrawOpInput(const AnfNodePtr &node, const AnfNodePtr &pred, size_t i) {
   MS_EXCEPTION_IF_NULL(pred);
-  if (pred->isa<CNode>() && GetCNodeTargetFuncName(pred->cast<CNodePtr>()) == mindspore::kTupleGetItemOpName) {
+  if (pred->isa<CNode>() &&
+      device::ascend::GetCNodeTargetFuncName(pred->cast<CNodePtr>()) == mindspore::kTupleGetItemOpName) {
     MS_EXCEPTION_IF_NULL(pred->cast<CNodePtr>());
     MS_EXCEPTION_IF_NULL(pred->cast<CNodePtr>()->input(1));
     compute_sout_ << op_draw_name_[pred->cast<CNodePtr>()->input(1).get()] << " -> " << op_draw_name_[node.get()] << ":"
@@ -2806,7 +2815,7 @@ std::vector<OutHandler> DfGraphConvertor::GetInputHandles(const AnfNodePtr &node
   auto cache_ret = tuple_out_handle_cache_.find(input.get());
   if (cache_ret != tuple_out_handle_cache_.end()) {
     handles = *(cache_ret->second);
-  } else if (IsWhileNode(input)) {
+  } else if (device::ascend::IsWhileNode(input)) {
     // While node in subgraph does not convert.
     // Output handle of While node is inconsistent with MS.
     MS_LOG(WARNING) << "Input node is while node, input node: " << input->fullname_with_scope()
@@ -2815,7 +2824,7 @@ std::vector<OutHandler> DfGraphConvertor::GetInputHandles(const AnfNodePtr &node
       return OutHandler(std::make_shared<::ge::Operator>(output.first), output.second);
     });
   } else {
-    auto pred_adpt = FindAdapter(input, training_);
+    auto pred_adpt = device::ascend::FindAdapter(input, training_);
     MS_EXCEPTION_IF_NULL(pred_adpt);
     // When node's output is dynamic or node has multiple output, it need to get all handles.
     // TupleGetItem's input is dynamic output(eg:MakeTuple), but it only need to get one handle.
@@ -3129,7 +3138,7 @@ void DfGraphConvertor::SetOpInput(const OpAdapterPtr &adpt, const CNodePtr &node
     SetMergeInput(adpt, node);
     return;
   }
-  bool is_call = IsCallNode(node);
+  bool is_call = device::ascend::IsCallNode(node);
   std::vector<int64_t> dyn_input_sizes;
   if (common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, node)) {
     dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(node, kAttrDynInputSizes);
@@ -3273,7 +3282,7 @@ void DfGraphConvertor::SetNodeInput(const AnfNodePtr node) {
   }
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  OpAdapterPtr adpt = FindAdapter(cnode, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(cnode, training_);
   if (adpt == nullptr) {
     error_ = NOT_FOUND;
     return;
@@ -3632,7 +3641,7 @@ void DfGraphConvertor::UpdateOpDesc(const AnfNodePtr node) {
     return;
   }
 
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     error_ = NOT_FOUND;
     return;
@@ -3669,10 +3678,10 @@ OperatorPtr DfGraphConvertor::Convert(const AnfNodePtr node) {
   // convert a new one
   if (node->isa<CNode>()) {
     auto cnode = node->cast<CNodePtr>();
-    if (IsSubGraph() && IsWhileNode(cnode)) {
+    if (IsSubGraph() && device::ascend::IsWhileNode(cnode)) {
       return nullptr;
     }
-    if (!IsSubGraph() && IsWhileNode(cnode)) {
+    if (!IsSubGraph() && device::ascend::IsWhileNode(cnode)) {
       CacheWhileGraph(cnode);
       auto &graphs = while_graph_cache_[cnode];
       GetWhileUsedInputIndex(graphs);
@@ -3733,7 +3742,7 @@ void DfGraphConvertor::ConvertTopK(const CNodePtr &node) {
   } else {
     k_value = LongToInt(GetValue<int64_t>(input_value));
   }
-  OpAdapterPtr adpt = FindAdapter(value_ptr, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(value_ptr, training_);
   MS_EXCEPTION_IF_NULL(adpt);
   auto op = adpt->generate(value_ptr);
   (void)adpt->setAttr(op, "value", k_value);
@@ -3860,7 +3869,7 @@ void DfGraphConvertor::TransDataType(const FuncGraphPtr &anf_graph) const {
     if (it->isa<CNode>()) {
       auto node = it->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(node);
-      std::string name = GetCNodeTargetFuncName(node);
+      std::string name = device::ascend::GetCNodeTargetFuncName(node);
       TransInputDataType(node, name);
       TransAttrDataType(node, name);
     }
@@ -3875,7 +3884,7 @@ void DfGraphConvertor::ConvertReshape(const CNodePtr &node) {
     MS_LOG(WARNING) << "Reshape must have two inputs.";
     return;
   }
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -3901,7 +3910,7 @@ void DfGraphConvertor::ConvertReshape(const CNodePtr &node) {
 
 void DfGraphConvertor::ConvertDynamicStitch(const CNodePtr &node) {
   MS_LOG(INFO) << "Convert and set 'N' attr of DynamicStitch.";
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -3928,7 +3937,7 @@ void DfGraphConvertor::ConvertDynamicStitch(const CNodePtr &node) {
 
 void DfGraphConvertor::ConvertParallelGroupToHcom(const CNodePtr &node) {
   auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(node, kParallelGroup);
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -3950,7 +3959,7 @@ void DfGraphConvertor::ConvertParallelGroupIdToHcom(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto parallel_group_id_value = node->GetAttr(kParallelGroupId);
   auto parallel_group_id = GetValue<uint32_t>(parallel_group_id_value);
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -3972,7 +3981,7 @@ void DfGraphConvertor::ConvertParallelGroupIdToHcom(const CNodePtr &node) {
 void DfGraphConvertor::ConvertHcomFusionId(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   MS_LOG(INFO) << "Add Hcom fusion_id";
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -4026,7 +4035,7 @@ void DfGraphConvertor::ConvertHcomFusionId(const CNodePtr &node) {
 }
 
 void DfGraphConvertor::ConvertAlltoAllVGE(const CNodePtr &node) {
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -4046,7 +4055,7 @@ void DfGraphConvertor::ConvertAlltoAllVGE(const CNodePtr &node) {
 }
 
 void DfGraphConvertor::ConvertUniformReal(const CNodePtr &node) {
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -4057,7 +4066,7 @@ void DfGraphConvertor::ConvertUniformReal(const CNodePtr &node) {
 }
 
 void DfGraphConvertor::ConvertUpdateState(const CNodePtr &node) {
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -4073,7 +4082,7 @@ void DfGraphConvertor::ConvertUpdateState(const CNodePtr &node) {
 }
 
 void DfGraphConvertor::ConvertHcclNode(const CNodePtr &node) {
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -4139,7 +4148,7 @@ void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const Operat
 void DfGraphConvertor::ConvertConv2D(const CNodePtr &node) {
   MS_LOG(INFO) << "Convert and set 'padding' attr for Conv2D-like op.";
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -4176,7 +4185,7 @@ void DfGraphConvertor::ConvertConv2D(const CNodePtr &node) {
 
 void DfGraphConvertor::ConvertOCRRecPreHandle(const CNodePtr &node) {
   MS_LOG(INFO) << "Add OCRRecognitionPreHandle _op_max_shape attr";
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
   }
@@ -4233,7 +4242,7 @@ bool DfGraphConvertor::CheckCNode(const std::string &name, const CNodePtr node) 
       // Add attr 'pad_mode' to Conv2D-like op
       {prim::kPrimConv2D->name(), &DfGraphConvertor::ConvertConv2D},
       {prim::kPrimDepthwiseConv2dNative->name(), &DfGraphConvertor::ConvertConv2D},
-      {kNameConv2DBackpropInputV2, &DfGraphConvertor::ConvertConv2D},
+      {device::ascend::kNameConv2DBackpropInputV2, &DfGraphConvertor::ConvertConv2D},
       {prim::kPrimConv2DBackpropInput->name(), &DfGraphConvertor::ConvertConv2D},
       {prim::kPrimConv2DBackpropFilter->name(), &DfGraphConvertor::ConvertConv2D},
       // Add attr 'N' to DynamicStitch
@@ -4312,13 +4321,13 @@ void DfGraphConvertor::SetNodeAbstract(const CNodePtr &node) const {
 
 OperatorPtr DfGraphConvertor::ConvertCNode(const CNodePtr node) {
   SaveParamFormat(node);
-  std::string name = GetCNodeTargetFuncName(node);
+  std::string name = device::ascend::GetCNodeTargetFuncName(node);
   if (!CheckCNode(name, node)) {
     return nullptr;
   }
 
   // get corresponding OpAdapter
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     MS_LOG(ERROR) << "Cannot get adapter for " << node->fullname_with_scope();
     unsupported_ops_names_.insert(name);
@@ -4360,7 +4369,7 @@ OperatorPtr DfGraphConvertor::ConvertCNode(const CNodePtr node) {
 
 OperatorPtr DfGraphConvertor::ConvertParameter(const AnfNodePtr node) {
   // convert Parameter in ANF to variable in DataFlow
-  auto adpt = FindAdapter(node, training_);
+  auto adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     MS_LOG(EXCEPTION) << "Can not find adapter for Parameter";
   }
@@ -4448,10 +4457,10 @@ Status DfGraphConvertor::TryConvertValueNodeToMultiConst(const ValueNodePtr node
     MS_EXCEPTION_IF_NULL(vec[i]);
     GeTensorPtr ge_tensor = nullptr;
     if (vec[i]->isa<MeTensor>()) {
-      ge_tensor = transform::TransformUtil::ConvertTensor(vec[i]->cast<MeTensorPtr>(), kOpFormat_DEFAULT);
+      ge_tensor = device::ascend::TransformUtil::ConvertTensor(vec[i]->cast<MeTensorPtr>(), kOpFormat_DEFAULT);
       MS_EXCEPTION_IF_NULL(ge_tensor);
     } else {
-      ge_tensor = transform::TransformUtil::ConvertScalar(vec[i]);
+      ge_tensor = device::ascend::TransformUtil::ConvertScalar(vec[i]);
       if (ge_tensor == nullptr) {
         return FAILED;
       }
@@ -4486,7 +4495,7 @@ OperatorPtr DfGraphConvertor::ConvertValueNode(const ValueNodePtr node) {
     return nullptr;
   }
 
-  OpAdapterPtr adpt = FindAdapter(node, training_);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training_);
   if (adpt == nullptr) {
     error_ = NOT_FOUND;
     return nullptr;
@@ -4538,7 +4547,7 @@ void DfGraphConvertor::DrawCNode(const CNodePtr node, const OpAdapterPtr adpt) {
   }
 
   compute_sout_ << "<tr><td colspan=\"" << (input_map.size() + dyn_input_map.size()) << "\">\"" << node->ToString()
-                << ":" << GetCNodeTargetFuncName(node) << "\"</td></tr>" << endl;
+                << ":" << device::ascend::GetCNodeTargetFuncName(node) << "\"</td></tr>" << endl;
 
   // print attrs' values
   auto atts = adpt->GetAttrsFromDrawGraph();
@@ -4552,10 +4561,10 @@ void DfGraphConvertor::DrawCNode(const CNodePtr node, const OpAdapterPtr adpt) {
   compute_sout_ << "</table>> shape=plaintext]" << endl;
 }
 void DfGraphConvertor::RegisterAdapter(const std::string &name, OpAdapterPtr adpt) {
-  OpAdapterMap::get()[name] = std::make_shared<OpAdapterDesc>(adpt);
+  device::ascend::OpAdapterMap::get()[name] = std::make_shared<device::ascend::OpAdapterDesc>(adpt);
 }
 void DfGraphConvertor::RegisterAdapter(const std::string &name, OpAdapterPtr train_adpt, OpAdapterPtr infer_adpt) {
-  OpAdapterMap::get()[name] = std::make_shared<OpAdapterDesc>(train_adpt, infer_adpt);
+  device::ascend::OpAdapterMap::get()[name] = std::make_shared<device::ascend::OpAdapterDesc>(train_adpt, infer_adpt);
 }
 
 std::map<std::string, ValuePtr> GeOpConvertor::GetAttrAndValue(const AnfNodePtr &node, const bool training = true) {
@@ -4566,7 +4575,7 @@ std::map<std::string, ValuePtr> GeOpConvertor::GetAttrAndValue(const AnfNodePtr 
     return attr_list;
   }
 
-  OpAdapterPtr adpt = FindAdapter(node, training);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training);
   if (adpt == nullptr) {
     MS_LOG(INFO) << "Current node can't find adpt! node info:" << node->DebugString();
     return attr_list;
@@ -4578,7 +4587,7 @@ std::map<std::string, ValuePtr> GeOpConvertor::GetAttrAndValue(const AnfNodePtr 
 
 std::string GeOpConvertor::GetOpType(const AnfNodePtr &node, const bool training = true) {
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adpt = FindAdapter(node, training);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training);
   if (adpt == nullptr) {
     MS_LOG(INFO) << "Current node can't find adpt! node info:" << node->DebugString();
     return "";
@@ -4589,7 +4598,8 @@ std::string GeOpConvertor::GetOpType(const AnfNodePtr &node, const bool training
 std::shared_ptr<GeTensorDesc> GeOpConvertor::GetTensorDesc(const ShapeVector &dev_shape, const TypeId &dev_type,
                                                            const std::string &dev_format, const ShapeVector &ori_shape,
                                                            const std::string &ori_format) {
-  auto tensor_desc = transform::TransformUtil::GetGeTensorDesc(dev_shape, dev_type, dev_format, ori_shape, ori_format);
+  auto tensor_desc =
+    device::ascend::TransformUtil::GetGeTensorDesc(dev_shape, dev_type, dev_format, ori_shape, ori_format);
   MS_EXCEPTION_IF_NULL(tensor_desc);
   return tensor_desc;
 }
@@ -4597,7 +4607,7 @@ std::shared_ptr<GeTensorDesc> GeOpConvertor::GetTensorDesc(const ShapeVector &de
 mindspore::HashMap<std::string, std::string> GeOpConvertor::GetNeedAddInput(const AnfNodePtr &node,
                                                                             const bool training) {
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adpt = FindAdapter(node, training);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(node, training);
   if (adpt == nullptr) {
     MS_LOG(INFO) << "Current node can't find adpt! node info:" << node->DebugString();
     return {};
@@ -4608,7 +4618,7 @@ mindspore::HashMap<std::string, std::string> GeOpConvertor::GetNeedAddInput(cons
 
 bool GeOpConvertor::IsDynamicInput(const AnfNodePtr &node, const size_t idx) {
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adapterPtr = FindAdapter(node, true);
+  OpAdapterPtr adapterPtr = device::ascend::FindAdapter(node, true);
   if (adapterPtr == nullptr) {
     MS_LOG(INFO) << "Can't find a adapter for op:" << node->DebugString();
     return false;
@@ -4618,7 +4628,7 @@ bool GeOpConvertor::IsDynamicInput(const AnfNodePtr &node, const size_t idx) {
 
 std::map<int, std::string> GeOpConvertor::GetAclInputNames(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adapterPtr = FindAdapter(node, true);
+  OpAdapterPtr adapterPtr = device::ascend::FindAdapter(node, true);
   if (adapterPtr == nullptr) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }
@@ -4636,7 +4646,7 @@ std::map<int, std::string> GeOpConvertor::GetAclInputNames(const AnfNodePtr &nod
 
 std::map<int, std::string> GeOpConvertor::GetAclOutputNames(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adapterPtr = FindAdapter(node, true);
+  OpAdapterPtr adapterPtr = device::ascend::FindAdapter(node, true);
   if (adapterPtr == nullptr) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }
@@ -4655,7 +4665,7 @@ std::map<int, std::string> GeOpConvertor::GetAclOutputNames(const AnfNodePtr &no
 
 std::map<int, std::string> GeOpConvertor::GetAclDynamicInputNames(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adapterPtr = FindAdapter(node, true);
+  OpAdapterPtr adapterPtr = device::ascend::FindAdapter(node, true);
   if (adapterPtr == nullptr) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }
@@ -4668,7 +4678,7 @@ std::map<int, std::string> GeOpConvertor::GetAclDynamicInputNames(const AnfNodeP
 
 std::map<int, std::string> GeOpConvertor::GetAclDynamicOutputNames(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  OpAdapterPtr adapterPtr = FindAdapter(node, true);
+  OpAdapterPtr adapterPtr = device::ascend::FindAdapter(node, true);
   if (adapterPtr == nullptr) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }

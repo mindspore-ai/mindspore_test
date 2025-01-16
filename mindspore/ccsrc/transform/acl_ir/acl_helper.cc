@@ -22,7 +22,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "include/transform/graph_ir/types.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
@@ -39,6 +38,7 @@
 namespace mindspore {
 namespace transform {
 namespace {
+using device::ascend::GeDataType;
 #define GET_DEFAULT_FORMAT(shape) (shape.size() == kDim4 ? kOpFormat_NCHW : kOpFormat_DEFAULT)
 static const std::set<std::string> kDefaultOutputNode = {
   // Dynamic output shape kernel.

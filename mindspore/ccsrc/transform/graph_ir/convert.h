@@ -39,14 +39,15 @@
 #include "ir/func_graph.h"
 #include "ir/tensor.h"
 #include "transform/graph_ir/df_graph_manager.h"
-#include "transform/graph_ir/op_adapter.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"
 #include "graph/operator_reg.h"
 #include "ge/ge_api.h"
 
 namespace mindspore {
 namespace transform {
-class BaseOpAdapter;
-
+using OpAdapterPtr = device::ascend::OpAdapterPtr;
+using OutHandler = device::ascend::OutHandler;
 using ParamIndexMap = std::map<std::size_t, std::size_t>;
 enum class GraphType { kNormal, kCond, kBody, kAfter, kBranch };
 enum class DfsVisitFlag { kUnVisited, kVisiting, kVisited };

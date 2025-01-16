@@ -19,10 +19,10 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
-using mindspore::transform::FASInputLayoutMode;
+using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
 namespace pyboost {
 namespace {

@@ -22,7 +22,7 @@
 #include "runtime/device/kernel_runtime.h"
 #include "transform/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace kernel {
@@ -56,7 +56,7 @@ void IncreFlashAttentionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor 
   auto num_heads = transform::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex16]);
   auto input_layout = transform::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
-  auto input_layout_str = transform::FASInputLayoutMode::ConvertEnumToString(input_layout);
+  auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout);
   MS_EXCEPTION_IF_NULL(inputs[kIndex17]);
   auto scale_value = transform::ConvertKernelTensor<float>(inputs[kIndex17]);
   auto scale_value_d = static_cast<double>(scale_value);
@@ -88,7 +88,7 @@ bool IncreFlashAttentionAscend::Launch(const std::vector<KernelTensor *> &inputs
   auto num_heads = transform::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex16]);
   auto input_layout = transform::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
-  auto input_layout_str = transform::FASInputLayoutMode::ConvertEnumToString(input_layout);
+  auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout);
   MS_EXCEPTION_IF_NULL(inputs[kIndex17]);
   auto scale_value = transform::ConvertKernelTensor<float>(inputs[kIndex17]);
   auto scale_value_d = static_cast<double>(scale_value);

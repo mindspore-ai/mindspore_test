@@ -17,12 +17,12 @@
 #include "transform/acl_ir/ge_adapter_info.h"
 #include <algorithm>
 #include <limits>
-#include "include/transform/graph_ir/utils.h"
-#include "transform/graph_ir/transform_util.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "graph/operator_factory.h"
 
 namespace mindspore {
 namespace transform {
+using device::ascend::InputDesc;
 void GeAdapterInfo::InitOpType() { info_.op_type = adapter_->getOpType(); }
 
 void GeAdapterInfo::InitAclInputsAndOutputs() {
@@ -201,7 +201,7 @@ GeAdapterInfoPtr GeAdapterManager::GetInfo(const std::string &prim_name, bool is
     return iter->second;
   }
 
-  OpAdapterPtr adpt = FindAdapter(prim_name, is_training);
+  OpAdapterPtr adpt = device::ascend::FindAdapter(prim_name, is_training);
   if (adpt == nullptr) {
     MS_LOG(DEBUG) << "The current name '" << prim_name << "' needs to add adapter.";
     return nullptr;

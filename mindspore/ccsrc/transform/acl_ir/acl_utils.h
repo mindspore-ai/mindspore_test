@@ -22,8 +22,9 @@
 #include <utility>
 #include <map>
 #include "graph/types.h"
-#include "include/transform/graph_ir/types.h"
 #include "transform/acl_ir/ge_adapter_info.h"
+#include "transform/acl_ir/acl_adapter_info.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_op_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

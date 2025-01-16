@@ -256,9 +256,9 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
       for (auto [index, dtypes] : input_supported_dtypes) {
         ss << "InputDesc [" << index << "] support {";
         for (auto dtype : dtypes) {
-          std::string dtype_str = transform::ge_dtype_str_map.find(dtype) == transform::ge_dtype_str_map.end()
+          std::string dtype_str = device::ascend::ge_dtype_str_map.find(dtype) == device::ascend::ge_dtype_str_map.end()
                                     ? ""
-                                    : transform::ge_dtype_str_map[dtype];
+                                    : device::ascend::ge_dtype_str_map[dtype];
           ss << dtype_str << ",";
         }
         ss << "}" << std::endl;
@@ -267,9 +267,9 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
       for (auto [index, dtypes] : output_supported_dtypes) {
         ss << "OutputDesc [" << index << "] support {";
         for (auto dtype : dtypes) {
-          std::string dtype_str = transform::ge_dtype_str_map.find(dtype) == transform::ge_dtype_str_map.end()
+          std::string dtype_str = device::ascend::ge_dtype_str_map.find(dtype) == device::ascend::ge_dtype_str_map.end()
                                     ? ""
-                                    : transform::ge_dtype_str_map[dtype];
+                                    : device::ascend::ge_dtype_str_map[dtype];
           ss << dtype_str << ",";
         }
         ss << "}" << std::endl;

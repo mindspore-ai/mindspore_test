@@ -15,9 +15,9 @@
  */
 #include <string>
 #include "kernel/ascend/opapi/aclnn/ffn_ext_aclnn_kernel.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 namespace mindspore {
-using mindspore::transform::FFNActivationMode;
+using mindspore::device::ascend::FFNActivationMode;
 namespace kernel {
 void FFNExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {

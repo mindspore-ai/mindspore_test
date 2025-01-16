@@ -24,7 +24,7 @@
 #include <memory>
 #include <algorithm>
 #include "transform/acl_ir/acl_utils.h"
-#include "transform/graph_ir/op_adapter_util.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "kernel/kernel.h"
 
 namespace mindspore {

@@ -23,10 +23,10 @@
 #include "runtime/device/kernel_runtime.h"
 #include "transform/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
-using mindspore::transform::AscendQuantRoundMode;
+using mindspore::device::ascend::AscendQuantRoundMode;
 namespace kernel {
 
 void QuantV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,

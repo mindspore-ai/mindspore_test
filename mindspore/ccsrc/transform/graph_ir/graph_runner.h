@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 
-#include "transform/graph_ir/transform_util.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "transform/graph_ir/df_graph_manager.h"
 #include "ir/tensor.h"
 

@@ -23,6 +23,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/transform/graph_ir/utils.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 
 namespace mindspore {
 namespace opt {
@@ -71,7 +72,7 @@ const AnfNodePtr InputsUnifyMindIR::Process(const FuncGraphPtr &func_graph, cons
   MS_EXCEPTION_IF_NULL(manager);
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  auto adpt = transform::FindAdapter(node);
+  auto adpt = device::ascend::FindAdapter(node);
   if (adpt == nullptr) {
     return nullptr;
   }
@@ -99,14 +100,14 @@ const AnfNodePtr InputsUnifyMindIR::Process(const FuncGraphPtr &func_graph, cons
     }
     auto src_type = common::AnfAlgo::GetOutputInferDataType(tensor_node, 0);
     auto src_type_it = std::find(it.second.supported_dtypes.begin(), it.second.supported_dtypes.end(),
-                                 transform::TransformUtil::ConvertDataType(src_type));
+                                 device::ascend::TransformUtil::ConvertDataType(src_type));
     if (src_type_it == it.second.supported_dtypes.end()) {
       auto iter = kReduceRaiseMap.find(src_type);
       if (iter == kReduceRaiseMap.end()) {
         MS_LOG(WARNING) << cnode->fullname_with_scope() << " input(" << it.first << ") data type can not add Cast.";
       } else {
         auto dst_type_it = std::find(it.second.supported_dtypes.begin(), it.second.supported_dtypes.end(),
-                                     transform::TransformUtil::ConvertDataType(iter->second));
+                                     device::ascend::TransformUtil::ConvertDataType(iter->second));
         if (dst_type_it == it.second.supported_dtypes.end()) {
           MS_LOG(WARNING) << cnode->fullname_with_scope() << " input(" << it.first << ") data type is not support.";
         } else {

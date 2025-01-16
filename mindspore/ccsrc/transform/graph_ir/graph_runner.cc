@@ -301,7 +301,7 @@ Status GraphRunner::RunGraph(const RunOptions &options, const std::vector<MeTens
     }
     MS_LOG(INFO) << "inputs tensor's shape is: { " << shape_str << "}";
 
-    auto ge_tensor_ptr = TransformUtil::ConvertTensor(it, kOpFormat_NCHW);
+    auto ge_tensor_ptr = device::ascend::TransformUtil::ConvertTensor(it, kOpFormat_NCHW);
     if (ge_tensor_ptr != nullptr) {
       (void)ge_inputs.emplace_back(ge_tensor_ptr);
     } else {
@@ -324,7 +324,7 @@ Status GraphRunner::RunGraph(const RunOptions &options, const std::vector<MeTens
   } else {
     // convert GeTensor to MeTensor
     for (auto &it : ge_outputs) {
-      auto tensor = TransformUtil::ConvertGeTensor(it);
+      auto tensor = device::ascend::TransformUtil::ConvertGeTensor(it);
       if (tensor != nullptr) {
         (void)outputs->emplace_back(tensor);
       }

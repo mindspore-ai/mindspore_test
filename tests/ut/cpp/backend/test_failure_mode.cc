@@ -25,6 +25,7 @@
 #define protected public
 #include "plugin/device/ascend/optimizer/mindir/dropout_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/lamb_fission.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #undef private
 #undef protected
 
@@ -79,7 +80,7 @@ TEST_F(TestFailureMode, test_convert_no_exist_op) {
   auto x1 = c.NewTensorInput("x1", kFloat, {2, 3});
   auto x2 = c.NewTensorInput("x2", kFloat, {2, 3});
   auto node = c.NewCNodeWithoutInfer("NoExist", {x1, x2}, {});
-  EXPECT_TRUE(transform::FindAdapter(node, false) == nullptr);
+  EXPECT_TRUE(device::ascend::FindAdapter(node, false) == nullptr);
 }
 
 /// Feature: Failure mode which test nullptr

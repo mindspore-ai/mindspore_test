@@ -21,6 +21,7 @@
 #include <vector>
 #include <unordered_set>
 #include "include/transform/graph_ir/types.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace device {
