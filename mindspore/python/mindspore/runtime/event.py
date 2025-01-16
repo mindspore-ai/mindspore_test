@@ -17,6 +17,9 @@ from mindspore._c_expression import Event as Event_
 from mindspore._c_expression import Stream as Stream_
 from mindspore._c_expression import current_stream as current_stream_
 from mindspore import _checkparam as Validator
+from  .device import _is_supported
+
+function_event_status = {'Event': False, 'wait': False}
 
 
 class Event(Event_):
@@ -64,6 +67,10 @@ class Event(Event_):
     """
 
     def __init__(self, enable_timing=False, blocking=False):
+        if not function_event_status['Event']:
+            function_event_status['Event'] = True
+            if not _is_supported():
+                return
         # pylint: disable=useless-super-delegation
         Validator.check_bool(enable_timing, "enable_timing", "Event")
         Validator.check_bool(blocking, "blocking", "Event")
@@ -129,6 +136,10 @@ class Event(Event_):
             [[4. 4.]
              [4. 4.]]
         """
+        if not function_event_status['wait']:
+            function_event_status['wait'] = True
+            if not _is_supported():
+                return
         if stream is None:
             stream = current_stream_()
         if not isinstance(stream, Stream_):

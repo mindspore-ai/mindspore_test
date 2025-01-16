@@ -18,7 +18,10 @@ try:
     from mindspore._c_expression import AscendOpTuningConf
 except ImportError:
     pass
+from  .device import _is_supported
 
+function_status = {'op_compile': False, 'aoe_tune_mode': False,
+                   'aoe_job_type': False}
 
 def op_compile(value):
     """
@@ -37,6 +40,10 @@ def op_compile(value):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_tuning.op_compile(True)
     """
+    if not function_status['op_compile']:
+        function_status['op_compile'] = True
+        if not _is_supported():
+            return
     if value == AscendOpTuningConf.get_instance().jit_compile():
         return
     # Check the configuration environment whether valid
@@ -66,6 +73,10 @@ def aoe_tune_mode(tune_mode):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_tuning.aoe_tune_mode("online")
     """
+    if not function_status['aoe_tune_mode']:
+        function_status['aoe_tune_mode'] = True
+        if not _is_supported():
+            return
     if tune_mode == AscendOpTuningConf.get_instance().aoe_tune_mode():
         return
     # Check the configuration environment whether valid
@@ -98,6 +109,10 @@ def aoe_job_type(config):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_tuning.aoe_job_type("1")
     """
+    if not function_status['aoe_job_type']:
+        function_status['aoe_job_type'] = True
+        if not _is_supported():
+            return
     if config == AscendOpTuningConf.get_instance().aoe_job_type():
         return
     # Check the configuration environment whether valid

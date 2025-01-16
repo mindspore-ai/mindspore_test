@@ -15,12 +15,13 @@
 
 """Op debug interfaces."""
 from mindspore._checkparam import args_type_check
-
+from  .device import _is_supported
 try:
     from mindspore._c_expression import AscendOpDebugConf
 except ImportError:
     pass
 
+function_status = {'execute_timeout': False, 'debug_option': False}
 
 @args_type_check(op_timeout=int)
 def execute_timeout(op_timeout):
@@ -39,6 +40,10 @@ def execute_timeout(op_timeout):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_debug.execute_timeout(100)
     """
+    if not function_status['execute_timeout']:
+        function_status['execute_timeout'] = True
+        if not _is_supported():
+            return
     if op_timeout == AscendOpDebugConf.get_instance().execute_timeout():
         return
     # Check the configuration environment whether valid
@@ -65,7 +70,11 @@ def debug_option(option_value):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_debug.debug_option("oom")
     """
-    if op_timeout == AscendOpDebugConf.get_instance().debug_option():
+    if not function_status['debug_option']:
+        function_status['debug_option'] = True
+        if not _is_supported():
+            return
+    if option_value == AscendOpDebugConf.get_instance().debug_option():
         return
     # Check the configuration environment whether valid
     if AscendOpDebugConf.get_instance().is_debug_option_configured():

@@ -14,6 +14,7 @@
 # ============================================================================
 
 """Device context ascend interfaces"""
+import mindspore as ms
 from mindspore._c_expression import MSContext
 from mindspore import log as logger
 
@@ -59,5 +60,13 @@ def is_available():
         if load_plugin_error != "":
             logger.warning(f"Here's error when loading plugin for MindSpore package."
                            f"Error message: {load_plugin_error}")
+        return False
+    return True
+
+
+def _is_supported():
+    device_target = ms.context.get_context("device_target")
+    if device_target == 'CPU' or device_target == 'GPU':
+        logger.error(f"{device_target} device is not supported. Please use correct device")
         return False
     return True

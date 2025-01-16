@@ -16,12 +16,15 @@
 """Op precision interfaces."""
 import os
 from mindspore._checkparam import args_type_check
+from  .device import _is_supported
 
 try:
     from mindspore._c_expression import AscendOpPrecisionConf
 except ImportError:
     pass
 
+function_status = {'precision_mode': False, 'op_precision_mode': False,
+                   'matmul_allow_hf32': False, 'conv_allow_hf32': False}
 
 def precision_mode(mode):
     """
@@ -62,6 +65,10 @@ def precision_mode(mode):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_precision.precision_mode("force_fp16")
     """
+    if not function_status['precision_mode']:
+        function_status['precision_mode'] = True
+        if not _is_supported():
+            return
     if mode == AscendOpPrecisionConf.get_instance().precision_mode():
         return
     # Check the configuration environment whether valid
@@ -98,6 +105,10 @@ def op_precision_mode(path):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_precision.op_precision_mode("./op_precision_config_file")
     """
+    if not function_status['op_precision_mode']:
+        function_status['op_precision_mode'] = True
+        if not _is_supported():
+            return
     if path == AscendOpPrecisionConf.get_instance().op_precision_mode():
         return
     # Check the configuration environment whether valid
@@ -130,6 +141,10 @@ def matmul_allow_hf32(value):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_precision.matmul_allow_hf32(True)
     """
+    if not function_status['matmul_allow_hf32']:
+        function_status['matmul_allow_hf32'] = True
+        if not _is_supported():
+            return
     supported_modes = [True, False]
     if value not in supported_modes:
         raise ValueError(f"For 'matmul_allow_hf32', the type of input value must be one of "
@@ -160,6 +175,10 @@ def conv_allow_hf32(value):
         >>> import mindspore as ms
         >>> ms.device_context.ascend.op_precision.conv_allow_hf32(True)
     """
+    if not function_status['conv_allow_hf32']:
+        function_status['conv_allow_hf32'] = True
+        if not _is_supported():
+            return
     supported_modes = [True, False]
     if value not in supported_modes:
         raise ValueError(f"For 'conv_allow_hf32', the type of input value must be one of "
