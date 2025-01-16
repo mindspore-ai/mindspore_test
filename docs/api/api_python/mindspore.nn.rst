@@ -292,7 +292,6 @@ Dropout层
     mindspore.nn.Adagrad
     mindspore.nn.Adam
     mindspore.nn.AdaMax
-    mindspore.nn.AdamOffload
     mindspore.nn.AdamWeightDecay
     mindspore.nn.AdaSumByDeltaWeightWrapCell
     mindspore.nn.AdaSumByGradWrapCell
