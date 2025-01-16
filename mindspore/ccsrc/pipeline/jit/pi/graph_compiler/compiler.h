@@ -29,16 +29,8 @@
 namespace mindspore {
 namespace pijit {
 using CallableGraph = std::function<PyObject *(PyObject *, PyObject *)>;
-// Compiler to parse python byte code
-class Compiler {
- public:
-  static CallableGraph Compile(const PyFunctionObject &func, const PyFrameWrapper &frame, const std::string &phase);
 
- private:
-  Compiler() = default;
-};
-
-class MindCompiler {
+class GraphCompiler {
  public:
   struct CompileInfo {
     std::string co_name_;
@@ -51,7 +43,7 @@ class MindCompiler {
                                const std::string &phase, const CompileInfo &compile_info);
 
  private:
-  MindCompiler() = default;
+  GraphCompiler() = default;
 };
 }  // namespace pijit
 }  // namespace mindspore

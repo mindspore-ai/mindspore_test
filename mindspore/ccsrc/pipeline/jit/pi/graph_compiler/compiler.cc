@@ -21,7 +21,6 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/func_graph.h"
-#include "pipeline/jit/pi/graph_compiler/func_graph_builder.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
 #include "pipeline/jit/ps/pipeline_jit.h"
@@ -96,21 +95,6 @@ void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &
   }
 }
 
-py::tuple MergeAllArgments(PyObject *args, PyObject *kwargs) {
-  if (kwargs == nullptr) {
-    return py::cast<py::tuple>(args);
-  }
-  py::list new_args;
-  for (const auto &value : py::cast<py::tuple>(args)) {
-    new_args.append(value);
-  }
-  for (const auto &[key, value] : py::cast<py::dict>(kwargs)) {
-    (void)key;
-    new_args.append(value);
-  }
-  return py::cast<py::tuple>(new_args);
-}
-
 py::tuple EliminateStubTensor(const py::tuple &args) {
   py::tuple new_args = py::reinterpret_steal<py::tuple>(PyTuple_New(args.size()));
   for (size_t idx = 0; idx < args.size(); idx++) {
@@ -137,24 +121,6 @@ py::tuple EliminateInvalidArgs(const py::tuple &args, int co_flags, bool enable_
         new_args.append(args[idx]);
       }
     }
-  }
-  return py::cast<py::tuple>(new_args);
-}
-
-py::tuple ExpandVariableArgs(const py::tuple &args, int co_flags, int co_argcount) {
-  if ((IntToSize(co_flags) & CO_VARARGS) == 0x0) {
-    return args;
-  }
-  py::tuple var_args = py::cast<py::tuple>(args[co_argcount]);
-  py::list new_args;
-  for (int index = 0; index < co_argcount; index++) {
-    new_args.append(args[index]);
-  }
-  for (const auto &var_arg : var_args) {
-    new_args.append(var_arg);
-  }
-  for (size_t index = (size_t)co_argcount + 1; index < args.size(); index++) {
-    new_args.append(args[index]);
   }
   return py::cast<py::tuple>(new_args);
 }
@@ -189,75 +155,6 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   return ret.ptr();
 }
 
-class SkipBoostInferScope {
- public:
-  SkipBoostInferScope() {
-    MS_LOG(DEBUG) << "Disable boost-infer when running PIJit with two-stages mode";
-    origin_value_ = common::GetEnv("MS_DEV_BOOST_INFER");
-    common::SetEnv("MS_DEV_BOOST_INFER", "0");
-  }
-  ~SkipBoostInferScope() { common::SetEnv("MS_DEV_BOOST_INFER", origin_value_.c_str()); }
-
- private:
-  std::string origin_value_;
-};
-}  // namespace
-
-CallableGraph Compiler::Compile(const PyFunctionObject &func, const PyFrameWrapper &frame, const std::string &phase) {
-  const PyCodeObject *code = frame.GetCode().ptr();
-  std::string name = py::cast<std::string>(code->co_name);
-  MS_EXCEPTION_IF_CHECK_FAIL(!phase.empty(), "Phase name should not be empty for function " + name + ".");
-
-  PyObject *f = reinterpret_cast<PyObject *>(const_cast<PyFunctionObject *>(&func));
-  bool enable_tuple_broaden = GraphUtils::IsTupleBroadenEnable(py::cast<py::object>(f));
-  CallableGraph callable = [code, enable_tuple_broaden, phase](PyObject *args, PyObject *kwargs) -> PyObject * {
-    MS_EXCEPTION_IF_CHECK_FAIL(PyTuple_Check(args), "Excepted a Tuple Object for run args.");
-    MS_EXCEPTION_IF_CHECK_FAIL(((kwargs == nullptr) || PyDict_Check(kwargs)),
-                               "Excepted nullptr or a Dict Object for run kwargs.");
-
-    py::tuple tuple = MergeAllArgments(args, kwargs);
-    tuple = ExpandVariableArgs(tuple, code->co_flags, code->co_argcount);
-    std::string name = py::cast<std::string>(code->co_name);
-    return RunGraph(phase, tuple, name, code->co_flags, enable_tuple_broaden);
-  };
-
-  auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
-  if (graph_executor->HasCompiled(phase)) {
-    return callable;
-  }
-
-  int arg_cnt = code->co_argcount + code->co_kwonlyargcount;
-  if (IntToSize(code->co_flags) & CO_VARARGS) {
-    arg_cnt++;
-  }
-  py::dict f_locals = frame.Locals();
-  py::list locals = py::reinterpret_steal<py::list>(PyDict_Values(f_locals.ptr()));
-  py::tuple args = py::reinterpret_steal<py::tuple>(PyList_AsTuple(PyList_GetSlice(locals.ptr(), 0, arg_cnt)));
-  py::dict kwargs =
-    (IntToSize(code->co_flags) & CO_VARKEYWORDS) == 0x0 ? py::dict() : py::cast<py::dict>(locals[arg_cnt]);
-  args = EliminateStubTensor(args);
-  auto byteCodeParser = std::make_shared<ByteCodeParser>(func);
-  ir::FunctionNodePtr func_node = byteCodeParser->Parse();
-  FuncGraphPtr graph = FuncGraphBuilder::BuildFuncGraph(func_node, args, kwargs);
-  if (graph == nullptr) {
-    return nullptr;
-  }
-  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
-    DumpIR("func_graph_builder.ir", graph);
-  }
-  args = ExpandVariableArgs(args, code->co_flags, code->co_argcount);
-  MarkArgumentMutable(args);
-  try {
-    SkipBoostInferScope skip_boost_infer_scope;
-    (void)graph_executor->CompileInner(graph, args, kwargs, phase, false);
-  } catch (const std::exception &ex) {
-    MS_LOG(ERROR) << "CompileInner failed for [" << std::string(py::str(name)) << "], error:" << ex.what();
-    return nullptr;
-  }
-  return callable;
-}
-
-namespace {
 py::tuple MergeArgsKwargs(PyObject *args, PyObject *kwargs) {
   if (kwargs == nullptr) {
     return py::cast<py::tuple>(args);
@@ -279,8 +176,8 @@ py::tuple MergeArgsKwargs(PyObject *args, PyObject *kwargs) {
 }
 }  // namespace
 
-CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tuple &args, const py::dict &kwargs,
-                                    const std::string &phase, const CompileInfo &compile_info) {
+CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::tuple &args, const py::dict &kwargs,
+                                     const std::string &phase, const CompileInfo &compile_info) {
   MS_EXCEPTION_IF_CHECK_FAIL(!phase.empty(),
                              "Phase name should not be empty for function " + compile_info.co_name_ + ".");
   CallableGraph callable = [compile_info, phase](PyObject *args, PyObject *kwargs) -> PyObject * {

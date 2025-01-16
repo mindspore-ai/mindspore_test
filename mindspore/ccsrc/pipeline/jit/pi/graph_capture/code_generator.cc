@@ -1503,7 +1503,7 @@ py::object MakeCodeFromCodeGen(const GraphBuilderPtr &builder, const GraphAnalyz
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
   auto graph = builder->GetGraph();
-  auto cg = CodeBreakGenerator::Creator(builder, py::cast<py::dict>(globals), graph->GetCodeObj());
+  auto cg = std::make_shared<CodeBreakGenerator>(builder, py::cast<py::dict>(globals), graph->GetCodeObj());
   cg->Init(graph, *analyzer);
   py::object code = analyzer->NeedInterpret() ? cg->MakeDispatchCode() : cg->MakeCapturedCode();
   return code;
@@ -1576,8 +1576,8 @@ void CodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, in
   }
   phase += ".pi_jit";
   auto origin_top_input_num = FGBuilder()->origin_top_input_num();
-  MindCompiler::CompileInfo compile_info{co_name, co_argcount, co_kwonlyargcount, co_flags, origin_top_input_num};
-  CallableGraph callable = mindspore::pijit::MindCompiler::Compile(func_graph, args, py::dict(), phase, compile_info);
+  GraphCompiler::CompileInfo compile_info{co_name, co_argcount, co_kwonlyargcount, co_flags, origin_top_input_num};
+  CallableGraph callable = GraphCompiler::Compile(func_graph, args, py::dict(), phase, compile_info);
   // Set NativeFunc.
   auto parent = GetJitCompileResults(co_);
   if (stub.ptr() == nullptr) {
