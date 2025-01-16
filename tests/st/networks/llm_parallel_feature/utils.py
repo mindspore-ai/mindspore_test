@@ -148,10 +148,7 @@ def check_log(file_path, check_pairs=None):
         shell=True)
     log_cnt = str(log_error_count, 'utf-8').strip()
     if log_cnt != "0":
-        log_context = subprocess.check_output(
-            ["cat %s" % file_path], shell=True
-        )
-        print(f"log context is {log_context}")
+        os.system(f"cat {file_path}")
     assert log_cnt == "0", f"Error found in {file_path}"
     if check_pairs is not None:
         for key_word, value in check_pairs.items():
@@ -409,7 +406,8 @@ def find_sums_in_log(log_file, keywords):
         for line in file:
             if 'Sums' in line:
                 return find_keyword_in_next_lines(file, keywords)
-    return None
+    os.system(f"cat {log_file}")
+    raise ValueError("Failed to find Sums in log file")
 
 
 def find_keyword_in_next_lines(file, keywords):
