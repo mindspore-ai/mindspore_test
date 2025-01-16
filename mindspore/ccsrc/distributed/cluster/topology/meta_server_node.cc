@@ -427,7 +427,9 @@ MessageBase *const MetaServerNode::ProcessGetHostNames(MessageBase *const messag
   MessageName result;
   auto node_role = message->body;
 
-  if (nodes_.size() != total_node_num_) {
+  // all_hostname_hash_.count(node_role) == 0 condition is to ensure some nodes' getting valid hostnames even if others
+  // nodes have already unregistered.
+  if (nodes_.size() != total_node_num_ && all_hostname_hash_.count(node_role) == 0) {
     result = MessageName::kInvalidMetadata;
     retval[kHostNames] = hostnames;
     auto response = CreateMessage(meta_server_addr_.GetUrl(), result, retval.dump());
