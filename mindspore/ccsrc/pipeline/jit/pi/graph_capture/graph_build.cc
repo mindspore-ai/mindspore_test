@@ -743,7 +743,7 @@ bool GraphBuilder::DoWith(const Instr &instr) {
   DoAttrAccess({LOAD_ATTR, 0, "__enter__"});
 
   if (!DoCall({CALL_FUNCTION, 0})) {
-    MS_LOG(ERROR) << "function '__enter__' runs failed here, it should be successful!";
+    MS_LOG(INFO) << "function '__enter__' runs failed.";
     return false;
   }
   PushStack(TryBlock{SETUP_WITH, instr.extra_jump()->bci(), instr.name(), instr.bci(), false});
@@ -1246,11 +1246,9 @@ bool GraphBuilder::DoGetItemWithByteCode(const Instr &instr) {
 bool GraphBuilder::DoGetItem(const Instr &instr) {
   auto r = pop();
   auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, false);
-  if (o != nullptr) {
-    auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-    v->set_abstract_wrapper(o);
-    push(v);
+  auto node = BuildMultiOpValueNode(instr, {l, r});
+  if (node != nullptr) {
+    push(node);
     return true;
   }
   /*
@@ -1268,7 +1266,7 @@ bool GraphBuilder::DoGetItem(const Instr &instr) {
   push(r);
   if (DoGetItemWithByteCode(instr)) {
     auto v = seek(0);
-    o = FGBuilder()->AddLocalVariable(v->GetVobj()->GetPyObject());
+    auto o = FGBuilder()->AddLocalVariable(v->GetVobj()->GetPyObject());
     if (o != nullptr) {
       v->set_abstract_wrapper(o);
       return true;
@@ -1591,9 +1589,10 @@ bool GraphBuilder::DoMakeFunction(const Instr &instr) {
 
 bool GraphBuilder::DoUnary(const Instr &instr) {
   auto o = pop();
-  auto r = HandleMultiOp(instr, {o}, false);
-  auto v = NewValueNode(AObject::Convert(r), instr, {o});
-  v->set_abstract_wrapper(r);
+  auto v = BuildMultiOpValueNode(instr, {o});
+  if (v == nullptr) {
+    return false;
+  }
   push(v);
   return true;
 }
@@ -1618,14 +1617,10 @@ bool GraphBuilder::DoIsOp(const Instr &instr) {
 bool GraphBuilder::DoContainsOp(const Instr &instr) {
   auto r = pop();
   auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, false);
-  if (o == nullptr) {
-    // todo: all byte code should check the result wrapper.
-    MS_LOG(INFO) << "Failed to handle bytecode CONTAINS_OP";
+  auto v = BuildMultiOpValueNode(instr, {l, r});
+  if (v == nullptr) {
     return false;
   }
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
   push(v);
   return true;
 }
@@ -1633,9 +1628,10 @@ bool GraphBuilder::DoContainsOp(const Instr &instr) {
 bool GraphBuilder::DoBinary(const Instr &instr) {
   auto r = pop();
   auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, false);
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
+  auto v = BuildMultiOpValueNode(instr, {l, r});
+  if (v == nullptr) {
+    return false;
+  }
   push(v);
   return true;
 }
@@ -1733,9 +1729,10 @@ bool GraphBuilder::DoCompare(const Instr &instr) {
 
   auto r = pop();
   auto l = pop();
-  auto o = HandleMultiOp(instr, {l, r}, true);
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
+  auto v = BuildMultiOpValueNode(instr, {l, r}, true);
+  if (v == nullptr) {
+    return false;
+  }
   push(v);
   return true;
 }
@@ -5768,6 +5765,18 @@ ValueNode *GraphBuilder::HandleNamedtupleGetElem(const Instr &instr, ValueNode *
   ValueNode *ret = NewValueNode(AObject::Convert(abs), instr, {node});
   ret->set_abstract_wrapper(abs);
   return ret;
+}
+
+ValueNode *GraphBuilder::BuildMultiOpValueNode(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare) {
+  const auto &wrapper = HandleMultiOp(instr, p, is_compare);
+  if (wrapper == nullptr || wrapper->abstract() == nullptr) {
+    MS_LOG(INFO) << "Failed to build multi-op for instruction " << instr.ToString();
+    return nullptr;
+  }
+  auto node = NewValueNode(AObject::Convert(wrapper), instr, p);
+  MS_EXCEPTION_IF_NULL(node);
+  node->set_abstract_wrapper(wrapper);
+  return node;
 }
 
 AbstractWrapperPtr GraphBuilder::HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare) {
