@@ -35,13 +35,13 @@ namespace backend {
 namespace ge_backend {
 struct GeInputData {
   std::vector<GeTensor> ge_inputs;
-  std::vector<device::DeviceAddress *> device_addrs;
+  std::vector<kernel::KernelTensor *> kernel_tensors;
   std::vector<std::pair<AnfNodeWeakPtr, size_t>> need_update_input;
 };
 
 struct GeOutputData {
   std::vector<GeTensor> ge_outputs;
-  std::vector<device::DeviceAddress *> device_addrs;
+  std::vector<kernel::KernelTensor *> kernel_tensors;
   std::vector<std::pair<AnfNodeWeakPtr, size_t>> graph_outputs;
 };
 

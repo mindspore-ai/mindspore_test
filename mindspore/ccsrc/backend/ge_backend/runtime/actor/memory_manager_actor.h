@@ -43,23 +43,23 @@ class MemoryManagerActor : public ActorBase {
   ~MemoryManagerActor() override = default;
 
   // The process entry of memory alloc.
-  void AllocateMemory(const std::vector<DeviceTensor *> *alloc_list, OpContext<DeviceTensor> *const op_context,
+  void AllocateMemory(const std::vector<KernelTensorPtr> *alloc_list, OpContext<kernel::KernelTensor> *const op_context,
                       const AID &from_aid);
 
-  void AllocateBatchMemory(const std::vector<DeviceTensor *> *alloc_list, OpContext<DeviceTensor> *const op_context,
-                           const AID &from_aid);
+  void AllocateBatchMemory(const std::vector<KernelTensorPtr> *alloc_list,
+                           OpContext<kernel::KernelTensor> *const op_context, const AID &from_aid);
 
   // The process entry of memory free.
-  void FreeMemory(const std::vector<DeviceTensor *> *free_list, OpContext<DeviceTensor> *const op_context,
+  void FreeMemory(const std::vector<KernelTensorPtr> *free_list, OpContext<kernel::KernelTensor> *const op_context,
                   const AID &from_aid);
 
-  void FreeBatchMemory(const std::vector<DeviceTensor *> *free_list, OpContext<DeviceTensor> *const op_context,
+  void FreeBatchMemory(const std::vector<KernelTensorPtr> *free_list, OpContext<kernel::KernelTensor> *const op_context,
                        const AID &from_aid);
 
   void FreeMemoryByRefCount(DeviceTensor *const device_tensor, const std::string &op_name);
 
   // Wait the MemoryManagerActor to finish running all current messages.
-  void Wait(OpContext<DeviceTensor> *const op_context, const AID &from_aid);
+  void Wait(OpContext<kernel::KernelTensor> *const op_context, const AID &from_aid);
 
  private:
   MemoryManagerActor() : ActorBase("GEMemoryManagerActor") {}
@@ -67,7 +67,7 @@ class MemoryManagerActor : public ActorBase {
 
   // When allocate device memory fail, print error log and set op context failed status.
   void SetOpContextMemoryAllocFail(const std::string &kernel_name, size_t alloc_size,
-                                   OpContext<DeviceTensor> *const op_context);
+                                   OpContext<kernel::KernelTensor> *const op_context);
 
   // MemoryManagerActor object is used like a single instance, if one actor allocates memory failed in one batch, which
   // will set fail message info OpContext, major thread will destroy the OpContext object, subsequent actor can not set

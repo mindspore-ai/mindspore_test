@@ -165,30 +165,34 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
 
 void DumpFormalParameterDeviceTensor(const ControlActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
-  const auto &formal_parameter_device_tensors = actor->ref_formal_parameter_device_tensors();
-  if (!formal_parameter_device_tensors.empty()) {
-    ofs << "\t\tref_formal_parameter_device_tensors:" << formal_parameter_device_tensors.size() << "\n ";
-    for (const auto &formal_parameter_device_tensor : formal_parameter_device_tensors) {
-      for (const auto &device_tensor : formal_parameter_device_tensor.second) {
+  const auto &formal_parameter_kernel_tensors = actor->ref_formal_parameter_kernel_tensors();
+  if (!formal_parameter_kernel_tensors.empty()) {
+    ofs << "\t\tref_formal_parameter_device_tensors:" << formal_parameter_kernel_tensors.size() << "\n ";
+    for (const auto &formal_parameter_kernel_tensor : formal_parameter_kernel_tensors) {
+      for (const auto &kernel_tensor : formal_parameter_kernel_tensor.second) {
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        auto &device_tensor = kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(device_tensor);
         auto ref_node = device_tensor->GetNodeIndex();
         MS_EXCEPTION_IF_NULL(ref_node.first);
-        ofs << "\t\t\tref_position:" << formal_parameter_device_tensor.first
+        ofs << "\t\t\tref_position:" << formal_parameter_kernel_tensor.first
             << "\tref_node_name:" << ref_node.first->fullname_with_scope()
             << "\tref_node_debug_name:" << ref_node.first->DebugString() << "\n";
       }
     }
   }
 
-  const auto &ref_node_formal_parameter_device_tensors = actor->ref_node_formal_parameter_device_tensors();
-  if (!ref_node_formal_parameter_device_tensors.empty()) {
-    ofs << "\t\tref_node_formal_parameter_device_tensors:" << ref_node_formal_parameter_device_tensors.size() << "\n ";
-    for (const auto &ref_node_formal_parameter_device_tensor : ref_node_formal_parameter_device_tensors) {
-      for (const auto &device_tensor : ref_node_formal_parameter_device_tensor.second) {
+  const auto &ref_node_formal_parameter_kernel_tensors = actor->ref_node_formal_parameter_kernel_tensors();
+  if (!ref_node_formal_parameter_kernel_tensors.empty()) {
+    ofs << "\t\tref_node_formal_parameter_device_tensors:" << ref_node_formal_parameter_kernel_tensors.size() << "\n ";
+    for (const auto &ref_node_formal_parameter_kernel_tensor : ref_node_formal_parameter_kernel_tensors) {
+      for (const auto &kernel_tensor : ref_node_formal_parameter_kernel_tensor.second) {
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        auto &device_tensor = kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(device_tensor);
         auto ref_node = device_tensor->GetNodeIndex();
         MS_EXCEPTION_IF_NULL(ref_node.first);
-        ofs << "\t\t\tref_position:" << ref_node_formal_parameter_device_tensor.first
+        ofs << "\t\t\tref_position:" << ref_node_formal_parameter_kernel_tensor.first
             << "\tref_node_name:" << ref_node.first->fullname_with_scope()
             << "\tref_node_debug_name:" << ref_node.first->DebugString() << "\n";
       }
@@ -210,7 +214,7 @@ void DumpControlActor(const ControlActor *actor, std::ofstream &ofs) {
       }
       ofs << "\t\t\tlocal partial index:" << local_partial.first
           << "\tgraph:" << local_partial.second->func_graph_->ToString()
-          << "\tparameter num:" << local_partial.second->device_tensors_.size() << "\n";
+          << "\tparameter num:" << local_partial.second->kernel_tensors_.size() << "\n";
     }
   }
 
@@ -511,7 +515,7 @@ std::string GetActorSubName(AbstractActor *actor) {
   const auto &pos = name.find_last_of("/");
   return kernel_graph_name + name.substr(pos + 1);
 }
-using ActorInputMap = std::map<size_t, std::tuple<std::string, DeviceAddressPtr>>;
+using ActorInputMap = std::map<size_t, std::tuple<std::string, KernelTensorPtr>>;
 void AddInputActorInfo(ActorInputMap *actor_inputs, AbstractActor *input_actor, const AbstractActor *const actor,
                        const ActorInfoMap &actor_info, size_t from_index, size_t to_index) {
   MS_EXCEPTION_IF_NULL(actor_inputs);
@@ -526,9 +530,9 @@ void AddInputActorInfo(ActorInputMap *actor_inputs, AbstractActor *input_actor, 
   if (input_iter != actor_info.end()) {
     const auto &input_name =
       "%" + std::to_string(std::get<0>(input_iter->second)) + "[" + std::to_string(from_index) + "]";
-    const auto &input_device_addresses = std::get<1>(input_iter->second);
+    const auto &input_kernel_tensors = std::get<1>(input_iter->second);
     (*actor_inputs)[to_index] = {
-      input_name, (from_index < input_device_addresses.size() ? input_device_addresses[from_index] : nullptr)};
+      input_name, (from_index < input_kernel_tensors.size() ? input_kernel_tensors[from_index] : nullptr)};
   } else {
     (*actor_inputs)[to_index] = {input_actor->GetAID().Name() + "[" + std::to_string(from_index) + "]", {}};
   }
@@ -673,8 +677,8 @@ void FetchInputForHostQueueDSActor(AbstractActor *actor, ActorInputMap *actor_in
       (*actor_inputs)[i] = {"null", nullptr};
       continue;
     }
-    auto device_address = AnfAlgo::GetMutableOutputAddr(node_pair.first, node_pair.second, false);
-    (*actor_inputs)[i] = {node_pair.first->DebugString(0), device_address};
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_pair.first, node_pair.second, false);
+    (*actor_inputs)[i] = {node_pair.first->DebugString(0), kernel_tensor};
   }
 }
 
@@ -700,10 +704,10 @@ void FetchInputData(AbstractActor *actor, ActorInputMap *actor_inputs, ActorInfo
   }
 }
 
-void FetchOutputInfo(AbstractActor *actor, std::vector<DeviceAddressPtr> *output_device_addresses,
+void FetchOutputInfo(AbstractActor *actor, std::vector<KernelTensorPtr> *output_kernel_tensors,
                      const ActorInputMap &actor_inputs) {
   MS_EXCEPTION_IF_NULL(actor);
-  MS_EXCEPTION_IF_NULL(output_device_addresses);
+  MS_EXCEPTION_IF_NULL(output_kernel_tensors);
   if (actor->type() == KernelTransformType::kSuperKernelActor) {
     if (actor->output_data_arrows().size() != actor->output_data_nodes().size()) {
       MS_LOG(INFO) << "For actor:" << actor->GetAID() << " output arrow size:" << actor->output_data_arrows().size()
@@ -723,21 +727,21 @@ void FetchOutputInfo(AbstractActor *actor, std::vector<DeviceAddressPtr> *output
       MS_EXCEPTION_IF_NULL(output_pair.first);
       const auto &node_index = common::AnfAlgo::VisitKernelWithReturnType(output_pair.first, output_pair.second, false);
       MS_EXCEPTION_IF_NULL(node_index.first);
-      device::DeviceAddressPtr device_address = nullptr;
+      KernelTensorPtr kernel_tensor = nullptr;
       if (AnfAlgo::OutputAddrExist(node_index.first, node_index.second, false)) {
-        device_address = AnfAlgo::GetMutableOutputAddr(node_index.first, node_index.second, false);
+        kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_index.first, node_index.second, false);
       }
-      if (device_address == nullptr || device_address->kernel_tensor() == nullptr) {
+      if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
         MS_LOG(INFO) << "For actor:" << actor->GetAID() << " output node:" << node_index.first->fullname_with_scope()
                      << " has no device address.";
-        output_device_addresses->emplace_back(nullptr);
+        output_kernel_tensors->emplace_back(nullptr);
         continue;
       }
-      output_device_addresses->emplace_back(AnfAlgo::GetMutableOutputAddr(node_index.first, node_index.second, false));
+      output_kernel_tensors->emplace_back(AnfAlgo::GetOutputKernelTensor(node_index.first, node_index.second, false));
     }
   } else {
-    for_each(actor_inputs.begin(), actor_inputs.end(), [output_device_addresses](const auto &pair) {
-      output_device_addresses->emplace_back(std::get<1>(pair.second));
+    for_each(actor_inputs.begin(), actor_inputs.end(), [output_kernel_tensors](const auto &pair) {
+      output_kernel_tensors->emplace_back(std::get<1>(pair.second));
     });
   }
 }
@@ -829,31 +833,29 @@ std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root, const GetInpu
   return actors;
 }
 
-void DumpShapeAndType(const std::vector<DeviceAddressPtr> &output_device_addresses, const ActorInputMap &actor_inputs,
+void DumpShapeAndType(const std::vector<KernelTensorPtr> &output_kernel_tensors, const ActorInputMap &actor_inputs,
                       std::ofstream &ofs) {
   std::string shape = "\t# shape : ";
   std::string type = "\t# type : ";
   for (const auto &pair : actor_inputs) {
-    const auto &device_address = std::get<1>(pair.second);
-    if (device_address == nullptr || device_address->kernel_tensor() == nullptr) {
+    const auto &kernel_tensor = std::get<1>(pair.second);
+    if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
       shape = shape + "<null> ";
       type = type + "<null> ";
       continue;
     }
-    const auto &kernel_tensor = device_address->kernel_tensor();
     shape =
       shape + "<" + (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString()) + "> ";
     type = type + "<" + (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString()) + "> ";
   }
   shape += "-> ";
   type += "-> ";
-  for_each(output_device_addresses.begin(), output_device_addresses.end(), [&shape, &type](const auto &device_address) {
-    if (device_address == nullptr || device_address->kernel_tensor() == nullptr) {
+  for_each(output_kernel_tensors.begin(), output_kernel_tensors.end(), [&shape, &type](const auto &kernel_tensor) {
+    if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
       shape = shape + "<null> ";
       type = type + "<null> ";
       return;
     }
-    const auto &kernel_tensor = device_address->kernel_tensor();
     shape =
       shape + "<" + (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString()) + "> ";
     type = type + "<" + (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString()) + "> ";
@@ -866,9 +868,9 @@ void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info,
   MS_EXCEPTION_IF_NULL(actor_info);
   ActorInputMap actor_inputs;
   FetchInputData(actor, &actor_inputs, actor_info);
-  std::vector<DeviceAddressPtr> output_device_addresses;
-  FetchOutputInfo(actor, &output_device_addresses, actor_inputs);
-  (*actor_info)[actor] = {index, output_device_addresses};
+  std::vector<KernelTensorPtr> output_kernel_tensors;
+  FetchOutputInfo(actor, &output_kernel_tensors, actor_inputs);
+  (*actor_info)[actor] = {index, output_kernel_tensors};
 
   // Dump input data.
   ofs << "%" << index << " = " << GetActorSubName(actor) << "(";
@@ -905,14 +907,14 @@ void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info,
   DumpActorInfo(actor, ofs);
 
   // Dump output info.
-  DumpShapeAndType(output_device_addresses, actor_inputs, ofs);
+  DumpShapeAndType(output_kernel_tensors, actor_inputs, ofs);
   ofs << "\t# device address : ";
-  for_each(output_device_addresses.begin(), output_device_addresses.end(), [&ofs](const auto &device_address) {
-    if (device_address == nullptr || device_address->kernel_tensor() == nullptr) {
-      ofs << "<" << device_address << "> ";
+  for_each(output_kernel_tensors.begin(), output_kernel_tensors.end(), [&ofs](const auto &kernel_tensor) {
+    if (kernel_tensor == nullptr || kernel_tensor->device_address() == nullptr) {
+      ofs << "<" << kernel_tensor << "> ";
       return;
     }
-    ofs << "<" << device_address << " : ref count:" << device_address->original_ref_count() << "> ";
+    ofs << "<" << kernel_tensor << " : ref count:" << kernel_tensor->device_address()->original_ref_count() << "> ";
   });
   ofs << "\n\t# AID : " << actor->GetAID().Name() << "\n";
 }

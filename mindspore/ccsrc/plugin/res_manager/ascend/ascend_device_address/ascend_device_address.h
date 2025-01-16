@@ -33,9 +33,7 @@ class LaunchKernel;
 namespace ascend {
 class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddress {
  public:
-  explicit AscendDeviceAddress(const KernelTensorPtr &kernel_tensor) : LoadableDeviceAddress(kernel_tensor) {
-    SetDevicePtrDeleter();
-  }
+  AscendDeviceAddress() : LoadableDeviceAddress() { SetDevicePtrDeleter(); }
   explicit AscendDeviceAddress(void *ptr, size_t size) : LoadableDeviceAddress(ptr, size) { SetDevicePtrDeleter(); }
   explicit AscendDeviceAddress(void *ptr, size_t size, const std::string &device_name, uint32_t device_id)
       : LoadableDeviceAddress(ptr, size, device_name, device_id) {
@@ -61,7 +59,10 @@ class ASCEND_RES_MANAGER_EXPORT AscendDeviceAddress : public LoadableDeviceAddre
     SetDevicePtrDeleter();
   }
   ~AscendDeviceAddress() override;
-  void DeviceSynchronizerInit() override;
+
+  DeviceAddressPtr CloneDeviceAddress() override;
+
+  DeviceSynchronizerPtr NewDeviceSynchronizer() override;
   bool SyncDeviceToHost(size_t size, void *const host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override;

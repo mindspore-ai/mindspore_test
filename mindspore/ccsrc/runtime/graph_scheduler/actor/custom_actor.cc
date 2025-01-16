@@ -15,6 +15,8 @@
  */
 
 #include "runtime/graph_scheduler/actor/custom_actor.h"
+
+#include <algorithm>
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "utils/log_adapter.h"
 #include "utils/anf_utils.h"
@@ -31,12 +33,12 @@ void CustomActor::Init() {
     const auto &cnode = base_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     auto input_num = common::AnfAlgo::GetInputNum(cnode);
-    input_device_tensors_.resize(input_num);
+    input_kernel_tensors_.resize(input_num);
     memory_free_list_.resize(input_num);
   }
 }
 
-void CustomActor::Run(OpContext<DeviceTensor> *const ctx) {
+void CustomActor::Run(OpContext<KernelTensor> *const ctx) {
   MS_EXCEPTION_IF_NULL(ctx);
   auto node = kernel_.lock();
   MS_EXCEPTION_IF_NULL(node);
@@ -51,21 +53,26 @@ void CustomActor::Run(OpContext<DeviceTensor> *const ctx) {
       for (auto &input_data : data_iter->second) {
         MS_EXCEPTION_IF_NULL(input_data);
         size_t input_data_index = IntToSize(input_data->index_);
-        if ((input_data_index >= input_device_tensors_.size()) || (input_data_index >= memory_free_list_.size())) {
+        if ((input_data_index >= input_kernel_tensors_.size()) || (input_data_index >= memory_free_list_.size())) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(
             strategy_, (*ctx),
             "The input index:" + std::to_string(input_data_index) + " is out of vector size:" +
-              std::to_string(input_device_tensors_.size()) + " for node:" + node->DebugString());
+              std::to_string(input_kernel_tensors_.size()) + " for node:" + node->DebugString());
           return;
         }
         MS_LOG(DEBUG) << "Collect input data index:" << input_data_index << " for custom actor:" << GetAID();
-        input_device_tensors_[input_data_index] = input_data->data_;
+        input_kernel_tensors_[input_data_index] = input_data->data_;
         memory_free_list_[input_data_index] = input_data->data_;
       }
     }
 
+    std::vector<KernelTensor *> raw_input_kernel_tensors;
+    raw_input_kernel_tensors.resize(input_kernel_tensors_.size());
+    std::transform(input_kernel_tensors_.begin(), input_kernel_tensors_.end(), raw_input_kernel_tensors.begin(),
+                   [](const KernelTensorPtr &ptr) { return ptr.get(); });
+
     // Collect the inputs from device tensor store.
-    FetchInputByTensorStore(&input_device_tensors_, nullptr, nullptr, &memory_free_list_, ctx);
+    FetchInputByTensorStore(&raw_input_kernel_tensors, nullptr, nullptr, &memory_free_list_, ctx);
 
     // Launch custom func
     MS_EXCEPTION_IF_NULL(node);
@@ -75,7 +82,7 @@ void CustomActor::Run(OpContext<DeviceTensor> *const ctx) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, (*ctx), error_info);
     }
     MS_LOG(DEBUG) << "Start Launch Custom actor: " << AnfUtils::GetCustomActorName(kernel_.lock());
-    custom_func(&input_device_tensors_);
+    custom_func(&input_kernel_tensors_);
     MS_LOG(DEBUG) << "End Launch Custom actor: " << AnfUtils::GetCustomActorName(kernel_.lock());
 
     // Update the output addr size after inferop && updateop, because after the inferop & updateop, the shape of output
@@ -97,7 +104,7 @@ void CustomActor::Run(OpContext<DeviceTensor> *const ctx) {
   PostRun(ctx);
 }
 
-void CustomActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
+void CustomActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   if (ActorDispatcher::is_memory_free_sync()) {
     ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &memory_free_list_,
                               device_contexts_[0], context, GetAID());

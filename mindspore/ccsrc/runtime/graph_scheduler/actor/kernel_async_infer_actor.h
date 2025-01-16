@@ -36,7 +36,7 @@ class BACKEND_EXPORT KernelAsyncInferActor : public ActorBase {
 
   void Initialize();
 
-  void InferShape(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor);
+  void InferShape(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
 
   void Wait();
 

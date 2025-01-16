@@ -108,14 +108,15 @@ bool SchedulerHelper::HasMonadControl(const AnfNodePtr &input_node, const Kernel
   return false;
 }
 
-void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor) {
+void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const KernelTensorPtr &kernel_tensor) {
   MS_EXCEPTION_IF_NULL(anf_node);
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  MS_LOG(DEBUG) << "Add device tensor store:" << device_tensor << " for node:" << anf_node.get()->DebugString()
-                << " node addr:" << anf_node.get() << " device type:" << device_tensor->GetDeviceType();
-  DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), device_tensor);
-  device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-  UpdateRefCount(device_tensor.get(), true);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor->device_address());
+  MS_LOG(DEBUG) << "Add device tensor store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
+                << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType();
+  DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), kernel_tensor);
+  kernel_tensor->device_address()->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  UpdateRefCount(kernel_tensor->device_address().get(), true);
 }
 
 void SchedulerHelper::AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,

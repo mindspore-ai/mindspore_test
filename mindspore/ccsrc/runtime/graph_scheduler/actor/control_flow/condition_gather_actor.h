@@ -39,21 +39,21 @@ class ConditionGatherActor : public KernelActor {
                        const KernelTransformType &type = KernelTransformType::kConditionGatherActor);
   ~ConditionGatherActor() override;
   // Receive the branch name from condition switch actor.
-  void RunBranchName(const std::string &branch_name, OpContext<DeviceTensor> *const context);
-  void ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) override;
-  void ExecuteResizeKernelModTask(OpContext<DeviceTensor> *const context) override;
-  void ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context) override;
-  void UpdateRefDeviceAddress(OpContext<DeviceTensor> *const context, bool increase_ref_count) override;
+  void RunBranchName(const std::string &branch_name, OpContext<KernelTensor> *const context);
+  void ExecuteInferShapeTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteResizeKernelModTask(OpContext<KernelTensor> *const context) override;
+  void ExecuteLaunchKernelTask(OpContext<KernelTensor> *const context) override;
+  void UpdateRefDeviceAddress(OpContext<KernelTensor> *const context, bool increase_ref_count) override;
   size_t branch_output_num() const { return branch_output_num_; }
   const std::vector<std::string> &branch_names() const { return branch_names_; }
 
  protected:
   void Init() override;
-  void FetchInput(OpContext<DeviceTensor> *const context);
-  void Run(OpContext<DeviceTensor> *const context) override;
+  void FetchInput(OpContext<KernelTensor> *const context);
+  void Run(OpContext<KernelTensor> *const context) override;
 
  private:
-  void FetchParameterInput(size_t start_index, OpContext<DeviceTensor> *const context);
+  void FetchParameterInput(size_t start_index, OpContext<KernelTensor> *const context);
 
   friend class SuperKernelActor;
   friend class InlineControlFlowScheduler;

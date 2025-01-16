@@ -55,7 +55,7 @@ class AnyTypeKernelActor : public SuperKernelActor {
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
 
   // Hand the graph input.
   // The execution of actor is divided into the following steps:
@@ -64,27 +64,27 @@ class AnyTypeKernelActor : public SuperKernelActor {
   // 2. check whether the corresponding graph already exists, if not found, execute 3, if there is, execute 4
   // 3. compile the corresponding kernel_graph according to the type and generate the corresponding actor_set
   // 4. send graph inputs to kernel actor of current graph
-  void RunForGraphInput(OpContext<DeviceTensor> *const context);
-  void FetchInputDeviceTensor(OpContext<DeviceTensor> *const context) override;
-  void UpdataDynamicShapeParameterForGraphInput(OpContext<DeviceTensor> *const context);
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void RunForGraphInput(OpContext<KernelTensor> *const context);
+  void FetchInputDeviceTensor(OpContext<KernelTensor> *const context) override;
+  void UpdataDynamicShapeParameterForGraphInput(OpContext<KernelTensor> *const context);
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
   // Handle the graph output.
-  bool CheckGraphOutputRunningCondition(const OpContext<DeviceTensor> *context);
+  bool CheckGraphOutputRunningCondition(const OpContext<KernelTensor> *context);
   // Receive graph outputs:
   // 1. find the corresponding arrow according to the current type key, and send the outputs.
-  void RunForGraphOutput(OpContext<DeviceTensor> *const context);
-  KernelGraphPtr CompileRealKernelGraph(OpContext<DeviceTensor> *const context);
-  void CheckParams(OpContext<DeviceTensor> *const context);
-  void FetchGraphOutput(OpContext<DeviceTensor> *const context);
-  void EraseGraphOutput(OpContext<DeviceTensor> *const context);
-  void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                        const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
+  void RunForGraphOutput(OpContext<KernelTensor> *const context);
+  KernelGraphPtr CompileRealKernelGraph(OpContext<KernelTensor> *const context);
+  void CheckParams(OpContext<KernelTensor> *const context);
+  void FetchGraphOutput(OpContext<KernelTensor> *const context);
+  void EraseGraphOutput(OpContext<KernelTensor> *const context);
+  void UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,
+                        const AnfNodePtr &output_node, OpContext<KernelTensor> *const context) override;
   // Compile the corresponding kernel_graph according to the input tensors and create the kernel actor in super kernel
   // actor.
-  void PrepareRunContext(OpContext<DeviceTensor> *const context);
+  void PrepareRunContext(OpContext<KernelTensor> *const context);
   // Clear the elements in super kernel actor and recreate by the new compiler action.
-  void ClearElements(OpContext<DeviceTensor> *const context);
+  void ClearElements(OpContext<KernelTensor> *const context);
 
  private:
   friend class AnyTypeGraphScheduler;
@@ -110,23 +110,23 @@ class AnyTypeKernelActor : public SuperKernelActor {
   // The output_data_nodes_ and output_data_ corresponds to the output_data_arrows_ one by one.
   mindspore::HashMap<std::string, std::vector<AnfNodePtr>> graph_input_data_nodes_;
   // The second of pair indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
-  mindspore::HashMap<std::string, std::vector<std::pair<OpDataUniquePtr<DeviceTensor>, size_t>>> graph_input_data_;
+  mindspore::HashMap<std::string, std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>>> graph_input_data_;
   // Record the fusion output index for output data arrow.
   mindspore::HashMap<std::string, mindspore::HashMap<DataArrow *, size_t>> data_arrow_to_graph_input_actor_indexs_;
   // Used to send batch data in the message which RunBatchOpData needs, the key is the actor name of destination actor.
-  mindspore::HashMap<std::string, mindspore::HashMap<std::string, std::vector<OpData<DeviceTensor> *>>>
+  mindspore::HashMap<std::string, mindspore::HashMap<std::string, std::vector<OpData<KernelTensor> *>>>
     batch_graph_input_data_;
   mindspore::HashMap<std::string, mindspore::HashMap<std::string, std::vector<DataArrowPtr>>>
     batch_graph_input_data_arrows_;
 
   // Graph outputs receive from kernel/superkernel actors of graph.
-  mindspore::HashMap<int, std::vector<OpData<DeviceTensor> *>> graph_output_op_data_;
+  mindspore::HashMap<int, std::vector<OpData<KernelTensor> *>> graph_output_op_data_;
   mindspore::HashMap<int, std::vector<AID *>> graph_output_op_control_;
-  std::vector<DeviceTensor *> graph_ouput_device_tensors_;
+  std::vector<KernelTensorPtr> graph_ouput_kernel_tensors_;
   // In any type kernel actor, the kernel in the model graph will have fallback scenario, the device type of the
   // model graph and the real graph will be different. A new device address needs to be created for the model graph
   // and placed here.
-  std::vector<DeviceTensorPtr> fallback_device_tensors_;
+  std::vector<KernelTensorPtr> fallback_kernel_tensors_;
   mindspore::HashMap<std::string, size_t> graph_output_data_num_;
   mindspore::HashMap<std::string, size_t> graph_output_control_num_;
 

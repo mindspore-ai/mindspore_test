@@ -28,9 +28,7 @@ namespace device {
 namespace cpu {
 class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
  public:
-  explicit CPUDeviceAddress(const KernelTensorPtr &kernel_tensor) : DeviceAddress(kernel_tensor) {
-    SetDevicePtrDeleter();
-  }
+  CPUDeviceAddress() : DeviceAddress() { SetDevicePtrDeleter(); }
 
   CPUDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) { SetDevicePtrDeleter(); }
 
@@ -57,7 +55,8 @@ class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
   }
 
   ~CPUDeviceAddress() override = default;
-  void DeviceSynchronizerInit() override;
+  DeviceSynchronizerPtr NewDeviceSynchronizer() override;
+  DeviceAddressPtr CloneDeviceAddress() override;
 
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override;
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,

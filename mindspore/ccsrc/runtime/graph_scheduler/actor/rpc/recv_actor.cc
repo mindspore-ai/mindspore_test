@@ -39,7 +39,7 @@ RecvActor::~RecvActor() {
   }
 }
 
-void RecvActor::SetOpcontext(OpContext<DeviceTensor> *const op_context) {
+void RecvActor::SetOpcontext(OpContext<KernelTensor> *const op_context) {
   std::unique_lock<std::mutex> lock(context_mtx_);
   MS_EXCEPTION_IF_NULL(op_context);
   op_context_ = op_context;
@@ -146,7 +146,7 @@ void RecvActor::StopRpcAtException() {
   }
 }
 
-void RecvActor::RunOpInterProcessData(MessageBase *const msg, OpContext<DeviceTensor> *const context) {
+void RecvActor::RunOpInterProcessData(MessageBase *const msg, OpContext<KernelTensor> *const context) {
   MS_ERROR_IF_NULL_WO_RET_VAL(msg);
   MS_ERROR_IF_NULL_WO_RET_VAL(op_context_);
   MS_ERROR_IF_NULL_WO_RET_VAL(context);
@@ -173,7 +173,7 @@ void RecvActor::RunOpInterProcessData(MessageBase *const msg, OpContext<DeviceTe
   return;
 }
 
-bool RecvActor::CheckRunningCondition(const OpContext<DeviceTensor> *context) const {
+bool RecvActor::CheckRunningCondition(const OpContext<KernelTensor> *context) const {
   MS_EXCEPTION_IF_NULL(context);
   // Step 1: Judge data and control inputs are satisfied.
   bool is_data_and_control_arrow_satisfied = AbstractActor::CheckRunningCondition(context);
@@ -200,7 +200,7 @@ bool RecvActor::CheckRunningCondition(const OpContext<DeviceTensor> *context) co
   return true;
 }
 
-void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
+void RecvActor::EraseInput(const OpContext<KernelTensor> *context) {
   MS_EXCEPTION_IF_NULL(context);
   KernelActor::EraseInput(context);
 
@@ -235,7 +235,7 @@ void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
 #endif
 }
 
-void RecvActor::Run(OpContext<DeviceTensor> *const context) {
+void RecvActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(kernel_info_);
   auto recv_kernel_mod = dynamic_cast<kernel::RpcKernelMod *>(kernel_info_->MutableKernelMod());
@@ -331,7 +331,7 @@ void RecvActor::AddArgSpecForInput(AbstractBasePtrList *args_spec_list, const Sh
   }
 
   // Update kernel tensor shape for dynamic shape case.
-  const auto &output_kernel_tensor = output_addr->kernel_tensor();
+  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(real_input, real_input_index, false);
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   const auto &new_shape = real_abs->GetShape();
   MS_EXCEPTION_IF_NULL(new_shape);

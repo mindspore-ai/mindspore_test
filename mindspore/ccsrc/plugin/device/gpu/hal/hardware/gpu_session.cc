@@ -313,7 +313,7 @@ bool CheckIfNeedSync(const tensor::TensorPtr &tensor, const DeviceAddressPtr &de
     need_sync = true;
   } else if (tensor_address != device_address) {
     if (tensor_address->GetDeviceType() == device_address->GetDeviceType()) {
-      AnfAlgo::SetOutputAddr(tensor_address, 0, pk_node.get());
+      AnfAlgo::SetOutputAddr(tensor_address, 0, pk_node);
     } else {
       need_sync = true;
     }
@@ -345,7 +345,9 @@ void GPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
         tensor->set_sync_status(kNoNeedSync);
         continue;
       }
-      auto device_address = AnfAlgo::GetMutableOutputAddr(pk_node, 0);
+      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(pk_node, 0, true);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
       bool need_sync = CheckIfNeedSync(tensor, device_address, pk_node);
       if (need_sync) {
@@ -463,10 +465,10 @@ void GPUSession::UpdateOutputTensors(const VectorRef *outputs,
           if (common::AnfAlgo::IsNopNode(node)) {
             auto pre_node = common::AnfAlgo::GetPrevNodeOutput(node, 0, true);
             if (!pre_node.first->isa<Parameter>()) {
-              AnfAlgo::SetOutputAddr(new_address, pre_node.second, pre_node.first.get());
+              AnfAlgo::SetOutputAddr(new_address, pre_node.second, pre_node.first);
             }
           } else {
-            AnfAlgo::SetOutputAddr(new_address, output_index, node.get());
+            AnfAlgo::SetOutputAddr(new_address, output_index, node);
           }
           (*new_to_old_device_address)[new_address] = address;
           if (graphkernel::GraphKernelFlags::GetInstance().IsEnableGraphKernel()) {

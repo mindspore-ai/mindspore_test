@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <algorithm>
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
@@ -42,9 +43,9 @@
 
 namespace mindspore {
 namespace runtime {
-void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &input_device_tensors,
-                                const std::vector<DeviceTensor *> &output_device_tensors,
-                                const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context,
+void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &input_kernel_tensors,
+                                const std::vector<KernelTensorPtr> &output_kernel_tensors,
+                                const DeviceContext *device_context, OpContext<KernelTensor> *const op_context,
                                 const AID *) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -58,10 +59,20 @@ void DebugActor::DebugPreLaunch(const AnfNodePtr &node, const std::vector<Device
  * Description: Load and read data for the given node if needed. Dump the node if dump is enabled and free the loaded
  * memory after the dump (for GPU and ascend kernel-by-kernel).
  */
-void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &input_device_tensors,
-                                 const std::vector<DeviceTensor *> &output_device_tensors,
-                                 const DeviceContext *device_context, OpContext<DeviceTensor> *const op_context,
+void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &input_kernel_tensors,
+                                 const std::vector<KernelTensorPtr> &output_kernel_tensors,
+                                 const DeviceContext *device_context, OpContext<KernelTensor> *const op_context,
                                  const AID *) {
+  std::vector<KernelTensor *> raw_input_kernel_tensors;
+  raw_input_kernel_tensors.resize(input_kernel_tensors.size());
+  std::vector<KernelTensor *> raw_output_kernel_tensors;
+  raw_output_kernel_tensors.resize(output_kernel_tensors.size());
+
+  std::transform(input_kernel_tensors.begin(), input_kernel_tensors.end(), raw_input_kernel_tensors.begin(),
+                 [](const KernelTensorPtr &ptr) { return ptr.get(); });
+  std::transform(output_kernel_tensors.begin(), output_kernel_tensors.end(), raw_output_kernel_tensors.begin(),
+                 [](const KernelTensorPtr &ptr) { return ptr.get(); });
+
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(op_context);
@@ -76,7 +87,7 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Devic
                << device_context->GetDeviceType();
   if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
 #ifdef ENABLE_DEBUGGER
-    AscendKbkDump(cnode, input_device_tensors, output_device_tensors, device_context);
+    AscendKbkDump(cnode, raw_input_kernel_tensors, raw_output_kernel_tensors, device_context);
 #endif
   } else if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
     if (DumpJsonParser::GetInstance().op_debug_mode() == DumpJsonParser::DUMP_LITE_EXCEPTION) {
@@ -101,7 +112,7 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Devic
       debugger->InsertExecutedGraph(kernel_graph);
       bool read_data = CheckReadData(cnode);
       if (read_data) {
-        ReadDataAndDump(cnode, input_device_tensors, output_device_tensors, exec_order_, device_context);
+        ReadDataAndDump(cnode, raw_input_kernel_tensors, raw_output_kernel_tensors, exec_order_, device_context);
       }
     }
     exec_order_ += 1;
@@ -117,8 +128,8 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Devic
  * (ascend kernel-by-kernel e2e dump).
  */
 #ifdef ENABLE_DEBUGGER
-void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTensor *> &input_device_tensors,
-                               const std::vector<DeviceTensor *> &output_device_tensors,
+void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<KernelTensor *> &input_kernel_tensors,
+                               const std::vector<KernelTensor *> &output_kernel_tensors,
                                const DeviceContext *device_context) {
   auto debugger = Debugger::GetInstance();
   if (debugger != nullptr) {
@@ -149,9 +160,9 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTe
     }
     if ((read_data && e2e_dump_enabled) || !sync_ok) {
       if (dump_json_parser.e2e_sync_dump_enabled()) {
-        ReadDataAndDump(cnode, input_device_tensors, output_device_tensors, exec_order_, device_context, abnormal_dump);
+        ReadDataAndDump(cnode, input_kernel_tensors, output_kernel_tensors, exec_order_, device_context, abnormal_dump);
       } else {
-        DumpDataViaCallback(cnode, input_device_tensors, output_device_tensors, device_context);
+        DumpDataViaCallback(cnode, input_kernel_tensors, output_kernel_tensors, device_context);
       }
 
       if (!sync_ok) {
@@ -172,7 +183,7 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTe
 void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                   const std::vector<AnfNodePtr> &origin_parameters_order,
                                   std::vector<DeviceContext *> device_contexts,
-                                  OpContext<DeviceTensor> *const op_context, const AID *) {
+                                  OpContext<KernelTensor> *const op_context, const AID *) {
   MS_LOG(INFO) << "Debug on step begin.";
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -240,7 +251,7 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
  * Description: Dump parameters and constants and update dump iter for CPU. Call PostExecuteGraph Debugger for GPU and
  * Ascend and update step number of online debugger GPU.
  */
-void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int total_running_count_, int sink_size_) {
+void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int total_running_count_, int sink_size_) {
   MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count_;
   auto context = MsContext::GetInstance();
   auto is_kbyk = context->IsKByKExecutorMode();

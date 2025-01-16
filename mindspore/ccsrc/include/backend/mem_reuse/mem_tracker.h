@@ -30,7 +30,7 @@
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"
-#include "common/device_address.h"
+#include "common/kernel.h"
 #include "include/backend/mem_reuse/mem_pool_util.h"
 
 namespace mindspore {
@@ -46,7 +46,8 @@ const char kDstRank[] = "dst_rank";
 const char kRootRank[] = "root_rank";
 
 using DeviceMemPtr = const void *;
-using KernelTensorPtr = const void *;
+using KernelTensorObjPtr = const void *;
+using KernelTensor = kernel::KernelTensor;
 using MemType = memory::mem_pool::MemType;
 
 struct TaskInfo {
@@ -164,7 +165,7 @@ class BACKEND_EXPORT MemTracker {
   virtual void FreeMemBlock(DeviceMemPtr device_addr, size_t in_used_size, size_t total_size) = 0;
   virtual void UseMemBlock(const std::string &task_name, DeviceMemPtr device_addr, const std::string &file_name,
                            size_t line_num) = 0;
-  virtual void BindDevicePtr(DeviceAddress *kernel_tensor, DeviceMemPtr device_ptr, const std::string &file_name,
+  virtual void BindDevicePtr(DeviceAddress *device_address, DeviceMemPtr device_ptr, const std::string &file_name,
                              size_t line_num) = 0;
   virtual void MarkTensorAsInput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
                                  TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
@@ -237,8 +238,6 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
                         const std::string &file_name, size_t line_num);
   std::map<DeviceMemPtr, MemBlockInfoPtr>::iterator FindMemBlock(DeviceMemPtr device_ptr, const std::string &file_name,
                                                                  size_t line_num);
-  void AddMemInfoForKernelTensor(const std::string &task_name, MemType type, size_t size, const void *kernel_tensor,
-                                 const std::string &file_name, size_t line_num);
   std::mutex mutex_;
   int64_t time_stamp_ = 0;
   int64_t nested_num_ = 0;

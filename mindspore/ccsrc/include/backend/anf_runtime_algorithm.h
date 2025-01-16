@@ -124,16 +124,17 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   // Get shape, devie type and value information.
   static std::tuple<abstract::BaseShapePtr, TypePtr, ValuePtr> GetAbstractInfo(const AnfNodePtr &node,
                                                                                size_t output_idx);
-
   static bool ExistOutputKernelTensor(const AnfNodePtr &node, size_t output_idx);
 
   // Get output kernel tensor if exists, otherwise throw a exception.
-  static const KernelTensorPtr &GetOutputKernelTensor(const AnfNodePtr &node, size_t output_idx);
+  static const KernelTensorPtr &GetOutputKernelTensor(const AnfNodePtr &node, size_t output_idx,
+                                                      bool skip_nop_node = true);
   // Get output kernel tensor if exists, otherwise create a new one and set into node.
   static const KernelTensorPtr &GetOrCreateOutputKernelTensor(const AnfNodePtr &node, size_t output_idx);
 
   // Get input kernel tensor if exists, otherwise throw a exception.
-  static const KernelTensorPtr &GetPrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx);
+  static const KernelTensorPtr &GetPrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx,
+                                                              bool skip_nop_node = true);
   // Get input kernel tensor if exists, otherwise create a new one and set into node.
   static const KernelTensorPtr &GetOrCreatePrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx);
 
@@ -157,23 +158,26 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
                                        std::vector<kernel::KernelAttr> *selected_kernel_attrs);
   // Create output kernel tensor for node using node's shape, type and value,
   // and set device information to kernel tensor.
-  static KernelTensorPtr CreateOutputKernelTensorWithDeviceInfo(const AnfWithOutIndex &node_with_index,
-                                                                void *const device_ptr, size_t size,
-                                                                const string &format, TypeId dtype_id,
-                                                                const ShapeVector &host_shape,
-                                                                const std::string &device_name, uint32_t device_id,
-                                                                const UserDataPtr &user_data = nullptr);
+  static KernelTensorPtr CreateOutputKernelTensorWithDeviceInfo(
+    const AnfWithOutIndex &node_with_index, void *const device_ptr, size_t size, const string &format, TypeId dtype_id,
+    const ShapeVector &host_shape, const std::string &device_name, uint32_t device_id,
+    const UserDataPtr &user_data = nullptr, uint32_t stream_id = 0);
 
   // Get all input memory size list for node.
   static std::vector<size_t> GetNodeInputSizeList(const AnfNodePtr &node);
 
   static size_t GetOutputAddressNum(const AnfNodePtr &node);
   // set output device addr of anf_node
-  static void SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, AnfNode *node);
+  static void SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
+  // set output kernel tensor of anf node
+  static void SetOutputKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx, AnfNode *node);
   // set workspace device addr of anf_node
-  static void SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, AnfNode *node);
+  static void SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
+  // set workspace kernel tensor of anf_node
+  static void SetWorkspaceKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx, AnfNode *node);
   // get workspace device addr of anf_node
   static DeviceAddress *GetWorkspaceAddr(const AnfNodePtr &node, size_t output_idx);
+  static KernelTensorPtr GetWorkspaceKernelTensor(const AnfNodePtr &node, size_t output_idx);
   // get workspace device mutable addr of anf_node
   static DeviceAddressPtr GetMutableWorkspaceAddr(const AnfNodePtr &node, size_t index);
   // get op pattern of the node
@@ -305,7 +309,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static bool IsSequenceOutputOfScalar(const AnfNodePtr &node);
 
   // The tensor related interfaces.
-  static tensor::TensorPtr CreateMapTensor(const DeviceAddressPtr &output_device_address);
+  static tensor::TensorPtr CreateMapTensor(const KernelTensorPtr &output_kernel_tensor);
   static tensor::TensorPtr CreateMapTensor(const AnfNodePtr &output_node, size_t output_index);
   static tensor::TensorPtr SequenceToTensor(const ValuePtr &value);
   static void FlattenDynamicInputArg(const BaseRef &arg, const AnfNodePtr &node,
@@ -320,6 +324,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static bool NeedEraseCache(const PrimitivePtr &prim);
 
   static abstract::AbstractBasePtr GetNodeAbstractByIndex(const AnfNodePtr &node, size_t index);
+  static abstract::AbstractBasePtr GetNodeAbstractByIndex(AnfNode *node, size_t index);
 
   static inline ValueNodePtr ConvertValueToNode(const KernelGraphPtr &kernel_graph, const ValuePtr &value) {
     MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -341,6 +346,15 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   // Only used for ascend ops.
   static bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx);
   static std::string GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num);
+
+  static KernelTensorPtr CreateKernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type,
+                                            const ValuePtr &value, void *device_ptr, size_t size,
+                                            const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
+                                            const string &device_name, uint32_t device_id,
+                                            const UserDataPtr &user_data = nullptr);
+  static KernelTensorPtr CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
+                                            const ShapeVector &host_shape, const string &device_name,
+                                            uint32_t device_id, const UserDataPtr &user_data = nullptr);
 };
 }  // namespace session
 

@@ -36,12 +36,12 @@ class CustomActor : public MemoryAwareActor {
   ~CustomActor() override = default;
 
   // The memory related operation interface.
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
 
   const AnfNodeWeakPtr &kernel() const { return kernel_; }
 
  protected:
-  void Run(OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
   void Init() override;
 
  private:
@@ -53,9 +53,9 @@ class CustomActor : public MemoryAwareActor {
   AnfUtils::CustomActorCallback custom_func_ = {};
   GraphExecutionStrategy strategy_{GraphExecutionStrategy::kPipeline};
   // The device tensors for launch.
-  std::vector<DeviceTensor *> input_device_tensors_;
+  std::vector<KernelTensorPtr> input_kernel_tensors_;
   // The device tensors for memory free.
-  std::vector<DeviceTensor *> memory_free_list_;
+  std::vector<KernelTensorPtr> memory_free_list_;
 
   std::string custom_type_;
 };

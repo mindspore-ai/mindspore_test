@@ -41,14 +41,14 @@ struct OpPartial;
 using OpPartialPtr = std::shared_ptr<OpPartial>;
 struct OpPartial {
   FuncGraph *func_graph_{nullptr};
-  std::vector<std::pair<size_t, DeviceTensor *>> device_tensors_;
+  std::vector<std::pair<size_t, KernelTensorPtr>> kernel_tensors_;
   std::vector<std::pair<size_t, OpPartialPtr>> partials_;
 };
 
 // Op real parameters with branch ID represents the data sent by gather actor to entrance actor, including all real
 // parameters and the id of the caller.
 struct OpRealParameterWithBranchID {
-  std::vector<std::pair<size_t, DeviceTensor *>> device_tensors_;
+  std::vector<std::pair<size_t, KernelTensorPtr>> kernel_tensors_;
   std::vector<std::pair<size_t, OpPartialPtr>> partials_;
   int branch_id_;
 };
@@ -60,29 +60,29 @@ class ControlActor : public MemoryAwareActor {
   ~ControlActor() override = default;
 
   // Receive partial.
-  virtual void RunOpPartial(const OpPartialPtr &partial, size_t position, OpContext<DeviceTensor> *const context);
+  virtual void RunOpPartial(const OpPartialPtr &partial, size_t position, OpContext<KernelTensor> *const context);
 
   // Receive branch id.
-  virtual void RunBranchID(int branch_id, OpContext<DeviceTensor> *const context);
+  virtual void RunBranchID(int branch_id, OpContext<KernelTensor> *const context);
 
   const std::vector<DataArrowPtr> &output_partial_arrows() const { return output_partial_arrows_; }
   const std::vector<AID> &output_branch_id_arrows() const { return output_branch_id_arrows_; }
   const std::unordered_map<size_t, OpPartialPtr> &local_partials() const { return local_partials_; }
-  const std::unordered_map<size_t, std::pair<DeviceTensor *, AnfNodePtr>> &local_device_tensors() const {
-    return local_device_tensors_;
+  const std::unordered_map<size_t, std::pair<KernelTensorPtr, AnfNodePtr>> &local_kernel_tensors() const {
+    return local_kernel_tensors_;
   }
   const std::vector<KernelWithIndex> &formal_parameters() const { return formal_parameters_; }
   const std::vector<std::pair<AID, DataArrow *>> &input_partial_arrow_aids() const { return input_partial_arrow_aids_; }
   const std::vector<AID> &input_branch_id_arrow_aids() const { return input_branch_id_arrow_aids_; }
-  const std::map<size_t, std::set<DeviceTensorPtr>> &ref_formal_parameter_device_tensors() const {
-    return ref_formal_parameter_device_tensors_;
+  const std::map<size_t, std::set<KernelTensorPtr>> &ref_formal_parameter_kernel_tensors() const {
+    return ref_formal_parameter_kernel_tensors_;
   }
-  const std::map<size_t, std::set<DeviceTensorPtr>> &ref_node_formal_parameter_device_tensors() const {
-    return ref_node_formal_parameter_device_tensors_;
+  const std::map<size_t, std::set<KernelTensorPtr>> &ref_node_formal_parameter_kernel_tensors() const {
+    return ref_node_formal_parameter_kernel_tensors_;
   }
   int branch_id() const { return output_branch_id_; }
   // Free memory by the dynamic ref count decremented. It corresponds to the EraseInput.
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
 
   void set_start_time(double start_time) { start_time_ = start_time; }
   const AnfNodePtr &node() const { return node_; }
@@ -94,10 +94,10 @@ class ControlActor : public MemoryAwareActor {
   void Init() override;
 
   // The basic interfaces for op partial and op real parameter.
-  void GetAllDeviceTensors(const OpPartialPtr &op_partial, std::vector<DeviceTensor *> *device_tensors);
-  void GetAllDeviceTensors(const OpRealParameterWithBranchID &op_real_parameter,
-                           std::vector<DeviceTensor *> *device_tensors);
-  void IncreaseDynamicRefCount(const OpData<DeviceTensor> *op_data) const;
+  void GetAllKernelTensors(const OpPartialPtr &op_partial, std::vector<KernelTensorPtr> *kernel_tensors);
+  void GetAllKernelTensors(const OpRealParameterWithBranchID &op_real_parameter,
+                           std::vector<KernelTensorPtr> *kernel_tensors);
+  void IncreaseDynamicRefCount(const OpData<KernelTensor> *op_data) const;
   void IncreaseDynamicRefCount(const OpPartialPtr &op_partial);
   void IncreaseDynamicRefCount(const OpRealParameterWithBranchID &op_real_parameter);
 
@@ -105,22 +105,22 @@ class ControlActor : public MemoryAwareActor {
   size_t FetchNodePosition(const KernelWithIndex &node) const;
 
   // Get all input, including data, partial, branchid.
-  virtual void FetchInput(OpContext<DeviceTensor> *const context);
-  void Run(OpContext<DeviceTensor> *const context) override;
-  bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const override;
-  void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                        const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
-  void CreateHeterDeviceTensor(DeviceTensor *const node_device_tensor, DeviceTensor *const input_device_tensor,
-                               size_t index, OpContext<DeviceTensor> *const context, const AnfNodePtr &node);
-  void SendOutput(OpContext<DeviceTensor> *const context) override;
-  void EraseInput(const OpContext<DeviceTensor> *context) override;
+  virtual void FetchInput(OpContext<KernelTensor> *const context);
+  void Run(OpContext<KernelTensor> *const context) override;
+  bool CheckRunningCondition(const OpContext<KernelTensor> *context) const override;
+  void UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,
+                        const AnfNodePtr &output_node, OpContext<KernelTensor> *const context) override;
+  void CreateHeterDeviceTensor(KernelTensor *const node_kernel_tensor, KernelTensor *const input_kernel_tensor,
+                               size_t index, OpContext<KernelTensor> *const context, const AnfNodePtr &node);
+  void SendOutput(OpContext<KernelTensor> *const context) override;
+  void EraseInput(const OpContext<KernelTensor> *context) override;
 
   // Increase the dynamic ref count by the outputs. It corresponds to the SendOutput.
-  virtual void IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context);
-  void MergeDeviceAddress(OpContext<DeviceTensor> *const context, const std::vector<DeviceTensor *> &addr_list,
-                          DeviceTensor **deivce_tensor);
-  void MergeEmptyAddressDeviceAddress(OpContext<DeviceTensor> *const context,
-                                      const std::vector<DeviceTensor *> &addr_list, DeviceTensor **device_tensor);
+  virtual void IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context);
+  void MergeDeviceAddress(OpContext<KernelTensor> *const context, const std::vector<KernelTensor *> &addr_list,
+                          KernelTensorPtr *kernel_tensor);
+  void MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const context,
+                                      const std::vector<KernelTensor *> &addr_list, KernelTensorPtr *kernel_tensor);
 
   // Input data.
   // 1.Input partial.
@@ -137,16 +137,16 @@ class ControlActor : public MemoryAwareActor {
 
   // Fetch data. After fetch input, all the input collected is saved here.
   std::vector<OpPartialPtr> input_partials_;
-  std::vector<DeviceTensor *> input_device_tensors_;
+  std::vector<KernelTensorPtr> input_kernel_tensors_;
 
   // The lists of device tensors which need free by dynamic ref count, will be cleared at the end of step.
-  std::queue<std::vector<DeviceTensor *>> memory_free_lists_;
+  std::queue<std::vector<KernelTensorPtr>> memory_free_lists_;
 
   // The exit actor needs to create a new device address and take out the ptr from the device tensor come from
   // the kernel actor. These new created device tensors are stored in the created device tensors.
-  std::vector<DeviceTensorPtr> created_device_tensors_;
-  std::map<std::pair<int, device::DeviceType>, DeviceTensorPtr> created_heter_device_tensors_;
-  std::vector<DeviceTensorPtr> last_step_created_device_tensors_;
+  std::vector<KernelTensorPtr> created_kernel_tensors_;
+  std::map<std::pair<int, device::DeviceType>, KernelTensorPtr> created_heter_kernel_tensors_;
+  std::vector<KernelTensorPtr> last_step_created_kernel_tensors_;
   // In control flow, when the argument is not a dynamic len tuple but the parameter is, need create a new
   // real make tuple node for it.
   std::vector<FuncGraphPtr> created_new_graphs_;
@@ -174,17 +174,17 @@ class ControlActor : public MemoryAwareActor {
   // Partial data in local. When partial is only funcgraph without real parameter, it is stored inside the actor.
   std::unordered_map<size_t, OpPartialPtr> local_partials_;
   // Device tensor in control node, but not in kernel graph.
-  std::unordered_map<size_t, std::pair<DeviceTensor *, AnfNodePtr>> local_device_tensors_;
+  std::unordered_map<size_t, std::pair<KernelTensorPtr, AnfNodePtr>> local_kernel_tensors_;
 
   // Cache output data by output index to modify the output data effectively.
-  std::vector<std::vector<OpData<DeviceTensor> *>> output_data_by_output_index_;
+  std::vector<std::vector<OpData<KernelTensor> *>> output_data_by_output_index_;
 
   // Formal parameters for control actor.
   std::vector<KernelWithIndex> formal_parameters_;
   // The device tensors of backend input nodes corresponding to ref formal parameters, the key is the position index of
   // formal parameter. Used to update the ptr of device tensors when receive the real parameters for ref nodes.
-  std::map<size_t, std::set<DeviceTensorPtr>> ref_formal_parameter_device_tensors_;
-  std::map<size_t, std::set<DeviceTensorPtr>> ref_node_formal_parameter_device_tensors_;
+  std::map<size_t, std::set<KernelTensorPtr>> ref_formal_parameter_kernel_tensors_;
+  std::map<size_t, std::set<KernelTensorPtr>> ref_node_formal_parameter_kernel_tensors_;
 
   // Count the time cost bewtween this actor to the end actors, when this actor is executed, set current time to the
   // start_time_ of the end actors and then when the end actors are executed, it will count the time cost between its

@@ -56,19 +56,19 @@ class DataSourceActor : public DebugAwareActor {
 
   void Init() override;
 
-  void Run(OpContext<DeviceTensor> *const context) override { FetchData(context); }
+  void Run(OpContext<KernelTensor> *const context) override { FetchData(context); }
 
   // The process entry of data processing.
-  void FetchData(OpContext<DeviceTensor> *const context);
+  void FetchData(OpContext<KernelTensor> *const context);
 
   // Construct the device tensors and fill to device tensor buffer from the member nodes during the data fetching.
   virtual void FillDataBuffer() = 0;
 
-  void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                        const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
+  void UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,
+                        const AnfNodePtr &output_node, OpContext<KernelTensor> *const context) override;
 
   // The buffers store the device tensors.
-  std::queue<std::vector<DeviceTensor *>> buffers_;
+  std::queue<std::vector<KernelTensorPtr>> buffers_;
   size_t buffer_capacity_;
 };
 
@@ -85,10 +85,10 @@ class HostQueueDataSourceActor : public DataSourceActor {
   ~HostQueueDataSourceActor() override = default;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
   // Copy data from data source to the device tensor buffer of actor after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
   size_t FetchNodePosition(const KernelWithIndex &node) const override;
   KernelWithIndex FetchNode(size_t node_position) const;
@@ -100,7 +100,7 @@ class HostQueueDataSourceActor : public DataSourceActor {
   void FillDataBuffer() override;
 
   void AddCopyDataCallBack(bool enable_async_copy, const mindspore::tensor::TensorPtrList &host_tensors,
-                           const std::vector<DeviceTensor *> &device_tensors);
+                           const std::vector<KernelTensorPtr> &kernel_tensors);
 
  private:
   friend class GraphScheduler;

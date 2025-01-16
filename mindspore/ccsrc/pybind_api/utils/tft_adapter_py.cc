@@ -92,11 +92,13 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
                                         const std::vector<std::pair<device::DeviceMemPtr, size_t>> &mem_uce_addr) {
   // Judge whether weights got uce error.
   MS_LOG(INFO) << "Start to get UCE process strategy for kbk.";
-  const auto &device_tensors = DeviceTensorStore::GetInstance().GetAll();
+  const auto &kernel_tensors = DeviceTensorStore::GetInstance().GetAll();
   try {
-    for (auto iter = device_tensors.begin(); iter != device_tensors.end(); ++iter) {
-      auto device_tensor_list = iter->second;
-      for (const auto &device_tensor : device_tensor_list) {
+    for (auto iter = kernel_tensors.begin(); iter != kernel_tensors.end(); ++iter) {
+      auto kernel_tensor_list = iter->second;
+      for (const auto &kernel_tensor : kernel_tensor_list) {
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        const auto &device_tensor = kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(device_tensor);
         void *device_tensor_start_addr = const_cast<void *>(device_tensor->GetPtr());
         void *device_tensor_end_addr =

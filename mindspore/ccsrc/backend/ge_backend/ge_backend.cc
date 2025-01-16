@@ -148,9 +148,8 @@ bool IsTupleOutputOfAnyType(const abstract::AbstractBasePtr &abstract, const ten
     return false;
   }
   auto device_tensor = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  return device_tensor != nullptr && device_tensor->user_data() == nullptr &&
-         device_tensor->kernel_tensor() != nullptr && device_tensor->kernel_tensor()->GetShape() != nullptr &&
-         device_tensor->kernel_tensor()->GetShape()->isa<abstract::SequenceShape>();
+  return device_tensor != nullptr && device_tensor->user_data() == nullptr && tensor->base_shape_ptr() != nullptr &&
+         tensor->base_shape_ptr()->isa<abstract::SequenceShape>();
 }
 
 mindspore::ge_backend::runtime::KernelMapPosition FetchOriginOutputOrder(const AnfNodePtr &node) {
@@ -1171,7 +1170,8 @@ RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, V
 
 void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
                                              const abstract::SequenceShapePtr &tensor_shape, VectorRef *outputs,
-                                             std::vector<tensor::TensorPtr> *tuple_tensors) const {
+                                             std::vector<tensor::TensorPtr> *tuple_tensors,
+                                             const TypePtr &output_type) const {
   MS_EXCEPTION_IF_NULL(output_tensor);
   MS_EXCEPTION_IF_NULL(tensor_shape);
   MS_EXCEPTION_IF_NULL(outputs);
@@ -1203,9 +1203,6 @@ void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
 
-  const auto &output_kernel_tensor = device_tensor->kernel_tensor();
-  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-  TypePtr output_type = output_kernel_tensor->GetType();
   MS_EXCEPTION_IF_NULL(output_type);
   TuplePtr output_tuple_type = output_type->cast<TuplePtr>();
   MS_EXCEPTION_IF_NULL(output_tuple_type);
@@ -1224,13 +1221,14 @@ void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
     auto split_tensor_size = SizeOf(split_tensor_shape) * GetTypeByte(TypeIdToType(tensor_type_id));
     auto split_tensor = std::make_shared<tensor::Tensor>(tensor_type_id, split_tensor_shape);
 
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),
       split_tensor_shape, device_tensor->device_name(), device_tensor->device_id());
     kernel_tensor->SetType(element_types[i]);
     kernel_tensor->SetShape((*tensor_shape)[i]);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
-    auto split_device_tensor = res_manager->CreateDeviceAddress(kernel_tensor);
+    auto split_device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(split_device_tensor);
     MS_LOG(DEBUG) << "Create device tensor:" << split_device_tensor << " type:" << device_tensor->type_id();
     // Copy data from origin tensor to the split tensor.
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "ConstructOutputByTupleTensor",
@@ -1265,7 +1263,8 @@ void GEBackend::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor,
 
 BaseRef GEBackend::ConstructOutputByAbstract(const abstract::AbstractBasePtr &abstract,
                                              const std::vector<tensor::TensorPtr> &output_tensors,
-                                             size_t *output_position, std::vector<tensor::TensorPtr> *tuple_tensors) {
+                                             size_t *output_position, std::vector<tensor::TensorPtr> *tuple_tensors,
+                                             const std::vector<TypePtr> &output_types) {
   MS_EXCEPTION_IF_NULL(abstract);
   MS_EXCEPTION_IF_NULL(output_position);
   MS_EXCEPTION_IF_NULL(tuple_tensors);
@@ -1280,11 +1279,10 @@ BaseRef GEBackend::ConstructOutputByAbstract(const abstract::AbstractBasePtr &ab
     if (IsTupleOutputOfAnyType(abstract, output_tensors[*output_position])) {
       MS_LOG(DEBUG) << "Any output for position:" << *output_position;
       VectorRef outputs;
-      auto device_tensor =
-        std::dynamic_pointer_cast<device::DeviceAddress>(output_tensors[*output_position]->device_address());
-      ConstructOutputByTupleTensor(output_tensors[*output_position],
-                                   device_tensor->kernel_tensor()->GetShape()->cast<abstract::SequenceShapePtr>(),
-                                   &outputs, tuple_tensors);
+      ConstructOutputByTupleTensor(
+        output_tensors[*output_position],
+        output_tensors[*output_position]->base_shape_ptr()->cast<abstract::SequenceShapePtr>(), &outputs, tuple_tensors,
+        output_types[*output_position]);
       (*output_position)++;
       std::vector<ValuePtr> values;
 
@@ -1308,7 +1306,7 @@ BaseRef GEBackend::ConstructOutputByAbstract(const abstract::AbstractBasePtr &ab
     // Restore the tuple output by the tensor of tuple.
     if ((tensor_shape != nullptr) && tensor_shape->isa<abstract::SequenceShape>()) {
       ConstructOutputByTupleTensor(output_tensor, tensor_shape->cast<abstract::SequenceShapePtr>(), &outputs,
-                                   tuple_tensors);
+                                   tuple_tensors, output_types[*output_position]);
       (*output_position)++;
       return outputs;
     }
@@ -1317,14 +1315,16 @@ BaseRef GEBackend::ConstructOutputByAbstract(const abstract::AbstractBasePtr &ab
   const auto &sub_abstracts = tuple_abstract->elements();
   for (const auto &sub_abstract : sub_abstracts) {
     MS_EXCEPTION_IF_NULL(sub_abstract);
-    outputs.emplace_back(ConstructOutputByAbstract(sub_abstract, output_tensors, output_position, tuple_tensors));
+    outputs.emplace_back(
+      ConstructOutputByAbstract(sub_abstract, output_tensors, output_position, tuple_tensors, output_types));
   }
   return outputs;
 }
 
 void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vector<tensor::TensorPtr> &output_tensors,
                                  size_t *output_position, VectorRef *outputs,
-                                 std::vector<tensor::TensorPtr> *tuple_tensors) {
+                                 std::vector<tensor::TensorPtr> *tuple_tensors,
+                                 const std::vector<TypePtr> &output_types) {
   MS_EXCEPTION_IF_NULL(output_node);
   MS_EXCEPTION_IF_NULL(outputs);
   MS_EXCEPTION_IF_NULL(output_position);
@@ -1353,7 +1353,8 @@ void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vecto
     MS_EXCEPTION_IF_NULL(make_tuple);
     VectorRef make_tuple_output;
     for (size_t i = 1; i < make_tuple->size(); i++) {
-      ConstructOutputs(make_tuple->input(i), output_tensors, output_position, &make_tuple_output, tuple_tensors);
+      ConstructOutputs(make_tuple->input(i), output_tensors, output_position, &make_tuple_output, tuple_tensors,
+                       output_types);
     }
     outputs->emplace_back(std::move(make_tuple_output));
     return;
@@ -1364,7 +1365,7 @@ void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vecto
     auto depend_node = output_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(depend_node);
     ConstructOutputs(depend_node->input(kRealInputIndexInDepend), output_tensors, output_position, outputs,
-                     tuple_tensors);
+                     tuple_tensors, output_types);
     return;
   }
 
@@ -1388,7 +1389,8 @@ void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vecto
       (output_node->abstract() != nullptr && output_node->abstract()->isa<abstract::AbstractSequence>())) {
     auto abstract = output_node->abstract();
     MS_EXCEPTION_IF_NULL(abstract);
-    outputs->emplace_back(ConstructOutputByAbstract(abstract, output_tensors, output_position, tuple_tensors));
+    outputs->emplace_back(
+      ConstructOutputByAbstract(abstract, output_tensors, output_position, tuple_tensors, output_types));
     return;
   }
 
@@ -1410,7 +1412,7 @@ void GEBackend::ConstructOutputs(const AnfNodePtr &output_node, const std::vecto
       // Restore the tuple output by the tensor of tuple.
       if ((tensor_shape != nullptr) && tensor_shape->isa<abstract::SequenceShape>()) {
         ConstructOutputByTupleTensor(output_tensor, tensor_shape->cast<abstract::SequenceShapePtr>(), &output_tuple,
-                                     tuple_tensors);
+                                     tuple_tensors, output_types[*output_position]);
       } else {
         output_tuple.emplace_back(output_tensor);
       }
@@ -1449,7 +1451,7 @@ void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
 
   // update shape
   MS_LOG(DEBUG) << "Update dynamic shape for parameter:" << input_node->DebugString();
-  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0);
+  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
     output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());
@@ -1681,9 +1683,11 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
   }
 }
 
-void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs) {
+void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
+                                 std::vector<TypePtr> *output_types) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(outputs);
+  MS_EXCEPTION_IF_NULL(output_types);
   auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(func_graph->output());
   // map of output_node ptr and corresponding tensor, for same output condition
   // 1. same device_address; 2. io_index, same pointer_ref_count
@@ -1694,7 +1698,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
       continue;
     }
     auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx, false);
-    const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx);
+    const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx, false);
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
     MS_EXCEPTION_IF_NULL(output_addr);
 
@@ -1703,10 +1707,9 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
       continue;
     }
 
-    auto out_tensor =
-      std::make_shared<tensor::Tensor>(output_addr->type_id(), output_addr->kernel_tensor()->GetShapeVector());
+    auto out_tensor = std::make_shared<tensor::Tensor>(output_addr->type_id(), output_kernel_tensor->GetShapeVector());
 
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, output_addr->GetSize(), kernel::GetFormatFromStrToEnum(output_addr->format()), output_addr->type_id(),
       output_addr->host_shape(), kAscendDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID));
     kernel_tensor->SetType(output_kernel_tensor->GetType());
@@ -1741,6 +1744,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     out_tensor->set_device_address(tensor_device_address);
     out_tensor->set_need_release_device_mem(true);
     outputs->emplace_back(out_tensor);
+    output_types->emplace_back(kernel_tensor->GetType());
   }
 }
 
@@ -1806,12 +1810,14 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
 
   // output ->std::vector<tensor::TensorPtr> *outputs
   std::vector<tensor::TensorPtr> output_tensors;
-  ConstructOutputs(func_graph, &output_tensors);
+  std::vector<TypePtr> output_types;
+  ConstructOutputs(func_graph, &output_tensors, &output_types);
   if (!output_tensors.empty()) {
     size_t output_position = 0;
     std::vector<tensor::TensorPtr> tuple_tensors;
     // std::vector<tensor::TensorPtr> ->VectorRef *outputs
-    ConstructOutputs(root_graph_map_[graph_id]->output(), output_tensors, &output_position, outputs, &tuple_tensors);
+    ConstructOutputs(root_graph_map_[graph_id]->output(), output_tensors, &output_position, outputs, &tuple_tensors,
+                     output_types);
   }
 
 // for data_dump
@@ -2192,10 +2198,11 @@ void GEBackend::ConstructOutputs(mindspore::ge_backend::runtime::ActorSet *actor
 
   // Fetch outputs.
   auto &output_tensors = actor_set->output_actor_->outputs();
+  auto &output_types = actor_set->output_actor_->output_types();
   if (!output_tensors.empty()) {
     size_t output_position = 0;
     std::vector<tensor::TensorPtr> tuple_tensors;
-    ConstructOutputs(root_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors);
+    ConstructOutputs(root_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors, output_types);
 
     // The tensor may be repeated, so it needs to be set null last.
     for (auto &tuple_tensor : tuple_tensors) {

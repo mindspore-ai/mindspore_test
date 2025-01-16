@@ -153,9 +153,12 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
                   memory::mem_pool::MemType::kConstantValue);
   }
 
-  const auto kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
+  const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
     {output_node, real_index}, mem, tensor_size, kOpFormat_DEFAULT, output_type_id, {}, kAscendDevice, device_id);
-  auto output_device_addr = std::make_shared<device::ascend::AscendDeviceAddress>(kernel_tensor);
+  // Set kernel tensor with output_with_index.second.
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, output_with_index.second, output_node.get());
+  auto output_device_addr = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(output_device_addr);
   if (ref_map.find(output_with_index) != ref_map.end()) {
     auto input_with_index = ref_map[output_with_index];
     auto input_device_address = AnfAlgo::GetMutableOutputAddr(input_with_index.first, input_with_index.second, false);
@@ -168,7 +171,7 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
     output_device_addr->IncreaseOriginalRefCount();
     output_device_addr->ResetRefCount();
   }
-  output_device_addr->set_device_synchronizer(std::make_shared<device::ascend::AscendDeviceSynchronizer>());
+  kernel_tensor->set_device_synchronizer(std::make_shared<device::ascend::AscendDeviceSynchronizer>());
   if (IsMemoryPoolRecycle() && need_alloc_output_cnt <= kNeedRecycleOutput) {
     MS_LOG(INFO) << "Set Memory Pool Recycle, graph: " << kernel_graph->ToString()
                  << ", node: " << output_node->fullname_with_scope();
@@ -244,7 +247,7 @@ void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManagerPtr
 
     auto output_device_addr =
       CreateOutputDeviceAddress(kernel_graph, output_with_index, need_alloc_output_cnt, res_manager);
-    AnfAlgo::SetOutputAddr(output_device_addr, output_with_index.second, output_node.get());
+    AnfAlgo::SetOutputAddr(output_device_addr, output_with_index.second, output_node);
     MS_LOG(INFO) << "Output node info: (name " << output_node->fullname_with_scope() << ", "
                  << output_node->DebugString() << " ), output size: " << output_device_addr->GetSize()
                  << ", device_address: " << output_device_addr;

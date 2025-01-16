@@ -47,14 +47,14 @@ class MemorySwapActor : public AbstractActor {
   ~MemorySwapActor() override = default;
 
  protected:
-  void Run(OpContext<DeviceTensor> *context) override;
-  void FetchRealParameters(OpContext<DeviceTensor> *context);
+  void Run(OpContext<KernelTensor> *context) override;
+  void FetchRealParameters(OpContext<KernelTensor> *context);
 
  private:
   void AllocDeviceContinuousMem(const std::vector<DeviceTensor *> &device_tensors);
-  static void Swap(OpContext<mindspore::runtime::DeviceTensor> *const context, device::StorageType to,
+  static void Swap(OpContext<KernelTensor> *const context, device::StorageType to,
                    const std::vector<DeviceTensor *> &device_tensors);
-  void UpdateDeviceTensors(OpContext<DeviceTensor> *context);
+  void UpdateDeviceTensors(OpContext<KernelTensor> *context);
   std::vector<DeviceTensor *> GetDeviceTensors(const std::vector<size_t> &indexes);
 
  protected:

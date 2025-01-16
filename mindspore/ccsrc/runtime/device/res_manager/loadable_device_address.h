@@ -41,7 +41,7 @@ using LoadableMemberPtr = std::unique_ptr<LoadableMember>;
 // LoadableDeviceAddress provide the ability to offload data on device to ddr or disk and load it back later.
 class RES_EXPORT LoadableDeviceAddress : public DeviceAddress {
  public:
-  explicit LoadableDeviceAddress(const KernelTensorPtr &kernel_tensor) : DeviceAddress(kernel_tensor) {}
+  LoadableDeviceAddress() : DeviceAddress() {}
   LoadableDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) {}
   LoadableDeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id)
       : DeviceAddress(ptr, size, format, type_id) {}

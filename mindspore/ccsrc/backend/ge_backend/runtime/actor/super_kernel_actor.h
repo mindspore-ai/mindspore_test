@@ -51,39 +51,39 @@ class SuperKernelActor : public DebugAwareActor {
         graph_phase_(graph_phase),
         is_infer_phase_(IsInferPhase(graph_phase)),
         graph_executor_(graph_executor) {
-    input_device_tensors_.resize(graph->input_nodes().size());
+    input_kernel_tensors_.resize(graph->input_nodes().size());
   }
   ~SuperKernelActor() override = default;
 
   size_t FetchInputNodePosition(const AnfNodePtr &intput_node);
-  virtual void FetchInputDeviceTensor(OpContext<DeviceTensor> *const context);
+  virtual void FetchInputDeviceTensor(OpContext<KernelTensor> *const context);
   // The debug related operation interface.
-  void SendDebugReq(OpContext<DeviceTensor> *const context) override;
+  void SendDebugReq(OpContext<KernelTensor> *const context) override;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
   // The callback after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
   // The input may come from the control actor, so need free the input memory by the dynamic ref count.
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
-  bool CopyInputData(const OpContext<DeviceTensor> *context, const KernelGraphPtr &graph);
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
+  bool CopyInputData(const OpContext<KernelTensor> *context, const KernelGraphPtr &graph);
 
   const KernelGraphPtr &graph() const { return graph_; }
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
   // The input device tensors for launch.
-  std::vector<DeviceTensor *> input_device_tensors_;
+  std::vector<KernelTensorPtr> input_kernel_tensors_;
   // The device tensors of graph input parameter, which used to compare the recv input data.
-  std::vector<DeviceTensorPtr> node_device_tensors_;
+  std::vector<KernelTensorPtr> node_kernel_tensors_;
   // The device tensors for memory alloc.
-  std::vector<DeviceTensor *> memory_alloc_list_;
+  std::vector<KernelTensorPtr> memory_alloc_list_;
   // The lists of device tensors which need free by dynamic ref count, will be cleared at the end of step.
-  std::queue<std::vector<DeviceTensor *>> memory_free_lists_;
+  std::queue<std::vector<KernelTensorPtr>> memory_free_lists_;
 
  private:
-  bool CopyInputDataPersistedHandle(DeviceTensor *input_device_tensor, const DeviceTensorPtr &node_device_tensor,
+  bool CopyInputDataPersistedHandle(DeviceTensor *input_device_tensor, const KernelTensorPtr &node_kernel_tensor,
                                     size_t i);
 
   void FetchPersistentDeviceTensor();
@@ -107,7 +107,7 @@ class SuperKernelActor : public DebugAwareActor {
 
   // The received input device type and format may be different from the formal parameter in the control flow scenarios,
   // so it needs to be copied from the input data to real data that graph launch needs.
-  std::vector<DeviceTensorPtr> copy_input_device_tensors_;
+  std::vector<KernelTensorPtr> copy_input_kernel_tensors_;
   // Record the device address to the output node of graph.
   std::map<DeviceAddress *, OutputMemoryInfo> device_address_to_node_;
   std::shared_ptr<device::GraphExecutor> graph_executor_;

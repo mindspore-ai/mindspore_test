@@ -37,9 +37,9 @@ class FusionActor : public AbstractActor {
   ~FusionActor() override = default;
 
   // The actor run when receive the input data.
-  void RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) override;
+  void RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) override;
   // The actor run when receive the input control.
-  void RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) override;
+  void RunOpControl(AID *const input_control, OpContext<KernelTensor> *const context) override;
 
   const std::vector<std::pair<AbstractActor *, size_t>> &real_input_data() const { return real_input_data_; }
   const mindspore::HashMap<std::string, std::vector<AbstractActor *>> &real_input_controls() const {

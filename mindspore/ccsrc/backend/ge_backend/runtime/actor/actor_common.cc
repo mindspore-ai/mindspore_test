@@ -44,7 +44,7 @@ bool IsSuperKernelActor(const AnfNodePtr &node, const KernelGraphPtr &kernel_gra
           ((node == nullptr) || node->isa<CNode>() || kernel_graph->IsChildGraphResult(node)));
 }
 
-bool IsRunningFailed(const OpContext<DeviceTensor> *context) { return (context->error_info_ != ""); }
+bool IsRunningFailed(const OpContext<KernelTensor> *context) { return (context->error_info_ != ""); }
 
 bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph,
                         const std::vector<AnfNodePtr> &host_parameters, GraphExecutionStrategy strategy) {
@@ -458,12 +458,13 @@ std::string GenerateActorIdByKernel(const AnfNodePtr &node) {
   return id;
 }
 
-mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<DeviceTensor *> &device_tensors) {
+mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<KernelTensorPtr> &kernel_tensors) {
   mindspore::HashMap<const void *, std::vector<size_t>> ptr_positions;
   mindspore::HashMap<size_t, size_t> repeat_index;
-  for (size_t i = 0; i < device_tensors.size(); ++i) {
-    if (device_tensors[i] != nullptr && device_tensors[i]->GetPtr() != nullptr) {
-      ptr_positions[device_tensors[i]->GetPtr()].emplace_back(i);
+  for (size_t i = 0; i < kernel_tensors.size(); ++i) {
+    if (kernel_tensors[i] != nullptr && kernel_tensors[i]->device_address() != nullptr &&
+        kernel_tensors[i]->device_address()->GetPtr() != nullptr) {
+      ptr_positions[kernel_tensors[i]->device_address()->GetPtr()].emplace_back(i);
     }
   }
   for (const auto &pair : ptr_positions) {
@@ -517,7 +518,6 @@ TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const K
   if (!DeviceAddressUtils::IsContiguousTensor(tensor)) {
     MS_LOG(EXCEPTION) << "The ge backend only support contiguous inputs, please check.";
   }
-  DeviceAddressUtils::CreateKernelTensor(tensor);
 
   return tensor;
 }
@@ -532,15 +532,17 @@ bool IsEmptySequenceTensor(tensor::Tensor *tensor) {
   return sequence_shape->size() == 0;
 }
 
-void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *device_tensor, size_t outer_index,
+void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, KernelTensorPtr kernel_tensor, size_t outer_index,
                                size_t inner_index) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (input_tensor == nullptr || IsEmptySequenceTensor(input_tensor)) {
     return;
   }
 
   // Update shape.
-  const auto &output_kernel_tensor = device_tensor->kernel_tensor();
+  const auto &output_kernel_tensor = kernel_tensor;
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
     output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());

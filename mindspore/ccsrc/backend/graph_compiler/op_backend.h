@@ -28,6 +28,8 @@
 
 namespace mindspore::compile {
 using BackendOpRunInfoPtr = session::BackendOpRunInfoPtr;
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 
 class BACKEND_EXPORT ViewBackend {
  public:
@@ -70,7 +72,7 @@ class BACKEND_EXPORT PostRunOp {
   void UpdateOutputAbstract(const VectorRef &outputs, const session::BackendOpRunInfoPtr &op_run_info) const;
 
   void UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_info, const OpCompilerInfoPtr &op_compiler_info,
-                           const std::vector<device::DeviceAddressPtr> &device_address_list, VectorRef *outputs) const;
+                           const std::vector<KernelTensorPtr> &kernel_tensor_list, VectorRef *outputs) const;
 
   void set_forward_tensor_ref_count(const std::map<std::string, size_t> &forward_tensor_ref_count) {
     forward_tensor_ref_count_ = forward_tensor_ref_count;
@@ -81,7 +83,7 @@ class BACKEND_EXPORT PostRunOp {
 
   tensor::BaseTensorPtr CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
                                                       const AnfNodePtr &output_node, size_t output_index,
-                                                      const std::shared_ptr<device::DeviceAddress> &address,
+                                                      const KernelTensorPtr &kernel_tensor,
                                                       size_t idx_in_graph_outputs) const;
 
   // Cache forward op output value node tensor ref count of kernels for back propagation graph in PyNative mode.
@@ -126,11 +128,11 @@ class BACKEND_EXPORT OpBackend {
 
   void DispatchOpTaskDynamic(VectorRef *outputs, const OpCompilerInfoPtr &op_compiler_info,
                              const session::BackendOpRunInfoPtr &op_run_info,
-                             const std::vector<device::DeviceAddressPtr> &device_address_list);
+                             const std::vector<KernelTensorPtr> &kernel_tensor_list);
 
   void OpRunCallbackDynamic(const std::shared_ptr<runtime::OpTaskContext> &context);
 
-  device::DeviceAddressPtrList GetOutputDeviceAddress(const OpCompilerInfoPtr &op_compiler_info) const;
+  std::vector<KernelTensorPtr> GetOutputKernelTensor(const OpCompilerInfoPtr &op_compiler_info) const;
 
   PostRunOp post_run_;
   ViewBackend view_backend_;

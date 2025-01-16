@@ -35,10 +35,10 @@ void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceTensorPtr &
 }
 
 void GraphParameterStore::ResetPrepareState() {
-  for (size_t i = 0; i < parameter_device_tensors_.size(); ++i) {
-    auto &device_tensors = parameter_device_tensors_[i];
-    for (size_t j = 0; j < device_tensors.size(); ++j) {
-      device_tensors[j].second.second = false;
+  for (size_t i = 0; i < parameter_kernel_tensors_.size(); ++i) {
+    auto &kernel_tensors = parameter_kernel_tensors_[i];
+    for (size_t j = 0; j < kernel_tensors.size(); ++j) {
+      kernel_tensors[j].second.second = false;
     }
   }
   tensor_data_in_callback_.reserve(buffer_size_);
@@ -48,125 +48,133 @@ void GraphParameterStore::ResetPrepareState() {
 void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_index, DeviceTensorType value_type) {
   CheckIndexValid(outer_index, inner_index);
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
-  auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
+  auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+  auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
   bool is_ref_count_max =
-    (device_tensor_with_info.second.first == SIZE_MAX || heter_device_tensor_with_info.second == SIZE_MAX);
+    (kernel_tensor_with_info.second.first == SIZE_MAX || heter_kernel_tensor_with_info.second == SIZE_MAX);
 
-  auto &device_tensor = device_tensor_with_info.first;
-  if (device_tensor != nullptr && device_tensor->GetDeviceType() == value_type) {
-    auto user_cnt = device_tensor_with_info.second.first;
-    device_tensor->set_original_ref_count(user_cnt);
-    device_tensor->ResetRefCount();
-    if (user_cnt > 0) {
-      // When allocate memory, the ref count would be increase, so it should be decrease here.
-      if (is_ref_count_max) {
-        device_tensor->set_new_ref_count(SIZE_MAX);
+  if (kernel_tensor_with_info.first != nullptr) {
+    auto &device_tensor = kernel_tensor_with_info.first->device_address();
+    if (device_tensor != nullptr && device_tensor->GetDeviceType() == value_type) {
+      auto user_cnt = kernel_tensor_with_info.second.first;
+      device_tensor->set_original_ref_count(user_cnt);
+      device_tensor->ResetRefCount();
+      if (user_cnt > 0) {
+        // When allocate memory, the ref count would be increase, so it should be decrease here.
+        if (is_ref_count_max) {
+          device_tensor->set_new_ref_count(SIZE_MAX);
+        } else {
+          static std::string name = "Parameter store";
+          device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
+        }
+        device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+        MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
+                      << " for device address:" << device_tensor->PrintInfo();
       } else {
-        static std::string name = "Parameter store";
-        device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
+        MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index
+                      << " inner index:" << inner_index << " for device address:" << device_tensor;
       }
-      device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-      MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
-                    << " for device address:" << device_tensor->PrintInfo();
-    } else {
-      MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index << " inner index:" << inner_index
-                    << " for device address:" << device_tensor;
+      return;
     }
-    return;
   }
 
-  auto &heter_device_tensor = heter_device_tensor_with_info.first;
-  if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == value_type) {
-    auto user_cnt = heter_device_tensor_with_info.second;
-    heter_device_tensor->set_original_ref_count(user_cnt);
-    heter_device_tensor->ResetRefCount();
-    if (user_cnt > 0) {
-      // When allocate memory, the ref count would be increase, so it should be decrease here.
-      if (is_ref_count_max) {
-        heter_device_tensor->set_new_ref_count(SIZE_MAX);
+  if (heter_kernel_tensor_with_info.first != nullptr) {
+    auto &heter_device_tensor = heter_kernel_tensor_with_info.first->device_address();
+    if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == value_type) {
+      auto user_cnt = heter_kernel_tensor_with_info.second;
+      heter_device_tensor->set_original_ref_count(user_cnt);
+      heter_device_tensor->ResetRefCount();
+      if (user_cnt > 0) {
+        // When allocate memory, the ref count would be increase, so it should be decrease here.
+        if (is_ref_count_max) {
+          heter_device_tensor->set_new_ref_count(SIZE_MAX);
+        } else {
+          static std::string name = "Parameter store";
+          heter_device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
+        }
+        heter_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+        MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
+                      << " for device address:" << heter_device_tensor->PrintInfo();
       } else {
-        static std::string name = "Parameter store";
-        heter_device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
+        MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index
+                      << " inner index:" << inner_index << " for device address:" << heter_device_tensor;
       }
-      heter_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
-      MS_LOG(DEBUG) << "Parameter store set new ref count:" << user_cnt - 1
-                    << " for device address:" << heter_device_tensor->PrintInfo();
-    } else {
-      MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index << " inner index:" << inner_index
-                    << " for device address:" << heter_device_tensor;
     }
   }
 }
 
-DeviceTensorPtr GraphParameterStore::FetchMutableAddr(size_t outer_index, size_t inner_index,
-                                                      DeviceTensorType value_type) {
+KernelTensorPtr GraphParameterStore::FetchWithFreshRefMap(size_t outer_index, size_t inner_index,
+                                                          DeviceTensorType value_type) {
   CheckIndexValid(outer_index, inner_index);
   std::shared_lock<std::shared_mutex> lock(param_mutex_);
-  const auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
-  const auto &device_tensor = device_tensor_with_info.first;
-  const auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
-  const auto &heter_device_tensor = heter_device_tensor_with_info.first;
+  const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+  const auto &kernel_tensor = kernel_tensor_with_info.first;
+  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
+  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
+
   // Record non weight parameter ref map.
-  if (device_tensor != nullptr && heter_device_tensor != nullptr) {
+  if (kernel_tensor != nullptr && heter_kernel_tensor != nullptr) {
     const auto &iter = index_to_front_node_.find(outer_index);
     if (iter != index_to_front_node_.end() && iter->second->isa<Parameter>() &&
         !common::AnfAlgo::IsParameterWeight(iter->second->cast<ParameterPtr>())) {
-      DeviceTensorCopyStore::GetInstance().Insert(device_tensor.get(), heter_device_tensor.get());
+      const auto &device_tensor = kernel_tensor->device_address();
+      const auto &heter_device_tensor = heter_kernel_tensor->device_address();
+      if (device_tensor != nullptr && heter_device_tensor != nullptr) {
+        DeviceTensorCopyStore::GetInstance().Insert(device_tensor.get(), heter_device_tensor.get());
+      }
     }
   }
 
-  if (device_tensor != nullptr && device_tensor->GetDeviceType() == value_type) {
-    return device_tensor;
+  if (kernel_tensor != nullptr && device::GetDeviceTypeByName(kernel_tensor->device_name()) == value_type) {
+    return kernel_tensor;
   }
 
-  if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == value_type) {
-    return heter_device_tensor;
+  if (heter_kernel_tensor != nullptr && device::GetDeviceTypeByName(heter_kernel_tensor->device_name()) == value_type) {
+    return heter_kernel_tensor;
   }
 
-  // The parameter and actor input is heterogeneous, kernel actor will use copy input device tensor.
-  if (heter_device_tensor == nullptr && device_tensor != nullptr) {
-    return device_tensor;
-  }
-  return nullptr;
-}
-
-DeviceTensor *GraphParameterStore::Fetch(size_t outer_index, size_t inner_index, DeviceTensorType value_type) {
-  CheckIndexValid(outer_index, inner_index);
-  std::shared_lock<std::shared_mutex> lock(param_mutex_);
-  const auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
-  const auto &device_tensor = device_tensor_with_info.first;
-  if (device_tensor != nullptr && device_tensor->GetDeviceType() == value_type) {
-    return device_tensor.get();
-  }
-
-  const auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
-  const auto &heter_device_tensor = heter_device_tensor_with_info.first;
-  if (heter_device_tensor != nullptr && heter_device_tensor->GetDeviceType() == value_type) {
-    return heter_device_tensor.get();
-  }
-
-  // The parameter and actor input is heterogeneous, kernel actor will use copy input device tensor.
-  if (heter_device_tensor == nullptr && device_tensor != nullptr) {
-    return device_tensor.get();
+  // The parameter and actor input is heterogeneous, kernel actor will use copy input kernel tensor.
+  if (heter_kernel_tensor == nullptr && kernel_tensor != nullptr) {
+    return kernel_tensor;
   }
   return nullptr;
 }
 
-std::vector<DeviceTensorPtr> GraphParameterStore::FetchMutableAddr(size_t outer_index, size_t inner_index) {
+KernelTensorPtr GraphParameterStore::Fetch(size_t outer_index, size_t inner_index, DeviceTensorType value_type) {
   CheckIndexValid(outer_index, inner_index);
   std::shared_lock<std::shared_mutex> lock(param_mutex_);
-  std::vector<DeviceTensorPtr> input_list;
-  const auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
-  const auto &device_tensor = device_tensor_with_info.first;
-  if (device_tensor != nullptr) {
-    input_list.push_back(device_tensor);
+  const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+  const auto &kernel_tensor = kernel_tensor_with_info.first;
+  if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr &&
+      device::GetDeviceTypeByName(kernel_tensor->device_address()->device_name()) == value_type) {
+    return kernel_tensor;
   }
 
-  const auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
-  const auto &heter_device_tensor = heter_device_tensor_with_info.first;
-  if (heter_device_tensor != nullptr) {
-    input_list.push_back(heter_device_tensor);
+  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
+  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
+  if (heter_kernel_tensor != nullptr && heter_kernel_tensor->device_address() != nullptr &&
+      device::GetDeviceTypeByName(heter_kernel_tensor->device_address()->device_name()) == value_type) {
+    return heter_kernel_tensor;
+  }
+
+  // The parameter and actor input is heterogeneous, kernel actor will use copy input kernel tensor.
+  return kernel_tensor;
+}
+
+std::vector<KernelTensorPtr> GraphParameterStore::Fetch(size_t outer_index, size_t inner_index) {
+  CheckIndexValid(outer_index, inner_index);
+  std::shared_lock<std::shared_mutex> lock(param_mutex_);
+  std::vector<KernelTensorPtr> input_list;
+  const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+  const auto &kernel_tensor = kernel_tensor_with_info.first;
+  if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr) {
+    input_list.push_back(kernel_tensor);
+  }
+
+  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
+  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
+  if (heter_kernel_tensor != nullptr && heter_kernel_tensor->device_address() != nullptr) {
+    input_list.push_back(heter_kernel_tensor);
   }
   return input_list;
 }
@@ -174,34 +182,28 @@ std::vector<DeviceTensorPtr> GraphParameterStore::FetchMutableAddr(size_t outer_
 bool GraphParameterStore::HasHeter(size_t outer_index, size_t inner_index) {
   CheckIndexValid(outer_index, inner_index);
   std::shared_lock<std::shared_mutex> lock(param_mutex_);
-  const auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
-  const auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
-  return device_tensor_with_info.first != nullptr && heter_device_tensor_with_info.first != nullptr;
+  const auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+  const auto &kernel_tensor = kernel_tensor_with_info.first;
+  const auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
+  const auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
+  return kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr && heter_kernel_tensor != nullptr &&
+         heter_kernel_tensor->device_address() != nullptr;
 }
 
-std::vector<DeviceTensor *> GraphParameterStore::Fetch(size_t outer_index, size_t inner_index) {
-  const auto &device_tensors = FetchMutableAddr(outer_index, inner_index);
-  std::vector<DeviceTensor *> input_list;
-  std::transform(device_tensors.begin(), device_tensors.end(), std::back_inserter(input_list),
-                 [](const auto &device_tensor) { return device_tensor.get(); });
-
-  return input_list;
-}
-
-void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const DeviceTensorPtr &value,
+void GraphParameterStore::Push(size_t outer_index, size_t inner_index, const KernelTensorPtr &value,
                                DeviceTensorType value_type, size_t cnt) {
   auto is_heter = CheckDeviceTensorHeter(outer_index, inner_index, value_type);
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
   if (!is_heter) {
-    auto &device_tensor_with_info = parameter_device_tensors_[outer_index][inner_index];
-    device_tensor_with_info.first = value;
-    device_tensor_with_info.second.first = cnt;
+    auto &kernel_tensor_with_info = parameter_kernel_tensors_[outer_index][inner_index];
+    kernel_tensor_with_info.first = value;
+    kernel_tensor_with_info.second.first = cnt;
     return;
   }
 
-  auto &heter_device_tensor_with_info = heter_device_tensors_[outer_index][inner_index];
-  heter_device_tensor_with_info.first = value;
-  heter_device_tensor_with_info.second = cnt;
+  auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[outer_index][inner_index];
+  heter_kernel_tensor_with_info.first = value;
+  heter_kernel_tensor_with_info.second = cnt;
 }
 
 Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithIndex &node) const {
@@ -282,30 +284,33 @@ void GraphParameterStore::ReleaseData() {
   for (auto index : non_weight_ref_max_inputs_) {
     CheckIndexValid(index.first, index.second);
     std::pair<size_t, size_t> position{index.first, index.second};
-    auto &device_tensor_with_info = parameter_device_tensors_[index.first][index.second];
-    auto &device_tensor = device_tensor_with_info.first;
-    if (device_tensor != nullptr && device_tensor->original_ref_count() == SIZE_MAX &&
-        !device_tensor->is_ptr_persisted()) {
-      MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " null, outer idx: " << index.first
-                    << ", inner idx: " << index.second;
-      auto kernel_tensor = device_tensor->kernel_tensor();
-      MS_EXCEPTION_IF_NULL(kernel_tensor);
-      release_data_info_[{position, device_tensor->GetDeviceType()}] = {kernel_tensor->GetType(),
-                                                                        device_tensor->GetNodeIndex()};
-      device_tensor_with_info.first = nullptr;
+    auto &kernel_tensor_with_info = parameter_kernel_tensors_[index.first][index.second];
+    auto &kernel_tensor = kernel_tensor_with_info.first;
+    if (kernel_tensor != nullptr) {
+      auto &device_tensor = kernel_tensor->device_address();
+      if (device_tensor != nullptr && device_tensor->original_ref_count() == SIZE_MAX &&
+          !device_tensor->is_ptr_persisted()) {
+        MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
+                      << ", inner idx: " << index.second << ", info: " << device_tensor->PrintInfo();
+        release_data_info_[{position, device_tensor->GetDeviceType()}] = {kernel_tensor->GetType(),
+                                                                          device_tensor->GetNodeIndex()};
+        kernel_tensor->set_device_address(nullptr);
+      }
     }
 
-    auto &heter_device_tensor_with_info = heter_device_tensors_[index.first][index.second];
-    auto &heter_device_tensor = heter_device_tensor_with_info.first;
-    if (heter_device_tensor != nullptr && heter_device_tensor->original_ref_count() == SIZE_MAX &&
-        !heter_device_tensor->is_ptr_persisted()) {
-      MS_LOG(DEBUG) << "Set store heter device tensor: " << heter_device_tensor.get()
-                    << " null, outer idx: " << index.first << ", inner idx: " << index.second;
-      auto heter_kernel_tensor = heter_device_tensor->kernel_tensor();
-      MS_EXCEPTION_IF_NULL(heter_kernel_tensor);
-      release_data_info_[{position, heter_device_tensor->GetDeviceType()}] = {heter_kernel_tensor->GetType(),
-                                                                              heter_device_tensor->GetNodeIndex()};
-      heter_device_tensor_with_info.first = nullptr;
+    auto &heter_kernel_tensor_with_info = heter_kernel_tensors_[index.first][index.second];
+    auto &heter_kernel_tensor = heter_kernel_tensor_with_info.first;
+    if (heter_kernel_tensor != nullptr) {
+      auto &heter_device_tensor = heter_kernel_tensor->device_address();
+      if (heter_device_tensor != nullptr && heter_device_tensor->original_ref_count() == SIZE_MAX &&
+          !heter_device_tensor->is_ptr_persisted()) {
+        MS_LOG(DEBUG) << "Set store heter device tensor: " << heter_device_tensor.get()
+                      << " ptr null, outer idx: " << index.first << ", inner idx: " << index.second
+                      << ", info: " << heter_device_tensor->PrintInfo();
+        release_data_info_[{position, heter_device_tensor->GetDeviceType()}] = {heter_kernel_tensor->GetType(),
+                                                                                heter_device_tensor->GetNodeIndex()};
+        heter_kernel_tensor->set_device_address(nullptr);
+      }
     }
   }
 

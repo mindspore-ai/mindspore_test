@@ -32,8 +32,8 @@ class DebugAwareActor : public MemoryAwareActor {
         profiler_aid_(profiler_aid) {}
   ~DebugAwareActor() override = default;
 
-  virtual void SendDebugReq(OpContext<DeviceTensor> *const context) {}
-  virtual void OnDebugFinish(OpContext<DeviceTensor> *const context) { PostRun(context); }
+  virtual void SendDebugReq(OpContext<KernelTensor> *const context) {}
+  virtual void OnDebugFinish(OpContext<KernelTensor> *const context) { PostRun(context); }
 
  protected:
   // The id of debug actor. Send message to it for debug.

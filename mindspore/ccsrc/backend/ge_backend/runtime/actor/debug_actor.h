@@ -32,20 +32,20 @@ class DebugActor : public ActorBase {
   ~DebugActor() override = default;
 
   // The debug of each node.
-  void DebugPreLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &op_input_kernel_tensors,
-                      const std::vector<DeviceTensor *> &op_output_kernel_tensors,
-                      OpContext<DeviceTensor> *const op_context, const AID *from_aid);
-  void DebugPostLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &op_input_kernel_tensors,
-                       const std::vector<DeviceTensor *> &op_output_kernel_tensors,
-                       OpContext<DeviceTensor> *const op_context, const AID *from_aid);
+  void DebugPreLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &op_input_kernel_tensors,
+                      const std::vector<KernelTensorPtr> &op_output_kernel_tensors,
+                      OpContext<KernelTensor> *const op_context, const AID *from_aid);
+  void DebugPostLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &op_input_kernel_tensors,
+                       const std::vector<KernelTensorPtr> &op_output_kernel_tensors,
+                       OpContext<KernelTensor> *const op_context, const AID *from_aid);
 
   // The debug on step begin.
   void DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                         const std::vector<AnfNodePtr> &origin_parameters_order,
-                        OpContext<DeviceTensor> *const op_context, const AID *from_aid);
+                        OpContext<KernelTensor> *const op_context, const AID *from_aid);
 
   // The debug on step end.
-  void DebugOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *from_aid, int total_running_count,
+  void DebugOnStepEnd(OpContext<KernelTensor> *const op_context, const AID *from_aid, int total_running_count,
                       int sink_size);
 
  private:

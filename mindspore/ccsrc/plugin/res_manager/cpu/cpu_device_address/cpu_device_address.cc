@@ -70,7 +70,7 @@ bool SyncUserDataToDevice(const UserDataPtr &user_data, const void *host_ptr, si
 }
 }  // namespace
 
-void CPUDeviceAddress::DeviceSynchronizerInit() { set_device_synchronizer(std::make_shared<CPUDeviceSynchronizer>()); }
+DeviceSynchronizerPtr CPUDeviceAddress::NewDeviceSynchronizer() { return std::make_shared<CPUDeviceSynchronizer>(); }
 
 void CPUDeviceAddress::SetDevicePtrDeleter() {
   if (address_common_ == nullptr || address_common_->pointer_ref_count_ == nullptr) {
@@ -172,7 +172,7 @@ bool CheckSizeZero(size_t size, size_t get_size) {
 
 bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId type, const void *host_ptr,
                                         const std::string &) const {
-  if (kernel_tensor() != nullptr && user_data() != nullptr && user_data()->has(kUserDataType)) {
+  if (user_data() != nullptr && user_data()->has(kUserDataType)) {
     return SyncUserDataToDevice(user_data(), host_ptr, size);
   }
 
@@ -243,7 +243,8 @@ bool CPUDeviceAddress::SyncDeviceToDevice(const DeviceSync *src_device_addr) con
   MS_EXCEPTION_IF_NULL(src_device_addr);
   auto src_cpu_device = dynamic_cast<const CPUDeviceAddress *>(src_device_addr);
   MS_EXCEPTION_IF_NULL(src_cpu_device);
-  return SyncDeviceToDevice(src_cpu_device->host_shape(), src_cpu_device->GetSize(), src_cpu_device->type_id(),
+  // SyncDeviceToDevice do not need shape vector, so use ShapeVector{}.
+  return SyncDeviceToDevice(ShapeVector(), src_cpu_device->GetSize(), src_cpu_device->type_id(),
                             src_cpu_device->GetPtr(), src_cpu_device->format());
 }
 
@@ -289,6 +290,12 @@ bool CPUDeviceAddress::SyncDeviceToDevice(const ShapeVector &, size_t size, Type
     return false;
   }
   return true;
+}
+
+DeviceAddressPtr CPUDeviceAddress::CloneDeviceAddress() {
+  auto clone_device_address = std::make_shared<CPUDeviceAddress>();
+  DeviceAddress::CloneDeviceAddress(clone_device_address);
+  return clone_device_address;
 }
 }  // namespace cpu
 }  // namespace device

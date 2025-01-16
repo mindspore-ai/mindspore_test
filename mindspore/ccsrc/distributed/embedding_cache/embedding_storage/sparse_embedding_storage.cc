@@ -28,11 +28,7 @@ template <typename KeyType, typename ValueType, typename Allocator>
 void SparseEmbeddingStorage<KeyType, ValueType, Allocator>::Initialize(const DeviceAddress *device_address) {
   MS_EXCEPTION_IF_NULL(device_address);
   EmbeddingStorage<KeyType, ValueType, Allocator>::Initialize(device_address);
-
-  auto user_data = device_address->user_data();
-  MS_EXCEPTION_IF_NULL(user_data);
-  hash_table_ = user_data->get<HashTable>(kUserDataData).get();
-  MS_EXCEPTION_IF_NULL(hash_table_);
+  MS_LOG(EXCEPTION) << "Not supported.";
 }
 
 template <typename KeyType, typename ValueType, typename Allocator>

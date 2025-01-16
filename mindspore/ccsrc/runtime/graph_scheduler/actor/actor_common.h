@@ -27,7 +27,7 @@
 #include <memory>
 #include "utils/hash_map.h"
 #include "actor/op_actor.h"
-#include "common/device_address.h"
+#include "common/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
@@ -48,8 +48,15 @@ using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
 using mindspore::device::DeviceContext;
 using mindspore::device::KernelInfo;
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 using CompileFunc = std::function<KernelGraphPtr(
   const GraphSegmentPtr &, const std::pair<AnfNodePtrList, AnfNodePtrList> &, const DeviceContext *, device::RunMode)>;
+
+template <typename T>
+using OpContext = OpRTContext<T>;
+template <typename T>
+using OpActor = OpRTActor<T>;
 
 // The execution result of actor.
 constexpr int kSuccess = 0;
@@ -322,7 +329,7 @@ class BACKEND_EXPORT ActorDispatcher {
   }
 
   template <typename T, typename... Args0, typename... Args1>
-  static void SendSync(OpActor<DeviceTensor> *to_actor, void (T::*method)(Args0...), Args1 &&... args) {
+  static void SendSync(OpActor<KernelTensor> *to_actor, void (T::*method)(Args0...), Args1 &&... args) {
     T *actor = static_cast<T *>(to_actor);
     MS_EXCEPTION_IF_NULL(actor);
     (actor->*method)(std::forward<Args1>(args)...);
@@ -441,7 +448,7 @@ class BACKEND_EXPORT ActorDispatcher {
   static bool enable_parallel_dispatch_kernel_for_cur_step_;
 };  // namespace runtime
 
-bool IsRunningFailed(const OpContext<DeviceTensor> *context);
+bool IsRunningFailed(const OpContext<KernelTensor> *context);
 
 bool IsDeviceQueueDSActor(const AnfNodePtr &node, GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
 
@@ -505,7 +512,7 @@ bool EnableParallelDispatchKernel();
 
 // If enable async launch kernel, wait all kernels launch task finish.
 // If enable infer->resize->launch pipeline, also wait all infer, resize and launch task finish.
-bool WaitRuntimePipelineFinish(const OpContext<DeviceTensor> *context, const std::string &name,
+bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
                                bool wait_kernel_launch_finish = true);
 
 size_t GetDefragMemoryStepFreq();
@@ -539,14 +546,14 @@ std::string GetActorIdByKernel(const AnfNodePtr &node);
 std::string GenerateActorIdByKernel(const AnfNodePtr &node);
 
 // GetThe repeat device tensor index.
-mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<DeviceTensor *> &device_tensors);
+mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<KernelTensorPtr> &kernel_tensors);
 
 // Check a graph is from inference phase.
 bool IsInferPhase(const std::string &phase);
 TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
-DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
-                             OpContext<DeviceTensor> *const context, const DeviceContext *device_context,
-                             const AID &from_aid);
+KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
+                               OpContext<KernelTensor> *const context, const DeviceContext *device_context,
+                               const AID &from_aid);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
 
 inline bool NeedRunMemTracker() {
