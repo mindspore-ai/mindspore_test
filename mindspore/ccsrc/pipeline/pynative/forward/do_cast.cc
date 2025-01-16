@@ -278,6 +278,7 @@ std::pair<std::vector<TypeId>, std::vector<bool>> GetTypeInfo(const FrontendOpRu
       const auto &value_seq = value->cast<ValueSequencePtr>();
       MS_EXCEPTION_IF_NULL(value_seq);
       const auto &elements = value_seq->value();
+      bool has_tensor = false;
       // Not support tuple(tuple<Tensor>) yet.
       for (const auto &element : elements) {
         MS_EXCEPTION_IF_NULL(element);
@@ -286,7 +287,13 @@ std::pair<std::vector<TypeId>, std::vector<bool>> GetTypeInfo(const FrontendOpRu
           args_type_id.push_back(element->cast<tensor::BaseTensorPtr>()->data_type());
           // No tuple[int] to tuple[Tensor] type_cast yet.
           args_has_tensor.push_back(true);
+          has_tensor = true;
         }
+      }
+      // For tuple<scalar>
+      if (!has_tensor) {
+        args_type_id.push_back(kTypeUnknown);
+        args_has_tensor.push_back(false);
       }
     } else {
       MS_LOG(DEBUG) << "Get input value " << input_value[i]->ToString();

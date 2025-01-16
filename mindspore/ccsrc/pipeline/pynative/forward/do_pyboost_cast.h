@@ -92,6 +92,7 @@ class PyBoostCastOperation : public CastBaseOperation {
       const auto &value_seq = v->template cast<ValueSequencePtr>();
       MS_EXCEPTION_IF_NULL(value_seq);
       const auto &elements = value_seq->value();
+      bool has_tensor = false;
       // Not support tuple(tuple<Tensor>) yet.
       for (const auto &element : elements) {
         MS_EXCEPTION_IF_NULL(element);
@@ -100,7 +101,13 @@ class PyBoostCastOperation : public CastBaseOperation {
           args_type_id->push_back(element->template cast<tensor::BaseTensorPtr>()->data_type());
           // No tuple[int] to tuple[Tensor] type_cast yet.
           args_has_tensor->push_back(true);
+          has_tensor = true;
         }
+      }
+      // For tuple<scalar>
+      if (!has_tensor) {
+        args_type_id->push_back(kTypeUnknown);
+        args_has_tensor->push_back(false);
       }
     } else {
       MS_LOG(DEBUG) << "Get value " << v->ToString();
