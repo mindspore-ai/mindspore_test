@@ -312,7 +312,7 @@ class BatchNorm3d(_BatchNorm):
 
     .. math::
 
-        y = \frac{x - mean}{\sqrt{variance + \epsilon}} * \gamma + \beta
+        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The mean and standard-deviation are calculated per-dimension over
     the mini-batches and :math:`\gamma` and :math:`\beta` are learnable parameter vectors

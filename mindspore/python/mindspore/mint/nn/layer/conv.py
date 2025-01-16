@@ -404,7 +404,7 @@ class Conv3d(_Conv):
         groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
             divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`. Default: ``1`` .
         bias (bool, optional): Whether the Conv3d layer has a bias parameter. Default: ``True`` .
-        dtype (mindspore.dtype): Dtype of Parameters. Default: mstype.float32 .
+        dtype (mindspore.dtype, optional): Dtype of Parameters. Default: ``mstype.float32`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` \

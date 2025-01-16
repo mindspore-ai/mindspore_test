@@ -529,8 +529,7 @@ def where(condition, input, other):
 
 def reverse(x, axis):
     """
-    :func:`mindspore.ops.reverse` will be deprecated in the future.
-    Please use :func:`mindspore.ops.flip` instead.
+    This interface will be deprecated in the future, and use :func:`mindspore.ops.flip` instead.
     """
     return flip(x, axis)
 
@@ -6169,8 +6168,7 @@ def topk(input, k, dim=None, largest=True, sorted=True):
 
 def expand(input_x, size):
     r"""
-    :func:`mindspore.ops.expand` will be deprecated in the future.
-    Please use :func:`mindspore.ops.broadcast_to` instead.
+    This interface will be deprecated in the future, and use :func:`mindspore.ops.broadcast_to` instead.
     """
     expand_op = _get_cache_prim(Expand)()
     return expand_op(input_x, size)

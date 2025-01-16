@@ -224,9 +224,9 @@ class DropoutExt(Cell):
         - Parameter `p` means the probability of the element of the input tensor to be zeroed.
 
     Args:
-        p (float): The dropout rate of input neurons, E.g. `p` =0.9, dropping out 90% of input neurons.
+        p (float, optional): The dropout rate of input neurons, E.g. `p` =0.9, dropping out 90% of input neurons.
             Default: ``0.5`` .
-        inplace (bool): If set to ``True`` , will do this operation in-place. Default: ``False`` .
+        inplace (bool, optional): If set to ``True`` , will do this operation in-place. Default: ``False`` .
 
     Inputs:
         - **x** (Tensor) - The input of Dropout.
