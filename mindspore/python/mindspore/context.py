@@ -26,7 +26,7 @@ from collections import namedtuple
 from types import FunctionType
 
 from mindspore import log as logger
-from mindspore._c_expression import MSContext, ms_ctx_param
+from mindspore._c_expression import MSContext, ms_ctx_param, CollectiveManager
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore.parallel._auto_parallel_context import _set_auto_parallel_context, _get_auto_parallel_context, \
@@ -289,6 +289,11 @@ class _Context:
         if deterministic not in deterministic_options:
             raise ValueError(f"For 'context.set_context', the argument 'deterministic' must be one of "
                              f"{deterministic_options}, but got {deterministic}.")
+
+        # Must wait for all async created groups to be initialized so that
+        # deterministic feature could be consistent between all processes.
+        CollectiveManager.get_instance().wait_all_comm_init()
+
         self.set_param(ms_ctx_param.deterministic, deterministic)
 
         hccl_deterministic = os.getenv("HCCL_DETERMINISTIC")
@@ -1508,7 +1513,11 @@ def set_context(**kwargs):
 
             When deterministic mode is on, model ops will be deterministic in Ascend. This means that if op run
             multiple times with the same inputs on the same hardware, it will have the exact same outputs each time.
-            This is useful for debugging models. This parameter will be deprecated and will be removed in
+            This is useful for debugging models.
+            In distributed scenario, we suggest user to set deterministic mode before
+            calling :func:`mindspore.communication.init` to enable deterministic operation for
+            communication operators in the global communication group.
+            This parameter will be deprecated and will be removed in
             future versions. Please use the api :func:`mindspore.set_deterministic` instead.
         print_file_path (str): This parameter will be deprecated and will be removed in future versions.
         env_config_path (str): This parameter will be deprecated and will be removed in future versions.

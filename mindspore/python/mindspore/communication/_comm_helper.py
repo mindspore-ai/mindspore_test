@@ -504,3 +504,8 @@ def _destroy_group_helper(group):
 def _get_group_map():
     """Get the group map"""
     return CollectiveManager.get_instance().get_group_map()
+
+
+def _wait_all_comm_init():
+    """Wait for all communicators to be initialized."""
+    return CollectiveManager.get_instance().wait_all_comm_init()

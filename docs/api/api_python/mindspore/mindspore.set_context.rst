@@ -130,6 +130,7 @@ mindspore.set_context
           - OFF：关闭算子确定性运行模式。
 
           当确定性开启时，模型中的算子将在Ascend中具有确定性。这意味着，如果算子在同一硬件上使用相同的输入运行多次，则每次都会有完全相同的输出。这对于调试模型很有用。
+          在分布式场景下，建议用户在调用接口 :func:`mindspore.communication.init` 前设置确定性计算，以保证使能全局通信域上的通信算子确定性。
           此参数将被弃用，将在后续版本中删除，请使用接口 :func:`mindspore.set_deterministic` 代替。
         - **print_file_path** (str) - 此参数将被弃用，将在后续版本中删除。
         - **env_config_path** (str) - 此参数将被弃用，将在后续版本中删除。
