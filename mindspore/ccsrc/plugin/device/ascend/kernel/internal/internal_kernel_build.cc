@@ -51,6 +51,9 @@ std::shared_ptr<KernelPlugin> GetKernelPLugin() {
   // create plugin object
   k_internal_kernel_plugin_ptr = Factory<KernelPlugin>::Instance().Create("InternalKernelPlugin");
   k_is_plugin_init = true;
+  if (k_internal_kernel_plugin_ptr != nullptr) {
+    k_internal_kernel_plugin_ptr->InitInternalLog();
+  }
   return k_internal_kernel_plugin_ptr;
 }
 
