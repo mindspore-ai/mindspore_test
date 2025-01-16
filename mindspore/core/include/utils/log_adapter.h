@@ -199,6 +199,7 @@ enum SubModuleId : int {
   SM_SYMBOLIC_SHAPE,     // symbolic shape
   SM_GRAPH_KERNEL,       // graph kernel fusion
   SM_LLM_BOOST,          // llm boost
+  SM_INTERNAL_KERNEL,    // internal kernel
   NUM_SUBMODUES,         // number of submodules
 };
 
