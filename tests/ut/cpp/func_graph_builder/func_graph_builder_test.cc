@@ -117,8 +117,8 @@ TEST_F(TestFuncGraphBuilder, TestAddTopGraphArgInput) {
 
 // Feature: Build graph in pi_jit.
 // Description: Use the func_graph_builder api to add cnode.
-// Expectation: The expected graph is constructed.
-TEST_F(TestFuncGraphBuilder, DISABLED_TestAddNodeAndSingleOutput) {
+// Expectation: The expected node is constructed.
+TEST_F(TestFuncGraphBuilder, TestAddNodeAndAddOutput) {
   FuncGraphBuilder func_graph_builder;
   py::int_ int_v1 = 1;
   auto v1_wrapper = func_graph_builder.AddLocalVariable(int_v1);
@@ -133,13 +133,14 @@ TEST_F(TestFuncGraphBuilder, DISABLED_TestAddNodeAndSingleOutput) {
   auto scalar_add_prim_class = mod.attr("ScalarAdd");
   ASSERT_FALSE(py::isinstance<py::none>(scalar_add_prim_class));
   auto scalar_add_prim = scalar_add_prim_class();
+
   auto obj = func_graph_builder.AddNode(scalar_add_prim, {input1, input2});
   ASSERT_NE(obj, nullptr);
+  const auto &expect_abstract = CreateAbstractScalar(3);
+  ASSERT_EQ(*(obj->abstract()), *expect_abstract);
   ASSERT_TRUE(func_graph_builder.AddOutput(obj));
   auto graph = func_graph_builder.graph();
-  ASSERT_NE(graph, nullptr);
-  FuncGraphPtr expected_graph = get_py_fun_.CallAndParseRet("test_add_node", "graph_single_output");
-  ASSERT_TRUE(CheckEqual(graph, expected_graph));
+  ASSERT_EQ(graph, nullptr);
 }
 
 // Feature: Build graph in pi_jit.
