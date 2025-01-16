@@ -31,9 +31,7 @@ namespace device {
 namespace gpu {
 class GPUDeviceAddress : public LoadableDeviceAddress {
  public:
-  explicit GPUDeviceAddress(const KernelTensorPtr &kernel_tensor) : LoadableDeviceAddress(kernel_tensor) {
-    SetDevicePtrDeleter();
-  }
+  GPUDeviceAddress() : LoadableDeviceAddress() { SetDevicePtrDeleter(); }
   GPUDeviceAddress(void *ptr, size_t size) : LoadableDeviceAddress(ptr, size) { SetDevicePtrDeleter(); }
   GPUDeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id)
       : LoadableDeviceAddress(ptr, size, format, type_id) {
@@ -54,7 +52,6 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
     SetDevicePtrDeleter();
   }
   ~GPUDeviceAddress() override;
-  void DeviceSynchronizerInit() override;
 
   bool SyncDeviceToHost(size_t size, void *host_ptr) const override;
   bool SyncHostToDevice(size_t size, const void *host_ptr) const override;
@@ -73,6 +70,7 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
                                              TypeId host_type, bool trans_flag, bool async_copy = true) const override;
 
+  DeviceSynchronizerPtr NewDeviceSynchronizer() override;
   // Asynchronously copy host memory to device side.
   bool AsyncHostToDevice(const ShapeVector &, size_t size, TypeId, const void *host_ptr,
                          size_t stream_id) const override;
@@ -87,6 +85,8 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   bool AsyncDeviceToHost(size_t size, void *host_ptr) const override;
 
   void ClearUserData() override;
+
+  DeviceAddressPtr CloneDeviceAddress() override;
 
  protected:
   bool CopyDeviceToHost(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;

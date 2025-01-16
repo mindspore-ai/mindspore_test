@@ -260,14 +260,12 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
-  // Create concrete device address according different device type using KernelTensor.
-  virtual DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
-    MS_LOG(EXCEPTION) << "Unimplemented interface.";
-  }
+  virtual DeviceAddressPtr CreateDeviceAddress() const { MS_LOG(EXCEPTION) << "Unimplemented interface."; }
 
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,
-                                               uint32_t device_id, uint32_t stream_id) const {
+                                               uint32_t device_id, uint32_t stream_id,
+                                               const UserDataPtr &user_data = nullptr) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 

@@ -107,16 +107,20 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   bool Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
             mindspore::device::DeviceAddress *src_device_tensor);
   // outputs
-  void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs);
+  void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
+                        std::vector<TypePtr> *output_types);
   void ConstructOutputs(const AnfNodePtr &output_node, const std::vector<tensor::TensorPtr> &output_tensors,
-                        size_t *output_position, VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors);
+                        size_t *output_position, VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors,
+                        const std::vector<TypePtr> &output_types);
   void ConstructOutputs(mindspore::ge_backend::runtime::ActorSet *actor_set, VectorRef *outputs,
                         const FuncGraphPtr &root_graph);
   void ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor, const abstract::SequenceShapePtr &tensor_shape,
-                                    VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors) const;
+                                    VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors,
+                                    const TypePtr &output_type) const;
   BaseRef ConstructOutputByAbstract(const abstract::AbstractBasePtr &abstract,
                                     const std::vector<tensor::TensorPtr> &output_tensors, size_t *output_position,
-                                    std::vector<tensor::TensorPtr> *tuple_tensors);
+                                    std::vector<tensor::TensorPtr> *tuple_tensors,
+                                    const std::vector<TypePtr> &output_types);
 
   // for acl dump
   bool DebugOnStepBegin(const KernelGraphPtr &func_graph);

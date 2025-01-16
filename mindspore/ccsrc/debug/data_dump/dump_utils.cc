@@ -164,11 +164,12 @@ void GetDumpIntShape(const AnfNodePtr &node, size_t index, NotNull<ShapeVector *
 
 const DeviceTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVector *> const int_shapes,
                                        NotNull<TypeId *> const host_type, NotNull<TypeId *> const device_type) {
-  const auto &device_tensors = DeviceTensorStore::GetInstance().Fetch(node.get());
-  if (device_tensors.size() < 1) {
+  const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(node.get());
+  if (kernel_tensors.size() < 1) {
     return nullptr;
   }
-  auto device_addr = device_tensors[0];
+  MS_EXCEPTION_IF_NULL(kernel_tensors[0]);
+  auto device_addr = kernel_tensors[0]->device_address();
   MS_EXCEPTION_IF_NULL(device_addr);
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   bool trans_flag = dump_json_parser.trans_flag();

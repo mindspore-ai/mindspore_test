@@ -44,18 +44,18 @@ class GatherActor : public ControlActor {
   }
 
  protected:
-  void SendOutput(OpContext<DeviceTensor> *const context) override;
-  void IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context) override;
-  void IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) override;
+  void SendOutput(OpContext<KernelTensor> *const context) override;
+  void IncreaseDynamicRefCounts(OpContext<KernelTensor> *const context) override;
+  void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
 
  private:
   friend class ControlNodeScheduler;
   friend class SchedulerHelper;
 
   // Gather the input data and input partials to a new partial.
-  void GatherInput(OpContext<DeviceTensor> *const context);
+  void GatherInput(OpContext<KernelTensor> *const context);
 
-  void BuildOutput(OpRealParameterWithBranchID *const output, OpContext<DeviceTensor> *const context);
+  void BuildOutput(OpRealParameterWithBranchID *const output, OpContext<KernelTensor> *const context);
 
   // The input gathered by input data and input partials, which is created in GatherInput and destroyed in SendOutput.
   OpPartialPtr gather_input_;

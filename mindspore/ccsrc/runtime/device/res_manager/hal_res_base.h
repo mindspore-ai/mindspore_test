@@ -25,7 +25,7 @@
 #include <unordered_set>
 #include "utils/log_adapter.h"
 #include "include/backend/visible.h"
-#include "common/device_address.h"
+#include "common/kernel.h"
 #include "ir/device_event.h"
 #include "include/common/utils/anfalgo.h"
 
@@ -41,6 +41,8 @@ namespace mindspore {
 namespace device {
 constexpr auto kDefaultStreamIndex = 0;
 constexpr auto kWorldGroupStreamIndex = 1;
+
+using KernelTensor = kernel::KernelTensor;
 
 class RES_EXPORT HalResBase {
  public:
@@ -81,6 +83,7 @@ class RES_EXPORT HalResBase {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
     return false;
   }
+
   virtual void FreeMemory(DeviceAddress *const &address) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
     return;
@@ -130,13 +133,12 @@ class RES_EXPORT HalResBase {
   }
 
   // Create concrete device address according different device type using KernelTensor.
-  virtual DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
-    MS_LOG(EXCEPTION) << "Unimplemented interface.";
-  }
+  virtual DeviceAddressPtr CreateDeviceAddress() const { MS_LOG(EXCEPTION) << "Unimplemented interface."; }
 
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,
-                                               uint32_t device_id, uint32_t stream_id) const {
+                                               uint32_t device_id, uint32_t stream_id,
+                                               const UserDataPtr &user_data = nullptr) const {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 

@@ -30,7 +30,7 @@ void KernelAsyncInferActor::Initialize() {
   Wait();
 }
 
-void KernelAsyncInferActor::InferShape(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor) {
+void KernelAsyncInferActor::InferShape(OpContext<KernelTensor> *const context, KernelActor *kernel_actor) {
   try {
     kernel_actor->ExecuteInferShapeTask(context);
   } catch (const std::exception &e) {

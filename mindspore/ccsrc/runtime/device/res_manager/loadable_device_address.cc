@@ -395,9 +395,9 @@ bool LoadableDeviceAddress::IsPtrValid() const {
   if (GetDevicePtr() != nullptr) {
     return true;
   }
-  const auto &hete_info = kernel_tensor_ == nullptr ? nullptr : kernel_tensor_->heterogeneous_info();
-  if (hete_info != nullptr) {
-    if (hete_info->host_ptr_ != nullptr || !hete_info->file_name_.empty()) {
+
+  if (hete_info_ != nullptr) {
+    if (hete_info_->host_ptr_ != nullptr || !hete_info_->file_name_.empty()) {
       return true;
     }
   }

@@ -44,272 +44,15 @@
 #include "ir/kernel_tensor_value.h"
 #include "mindspore/ccsrc/include/backend/device_synchronizer.h"
 #include "common/kernel_visible.h"
+#include "common/device_address.h"
 
 namespace mindspore {
-
-// PointerRefCount encapsulates pointer and reference count-related operations, and supports custom deleter to free
-// resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same PointerRefCount object.
-class OPS_KERNEL_COMMON_API PointerRefCount {
- public:
-  // The arguments are pointer and a bool variable that identifies whether pointer is from the memory pool.
-  using Deleter = std::function<void(void *, bool)>;
-
-  PointerRefCount() = default;
-  explicit PointerRefCount(void *ptr) : ptr_(ptr) {}
-  PointerRefCount(void *ptr, const Deleter &deleter) : ptr_(ptr), deleter_(deleter) {}
-
-  PointerRefCount(const PointerRefCount &) = delete;
-  PointerRefCount &operator=(const PointerRefCount &) = delete;
-
-  ~PointerRefCount() {
-    try {
-      if (ptr_ != nullptr && deleter_) {
-        deleter_(ptr_, from_mem_pool_);
-      }
-      ptr_ = nullptr;
-    } catch (const std::exception &e) {
-      MS_LOG(ERROR) << "PointerRefCount destructed failed: " << e.what();
-    } catch (...) {
-      MS_LOG(ERROR) << "PointerRefCount destructed failed.";
-    }
-  }
-
-  std::string PrintInfo() const {
-    std::ostringstream ofs;
-    ofs << this << " ptr:" << ptr_ << " from mem pool:" << from_mem_pool_ << " origin ref count:" << original_ref_count_
-        << " ref count:" << ref_count_ << " dynamic ref count:" << dynamic_ref_count_
-        << " new ref count:" << new_ref_count_;
-    return ofs.str();
-  }
-
-  // Get raw pointer.
-  void *ptr() const { return ptr_; }
-  // Set raw pointer.
-  void set_ptr(void *ptr) { ptr_ = ptr; }
-
-  // Get whether pointer in PointerRefCount is allocated from the memory pool.
-  bool from_mem_pool() const { return from_mem_pool_; }
-  // Set whether pointer in PointerRefCount is allocated from the memory pool.
-  void set_from_mem_pool(bool from_mem_pool) { from_mem_pool_ = from_mem_pool; }
-
-  // Increase ref count or dynamic ref count.
-  size_t IncreaseCounter() {
-    if (ref_count_ != SIZE_MAX) {
-      return ++ref_count_;
-    } else if (dynamic_ref_count_ != INT32_MAX) {
-      return ++dynamic_ref_count_;
-    }
-    return SIZE_MAX;
-  }
-  // Decrease ref count or dynamic ref count.
-  size_t DecreaseCounter() {
-    if (ref_count_ != SIZE_MAX) {
-      return --ref_count_;
-    } else if (dynamic_ref_count_ != INT32_MAX) {
-      return --dynamic_ref_count_;
-    }
-    return SIZE_MAX;
-  }
-
-  // The related interface of static reference count operation.
-  void set_original_ref_count(size_t original_ref_count) { original_ref_count_ = original_ref_count; }
-  size_t original_ref_count() const { return original_ref_count_; }
-  void set_ref_count(size_t ref_count) { ref_count_ = ref_count; }
-  size_t ref_count() const { return ref_count_.load(); }
-  void IncreaseOriginalRefCount() {
-    if (original_ref_count_ < SIZE_MAX) {
-      original_ref_count_++;
-    }
-  }
-  void DecreaseOriginalRefCount() {
-    if ((original_ref_count_ < SIZE_MAX) && (original_ref_count_ > 0)) {
-      original_ref_count_--;
-    }
-  }
-
-  void IncreaseRefCount(size_t increase_cnt) {
-    if (ref_count() < SIZE_MAX && (SIZE_MAX - ref_count()) > increase_cnt) {
-      ref_count_ += increase_cnt;
-      return;
-    }
-    MS_LOG(EXCEPTION) << "The reference count is:" << ref_count() << ", and can't add: " << increase_cnt << " more.";
-  }
-  size_t DecreaseRefCount() { return --ref_count_; }
-  void ResetRefCount() { ref_count_ = original_ref_count_; }
-
-  // The related interface of dynamic reference count operation.
-  void set_dynamic_ref_count(int32_t dynamic_ref_count) { dynamic_ref_count_ = dynamic_ref_count; }
-  int32_t dynamic_ref_count() const { return dynamic_ref_count_; }
-
-  void IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt) {
-    if (dynamic_ref_count_ < INT32_MAX && (INT32_MAX - dynamic_ref_count_) > increase_cnt) {
-      auto ret = dynamic_ref_count_.fetch_add(increase_cnt) + increase_cnt;
-      MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << ptr();
-      return;
-    }
-    MS_LOG(EXCEPTION) << "The dynamic reference count is:" << dynamic_ref_count_ << ", and can't add: " << increase_cnt
-                      << " more.";
-  }
-  void IncreaseDynamicRefCount(const std::string &op_object) {
-    if (dynamic_ref_count_ < INT32_MAX) {
-      auto ret = ++dynamic_ref_count_;
-      MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << ptr();
-    }
-  }
-  int32_t DecreaseDynamicRefCount(const std::string &op_object) {
-    if (dynamic_ref_count_ <= 0) {
-      MS_LOG(EXCEPTION) << "The dynamic reference count is invalid value:" << dynamic_ref_count_;
-    }
-    auto ret = --dynamic_ref_count_;
-    MS_LOG(DEBUG) << op_object << " The dynamic ref count decreases to:" << ret << " for ptr:" << ptr();
-    return ret;
-  }
-
-  // Get pointer resource destructor.
-  Deleter deleter() const { return deleter_; }
-
-  // Set pointer resource destructor.
-  void set_deleter(const Deleter &deleter) { deleter_ = deleter; }
-
-  bool is_ptr_persisted() const { return is_ptr_persisted_; }
-  void set_is_ptr_persisted(bool is_ptr_persisted) { is_ptr_persisted_ = is_ptr_persisted; }
-
-  // New ref count interface.
-  void IncreaseNewRefCount(size_t i = 1) {
-    if (new_ref_count_ < SIZE_MAX) {
-      new_ref_count_ += i;
-    }
-  }
-  size_t DecreaseNewRefCount() {
-    if (new_ref_count_ == 0) {
-      MS_LOG(EXCEPTION) << "Failed to decrease ref count:" << this;
-    }
-    if (new_ref_count_ == SIZE_MAX) {
-      return SIZE_MAX;
-    }
-    return --new_ref_count_;
-  }
-  void set_new_ref_count(size_t new_ref_count) { new_ref_count_ = new_ref_count; }
-  size_t new_ref_count() const { return new_ref_count_.load(); }
-
- private:
-  void *ptr_{nullptr};
-
-  // Whether ptr_  is allocated from the memory pool.
-  bool from_mem_pool_{false};
-
-  // The static reference count, the value can be calculated at compile phase.
-  size_t original_ref_count_{1};
-  // The current reference count value, it will be decreased in the running, and reset by original_ref_count_ when it is
-  // zero.
-  std::atomic<size_t> ref_count_{1};
-
-  std::atomic<size_t> new_ref_count_{0};
-
-  // The dynamic reference count, the value can be calculated at compile phase.
-  std::atomic_int32_t dynamic_ref_count_{INT32_MAX};
-
-  // The pointer resource destructor.
-  Deleter deleter_;
-
-  // The device address of the node that owns the device address cannot be updated and replaced.
-  // Application scenario: set to true when the hardware execution mode requires that ptr cannot be changed during
-  // execution.
-  bool is_ptr_persisted_{false};
-};
-
-using PointerRefCountPtr = std::shared_ptr<PointerRefCount>;
-
 namespace kernel {
-enum class NeedAllocateHeteRes : int64_t { NoNeedHeteRes = 0, NeedHostMem = 1, NeedDiskFile = 2 };
+using abstract::AbstractBase;
+using device::DeviceSynchronizerPtr;
+using DeviceAddress = device::DeviceAddress;
+using DeviceAddressPtr = device::DeviceAddressPtr;
 
-struct HeterogeneousInfo {
-  // Address on cpu ddr when the KernelTensor is stored on CPU.
-  void *host_ptr_;
-  // File name when the KernelTensor is stored on Disk.
-  std::string file_name_;
-  // Token for unfinished async io.
-  std::optional<size_t> aio_token_;
-  // Mark which heterogeneous resource should be allocated.
-  NeedAllocateHeteRes need_alloc_hete_res_{NeedAllocateHeteRes::NoNeedHeteRes};
-};
-using HeterogeneousInfoPtr = std::shared_ptr<HeterogeneousInfo>;
-
-struct AddressCommon {
-  AddressCommon() { pointer_ref_count_ = std::make_shared<PointerRefCount>(); }
-  AddressCommon(void *device_ptr, size_t size)
-      : pointer_ref_count_(std::make_shared<PointerRefCount>(device_ptr)), size_(size) {}
-  AddressCommon(void *device_ptr, size_t size, const ShapeVector &shape_vector, const Format &format, TypeId dtype_id,
-                const std::string &device_name, uint32_t device_id, uint32_t stream_id = 0)
-      : pointer_ref_count_(std::make_shared<PointerRefCount>(device_ptr)),
-        stream_id_(stream_id),
-        size_(size),
-        format_(format),
-        dtype_id_(dtype_id),
-        device_name_(device_name),
-        device_id_(device_id),
-        shape_vector_(shape_vector) {}
-  AddressCommon(const AddressCommon &other) {
-    pointer_ref_count_ =
-      other.pointer_ref_count_ != nullptr
-        ? std::make_shared<PointerRefCount>(other.pointer_ref_count_->ptr(), other.pointer_ref_count_->deleter())
-        : std::make_shared<PointerRefCount>();
-    tensor_storage_info_ = other.tensor_storage_info_;
-    stream_id_ = other.stream_id_;
-    size_ = other.size_;
-    format_ = other.format_;
-    dtype_id_ = other.dtype_id_;
-    device_id_ = other.device_id_;
-    device_name_ = other.device_name_;
-    dtype_id_ = other.dtype_id_;
-    shape_vector_ = other.shape_vector_;
-    managed_by_somas_ = other.managed_by_somas_;
-  }
-  AddressCommon &operator=(const AddressCommon &) = delete;
-
-  std::string PrintInfo() const {
-    std::ostringstream ofs;
-    ofs << "size:" << size_ << " tensor storage info:" << tensor_storage_info_;
-    if (tensor_storage_info_ != nullptr) {
-      ofs << tensor_storage_info_->ToString();
-    }
-    ofs << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
-        << " device name:" << device_name_ << " shape vector:{";
-    std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
-    ofs << "} point ref count:";
-    if (pointer_ref_count_ == nullptr) {
-      ofs << "0";
-    } else {
-      ofs << pointer_ref_count_->PrintInfo();
-    }
-    return ofs.str();
-  }
-
-  PointerRefCountPtr pointer_ref_count_;
-  TensorStorageInfoPtr tensor_storage_info_{nullptr};
-  uint32_t stream_id_{0};
-  size_t size_{0};
-  Format format_{Format::DEFAULT_FORMAT};
-  // The data enum type id of the KernelTensor.
-  TypeId dtype_id_{kTypeUnknown};
-  // The device target name, such as "GPU","Ascend".
-  std::string device_name_;
-  // Represents the device card id associated with the KernelTensor.
-  uint32_t device_id_{0};
-  // The origin flatten shape vector for Tensor/Scalar/Tuple/List.
-  // 1. For Tensor type, means its shape. For example, a Tensor with shape (8, 16), shape_vector_ is {8, 16}.
-  // 2. For Scalar type, shape_vector_ is an empty ShapeVector, i.e. {}.
-  // 3. For Tuple/List (all elements must be Tensor with same shape or Scalar) type, the shape_vector_
-  // consists of the element number and the shape of element in Tuple/List. For example, if a Tuple of the structure
-  // ((8,16), (8,16)) contains two Tensors of shape (8, 16), then shape_vector_ is {2, 8, 16}, 2 means elements
-  // number in Tuple/List. A Tuple with a structure such as ((), ()) that contains two Scalar, the shape_vector_ of
-  // this Tuple is {2}.
-  ShapeVector shape_vector_{};
-  bool managed_by_somas_{false};
-};
-using AddressCommonPtr = std::shared_ptr<AddressCommon>;
-
-// A template class used to detect whether it is a valid container.
 template <typename T>
 struct ValidContainerChecker : std::false_type {};
 
@@ -360,9 +103,6 @@ struct Address {
 using AddressPtr = std::shared_ptr<Address>;
 using AddressPtrList = std::vector<AddressPtr>;
 
-using abstract::AbstractBase;
-using device::DeviceSynchronizerPtr;
-
 // KernelTensor is used to express input and output parameters of kernels.
 // KernelTensor is a generalized Tensor semantics, which can represent not only Tensor, but also the meta-information
 // of Scalar, Tuple, List and other data structures. It saves the shape, type, value and format information required by
@@ -373,23 +113,24 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   KernelTensor();
   ~KernelTensor() = default;
-  explicit KernelTensor(const AddressCommonPtr &address_common) : address_common_(address_common) {}
 
   // Constructor of KernelTensor by shape, type, value.
   KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value);
 
   // Constructor of KernelTensor by device info.
-  KernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id, const ShapeVector &host_shape,
-               const string &device_name, uint32_t device_id, const UserDataPtr &user_data = nullptr);
+  KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_id, const ShapeVector &host_shape);
 
   // Constructor of KernelTensor by shape, type, value and device info.
-  KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value, void *device_ptr,
-               size_t size, const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
-               const string &device_name, uint32_t device_id, const UserDataPtr &user_data = nullptr);
+  KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
+               const ValuePtr &value, void *device_ptr, size_t size, const std::string &format, TypeId dtype_id,
+               const ShapeVector &host_shape, const string &device_name, uint32_t device_id);
 
   // Constructor of KernelTensor by shape, type, value and device info.
-  KernelTensor(const AddressCommonPtr &address_common, const abstract::BaseShapePtr &shape, const TypePtr &type,
+  KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
                const ValuePtr &value, const ShapeVector &host_shape, const UserDataPtr &user_data = nullptr);
+
+  explicit KernelTensor(const DeviceAddressPtr &device_address)
+      : KernelTensor(device_address, nullptr, nullptr, nullptr, {}) {}
 
   KernelTensor(const KernelTensor &other);
   KernelTensor &operator=(const KernelTensor &) = delete;
@@ -398,11 +139,13 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   std::string PrintInfo() const {
     std::stringstream ofs;
-    ofs << "user data:" << user_data_;
-    if (address_common_ == nullptr) {
-      return ofs.str() + " address common:0";
+    if (device_address_ != nullptr) {
+      return ofs.str() + " device address:" + device_address_->PrintInfo();
     }
-    return ofs.str() + " address common:" + address_common_->PrintInfo();
+    if (address_common_ != nullptr) {
+      return ofs.str() + " address common:" + address_common_->PrintInfo();
+    }
+    return ofs.str() + "device address:0";
   }
 
   // Get the base shape for Tensor/Sequence/Scalar.
@@ -425,10 +168,16 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   const ShapeVector &GetDeviceShapeVector() const;
 
   // Get host shape for KernelTensor.
-  const ShapeVector &host_shape() const { return host_shape_; }
+  const ShapeVector &host_shape() const {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    return device_address_->host_shape();
+  }
 
   // Set host shape for KernelTensor.
-  void set_host_shape(const ShapeVector &host_shape) { host_shape_ = host_shape; }
+  void set_host_shape(const ShapeVector &host_shape) {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    device_address_->set_host_shape(host_shape);
+  }
 
   // Get the object type of the KernelTensor.
   TypePtr GetType() const override { return type_; }
@@ -582,6 +331,20 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     address_common_->pointer_ref_count_ = ptr_ref_cnt;
   }
 
+  void set_ref_count_without_hold(const PointerRefCountPtr &ptr_ref_cnt) {
+    if (ptr_ref_cnt == nullptr || address_common_ == nullptr || address_common_->pointer_ref_count_ == nullptr) {
+      return;
+    }
+    address_common_->pointer_ref_count_->set_ptr(ptr_ref_cnt->ptr());
+    address_common_->pointer_ref_count_->set_from_mem_pool(ptr_ref_cnt->from_mem_pool());
+    address_common_->pointer_ref_count_->set_original_ref_count(ptr_ref_cnt->original_ref_count());
+    address_common_->pointer_ref_count_->set_ref_count(ptr_ref_cnt->ref_count());
+    address_common_->pointer_ref_count_->set_dynamic_ref_count(ptr_ref_cnt->dynamic_ref_count());
+    address_common_->pointer_ref_count_->set_deleter(ptr_ref_cnt->deleter());
+    address_common_->pointer_ref_count_->set_is_ptr_persisted(ptr_ref_cnt->is_ptr_persisted());
+    address_common_->pointer_ref_count_->set_new_ref_count(ptr_ref_cnt->new_ref_count());
+  }
+
   //  Set the pointer and reference count to nullptr, resource reclaiming of the device pointer is automatically
   //  released.
   void ReleaseDeviceRes() { address_common_->pointer_ref_count_ = nullptr; }
@@ -632,19 +395,35 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   void set_managed_by_somas(bool managed_by_somas) { address_common_->managed_by_somas_ = managed_by_somas; }
 
   // Get user data maintained by the KernelTensor.
-  const UserDataPtr &user_data() const { return user_data_; }
+  UserDataPtr user_data() const {
+    if (device_address_ == nullptr) {
+      return nullptr;
+    }
+    return device_address_->user_data();
+  }
 
   // Set user data to the KernelTensor.
-  void set_user_data(const UserDataPtr &user_data) { user_data_ = user_data; }
+  void set_user_data(const UserDataPtr &user_data) {
+    if (device_address_ == nullptr) {
+      return;
+    }
+    device_address_->set_user_data(user_data);
+  }
 
   // Set device synchronizer to the KernelTensor.
   void set_device_synchronizer(const DeviceSynchronizerPtr &device_synchronizer) {
     device_synchronizer_ = device_synchronizer;
   }
 
-  HeterogeneousInfoPtr heterogeneous_info() const { return hete_info_; }
+  HeterogeneousInfoPtr heterogeneous_info() const {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    return device_address_->heterogeneous_info();
+  }
 
-  void set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { hete_info_ = hete_info; }
+  void set_heterogeneous_info(HeterogeneousInfoPtr hete_info) {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    device_address_->set_heterogeneous_info(hete_info);
+  }
 
   // Clone a new KernelTensor from this.
   std::shared_ptr<KernelTensor> CloneKernelTensor() { return std::make_shared<KernelTensor>(*this); }
@@ -679,8 +458,59 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     address_common_->tensor_storage_info_ = storage_info;
   }
 
+  const device::DeviceType GetDeviceType() const {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    return device_address_->GetDeviceType();
+  }
+
+  size_t GetSize() const {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    return device_address_->GetSize();
+  }
+
+  // The interface of flag.
+  size_t flag() const {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    return device_address_->flag();
+  }
+  size_t original_ref_count() const { return address_common_->pointer_ref_count_->original_ref_count(); }
+  size_t ref_count() const { return address_common_->pointer_ref_count_->ref_count(); }
+  int32_t dynamic_ref_count() const { return address_common_->pointer_ref_count_->dynamic_ref_count(); }
+  size_t new_ref_count() const { return address_common_->pointer_ref_count_->new_ref_count(); }
+
+  const DeviceAddressPtr &device_address() const;
+  void set_device_address(const DeviceAddressPtr &device_address);
   const AddressCommonPtr address_common() const { return address_common_; }
-  void set_address_common(const AddressCommonPtr &address_common) { address_common_ = address_common; }
+
+  // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from
+  // user data to device ptr.
+  bool need_sync_user_data() {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    return device_address_->need_sync_user_data();
+  }
+  void set_need_sync_user_data(bool need_sync_user_data) {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    device_address_->set_need_sync_user_data(need_sync_user_data);
+  }
+
+  void Swap(KernelTensor *other) {
+    MS_EXCEPTION_IF_NULL(other);
+    auto other_device_address = other->device_address().get();
+    MS_EXCEPTION_IF_NULL(device_address_);
+    device_address_->Swap(other_device_address);
+    set_task_id_on_stream(other->task_id_on_stream());
+  }
+
+  // Return whether KernelTensor has a valid ptr.
+  bool IsPtrValid() const {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    return device_address_->IsPtrValid();
+  }
+
+  void ClearUserData() {
+    MS_EXCEPTION_IF_NULL(device_address_);
+    device_address_->ClearUserData();
+  }
 
  private:
   // This is a deprecated function in base class.
@@ -718,19 +548,12 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   void CheckHostInfoValid();
 
   // The host-side related data in KernelTensor.
-  // Note: To improve the performance of constructing KernelTensor, allow some constructors not to initialize host info.
-  // If host info is not initialized in the constructor, it can be initialized when it is needed.
+  // Note: To improve the performance of constructing KernelTensor, allow some constructors not to initialize host
+  // info. If host info is not initialized in the constructor, it can be initialized when it is needed.
   std::unique_ptr<KernelHostInfo> host_info_{nullptr};
 
   // The launch index on stream managed by framework.
   std::shared_ptr<int64_t> task_id_on_stream_{nullptr};
-
-  // The flatten shape(maybe after padding) vector.
-  // Note: the 'host_shape_' will be repalced by 'shape_vector_' in the future.
-  ShapeVector host_shape_{};
-
-  // User data is the extra data required by the kernel or framework.
-  UserDataPtr user_data_{nullptr};
 
   // For synchronizing data between device and host.
   DeviceSynchronizerPtr device_synchronizer_{nullptr};
@@ -741,11 +564,9 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   // Host data address.
   AddressPtr host_data_{nullptr};
 
-  // address basic info
+  // device address info
+  DeviceAddressPtr device_address_{nullptr};
   AddressCommonPtr address_common_{nullptr};
-
-  // heterogeneous info
-  HeterogeneousInfoPtr hete_info_{nullptr};
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 

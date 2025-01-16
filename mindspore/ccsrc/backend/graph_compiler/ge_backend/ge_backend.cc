@@ -99,21 +99,22 @@ void GEBackend::SetTensorUpdateCallback(const tensor::TensorPtr &update_tensor) 
   }
 }
 
-void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node,
-                                         const mindspore::device::DeviceAddressPtr &device_tensor,
+void GEBackend::UpdateInputsShapeAndSize(const ParameterPtr &input_node, const kernel::KernelTensorPtr &kernel_tensor,
                                          const tensor::TensorPtr &input_tensor,
                                          const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(input_node);
-  MS_EXCEPTION_IF_NULL(device_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(input_tensor);
+  const auto &device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
   // update shape and size, for dynamic shape
-  if (!input_node->has_dynamic_shape() && !IsDynamic(device_tensor->host_shape())) {
+  if (!input_node->has_dynamic_shape() && !IsDynamic(kernel_tensor->host_shape())) {
     return;
   }
 
   // update shape
   MS_LOG(DEBUG) << "Update dynamic shape for parameter:" << input_node->DebugString();
-  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0);
+  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
     output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());
@@ -162,7 +163,9 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
     std::vector<tensor::TensorPtr> flatten_tensors;
     auto params = common::AnfAlgo::GetAllOutput(inputs[i]);
     for (size_t j = 0; j < params.size(); ++j) {
-      auto device_tensor = AnfAlgo::GetMutableOutputAddr(params[j], 0, false);
+      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(params[j], 0, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       // skip const input
       if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
@@ -187,7 +190,7 @@ void GEBackend::ConstructInputsRefMode(const KernelGraphPtr &func_graph, const V
       auto host_tensor_address =
         std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(flatten_tensors[j]->device_address());
 
-      UpdateInputsShapeAndSize(parameter, device_tensor, flatten_tensors[j], device_context);
+      UpdateInputsShapeAndSize(parameter, kernel_tensor, flatten_tensors[j], device_context);
 
       // in different backend object, but has init, skip
       if (common::AnfAlgo::IsParameterWeight(parameter)) {
@@ -343,7 +346,7 @@ void GEBackend::SyncTensorData(const tensor::TensorPtr &host_tensor,
 }
 
 void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
-                                 const device::DeviceContext *device_context) {
+                                 const device::DeviceContext *device_context, std::vector<TypePtr> *output_types) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(outputs);
   auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(func_graph->output());
@@ -355,9 +358,9 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     if (HasAbstractMonad(output_node)) {
       continue;
     }
-    auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx, false);
-    const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx);
+    auto output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx, false);
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto output_addr = output_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(output_addr);
 
     // when output_addr exist, need gen fake output
@@ -365,12 +368,12 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
       continue;
     }
 
-    auto out_tensor =
-      std::make_shared<tensor::Tensor>(output_addr->type_id(), output_addr->kernel_tensor()->GetShapeVector());
+    auto out_tensor = std::make_shared<tensor::Tensor>(output_addr->type_id(), output_kernel_tensor->GetShapeVector());
 
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, output_addr->GetSize(), kernel::GetFormatFromStrToEnum(output_addr->format()), output_addr->type_id(),
-      output_addr->host_shape(), kAscendDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID));
+      output_kernel_tensor->host_shape(), kAscendDevice,
+      MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID));
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
     kernel_tensor->set_stream_id(output_addr->stream_id());
@@ -401,18 +404,21 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
                   << ", output node:" << output_node->fullname_with_scope() << " output index:" << idx
                   << ", origin output device tensor: " << output_addr;
 
-    tensor_device_address->set_host_shape(out_tensor->shape());
+    kernel_tensor->set_host_shape(out_tensor->shape());
     out_tensor->set_device_address(tensor_device_address);
     out_tensor->set_need_release_device_mem(true);
     outputs->emplace_back(out_tensor);
+    output_types->emplace_back(kernel_tensor->GetType());
   }
 }
 
 void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceContext *device_context,
-                         const VectorRef &args, std::vector<tensor::TensorPtr> *outputs) {
+                         const VectorRef &args, std::vector<tensor::TensorPtr> *outputs,
+                         std::vector<TypePtr> *output_types) {
   MS_LOG(INFO) << "Status record: start run graph: " << graph_info;
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(outputs);
+  MS_EXCEPTION_IF_NULL(output_types);
 
   if (graph_map_.find(graph_info) == graph_map_.end()) {
     MS_LOG(EXCEPTION) << "The graph is not found, graph: " << graph_info;
@@ -458,7 +464,7 @@ void GEBackend::RunGraph(const std::string &graph_info, const device::DeviceCont
   }
 
   // output ->VectorRef *outputs
-  ConstructOutputs(func_graph, outputs, device_context);
+  ConstructOutputs(func_graph, outputs, device_context, output_types);
 
 // for data_dump
 #ifndef ENABLE_SECURITY

@@ -91,7 +91,7 @@ bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint3
 }
 
 bool AscendDeviceResManager::AllocateForHete(mindspore::device::DeviceAddress *const &address,
-                                             mindspore::kernel::HeterogeneousInfoPtr hete_info) const {
+                                             mindspore::HeterogeneousInfoPtr hete_info) const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->AllocateForHete(address, hete_info);
 }
@@ -111,7 +111,7 @@ size_t AscendDeviceResManager::GetMaxUsedMemorySize() const {
   return ascend_res_manager_->GetMaxUsedMemorySize();
 }
 
-void AscendDeviceResManager::FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const {
+void AscendDeviceResManager::FreeForHete(mindspore::HeterogeneousInfoPtr hete_info) const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->FreeForHete(hete_info);
 }
@@ -220,18 +220,18 @@ std::vector<void *> AscendDeviceResManager::AllocateContinuousMemory(const std::
   return ascend_res_manager_->AllocateContinuousMemory(size_list, stream_id);
 }
 
-DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
+DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->CreateDeviceAddress(kernel_tensor);
+  return ascend_res_manager_->CreateDeviceAddress();
 }
 
 DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                              const Format &format, TypeId type_id,
                                                              const std::string &device_name, uint32_t device_id,
-                                                             uint32_t stream_id) const {
+                                                             uint32_t stream_id, const UserDataPtr &user_data) const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                                  stream_id);
+                                                  stream_id, user_data);
 }
 
 bool AscendDeviceResManager::LoadCollectiveCommLib() {

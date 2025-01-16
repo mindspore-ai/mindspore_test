@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace runtime {
-void MemorySwapActor::UpdateDeviceTensors(OpContext<mindspore::runtime::DeviceTensor> *context) {
+void MemorySwapActor::UpdateDeviceTensors(OpContext<KernelTensor> *context) {
   MS_EXCEPTION_IF_NULL(context);
   const auto &data_iter = input_op_datas_.find(context->sequential_num_);
   size_t total_device_tensor_num = fixed_device_tensor_num_ + device_tensor_store_keys_.size();
@@ -41,12 +41,14 @@ void MemorySwapActor::UpdateDeviceTensors(OpContext<mindspore::runtime::DeviceTe
       if (swap_device_tensor_index >= total_device_tensor_num) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input index is out of range.");
       }
-      device_tensors_to_swap_[swap_device_tensor_index] = input_data->data_;
+      MS_EXCEPTION_IF_NULL(input_data->data_);
+      device_tensors_to_swap_[swap_device_tensor_index] = input_data->data_->device_address().get();
     }
   }
   for (const auto &key : device_tensor_store_keys_) {
-    auto device_tensor = DeviceTensorStore::GetInstance().Fetch(key.second.get(), device_contexts_[0]->GetDeviceType());
-    device_tensors_to_swap_[key.first] = device_tensor.get();
+    auto kernel_tensor = DeviceTensorStore::GetInstance().Fetch(key.second.get(), device_contexts_[0]->GetDeviceType());
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    device_tensors_to_swap_[key.first] = kernel_tensor->device_address().get();
   }
 }
 
@@ -79,9 +81,9 @@ void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensor *>
         device_tensors[i]->GetPtr() != nullptr) {
       const auto original_ptr = device_tensors[i]->GetMutablePtr();
       device_tensors[i]->set_ptr(device_ptrs[i]);
-      if (!device_tensors[i]->SyncDeviceToDevice(device_tensors[i]->host_shape(), device_tensors[i]->GetSize(),
-                                                 device_tensors[i]->type_id(), original_ptr,
-                                                 device_tensors[i]->format())) {
+      // SyncDeviceToDevice do not need shape vector.
+      if (!device_tensors[i]->SyncDeviceToDevice({}, device_tensors[i]->GetSize(), device_tensors[i]->type_id(),
+                                                 original_ptr, device_tensors[i]->format())) {
         MS_LOG(EXCEPTION) << "Copy data for continuous memory failed, src addr: " << original_ptr << ", dst addr: "
                           << ", size: " << device_tensors[i]->GetSize();
       }
@@ -94,7 +96,7 @@ void MemorySwapActor::AllocDeviceContinuousMem(const std::vector<DeviceTensor *>
   }
 }
 
-void MemorySwapActor::Swap(OpContext<mindspore::runtime::DeviceTensor> *const context, device::StorageType to,
+void MemorySwapActor::Swap(OpContext<KernelTensor> *const context, device::StorageType to,
                            const std::vector<DeviceTensor *> &device_tensors) {
   for (const auto &device_tensor : device_tensors) {
     MS_EXCEPTION_IF_NULL(device_tensor);
@@ -104,7 +106,7 @@ void MemorySwapActor::Swap(OpContext<mindspore::runtime::DeviceTensor> *const co
   }
 }
 
-void MemorySwapActor::Run(OpContext<mindspore::runtime::DeviceTensor> *const context) {
+void MemorySwapActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   static std::map<device::SwapActionType, device::StorageType> swap_to_map = {
     {device::SwapActionType::kHBM2DDR, device::StorageType::kHost},

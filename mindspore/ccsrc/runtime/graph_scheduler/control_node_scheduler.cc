@@ -198,8 +198,8 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
     size_t real_inner_idx = parameter_with_index.second;
     auto cur_device_type = device_context->GetDeviceType();
     // Do not push device tensor into graph parameter store if already have.
-    const auto device_tensor = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx, cur_device_type);
-    if (device_tensor != nullptr && device_tensor->GetDeviceType() == cur_device_type) {
+    const auto old_kernel_tensor = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx, cur_device_type);
+    if (old_kernel_tensor != nullptr && old_kernel_tensor->GetDeviceType() == cur_device_type) {
       continue;
     }
     auto input_param = node_with_index.first->cast<ParameterPtr>();
@@ -216,13 +216,13 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
     const auto &sub_abstract =
       common::AnfAlgo::FetchAbstractByIndex(parameter_with_index.first->abstract(), parameter_with_index.second);
     MS_EXCEPTION_IF_NULL(sub_abstract);
-    const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
+    const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
       sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
       device_address->format(), device_address->type_id(), device_address->host_shape(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
-    auto new_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto new_address = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(new_address);
     MS_LOG(DEBUG) << "Create new address for node that has no corresponding backend node:"
                   << parameter_with_index.first->DebugString() << " index:" << parameter_with_index.second
@@ -231,8 +231,8 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
                   << " type:" << (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString())
                   << " shape:"
                   << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString());
-    AnfAlgo::SetOutputAddr(new_address, parameter_with_index.second, parameter_with_index.first.get());
-    cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, new_address, new_address->GetDeviceType(), 0);
+    AnfAlgo::SetOutputKernelTensor(kernel_tensor, parameter_with_index.second, parameter_with_index.first.get());
+    cur_graph_parameter_store->Push(real_outer_idx, real_inner_idx, kernel_tensor, new_address->GetDeviceType(), 0);
     (void)front_node_position_map.emplace(parameter_with_index, real_outer_idx);
   }
 }
@@ -289,18 +289,20 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
     } else {
       CreateBuildInfoForFrontNode(parameter_with_index, node_with_index.first);
       // Create device tensor.
-      const auto &device_address = AnfAlgo::GetMutableOutputAddr(node_with_index.first, node_with_index.second, false);
+      auto old_kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
+      MS_EXCEPTION_IF_NULL(old_kernel_tensor);
+      auto device_address = old_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
       const auto &sub_abstract =
         common::AnfAlgo::FetchAbstractByIndex(parameter_with_index.first->abstract(), parameter_with_index.second);
       MS_EXCEPTION_IF_NULL(sub_abstract);
-      const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
+      const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
         sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
-        device_address->format(), device_address->type_id(), device_address->host_shape(),
+        device_address->format(), device_address->type_id(), old_kernel_tensor->host_shape(),
         device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
-      auto new_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      auto new_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(new_address);
       MS_LOG(DEBUG) << "Create new address for node that has no corresponding backend node:"
                     << parameter_with_index.first->DebugString() << " index:" << parameter_with_index.second
@@ -309,7 +311,7 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
                     << " type:" << (kernel_tensor->GetType() == nullptr ? "null" : kernel_tensor->GetType()->ToString())
                     << " shape:"
                     << (kernel_tensor->GetShape() == nullptr ? "null" : kernel_tensor->GetShape()->ToString());
-      AnfAlgo::SetOutputAddr(new_address, parameter_with_index.second, parameter_with_index.first.get());
+      AnfAlgo::SetOutputKernelTensor(kernel_tensor, parameter_with_index.second, parameter_with_index.first.get());
 
       (void)node_map.emplace(parameter_with_index, control_node_ds_actor->data_node_with_indexs_.size());
       (void)control_node_ds_actor->data_node_with_indexs_.emplace_back(parameter_with_index);
@@ -894,33 +896,33 @@ void ControlNodeScheduler::ClearActorData(const ControlActorSet *control_actor_s
 
   for (auto &switch_actor : control_actor_set->switch_actors_) {
     MS_EXCEPTION_IF_NULL(switch_actor);
-    switch_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
+    switch_actor->memory_free_lists_ = std::queue<std::vector<KernelTensorPtr>>();
   }
 
   for (auto &gather_actor : control_actor_set->gather_actors_) {
     MS_EXCEPTION_IF_NULL(gather_actor);
-    gather_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
-    gather_actor->created_device_tensors_.clear();
+    gather_actor->memory_free_lists_ = std::queue<std::vector<KernelTensorPtr>>();
+    gather_actor->created_kernel_tensors_.clear();
     gather_actor->created_new_graphs_.clear();
     gather_actor->created_new_nodes_.clear();
   }
 
   for (auto &entrance_actor : control_actor_set->entrance_actors_) {
     MS_EXCEPTION_IF_NULL(entrance_actor);
-    entrance_actor->created_device_tensors_.clear();
-    entrance_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
+    entrance_actor->created_kernel_tensors_.clear();
+    entrance_actor->memory_free_lists_ = std::queue<std::vector<KernelTensorPtr>>();
   }
 
   for (auto &stack_actor : control_actor_set->stack_actors_) {
     MS_EXCEPTION_IF_NULL(stack_actor);
-    stack_actor->created_device_tensors_.clear();
-    stack_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
+    stack_actor->created_kernel_tensors_.clear();
+    stack_actor->memory_free_lists_ = std::queue<std::vector<KernelTensorPtr>>();
   }
 
   for (auto &exit_actor : control_actor_set->exit_actors_) {
     MS_EXCEPTION_IF_NULL(exit_actor);
-    exit_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
-    exit_actor->last_step_created_device_tensors_.swap(exit_actor->created_device_tensors_);
+    exit_actor->memory_free_lists_ = std::queue<std::vector<KernelTensorPtr>>();
+    exit_actor->last_step_created_kernel_tensors_.swap(exit_actor->created_kernel_tensors_);
     exit_actor->created_new_graphs_.clear();
     exit_actor->created_new_nodes_.clear();
   }
@@ -929,8 +931,8 @@ void ControlNodeScheduler::ClearActorData(const ControlActorSet *control_actor_s
 void ControlNodeScheduler::ClearExitActorDeviceTensors(std::vector<ExitActorPtr> exit_actors) const {
   for (auto &exit_actor : exit_actors) {
     MS_EXCEPTION_IF_NULL(exit_actor);
-    exit_actor->last_step_created_device_tensors_.clear();
-    exit_actor->created_device_tensors_.clear();
+    exit_actor->last_step_created_kernel_tensors_.clear();
+    exit_actor->created_kernel_tensors_.clear();
   }
 }
 
@@ -992,7 +994,7 @@ void ControlNodeScheduler::OptimizeBranchIdArrow(const ActorSetPtr &actor_set,
     }
     if (stack_actor->input_stack_data_num_ == 0 ||
         stack_actor->input_stack_data_num_ >= stack_actor->device_tensor_store_keys_.size() +
-                                                stack_actor->local_device_tensors_.size() +
+                                                stack_actor->local_kernel_tensors_.size() +
                                                 stack_actor->input_data_arrow_aids_.size()) {
       continue;
     }
@@ -1558,10 +1560,11 @@ void ControlNodeScheduler::LinkArrowByValueNode(const AnfNodePtr &value_node, Co
           << " for value node:" << value_node->DebugString() << " to actor:" << to_actor->GetAID();
       }
     }
-    to_actor->local_device_tensors_[to_index] = {AnfAlgo::GetMutableOutputAddr(value_node, from_index, false).get(),
+    to_actor->local_kernel_tensors_[to_index] = {AnfAlgo::GetOutputKernelTensor(value_node, from_index, false),
                                                  value_node};
-    to_actor->local_device_tensors_[to_index].first->SetNodeIndex(value_node, from_index);
-    MS_LOG(DEBUG) << "Add local device tensor:" << to_actor->local_device_tensors_[to_index].first
+    MS_EXCEPTION_IF_NULL(to_actor->local_kernel_tensors_[to_index].first->device_address());
+    to_actor->local_kernel_tensors_[to_index].first->device_address()->SetNodeIndex(value_node, from_index);
+    MS_LOG(DEBUG) << "Add local device tensor:" << to_actor->local_kernel_tensors_[to_index].first
                   << " index:" << to_index << " for actor:" << to_actor->GetAID() << " from index:" << from_index;
   }
 }
@@ -2523,13 +2526,14 @@ void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *ac
       size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(formal_parameter.first.get());
       // parameter-weight not support tuple
       size_t real_inner_idx = formal_parameter.second;
-      auto device_tensors = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
+      auto kernel_tensors = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
       // input but not parameter-weight won't be heter.
-      if (device_tensors.empty()) {
+      if (kernel_tensors.empty()) {
         continue;
       }
-      MS_EXCEPTION_IF_NULL(device_tensors[0]);
-      const auto &cur_device_tensor = device_tensors[0];
+      MS_EXCEPTION_IF_NULL(kernel_tensors[0]);
+      auto cur_device_tensor = kernel_tensors[0]->device_address().get();
+      MS_EXCEPTION_IF_NULL(cur_device_tensor);
       cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx, SIZE_MAX,
                                             cur_device_tensor->GetDeviceType());
@@ -2845,7 +2849,7 @@ void GetInputNameForControlActor(AbstractActor *const actor, std::map<size_t, In
                                  0};
     *max_index = (*max_index > pair.first ? *max_index : pair.first);
   }
-  for (const auto &pair : control_actor->local_device_tensors()) {
+  for (const auto &pair : control_actor->local_kernel_tensors()) {
     MS_EXCEPTION_IF_NULL(pair.second.second);
     std::string name = pair.second.second->DebugString(0);
     if (pair.second.second->isa<ValueNode>()) {

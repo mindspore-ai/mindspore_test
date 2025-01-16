@@ -232,7 +232,7 @@ void GPUKernelRuntime::AllocInplaceNodeMemory(const session::KernelGraph *graph)
       auto prim = common::AnfAlgo::GetCNodePrimitive(node);
       MS_EXCEPTION_IF_NULL(prim);
       auto index = GetValue<uint32_t>(prim->GetAttr("inplace_output_index"));
-      AnfAlgo::SetOutputAddr(device_address, index, node.get());
+      AnfAlgo::SetOutputAddr(device_address, index, node);
     }
   }
 }
@@ -487,7 +487,7 @@ void GPUKernelRuntime::InitKernelOutputAddress(const session::KernelGraph *graph
       std::string output_format = AnfAlgo::GetOutputFormat(kernel, i);
       auto output_type = AnfAlgo::GetOutputDeviceDataType(kernel, i);
       auto device_address = CreateDeviceAddress(nullptr, output_sizes[i], output_format, output_type);
-      AnfAlgo::SetOutputAddr(device_address, i, kernel.get());
+      AnfAlgo::SetOutputAddr(device_address, i, kernel);
     }
   }
 }
@@ -501,7 +501,7 @@ void GPUKernelRuntime::InitKernelWorkspaceAddress(const session::KernelGraph *gr
     auto workspace_sizes = kernel_mod->GetWorkspaceSizeList();
     for (size_t i = 0; i < workspace_sizes.size(); ++i) {
       auto device_address = CreateDeviceAddress(nullptr, workspace_sizes[i], "", kTypeUnknown);
-      AnfAlgo::SetWorkspaceAddr(device_address, i, kernel.get());
+      AnfAlgo::SetWorkspaceAddr(device_address, i, kernel);
     }
   }
 }
@@ -945,13 +945,13 @@ bool GPUKernelRuntime::AllocKernelInputDynamicRes(const mindspore::AnfNodePtr &k
   MS_EXCEPTION_IF_NULL(mem_reuse_util_);
   size_t input_num = common::AnfAlgo::GetInputTensorNum(kernel);
   for (size_t i = 0; i < input_num; ++i) {
-    DeviceAddressPtr device_address;
+    KernelTensorPtr kernel_tensor;
     if (mem_reuse_util_->is_all_nop_node()) {
       // Graph may be all nop nodes and not remove nop node, so this can not skip nop node.
-      device_address = GetPrevNodeMutableOutputAddr(kernel, i, false);
+      kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel, i, false);
     } else {
       // Graph may be "nop node + depend + node",  the input of node is the depend, so this case need skip nop node.
-      device_address = GetPrevNodeMutableOutputAddr(kernel, i, true);
+      kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel, i, true);
     }
 
     // Get in-place output_address
@@ -961,15 +961,16 @@ bool GPUKernelRuntime::AllocKernelInputDynamicRes(const mindspore::AnfNodePtr &k
       auto input_index = GetValue<uint32_t>(primitive->GetAttr("aggregate_input_index"));
       if (i == input_index) {
         auto skip_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(kernel), input_index);
-        device_address = GetPrevNodeMutableOutputAddr(skip_node, 0, false);
+        kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(skip_node, 0, false);
       }
     }
 
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     UpdateHostSwapInQueue(device_address, mock);
     MS_EXCEPTION_IF_NULL(device_address->GetDevicePtr());
-    const auto &input = device_address->kernel_tensor();
-    (void)kernel_inputs->emplace_back(input.get());
+    (void)kernel_inputs->emplace_back(kernel_tensor.get());
   }
   return true;
 }
@@ -985,14 +986,14 @@ bool GPUKernelRuntime::AllocKernelOutputDynamicRes(const mindspore::kernel::Kern
   }
   auto output_sizes = kernel_mod.GetOutputSizeList();
   for (size_t i = 0; i < output_sizes.size(); ++i) {
-    auto device_address = GetMutableOutputAddr(kernel, i, false);
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(kernel, i, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     if (device_address->GetDevicePtr() == nullptr && !AttemptMallocMem(device_address, output_sizes[i], mock)) {
       return false;
     }
-    const auto &output = device_address->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(output);
-    (void)kernel_outputs->emplace_back(output.get());
+    (void)kernel_outputs->emplace_back(kernel_tensor.get());
   }
   return true;
 }
@@ -1008,12 +1009,14 @@ bool GPUKernelRuntime::AllocKernelWorkspaceDynamicRes(const mindspore::kernel::K
       (void)kernel_workspaces->emplace_back(nullptr);
       continue;
     }
-    auto device_address = AnfAlgo::GetMutableWorkspaceAddr(kernel, i);
+    const auto &kernel_tensor = AnfAlgo::GetWorkspaceKernelTensor(kernel, i);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_address = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
     if (device_address->GetDevicePtr() == nullptr && !AttemptMallocMem(device_address, workspace_sizes[i], mock)) {
       return false;
     }
-    const auto &workspace = device_address->kernel_tensor();
+    const auto &workspace = kernel_tensor;
     MS_EXCEPTION_IF_NULL(workspace);
     workspace->set_size(workspace_sizes[i]);
     (void)kernel_workspaces->emplace_back(workspace.get());

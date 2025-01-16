@@ -57,12 +57,12 @@ class DataPrepareActor : public DebugAwareActor {
 
   // The process entry of data prepare.
   void PrepareData(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
-                   OpContext<DeviceTensor> *const context, GraphExecutionStrategy real_strategy);
+                   OpContext<KernelTensor> *const context, GraphExecutionStrategy real_strategy);
 
   // The debug related operation interface.
-  void SendDebugReq(OpContext<DeviceTensor> *const context) override;
-  void SendProfilerReq(OpContext<DeviceTensor> *const context);
-  void OnDebugFinish(OpContext<DeviceTensor> *const context) override;
+  void SendDebugReq(OpContext<KernelTensor> *const context) override;
+  void SendProfilerReq(OpContext<KernelTensor> *const context);
+  void OnDebugFinish(OpContext<KernelTensor> *const context) override;
 
   void set_has_continuous_memory(bool has_continuous_memory) { has_continuous_memory_ = has_continuous_memory; }
   bool has_continuous_memory() { return has_continuous_memory_; }
@@ -70,7 +70,7 @@ class DataPrepareActor : public DebugAwareActor {
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override {
+  void Run(OpContext<KernelTensor> *const context) override {
     VectorRef empty_args;
     PrepareData(init_tensors_, empty_args, context, GraphExecutionStrategy::kPipeline);
   }
@@ -86,45 +86,45 @@ class DataPrepareActor : public DebugAwareActor {
                              const KernelWithIndex &front_node);
 
   void PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
-                                       OpContext<DeviceTensor> *const context);
+                                       OpContext<KernelTensor> *const context);
   void PrepareDataForHostTensorQueue(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
-                                     OpContext<DeviceTensor> *const context);
-  void PrepareDataForHostTensorQueueNew(const VectorRef &args, OpContext<DeviceTensor> *const context);
+                                     OpContext<KernelTensor> *const context);
+  void PrepareDataForHostTensorQueueNew(const VectorRef &args, OpContext<KernelTensor> *const context);
 
   void RaiseARFError(const VectorRef &args);
 
   // Prepare the device data for persistent device tensor of weight node from host tensor.
   void PrepareDataForWeightNode(const AnfNodePtr &backend_node, const AnfNodePtr &front_node, const TensorPtr &tensor,
-                                const DeviceContext *device_context, OpContext<DeviceTensor> *const context);
+                                const DeviceContext *device_context, OpContext<KernelTensor> *const context);
   // Prepare the device data for persistent device tensor of value node.
   void PrepareDataForValueNode(const ValueNodePtr &node, const AnfNodePtr &front_node,
-                               const DeviceContext *device_context, OpContext<DeviceTensor> *const context) const;
+                               const DeviceContext *device_context, OpContext<KernelTensor> *const context) const;
   void PrepareDataForStringValue(const ValueNodePtr &node, size_t index, const AnfNodePtr &front_node,
-                                 const DeviceContext *device_context, OpContext<DeviceTensor> *const context) const;
+                                 const DeviceContext *device_context, OpContext<KernelTensor> *const context) const;
   // Sync host data of Sequence or Scalar type value to device side.
   void PrepareDataForSequenceAndScalarValue(const ValueNodePtr &node, size_t index, const AnfNodePtr &front_node,
                                             const DeviceContext *device_context,
-                                            OpContext<DeviceTensor> *const context) const;
+                                            OpContext<KernelTensor> *const context) const;
   //  The branch processing of PrepareDataForValueNode that value type is tensor.
   void PrepareDataForValueNodeTensor(const ValueNodePtr &node, const ValuePtr &node_value, const AnfNodePtr &front_node,
-                                     const DeviceContext *device_context, OpContext<DeviceTensor> *const context) const;
+                                     const DeviceContext *device_context, OpContext<KernelTensor> *const context) const;
 
   // The data prepare in the control flow scene.
   // If the parameters in the root graph are only used by the control node, these parameters will not be initialized
   // by the kernel graph, and addresses need to be specially allocated for these parameters.
   void PrepareDeviceTensorStoreForControlNode(const ControlNodeParserPtr &control_node_parser,
                                               const std::vector<TensorPtr> &tensors, const VectorRef &args,
-                                              OpContext<DeviceTensor> *const context);
+                                              OpContext<KernelTensor> *const context);
   void PrepareHostTensorQueueForControlNode(const std::vector<TensorPtr> &tensors,
                                             std::vector<TensorPtr> *const host_tensors,
-                                            OpContext<DeviceTensor> *const context);
+                                            OpContext<KernelTensor> *const context);
   void PrepareDataForControlValueNode(const KernelWithIndex &node_with_index, const DeviceContext *device_context,
-                                      OpContext<DeviceTensor> *const context, const ControlNodeParserPtr &parser) const;
+                                      OpContext<KernelTensor> *const context, const ControlNodeParserPtr &parser) const;
 
   // The device tensor stores may exist the two device tensors and need copy data in the heterogeneous scene.
   void CopyDataFromDeviceTensorStore(const AnfNodePtr &front_node, const AnfNodePtr &backend_node,
                                      const device::DeviceAddressPtr &host_tensor_address,
-                                     const DeviceContext *device_context, OpContext<DeviceTensor> *context) const;
+                                     const DeviceContext *device_context, OpContext<KernelTensor> *context) const;
 
   void SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors);
 
@@ -135,12 +135,14 @@ class DataPrepareActor : public DebugAwareActor {
 
   // Prepare when input optimize, prepare const value and weights at the first step.
   void PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
-                                      OpContext<DeviceTensor> *const context, uint64_t start_time);
+                                      OpContext<KernelTensor> *const context, uint64_t start_time);
 
   // Record updated tensors for reprepare.
   void RecordTensorsNeedReprepare(tensor::Tensor *tensor);
-  void PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index, OpContext<DeviceTensor> *const context,
+  void PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index, OpContext<KernelTensor> *const context,
                                      const DeviceContext *device_context);
+  void RecordInputAndConvertStatic(const std::vector<TensorPtr> &host_tensors,
+                                   const std::vector<size_t> &host_param_indexes, bool isDyn);
 
   // Remove after refact.
   bool enable_prepare_case() {

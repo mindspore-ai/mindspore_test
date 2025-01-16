@@ -29,7 +29,7 @@ void MemoryAllocActor::Init() {
                              "The merged blocks size of somas info is zero.");
 }
 
-void MemoryAllocActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
+void MemoryAllocActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
   if (ActorDispatcher::is_memory_allocation_sync()) {
     ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateSomasMemory, somas_info_,
                               device_contexts_[0], context, GetAID());
@@ -40,7 +40,7 @@ void MemoryAllocActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context
   }
 }
 
-void MemoryAllocActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
+void MemoryAllocActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(somas_info_);
   if (IsRunningFailed(context)) {

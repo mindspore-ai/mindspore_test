@@ -27,7 +27,7 @@
 #include <memory>
 #include "utils/hash_map.h"
 #include "actor/op_actor.h"
-#include "common/device_address.h"
+#include "common/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
@@ -45,10 +45,16 @@ namespace ge_backend {
 namespace runtime {
 using mindspore::session::KernelWithIndex;
 using tensor::TensorPtr;
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
 using mindspore::backend::ge_backend::DeviceAddressUtils;
 using mindspore::device::KernelInfo;
+template <typename T>
+using OpContext = OpRTContext<T>;
+template <typename T>
+using OpActor = OpRTActor<T>;
 
 // The execution result of actor.
 constexpr int kSuccess = 0;
@@ -233,7 +239,7 @@ class ActorDispatcher {
   static bool is_memory_free_sync_;
 };
 
-bool IsRunningFailed(const OpContext<DeviceTensor> *context);
+bool IsRunningFailed(const OpContext<KernelTensor> *context);
 
 // Host parameters are parameters of root funcgraph, in control flow, only the parameters of the root funcgraph are
 // in the host data source.
@@ -287,7 +293,7 @@ std::string GetActorIdByKernel(const AnfNodePtr &node);
 std::string GenerateActorIdByKernel(const AnfNodePtr &node);
 
 // GetThe repeat device tensor index.
-mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<DeviceTensor *> &device_tensors);
+mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<KernelTensorPtr> &kernel_tensors);
 
 // Check a graph is from inference phase.
 bool IsInferPhase(const std::string &phase);

@@ -307,7 +307,7 @@ bool DeviceDenseEmbeddingOperation::LookupDeviceCache(void *indices, void *embed
 
   std::vector<abstract::AbstractBasePtr> input_kernel_tensors_for_infer(kCacheOpInputNum, nullptr);
   for (size_t i = 0; i < kCacheOpInputNum; i++) {
-    const auto &kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(embedding_cache_lookup_node_, i);
+    const auto &kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(embedding_cache_lookup_node_, i, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     input_kernel_tensors_for_infer[i] = kernel_tensor;
   }
@@ -368,7 +368,7 @@ bool DeviceDenseEmbeddingOperation::UpdateDeviceCache(void *indices, void *updat
 
   std::vector<abstract::AbstractBasePtr> input_kernel_tensors_for_infer(kCacheOpInputNum, nullptr);
   for (size_t i = 0; i < kCacheOpInputNum; i++) {
-    const auto &kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(embedding_cache_update_node_, i);
+    const auto &kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(embedding_cache_update_node_, i, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     input_kernel_tensors_for_infer[i] = kernel_tensor;
   }

@@ -287,16 +287,14 @@ tensor::TensorPtr CPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor
   return cpu_res_manager_->GetSliceByPaddingShapeHandle(first_tensor, start, end);
 }
 
-DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
-  return cpu_res_manager_->CreateDeviceAddress(kernel_tensor);
-}
+DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress() const { return cpu_res_manager_->CreateDeviceAddress(); }
 
 DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                           const Format &format, TypeId type_id,
                                                           const std::string &device_name, uint32_t device_id,
-                                                          uint32_t stream_id) const {
+                                                          uint32_t stream_id, const UserDataPtr &user_data) const {
   return cpu_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                               stream_id);
+                                               stream_id, user_data);
 }
 
 bool CPUDeviceResManager::LoadCollectiveCommLib() { return cpu_res_manager_->LoadCollectiveCommLib(); }

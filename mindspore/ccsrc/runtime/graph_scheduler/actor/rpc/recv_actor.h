@@ -47,7 +47,7 @@ class RecvActor : public RpcActor {
   ~RecvActor() override;
 
   // Besides set the op context, this method also notify the message handler to 'RunOpInterProcessData'.
-  void SetOpcontext(OpContext<DeviceTensor> *const op_context) override;
+  void SetOpcontext(OpContext<KernelTensor> *const op_context) override;
 
   // This method means the op context is invalid now. If the message handler is called while the op context is invalid,
   // it should be blocked until 'SetOpcontext' is called.
@@ -71,17 +71,17 @@ class RecvActor : public RpcActor {
  protected:
   // Besides the checking method in base class AbstractActor, condition of inter-process arrows should be checked for
   // recv actor.
-  bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const override;
+  bool CheckRunningCondition(const OpContext<KernelTensor> *context) const override;
 
   // When an inter-process data received, this method is called.
-  void RunOpInterProcessData(MessageBase *const msg, OpContext<DeviceTensor> *const context);
+  void RunOpInterProcessData(MessageBase *const msg, OpContext<KernelTensor> *const context);
 
   // Besides erasing input data and input controls when finish actor running, inter-process inputs should be erased.
-  void EraseInput(const OpContext<DeviceTensor> *context) override;
+  void EraseInput(const OpContext<KernelTensor> *context) override;
 
   // Before calling the Run method in KernelActor, some preprocess like inferring shape should be done. So rewrite the
   // Run method.
-  void Run(OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
 
   // Set the message handler of the server.
   virtual void SetMessageHandler();

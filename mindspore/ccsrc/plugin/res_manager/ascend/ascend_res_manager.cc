@@ -216,8 +216,8 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
     stream_id = address->stream_id();
   }
 
-  const auto &hete_info =
-    address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
+  const auto &hete_info = address->heterogeneous_info();
+
   if (hete_info != nullptr) {
     static std::string name = "Alloc memory";
     address->IncreaseNewRefCount(name);
@@ -241,10 +241,10 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 }
 
 bool AscendResManager::AllocateForHete(mindspore::device::DeviceAddress *const &address,
-                                       mindspore::kernel::HeterogeneousInfoPtr hete_info) const {
+                                       HeterogeneousInfoPtr hete_info) const {
   MS_EXCEPTION_IF_NULL(address);
   MS_EXCEPTION_IF_NULL(hete_info);
-  if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedHostMem) {
+  if (hete_info->need_alloc_hete_res_ == NeedAllocateHeteRes::NeedHostMem) {
     if (hete_info->host_ptr_ != nullptr) {
       MS_LOG(ERROR) << "Memory leak detected!";
       return false;
@@ -253,7 +253,7 @@ bool AscendResManager::AllocateForHete(mindspore::device::DeviceAddress *const &
     hete_info->host_ptr_ = host_ptr;
     address->set_from_mem_pool(true);
   }
-  if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedDiskFile) {
+  if (hete_info->need_alloc_hete_res_ == NeedAllocateHeteRes::NeedDiskFile) {
     if (!hete_info->file_name_.empty()) {
       MS_LOG(ERROR) << "Memory leak detected!";
       return false;
@@ -291,7 +291,7 @@ size_t AscendResManager::GetMaxUsedMemorySize() const {
   return mem_manager_->GetMaxUsedMemorySize();
 }
 
-void AscendResManager::FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const {
+void AscendResManager::FreeForHete(HeterogeneousInfoPtr hete_info) const {
   MS_EXCEPTION_IF_NULL(hete_info);
   if (hete_info->host_ptr_ != nullptr) {
     swap_manager_->FreeHostMemory(hete_info->host_ptr_);
@@ -305,8 +305,7 @@ void AscendResManager::FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_
 
 void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
-  const auto &hete_info =
-    address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
+  const auto &hete_info = address->heterogeneous_info();
   if (hete_info != nullptr) {
     FreeForHete(hete_info);
   }
@@ -433,27 +432,31 @@ std::vector<void *> AscendResManager::AllocateContinuousMemory(const std::vector
   return mem_manager_->MallocContinuousMemFromMemPool(aligned_size_list, stream_id);
 }
 
-DeviceAddressPtr AscendResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  if (kernel_tensor->device_name().empty()) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto device_type = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-    kernel_tensor->set_device_name(device_type);
-    kernel_tensor->set_device_id(device_id);
-  }
-  auto device_address = std::make_shared<AscendDeviceAddress>(kernel_tensor);
-  device_address->set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
+DeviceAddressPtr AscendResManager::CreateDeviceAddress() const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_address = std::make_shared<AscendDeviceAddress>();
+  device_address->set_device_name(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  device_address->set_device_id(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
   return device_address;
 }
 
 DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                        const Format &format, TypeId type_id,
                                                        const std::string &device_name, uint32_t device_id,
-                                                       uint32_t stream_id) const {
-  return std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                               stream_id);
+                                                       uint32_t stream_id, const UserDataPtr &) const {
+  auto real_device_name = device_name;
+  auto real_device_id = device_id;
+  if (device_name.empty()) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    real_device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    real_device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    MS_LOG(DEBUG) << "Create device address with real device name: " << real_device_name
+                  << ", real device id: " << real_device_id;
+  }
+  return std::make_shared<AscendDeviceAddress>(ptr, size, shape_vector, format, type_id, real_device_name,
+                                               real_device_id, stream_id);
 }
 
 bool AscendResManager::LoadCollectiveCommLib() {

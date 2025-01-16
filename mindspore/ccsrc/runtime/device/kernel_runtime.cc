@@ -234,7 +234,7 @@ void KernelRuntime::GetCommunicationOutputInfo(const AnfNodePtr &node, size_t *t
       const auto output_type = AnfAlgo::GetOutputDeviceDataType(node, i);
       const auto tensor_size = AnfAlgo::GetOutputTensorMemSize(node, i);
       address = CreateDeviceAddress(nullptr, tensor_size, output_format, output_type, {node, i});
-      AnfAlgo::SetOutputAddr(address, i, node.get());
+      AnfAlgo::SetOutputAddr(address, i, node);
     }
     MS_EXCEPTION_IF_NULL(address);
     auto align_size = MemoryManager::GetCommonAlignSize(address->size());
@@ -288,20 +288,19 @@ void KernelRuntime::ResetNodeAddress(const session::KernelGraph &kernel_graph) {
       auto tensor_size = AnfAlgo::GetOutputTensorMemSize(input_node, index);
       auto device_address = CreateDeviceAddress(nullptr, tensor_size, AnfAlgo::GetOutputFormat(input_node, index),
                                                 output_type_id, {input_node, index});
-      AnfAlgo::SetOutputAddr(device_address, index, input_node.get());
+      AnfAlgo::SetOutputAddr(device_address, index, input_node);
     }
 
     auto output_sizes = kernel_mod->GetOutputSizeList();
     for (size_t i = 0; i < output_sizes.size(); ++i) {
       auto output_format = AnfAlgo::GetOutputFormat(kernel, i);
       auto output_type = AnfAlgo::GetOutputDeviceDataType(kernel, i);
-      AnfAlgo::SetOutputAddr(CreateDeviceAddress(nullptr, output_sizes[i], output_format, output_type), i,
-                             kernel.get());
+      AnfAlgo::SetOutputAddr(CreateDeviceAddress(nullptr, output_sizes[i], output_format, output_type), i, kernel);
     }
     auto workspace_sizes = kernel_mod->GetWorkspaceSizeList();
     for (size_t i = 0; i < workspace_sizes.size(); ++i) {
       AnfAlgo::SetWorkspaceAddr(CreateDeviceAddress(nullptr, workspace_sizes[i], kOpFormat_DEFAULT, kNumberTypeFloat32),
-                                i, kernel.get());
+                                i, kernel);
     }
   }
 }
@@ -330,26 +329,26 @@ void KernelRuntime::RunOpClearMemory(const session::KernelGraph &graph) const {
   // clear input parameter memory resource
   for (const auto &input_node : graph.inputs()) {
     MS_EXCEPTION_IF_NULL(input_node);
-    AnfAlgo::SetOutputAddr(nullptr, 0, input_node.get());
+    AnfAlgo::SetOutputAddr(nullptr, 0, input_node);
   }
   // clear input value node memory resource
   for (const auto &value_node : graph.graph_value_nodes()) {
     MS_EXCEPTION_IF_NULL(value_node);
-    AnfAlgo::SetOutputAddr(nullptr, 0, value_node.get());
+    AnfAlgo::SetOutputAddr(nullptr, 0, value_node);
   }
   for (const auto &cnode : graph.execution_order()) {
     MS_EXCEPTION_IF_NULL(cnode);
     // clear output memory resource
     size_t output_num = AnfAlgo::GetOutputTensorNum(cnode);
     for (size_t index = 0; index < output_num; ++index) {
-      AnfAlgo::SetOutputAddr(nullptr, index, cnode.get());
+      AnfAlgo::SetOutputAddr(nullptr, index, cnode);
     }
     // clear workspace memory resource
     auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
     MS_EXCEPTION_IF_NULL(kernel_mod);
     auto workspace_lists = kernel_mod->GetWorkspaceSizeList();
     for (size_t index = 0; index < workspace_lists.size(); ++index) {
-      AnfAlgo::SetWorkspaceAddr(nullptr, index, cnode.get());
+      AnfAlgo::SetWorkspaceAddr(nullptr, index, cnode);
     }
   }
 }
@@ -409,7 +408,7 @@ void KernelRuntime::RunOpAssignInputMemory(const std::vector<tensor::TensorPtr> 
           }
         }
 
-        AnfAlgo::SetOutputAddr(output_address, index, item.get());
+        AnfAlgo::SetOutputAddr(output_address, index, item);
         continue;
       }
       TypeId output_type_id = AnfAlgo::GetOutputDeviceDataType(item, index);
@@ -427,7 +426,7 @@ void KernelRuntime::RunOpAssignInputMemory(const std::vector<tensor::TensorPtr> 
       if (!ret) {
         MS_LOG(EXCEPTION) << "Device memory isn't enough and alloc failed, alloc size:" << tensor_size;
       }
-      AnfAlgo::SetOutputAddr(device_address, index, item.get());
+      AnfAlgo::SetOutputAddr(device_address, index, item);
     }
   }
 }
@@ -448,7 +447,7 @@ void KernelRuntime::RunOpAssignOutputMemory(const AnfNodePtr &kernel,
   for (auto &iter : tensor_to_node) {
     auto device_address = iter.first->device_address();
     AnfAlgo::SetOutputAddr(std::dynamic_pointer_cast<device::DeviceAddress>(device_address), iter.second.second,
-                           iter.second.first.get());
+                           iter.second.first);
   }
 
   for (size_t i = 0; i < output_sizes.size(); ++i) {
@@ -466,7 +465,7 @@ void KernelRuntime::RunOpAssignOutputMemory(const AnfNodePtr &kernel,
     if (common::AnfAlgo::GetCNodeName(kernel) == kApplyMomentumOpName ||
         common::AnfAlgo::GetCNodeName(kernel) == kApplyMomentumDOpName) {
       auto device_address = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel, i);
-      AnfAlgo::SetOutputAddr(device_address, i, kernel.get());
+      AnfAlgo::SetOutputAddr(device_address, i, kernel);
       continue;
     }
     std::string output_format = AnfAlgo::GetOutputFormat(kernel, i);
@@ -481,7 +480,7 @@ void KernelRuntime::RunOpAssignOutputMemory(const AnfNodePtr &kernel,
     if (!ret) {
       MS_LOG(EXCEPTION) << "Device memory isn't enough and alloc failed, alloc size:" << output_sizes[i];
     }
-    AnfAlgo::SetOutputAddr(device_address, i, kernel.get());
+    AnfAlgo::SetOutputAddr(device_address, i, kernel);
   }
 }
 
@@ -499,7 +498,7 @@ void KernelRuntime::RunOpAssignWorkSpaceMemory(const AnfNodePtr &kernel) {
       if (!ret) {
         MS_LOG(EXCEPTION) << "Device memory isn't enough and alloc failed, alloc size:" << workspace_lists[i];
       }
-      AnfAlgo::SetWorkspaceAddr(device_address, i, kernel.get());
+      AnfAlgo::SetWorkspaceAddr(device_address, i, kernel);
     }
   }
 }
@@ -543,10 +542,10 @@ void KernelRuntime::RunOpAssignOutputNodeMemory(const ValuePtr &pre_output_value
           << "The input size of output node: " << real_output_cnode->DebugString() << " should large than one!";
       }
       AnfAlgo::SetOutputAddr(std::dynamic_pointer_cast<device::DeviceAddress>(pre_output_tensors[i]->device_address()),
-                             output_node_with_index.second, real_output_cnode->input(1).get());
+                             output_node_with_index.second, real_output_cnode->input(1));
     } else {
       AnfAlgo::SetOutputAddr(std::dynamic_pointer_cast<device::DeviceAddress>(pre_output_tensors[i]->device_address()),
-                             output_node_with_index.second, output_node_with_index.first.get());
+                             output_node_with_index.second, output_node_with_index.first);
     }
   }
 }
@@ -612,7 +611,7 @@ void KernelRuntime::AssignStaticMemoryInput(const session::KernelGraph &graph) {
       DeviceAddressPtr device_address =
         (graph.has_flag(kFlagEnableZeroCopyInGraph) ? nullptr : GetInternalDeviceAddress(graph, item));
       GetDeviceAddress(item, shadow_backend_node_map, index, graph, &device_address);
-      AnfAlgo::SetOutputAddr(device_address, index, item.get());
+      AnfAlgo::SetOutputAddr(device_address, index, item);
     }
   }
   MS_LOG(INFO) << "AssignStaticMemoryInput end";
@@ -714,9 +713,14 @@ void KernelRuntime::UpdateSingleRefNodeMem(const CNodePtr &kernel, const session
     if (graph.IsInRefOutputMap(out_pair)) {
       auto origin_pair = graph.GetRefCorrespondOutput(out_pair);
       MS_EXCEPTION_IF_NULL(origin_pair.first);
-      auto origin_node_output_addr = AnfAlgo::GetMutableOutputAddr(origin_pair.first, origin_pair.second);
+      auto origin_node_output_kernel_tensor =
+        AnfAlgo::GetOutputKernelTensor(origin_pair.first, origin_pair.second, false);
+      MS_EXCEPTION_IF_NULL(origin_node_output_kernel_tensor);
+      auto origin_node_output_addr = origin_node_output_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(origin_node_output_addr);
-      auto cur_node_output_addr = AnfAlgo::GetMutableOutputAddr(kernel, i);
+      auto cur_node_output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(kernel, i, false);
+      MS_EXCEPTION_IF_NULL(cur_node_output_kernel_tensor);
+      auto cur_node_output_addr = cur_node_output_kernel_tensor->device_address();
       if (!reverse && origin_node_output_addr->GetPtr() == nullptr) {
         continue;
       }
@@ -725,12 +729,12 @@ void KernelRuntime::UpdateSingleRefNodeMem(const CNodePtr &kernel, const session
         MS_LOG(DEBUG) << "REF origin op is " << origin_pair.first->DebugString() << ", output index is "
                       << origin_pair.second << ", cur op is " << kernel->DebugString() << ", out index is " << i;
         if (reverse) {
-          AnfAlgo::SetOutputAddr(cur_node_output_addr, origin_pair.second, origin_pair.first.get());
+          AnfAlgo::SetOutputAddr(cur_node_output_addr, origin_pair.second, origin_pair.first);
         } else {
-          if (!cur_node_output_addr->host_shape().empty()) {
-            origin_node_output_addr->set_host_shape(cur_node_output_addr->host_shape());
+          if (!cur_node_output_kernel_tensor->host_shape().empty()) {
+            origin_node_output_kernel_tensor->set_host_shape(cur_node_output_kernel_tensor->host_shape());
           }
-          AnfAlgo::SetOutputAddr(origin_node_output_addr, i, kernel.get());
+          AnfAlgo::SetOutputAddr(origin_node_output_addr, i, kernel);
         }
       }
     }
@@ -817,7 +821,7 @@ void KernelRuntime::AssignCommunicationNodeOutputMem(MemType type, const AnfNode
       address->set_ptr(output_ptr);
     }
     address->set_host_shape(AnfAlgo::GetRuntimePaddingShape(node, j));
-    AnfAlgo::SetOutputAddr(address, j, node.get());
+    AnfAlgo::SetOutputAddr(address, j, node);
     output_ptr += align_size_list[j];
   }
 }
@@ -837,7 +841,7 @@ DeviceAddressPtr KernelRuntime::PreAssignCNodeMemory(const AnfNodePtr &anf_node,
   std::string output_format = AnfAlgo::GetOutputFormat(anf_node, index);
   auto output_type = AnfAlgo::GetOutputDeviceDataType(anf_node, index);
   auto address = CreateDeviceAddress(nullptr, output_size, output_format, output_type, {anf_node, index});
-  AnfAlgo::SetOutputAddr(address, index, anf_node.get());
+  AnfAlgo::SetOutputAddr(address, index, anf_node);
   return address;
 }
 
@@ -943,7 +947,7 @@ void KernelRuntime::AssignNodeOutputMem(MemType type, const AnfNodePtr &node, in
       MS_LOG(DEBUG) << "Skip mem alloc for device address:" << device_address << " node:" << node->DebugString();
     }
     device_address->set_host_shape(AnfAlgo::GetRuntimePaddingShape(node, i));
-    AnfAlgo::SetOutputAddr(device_address, i, node.get());
+    AnfAlgo::SetOutputAddr(device_address, i, node);
   }
 }
 
@@ -983,7 +987,7 @@ void KernelRuntime::AssignValueNodeTensor(const ValueNodePtr &value_node, const 
     auto output_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
     if (output_address != nullptr && output_address->GetDeviceType() == GetTargetDeviceType()) {
       AnfAlgo::SetOutputAddr(std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx++,
-                             value_node.get());
+                             value_node);
       continue;
     }
 
@@ -1020,7 +1024,7 @@ void KernelRuntime::AssignValueNodeTensor(const ValueNodePtr &value_node, const 
                           << ", tensor size is: " << node_size;
       }
     }
-    AnfAlgo::SetOutputAddr(address, output_idx, value_node.get());
+    AnfAlgo::SetOutputAddr(address, output_idx, value_node);
     size_t tensor_size = LongToSize(tensor->data().nbytes());
     std::string format = "DefaultFormat";
     if (tensor->isa<tensor::Tensor>()) {
@@ -1079,7 +1083,7 @@ void KernelRuntime::AssignStaticMemoryValueNode(const session::KernelGraph &grap
       auto address = CreateDeviceAddressForStringValue(node_value, use_mem_from_memory_pool, graph.graph_id());
       MS_EXCEPTION_IF_NULL(address);
       address->set_from_persistent_mem(true);
-      AnfAlgo::SetOutputAddr(address, 0, value_node.get());
+      AnfAlgo::SetOutputAddr(address, 0, value_node);
     }
   }
   MS_LOG(DEBUG) << "AssignStaticMemoryValueNode end";
@@ -1170,7 +1174,7 @@ void KernelRuntime::AssignWorkSpaceMem(MemType type, const AnfNodePtr &node) {
       return;
     }
     auto ptr = mem_manager_->MallocWorkSpaceMem(node, index, type, size);
-    AnfAlgo::SetWorkspaceAddr(CreateDeviceAddress(ptr, size, "", kTypeUnknown), index, node.get());
+    AnfAlgo::SetWorkspaceAddr(CreateDeviceAddress(ptr, size, "", kTypeUnknown), index, node);
     index++;
   }
 }
@@ -1191,25 +1195,21 @@ void KernelRuntime::GenLaunchArgs(const mindspore::kernel::KernelMod &kernel_mod
   size_t input_num = common::AnfAlgo::GetInputTensorNum(kernel);
   for (size_t i = 0; i < input_num; ++i) {
     auto real_input = AnfAlgo::GetInputGraphIdxByKernelIdx(kernel, i);
-    auto device_address = AnfAlgo::GetPrevNodeOutputAddr(kernel, real_input, skip_nop_node);
-    MS_EXCEPTION_IF_NULL(device_address);
-    const auto &input = device_address->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(input);
-    (void)kernel_launch_info->inputs_.emplace_back(input.get());
+    auto kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(kernel, real_input, skip_nop_node);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    (void)kernel_launch_info->inputs_.emplace_back(kernel_tensor.get());
   }
 
   for (size_t i = 0; i < kernel_mod.GetOutputSizeList().size(); ++i) {
-    auto device_address = AnfAlgo::GetOutputAddr(kernel, i, skip_nop_node);
-    const auto &output = device_address->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(output);
-    (void)kernel_launch_info->outputs_.emplace_back(output.get());
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(kernel, i, skip_nop_node);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    (void)kernel_launch_info->outputs_.emplace_back(kernel_tensor.get());
   }
 
   for (size_t i = 0; i < kernel_mod.GetWorkspaceSizeList().size(); ++i) {
-    auto device_address = AnfAlgo::GetWorkspaceAddr(kernel, i);
-    const auto &workspace = device_address->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(workspace);
-    (void)kernel_launch_info->workspaces_.emplace_back(workspace.get());
+    auto kernel_tensor = AnfAlgo::GetWorkspaceKernelTensor(kernel, i);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    (void)kernel_launch_info->workspaces_.emplace_back(kernel_tensor.get());
   }
 }
 
@@ -1285,12 +1285,12 @@ void KernelRuntime::GenKernelTensorLaunchArgs(const CNodePtr &cnode, std::vector
     auto clean_output_indexes = common::AnfAlgo::GetNodeAttr<std::vector<size_t>>(pre_node, kAttrAtomicOutputIndexs);
 #endif
     for (auto index : clean_output_indexes) {
-      auto device_address = AnfAlgo::GetOutputAddr(pre_node, index);
-      MS_EXCEPTION_IF_NULL(device_address);
-      const auto &input = device_address->kernel_tensor();
+      auto input = AnfAlgo::GetOutputKernelTensor(pre_node, index, true);
       MS_EXCEPTION_IF_NULL(input);
+      auto device_address = input->device_address();
+      MS_EXCEPTION_IF_NULL(device_address);
       if (mem_scheduler != nullptr) {
-        GetOrMallocAddress(mem_scheduler, device_address, input);
+        GetOrMallocAddress(mem_scheduler, device_address.get(), input);
       }
       auto real_output_size = AnfAlgo::GetOutputTensorMemSize(pre_node, index);
       if (device_address->GetSize() != real_output_size) {
@@ -1311,11 +1311,12 @@ void KernelRuntime::GenKernelTensorLaunchArgs(const CNodePtr &cnode, std::vector
       common::AnfAlgo::GetNodeAttr<std::vector<size_t>>(pre_node, kAttrAtomicWorkspaceIndexs);
 #endif
     for (const auto &index : clean_workspaces_indexes) {
-      auto device_address = AnfAlgo::GetWorkspaceAddr(pre_node, index);
-      const auto &workspace = device_address->kernel_tensor();
+      const auto &workspace = AnfAlgo::GetWorkspaceKernelTensor(pre_node, index);
       MS_EXCEPTION_IF_NULL(workspace);
+      const auto &device_address = workspace->device_address();
+      MS_EXCEPTION_IF_NULL(device_address);
       if (mem_scheduler != nullptr) {
-        GetOrMallocAddress(mem_scheduler, device_address, workspace);
+        GetOrMallocAddress(mem_scheduler, device_address.get(), workspace);
       }
       (void)kernel_inputs->emplace_back(workspace.get());
     }
@@ -1388,32 +1389,37 @@ void KernelRuntime::AssignKernelAddress(const std::shared_ptr<MemScheduler> &mem
     auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(kernel, real_input, true);
     auto index = kernel_with_index.second;
     auto &input_node = kernel_with_index.first;
-    auto device_address = AnfAlgo::GetOutputAddr(input_node, index, true);
+    auto input = AnfAlgo::GetOutputKernelTensor(input_node, index, true);
+    MS_EXCEPTION_IF_NULL(input);
+    auto device_address = input->device_address();
     MS_EXCEPTION_IF_NULL(device_address);
-    const auto &input = device_address->kernel_tensor();
-    GetOrMallocAddress(mem_scheduler, device_address, input);
+    GetOrMallocAddress(mem_scheduler, device_address.get(), input);
     (void)kernel_launch_info->inputs_.emplace_back(input.get());
     if (update_parameter && input_node->isa<Parameter>()) {
       auto param = input_node->cast<ParameterPtr>();
       auto abstract = param->abstract();
       MS_EXCEPTION_IF_NULL(abstract);
       if (abstract->isa<abstract::AbstractRefTensor>()) {
-        mem_scheduler->UpdateHighPriorityMem(device_address);
+        mem_scheduler->UpdateHighPriorityMem(device_address.get());
       }
     }
   }
 
   for (size_t j = 0; j < kernel_mod->GetOutputSizeList().size(); ++j) {
-    auto device_address = AnfAlgo::GetOutputAddr(kernel, j, true);
-    const auto &output = device_address->kernel_tensor();
-    GetOrMallocAddress(mem_scheduler, device_address, output);
+    auto output = AnfAlgo::GetOutputKernelTensor(kernel, j, true);
+    MS_EXCEPTION_IF_NULL(output);
+    auto device_address = output->device_address();
+    MS_EXCEPTION_IF_NULL(device_address);
+    GetOrMallocAddress(mem_scheduler, device_address.get(), output);
     (void)kernel_launch_info->outputs_.emplace_back(output.get());
   }
 
   for (size_t i = 0; i < kernel_mod->GetWorkspaceSizeList().size(); ++i) {
-    auto device_address = AnfAlgo::GetWorkspaceAddr(kernel, i);
-    const auto &workspace = device_address->kernel_tensor();
-    GetOrMallocAddress(mem_scheduler, device_address, workspace);
+    const auto &workspace = AnfAlgo::GetWorkspaceKernelTensor(kernel, i);
+    MS_EXCEPTION_IF_NULL(workspace);
+    auto device_address = workspace->device_address();
+    MS_EXCEPTION_IF_NULL(device_address);
+    GetOrMallocAddress(mem_scheduler, device_address.get(), workspace);
     (void)kernel_launch_info->workspaces_.emplace_back(workspace.get());
   }
 }
@@ -1481,7 +1487,9 @@ void KernelRuntime::InitGraphInputTensors(const std::shared_ptr<MemScheduler> &m
     if (!input_node->isa<Parameter>() || !AnfAlgo::OutputAddrExist(input_node, 0)) {
       continue;
     }
-    auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0);
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, true);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_address = kernel_tensor->device_address();
     auto tensor = input_tensors[i];
     MS_EXCEPTION_IF_NULL(tensor);
     auto tensor_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
@@ -1647,7 +1655,7 @@ bool KernelRuntime::LaunchKernelMod(const session::KernelGraph &graph, bool mock
         for (size_t idx = 0; idx < AnfAlgo::GetOutputTensorNum(kernel); idx += 1) {
           auto real_input = AnfAlgo::GetInputGraphIdxByKernelIdx(kernel, idx);
           auto device_address = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel, real_input);
-          AnfAlgo::SetOutputAddr(device_address, idx, kernel.get());
+          AnfAlgo::SetOutputAddr(device_address, idx, kernel);
         }
         continue;
       }

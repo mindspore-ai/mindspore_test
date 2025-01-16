@@ -44,11 +44,11 @@ class ProfilerActor : public ActorBase {
   // The debug on step begin.
   void ProfilerOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                            const std::vector<AnfNodePtr> &origin_parameters_order,
-                           std::vector<DeviceContext *> device_contexts, OpContext<DeviceTensor> *const op_context,
+                           std::vector<DeviceContext *> device_contexts, OpContext<KernelTensor> *const op_context,
                            const AID *from_aid);
 
   // The debug on step end.
-  void ProfilerOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *from_aid, int total_running_count_);
+  void ProfilerOnStepEnd(OpContext<KernelTensor> *const op_context, const AID *from_aid, int total_running_count_);
   static inline uint64_t current_step{1};
 
  private:

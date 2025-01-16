@@ -957,14 +957,14 @@ void ForwardExecutor::CreateInputAddressForViewOp(const tensor::BaseTensorPtr &i
   if (!is_cpu_address_exist) {
     MS_LOG(DEBUG) << "Input_tensor address is nullptr, need create address.";
     auto address_size = GetTypeByte(input_tensor->Dtype()) * static_cast<size_t>(input_tensor->ElementsNum());
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
     kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
     kernel_tensor->set_stream_id(op_run_info->base_op_run_info.stream_id);
 
-    auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto device_address = kernel_tensor->device_address();
     input_tensor->set_device_address(device_address);
   }
 
@@ -1011,11 +1011,12 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
   auto input_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
   MS_EXCEPTION_IF_NULL(input_device_address);
   if (task_type == runtime::KernelTaskType::kCOPY_TASK) {
-    input_device_address->kernel_tensor()->set_tensor_storage_info(storage_info);
+    input_device_address->set_tensor_storage_info(storage_info);
   }
 
   // Create view output address
-  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+
+  auto kernel_tensor = AnfAlgo::CreateKernelTensor(
     nullptr, input_device_address->GetSize(), Format::DEFAULT_FORMAT, output_tensor->data_type(),
     output_tensor->shape(), input_device_address->device_name(), input_device_address->device_id());
   if (input_device_address->GetDeviceType() != device::DeviceType::kAscend) {
@@ -1027,9 +1028,7 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
   kernel_tensor->set_size(input_device_address->GetSize());
   kernel_tensor->set_stream_id(input_device_address->stream_id());
 
-  const auto &device_context = runtime::OpRunner::GetDeviceContext(input_device_address->device_name());
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto output_device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+  auto output_device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(output_device_address);
 
   output_device_address->set_pointer_ref_count(input_device_address->pointer_ref_count());

@@ -412,15 +412,15 @@ void EmbeddingCacheScheduler::InitEmbeddingStorage(const std::vector<AnfNodePtr>
 
     auto embed_storage = embedding_storage_manager.Get(param_info->key());
     MS_EXCEPTION_IF_NULL(embed_storage);
-    std::vector<DeviceTensorPtr> device_tensors = DeviceTensorStore::GetInstance().Fetch(param.get());
-    if (device_tensors.size() != 1) {
+    std::vector<KernelTensorPtr> kernel_tensors = DeviceTensorStore::GetInstance().Fetch(param.get());
+    if (kernel_tensors.size() != 1) {
       MS_LOG(EXCEPTION)
         << "The device tensor size for embedding table which enables embedding storage should be 1, but got:"
-        << device_tensors.size();
+        << kernel_tensors.size();
     }
 
     // Initialize embedding storage instance.
-    embed_storage->Initialize(device_tensors.front().get());
+    embed_storage->Initialize(kernel_tensors.front()->device_address().get());
   }
 }
 

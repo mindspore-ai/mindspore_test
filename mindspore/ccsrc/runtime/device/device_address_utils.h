@@ -35,16 +35,13 @@ struct is_optional<std::optional<T>> : public std::true_type {};
 
 namespace mindspore {
 using device::DeviceContext;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 namespace runtime {
 // Extract the methods related to DeviceAddress in GraphCompiler to the DeviceAddressUtils class.
 class BACKEND_EXPORT DeviceAddressUtils {
  public:
-  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const tensor::BaseTensor *tensor);
-  static void CreateKernelTensor(const device::DeviceAddressPtr &device_address, const AbstractBasePtr &abs);
-  static void CreateKernelTensor(const ValuePtr &input_value);
-  static void CreateKernelTensor(const tensor::TensorPtr &input_tensor);
   static void CopyNoneTensorDataToDevice(const device::DeviceContext *device_context,
-                                         const device::DeviceAddressPtr &device_address, const ShapeVector &shape = {});
+                                         const KernelTensorPtr &kernel_tensor, const ShapeVector &shape = {});
   static void CreateParameterDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
   static device::DeviceAddressPtrList CreateDeviceAddressForTensorValue(const DeviceContext *device_context,
                                                                         const ValuePtr &node_value, size_t output_idx,
@@ -53,8 +50,9 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void CreateKernelOutputDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph,
                                               bool is_gradient_out);
 
-  static std::vector<device::DeviceAddressPtr> CreateGraphOutputDeviceAddress(
-    const OpCompilerInfoPtr &op_compiler_info, const abstract::AbstractBasePtr &out_abstract, size_t stream_id);
+  static std::vector<KernelTensorPtr> CreateGraphOutputKernelTensor(const OpCompilerInfoPtr &op_compiler_info,
+                                                                    const abstract::AbstractBasePtr &out_abstract,
+                                                                    size_t stream_id);
 
   static void CreateKernelWorkspaceDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
   static void CreateDeviceAddressByMapTensorNode(const DeviceContext *device_context, const AnfNodePtr &node,
@@ -66,8 +64,8 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void UpdateDeviceAddressForRefNodeForSingleOp(const KernelGraphPtr &graph);
   static void UpdateDeviceAddressMonadFlag(const session::AnfWithOutIndex &cur_pair,
                                            const session::AnfWithOutIndex &origin_pair);
-  static device::DeviceAddressPtr CloneEmptyDeviceAddress(const device::DeviceAddressPtr &old_device_address,
-                                                          const DeviceContext *device_context);
+  static KernelTensorPtr CloneEmptyKernelTensor(const KernelTensorPtr &old_kernel_tensor,
+                                                const DeviceContext *device_context);
   static void CreateGraphOutputDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
   static size_t GetTensorDeviceSize(const DeviceContext *device_context, const AnfNodePtr &node,
                                     const ShapeVector &shape, const string &format, TypeId dtype, size_t output_index);
@@ -90,24 +88,24 @@ class BACKEND_EXPORT DeviceAddressUtils {
     }
   }
 
-  static device::DeviceAddressPtr CreateInputAddress(const DeviceContext *device_context, size_t stream_id,
-                                                     const abstract::AbstractBasePtr &abs, size_t index,
-                                                     const tensor::BaseTensorPtr &tensor);
-  static device::DeviceAddressPtr CreateInputAddress(const DeviceContext *device_context, size_t stream_id,
-                                                     const abstract::AbstractBasePtr &abs, size_t index,
-                                                     const std::optional<tensor::BaseTensorPtr> &val);
-  static device::DeviceAddressPtr CreateInputAddress(const DeviceContext *device_context, size_t stream_id,
-                                                     const abstract::AbstractBasePtr &abs, size_t index,
-                                                     const ScalarPtr &scalar_value);
-  static device::DeviceAddressPtr CreateInputAddress(const DeviceContext *device_context, size_t stream_id,
-                                                     const abstract::AbstractBasePtr &abs, size_t index,
-                                                     const StringImmPtr &string_imm);
-  static device::DeviceAddressPtr CreateInputAddress(const DeviceContext *device_context, size_t stream_id,
-                                                     const abstract::AbstractBasePtr &abs, size_t index,
-                                                     const TypePtr &type_ptr);
+  static KernelTensorPtr CreateInputKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                                 const abstract::AbstractBasePtr &abs, size_t index,
+                                                 const tensor::BaseTensorPtr &tensor);
+  static KernelTensorPtr CreateInputKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                                 const abstract::AbstractBasePtr &abs, size_t index,
+                                                 const std::optional<tensor::BaseTensorPtr> &val);
+  static KernelTensorPtr CreateInputKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                                 const abstract::AbstractBasePtr &abs, size_t index,
+                                                 const ScalarPtr &scalar_value);
+  static KernelTensorPtr CreateInputKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                                 const abstract::AbstractBasePtr &abs, size_t index,
+                                                 const StringImmPtr &string_imm);
+  static KernelTensorPtr CreateInputKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                                 const abstract::AbstractBasePtr &abs, size_t index,
+                                                 const TypePtr &type_ptr);
   template <typename T>
-  static device::DeviceAddressPtr CreateInputAddress(const DeviceContext *device_context, size_t stream_id,
-                                                     const abstract::AbstractBasePtr &abs, size_t index, const T &t) {
+  static KernelTensorPtr CreateInputKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                                 const abstract::AbstractBasePtr &abs, size_t index, const T &t) {
     MS_EXCEPTION_IF_NULL(device_context);
     auto tmp_abs = abs;
     if (abs == nullptr) {
@@ -116,18 +114,20 @@ class BACKEND_EXPORT DeviceAddressUtils {
     auto shape = tmp_abs->GetShape();
     auto type = tmp_abs->GetType();
     auto value = tmp_abs->GetValue();
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
-    auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto device_address = device_context->device_res_manager_->CreateDeviceAddress();
+    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, ShapeVector{});
+    kernel_tensor->set_device_synchronizer(device_address->NewDeviceSynchronizer());
     device_address->set_from_persistent_mem(true);
     device_address->set_new_ref_count(SIZE_MAX);
 
     if (device_address->GetPtr() == nullptr) {
-      CopyNoneTensorDataToDevice(device_context, device_address);
+      CopyNoneTensorDataToDevice(device_context, kernel_tensor);
     }
     MS_LOG(DEBUG) << "Create input " << tmp_abs->ToString() << " device address for " << index
                   << "th input, Shape: " << shape->ToString() << ", Type: " << type->ToString()
-                  << ", Value: " << (value ? value->ToString() : "nullptr") << " device address:" << device_address;
-    return device_address;
+                  << ", Value: " << (value ? value->ToString() : "nullptr") << " device address:" << device_address
+                  << ", kernel tensor: " << kernel_tensor.get();
+    return kernel_tensor;
   }
 
   static void CreateOutputTensorAddress(const DeviceContext *device_context, size_t stream_id,
@@ -142,14 +142,16 @@ class BACKEND_EXPORT DeviceAddressUtils {
                                                                             const size_t &workspace_size,
                                                                             bool no_exception = false);
 
-  static device::DeviceAddressPtr CreateWorkspaceAddress(const DeviceContext *device_context, size_t stream_id,
-                                                         const size_t &workspace_size);
+  static KernelTensorPtr CreateWorkspaceKernelTensor(const DeviceContext *device_context, size_t stream_id,
+                                                     const size_t &workspace_size);
 
   static void UpdateDeviceAddressHostInfoByNode(const device::DeviceAddressPtr &addr, const AnfNodePtr &node,
                                                 size_t output_idx);
   static device::DeviceAddressPtr CreateDeviceAddress(const DeviceContext *device_context,
                                                       const tensor::BaseTensorPtr &tensor,
                                                       const ShapeVector &real_shape, const size_t &stream_id);
+  static KernelTensorPtr CreateKernelTensor(const DeviceContext *device_context, const tensor::BaseTensorPtr &tensor,
+                                            const ShapeVector &real_shape, const size_t &stream_id);
 
   // Convert tensor to contiguous tensor.
   static void ConvertContiguousTensorSync(const tensor::BaseTensorPtr &tensor);

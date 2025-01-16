@@ -26,6 +26,7 @@
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/device/ascend_kernel_runtime.h"
 #include "plugin/res_manager/ascend/ascend_res_manager.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace device {
@@ -47,10 +48,10 @@ class AscendDeviceResManager : public DeviceResManager {
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
 
-  DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const override;
+  DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id) const override;
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
   bool LoadCollectiveCommLib() override;
   CollectiveCommunicationLib *collective_comm_lib() const override;
@@ -140,8 +141,8 @@ class AscendDeviceResManager : public DeviceResManager {
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
 
  private:
-  bool AllocateForHete(DeviceAddress *const &address, mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
-  void FreeForHete(mindspore::kernel::HeterogeneousInfoPtr hete_info) const;
+  bool AllocateForHete(DeviceAddress *const &address, HeterogeneousInfoPtr hete_info) const;
+  void FreeForHete(HeterogeneousInfoPtr hete_info) const;
 
   KernelRuntime *runtime_instance_ = nullptr;
   AscendResManager *ascend_res_manager_ = nullptr;

@@ -37,7 +37,7 @@ class GeDeviceResManager {
   void *AllocateWorkSpaceMemory(size_t size) const;
   void FreeMemory(device::DeviceAddress *const &address) const;
   void FreeMemory(void *ptr) const;
-  device::DeviceAddressPtr CreateDeviceAddress(const kernel::KernelTensorPtr &kernel_tensor) const;
+  device::DeviceAddressPtr CreateDeviceAddress() const;
 
   size_t GetMaxUsedMemorySize() const;
   bool BindDeviceToCurrentThread(bool force_bind) const;

@@ -36,7 +36,7 @@ class BACKEND_EXPORT GEBackend {
                            const backend::BackendJitConfig &backend_jit_config);
 
   void RunGraph(const std::string &graph_info, const device::DeviceContext *device_context, const VectorRef &args,
-                std::vector<tensor::TensorPtr> *outputs);
+                std::vector<tensor::TensorPtr> *outputs, std::vector<TypePtr> *output_types);
 
   FuncGraphPtr BuildDFGraph(const device::DeviceContext *device_context, const FuncGraphPtr &anf_graph,
                             const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors);
@@ -65,11 +65,10 @@ class BACKEND_EXPORT GEBackend {
   void SyncTensorData(const tensor::TensorPtr &host_tensor, const std::shared_ptr<device::DeviceAddress> &device_tensor,
                       const AnfNodePtr &node);
   void ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<tensor::TensorPtr> *outputs,
-                        const device::DeviceContext *device_contextF);
+                        const device::DeviceContext *device_contextF, std::vector<TypePtr> *output_types);
   bool Copy(const mindspore::device::DeviceAddress *dst_device_tensor,
             const mindspore::device::DeviceAddress *src_device_tensor);
-  void UpdateInputsShapeAndSize(const ParameterPtr &input_node,
-                                const mindspore::device::DeviceAddressPtr &device_tensor,
+  void UpdateInputsShapeAndSize(const ParameterPtr &input_node, const kernel::KernelTensorPtr &kernel_tensor,
                                 const tensor::TensorPtr &input_tensor, const device::DeviceContext *device_context);
 
   // for acl dump

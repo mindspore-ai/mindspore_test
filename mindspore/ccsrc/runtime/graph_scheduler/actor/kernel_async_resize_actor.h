@@ -36,7 +36,7 @@ class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
 
   void Initialize();
 
-  void ResizeKernelMod(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor);
+  void ResizeKernelMod(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
 
   void Wait();
 

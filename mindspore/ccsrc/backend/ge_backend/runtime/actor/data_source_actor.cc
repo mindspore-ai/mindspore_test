@@ -32,7 +32,7 @@ namespace ge_backend {
 namespace runtime {
 void DataSourceActor::Init() { InitOutputData(); }
 
-void DataSourceActor::FetchData(OpContext<DeviceTensor> *const context) {
+void DataSourceActor::FetchData(OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Data source actor(" << GetAID().Name() << ") fetches data.";
   MS_EXCEPTION_IF_NULL(context);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), GetAID().Name(), "");
@@ -51,8 +51,8 @@ void DataSourceActor::FetchData(OpContext<DeviceTensor> *const context) {
   SendMemoryAllocReq(context);
 }
 
-void DataSourceActor::UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                                       const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) {
+void DataSourceActor::UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,
+                                       const AnfNodePtr &output_node, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(output_data);
   MS_EXCEPTION_IF_NULL(data_arrow);
   MS_EXCEPTION_IF_NULL(output_node);
@@ -61,67 +61,67 @@ void DataSourceActor::UpdateOutputData(OpData<DeviceTensor> *const output_data, 
   if (buffers_.size() == 0) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The data queue is empty.");
   }
-  const auto &output_device_tensors = buffers_.front();
+  const auto &output_kernel_tensors = buffers_.front();
 
   auto position = FetchNodePosition({output_node, data_arrow->from_output_index_});
   // Host data souruce actor uses the node position, device data source actor uses the output index.
   auto output_position = (position != 0) ? position : IntToSize(data_arrow->from_output_index_);
-  if (output_position >= output_device_tensors.size()) {
+  if (output_position >= output_kernel_tensors.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The output index is of range.");
   }
-  output_data->data_ = output_device_tensors[output_position];
+  output_data->data_ = output_kernel_tensors[output_position];
 }
 
 void HostQueueDataSourceActor::FillDataBuffer() {
   // Construct device tensors.
-  std::vector<DeviceTensor *> device_tensors;
+  std::vector<KernelTensorPtr> kernel_tensors;
   for (auto &node_with_index : data_node_with_indexs_) {
     MS_LOG(DEBUG) << "Node:" << node_with_index.first->DebugString() << " index:" << node_with_index.second;
-    auto device_address = AnfAlgo::GetMutableOutputAddr(node_with_index.first, node_with_index.second, false);
-    MS_EXCEPTION_IF_NULL(device_address);
-    (void)device_tensors.emplace_back(device_address.get());
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_with_index.first, node_with_index.second, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    (void)kernel_tensors.emplace_back(kernel_tensor);
   }
 
-  buffers_.push(device_tensors);
+  buffers_.push(kernel_tensors);
 }
 
-void HostQueueDataSourceActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
-  auto &device_tensors = buffers_.back();
+void HostQueueDataSourceActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
+  auto &kernel_tensors = buffers_.back();
   if (ActorDispatcher::is_memory_allocation_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors, context,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors, context,
                                 GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors, context,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &kernel_tensors, context,
                                 GetAID());
     }
     OnMemoryAllocFinish(context);
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &device_tensors, context,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &kernel_tensors, context,
                             GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &device_tensors, context,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateBatchMemory, &kernel_tensors, context,
                             GetAID());
     }
   }
 }
 
-void HostQueueDataSourceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
-  auto &device_tensors = buffers_.front();
+void HostQueueDataSourceActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
+  auto &kernel_tensors = buffers_.front();
   if (ActorDispatcher::is_memory_free_sync()) {
     if (IsSameDeviceType()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors, context,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors, context,
                                 GetAID());
     } else {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors, context,
+      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &kernel_tensors, context,
                                 GetAID());
     }
   } else {
     if (IsSameDeviceType()) {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &device_tensors, context, GetAID());
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &kernel_tensors, context, GetAID());
     } else {
-      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &device_tensors, context,
+      ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeBatchMemory, &kernel_tensors, context,
                             GetAID());
     }
   }
@@ -129,8 +129,8 @@ void HostQueueDataSourceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const 
 
 void HostQueueDataSourceActor::AddCopyDataCallBack(bool enable_async_copy,
                                                    const mindspore::tensor::TensorPtrList &host_tensors,
-                                                   const std::vector<DeviceTensor *> &device_tensors) {
-  if (!enable_async_copy || device_tensors.empty()) {
+                                                   const std::vector<KernelTensorPtr> &kernel_tensors) {
+  if (!enable_async_copy || kernel_tensors.empty()) {
     return;
   }
 
@@ -145,13 +145,13 @@ void HostQueueDataSourceActor::AddCopyDataCallBack(bool enable_async_copy,
   device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
-  auto callback_ret = res_manager->LaunchCallback(callback_func, device_tensors[0]->stream_id());
+  auto callback_ret = res_manager->LaunchCallback(callback_func, kernel_tensors[0]->stream_id());
   if (!callback_ret) {
     MS_LOG(EXCEPTION) << "Async Copy memory launch callback failed";
   }
 }
 
-void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
+void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   MS_EXCEPTION_IF_NULL(context);
@@ -168,8 +168,8 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Host data queue is empty.");
   }
   auto &host_tensors = host_queue_->Pull();
-  auto &device_tensors = buffers_.back();
-  if (host_tensors.size() != device_tensors.size()) {
+  auto &kernel_tensors = buffers_.back();
+  if (host_tensors.size() != kernel_tensors.size()) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context),
                                       "The length of host tensors is not equal to the length of device tensors.");
   }
@@ -181,7 +181,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
   try {
     for (size_t i = 0; i < host_tensors.size(); ++i) {
       auto &host_tensor = host_tensors[i];
-      auto &device_tensor = device_tensors[i];
+      auto &device_tensor = kernel_tensors[i]->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       MS_EXCEPTION_IF_NULL(host_tensor);
       // No used device address need skip.
@@ -192,10 +192,10 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
       auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(host_tensor->device_address());
       // Sync data from host_tensor_device_address to device_tensor.
       if (tensor_device_address != nullptr) {
-        if (tensor_device_address.get() == device_tensor) {
+        if (tensor_device_address == device_tensor) {
           continue;
         }
-        if (!Copy(device_tensor, tensor_device_address.get())) {
+        if (!Copy(device_tensor.get(), tensor_device_address.get())) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
         }
         continue;
@@ -225,7 +225,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
         device_tensor->set_host_shape(host_tensor->shape());
       }
     }
-    AddCopyDataCallBack(enable_async_copy, host_tensors, device_tensors);
+    AddCopyDataCallBack(enable_async_copy, host_tensors, kernel_tensors);
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Host data source actor run exception.");
@@ -277,13 +277,15 @@ void HostQueueDataSourceActor::ReleaseData() {
       auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
       MS_EXCEPTION_IF_NULL(res_manager);
 
-      const auto &kernel_tensor = old_address->kernel_tensor();
+      auto kernel_tensor =
+        AnfAlgo::GetOutputKernelTensor(data_node_with_index.first, data_node_with_index.second, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
       MS_EXCEPTION_IF_NULL(new_kernel_tensor);
       new_kernel_tensor->set_device_ptr(nullptr);
 
-      auto new_address = res_manager->CreateDeviceAddress(new_kernel_tensor);
+      auto new_address = new_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(new_address);
       MS_LOG(DEBUG) << "Create device tensor:" << new_address << " type:" << new_address->type_id()
                     << ", kernel tensor addr:" << new_kernel_tensor.get();
@@ -292,7 +294,7 @@ void HostQueueDataSourceActor::ReleaseData() {
       new_address->set_flag(old_address->flag());
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);
-      AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first.get());
+      AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first);
       if (ref_device_tensors_.find(data_node_with_index) == ref_device_tensors_.end()) {
         continue;
       }

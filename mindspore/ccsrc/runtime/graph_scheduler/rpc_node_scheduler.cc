@@ -183,7 +183,7 @@ void RpcNodeScheduler::Schedule(const ActorSet *actor_set) const {
   }
 }
 
-void RpcNodeScheduler::SetOpcontext(const RpcActorSetPtr &rpc_actors, OpContext<DeviceTensor> *const op_context) {
+void RpcNodeScheduler::SetOpcontext(const RpcActorSetPtr &rpc_actors, OpContext<KernelTensor> *const op_context) {
   MS_EXCEPTION_IF_NULL(op_context);
   MS_EXCEPTION_IF_NULL(rpc_actors);
 

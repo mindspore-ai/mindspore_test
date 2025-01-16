@@ -38,13 +38,13 @@ class MemoryFreeActor : public MemoryAwareActor {
   ~MemoryFreeActor() override = default;
 
   // The memory related operation interface.
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
 
   // Get the member.
   SomasInfo *somas_info() const { return somas_info_; }
 
  protected:
-  void Run(OpContext<DeviceTensor> *const context) override {
+  void Run(OpContext<KernelTensor> *const context) override {
     if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run graph failed and please check error log.";
       return;

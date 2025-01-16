@@ -34,8 +34,8 @@ void CopyActor::Init() {
   }
 
   const size_t kDeviceTensorNum = 1;
-  input_device_tensor_.resize(kDeviceTensorNum);
-  output_device_tensor_.resize(kDeviceTensorNum);
+  input_kernel_tensors_.resize(kDeviceTensorNum);
+  output_kernel_tensors_.resize(kDeviceTensorNum);
 
   // Check output data index.
   for (auto &data_arrow : output_data_arrows_) {
@@ -48,34 +48,34 @@ void CopyActor::Init() {
   InitOutputData();
 }
 
-void CopyActor::Run(OpContext<DeviceTensor> *const context) {
+void CopyActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), GetAID().Name(), "");
-  FetchDeviceTensor(context);
+  FetchKernelTensor(context);
   SendMemoryAllocReq(context);
 }
 
-void CopyActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
+void CopyActor::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
   if (ActorDispatcher::is_memory_allocation_sync()) {
-    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &output_device_tensor_,
+    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &output_kernel_tensors_,
                               device_contexts_[kOutputDeviceContextIndex], context, GetAID());
     OnMemoryAllocFinish(context);
   } else {
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &output_device_tensor_,
+    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateMemory, &output_kernel_tensors_,
                           device_contexts_[kOutputDeviceContextIndex], context, GetAID());
   }
 }
 
-void CopyActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
+void CopyActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   if (ActorDispatcher::is_memory_free_sync()) {
-    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &input_device_tensor_,
+    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &input_kernel_tensors_,
                               device_contexts_[kInputDeviceContextIndex], context, GetAID());
-    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &output_device_tensor_,
+    ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &output_kernel_tensors_,
                               device_contexts_[kOutputDeviceContextIndex], context, GetAID());
   } else {
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &input_device_tensor_,
+    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &input_kernel_tensors_,
                           device_contexts_[kInputDeviceContextIndex], context, GetAID());
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &output_device_tensor_,
+    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &output_kernel_tensors_,
                           device_contexts_[kOutputDeviceContextIndex], context, GetAID());
   }
 }
@@ -92,54 +92,60 @@ bool CheckNonWeightParameter(const std::vector<std::pair<size_t, AnfNodePtr>> &d
   return device_tensor_store_keys.empty();
 }
 
-void CopyActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
+void CopyActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(output_device_tensor_[0]);
-  MS_EXCEPTION_IF_NULL(input_device_tensor_[0]);
+  MS_EXCEPTION_IF_NULL(output_kernel_tensors_[0]);
+  MS_EXCEPTION_IF_NULL(output_kernel_tensors_[0]->device_address());
+  MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
+  MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]->device_address());
   if (IsRunningFailed(context)) {
     return;
   }
 
-  if (input_device_tensor_[0]->GetSize() != output_device_tensor_[0]->GetSize()) {
-    MS_LOG(WARNING) << GetAID().Name() << " copy size is not equal, input device tensor:" << input_device_tensor_[0]
-                    << " size:" << input_device_tensor_[0]->GetSize()
-                    << ", output device tensor:" << output_device_tensor_[0]
-                    << "size:" << output_device_tensor_[0]->GetSize();
+  if (input_kernel_tensors_[0]->device_address()->GetSize() != output_kernel_tensors_[0]->device_address()->GetSize()) {
+    MS_LOG(WARNING) << GetAID().Name()
+                    << " copy size is not equal, input device tensor:" << input_kernel_tensors_[0]->device_address()
+                    << " size:" << input_kernel_tensors_[0]->device_address()->GetSize()
+                    << ", output device tensor:" << output_kernel_tensors_[0]->device_address()
+                    << "size:" << output_kernel_tensors_[0]->device_address()->GetSize();
   }
 
   {
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, GetAID().Name());
-    MS_LOG(DEBUG) << "Copy device tensor from device address:" << input_device_tensor_[0]->PrintInfo() << " to "
-                  << output_device_tensor_[0]->PrintInfo() << " for copy actor:" << GetAID();
-    if (!Copy(output_device_tensor_[0], input_device_tensor_[0])) {
+    MS_LOG(DEBUG) << "Copy device tensor from device address:"
+                  << input_kernel_tensors_[0]->device_address()->PrintInfo() << " to "
+                  << output_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
+    if (!Copy(output_kernel_tensors_[0]->device_address().get(), input_kernel_tensors_[0]->device_address().get())) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
 
-    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor_[0]->PrintInfo()
-                  << " and " << input_device_tensor_[0]->PrintInfo() << " for copy actor:" << GetAID();
-    DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor_[0], input_device_tensor_[0]);
-    output_device_tensor_[0]->kernel_tensor()->SetType(input_device_tensor_[0]->kernel_tensor()->GetType());
-    output_device_tensor_[0]->kernel_tensor()->SetShape(input_device_tensor_[0]->kernel_tensor()->GetShape());
-    output_device_tensor_[0]->set_user_data(input_device_tensor_[0]->user_data());
-    MS_LOG(DEBUG) << "Set user data:" << input_device_tensor_[0]->user_data()
-                  << " shape:" << input_device_tensor_[0]->kernel_tensor()->GetShape()->ToString()
-                  << " from device tensor:" << input_device_tensor_[0]
-                  << " to device address:" << output_device_tensor_[0];
-    output_device_tensor_[0]->set_need_sync_user_data(input_device_tensor_[0]->need_sync_user_data());
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:"
+                  << output_kernel_tensors_[0]->device_address()->PrintInfo() << " and "
+                  << input_kernel_tensors_[0]->device_address()->PrintInfo() << " for copy actor:" << GetAID();
+    DeviceTensorCopyStore::GetInstance().Insert(output_kernel_tensors_[0]->device_address().get(),
+                                                input_kernel_tensors_[0]->device_address().get());
+    output_kernel_tensors_[0]->SetType(input_kernel_tensors_[0]->GetType());
+    output_kernel_tensors_[0]->SetShape(input_kernel_tensors_[0]->GetShape());
+    output_kernel_tensors_[0]->set_user_data(input_kernel_tensors_[0]->user_data());
+    MS_LOG(DEBUG) << "Set user data:" << input_kernel_tensors_[0]->user_data()
+                  << " shape:" << input_kernel_tensors_[0]->GetShape()->ToString()
+                  << " from device tensor:" << input_kernel_tensors_[0]->device_address()
+                  << " to device address:" << output_kernel_tensors_[0]->device_address();
+    output_kernel_tensors_[0]->set_need_sync_user_data(input_kernel_tensors_[0]->need_sync_user_data());
   }
 
   PostRun(context);
 }
 
-void CopyActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
+void CopyActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
   if (!enable_input_optimize_) {
     return;
   }
   if (parameter_indexs_.size() > 0) {
-    input_device_tensor_[0] =
+    input_kernel_tensors_[0] =
       FetchParameter(parameter_indexs_[0].second, context, device_contexts_[kInputDeviceContextIndex], GetAID());
-    if (input_device_tensor_[0] == nullptr) {
+    if (input_kernel_tensors_[0] == nullptr) {
       std::string error_info =
         GetAID().Name() +
         " get graph parameter store input failed: " + parameter_indexs_[0].second.first.first->fullname_with_scope() +
@@ -152,14 +158,14 @@ void CopyActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
         !common::AnfAlgo::IsParameterWeight(parameter_indexs_[0].second.first.first->cast<ParameterPtr>())) {
       // Get non-weight parameter addr.
       MS_EXCEPTION_IF_NULL(output_);
-      output_device_tensor_[0] = output_.get();
+      output_kernel_tensors_[0] = output_;
     } else {
       // Get weight parameter addr.
-      output_device_tensor_[0] =
+      output_kernel_tensors_[0] =
         FetchParameter(parameter_indexs_[0].second, context, device_contexts_[kOutputDeviceContextIndex], GetAID());
     }
 
-    if (output_device_tensor_[0] == nullptr) {
+    if (output_kernel_tensors_[0] == nullptr) {
       std::string error_info =
         GetAID().Name() +
         " get graph parameter store output failed: " + parameter_indexs_[0].second.first.first->fullname_with_scope() +
@@ -170,7 +176,7 @@ void CopyActor::FetchParameterInput(OpContext<DeviceTensor> *const context) {
   }
 }
 
-void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
+void CopyActor::FetchKernelTensor(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
   const auto &input_device_context = device_contexts_[kInputDeviceContextIndex];
@@ -181,20 +187,18 @@ void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
   if (device_tensor_store_keys_.size() > 0) {
     const auto &device_tensor_store_node = device_tensor_store_keys_[0].second;
     MS_EXCEPTION_IF_NULL(device_tensor_store_node);
-    input_device_tensor_[0] = DeviceTensorStore::GetInstance()
-                                .Fetch(device_tensor_store_node.get(), input_device_context->GetDeviceType())
-                                .get();
-    if (input_device_tensor_[0] == nullptr) {
+    input_kernel_tensors_[0] =
+      DeviceTensorStore::GetInstance().Fetch(device_tensor_store_node.get(), input_device_context->GetDeviceType());
+    if (input_kernel_tensors_[0] == nullptr) {
       std::string error_info =
         GetAID().Name() + " get device tensor store failed: " + device_tensor_store_node->fullname_with_scope() +
         ", device type:" + std::to_string(static_cast<int>(input_device_context->GetDeviceType()));
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
 
-    output_device_tensor_[0] = DeviceTensorStore::GetInstance()
-                                 .Fetch(device_tensor_store_node.get(), output_device_context->GetDeviceType())
-                                 .get();
-    if (output_device_tensor_[0] == nullptr) {
+    output_kernel_tensors_[0] =
+      DeviceTensorStore::GetInstance().Fetch(device_tensor_store_node.get(), output_device_context->GetDeviceType());
+    if (output_kernel_tensors_[0] == nullptr) {
       std::string error_info =
         GetAID().Name() + " get device tensor store failed: " + device_tensor_store_node->fullname_with_scope() +
         ", device type:" + std::to_string(static_cast<int>(output_device_context->GetDeviceType()));
@@ -210,10 +214,10 @@ void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
       }
       const auto &input_data = data_iter->second[0];
       MS_EXCEPTION_IF_NULL(input_data);
-      input_device_tensor_[0] = input_data->data_;
+      input_kernel_tensors_[0] = input_data->data_;
 
       MS_EXCEPTION_IF_NULL(output_);
-      output_device_tensor_[0] = output_.get();
+      output_kernel_tensors_[0] = output_;
     }
   }
 
@@ -221,12 +225,14 @@ void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
     MS_LOG(INFO) << "Run failed and early stop.";
     return;
   }
-  if (is_need_update_output_size_ && (input_device_tensor_[0]->GetSize() != output_device_tensor_[0]->GetSize())) {
-    MS_LOG(DEBUG) << GetAID().Name() << " update output size from " << output_device_tensor_[0]->GetSize() << " to "
-                  << input_device_tensor_[0]->GetSize();
-    output_device_tensor_[0]->SetSize(input_device_tensor_[0]->GetSize());
-    const auto &output_kernel_tensor = output_device_tensor_[0]->kernel_tensor();
-    const auto &input_kernel_tensor = input_device_tensor_[0]->kernel_tensor();
+  if (is_need_update_output_size_ && (input_kernel_tensors_[0]->device_address()->GetSize() !=
+                                      output_kernel_tensors_[0]->device_address()->GetSize())) {
+    MS_LOG(DEBUG) << GetAID().Name() << " update output size from "
+                  << output_kernel_tensors_[0]->device_address()->GetSize() << " to "
+                  << input_kernel_tensors_[0]->device_address()->GetSize();
+    output_kernel_tensors_[0]->device_address()->SetSize(input_kernel_tensors_[0]->device_address()->GetSize());
+    const auto &output_kernel_tensor = output_kernel_tensors_[0];
+    const auto &input_kernel_tensor = input_kernel_tensors_[0];
     MS_EXCEPTION_IF_NULL(output_kernel_tensor);
     MS_EXCEPTION_IF_NULL(input_kernel_tensor);
     output_kernel_tensor->SetType(input_kernel_tensor->GetType()->Clone());
@@ -234,8 +240,9 @@ void CopyActor::FetchDeviceTensor(OpContext<DeviceTensor> *const context) {
   }
 }
 
-void CopyActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(output_device_tensor_[0]);
+void CopyActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) {
+  MS_EXCEPTION_IF_NULL(output_kernel_tensors_[0]);
+  MS_EXCEPTION_IF_NULL(output_kernel_tensors_[0]->device_address());
   if (output_data_arrows_.size() < output_free_size_) {
     std::stringstream error_info;
     error_info << "Invalid output size:" << output_data_arrows_.size() << " and free size:" << output_free_size_
@@ -243,16 +250,16 @@ void CopyActor::IncreaseNewRefCounts(OpContext<DeviceTensor> *const context) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info.str());
   }
   for (size_t i = 0; i < output_data_arrows_.size() - output_free_size_; ++i) {
-    output_device_tensor_[0]->IncreaseNewRefCount(GetAID().Name());
-    MS_LOG(DEBUG) << "Increase new ref count for device address:" << output_device_tensor_[0]->PrintInfo()
-                  << " in actor:" << GetAID();
+    output_kernel_tensors_[0]->device_address()->IncreaseNewRefCount(GetAID().Name());
+    MS_LOG(DEBUG) << "Increase new ref count for device address:"
+                  << output_kernel_tensors_[0]->device_address()->PrintInfo() << " in actor:" << GetAID();
   }
 }
 
-void CopyActor::UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &, const AnfNodePtr &,
-                                 OpContext<DeviceTensor> *const) {
+void CopyActor::UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &, const AnfNodePtr &,
+                                 OpContext<KernelTensor> *const) {
   MS_EXCEPTION_IF_NULL(output_data);
-  output_data->data_ = output_device_tensor_[0];
+  output_data->data_ = output_kernel_tensors_[0];
 }
 }  // namespace runtime
 }  // namespace mindspore

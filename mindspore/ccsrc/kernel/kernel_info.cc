@@ -44,11 +44,35 @@ bool KernelInfo::SetOutputKernelTensor(const KernelTensorPtr &kernel_tensor, siz
   }
 
   if (index >= output_kernel_tensor_list_.size()) {
-    MS_LOG(ERROR) << "Index [" << index << "] out of range";
-    return false;
+    for (size_t i = output_kernel_tensor_list_.size(); i <= index; i++) {
+      (void)output_kernel_tensor_list_.emplace_back(nullptr);
+    }
   }
 
   output_kernel_tensor_list_[index] = kernel_tensor;
+  return true;
+}
+
+bool KernelInfo::SetWorkspaceKernelTensor(const KernelTensorPtr &kernel_tensor, size_t index) {
+  // Initialize empty workspace kernel tensor list for Parameter and ValueNode.
+  if (kernel_mod_ == nullptr && index >= workspace_kernel_tensor_list_.size()) {
+    for (size_t i = workspace_kernel_tensor_list_.size(); i <= index; i++) {
+      (void)workspace_kernel_tensor_list_.emplace_back(nullptr);
+    }
+  } else if (kernel_mod_ != nullptr && workspace_kernel_tensor_list_.empty()) {
+    // Initialize empty workspace kernel tensor list for CNode.
+    for (size_t i = 0; i < kernel_mod_->GetWorkspaceSizeList().size(); i++) {
+      (void)workspace_kernel_tensor_list_.emplace_back(nullptr);
+    }
+  }
+
+  if (index >= workspace_kernel_tensor_list_.size()) {
+    for (size_t i = workspace_kernel_tensor_list_.size(); i <= index; ++i) {
+      (void)workspace_kernel_tensor_list_.emplace_back(nullptr);
+    }
+  }
+
+  workspace_kernel_tensor_list_[index] = kernel_tensor;
   return true;
 }
 
@@ -59,92 +83,147 @@ bool KernelInfo::OutputKernelTensorExist(size_t index) const {
   return output_kernel_tensor_list_[index] != nullptr;
 }
 
+bool KernelInfo::WorkspaceKernelTensorExist(size_t index) const {
+  if (index >= workspace_kernel_tensor_list_.size()) {
+    return false;
+  }
+  return workspace_kernel_tensor_list_[index] != nullptr;
+}
+
 const DeviceAddress *KernelInfo::GetOutputAddr(size_t index) const {
-  if (index >= output_address_list_.size()) {
-    MS_LOG(ERROR) << "Index [" << index << "] out of range 0~" << (output_address_list_.size() - 1);
+  if (index >= output_kernel_tensor_list_.size()) {
+    MS_LOG(ERROR) << "Index [" << index << "] out of range 0~" << (output_kernel_tensor_list_.size() - 1);
     return nullptr;
   }
-  return output_address_list_[index].get();
+  const auto &output_kernel_tensor = output_kernel_tensor_list_[index];
+  if (output_kernel_tensor == nullptr) {
+    MS_LOG(INFO) << "Index [" << index << "] has no kernel tensor.";
+    return nullptr;
+  }
+  return output_kernel_tensor->device_address().get();
 }
 
 DeviceAddressPtr KernelInfo::GetMutableOutputAddr(size_t index) const {
-  if (index >= output_address_list_.size()) {
+  if (index >= output_kernel_tensor_list_.size()) {
     MS_LOG(ERROR) << "Index [" << index << "] out of range";
     return nullptr;
   }
-  return output_address_list_[index];
+  const auto &output_kernel_tensor = output_kernel_tensor_list_[index];
+  if (output_kernel_tensor == nullptr) {
+    MS_LOG(INFO) << "Index [" << index << "] has no kernel tensor.";
+    return nullptr;
+  }
+  return output_kernel_tensor->device_address();
 }
 
 bool KernelInfo::OutputAddrExist(size_t index) const {
-  if (index >= output_address_list_.size()) {
+  if (index >= output_kernel_tensor_list_.size()) {
+    MS_LOG(DEBUG) << "Index [" << index << "] out of range";
     return false;
   }
-  return output_address_list_[index] != nullptr;
+  const auto &output_kernel_tensor = output_kernel_tensor_list_[index];
+  if (output_kernel_tensor == nullptr) {
+    MS_LOG(INFO) << "Index [" << index << "] has no kernel tensor.";
+    return false;
+  }
+  return output_kernel_tensor->device_address() != nullptr;
 }
 
 bool KernelInfo::SetOutputAddr(const DeviceAddressPtr &output_address, size_t index) {
   // parameter and valuenode
-  if (kernel_mod_ == nullptr && index >= output_address_list_.size()) {
-    for (size_t i = output_address_list_.size(); i <= index; i++) {
-      (void)output_address_list_.emplace_back(nullptr);
+  if (kernel_mod_ == nullptr && index >= output_kernel_tensor_list_.size()) {
+    for (size_t i = output_kernel_tensor_list_.size(); i <= index; i++) {
+      (void)output_kernel_tensor_list_.emplace_back(nullptr);
     }
-  } else if (kernel_mod_ != nullptr && output_address_list_.empty()) {
+  } else if (kernel_mod_ != nullptr && output_kernel_tensor_list_.empty()) {
     // set cnode
     MS_EXCEPTION_IF_NULL(select_kernel_build_info_);
     for (size_t i = 0; i < select_kernel_build_info_->GetOutputNum(); i++) {
-      (void)output_address_list_.emplace_back(nullptr);
+      (void)output_kernel_tensor_list_.emplace_back(nullptr);
     }
   }
-  if (index >= output_address_list_.size()) {
+  if (index >= output_kernel_tensor_list_.size()) {
     MS_LOG(ERROR) << "Index [" << index << "] out of range";
     return false;
   }
-  output_address_list_[index] = output_address;
-
+  const auto &output_kernel_tensor = output_kernel_tensor_list_[index];
+  if (output_kernel_tensor == nullptr) {
+    MS_LOG(ERROR) << "Index [" << index << "] has no kernel tensor.";
+    return false;
+  }
+  output_kernel_tensor->set_device_address(output_address);
   return true;
 }
 
 DeviceAddress *KernelInfo::GetWorkspaceAddr(size_t index) const {
-  if (index >= workspace_address_list_.size()) {
+  if (index >= workspace_kernel_tensor_list_.size()) {
     MS_LOG(ERROR) << "Index [" << index << "] out of range";
     return nullptr;
   }
-  return workspace_address_list_[index].get();
+  const auto &workspace_kernel_tensor = workspace_kernel_tensor_list_[index];
+  if (workspace_kernel_tensor == nullptr) {
+    MS_LOG(ERROR) << "Index [" << index << "] has no kernel tensor.";
+    return nullptr;
+  }
+  return workspace_kernel_tensor->device_address().get();
 }
 
 DeviceAddressPtr KernelInfo::GetMutableWorkspaceAddr(size_t index) const {
-  if (index >= workspace_address_list_.size()) {
+  if (index >= workspace_kernel_tensor_list_.size()) {
     MS_LOG(ERROR) << "Index [" << index << "] out of range";
     return nullptr;
   }
-  return workspace_address_list_[index];
+  const auto &workspace_kernel_tensor = workspace_kernel_tensor_list_[index];
+  if (workspace_kernel_tensor == nullptr) {
+    MS_LOG(ERROR) << "Index [" << index << "] has no kernel tensor.";
+    return nullptr;
+  }
+  return workspace_kernel_tensor->device_address();
+}
+
+KernelTensorPtr KernelInfo::GetWorkspaceKernelTensor(size_t index) const {
+  if (index >= workspace_kernel_tensor_list_.size()) {
+    MS_LOG(ERROR) << "Index [" << index << "] out of range";
+    return nullptr;
+  }
+  const auto &workspace_kernel_tensor = workspace_kernel_tensor_list_[index];
+  if (workspace_kernel_tensor == nullptr) {
+    MS_LOG(ERROR) << "Index [" << index << "] has no kernel tensor.";
+    return nullptr;
+  }
+  return workspace_kernel_tensor;
 }
 
 bool KernelInfo::WorkspaceAddrExist(size_t index) const {
-  if (index >= workspace_address_list_.size()) {
+  if (index >= workspace_kernel_tensor_list_.size()) {
     return false;
   }
-  return workspace_address_list_[index] != nullptr;
+  return workspace_kernel_tensor_list_[index] != nullptr;
 }
 
 bool KernelInfo::SetWorkspaceAddr(const DeviceAddressPtr &output_address, size_t index) {
-  if (workspace_address_list_.empty()) {
+  if (workspace_kernel_tensor_list_.empty()) {
     // parameter and valuenode
     if (kernel_mod_ == nullptr) {
-      (void)workspace_address_list_.emplace_back(nullptr);
+      (void)workspace_kernel_tensor_list_.emplace_back(nullptr);
     } else {
       // set cnode
       for (size_t i = 0; i < kernel_mod_->GetWorkspaceSizeList().size(); i++) {
-        (void)workspace_address_list_.emplace_back(nullptr);
+        (void)workspace_kernel_tensor_list_.emplace_back(nullptr);
       }
     }
   }
-  if (index >= workspace_address_list_.size()) {
-    for (size_t i = 0; i < index - workspace_address_list_.size() + 1; i++) {
-      workspace_address_list_.emplace_back(nullptr);
+  if (index >= workspace_kernel_tensor_list_.size()) {
+    for (size_t i = 0; i < index - workspace_kernel_tensor_list_.size() + 1; i++) {
+      workspace_kernel_tensor_list_.emplace_back(nullptr);
     }
   }
-  workspace_address_list_[index] = output_address;
+  const auto &workspace_kernel_tensor = workspace_kernel_tensor_list_[index];
+  if (workspace_kernel_tensor == nullptr) {
+    MS_LOG(ERROR) << "Index [" << index << "] has no kernel tensor.";
+    return false;
+  }
+  workspace_kernel_tensor->set_device_address(output_address);
   return true;
 }
 
@@ -215,10 +294,10 @@ bool KernelInfo::operator==(const KernelInfo &other) const {
       (kernel_mod_ != nullptr && other.kernel_mod_ == nullptr)) {
     return false;
   }
-  // Currently we only check whether both the sizes are equal of output_address_list_ and workspace_address_list_ or
-  // not. We can complete this check in the future.
-  if (output_address_list_.size() != other.output_address_list_.size() ||
-      workspace_address_list_.size() != other.workspace_address_list_.size()) {
+  // Currently we only check whether both the sizes are equal of output_kernel_tensor_list_ and
+  // workspace_kernel_tensor_list_ or not. We can complete this check in the future.
+  if (output_kernel_tensor_list_.size() != other.output_kernel_tensor_list_.size() ||
+      workspace_kernel_tensor_list_.size() != other.workspace_kernel_tensor_list_.size()) {
     return false;
   }
   return true;

@@ -94,8 +94,8 @@ TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::ve
   return stat;
 }
 
-void DumpKernelTensorStats(const DeviceContext *device_context, std::vector<device::DeviceAddress *> tensors,
-                           bool is_input, const CNodePtr &node, uint32_t graph_id) {
+void DumpKernelTensorStats(const DeviceContext *device_context, std::vector<KernelTensor *> tensors, bool is_input,
+                           const CNodePtr &node, uint32_t graph_id) {
   string node_name = GetKernelNodeName(node);
   GetFileKernelName(NOT_NULL(&node_name));
   string node_type = common::AnfAlgo::GetCNodeName(node);
@@ -117,7 +117,7 @@ void DumpKernelTensorStats(const DeviceContext *device_context, std::vector<devi
     }
   }
   for (auto i : valid_index) {
-    auto tensor = tensors[i]->kernel_tensor().get();
+    auto tensor = tensors[i];
     DumpTensorInfo tensor_info(device_context, tensor, is_input, i, node_name, node_type);
     auto stat = GetKernelTensorStats(tensor_info, stat_name_list, stream_id);
     if (stat.data_size_ == 0) {
