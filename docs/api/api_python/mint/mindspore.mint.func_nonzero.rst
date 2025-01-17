@@ -21,4 +21,4 @@ mindspore.mint.nonzero
     异常：
         - **TypeError** - 如果 `input` 不是Tensor。
         - **TypeError** - 如果 `as_tuple` 不是bool。
-        - **RuntimeError** - 在CPU或者GPU平台中，如果 `self` 的维度为0。
+        - **RuntimeError** - 在CPU或者GPU平台中，如果 `input` 的维度为0。

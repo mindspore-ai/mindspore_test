@@ -25,8 +25,8 @@ mindspore.mint.nn.PReLU
         通道数是输入的第二个维度值。当输入的维度小于2时，则没有通道维度并且通道数等于1。
 
     参数：
-        - **num_parameters** (int) - 可训练参数 :math:`w` 的数量。虽然这个参数可以接受一个int作为输入，但只有两个值是合法的，值是1或输入Tensor `input` 的通道数。默认值： ``1`` 。
-        - **init** (float) - 参数的初始值。默认值： ``0.25`` 。
+        - **num_parameters** (int，可选) - 可训练参数 :math:`w` 的数量。虽然这个参数可以接受一个int作为输入，但只有两个值是合法的，值是1或输入Tensor `input` 的通道数。默认值： ``1`` 。
+        - **init** (float，可选) - 参数的初始值。默认值： ``0.25`` 。
         - **dtype** (mindspore.dtype，可选) - 参数的dtype。默认值： ``None`` 。支持的数据类型是{float16, float32, bfloat16}。
 
     输入：

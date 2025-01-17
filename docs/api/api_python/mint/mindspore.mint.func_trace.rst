@@ -16,5 +16,5 @@ mindspore.mint.trace
 
     异常：
         - **TypeError** - 如果 `input` 不是Tensor。
-        - **ValueError** - 如果当 `input` 的维度不是2。
+        - **ValueError** - 如果 `input` 的维度不是2。
         - **TypeError** - `input` 的数据类型不是float16、float32、float64、bool、uint8、int8、int16、int32、int64、complex64、complex128、bfloat16之一。
