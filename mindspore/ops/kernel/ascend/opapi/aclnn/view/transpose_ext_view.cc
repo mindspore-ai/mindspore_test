@@ -15,8 +15,6 @@
  */
 #include "kernel/ascend/opapi/aclnn/view/transpose_ext_view.h"
 
-#include <functional>
-
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
 #include "mindspore/ops/view/transpose_ext_strides_calc.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
@@ -24,14 +22,6 @@
 
 namespace mindspore {
 namespace kernel {
-namespace {
-size_t GetOriginInputSize(const ops::OldTensorInfoPtr old_info, TypeId type_id) {
-  const auto &ori_shape = old_info->ori_shape;
-  auto num = std::accumulate(ori_shape.begin(), ori_shape.end(), int64_t(1), std::multiplies<int64_t>());
-  auto ori_size = abstract::TypeIdSize(type_id) * LongToSize(num);
-  return ori_size;
-}
-}  // namespace
 void TransposeExtView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
