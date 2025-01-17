@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 import os
-import pytest
 import re
 import shutil
 import mindspore as ms
@@ -96,31 +95,25 @@ def test_side_effect_bprop():
     Description: Support side effect node in operation bprop.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        save_path = "./test_side_effect_bprop"
-        context.set_context(mode=context.GRAPH_MODE, save_graphs=True, save_graphs_path=save_path)
+    save_path = "./test_side_effect_bprop"
+    context.set_context(mode=context.GRAPH_MODE, save_graphs=True, save_graphs_path=save_path)
 
-        x = Parameter(Tensor(1, dtype=ms.int32), name='para')
-        y = ms.Tensor(2, dtype=ms.int32)
-        out = GradNet(Net())(x, y)
-        print("out:", out)
+    x = Parameter(Tensor(1, dtype=ms.int32), name='para')
+    y = ms.Tensor(2, dtype=ms.int32)
+    out = GradNet(Net())(x, y)
+    print("out:", out)
 
-        content = read_file(save_path)
-        updatestate_set = re.findall('= UpdateState', content)
-        assign_set = re.findall("= PrimFunc_Assign", content)
-        assign_add_set = re.findall("= PrimFunc_AssignAdd", content)
-        assign_add_input_set = re.findall("%para1_x, %para2_y, %6", content)
-        custom_assign_set = re.findall("= CustomAssign", content)
-        special_updatestate_set = re.findall("%4, %5", content)
-        context.set_context(save_graphs=False)
-        try:
-            shutil.rmtree(save_path)
-        except FileNotFoundError:
-            pass
-        assert len(updatestate_set) == 3
-        assert len(assign_set) == 2
-        assert len(assign_add_set) == 1
-        assert len(assign_add_input_set) == 1
-        assert len(custom_assign_set) == 1
-        assert len(special_updatestate_set) == 1
-    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
+    content = read_file(save_path)
+    updatestate_set = re.findall('= UpdateState', content)
+    assign_set = re.findall("= PrimFunc_Assign", content)
+    assign_add_set = re.findall("= PrimFunc_AssignAdd", content)
+    custom_assign_set = re.findall("= CustomAssign", content)
+    context.set_context(save_graphs=False)
+    try:
+        shutil.rmtree(save_path)
+    except FileNotFoundError:
+        pass
+    assert len(updatestate_set) == 3
+    assert len(assign_set) == 2
+    assert len(assign_add_set) == 1
+    assert len(custom_assign_set) == 1

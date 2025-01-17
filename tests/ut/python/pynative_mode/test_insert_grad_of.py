@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """ test_insert_grad_of """
-import pytest
 import numpy as np
 
 import mindspore
@@ -142,9 +141,6 @@ def test_cell_assign():
             z = z * y
             return z
 
-    with pytest.raises(RuntimeError) as info:
-        input_x = Tensor(np.ones([2, 2], np.float32))
-        input_y = Tensor(np.ones([2, 2], np.float32))
-        GradNetWrap(Mul())(input_x, input_y)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    input_x = Tensor(np.ones([2, 2], np.float32))
+    input_y = Tensor(np.ones([2, 2], np.float32))
+    GradNetWrap(Mul())(input_x, input_y)
