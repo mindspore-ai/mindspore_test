@@ -59,8 +59,8 @@ def conv_allow_tf32(value):
         >>> import mindspore as ms
         >>> ms.device_context.gpu.op_precision.conv_allow_tf32(False)
     """
-    if not function_status['matmul_allow_tf32']:
-        function_status['matmul_allow_tf32'] = True
+    if not function_status['conv_allow_tf32']:
+        function_status['conv_allow_tf32'] = True
         if not _is_supported():
             return
     GPUOpPrecisionConf.get_instance().conv_allow_tf32(value)
