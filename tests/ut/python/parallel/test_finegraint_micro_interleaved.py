@@ -397,7 +397,6 @@ def test_interleaved_two_matmul():
     phase = compile_net(net, x)
     _ = ParallelValidator(net, phase)
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_interleaved_two_matmul_2dtp():
     """
     Feature: test micro interleaved using two matmul
@@ -420,7 +419,6 @@ def test_interleaved_two_matmul_2dtp():
     phase = compile_net(net, x)
     _ = ParallelValidator(net, phase)
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_interleaved_with_reshape():
     """
     Feature: test micro interleaved using two matmul
@@ -578,7 +576,6 @@ def test_interleaved_with_layernorm():
     _ = compile_net(net, x)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_interleaved_with_transpose():
     """
     Feature: test micro interleaved

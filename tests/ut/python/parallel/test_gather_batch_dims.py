@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
@@ -131,7 +130,6 @@ def test_gather_2x2():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_2x2_sp():
     """
     Feature: distribute operator gather
@@ -151,7 +149,6 @@ def test_gather_2x2_sp():
     assert validator.check_node_attrs('AllReduce-0', rank_list)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_2x2_sp_grad_accu():
     """
     Feature: distribute operator gather
@@ -180,7 +177,6 @@ def test_gather_2x2_sp_grad_accu():
     assert validator.check_node_inputs_has('_VirtualAssignAdd-2', inputs_node)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_2x2_sp_reducescatter():
     """
     Feature: distribute operator gather
@@ -201,7 +197,6 @@ def test_gather_2x2_sp_reducescatter():
     assert validator.check_node_attrs('ReduceScatter-0', rank_list)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_2x2_sp_dynamic():
     """
     Feature: distribute operator gather

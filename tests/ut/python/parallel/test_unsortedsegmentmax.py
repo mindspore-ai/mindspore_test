@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 
 import mindspore as ms
@@ -77,7 +76,6 @@ def compile_graph(x, y, segments, strategy1, strategy2, auto=False):
     _cell_graph_executor.compile(net, x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_UnsortedSegmentMax_model_parallel_slice_1d():
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     x = Tensor(np.ones(8), ms.float32)
@@ -98,7 +96,6 @@ def test_UnsortedSegmentMax_model_parallel_no_slice_1d():
     compile_graph(x, y, num_segments, strategy1, strategy2)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_UnsortedSegmentMax_model_parallel_index_slice_2d():
     context.set_auto_parallel_context(device_num=4, global_rank=0)
     x = Tensor(np.ones((4, 8)), ms.float32)
@@ -129,7 +126,6 @@ def test_UnsortedSegmentMax_model_parallel_vector_slice_3d():
     compile_graph(x, y, num_segments, strategy1, strategy2)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_UnsortedSegmentMax_model_parallel_index_vector_slice_2d():
     context.set_auto_parallel_context(device_num=4, global_rank=0)
     x = Tensor(np.ones((4, 8)), ms.float32)
@@ -140,7 +136,6 @@ def test_UnsortedSegmentMax_model_parallel_index_vector_slice_2d():
     compile_graph(x, y, num_segments, strategy1, strategy2)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_UnsortedSegmentMax_model_parallel_index_vector_slice_3d():
     context.set_auto_parallel_context(device_num=4, global_rank=0)
     x = Tensor(np.ones((4, 4, 8)), ms.float32)
@@ -151,7 +146,6 @@ def test_UnsortedSegmentMax_model_parallel_index_vector_slice_3d():
     compile_graph(x, y, num_segments, strategy1, strategy2)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_UnsortedSegmentMax_model_parallel_float16():
     context.set_auto_parallel_context(device_num=4, global_rank=0)
     x = Tensor(np.ones((4, 4, 8)), ms.float16)
@@ -162,7 +156,6 @@ def test_UnsortedSegmentMax_model_parallel_float16():
     compile_graph(x, y, num_segments, strategy1, strategy2)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_UnsortedSegmentMax_model_parallel_int32():
     context.set_auto_parallel_context(device_num=4, global_rank=0)
     x = Tensor(np.ones((4, 4, 8)), ms.int32)

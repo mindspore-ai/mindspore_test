@@ -106,7 +106,6 @@ def test_gatherv2_semi_auto0():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_semi_auto1():
     """
     Feature: distribute operator gather in auto parallel.
@@ -121,7 +120,6 @@ def test_gatherv2_semi_auto1():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_semi_auto2():
     """
     Feature: distribute operator gather in auto parallel.
@@ -136,7 +134,6 @@ def test_gatherv2_semi_auto2():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_semi_auto3():
     """
     Feature: distribute operator gather in auto parallel.
@@ -165,7 +162,6 @@ def test_gatherv2_semi_auto4():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_semi_auto5():
     """
     Feature: distribute operator gather in auto parallel.
@@ -220,7 +216,6 @@ def test_gatherv2_semi_auto8():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_forward_all_reduce():
     """
     Feature: distribute operator gather in auto parallel.
@@ -236,7 +231,6 @@ def test_gatherv2_forward_all_reduce():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_shard_batch_and_axis():
     """
     Feature: distribute operator gather in auto parallel.
@@ -252,7 +246,6 @@ def test_gatherv2_shard_batch_and_axis():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_split_axis_0_repeat_calc():
     """
     Feature: distribute operator gather in auto parallel.
@@ -292,7 +285,6 @@ def test_gatherv2_auto1():
     compile_graph(net, 8, "auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_out_strategy_allreduce():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -308,7 +300,6 @@ def test_gatherv2_out_strategy_allreduce():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_out_strategy_allreduce_repeat_calc():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -324,7 +315,6 @@ def test_gatherv2_out_strategy_allreduce_repeat_calc():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_out_strategy_reducescatter():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -340,7 +330,6 @@ def test_gatherv2_out_strategy_reducescatter():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_out_strategy_reducescatter_repeat_calc():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -356,7 +345,6 @@ def test_gatherv2_out_strategy_reducescatter_repeat_calc():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_shard_batch_and_axis_out_strategy_allreduce():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -372,7 +360,6 @@ def test_gatherv2_shard_batch_and_axis_out_strategy_allreduce():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_shard_batch_and_axis_out_strategy_reducescatter():
     """
     Feature: distribute operator gather in semi auto parallel.

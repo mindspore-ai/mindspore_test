@@ -68,7 +68,6 @@ def compile_add_check_output(dir_name, net, x):
         ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt(has_bias):
     """
@@ -96,7 +95,6 @@ def test_batch_matmul_opt(has_bias):
     compile_add_check_output(dir_name, net, x)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt_with_mp_larger_than_ep(has_bias):
     """
@@ -123,7 +121,6 @@ def test_batch_matmul_opt_with_mp_larger_than_ep(has_bias):
     compile_add_check_output(dir_name, net, x)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt_with_outer_dp(has_bias):
     """
@@ -150,7 +147,6 @@ def test_batch_matmul_opt_with_outer_dp(has_bias):
     compile_add_check_output(dir_name, net, x)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt_with_sp(has_bias):
     """
