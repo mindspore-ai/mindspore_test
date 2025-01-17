@@ -22,18 +22,6 @@
 
 namespace mindspore {
 namespace {
-py::object GetPythonArg(const ValuePtr &grad) {
-  // Get _c_expression tensor
-  auto c_expression_tensor = ValueToPyData(grad);
-  // Get python tensor
-  return ConvertCTensorToPyTensor(c_expression_tensor);
-}
-
-ValuePtr GetCValue(const py::object &output) {
-  // Convert pyobject output to c++ tensor.
-  return ConvertPyObjectToCTensor(output);
-}
-
 py::object RunHook(uint64_t tensor_id, const py::function &hook, const py::object &arg) {
   if (hook.ptr() == nullptr) {
     MS_LOG(DEBUG) << "Hook for tensor id " << tensor_id << " have been deleted by python";
@@ -60,8 +48,8 @@ TensorBackwardHook::~TensorBackwardHook() { py::gil_scoped_acquire acquire_gil; 
 
 ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   py::gil_scoped_acquire acquire_gil;
-  auto py_args = GetPythonArg(grad);
-  auto ret = RunHook(tensor_id_, hook_, py_args);
-  return GetCValue(ret);
+  auto py_arg = CTensorToPyStubNodes(grad);
+  auto ret = RunHook(tensor_id_, hook_, py_arg);
+  return StubNodeToTensor(ret);
 }
 }  // namespace mindspore

@@ -118,6 +118,7 @@ void RegisterHook::RemoveTensorBackwardHook(uint64_t handle_id) {
     }
   }
   auto meta = it->second.first.lock();
+  (void)hook_meta_fn_map_.erase(it);
   if (meta == nullptr) {
     MS_LOG(DEBUG) << "Get null meta";
     return;
