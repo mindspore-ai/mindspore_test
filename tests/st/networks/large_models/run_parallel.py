@@ -21,11 +21,13 @@ import argparse
 import os
 import sys
 
+import numpy as np
+
 workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "networks/mindformers"))
 
 import mindspore as ms
-from mindspore import Tensor, Model
+from mindspore import Tensor, Model, mint
 from mindspore.common import initializer as init
 from mindspore.nn.utils import no_init_parameters
 
@@ -210,9 +212,180 @@ def parallel_qwen2_0_5b_predict_mp2_static():
             assert output_text == answer
 
 
+def parallel_qwen2_0_5b_parallel_decoding_mp2():
+    """test qwen2-0.5B predict in model_parallel=2 with dynamic shape"""
+    os.environ["MS_INTERNAL_DISABLE_CUSTOM_KERNEL_LIST"] = "PagedAttention,FlashAttentionScore"
+    os.environ["RUN_MODE"] = "predict"
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+    config_path = os.path.join(cur_dir, "qwen/configs/ci_predict_qwen2_0_5b_instruct.yaml")
+
+    load_checkpoint = "/home/workspace/mindspore_dataset/weight/ms_safetensor_qwen2_0.5/"
+
+    seq_length = 128
+    # init config with yaml
+    config = MindFormerConfig(config_path)
+    config.use_parallel = True
+    config.parallel.strategy_ckpt_config.save_file = "./qwen2_05b_dynamic_ckpt_strategy.ckpt"
+    config.load_ckpt_format = "safetensors"
+    config.parallel_config.model_parallel = 2
+    config.parallel_config.data_parallel = 1
+    config.parallel_config.pipeline_stage = 1
+    config.load_checkpoint = load_checkpoint
+    config.model.model_config.seq_length = seq_length
+    config.model.model_config.use_past = True
+    config.model.model_config.use_flash_attention = True
+    config.model.model_config.is_dynamic = True
+    config.model.model_config.parallel_decoding_params = {"parallel_decoding": "la"}
+
+    # init context
+    build_context(config)
+    build_parallel_config(config)
+
+    config.model.model_config.parallel_config = config.parallel_config
+    model_config = LlamaConfig(**config.model.model_config)
+    model_config.checkpoint_name_or_path = None
+
+    # build model
+    with no_init_parameters():
+        network = LlamaForCausalLM(model_config)
+    model = Model(network)
+
+    # load checkpoint
+    if config.load_checkpoint:
+        logger.info("----------------Transform and load checkpoint----------------")
+        batch_size = config.model.model_config.batch_size
+        input_ids = Tensor(shape=(batch_size, seq_length), dtype=ms.int32, init=init.One())
+        infer_data = network.prepare_inputs_for_predict_layout(input_ids)
+        transform_and_load_checkpoint(config, model, network, infer_data, do_predict=True)
+    network.set_dynamic_inputs()
+
+    # forward
+    inputs_list = []
+    for i in range(5):
+        bs = i + 1
+        seq_len = i + 2
+        token_num = bs * seq_len
+        batch_valid_length = seq_len if i == 0 else i + 3
+
+        input_ids = np.arange(0, token_num, dtype=np.int32)
+        input_ids[input_ids % (i + 1)] = 1
+        position_ids = np.arange(0, token_num, dtype=np.int32)
+        position_ids[position_ids % (i + 1)] = 0
+        spec_mask = np.arange(0, token_num * batch_valid_length, dtype=np.float16)
+        spec_mask[spec_mask % (i + 1) != 0] = 0
+
+        inputs = {
+            "input_ids": input_ids,
+            "valid_length_each_example": np.array([batch_valid_length] * bs, np.int32),
+            "block_tables": np.arange(0, stop=int(model_config.num_blocks // bs * bs), dtype=np.int32).reshape(bs, -1),
+            "slot_mapping": np.arange(0, stop=token_num, dtype=np.int32),
+            "position_ids": position_ids,
+            "spec_mask": spec_mask.reshape(token_num, batch_valid_length),
+            "q_seq_lens": np.array([seq_len] * bs, np.int32),
+            "use_past": True,
+            "prefill": i == 0,
+        }
+        inputs_list.append(inputs)
+
+    expect_list = [
+        np.array([
+            [24184, 18493],
+        ], np.int32),
+        np.array([
+            [1, 91997],
+            [1, 91997],
+            [1, 698],
+            [121487, 235],
+            [95655, 95113],
+            [110616, 9179],
+        ], np.int32),
+        np.array([
+            [1, 698],
+            [1, 3],
+            [1, 698],
+            [1, 698],
+            [95655, 95113],
+            [110616, 9179],
+            [34509, 46423],
+            [69183, 75116],
+            [3591, 116053],
+            [112738, 13845],
+            [13, 220],
+            [56852, 87973],
+        ], np.int32),
+        np.array([
+            [3014, 1],
+            [3014, 220],
+            [38646, 10892],
+            [3014, 220],
+            [67, 35],
+            [110616, 9179],
+            [34509, 46423],
+            [69183, 75116],
+            [3591, 116053],
+            [112738, 19310],
+            [13, 220],
+            [56852, 87973],
+            [75116, 75694],
+            [103351, 101724],
+            [100239, 26797],
+            [50238, 131275],
+            [62785, 26916],
+            [104512, 2742],
+            [24695, 101911],
+            [19264, 32638],
+        ], np.int32),
+        np.array([
+            [16, 17],
+            [12, 220],
+            [2130, 16],
+            [12, 220],
+            [220, 15],
+            [68590, 33624],
+            [34509, 46423],
+            [69183, 75116],
+            [3591, 116053],
+            [112738, 19310],
+            [13, 220],
+            [56852, 87973],
+            [75116, 75694],
+            [103351, 101724],
+            [100239, 26797],
+            [50238, 131275],
+            [62785, 26916],
+            [104512, 2742],
+            [24695, 101911],
+            [19264, 32638],
+            [10, 13],
+            [102608, 115698],
+            [90867, 10402],
+            [8937, 102347],
+            [60919, 9442],
+            [30858, 93304],
+            [13, 220],
+            [75116, 94892],
+            [106004, 114898],
+            [17, 94443],
+        ], np.int32),
+    ]
+    for inputs, expect in zip(inputs_list, expect_list):
+        res, _ = network.forward(**inputs)
+        _, indices = mint.topk(res, 2)
+        print(f'res {res.shape}\n', res)
+        print(f'indices {indices.shape}\n', indices)
+        if inputs["prefill"]:
+            expect_shape = (inputs["valid_length_each_example"].shape[0], model_config.vocab_size)
+        else:
+            expect_shape = (inputs["input_ids"].shape[0], model_config.vocab_size)
+        print(f'expect_shape {expect_shape}')
+        assert res.shape == expect_shape
+        assert np.allclose(indices.numpy().astype(np.int32), expect, atol=1e-3)
+
+
 TEST_MAP = {
     'parallel_qwen2_0_5b_predict_mp2': parallel_qwen2_0_5b_predict_mp2,
     'parallel_qwen2_0_5b_predict_mp2_static': parallel_qwen2_0_5b_predict_mp2_static,
+    'parallel_qwen2_0_5b_parallel_decoding_mp2': parallel_qwen2_0_5b_parallel_decoding_mp2,
 }
 
 if __name__ == '__main__':
