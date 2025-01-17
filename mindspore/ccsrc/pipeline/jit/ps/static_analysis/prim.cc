@@ -188,7 +188,7 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
 
 AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
-  if (abs->isa<abstract::AbstractRefTensor>()) {
+  if (abs->isa<abstract::AbstractRefTensor>() || abs->isa<abstract::AbstractNone>()) {
     return abs;
   }
   auto tensor_abs = dyn_cast<abstract::AbstractTensor>(abs);
