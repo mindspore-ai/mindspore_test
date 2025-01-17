@@ -15,7 +15,7 @@ mindspore.mint.nn.functional.hardshrink
 
     HardShrink激活函数图：
 
-    .. image:: ../images/HardShrink.png
+    .. image:: ../images/Hardshrink.png
         :align: center
 
     参数：
