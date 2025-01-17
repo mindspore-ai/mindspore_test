@@ -1032,7 +1032,8 @@ size_t AbstractDynamicMemPool::UsedMemPeakStatistics() const { return mem_stat_.
 size_t AbstractDynamicMemPool::MaxMemAllocatedStatistics() const { return mem_stat_.temp_peak_size_; }
 
 size_t AbstractDynamicMemPool::MaxMemReservedStatistics() const {
-  return mem_stat_.alloc_size_ - mem_stat_.temp_alloc_size_;
+  return enable_vmm_ ? GetVmmUsedMemSize() - mem_stat_.temp_alloc_size_
+                     : mem_stat_.alloc_size_ - mem_stat_.temp_alloc_size_;
 }
 
 size_t AbstractDynamicMemPool::ActualPeakStatistics() const {
@@ -1110,7 +1111,7 @@ AbstractDynamicMemPool::PersistentMemBlocksInfoStatistics() const {
 
 void AbstractDynamicMemPool::ResetMaxMemReserved() {
   LockGuard lock(lock_);
-  mem_stat_.temp_alloc_size_ = mem_stat_.alloc_size_;
+  mem_stat_.temp_alloc_size_ = enable_vmm_ ? GetVmmUsedMemSize() : mem_stat_.alloc_size_;
 }
 
 void AbstractDynamicMemPool::ResetMaxMemAllocated() {

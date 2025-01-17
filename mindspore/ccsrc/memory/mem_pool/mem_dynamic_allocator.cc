@@ -1444,6 +1444,9 @@ size_t DynamicMemPoolBestFit::MaxMemAllocatedStatistics() const {
   return common_mem_->mps_.temp_used_mem_peak_size_ + persistent_mem_->mps_.temp_used_mem_peak_size_;
 }
 size_t DynamicMemPoolBestFit::MaxMemReservedStatistics() const {
+  if (IsEnableVmm()) {
+    return GetVmmUsedMemSize() - common_mem_->mps_.temp_total_mem_size_;
+  }
   return common_mem_->mps_.total_mem_size_ + persistent_mem_->mps_.total_mem_size_ -
          common_mem_->mps_.temp_total_mem_size_ - persistent_mem_->mps_.temp_total_mem_size_;
 }
@@ -1478,8 +1481,13 @@ DynamicMemPoolBestFit::PersistentMemBlocksInfoStatistics() const {
   return ExtractBlocksListInfo(persistent_mem_);
 }
 void DynamicMemPoolBestFit::ResetMaxMemReserved() {
-  common_mem_->mps_.temp_total_mem_size_ = common_mem_->mps_.total_mem_size_;
-  persistent_mem_->mps_.temp_total_mem_size_ = persistent_mem_->mps_.total_mem_size_;
+  if (enable_vmm_) {
+    common_mem_->mps_.temp_total_mem_size_ = GetVmmUsedMemSize();
+    persistent_mem_->mps_.temp_total_mem_size_ = GetVmmUsedMemSize();
+  } else {
+    common_mem_->mps_.temp_total_mem_size_ = common_mem_->mps_.total_mem_size_;
+    persistent_mem_->mps_.temp_total_mem_size_ = persistent_mem_->mps_.total_mem_size_;
+  }
 }
 void DynamicMemPoolBestFit::ResetMaxMemAllocated() {
   common_mem_->mps_.temp_total_used_mem_size_ = common_mem_->mps_.total_used_mem_size_;
