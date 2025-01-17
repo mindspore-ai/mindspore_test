@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@
 
 namespace mindspore::graphkernel {
 const std::unordered_set<std::string> &ProactiveFallbackExpander::GetFallbackOps() {
-  static const std::unordered_set<std::string> fallback_ops_list_ = {
-    "SumExt", "OnesLikeExt", "ZerosLikeExt", "BatchMatMulExt", "MatMulExt", "ClampScalar", "ClampTensor"};
+  static const std::unordered_set<std::string> fallback_ops_list_ = {"OnesLikeExt", "ZerosLikeExt", "BatchMatMulExt",
+                                                                     "MatMulExt",   "ClampScalar",  "ClampTensor"};
   return fallback_ops_list_;
 }
 
