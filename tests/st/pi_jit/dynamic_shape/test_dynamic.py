@@ -1,4 +1,3 @@
-from mindspore._c_expression import update_pijit_default_config
 from mindspore.nn import Cell
 from mindspore import ops
 from mindspore import context, jit

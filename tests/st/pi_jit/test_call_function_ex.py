@@ -17,8 +17,8 @@ import sys
 import pytest
 import mindspore.context as context
 from tests.mark_utils import arg_mark
-from mindspore import Tensor, jit, JitConfig
-from mindspore._c_expression import update_pijit_default_config, get_code_extra
+from mindspore import Tensor, jit
+from mindspore._c_expression import get_code_extra
 
 
 SYS_VER = (sys.version_info.major, sys.version_info.minor)

@@ -337,7 +337,7 @@ void GraphJitConfig::Update(const py::object &c) {
         continue;
       }
     }
-    MS_LOG(WARNING) << "unknown PIJit options: " << std::string(py::str(key)) << ":" << std::string(py::str(value));
+    MS_LOG(WARNING) << "Unknown PIJit option: " << std::string(py::str(key)) << ":" << std::string(py::str(value));
   }
 }
 
