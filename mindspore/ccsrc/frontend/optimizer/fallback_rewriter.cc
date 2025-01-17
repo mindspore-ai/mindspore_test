@@ -2236,6 +2236,26 @@ class AfterOptARewriter : public BaseRewriter {
                                                  key_value_tuple, key_value_tuple->debug_info());
   }
 
+  AnfNodePtr ConvertEllipsisToPyExecute(const FuncGraphPtr &func_graph) {
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto str_value = std::make_shared<StringImm>("...");
+    auto str_none = std::make_shared<StringImm>("None");
+    auto script_node = NewValueNode(str_value);
+
+    std::vector<ValuePtr> none_value{str_none};
+    const auto none_tuple = std::make_shared<ValueTuple>(none_value);
+    auto none_tuple_node = NewValueNode(none_tuple);
+    AbstractBasePtrList abs_list{std::make_shared<abstract::AbstractScalar>(MakeValue("None"))};
+    none_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abs_list));
+
+    AnfNodePtr ellipsis_execute_node = fallback::CreatePyExecuteCNodeInOrder(
+      func_graph, script_node, none_tuple_node, none_tuple_node, none_tuple_node->debug_info());
+    MS_LOG(DEBUG) << "ellipsis_execute_node:" << ellipsis_execute_node->DebugString();
+
+    set_need_renormalized(true);
+    return ellipsis_execute_node;
+  }
+
   AnfNodePtr GetPyExecuteFromValue(const FuncGraphPtr &fg, const ValueNodePtr &value_node, const ValuePtr &value,
                                    bool py_execute_input) {
     MS_EXCEPTION_IF_NULL(fg);
@@ -2286,6 +2306,9 @@ class AfterOptARewriter : public BaseRewriter {
     }
     if (value->isa<ValueSlice>()) {
       return ConvertValueSlice(fg, value_node, value->cast<ValueSlicePtr>());
+    }
+    if (value->isa<Ellipsis>()) {
+      return ConvertEllipsisToPyExecute(fg);
     }
     return value_node;
   }
