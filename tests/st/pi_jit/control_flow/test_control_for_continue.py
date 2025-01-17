@@ -180,8 +180,8 @@ def test_control_flow_for_enumerate_if_continue():
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForEnumerateIfContinue(t1, t2, t3)
-    cfg = {"compile_by_trace": False} # One-stage will fix it later
-    pi_jit_with_config(function=CtrlForEnumerateIfContinue.construct, jit_config=cfg)(pi_net, x)
+    # One-stage will fix it later
+    pi_jit_with_config(fn=CtrlForEnumerateIfContinue.construct)(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 

@@ -24,7 +24,6 @@ from tests.st.pi_jit.share.utils import pi_jit_with_config
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
     "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph

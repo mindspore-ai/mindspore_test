@@ -28,7 +28,6 @@ cfg = {
     "print_bb": False,
     "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
-    "compile_by_trace": True
 }
 
 

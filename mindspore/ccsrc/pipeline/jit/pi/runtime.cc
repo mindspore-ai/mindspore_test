@@ -41,7 +41,6 @@
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/shape_ctx.h"
 #include "pipeline/jit/pi/capture_context.h"
-#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -426,7 +425,6 @@ static void GraphCapture(JitCompileResults *jcr) {
   MS_EXCEPTION_IF_NULL(jcr->code());
 
   GraphJitConfig &conf = *jcr->conf();
-  AObject::SetTraceFlag(conf.GetBoolConfig(GraphJitConfig::kTraceFlag));
   GraphBuilderPtr g = TraceRun(jcr);
   if (HandleUnsupportedSyntax(jcr, g)) {
     return;
@@ -447,10 +445,8 @@ static void GraphCapture(JitCompileResults *jcr) {
   // dump DFG
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
     g->DumpDFG();
-    if (conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-      const auto &debug_str = analyzer->GetCaptureInfo().ToString();
-      PY_PRINT_F("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
-    }
+    const auto &debug_str = analyzer->GetCaptureInfo().ToString();
+    PY_PRINT_F("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
   }
 
   py::object new_code = MakeCodeFromCodeGen(g, analyzer, jcr->origin_frame().Globals().ptr());
@@ -466,11 +462,6 @@ static void GraphCapture(JitCompileResults *jcr) {
 
   // collect stop trace reason to traceback
   jcr->tbs()->PushStopTraceRes(g->GetGraph()->GetCodeName(), g->GetGraph()->GetStopTraceReason());
-
-  bool captured = !analyzer->NeedInterpret() && !conf.GetBoolConfig(GraphJitConfig::kInterpretCapturedCode);
-  if (captured && !jcr->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-    jcr->set_stat(JitCompileResults::GRAPH_CAPTURED);
-  }
 }
 
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode) {
@@ -621,28 +612,26 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     auto aobject_resource = AObject::MakeResource();
     bool enable_dynamicshape = c->conf()->GetBoolConfig(GraphJitConfig::kEnableDynamicShape);
     std::vector<PyObject *> backup;
-    if (c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-      GuardForFrame(frame, c->code(), *c->conf());
-      OptStrategy::MakeGCStrategy(c->codehub(), c->conf()->getIntConfig(GraphJitConfig::kLimitGraphSize),
-                                  c->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
-                                  c->code());
-      if (enable_dynamicshape) {
-        backup = c->code()->GetGuard()->ApplyDynamicShape(frame.frame());
+    GuardForFrame(frame, c->code(), *c->conf());
+    OptStrategy::MakeGCStrategy(c->codehub(), c->conf()->getIntConfig(GraphJitConfig::kLimitGraphSize),
+                                c->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
+                                c->code());
+    if (enable_dynamicshape) {
+      backup = c->code()->GetGuard()->ApplyDynamicShape(frame.frame());
 #if !IS_PYTHON_3_11_PLUS
-        PyFrame_FastToLocals(frame.frame());
+      PyFrame_FastToLocals(frame.frame());
 #endif
-      }
     }
+
     GraphCapture(c);
-    if (c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-      if (enable_dynamicshape) {
-        c->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
+
+    if (enable_dynamicshape) {
+      c->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
 #if !IS_PYTHON_3_11_PLUS
-        PyFrame_FastToLocals(frame.frame());
+      PyFrame_FastToLocals(frame.frame());
 #endif
-      }
-      AddGuardForGlobals(frame, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
     }
+    AddGuardForGlobals(frame, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
     aobject_resource.Release();
   }
   sc.ApplySignature();
@@ -668,37 +657,6 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     return false;
   }
   return true;
-}
-
-static py::object ResultMutable(py::object obj) {
-  py::object mutable_func = Utils::GetModuleAttr("mindspore.common", "mutable", false, true);
-  if (py::isinstance<py::tuple>(obj)) {
-    auto tuple_obj = obj.cast<py::tuple>();
-    py::list mutable_list(tuple_obj);
-    for (size_t i = 0; i < tuple_obj.size(); i++) {
-      try {
-        auto mutable_element = mutable_func(tuple_obj[i]);
-        mutable_list[i] = mutable_element;
-      } catch (py::error_already_set &e) {
-        if (PyErr_Occurred()) {
-          PyErr_Clear();
-        }
-        continue;
-      }
-    }
-    auto mutable_tuple = py::tuple(mutable_list);
-    return mutable_tuple;
-  } else {
-    try {
-      auto mutable_obj = mutable_func(obj);
-      return mutable_obj;
-    } catch (py::error_already_set &e) {
-      if (PyErr_Occurred()) {
-        PyErr_Clear();
-      }
-    }
-  }
-  return obj;
 }
 
 static py::object CallGraph(const JitCompileResults *c, const py::object &args, const py::object &kwvargs) {
@@ -731,11 +689,7 @@ static py::object CallGraph(const JitCompileResults *c, const py::object &args, 
   if (res == NULL && !PyErr_Occurred()) {
     PyErr_SetString(PyExc_RuntimeError, "compiled graph execute failed");
   }
-  auto res_obj = py::reinterpret_steal<py::object>(res);
-  if (!c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-    return ResultMutable(res_obj);
-  }
-  return res_obj;
+  return py::reinterpret_steal<py::object>(res);
 }
 
 static py::object CallCompiledCallable(PyThreadState *tstate, const PyFrameWrapper &f, const JitCompileResults *c) {
@@ -757,133 +711,6 @@ static py::object CallCompiledCallable(PyThreadState *tstate, const PyFrameWrapp
     PyErr_Format(PyExc_RuntimeError, "compiled function failed with unknown error");
   }
   return py::reinterpret_steal<py::object>(res);
-}
-
-static bool CheckTensorInContainer(py::object args) {
-  if (py::isinstance<py::tuple>(args)) {
-    py::tuple t = py::cast<py::tuple>(args);
-    for (size_t i = 0; i < t.size(); ++i) {
-      if (CheckTensorInContainer(t[i])) {
-        return true;
-      }
-    }
-  } else if (py::isinstance<py::list>(args)) {
-    py::list l = py::cast<py::list>(args);
-    for (size_t i = 0; i < l.size(); ++i) {
-      if (CheckTensorInContainer(l[i])) {
-        return true;
-      }
-    }
-  }
-  if (IsStubTensor(args) || tensor::IsTensorPy(args)) {
-    return true;
-  }
-  return false;
-}
-
-static bool CheckAbstract(abstract::AbstractBasePtr abs, bool incontainer);
-
-static bool CheckContainer(abstract::AbstractBasePtr abs) {
-  if (abs->isa<abstract::AbstractTuple>()) {
-    auto elems = abs->cast<abstract::AbstractTuplePtr>()->elements();
-    for (size_t idx = 0; idx < elems.size(); ++idx) {
-      if (!CheckAbstract(elems[idx], true)) {
-        return false;
-      }
-    }
-  }
-  if (abs->isa<abstract::AbstractList>()) {
-    auto elems = abs->cast<abstract::AbstractListPtr>()->elements();
-    for (size_t idx = 0; idx < elems.size(); ++idx) {
-      if (!CheckAbstract(elems[idx], true)) {
-        return false;
-      }
-    }
-  }
-  if (abs->isa<abstract::AbstractSequence>()) {
-    auto elems = abs->cast<abstract::AbstractSequencePtr>()->elements();
-    for (size_t idx = 0; idx < elems.size(); ++idx) {
-      if (!CheckAbstract(elems[idx], true)) {
-        return false;
-      }
-    }
-  }
-  if (abs->isa<abstract::AbstractDictionary>()) {
-    auto elems = abs->cast<abstract::AbstractDictionaryPtr>()->elements();
-    for (size_t idx = 0; idx < elems.size(); ++idx) {
-      if (!CheckAbstract(elems[idx].first, true) || !CheckAbstract(elems[idx].first, true)) {
-        return false;
-      }
-    }
-  }
-  if (abs->isa<abstract::AbstractSlice>()) {
-    auto slice = abs->cast<abstract::AbstractSlicePtr>();
-    return !CheckAbstract(slice->start(), true) || !CheckAbstract(slice->stop(), true) ||
-           !CheckAbstract(slice->step(), true);
-  }
-  return true;
-}
-
-static bool CheckAbstract(abstract::AbstractBasePtr abs, bool incontainer) {
-  if (incontainer && abs->isa<abstract::AbstractAny>()) {
-    return false;
-  }
-  if (abs->isa<abstract::AbstractTuple>() || abs->isa<abstract::AbstractList>() ||
-      abs->isa<abstract::AbstractSequence>() || abs->isa<abstract::AbstractDictionary>() ||
-      abs->isa<abstract::AbstractSlice>()) {
-    return CheckContainer(abs);
-  }
-  if (abs->isa<abstract::AbstractNone>() || abs->isa<abstract::AbstractNull>() || abs->isa<abstract::AbstractType>() ||
-      abs->isa<abstract::AbstractFunction>() || abs->isa<abstract::AbstractAny>()) {
-    return false;
-  }
-  if (abs->isa<abstract::AbstractScalar>()) {
-    auto tp = abs->GetTypeTrack()->type_id();
-    return tp != kMetaTypeNone && tp != kMetaTypeNull && tp != kNumberTypeBool;
-  }
-  return true;
-}
-
-static bool CheckValidReturn(const JitCompileResults *c) {
-  auto graph_executor = pipeline::GetExecutor();
-  FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(c->code()->GetPhase());
-  auto abs = ms_func_graph->output()->abstract();
-  return CheckAbstract(abs, false);
-}
-
-static bool PreferCallGraph(const JitCompileResults *c, py::object args) {
-  if (c->code()->GetNativeFunc() == nullptr) {
-    return false;
-  }
-  if (c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-    return true;
-  }
-  if (!CheckValidReturn(c)) {
-    return false;
-  }
-  py::tuple t = py::cast<py::tuple>(args);
-  for (size_t i = 0; i < t.size(); ++i) {
-    py::object obj = t[i];
-    if (IsMutableObj(obj)) {
-      continue;
-    }
-    if ((py::isinstance<py::list>(t[i]) || py::isinstance<py::tuple>(t[i])) && CheckTensorInContainer(t[i])) {
-      return false;
-    }
-  }
-  OptStrategy::ExecKind stat = OptStrategy::ExecKind::kExecGraph;
-  if (c->conf()->GetBoolConfig(GraphJitConfig::kPerfStatistics)) {
-    constexpr auto kStatisticsScale = 10000.0;
-    int scale_statistics = c->conf()->getIntConfig(GraphJitConfig::kPerfStatisticsScale10000x);
-    stat = OptStrategy::MakeExecStrategyByPerf(
-      c->code()->GetPerf(OptPerf::PerfKind::kPerfGraph), c->code()->GetPerf(OptPerf::PerfKind::kPerfPyNative),
-      c->conf()->getIntConfig(GraphJitConfig::kPerfStatisticsCount), scale_statistics / kStatisticsScale);
-  }
-  int graph_bytecode_min = c->conf()->getIntConfig(GraphJitConfig::kStaticGraphBytecodeMin);
-  if (graph_bytecode_min > 0 && stat == OptStrategy::ExecKind::kExecGraph) {
-    stat = OptStrategy::MakeExecStrategyByComplex(c->code()->GetPythonCode(), graph_bytecode_min);
-  }
-  return stat == OptStrategy::ExecKind::kExecGraph;
 }
 
 static void SetExecStatus(const JitCompileResults *c, const PyFrameWrapper &f, bool graph_preferred) {
@@ -911,7 +738,7 @@ static py::object CallCompiledResults(PyThreadState *tstate, const PyFrameWrappe
 
   py::object args = py::reinterpret_steal<py::object>(PyList_AsTuple(packed_args[0].ptr()));
   py::object kwvargs = packed_args[2];
-  bool graph_preferred = PreferCallGraph(c, args);
+  bool graph_preferred = c->code()->GetNativeFunc() != nullptr;
   SetExecStatus(c, f, graph_preferred);
   py::object res;
   if (!graph_preferred) {
@@ -1249,12 +1076,6 @@ bool pi_jit_should_compile(const py::handle &funcHandle, const py::handle &tag, 
   }
   c->set_input_signature(py::reinterpret_borrow<py::object>(signature));
   auto new_config = mindspore::pijit::GraphJitConfig(py::reinterpret_borrow<py::object>(tag));
-  // When switching between one-stage and two-stage, reset the config.
-  if (c->conf()->GetBoolConfig(pijit::GraphJitConfig::kTraceFlag) !=
-      new_config.GetBoolConfig(pijit::GraphJitConfig::kTraceFlag)) {
-    c->set_code(nullptr);
-    c->set_codehub(std::make_shared<pijit::OptCodeHub>());
-  }
   if (c->stat() != mindspore::pijit::JitCompileResults::NEVER_COMPILE) {
     *c->conf() = new_config;
     return true;

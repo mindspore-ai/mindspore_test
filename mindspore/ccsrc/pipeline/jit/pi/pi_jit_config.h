@@ -60,7 +60,6 @@ class GraphJitConfig {
     kFeatureBreakAtInlinedFunction,
     kEnableDynamicShape,
     kEnableMsApiInfer,
-    kTraceFlag,
     kSkipException,
     kPIJitContextMode,
     kExpandGraphInput,

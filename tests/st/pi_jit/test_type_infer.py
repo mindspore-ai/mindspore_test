@@ -43,8 +43,7 @@ class Obj:
     def func(self):
         return 1
 
-
-@pi_jit_with_config(jit_config={"compile_by_trace": False}) # One-stage will fix it later
+@jit(capture_mode="bytecode") # One-stage will fix it later
 def func(self, x):
     tpe = kw_inline_test()
     lst = list(tpe)

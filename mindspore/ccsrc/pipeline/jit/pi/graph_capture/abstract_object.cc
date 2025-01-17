@@ -68,7 +68,6 @@ static const std::set<AObject::Type> kMsSupportedType = {
 };
 
 std::vector<AbstractObjectBase::Resource *> AbstractObjectBase::Resource::weak_this_;
-bool AbstractObjectBase::trace_flag_ = false;
 
 AbstractObjectBase::Resource::Resource() : pool_(__FILE__, __LINE__, "AObject") {
   MS_EXCEPTION_IF_CHECK_FAIL(weak_this_.empty(), "can't reentrant");
@@ -1441,45 +1440,7 @@ py::object AbstractList::GetPyObject() {
   return value_;
 }
 
-bool AbstractDict::Update() {
-  if (trace_flag_) {
-    return true;
-  }
-  value_ = py::object();
-  for (auto i : this->write_cache_) {
-    PyObject *key = i.first == nullptr ? nullptr : i.first->GetPyObject().ptr();
-    if (key == nullptr || -1 == PyDict_SetItem(dict_.ptr(), key, ConvertValue(i.second).ptr())) {
-      MarkElementInValid();
-      PyErr_Clear();
-      return false;
-    }
-  }
-  this->write_cache_.clear();
-  // copy it
-  value_ = py::dict();
-  PyObject *k;
-  PyObject *v;
-  Py_ssize_t p = 0;
-  bool init_element_type = false;
-  while (PyDict_Next(dict_.ptr(), &p, &k, &v)) {
-    AObject *i = ConvertValue(v);
-    py::object item = i != nullptr ? i->GetPyObject() : py::object();
-    if (item.ptr() == nullptr) {
-      value_ = py::object();
-      break;
-    }
-    PyDict_SetItem(value_.ptr(), k, item.ptr());
-    if (init_element_type) {
-      k_type_ = k_type_ == GetPyType(k) ? k_type_ : kTypeAnyValue;
-      v_type_ = v_type_ == i->GetType() ? v_type_ : kTypeAnyValue;
-    } else {
-      k_type_ = GetPyType(k);
-      v_type_ = i->GetType();
-      init_element_type = true;
-    }
-  }
-  return true;
-}
+bool AbstractDict::Update() { return true; }
 
 py::object AbstractDict::GetPyObject() {
   if (!IsElementValid()) {

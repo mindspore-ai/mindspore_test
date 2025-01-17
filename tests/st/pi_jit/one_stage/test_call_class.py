@@ -19,11 +19,6 @@ from mindspore import context
 from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-        
-cfg = {
-    "compile_by_trace": True,
-}
-
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_tensor():
@@ -39,8 +34,7 @@ def test_create_tensor():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-    actual = pi_jit_with_config(fn, jit_config=cfg)()
-
+    actual = jit(fn, capture_mode="bytecode")()
     match_array(actual.asnumpy(), expect.asnumpy())
     assert_executed_by_graph_mode(fn)
 
@@ -60,7 +54,7 @@ def test_create_tensor_list():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-    actual = pi_jit_with_config(fn, jit_config=cfg)()
+    actual = jit(fn, capture_mode="bytecode")()
 
     assert isinstance(actual, list)
     assert len(actual) == 2
@@ -82,7 +76,7 @@ def test_create_tensor_by_ms_api():
     context.set_context(mode=context.PYNATIVE_MODE)
     expect = fn()
 
-    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    fn = jit(fn, mode="PIJit")
     actual = fn()
 
     match_array(actual.asnumpy(), expect.asnumpy())
