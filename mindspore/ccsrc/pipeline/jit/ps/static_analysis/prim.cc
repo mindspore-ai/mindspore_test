@@ -2872,12 +2872,16 @@ CNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim, const FuncGraphP
     // Process arg_handler.
     for (size_t i = 0; i < op_init_args.size(); ++i) {
       auto abs_node = eval_func(init_nodes[i]);
-      init_nodes[i] = GetNodeAfterArgHandler(init_nodes[i], prim_name, op_init_args[i], abs_node, graph);
+      if (!prim->HasAttr("Converted")) {
+        init_nodes[i] = GetNodeAfterArgHandler(init_nodes[i], prim_name, op_init_args[i], abs_node, graph);
+      }
     }
   }
   for (size_t i = 0; i < op_call_args.size(); ++i) {
     auto abs_node = eval_func(call_nodes[i]);
-    call_nodes[i] = GetNodeAfterArgHandler(call_nodes[i], prim_name, op_call_args[i], abs_node, graph);
+    if (!prim->HasAttr("Converted")) {
+      call_nodes[i] = GetNodeAfterArgHandler(call_nodes[i], prim_name, op_call_args[i], abs_node, graph);
+    }
   }
 
   // Check args type and do type conversion.
