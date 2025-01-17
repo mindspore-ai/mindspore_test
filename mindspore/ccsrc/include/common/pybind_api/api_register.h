@@ -68,10 +68,8 @@ void RegPyNativeExecutor(const py::module *m);
 void RegisterPyBoostFunction(py::module *m);
 void RegisterCustomizeFunction(py::module *m);
 void RegisterFunctional(py::module *m);
-}  // namespace pynative
-namespace kernel::pyboost {
 void RegDirectOps(py::module *m);
-}
+}  // namespace pynative
 
 namespace pijit {
 void RegPIJitInterface(py::module *m);

@@ -17,10 +17,10 @@
 #include "pybind_api/ops/direct_ops.h"
 #include "include/common/pybind_api/api_register.h"
 
-namespace mindspore::kernel::pyboost {
+namespace mindspore::pynative {
 void RegDirectOps(py::module *m) {
-  m->def("pyboost_empty", &mindspore::kernel::pyboost::Empty, "Empty");
-  m->def("pyboost_empty_like", &mindspore::kernel::pyboost::EmptyLike, "EmptyLike");
-  m->def("pyboost_new_empty", &mindspore::kernel::pyboost::NewEmpty, "NewEmpty");
+  m->def("pyboost_empty", &mindspore::pynative::Empty, "Empty");
+  m->def("pyboost_empty_like", &mindspore::pynative::EmptyLike, "EmptyLike");
+  m->def("pyboost_new_empty", &mindspore::pynative::NewEmpty, "NewEmpty");
 }
-}  // namespace mindspore::kernel::pyboost
+}  // namespace mindspore::pynative

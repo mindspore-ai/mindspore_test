@@ -535,7 +535,7 @@ def reverse(x, axis):
     return flip(x, axis)
 
 
-def empty(size, *, dtype=None, device=None):
+def empty(*size, dtype=None, device=None):
     r"""
     Creates a tensor with uninitialized data, whose shape, dtype and device are described by the argument `size`,
     `dtype` and `device` respectively.

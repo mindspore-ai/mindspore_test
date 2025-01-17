@@ -200,7 +200,7 @@ void RegModule(py::module *m) {
   mindspore::pynative::RegisterPyBoostFunction(m);
   mindspore::pynative::RegisterCustomizeFunction(m);
   mindspore::pynative::RegisterFunctional(m);
-  mindspore::kernel::pyboost::RegDirectOps(m);
+  mindspore::pynative::RegDirectOps(m);
   mindspore::pijit::RegPIJitInterface(m);
   mindspore::prim::RegCompositeOpsGroup(m);
   mindspore::profiler::RegProfilerManager(m);
