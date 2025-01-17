@@ -145,9 +145,9 @@ class GraphBuilder {
    * \param[out] has_kw this call has key-word arguments
    * \return false if can't generate unpack operations
    */
-  virtual bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw, CallNode *call_node);
+  bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw, CallNode *call_node);
 
-  virtual bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node);
+  bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node);
 
   bool UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *params, CallNode *call_node, ValueNode *dict_node);
   // generate the general unpack operations of dict, return operations
@@ -161,7 +161,7 @@ class GraphBuilder {
    * \param[out] extra_oper the move operations to move parameters to locals
    * \return false if parameters is illegal
    */
-  virtual bool HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame);
+  bool HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame);
 
   /**
    * Pack key-word parameters to dict, unpack the position arguments by key from the dict.
@@ -181,7 +181,7 @@ class GraphBuilder {
   /**
    * Use the call stack without key-word arguments to fill the frame locals
    */
-  virtual bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame);
+  bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame);
 
   // build subgraph, return stop trace reason
   virtual StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
@@ -189,8 +189,10 @@ class GraphBuilder {
 
   bool ReplaceCall(CallNode *call_node, const py::object &func);
 
-  // build abstract instance of python class
-  virtual ValueNode *HandleCallClass(CallNode *call_node);
+  ValueNode *BuildCallClassNode(CallNode *call_node);
+
+  ValueNode *HandleCallClass(CallNode *call_node);
+
   bool HandleCallTensorClass(CallNode *call_node);
 
   // return false if has unsupported bytecode
@@ -265,7 +267,7 @@ class GraphBuilder {
   void DoLoadGlobal(const Instr &instr);
   bool DoGlobalAccess(const Instr &instr);
   bool DoAttrAccess(const Instr &instr);
-  virtual ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr);
+  ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr);
   bool DoGetItem(const Instr &instr);
   bool DoGetItemWithByteCode(const Instr &instr);
 
@@ -413,15 +415,6 @@ class MindGraphBuilder : public GraphBuilder {
   StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                 const GraphBuilderPtr &subgraph) override;
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
-
- protected:
-  ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr) override;
-  bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
-  bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
-                          CallNode *call_node) override;
-  bool HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
-  bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) override;
-  ValueNode *HandleCallClass(CallNode *call_node) override;
 };
 }  // namespace pijit
 }  // namespace mindspore

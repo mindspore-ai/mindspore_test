@@ -1074,10 +1074,6 @@ std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject
 #endif
 }
 
-ValueNode *GraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
-  return NewValueNode(target_node->get_attr(instr.name()), instr, {target_node});
-}
-
 ValueNode *GraphBuilder::DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr) {
   if (node->GetVobj() == nullptr || node->GetVobj()->GetPyObject().ptr() == nullptr ||
       node->GetVobj()->GetType() != AbstractObjectBase::kTypeCell) {
@@ -2410,7 +2406,7 @@ static py::object FilterCTensorInZip(AObject *vobj, py::object obj) {
   }
 }
 
-ValueNode *GraphBuilder::HandleCallClass(CallNode *call_node) {
+ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
   AObject *vobj = call_node->input(0)->GetVobj();
   if (!vobj || vobj->GetType() != AObject::kTypeType) {
     return nullptr;
@@ -2972,31 +2968,6 @@ bool GraphBuilder::UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *p
   return true;
 }
 
-bool GraphBuilder::UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) {
-  ValueNode *dict_node = params->back();
-  params->clear();
-  if (dict_node->GetOpcode() != BUILD_MAP) {
-    return UnpackDynamicLengthDictByBytecode(params, call_node, dict_node);
-  }
-  if (dict_node->GetOparg() == 0) {
-    return true;
-  }
-  py::tuple keys(dict_node->GetOparg());
-  for (int i = 0; i < dict_node->GetOparg(); ++i) {
-    AObject *k = dict_node->input(i * 2)->GetVobj();
-    if (k->GetType() != AObject::kTypeString) {
-      MS_LOG(DEBUG) << "for unpack-call, dict keys must be string";
-      return false;
-    }
-    keys[i] = k->GetPyObject();
-    params->push_back(dict_node->input((i << 1) + 1));
-    MS_EXCEPTION_IF_CHECK_FAIL(keys[i].ptr(), "the keys of unpack-call must be a const string");
-  }
-  ValueNode *const_keys = this->NewValueNode(AObject::Convert(keys), LOAD_CONST, -1, {});
-  params->push_back(const_keys);
-  return true;
-}
-
 bool GraphBuilder::UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *params, ValueNode *args_node,
                                                       CallNode *call_node) {
   // user-defined sequence, dynamic length tuple unpack
@@ -3021,25 +2992,6 @@ bool GraphBuilder::UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *
     call_node->AddParam(value);
   }
   params->insert(params->begin(), args.begin(), args.end());
-  return true;
-}
-
-// unpack CALL_FUNCTION_EX parameters
-// should do this when bytecode analyze ? replace origin opcode
-bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
-                                      CallNode *call_node) {
-  bool has_dict = params->size() > 1;
-  ValueNode *args_node = params->operator[](0);
-  if (!has_dict) {
-    params->clear();
-  } else if (!UnpackCallExDict(params, call_node)) {
-    return false;
-  }
-  *has_kw = params->size();
-  if (args_node->GetOpcode() != BUILD_TUPLE && args_node->GetOpcode() != BUILD_LIST) {
-    return UnpackDynamicLengthTupleByBytecode(params, args_node, call_node);
-  }
-  params->insert(params->begin(), args_node->getInputs().begin(), args_node->getInputs().end());
   return true;
 }
 
@@ -3095,28 +3047,6 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
   if (!has_kw_va) {
     return kw_2_p_cnt == k_cnt;  // if not equal, too many key-word arguments
   }
-  return true;
-}
-
-bool GraphBuilder::HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
-  PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
-  std::vector<ValueNode *> kwvargs;
-  if (!PackKwParams(func, params, frame, &kwvargs)) {
-    // illegal arguments
-    return false;
-  }
-
-  const int argc = co->co_argcount + co->co_kwonlyargcount;
-  if (!(co->co_flags & CO_VARKEYWORDS)) {
-    // kw_2_p_cnt == k_cnt, all kw arguments is positions arguments
-    return true;
-  }
-
-  int kwvarg_loc = argc + ((co->co_flags & CO_VARARGS) ? 1 : 0);
-  AObject *dict = AObject::BuildOperations(CollectObjects(kwvargs), BUILD_MAP);
-  frame->SetLocal(kwvarg_loc, NewValueNode(dict, BUILD_MAP, kwvargs.size() / 2, kwvargs));
-
-  static_cast<CallNode *>(seek(0))->AddParam(frame->Local(kwvarg_loc));
   return true;
 }
 
@@ -3207,63 +3137,7 @@ ValueNode *GraphBuilder::GetBoundSelf(CallNode *call_node) {
   return self;
 }
 
-bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
-  CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
-  PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
-  auto vobj = AObject::Convert(func.ptr());
-  AObject::Type callable_type = vobj->GetType();
-
-  ValueNode *self = GetBoundSelf(call_node);
-  if (self != nullptr) {
-    params->insert(params->begin(), self);
-  }
-
-  const int argc = co->co_argcount;
-  const int has_varg = (co->co_flags & CO_VARARGS) ? 1 : 0;
-  const int has_kwvarg = (co->co_flags & CO_VARKEYWORDS) ? 1 : 0;
-  const int varg_loc = argc + co->co_kwonlyargcount;
-  const int kwvarg_loc = argc + co->co_kwonlyargcount + has_varg;
-  int pargc = params->size();
-  if (pargc > argc && !has_varg) {
-    MS_LOG(DEBUG) << "too many parameters";
-    return false;
-  }
-  bool append_self_to_varg = has_varg && self && callable_type == AObject::kTypeBoundMethod && argc == 0;
-  if (append_self_to_varg) {  // self is in variable arguments
-    MS_LOG(INFO) << "not implement append self to variable arguments, inline failed";
-    return false;
-  }
-
-  if (has_kwvarg && frame->Local(kwvarg_loc) == &ValueNode::kUnboundLocal) {
-    auto vo = AObject::Convert(py::dict());
-    auto m = NewValueNode(vo, BUILD_MAP, 0, {});
-    call_node->AddParam(m);
-    frame->SetLocal(kwvarg_loc, m);
-  }
-
-  if (has_varg) {
-    int vargc = pargc > argc ? pargc - argc : 0;
-    std::vector<ValueNode *> vargs(params->end() - vargc, params->end());
-    params->resize(params->size() - vargc);
-
-    auto vo = AObject::BuildOperations(CollectObjects(vargs), BUILD_TUPLE);
-    ValueNode *build_tuple = NewValueNode(vo, BUILD_TUPLE, vargc, vargs);
-    call_node->AddParam(build_tuple);
-    frame->SetLocal(varg_loc, build_tuple);
-  }
-
-  pargc = params->size();
-  for (int i = pargc - 1; i >= 0; --i) {
-    if (frame->Local(i) != &ValueNode::kUnboundLocal) {
-      MS_LOG(DEBUG) << "duplicate key-word parameter error";
-      return false;
-    }
-    frame->SetLocal(i, params->back());
-    params->pop_back();
-  }
-  return CheckAndSetDefaultParams(func, frame, pargc);
-}
-
+// todo: Add new class CallParameter handler to move these function out.
 bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *call_node, FrameStates *frame) {
 #if IS_PYTHON_3_11_PLUS
   MS_LOG(ERROR) << "not implement in python3.11";
@@ -5426,11 +5300,11 @@ bool GraphBuilder::HandleCallTensorClass(CallNode *call_node) {
   return true;
 }
 
-ValueNode *MindGraphBuilder::HandleCallClass(CallNode *call_node) {
+ValueNode *GraphBuilder::HandleCallClass(CallNode *call_node) {
   if (IsMakeNamedtuple(call_node)) {
     return HandleMakeNamedtuple(call_node);
   }
-  ValueNode *node = GraphBuilder::HandleCallClass(call_node);
+  ValueNode *node = BuildCallClassNode(call_node);
   if (node == nullptr) {
     MS_LOG(INFO) << "Failed to handle call class";
     return nullptr;
@@ -5685,7 +5559,7 @@ void GraphBuilder::GuardAttribute(ValueNode *attr_node) {
   }
 }
 
-ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
+ValueNode *GraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
   if (IsNamedtupleGetElem(target_node, instr.name())) {
     return HandleNamedtupleGetElem(instr, target_node);
   }
@@ -5871,8 +5745,7 @@ AbstractWrapperPtr GraphBuilder::HandleBuildStringOp(const PrimitivePtr &primiti
   return result_str;
 }
 
-bool MindGraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params,
-                                            FrameStates *frame) {
+bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
   auto vobj = AObject::Convert(func.ptr());
@@ -5930,8 +5803,8 @@ bool MindGraphBuilder::HandlePositionParams(const py::object &func, std::vector<
   return CheckAndSetDefaultParams(func, frame, pargc);
 }
 
-bool MindGraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
-                                          CallNode *call_node) {
+bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
+                                      CallNode *call_node) {
   bool has_dict = params->size() > 1;
   ValueNode *args_node = params->operator[](0);
   if (!has_dict) {
@@ -5946,14 +5819,10 @@ bool MindGraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int 
   }
   py::object object = args_node->GetVobj()->GetPyObject();
   if (!py::isinstance<py::tuple>(object) && !py::isinstance<py::list>(object)) {
+    MS_LOG(INFO) << "CallEx parameter should be tuple or list but got " << py::str(object);
     return false;
   }
-  size_t args_len = 0;
-  if (py::isinstance<py::tuple>(object)) {
-    args_len = py::len(py::cast<py::tuple>(object));
-  } else {
-    args_len = py::len(py::cast<py::list>(object));
-  }
+  size_t args_len = py::len(object);
   if (args_len == 0) {
     return true;
   }
@@ -5970,7 +5839,7 @@ bool MindGraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int 
   return true;
 }
 
-bool MindGraphBuilder::HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
+bool GraphBuilder::HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
   std::vector<ValueNode *> kwvargs;
   if (!PackKwParams(func, params, frame, &kwvargs)) {
@@ -5995,7 +5864,7 @@ bool MindGraphBuilder::HandleKWParams(const py::object &func, std::vector<ValueN
   return true;
 }
 
-bool MindGraphBuilder::UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) {
+bool GraphBuilder::UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) {
   ValueNode *dict_node = params->back();
   params->clear();
 
