@@ -20,6 +20,9 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <functional>
+#include <unordered_map>
+#include <unordered_set>
 #include "pybind11/pybind11.h"
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/pi/graph_guard/guard.h"
@@ -44,6 +47,12 @@ using OptFuncPtr = std::shared_ptr<OptFunc>;
 /// \brief OptOption is the compilation option for the code
 class OptOption : public std::enable_shared_from_this<OptOption> {
  public:
+  struct Less {
+    bool operator()(const std::shared_ptr<OptOption> &a, const std::shared_ptr<OptOption> &b) const {
+      return std::less<void *>()(a->target_, b->target_);
+    }
+  };
+
   /// \brief no support for default construction and you can extend the option class to support more feature
   OptOption() = delete;
   virtual ~OptOption() = default;
@@ -96,10 +105,11 @@ using OptCodeFilterFunc = std::function<bool(OptCodePtr)>;
 /// \brief hub for optimized code based on compilation option
 class OptCodeHub : public std::enable_shared_from_this<OptCodeHub> {
  public:
+  friend class CodeCache;
   OptCodeHub() = default;
   virtual ~OptCodeHub() = default;
   virtual OptCodePtr AddOptTarget(OptOptionPtr option);
-  virtual OptCodeSet GetOptTarget(OptOptionPtr option);
+  virtual const OptCodeSet &GetOptTarget(OptOptionPtr option);
   virtual void UpdateOptTarget(OptOptionPtr option, OptCodePtr code);
   virtual void DelOptTarget(OptOptionPtr option, OptCodePtr code);
   virtual void DelOptTarget(OptCodePtr code);
@@ -108,10 +118,53 @@ class OptCodeHub : public std::enable_shared_from_this<OptCodeHub> {
   static OptCodePtr Filter(std::string key, OptCodeFilterFunc filter);
 
  protected:
-  std::map<OptOptionPtr, OptCodeSet> codeMap_;
+  // use OptOption instead of OptOptionPtr ...
+  std::map<OptOptionPtr, OptCodeSet, OptOption::Less> codeMap_;
 };
 
 using OptCodeHubPtr = std::shared_ptr<OptCodeHub>;
+
+class CodeCache {
+ public:
+  struct FailInfo {
+    int count_;
+  };
+
+  explicit CodeCache(void *jcr);
+  const auto &code_hub() const { return code_hub_; }
+  const auto &fail_guard() const { return fail_guard_; }
+  const auto &code() const { return code_; }
+
+  void set_code(const OptCodePtr &ptr) { code_ = ptr; }
+  FailInfo FindFailInfo(const GuardItemPtr &p) const;
+  void CollectFailGuard();
+  void Clear();
+
+ private:
+  class GuardItemKey {
+   public:
+    explicit GuardItemKey(const GuardItemPtr &p) : ptr_(p) {}
+    auto operator-> () const { return ptr_.operator->(); }
+    auto ptr() const { return ptr_; }
+    size_t hash() const { return ptr_ ? ptr_->GetTrace()->Info().Id() + ptr_->GetType() : 0; }
+    bool operator==(const GuardItemKey &) const noexcept;
+
+   private:
+    GuardItemPtr ptr_;
+  };
+  struct KeyHash {
+    bool operator()(const GuardItemKey &p) const noexcept { return p.hash(); }
+  };
+
+  using GuardItemSet = std::unordered_set<GuardItemKey, KeyHash>;
+  using FailGuardItemMap = std::unordered_map<GuardItemKey, FailInfo, KeyHash>;
+
+  OptOptionPtr jcr_;
+  OptCodeHubPtr code_hub_;
+  OptCodePtr code_;
+  FailGuardItemMap fail_guard_;  // total count same as compile time ...
+};
+
 }  // namespace pijit
 }  // namespace mindspore
 

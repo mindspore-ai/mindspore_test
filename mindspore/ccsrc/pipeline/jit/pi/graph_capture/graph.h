@@ -192,6 +192,9 @@ class Graph {
   const auto &prepare() const { return prepare_; }
   bool PrepareParameter(ValueNode *node);
 
+  // return true if has fail guard matched
+  bool NeedSymbolic(ValueNode *node);
+
   void set_func_graph_builder(const std::shared_ptr<FuncGraphBuilder> &ptr) { func_graph_builder_ = ptr; }
   const auto &func_graph_builder() const { return func_graph_builder_; }
 

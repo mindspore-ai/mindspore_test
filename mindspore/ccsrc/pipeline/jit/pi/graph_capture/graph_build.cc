@@ -976,6 +976,29 @@ void GraphBuilder::HandleLoadGlobalPythonCode(const Instr &instr) {
   push(n);
 }
 
+bool GraphBuilder::Symbolic(ValueNode *node) {
+  MS_EXCEPTION_IF_CHECK_FAIL(!node->has_abstract_wrapper(), "symbolic after specialize");
+  py::object o = node->GetVobj()->GetPyObject();
+  if (o.ptr() == nullptr) {
+    MS_LOG(INFO) << "only support symbolic from real python object";
+    return false;
+  }
+  AObject::Type real_type = node->GetVobj()->GetType();
+  bool not_parameter = real_type != AObject::kTypeTensor || !IsParameterObject(o);
+  bool need_symbolic = not_parameter && root()->GetGraph()->NeedSymbolic(node);
+  if (!need_symbolic || !root()->GetGraph()->PrepareParameter(node)) {
+    return false;
+  }
+  MS_LOG(INFO) << "Try adding node as graph input: [" << node->ToString();
+  auto abstract_wrapper = FGBuilder()->AddAttributeInput(o);
+  MS_EXCEPTION_IF_CHECK_FAIL(abstract_wrapper, "Failed to add scalar or Tensor as input: [" + node->ToString());
+  node->set_abstract_wrapper(abstract_wrapper);
+  // tensor must be guard dtype
+  bool is_tensor = node->GetVobj()->GetType() == AObject::kTypeTensor;
+  graph_->GuardValueNode(node, is_tensor ? GuardLevel::GDeduce : GuardLevel::GType);
+  return true;
+}
+
 void GraphBuilder::DoLoadGlobal(const Instr &instr) {
   HandleLoadGlobalPythonCode(instr);
   ValueNode *node = seek(0);
@@ -983,6 +1006,13 @@ void GraphBuilder::DoLoadGlobal(const Instr &instr) {
   if (handle.ptr() == nullptr) {
     return;  // name not define
   }
+  if (node->GetVobj()->GetType() == AObject::kTypeTensor) {
+    MS_LOG(WARNING) << "use global tensor in jit, treat as Parameter of graph";
+    // not implement ...
+  }
+  // global guard not implement
+  // if Symbolic(node) and do something ...
+  MS_LOG(INFO) << "constant global " << node->ToString();
   node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(handle));
 }
 
@@ -5477,32 +5507,6 @@ AbstractWrapperPtr GraphBuilder::HandleGetShapeOfDynamicLengthTensor(const Abstr
   return FGBuilder()->AddNode(prim::kPrimShape, input_abstract_wrapper);
 }
 
-static bool IsMutableAttribute(ValueNode *node) {
-  const auto &attr_names = node->GetGraph()->Config().attr_as_param_list();
-  if (attr_names.find(node->GetName()) == attr_names.end()) {
-    return false;
-  }
-  auto op = node->GetVobj()->GetPyObject().ptr();
-  if (op == nullptr) {
-    return false;
-  }
-  // for mutable tuple and list, PyList_Check, PyTuple_Check
-  // ... not implement
-
-  // now, only support these scalar types
-  if (PyLong_Check(op) || PyFloat_Check(op) || PyBool_Check(op)) {
-    return true;
-  }
-  // now, for Tensor, mindspore.common.Parameter and mindspore._c_expression.Tensor as func input is unsupported
-  if (!IsPybindType<tensor::Tensor, false>(Py_TYPE(op)) && py::isinstance<tensor::Tensor>(op)) {
-    constexpr char name[] = "Parameter";
-    constexpr auto len = sizeof(name) - 1;
-    std::string type_name = Py_TYPE(op)->tp_name;
-    return type_name.size() < len ? true : (0 != type_name.compare(type_name.size() - len, len, name));
-  }
-  return false;
-}
-
 void GraphBuilder::GuardAttribute(ValueNode *attr_node) {
   static constexpr auto const_type = {
     AObject::kTypeInt,   AObject::kTypeFloat, AObject::kTypeBool, AObject::kTypeMSDType,
@@ -5570,20 +5574,8 @@ ValueNode *GraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &inst
       return ret;
     }
   }
-
-  if (IsMutableAttribute(attr_node) && root()->GetGraph()->PrepareParameter(attr_node)) {
-    const auto &cur_name = instr.name();
-    MS_LOG(INFO) << "Try adding attribute " << cur_name << " as graph input";
-    auto abstract_wrapper = FGBuilder()->AddAttributeInput(attr_obj);
-    if (abstract_wrapper != nullptr) {
-      graph_attr_node = attr_node;
-      graph_attr_node->set_abstract_wrapper(abstract_wrapper);
-      // tensor must be guard dtype
-      bool is_tensor = attr_node->GetVobj()->GetType() == AObject::kTypeTensor;
-      graph_->GuardValueNode(attr_node, is_tensor ? GuardLevel::GDeduce : GuardLevel::GType);
-      return graph_attr_node;
-    }
-    MS_LOG(INTERNAL_EXCEPTION) << "Failed to add scalar or Tensor " << cur_name << " as input.";
+  if (Symbolic(attr_node)) {
+    return attr_node;
   }
   MS_LOG(INFO) << "constant attribute " << attr_node->ToString();
 

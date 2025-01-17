@@ -318,6 +318,16 @@ class GraphBuilder {
   void AddInput(ValueNode *node);
   void ExpandContainerParameters(ValueNode *node);
 
+  /**
+   * now, call this function only if:
+   * 1. scalar of func_graph parameter,
+   * 2. global variable,
+   * 3. attribute of any,
+   * 4. class instantiation(such as float(any), int(any)...),
+   * return true if above value is not constant, pass the interpret result as mutable parameter to graph
+   */
+  bool Symbolic(ValueNode *node);
+
  protected:
   GraphBuilderPtr sub_graph = nullptr;
   GraphBuilder *root_;

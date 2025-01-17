@@ -203,7 +203,8 @@ std::string Traceback::Dump(bool is_all) const {
     // dump stop trace reason
     auto it_trace = stop_trace_res_.find(tb.func_name_);
     if (it_trace != stop_trace_res_.cend()) {
-      os << std::left << std::setw(kThree * width) << GetStopTraceReasonDesc(it_trace->second);
+      os << std::left << std::setw(kThree * width)
+         << GetStopTraceReasonDesc(static_cast<StopTraceReason>(it_trace->second));
     } else {
       os << std::left << std::setw(kThree * width) << "unknown";
     }
@@ -225,7 +226,8 @@ void Traceback::DumpInlineInfo(std::stringstream &os, const std::string &func_na
   }
   for (const auto &info : it->second) {
     std::string space((info.depth + 1) * kTwo, ' ');
-    os << space << "| inline_info:" << GetInlineReasonDesc(info.res) << " line:" << info.line;
+    os << space << "| inline_info:" << GetInlineReasonDesc(static_cast<InlineReason>(info.res))
+       << " line:" << info.line;
     if (!info.inline_name_.empty()) {
       os << " func_name:" << info.inline_name_;
     }
@@ -295,6 +297,19 @@ std::string Traceback::DumpSummary() const {
   }
   os << "\n\n";
   return os.str();
+}
+
+std::string Traceback::GetStopTrace() {
+  std::string res;
+  for (auto item : stop_trace_res_) {
+    if (res.size() == 0) {
+      res += std::string("\"") + item.first + "\":" + std::to_string(SizeToInt(item.second));
+    } else {
+      res += std::string("\"") + item.first + "\":" + std::to_string(SizeToInt(item.second));
+    }
+  }
+  res = std::string("{") + res + std::string("}");
+  return res;
 }
 
 int Traceback::FindMaxNameLength(const std::list<Element> &tbs) const {
@@ -796,6 +811,9 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   }
   for (auto item : cache) {
     Py_XDECREF(item.second);
+  }
+  if (c->code() == nullptr) {  // recompiled
+    c->CacheFailGuard();
   }
   MS_LOG(INFO) << "Check guard" << (c->code() != nullptr ? " success!" : " failed!");
   return c->code() != nullptr;

@@ -59,6 +59,53 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
   }
 }
 
+bool Graph::NeedSymbolic(ValueNode *node) {
+  if (node->IsConstantValue()) {
+    // such as LOAD_CONST,
+    MS_LOG(DEBUG) << "The node already marked the constant";
+    return false;
+  }
+  AObject::Type real_type = node->GetVobj()->GetType();
+  // now, only support these types
+  // for mutable tuple and list ... not implement
+  const auto valid_type = {AObject::kTypeInt, AObject::kTypeFloat, AObject::kTypeBool, AObject::kTypeTensor};
+  if (valid_type.end() == std::find(valid_type.begin(), valid_type.end(), real_type)) {
+    return false;
+  }
+  JitCompileResults *jcr = GetJitCompileResults(GetCodeObj());
+  if (jcr->cache().fail_guard().empty()) {
+    return false;
+  }
+  const auto size = guard_->GetGuard()->guard_list().size();
+  if (!this->GuardValueNode(node)) {
+    return false;
+  }
+  if (size + 1 != guard_->GetGuard()->guard_list().size()) {
+    MS_LOG(INFO) << "more than one guard, not implement";
+    return false;
+  }
+  GuardItemPtr except = guard_->GetGuard()->guard_list().back();
+  auto item = jcr->cache().FindFailInfo(except);
+  if (item.count_ == 0) {
+    return false;
+  }
+  const int symbolic_scalar = Config().getIntConfig(GraphJitConfig::kSymbolic) + 1;
+  const int symbolic_tensor = Config().getIntConfig(GraphJitConfig::kSymbolic);
+  const int guard_strategy_symbol = 1;
+  int guard_strategy = item.count_ > (real_type == AObject::kTypeTensor ? symbolic_tensor : symbolic_scalar);
+  MS_LOG(DEBUG) << "find failed item: !! " << except->GetTrace()->ToString() << " fail count: " << item.count_
+                << " except > " << (real_type == AObject::kTypeTensor ? symbolic_tensor : symbolic_scalar) << std::endl;
+  bool is_mutable = guard_strategy == guard_strategy_symbol;
+  if (is_mutable) {
+    node->SetConstantValue(false);
+    bool succ = guard_->GetGuard()->Erase(except);
+    MS_EXCEPTION_IF_CHECK_FAIL(succ, "just create guard item, but can't find it in guard map");
+    // clear compile cache for this fail item ...
+    // erase fail item from cache ...
+  }
+  return is_mutable;
+}
+
 bool Graph::PrepareParameter(ValueNode *node) {
   using PrepareHelper = bool (*)(ValueNode *, std::vector<ValueNode *> *);
   static PrepareHelper prepare_oper = [](ValueNode *node, std::vector<ValueNode *> *oper) {

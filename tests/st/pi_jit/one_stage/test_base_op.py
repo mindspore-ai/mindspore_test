@@ -29,13 +29,11 @@ from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 from mindspore._c_expression import Tensor as CppTensor
+from tests.st.pi_jit.share.utils import assert_graph_compile_status
 
 cfg = {
-    "replace_nncell_by_construct": True,
     "print_after_all": False,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
-    "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
 def assert_executed_by_graph_mode(func):
@@ -995,7 +993,7 @@ def test_attr_as_inputs():
             super(Net, self).__init__()
             self.a = 1
 
-        @jit(mode="PIJit", jit_config={"pijit_attr_as_input": ["a"]})
+        @jit(mode="PIJit")
         def construct(self, x):
             self.a = self.a + 1
             return self.a + x
@@ -1005,8 +1003,7 @@ def test_attr_as_inputs():
     net = Net()
     ret = net(m)
     assert np.all(ret.asnumpy() == np.array([3, 4, 5]))
-    jcr = get_code_extra(Net.construct.__wrapped__)
-    assert jcr["break_count_"] == 0
+    assert_graph_compile_status(Net.construct.__wrapped__, 0)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1022,7 +1019,7 @@ def test_attr_as_inputs_2():
             self.a = 1
             self.b = Parameter(Tensor([1, 1, 1]), name='b')
 
-        @jit(mode="PIJit", jit_config={"pijit_attr_as_input": ["a"]})
+        @jit(mode="PIJit")
         def construct(self, x):
             b = self.b
             self.a = self.a + 1
@@ -1033,8 +1030,7 @@ def test_attr_as_inputs_2():
     net = Net()
     ret = net(m)
     assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
-    jcr = get_code_extra(Net.construct.__wrapped__)
-    assert jcr["break_count_"] == 0
+    assert_graph_compile_status(Net.construct.__wrapped__, 0)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
@@ -1046,23 +1042,90 @@ def test_attr_as_inputs_3():
     """
     class Net(nn.Cell):
         def __init__(self):
-            super(Net, self).__init__()
+            super().__init__()
             self.a = 1
             self.b = Parameter(Tensor([1, 1, 1]), name='b')
 
-        @jit(mode="PIJit", jit_config={"pijit_attr_as_input": ["a"]})
+        @jit(mode="PIJit")
         def construct(self, x):
             b = self.b
             self.a = self.a + 1
             return b + self.a + x
 
-    context.set_context(mode=context.PYNATIVE_MODE)
     m = Parameter(Tensor([1, 2, 3]), name='m')
     net = Net()
     ret = net(m)
     assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
-    jcr = get_code_extra(Net.construct.__wrapped__)
-    assert jcr["break_count_"] == 0
+    assert_graph_compile_status(Net.construct.__wrapped__, 0)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_4():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(mode="PIJit")
+        def construct(self, x):
+            return self.a + x
+
+    net = Net()
+    for i in range(10):
+        net.a = i
+        x = Tensor(np.random.rand(4,4))
+        y = net(x)
+        assert np.all((x + i == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 8, 3)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_config():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(mode="PIJit", jit_config={"_symbolic": 2})
+        def construct(self, x):
+            return self.a + x
+
+    net = Net()
+    for i in range(100, 110):
+        net.a = i
+        x = Tensor(np.random.rand(4,4))
+        y = net(x)
+        assert np.all((x + i == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 6, 5)
+
+
+@pytest.mark.skip
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_global_as_inputs_1():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    global magic
+
+    class Net(nn.Cell):
+        @jit(mode="PIJit")
+        def construct(self, x):
+            return magic + x
+
+    net = Net()
+    x = Tensor(np.random.rand(4,4))
+    for _ in range(10):
+        magic = np.random.randint(0, 10e7)
+        y = net(x)
+        assert np.all((magic + x == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 8, 3)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')

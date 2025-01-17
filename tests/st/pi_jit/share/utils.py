@@ -133,22 +133,25 @@ def is_empty(variable):
     return False
 
 
+def has_graph(jcr, *, depth=2):
+    if not depth or jcr is None or 'code' not in jcr:
+        return False
+    if jcr['code'].get('phase_', None):
+        return True
+    if not jcr['code'].get('compiled_code_', None):
+        return False
+    for item in jcr['code']['compiled_code_'].co_consts:
+        if isinstance(item, types.CodeType) and has_graph(get_code_extra(item), depth=depth - 1):
+            return True
+    return False
+
+
 def assert_executed_by_graph_mode(func, *, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
-    if 'phase_' in jcr['code']:
-        assert len(jcr['code']['phase_']) > 0
-    else:
-        checked = False
-        for item in jcr['code']['compiled_code_'].co_consts:
-            if isinstance(item, types.CodeType):
-                j = get_code_extra(item)
-                assert len(j['code']['phase_']) > 0
-                checked = True
-                break
-        assert checked
+    assert has_graph(jcr)
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
 
@@ -168,6 +171,15 @@ def assert_has_graph_break(func, *, break_count: int = 1, call_count: int = None
     assert jcr['break_count_'] == break_count, f'break_count expect: {break_count}, actual: {jcr["break_count_"]}'
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
+        
+def assert_graph_compile_status(func, break_count=None, call_count=None, compile_count=None):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert break_count is None or jcr['break_count_'] == break_count
+    assert call_count is None or jcr['code']['call_count_'] == call_count
+    assert compile_count is None or jcr['compile_count_'] == compile_count
+    assert has_graph(jcr)
 
 def pi_jit_with_config(function=None, jit_config=None):
     wrap_func = PIJitCaptureContext(jit_config)
