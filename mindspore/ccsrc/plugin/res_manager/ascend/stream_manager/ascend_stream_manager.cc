@@ -81,11 +81,6 @@ void AscendStreamMng::CreateStream(aclrtStream *stream, int32_t priority) {
     MS_LOG(EXCEPTION) << "aclrtSetStreamFailureMode failed, ret:" << ret;
   }
   (void)streams_.emplace_back(*stream);
-  // If this is the first stream ever created, set it as default stream.
-  if (streams_.size() == 1) {
-    default_stream_ = *stream;
-    default_stream_id_ = kIndex0;
-  }
   RegCallback(*stream);
 }
 
@@ -216,6 +211,13 @@ bool AscendStreamMng::DestroyStream(size_t stream_id) {
   }
   UnRegCallback(streams_.at(stream_id));
   streams_[stream_id] = nullptr;
+  if (communication_stream_id_ == stream_id) {
+    communication_stream_ = nullptr;
+  }
+  if (default_stream_id_ == stream_id) {
+    default_stream_ = nullptr;
+  }
+
   return true;
 }
 
@@ -232,6 +234,8 @@ bool AscendStreamMng::ForceDestroyAllStreams() {
     UnRegCallback(stream);
   }
   streams_.clear();
+  default_stream_ = nullptr;
+  communication_stream_ = nullptr;
   return true;
 }
 
@@ -248,6 +252,8 @@ bool AscendStreamMng::DestroyAllStreams() {
     UnRegCallback(stream);
   }
   streams_.clear();
+  default_stream_ = nullptr;
+  communication_stream_ = nullptr;
   return true;
 }
 
@@ -367,6 +373,42 @@ std::vector<uint32_t> AscendStreamMng::GetStreamIds() const {
   }
   return stream_ids;
 }
+
+void AscendStreamMng::CreateDefaultStream() {
+  if (default_stream_ == nullptr) {
+    CreateStream(&default_stream_id_);
+    MS_LOG(INFO) << "Create ascend default stream, stream id: " << default_stream_id_;
+    default_stream_ = GetStream(default_stream_id_);
+    MS_EXCEPTION_IF_NULL(default_stream_);
+  } else {
+    MS_LOG(INFO) << "The default compute stream is already created, skip.";
+  }
+
+  if (communication_stream_ == nullptr) {
+    CreateStream(&communication_stream_id_);
+    MS_LOG(INFO) << "Create ascend communication stream, stream id: " << communication_stream_id_;
+    communication_stream_ = GetStream(communication_stream_id_);
+    MS_EXCEPTION_IF_NULL(communication_stream_);
+  } else {
+    MS_LOG(INFO) << "The default communication stream is already created, skip.";
+  }
+}
+
+size_t AscendStreamMng::default_stream_id() const {
+  if (default_stream_ == nullptr) {
+    MS_LOG(EXCEPTION) << "The default stream is not created";
+  }
+  return default_stream_id_;
+}
+size_t AscendStreamMng::communication_stream_id() const {
+  if (communication_stream_ == nullptr) {
+    MS_LOG(EXCEPTION) << "The communication stream is not created";
+  }
+  return communication_stream_id_;
+}
+aclrtStream AscendStreamMng::default_stream() const { return default_stream_; }
+aclrtStream AscendStreamMng::communication_stream() const { return communication_stream_; }
+
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

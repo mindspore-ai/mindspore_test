@@ -103,7 +103,11 @@ class AscendStreamMng {
   void set_current_stream(size_t stream_id) { current_stream_id_ = stream_id; }
   size_t current_stream() const { return current_stream_id_; }
 
-  size_t default_stream_id() const { return default_stream_id_; }
+  void CreateDefaultStream();
+  size_t default_stream_id() const;
+  size_t communication_stream_id() const;
+  aclrtStream default_stream() const;
+  aclrtStream communication_stream() const;
 
   bool single_op_multi_stream_enable() const { return single_op_multi_stream_enable_; }
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) {
@@ -137,8 +141,11 @@ class AscendStreamMng {
   size_t current_stream_id_{0};
 
   // Default stream. We consider the first stream created as default stream.
-  void *default_stream_{nullptr};
+  aclrtStream default_stream_{nullptr};
   size_t default_stream_id_{0};
+  aclrtStream communication_stream_{nullptr};
+  size_t communication_stream_id_{0};
+
   bool single_op_multi_stream_enable_{false};
 
   // Flag of registering callback or not, default value is false.

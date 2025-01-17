@@ -32,22 +32,6 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class ErrorManagerAdapter {
- public:
-  ErrorManagerAdapter() = default;
-  ~ErrorManagerAdapter() = default;
-  static bool Init();
-  static std::string GetErrorMessage(bool add_title = false);
-
- private:
-  static void MessageHandler(std::ostringstream *oss);
-
- private:
-  static std::mutex initialized_mutex_;
-  static bool initialized_;
-};
-
-std::string GetErrorMsg(uint32_t rt_error_code);
 
 bool EnableLccl();
 

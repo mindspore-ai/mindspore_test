@@ -31,6 +31,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace mindspore {
 namespace profiler {
@@ -61,9 +62,7 @@ static void SetStreamForCurrentThread() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->SetContext();
+  device::ascend::AscendHalManager::GetInstance().SetContext(device_id);
 }
 
 static void DispatchFrontendTask(const std::shared_ptr<runtime::AsyncTask> &task) {

@@ -27,6 +27,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
 namespace mindspore {
 namespace device {

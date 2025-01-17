@@ -24,6 +24,7 @@
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -88,9 +89,7 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
     return false;
   }
 
-  if (runtime_instance_ != nullptr) {
-    runtime_instance_->SetContext();
-  }
+  BindDeviceToCurrentThread(false);
 
   if (stream_id == UINT32_MAX) {
     stream_id = address->stream_id();
@@ -112,16 +111,18 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
 }
 
 void *GeDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  if (runtime_instance_ != nullptr) {
-    runtime_instance_->SetContext();
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(EXCEPTION) << "Bind context to current thread failed";
+    return nullptr;
   }
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
 }
 
 void *GeDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
-  if (runtime_instance_ != nullptr) {
-    runtime_instance_->SetContext();
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(EXCEPTION) << "Bind context to current thread failed";
+    return nullptr;
   }
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->MallocMemFromMemPool(size, true, false, stream_id);
@@ -163,31 +164,27 @@ size_t GeDeviceResManager::GetMaxUsedMemorySize() const {
 }
 
 bool GeDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+
   static thread_local std::once_flag is_set;
-  std::call_once(is_set, []() {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  std::call_once(is_set, [device_id]() {
     auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id));
     if (ret != ACL_ERROR_NONE) {
       MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
     }
   });
 
-  if (runtime_instance_ != nullptr) {
-    if (force_bind) {
-      runtime_instance_->SetContextForce();
-    } else {
-      runtime_instance_->SetContext();
-    }
+  if (force_bind) {
+    AscendHalManager::GetInstance().SetContextForce(device_id);
+  } else {
+    AscendHalManager::GetInstance().SetContext(device_id);
   }
   return true;
 }
 
-void *GeDeviceResManager::GetStream() const {
-  MS_EXCEPTION_IF_NULL(runtime_instance_);
-  return runtime_instance_->compute_stream();
-}
+void *GeDeviceResManager::GetStream() const { return AscendStreamMng::GetInstance().default_stream(); }
 
 bool GeDeviceResManager::SyncStream(size_t stream_id) const {
   if (!BindDeviceToCurrentThread(false)) {
@@ -228,7 +225,10 @@ DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &
   if (!is_use_cpu_memory_) {
     if (kernel_tensor->device_name().empty()) {
       kernel_tensor->set_device_name(kAscendDevice);
-      kernel_tensor->set_device_id(runtime_instance_->device_id());
+      auto context_ptr = MsContext::GetInstance();
+      MS_EXCEPTION_IF_NULL(context_ptr);
+      uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+      kernel_tensor->set_device_id(device_id);
     }
     auto device_address = std::make_shared<AscendDeviceAddress>(kernel_tensor);
     device_address->set_device_synchronizer(std::make_shared<AscendDeviceSynchronizer>());
