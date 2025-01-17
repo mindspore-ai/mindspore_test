@@ -130,6 +130,8 @@ Status ShardReader::Init(const std::vector<std::string> &file_paths, bool load_d
     tasks_.load_mode_ = LoadMode::kFast;
   }
 
+  UpdateLoadModeByShuffleMode();
+
   auto disk_size = page_size_ * row_group_summary.size();
   auto compression_size = shard_header_->GetCompressionSize();
   total_blob_size_ = disk_size + compression_size;
@@ -140,6 +142,55 @@ Status ShardReader::Init(const std::vector<std::string> &file_paths, bool load_d
   MS_LOG(INFO) << "Succeed to get metadata from mindrecord files";
 
   return Status::OK();
+}
+
+void ShardReader::UpdateLoadModeByShuffleMode() {
+  // change the load mode by shuffle mode
+  // the load mode will generate different task_list, the task_list will be shuffled by different shuffle mode
+  for (auto &item : operators_) {
+    MS_LOG(INFO) << "The shuffle mode of the operator is " << item->GetShuffleMode();
+    std::string info = "Update the load mode from " + LoadModeToStr(load_mode_) + " to ";
+    switch (item->GetShuffleMode()) {
+      case dataset::ShuffleMode::kGlobal: {
+        load_mode_ = LoadMode::kLazy;
+        tasks_.load_mode_ = LoadMode::kLazy;
+        break;
+      }
+      case dataset::ShuffleMode::kPartial: {
+        load_mode_ = LoadMode::kSlow;
+        tasks_.load_mode_ = LoadMode::kSlow;
+        break;
+      }
+      case dataset::ShuffleMode::kFiles: {
+        load_mode_ = LoadMode::kLazy;
+        tasks_.load_mode_ = LoadMode::kLazy;
+        break;
+      }
+      case dataset::ShuffleMode::kInfile: {
+        load_mode_ = LoadMode::kLazy;
+        tasks_.load_mode_ = LoadMode::kLazy;
+        break;
+      }
+      case dataset::ShuffleMode::kAdaptive: {
+        // update the shuffle mode by load mode when the shuffle mode is adaptive
+        if (load_mode_ == LoadMode::kFast || load_mode_ == LoadMode::kLazy) {
+          item->UpdateShuffleMode(dataset::ShuffleMode::kGlobal);
+        } else if (load_mode_ == LoadMode::kSlow) {
+          item->UpdateShuffleMode(dataset::ShuffleMode::kPartial);
+        }
+        break;
+      }
+      case dataset::ShuffleMode::kFalse: {
+        load_mode_ = LoadMode::kFast;
+        tasks_.load_mode_ = LoadMode::kFast;
+        break;
+      }
+      default:
+        // no need to change the load mode
+        break;
+    }
+    MS_LOG(INFO) << info << LoadModeToStr(load_mode_) << ".";
+  }
 }
 
 Status ShardReader::VerifyDataset(sqlite3 **db, const string &file) {
@@ -1218,6 +1269,7 @@ Status ShardReader::Open(const std::vector<std::string> &file_paths, bool load_d
                          const std::vector<std::shared_ptr<ShardOperator>> &operators, int64_t num_padded,
                          LoadMode load_mode) {
   load_mode_ = load_mode;
+  operators_ = operators;
 
   // Open file and set header by ShardReader
   RETURN_IF_NOT_OK_MR(Init(file_paths, load_dataset));
@@ -1237,7 +1289,6 @@ Status ShardReader::Open(const std::vector<std::string> &file_paths, bool load_d
   n_consumer_ = n_consumer;
   num_padded_ = num_padded;
 
-  operators_ = operators;
   RETURN_IF_NOT_OK_MR(Open(n_consumer));
   return Status::OK();
 }
@@ -1439,17 +1490,23 @@ Status ShardReader::CreateTasks(const std::vector<std::tuple<int, int, int, uint
 
   if (-1 == category_operator) {
     if (load_mode_ != LoadMode::kSlow) {
-      if (load_mode_ == LoadMode::kLazy) {
-        RETURN_IF_NOT_OK_MR(CreateLazyTasksByRow(row_group_summary, operators));
-      } else {
-        RETURN_IF_NOT_OK_MR(CreateTasksByRow(row_group_summary, operators));
-      }
-
-      // need padded sample to the task
-      if (num_padded_ > 0) {
-        for (auto i = 0; i < num_padded_; ++i) {
-          tasks_.InsertTask(TaskType::kPaddedTask, 0, 0, {}, json());
+      try {
+        if (load_mode_ == LoadMode::kLazy) {
+          RETURN_IF_NOT_OK_MR(CreateLazyTasksByRow(row_group_summary, operators));
+        } else {
+          RETURN_IF_NOT_OK_MR(CreateTasksByRow(row_group_summary, operators));
         }
+
+        // need padded sample to the task
+        if (num_padded_ > 0) {
+          for (auto i = 0; i < num_padded_; ++i) {
+            tasks_.InsertTask(TaskType::kPaddedTask, 0, 0, {}, json());
+          }
+        }
+      } catch (std::bad_alloc &ba) {
+        MS_LOG(EXCEPTION) << "bad_alloc caught: " << ba.what() << ". Out of memory, please use parameter "
+                          << "shuffle=Shuffle.PARTIAL do shuffle in MindDataset(...) / RandomSampler(...) / "
+                          << "DistributedSampler(...) which will use less memory.";
       }
     } else {
       RETURN_IF_NOT_OK_MR(CreateSlowTasksByRow());

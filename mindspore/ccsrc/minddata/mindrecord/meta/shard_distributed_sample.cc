@@ -18,18 +18,22 @@
 
 namespace mindspore {
 namespace mindrecord {
-ShardDistributedSample::ShardDistributedSample(int num_shards, int shard_id, int64_t no_of_padded_samples, bool shuffle,
-                                               uint32_t seed, int64_t no_of_samples, int64_t offset)
+ShardDistributedSample::ShardDistributedSample(int num_shards, int shard_id, int64_t no_of_padded_samples,
+                                               dataset::ShuffleMode shuffle_mode, uint32_t seed, int64_t no_of_samples,
+                                               int64_t offset)
     : ShardSample(1, num_shards, shard_id, no_of_samples, offset),
-      shuffle_(shuffle),
       no_of_padded_samples_(no_of_padded_samples),
       first_epoch_(true) {
-  shuffle_op_ = std::make_shared<ShardShuffle>(seed, kShuffleSample);
+  ShardSample::UpdateShuffleMode(shuffle_mode);
+  if (shuffle_mode != dataset::ShuffleMode::kFalse) {
+    shuffle_op_ = std::make_shared<ShardShuffle>(seed, kShuffleSample);
+    shuffle_op_->UpdateShuffleMode(shuffle_mode);
+  }
 }
 
-ShardDistributedSample::ShardDistributedSample(int num_shards, int shard_id, bool shuffle, uint32_t seed,
-                                               int64_t no_of_samples, int64_t offset)
-    : ShardDistributedSample(num_shards, shard_id, 0, shuffle, seed, no_of_samples, offset) {}
+ShardDistributedSample::ShardDistributedSample(int num_shards, int shard_id, dataset::ShuffleMode shuffle_mode,
+                                               uint32_t seed, int64_t no_of_samples, int64_t offset)
+    : ShardDistributedSample(num_shards, shard_id, 0, shuffle_mode, seed, no_of_samples, offset) {}
 
 int64_t ShardDistributedSample::GetNumSamples(int64_t dataset_size, int64_t num_classes) {
   if (no_of_padded_samples_ <= 0) {
@@ -66,9 +70,8 @@ Status ShardDistributedSample::PreExecute(ShardTaskList &tasks) {
   } else {
     tasks = task_;
   }
-  if (shuffle_) {
+  if (shuffle_op_) {
     shuffle_op_->SetShardSampleCount(GetShardSampleCount());
-    shuffle_op_->UpdateShuffleMode(GetShuffleMode());
     RETURN_IF_NOT_OK_MR((*shuffle_op_)(tasks));
   }
   return Status::OK();

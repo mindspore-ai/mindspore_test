@@ -15,6 +15,7 @@
  */
 
 #include "common/common.h"
+#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/core/tensor.h"
 
@@ -179,7 +180,7 @@ TEST_F(MindDataTestPipeline, TestKITTIPipelineDistributedSampler) {
  // Create a KITTI Dataset.
  std::string folder_path = datasets_root_path_ + "/testKITTI";
  // num_shards=3, shard_id=0, shuffle=false, num_samplers=0, seed=0, offset=-1, even_dist=true
- DistributedSampler sampler = DistributedSampler(3, 0, false, 0, 0, -1, true);
+ DistributedSampler sampler = DistributedSampler(3, 0, ShuffleMode::kFalse, 0, 0, -1, true);
  std::shared_ptr<Dataset> ds = KITTI(folder_path, "train", false, sampler);
  EXPECT_NE(ds, nullptr);
 
