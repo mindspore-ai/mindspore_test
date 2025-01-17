@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import os
 import glob
 import shutil
@@ -54,7 +53,6 @@ class BackwardNet(nn.Cell):
         return grads
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 @security_off_wrap
 def test_save_graphs1():
     """
