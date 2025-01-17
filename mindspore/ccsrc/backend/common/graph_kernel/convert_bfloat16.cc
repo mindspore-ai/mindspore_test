@@ -122,8 +122,10 @@ AnfNodePtr NewCastNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_n
 }
 
 // {prim_name, {inputs_keep_index}}
-const HashMap<std::string, std::vector<size_t>> kNeedKeepBF16Ops = {
-  {ops::kNameAssign, {kIndex2}}, {ops::kNameMatMul, {kIndex1, kIndex2}}, {ops::kNameBatchMatMul, {kIndex1, kIndex2}}};
+const HashMap<std::string, std::vector<size_t>> kNeedKeepBF16Ops = {{ops::kNameAssign, {kIndex2}},
+                                                                    {ops::kNameMatMul, {kIndex1, kIndex2}},
+                                                                    {ops::kNameBatchMatMul, {kIndex1, kIndex2}},
+                                                                    {ops::kNameCast, {kIndex1}}};
 
 inline bool NeedKeepBF16(const CNodePtr &cnode) {
   const auto &prim = GetCNodePrimitive(cnode);
@@ -245,15 +247,6 @@ bool ConvertBFloat16::Process(const FuncGraphPtr &func_graph) {
     }
     if (cnode == last_node_) {
       break;
-    }
-    // For cast node, directly update its input data type
-    if (IsPrimitiveCNode(node, prim::kPrimCast)) {
-      auto orig_input_type = cb->GetInputType(node, 0);
-      auto cur_input_type = cb->GetOutputType(cnode->input(1), 0);
-      if (cur_input_type != orig_input_type) {
-        UpdateBuildInfoInputDataType(node, orig_input_type, cur_input_type);
-      }
-      continue;
     }
     // For other nodes, add cast for its input and update its abstract and build info
     //   add cast for node's output if node is sub-graph's output
