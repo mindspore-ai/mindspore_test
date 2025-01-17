@@ -17,7 +17,6 @@
 import shutil
 import os
 import numpy as np
-import pytest
 from tests.mark_utils import arg_mark
 from tests.dataset_mock import MindData
 import mindspore as ms
@@ -36,7 +35,6 @@ from mindspore.train import Model
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_1():
     """
     Feature: JIT trace function
@@ -64,7 +62,6 @@ def test_trace_1():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_2():
     """
     Feature: JIT trace function
@@ -107,7 +104,6 @@ def test_trace_2():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_3():
     """
     Feature: JIT trace function
@@ -275,7 +271,6 @@ class Net(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_train_1():
     """
     Feature: JIT trace function
@@ -294,7 +289,6 @@ def test_trace_train_1():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_train_2():
     """
     Feature: JIT trace function
@@ -316,7 +310,6 @@ def test_trace_train_2():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_4():
     """
     Feature: JIT trace function
@@ -358,7 +351,6 @@ def test_trace_4():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_5():
     """
     Feature: JIT trace function
@@ -417,7 +409,6 @@ def test_trace_5():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_6():
     """
     Feature: JIT trace function
@@ -479,7 +470,6 @@ def test_trace_6():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_7():
     """
     Feature: JIT trace function
@@ -544,7 +534,6 @@ def test_trace_7():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_8():
     """
     Feature: JIT trace function
@@ -608,7 +597,6 @@ def test_trace_8():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_9():
     """
     Feature: JIT trace function
@@ -672,7 +660,6 @@ def test_trace_9():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="No support")
 def test_trace_10():
     """
     Feature: JIT trace function
