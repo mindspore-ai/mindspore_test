@@ -261,10 +261,10 @@ class Conv2d(_Conv):
         RuntimeError: On Ascend, due to the limitation of the L1 cache size of different NPU chip, if input size or
             kernel size is too large, it may trigger an error.
         TypeError: If `in_channels`, `out_channels` or `groups` is not an int.
-        TypeError: If `kernel_size`, `stride`, `padding` or `dilation` is neither an int not a tuple.
+        TypeError: If `kernel_size`, `stride` or `dilation` is neither an int not a tuple.
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
-        ValueError: If `padding` is `same` , but `stride` is not equal 1.
+        ValueError: If `padding` is `same` , `stride` is not equal to 1.
         ValueError: The input parameters do not satisfy the convolution output formula.
         ValueError: The KernelSize cannot exceed the size of the input feature map.
         ValueError: The value of padding cannot cause the calculation area to exceed the input size.

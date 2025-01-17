@@ -6166,8 +6166,8 @@ def _get_pad_nd_info(pad_l, pad_r):
 def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     r"""
     Applies a 2D convolution over an input tensor. The input tensor is typically of
-    shape :math:`(N, C_{in}, H_{in}, W_{in})`, where :math:`N` is batch size, :math:`C` is
-    channel number, :math:`H` is feature height, :math:`W` is feature width.
+    shape :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`,
+    where :math:`N` is batch size, :math:`C` is channel number, :math:`H` is feature height, :math:`W` is feature width.
 
     The output is calculated based on formula:
 
@@ -6210,7 +6210,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
+        input (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`.
         weight (Tensor): Tensor of shape
             :math:`(N, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`, then the size of kernel
             is :math:`(\text{kernel_size[0]}, \text{kernel_size[1]})`.
@@ -6249,7 +6249,7 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     Returns:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.
         To see how different pad modes affect the output shape, please refer to
-        :class:`mindspore.nn.Conv2d` for more details.
+        :class:`mindspore.mint.nn.Conv2d` for more details.
 
     Raises:
         ValueError: Args and size of the input feature map should satisfy the output formula to ensure that the size of
@@ -6257,12 +6257,12 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
             formula, please refer to :class:`mindspore.mint.nn.Conv2d`.
         RuntimeError: On Ascend, due to the limitation of the L1 cache size of different NPU chip, if input size or
             kernel size is too large, it may trigger an error.
-        TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.
-        TypeError: `groups` is not an int.
+        TypeError: If `in_channels` , `out_channels` or `groups` is not an int.
+        TypeError: If `kernel_size` , `stride` or `dilation` is neither an int nor a tuple.
         TypeError: If `bias` is not a Tensor.
         ValueError: If  the shape of `bias` is not :math:`(C_{out})` .
         ValueError: If `stride` or `dilation` is less than 1.
-        ValueError: If `padding` is `same` , but `stride` is not equal to 1.
+        ValueError: If `padding` is `same` , `stride` is not equal to 1.
         ValueError: The input parameters do not satisfy the convolution output formula.
         ValueError: The KernelSize cannot exceed the size of the input feature map.
         ValueError: The value of padding cannot cause the calculation area to exceed the input size.

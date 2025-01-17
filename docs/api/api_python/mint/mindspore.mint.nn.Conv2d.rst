@@ -91,10 +91,10 @@ mindspore.mint.nn.Conv2d
         - **ValueError** - 输入特征图的大小与参数应满足输出公式，以确保输出特征图大小为正，否则会报错。
         - **RuntimeError** - Ascend上受不同型号NPU芯片上L1缓存大小限制，用例尺寸或Kernel Size过大。
         - **TypeError** - 如果 `in_channels` ， `out_channels` 或者 `groups` 不是整数。
-        - **TypeError** - 如果 `kernel_size` ， `stride`， 或者 `dilation` 既不是整数也不是tuple。
+        - **TypeError** - 如果 `kernel_size` ， `stride`， 或者 `dilation` 既不是int也不是tuple。
         - **ValueError** - 如果 `in_channels` ， `out_channels`， `kernel_size` ， `stride` 或者 `dilation` 小于1。
         - **ValueError** - 如果 `padding` 小于0。
-        - **ValueError** - 如果 `padding` 是 ``"same"`` ， 但是 `stride` 不等于1。
+        - **ValueError** - 如果 `padding` 是 ``"same"`` ， `stride` 不等于1。
         - **ValueError** - 输入参数不满足卷积输出公式。
         - **ValueError** - `KernelSize` 不能超过输入特征图的大小。
         - **ValueError** - `padding` 值不能导致计算区域超出输入大小。

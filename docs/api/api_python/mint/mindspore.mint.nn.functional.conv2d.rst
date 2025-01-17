@@ -3,7 +3,7 @@ mindspore.mint.nn.functional.conv2d
 
 .. py:function:: mindspore.mint.nn.functional.conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1)
 
-    对输入Tensor计算二维卷积。通常输入的shape为 :math:`(N, C_{in}, H_{in}, W_{in})` ，其中 :math:`N` 为batch size，:math:`C` 为通道数， :math:`H` 为特征图的高度，:math:`W` 为特征图的宽度。
+    对输入Tensor计算二维卷积。通常输入的shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或 :math:`(C_{in}, H_{in}, W_{in})` ，其中 :math:`N` 为batch size，:math:`C` 为通道数， :math:`H` 为特征图的高度，:math:`W` 为特征图的宽度。
 
     根据以下公式计算输出：
 
@@ -34,7 +34,7 @@ mindspore.mint.nn.functional.conv2d
         这是一个实验性API，后续可能修改或删除。
     
     参数：
-        - **input** (Tensor) - shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 的Tensor。
+        - **input** (Tensor) - shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或 :math:`(N, C_{in}, H_{in}, W_{in})` 的Tensor。
         - **weight** (Tensor) - shape为 :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})` ，则卷积核的大小为 :math:`(\text{kernel_size[0]}, \text{kernel_size[1]})` 。
         - **bias** (Tensor，可选) - 偏置Tensor，shape为 :math:`(C_{out})` 的Tensor。如果 `bias` 是 ``None`` ，将不会添加偏置。默认值： ``None`` 。
         - **stride** (Union(int, tuple[int])，可选) - 卷积核移动的步长，数据类型为int，或者由2个int组成的tuple。一个int表示在高度和宽度方向的移动步长均为该值。两个int组成的tuple分别表示在高度和宽度方向的移动步长。默认值： ``1`` 。
@@ -55,12 +55,12 @@ mindspore.mint.nn.functional.conv2d
     异常：
         - **ValueError** - 输入特征图的大小与参数应满足输出公式，以确保输出特征图大小为正，否则会报错。输出公式请参考 :class:`mindspore.mint.nn.Conv2d` 以获取更多详细信息。
         - **RuntimeError** - Ascend上受不同型号NPU芯片上L1缓存大小限制，用例尺寸或Kernel Size不能过大。
-        - **TypeError** -  `stride` 或 `dilation` 既不是int也不是tuple。
-        - **TypeError** -  `groups` 不是int。
-        - **TypeError** -  `bias` 不是Tensor。
-        - **ValueError** - `bias` 的shape不是 :math:`(C_{out})` 。
-        - **ValueError** - `stride` 或 `diation` 小于1。
-        - **ValueError** - 如果 `padding` 是 ``"same"`` ， 但是 `stride` 不等于1。
+        - **TypeError** -  如果 `in_channels` ， `out_channels` 或者 `groups` 不是int。
+        - **TypeError** -  如果 `kernel_size` ， `stride` 或 `dilation` 既不是int也不是tuple。
+        - **TypeError** -  如果 `bias` 不是Tensor。
+        - **ValueError** - 如果 `bias` 的shape不是 :math:`(C_{out})` 。
+        - **ValueError** - 如果 `stride` 或 `diation` 小于1。
+        - **ValueError** - 如果 `padding` 是 ``"same"`` ， `stride` 不等于1。
         - **ValueError** - 输入参数不满足卷积输出公式。
         - **ValueError** - `KernelSize` 不能超过输入特征图的大小。
         - **ValueError** - `padding` 值不能导致计算区域超出输入大小。
