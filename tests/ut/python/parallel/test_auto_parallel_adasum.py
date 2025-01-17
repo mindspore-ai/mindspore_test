@@ -87,7 +87,6 @@ def test_auto_parallel_adasum2():
     compile_net(net, by_grad=False)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_auto_parallel_adasum3():
     """
     Feature: adasum in auto parallel.

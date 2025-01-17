@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,14 @@ std::vector<AnfNodePtr> RectifyInputsForNewCNode(const std::vector<AnfNodePtr> &
 
   std::vector<AnfNodePtr> new_inputs(inputs.begin(), inputs.end());
   auto op_inputs_num = op_def->indexes_.size();
+  auto graph_view_prim = op_def->is_graph_view_;
+  static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
+  if (graph_view_prim == true && !close_view_op) {
+    op_inputs_num = op_inputs_num + 1;  // for umonad input
+    auto monad_input = NewValueNode(kUMonad);
+    monad_input->set_abstract(kUMonad->ToAbstract());
+    (void)new_inputs.emplace_back(monad_input);
+  }
   new_inputs.resize(op_inputs_num + 1);  // 1 for primitive.
 
   // For new defined op, almost all old attrs is changed to inputs.

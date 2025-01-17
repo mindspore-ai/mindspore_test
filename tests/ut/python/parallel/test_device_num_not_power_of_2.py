@@ -100,7 +100,6 @@ def test_auto_parallel_device_num_24():
     compile_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_auto_parallel_device_num_24_1():
     """
     Feature: device num 24 in auto parallel.

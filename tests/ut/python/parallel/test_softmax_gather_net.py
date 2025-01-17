@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
@@ -94,7 +93,6 @@ def test_gather_and_softmax_1():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_and_softmax_2():
     """
     Feature: distribute operator gather in auto parallel.
@@ -110,7 +108,6 @@ def test_gather_and_softmax_2():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_and_softmax_3():
     """
     Feature: distribute operator gather in auto parallel.
@@ -126,7 +123,6 @@ def test_gather_and_softmax_3():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_and_softmax_4():
     """
     Feature: distribute operator gather in auto parallel.
@@ -157,7 +153,6 @@ def test_gather_and_softmax_5():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_and_softmax_6():
     """
     Feature: distribute operator gather in auto parallel.
@@ -216,7 +211,6 @@ def test_gatherv_and_softmax_9():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_softmax_forward_all_reduce():
     """
     Feature: distribute operator gather in auto parallel.
@@ -234,7 +228,6 @@ def test_gather_softmax_forward_all_reduce():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_softmax_shard_batch_and_axis():
     """
     Feature: distribute operator gather in auto parallel.
@@ -252,7 +245,6 @@ def test_gather_softmax_shard_batch_and_axis():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_softmax_split_axis_0_repeat_calc():
     """
     Feature: distribute operator gather in auto parallel.
@@ -294,7 +286,6 @@ def test_gather_softmax_auto1():
     compile_graph(net, 8, "auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_softmax_out_strategy_allreduce():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -312,7 +303,6 @@ def test_gather_softmax_out_strategy_allreduce():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_softmax_out_strategy_allreduce_repeat_calc():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -331,7 +321,6 @@ def test_gather_softmax_out_strategy_allreduce_repeat_calc():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gather_softmax_out_strategy_reducescatter():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -349,7 +338,6 @@ def test_gather_softmax_out_strategy_reducescatter():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_out_strategy_reducescatter_repeat_calc():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -367,7 +355,6 @@ def test_gatherv2_out_strategy_reducescatter_repeat_calc():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_shard_batch_and_axis_out_strategy_allreduce():
     """
     Feature: distribute operator gather in semi auto parallel.
@@ -385,7 +372,6 @@ def test_gatherv2_shard_batch_and_axis_out_strategy_allreduce():
     compile_graph(net, 8, "semi_auto_parallel", x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_shard_batch_and_axis_out_strategy_reducescatter():
     """
     Feature: distribute operator gather in semi auto parallel.

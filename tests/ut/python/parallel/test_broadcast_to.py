@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.context as context
@@ -86,7 +85,6 @@ def compile_net2(net):
     context.reset_auto_parallel_context()
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_BroadcastTo_parameter():
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
     strategy1 = ((1, 4, 2),)
@@ -95,7 +93,6 @@ def test_BroadcastTo_parameter():
     compile_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_BroadcastTo_parameter_no_full():
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
     strategy1 = ((1, 2, 2),)
@@ -104,7 +101,6 @@ def test_BroadcastTo_parameter_no_full():
     compile_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_BroadcastTo_auto_parallel():
     """
     Feature: test auto parallel
@@ -117,7 +113,6 @@ def test_BroadcastTo_auto_parallel():
     compile_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_BroadcastTo_matmul():
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
     strategy1 = ((2, 4),)

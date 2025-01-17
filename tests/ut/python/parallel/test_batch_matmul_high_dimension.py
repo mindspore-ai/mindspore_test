@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
 import numpy as np
 
 import mindspore as ms
@@ -105,7 +104,6 @@ def compile_net(net):
     context.reset_auto_parallel_context()
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_batch_matmul_2D_TP():
     """
     Feature: 2D/3D tensor parllel.
@@ -126,7 +124,6 @@ def test_batch_matmul_2D_TP():
     compile_batch_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_batch_matmul_2D_TP_transpose_b():
     """
     Feature: 2D/3D tensor parllel.
@@ -147,7 +144,6 @@ def test_batch_matmul_2D_TP_transpose_b():
     compile_batch_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_batch_matmul_2D_TP_reduce_1D():
     """
     Feature: 2D/3D tensor parllel.
@@ -168,7 +164,6 @@ def test_batch_matmul_2D_TP_reduce_1D():
     compile_batch_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_batch_matmul_3D_TP():
     """
     Feature: 2D/3D tensor parllel.
@@ -189,7 +184,6 @@ def test_batch_matmul_3D_TP():
     compile_batch_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_batch_matmul_3D_TP_transpose_b():
     """
     Feature: 2D/3D tensor parllel.
@@ -210,7 +204,6 @@ def test_batch_matmul_3D_TP_transpose_b():
     compile_batch_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_batch_matmul_3D_TP_reduce_2D():
     """
     Feature: 2D/3D tensor parllel.
@@ -231,7 +224,6 @@ def test_batch_matmul_3D_TP_reduce_2D():
     compile_batch_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_matmul_2D_TP():
     """
     Feature: 2D/3D tensor parllel.
@@ -252,7 +244,6 @@ def test_matmul_2D_TP():
     compile_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_matmul_2D_TP_transpose_b():
     """
     Feature: 2D/3D tensor parllel.
@@ -273,7 +264,6 @@ def test_matmul_2D_TP_transpose_b():
     compile_net(net)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_matmul_2D_TP_reduce_1D():
     """
     Feature: 2D/3D tensor parllel.

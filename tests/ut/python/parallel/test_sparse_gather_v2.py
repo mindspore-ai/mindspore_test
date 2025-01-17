@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 
 import mindspore as ms
@@ -78,7 +77,6 @@ def compile_net(net, index_shape, emb_shape, device_num=8, parallel_mode="semi_a
     _cell_graph_executor.compile(net, x, y)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_semi_auto0():
     """
     Feature: distribute operator SparseGatherV2 in auto parallel.
@@ -92,7 +90,6 @@ def test_gatherv2_semi_auto0():
     compile_net(net, [64 // 8, 64], [64 // 8, 64, 64])
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_semi_auto1():
     """
     Feature: distribute operator SparseGatherV2 in auto parallel.
@@ -117,7 +114,6 @@ def test_gatherv2_semi_auto2():
     compile_net(net, [64, 32], [64, 64, 64])
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_gatherv2_semi_auto3():
     """
     Feature: distribute operator SparseGatherV2 in auto parallel.

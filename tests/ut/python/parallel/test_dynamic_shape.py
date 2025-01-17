@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
 import numpy as np
 
 import mindspore as ms
@@ -95,7 +94,6 @@ def test_unique_column_split():
     _cell_graph_executor.compile(train_net, x)
 
 
-@pytest.mark.skip(reason="view feature not supported UT")
 def test_unique_row_split():
     class Net(nn.Cell):
         def __init__(self):
