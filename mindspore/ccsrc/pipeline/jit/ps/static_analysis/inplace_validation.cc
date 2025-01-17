@@ -24,7 +24,6 @@
 #include "mindspore/core/include/ir/core_ops_primitive.h"
 #include "frontend/optimizer/utils.h"
 #include "utils/trace_base.h"
-#include "mindspore/ops/op_def/array_ops.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -253,9 +252,6 @@ void CheckInplaceValidationInGrad(const FuncGraphPtr &func_graph) {
       // Has ref_key input: Load, InplaceOps, UpdateState
       auto inputs = cnode->inputs();
       if (HasRefKeyInput(node, refkey)) {
-        if (IsPrimitiveCNode(node, prim::kPrimZerosLike)) {
-          continue;
-        }
         if (IsPrimitiveCNode(node, prim::kPrimLoad)) {
           auto first_input_version = node_version[cnode->input(first_index)];
           auto second_input_version = node_version[cnode->input(second_index)];
