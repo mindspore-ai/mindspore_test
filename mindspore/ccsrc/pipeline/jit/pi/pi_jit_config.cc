@@ -74,6 +74,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"expand_graph_input", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphInput>},
   {"expand_graph_output", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphOutput>},
   // kEnableOptimizeForAttrItem
+  {"_symbolic", &GraphJitConfig::SetInt<GraphJitConfig::kSymbolic>},
   {"MAX_INLINE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxInlineDepth>},
   {"MAX_TRACE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxTraceDepth>},
   {"MAX_PRUNE_CASE", &GraphJitConfig::SetInt<GraphJitConfig::kMaxPruneCase>},
@@ -89,7 +90,6 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"allowed_inline_modules", &GraphJitConfig::AddAllowedInlineModules},
   {"pijit_forbidden", &GraphJitConfig::AddJitForbidden},
   {"pijit_constexpr", &GraphJitConfig::AddJitConstexpr},
-  {"pijit_attr_as_input", &GraphJitConfig::AddAttributeAsParameter},
   {"relax_guard_func", &GraphJitConfig::AddJitRelaxGuard},
   {"jit_level", &GraphJitConfig::AddJitLevel},
 };
@@ -126,10 +126,6 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kExpandGraphInput - kBoolConf] = true;
   bool_conf[kExpandGraphOutput - kBoolConf] = true;
 
-  /*'EnableOptimizeForAttrItem' options must be ensure that multiple calls of the
-   *__getattr__, __getitem__ function of the user-defined object do not affect the correctness.
-   */
-  bool_conf[kEnableOptimizeForAttrItem - kBoolConf] = true;
   bool_conf[kEnableEliminateUnusedOperation - kBoolConf] = false;
   bool_conf[kFeatureBreakAtInlinedFunction - kBoolConf] = true;
 
@@ -145,6 +141,7 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   int_conf[kLimitGraphSize - kIntConf] = 0;
   int_conf[kLimitGraphCount - kIntConf] = 0;
   int_conf[kGuardRelaxCount - kIntConf] = 0;
+  int_conf[kSymbolic - kIntConf] = 0;
 
   AddAllowedInlineModules("mindspore");
 
@@ -194,34 +191,6 @@ static bool AddToFuncMap(PyObject *list, const std::string &map_name, const std:
 
 bool GraphJitConfig::AddJitForbidden(PyObject *list) {
   return AddToFuncMap(list, kFuncMapName, "FUNC_KEY_PIJIT_FORBIDDEN");
-}
-
-bool GraphJitConfig::AddAttributeAsParameter(PyObject *list) {
-  py::object l = py::reinterpret_borrow<py::object>(list);
-  for (const auto &i : py::iter(l)) {
-    const char *name = nullptr;
-    if (PyUnicode_Check(i.ptr())) {
-      name = PyUnicode_AsUTF8(i.ptr());
-    } else if (PyModule_Check(i.ptr())) {
-      name = PyModule_GetName(i.ptr());
-    } else {
-      continue;
-    }
-    if (name == nullptr) {
-      PyErr_Clear();
-      continue;
-    }
-    AddAttributeAsParameter(name);
-  }
-  return true;
-}
-
-void GraphJitConfig::AddAttributeAsParameter(const std::string &attr_name) {
-  CaptureContext::GetInstance()->AddAttributeAsParameter(attr_name);
-}
-
-const std::set<std::string> &GraphJitConfig::attr_as_param_list() const {
-  return CaptureContext::GetInstance()->param_attr_names();
 }
 
 bool GraphJitConfig::AddJitLevel(PyObject *str) {

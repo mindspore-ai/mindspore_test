@@ -54,7 +54,6 @@ class GraphJitConfig {
     kLogPerf,
     kLogGuardPerf,
     kTestGraphIR,
-    kEnableOptimizeForAttrItem,
     kEnableEliminateUnusedOperation,
     kEnableGeneratorExpressionToTuple,
     kFeatureBreakAtInlinedFunction,
@@ -66,6 +65,7 @@ class GraphJitConfig {
     kExpandGraphOutput,
     /* ------------------------------ */
     kIntConf,
+    kSymbolic,
     kMaxInlineDepth,
     kMaxTraceDepth,
     kMaxPruneCase,
@@ -95,10 +95,6 @@ class GraphJitConfig {
   bool AddJitRelaxGuard(PyObject *list);
   bool AddJitConstexpr(PyObject *callable_list);
   bool AddJitForbidden(PyObject *callable_list);
-
-  bool AddAttributeAsParameter(PyObject *list);
-  void AddAttributeAsParameter(const std::string &attr_name);
-  const std::set<std::string> &attr_as_param_list() const;
 
   bool AddAllowedInlineModules(PyObject *str_list);
   std::string getJitLevel() const;

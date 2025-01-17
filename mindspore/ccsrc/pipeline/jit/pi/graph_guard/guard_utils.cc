@@ -2430,7 +2430,7 @@ static ItemDataPtr CreateItem(PyObject *obj, bool need_specialize, int recurse_d
   return dp;
 }
 
-GuardItem::GuardItem(TracePtr tt) : var_(tt), type_(GIType::GTUnknown), info_(nullptr) {}
+GuardItem::GuardItem(TracePtr tt) : var_(tt), type_(GIType::GTUnknown), info_(nullptr), fail_count_(0) {}
 
 void GuardItem::Replace(TracePtr dst, TracePtr src) {
   if (!var_) {
@@ -2455,7 +2455,7 @@ GuardItemPtr GuardItem::Optimize() {
   }
 }
 
-TracePtr GuardItem::GetTrace() { return var_; }
+TracePtr GuardItem::GetTrace() const { return var_; }
 
 bool GuardItem::operator==(const GuardItem &obj) const { return type_ == obj.type_ && *var_ == *(obj.var_); }
 

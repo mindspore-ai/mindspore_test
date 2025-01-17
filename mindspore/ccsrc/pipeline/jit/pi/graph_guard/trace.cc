@@ -182,7 +182,7 @@ TracePtr Trace::GetOrigin() {
 
 PyObject *Trace::GetObject() { return obj_; }
 
-TraceType Trace::GetTraceType() { return curType_; }
+TraceType Trace::GetTraceType() const { return curType_; }
 
 TraceType Trace::GetOriginType() { return originType_; }
 

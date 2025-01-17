@@ -51,7 +51,6 @@ class CaptureContext {
   const auto &wrapper_code() const { return wrapper_code_; }
   const auto &wrapped_func() const { return wrapped_func_; }
   const auto &known_modules() const { return known_modules_; }
-  const auto &param_attr_names() const { return param_attr_names_; }
 
   // setter
   void set_config(const std::shared_ptr<GraphJitConfig> &c) { config_ = c; }
@@ -74,8 +73,6 @@ class CaptureContext {
   }
 
   void AddKnownModule(const std::string &name) { known_modules_.insert(name); }
-
-  void AddAttributeAsParameter(const std::string &name) { param_attr_names_.insert(name); }
 
   // register the rule of skip code
   void RegisterSkipFile(const std::string &name) { skip_files_.insert(name); }
@@ -108,7 +105,6 @@ class CaptureContext {
   // skip rules
   std::set<std::string> skip_files_;
   std::set<std::string> known_modules_;
-  std::set<std::string> param_attr_names_;
 
   // wrapper info
   void *wrapper_code_;

@@ -325,6 +325,7 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
       g_guard_perf.LogGuardPerfEnd(item.get(), result);
     }
     if (!result) {
+      item->set_faile_count(item->fail_count() + 1);
       UpdateGuardList(item);
       if (fail != nullptr) {
         fail->operator[](item->Info().Id()) = false;
@@ -395,6 +396,18 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
   } else {
     return false;
   }
+}
+
+bool OptGuard::Erase(const GuardItemPtr &last) {
+  auto iter = std::find(guardList_.rbegin(), guardList_.rend(), last);
+  if (iter == guardList_.rend()) {
+    return false;
+  }
+  guardList_.erase(guardList_.begin() + std::distance(iter, guardList_.rend()) - 1);
+  auto m_iter = guardMap_.find(last->Info().Id());
+  MS_EXCEPTION_IF_CHECK_FAIL(m_iter != guardMap_.end() && m_iter->second == last, "id conflict !");
+  guardMap_.erase(m_iter);
+  return true;
 }
 
 const InfoPack &OptGuard::Info() {
