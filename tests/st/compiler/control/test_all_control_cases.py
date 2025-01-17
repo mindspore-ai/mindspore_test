@@ -18,7 +18,6 @@ from tests.st.compiler.control.cases_register import case_register
 from tests.mark_utils import arg_mark
 from mindspore import context
 
-@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_level0_ascend_cases():
     """
