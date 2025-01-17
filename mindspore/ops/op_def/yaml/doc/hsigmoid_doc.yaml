@@ -14,7 +14,7 @@ hsigmoid:
 
         HardSigmoid Activation Function Graph:
 
-        .. image:: ../images/HardSigmoid.png
+        .. image:: ../images/Hardsigmoid.png
             :align: center
 
         Args:
