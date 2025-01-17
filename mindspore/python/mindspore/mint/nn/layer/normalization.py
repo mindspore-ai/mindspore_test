@@ -403,7 +403,7 @@ class GroupNorm(Cell):
           additional dimensions.
 
     Outputs:
-        Tensor, the normalized and scaled offset tensor, has the same shape and data type as the `x`.
+        Tensor, the normalized and scaled offset tensor, has the same shape and data type as the `input`.
 
     Raises:
         TypeError: If `num_groups` or `num_channels` is not an int.

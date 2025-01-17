@@ -1447,7 +1447,7 @@ def unique_ext(input, sorted=True, return_inverse=False, return_counts=False, di
     when `return_inverse=True`, also return a tensor containing the index of each value of input
     tensor corresponding to the output unique tensor.
     when `return_counts=True`, also return a tensor containing the number of occurrences for each
-    unique value or tensor
+    unique value or tensor.
 
     Args:
         input (Tensor): The input tensor.
@@ -3183,7 +3183,7 @@ def sort_ext(input, *, dim=-1, descending=False, stable=False):
         TypeError: If `descending` is not a bool.
         TypeError: If `input` not in float16, float32, uint8, int8, int16, int32, int64, bfloat16
         TypeError: If `stable` is not a bool.
-        ValueError: If `dim` is not in range of [-len(input_x.shape), len(input_x.shape)).
+        ValueError: If `dim` is not in range of [-len(input.shape), len(input.shape)).
 
     Supported Platforms:
         ``Ascend``

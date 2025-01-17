@@ -1806,7 +1806,7 @@ def split(tensor, split_size_or_sections, dim=0):
     Raises:
         TypeError: If argument `tensor` is not Tensor.
         TypeError: If argument `dim` is not int.
-        ValueError: If argument `dim` is out of range of :[-tensor.ndim, tensor.ndim).
+        ValueError: If argument `dim` is out of range of [-tensor.ndim, tensor.ndim).
         TypeError: If each element in `split_size_or_sections` is not integer.
         TypeError: If argument `split_size_or_sections` is not int, tuple(int) or list(int).
         ValueError: The sum of `split_size_or_sections` is not equal to tensor.shape[dim].
@@ -1934,7 +1934,7 @@ def sub(input, other, *, alpha=1):
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default ``1``.
+        alpha (number.Number, optional): A scaling factor applied to `other`, default ``1``.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,

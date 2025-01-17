@@ -241,7 +241,7 @@ class MaxUnpool2d(Cell):
         TypeError: If data type of `input` or `indices` is not supported.
         TypeError: If `kernel_size`, `stride` or `padding` is neither an int nor a tuple.
         ValueError: If numbers in `stride`, `padding` or `kernel_size` is not positive.
-        ValueError: If the shape of `input` and `indices` are not equal.
+        ValueError: If the shapes of `input` and `indices` are not equal.
         ValueError: If `input` whose length is not 3 or 4.
         ValueError: If `output_size` whose type is not tuple.
         ValueError: If `output_size` is not close to output size computed by attr `kernel_size`, `stride`, `padding`.
