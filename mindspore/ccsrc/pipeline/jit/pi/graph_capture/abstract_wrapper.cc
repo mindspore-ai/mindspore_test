@@ -199,11 +199,7 @@ py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
     return py::object();
   }
 
-  if (pijit::kPIJitConfigDefault.GetBoolConfig(pijit::GraphJitConfig::kTraceFlag)) {
-    return ConvertToPythonTensor(py_obj);
-  }
-
-  return py_obj;
+  return ConvertToPythonTensor(py_obj);
 }
 
 // Create namedtuple python object.

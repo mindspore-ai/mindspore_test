@@ -21,10 +21,7 @@ from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 
-cfg = {
-    "print_after_all": False,
-    "compile_by_trace": True,
-}
+cfg = {"print_after_all": False}
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')

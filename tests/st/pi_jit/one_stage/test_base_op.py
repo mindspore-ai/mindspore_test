@@ -33,7 +33,6 @@ from mindspore._c_expression import Tensor as CppTensor
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
     "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
@@ -579,7 +578,7 @@ def test_use_free_variable():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @pi_jit_with_config(jit_config={"loop_unrolling": True, "compile_by_trace": True})
+        @pi_jit_with_config(jit_config={"loop_unrolling": True})
         def construct(self, x):
             mod = 2
             return any(i % mod == 0 for i in x)
@@ -605,7 +604,7 @@ def test_use_free_variable_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @pi_jit_with_config(jit_config={"compile_by_trace": True})
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             mod = 2
             return any(i % mod == 0 for i in x)

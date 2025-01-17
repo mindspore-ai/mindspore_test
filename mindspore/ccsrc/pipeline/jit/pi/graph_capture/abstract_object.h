@@ -75,13 +75,10 @@ class AbstractObjectBase {
   // record PyObject and check self reference for list,tuple,dict
   using RecMap = std::unordered_map<PyObject *, AObject *>;
 
-  static bool trace_flag_;
-
   explicit AbstractObjectBase(Type type) : type_object_(nullptr), type_(type), ms_flag_(0) {}
   virtual ~AbstractObjectBase() {}
 
   void SetTypeObject(PyTypeObject *tp) { type_object_ = tp; }
-  static void SetTraceFlag(bool trace_flag) { trace_flag_ = trace_flag; }
   PyTypeObject *GetTypeObject() const { return type_object_; }
   Type GetType() const { return type_; }
 
