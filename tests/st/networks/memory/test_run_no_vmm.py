@@ -15,7 +15,6 @@
 """
 Test module for dynamic allocator.
 """
-import pytest
 import os
 import subprocess
 from tests.mark_utils import arg_mark
@@ -57,7 +56,6 @@ def run_command(cmd, log_path, is_oom, is_two_pointer):
         os.remove(log_path)
 
 
-@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_no_vmm_kbk():
     """
