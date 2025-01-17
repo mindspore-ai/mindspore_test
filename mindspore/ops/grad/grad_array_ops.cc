@@ -774,9 +774,8 @@ std::pair<std::vector<bool>, std::vector<std::vector<int64_t>>> DynBroadcastGrad
                                 x_size < i ? 1 : shape[kIndex1][x_size - i],
                                 y_size < i ? 1 : shape[kIndex2][y_size - i]};
     const int64_t reduce_idx = SizeToLong(n - i);
-    bool is_dynamic = false;
     if (dim_value[kIndex1] == dim_value[kIndex0] && dim_value[kIndex2] == dim_value[kIndex0]) {
-      if (dim_value[kIndex0] == -1) {
+      if (dim_value[kIndex0] == abstract::TensorShape::kShapeDimAny) {
         need_shapecalc[kIndex0] = need_shapecalc[kIndex1] = need_shapecalc[kIndex2] = true;
         break;
       }
@@ -784,12 +783,7 @@ std::pair<std::vector<bool>, std::vector<std::vector<int64_t>>> DynBroadcastGrad
       for (size_t j = 0; j < kDim3; j++) {
         if (dim_value[j] == 1) {
           (void)reduce_axis[j].emplace_back(reduce_idx);
-        } else if (dim_value[j] > 0) {
-          is_dynamic = true;
-        }
-      }
-      for (size_t j = 0; j < kDim3; j++) {
-        if (is_dynamic && dim_value[j] == -1) {
+        } else if (dim_value[j] == abstract::TensorShape::kShapeDimAny) {
           need_shapecalc[j] = true;
           (void)reduce_axis[j].emplace_back(reduce_idx);
         }
