@@ -354,21 +354,18 @@ def test_parameter_argument_grad():
 
 
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as err1:
-        param = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='param')
-        x = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='x')
-        y = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='y')
-        net = ParameterArgumentCell()
-        net(param, x, y)
+    param = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='param')
+    x = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='x')
+    y = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='y')
+    net = ParameterArgumentCell()
+    net(param, x, y)
 
-        bparam = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='bparam')
-        bx = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='bx')
-        by = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='by')
-        grad_by_list = ms.ops.GradOperation(get_by_list=True)
-        grad_by_list(net, ParameterTuple(net.trainable_params()))(bparam, bx, by)
+    bparam = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='bparam')
+    bx = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='bx')
+    by = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='by')
+    grad_by_list = ms.ops.GradOperation(get_by_list=True)
+    grad_by_list(net, ParameterTuple(net.trainable_params()))(bparam, bx, by)
 
-        assert np.array_equal(param.asnumpy(), bparam.asnumpy())
-        assert np.array_equal(x.asnumpy(), bx.asnumpy())
-        assert np.array_equal(y.asnumpy(), by.asnumpy())
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
-            in str(err1.value))
+    assert np.array_equal(param.asnumpy(), bparam.asnumpy())
+    assert np.array_equal(x.asnumpy(), bx.asnumpy())
+    assert np.array_equal(y.asnumpy(), by.asnumpy())

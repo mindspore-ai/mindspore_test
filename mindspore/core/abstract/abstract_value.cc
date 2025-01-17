@@ -2900,19 +2900,6 @@ ValuePtr GetRefKeyValue(const AbstractBasePtr &abs) {
   return nullptr;
 }
 
-std::string GetRefKeyFromAbstract(const AbstractBasePtr &abs) {
-  auto abs_ref = abs->cast<abstract::AbstractRefPtr>();
-  if (abs_ref == nullptr) {
-    return "";
-  }
-  MS_EXCEPTION_IF_NULL(abs_ref->ref_key_value());
-  auto ref_key = abs_ref->ref_key_value()->cast<StringImmPtr>();
-  if (ref_key == nullptr) {
-    return "";
-  }
-  return ref_key->value();
-}
-
 void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg) {
   // Update inputs inplace abstract.
   if (old_arg != nullptr && old_arg->inplace_abstract() != nullptr && new_arg != nullptr) {

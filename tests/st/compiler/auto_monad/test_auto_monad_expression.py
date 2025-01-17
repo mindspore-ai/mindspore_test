@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 import os
-import pytest
 import re
 import shutil
 import numpy as np
@@ -199,27 +198,24 @@ def test_load_convert_tensormove():
     """
 
     if ms.context.get_context('mode') == 0:
-        with pytest.raises(RuntimeError) as info:
-            # set MS_DEV_SIDE_EFFECT_LOAD_ELIM = 0/1/2
-            os.environ['MS_DEV_SIDE_EFFECT_LOAD_ELIM'] = '1'
-            save_path = "./test_load_convert_tensormove"
-            context.set_context(save_graphs=True, save_graphs_path=save_path)
-            x = Tensor(np.array(1), ms.int32)
-            graph_forword_net = ForwardNet()
-            graph_backword_net = BackwardNet(graph_forword_net)
-            output_except = (Tensor(np.array(3), ms.int32),)
-            graph_mode_grads = graph_backword_net(x)
-            content2 = read_file(save_path)
-            tensormove_set = re.findall('= TensorMove', content2)
-            context.set_context(save_graphs=False)
-            try:
-                shutil.rmtree(save_path)
-            except FileNotFoundError:
-                pass
-            assert len(tensormove_set) == 3
-            assert np.all(graph_mode_grads == output_except)
-        assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-                in str(info.value))
+        # set MS_DEV_SIDE_EFFECT_LOAD_ELIM = 0/1/2
+        os.environ['MS_DEV_SIDE_EFFECT_LOAD_ELIM'] = '1'
+        save_path = "./test_load_convert_tensormove"
+        context.set_context(save_graphs=True, save_graphs_path=save_path)
+        x = Tensor(np.array(1), ms.int32)
+        graph_forword_net = ForwardNet()
+        graph_backword_net = BackwardNet(graph_forword_net)
+        output_except = (Tensor(np.array(3), ms.int32),)
+        graph_mode_grads = graph_backword_net(x)
+        content2 = read_file(save_path)
+        tensormove_set = re.findall('= TensorMove', content2)
+        context.set_context(save_graphs=False)
+        try:
+            shutil.rmtree(save_path)
+        except FileNotFoundError:
+            pass
+        assert len(tensormove_set) == 3
+        assert np.all(graph_mode_grads == output_except)
 
 
 class ForwardNet2(Cell):

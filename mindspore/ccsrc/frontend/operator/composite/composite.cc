@@ -1524,8 +1524,6 @@ FuncGraphPtr GradOperation::GenerateFuncGraph(const AbstractBasePtrList &args_ab
     TraceGuard guard(MakeTraceInfo<TraceGradOperation>(forward_graph->debug_info()));
     k_child = GetGrad(j, weights, position, forward_graph, is_weights_empty_or_none);
     k_child->set_flag(FUNC_GRAPH_FLAG_ARGS_NO_EXPAND, true);
-    auto k_child_output = k_child->output();
-    k_child_output->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(true));
   }
   grad_fg->set_output(NewValueNode(k_child));
 

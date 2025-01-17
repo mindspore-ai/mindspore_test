@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import numpy as np
 from tests.st.compiler.control.cases_register import case_register
 from mindspore.common import dtype as mstype
@@ -89,11 +88,8 @@ def test_backward():
     # Graph Mode
     context.set_context(mode=context.GRAPH_MODE)
 
-    with pytest.raises(RuntimeError) as err1:
-        graph_forward_net = ForwardNet(max_cycles=3)
-        graph_backward_net = BackwardNet(graph_forward_net)
-        graph_mode_grads = graph_backward_net(x, y)
+    graph_forward_net = ForwardNet(max_cycles=3)
+    graph_backward_net = BackwardNet(graph_forward_net)
+    graph_mode_grads = graph_backward_net(x, y)
 
-        assert graph_mode_grads == (Tensor(np.array(9), mstype.int32), Tensor(np.array(3), mstype.int32))
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
-            in str(err1.value))
+    assert graph_mode_grads == (Tensor(np.array(9), mstype.int32), Tensor(np.array(3), mstype.int32))

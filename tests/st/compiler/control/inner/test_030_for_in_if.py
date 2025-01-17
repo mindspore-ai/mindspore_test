@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 from tests.st.compiler.control.cases_register import case_register
 from mindspore import context
@@ -225,16 +224,13 @@ def test_for_in_if_04():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        for_in_if_net = ForInIfNet()
-        net = GradNet(for_in_if_net)
-        forward_net = ForInIfNet()
-        graph_forward_res = forward_net(x)
-        graph_backward_res = net(x)
-        assert graph_forward_res == Tensor([45], mstype.int32)
-        assert graph_backward_res == (Tensor([9], mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    for_in_if_net = ForInIfNet()
+    net = GradNet(for_in_if_net)
+    forward_net = ForInIfNet()
+    graph_forward_res = forward_net(x)
+    graph_backward_res = net(x)
+    assert graph_forward_res == Tensor([45], mstype.int32)
+    assert graph_backward_res == (Tensor([9], mstype.int32),)
 
 
 @case_register.level1
@@ -280,15 +276,12 @@ def test_for_in_if_05():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        for_in_if_net = ForInIfNet()
-        net = GradNet(for_in_if_net)
+    for_in_if_net = ForInIfNet()
+    net = GradNet(for_in_if_net)
 
-        forward_net = ForInIfNet()
-        graph_forward_res = forward_net(x)
-        graph_backward_res = net(x)
+    forward_net = ForInIfNet()
+    graph_forward_res = forward_net(x)
+    graph_backward_res = net(x)
 
-        assert graph_forward_res == Tensor([-91], mstype.int32)
-        assert graph_backward_res == (Tensor([13], mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    assert graph_forward_res == Tensor([-91], mstype.int32)
+    assert graph_backward_res == (Tensor([13], mstype.int32),)

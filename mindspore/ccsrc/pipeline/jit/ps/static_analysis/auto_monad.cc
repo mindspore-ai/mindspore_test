@@ -1826,12 +1826,6 @@ class AutoMonadConverter {
     auto depend_cnode = func_graph_->NewCNode({depend, output, node});
     depend_cnode->set_abstract(output->abstract());
     func_graph_->set_output(depend_cnode);
-    auto need_check = output->user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD);
-    if (need_check != nullptr && (*need_check)) {
-      MS_LOG(DEBUG) << "node need check:" << output->DebugString();
-      output->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(false));
-      depend_cnode->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(true));
-    }
   }
 
   AnfNodePtr GetGraphOutput() const {

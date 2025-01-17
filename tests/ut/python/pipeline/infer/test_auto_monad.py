@@ -70,13 +70,11 @@ def test_assign_only_grad():
             return grad_all_list(self.net, self.parameter_tuple)(x, y)
 
 
-    with pytest.raises(RuntimeError) as err1:
-        assign_net = AssignOnlyNet()
-        net = GradNet(assign_net)
-        x = Tensor(np.array([2.0], np.float32))
-        y = Tensor(np.array([3.0], np.float32))
-        print(net(x, y))
-    assert "A leaf Variable that requires grad is being used in an in-place operation" in str(err1.value)
+    assign_net = AssignOnlyNet()
+    net = GradNet(assign_net)
+    x = Tensor(np.array([2.0], np.float32))
+    y = Tensor(np.array([3.0], np.float32))
+    print(net(x, y))
 
 
 def test_load_assign_grad():
@@ -101,13 +99,11 @@ def test_load_assign_grad():
         def construct(self, x, y):
             return grad_all_list(self.net, self.parameter_tuple)(x, y)
 
-    with pytest.raises(RuntimeError) as err1:
-        assign_net = AssignNet()
-        net = GradNet(assign_net)
-        x = Tensor(np.array([2.0], np.float32))
-        y = Tensor(np.array([3.0], np.float32))
-        print(net(x, y))
-    assert "A leaf Variable that requires grad is being used in an in-place operation" in str(err1.value)
+    assign_net = AssignNet()
+    net = GradNet(assign_net)
+    x = Tensor(np.array([2.0], np.float32))
+    y = Tensor(np.array([3.0], np.float32))
+    print(net(x, y))
 
 
 def test_insert_gradient_of():
@@ -350,15 +346,12 @@ def test_grad_fv_and_insert_gradient_of():
             out = self.getG(x)
             return out
 
-    with pytest.raises(RuntimeError) as info:
-        net = FvAndInsertGradientNet()
-        input_data = Tensor(np.array([1.0], np.float32))
-        # if use grad_all_list, the generated graph will have EnvironSet
-        # as gradient for inputs is constant zero, so it will depend on result of grad.
-        grad_net = grad_by_list(net, ParameterTuple(net.trainable_params()))
-        print(grad_net(input_data))
-    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
-
+    net = FvAndInsertGradientNet()
+    input_data = Tensor(np.array([1.0], np.float32))
+    # if use grad_all_list, the generated graph will have EnvironSet
+    # as gradient for inputs is constant zero, so it will depend on result of grad.
+    grad_net = grad_by_list(net, ParameterTuple(net.trainable_params()))
+    print(grad_net(input_data))
 
 # should compile success as cnode with Partial primitive will not bind an additional U monad.
 def test_partial_parameter():

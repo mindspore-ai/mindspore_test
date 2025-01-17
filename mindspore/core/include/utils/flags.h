@@ -48,8 +48,6 @@ inline const char ATTR_VALUE[] = "value";
 inline const char ATTR_DTYPE[] = "dtype";
 inline const char ATTR_SHAPE[] = "shape";
 inline const char ATTR_NO_ELIMINATE[] = "no_eliminate";
-
-inline const char NODE_FLAG_CHECK_INPLACE_GRAD[] = "check_inplace_grad";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_UTILS_FLAGS_H

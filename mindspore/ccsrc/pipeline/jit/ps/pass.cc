@@ -99,7 +99,6 @@
 #include "pipeline/jit/ps/pipeline_split.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "pipeline/jit/ps/static_analysis/auto_monad.h"
-#include "pipeline/jit/ps/static_analysis/inplace_validation.h"
 #include "frontend/optimizer/irpass/branch_culling.h"
 #include "frontend/optimizer/irpass/meta_fg_eliminate.h"
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
@@ -368,10 +367,6 @@ FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_f
 }
 
 namespace {
-bool InplaceValidationWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return InplaceValidation(root); }
-bool InplaceValidationAfterExpandWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
-  return InplaceValidationAfterExpand(root);
-}
 bool ReAutoMonadWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return ReAutoMonad(root); }
 REGISTER_OPT_PASS_FUNC(ReAutoMonadWrapper)
 bool parallel_mode() {
@@ -579,9 +574,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},
-     {"inplace_validation", opt::OptPassConfig(InplaceValidationWrapper)},
      {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
-     {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
      {"flash_sp_send_recv_attached", opt::OptPassConfig(parallel::FlashSPSendRecvNodeAttach)},
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
      {"after_resolve", after_resolve_pass},

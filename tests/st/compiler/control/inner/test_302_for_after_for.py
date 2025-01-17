@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
 from tests.st.compiler.control.cases_register import case_register
 from mindspore import context
@@ -129,16 +128,13 @@ def test_for_after_for_02():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        for_after_for_net = ForAfterForNet()
-        net = GradNet(for_after_for_net)
+    for_after_for_net = ForAfterForNet()
+    net = GradNet(for_after_for_net)
 
-        forward_net = ForAfterForNet()
-        graph_forward_res = forward_net(x)
-        graph_backward_res = net(x)
+    forward_net = ForAfterForNet()
+    graph_forward_res = forward_net(x)
+    graph_backward_res = net(x)
 
-        # pynative mode
-        assert graph_forward_res == Tensor([1620], mstype.int32)
-        assert graph_backward_res == (Tensor([20], mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    # pynative mode
+    assert graph_forward_res == Tensor([1620], mstype.int32)
+    assert graph_backward_res == (Tensor([20], mstype.int32),)

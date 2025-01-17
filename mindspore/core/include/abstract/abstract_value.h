@@ -1821,7 +1821,6 @@ MS_CORE_API std::string ExtractLoggingInfo(const std::string &info);
 MS_CORE_API void SynchronizeSequenceElementsUseFlagsRecursively(const AbstractSequencePtr &lhs_sequence,
                                                                 const AbstractSequencePtr &rhs_sequence);
 MS_CORE_API ValuePtr GetRefKeyValue(const AbstractBasePtr &abs);
-MS_CORE_API std::string GetRefKeyFromAbstract(const AbstractBasePtr &abs);
 
 MS_CORE_API void SynchronizeSuccessiveInputs(const AbstractBasePtr &old_arg, const AbstractBasePtr &new_arg);
 }  // namespace abstract
