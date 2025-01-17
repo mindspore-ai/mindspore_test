@@ -138,7 +138,7 @@ mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910b
 custom_workspace
 
 # leftover internal kernel files after extraction
-mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/ms_kernels_internal
-mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/ms_kernels_dependency
-mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/ms_kernels_internal
-mindpsore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/ms_kernels_dependency
+mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/*ms_kernels_internal
+mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/aarch64/*ms_kernels_dependency
+mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/*ms_kernels_internal
+mindspore/ccsrc/plugin/device/ascend/kernel/internal/prebuild/x86_64/*ms_kernels_dependency

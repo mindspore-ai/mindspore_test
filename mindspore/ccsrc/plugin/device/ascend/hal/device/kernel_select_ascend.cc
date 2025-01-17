@@ -589,18 +589,6 @@ void HandleKernelSelectFailure(const KernelGraphPtr &graph, const CNodePtr &node
   }
 }
 
-std::vector<std::string> SplitString(const std::string &str, char delim) {
-  std::stringstream ss(str);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim)) {
-    if (!item.empty()) {
-      elems.emplace_back(item);
-    }
-  }
-  return elems;
-}
-
 void CollectOpSelectedType(std::string op_name, SelectedKernelType op_type, std::vector<size_t> *op_selected_num,
                            std::vector<std::set<std::string>> *op_selected_type) {
   MS_EXCEPTION_IF_NULL(op_selected_type);
@@ -631,7 +619,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
     return result;
   }
 
-  if (IsEnableInternalNode(node)) {
+  if (kernel::IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);
     CollectOpSelectedType(op_name, SelectedKernelType::INTERNAL_KERNEL, op_selected_num, &op_selected_type);
     return result;
@@ -742,37 +730,6 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
   bool ret = ReadAclnnEnableEnv(op_name);
   kIsEnableAclnnMap.insert({op_name, ret});
   return ret;
-}
-
-bool IsEnableInternalNode(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto enable_internal = false;
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->IsEnableInferBoost()) {
-    enable_internal = true;
-  }
-
-  std::string op_name = common::AnfAlgo::GetCNodeName(node);
-  if (op_name == "ReshapeExt") {
-    enable_internal = true;
-  }
-
-  if (op_name == "QuantBatchMatmul") {
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (!IsValueNode<None>(cnode->input(kIndex6))) {
-      enable_internal = false;
-    }
-  }
-  std::string disable_name_list = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
-  std::vector<std::string> op_name_vec = SplitString(disable_name_list, ',');
-  if (std::any_of(op_name_vec.begin(), op_name_vec.end(),
-                  [&op_name](const std::string &name) { return name == op_name; })) {
-    enable_internal = false;
-  }
-
-  return enable_internal && kernel::IsRegisteredInternalKernel(node);
 }
 
 void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes) {
