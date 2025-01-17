@@ -28,12 +28,14 @@ ShardShuffle::ShardShuffle(uint32_t seed, ShuffleType shuffle_type)
       shuffle_type_(shuffle_type) {}
 
 ShardShuffle::ShardShuffle(uint32_t seed, int64_t no_of_samples, bool replacement, bool reshuffle_each_epoch,
-                           ShuffleType shuffle_type)
+                           ShuffleType shuffle_type, dataset::ShuffleMode shuffle_mode)
     : shuffle_seed_(seed),
       no_of_samples_(no_of_samples),
       replacement_(replacement),
       reshuffle_each_epoch_(reshuffle_each_epoch),
-      shuffle_type_(shuffle_type) {}
+      shuffle_type_(shuffle_type) {
+  UpdateShuffleMode(shuffle_mode);
+}
 
 int64_t ShardShuffle::GetNumSamples(int64_t dataset_size, int64_t num_classes) {
   if (replacement_) {

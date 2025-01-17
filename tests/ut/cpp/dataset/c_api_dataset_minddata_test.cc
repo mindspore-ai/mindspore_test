@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "common/common.h"
+#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/core/tensor.h"
 
@@ -263,7 +264,7 @@ TEST_F(MindDataTestPipeline, TestMindDataSuccess6) {
   EXPECT_NE(ds3, nullptr);
 
   // Check distributed sampler, output number is 3, get 3 samples in shard 0
-  std::shared_ptr<Dataset> ds4 = MindData(file_list, {}, std::make_shared<DistributedSampler>(2, 0, false, 10));
+  std::shared_ptr<Dataset> ds4 = MindData(file_list, {}, std::make_shared<DistributedSampler>(2, 0, ShuffleMode::kFalse, 10));
   EXPECT_NE(ds4, nullptr);
 
   // Check distributed sampler get 3 samples with indice 0, 1 ,2

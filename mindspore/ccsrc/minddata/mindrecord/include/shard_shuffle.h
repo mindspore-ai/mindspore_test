@@ -27,7 +27,8 @@ class MINDRECORD_API ShardShuffle : public ShardOperator {
   explicit ShardShuffle(uint32_t seed = 0, ShuffleType shuffle_type = kShuffleCategory);
 
   ShardShuffle(uint32_t seed, int64_t no_of_samples, bool replacement, bool reshuffle_each_epoch,
-               ShuffleType shuffle_type = kShuffleSample);
+               ShuffleType shuffle_type = kShuffleSample,
+               dataset::ShuffleMode shuffle_mode = dataset::ShuffleMode::kGlobal);
 
   ~ShardShuffle() override{};
 

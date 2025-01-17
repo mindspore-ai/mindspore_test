@@ -31,11 +31,11 @@
 namespace mindspore {
 namespace dataset {
 // Constructor
-DistributedSamplerObj::DistributedSamplerObj(int64_t num_shards, int64_t shard_id, bool shuffle, int64_t num_samples,
-                                             uint32_t seed, int64_t offset, bool even_dist)
+DistributedSamplerObj::DistributedSamplerObj(int64_t num_shards, int64_t shard_id, dataset::ShuffleMode shuffle_mode,
+                                             int64_t num_samples, uint32_t seed, int64_t offset, bool even_dist)
     : num_shards_(num_shards),
       shard_id_(shard_id),
-      shuffle_(shuffle),
+      shuffle_mode_(shuffle_mode),
       num_samples_(num_samples),
       seed_(seed),
       offset_(offset),
@@ -76,7 +76,17 @@ Status DistributedSamplerObj::ValidateParams() {
 
 Status DistributedSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   // runtime sampler object
-  *sampler = std::make_shared<dataset::DistributedSamplerRT>(num_shards_, shard_id_, shuffle_, num_samples_, seed_,
+  if (shuffle_mode_ != dataset::ShuffleMode::kFalse && shuffle_mode_ != dataset::ShuffleMode::kGlobal) {
+    RETURN_STATUS_UNEXPECTED(
+      "The current dataset's shuffle mode should be Shuffle.FALSE or Shuffle.GLOBAL. Other "
+      "shuffle modes are not supported yet.");
+  }
+  bool shuffle = false;
+  if (shuffle_mode_ == dataset::ShuffleMode::kGlobal) {
+    shuffle = true;
+  }
+
+  *sampler = std::make_shared<dataset::DistributedSamplerRT>(num_shards_, shard_id_, shuffle, num_samples_, seed_,
                                                              offset_, even_dist_);
   Status s = BuildChildren(sampler);
   sampler = s.IsOk() ? sampler : nullptr;
@@ -86,7 +96,7 @@ Status DistributedSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) 
 #ifndef ENABLE_ANDROID
 std::shared_ptr<mindrecord::ShardOperator> DistributedSamplerObj::BuildForMindDataset() {
   // runtime mindrecord sampler object
-  auto mind_sampler = std::make_shared<mindrecord::ShardDistributedSample>(num_shards_, shard_id_, shuffle_, seed_,
+  auto mind_sampler = std::make_shared<mindrecord::ShardDistributedSample>(num_shards_, shard_id_, shuffle_mode_, seed_,
                                                                            num_samples_, offset_);
   return mind_sampler;
 }
@@ -98,7 +108,7 @@ Status DistributedSamplerObj::to_json(nlohmann::json *const out_json) {
   args["sampler_name"] = "DistributedSampler";
   args["num_shards"] = num_shards_;
   args["shard_id"] = shard_id_;
-  args["shuffle"] = shuffle_;
+  args["shuffle_mode"] = shuffle_mode_;
   args["seed"] = seed_;
   args["offset"] = offset_;
   args["num_samples"] = num_samples_;
@@ -112,18 +122,18 @@ Status DistributedSamplerObj::from_json(nlohmann::json json_obj, int64_t num_sam
                                         std::shared_ptr<SamplerObj> *sampler) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_shards", "DistributedSampler"));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "shard_id", "DistributedSampler"));
-  RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "shuffle", "DistributedSampler"));
+  RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "shuffle_mode", "DistributedSampler"));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "seed", "DistributedSampler"));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "offset", "DistributedSampler"));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "even_dist", "DistributedSampler"));
   int64_t num_shards = json_obj["num_shards"];
   int64_t shard_id = json_obj["shard_id"];
-  bool shuffle = json_obj["shuffle"];
+  dataset::ShuffleMode shuffle_mode = json_obj["shuffle_mode"];
   uint32_t seed = json_obj["seed"];
   int64_t offset = json_obj["offset"];
   bool even_dist = json_obj["even_dist"];
   *sampler =
-    std::make_shared<DistributedSamplerObj>(num_shards, shard_id, shuffle, num_samples, seed, offset, even_dist);
+    std::make_shared<DistributedSamplerObj>(num_shards, shard_id, shuffle_mode, num_samples, seed, offset, even_dist);
   // Run common code in super class to add children samplers
   RETURN_IF_NOT_OK(SamplerObj::from_json(json_obj, sampler));
   return Status::OK();
@@ -131,8 +141,8 @@ Status DistributedSamplerObj::from_json(nlohmann::json json_obj, int64_t num_sam
 #endif
 
 std::shared_ptr<SamplerObj> DistributedSamplerObj::SamplerCopy() {
-  auto sampler =
-    std::make_shared<DistributedSamplerObj>(num_shards_, shard_id_, shuffle_, num_samples_, seed_, offset_, even_dist_);
+  auto sampler = std::make_shared<DistributedSamplerObj>(num_shards_, shard_id_, shuffle_mode_, num_samples_, seed_,
+                                                         offset_, even_dist_);
   for (const auto &child : children_) {
     Status rc = sampler->AddChildSampler(child);
     if (rc.IsError()) {

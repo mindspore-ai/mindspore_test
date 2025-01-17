@@ -27,9 +27,11 @@ import numpy as np
 import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
 from mindspore import log as logger
+from mindspore.dataset import Shuffle
 from mindspore.dataset.vision import Inter
 from mindspore.mindrecord import FileWriter, set_enc_key, set_enc_mode
 from util import config_get_set_seed
+
 
 FILES_NUM = 4
 CV_DIR_NAME = "../data/mindrecord/testImageNetData"
@@ -2988,6 +2990,212 @@ def test_minddataset_with_empty_file():
     os.remove(file_name2 + ".db")
 
 
+mindrecord_sample_count = [100, 77, 37, 19]
+
+
+@pytest.fixture
+def add_and_remove_mindrecord_files():
+    """add/remove mindrecord files"""
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    try:
+        total = 0
+        for x in mindrecord_sample_count:
+            if os.path.exists("{}{}".format(file_name, str(x))):
+                os.remove("{}{}".format(file_name, str(x)))
+            if os.path.exists("{}{}.db".format(file_name, str(x))):
+                os.remove("{}{}.db".format(file_name, str(x)))
+            writer = FileWriter("{}{}".format(file_name, str(x)))
+            schema_json = {"file_name": {"type": "string"}, "label": {"type": "int32"}, "data": {"type": "bytes"}}
+            writer.add_schema(schema_json, "test_schema")
+            indexes = ["file_name", "label"]
+            writer.add_index(indexes)
+            for i in range(x):
+                data = [{"file_name": str(i + total) + ".jpg", "label": i + total,
+                         "data": b"\x10c\xb3w\xa8\xee$o&<q\x8c\x8e(\xa2\x90\x90\x96\xbc\xb1\x1e\xd4QER\x13?\xff"}]
+                writer.write_raw_data(data)
+                total += 1
+            writer.commit()
+        yield
+    except Exception as error:
+        for x in mindrecord_sample_count:
+            os.remove("{}{}".format(file_name, str(x)))
+            os.remove("{}{}.db".format(file_name, str(x)))
+        raise error
+    else:
+        for x in mindrecord_sample_count:
+            os.remove("{}{}".format(file_name, str(x)))
+            os.remove("{}{}.db".format(file_name, str(x)))
+
+
+def get_attribute(dataset, size):
+    assert dataset.get_dataset_size() == size
+    print(dataset.output_shapes())
+    print(dataset.output_types())
+    print(dataset.get_col_names())
+    assert dataset.get_batch_size() == 1
+
+
+@pytest.mark.parametrize("shuffle, label",
+                         [(None, 184),
+                          (True, 184),
+                          (False, 0),
+                          (Shuffle.ADAPTIVE, 184),
+                          (Shuffle.GLOBAL, 184),
+                          (Shuffle.PARTIAL, 92),
+                          (Shuffle.FILES, 100),
+                          (Shuffle.INFILE, 96)])
+def test_parameter_shuffle(add_and_remove_mindrecord_files, shuffle, label):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset when shuffle is PARTIAL and ADAPTIVE
+    Expectation: Output is equal to the expected output
+    """
+    file_name = file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    mindrecord_files = ["{}{}".format(file_name, str(x)) for x in mindrecord_sample_count]
+    actual_dataset_size = sum(mindrecord_sample_count)
+
+    original_seed = config_get_set_seed(1234)
+
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, shuffle=shuffle)
+    get_attribute(dataset, actual_dataset_size)
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == label
+        break
+
+    ds.config.set_seed(original_seed)
+
+
+@pytest.mark.parametrize("sampler, label",
+                         [(ds.RandomSampler(), 184),
+                          (ds.RandomSampler(shuffle=Shuffle.ADAPTIVE), 184),
+                          (ds.RandomSampler(shuffle=Shuffle.GLOBAL), 184),
+                          (ds.RandomSampler(shuffle=Shuffle.PARTIAL), 92),
+                          (ds.RandomSampler(shuffle=Shuffle.FILES), 100),
+                          (ds.RandomSampler(shuffle=Shuffle.INFILE), 96)])
+def test_parameter_RandomSampler(add_and_remove_mindrecord_files, sampler, label):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset when RandomSampler is PARTIAL and ADAPTIVE
+    Expectation: Output is equal to the expected output
+    """
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    mindrecord_files = ["{}{}".format(file_name, str(x)) for x in mindrecord_sample_count]
+    actual_dataset_size = sum(mindrecord_sample_count)
+
+    original_seed = config_get_set_seed(1234)
+
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=sampler)
+    get_attribute(dataset, actual_dataset_size)
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == label
+        break
+
+    ds.config.set_seed(original_seed)
+
+
+def test_parameter_DistributedSampler(add_and_remove_mindrecord_files):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset when parameter DistributedSampler with PARTIAL and ADAPTIVE
+    Expectation: Output is equal to the expected output
+    """
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    mindrecord_files = ["{}{}".format(file_name, str(x)) for x in mindrecord_sample_count]
+    actual_dataset_size = sum(mindrecord_sample_count)
+
+    original_seed = config_get_set_seed(1234)
+
+    # Parmetrize will cause config.set_seed to fail to take effect.
+    # Therefore, parametrize is not used in this test case.
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 136
+        break
+
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5, shuffle=True)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 136
+        break
+
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5, shuffle=False)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 200
+        break
+
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5, shuffle=Shuffle.ADAPTIVE)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 136
+        break
+
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5, shuffle=Shuffle.GLOBAL)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 136
+        break
+
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5, shuffle=Shuffle.PARTIAL)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 164
+        break
+
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5, shuffle=Shuffle.FILES)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 108
+        break
+
+    distributed_sampler = ds.DistributedSampler(num_shards=8, shard_id=5, shuffle=Shuffle.INFILE)
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, sampler=distributed_sampler)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == 164
+        break
+
+    ds.config.set_seed(original_seed)
+
+
+@pytest.mark.parametrize("shuffle, num_shards, shard_id, label",
+                         [(None, 8, 5, 136),
+                          (True, 8, 5, 136),
+                          (False, 8, 5, 200),
+                          (Shuffle.ADAPTIVE, 8, 5, 136),
+                          (Shuffle.GLOBAL, 8, 5, 136),
+                          (Shuffle.PARTIAL, 8, 5, 164),
+                          (Shuffle.FILES, 8, 5, 108),
+                          (Shuffle.INFILE, 8, 5, 164)])
+def test_parameter_shuffle_num_shards_shard_id(add_and_remove_mindrecord_files, shuffle, num_shards, shard_id, label):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset when shuffle is PARTIAL and ADAPTIVE and num_shards & shard_id
+    Expectation: Output is equal to the expected output
+    """
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    mindrecord_files = ["{}{}".format(file_name, str(x)) for x in mindrecord_sample_count]
+    actual_dataset_size = sum(mindrecord_sample_count)
+
+    original_seed = config_get_set_seed(1234)
+
+    dataset = ds.MindDataset(dataset_files=mindrecord_files, shuffle=shuffle, num_shards=num_shards, shard_id=shard_id)
+    get_attribute(dataset, math.ceil(actual_dataset_size / 8))
+    for item in dataset.create_dict_iterator():
+        assert item["label"] == label
+        break
+
+    ds.config.set_seed(original_seed)
+
+
 if __name__ == '__main__':
     test_nlp_compress_data(add_and_remove_nlp_compress_file)
     test_nlp_compress_data_old_version(add_and_remove_nlp_compress_file)
@@ -3027,3 +3235,7 @@ if __name__ == '__main__':
     test_for_loop_dataset_iterator(add_and_remove_nlp_compress_file)
     test_minddataset_with_encode()
     test_minddataset_with_empty_file()
+    test_parameter_shuffle(add_and_remove_mindrecord_files, None, 184)
+    test_parameter_RandomSampler(add_and_remove_mindrecord_files, ds.RandomSampler(), 184)
+    test_parameter_DistributedSampler(add_and_remove_mindrecord_files)
+    test_parameter_shuffle_num_shards_shard_id(add_and_remove_mindrecord_files, None, 8, 5, 136)

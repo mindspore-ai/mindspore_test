@@ -228,6 +228,11 @@ Status ShardSample::UpdatePartitionWhenSlowMode(ShardTaskList &tasks) {
     }
   }
 
+  for (const auto &item : vpssc) {
+    MS_LOG(INFO) << "Distribute samples, partition_id: " << partition_id_ << ", task_type: " << item.task_type
+                 << ", shard_id: " << item.shard_id << ", start: " << item.start << ", end: " << item.end;
+  }
+
   tasks.SetPartitionedShardSampleCount(vpssc);
 
   // update vpssc by no_of_samples_

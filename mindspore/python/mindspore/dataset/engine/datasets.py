@@ -38,7 +38,6 @@ import warnings
 import time
 import uuid
 import multiprocessing
-from enum import Enum
 from importlib import import_module
 import sys
 import threading
@@ -64,6 +63,7 @@ from mindspore.parallel._utils import _get_device_num
 from mindspore.dataset.debug import DebugHook
 
 from mindspore.dataset.engine import samplers
+from mindspore.dataset.engine.samplers import Shuffle
 from .iterators import DictIterator, TupleIterator, DummyIterator, check_iterator_cleanup, _set_iterator_cleanup, \
     ITERATORS_LIST, _unset_iterator_cleanup, _cleanup_the_iterators_if_created
 from .queue import _SharedQueue, _Queue
@@ -134,71 +134,6 @@ def _reset_training_dataset(global_step, dataset_size):
         dataset._reset(global_step, dataset_size)  # pylint: disable=protected-access
     else:
         raise RuntimeError("Training dataset is not set.")
-
-
-class Shuffle(str, Enum):
-    """Specify the shuffle mode.
-
-    - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-    - ``Shuffle.FILES`` : Shuffle files only.
-    - ``Shuffle.INFILE`` : Shuffle data within each file.
-    """
-    GLOBAL: str = "global"
-    FILES: str = "files"
-    INFILE: str = "infile"
-
-
-ShuffleToShuffleMode = {Shuffle.FILES: cde.ShuffleMode.FILES,
-                        Shuffle.GLOBAL: cde.ShuffleMode.GLOBAL,
-                        Shuffle.INFILE: cde.ShuffleMode.INFILE}
-
-
-def shuffle_to_shuffle_mode(shuffle):
-    """
-    Shuffle Enum to Shuffle Mode
-
-    Args:
-        shuffle (Shuffle): shuffle flag to shuffle mode in C layer
-
-    Returns:
-        ShuffleMode, shuffle mode
-    """
-    shuffle_mode = cde.ShuffleMode.GLOBAL  # Global shuffle
-    if not isinstance(shuffle, Shuffle):
-        if shuffle is None or shuffle:
-            shuffle_mode = cde.ShuffleMode.GLOBAL  # Global shuffle
-        else:
-            shuffle_mode = cde.ShuffleMode.FALSE  # No shuffle
-    else:
-        shuffle_mode = ShuffleToShuffleMode[shuffle]
-    return shuffle_mode
-
-
-def shuffle_to_bool(shuffle):
-    """
-    Shuffle Enum to bool
-
-    Args:
-        shuffle (Shuffle): shuffle flag to bool
-
-    Returns:
-        bool, True / False
-    """
-    if shuffle is not None and not isinstance(shuffle, (bool, Shuffle)):
-        raise TypeError("shuffle must be of boolean or enum of 'Shuffle' values like 'Shuffle.GLOBAL' or "
-                        "'Shuffle.FILES' or 'Shuffle.INFILE'.")
-
-    shuffle_bool = True
-    if not isinstance(shuffle, Shuffle):
-        if shuffle is None:
-            shuffle_bool = None
-        elif shuffle:
-            shuffle_bool = True
-        else:
-            shuffle_bool = False
-    else:
-        shuffle_bool = True
-    return shuffle_bool
 
 
 @check_zip
@@ -2348,10 +2283,10 @@ class SourceDataset(Dataset):
         self.shard_id = replace_none(shard_id, 0)
 
         if shuffle is not None and not isinstance(shuffle, (bool, Shuffle)):
-            raise TypeError("shuffle must be of boolean or enum of 'Shuffle' values like 'Shuffle.GLOBAL' or "
-                            "'Shuffle.FILES' or 'Shuffle.INFILE'.")
+            raise TypeError("shuffle must be of boolean or enum of 'Shuffle' values like 'Shuffle.ADAPTIVE' or "
+                            "'Shuffle.GLOBAL' or 'Shuffle.PARTIAL' or 'Shuffle.FILES' or 'Shuffle.INFILE'.")
 
-        self.shuffle_flag = 2  # Global shuffle
+        self.shuffle_flag = 5  # Adaptive shuffle
         if not isinstance(shuffle, Shuffle):
             if shuffle is None or shuffle:
                 self.shuffle_flag = 2  # Global shuffle
@@ -2364,6 +2299,10 @@ class SourceDataset(Dataset):
                 self.shuffle_flag = 1  # Files shuffle
             elif shuffle == Shuffle.INFILE:
                 self.shuffle_flag = 3  # Infile shuffle
+            elif shuffle == Shuffle.ADAPTIVE:
+                self.shuffle_flag = 5
+            elif shuffle == Shuffle.PARTIAL:
+                self.shuffle_flag = 4
 
     def parse(self, children=None):
         raise NotImplementedError("Dataset has to implement parse method.")
@@ -2420,9 +2359,13 @@ class MappableDataset(SourceDataset):
     def __init__(self, num_parallel_workers=None, sampler=None, num_samples=None, shuffle=None, num_shards=None,
                  shard_id=None, cache=None):
         num_shards, shard_id = self._update_data_shard(num_shards, shard_id)
+        if sampler is None:
+            if shuffle is None or shuffle is True:
+                shuffle = Shuffle.GLOBAL
+            elif shuffle is False:
+                shuffle = Shuffle.FALSE
         super().__init__(num_parallel_workers=num_parallel_workers, num_samples=num_samples, shuffle=shuffle,
                          num_shards=num_shards, shard_id=shard_id, cache=cache)
-        self.shuffle_flag = replace_none(shuffle, True)
         self.sampler = samplers.select_sampler(num_samples, sampler, shuffle, num_shards, shard_id)
 
     def add_sampler(self, new_sampler):
@@ -3033,7 +2976,7 @@ class SyncWaitDataset(UnionBaseDataset):
 
 class ShuffleDataset(UnionBaseDataset):
     """
-    The result of applying Shuffle operation to the input Dataset.
+    The result of applying shuffle operation to the input Dataset.
 
     Args:
         input_dataset (Dataset): Input Dataset to be shuffled.
