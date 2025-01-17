@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/core_ops_name.h"
@@ -32,6 +33,7 @@
 
 namespace mindspore {
 namespace opt {
+static const uint32_t kMaxRankSize = 8;
 const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
   auto transpose_a = std::make_shared<Var>();
   MS_CHECK_TRUE_RET(transpose_a != nullptr, {});
@@ -172,6 +174,12 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
   MS_EXCEPTION_IF_NULL(allreduce_cnode);
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
   auto group_ptr = allreduce_prim->GetAttr(kAttrNameGroup);
+  auto group_name = GetValue<std::string>(group_ptr);
+  auto rank_size = distributed::collective::CollectiveManager::instance()->GetGroupSize(group_name);
+  if (rank_size > kMaxRankSize) {
+    MS_LOG(INFO) << "only support rank size 1, 2, 4, 8, but got " << rank_size;
+    return nullptr;
+  }
   auto reduce_op_ptr = allreduce_prim->GetAttr(kAttrNameOp);
   auto reduction = GetValue<std::string>(reduce_op_ptr);
   auto iter = std::find(support_reduce_op_list_.begin(), support_reduce_op_list_.end(), reduction);
@@ -228,7 +236,7 @@ const AnfNodePtr MatMulAllReduceAddRmsNormFusion::Process(const FuncGraphPtr &gr
   add_result_shapes.push_back(AnfAlgo::GetOutputDetailShape(add, kIndex0));
 
   auto matmul_allreduce_addrmsnorm_cnode = CreateMatMulAllReduceAddRmsNormNode(graph, node, equiv, add_result_types[0]);
-  MS_EXCEPTION_IF_NULL(matmul_allreduce_addrmsnorm_cnode);
+  MS_CHECK_TRUE_RET(matmul_allreduce_addrmsnorm_cnode != nullptr, nullptr);
 
   std::vector<TypeId> types;
   std::vector<BaseShapePtr> shapes;
