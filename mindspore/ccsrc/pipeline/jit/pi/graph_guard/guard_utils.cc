@@ -2591,6 +2591,7 @@ class TypeGuard : public GuardItem {
     } else {
       refType_ = Py_TYPE(obj->GetObject());
     }
+    is_tensor_ = IsTensorOrStubTensor(refType_);
     if (obj->GetRelaxCount() > 0) {
       check_count_ = 0;
     } else {
@@ -2634,6 +2635,9 @@ class TypeGuard : public GuardItem {
       tp = Py_TYPE(obj);
     }
     if (tp != refType_) {
+      if (is_tensor_) {
+        return IsTensorOrStubTensor(tp);
+      }
       return false;
     } else {
       return true;
@@ -2673,10 +2677,16 @@ class TypeGuard : public GuardItem {
     return false;
   }
 
+ private:
+  static bool IsTensorOrStubTensor(PyTypeObject *type) {
+    return type != nullptr && (IsTensorType<true>(type) || IsStubTensorType<true>(type));
+  }
+
  protected:
   PyTypeObject *refType_;
   int check_count_;
   bool is_const_;
+  bool is_tensor_{false};
 };
 
 class IdGuard : public GuardItem {

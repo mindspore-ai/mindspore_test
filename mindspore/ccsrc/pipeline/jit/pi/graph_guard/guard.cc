@@ -282,7 +282,8 @@ static std::string GuardCheckFailInfo(const GuardItemPtr &item, const py::handle
         << ", dtype=" << py::str(tensor.attr("dtype").ptr()) << ")";
     }
   };
-  s << "Guard check fail: " << item->ToString() << " v.s. (" << object.ptr() << "): ";
+  const char *type = object.ptr() != nullptr ? Py_TYPE(object.ptr())->tp_name : "";
+  s << "Guard check fail: " << item->ToString() << " v.s. " << type << "(" << object.ptr() << "): ";
   if (object.ptr() == nullptr) {
     s << "<nullptr>";
   } else if (IsTensorPyObject(object.ptr())) {
