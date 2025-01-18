@@ -143,8 +143,6 @@ def test_tesnsor_augassign_by_number():
     value_tensor_1_ele = Tensor(value_np_1_ele, mstype.float32)
     value_tensor_1d = Tensor(value_np_1d, mstype.float32)
 
-    value_list_much_ele = [12, 22, 33, 43, 18]
-
     input_tensor_1d[number_index_1] += value_number
     input_np_1d[number_index_1] += value_number
     assert np.allclose(input_tensor_1d.asnumpy(), input_np_1d, 0.0001, 0.0001)
@@ -174,11 +172,6 @@ def test_tesnsor_augassign_by_number():
         _pynative_executor.sync()
     with pytest.raises(IndexError):
         input_tensor_1d[number_index_4] *= value_number
-        _pynative_executor.sync()
-
-
-    with pytest.raises(ValueError):
-        input_tensor_3d[number_index_2] //= value_list_much_ele
         _pynative_executor.sync()
 
 

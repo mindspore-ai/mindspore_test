@@ -452,9 +452,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __rfloordiv__(self, other):
         return tensor_operator_registry.get('__floordiv__')(other, self)
 
-    def __ifloordiv__(self, other):
-        return self.__floordiv__(other)
-
     def __lt__(self, other):
         out = tensor_operator_registry.get('__lt__')(self, other)
         return out
