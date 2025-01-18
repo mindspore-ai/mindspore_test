@@ -52,6 +52,7 @@ class MatMulCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{kUnkown};
+  size_t kernel_func_idx_{0};
 
   bool is_empty_tensor_{false};
   LaunchEmptyTensorFunc launch_empty_tensor_func_;

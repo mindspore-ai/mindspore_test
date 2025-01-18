@@ -15,12 +15,14 @@
  */
 
 #include "kernel/cpu/matmul_cpu_kernel.h"
-#include "kernel/cpu/eigen/matmul_double_cpu_kernel_func.h"
-#include "kernel/cpu/mkldnn/matmul_cpu_kernel_func.h"
+
 #include <utility>
 #include <algorithm>
 #include <functional>
 #include <map>
+
+#include "kernel/cpu/eigen/matmul_double_cpu_kernel_func.h"
+#include "kernel/cpu/mkldnn/matmul_cpu_kernel_func.h"
 
 namespace mindspore {
 namespace kernel {
@@ -279,9 +281,7 @@ bool MatMulCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const s
   if (!is_match) {
     MS_LOG(EXCEPTION) << "MatMul does not support this kernel data type: " << kernel_attr;
   }
-
-  func_obj_ = support_list_map[kernel_type_][index].second();
-  func_obj_->InitFunc(primitive_, inputs, outputs);
+  kernel_func_idx_ = index;
   return true;
 }
 
@@ -301,6 +301,8 @@ int MatMulCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
     launch_empty_tensor_func_ = empty_tensor_map_[dtype];
     return ret;
   }
+  func_obj_ = support_list_map[kernel_type_][kernel_func_idx_].second();
+  func_obj_->InitFunc(primitive_, inputs, outputs);
   return func_obj_->Resize(inputs, outputs);
 }
 
