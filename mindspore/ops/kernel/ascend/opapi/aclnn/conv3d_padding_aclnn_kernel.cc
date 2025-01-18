@@ -218,6 +218,8 @@ void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
   }
 
   if (!is_batchfy_) {
+    input_sizes.erase(input_sizes.begin());
+    SetTensorStorageInfo<KernelTensor *>(inputs[kIndex0], input_sizes);
     output_sizes.erase(output_sizes.begin());
     SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], output_sizes);
   }
