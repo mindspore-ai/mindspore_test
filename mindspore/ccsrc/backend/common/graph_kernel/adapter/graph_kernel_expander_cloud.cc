@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,8 +151,6 @@ const std::vector<OpWithLevel> expand_ops_with_level_v2 = {
 };
 
 const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
-  {kAscendDevice, OpLevel_0, prim::kPrimAddExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSubExt},
   {kAscendDevice, OpLevel_0, prim::kPrimAdam},
   {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecayAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimAddcmul},
@@ -193,12 +191,7 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecay},
   {kAscendDevice, OpLevel_1, prim::kPrimExpandDims},
   {kAscendDevice, OpLevel_1, prim::kPrimSqueeze},
-  {kAscendDevice, OpLevel_1, prim::kSoftmaxGradExt},
   {kAscendDevice, OpLevel_1, prim::kPrimApplyMomentum},
-  {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimEluExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusGradExt},
   {kAscendDevice, OpLevel_0, prim::kPrimRepeatInterleaveInt},
   {kAscendDevice, OpLevel_0, prim::kPrimHShrink},
   {kAscendDevice, OpLevel_0, prim::kPrimHSigmoid},
@@ -211,9 +204,18 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimClampScalar},
   {kAscendDevice, OpLevel_0, prim::kPrimDivMod},
   {kAscendDevice, OpLevel_0, prim::kPrimBCEWithLogitsLoss},
+  // mint ops
+  {kAscendDevice, OpLevel_0, prim::kPrimAddExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSubExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSumExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimMeanExt},
   {kAscendDevice, OpLevel_0, prim::kPrimAcoshExt},
   {kAscendDevice, OpLevel_0, prim::kPrimAsinhExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimMeanExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimEluExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusGradExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
+  {kAscendDevice, OpLevel_1, prim::kSoftmaxGradExt},
 };
 }  // namespace
 

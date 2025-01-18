@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -216,7 +216,9 @@ REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
   return {result};
 });
 
-REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
+enum ReduceType { kSum = 0, kMean };
+
+NodePtrList ReduceExtCommon(const DefaultIrBuilder *ib, ReduceType reduce_type) {
   auto input = ib->input(kIndex0);
   auto input_type = input->GetDtype()->type_id();
   if (input_type != kNumberTypeFloat32 && input_type != kNumberTypeFloat16 && input_type != kNumberTypeBFloat16) {
@@ -236,7 +238,10 @@ REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
     MS_LOG(DEBUG) << "Skip empty shape or dynamic rank, shape is: " << x_shape;
     return {};
   }
-  auto axis_ = GetAxisList(axis->GetValue());
+  std::vector<int64_t> axis_ = {};
+  if (axis->GetDtype()->type_id() != kMetaTypeNone) {
+    axis_ = GetAxisList(axis->GetValue());
+  }
   auto rank = SizeToLong(x_shape.size());
   (void)std::for_each(axis_.begin(), axis_.end(), [rank](auto &a) { a = a < 0 ? a + rank : a; });
   if (axis_.empty()) {
@@ -256,11 +261,17 @@ REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
       sz *= x_shape[i];
     }
   }
-  auto sum_x = ib->ReduceSum(input, axis_, GetValue<bool>(keep_dims->GetValue()));
-  auto result = ib->Div(sum_x, sz);
-  result = out_type == kNumberTypeFloat32 ? result : ib->Cast(result, out_type);
-  return {result};
-});
+  auto res = ib->ReduceSum(input, axis_, GetValue<bool>(keep_dims->GetValue()));
+  if (reduce_type == ReduceType::kMean) {
+    res = ib->Div(res, sz);
+  }
+  res = out_type == kNumberTypeFloat32 ? res : ib->Cast(res, out_type);
+  return {res};
+}
+
+REG_EXPANDER_FUNC("SumExt").SetBody(BODYFUNC(ib) { return ReduceExtCommon(ib, ReduceType::kSum); });
+
+REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) { return ReduceExtCommon(ib, ReduceType::kMean); });
 
 REG_EXPANDER_FUNC("AcoshExt").SetBody(BODYFUNC(ib) {
   auto input = ib->input(kIndex0);
