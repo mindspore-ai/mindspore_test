@@ -30,6 +30,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+constexpr int64_t kNum2 = 2;
+
 bool IsTensorTransposed(const ValueTuplePtr &tuple_tensor) {
   const auto &tensors = tuple_tensor->value();
   auto tensor = tensors.at(kIndex0)->cast<BaseTensorPtr>();
@@ -143,11 +145,11 @@ void GmmV2BackwardAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
   std::vector<BaseTensorPtr> dw;
   if (IsTensorTransposed(weight_tensor_list)) {
     auto gradt = ForEachTranspose(grad_tenor_list, true);
-    auto dwt = GmmV2(gradt, x_tensor_list, group_list, group_list_type, 2);
+    auto dwt = GmmV2(gradt, x_tensor_list, group_list, group_list_type, kNum2);
     dw = ForEachTranspose(dwt);
   } else {
     auto xt = ForEachTranspose(x_tensor_list);
-    dw = GmmV2(xt, grad_tenor_list, group_list, group_list_type, 2);
+    dw = GmmV2(xt, grad_tenor_list, group_list, group_list_type, kNum2);
   }
   auto dw_output = ForEachReShape(dw, weight_tensor_list);
 

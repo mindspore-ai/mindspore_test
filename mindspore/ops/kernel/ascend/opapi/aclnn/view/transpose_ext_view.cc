@@ -26,10 +26,10 @@ namespace mindspore {
 namespace kernel {
 namespace {
 size_t GetOriginInputSize(const ops::OldTensorInfoPtr old_info, TypeId type_id) {
-    const auto&ori_shape = old_info->ori_shape;
-    auto num = std::accumulate(ori_shape.begin(), ori_shape.end(), int64_t(1), std::multiplies<int64_t>());
-    auto ori_size = abstract::TypeIdSize(type_id) * LongToSize(num);
-    return ori_size;
+  const auto &ori_shape = old_info->ori_shape;
+  auto num = std::accumulate(ori_shape.begin(), ori_shape.end(), int64_t(1), std::multiplies<int64_t>());
+  auto ori_size = abstract::TypeIdSize(type_id) * LongToSize(num);
+  return ori_size;
 }
 }  // namespace
 void TransposeExtView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,

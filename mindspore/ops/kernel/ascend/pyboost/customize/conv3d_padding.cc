@@ -29,6 +29,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+constexpr int64_t kNum2 = 2;
 void Conv3DExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
   if (param->size() == kIndex1) {
     param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
@@ -57,7 +58,7 @@ bool Conv3DGetSymmetricPadding(std::vector<int64_t> &padding_l, std::vector<int6
     auto inputSize = input_sizes[i + 2];
     auto kernelSize = weight_sizes[i + 2];
     auto total_padding = dilation_value * (kernelSize - 1);
-    if (stride_value > 2 && (total_padding % 2 == 1)) {
+    if (stride_value > kNum2 && (total_padding % kNum2 == 1)) {
       auto wiggle_room = inputSize % stride_value - 1;
       if (wiggle_room > 0) {
         --total_padding;
@@ -121,7 +122,7 @@ tensor::BaseTensorPtr Conv3DPaddingAscendCustomize(const std::shared_ptr<OpRunne
     if (symmetric_padding) {
       pad_vector = padding_l;
     } else {
-      std::vector<ValuePtr> pad_nd(2 * dim, std::make_shared<Int64Imm>(0));
+      std::vector<ValuePtr> pad_nd(kNum2 * dim, std::make_shared<Int64Imm>(0));
       for (size_t i = 0; i < dim; ++i) {
         // Apply padding by the difference, leaving only a symmetric padding
         auto delta_pad = padding_r[i] - padding_l[i];

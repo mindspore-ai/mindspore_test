@@ -33,6 +33,7 @@ namespace {
 constexpr auto kConvGap2 = 2;
 constexpr auto kConvSize3 = 3;
 constexpr auto kConvSize5 = 5;
+constexpr int64_t kNum2 = 2;
 }  // namespace
 namespace conv_base {
 int64_t ConvBaseGetOutputSpatialDim(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos,
@@ -144,16 +145,17 @@ void ConvBaseFunImpl::FetchSpatialDim(const PrimitivePtr &primitive, const Infer
       }
       int64_t input_rank = SizeToLong(input_shape.size());
       for (int64_t i = 2; i < input_rank; i++) {
-        if (dilation.IsValueUnknown(i - 2) || padding.IsValueUnknown(i - 2)) {
+        if (dilation.IsValueUnknown(i - kNum2) || padding.IsValueUnknown(i - kNum2)) {
           break;
         }
-        input_shape_with_padding.push_back(input_shape[i] + 2 * padding[(i - 2) % padding.size()]);
-        kernel_shape_with_dilation.push_back(dilation[(i - 2) % dilation.size()] * (weight_shape[i] - 1) + 1);
+        input_shape_with_padding.push_back(input_shape[i] + kNum2 * padding[(i - kNum2) % padding.size()]);
+        kernel_shape_with_dilation.push_back(dilation[(i - kNum2) % dilation.size()] * (weight_shape[i] - 1) + 1);
         if (input_shape_with_padding.back() < kernel_shape_with_dilation.back()) {
           MS_EXCEPTION(ValueError) << "For [" << prim_name << "], (Input_shape[i]{" << input_shape[i]
-                                   << "} + 2 * padding[i-2]{" << padding[(i - 2) % padding.size()]
+                                   << "} + 2 * padding[i-2]{"
+                                   << padding[(i - kNum2) % static_cast<int64_t>(padding.size())]
                                    << "})can't be less then "
-                                   << "(delation[i-2]{" << dilation[(i - 2) % dilation.size()]
+                                   << "(delation[i-2]{" << dilation[(i - kNum2) % static_cast<int64_t>(dilation.size())]
                                    << "} * (weight_shape[i]{" << weight_shape[i] << "} - 1) + 1).";
         }
       }
