@@ -44,6 +44,21 @@ NodePtrList AddnGradFunc(BpropBuilder *ib) {
   return {ib->MakeTuple(result)};
 }
 
+bool CloneInplaceInputFuncForInplaceDiv(const PynativeCallback &cb) {
+  if (!cb.IsNotRequiresGrad(kIndex1)) {
+    return true;
+  }
+  return false;
+}
+
+void FreeTensorOfInplaceDivTensor(const PynativeCallback &cb) {
+  auto &inputs = *cb.GetInputs();
+  if (inputs[kIndex1]->isa<tensor::BaseTensor>() && cb.IsNotRequiresGrad(kIndex1)) {
+    cb.FreeDeviceAddress(&inputs[0]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[0] of" << cb.opname();
+  }
+}
+
 NodePtrList IgammaBpropExpanderDyn(BpropBuilder *ib) {
   auto a = ib->GetInput(kIndex0);
   auto x = ib->GetInput(kIndex1);
@@ -1265,6 +1280,93 @@ REG_BPROP_BUILDER("FmodScalar").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   return {dout, ib->OutZeros(other)};
+});
+
+REG_BPROP_BUILDER("InplaceDiv")
+  .FreeUselessValues(FreeTensorOfInplaceDivTensor)
+  .CloneInplaceInput(CloneInplaceInputFuncForInplaceDiv)
+  .SetBody(BODYFUNC(ib) {
+    auto input = ib->GetInput(kIndex0);
+    auto other = ib->GetInput(kIndex1);
+    auto dout = ib->GetInput(kIndex3);
+    NodePtr bc_input = nullptr;
+    NodePtr bc_other = nullptr;
+    if (input->need_compute_grad_out()) {
+      auto other_type = ib->GetDtypeId(other);
+      if (other_type == kNumberTypeComplex64 || other_type == kNumberTypeComplex128) {
+        auto other_conj = ib->Conj(other);
+        bc_input = ib->Div(dout, other_conj);
+      } else {
+        bc_input = ib->Div(dout, other);
+      }
+    }
+
+    if (other->need_compute_grad_out()) {
+      auto neg_dout = ib->Emit("Neg", {dout});
+      auto div_res1 = ib->Div(input, other);
+      auto div_res2 = ib->Div(div_res1, other);
+
+      auto div_res2_type = ib->GetDtypeId(div_res2);
+      if (div_res2_type == kNumberTypeComplex64 || div_res2_type == kNumberTypeComplex128) {
+        div_res2 = ib->Conj(div_res2);
+      }
+
+      bc_other = ib->Mul(div_res2, neg_dout);
+    }
+
+    std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, bc_input, bc_other);
+    auto input_cast = ib->Cast(ret[0], ib->GetDtype(input));
+    auto other_cast = ib->Cast(ret[1], ib->GetDtype(other));
+    return {input_cast, other_cast};
+  });
+
+REG_BPROP_BUILDER("InplaceDivs").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+
+  NodePtr bc_input = nullptr;
+  auto other_type = ib->GetDtypeId(other);
+  if (other_type == kNumberTypeComplex64 || other_type == kNumberTypeComplex128) {
+    other = ib->Conj(other);
+  }
+  bc_input = ib->Emit("Divs", {dout, other});
+
+  auto input_cast = ib->Cast(bc_input, ib->GetDtype(input));
+  return {bc_input, ib->OutZeros(other)};
+});
+
+REG_BPROP_BUILDER("InplaceDivMod").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto rounding_mode = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+
+  NodePtr bc_input = nullptr;
+  NodePtr bc_other = nullptr;
+  if (input->need_compute_grad_out()) {
+    bc_input = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  }
+
+  if (other->need_compute_grad_out()) {
+    bc_other = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(other))));
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, bc_input, bc_other);
+  ret.emplace_back(ib->OutZeros(rounding_mode));
+  return ret;
+});
+
+REG_BPROP_BUILDER("InplaceDivMods").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto rounding_mode = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+
+  NodePtr bc_input = nullptr;
+  bc_input = ib->ZerosLikeExt(dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+
+  return {bc_input, ib->OutZeros(other), ib->OutZeros(rounding_mode)};
 });
 
 REG_BPROP_BUILDER("Div").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib) {

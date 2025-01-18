@@ -51,6 +51,7 @@ from mindspore.ops.auto_generate import abs
 
 # 5 add
 from mindspore.ops.auto_generate import add_ext, add
+
 # 6 all
 from mindspore.ops.auto_generate import all
 # 7 allclose
@@ -516,7 +517,6 @@ def tensor_argsort(input, dim=-1, descending=False):
 def deprecated_tensor_argsort(input, axis=-1, descending=False):
     return argsort(input, axis, descending)
 
-
 # 13 atan2
 def tensor_atan2(input, other):
     return atan2(input, other)
@@ -592,6 +592,12 @@ def tensor_cumsum(input, dim, *, dtype=None):
 def tensor_div(input, value, *, rounding_mode=None):
     return div(input, value, rounding_mode=rounding_mode)
 
+def tensor_div_deal_sequence(input, other, *, rounding_mode=None):
+    if isinstance(input, (tuple, list)):
+        input = sequence_to_tensor(input, F.dtype(other))
+    if isinstance(other, (tuple, list)):
+        other = sequence_to_tensor(other, F.dtype(input))
+    return div(input, other, rounding_mode=rounding_mode)
 
 # 28 divide
 

@@ -1,28 +1,28 @@
 div_:
   - op_yaml: inplace_div_op.yaml
-    py_method: tensor_div_empty_
+    py_method: tensor_div_deal_sequence
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
+    CPU: py_method
+    GPU: py_method
     interface: tensor
 
   - op_yaml: inplace_divs_op.yaml
-    py_method: tensor_div_empty_
+    py_method: tensor_div_deal_sequence
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
+    CPU: py_method
+    GPU: py_method
     interface: tensor
 
   - op_yaml: inplace_divmod_op.yaml
-    py_method: tensor_div_empty_
+    py_method: tensor_div_deal_sequence
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
+    CPU: py_method
+    GPU: py_method
     interface: tensor
 
   - op_yaml: inplace_divmods_op.yaml
-    py_method: tensor_div_empty_
+    py_method: tensor_div_deal_sequence
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
+    CPU: py_method
+    GPU: py_method
     interface: tensor
