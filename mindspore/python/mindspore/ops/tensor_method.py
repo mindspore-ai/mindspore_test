@@ -419,6 +419,8 @@ from mindspore.ops.function.math_func import addmv
 # 1028
 from mindspore.ops.function.math_func import var_ext
 
+# 1029 exp_
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 
 ########################################functions########################################
 def place_holder():
@@ -1639,3 +1641,8 @@ def matmul_reduce_scatter(
     For details, please refer to :func:`mindspore.ops.matmul_reduce_scatter`.
     """
     raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
+
+
+# 1029
+def tensor_exp_(input):
+    return inplace_exp_op(input)
