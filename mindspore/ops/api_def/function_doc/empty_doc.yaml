@@ -8,15 +8,10 @@ empty:
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
-    Note:
-        - `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
-        - The input must be two Tensors, or a Tensor and a Scalar.
-        - The shapes of the inputs can be broadcasted to each other.
-
     Args:
-        size (Union[tuple[int], list[int], int]): The specified shape of output tensor. Only positive integer or
-            tuple or list containing positive integers are allowed.
-    
+        size (Union[tuple[int], list[int], int]): The specified shape of output tensor. Can be variable numbers of
+            positive integers or tupled or list containing positive integers.
+
     Keyword Args:
         dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor. If `dtype` is ``None`` ,
             `mindspore.float32` will be used. Default: ``None`` .
