@@ -28,7 +28,7 @@
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pybind_api/ops/direct_ops.h"
 
-namespace mindspore::kernel::pyboost {
+namespace mindspore::pynative {
 
 py::object EmptyLike(const py::list &args) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "EmptyLike",
@@ -111,4 +111,4 @@ py::object EmptyLike(const py::list &args) {
 
   return stub_out.first;
 }
-}  // namespace mindspore::kernel::pyboost
+}  // namespace mindspore::pynative

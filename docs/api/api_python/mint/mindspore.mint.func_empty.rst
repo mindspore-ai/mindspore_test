@@ -1,7 +1,7 @@
 mindspore.mint.empty
 ====================
 
-.. py:function:: mindspore.mint.empty(size, *, dtype=None, device=None)
+.. py:function:: mindspore.mint.empty(*size, dtype=None, device=None)
 
     创建一个数据没有初始化的Tensor。参数 `size` 指定Tensor的shape，参数 `dtype` 指定填充值的数据类型，参数 `device` 指\
     定Tensor使用的内存来源。

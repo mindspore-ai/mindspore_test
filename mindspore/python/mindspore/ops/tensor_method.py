@@ -365,6 +365,7 @@ from mindspore.ops.function.math_func import median
 # 156
 
 # 157
+from mindspore._c_expression import pyboost_empty
 
 # 158
 
@@ -1424,6 +1425,9 @@ def tensor_median_dim(input, dim=-1, keepdim=False):
 # 156
 
 # 157
+def tensor_empty(*size, dtype=None, device=None):
+    return pyboost_empty(size, dtype, device)
+
 
 # 158
 
