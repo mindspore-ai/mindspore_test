@@ -75,14 +75,25 @@ std::string Utils::GetPyName(PyObject *obj) {
   return str != nullptr ? std::string(str) : "";
 }
 
-void Utils::PyBuiltinPrint(PyObject *str) {
+void Utils::PyBuiltinPrint(PyObject *str, bool flush) {
+  if (flush) {
+    using namespace pybind11::literals;  // to bring in the `_a` literal
+    py::print(py::handle(str), "flush"_a=true);
+    return;
+  }
   static _PyCFunctionFastWithKeywords pyprint = nullptr;
   if (!pyprint) {
     PyObject *p = PyDict_GetItemString(PyEval_GetBuiltins(), "print");
     MS_EXCEPTION_IF_CHECK_FAIL(p && PyCFunction_Check(p), "can't get python 'print' function");
     pyprint = (_PyCFunctionFastWithKeywords)PyCFunction_GET_FUNCTION(p);
   }
-  pyprint(nullptr, &str, 1, nullptr);
+  if (flush) {
+    PyObject *args[2]{str, py::bool_(true).ptr()};
+    py::tuple kwnames = py::make_tuple("flush");
+    pyprint(nullptr, args, 1, kwnames.ptr());
+  } else {
+    pyprint(nullptr, &str, 1, nullptr);
+  }
   if (PyErr_Occurred()) {
     PyErr_Print();
     PyErr_Clear();
@@ -103,6 +114,7 @@ void Utils::DisFuncObject(PyObject *func) {
   if (PyErr_Occurred()) {
     PyErr_Print();
   }
+  PyBuiltinPrint(py::str("").ptr(), true);
 }
 
 py::object Utils::GetModuleAttr(const std::string &mod_name, const std::string &attr_name, bool _import, bool _throw) {
