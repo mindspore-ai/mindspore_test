@@ -1241,6 +1241,8 @@ def tensor_inplace_masked_fill_tensor_empty(input, masked, value):
 
 
 # 127 mul_
+def tensor_inplace_mul(input, other):
+    return F.mul(input, other)
 
 # 128 normal_
 

@@ -798,6 +798,28 @@ inline NodePtr ForEachOutZeros(BpropBuilder *ib, const NodePtr &node) {
   return zeros_node;
 }
 
+bool CloneInplaceInputFuncForInplaceMul(const PynativeCallback &cb) {
+  if (!cb.IsNotRequiresGrad(kIndex1)) {
+    return true;
+  }
+  return false;
+}
+
+void FreeTensorsOfInplaceMul(const PynativeCallback &cb) {
+  cb.FreeOutputDeviceAddress();
+  // For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
+  // so if y is a valuenode, the dy is useless, we can free x in ahead.
+  auto &inputs = *cb.GetInputs();
+  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
+    cb.FreeDeviceAddress(&inputs[kIndex1]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
+  }
+  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::BaseTensor>()) {
+    cb.FreeDeviceAddress(&inputs[kIndex0]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << cb.opname();
+  }
+}
+
 REG_BPROP_BUILDERS_BEGIN(GradMathOps)
 REG_BPROP_BUILDER("MatMul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -1186,6 +1208,31 @@ REG_BPROP_BUILDER("InplaceAddExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUN
 
   std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
   return {ret[0], ib->Cast(ret[1], ib->GetDtype(y)), ib->OutZeros(alpha)};
+});
+
+REG_BPROP_BUILDER("InplaceMul")
+  .FreeUselessValues(FreeTensorsOfInplaceMul)
+  .CloneInplaceInput(CloneInplaceInputFuncForInplaceMul)
+  .SetBody(BODYFUNC(ib) {
+    auto x = ib->GetInput(kIndex0);
+    auto y = ib->GetInput(kIndex1);
+    auto dout = ib->GetInput(kIndex3);
+    NodePtr bc_dx = nullptr;
+    NodePtr bc_dy = nullptr;
+    if (x->need_compute_grad_out()) {
+      bc_dx = ib->Mul(y, dout);
+    }
+    if (y->need_compute_grad_out()) {
+      bc_dy = ib->Mul(x, dout);
+    }
+    return BinopGradCommon(ib, x, y, bc_dx, bc_dy);
+  });
+
+REG_BPROP_BUILDER("InplaceMuls").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto y = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->Emit("Muls", {dout, y});
+  return {dx, ib->OutZeros(y)};
 });
 
 REG_BPROP_BUILDER("SubExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {

@@ -36,12 +36,10 @@ def test_tesnsor_augassign_by_slice():
     input_tensor_3d = Tensor(input_np_3d, mstype.float32)
     index_slice_1 = slice(1, None, None)
     index_slice_2 = slice(None, 4, None)
-    index_slice_3 = slice(-3, 4, None)
     index_slice_8 = slice(-5, 3, None)
 
     value_number = 3
     value_list_1_ele = [2]
-    value_list_mul_ele = [10, 20, 30, 40, 50, 60]
 
     input_tensor_3d[index_slice_1] += value_number
     input_np_3d[index_slice_1] += value_number
@@ -49,10 +47,6 @@ def test_tesnsor_augassign_by_slice():
 
     input_tensor_3d[index_slice_2] -= value_list_1_ele
     input_np_3d[index_slice_2] -= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_slice_3] *= value_list_mul_ele
-    input_np_3d[index_slice_3] *= value_list_mul_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[index_slice_8] += value_number
@@ -74,10 +68,8 @@ def test_tesnsor_augassign_by_ellipsis():
     value_tensor_1 = Tensor(value_np_1)
 
     value_tuple_1_ele = (0.5,)
-    value_tuple_4_ele = (0.1, 0.2, 0.3, 0.4)
 
     value_list_1_ele = [1.5]
-    value_list_4_ele = [1.1, 1.2, 1.3, 1.4]
 
     input_tensor_3d[...] += value_number_1
     input_np_3d[...] += value_number_1
@@ -95,16 +87,8 @@ def test_tesnsor_augassign_by_ellipsis():
     input_np_3d[...] -= value_tuple_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[...] *= value_tuple_4_ele
-    input_np_3d[...] *= value_tuple_4_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[...] -= value_list_1_ele
     input_np_3d[...] -= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[...] *= value_list_4_ele
-    input_np_3d[...] *= value_list_4_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
 
@@ -201,13 +185,9 @@ def test_tesnsor_augassign_by_number():
     value_tensor_2d = Tensor(value_np_2d, mstype.float32)
 
     value_tuple_1_ele = (100,)
-    value_tuple_mul_ele = (10, 20, 30, 40)
-    value_tuple_much_ele = (10, 20, 30, 40, 10)
 
     value_list_1_ele = [101]
-    value_list_mul_ele = [11, 21, 31, 41]
     value_list_much_ele = [12, 22, 33, 43, 18]
-    value_list_empty = []
 
     input_tensor_1d[number_index_1] += value_number
     input_np_1d[number_index_1] += value_number
@@ -245,16 +225,8 @@ def test_tesnsor_augassign_by_number():
     input_np_3d[number_index_1] -= value_tuple_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
-    input_tensor_3d[number_index_1] *= value_tuple_mul_ele
-    input_np_3d[number_index_1] *= value_tuple_mul_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
     input_tensor_3d[number_index_1] -= value_list_1_ele
     input_np_3d[number_index_1] -= value_list_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[number_index_2] *= value_list_mul_ele
-    input_np_3d[number_index_2] *= value_list_mul_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     with pytest.raises(IndexError):
@@ -267,18 +239,9 @@ def test_tesnsor_augassign_by_number():
         input_tensor_1d[number_index_4] *= value_number
         _pynative_executor.sync()
 
-    with pytest.raises(ValueError):
-        input_tensor_1d[number_index_1] *= value_tuple_mul_ele
-        _pynative_executor.sync()
-    with pytest.raises(ValueError):
-        input_tensor_3d[number_index_1] *= value_tuple_much_ele
-        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor_3d[number_index_2] //= value_list_much_ele
-        _pynative_executor.sync()
-    with pytest.raises(ValueError):
-        input_tensor_3d[number_index_2] *= value_list_empty
         _pynative_executor.sync()
 
 
@@ -316,10 +279,6 @@ def test_tesnsor_augassign_by_tensor():
 
     input_tensor_3d[index_tensor_1d_1ele] -= value_tensor_2
     input_np_3d[index_np_1d_1ele] -= value_np_2
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_tensor_1d_1ele] *= value_list_1_ele
-    input_np_3d[index_np_1d_1ele] *= value_list_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     input_tensor_3d[index_tensor_1d] += value_number

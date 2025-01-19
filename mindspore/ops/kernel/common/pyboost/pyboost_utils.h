@@ -245,12 +245,24 @@ class BACKEND_EXPORT PyBoostUtils {
 
   static bool IsBool(const ScalarPtr &alpha) { return alpha->isa<BoolImm>(); }
 
+  static bool IsIntegral(const BaseTensorPtr &input_tensor) {
+    return input_tensor->data_type() >= TypeId::kNumberTypeInt &&
+           input_tensor->data_type() <= TypeId::kNumberTypeUInt64;
+  }
+
+  static bool IsIntegral(const ScalarPtr &alpha) { return alpha->isa<IntegerImm>(); }
+
   static bool IsFloat(const BaseTensorPtr &input_tensor) {
     return input_tensor->data_type() >= TypeId::kNumberTypeFloat &&
            input_tensor->data_type() <= TypeId::kNumberTypeBFloat16;
   }
 
   static bool IsFloat(const ScalarPtr &alpha) { return alpha->isa<FloatImm>(); }
+
+  static bool IsComplex(const BaseTensorPtr &input_tensor) {
+    return input_tensor->data_type() >= TypeId::kNumberTypeComplex &&
+           input_tensor->data_type() <= TypeId::kNumberTypeComplex128;
+  }
 
  private:
   inline static uint32_t cur_stream_id_ = kDefaultStreamIndex;
