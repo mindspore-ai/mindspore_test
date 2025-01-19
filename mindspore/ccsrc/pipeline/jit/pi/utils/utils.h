@@ -92,7 +92,7 @@ class Utils {
   // alias python 'print(func); import dis; dis.dis(func)'
   static void DisFuncObject(PyObject *);
   // alias python 'print(...)'
-  static void PyBuiltinPrint(PyObject *);
+  static void PyBuiltinPrint(PyObject *, bool flush = false);
 
   static PyObject *MixedPrecisionTypeToDType(MixedPrecisionType mixedPrecisionType);
 };
