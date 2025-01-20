@@ -313,7 +313,7 @@ from mindspore.ops.function.array_func import where as where_func
 # 132 absolute
 
 # 133 bincount
-from mindspore.ops.function.math_func import bincount
+from mindspore.ops.function.math_func import bincount, roll
 
 # 134 diff
 
@@ -1271,6 +1271,8 @@ def tensor_inplace_mul(input, other):
 def tensor_bincount(input, weights=None, minlength=0):
     return bincount(input, weights, minlength)
 
+def tensor_roll(input, shifts, dims=None):
+    return roll(input, shifts, dims)
 
 # 134 diff
 

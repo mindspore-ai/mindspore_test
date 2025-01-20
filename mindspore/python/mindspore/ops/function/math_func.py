@@ -38,7 +38,7 @@ from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_s
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
-from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl, cross_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import cross_impl
 from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, reduce_min_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
@@ -51,7 +51,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          log, log1p, neg, not_equal, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
-                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
                                          addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext, grouped_matmul_v4)
@@ -9875,42 +9875,6 @@ def rot90(input, k, dims):
         op = P.ReverseV2(axis=[dims[1]])
         out = op(output)
     return out
-
-
-def roll(input, shifts, dims=None):
-    """
-    Rolls the elements of a tensor along an axis.
-
-    Args:
-        input (Tensor): Input tensor.
-        shifts (Union[list(int), tuple(int), int]): Specifies the number of places by which elements are shifted
-            positively (towards larger indices) along the specified dimension. Negative shifts will roll the elements
-            in the opposite direction.
-        dims (Union[list(int), tuple(int), int], optional): Specifies the dimension indexes of shape to be rolled.
-            Default: ``None``. If dims is None, the Tensor will be flattened before rolling and then restored to the
-            original shape.
-
-    Returns:
-        Tensor, has the same shape and type as `input`.
-
-    Raises:
-        TypeError: If `shifts` is not an int, a tuple or a list.
-        TypeError: If `dims` is not an int, a tuple or a list.
-
-    Supported Platforms:
-        ``GPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([0, 1, 2, 3, 4]).astype(np.float32))
-        >>> output = ops.roll(input, shifts=2, dims=0)
-        >>> print(output)
-        [3. 4. 0. 1. 2.]
-    """
-    return roll_impl(input, shifts, dims)
 
 
 def xdivy(x, y):

@@ -287,6 +287,7 @@ deprecated_tensor_method_map = {
 
     # 133 bincount
     "bincount": "tensor_bincount",
+    "roll": "tensor_roll",
     # 134 diff
 
     # 135 double

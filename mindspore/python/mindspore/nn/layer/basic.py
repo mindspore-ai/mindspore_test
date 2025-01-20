@@ -1565,7 +1565,7 @@ class Roll(Cell):
         else:
             if not isinstance(self.axis, (list, tuple)):
                 self.op_list.append(
-                    (P.Roll(shift=self.shift, axis=0), self.axis))
+                    (P.Roll(shifts=self.shift, dims=0), self.axis))
             else:
                 if len(self.shift) != len(self.axis):
                     raise ValueError(f"For '{self.cls_name}', the shape of 'shift' and the shape of 'axis' must be "
@@ -1573,7 +1573,7 @@ class Roll(Cell):
                                      f"and the length of 'axis' {len(self.axis)}.")
                 for idx, _ in enumerate(self.axis):
                     self.op_list.append(
-                        (P.Roll(shift=self.shift[idx], axis=0), self.axis[idx]))
+                        (P.Roll(shifts=self.shift[idx], dims=0), self.axis[idx]))
 
     def construct(self, input_x):
         dim = len(self.shape_op(input_x))

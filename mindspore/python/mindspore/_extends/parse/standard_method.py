@@ -1289,12 +1289,11 @@ def round_(x):
     return F.round(x)
 
 
-def roll(x, shifts, dims):
+def roll(x, shifts, dims=None):
     """
     Rolls the elements of a tensor along an axis.
     """
-    dims = dims if dims is not None else 0
-    return F.Roll(shifts, dims)(x)
+    return F.roll(x, shifts, dims)
 
 
 def rot90(x, k, dims):

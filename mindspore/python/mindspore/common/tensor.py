@@ -1664,12 +1664,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         reshape_op = tensor_operator_registry.get('reshape')
         return reshape_op(self, (-1,))
 
-    def roll(self, shifts, dims):
-        """
-        For details, please refer to :func:`mindspore.ops.roll`.
-        """
-        return tensor_operator_registry.get('roll')(shifts, dims)(self)
-
     def rot90(self, k, dims):
         r"""
         For details, please refer to :func:`mindspore.ops.rot90`.
