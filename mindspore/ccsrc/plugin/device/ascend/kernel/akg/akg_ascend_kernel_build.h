@@ -20,6 +20,7 @@
 #include <string>
 #include "kernel/graph_kernel/akg/akg_kernel_build.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
+#include "kernel/graph_kernel/dynamic_akg/dynamic_akg_kernel_build.h"
 
 namespace mindspore {
 namespace kernel {
@@ -40,7 +41,21 @@ class AkgAscendKernelBuilder : public AkgKernelBuilder {
   std::string GetPlatform() const override { return "ASCEND"; }
 };
 
+class DynamicAkgAscendKernelBuilder : public DynamicAkgKernelBuilder {
+ public:
+  DynamicAkgAscendKernelBuilder() = default;
+  ~DynamicAkgAscendKernelBuilder() = default;
+
+  kernel::KernelBuildClient *GetClient() override { return &(kernel::AkgV2KernelBuildClient::Instance()); }
+  void LoadCache() override { return; }
+  KernelPackPtr SearchKernelCache(const std::string &kernel_name) override;
+  KernelPackPtr InsertKernelCache(const std::string &kernel_name) override;
+  void SetKernelMod(const KernelPackPtr &kernel_pack, const GraphKernelJsonGenerator &json_generator, const AnfNodePtr &anf_node) override;
+  void SaveJsonInfo(const string &kernel_name, const string &kernel_json) override;
+};
+
 REG_GRAPH_KERNEL_BUILDER(kAscendDevice, false, AkgAscendKernelBuilder);
+REG_GRAPH_KERNEL_BUILDER(kAscendDevice, true, DynamicAkgAscendKernelBuilder);
 }  // namespace kernel
 }  // namespace mindspore
 

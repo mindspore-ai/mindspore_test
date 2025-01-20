@@ -29,7 +29,7 @@ namespace kernel {
 class AkgKernelMod : public KernelMod {
  public:
   explicit AkgKernelMod(const KernelPackPtr &kernel_pack, const AnfNodePtr &anf_node_ptr);
-  ~AkgKernelMod() final {}
+  ~AkgKernelMod() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   std::vector<size_t> GenParameters() override;
@@ -45,6 +45,31 @@ class AkgKernelMod : public KernelMod {
 };
 
 using AkgKernelModPtr = std::shared_ptr<AkgKernelMod>;
+
+class DynamicAkgKernelMod : public AkgKernelMod {
+ public:
+  explicit DynamicAkgKernelMod(const KernelPackPtr &kernel_pack, const AnfNodePtr &anf_node_ptr):
+    AkgKernelMod(kernel_pack, anf_node_ptr), kernel_pack_(kernel_pack) {};
+  ~DynamicAkgKernelMod() = default;
+
+  bool Init(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &) override {
+    auto kernel_json_info = kernel_pack_->kernel_json_info();
+    kernel_name_ = kernel_json_info.kernel_name;
+    return true;
+  };
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+  std::vector<size_t> GenParameters() override;
+  int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  void SetKernelDynamicStatus(bool is_dynamic) { is_dynamic_ = is_dynamic; }
+
+ private:
+  KernelPackPtr kernel_pack_;
+  std::vector<std::vector<size_t>> args_remap_;
+  bool is_dynamic_{false};
+};
+
+using DynamicAkgKernelModPtr = std::shared_ptr<DynamicAkgKernelMod>;
 }  // namespace kernel
 }  // namespace mindspore
 
