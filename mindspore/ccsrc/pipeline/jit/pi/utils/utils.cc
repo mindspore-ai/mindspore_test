@@ -76,19 +76,20 @@ std::string Utils::GetPyName(PyObject *obj) {
 }
 
 void Utils::PyBuiltinPrint(PyObject *str, bool flush) {
-  if (flush) {
-    using namespace pybind11::literals;  // to bring in the `_a` literal
-    py::print(py::handle(str), "flush"_a=true);
-    return;
-  }
   static _PyCFunctionFastWithKeywords pyprint = nullptr;
   if (!pyprint) {
     PyObject *p = PyDict_GetItemString(PyEval_GetBuiltins(), "print");
     MS_EXCEPTION_IF_CHECK_FAIL(p && PyCFunction_Check(p), "can't get python 'print' function");
     pyprint = (_PyCFunctionFastWithKeywords)PyCFunction_GET_FUNCTION(p);
   }
+  // The arguments of _PyCFunctionFastWithKeywords, refer to: https://docs.python.org/3/c-api/structures.html
+  // This api has four arguments:
+  // - PyObject *self, the `self` object of bounded method, or the module object.
+  // - PyObject *const *args, an array of positional-args and keyword-args.
+  // - Py_ssize_t nargs, the num of positional-args (not include keyword-args).
+  // - PyObject *kwnames, a tuple of keyword-args names.
   if (flush) {
-    PyObject *args[2]{str, py::bool_(true).ptr()};
+    PyObject *args[2]{str, Py_True};
     py::tuple kwnames = py::make_tuple("flush");
     pyprint(nullptr, args, 1, kwnames.ptr());
   } else {
@@ -106,7 +107,6 @@ void Utils::DisFuncObject(PyObject *func) {
     return;
   }
   auto dis = py::module::import("dis").attr("dis");
-  // py::print("*** Dump ByteCode After CodeGen on [", py::cast<py::object>(func), "] ***");
   PY_PRINT_F("*** Dump ByteCode After CodeGen on [%A] ***", func);
   auto args = PyTuple_Pack(1, func);
   Py_XDECREF(PyObject_Call(dis.ptr(), args, NULL));
@@ -114,6 +114,8 @@ void Utils::DisFuncObject(PyObject *func) {
   if (PyErr_Occurred()) {
     PyErr_Print();
   }
+  // By adding `print("", flush=True)`, the output of `dis` can be immediately printed out without being truncated
+  // by `MS_LOG`.
   PyBuiltinPrint(py::str("").ptr(), true);
 }
 
