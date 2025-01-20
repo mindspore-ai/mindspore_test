@@ -1068,6 +1068,15 @@ def deprecated_tensor_sub(input, y):
         y = sequence_to_tensor(y, F.dtype(input))
     return sub(input, y)
 
+def deprecated_tensor_sub_(input, y):
+    if isinstance(y, COOTensor):
+        return F.tensor_scatter_sub(input, y.indices, y.values)
+    if isinstance(input, (tuple, list)):
+        input = sequence_to_tensor(input, F.dtype(y))
+    if isinstance(y, (tuple, list)):
+        y = sequence_to_tensor(y, F.dtype(input))
+    return sub(input, y)
+
 
 # 104 sum
 def tensor_sum_ext(input, dim=None, keepdim=False, *, dtype=None):
@@ -1595,6 +1604,10 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
 
+def tensor_inplace_sub_cpu_gpu(input, other, *, alpha=1):
+    if alpha == 1:
+        return sub(input, other)
+    return sub_ext(input, other, alpha=alpha)
 
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")

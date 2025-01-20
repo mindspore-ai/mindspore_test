@@ -115,9 +115,9 @@ def test_method_sub_pyboost(mode):
     net2 = SubPyboostNet2()
     x = ms.Tensor(np.array([4, 5, 6]), dtype=ms.float32)
     y = ms.Tensor(1, ms.int32)
-    alpha = 0.5
+    alpha = 2
     output = net(x, y, alpha=alpha)
-    expect_output = np.array([3.5, 4.5, 5.5], dtype=np.float32)
+    expect_output = np.array([2, 3, 4], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
     output1 = net1(x, y, alpha=alpha)
     assert np.allclose(output1.asnumpy(), expect_output)
