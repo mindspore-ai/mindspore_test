@@ -79,6 +79,18 @@ int LowlatencyCollectiveCommLib::MatmulAllReduce(const LcocPtr &lcoc_ptr, const 
   return lcoc_ptr->MatmulAllReduce(input_pkg, output_pkg, workspace, stream);
 }
 
+int LowlatencyCollectiveCommLib::AllGatherMatmul(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg,
+                                                 const CoCOutputPkg &output_pkg, void *workspace,
+                                                 const aclrtStream stream) {
+  return lcoc_ptr->AllGatherMatmulV2(input_pkg, output_pkg, workspace, stream);
+}
+
+int LowlatencyCollectiveCommLib::MatmulReduceScatter(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg,
+                                                     const CoCOutputPkg &output_pkg, void *workspace,
+                                                     const aclrtStream stream) {
+  return lcoc_ptr->MatmulReduceScatter(input_pkg, output_pkg, workspace, stream);
+}
+
 LcclPtr LowlatencyCollectiveCommLib::LcclCommunicator(const std::string &group_name) {
   CHECK_RET((groups_.count(group_name) != 0), true, "The LCCL group " + group_name + " does not existed.");
   auto group = std::dynamic_pointer_cast<LowlatencyCommunicationGroup>(groups_[group_name]);
@@ -143,6 +155,17 @@ int Broadcast(const LcclPtr &lccl_ptr, void *buff, size_t count, HcclDataType da
 int MatmulAllReduce(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg, const CoCOutputPkg &output_pkg,
                     void *workspace, const aclrtStream stream) {
   return LowlatencyCollectiveCommLib::GetInstance().MatmulAllReduce(lcoc_ptr, input_pkg, output_pkg, workspace, stream);
+}
+
+int AllGatherMatmul(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg, const CoCOutputPkg &output_pkg,
+                    void *workspace, const aclrtStream stream) {
+  return LowlatencyCollectiveCommLib::GetInstance().AllGatherMatmul(lcoc_ptr, input_pkg, output_pkg, workspace, stream);
+}
+
+int MatmulReduceScatter(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg, const CoCOutputPkg &output_pkg,
+                        void *workspace, const aclrtStream stream) {
+  return LowlatencyCollectiveCommLib::GetInstance().MatmulReduceScatter(lcoc_ptr, input_pkg, output_pkg, workspace,
+                                                                        stream);
 }
 
 LcclPtr LcclCommunicator(const std::string &group_name) {

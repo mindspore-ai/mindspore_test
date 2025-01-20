@@ -24,6 +24,7 @@
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"

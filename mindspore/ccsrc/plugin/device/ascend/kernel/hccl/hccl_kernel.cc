@@ -20,6 +20,7 @@
 #include <set>
 #include <unordered_set>
 #include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -101,12 +102,30 @@ HcclKernel::HcclKernel()
       comm_(nullptr),
       use_lccl_{false} {}
 
+inline void SplitString(const std::string &str, char delim, std::set<std::string> *output_list) {
+  std::stringstream ss(str);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    if (!item.empty()) {
+      output_list->emplace(item);
+    }
+  }
+}
+
 bool isSupportLccl(const std::string &group_name, const std::string &kernel_name,
                    const std::unordered_set<std::string> &lccl_enabled_groups) {
 #ifdef ENABLE_INTERNAL_KERNELS
   bool enable_lccl = device::ascend::EnableLccl();
-  std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,
-                                                 kAllGatherOpName, kMatMulAllReduceOpName, kBarrierOpName};
+  std::set<std::string> support_lccl_op_names;
+  // MS_LCCL_ENABLE_CUSTOM_KERNEL_LIST宏用于自定义使能lccl哪些算子
+  std::string env = common::GetEnv("MS_LCCL_ENABLE_CUSTOM_KERNEL_LIST");
+  if (!env.empty()) {
+    SplitString(env, ',', &support_lccl_op_names);
+  } else {
+    support_lccl_op_names = {kAllReduceOpName,          kReduceScatterOpName,   kBroadcastOpName,
+                             kAllGatherOpName,          kMatMulAllReduceOpName, kAllGatherMatmulOpName,
+                             kMatmulReduceScatterOpName};
+  }
   if (enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
       support_lccl_op_names.find(kernel_name) != support_lccl_op_names.end()) {
     return true;
@@ -135,8 +154,8 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
-                                           kMatMulAllReduceOpName};
+  std::set<std::string> reduce_op_names = {kAllReduceOpName,       kReduceScatterOpName,   kReduceOpName,
+                                           kMatMulAllReduceOpName, kAllGatherMatMulOpName, kMatMulReduceScatterOpName};
   if (reduce_op_names.count(kernel_name_) != 0) {
     if (!HcomUtil::GetHcomOperationType(primitive_, &op_type_, &collective_reduce_type_)) {
       MS_LOG(ERROR) << "GetHcomOperationType fail!";
@@ -204,7 +223,8 @@ void HcclKernel::CalLoopSize() {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
   // For MatMulAllReduce, output number is 1.
-  if (kernel_name_ == kMatMulAllReduceOpName) {
+  if (kernel_name_ == kMatMulAllReduceOpName || kernel_name_ == kAllGatherMatmulOpName ||
+      kernel_name_ == kMatmulReduceScatterOpName) {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
   MS_LOG(INFO) << "Get Hccl Kernel: " << kernel_name_ << ", output size: " << loop_size_;
