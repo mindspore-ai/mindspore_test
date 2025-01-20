@@ -231,7 +231,8 @@ class FuseMatMul : public FusePattern {
 
 void SplitModelAscend::InitFusePatterns() {
   is_dvm_ = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
-  if (is_dvm_) {
+  auto is_akg_v2 = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_V2");
+  if (is_dvm_ || is_akg_v2) {
     // fuse pattern for dvm
     AddPattern(std::make_shared<FuseVirtualNode>(), true);
     AddPattern(std::make_shared<FuseReshape>(), true);

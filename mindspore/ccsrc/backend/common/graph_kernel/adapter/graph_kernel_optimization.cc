@@ -140,10 +140,10 @@ PassManagerPtr GraphKernelOptimizer::Cluster() const {
   auto pm = std::make_shared<GraphKernelPassManager>(1, "cluster");
 
   // Convert IsFinite and its user to FloatStatus
-  pm->Add(std::make_shared<FloatStatusFusion>(), OptLevel_2, is_dvm);
+  pm->Add(std::make_shared<FloatStatusFusion>(), OptLevel_2, is_ascend);
 
   // Expand FloatStatus(AddN)
-  pm->Add(std::make_shared<FloatStatusAddNFusion>(), OptLevel_2, is_gpu || is_dvm);
+  pm->Add(std::make_shared<FloatStatusAddNFusion>(), OptLevel_2, is_gpu || is_ascend);
 
   // Expand complex basic kernels to composite kernels
   pm->Add(std::make_shared<GraphKernelExpanderCloud>(), OptLevel_1);
@@ -201,9 +201,9 @@ PassManagerPtr GraphKernelOptimizer::Split() const {
   std::vector<PrimitivePtr> duplicated_ops = {prim::kPrimReshape};
   pm->Add(std::make_shared<ShapeOpsSplitter>(duplicated_ops), OptLevel_1);
   // Use symbol to calculate a more precise edge relation between nodes
-  pm->Add(std::make_shared<SymbolEngineBuilder>(false), OptLevel_1, is_dvm);
+  pm->Add(std::make_shared<SymbolEngineBuilder>(false), OptLevel_1, is_ascend);
   // Replace sub graph output(which is only used by Shape) with sub graph input
-  pm->Add(std::make_shared<ShrinkOnlyShapeNeeded>(), OptLevel_1, is_dvm);
+  pm->Add(std::make_shared<ShrinkOnlyShapeNeeded>(), OptLevel_1, is_ascend);
   // Split kernel according to costmodel
   pm->Add(std::make_shared<GraphKernelSplitterWithPy>(false), OptLevel_1);
   // After Simplify and Splitter, a lot of redundant getitem/maketuple
@@ -283,7 +283,7 @@ PassManagerPtr GraphKernelOptimizer::Build() const {
   // Compile graph kernel nodes, and inline nodes if compile failed.
   auto enable_dyn_level = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_dynamic_shape_fusion);
   pm->Add(std::make_shared<DynamicShapeCluster>(), enable_dyn_level, is_cpu || is_gpu);
-  pm->Add(std::make_shared<SymbolEngineBuilder>(true), enable_dyn_level, is_cpu || is_gpu);
+  pm->Add(std::make_shared<SymbolEngineBuilder>(true), enable_dyn_level, !is_dvm);
   pm->Add(std::make_shared<GraphKernelSplitterWithPy>(true), enable_dyn_level, is_gpu);
 #ifdef ENABLE_AKG
   pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_ge && !is_dvm);

@@ -431,7 +431,7 @@ std::vector<PrimitivePtr> StaticShapeCluster::GetClusterOps() {
   } else if (flags.kernel_generator == "DVM") {
     clusterable_ops = clusterable_ops_with_level_dvm;
   } else {
-    clusterable_ops = clusterable_ops_with_level;
+    clusterable_ops = clusterable_ops_with_level_dvm;
   }
   auto ops = GkUtils::GetValidOps(clusterable_ops, flags.fusion_ops_level, flags.enable_cluster_ops_only,
                                   flags.enable_cluster_ops, disable_cluster_ops);
@@ -463,7 +463,9 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
     return false;
   }
   bool is_dvm = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
-  if (!is_dvm && common::AnfAlgo::IsDynamicShape(node)) {
+  bool is_akg_v2 = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_V2");
+  // todo: 不能直接删
+  if ((!is_dvm && !is_akg_v2) && common::AnfAlgo::IsDynamicShape(node)) {
     return false;
   }
   bool node_in_oplist = std::any_of(op_list_.begin(), op_list_.end(),
@@ -486,7 +488,7 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
     }
   }
 
-  if (is_dvm && !DvmSupported(node)) {
+  if ((is_dvm || is_akg_v2) && !DvmSupported(node)) {
     return false;
   }
 
@@ -506,7 +508,7 @@ bool StaticShapeCluster::IsClusterableOp(const AnfNodePtr &node) {
   if (!ValueDependOpUtils::IsConstInput(node)) {
     return false;
   }
-  if (SkipHostInputNode(node, is_dvm)) {
+  if (SkipHostInputNode(node, is_dvm) || SkipHostInputNode(node, is_akg_v2)) {
     // this node can be fused with input host ops by kernelpacket
     return false;
   }

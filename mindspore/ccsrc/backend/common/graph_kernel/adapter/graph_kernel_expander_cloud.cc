@@ -239,7 +239,7 @@ std::vector<PrimitivePtr> GraphKernelExpanderCloud::GetExpanderOps() {
   } else if (flags.kernel_generator == "DVM") {
     expand_ops = expand_ops_with_level_dvm;
   } else {
-    expand_ops = expand_ops_with_level;
+    expand_ops = expand_ops_with_level_dvm;
   }
   auto ops = GkUtils::GetValidOps(expand_ops, flags.fusion_ops_level, flags.enable_expand_ops_only,
                                   flags.enable_expand_ops, disable_expand_ops);
@@ -250,6 +250,7 @@ std::vector<PrimitivePtr> GraphKernelExpanderCloud::InitOpList() { return GraphK
 
 bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   bool is_dvm = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
+  bool is_akg_v2 = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_V2");
   if (IsComplexOp(node) && !is_dvm) {
     return true;
   }
@@ -272,7 +273,7 @@ bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   }
 
   auto enable_dynamic_shape = GraphKernelFlags::GetInstance().enable_dynamic_shape_fusion;
-  if (is_dvm) {
+  if (is_dvm || is_akg_v2) {
     return enable_dynamic_shape;
   }
 

@@ -289,6 +289,8 @@ void SetSingleValue(nlohmann::json *node_json, void *data, TypeId type_id, const
   } else if (type_id == kFloat16->type_id()) {
     float16 *val = static_cast<float16 *>(data);
     (*node_json)["value"] = static_cast<float>(val[0]);
+  } else if (type_id == kBFloat16->type_id()) {
+    (*node_json)["value"] = static_cast<int64_t *>(data)[0];
   } else if (type_id == kUInt64->type_id()) {
     (*node_json)["value"] = static_cast<uint64_t *>(data)[0];
   } else if (type_id == kUInt32->type_id()) {
