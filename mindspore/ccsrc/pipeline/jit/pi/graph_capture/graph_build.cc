@@ -2038,6 +2038,18 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
   co_name_ = name;
 
   graph_->set_func_graph_builder(fg_builder);
+  this->FGAddTopInputs();
+  auto add_local = [this](ValueNode *node) {
+    if (node != &ValueNode::kUnboundLocal && node->abstract_wrapper() == nullptr) {
+      MS_LOG(INFO) << "The python argument is Parameter, recompile if it's changed [" << node->ToString();
+      node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject()));
+    }
+  };
+  std::for_each(frame_.GetLocals().begin(), frame_.GetLocals().end(), add_local);
+  for (auto n : frame_.GetClosures()) {
+    add_local(n);
+    add_local(n->GetValue());
+  }
 #endif
 }
 
@@ -2576,26 +2588,8 @@ bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) 
   return true;
 }
 
-MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f) {
-  this->FGAddTopInputs();
-  auto add_local = [this](ValueNode *node) {
-    if (node != &ValueNode::kUnboundLocal && node->abstract_wrapper() == nullptr) {
-      MS_LOG(INFO) << "The python argument is Parameter, recompile if it's changed [" << node->ToString();
-      node->set_abstract_wrapper(FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject()));
-    }
-  };
-  std::for_each(frame_.GetLocals().begin(), frame_.GetLocals().end(), add_local);
-  for (auto n : frame_.GetClosures()) {
-    add_local(n);
-    add_local(n->GetValue());
-  }
-}
-
-MindGraphBuilder::MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-    : GraphBuilder(r, p, co, globals) {}
-
 namespace {
-std::string GetFuncGraphName(const py::object &func, const MindGraphBuilderPtr &subgraph) {
+std::string GetFuncGraphName(const py::object &func, const GraphBuilderPtr &subgraph) {
   auto func_str = py::cast<std::string>(py::str(func));
   std::vector<std::string> vec;
   std::istringstream iss(func_str);
@@ -2720,9 +2714,8 @@ void GraphBuilder::HandleCustomBProp(const FuncGraphPtr &graph, const py::object
   return;
 }
 
-StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                                const GraphBuilderPtr &subgraph) {
-  auto sg = std::dynamic_pointer_cast<MindGraphBuilder>(subgraph);
+StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
+                                            const GraphBuilderPtr &sg) {
   sg->FGBuilder()->AddPrevBuilder(FGBuilder());
   sg->FGBuilder()->set_manager(FGBuilder()->manager());
 
@@ -2732,7 +2725,7 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
 
   std::vector<ValueNode *> args;
   if (PyFunction_Check(func.ptr())) {
-    args = GetNewArgs(call_node, AObject::Convert(func.ptr()), subgraph);
+    args = GetNewArgs(call_node, AObject::Convert(func.ptr()), sg);
   } else {
     const auto &call_node_inputs = call_node->getInputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
@@ -2820,7 +2813,7 @@ void GraphBuilder::RollbackSideEffectRecords() {
   graph_->GetSideEffect()->ResetRecord(new_side_effect_nodes);
 }
 
-FuncGraphPtr GraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder,
+FuncGraphPtr GraphBuilder::BuildSubFuncGraph(const GraphBuilderPtr &subgraph_builder,
                                              const std::vector<ValueNode *> &args, CallNode *call_node) {
   bool succ = subgraph_builder->FGAddOutput();
   if (!succ) {
@@ -2842,7 +2835,7 @@ FuncGraphPtr GraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph
   return succ ? sub_graph : nullptr;
 }
 
-bool GraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output, const MindGraphBuilderPtr &subgraph_builder,
+bool GraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output, const GraphBuilderPtr &subgraph_builder,
                                         CallNode *call_node) {
   if (subgraph_builder->FGBuilder()->GetOutputSize() == 1) {
     // Only the output of function call, no side effect output.
@@ -2883,55 +2876,6 @@ AbstractWrapperPtr GraphBuilder::FGTupleGetItem(const AbstractWrapperPtr &tuple,
     return nullptr;
   }
   return ret;
-}
-
-// build sub-graph
-StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                            const GraphBuilderPtr &subgraph) {
-  InlineReason stat = InlineReason::kInline;
-  bool is_make_func = call_node->input(0)->GetOpcode() == MAKE_FUNCTION;
-
-  auto code = subgraph->GetGraph()->GetGuard();
-  MS_EXCEPTION_IF_NULL(code);
-  code->GetGuard()->Backup();
-
-  MS_LOG(INFO) << "old subgraph->TraceRun";
-  subgraph->TraceRun();
-
-  call_node->SetSubGraph(subgraph->GetGraph());
-  if (subgraph->GetGraph()->GetRetVal() != nullptr) {
-    call_node->SetVobj(subgraph->GetGraph()->GetRetVal()->GetVobj());
-  }
-  bool gen_to_tuple = subgraph->GetGraph()->Config().GetBoolConfig(GraphJitConfig::kEnableGeneratorExpressionToTuple);
-  if (!gen_to_tuple && subgraph->GetGraph()->GetGeneratorResult() != nullptr) {
-    subgraph->GetGraph()->SetRetVal(nullptr);
-  }
-
-  stat = ApplyInlinePolicy(call_node) ? stat : InlineReason::kInlinePolicyDisabled;
-  if (stat != InlineReason::kInline) {
-    code->GetGuard()->Rollback();
-    if (!is_make_func) {
-      /**
-       * replace function call, inline or resume capture after break graph
-       * exclude make function, because of function always a new function but code is constant
-       **/
-      stat = ReplaceCall(call_node, func) ? stat : InlineReason::kInlinePolicyDisabled;
-    }
-  } else {
-    if (!is_make_func) {
-      // exclude make function, because of function always a new function but code is constant
-      stat = graph_->GuardInlinedFunc(call_node) ? stat : InlineReason::kInlinePolicyDisabled;
-    }
-    if (stat != InlineReason::kInline) {
-      code->GetGuard()->Rollback();
-    } else {
-      code->GetGuard()->Pop();
-    }
-  }
-
-  // if stat == InlineReason::kInline, guard free variable
-  call_node->SetInlineReason(stat);
-  return StopTraceReason::kNonStopTrace;
 }
 
 bool GraphBuilder::UnpackDynamicLengthDictByBytecode(std::vector<ValueNode *> *params, CallNode *call_node,
@@ -3213,7 +3157,8 @@ bool GraphBuilder::ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reas
   return false;
 }
 
-py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
+// todo: this function should merge with resolve callable and delete useless part.
+py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTraceReason *stop_reason) {
   AObject *callable = call_node->input(0)->GetVobj();
   py::object callable_info;
   *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
@@ -3295,7 +3240,7 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
     for (int i = 0; i < ncells; i++) {
       auto obj_info = AObject::Convert(py::reinterpret_steal<py::object>(PyCell_New(nullptr)));
       CellVarNode *cell_node = graph_->NewCellNode(obj_info, CALL_FUNCTION, 0, {type_node});
-      auto abs = static_cast<MindGraphBuilder *>(this)->FGBuilder()->AddLocalVariable(obj_info->GetPyObject());
+      auto abs = FGBuilder()->AddLocalVariable(obj_info->GetPyObject());
       cell_node->set_abstract_wrapper(abs);
       call_node->AddParam(cell_node);
       frame->SetClosure(i, cell_node);
@@ -3424,7 +3369,7 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
   // unsupported check
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(callable_info.ptr()));
   PyObject *globals = PyFunction_GET_GLOBALS(callable_info.ptr());
-  auto subgraph = GraphBuilder::Creator(this->root_ ? this->root_ : this, this, co, globals);
+  auto subgraph = std::make_shared<GraphBuilder>(this->root_ ? this->root_ : this, this, co, globals);
   this->sub_graph = subgraph;
 
   // frame build
@@ -4602,7 +4547,7 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GraphBuilder::BuildFor
     DoCall({CALL_FUNCTION, arg_size});
   }
   pop();
-  auto forward_graph_builder = std::dynamic_pointer_cast<MindGraphBuilder>(this->sub_graph);
+  auto forward_graph_builder = sub_graph;
   if (forward_graph_builder == nullptr) {
     MS_LOG(INFO) << "Failed to get function graph builder for forward graph.";
     return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(nullptr, bind_helper);
@@ -4859,8 +4804,6 @@ py::object GraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *s
     MS_LOG(INFO) << "Build forward fg failed.";
     return py::object();
   }
-  auto forward_graph_builder = std::dynamic_pointer_cast<MindGraphBuilder>(this->sub_graph);
-
   if (py::isinstance<Cell>(forward_net_object)) {
     HandleCustomBProp(forward_fg, forward_net_object);
   }
@@ -4882,12 +4825,12 @@ py::object GraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *s
   if (!HandleRegisterHook(forward_fg)) {
     *stop_reason = StopTraceReason::kStopTraceTensorHook;
   }
-  HandleGradForwardSideEffect(forward_fg, ret, forward_graph_builder, call_node);
+  HandleGradForwardSideEffect(forward_fg, ret, sub_graph, call_node);
   return py::object();
 }
 
 void GraphBuilder::HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
-                                               const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node) {
+                                               const GraphBuilderPtr &subgraph_builder, CallNode *call_node) {
   const auto &side_effect_outputs = subgraph_builder->side_effect_outputs();
   if (side_effect_outputs.empty() || !grad->grad_info().get_value_) {
     return;
@@ -5128,7 +5071,7 @@ static void MarkPIJitSpecializedCall(const FuncGraphBuilderPtr &fg_builder, Call
   }
 }
 
-py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
+py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
   *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
   if (callable_info.ptr() == nullptr) {
@@ -5174,7 +5117,7 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     return HandleMSCallable(call_node, callable_info, original_callable, stop_reason);
   }
 
-  py::object result = this->GraphBuilder::ResolveCallable(call_node, stop_reason);
+  py::object result = ResolveCallableWithByteCode(call_node, stop_reason);
   AObject *callable = call_node->input(0)->GetVobj();
   bool pijit_specialized = original_callable.ptr() == callable_info.ptr()  // not converted
                            || call_node->GetSubGraph() != nullptr          // pijit sub graph

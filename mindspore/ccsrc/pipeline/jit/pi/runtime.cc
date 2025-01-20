@@ -406,7 +406,7 @@ static auto HandleUnsupportedSyntax(JitCompileResults *jcr, const GraphBuilderPt
 
 static auto TraceRun(JitCompileResults *jcr) {
   TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
-  GraphBuilderPtr g = GraphBuilder::Creator(jcr->origin_frame());
+  GraphBuilderPtr g = std::make_shared<GraphBuilder>(jcr->origin_frame());
   (void)g->TraceRun();
   return g;
 }
