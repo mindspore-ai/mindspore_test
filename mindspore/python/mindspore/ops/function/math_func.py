@@ -8432,13 +8432,13 @@ def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
     Examples:
         >>> import mindspore as ms
         >>> A = ms.ops.arange(0, 12, dtype=ms.float32).reshape(3, 4)
-        >>> print(ms.ops.matrix_norm_ext(x, ord='fro'))
+        >>> print(ms.ops.matrix_norm_ext(A, ord='fro'))
         22.494444
-        >>> print(ms.ops.matrix_norm_ext(x, ord='nuc'))
+        >>> print(ms.ops.matrix_norm_ext(A, ord='nuc'))
         24.364643
-        >>> print(ms.ops.matrix_norm_ext(x, ord=float('inf')))
+        >>> print(ms.ops.matrix_norm_ext(A, ord=float('inf')))
         38.0
-        >>> print(ms.ops.matrix_norm_ext(x, ord=float('-inf')))
+        >>> print(ms.ops.matrix_norm_ext(A, ord=float('-inf')))
         6.0
     """
     ndim = A.ndim
@@ -8562,8 +8562,10 @@ def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
         >>> n = ops.arange(27, dtype=ms.float32).reshape(3, 3, 3)
         >>> print(ops.function.math_func.linalg_norm(n, dim=(1, 2)))
         [14.282857 39.76179  66.45299 ]
-        >>> print(ops.function.math_func.linalg_norm(n[0, :, :]), ops.function.math_func.linalg_norm(n[1, :, :]))
-        14.282857 39.76179
+        >>> print(ops.function.math_func.linalg_norm(n[0, :, :]))
+        14.282857
+        >>> print(ops.function.math_func.linalg_norm(n[1, :, :]))
+        39.76179
     """
     dim, immediate = _check_linalg_norm_input(dim, ord, A.ndim)
     if immediate:
@@ -8809,21 +8811,21 @@ def matrix_norm(A, ord='fro', axis=(-2, -1), keepdims=False, *, dtype=None):
     Examples:
         >>> import mindspore as ms
         >>> A = ms.ops.arange(0, 12, dtype=ms.float32).reshape(3, 4)
-        >>> print(ms.ops.matrix_norm(x, ord='fro'))
+        >>> print(ms.ops.matrix_norm(A, ord='fro'))
         22.494444
-        >>> print(ms.ops.matrix_norm(x, ord='nuc'))
+        >>> print(ms.ops.matrix_norm(A, ord='nuc'))
         24.364643
-        >>> print(ms.ops.matrix_norm(x, ord=float('inf')))
+        >>> print(ms.ops.matrix_norm(A, ord=float('inf')))
         38.0
-        >>> print(ms.ops.matrix_norm(x, ord=float('-inf')))
+        >>> print(ms.ops.matrix_norm(A, ord=float('-inf')))
         6.0
-        >>> print(ms.ops.vector_norm(x, ord=1))
+        >>> print(ms.ops.vector_norm(A, ord=1))
         21.0
-        >>> print(ms.ops.vector_norm(x, ord=-1))
+        >>> print(ms.ops.vector_norm(A, ord=-1))
         12.0
-        >>> print(ms.ops.vector_norm(x, ord=2))
+        >>> print(ms.ops.vector_norm(A, ord=2))
         22.409302
-        >>> print(ms.ops.vector_norm(x, ord=-2))
+        >>> print(ms.ops.vector_norm(A, ord=-2))
         1.672928e-07
     """
     ndim = A.ndim
