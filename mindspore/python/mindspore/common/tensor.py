@@ -406,9 +406,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __rmul__(self, other):
         return self.__mul__(other)
 
-    def __imul__(self, other):
-        return self.__mul__(other)
-
     def __matmul__(self, other):
         return tensor_operator_registry.get('__matmul__')(self, other)
 
