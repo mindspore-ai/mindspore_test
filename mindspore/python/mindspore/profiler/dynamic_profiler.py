@@ -392,16 +392,16 @@ class DynamicProfilerMonitorBase(Callback):
             ...      cfg_json = {
             ...          "start_step": 2,
             ...          "stop_step": 5,
-            ...          "aicore_metrics": 1,
-            ...          "profiler_level": -1,
-            ...          "profile_framework": 1,
-            ...          "analyse_mode": 0,
-            ...          "with_stack": True,
-            ...          "parallel_strategy": True,
-            ...          "data_simplification": False,
+            ...          "aicore_metrics": -1,
+            ...          "profiler_level": 0,
+            ...          "activities": 0,
+            ...          "analyse_mode": -1,
+            ...          "parallel_strategy": False,
+            ...          "with_stack": False,
+            ...          "data_simplification": True,
             ...          }
-            ...      context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
-            ...      context.set_context(mode=mindspore.PYNATIVE_MODE, device_target="Ascend")
+            ...      context.set_context(mode=mindspore.PYNATIVE_MODE)
+            ...      mindspore.set_device("Ascend")
             ...      cfg_path = os.path.join("./cfg_path", "profiler_config.json")
             ...      # set cfg file
             ...      with open(cfg_path, 'w') as f:
