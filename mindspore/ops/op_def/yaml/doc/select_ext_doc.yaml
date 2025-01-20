@@ -24,7 +24,6 @@ select_ext:
             >>> from mindspore import Tensor, mint
             >>> input = Tensor([[2, 3, 4, 5],[3, 2, 4, 5]])
             >>> y = mint.select(input, 0, 0)
-            >>> y = Tensor([1,2], mindspore.float32)
             >>> print(y)
             [2 3 4 5]
             
