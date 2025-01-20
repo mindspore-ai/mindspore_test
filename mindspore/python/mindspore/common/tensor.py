@@ -3029,7 +3029,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
             >>> from_ = 0
             >>> to = 5
-            >>> print(a.random_(low, high).shape)
+            >>> print(a.random_(from_, to).shape)
             (2, 3)
         """
         return tensor_operator_registry.get('random_')(self, from_=from_, to=to, generator=generator)
