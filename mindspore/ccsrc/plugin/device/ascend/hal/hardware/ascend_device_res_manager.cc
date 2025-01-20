@@ -711,6 +711,33 @@ int AscendDeviceResManager::SendRecv(const std::vector<tensor::TensorPtr> &param
   return replicator.SendRecv(params, src_rank, dst_rank);
 }
 
+int AscendDeviceResManager::ResetParams(const std::vector<tensor::TensorPtr> &params) const {
+  constexpr size_t kDefaultStreamId = 0;
+  auto stream_id = kDefaultStreamId;
+  auto stream_ptr = AscendStreamMng::GetInstance().GetStream(stream_id);
+  MS_EXCEPTION_IF_NULL(stream_ptr);
+  MS_LOG(INFO) << "Size of params is " << params.size();
+
+  for (size_t index = 0; index < params.size(); ++index) {
+    auto &tensor = params[index];
+    if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr) {
+      MS_LOG(INFO) << "Parameter " << index << "/" << params.size() << " size=" << tensor->Size()
+                   << " tensor device address is nullptr, skip resetting.";
+      continue;
+    }
+    MS_LOG(INFO) << "Parameter " << index << "/" << params.size() << " size=" << tensor->Size();
+    auto ret = CALL_ASCEND_API(aclrtMemsetAsync, tensor->device_address()->GetMutablePtr(), tensor->Size(), 0,
+                               tensor->Size(), stream_ptr);
+    if (ret != ACL_SUCCESS) {
+      MS_LOG(ERROR) << "Call aclrtMemsetAsync failed with return value " << ret << ".";
+      return ret;
+    }
+  }
+  (void)SyncStream(stream_id);
+
+  return 0;
+}
+
 int AscendDeviceResManager::CleanTdtChannel() const {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";

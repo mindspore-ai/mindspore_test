@@ -48,6 +48,7 @@ aclrtMallocHostFunObj aclrtMallocHost_ = nullptr;
 aclrtMemcpyFunObj aclrtMemcpy_ = nullptr;
 aclrtMemcpyAsyncFunObj aclrtMemcpyAsync_ = nullptr;
 aclrtMemsetFunObj aclrtMemset_ = nullptr;
+aclrtMemsetAsyncFunObj aclrtMemsetAsync_ = nullptr;
 aclrtProcessReportFunObj aclrtProcessReport_ = nullptr;
 aclrtQueryEventStatusFunObj aclrtQueryEventStatus_ = nullptr;
 aclrtRecordEventFunObj aclrtRecordEvent_ = nullptr;
@@ -112,6 +113,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtMemcpy_ = DlsymAscendFuncObj(aclrtMemcpy, handler);
   aclrtMemcpyAsync_ = DlsymAscendFuncObj(aclrtMemcpyAsync, handler);
   aclrtMemset_ = DlsymAscendFuncObj(aclrtMemset, handler);
+  aclrtMemsetAsync_ = DlsymAscendFuncObj(aclrtMemsetAsync, handler);
   aclrtProcessReport_ = DlsymAscendFuncObj(aclrtProcessReport, handler);
   aclrtQueryEventStatus_ = DlsymAscendFuncObj(aclrtQueryEventStatus, handler);
   aclrtRecordEvent_ = DlsymAscendFuncObj(aclrtRecordEvent, handler);
@@ -173,6 +175,7 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtMemcpy);
   ASSIGN_SIMU(aclrtMemcpyAsync);
   ASSIGN_SIMU(aclrtMemset);
+  ASSIGN_SIMU(aclrtMemsetAsync);
   ASSIGN_SIMU(aclrtProcessReport);
   ASSIGN_SIMU(aclrtQueryEventStatus);
   ASSIGN_SIMU(aclrtRecordEvent);

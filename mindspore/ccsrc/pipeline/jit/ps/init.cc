@@ -185,6 +185,7 @@ void RegModule(py::module *m) {
   RegAmpModule(m);
   RegStress(m);
   RegSendRecv(m);
+  RegResetParams(m);
   RegCleanTdtChannel(m);
   mindspore::dump::RegDumpControl(m);
   RegTFT(m);

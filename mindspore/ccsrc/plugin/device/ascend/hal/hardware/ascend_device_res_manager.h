@@ -134,6 +134,7 @@ class AscendDeviceResManager : public DeviceResManager {
   int StressDetect() const override;
 
   int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const override;
+  int ResetParams(const std::vector<tensor::TensorPtr> &params) const override;
   int CleanTdtChannel() const override;
 
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);

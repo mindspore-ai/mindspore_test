@@ -32,10 +32,23 @@ int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst
   device::DeviceContextManager::GetInstance().SyncAllStreams();
   return device_ctx->device_res_manager_->SendRecv(params, src_rank, dst_rank);
 }
+
+int ResetParams(const std::vector<tensor::TensorPtr> &params) {
+  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
+  MS_EXCEPTION_IF_NULL(device_ctx);
+  MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
+  device::DeviceContextManager::GetInstance().SyncAllStreams();
+  return device_ctx->device_res_manager_->ResetParams(params);
+}
 }  // namespace
 
 void RegSendRecv(py::module *m) {
   (void)m->def("send_recv", &mindspore::SendRecv, "Send and receive parameters", py::arg("params"), py::arg("src_rank"),
                py::arg("dst_rank"));
+}
+
+void RegResetParams(py::module *m) {
+  (void)m->def("reset_params", &mindspore::ResetParams, "Reset parameter's value to zero", py::arg("params"));
 }
 }  // namespace mindspore

@@ -22,13 +22,12 @@ from mindspore.train.callback._callback import Callback
 from mindspore import context
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
-from mindspore.ops import functional as F
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
 from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post, _tft_sem_enable
 from mindspore._c_expression import clean_tdt_channel
-from mindspore._c_expression import send_recv
+from mindspore._c_expression import send_recv, reset_params
 from mindspore._c_expression import CollectiveManager
 from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
 from mindspore._c_expression import Tensor as Tensor_
@@ -107,7 +106,8 @@ or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
         cb_params = args
         src_rank = repair_info["src"][0]
         dst_rank = repair_info["dst"][0]
-        send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank)
+        if send_recv(cb_params.train_network.trainable_params(), src_rank, dst_rank) != 0:
+            raise ValueError("Call send_recv failed.")
     logger.info("Finish _tft_repair_callback")
 
 
@@ -351,12 +351,12 @@ class TFTRegister(Callback):
         logger.info("Finished start tft processor.")
 
     def _reset_acc_grads(self):
-        for key, param in self.cb_params.train_network.parameters_and_names():
-            if 'accu_grad' in key:
-                accu_grad = param
-                grad_val = F.cast(F.equal(accu_grad, accu_grad), F.dtype(accu_grad))
-                zeros = F.mul(grad_val, 0)
-                F.assign(accu_grad, zeros)
+        accu_grad_params = map(lambda e: e[1],
+                               filter(lambda e: e[1].name.startswith('accu_grads'),
+                                      self.cb_params.train_network.parameters_and_names()))
+        accu_grad_list = list(accu_grad_params)
+        if reset_params(accu_grad_list) != 0:
+            raise ValueError("Call reset_params failed.")
 
     def on_train_step_end(self, run_context):
         """
