@@ -27,7 +27,7 @@ class Net(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
