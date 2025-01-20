@@ -2,15 +2,14 @@ inplace_scatter_src:
     description: |
         InplaceScatterSrc is for scatter_ when using a Tensor as the source element without reduce.
 
-        For details, please refer to :func:`mindspore.ops.scatter_`.
+        For details, please refer to :func:`mindspore.Tensor.scatter_`.
 
         Examples:
-            >>> from mindspore import tensor, int64, float32
-            >>> from mindspore.ops import scatter_
-            >>> this_tensor = tensor([[1, 2], [3, 4]], dtype=float32)
-            >>> index = tensor([[1, 0], [1, 0]], dtype=int64)
-            >>> src = tensor([[4, 3], [2, 1]], dtype=float32)
-            >>> scatter_(this_tensor, 1, index, src)
+            >>> from mindspore import Tensor, int64, float32
+            >>> this_tensor = Tensor([[1, 2], [3, 4]], dtype=float32)
+            >>> index = Tensor([[1, 0], [1, 0]], dtype=int64)
+            >>> src = Tensor([[4, 3], [2, 1]], dtype=float32)
+            >>> this_tensor.scatter_(1, index, src)
             >>> print(this_tensor)
             [[3., 4.],
              [1., 2.]]
