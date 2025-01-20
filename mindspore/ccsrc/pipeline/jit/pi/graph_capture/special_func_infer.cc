@@ -373,8 +373,9 @@ bool InferBuiltinFuncOrMethod(CallNode *call_node, GraphBuilder *unused = nullpt
 }
 
 // dict.items()
-bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
+bool InferDictItems(CallNode *call_node, GraphBuilder *builder) {
   MS_LOG(INFO) << "Start to handle dict items.";
+  MS_EXCEPTION_IF_NULL(builder);
   (void)JustCallAndSetRes(call_node);
   auto func = call_node->input(0);
   if (func->GetOpcode() == LOAD_ATTR) {
@@ -385,9 +386,8 @@ bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
       MS_LOG(INFO) << "Wrapper is NULL for dict node: " << dict_node->ToString() << ", failed to infer dict.items()";
       return false;
     }
-    auto mind_builder = static_cast<MindGraphBuilder *>(unused);
     AbstractWrapperPtrList inputs_wrapper = {wrapper};
-    auto ret = mind_builder->FGBuilder()->AddNode(prim::kPrimDictItems, inputs_wrapper);
+    auto ret = builder->FGBuilder()->AddNode(prim::kPrimDictItems, inputs_wrapper);
     if (ret == nullptr) {
       MS_LOG(INFO) << "Handle dict items failed for node: " << call_node->ToString();
       return false;
@@ -427,7 +427,8 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   auto old_node = self;
 
   // constant fold and set node info
-  auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr);
+  // todo: this builder do not need to create.
+  auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
   Graph *sub_graph = builder->GetGraph();
   builder->DoLoadConst({LOAD_CONST, 0, py::object(py::none())});
   builder->DoReturn({RETURN_VALUE, 0});
@@ -498,7 +499,8 @@ static bool InferListReverse(CallNode *call_node, GraphBuilder *parent) {
     std::reverse(elements->begin(), elements->end());
   };
   auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
-    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr);
+    // todo: this builder do not need to create.
+    auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
     CallNodeReturnConst(call_node, builder->GetGraph(), AObject::Convert(Py_None));
   };
   auto is_safe = [](CallNode *, GraphBuilder *) { return true; };
@@ -533,7 +535,8 @@ static bool InferListPop(CallNode *call_node, GraphBuilder *parent) {
   };
   auto return_element = [&pop_value](CallNode *call_node, GraphBuilder *parent) {
     MS_EXCEPTION_IF_NULL(pop_value);
-    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr);
+    // todo: this builder do not need to create.
+    auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
     auto sub_graph = builder->GetGraph();
     sub_graph->SetRetVal(pop_value);
     call_node->SetSubGraph(sub_graph);
@@ -569,7 +572,8 @@ static bool InferListRemove(CallNode *call_node, GraphBuilder *parent) {
     (void)std::remove(elements->begin(), elements->end(), target);
   };
   auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
-    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr);
+    // todo: this builder do not need to create.
+    auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
     CallNodeReturnConst(call_node, builder->GetGraph(), AObject::Convert(Py_None));
   };
   auto is_safe = [](CallNode *, GraphBuilder *) { return true; };
@@ -614,7 +618,8 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
   }
 
   // constant fold and set node info
-  auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr);
+  // todo: this builder do not need to create.
+  auto builder = std::make_shared<GraphBuilder>(parent->root(), parent, nullptr, nullptr);
   Graph *sub_graph = builder->GetGraph();
   builder->DoLoadConst({LOAD_CONST, 0, value});
   builder->DoReturn({RETURN_VALUE, 0});
@@ -698,7 +703,7 @@ bool InferPrimitiveAssign(CallNode *call_node, GraphBuilder *parent) {
   return true;
 }
 
-bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
+bool InferTensorSetItem(CallNode *call_node, GraphBuilder *builder) {
   SetForbiddenFuncInfo(call_node);
   bool is_not_method = false;
   ValueNode *self = GetSelfFromKnownMethod(call_node, &is_not_method);
@@ -710,22 +715,21 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
   }
 
   // parser setitem
-  constexpr auto kMeTaModule = "mindspore.ops.composite.multitype_ops";
-  auto meta = py::module::import(kMeTaModule).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
+  constexpr auto meta_module = "mindspore.ops.composite.multitype_ops";
+  auto meta = py::module::import(meta_module).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
 
-  auto fg = dynamic_cast<MindGraphBuilder *>(parent);
   std::vector<ValueNode *> args = {self};
   for (size_t i = 1 + is_not_method; i < call_node->getInputs().size(); ++i) {
     args.push_back(call_node->input(i));
   }
-  auto abs = fg->FGBuilder()->AddNode(meta, fg->HandleInputArgs(std::move(args)));
+  auto abs = builder->FGBuilder()->AddNode(meta, builder->HandleInputArgs(std::move(args)));
   if (abs == nullptr) {
     return false;
   }
   call_node->set_abstract_wrapper(abs);
   call_node->SetVobj(AObject::Convert(abs));
 
-  TensorAssignValue(call_node, parent, self, call_node, SideEffect::kBuiltinMethod, "__setitem__");
+  TensorAssignValue(call_node, builder, self, call_node, SideEffect::kBuiltinMethod, "__setitem__");
 
   call_node->SetInlineReason(InlineReason::kInlineFuncSpecialize);
   return true;

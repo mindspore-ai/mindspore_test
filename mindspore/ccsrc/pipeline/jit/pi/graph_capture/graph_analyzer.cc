@@ -194,9 +194,7 @@ void GraphAnalyzer::Analyze() {
   GetCaptureInfo().captured_.operations = collect_trace_nodes();
   UseDefAnalyze();
 
-  auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
-  MS_EXCEPTION_IF_NULL(mind_graph_builder);
-  auto func_graph_builder = mind_graph_builder->FGBuilder();
+  auto func_graph_builder = graph_builder_->FGBuilder();
   if (func_graph_builder->graph() == nullptr) {
     // Graph build failed, add all nodes to ordered_escaped_locals.
     PyCodeWrapper co(graph_->GetCodeObj());
@@ -366,7 +364,7 @@ ValueNode *GraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   }
   auto &captured = GetCaptureInfo().captured_;
   auto sequence = abstract->cast<abstract::AbstractSequencePtr>();
-  auto func_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_)->FGBuilder();
+  auto func_graph_builder = graph_builder_->FGBuilder();
   auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
   auto func_graph = func_graph_builder->graph(true);
   bool is_tuple = abstract->isa<abstract::AbstractTuple>();
@@ -439,7 +437,7 @@ std::pair<ValueNode *, ValueNode *> GraphAnalyzer::MutateDictNode(ValueNode *nod
                 });
   auto keys_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(key_abstracts));
   auto values_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(value_abstracts));
-  auto func_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_)->FGBuilder();
+  auto func_graph_builder = graph_builder_->FGBuilder();
   auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
   MS_EXCEPTION_IF_NULL(graph_node);
   auto func_graph = func_graph_builder->graph(true);
@@ -510,9 +508,7 @@ void GraphAnalyzer::ExpandGraphOutput() {
       abstract->set_user_data<int>(kPiJitOutputDepthKey, std::make_shared<int>(depth));
       return depth;
     };
-  auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
-  MS_EXCEPTION_IF_NULL(mind_graph_builder);
-  auto func_graph_builder = mind_graph_builder->FGBuilder();
+  auto func_graph_builder = graph_builder_->FGBuilder();
   MS_EXCEPTION_IF_NULL(func_graph_builder);
   func_graph_builder->ClearOutputNodes();
   auto &captured = GetCaptureInfo().captured_;
@@ -550,9 +546,7 @@ void GraphAnalyzer::ExpandGraphOutput() {
 }
 
 bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
-  auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
-  MS_EXCEPTION_IF_NULL(mind_graph_builder);
-  auto func_graph_builder = mind_graph_builder->FGBuilder();
+  auto func_graph_builder = graph_builder_->FGBuilder();
   MS_EXCEPTION_IF_NULL(func_graph_builder);
   func_graph_builder->ClearOutputNodes();
   auto &captured = GetCaptureInfo().captured_;

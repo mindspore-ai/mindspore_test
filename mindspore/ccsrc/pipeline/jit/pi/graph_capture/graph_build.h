@@ -29,9 +29,7 @@
 namespace mindspore {
 namespace pijit {
 class GraphBuilder;
-class MindGraphBuilder;
 using GraphBuilderPtr = std::shared_ptr<GraphBuilder>;
-using MindGraphBuilderPtr = std::shared_ptr<MindGraphBuilder>;
 
 struct TryBlock {
   int type;         /*what kind of block this is (SETUP_SETUP, SETUP_FINALLY, SETUP_EXCEPT)*/
@@ -63,12 +61,6 @@ class GraphBuilder {
       delete i;
     }
     graph_pool_.clear();
-  }
-  static GraphBuilderPtr Creator(const PyFrameWrapper &f) {
-    return std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(f));
-  }
-  static GraphBuilderPtr Creator(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals) {
-    return std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(r, p, co, globals));
   }
 
   StopTraceReason TraceRun();
@@ -112,7 +104,7 @@ class GraphBuilder {
    * \param [out] stop_reason
    * \return The function object of call target
    */
-  virtual py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason);
+  py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason);
 
   /**
    * Resolve closure of function, generate cell free nodes to trace closure
@@ -184,8 +176,8 @@ class GraphBuilder {
   bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame);
 
   // build subgraph, return stop trace reason
-  virtual StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                        const GraphBuilderPtr &subgraph);
+  StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
+                                const GraphBuilderPtr &subgraph);
 
   bool ReplaceCall(CallNode *call_node, const py::object &func);
 
@@ -363,7 +355,7 @@ class GraphBuilder {
   bool IsGradCallable(ValueNode *node);
   py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
   void HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
-                                   const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node);
+                                   const GraphBuilderPtr &subgraph_builder, CallNode *call_node);
 
   py::object HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
                                     StopTraceReason *stop_reason);
@@ -374,11 +366,11 @@ class GraphBuilder {
   void CollectSideEffectOutputs();
   // Roll back the side effect nodes generated in current graph (and all its subgraphs).
   void RollbackSideEffectRecords();
-  FuncGraphPtr BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder, const std::vector<ValueNode *> &args,
+  FuncGraphPtr BuildSubFuncGraph(const GraphBuilderPtr &subgraph_builder, const std::vector<ValueNode *> &args,
                                  CallNode *call_node);
   bool FGAddOutput();
   bool FGAddSideEffectOutput();
-  bool HandleSubGraphOutput(const AbstractWrapperPtr &output, const MindGraphBuilderPtr &subgraph_builder,
+  bool HandleSubGraphOutput(const AbstractWrapperPtr &output, const GraphBuilderPtr &subgraph_builder,
                             CallNode *call_node);
   AbstractWrapperPtr FGTupleGetItem(const AbstractWrapperPtr &tuple, int index);
 
@@ -406,15 +398,7 @@ class GraphBuilder {
   void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
   bool ConvertClassType(const py::object &callable_info, CallNode *call_node, StopTraceReason *stop_reason);
   std::pair<bool, py::object> ConvertCallableObject(const py::object &callable_info) const;
-};
-
-class MindGraphBuilder : public GraphBuilder {
- public:
-  explicit MindGraphBuilder(const PyFrameWrapper &f);
-  MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
-  StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                const GraphBuilderPtr &subgraph) override;
-  py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
+  py::object ResolveCallableWithByteCode(CallNode *call_node, StopTraceReason *stop_reason);
 };
 }  // namespace pijit
 }  // namespace mindspore
