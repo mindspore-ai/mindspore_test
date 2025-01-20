@@ -80,7 +80,7 @@ class Adam(Optimizer):
     .. warning::
         The implementation formula of this optimizer interface is not completely consistent with that in the paper.
         If you want to use an interface that is completely consistent, it is recommended to use
-        :class:`mindspore.mint.Adam`, which currently only supports Ascend.
+        :class:`mindspore.mint.optim.Adam`, which currently only supports Ascend.
         This is an experimental optimizer API that is subject to change.
         This module must be used with lr scheduler module in `LRScheduler Class
         <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_ .
