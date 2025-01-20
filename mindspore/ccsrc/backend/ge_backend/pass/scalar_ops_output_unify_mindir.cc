@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ge/scalar_ops_output_unify_mindir.h"
+#include "backend/ge_backend/pass/scalar_ops_output_unify_mindir.h"
 #include <memory>
 #include <vector>
 #include "mindspore/ops/op_def/array_ops.h"

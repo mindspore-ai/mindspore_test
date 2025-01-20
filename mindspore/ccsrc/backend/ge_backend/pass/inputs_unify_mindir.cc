@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ge/inputs_unify_mindir.h"
+#include "backend/ge_backend/pass/inputs_unify_mindir.h"
 #include <map>
 #include <vector>
 #include <memory>

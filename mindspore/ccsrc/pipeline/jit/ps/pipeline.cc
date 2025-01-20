@@ -1949,7 +1949,7 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   return res;
 }
 
-FuncGraphPtr GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string &phase) const {
+void GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string &phase) const {
   MS_LOG(INFO) << "Start build df graph, phase = " << phase;
   if (info_.count(phase) == 0) {
     MS_LOG(INTERNAL_EXCEPTION) << "No phase in executor: " << GetPhasePrefix(phase);
@@ -1959,39 +1959,33 @@ FuncGraphPtr GraphExecutorPy::BuildGraph(const py::dict &init_params, const std:
   auto target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (target != kAscendDevice) {
     MS_LOG(INFO) << "Only Support ascend.";
-    return nullptr;
+    return;
   }
 
   auto iter = info_.find(phase);
   if (iter == info_.end()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Phase " << phase << " must compile.";
   }
+
+  std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
+  ConvertObjectToTensors(init_params, &init_tensors, info_.at(phase)->func_graph);
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    backend::BackendManager::GetInstance().ConvertIR(info_.at(phase)->func_graph, init_tensors,
+                                                     backend::IRFormat::kAir);
+    return;
+  }
+
   auto backend = compile::CreateBackend();
   MS_EXCEPTION_IF_NULL(backend);
   const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
   MS_EXCEPTION_IF_NULL(mindrt_backend);
-  std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
-  ConvertObjectToTensors(mindrt_backend, init_params, &init_tensors, info_.at(phase)->func_graph);
-  return mindrt_backend->BuildDFGraph(info_.at(phase)->func_graph, init_tensors);
+  (void)mindrt_backend->BuildDFGraph(info_.at(phase)->func_graph, init_tensors);
 }
 
-void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend,
-                                             const py::dict &dict,
+void GraphExecutorPy::ConvertObjectToTensors(const py::dict &dict,
                                              std::map<std::string, std::shared_ptr<Tensor>> *const tensors,
                                              const FuncGraphPtr &anf_graph) const {
-  const auto &infer_need_update_parameter_names = backend->GetInferParameterNames();
-  bool infer = false;
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  bool enable_ge = context_ptr->backend_policy() == "ge";
-  bool is_train = false;
-  if (anf_graph->has_attr("phase")) {
-    std::string phase = anf_graph->get_attr("phase")->ToString();
-    is_train = phase == "train";
-  }
-  if (enable_ge && !is_train) {
-    infer = true;
-  }
   for (auto item : dict) {
     if ((!py::isinstance<py::str>(item.first))) {
       MS_LOG(WARNING) << "Type of key of py_dict is not string, ignore it.";
@@ -2000,10 +1994,6 @@ void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::Mind
     std::shared_ptr<Tensor> tensor;
     std::string name = py::cast<std::string>(item.first);
 
-    if (infer && infer_need_update_parameter_names.find(name) == infer_need_update_parameter_names.end() &&
-        !IsEnableRefMode()) {
-      continue;
-    }
     if (py::isinstance<py::float_>(item.second.attr("data"))) {
       // convert float to tensor with shape([1])
       tensor = std::make_shared<Tensor>(kNumberTypeFloat32, std::vector<int64_t>({1}));
@@ -2337,7 +2327,15 @@ void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::strin
   FuncGraphPtr func_graph = info_[phase]->func_graph;
   MS_EXCEPTION_IF_NULL(func_graph);
 
-  string save_str = mindrt_backend->ExportDFGraph(file_name, func_graph, is_save_to_file);
+  string save_str;
+  std::string new_backend_env = common::GetEnv("MS_NEW_BACKEND");
+  if (!new_backend_env.empty()) {
+    save_str =
+      backend::BackendManager::GetInstance().ExportIR(func_graph, file_name, is_save_to_file, backend::IRFormat::kAir);
+  } else {
+    save_str = mindrt_backend->ExportDFGraph(file_name, func_graph, is_save_to_file);
+  }
+
   if (is_save_to_file) {
     return;
   }

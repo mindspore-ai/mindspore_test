@@ -118,6 +118,7 @@ set(BACKEND_SUB_COMP
         backend/graph_compiler
         backend/operator
         memory/mem_pool
+        backend/ge_backend
         runtime/collective
         runtime/device
         runtime/graph_scheduler
@@ -156,6 +157,7 @@ endif()
 target_link_libraries(mindspore_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_backend_manager proto_input mindspore_res_manager)
 target_link_libraries(mindspore_backend PRIVATE securec)
+
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_backend PROPERTIES MACOSX_RPATH ON)

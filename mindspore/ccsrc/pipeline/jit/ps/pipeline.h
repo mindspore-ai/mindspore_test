@@ -160,7 +160,8 @@ class GraphExecutorPy : public ExecutorPy {
   void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
   py::bytes GetOptimizeGraphProto(const std::string &phase);
 
-  FuncGraphPtr BuildGraph(const py::dict &init_params, const std::string &phase) const;
+
+  void BuildGraph(const py::dict &init_params, const std::string &phase) const;
   void ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt = py::none(),
                    char *key = nullptr);
   py::bytes GetRandomStatus(const std::string &phase) const;
@@ -194,7 +195,7 @@ class GraphExecutorPy : public ExecutorPy {
   GraphExecutorPy() = default;
   void ParallelPostProcess(const string &phase, bool use_compile_cache);
 
-  void ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend, const py::dict &dict,
+  void ConvertObjectToTensors(const py::dict &dict,
                               std::map<std::string, std::shared_ptr<tensor::Tensor>> *const tensors,
                               const FuncGraphPtr &anf_graph) const;
 

@@ -217,6 +217,7 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/format_type/set_fracz_group_attr.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/format_type/utils.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge/*.cc"
+        "../../../mindspore/ccsrc/backend/ge_backend/pass/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge_backend_optimization.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge_optimization.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/get_value_helper.cc"

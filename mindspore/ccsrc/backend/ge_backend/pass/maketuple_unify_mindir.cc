@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ge/maketuple_unify_mindir.h"
+#include "backend/ge_backend/pass/maketuple_unify_mindir.h"
 #include <memory>
 #include <vector>
 #include <string>

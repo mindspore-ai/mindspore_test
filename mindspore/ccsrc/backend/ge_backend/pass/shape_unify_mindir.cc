@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ge/shape_unify_mindir.h"
+#include "backend/ge_backend/pass/shape_unify_mindir.h"
 #include <memory>
 #include <vector>
 #include "mindspore/ops/op_def/array_ops.h"

@@ -89,6 +89,35 @@ RunningStatus BackendManager::Run(BackendType backend_type, BackendGraphId graph
   return backend->Run(graph_id, inputs, outputs);
 }
 
+string BackendManager::ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file,
+                                IRFormat ir_format, const std::string &backend_name) {
+  BackendType backend_type = kInvalidBackend;
+  if (backend_name.empty()) {
+    backend_type = GetBackendType();
+  } else {
+    backend_type = GetBackendTypeByName(backend_name);
+  }
+
+  auto backend = GetOrCreateBackend(backend_type);
+  MS_EXCEPTION_IF_NULL(backend);
+  return backend->ExportIR(anf_graph, file_name, is_save_to_file, ir_format);
+}
+
+void BackendManager::ConvertIR(const FuncGraphPtr &anf_graph,
+                               const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
+                               IRFormat ir_format, const std::string &backend_name) {
+  BackendType backend_type = kInvalidBackend;
+  if (backend_name.empty()) {
+    backend_type = GetBackendType();
+  } else {
+    backend_type = GetBackendTypeByName(backend_name);
+  }
+
+  auto backend = GetOrCreateBackend(backend_type);
+  MS_EXCEPTION_IF_NULL(backend);
+  return backend->ConvertIR(anf_graph, init_tensors, ir_format);
+}
+
 BackendBase *BackendManager::GetOrCreateBackend(BackendType backend_type) {
   if (backends_[backend_type] != nullptr) {
     return backends_[backend_type].get();

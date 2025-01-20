@@ -14,23 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_OPTIMIZER_IRPASS_SCALAR_UNIFY_MINDIR_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_OPTIMIZER_IRPASS_SCALAR_UNIFY_MINDIR_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_INPUTS_UNIFY_MINDIR_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_INPUTS_UNIFY_MINDIR_H_
 
+#include <string>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace opt {
-class ScalarUnifyMindIR : public PatternProcessPass {
+class InputsUnifyMindIR : public PatternProcessPass {
  public:
-  explicit ScalarUnifyMindIR(bool multigraph = true) : PatternProcessPass("scalar_unify_mindir", multigraph) {
+  explicit InputsUnifyMindIR(bool multigraph = true) : PatternProcessPass("inputs_unify_mindir", multigraph) {
     is_add_ = false;
   }
-  ~ScalarUnifyMindIR() override = default;
+  ~InputsUnifyMindIR() override = default;
 
-  const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
+
+ private:
+  ValueNodePtr CreateValueTensor(const FuncGraphPtr &func_graph, const AnfNodePtr &node) const;
+  CNodePtr CreateTupleToTensor(const FuncGraphPtr &func_graph, const AnfNodePtr &node) const;
+  CNodePtr CreateScalarToTensor(const FuncGraphPtr &func_graph, const AnfNodePtr &node) const;
+  AnfNodePtr CreateCastNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const TypePtr &data_type) const;
 };
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_OPTIMIZER_IRPASS_SCALAR_UNIFY_MINDIR_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_INPUTS_UNIFY_MINDIR_H_

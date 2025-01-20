@@ -689,7 +689,23 @@ void GEBackend::ProfilerOnStepEnd(const device::DeviceContext *device_context, b
 FuncGraphPtr GEBackend::BuildDFGraph(const device::DeviceContext *device_context, const FuncGraphPtr &func_graph,
                                      const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors) {
   MS_EXCEPTION_IF_NULL(func_graph);
-  return device_context->graph_executor_->BuildDFGraph(func_graph, init_tensors, true);
+  std::map<std::string, std::shared_ptr<tensor::Tensor>> real_init_tensors{};
+  const auto &infer_need_update_parameter_names = GetInferParameterNames(device_context);
+
+  bool infer = false;
+  if (func_graph->has_attr("phase")) {
+    std::string phase = func_graph->get_attr("phase")->ToString();
+    infer = phase != "train";
+  }
+
+  if (infer && !IsEnableRefMode()) {
+    for (auto iter = init_tensors.begin(); iter != init_tensors.end(); ++iter) {
+      if (infer_need_update_parameter_names.find(iter->first) != infer_need_update_parameter_names.end()) {
+        real_init_tensors.emplace(*iter);
+      }
+    }
+  }
+  return device_context->graph_executor_->BuildDFGraph(func_graph, real_init_tensors, true);
 }
 
 string GEBackend::ExportDFGraph(const device::DeviceContext *device_context, const std::string &file_name,

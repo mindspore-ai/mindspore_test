@@ -63,6 +63,15 @@ class BACKEND_MANAGER_EXPORT BackendManager {
   // Clear the members.
   void Clear();
 
+  // convert mindir to ir_format
+  void ConvertIR(const FuncGraphPtr &anf_graph,
+                 const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors, IRFormat ir_format,
+                 const std::string &backend_name = "");
+
+  // export graph to ir_format. If is_save_to_file=True, save as file; if False, return as string
+  string ExportIR(const FuncGraphPtr &anf_graph, const std::string &file_name, bool is_save_to_file, IRFormat ir_format,
+                  const std::string &backend_name = "");
+
  private:
   BackendManager() = default;
   ~BackendManager() = default;

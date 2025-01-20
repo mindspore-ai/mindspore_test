@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ge/scalar_unify_mindir.h"
+#include "backend/ge_backend/pass/scalar_unify_mindir.h"
 #include <memory>
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "include/common/utils/anfalgo.h"

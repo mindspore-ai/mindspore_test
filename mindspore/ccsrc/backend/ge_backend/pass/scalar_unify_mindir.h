@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SCALAR_OPS_OUTPUT_UNIFY_MINDIR_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SCALAR_OPS_OUTPUT_UNIFY_MINDIR_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_SCALAR_UNIFY_MINDIR_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_SCALAR_UNIFY_MINDIR_H_
 
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace opt {
-class ScalarOpsOutputUnifyMindIR : public PatternProcessPass {
+class ScalarUnifyMindIR : public PatternProcessPass {
  public:
-  explicit ScalarOpsOutputUnifyMindIR(bool multigraph = true)
-      : PatternProcessPass("scalar_ops_output_unify_mindir", multigraph) {
+  explicit ScalarUnifyMindIR(bool multigraph = true) : PatternProcessPass("scalar_unify_mindir", multigraph) {
     is_add_ = false;
   }
-  ~ScalarOpsOutputUnifyMindIR() override = default;
+  ~ScalarUnifyMindIR() override = default;
 
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 };
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SCALAR_OPS_OUTPUT_UNIFY_MINDIR_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_SCALAR_UNIFY_MINDIR_H_
