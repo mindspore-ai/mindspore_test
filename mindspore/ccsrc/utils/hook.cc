@@ -22,6 +22,13 @@
 
 namespace mindspore {
 namespace {
+ValuePtr PydataToCValue(const py::object &ret) {
+  if (py::isinstance<tensor::Tensor>(ret)) {
+    return py::cast<tensor::TensorPtr>(ret);
+  }
+  return StubNodeToTensor(ret);
+}
+
 py::object RunHook(uint64_t tensor_id, const py::function &hook, const py::object &arg) {
   if (hook.ptr() == nullptr) {
     MS_LOG(DEBUG) << "Hook for tensor id " << tensor_id << " have been deleted by python";
@@ -50,6 +57,6 @@ ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   py::gil_scoped_acquire acquire_gil;
   auto py_arg = CTensorToPyStubNodes(grad);
   auto ret = RunHook(tensor_id_, hook_, py_arg);
-  return StubNodeToTensor(ret);
+  return PydataToCValue(ret);
 }
 }  // namespace mindspore
