@@ -1421,6 +1421,10 @@ def deprecated_tensor_dot(input, other):
     return F.dot(input, other)
 
 
+def deprecated_tensor_logsumexp(input, dim, keepdim=False):
+    return F.logsumexp(input, dim, keepdim)
+
+
 # 154
 def tensor_isneginf(input):
     return isneginf_ext(input)

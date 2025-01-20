@@ -1274,12 +1274,12 @@ def logcumsumexp(input, axis):
     return F.logcumsumexp(input, axis)
 
 
-def logsumexp(input, axis, keepdims=False):
+def logsumexp(input, dim, keepdim=False):
     """
     Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
     then calculate logarithm of the sum.
     """
-    return F.logsumexp(input, axis, keepdims)
+    return F.logsumexp(input, dim, keepdim)
 
 
 def round_(x):

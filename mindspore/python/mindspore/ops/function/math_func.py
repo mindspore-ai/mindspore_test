@@ -7237,7 +7237,7 @@ def logcumsumexp(input, axis):
     return cumulative_logsumexp_(input, Tensor(axis))
 
 
-def logsumexp(input, axis, keep_dims=False):
+def logsumexp(input, dim, keepdim=False):
     r"""
     Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
     then calculate logarithm of the sum.
@@ -7248,19 +7248,19 @@ def logsumexp(input, axis, keep_dims=False):
 
     Args:
         input (Tensor): The input tensor. With float16 or float32 data type.
-        axis (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
-        keep_dims (bool, optional): If True, keep these reduced dimensions and the length is 1.
+        dim (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
+        keepdim (bool, optional): If True, keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions.
             Default : ``False`` .
 
     Returns:
         Tensor, has the same dtype as the `input`.
 
-        - If axis is (), and keep_dims is False,
+        - If dim is (), and keepdim is False,
           the output is a 0-D tensor representing the sum of all elements in the input tensor.
-        - If axis is int, set as 2, and keep_dims is False,
+        - If dim is int, set as 2, and keepdim is False,
           the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If axis is tuple(int), set as (2, 3), and keep_dims is False,
+        - If dim is tuple(int), set as (2, 3), and keepdim is False,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
 
     Supported Platforms:
@@ -7270,18 +7270,16 @@ def logsumexp(input, axis, keep_dims=False):
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
         >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.logsumexp(x, 1, keep_dims=True)
+        >>> output = ops.logsumexp(x, 1, keepdim=True)
         >>> print(output.shape)
         (3, 1, 5, 6)
     """
-    _reduce_sum = _get_cache_prim(P.ReduceSum)(keep_dims)
-
-    input_max = ops.ReduceMax(keep_dims=True)(input, axis)
+    input_max = ops.ReduceMax(keep_dims=True)(input, dim)
     input_exp = tensor_exp(input - input_max)
-    input_sumexp = _reduce_sum(input_exp, axis)
+    input_sumexp = ops.sum(input_exp, dim, keepdim)
     input_logsumexp = log_(input_sumexp)
-    if not keep_dims:
-        input_max = input_max.squeeze(axis=axis)
+    if not keepdim:
+        input_max = input_max.squeeze(dim)
     return input_logsumexp + input_max
 
 
