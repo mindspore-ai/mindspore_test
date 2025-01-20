@@ -31,7 +31,7 @@ class History(Callback):
     outputs will be recorded.
 
     Note:
-        Normally used in `mindspore.train.Model.train` or `mindspore.train.Model.fit`.
+        Normally used in :func:`mindspore.train.Model.train` or :func:`mindspore.train.Model.fit`.
 
     Examples:
         >>> import numpy as np

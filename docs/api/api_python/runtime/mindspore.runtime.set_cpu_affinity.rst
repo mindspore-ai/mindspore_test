@@ -32,4 +32,4 @@ mindspore.runtime.set_cpu_affinity
         - **ValueError** - 参数 `affinity_cpu_list` 的value中的元素不符合 ``["cpuidX-cpuidY"]`` 格式。
         - **RuntimeError** - 自动化生成绑核策略或者自定义指定绑核策略场景，分配给每个设备的CPU核数量小于7个。
         - **RuntimeError** - 自定义指定绑核策略场景，分配给某个设备的CPU在环境中不可用。
-        - **RuntimeError** - 重复调用了 `mindspore.runtime.set_cpu_affinity` 接口。
+        - **RuntimeError** - 重复调用了 :func:`mindspore.runtime.set_cpu_affinity` 接口。

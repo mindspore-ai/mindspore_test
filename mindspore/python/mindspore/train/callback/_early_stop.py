@@ -198,7 +198,7 @@ class EarlyStopping(Callback):
         """
         Get the monitor value at the end of epoch during training.
 
-        If `mindspore.train.callback.ReduceLROnPlateau` used with `model.train`, no evaluation process
+        If :class:`mindspore.train.callback.ReduceLROnPlateau` used with `model.train`, no evaluation process
         during training, only monitor="loss" is valid; if it used with `model.fit`, evaluation process will be
         performed at the end of epoch, valid monitor is "loss", "eval_loss" and metrics passed to `Model`.
 

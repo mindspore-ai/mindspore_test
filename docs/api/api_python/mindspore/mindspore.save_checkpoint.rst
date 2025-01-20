@@ -9,7 +9,7 @@ mindspore.save_checkpoint
         `enc_mode` 和 `crc_check` 参数互斥，不能同时配置。
 
     参数：
-        - **save_obj** (Union[Cell, list, dict]) - 待保存的对象。数据类型可为 :class:`mindspore.nn.Cell` 、list或dict。若为list，可以是 `Cell.trainable_params()` 的返回值，或元素为dict的列表（如[{"name": param_name, "data": param_data},…]，`param_name` 的类型必须是str，`param_data` 的类型必须是Parameter或者Tensor）；若为dict，可以是 `mindspore.load_checkpoint()` 的返回值。
+        - **save_obj** (Union[Cell, list, dict]) - 待保存的对象。数据类型可为 :class:`mindspore.nn.Cell` 、list或dict。若为list，可以是 `Cell.trainable_params()` 的返回值，或元素为dict的列表（如[{"name": param_name, "data": param_data},…]，`param_name` 的类型必须是str，`param_data` 的类型必须是Parameter或者Tensor）；若为dict，可以是 :func:`mindspore.load_checkpoint` 的返回值。
         - **ckpt_file_name** (str) - checkpoint文件名称。如果文件已存在，将会覆盖原有文件。
         - **integrated_save** (bool) - 在并行场景下是否合并保存拆分的Tensor。默认值： ``True`` 。
         - **async_save** (Union[bool, str]) - 是否使用异步保存checkpoint文件，True时默认使用异步线程；如果是str类型，选择异步保存方式，可以是 "process" 或 "thread"。默认值： ``False`` 。

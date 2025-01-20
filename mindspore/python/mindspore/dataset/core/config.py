@@ -512,7 +512,7 @@ def set_enable_autotune(enable, filepath_prefix=None):
         RuntimeError: If `filepath_prefix` does not have write permission.
 
     Note:
-        - Saved parameter profiles can be loaded via the `mindspore.dataset.deserialize` interface to
+        - Saved parameter profiles can be loaded via the :func:`mindspore.dataset.deserialize` interface to
           directly obtain a data processing pipeline object configured with optimal parameters.
         - The parameter tuning process can be viewed by turning on INFO level logging.
 

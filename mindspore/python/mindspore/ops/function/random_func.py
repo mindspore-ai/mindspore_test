@@ -1881,7 +1881,8 @@ def multinomial(input, num_samples, replacement=True, seed=None):
 
     The polynomial distribution is a probability distribution that generalizes the binomial distribution formula to
     multiple states. In the polynomial distribution, each event has a fixed probability, and the sum of these
-    probabilities is 1. The purpose of the `mindspore.ops.multinomial` interface is to perform `num_samples` sampling
+    probabilities is 1. The purpose of the :func:`mindspore.ops.multinomial` interface
+    is to perform `num_samples` sampling
     on the input `input`, and the output tensor is the index of the input tensor for each sampling.
     The values in `input` represent the probability of selecting the corresponding index for each sampling.
 
@@ -2008,7 +2009,8 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
 
     The polynomial distribution is a probability distribution that generalizes the binomial distribution formula to
     multiple states. In the polynomial distribution, each event has a fixed probability, and the sum of these
-    probabilities is 1. The purpose of the `mindspore.mint.multinomial` interface is to perform `num_samples` sampling
+    probabilities is 1. The purpose of the :func:`mindspore.mint.multinomial` interface
+    is to perform `num_samples` sampling
     on the input `input`, and the output tensor is the index of the input tensor for each sampling.
     The values in `input` represent the probability of selecting the corresponding index for each sampling.
 

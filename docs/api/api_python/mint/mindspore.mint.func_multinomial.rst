@@ -7,7 +7,7 @@ mindspore.mint.multinomial
 
     多项式分布是一种概率分布，把二项分布公式推广至多种状态，就得到了多项式分布。在多项式分布中，每个事件都有一个固定的概率，这些概率的和为1。
 
-    `mindspore.mint.multinomial` 接口的作用是对输入 `input` 进行 `num_samples` 次抽样，输出的Tensor则为每一次抽样时输入Tensor的索引，其中 `input` 中的值为每次抽样取到对应索引的概率。
+    :func:`mindspore.mint.multinomial` 接口的作用是对输入 `input` 进行 `num_samples` 次抽样，输出的Tensor则为每一次抽样时输入Tensor的索引，其中 `input` 中的值为每次抽样取到对应索引的概率。
 
     这里我们给一个相对极端的用例方便理解，我们给定一个输入概率值Tensor，值为 `Tensor([90 / 100, 10 / 100, 0], mindspore.float32)` ，代表我们一共可以对三个索引进行抽样，分别为索引0，索引1，索引2，它们被抽中的概率分别为90%，10%，0%，我们对其进行n次抽样，抽样的结果序列则为多项式分布的计算结果，计算结果长度与抽样次数一致。
     

@@ -636,7 +636,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
             list, or dict. If a list, it can be the returned value of `Cell.trainable_params()`, or a list of dict
             elements(each element is a dictionary, like [{"name": param_name, "data": param_data},...], the type of
             `param_name` must be string, and the type of `param_data` must be parameter or Tensor); If dict,
-            it can be the returned value of `mindspore.load_checkpoint()`.
+            it can be the returned value of :func:`mindspore.load_checkpoint`.
         ckpt_file_name (str): Checkpoint file name. If the file name already exists, it will be overwritten.
         integrated_save (bool): Whether to integrated save in automatic model parallel scene. Default: ``True`` .
         async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file, if True,
