@@ -2853,7 +2853,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> x = mindspore.ops.ones((4, 2))
             >>> generator = mindspore.Generator()
             >>> generator.manual_seed(100)
-            >>> output = x.uniform_(1., 2., generator)
+            >>> output = x.uniform_(1., 2., generator=generator)
             >>> print(output.shape)
             (4, 2)
         """
