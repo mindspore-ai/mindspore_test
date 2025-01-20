@@ -433,7 +433,6 @@ def test_ctrl_if_by_if_combine_with_not_or_and():
     fact.backward_cmp()
 
 
-@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ctrl_if_by_if_combine_with_dynamic_shape():
     """
@@ -472,4 +471,5 @@ def test_ctrl_if_by_if_combine_with_dynamic_shape():
     pi_net = Net54()
     fact = ParserFactory(ps_net, pi_net, input_np_a)
     fact.forward_cmp()
-    fact.backward_cmp()
+    # Calculate the gradient of the dyn_shape cases without sens_param. 
+    fact.backward_cmp_without_sens()
