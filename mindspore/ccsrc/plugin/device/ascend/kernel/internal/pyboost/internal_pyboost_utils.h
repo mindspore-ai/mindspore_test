@@ -103,5 +103,6 @@ void ConvertVectorDtype(std::vector<D> &dst_vec, const std::vector<S> &src_vec) 
     dst_vec.emplace_back(static_cast<D>(item));
   }
 }
+
 }  // namespace mindspore::kernel
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_PYBOOST_CACHE_H_
