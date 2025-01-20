@@ -40,7 +40,7 @@ index_add\_:
             >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
             >>> index = Tensor(np.array([0, 2]), mindspore.int32)
             >>> y = Tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
-            >>> output = x.index_add_(1, index, y, 1)
+            >>> output = x.index_add_(1, index, y, alpha=1)
             >>> print(output)
             [[ 1.5  2.   4. ]
              [ 5.   5.   7.5]
