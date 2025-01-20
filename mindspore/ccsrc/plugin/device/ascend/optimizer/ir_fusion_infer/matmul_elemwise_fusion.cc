@@ -97,11 +97,6 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
     return nullptr;
   }
 
-  auto elewise_input_num = common::AnfAlgo::GetInputTensorNum(node);
-  if (elewise_input_num != kUnaryInputNum && elewise_input_num != kBinaryInputNum) {
-    MS_LOG(EXCEPTION) << "Only support elewise unary and binary inputs";
-  }
-
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(equiv);
@@ -112,6 +107,19 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
   MS_CHECK_TRUE_RET(matmul_cnode != nullptr, {});
   MS_CHECK_TRUE_RET(matmul_cnode->func_graph() == elemwise_node->func_graph(), {});
 
+  std::string elemwise_type = GetElemwiseType(elemwise_node);
+  const std::string bias_add_str = "bias_add";
+  if (elemwise_type == bias_add_str && (common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1).size() > 1 ||
+                                        common::AnfAlgo::GetOutputInferDataType(node, 0) != kFloat16->type_id())) {
+    return nullptr;
+  }
+  auto elewise_input_num = 0;
+  if (elemwise_type == bias_add_str) {
+    elewise_input_num = kBinaryInputNum;
+  } else {
+    elewise_input_num = kUnaryInputNum;
+  }
+
   // create op
   PrimitivePtr matmul_elemwise_prim = nullptr;
   if (elewise_input_num == kUnaryInputNum) {
@@ -120,13 +128,6 @@ const AnfNodePtr MatmulElemFusion::Process(const FuncGraphPtr &func_graph, const
     matmul_elemwise_prim = std::make_shared<Primitive>(kFusedMatmulElemBinaryOpName);
   }
   MS_CHECK_TRUE_RET(matmul_elemwise_prim, {});
-
-  std::string elemwise_type = GetElemwiseType(elemwise_node);
-  const std::string bias_add_str = "bias_add";
-  if (elemwise_type == bias_add_str && (common::AnfAlgo::GetPrevNodeOutputInferShape(node, 1).size() > 1 ||
-                                        common::AnfAlgo::GetOutputInferDataType(node, 0) != kFloat16->type_id())) {
-    return nullptr;
-  }
   matmul_elemwise_prim->AddAttr("ElemwiseType", MakeValue(elemwise_type));
 
   auto input_trans_a = matmul_cnode->input(kIndex3)->cast<ValueNodePtr>();
