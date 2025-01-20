@@ -53,7 +53,7 @@ mindspore.mint.nn.Conv3d
         - **dilation** (Union[int, tuple[int]]，可选) - 控制内核点之间的空间。默认值： ``1`` 。
         - **groups** (int，可选) - 拆分过滤成组， `in_channel` 和 `out_channels` 必须能被 `groups` 整除。如果组等于 `in_channels` 和 `out_channels` 。默认值： `1` 。
         - **bias** (bool，可选) - Conv3d层是否具有偏置参数。默认值： `True` 。
-        - **dtype** (:class:`mindspore.dtype`) - Parameters的dtype。默认值： ``mstype.float32`` 。
+        - **dtype** (:class:`mindspore.dtype`，可选) - Parameters的dtype。默认值： ``mstype.float32`` 。
 
     输入：
         - **x** (Tensor) - shape为 :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` 或 :math:`(C_{in}, D_{in}, H_{in}, W_{in})` 的Tensor。

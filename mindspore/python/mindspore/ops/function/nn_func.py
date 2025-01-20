@@ -7225,7 +7225,7 @@ def conv3d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
 
     Returns:
         Tensor, the same dtype as the `input`, with the shape :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`
-            or :math:`(C_{out}, D_{out}, H_{out}, W_{out})`.
+        or :math:`(C_{out}, D_{out}, H_{out}, W_{out})`.
 
     Raises:
         TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.

@@ -82,8 +82,8 @@ mindspore.mint.nn.functional.conv3d
         - **groups** (int，可选) - 将 `input` 拆分的组数。默认值： ``1`` 。
 
     返回：
-        Tensor，dtype与 `input` 相同，shape为:math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`
-            或:math:`(C_{out}, D_{out}, H_{out}, W_{out})` 。
+        Tensor，dtype与 `input` 相同，shape为 :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`
+        或 :math:`(C_{out}, D_{out}, H_{out}, W_{out})` 。
 
     异常：
         - **TypeError** -  `stride` 、 `padding` 或 `dilation` 既不是int也不是tuple。

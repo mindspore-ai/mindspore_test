@@ -38,7 +38,7 @@ mindspore.experimental.optim.Adam
         \end{aligned}
 
     .. warning::
-        该优化器接口的实现公式与论文中的实现并不完全一致。若要使用完全一致的接口，建议使用 :class:`mindspore.mint.Adam`，它目前仅支持Ascend。
+        该优化器接口的实现公式与论文中的实现并不完全一致。若要使用完全一致的接口，建议使用 :class:`mindspore.mint.optim.Adam`，它目前仅支持Ascend。
         这是一个实验性的优化器接口，需要和 `LRScheduler <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.experimental.html#lrscheduler%E7%B1%BB>`_ 下的动态学习率接口配合使用。
 
     参数：
