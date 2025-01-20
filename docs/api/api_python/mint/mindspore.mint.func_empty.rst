@@ -10,8 +10,7 @@ mindspore.mint.empty
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **size** (Union[tuple[int], list[int], int]) - 指定输出Tensor的shape，只允许正整数或者包含正整数\
-          的tupled、list。
+        - **size** (Union[tuple[int], list[int], int]) - 指定输出Tensor的shape，可以是可变数量的正整数或包含正整数的tupled、list。
 
     关键字参数：
         - **dtype** (:class:`mindspore.dtype`, 可选) - 用来描述所创建的Tensor的dtype。如果为 ``None`` ，那\
