@@ -13,28 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_REALDIV_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_REALDIV_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_REALDIV_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_REALDIV_H_
 
 #include <string>
 #include <vector>
 #include <utility>
 
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
-class AcmeKernelInfoRealDiv : public AcmeKernelInfo {
+class InternalKernelInfoRealDiv : public InternalKernelInfo {
  public:
-  AcmeKernelInfoRealDiv() : AcmeKernelInfo(std::move("RealDiv")) {}
-  ~AcmeKernelInfoRealDiv() = default;
-  
+  InternalKernelInfoRealDiv() : InternalKernelInfo(std::move("RealDiv")) {}
+  ~InternalKernelInfoRealDiv() = default;
+
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
-                               const internal::OutputsImmutableInfoList &outputs) override;
+                                       const internal::OutputsImmutableInfoList &outputs) override;
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_PYBOOST_REALDIV_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_REALDIV_H_

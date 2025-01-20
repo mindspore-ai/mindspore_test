@@ -52,20 +52,20 @@ BACKEND_EXPORT void GatherOpHash(const std::optional<TypePtr> &);
 
 template <typename T>
 BACKEND_EXPORT void GatherOpHash(const std::vector<T> &values) {
-  transform::MemcpyToBuf(&values.data(), values.size() * sizeof(T));
+  transform::MemcpyToBuf((void *)values.data(), values.size() * sizeof(T));
 }
 
 BACKEND_EXPORT void GatherOpHash();
 
 template <typename T, typename... Args>
-void GatherOpHash(const T &arg, const Args &... args) {
+void GatherOpHash(const T &arg, const Args &...args) {
   GatherOpHash(arg);
   GatherOpHash(args...);
 }
 
-// 创建acme算子主要看输入的数据类型和属性
+// 创建internal算子主要看输入的数据类型和属性
 template <typename... Args>
-uint64_t CalcAcmeOpApiHash(const std::string &arg, const Args &... args) {
+uint64_t CalcInternalOpApiHash(const std::string &arg, const Args &...args) {
   transform::g_hash_offset = 0;
   GatherOpHash(arg, args...);
   return transform::calc_hash_id();
@@ -84,16 +84,24 @@ BACKEND_EXPORT void GatherTilingHash(const T &value) {
 BACKEND_EXPORT void GatherTilingHash();
 
 template <typename T, typename... Args>
-void GatherTilingHash(const T &arg, const Args &... args) {
+void GatherTilingHash(const T &arg, const Args &...args) {
   GatherTilingHash(arg);
   GatherTilingHash(args...);
 }
 
-// acme算子tiling还需要包含输入的shape和属性是否变化
+// internal算子tiling还需要包含输入的shape和属性是否变化
 template <typename... Args>
-uint64_t CalcAcmeOpTilingHash(const std::string &arg, const Args &... args) {
+uint64_t CalcInternalOpTilingHash(const std::string &arg, const Args &...args) {
   GatherTilingHash(arg, args...);
   return transform::calc_hash_id();
+}
+
+template <typename D, typename S>
+void ConvertVectorDtype(std::vector<D> &dst_vec, const std::vector<S> &src_vec) {
+  dst_vec.clear();
+  for (const auto &item : src_vec) {
+    dst_vec.emplace_back(static_cast<D>(item));
+  }
 }
 }  // namespace mindspore::kernel
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_PYBOOST_CACHE_H_

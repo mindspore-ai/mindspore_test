@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
-internal::InternalOpPtr AcmeKernelInfoGather::CreateKernel(const internal::InputsImmutableInfoList &inputs,
+internal::InternalOpPtr InternalKernelInfoGather::CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                                    const internal::OutputsImmutableInfoList &outputs) {
   internal::GatherParam param;
   param.axes.emplace_back(axis_);
@@ -29,16 +29,17 @@ internal::InternalOpPtr AcmeKernelInfoGather::CreateKernel(const internal::Input
   return internal::CreateGatherOp(inputs, outputs, param, internal::kInternalGatherOpName);
 }
 
-void AcmeKernelInfoGather::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
-  const auto &input_tensor = input_values[kIndex0]->cast<BaseTensorPtr>();
-  const auto &indices_tensor = input_values[kIndex1]->cast<BaseTensorPtr>();
+void InternalKernelInfoGather::Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+  GetInputAndOutputIndex(op, input_values);
+  std::vector<BaseTensorPtr> inputs;
+  std::vector<BaseTensorPtr> outputs;
+  Init(input_values, inputs, outputs, op->outputs());
   axis_ = GetValueWithCheck<int64_t>(input_values[kIndex2]);
   batch_dims_ = GetValueWithCheck<int64_t>(input_values[kIndex3]);
-
-  const std::vector<BaseTensorPtr> inputs = {input_tensor, indices_tensor};
-  auto op_key = CalcAcmeOpApiHash(kernel_name_, inputs, axis_, batch_dims_);
-  CallAcmeOp(op, inputs, op_key);
+  auto op_key = CalcInternalOpApiHash(kernel_name_, inputs, axis_, batch_dims_);
+  GetOrCreateKernel(inputs, outputs, op_key);
+  LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(Gather, internal::kInternalGatherOpName, AcmeKernelInfoGather);
+MS_INTERNAL_KERNEL_INFO_FACTORY_REG(Gather, internal::kInternalGatherOpName, InternalKernelInfoGather);
 }  // namespace kernel
 }  // namespace mindspore

@@ -229,13 +229,13 @@ PYBOOST_ASCEND_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_ascend_call_template.tpl'))
 
-PYBOOST_ACME_CALL_TEMPLATE = Template.load_from_file(
+PYBOOST_INTERNAL_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_acme_call_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_internal_call_template.tpl'))
 
-PYBOOST_ACME_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
+PYBOOST_INTERNAL_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
-                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_acme_customize_call_template.tpl'))
+                 f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_internal_customize_call_template.tpl'))
 
 PYBOOST_ASCEND_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,

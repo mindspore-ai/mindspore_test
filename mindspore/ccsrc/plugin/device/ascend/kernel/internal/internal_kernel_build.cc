@@ -77,12 +77,12 @@ void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vect
   return internal_kernel_plugin_ptr->GetValidKernelBuildInfoWithInternalFormat(node, input_formats, output_formats);
 }
 
-void AcmeKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
+void InternalKernelCall(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) {
   auto internal_kernel_plugin_ptr = GetKernelPLugin();
   if (internal_kernel_plugin_ptr == nullptr) {
     return;
   }
-  return internal_kernel_plugin_ptr->AcmeKernelCall(op, input_values);
+  return internal_kernel_plugin_ptr->InternalKernelCall(op, input_values);
 }
 }  // namespace kernel
 }  // namespace mindspore

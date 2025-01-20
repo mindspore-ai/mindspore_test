@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/internal/pyboost/acme_pyboost_utils.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/internal_pyboost_utils.h"
 namespace mindspore::kernel {
 namespace {
 void GatherType(const mindspore::tensor::BaseTensorPtr &tensor) {

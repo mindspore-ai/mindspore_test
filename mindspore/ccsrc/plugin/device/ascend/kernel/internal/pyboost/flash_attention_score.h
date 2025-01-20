@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLYROTARYPOSEMB_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLYROTARYPOSEMB_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_FLASH_ATTENTION_SCORE_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_FLASH_ATTENTION_SCORE_H_
 
 #include <string>
 #include <vector>
@@ -24,10 +24,10 @@
 
 namespace mindspore {
 namespace kernel {
-class InternalKernelInfoApplyRotaryPosEmb : public InternalKernelInfo {
+class InternalKernelInfoFlashAttentionScore : public InternalKernelInfo {
  public:
-  InternalKernelInfoApplyRotaryPosEmb() : InternalKernelInfo(std::move("ApplyRotaryPosEmb")) {}
-  ~InternalKernelInfoApplyRotaryPosEmb() = default;
+  InternalKernelInfoFlashAttentionScore() : InternalKernelInfo(std::move("FlashAttentionScore")) {}
+  ~InternalKernelInfoFlashAttentionScore() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
@@ -36,8 +36,18 @@ class InternalKernelInfoApplyRotaryPosEmb : public InternalKernelInfo {
                                        const internal::OutputsImmutableInfoList &outputs) override;
 
  private:
-  int32_t cos_format_ = 0;
+  int32_t head_num_;
+  int32_t inner_precise_;
+  int32_t pre_tokens_;
+  int32_t next_tokens_;
+  int32_t sparse_mode_;
+  int32_t mask_dtype_;
+  int32_t input_layout_;
+  std::vector<int64_t> mask_dims_;
+  std::vector<int32_t> kv_seq_len_;
+  std::vector<int32_t> q_seq_len_;
+  float tor_;
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_PYBOOST_APPLYROTARYPOSEMB_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_FLASH_ATTENTION_SCORE_H_
