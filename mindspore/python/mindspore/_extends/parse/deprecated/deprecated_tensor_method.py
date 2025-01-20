@@ -280,7 +280,7 @@ deprecated_tensor_method_map = {
     # 129 requires_grad_
 
     # 130 sub_
-
+    "sub_": "deprecated_tensor_sub_",
     # 131 uniform_
 
     # 132 absolute
