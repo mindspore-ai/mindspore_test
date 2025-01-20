@@ -3989,8 +3989,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> x = Tensor(np.array([2, 2]))
             >>> output = x.zero_()
             >>> print(output)
-            [[0. 0.]
-             [0. 0.]]
+            [0 0]
         """
         return tensor_operator_registry.get('zero_')(self)
 
