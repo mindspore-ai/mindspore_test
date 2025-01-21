@@ -46,6 +46,7 @@ install(
 
 install(
     TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager
+        mindspore_frontend
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )

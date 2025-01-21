@@ -21,10 +21,11 @@
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/tensor_layout/layout_transfer.h"
 #include "frontend/parallel/tensor_layout/reshape_layout_transfer.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parallel {
-class RedistributionLayoutTransfer : public LayoutTransfer {
+class FRONTEND_EXPORT RedistributionLayoutTransfer : public LayoutTransfer {
  public:
   RedistributionLayoutTransfer() = default;
   ~RedistributionLayoutTransfer() override = default;

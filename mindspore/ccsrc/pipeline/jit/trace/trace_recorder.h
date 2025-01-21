@@ -86,7 +86,7 @@ class TraceRecorder {
   std::unordered_map<std::string, AnfNodePtr> py_obj_node_map_;  // The map from py::object id() to AnfNode.
 };
 
-void RegTraceRecorderPy(const py::module *m);
+FRONTEND_EXPORT void RegTraceRecorderPy(const py::module *m);
 }  // namespace trace
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PIPELINE_JIT_TRACE_RECORDER_H_

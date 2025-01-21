@@ -23,6 +23,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+#include "include/common/pybind_api/api_register.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "ops/op_def.h"
 #include "ir/core_ops_primitive.h"
