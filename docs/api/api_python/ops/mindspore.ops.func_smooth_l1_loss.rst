@@ -27,6 +27,9 @@ mindspore.ops.smooth_l1_loss
 
     其中， :math:`\text{beta}` 控制损失函数在线性与二次间变换的阈值， :math:`\text{beta}>0` ，默认值是 ``1.0`` 。 :math:`N` 为batch size。
 
+    .. warning::
+        该API在CPU上性能较差，推荐在Ascend/GPU上运行。
+
     参数：
         - **input** (Tensor) - shape： :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。支持数据类型：
           

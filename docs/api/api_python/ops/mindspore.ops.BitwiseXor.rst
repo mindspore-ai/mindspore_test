@@ -5,6 +5,9 @@ mindspore.ops.BitwiseXor
 
     逐元素执行两个Tensor的异或运算。
 
+    .. warning::
+        该API在CPU上性能较差，推荐在Ascend/GPU上运行。
+
     更多细节详见 :func:`mindspore.ops.bitwise_xor`。
 
     输入：

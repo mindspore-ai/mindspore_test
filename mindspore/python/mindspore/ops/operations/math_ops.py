@@ -2442,6 +2442,9 @@ class BitwiseXor(_BitwiseBinaryOp):
     r"""
     Returns bitwise `xor` of two tensors element-wise.
 
+    .. warning::
+        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
+
     Refer to :func:`mindspore.ops.bitwise_xor` for more details.
 
     Inputs:
