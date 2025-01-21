@@ -94,5 +94,56 @@ REG_BPROP_BUILDER("_DynamicLossScale").SetUnusedInputs({i0, i2}).SetBody(BODYFUN
                       {{"split_overflow", MakeValue(true)}, {"layer_overflow", ib->GetAttr("layer")}});
   return {res, ib->OutZeros(loss_scale)};
 });
+
+REG_BPROP_BUILDER("InplaceSubExt").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr dx = nullptr;
+  NodePtr dy = nullptr;
+
+  if (x->need_compute_grad_out()) {
+    dx = dout;
+  }
+
+  if (y->need_compute_grad_out()) {
+    dy = ib->Neg(dout);
+    auto alpha_opt = GetAlpha(alpha);
+    if (!alpha_opt.has_value()) {
+      auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(x));
+      dy = ib->Mul(dy, alpha_tensor);
+    } else if (alpha_opt.value() != 1) {
+      if (ib->GetDtypeId(x) == kNumberTypeFloat16) {
+        auto alpha_tensor = ib->ScalarToTensor(alpha);
+        dy = ib->Mul(dy, alpha_tensor);
+      } else {
+        auto alpha_tensor = ib->Tensor(alpha_opt.value(), ib->GetDtype(x));
+        dy = ib->Mul(dy, alpha_tensor);
+      }
+    }
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
+  ret.emplace_back(ib->OutZeros(alpha));
+  return ret;
+});
+
+REG_BPROP_BUILDER("InplaceSubScalar").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr dx = nullptr;
+  NodePtr dy = nullptr;
+
+  if (x->need_compute_grad_out()) {
+    dx = dout;
+  }
+
+  std::vector<NodePtr> ret = BinopGradCommon(ib, x, y, dx, dy);
+  ret.emplace_back(ib->OutZeros(alpha));
+  return ret;
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
