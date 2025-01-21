@@ -63,9 +63,12 @@ bool IsMutable(const py::object &obj) {
 CNodePtr GenerateCNode(const FuncGraphPtr &func_graph, const PrimitivePtr &prim, const AnfNodePtrList &args_inputs) {
   auto node_inputs = args_inputs;
   if (ops::IsPrimitiveFunction(prim->name())) {
-    const auto &new_prim = std::make_shared<prim::DoTransPrimitiveFunction>(std::make_shared<Primitive>(prim->name()));
+    auto primitive = std::make_shared<Primitive>(prim->name());
+    primitive->AddAttr("Converted", MakeValue(true));
+    const auto &new_prim = std::make_shared<prim::DoTransPrimitiveFunction>(primitive);
     (void)node_inputs.insert(node_inputs.cbegin(), NewValueNode(new_prim));
   } else {
+    prim->AddAttr("Converted", MakeValue(true));
     (void)node_inputs.insert(node_inputs.cbegin(), NewValueNode(prim));
   }
   return func_graph->NewCNodeInOrder(node_inputs);
@@ -237,11 +240,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
                 << ", phase: " << phase;
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
-  py::object res = graph_executor->Run(args, phase);
-  if (IS_OUTPUT_ON(mindspore::kDebug)) {
-    SyncTensor(res);
-    MS_LOG(DEBUG) << "forward res: " << py::str(res);
-  }
+  py::object res;
   int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto executor = pynative::PyNativeExecutor::GetInstance();
   if (mode == kPynativeMode && executor->RequiresGrad()) {
@@ -254,7 +253,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
                         << jit_fg->parameters().size()
                         << ". Please make sure all of the inputs were used in trace block.";
     }
-    executor->GradJit(args);
+    res = executor->GradJit(args);
     // Update forward graph with fprop graph.
     FuncGraphPtr grad_jit_fg = graph_executor->GetJitGradGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(grad_jit_fg);
@@ -271,6 +270,8 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
     if (jit_fg->modify_output()) {
       res = py::cast<py::tuple>(res)[0];
     }
+  } else {
+    res = graph_executor->Run(args, phase);
   }
   if (IS_OUTPUT_ON(mindspore::kDebug)) {
     SyncTensor(res);
