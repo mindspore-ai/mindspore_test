@@ -446,7 +446,7 @@ static void GraphCapture(JitCompileResults *jcr) {
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
     g->DumpDFG();
     const auto &debug_str = analyzer->GetCaptureInfo().ToString();
-    PY_PRINT_F("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
+    PY_PRINTF_WITH_FLUSH("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
   }
 
   py::object new_code = MakeCodeFromCodeGen(g, analyzer, jcr->origin_frame().Globals().ptr());
