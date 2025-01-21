@@ -126,6 +126,7 @@ Activation Functions
     mindspore.ops.softmin
     mindspore.ops.softshrink
     mindspore.ops.softsign
+    mindspore.ops.swiglu
     mindspore.ops.tanh
     mindspore.ops.threshold
 
@@ -175,6 +176,8 @@ Image Functions
     mindspore.ops.padding
     mindspore.ops.pixel_shuffle
     mindspore.ops.pixel_unshuffle
+    mindspore.ops.rotary_position_embedding
+    mindspore.ops.rotated_iou
     mindspore.ops.upsample
 
 Mathematical Functions

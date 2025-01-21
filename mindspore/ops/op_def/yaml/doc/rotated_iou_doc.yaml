@@ -2,6 +2,9 @@ rotated_iou:
   description: |
     Calculate the overlap area between rotated rectangles.
     
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     .. note::
         The input data types supported by the Ascend platform include 
         bfloat16, float16, float32.

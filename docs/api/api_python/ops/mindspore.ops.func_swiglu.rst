@@ -6,6 +6,9 @@ mindspore.ops.swiglu
     计算Swish门线性单元函数（Swish Gated Linear Unit function）。
     SwiGLU是 :class:`mindspore.ops.GLU` 激活函数的变体，定义为：
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     .. math::
         {SwiGLU}(a, b)= Swish(a) \otimes b
 
