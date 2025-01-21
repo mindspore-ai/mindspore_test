@@ -342,7 +342,7 @@ def uniform_(input, from_=0, to=1, *, generator=None):
         >>> x = ops.ones((4, 2))
         >>> generator = mindspore.Generator()
         >>> generator.manual_seed(100)
-        >>> result = ops.function.random_func.uniform_(x, 1., 2., generator)
+        >>> result = ops.function.random_func.uniform_(x, 1., 2., generator=generator)
         >>> print(result.shape)
         (4, 2)
     """
