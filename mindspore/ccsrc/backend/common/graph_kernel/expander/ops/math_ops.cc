@@ -16,6 +16,7 @@
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore::graphkernel::expander {
 REG_EXPANDER_FUNC("AddN").SetBody(BODYFUNC(ib) {
@@ -235,7 +236,11 @@ NodePtrList ReduceExtCommon(const DefaultIrBuilder *ib, ReduceType reduce_type) 
   input = input_type == kNumberTypeFloat32 ? input : ib->Cast(input, kNumberTypeFloat32);
   auto x_shape = input->GetShape();
   if (x_shape.empty() || IsDynamicRank(x_shape)) {
-    MS_LOG(DEBUG) << "Skip empty shape or dynamic rank, shape is: " << x_shape;
+    MS_LOG(DEBUG) << "Skip expanding node, bucause shape of this node is empty or dynamic rank, shape is: " << x_shape;
+    return {};
+  }
+  if (common::AnfAlgo::IsDynamicSequence(axis->as<AnfNodePtr>())) {
+    MS_LOG(DEBUG) << "Skip expanding node, because axis is a dynamic sequence";
     return {};
   }
   std::vector<int64_t> axis_ = {};
