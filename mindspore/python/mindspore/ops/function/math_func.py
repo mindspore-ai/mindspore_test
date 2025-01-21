@@ -12449,34 +12449,18 @@ def _calc_new_shape(shape, axes, position=0):
 
 def tensor_dot(x1, x2, axes):
     """
-    Computation of Tensor contraction on arbitrary axes between tensors `a` and `b`.
-
-    Contraction allows for the summation of products of elements of `a` and `b` on specified axes.
-    The same number of axes must be specified for both x1 and x2, and values must be within range
-    of number of dims of both `a` and `b`.
-
-    Selected dims in both inputs must also match.
-
-    axes = 0 leads to outer product.
-    axes = 1 leads to normal matrix multiplication when inputs both 2D.
-    axes = 1 is the same as axes = ((1,),(0,)) where both `a` and `b` are 2D.
-    axes = 2 is the same as axes = ((1,2),(0,1)) where both `a` and `b` are 3D.
+    Compute the tensor dot product along the specified axes.
 
     Args:
-        x1 (Tensor): First tensor in tensor_dot with datatype float16 or float32
-        x2 (Tensor): Second tensor in tensor_dot with datatype float16 or float32
-        axes (Union[int, tuple(int), tuple(tuple(int)), list(list(int))]): Single value or
-            tuple/list of length 2 with dimensions specified for `a` and `b` each. If single value `N` passed,
-            automatically picks up last N dims from `a` input shape and first N dims from `b` input shape in order
-            as axes for each respectively.
+        x1 (Tensor): Input tensor.
+        x2 (Tensor): Input tensor.
+        axes (Union[int, tuple(int), tuple(tuple(int)), list(list(int))]): The number of dimensions to sum over. If an
+            integer `k` is provided, then sum over the last `k` axes of `x1` and the first `k` axes of `x2`, in order.
+            If a tuple or list is provided, then `axes[0]` specifies the axes of `x1` and `axes[1]` specifies the axes
+            of `x2`.
 
     Returns:
-        Tensor, the shape of the output tensor is :math:`(N + M)`, where :math:`N` and :math:`M` are the free axes not
-        contracted in both inputs.
-
-    Raises:
-        TypeError: If `x1` or `x2` is not a Tensor.
-        TypeError: If `axes` is not one of the following: int, tuple, list.
+        Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
