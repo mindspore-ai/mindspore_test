@@ -13,9 +13,12 @@
 # limitations under the License.
 # ==============================================================================
 import copy
+
 import numpy as np
-import mindspore.dataset.text as text
+import pytest
+
 import mindspore.dataset as ds
+import mindspore.dataset.text as text
 from mindspore.dataset.text import SentencePieceModel, SPieceTokenizerOutType
 
 VOCAB_FILE = "../data/dataset/test_sentencepiece/vocab.txt"
@@ -121,7 +124,8 @@ def test_from_vocab_to_int():
             assert value == expect[key]
 
 
-def test_from_file_to_str():
+@pytest.mark.parametrize("cleanup_tmp_file", ["./m.model"], indirect=True)
+def test_from_file_to_str(cleanup_tmp_file):
     """
     Feature: SentencePieceTokenizer
     Description: Test SentencePieceTokenizer with out_type equal to string
@@ -139,7 +143,8 @@ def test_from_file_to_str():
             assert value == expect[key]
 
 
-def test_from_file_to_int():
+@pytest.mark.parametrize("cleanup_tmp_file", ["./m.model"], indirect=True)
+def test_from_file_to_int(cleanup_tmp_file):
     """
     Feature: SentencePieceTokenizer
     Description: Test SentencePieceTokenizer while loading vocab model from file
@@ -226,7 +231,7 @@ if __name__ == "__main__":
     test_from_vocab_to_str_char()
     test_from_vocab_to_str_word()
     test_from_vocab_to_int()
-    test_from_file_to_str()
-    test_from_file_to_int()
+    test_from_file_to_str(cleanup_tmp_file)
+    test_from_file_to_int(cleanup_tmp_file)
     test_build_from_dataset()
     test_with_zip_concat()
