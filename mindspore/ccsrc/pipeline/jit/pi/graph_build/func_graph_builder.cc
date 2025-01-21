@@ -35,7 +35,7 @@
 #include "frontend/operator/composite/unpack_call.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
-#include "pipeline/pynative/grad/variable.h"
+#include "pipeline/jit/pi/graph_build/build_utils.h"
 
 namespace mindspore {
 namespace {
@@ -45,7 +45,6 @@ constexpr auto kGradNetInputs = "grad_net_inputs";
 constexpr auto kTensorModule = "mindspore.common";
 constexpr auto kAdapterFlag = "adapter_flag";
 constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
-constexpr auto kRegisterHookKey = "backward_register_hook";
 constexpr auto kCandidateIsolatedFlag = "candidate_isolated";
 
 bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
@@ -173,82 +172,7 @@ TypeId GetTypeIdFromClassName(const std::string &class_name) {
   }
   return iter->second;
 }
-
-bool FunctionShouldBeParseInAst(const py::object &obj) {
-  static mindspore::HashSet<std::string> func_names{"cast_to_adapter_tensor", "cast_to_ms_tensor"};
-  if (!py::hasattr(obj, "__name__")) {
-    return false;
-  }
-  return func_names.find(py::cast<std::string>(obj.attr("__name__"))) != func_names.end();
-}
-
-bool IsSideEffectPrimitive(const PrimitivePtr &prim) {
-  return GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_IO) || GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_MEM);
-}
-
-bool IsPrimitiveObject(const py::object &obj) {
-  return py::hasattr(obj, PYTHON_PRIMITIVE_FLAG) &&
-         parse::data_converter::GetObjType(obj) != parse::RESOLVE_TYPE_CLASS_TYPE;
-}
-
-bool IsPrimitiveFunctionalObject(const py::object &obj) {
-  return py::isinstance<PrimitiveFunctionAdapter>(obj) || py::isinstance<Functional>(obj);
-}
-
-bool IsMsClassObject(const py::object &obj) {
-  constexpr auto ms_class_attr = "__ms_class__";
-  return py::hasattr(obj, ms_class_attr) && py::cast<bool>(py::getattr(obj, ms_class_attr));
-}
-
-bool IsMetaFuncGraphObject(const py::object &obj) { return py::isinstance<MetaFuncGraph>(obj); }
-
-std::vector<std::function<bool(const py::object &)>> kCallableCheckFunc = {
-  IsPrimitiveObject, IsPrimitiveFunctionalObject, IsMsClassObject, IsMetaFuncGraphObject, FunctionShouldBeParseInAst};
 }  // namespace
-
-bool FuncGraphBuilder::HasRegisterHook(const py::object &obj) {
-  if (!py::isinstance<tensor::BaseTensor>(obj)) {
-    return false;
-  }
-  auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
-  const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
-  if (grad_meta_data == nullptr || !grad_meta_data->is_register_hook()) {
-    return false;
-  }
-  return !grad_meta_data->backward_hooks().empty();
-}
-
-// HasRegisterHook must be called before calling this function and the return value must be True
-py::list FuncGraphBuilder::GetRegisterHookList(const py::object &obj) {
-  if (!HasRegisterHook(obj)) {
-    return py::list();
-  }
-  py::list hook_fn_list;
-  auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
-  const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
-  const auto &backward_hooks = grad_meta_data->backward_hooks();
-  for (const auto &[id, hook] : backward_hooks) {
-    auto fn = hook->hook_;
-    if (py::isinstance<py::none>(fn)) {
-      MS_LOG(DEBUG) << "Hook of Tensor[" << id << "] is None.";
-      continue;
-    }
-    hook_fn_list.append(fn);
-  }
-  return hook_fn_list;
-}
-
-void FuncGraphBuilder::SaveTensorRegisterHook(const py::object &obj, const AnfNodePtr &node) {
-  if (node->abstract() == nullptr) {
-    return;
-  }
-  auto hook_list = GetRegisterHookList(obj);
-  if (hook_list.empty()) {
-    return;
-  }
-  MS_LOG(INFO) << "Save Hook " << py::str(py::object(hook_list)) << " to " << node->DebugString();
-  node->abstract()->set_user_data<py::tuple>(kRegisterHookKey, std::make_shared<py::tuple>(py::tuple(hook_list)));
-}
 
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
   if (!IsParameterSequence(input_obj)) {
@@ -272,7 +196,7 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
     if (cur_abs == nullptr) {
       return nullptr;
     }
-    SaveTensorRegisterHook(py::cast<py::object>(obj), cur_node);
+    pijit::SaveTensorRegisterHook(py::cast<py::object>(obj), cur_node);
     inputs.push_back(cur_node);
     inputs_abs.push_back(cur_abs);
   }
@@ -391,7 +315,7 @@ std::pair<AbstractBasePtr, bool> FuncGraphBuilder::EvalValue(const ValuePtr &val
       auto prim = value->cast<PrimitivePtr>();
       auto eval_res = abstract::EvalOnePrim(prim, inputs_abs_list);
       if (eval_res != nullptr) {
-        return std::make_pair(eval_res->abstract(), IsSideEffectPrimitive(prim));
+        return std::make_pair(eval_res->abstract(), pijit::IsSideEffectPrimitive(prim));
       }
     } else if (value->ToAbstract()->isa<abstract::AbstractFunction>()) {
       auto analyze_res = pipeline::AbstractAnalyze(value, inputs_abs_list);
@@ -814,7 +738,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
     return BuildGradNetNode(callable_value, callable_obj, inputs_abstract_wrapper);
   }
 
-  if (FunctionShouldBeParseInAst(callable_obj)) {
+  if (pijit::IsSpecialCallableObject(callable_obj)) {
     return TryToAddNode(callable_value, inputs_abstract_wrapper);
   }
 
@@ -949,7 +873,7 @@ void FuncGraphBuilder::MarkNodeIsolated(const AnfNodePtr &node, bool force) {
   }
   if (callable->isa<Primitive>()) {
     auto prim = callable->cast<PrimitivePtr>();
-    if (force || IsSideEffectPrimitive(prim)) {
+    if (force || pijit::IsSideEffectPrimitive(prim)) {
       (void)isolated_nodes_.emplace_back(cnode);
       cnode->set_has_side_effect_node(true);
       graph_->set_has_side_effect_node(true);
@@ -1318,7 +1242,7 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
     if (new_node != nullptr) {
       abs = new_node->abstract();
     }
-    is_side_effect = IsSideEffectPrimitive(prim);
+    is_side_effect = pijit::IsSideEffectPrimitive(prim);
   } else {
     // Do infer and check callable.
     const auto &ret = DoInferAndCheck(callable_value, input_abs_list);
@@ -1545,13 +1469,6 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithAbstract(const ValuePtr &value,
     MS_LOG(INFO) << "Failed to add node with abstract. The exception:\n" << e.what();
   }
   return ret;
-}
-
-bool FuncGraphBuilder::CheckCallable(const py::object &obj) {
-  bool res =
-    std::any_of(kCallableCheckFunc.cbegin(), kCallableCheckFunc.cend(), [&obj](const auto &func) { return func(obj); });
-  MS_LOG(INFO) << "Result for check callable for object " << py::str(obj) << " is " << res;
-  return res;
 }
 
 py::object FuncGraphBuilder::ConvertMethod(const py::object &obj) {
