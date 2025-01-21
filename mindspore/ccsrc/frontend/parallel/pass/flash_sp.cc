@@ -1794,7 +1794,7 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
     }
   }
   acc_attention = CreateDepends(acc_attention, {latest_send_qkv, latest_recv_qkv, latest_send_oml, latest_recv_oml});
-  acc_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index));
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index), acc_attention);
   acc_attention = NewCastNode(acc_attention, output_type_id);
   if (input_layout == FASInputLayoutMode::BSH) {
     auto tmp_tup1 = parallel::CreateTuple({0, 2, 1, 3});
