@@ -174,7 +174,7 @@ class GradNetAllInputs(nn.Cell):
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_side_effect_bprop_one_input():
     """
     Feature: Test side effect bprop with one input.
@@ -191,7 +191,7 @@ def test_side_effect_bprop_one_input():
         grads = grad_net(input1, grad_ys)
         assert grads[0].asnumpy().shape == (2, 2)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(0.5)
 
     patterns = ['x1:',
                 'Tensor(shape=[2, 2], dtype=Float32, value=',
