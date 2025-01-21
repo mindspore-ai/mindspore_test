@@ -213,6 +213,31 @@ def get_transpose_vmap_rule(prim, axis_size):
     return vmap_rule
 
 
+@vmap_rules_getters.register("TransposeExt")
+def get_transpose_ext_vmap_rule(prim, axis_size):
+    """VmapRule for `TransposeExt` operation."""
+    if isinstance(prim, str):
+        prim = Primitive(prim)
+
+    def vmap_rule(x_bdim, dim1_bdim, dim2_bdim):
+        is_all_none, result = vmap_general_preprocess(prim, x_bdim, dim1_bdim, dim2_bdim)
+        if is_all_none:
+            return result
+
+        x, dim = x_bdim
+        dim1, dim1_dim = dim1_bdim
+        dim2, dim2_dim = dim2_bdim
+        if dim1_dim is not None or dim2_dim is not None:
+            _raise_value_error("The source axis of dim1_dim and dim2_dim in `TransposeExt` must be None, "
+                               "but got {} and {}.".format(dim1_dim, dim2_dim))
+        batch_dim1 = dim1 if dim1 < dim else dim1 + 1
+        batch_dim2 = dim2 if dim2 < dim else dim2 + 1
+        out = prim(x, batch_dim1, batch_dim2)
+        return out, dim
+
+    return vmap_rule
+
+
 @vmap_rules_getters.register("Tile")
 def get_tile_vmap_rule(prim, axis_size):
     """VmapRule for `P.Tile` operation."""
