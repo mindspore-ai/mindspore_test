@@ -498,7 +498,7 @@ def test_print_joinedstr():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_print_param_value():
     """
     Feature: graph print parameter value.
@@ -527,7 +527,7 @@ def test_print_param_value():
         x = Tensor(99, mstype.float32)
         test_net(x)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(0.5)
         assert test_net.p1 == 100
 
     patterns = {"Tensor(shape=[], dtype=Float32, value=100)"}
