@@ -3170,14 +3170,15 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('unsorted_segment_prod')(self, segment_ids, num_segments)
 
-    def unique_consecutive(self, return_idx=False, return_counts=False, axis=None):
+    def unique_consecutive(self, return_inverse=False, return_counts=False, dim=None):
         """
         For details, please refer to :func:`mindspore.ops.unique_consecutive`.
         """
-        output, idx, counts = tensor_operator_registry.get("unique_consecutive")(return_idx, return_counts, axis)(self)
-        if return_idx and return_counts:
+        output, idx, counts = tensor_operator_registry.get("unique_consecutive")\
+            (return_inverse, return_counts, dim)(self)
+        if return_inverse and return_counts:
             return output, idx, counts
-        if return_idx:
+        if return_inverse:
             return output, idx
         if return_counts:
             return output, counts

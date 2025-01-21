@@ -1361,11 +1361,11 @@ def remainder(input, divisor):
     return F.remainder(input, divisor)
 
 
-def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
     """
     Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
     """
-    return F.unique_consecutive(input, return_idx, return_counts, axis)
+    return F.unique_consecutive(input, return_inverse, return_counts, dim)
 
 
 def unique_with_pad(x, pad_num):

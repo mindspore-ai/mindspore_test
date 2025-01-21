@@ -1567,21 +1567,21 @@ def unique_with_pad(x, pad_num):
     return _get_cache_prim(P.UniqueWithPad)()(x, pad_num)
 
 
-def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
     """
     Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
 
     Args:
         input (Tensor): The input tensor.
-        return_idx (bool, optional): Whether to return the index of where the element in the original input
+        return_inverse (bool, optional): Whether to return the index of where the element in the original input
             maps to the position in the output. Default: ``False`` .
         return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
-        axis (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
+        dim (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
             returned. If specified, it must be int32 or int64. Default: ``None`` .
 
     Returns:
         A tensor or a tuple of tensors containing tensor objects (`output`, `idx`, `counts`). `output` has the
-        same type as `input` and is used to represent the output list of unique scalar elements. If `return_idx` is
+        same type as `input` and is used to represent the output list of unique scalar elements. If `return_inverse` is
         True, there will be an additional returned tensor, `idx`, which has the same shape as `input` and represents
         the index of where the element in the original input maps to the position in the output. If `return_counts`
         is True, there will be an additional returned tensor, `counts`, which represents the number of occurrences
@@ -1590,10 +1590,10 @@ def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
     Raises:
         TypeError: If `input` is not a Tensor.
         TypeError: If dtype of `input` is not supported.
-        TypeError: If `return_idx` is not a bool.
+        TypeError: If `return_inverse` is not a bool.
         TypeError: If `return_counts` is not a bool.
-        TypeError: If `axis` is not an int.
-        ValueError: If `axis` is not in the range of :math:`[-ndim, ndim-1]`.
+        TypeError: If `dim` is not an int.
+        ValueError: If `dim` is not in the range of :math:`[-ndim, ndim-1]`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1612,13 +1612,13 @@ def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
         [2 2 1 2 1]
     """
 
-    if not F.isconstant(return_idx) or not F.isconstant(return_counts):
+    if not F.isconstant(return_inverse) or not F.isconstant(return_counts):
         raise ValueError(
             f"For 'unique_consecutive', 'return_inverse' and 'return_counts' cannot be mutable")
-    output, idx, counts = unique_consecutive_impl(input, return_idx, return_counts, axis)
-    if return_idx and return_counts:
+    output, idx, counts = unique_consecutive_impl(input, return_inverse, return_counts, dim)
+    if return_inverse and return_counts:
         return output, idx, counts
-    if return_idx:
+    if return_inverse:
         return output, idx
     if return_counts:
         return output, counts
