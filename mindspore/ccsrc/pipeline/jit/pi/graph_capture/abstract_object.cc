@@ -600,17 +600,6 @@ AObject *AbstractObject::GetAttr(const std::string &name) {
   FIND_MAP_CACHE(attrs_, name);
   AObject *res = nullptr;
   if (value_.ptr() != nullptr) {
-    PRINT_IF_HAS_USER_DEFINED_HOOK(value_.ptr(), __getattr__);
-    PRINT_IF_HAS_USER_DEFINED_HOOK(value_.ptr(), __getattribute__);
-#ifdef DEBUG
-    PyObject *tmp = PyObject_GetAttrString(reinterpret_cast<PyObject *>(Py_TYPE(value_.ptr())), name.c_str());
-    if (tmp) {  // is user defined descriptor ?
-      PRINT_IF_HAS_USER_DEFINED_HOOK(tmp, __get__);
-    } else {
-      PyErr_Clear();
-    }
-    Py_XDECREF(tmp);
-#endif
     PyObject *attr = PyObject_GetAttrString(value_.ptr(), name.c_str());
     CHECK_PYTHON_EXCEPTION(attr);
     res = Convert(attr);
@@ -1076,7 +1065,7 @@ AbstractDict::AbstractDict(Type type, py::object seq, RecMap *rec)
   Py_ssize_t p = 0;
 
 #define ITER_EXPR while (PyDict_Next(seq.ptr(), &p, &k, &item))
-#define GET_EXPR PRINT_IF_HAS_USER_DEFINED_HOOK(k, __hash__)
+#define GET_EXPR
 #define SET_EXPR PyDict_SetItem(m, k, ConvertValue(aobject).ptr())
   RECURSION_CONVERT(ITER_EXPR, GET_EXPR, SET_EXPR, item);
 #undef ITER_EXPR
@@ -1293,7 +1282,6 @@ AObject *AbstractDict::GetItem(AObject *k) {
   if (key == nullptr) {
     return MakeAObject(kTypeAnyValue);
   }
-  PRINT_IF_HAS_USER_DEFINED_HOOK(key, __hash__);
   PyObject *item = PyDict_GetItem(dict_.ptr(), key);
   return item == nullptr ? MakeAObject(kTypeAnyValue) : ConvertValue(item);
 }
