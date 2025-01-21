@@ -2648,7 +2648,7 @@ REG_BPROP_BUILDER("MaskedFill").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYF
   NodePtr dvalue = value->need_compute_grad_out() ? ib->Mul(dout, mask) : nullptr;
   auto bout = BinopGradCommon(ib, input_data, mask, dinput, dvalue);
 
-  dinput = input_data->need_compute_grad_out() ? ib->Cast(bout[0], ib->GetDtype(input_data)) : ib->OutZeros(dinput);
+  dinput = input_data->need_compute_grad_out() ? ib->Cast(bout[0], ib->GetDtype(input_data)) : ib->OutZeros(input_data);
   if (value->need_compute_grad_out()) {
     auto dvalue_shape = dvalue->shape();
     if (IsDynamicRank(dvalue_shape)) {
