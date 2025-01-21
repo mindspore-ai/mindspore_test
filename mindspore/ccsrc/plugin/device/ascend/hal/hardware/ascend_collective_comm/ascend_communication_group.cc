@@ -86,12 +86,12 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   initialized_ = true;
 
   // Initialize watch dog for global communication group.
-  if (name_ == kHCCLGlobalGroupName && ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
-    MS_LOG(INFO) << "Start initializing hccl watchdog on device side...";
-    std::map<std::string, HcclComm> world_comm_group = {{kHCCLGlobalGroupName, comm_}};
-    HcclWatchDogManager::GetInstance().AddHandler(
-      std::make_unique<HcclWatchDogHandler>(global_rank_, group_rank, group_size, world_comm_group));
-    (void)HcclWatchDogManager::GetInstance().InitHandler();
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+    MS_LOG(INFO) << "Start initializing hccl watchdog on device side for group: " << name_
+                 << ", rank: " << global_rank_;
+    HcclWatchDogManager::GetInstance().AddHandler(std::make_unique<HcclWatchDogHandler>(global_rank_, name_, comm_));
+    auto handle_size = HcclWatchDogManager::GetInstance().HandleSize();
+    (void)HcclWatchDogManager::GetInstance().InitHandler(handle_size);
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);

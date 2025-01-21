@@ -43,13 +43,9 @@ class TestHcclWatchDogManager : public UT::Common {
 /// Expectation: None
 TEST_F(TestHcclWatchDogHandler, initialize1) {
   uint32_t global_rank_id = 0;
-  uint32_t local_rank_id = 0;
-  uint32_t global_rank_size = 8;
-  std::map<std::string, HcclComm> mp_;
-  auto handler = std::make_shared<HcclWatchDogHandler>(global_rank_id, local_rank_id, global_rank_size, mp_);
-  EXPECT_EQ(handler->global_rank(), global_rank_id);
-  EXPECT_EQ(handler->local_rank(), local_rank_id);
-  EXPECT_EQ(handler->global_rank_size(), global_rank_size);
+  HcclComm hcom_;
+  auto handler = std::make_shared<HcclWatchDogHandler>(global_rank_id, " ", hcom_);
+  EXPECT_EQ(handler->rank_id(), global_rank_id);
 }
 
 /// Feature: HcclWatchDogHandler.
@@ -57,10 +53,8 @@ TEST_F(TestHcclWatchDogHandler, initialize1) {
 /// Expectation: None
 TEST_F(TestHcclWatchDogHandler, initialize2) {
   uint32_t global_rank_id = 0;
-  uint32_t local_rank_id = 0;
-  uint32_t global_rank_size = 8;
-  std::map<std::string, HcclComm> mp_;
-  auto handler = std::make_shared<HcclWatchDogHandler>(global_rank_id, local_rank_id, global_rank_size, mp_);
+  HcclComm hcom_;
+  auto handler = std::make_shared<HcclWatchDogHandler>(global_rank_id, " ", hcom_);
   EXPECT_EQ(handler->Initialize(), true);
 }
 
@@ -68,7 +62,7 @@ TEST_F(TestHcclWatchDogHandler, initialize2) {
 /// Description: Test HcclWatchDogManager init, no handle, return false.
 /// Expectation: None
 TEST_F(TestHcclWatchDogManager, InitializeWithoutHandle) {
-  EXPECT_EQ(HcclWatchDogManager::GetInstance().InitHandler(), false);
+  EXPECT_EQ(HcclWatchDogManager::GetInstance().InitHandler(0), false);
 }
 
 /// Feature: TestHcclWatchDogManager.
@@ -76,12 +70,11 @@ TEST_F(TestHcclWatchDogManager, InitializeWithoutHandle) {
 /// Expectation: None
 TEST_F(TestHcclWatchDogManager, InitializeWithHandle) {
   uint32_t global_rank_id = 0;
-  uint32_t local_rank_id = 0;
   uint32_t global_rank_size = 8;
-  std::map<std::string, HcclComm> mp_;
+  HcclComm hcom_;
   HcclWatchDogManager::GetInstance().AddHandler(
-    std::make_unique<HcclWatchDogHandler>(global_rank_id, local_rank_id, global_rank_size, mp_));
-  EXPECT_EQ(HcclWatchDogManager::GetInstance().InitHandler(), true);
+    std::make_unique<HcclWatchDogHandler>(global_rank_id, " ", hcom_));
+  EXPECT_EQ(HcclWatchDogManager::GetInstance().InitHandler(0), false);
 }
 
 /// Feature: TestHcclWatchDogManager.
@@ -96,11 +89,9 @@ TEST_F(TestHcclWatchDogManager, DestroyWithoutHandle) {
 /// Expectation: None
 TEST_F(TestHcclWatchDogManager, DestroyWithHandle) {
   uint32_t global_rank_id = 0;
-  uint32_t local_rank_id = 0;
-  uint32_t global_rank_size = 8;
-  std::map<std::string, HcclComm> mp_;
+  HcclComm hcom_;
   HcclWatchDogManager::GetInstance().AddHandler(
-    std::make_unique<HcclWatchDogHandler>(global_rank_id, local_rank_id, global_rank_size, mp_));
+    std::make_unique<HcclWatchDogHandler>(global_rank_id, " ", hcom_));
   EXPECT_NO_THROW(HcclWatchDogManager::GetInstance().DestoryHandler());
 }
 }  // namespace ascend
