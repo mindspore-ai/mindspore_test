@@ -19,7 +19,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -30,10 +30,10 @@ void ReduceAllAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
   if (inputs[kIndex1]->GetType()->isa<TypeNone>()) {
     axis_ = std::vector<int64_t>{};
   } else {
-    axis_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
+    axis_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
   }
 
-  keep_dims_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  keep_dims_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
   GetWorkspaceForResize(inputs[kIndex0], axis_, keep_dims_, outputs[kIndex0]);
 }
 

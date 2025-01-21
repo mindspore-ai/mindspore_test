@@ -16,7 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/inplace_normal_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -52,8 +52,8 @@ void InplaceNormalAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &outputs) {
   mean_ = GetInputValueToFloat(inputs, kIndex1);
   std_ = GetInputValueToFloat(inputs, kIndex2);
-  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   GetWorkspaceForResize(inputs[kIndex0], mean_, std_, seed_, offset_);
 }

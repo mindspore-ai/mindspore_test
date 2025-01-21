@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -65,7 +65,7 @@ void BincountExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inpu
   input_numel_ = inputs[kIndex0]->GetShapeVector()[0];
   origin_output_typeptr_ = outputs[0]->GetType();
 
-  min_length_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  min_length_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   outputs[kIndex0]->SetShapeVector({min_length_});
   GetWorkspaceForResizeBincount(inputs[kIndex0], inputs[kIndex1], min_length_, outputs[kIndex0]);
   // Check if null tensor

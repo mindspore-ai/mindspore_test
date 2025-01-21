@@ -21,7 +21,7 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
@@ -55,7 +55,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
 
   template <typename... Args>
   void GetWorkspaceForResize(const Args &... args) {
-    hash_id_ = transform::AclnnHash(op_type_, args...);
+    hash_id_ = device::ascend::AclnnHash(op_type_, args...);
     size_t cur_workspace = 0;
     if (hash_map_.count(hash_id_)) {
       hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_]);
@@ -68,13 +68,13 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
         hash_map_[hash_id_] = hash_cache_.begin();
       } else {
         hash_id_ = 0;
-        cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
+        cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
       }
     }
     if (hash_cache_.size() > capacity_) {
       hash_map_.erase(std::get<0>(hash_cache_.back()));
       auto release_func = std::get<kReleaseFuncIndex>(hash_cache_.back());
-      release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
+      release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
       hash_cache_.pop_back();
     }
 

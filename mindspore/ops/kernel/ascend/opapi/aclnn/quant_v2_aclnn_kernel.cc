@@ -21,7 +21,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
@@ -31,8 +31,8 @@ namespace kernel {
 
 void QuantV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  auto sqrt_mode = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
-  auto rounding_mode = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto sqrt_mode = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  auto rounding_mode = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   std::string rounding_mode_str = AscendQuantRoundMode::ConvertEnumToString(rounding_mode);
 
   // Infer function has confirmed the actual dtype of output
@@ -45,8 +45,8 @@ void QuantV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
 bool QuantV2Ascend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto sqrt_mode = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
-  auto rounding_mode = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto sqrt_mode = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  auto rounding_mode = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   std::string rounding_mode_str = AscendQuantRoundMode::ConvertEnumToString(rounding_mode);
 
   // Infer function has confirmed the actual dtype of output

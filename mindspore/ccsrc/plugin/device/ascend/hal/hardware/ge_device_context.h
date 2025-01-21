@@ -23,7 +23,6 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/device/memory_manager.h"
 #include "utils/ms_context.h"
-#include "include/transform/graph_ir/types.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ge_kernel_executor.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_graph_executor.h"

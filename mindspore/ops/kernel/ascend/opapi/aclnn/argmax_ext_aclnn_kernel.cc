@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -37,7 +37,7 @@ void ArgMaxAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   auto dim_value_opt = inputs[kIndex1]->GetOptionalValueWithCheck<int64_t>();
   if (dim_value_opt.has_value()) {
     dim_ = dim_value_opt.value();
-    keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+    keepdim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
   } else {  // input dim is None set flatten size
     dim_is_none_ = true;
   }

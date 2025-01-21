@@ -38,7 +38,7 @@
 #include <vector>
 #include <string>
 #include <utility>
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "ge/ge_graph_compile_summary.h"
 
 namespace mindspore {
@@ -62,7 +62,7 @@ struct GraphSummary {
   std::string ToString() const;
 
  private:
-  std::string TransGeDtypeToString(const transform::GeDataType dtype) const;
+  std::string TransGeDtypeToString(const backend::ge_backend::GeDataType dtype) const;
 };
 }  // namespace ascend
 }  // namespace device

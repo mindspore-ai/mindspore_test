@@ -20,17 +20,17 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
 void LinSpaceExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  start_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
-  end_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
-  steps_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  start_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
+  end_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  steps_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   GetWorkspaceForResize(start_, end_, steps_, outputs[kIndex0]);
 }
 

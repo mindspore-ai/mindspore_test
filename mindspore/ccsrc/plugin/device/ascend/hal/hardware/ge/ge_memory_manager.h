@@ -20,7 +20,7 @@
 #include <string>
 #include <set>
 #include <map>
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 
 namespace mindspore {
 namespace device {
@@ -32,11 +32,11 @@ struct FixedMemory {
 };
 using FixedMemoryPtr = std::shared_ptr<FixedMemory>;
 using GEAllocFunc = std::function<void *(size_t)>;
-using GEUpdateMemoryFunc = std::function<transform::Status(bool is_refreshable, const transform::RunOptions &options,
-                                                           const void *const memory, size_t size)>;
+using GEUpdateMemoryFunc = std::function<backend::ge_backend::Status(
+  bool is_refreshable, const backend::ge_backend::RunOptions &options, const void *const memory, size_t size)>;
 
 struct GEMemory {
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   size_t workspace_memory;
   size_t fixed_memory;
   size_t const_memory;
@@ -49,8 +49,8 @@ struct GEMemory {
 class GEMemoryManager {
  public:
   static GEMemoryManager &Instance();
-  void InitGEMemory(const transform::RunOptions &run_options, size_t workspace_memory_size, size_t fixed_memory_size,
-                    size_t const_memory_size, bool is_refreshable, size_t stream_id);
+  void InitGEMemory(const backend::ge_backend::RunOptions &run_options, size_t workspace_memory_size,
+                    size_t fixed_memory_size, size_t const_memory_size, bool is_refreshable, size_t stream_id);
   void AllocGEMemory(GEAllocFunc alloc_func, GEUpdateMemoryFunc update_func) const;
   size_t GetWorkspaceMemory(const std::string &graph_name) const;
   void Clear();

@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "graph/graph_buffer.h"
 #include "graph/graph.h"
 #include "cxx_api/model/aoe/auto_tune_process.h"
@@ -61,8 +61,8 @@ void ClearCurrentRtCtx() {
   }
 }
 
-transform::TensorOrderMap GetParams(const FuncGraphPtr &anf_graph) {
-  transform::TensorOrderMap res;
+backend::ge_backend::TensorOrderMap GetParams(const FuncGraphPtr &anf_graph) {
+  backend::ge_backend::TensorOrderMap res;
   for (auto &anf_node : anf_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(anf_node);
     auto para = anf_node->cast<ParameterPtr>();
@@ -79,24 +79,25 @@ transform::TensorOrderMap GetParams(const FuncGraphPtr &anf_graph) {
 }
 }  // namespace
 
-transform::DfGraphPtr ModelConverter::ConvertFuncGraphToAIR(const FuncGraphPtr &anf_graph) const {
+backend::ge_backend::DfGraphPtr ModelConverter::ConvertFuncGraphToAIR(const FuncGraphPtr &anf_graph) const {
   MS_EXCEPTION_IF_NULL(anf_graph);
 #ifndef BUILD_LITE
   opt::ReduceOptimization(anf_graph);
 #endif
-  auto converter = transform::NewConverter(anf_graph, "", transform::RefModeFlag::kRefModeNone, true);
+  auto converter =
+    backend::ge_backend::NewConverter(anf_graph, "", backend::ge_backend::RefModeFlag::kRefModeNone, true);
   std::string compute_graph_name = anf_graph->ToString();
   auto option = options_.lock();
   if (option != nullptr && !option->GetDumpModelName().empty()) {
     compute_graph_name = option->GetDumpModelName();
   }
-  transform::SetTraining(converter, false);
+  backend::ge_backend::SetTraining(converter, false);
 
-  transform::BuildGraph(compute_graph_name, converter, GetParams(anf_graph));
-  return transform::GetComputeGraph(converter);
+  backend::ge_backend::BuildGraph(compute_graph_name, converter, GetParams(anf_graph));
+  return backend::ge_backend::GetComputeGraph(converter);
 }
 
-Buffer ModelConverter::BuildAirModel(const transform::DfGraphPtr &graph,
+Buffer ModelConverter::BuildAirModel(const backend::ge_backend::DfGraphPtr &graph,
                                      const std::map<std::string, std::string> &init_options,
                                      const std::map<std::string, std::string> &build_options) const {
   ge::ModelBufferData model;
@@ -213,7 +214,7 @@ Buffer ModelConverter::LoadMindIR(const FuncGraphPtr &func_graph) {
 }
 
 Buffer ModelConverter::LoadAscendIRInner(const Buffer &model_data) {
-  transform::DfGraphPtr df_graph = std::make_shared<transform::DfGraph>("tmp");
+  backend::ge_backend::DfGraphPtr df_graph = std::make_shared<backend::ge_backend::DfGraph>("tmp");
   if (df_graph == nullptr) {
     MS_LOG(ERROR) << "Convert FuncGraph to AscendIR failed.";
     return {};

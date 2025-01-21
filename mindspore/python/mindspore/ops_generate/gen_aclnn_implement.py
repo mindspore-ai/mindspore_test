@@ -65,7 +65,7 @@ def gen_cc(kernelmod_name, aclnn_name, op_proto, kernelmod_cc_path, need_update_
         if dtype != 'tensor':
             if dtype == 'int':
                 dtype = 'int64_t'
-            input_templete += "  auto {} = transform::ConvertKernelTensor<{}>(inputs[kIndex{}]);\n".format(
+            input_templete += "  auto {} = device::ascend::ConvertKernelTensor<{}>(inputs[kIndex{}]);\n".format(
                 n.arg_name, dtype, idx)
             input_name = n.arg_name + ", "
         if dtype == 'tuple[tensor]' and auto_gen == "_auto_gen":
@@ -78,7 +78,7 @@ def gen_cc(kernelmod_name, aclnn_name, op_proto, kernelmod_cc_path, need_update_
         if dtype != 'tensor':
             if dtype == 'int':
                 dtype = 'int64_t'
-            input_templete += "  auto {} = transform::ConvertKernelTensor<{}>(outputs[kIndex{}]);\n".format(
+            input_templete += "  auto {} = device::ascend::ConvertKernelTensor<{}>(outputs[kIndex{}]);\n".format(
                 n.arg_name, dtype, idx)
             output_name = n.arg_name + ", "
         if dtype == 'tuple[tensor]' and auto_gen == "_auto_gen":

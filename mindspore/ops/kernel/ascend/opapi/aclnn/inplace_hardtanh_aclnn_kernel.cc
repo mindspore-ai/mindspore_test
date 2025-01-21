@@ -18,7 +18,7 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -26,8 +26,8 @@ namespace kernel {
 
 void InplaceHardtanhAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &outputs) {
-  min_val_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
-  max_val_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
+  min_val_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  max_val_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
 
   GetWorkspaceForResize(inputs[kIndex0], min_val_, max_val_);
 }

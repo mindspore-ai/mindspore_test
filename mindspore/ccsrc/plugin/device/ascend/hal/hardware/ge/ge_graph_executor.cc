@@ -22,8 +22,8 @@
 #include <map>
 #include <set>
 #include <sstream>
-#include "include/transform/graph_ir/types.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -81,10 +81,10 @@ void GetMeRetDataType(const AbstractBasePtr &cnode_data, std::vector<TypeId> *me
   }
 }
 
-transform::TensorOrderMap GetDefaultParams(const FuncGraphPtr &anf_graph,
-                                           std::map<std::string, ShapeVector> *origin_shape) {
+backend::ge_backend::TensorOrderMap GetDefaultParams(const FuncGraphPtr &anf_graph,
+                                                     std::map<std::string, ShapeVector> *origin_shape) {
   MS_EXCEPTION_IF_NULL(anf_graph);
-  transform::TensorOrderMap res;
+  backend::ge_backend::TensorOrderMap res;
   for (auto &anf_node : anf_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(anf_node);
     auto para = anf_node->cast<ParameterPtr>();
@@ -110,7 +110,7 @@ transform::TensorOrderMap GetDefaultParams(const FuncGraphPtr &anf_graph,
 
 void RevertOriginShape(const KernelGraphPtr &anf_graph, const std::map<std::string, ShapeVector> &origin_shape) {
   MS_EXCEPTION_IF_NULL(anf_graph);
-  transform::TensorOrderMap res;
+  backend::ge_backend::TensorOrderMap res;
   for (auto &anf_node : anf_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(anf_node);
     auto para = anf_node->cast<ParameterPtr>();
@@ -130,9 +130,9 @@ void RevertOriginShape(const KernelGraphPtr &anf_graph, const std::map<std::stri
   }
 }
 
-std::vector<transform::GeTensorPtr> GetInputTensors(const FuncGraphPtr &anf_graph) {
+std::vector<backend::ge_backend::GeTensorPtr> GetInputTensors(const FuncGraphPtr &anf_graph) {
   MS_EXCEPTION_IF_NULL(anf_graph);
-  transform::TensorOrderMap init_input_map;
+  backend::ge_backend::TensorOrderMap init_input_map;
   std::vector<tensor::TensorPtr> init_input;
   for (auto &anf_node : anf_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(anf_node);
@@ -146,38 +146,38 @@ std::vector<transform::GeTensorPtr> GetInputTensors(const FuncGraphPtr &anf_grap
   }
   (void)std::transform(init_input_map.begin(), init_input_map.end(), std::back_inserter(init_input),
                        [](const std::pair<std::string, tensor::TensorPtr> &item) { return item.second; });
-  return transform::ConvertInputTensors(init_input, kOpFormat_NCHW);
+  return backend::ge_backend::ConvertInputTensors(init_input, kOpFormat_NCHW);
 }
 
 void RunGEInitGraph(const FuncGraphPtr &anf_graph) {
   MS_LOG(DEBUG) << "ExecInitGraph start.";
   MS_EXCEPTION_IF_NULL(anf_graph);
 
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   run_options.name = "init_subgraph." + GetGraphName(anf_graph);
 
-  auto graph_runner = transform::CheckAndGetGraphRunner(run_options);
+  auto graph_runner = backend::ge_backend::CheckAndGetGraphRunner(run_options);
   if (graph_runner == nullptr) {
     return;
   }
 
-  std::vector<transform::GeTensorPtr> ge_tensors = GetInputTensors(anf_graph);
-  std::vector<transform::GeTensorPtr> ge_outputs;
+  std::vector<backend::ge_backend::GeTensorPtr> ge_tensors = GetInputTensors(anf_graph);
+  std::vector<backend::ge_backend::GeTensorPtr> ge_outputs;
   {
     // Release GIL before calling into (potentially long-running) C++ code
     GilReleaseWithCheck gil_release;
-    transform::Status ret = transform::RunGraph(graph_runner, run_options, ge_tensors, &ge_outputs);
-    if (ret != transform::Status::SUCCESS) {
+    backend::ge_backend::Status ret = backend::ge_backend::RunGraph(graph_runner, run_options, ge_tensors, &ge_outputs);
+    if (ret != backend::ge_backend::Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "Exec " << run_options.name << " graph failed.";
     }
 
     MS_LOG(DEBUG) << "Exec " << run_options.name << " graph success.";
 
     if ((ConfigManager::GetInstance().parallel_strategy() == ParallelStrategy::DISTRIBUTION) &&
-        (transform::GetGraphByName(BROADCAST_GRAPH_NAME) != nullptr)) {
+        (backend::ge_backend::GetGraphByName(BROADCAST_GRAPH_NAME) != nullptr)) {
       run_options.name = BROADCAST_GRAPH_NAME;
-      ret = transform::RunGraph(graph_runner, run_options, ge_tensors, &ge_outputs);
-      if (ret != transform::Status::SUCCESS) {
+      ret = backend::ge_backend::RunGraph(graph_runner, run_options, ge_tensors, &ge_outputs);
+      if (ret != backend::ge_backend::Status::SUCCESS) {
         MS_LOG(EXCEPTION) << "Exec BROADCAST_GRAPH_NAME failed.";
       }
       MS_LOG(DEBUG) << "Exec broadcast graph success.";
@@ -299,7 +299,7 @@ bool CacheFileExists(const std::string &name) {
 }
 
 void SetOutputs(const std::vector<KernelWithIndex> &graph_outputs,
-                const std::vector<transform::GeTensorPtr> &ge_outputs, const std::vector<TypeId> &me_types) {
+                const std::vector<backend::ge_backend::GeTensorPtr> &ge_outputs, const std::vector<TypeId> &me_types) {
   for (size_t i = 0; i < graph_outputs.size(); ++i) {
     const auto &[output_node, idx] = common::AnfAlgo::FetchRealNodeSkipMonadControl(graph_outputs[i]);
     const auto &tensor = ge_outputs[i];
@@ -444,7 +444,7 @@ void GeGraphExecutor::SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph) {
   const auto &param_list = graph->parameters();
   for (const auto &param_node : param_list) {
     MS_EXCEPTION_IF_NULL(param_node);
-    if (param_node->has_user_data(transform::kNoNeedAllocDeviceAddress)) {
+    if (param_node->has_user_data(backend::ge_backend::kNoNeedAllocDeviceAddress)) {
       auto output_addr = AnfAlgo::GetMutableOutputAddr(param_node, 0, false);
       MS_EXCEPTION_IF_NULL(output_addr);
       output_addr->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
@@ -470,7 +470,7 @@ void GeGraphExecutor::BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph)
   std::vector<DeviceAddress *> device_addrs;
   std::vector<std::pair<AnfNodeWeakPtr, size_t>> need_update_input;
   std::vector<AnfNodeWeakPtr> ge_input_nodes;
-  auto ge_input_list = kernel_graph->user_data<transform::GEInputList>();
+  auto ge_input_list = kernel_graph->user_data<backend::ge_backend::GEInputList>();
   if (ge_input_list) {
     ge_input_nodes = ge_input_list->ge_inputs;
   }
@@ -546,7 +546,8 @@ void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph
   MS_LOG(INFO) << "BuildOutputDataGeTensor finish.";
 }
 
-bool GeGraphExecutor::BuildGraph(const KernelGraphPtr &graph, const transform::TensorOrderMap &tensor_order_map) {
+bool GeGraphExecutor::BuildGraph(const KernelGraphPtr &graph,
+                                 const backend::ge_backend::TensorOrderMap &tensor_order_map) {
   auto &compile_cache_context = CompileCacheContext::GetInstance();
   auto use_compile_cache = compile_cache_context.UseCompileCache();
   auto init_compile_cache = compile_cache_context.init_compile_cache();
@@ -572,9 +573,9 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
   (void)BuildGraph(graph, tensor_order_map);
 
   SetDynamicShapeAttr(graph);
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   run_options.name = GetGraphName(graph);
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   if (graph_runner == nullptr) {
     MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
   }
@@ -585,7 +586,7 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
     // Release GIL before calling into (potentially long-running) C++ code
     GilReleaseWithCheck gil_release;
     auto ret = graph_runner->CompileGraph(run_options);
-    if (ret != transform::Status::SUCCESS) {
+    if (ret != backend::ge_backend::Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "Compile graph " << run_options.name << " failed.";
     }
   } else {
@@ -594,7 +595,7 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
       // Release GIL before calling into (potentially long-running) C++ code
       GilReleaseWithCheck gil_release;
       auto ret = graph_runner->CompileGraph(run_options, &ge_graph_summary);
-      if (ret != transform::Status::SUCCESS) {
+      if (ret != backend::ge_backend::Status::SUCCESS) {
         MS_LOG(EXCEPTION) << "Compile graph " << run_options.name << " failed.";
       }
     }
@@ -631,12 +632,12 @@ std::vector<std::pair<uint32_t, uint32_t>> GeGraphExecutor::GetGraphRefIndexes(c
 
 void GeGraphExecutor::SetGraphWorkspaceMemory(const KernelGraphPtr &graph, void *device_ptr, size_t size) {
   MS_EXCEPTION_IF_NULL(graph);
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   MS_EXCEPTION_IF_NULL(graph_runner);
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   run_options.name = GetGraphName(graph);
   auto ret = graph_runner->UpdateRefreshableMemory(run_options, device_ptr, size);
-  if (ret != transform::Status::SUCCESS) {
+  if (ret != backend::ge_backend::Status::SUCCESS) {
     MS_LOG(EXCEPTION) << "UpdateRefreshableMemory for graph " << run_options.name << " failed.";
   }
 }
@@ -835,7 +836,7 @@ DeviceAddressPtr GeGraphExecutor::CreateDeviceAddress(const KernelTensorPtr &ker
 void GeGraphExecutor::AllocGEFixMemory() const {
   MS_LOG(INFO) << "Start AllocGEFixMemory";
   auto alloc_func = [this](size_t size) { return ge_res_manager_->AllocateStaticMemory(size); };
-  auto update_func = [](bool is_refreshable, const transform::RunOptions &options, const void *const memory,
+  auto update_func = [](bool is_refreshable, const backend::ge_backend::RunOptions &options, const void *const memory,
                         size_t size) {
     MS_LOG(INFO) << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
                  << ", size: " << size << ", memory: " << memory;
@@ -844,7 +845,7 @@ void GeGraphExecutor::AllocGEFixMemory() const {
                 << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
                 << ", size: " << size << ", memory: " << memory << std::endl;
     }
-    auto graph_runner = transform::GetGraphRunner();
+    auto graph_runner = backend::ge_backend::GetGraphRunner();
     MS_EXCEPTION_IF_NULL(graph_runner);
     if (is_refreshable) {
       return graph_runner->SetFixedMemory(options, memory, size);
@@ -858,7 +859,7 @@ void GeGraphExecutor::InitGEFixMemory(const KernelGraphPtr &graph, size_t stream
   if (!IsEnableRefMode()) {
     return;
   }
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   run_options.name = GetGraphName(graph);
   if (!ge_message_manager_.SummaryExist(run_options.name)) {
     MS_LOG(INFO) << "The summary of graph: " << run_options.name << " is not exist.";
@@ -1063,9 +1064,9 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
 
   // call ge rungraph
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   run_options.name = graph_name;
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   if (graph_runner == nullptr) {
     MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
   }
@@ -1097,9 +1098,9 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
   {
     // Release GIL before calling into (potentially long-running) C++ code
     GilReleaseWithCheck gil_release;
-    transform::Status ret =
-      transform::RunGraphWithStreamAsync(graph_runner, run_options, stream, ge_inputs, ge_outputs);
-    if (ret != transform::Status::SUCCESS) {
+    backend::ge_backend::Status ret =
+      backend::ge_backend::RunGraphWithStreamAsync(graph_runner, run_options, stream, ge_inputs, ge_outputs);
+    if (ret != backend::ge_backend::Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "Exec graph failed";
     }
   }
@@ -1286,22 +1287,22 @@ void GeGraphExecutor::DoAsyncCkpt(const FuncGraphPtr &graph) {
 }
 
 void GeGraphExecutor::RunCheckpointGraph(const KernelGraphPtr &graph) {
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   run_options.name = "save." + GetGraphName(graph);
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   if (graph_runner == nullptr) {
     MS_LOG(ERROR) << "Can not found GraphRunner";
     return;
   }
 
   {
-    std::vector<transform::GeTensorPtr> ge_inputs;
-    std::vector<transform::GeTensorPtr> ge_outputs;
-    auto ret = transform::RunGraph(graph_runner, run_options, ge_inputs, &ge_outputs);
-    if (ret == transform::Status::NOT_FOUND) {
+    std::vector<backend::ge_backend::GeTensorPtr> ge_inputs;
+    std::vector<backend::ge_backend::GeTensorPtr> ge_outputs;
+    auto ret = backend::ge_backend::RunGraph(graph_runner, run_options, ge_inputs, &ge_outputs);
+    if (ret == backend::ge_backend::Status::NOT_FOUND) {
       MS_LOG(INFO) << "Exec graph:" << run_options.name << "not found, skip.";
       return;
-    } else if (ret != transform::Status::SUCCESS) {
+    } else if (ret != backend::ge_backend::Status::SUCCESS) {
       MS_LOG(WARNING) << "Exec graph:" << run_options.name << " failed";
       return;
     }
@@ -1329,9 +1330,9 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
       is_init_graph_run_[graph] = true;
     }
 
-    std::vector<transform::GeTensorPtr> ge_inputs;
+    std::vector<backend::ge_backend::GeTensorPtr> ge_inputs;
     if (!inputs.empty()) {
-      ge_inputs = transform::ConvertInputTensors(inputs, kOpFormat_NCHW);
+      ge_inputs = backend::ge_backend::ConvertInputTensors(inputs, kOpFormat_NCHW);
     } else {
       // copy input from device to host
       std::vector<tensor::TensorPtr> input_tensors;
@@ -1347,7 +1348,7 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
         tensor->data_sync();
         (void)input_tensors.emplace_back(std::move(tensor));
       }
-      ge_inputs = transform::ConvertInputTensors(input_tensors, kOpFormat_NCHW);
+      ge_inputs = backend::ge_backend::ConvertInputTensors(input_tensors, kOpFormat_NCHW);
     }
 
     // call ge rungraph
@@ -1355,9 +1356,9 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
     if (kg != nullptr) {
       graph_name = kg->GetFuncGraph()->ToString();
     }
-    transform::RunOptions run_options;
+    backend::ge_backend::RunOptions run_options;
     run_options.name = graph_name;
-    auto graph_runner = transform::GetGraphRunner();
+    auto graph_runner = backend::ge_backend::GetGraphRunner();
     if (graph_runner == nullptr) {
       MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
     }
@@ -1368,19 +1369,20 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
     auto output_c = output->cast<CNodePtr>()->abstract();
     // get output node data types
     GetMeRetDataType(output_c, &me_types);
-    std::vector<transform::GeTensorPtr> ge_outputs;
+    std::vector<backend::ge_backend::GeTensorPtr> ge_outputs;
     {
       // Release GIL before calling into (potentially long-running) C++ code
       GilReleaseWithCheck gil_release;
       MS_LOG(DEBUG) << "Run graph begin, inputs size is: " << inputs.size();
-      transform::Status ret = transform::RunGraphAsync(graph_runner, run_options, ge_inputs, &ge_outputs);
+      backend::ge_backend::Status ret =
+        backend::ge_backend::RunGraphAsync(graph_runner, run_options, ge_inputs, &ge_outputs);
       MS_LOG(DEBUG) << "Run graph finish, outputs size is: " << ge_outputs.size();
-      if (ret == transform::Status::NOT_FOUND) {
+      if (ret == backend::ge_backend::Status::NOT_FOUND) {
         MS_LOG(WARNING) << "The Graph[" << graph_name << "] is not found, skip run it.";
         (void)profiler::CollectHostInfo("Ascend", "RunGraph", "GeRunGraph_" + graph_name, start_time,
                                         profiler::GetClockSyscnt(), 1);
         return true;
-      } else if (ret != transform::Status::SUCCESS) {
+      } else if (ret != backend::ge_backend::Status::SUCCESS) {
         MS_LOG(EXCEPTION) << "Exec graph failed";
       }
     }
@@ -1399,7 +1401,7 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
       SetOutputs(graph_outputs, ge_outputs, me_types);
     }
   }
-  if (graph->has_flag(transform::kGraphFlagHasGetNext)) {
+  if (graph->has_flag(backend::ge_backend::kGraphFlagHasGetNext)) {
     MS_LOG(DEBUG) << "Reset ConfigManager, graph: " << graph_name;
     ConfigManager::GetInstance().ResetConfig();
     ConfigManager::GetInstance().ResetIterNum();
@@ -1446,7 +1448,7 @@ string GeGraphExecutor::ExportDFGraph(const std::string &file_name, const FuncGr
                                       bool is_save_to_file) {
   MS_EXCEPTION_IF_NULL(anf_graph);
   auto graph_name = GetGraphName(anf_graph);
-  return transform::ExportDFGraph(file_name, graph_name, is_save_to_file);
+  return backend::ge_backend::ExportDFGraph(file_name, graph_name, is_save_to_file);
 }
 
 std::vector<GeTensor> GeGraphExecutor::GenerateInputGeTensor(const KernelGraphPtr &kernel_graph) const {
@@ -1538,13 +1540,13 @@ std::vector<GeTensor> GeGraphExecutor::GenerateOutputGeTensor(const KernelGraphP
 }
 
 void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
-  transform::RunOptions run_options;
+  backend::ge_backend::RunOptions run_options;
   run_options.name = "init_subgraph." + graph_name;
-  if (transform::GetGraphByName(run_options.name) == nullptr) {
+  if (backend::ge_backend::GetGraphByName(run_options.name) == nullptr) {
     MS_LOG(INFO) << "Can not find " << run_options.name << " sub graph, don't need data init subgraph in INFER mode.";
     return;
   }
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   if (graph_runner == nullptr) {
     MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
   }
@@ -1555,13 +1557,13 @@ void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
   }
   pre_sink_size_ = cur_sink_size;
   MS_LOG(INFO) << "Start run init graph: " << run_options.name << ", sink size:" << cur_sink_size;
-  std::vector<transform::GeTensorPtr> ge_outputs;
-  std::vector<transform::GeTensorPtr> ge_tensors;
+  std::vector<backend::ge_backend::GeTensorPtr> ge_outputs;
+  std::vector<backend::ge_backend::GeTensorPtr> ge_tensors;
   {
     // Release GIL before calling into (potentially long-running) C++ code
     GilReleaseWithCheck gil_release;
-    transform::Status ret = transform::RunGraph(graph_runner, run_options, ge_tensors, &ge_outputs);
-    if (ret != transform::Status::SUCCESS) {
+    backend::ge_backend::Status ret = backend::ge_backend::RunGraph(graph_runner, run_options, ge_tensors, &ge_outputs);
+    if (ret != backend::ge_backend::Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "Exec " << run_options.name << " graph failed.";
     }
     MS_LOG(INFO) << "Exec " << run_options.name << " graph success.";
@@ -1599,13 +1601,13 @@ void GeGraphExecutor::Initialize() {
   }
 
   CreateSessionAndGraphRunner();
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   MS_EXCEPTION_IF_NULL(graph_runner);
   if (IsEnableRefMode()) {
     ge_allocator_ = std::make_shared<GeAllocator>(ge_res_manager_.get());
-    transform::Status ret =
-      transform::RegisterExternalAllocator(graph_runner, ge_res_manager_->GetStream(), ge_allocator_);
-    if (ret != transform::Status::SUCCESS) {
+    backend::ge_backend::Status ret =
+      backend::ge_backend::RegisterExternalAllocator(graph_runner, ge_res_manager_->GetStream(), ge_allocator_);
+    if (ret != backend::ge_backend::Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "RegisterExternalAllocator failed";
     }
     MS_LOG(INFO) << "Create session and graphrunner successful.";
@@ -1618,21 +1620,21 @@ void GeGraphExecutor::Initialize() {
 }
 
 void GeGraphExecutor::CreateSessionAndGraphRunner() const {
-  auto sess = transform::GetGeSession();
+  auto sess = backend::ge_backend::GetGeSession();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (sess == nullptr) {
-    transform::SessionOptions options;
+    backend::ge_backend::SessionOptions options;
     GetGeSessionOptions(&options);
     SetPassthroughGeOptions("session", &options);
-    sess = transform::NewSession(options);
-    transform::SetGeSession(sess);
+    sess = backend::ge_backend::NewSession(options);
+    backend::ge_backend::SetGeSession(sess);
   }
 
-  transform::GraphRunnerOptions options;
+  backend::ge_backend::GraphRunnerOptions options;
   options.sess_ptr = sess;
-  auto graph_runner = transform::NewGraphRunner(options);
-  transform::SetGraphRunner(graph_runner);
+  auto graph_runner = backend::ge_backend::NewGraphRunner(options);
+  backend::ge_backend::SetGraphRunner(graph_runner);
 }
 
 void GeGraphExecutor::Finalize() {
@@ -1642,7 +1644,7 @@ void GeGraphExecutor::Finalize() {
   // clear ge op adapter
   device::ascend::OpAdapterMap::get().clear();
   // remove ge graph
-  transform::DfGraphManager::GetInstance().ClearGraph();
+  backend::ge_backend::DfGraphManager::GetInstance().ClearGraph();
   // unregister allocator, before ResManager Destroy(use stream)
   UnregisterExternalAllocator();
   // Free GeTensorMemory before device_res_manager_ Destroy
@@ -1660,7 +1662,7 @@ void GeGraphExecutor::Finalize() {
 }
 
 void GeGraphExecutor::UnregisterExternalAllocator() {
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   if (graph_runner == nullptr) {
     MS_LOG(INFO) << "The graph_runner is not exist";
     return;
@@ -1668,8 +1670,8 @@ void GeGraphExecutor::UnregisterExternalAllocator() {
   if (!graph_runner->IsAllocatorRegistered()) {
     return;
   }
-  auto ret = transform::UnregisterExternalAllocator(graph_runner, ge_res_manager_->GetStream());
-  if (ret != transform::Status::SUCCESS) {
+  auto ret = backend::ge_backend::UnregisterExternalAllocator(graph_runner, ge_res_manager_->GetStream());
+  if (ret != backend::ge_backend::Status::SUCCESS) {
     MS_LOG(EXCEPTION) << "UnregisterExternalAllocator failed";
   }
 }
@@ -1684,7 +1686,7 @@ bool GeGraphExecutor::FinalizeGe() {
   if (ms_context->get_param<uint32_t>(MS_CTX_GE_REF) == 0) {
     ms_context->set_param<uint32_t>(MS_CTX_GE_REF, 0);
     try {
-      transform::ClearGeSessionAndRunner();
+      backend::ge_backend::ClearGeSessionAndRunner();
     } catch (const std::exception &e) {
       MS_LOG(ERROR) << "Error occurred when deleting GE graph runner and session fail. Error: " << e.what();
     } catch (...) {

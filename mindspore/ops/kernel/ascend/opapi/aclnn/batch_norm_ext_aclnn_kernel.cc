@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -28,7 +28,7 @@ namespace kernel {
 
 void BatchNormExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  auto training = transform::ConvertKernelTensor<bool>(inputs[kIndex5]);
+  auto training = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
   auto eps_dtype_id = inputs[kIndex7]->dtype_id();
   eps_ = (eps_dtype_id == kNumberTypeFloat32) ? static_cast<double>(inputs[kIndex7]->GetValueWithCheck<float>())
                                               : inputs[kIndex7]->GetValueWithCheck<double>();
@@ -45,7 +45,7 @@ void BatchNormExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inp
 bool BatchNormExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto training = transform::ConvertKernelTensor<bool>(inputs[kIndex5]);
+  auto training = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
         training, momentum_, eps_, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
   return true;

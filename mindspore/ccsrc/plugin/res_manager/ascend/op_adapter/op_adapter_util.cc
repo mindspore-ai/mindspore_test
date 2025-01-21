@@ -23,9 +23,9 @@
 #include "include/common/utils/utils.h"
 #include "utils/check_convert_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "ir/kernel_tensor_value.h"
 #include "ops_utils/op_utils.h"
-#include "include/transform/graph_ir/utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 

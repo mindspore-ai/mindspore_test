@@ -21,7 +21,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/customize/identity.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "plugin/device/ascend/kernel/acl/acl_kernel_mod.h"
 
 namespace mindspore {

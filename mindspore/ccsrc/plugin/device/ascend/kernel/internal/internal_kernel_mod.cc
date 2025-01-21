@@ -20,7 +20,8 @@
 #include <utility>
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "transform/acl_ir/op_api_cache.h"
+#include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
+#include "runtime/device/ms_device_shape_transfer.h"
 
 namespace mindspore {
 namespace kernel {
@@ -90,7 +91,7 @@ bool InternalKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs
   if (internal_op_ == nullptr) {
     return true;
   }
-  transform::g_hash_offset = 0;
+  g_hash_offset = 0;
   for (auto idx : recreate_cared_indices_) {
     auto input = inputs[idx];
     auto type = input->type_id();
@@ -99,27 +100,27 @@ bool InternalKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs
       switch (data_type) {
         case kNumberTypeBool: {
           auto value = input->GetValueWithCheck<bool>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<int32_t>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<int64_t>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeFloat32: {
           auto value = input->GetValueWithCheck<float>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeFloat64: {
           auto value = input->GetValueWithCheck<double>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         default:
@@ -131,12 +132,12 @@ bool InternalKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs
       switch (data_type) {
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<std::vector<int32_t>>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<std::vector<int64_t>>();
-          transform::GatherHash(value);
+          GatherHash(value);
           break;
         }
         default:
@@ -144,18 +145,18 @@ bool InternalKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs
                                      << ", index: " << idx;
       }
     } else if (type == kMetaTypeNone) {
-      transform::GatherHash(type);
+      GatherHash(type);
     } else if (type != kObjectTypeTensorType) {
       MS_LOG(INTERNAL_EXCEPTION) << "Unsupported type: " << type << ", kenrel_name: " << kernel_name_
                                  << ", index: " << idx;
     }
   }
 
-  if (transform::g_hash_offset == 0) {
+  if (g_hash_offset == 0) {
     return false;
   }
 
-  auto hash_id = transform::calc_hash_id();
+  auto hash_id = calc_hash_id();
   if (hash_id != last_key_) {
     last_key_ = hash_id;
     return true;

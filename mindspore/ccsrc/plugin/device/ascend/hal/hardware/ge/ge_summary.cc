@@ -125,7 +125,7 @@ std::string GraphSummary::ToString() const {
   return ss.str();
 }
 
-std::string GraphSummary::TransGeDtypeToString(const transform::GeDataType dtype) const {
+std::string GraphSummary::TransGeDtypeToString(const backend::ge_backend::GeDataType dtype) const {
   std::string dtype_str = "";
   if (device::ascend::ge_dtype_str_map.find(dtype) != device::ascend::ge_dtype_str_map.end()) {
     dtype_str = device::ascend::ge_dtype_str_map[dtype];

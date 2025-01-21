@@ -23,7 +23,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 
 namespace mindspore {
 namespace kernel {

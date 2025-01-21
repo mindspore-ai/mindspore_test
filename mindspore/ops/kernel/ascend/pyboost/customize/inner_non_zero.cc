@@ -47,7 +47,7 @@ tensor::BaseTensorPtr InnerNonZeroAscendCustomize(const std::shared_ptr<OpRunner
   PyBoostUtils::MallocOpOutputs(device_context, outputs);
   auto return_values = LAUNCH_ACLNN_SYNC(aclnnNonzeroV2, device_context, op->stream_id(), input_tensor, outputs[0]);
   const auto &cache_func_ptr = std::get<kIndex2>(return_values);
-  auto all_acl_tensor = cache_func_ptr(transform::ProcessCacheType::kGetOutputShape, {});
+  auto all_acl_tensor = cache_func_ptr(device::ascend::ProcessCacheType::kGetOutputShape, {});
 
   // update shape
   auto output_real_shape = all_acl_tensor[kIndex1];

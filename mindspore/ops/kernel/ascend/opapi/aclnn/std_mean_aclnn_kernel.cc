@@ -19,7 +19,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -33,8 +33,8 @@ void StdMeanAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   } else {
     dim_ = std::vector<int64_t>{};
   }
-  correction_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  correction_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  keepdim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
 
   GetWorkspaceForResize(inputs[kIndex0], dim_, correction_, keepdim_, outputs[kIndex0], outputs[kIndex1]);
 }

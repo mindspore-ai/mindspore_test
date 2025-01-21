@@ -20,7 +20,7 @@
 #include <string>
 #include <set>
 #include "include/backend/kernel_graph.h"
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "runtime/hardware/device_context.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_device_res_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_summary.h"
@@ -34,7 +34,7 @@ class GEMemoryAllocator {
                                         GeDeviceResManagerPtr res_manager);
   static void AllocInputHostMemory(const KernelGraphPtr &kernel_graph, DeviceContext *device_context);
   static void AllocOutputHostMemory(const KernelGraphPtr &kernel_graph, DeviceContext *device_context);
-  static void AllocGraphMemory(const transform::RunOptions &options, const KernelGraphPtr &graph,
+  static void AllocGraphMemory(const backend::ge_backend::RunOptions &options, const KernelGraphPtr &graph,
                                const GraphSummary &summary, size_t stream_id, GeDeviceResManagerPtr res_manager);
   static void AllocUnuseInput(const KernelGraphPtr &kernel_graph, const AnfNodePtr &input_node,
                               DeviceAddress *output_addr, GeDeviceResManagerPtr res_manager);

@@ -16,9 +16,16 @@
 
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
 
+#include <vector>
+#include <set>
 #include <unordered_map>
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/nn_optimizer_op_name.h"
+#include "mindspore/ops/ops_utils/op_constants.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/kernel_info.h"
+#include "kernel/kernel_build_info.h"
 #include "mindapi/base/type_id.h"
 #include "utils/log_adapter.h"
 
@@ -93,6 +100,60 @@ internal::TensorFormat TransInternalFormat(Format format) {
     default:
       return iter->second;
   }
+}
+
+bool CheckDefaultSupportFormat(const std::string &format) {
+  static std::set<std::string> default_support = {kOpFormat_DEFAULT, kOpFormat_ND,    kOpFormat_NCHW,
+                                                  kOpFormat_NHWC,    kOpFormat_NDHWC, kOpFormat_NCDHW};
+  return default_support.find(format) != default_support.end();
+}
+
+void SetParameterFormat(const AnfNodePtr &node, const std::string &format, std::string *old_format) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<Parameter>()) {
+    if (IsPrimitiveCNode(node, prim::kPrimCast)) {
+      auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, 0);
+      if (kernel_with_index.first->isa<Parameter>()) {
+        SetParameterFormat(kernel_with_index.first, format, old_format);
+      } else {
+        return;
+      }
+      auto kernel_info = std::dynamic_pointer_cast<device::KernelInfo>(node->kernel_info_ptr());
+      MS_EXCEPTION_IF_NULL(kernel_info);
+      auto build_info = kernel_info->GetMutableSelectKernelBuildInfo();
+      MS_EXCEPTION_IF_NULL(build_info);
+      build_info->SetInputsFormat({format});
+      build_info->SetOutputsFormat({format});
+      kernel_info->set_select_kernel_build_info(build_info);
+    }
+    return;
+  }
+  auto parameter = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(parameter);
+  bool is_weight = common::AnfAlgo::IsParameterWeight(parameter);
+  if (!is_weight) {
+    return;
+  }
+
+  const auto &output_with_indexs = common::AnfAlgo::GetAllOutputWithIndex(node);
+  std::vector<std::string> output_formats{output_with_indexs.size(), format};
+  auto kernel_info = std::dynamic_pointer_cast<device::KernelInfo>(node->kernel_info_ptr());
+  if (kernel_info == nullptr) {
+    kernel_info = std::make_shared<device::KernelInfo>();
+    node->set_kernel_info(kernel_info);
+  }
+  MS_EXCEPTION_IF_NULL(kernel_info);
+
+  auto build_info = kernel_info->GetMutableSelectKernelBuildInfo();
+  if (build_info == nullptr) {
+    auto builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>();
+    build_info = builder->Build();
+  }
+  MS_EXCEPTION_IF_NULL(build_info);
+  build_info->SetOutputsFormat(output_formats);
+  kernel_info->set_select_kernel_build_info(build_info);
+  MS_EXCEPTION_IF_NULL(old_format);
+  *old_format = format;
 }
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,9 +20,9 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include "transform/graph_ir/convert.h"
-#include "transform/graph_ir/graph_runner.h"
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/convert.h"
+#include "backend/ge_backend/graph_ir/graph_runner.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "include/common/utils/config_manager.h"
 #include "include/backend/visible.h"
@@ -32,8 +32,8 @@ constexpr char BROADCAST_GRAPH_NAME[] = "broadcast_subgraph";
 
 namespace transform {
 using OpAdapterPtr = std::shared_ptr<device::ascend::BaseOpAdapter>;
-using GraphRunnerPtr = std::shared_ptr<transform::GraphRunner>;
-using DfGraphConvertorPtr = std::shared_ptr<transform::DfGraphConvertor>;
+using GraphRunnerPtr = std::shared_ptr<backend::ge_backend::GraphRunner>;
+using DfGraphConvertorPtr = std::shared_ptr<backend::ge_backend::DfGraphConvertor>;
 
 bool IsInitDataSetQueueNode(const AnfNodePtr &node);
 
@@ -52,8 +52,9 @@ MeTensorPtr ConvertGeTensor(const GeTensorPtr &tensor);
 MeTensorPtr ConvertGeTensor(const GeTensorPtr &tensor, const TypeId &me_type);
 
 // df graph manager
-std::shared_ptr<transform::GraphRunner> GetGraphRunner();
-std::shared_ptr<transform::GraphRunner> CheckAndGetGraphRunner(const transform::RunOptions &run_options);
+std::shared_ptr<backend::ge_backend::GraphRunner> GetGraphRunner();
+std::shared_ptr<backend::ge_backend::GraphRunner> CheckAndGetGraphRunner(
+  const backend::ge_backend::RunOptions &run_options);
 BACKEND_EXPORT std::shared_ptr<::ge::Session> GetGeSession();
 BACKEND_EXPORT void SetGeSession(const std::shared_ptr<::ge::Session> &sess_ptr);
 BACKEND_EXPORT GraphRunnerPtr NewGraphRunner(const GraphRunnerOptions &options);
@@ -106,7 +107,7 @@ Status RegisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, con
 
 Status UnregisterExternalAllocator(const std::shared_ptr<GraphRunner> &runner, const void *const stream);
 
-transform::Status CompileDatasetGraph(const DatasetGraphParam &param, const std::string &phase = "dataset");
+backend::ge_backend::Status CompileDatasetGraph(const DatasetGraphParam &param, const std::string &phase = "dataset");
 string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file);
 }  // namespace transform
 }  // namespace mindspore

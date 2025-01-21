@@ -16,7 +16,7 @@
 #include "kernel/ascend/opapi/aclnn/reduce_sum_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
@@ -25,10 +25,10 @@ namespace mindspore {
 namespace kernel {
 void ReduceSumAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
-  dims_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
-  keep_dim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
-  dtype_ = transform::ConvertKernelTensor<TypeId>(inputs[kIndex0]);
-  auto skip_mode = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  dims_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
+  keep_dim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  dtype_ = device::ascend::ConvertKernelTensor<TypeId>(inputs[kIndex0]);
+  auto skip_mode = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
   need_skip_execute_ = false;
   if (AnfAlgo::IsDynamicShapeSkipExecute(skip_mode, inputs[kIndex1]->GetShapeVector())) {
     need_skip_execute_ = true;

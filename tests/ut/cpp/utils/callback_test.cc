@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "include/common/utils/python_adapter.h"
-#include "mindspore/ccsrc/transform/graph_ir/df_graph_manager.h"
+#include "mindspore/ccsrc/backend/ge_backend/graph_ir/df_graph_manager.h"
 #include "include/common/debug/draw.h"
 #ifdef ENABLE_D
 #include "include/common/utils/callbacks_ge.h"
@@ -37,7 +37,7 @@ class TestCallback : public UT::Common {
 TEST_F(TestCallback, test_get_anf_tensor_shape) {
   py::object obj = python_adapter::CallPyFn("gtest_input.pipeline.parse.parse_class", "test_get_object_graph");
   FuncGraphPtr func_graph = pipeline::GraphExecutorPy::GetInstance()->GetFuncGraphPy(obj);
-  transform::DfGraphManager::GetInstance().SetAnfGraph(func_graph);
+  backend::ge_backend::DfGraphManager::GetInstance().SetAnfGraph(func_graph);
   std::shared_ptr<std::vector<int64_t>> param_shape_ptr = std::make_shared<std::vector<int64_t>>();
   bool get_shape = callbacks::GetParameterShape(func_graph, "weight", param_shape_ptr);
   ASSERT_TRUE(get_shape == true);
@@ -46,7 +46,7 @@ TEST_F(TestCallback, test_get_anf_tensor_shape) {
 TEST_F(TestCallback, test_checkpoint_save_op) {
   py::object obj = python_adapter::CallPyFn("gtest_input.pipeline.parse.parse_class", "test_get_object_graph");
   FuncGraphPtr func_graph = pipeline::GraphExecutorPy::GetInstance()->GetFuncGraphPy(obj);
-  transform::DfGraphManager::GetInstance().SetAnfGraph(func_graph);
+  backend::ge_backend::DfGraphManager::GetInstance().SetAnfGraph(func_graph);
 
 #define DTYPE float
   ge::DataType dt = ge::DataType::DT_FLOAT;
@@ -56,7 +56,7 @@ TEST_F(TestCallback, test_checkpoint_save_op) {
   ge::Shape shape({2, 2, 2, 1});
   ge::Format format = ge::Format::FORMAT_NCHW;
   ge::TensorDesc desc(shape, format, dt);
-  transform::GeTensorPtr ge_tensor_ptr =
+  backend::ge_backend::GeTensorPtr ge_tensor_ptr =
     std::make_shared<GeTensor>(desc, reinterpret_cast<uint8_t *>(data.data()), data.size() * sizeof(DTYPE));
   std::map<std::string, GeTensor> param_map;
   param_map.insert(std::pair<std::string, GeTensor>("weight", *ge_tensor_ptr));
@@ -72,7 +72,7 @@ TEST_F(TestCallback, test_summary_save_op) {
     py::object obj = python_adapter::CallPyFn(
             "gtest_input.pipeline.parse.parse_class", "test_get_object_graph");
     FuncGraphPtr func_graph = obj.cast<FuncGraphPtr>();
-    transform::DfGraphManager::GetInstance().SetAnfGraph(func_graph);
+    backend::ge_backend::DfGraphManager::GetInstance().SetAnfGraph(func_graph);
 
     #define DTYPE float
     ge::DataType dt = ge::DataType::DT_FLOAT;

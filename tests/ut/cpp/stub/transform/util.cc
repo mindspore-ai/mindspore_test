@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 
 #include <string>
 #include <utility>
@@ -23,7 +23,7 @@
 #include "securec/include/securec.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "transform/graph_ir/df_graph_manager.h"
+#include "backend/ge_backend/graph_ir/df_graph_manager.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"

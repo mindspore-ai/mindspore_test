@@ -22,8 +22,8 @@
 #include <utility>
 #include <nlohmann/json.hpp>
 #include "include/common/utils/anfalgo.h"
-#include "include/transform/graph_ir/types.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -162,7 +162,8 @@ void GetComputeGraphReuseOptions(const FuncGraphPtr &graph, OptionMap *option) {
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (graph->has_flag(transform::kGraphFlagHasGetNext) && !graph->has_flag(transform::kGraphNeedIteration)) {
+  if (graph->has_flag(backend::ge_backend::kGraphFlagHasGetNext) &&
+      !graph->has_flag(backend::ge_backend::kGraphNeedIteration)) {
     MS_LOG(INFO) << "key: ge.exec.inputReuseMemIndexes, value: 0."
                  << ", Graph name: " << graph->ToString();
     (void)option->insert(std::make_pair("ge.exec.inputReuseMemIndexes", "0"));
@@ -359,8 +360,8 @@ void SetPassthroughGeOptions(std::string option_level, OptionMap *options) {
 
 bool AddFakeGraph(const FuncGraphPtr &anf_graph) {
   MS_EXCEPTION_IF_NULL(anf_graph);
-  auto converter = transform::NewConverter(anf_graph, GetPhasePrefix());
-  transform::GenFakeGraph(anf_graph->ToString(), converter);
+  auto converter = backend::ge_backend::NewConverter(anf_graph, GetPhasePrefix());
+  backend::ge_backend::GenFakeGraph(anf_graph->ToString(), converter);
   auto graph_name = GetGraphName(anf_graph);
   std::string init_graph = "init_subgraph." + graph_name;
   std::string checkpoint_name = "save." + graph_name;
@@ -370,36 +371,38 @@ bool AddFakeGraph(const FuncGraphPtr &anf_graph) {
   GetComputeGraphReuseOptions(anf_graph, &options);
   UpdateTopoOrderOptions(graph_name, &options);
   MS_LOG(INFO) << "Set options of compute graph: " << graph_name << " to " << MapToString(options);
-  (void)transform::AddGraph(graph_name, transform::GetComputeGraph(converter));
-  (void)transform::AddGraph(init_graph, transform::GetInitGraph(converter));
-  (void)transform::AddGraph(BROADCAST_GRAPH_NAME, transform::GetBroadcastGraph(converter));
+  (void)backend::ge_backend::AddGraph(graph_name, backend::ge_backend::GetComputeGraph(converter));
+  (void)backend::ge_backend::AddGraph(init_graph, backend::ge_backend::GetInitGraph(converter));
+  (void)backend::ge_backend::AddGraph(BROADCAST_GRAPH_NAME, backend::ge_backend::GetBroadcastGraph(converter));
 
   if (!IsEnableRefMode()) {
-    transform::Status ret = transform::AddGraph(checkpoint_name, transform::GetSaveCheckpointGraph(converter));
-    if (ret == transform::Status::SUCCESS) {
-      transform::SetAnfGraph(checkpoint_name, anf_graph);
+    backend::ge_backend::Status ret =
+      backend::ge_backend::AddGraph(checkpoint_name, backend::ge_backend::GetSaveCheckpointGraph(converter));
+    if (ret == backend::ge_backend::Status::SUCCESS) {
+      backend::ge_backend::SetAnfGraph(checkpoint_name, anf_graph);
     }
   }
   return true;
 }
 
-bool AddDFGraph(const FuncGraphPtr &anf_graph, const transform::TensorOrderMap &init_inputs_map, bool export_air) {
+bool AddDFGraph(const FuncGraphPtr &anf_graph, const backend::ge_backend::TensorOrderMap &init_inputs_map,
+                bool export_air) {
   MS_EXCEPTION_IF_NULL(anf_graph);
-  auto converter = transform::NewConverter(anf_graph, GetPhasePrefix());
+  auto converter = backend::ge_backend::NewConverter(anf_graph, GetPhasePrefix());
   bool is_cloud = true;
   bool need_aoe = false;
   if (export_air) {
     MS_LOG(INFO) << "Set DfGraphConvertor training : false";
-    transform::SetTraining(converter, false);
-    transform::SetExportAir(converter, true);
+    backend::ge_backend::SetTraining(converter, false);
+    backend::ge_backend::SetExportAir(converter, true);
     is_cloud = false;
   }
-  transform::BuildGraph(anf_graph->ToString(), converter, init_inputs_map);
-  transform::GenerateBroadcastGraph(converter, init_inputs_map);
-  transform::GenerateCheckpointGraph(converter);
-  auto err_code = transform::ErrCode(converter);
+  backend::ge_backend::BuildGraph(anf_graph->ToString(), converter, init_inputs_map);
+  backend::ge_backend::GenerateBroadcastGraph(converter, init_inputs_map);
+  backend::ge_backend::GenerateCheckpointGraph(converter);
+  auto err_code = backend::ge_backend::ErrCode(converter);
   if (err_code != 0) {
-    transform::ClearGraph();
+    backend::ge_backend::ClearGraph();
     MS_LOG(ERROR) << "Convert df graph failed, err:" << err_code;
     return false;
   }
@@ -414,26 +417,27 @@ bool AddDFGraph(const FuncGraphPtr &anf_graph, const transform::TensorOrderMap &
   GetComputeGraphReuseOptions(anf_graph, &options);
   UpdateTopoOrderOptions(graph_name, &options);
   MS_LOG(INFO) << "Set options of compute graph: " << graph_name << " to " << MapToString(options);
-  (void)transform::AddGraph(graph_name, transform::GetComputeGraph(converter),
-                            transform::DfGraphConfig(options, is_cloud, need_aoe, export_air));
+  (void)backend::ge_backend::AddGraph(graph_name, backend::ge_backend::GetComputeGraph(converter),
+                                      backend::ge_backend::DfGraphConfig(options, is_cloud, need_aoe, export_air));
   if (IsEnableRefMode()) {
-    (void)transform::AddGraph(init_graph, converter->GetInitGraph());
+    (void)backend::ge_backend::AddGraph(init_graph, converter->GetInitGraph());
   } else {
-    (void)transform::AddGraph(init_graph, transform::GetInitGraph(converter));
+    (void)backend::ge_backend::AddGraph(init_graph, backend::ge_backend::GetInitGraph(converter));
   }
-  (void)transform::AddGraph(BROADCAST_GRAPH_NAME, transform::GetBroadcastGraph(converter));
+  (void)backend::ge_backend::AddGraph(BROADCAST_GRAPH_NAME, backend::ge_backend::GetBroadcastGraph(converter));
 
   if (!IsEnableRefMode()) {
-    transform::Status ret = transform::AddGraph(checkpoint_name, transform::GetSaveCheckpointGraph(converter));
-    if (ret == transform::Status::SUCCESS) {
-      transform::SetAnfGraph(checkpoint_name, anf_graph);
+    backend::ge_backend::Status ret =
+      backend::ge_backend::AddGraph(checkpoint_name, backend::ge_backend::GetSaveCheckpointGraph(converter));
+    if (ret == backend::ge_backend::Status::SUCCESS) {
+      backend::ge_backend::SetAnfGraph(checkpoint_name, anf_graph);
     }
   }
 
   return true;
 }
 
-void GetGeSessionOptions(transform::SessionOptions *options) {
+void GetGeSessionOptions(backend::ge_backend::SessionOptions *options) {
   MS_EXCEPTION_IF_NULL(options);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);

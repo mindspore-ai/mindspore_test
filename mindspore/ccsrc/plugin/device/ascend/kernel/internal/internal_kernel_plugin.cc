@@ -29,11 +29,11 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/factory/ms_factory.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/framework_utils.h"
 #include "op_def/math_op_name.h"
 #include "op_def/nn_op_name.h"
 #include "acl/acl_base.h"
-#include "transform/acl_ir/acl_helper.h"
 #include "utils/phase.h"
 #include "utils/ms_context.h"
 
@@ -110,7 +110,7 @@ bool IsNeedInsertTransDataForGraphOut(const AnfNodePtr &node, const std::vector<
   // output is graph output & format is nz
   if (IsKernelGraphOutput(node) &&
       std::any_of(output_formats.begin(), output_formats.end(),
-                  [](const std::string &format) { return !transform::AclHelper::CheckDefaultSupportFormat(format); })) {
+                  [](const std::string &format) { return !CheckDefaultSupportFormat(format); })) {
     return true;
   }
   return false;
@@ -119,9 +119,8 @@ bool IsNeedInsertTransDataForGraphOut(const AnfNodePtr &node, const std::vector<
 bool NeedSetParameterFormat(const AnfNodePtr &input_node, const std::string &new_format,
                             const std::string &input_format) {
   std::string old_format = input_format;
-  if (transform::AclHelper::CheckDefaultSupportFormat(old_format) &&
-      !transform::AclHelper::CheckDefaultSupportFormat(new_format)) {
-    transform::SetParameterFormat(input_node, new_format, &old_format);
+  if (CheckDefaultSupportFormat(old_format) && !CheckDefaultSupportFormat(new_format)) {
+    SetParameterFormat(input_node, new_format, &old_format);
     if (old_format != input_format) {
       return true;
     }
@@ -305,8 +304,7 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
     if (AnfUtils::GetCNodeName(node) == kReshapeExtOpName && i == 1) {
       continue;
     }
-    if ((!transform::AclHelper::CheckDefaultSupportFormat(input_format) ||
-         !transform::AclHelper::CheckDefaultSupportFormat(input_formats->at(i))) &&
+    if ((!CheckDefaultSupportFormat(input_format) || !CheckDefaultSupportFormat(input_formats->at(i))) &&
         input_format != input_formats->at(i)) {
       (void)special_inputs.emplace_back(i);
       (void)special_format_inputs.emplace_back(GetSpecialFormat(node, kernel_with_index.first, i));

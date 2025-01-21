@@ -21,8 +21,8 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/shape_utils.h"
 
@@ -40,10 +40,10 @@ void GroupNormGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
   HxW_ = (x_shape.size() == kNumberTwo)
            ? 1
            : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(), 1, std::multiplies<int64_t>());
-  num_groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex5]);
-  auto dx_is_require = static_cast<uint8_t>(transform::ConvertKernelTensor<bool>(inputs[kIndex6]));
-  auto dgamma_is_require = static_cast<uint8_t>(transform::ConvertKernelTensor<bool>(inputs[kIndex7]));
-  auto dbeta_is_require = static_cast<uint8_t>(transform::ConvertKernelTensor<bool>(inputs[kIndex8]));
+  num_groups_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex5]);
+  auto dx_is_require = static_cast<uint8_t>(device::ascend::ConvertKernelTensor<bool>(inputs[kIndex6]));
+  auto dgamma_is_require = static_cast<uint8_t>(device::ascend::ConvertKernelTensor<bool>(inputs[kIndex7]));
+  auto dbeta_is_require = static_cast<uint8_t>(device::ascend::ConvertKernelTensor<bool>(inputs[kIndex8]));
 
   (void)output_mask_.emplace_back(dx_is_require);
   (void)output_mask_.emplace_back(dgamma_is_require);

@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/optimizer/ge/expander_fallback.h"
 #include <vector>
 #include "backend/common/expander/fallback/expander_fallback.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "backend/common/graph_kernel/value_graph_binder.h"
 #include "include/backend/device_type.h"
 #include "include/backend/kernel_graph.h"
@@ -33,7 +33,7 @@ bool ExpanderFallback::Run(const FuncGraphPtr &graph) {
   auto IsEnableAclnn = [&is_kbk](const AnfNodePtr &node) {
     return is_kbk && kernel::IsRegisteredAclnnOp(common::AnfAlgo::GetCNodeName(node));
   };
-  auto IsRegisteredAdapter = [](const AnfNodePtr &node) { return transform::ConvertCheck(node); };
+  auto IsRegisteredAdapter = [](const AnfNodePtr &node) { return backend::ge_backend::ConvertCheck(node); };
 
   bool changed = false;
   std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());

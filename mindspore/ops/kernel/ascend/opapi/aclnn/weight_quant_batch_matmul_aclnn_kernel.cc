@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -28,9 +28,9 @@ namespace kernel {
 
 void WeightQuantBatchMatmulV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                       const std::vector<KernelTensor *> &outputs) {
-  auto trans_x = transform::ConvertKernelTensor<bool>(inputs[kIndex7]);
-  auto trans_weight = transform::ConvertKernelTensor<bool>(inputs[kIndex8]);
-  auto antiquant_group_size = transform::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
+  auto trans_x = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex7]);
+  auto trans_weight = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex8]);
+  auto antiquant_group_size = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
 
   weight_ = std::make_shared<KernelTensor>(*inputs[kIndex1]);
   KernelTensor *weight = weight_.get();
@@ -52,7 +52,7 @@ bool WeightQuantBatchMatmulV2Ascend::Launch(const std::vector<KernelTensor *> &i
                                             const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
-  auto antiquant_group_size = transform::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
+  auto antiquant_group_size = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
   input_x_.first = inputs[kIndex0];
 
   weight_ = std::make_shared<KernelTensor>(*inputs[kIndex1]);

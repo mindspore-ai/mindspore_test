@@ -17,7 +17,7 @@
 #include <memory>
 #include "plugin/device/ascend/hal/device/ascend_data_queue.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
@@ -27,7 +27,7 @@ bool GetNextAclKernelMod::Init(const std::vector<KernelTensor *> &inputs, const 
   if (kernel_name_ == kDynamicGetNextV2OpName) {
     kernel_name_ = kDynamicGetNextAscendOpName;
   }
-  converter_ = std::make_shared<transform::AclConverter>();
+  converter_ = std::make_shared<device::ascend::AclConverter>();
   converter_->ConvertToAclOpType(kernel_name_);
   converter_->ProcessRunnerSpecialInfo(kernel_name_, output_params_, is_dynamic_);
   return true;
@@ -79,7 +79,7 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   }
   primitive_->set_attr("shapes", MakeValue(new_output_shapes));
 
-  if (transform::AclHelper::IsPrintDebugString()) {
+  if (device::ascend::AclHelper::IsPrintDebugString()) {
     ms_attr_str_.clear();
     converter_->ConvertToAclAttr(primitive_->attrs(), kernel_name_, &ms_attr_str_);
   } else {

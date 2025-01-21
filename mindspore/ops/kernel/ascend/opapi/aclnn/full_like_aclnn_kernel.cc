@@ -15,14 +15,14 @@
  */
 
 #include "kernel/ascend/opapi/aclnn/full_like_aclnn_kernel.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore {
 namespace kernel {
 
 void FullLikeAscendCall::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  fill_value_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  fill_value_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   GetWorkspaceForResize(outputs[kIndex0], fill_value_);
 }
 

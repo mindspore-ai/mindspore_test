@@ -31,7 +31,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
-#include "transform/acl_ir/ge_adapter_info.h"
+#include "plugin/device/ascend/acl_ir/ge_adapter_info.h"
 #include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
 
 namespace mindspore {
@@ -61,7 +61,7 @@ std::unordered_map<size_t, size_t> GetRefInfoMaps(const CNodePtr &cnode) {
 
   auto op_name = common::AnfAlgo::GetCNodeName(cnode);
   if (kernel_type == KernelType::ACL_KERNEL) {
-    auto info = transform::GeAdapterManager::GetInstance().GetInfo(op_name, true);
+    auto info = device::ascend::GeAdapterManager::GetInstance().GetInfo(op_name, true);
     if (info == nullptr) {
       return ref_infos;
     }

@@ -24,7 +24,7 @@
 #include <unordered_set>
 #include "runtime/hardware/device_context.h"
 #include "utils/ms_context.h"
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_device_res_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_summary.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_memory_manager.h"
@@ -154,7 +154,7 @@ class GeGraphExecutor : public GraphExecutor {
                                                  const KernelGraphPtr &graph);
   void RunInitGraph(const std::string &graph_name);
   void AddRefCorrespondPairs(const KernelGraphPtr &graph, const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes);
-  bool BuildGraph(const KernelGraphPtr &graph, const transform::TensorOrderMap &tensor_order_map);
+  bool BuildGraph(const KernelGraphPtr &graph, const backend::ge_backend::TensorOrderMap &tensor_order_map);
   void DoAsyncCkpt(const FuncGraphPtr &graph);
   void SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;

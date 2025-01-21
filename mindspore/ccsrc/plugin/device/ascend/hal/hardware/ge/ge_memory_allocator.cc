@@ -22,7 +22,7 @@
 #include <set>
 #include <sstream>
 #include <vector>
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -298,7 +298,7 @@ void EnableGraphOutputZeroCopy(const KernelGraphPtr &graph) {
   }
 }
 
-void AllocConstMemory(const transform::RunOptions &options, const KernelGraphPtr &graph, size_t memory_size,
+void AllocConstMemory(const backend::ge_backend::RunOptions &options, const KernelGraphPtr &graph, size_t memory_size,
                       GeDeviceResManagerPtr res_manager) {
   if (memory_size == 0) {
     return;
@@ -315,16 +315,17 @@ void AllocConstMemory(const transform::RunOptions &options, const KernelGraphPtr
   }
   UpdateTracker("AllocConstMemory", "ConstMemory", graph->ToString(), memory_size, memory,
                 device::tracker::MemType::kGeConst);
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   MS_EXCEPTION_IF_NULL(graph_runner);
   auto ret = graph_runner->SetConstMemory(options, memory, memory_size);
-  if (ret != transform::Status::SUCCESS) {
+  if (ret != backend::ge_backend::Status::SUCCESS) {
     MS_LOG(EXCEPTION) << "SetConstMemory for graph " << options.name << " failed.";
   }
   MS_LOG(INFO) << "End AllocConstMemory";
 }
 
-void AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size, GeDeviceResManagerPtr res_manager) {
+void AllocFeatureMemory(const backend::ge_backend::RunOptions &options, size_t memory_size,
+                        GeDeviceResManagerPtr res_manager) {
   if (memory_size == 0) {
     return;
   }
@@ -334,10 +335,10 @@ void AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size
   if (memory == nullptr) {
     MS_LOG(EXCEPTION) << "AllocFeatureMemory error, memory not enough, memory size: " << memory_size;
   }
-  auto graph_runner = transform::GetGraphRunner();
+  auto graph_runner = backend::ge_backend::GetGraphRunner();
   MS_EXCEPTION_IF_NULL(graph_runner);
   auto ret = graph_runner->UpdateFeatureMemory(options, memory, memory_size);
-  if (ret != transform::Status::SUCCESS) {
+  if (ret != backend::ge_backend::Status::SUCCESS) {
     MS_LOG(EXCEPTION) << "UpdateFeatureMemory for graph " << options.name << " failed.";
   }
 
@@ -463,7 +464,7 @@ void GEMemoryAllocator::ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_g
   EnableGraphOutputZeroCopy(kernel_graph);
 }
 
-void GEMemoryAllocator::AllocGraphMemory(const transform::RunOptions &options, const KernelGraphPtr &graph,
+void GEMemoryAllocator::AllocGraphMemory(const backend::ge_backend::RunOptions &options, const KernelGraphPtr &graph,
                                          const GraphSummary &summary, size_t stream_id,
                                          GeDeviceResManagerPtr res_manager) {
   AllocConstMemory(options, graph, summary.const_memory_size, res_manager);

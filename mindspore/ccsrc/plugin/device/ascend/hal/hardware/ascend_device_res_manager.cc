@@ -38,10 +38,9 @@
 #include "plugin/device/ascend/hal/special/parameter_replication.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/stress_detect.h"
-#include "include/transform/graph_ir/utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "transform/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "utils/file_utils.h"
 #include "graph/def_types.h"
@@ -415,7 +414,7 @@ bool AscendDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
     if (ret != ACL_ERROR_NONE) {
       MS_LOG(EXCEPTION) << "Device " << device_id << " call aclrtSetDevice failed, ret:" << static_cast<int>(ret);
     }
-    transform::AclUtil::SetDeterministic();
+    device::ascend::AclUtil::SetDeterministic();
   });
 
   if (runtime_instance_ != nullptr) {

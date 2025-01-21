@@ -15,9 +15,8 @@
  */
 
 #include "plugin/device/ascend/kernel/internal/internal_ascend_adapter.h"
-
-#include "transform/acl_ir/op_api_cache.h"
-
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 namespace mindspore {
 namespace kernel {
 aclError InternalAscendAdapter::AscendMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count,

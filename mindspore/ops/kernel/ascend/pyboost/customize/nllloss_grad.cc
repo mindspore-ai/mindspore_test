@@ -22,7 +22,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,7 +38,7 @@ tensor::BaseTensorPtr NLLLossGradAscendCustomize(const std::shared_ptr<OpRunner>
                           reduction, ignore_index);
 
   auto reduction_imm = static_cast<Reduction>(GetValue<int64_t>(reduction));
-  auto reduction_value = transform::AclHelper::ConvertMsReductionToGe(reduction_imm);
+  auto reduction_value = device::ascend::AclHelper::ConvertMsReductionToGe(reduction_imm);
 
   auto ignore_index_imm = GetValue<int64_t>(ignore_index);
 

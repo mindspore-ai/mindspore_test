@@ -20,14 +20,14 @@
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/opapi/aclnn/batchmatmul_reduce_scatter_all_to_all_aclnn_kernel.h"
-#include "mindspore/ccsrc/transform/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
 namespace mindspore {
 namespace kernel {
 void BatchMatMulReduceScatterAlltoAllAscend::InitializeCommunicationAttributes() {
   group_ep_ = GetRequiredAttr<std::string>(kAttrGroupEp);
   group_tp_ = GetRequiredAttr<std::string>(kAttrGroupTp);
-  hccl_inner_comm_ep_name_ = mindspore::transform::OpApiUtil::GetCommName(group_ep_);
-  hccl_inner_comm_tp_name_ = mindspore::transform::OpApiUtil::GetCommName(group_tp_);
+  hccl_inner_comm_ep_name_ = mindspore::device::ascend::OpApiUtil::GetCommName(group_ep_);
+  hccl_inner_comm_tp_name_ = mindspore::device::ascend::OpApiUtil::GetCommName(group_tp_);
   ep_world_size_ = GetRequiredAttr<int64_t>(kAttrEpWorldSize);
   tp_world_size_ = GetRequiredAttr<int64_t>(kAttrTpWorldSize);
   y_shard_type_ = GetRequiredAttr<int64_t>(kAttrYShardType);

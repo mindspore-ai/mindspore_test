@@ -20,7 +20,7 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {

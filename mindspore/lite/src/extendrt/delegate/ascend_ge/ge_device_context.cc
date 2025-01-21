@@ -23,7 +23,7 @@
 #include "include/api/status.h"
 #include "include/backend/device_type.h"
 #include "runtime/device/ms_device_shape_transfer.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "ge/ge_api.h"
 #include "common/config_infos.h"
 #include "common/common.h"
@@ -407,7 +407,7 @@ bool GeDeviceContext::FinalizeGe(const std::shared_ptr<MsContext> &inst_context)
   if (inst_context->get_param<uint32_t>(MS_CTX_GE_REF) == 0) {
     inst_context->set_param<uint32_t>(MS_CTX_GE_REF, 0);
     try {
-      transform::ClearGeSessionAndRunner();
+      backend::ge_backend::ClearGeSessionAndRunner();
     } catch (const std::exception &e) {
       MS_LOG(ERROR) << "Error occurred when deleting GE graph runner and session fail. Error: " << e.what();
     } catch (...) {

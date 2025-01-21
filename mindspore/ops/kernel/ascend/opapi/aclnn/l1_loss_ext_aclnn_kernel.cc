@@ -18,7 +18,7 @@
 #include <vector>
 #include <unordered_map>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "kernel/common_utils.h"
@@ -31,7 +31,7 @@ void L1LossExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *>
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
 
-  const auto &reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]));
+  const auto &reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]));
   // transform reduction enum value to corresponding value
   reduction_ = ops::ConvertReductionForAclnn(reduction_imm);
 

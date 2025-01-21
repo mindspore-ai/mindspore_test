@@ -19,7 +19,7 @@ namespace mindspore {
 namespace kernel {
 void OneHotExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  depth_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  depth_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   axis_ = -1;
   GetWorkspaceForResize(inputs[kIndex0], depth_, inputs[kIndex2], inputs[kIndex3], axis_, outputs[kIndex0]);
 }

@@ -37,7 +37,7 @@ class TestGeMemoryManager : public UT::Common {
 /// Expectation: can init ge memory and can not throw exception.
 TEST_F(TestGeMemoryManager, test_init_ge_memory) {
   size_t stream_id = 0;
-  transform::RunOptions options;
+  backend::ge_backend::RunOptions options;
   options.name = "test";
   size_t workspace_memory_size = 1024;
   size_t fixed_memory_size = 1024;
@@ -67,7 +67,7 @@ TEST_F(TestGeMemoryManager, test_init_ge_memory) {
 /// Expectation: can reuse ge memory and can not throw exception.
 TEST_F(TestGeMemoryManager, test_reuse_ge_memory) {
   size_t stream_id = 0;
-  transform::RunOptions options;
+  backend::ge_backend::RunOptions options;
   options.name = "test";
   size_t workspace_memory_size = 1024;
   size_t fixed_memory_size = 1024;
@@ -96,7 +96,7 @@ TEST_F(TestGeMemoryManager, test_reuse_ge_memory) {
 /// Expectation: no reuse ge memory and can not throw exception.
 TEST_F(TestGeMemoryManager, test_no_reuse_ge_memory_multi_stream) {
   size_t stream_id = 0;
-  transform::RunOptions options;
+  backend::ge_backend::RunOptions options;
   options.name = "test";
   size_t workspace_memory_size = 1024;
   size_t fixed_memory_size = 1024;
@@ -126,7 +126,7 @@ TEST_F(TestGeMemoryManager, test_no_reuse_ge_memory_multi_stream) {
 /// Expectation: no reuse ge memory and can not throw exception.
 TEST_F(TestGeMemoryManager, test_no_reuse_ge_memory_after_alloc) {
   size_t stream_id = 0;
-  transform::RunOptions options;
+  backend::ge_backend::RunOptions options;
   options.name = "test";
   size_t workspace_memory_size = 1024;
   size_t fixed_memory_size = 1024;
@@ -136,8 +136,8 @@ TEST_F(TestGeMemoryManager, test_no_reuse_ge_memory_after_alloc) {
                                            is_refreshable, stream_id);
   size_t tmp_memory = 0;
   auto alloc_func = [&tmp_memory](size_t size) -> void * { return &tmp_memory; };
-  auto update_func = [](bool is_refreshable, const transform::RunOptions &options, const void *const memory,
-                        size_t size) -> transform::Status { return transform::Status::SUCCESS; };
+  auto update_func = [](bool is_refreshable, const backend::ge_backend::RunOptions &options, const void *const memory,
+                        size_t size) -> backend::ge_backend::Status { return backend::ge_backend::Status::SUCCESS; };
   GEMemoryManager::Instance().AllocGEMemory(alloc_func, update_func);
   auto fix_memory_ptrs = GEMemoryManager::Instance().GetAllNotAllocFixMemory();
   EXPECT_EQ(fix_memory_ptrs.size(), 0);
@@ -167,7 +167,7 @@ TEST_F(TestGeMemoryManager, test_no_reuse_ge_memory_after_alloc) {
 /// Expectation: can alloc ge memory and can not throw exception.
 TEST_F(TestGeMemoryManager, test_alloc_ge_memory) {
   size_t stream_id = 0;
-  transform::RunOptions options;
+  backend::ge_backend::RunOptions options;
   options.name = "test";
   size_t workspace_memory_size = 1024;
   size_t fixed_memory_size = 1024;
@@ -177,8 +177,8 @@ TEST_F(TestGeMemoryManager, test_alloc_ge_memory) {
                                            is_refreshable, stream_id);
   size_t tmp_memory = 0;
   auto alloc_func = [&tmp_memory](size_t size) -> void * { return &tmp_memory; };
-  auto update_func = [](bool is_refreshable, const transform::RunOptions &options, const void *const memory,
-                        size_t size) -> transform::Status { return transform::Status::SUCCESS; };
+  auto update_func = [](bool is_refreshable, const backend::ge_backend::RunOptions &options, const void *const memory,
+                        size_t size) -> backend::ge_backend::Status { return backend::ge_backend::Status::SUCCESS; };
   GEMemoryManager::Instance().AllocGEMemory(alloc_func, update_func);
   auto fix_memory_ptrs = GEMemoryManager::Instance().GetAllNotAllocFixMemory();
   EXPECT_EQ(fix_memory_ptrs.size(), 0);
@@ -189,7 +189,7 @@ TEST_F(TestGeMemoryManager, test_alloc_ge_memory) {
 /// Expectation: can get workspace memory and can not throw exception.
 TEST_F(TestGeMemoryManager, test_get_workspace) {
   size_t stream_id = 0;
-  transform::RunOptions options;
+  backend::ge_backend::RunOptions options;
   options.name = "test";
   size_t workspace_memory_size = 1024;
   size_t fixed_memory_size = 1024;
