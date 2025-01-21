@@ -99,6 +99,7 @@ const char kRuntimeClusterThreadNum[] = "cluster_thread_num";
 const char kRuntimeThreadLoadCache[] = "multi_thread_load_cache";
 const char kRuntimeAsyncInitComm[] = "async_init_comm";
 const char kRuntimeInputOptimize[] = "input_optimize";
+const char kRuntimeCommInitLcclOnly[] = "comm_init_lccl_only";
 // Runtime debug config.
 const char kRuntimeMemoryTrack[] = "memory_track";
 const char kRuntimeMemoryStat[] = "memory_statistics";
