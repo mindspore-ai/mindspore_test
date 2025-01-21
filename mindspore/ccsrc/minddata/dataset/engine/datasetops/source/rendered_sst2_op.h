@@ -169,6 +169,7 @@ class RenderedSST2Op : public MappableLeafOp {
   std::unique_ptr<Queue<std::string>> folder_path_queue_;
   std::unique_ptr<Queue<uint32_t>> folder_classId_queue_;  // the class Id of the images under the folder
   std::unique_ptr<Queue<FolderImagesPair>> image_name_queue_;
+  std::mutex access_mutex_;
 };
 }  // namespace dataset
 }  // namespace mindspore
