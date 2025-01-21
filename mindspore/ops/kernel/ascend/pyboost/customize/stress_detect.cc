@@ -36,7 +36,7 @@ void StressDetectTask::Run() {
 int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceContext *device_context) {
   runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);
-  uint64_t workspace_size = 2;
+  uint64_t workspace_size = 10;
   constexpr uint64_t kSize = 1024;
   workspace_size = workspace_size * kSize * kSize * kSize;
   void *workspace_addr = nullptr;
