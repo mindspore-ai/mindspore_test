@@ -1873,7 +1873,7 @@ class Ones(Primitive):
 
 class Zeros(Primitive):
     r"""
-    Zeros will be deprecated in the future. Please use class `mindspore.ops.zeros` instead.
+    Zeros will be deprecated in the future. Please use class :func:`mindspore.ops.zeros` instead.
 
     Creates a tensor filled with value zeros.
 

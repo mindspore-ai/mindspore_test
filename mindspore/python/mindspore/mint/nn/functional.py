@@ -450,7 +450,7 @@ def binary_cross_entropy_with_logits(input, target, weight=None, reduction='mean
     r"""
     Adds sigmoid activation function to `input` as logits, and uses this logits to compute binary cross entropy
     between the logits and the target.
-    Consistent with the function of `mindspore.ops.binary_cross_entropy_with_logits` .
+    Consistent with the function of :func:`mindspore.ops.binary_cross_entropy_with_logits` .
 
     Sets input `input` as :math:`X`, input `target` as :math:`Y`, input `weight` as :math:`W`, output as :math:`L`.
     Then,

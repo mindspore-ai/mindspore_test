@@ -217,7 +217,7 @@ class Parameter(Tensor_):
             broadcast and gradients communication would not be applied to the `Parameter`. Default: ``False`` .
         parallel_optimizer (bool): It is used to filter the weight shard operation in `SEMI_AUTO_PARALLEL` or
             `AUTO_PARALLEL` mode. It works only when enable parallel optimizer in
-            `mindspore.set_auto_parallel_context()`. Default: ``True`` .
+            :func:`mindspore.set_auto_parallel_context`. Default: ``True`` .
         storage_format (str): Only Ascend device target is supported. It is used to specify the format of the weight
             loaded to the device. By default, the format is not changed. The optional values are ``"FRACTAL_NZ"`` ,
             ``"NC1HWC0"`` , ``"FRACTAL_Z"`` , etc. Default: ``""`` .
@@ -225,7 +225,8 @@ class Parameter(Tensor_):
             stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
             ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
             after use. It takes effext only when `memory_offload` is ``"ON"``, `jit_level` is not ``"O2"`` and
-            `memory_optimize_level` is ``O0`` in `mindspore.set_context()`. Less device memory is needed when device is
+            `memory_optimize_level` is ``O0`` in :func:`mindspore.set_context`.
+            Less device memory is needed when device is
             specified as ``"CPU"``.
 
     Examples:
@@ -693,7 +694,7 @@ class Parameter(Tensor_):
         Get the optimizer parallel status(bool) of the parameter.
 
         It is used to filter the weight shard operation in `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode. It works only
-        when enable parallel optimizer in `mindspore.set_auto_parallel_context()`.
+        when enable parallel optimizer in :func:`mindspore.set_auto_parallel_context`.
 
         Examples:
             >>> from mindspore import Tensor, Parameter

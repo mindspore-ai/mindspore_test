@@ -8,7 +8,7 @@ mindspore.train.History
     用户不自定义训练网络或评估网络情况下，记录的内容将为损失值；用户自定义了训练网络/评估网络的情况下，如果定义的网络返回 `Tensor` 或 `numpy.ndarray`，则记录此返回值均值，如果返回 `tuple` 或 `list`，则记录第一个元素。
 
     .. note::
-        通常使用在 `mindspore.train.Model.train` 和 `mindspore.train.Model.fit` 中。
+        通常使用在 :func:`mindspore.train.Model.train` 和 :func:`mindspore.train.Model.fit` 中。
 
     .. py:method:: begin(run_context)
 

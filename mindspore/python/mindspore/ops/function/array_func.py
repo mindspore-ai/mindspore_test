@@ -550,7 +550,7 @@ def empty(*size, dtype=None, device=None):
         dtype (:class:`mindspore.dtype`, optional): The specified type of output tensor. If `dtype` is ``None`` ,
             `mindspore.float32` will be used. Default: ``None`` .
         device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
-            `device = None`, the value set by `mindspore.set_device` will be used. Default ``None``.
+            `device = None`, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
 
     Returns:
         Tensor, whose dtype and size are defined by input.
@@ -588,7 +588,7 @@ def empty_like(input, *, dtype=None, device=None):
             tensor will have the same dtype as input `input`. Default ``None``.
         device (string, optional): The specified device of the output tensor. Support ``CPU`` and ``Ascend``. If
             `device = None`, the tensor will have the same device as input `input` and if the device of the input
-            tensor is not defined, the value set by `mindspore.set_device` will be used. Default ``None``.
+            tensor is not defined, the value set by :func:`mindspore.set_device` will be used. Default ``None``.
 
     Returns:
         Tensor, has the same shape, type and device as `input` but with uninitialized data (May be a random value).

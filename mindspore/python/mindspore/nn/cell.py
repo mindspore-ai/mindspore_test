@@ -60,7 +60,7 @@ class Cell(Cell_):
     .. note::
         Cell is the inference mode by default. For a class that inherits a Cell,
         if the training and inference have different structures, the subclass performs the inference branch by default.
-        To set the training mode, refer to `mindspore.nn.Cell.set_train` .
+        To set the training mode, refer to :func:`mindspore.nn.Cell.set_train` .
 
     .. warning::
         In the subclass of Cell, it's not allowed to define a method named 'cast' and not allowed to define an attribute
@@ -608,7 +608,7 @@ class Cell(Cell_):
         strategy for others will be set by sharding propagation.
         in_strategy and out_strategy define the input and output layout respectively.
         in_strategy/out_strategy should be a tuple, each element of which corresponds to the desired layout of
-        this input/output, which can refer to the description of `mindspore.ops.Primitive.shard`.
+        this input/output, which can refer to the description of :func:`mindspore.ops.Primitive.shard`.
         The parallel strategies of remaining operators are derived from the strategy specified by the input and output.
 
         Note:

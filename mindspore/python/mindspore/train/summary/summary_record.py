@@ -393,8 +393,7 @@ class SummaryRecord:
             bool, whether the record process is successful or not.
 
         Raises:
-            TypeError: `step` is not int, or `train_network` is not `mindspore.nn.Cell
-                <https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.Cell.html#mindspore-nn-cell>`_ .
+            TypeError: `step` is not int, or `train_network` is not :class:`mindspore.nn.Cell`.
 
         Examples:
             >>> import mindspore as ms

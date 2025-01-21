@@ -16,7 +16,7 @@ mindspore.mint.empty
         - **dtype** (:class:`mindspore.dtype`, 可选) - 用来描述所创建的Tensor的dtype。如果为 ``None`` ，那\
           么将会使用 `mindspore.float32` 。默认值： ``None`` 。
         - **device** (string, 可选) - 指定Tensor使用的内存来源。当前支持 ``CPU`` 和 ``Ascend`` 。如果为 ``None`` ，
-          那么将会使用 `mindspore.set_device` 设置的值。默认值 ``None`` 。
+          那么将会使用 :func:`mindspore.set_device` 设置的值。默认值 ``None`` 。
 
     返回：
         Tensor，shape和dtype由输入定义。

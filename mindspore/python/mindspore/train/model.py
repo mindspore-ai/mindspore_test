@@ -1593,7 +1593,7 @@ class Model:
 
     def _eval_in_fit(self, valid_dataset, callbacks=None, dataset_sink_mode=True, cb_params=None):
         """
-        Evaluation process in `mindspore.train.Model.fit`.
+        Evaluation process in :func:`mindspore.train.Model.fit`.
 
         Args:
             valid_dataset (Dataset): Dataset to evaluate the model. If `valid_dataset` is provided, evaluation process
