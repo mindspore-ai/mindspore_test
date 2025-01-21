@@ -1,21 +1,14 @@
 sub_:
   - op_yaml: inplace_sub_ext_op.yaml
-    py_method: tensor_inplace_sub_cpu_gpu
+    py_method: tensor_sub_empty_
     Ascend: pyboost
-    CPU: py_method
-    GPU: py_method
+    CPU: pyboost
+    GPU: pyboost
     interface: tensor
 
   - op_yaml: inplace_sub_scalar_op.yaml
-    py_method: tensor_inplace_sub_cpu_gpu
+    py_method: tensor_sub_empty_
     Ascend: pyboost
-    CPU: py_method
-    GPU: py_method
-    interface: tensor
-
-  - op_yaml: deprecated/sub__method.yaml
-    py_method: deprecated_tensor_sub_ # callback to python function "def deprecated_tensor_sub"
-    Ascend: py_method
-    CPU: py_method
-    GPU: py_method
+    CPU: pyboost
+    GPU: pyboost
     interface: tensor

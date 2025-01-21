@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <unordered_set>
 #include <vector>
-#include <cmath>
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/bprop/common_utils.h"
@@ -47,13 +46,6 @@ NodePtrList AddnGradFunc(BpropBuilder *ib) {
 
 bool CloneInplaceInputFuncForInplaceDiv(const PynativeCallback &cb) {
   if (!cb.IsNotRequiresGrad(kIndex1)) {
-    return true;
-  }
-  return false;
-}
-
-bool CloneInplaceInputFuncForInplaceSub(const PynativeCallback &cb) {
-  if (!cb.IsNotRequiresGrad(kIndex0)) {
     return true;
   }
   return false;
@@ -1321,59 +1313,6 @@ REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib)
   }
   return BinopGradCommon(ib, x, y, dx, dy);
 });
-
-REG_BPROP_BUILDER("InplaceSubExt")
-  .CloneInplaceInput(CloneInplaceInputFuncForInplaceSub)
-  .SetUnusedInputs({i0, i1, i3})
-  .SetBody(BODYFUNC(ib) {
-    auto input = ib->GetInput(kIndex0);
-    auto other = ib->GetInput(kIndex1);
-    auto alpha = ib->GetInput(kIndex2);
-    auto dout = ib->GetInput(kIndex4);
-    NodePtr input_bc = nullptr;
-    NodePtr other_bc = nullptr;
-
-    if (input->need_compute_grad_out()) {
-      input_bc = dout;
-    }
-
-    if (other->need_compute_grad_out()) {
-      other_bc = ib->Neg(dout);
-      auto alpha_opt = GetAlpha(alpha);
-      if (!alpha_opt.has_value()) {
-        auto alpha_tensor = ib->ScalarToTensor(alpha, ib->GetDtype(input));
-        other_bc = ib->Mul(other_bc, alpha_tensor);
-      } else {
-        auto tolerance = 1e-9;
-        auto alpha_dtype = ib->GetDtypeId(alpha);
-        if ((alpha_dtype == kNumberTypeInt64 && alpha_opt.value() == 1) ||
-            (alpha_dtype == kNumberTypeFloat32 && fabs(alpha_opt.value() - 1) < tolerance)) {
-          other_bc = other_bc;
-        } else {
-          other_bc = ib->Emit("Muls", {other_bc, alpha});
-        }
-      }
-    }
-
-    std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, input_bc, other_bc);
-    auto input_cast = ib->Cast(ret[0], ib->GetDtype(input));
-    auto other_cast = ib->Cast(ret[1], ib->GetDtype(other));
-    return {input_cast, other_cast, ib->OutZeros(alpha)};
-  });
-
-REG_BPROP_BUILDER("InplaceSubScalar")
-  .CloneInplaceInput(CloneInplaceInputFuncForInplaceSub)
-  .SetUnusedInputs({i0, i3})
-  .SetBody(BODYFUNC(ib) {
-    auto input = ib->GetInput(kIndex0);
-    auto other = ib->GetInput(kIndex1);
-    auto alpha = ib->GetInput(kIndex2);
-    auto dout = ib->GetInput(kIndex4);
-    NodePtr input_bc = nullptr;
-
-    input_bc = ib->Cast(dout, ib->GetDtype(input));
-    return {input_bc, ib->OutZeros(other), ib->OutZeros(alpha)};
-  });
 
 REG_BPROP_BUILDER("FmodTensor").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
