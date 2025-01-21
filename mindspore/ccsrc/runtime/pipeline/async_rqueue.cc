@@ -116,6 +116,10 @@ void AsyncRQueue::WorkerLoop() {
 }
 
 void AsyncRQueue::Push(const AsyncTaskPtr &task) {
+  if (disable_multi_thread_) {
+    task->Run();
+    return;
+  }
   if (worker_ == nullptr) {
     worker_ = std::make_unique<std::thread>(&AsyncRQueue::WorkerLoop, this);
   }
@@ -239,7 +243,7 @@ void AsyncRQueue::ChildAfterFork() {
   if (worker_ != nullptr) {
     MS_LOG(DEBUG) << "Release and recreate worker_.";
     (void)worker_.release();
-    worker_ = std::make_unique<std::thread>(&AsyncRQueue::WorkerLoop, this);
+    worker_ = nullptr;
   }
   MS_LOG(DEBUG) << "AsyncQueue " << name_ << " reinitialize after fork done.";
 }
