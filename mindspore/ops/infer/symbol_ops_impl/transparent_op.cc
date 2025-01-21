@@ -48,6 +48,7 @@ REG_SYMBOL_OP_BUILDER("FastGeLU").SetShapeDepend({DependOn::kShape}).SetShapeFun
 REG_SYMBOL_OP_BUILDER("FillV2").SetShapeDepend({DependOn::kValue, DependOn::kNone}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("GeLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("GeLUGrad").SetShapeDepend({DependOn::kNone, DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("InsertGradientOf").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("IsFinite").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("LogicalNot").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Log").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);

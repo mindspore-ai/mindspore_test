@@ -103,3 +103,54 @@ def test_pipeline_split_stage1():
     optimizer = nn.Lamb(net.trainable_params(), learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False)
+
+
+class MatMulCellWithDump(Cell):
+    def __init__(self, strategy1, strategy2):
+        super().__init__()
+        self.param = Parameter(initializer("zeros", [64, 64]), name="param")
+        self.param1 = Parameter(initializer("zeros", [64, 64]), name="param1")
+        self.matmul = P.MatMul().shard(strategy1)
+        self.matmul1 = P.MatMul().shard(strategy2)
+        self.dump = P.TensorDump("in")
+        self.dump.add_prim_attr("side_effect_io", False)
+        self.depend = P.Depend()
+
+    def construct(self, x):
+        x = self.depend(x, self.dump("./dump/file", x))
+        out = self.matmul(x, self.param)
+        out = self.matmul1(out, self.param1)
+        return out
+
+
+class NetWithDump(nn.Cell):
+    def __init__(self, strategy1, strategy2):
+        super().__init__()
+        self.block = nn.CellList()
+        for i in range(2):
+            cell = MatMulCellWithDump(strategy1, strategy2)
+            cell.pipeline_stage = i
+            self.block.append(cell)
+
+    def construct(self, x):
+        for i in range(2):
+            x = self.block[i](x)
+        return x
+
+
+def test_pipeline_split_with_dump_stage1():
+    """
+    Feature:pipeline with TensorDump stage1
+    Description:pipeline end virtual node
+    Expectation:success
+    """
+    context.set_auto_parallel_context(device_num=16, global_rank=8, pipeline_stages=2)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    dataset = DatasetLenet(data, 3)
+    strategy1 = ((4, 1), (1, 2))
+    strategy2 = ((2, 2), (2, 1))
+    net = PipelineCell(NetWithDump(strategy1, strategy2), 4)
+    optimizer = nn.Lamb(net.trainable_params(), learning_rate=0.01)
+    model = Model(net, optimizer=optimizer)
+    model.train(2, dataset, dataset_sink_mode=False)

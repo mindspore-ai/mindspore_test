@@ -924,7 +924,8 @@ CNodePtr FindPreviousCareNode(const CNodePtr &current, int32_t depth = 0) {
     MS_LOG(INFO) << "Input of node is not a cnode: " << prev->fullname_with_scope();
     return nullptr;
   }
-  if (!IsParallelCareNode(cnode) && (IsTargetOp(cnode, "Cast") || IsTupleGetItem(cnode))) {
+  static std::set<std::string> RECURSIVE_WHITE_LIST = {CAST, TUPLE_GETITEM_OP, INSERTGRADIENTOF, DEPEND};
+  if (!IsParallelCareNode(cnode) && (RECURSIVE_WHITE_LIST.find(GetPrimName(cnode)) != RECURSIVE_WHITE_LIST.end())) {
     return FindPreviousCareNode(cnode, depth + 1);
   }
   return cnode;
