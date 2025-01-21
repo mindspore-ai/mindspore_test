@@ -23,6 +23,7 @@ from  .device import _is_supported
 function_status = {'op_compile': False, 'aoe_tune_mode': False,
                    'aoe_job_type': False}
 
+
 def op_compile(value):
     """
     Whether to select online compilation.The default settings by the framework are online compilation for static
