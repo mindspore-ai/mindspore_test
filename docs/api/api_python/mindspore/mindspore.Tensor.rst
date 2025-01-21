@@ -134,6 +134,7 @@ mindspore.Tensor
     mindspore.Tensor.erfc
     mindspore.Tensor.erfinv
     mindspore.Tensor.exp
+    mindspore.Tensor.exp_
     mindspore.Tensor.expand
     mindspore.Tensor.expand_as
     mindspore.Tensor.expand_dims
