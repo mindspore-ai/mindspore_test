@@ -32,6 +32,7 @@
 #include "frontend/operator/composite/composite.h"
 
 namespace mindspore {
+namespace pijit {
 constexpr auto kAdapterFlag = "adapter_flag";
 constexpr auto kTensorModule = "mindspore.common";
 constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
@@ -459,4 +460,5 @@ std::vector<py::object> AbstractWrapper::GetSliceInputsPyObject() const {
   (void)ret.emplace_back(ConvertToPyObject(abstract_slice->step()));
   return ret;
 }
+}  // namespace pijit
 }  // namespace mindspore

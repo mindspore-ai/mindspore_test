@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "build_utils.h"
+#include "pipeline/jit/pi/graph_build/build_utils.h"
 
+#include <string>
+#include <vector>
+#include <memory>
 #include "utils/flags.h"
 #include "ir/meta_func_graph.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -52,8 +55,7 @@ bool IsSpecialCallableObject(const py::object &obj) {
 
 bool IsObjectCallable(const py::object &obj) {
   static std::vector<std::function<bool(const py::object &)>> check_list{
-    IsPrimitiveObject, IsPrimitiveFunctionalObject, IsMsClassObject, IsMetaFuncGraphObject, IsSpecialCallableObject
-  };
+    IsPrimitiveObject, IsPrimitiveFunctionalObject, IsMsClassObject, IsMetaFuncGraphObject, IsSpecialCallableObject};
   return std::any_of(check_list.cbegin(), check_list.cend(), [&obj](const auto &func) { return func(obj); });
 }
 

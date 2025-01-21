@@ -306,7 +306,7 @@ class GraphBuilder {
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }
 
-  mindspore::FuncGraphBuilderPtr FGBuilder() const { return graph_->func_graph_builder(); }
+  FuncGraphBuilderPtr FGBuilder() const { return graph_->func_graph_builder(); }
   void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);
   void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,

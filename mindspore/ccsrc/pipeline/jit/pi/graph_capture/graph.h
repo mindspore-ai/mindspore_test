@@ -30,13 +30,11 @@
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {
-
-class FuncGraphBuilder;
-
 namespace pijit {
 
 class OptCode;
 class GraphJitConfig;
+class FuncGraphBuilder;
 
 class FrameStates {
  public:

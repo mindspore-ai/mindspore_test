@@ -28,6 +28,7 @@
 namespace py = pybind11;
 
 namespace mindspore {
+namespace pijit {
 constexpr auto kPijitNamedtupleType = "pijit_namedtuple_type";
 
 class AbstractWrapper;
@@ -74,6 +75,7 @@ class AbstractWrapper {
   AbstractBasePtr abstract_;
   GradInfo grad_info_;
 };
+}  // namespace pijit
 }  // namespace mindspore
 
 #endif  // MINDSPORE_PI_JIT_GRAPH_CAPTURE_ABSTRACT_WRAPPER_H
