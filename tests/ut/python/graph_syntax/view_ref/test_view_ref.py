@@ -194,9 +194,7 @@ def test_view_resize_loss_ref():
     Description: test view loss ref
     Expectation: expect correct result.
     """
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "1"
     input_x = generate_random_input((4, 3, 5), np.float32)
     input_x1 = generate_random_input((4, 3, 6), np.float32)
     input_x2 = generate_random_input((4, 3, 7), np.float32)
     TEST_VIEW(diff_forward_dyn_func, [Tensor(input_x), 2, -1, Tensor(input_x1), Tensor(input_x2)])
-    os.environ['MS_DEV_JIT_ENABLE_VIEW_OP'] = "0"
