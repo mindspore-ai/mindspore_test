@@ -30,18 +30,6 @@
 namespace mindspore::opt {
 namespace {
 
-std::vector<std::string> SplitString(const std::string &str, char delim) {
-  std::stringstream ss(str);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim)) {
-    if (!item.empty()) {
-      elems.emplace_back(item);
-    }
-  }
-  return elems;
-}
-
 bool IsForwardNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
@@ -161,44 +149,6 @@ const BaseRef MC2FusionBase::DefinePattern() const {
   return pattern;
 }
 
-bool EnableFusion(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (device::ascend::EnableLccl() && common::GetEnv("LCCL_ENABLE_FUSION") != "on") {
-    MS_LOG(DEBUG) << "LCCL_ENABLE_FUSION not set on.";
-    return false;
-  }
-
-  if (!device::ascend::EnableLccl()) {
-    auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
-    if (mc2_fusion_level == kMC2NotFusion) {
-      MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
-      return false;
-    }
-
-    if (mc2_fusion_level == kMC2FusionForward && !IsForwardNode(node)) {
-      MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionForward << ", only apply to forward node. Skip node "
-                    << node->fullname_with_scope();
-      return false;
-    }
-
-    if (mc2_fusion_level == kMC2FusionBackward && !(IsBpropNode(node) || IsRecomputeNode(node))) {
-      MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionBackward << ", only apply to backward node. Skip node "
-                    << node->fullname_with_scope();
-      return false;
-    }
-
-    if (IsKbkMode(func_graph)) {
-      if (mc2_fusion_level != kMC2NotFusion && mc2_fusion_level != kMC2FusionForward &&
-          mc2_fusion_level != kMC2FusionBackward && mc2_fusion_level != kMC2FusionFull) {
-        MS_LOG(DEBUG) << "In KBK mode MC2 fusion level is " << mc2_fusion_level << ", only support 0, 1, 2, 3.";
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                         const EquivPtr &equiv) const {
   MS_LOG(DEBUG) << "Do " << name() << " fusion.";
@@ -211,8 +161,31 @@ const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const An
     return nullptr;
   }
 
-  if (!EnableFusion(func_graph, node)) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
+  if (mc2_fusion_level == kMC2NotFusion) {
+    MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
     return nullptr;
+  }
+
+  if (mc2_fusion_level == kMC2FusionForward && !IsForwardNode(node)) {
+    MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionForward << ", only apply to forward node. Skip node "
+                  << node->fullname_with_scope();
+    return nullptr;
+  }
+  if (mc2_fusion_level == kMC2FusionBackward && !(IsBpropNode(node) || IsRecomputeNode(node))) {
+    MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionBackward << ", only apply to backward node. Skip node "
+                  << node->fullname_with_scope();
+    return nullptr;
+  }
+
+  if (IsKbkMode(func_graph)) {
+    if (mc2_fusion_level != kMC2NotFusion && mc2_fusion_level != kMC2FusionForward &&
+        mc2_fusion_level != kMC2FusionBackward && mc2_fusion_level != kMC2FusionFull) {
+      MS_LOG(DEBUG) << "In KBK mode MC2 fusion level is " << mc2_fusion_level << ", only support 0, 1, 2, 3.";
+      return nullptr;
+    }
   }
 
   auto fusion_node = CreateFusionCNode(func_graph, node, equiv);
@@ -256,16 +229,6 @@ const VectorRef MatmulReduceScatterFusion::DefineFusionPattern() const {
 CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                       const EquivPtr &equiv) const {
   MS_LOG(DEBUG) << "Create MatmulReduceScatter CNode";
-  std::string env = common::GetEnv("MS_LCCL_ENABLE_CUSTOM_KERNEL_LIST");
-  if (!env.empty()) {
-    std::vector<std::string> op_name_vec = SplitString(env, ',');
-    auto is_fusion = std::any_of(op_name_vec.begin(), op_name_vec.end(),
-                                 [](const std::string &name) { return name == kMatmulReduceScatterOpName; });
-    if (!is_fusion) {
-      MS_LOG(DEBUG) << "MatmulReduceScatter NOT IN MS_LCCL_ENABLE_CUSTOM_KERNEL_LIST!";
-      return nullptr;
-    }
-  }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   const auto &soc_version = context_ptr->ascend_soc_version();
@@ -287,6 +250,7 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input, x2}, valid_type_list), {});
 
   auto matmul_cnode_users = matmul_cnode->func_graph()->manager()->node_users()[matmul_cnode];
+  MS_CHECK_TRUE_RET(matmul_cnode_users.size() == 1, {});
 
   auto trans_input = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
   auto trans_x2 = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
@@ -305,12 +269,9 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
                     << kMaxValue << " (exclusive).";
     return nullptr;
   }
-  if (!device::ascend::EnableLccl()) {
-    // Ensure is_trans_a is false for mc2 fusion
-    MS_CHECK_TRUE_RET(!is_trans_a, {});
-  }
 
-  // add attr
+  auto matmul_reduce_scatter_prim = prim::kPrimMatmulReduceScatter->Clone();
+  MS_CHECK_TRUE_RET(matmul_reduce_scatter_prim, {});
   auto reduce_scatter_prim = GetCNodePrimitive(reduce_scatter_cnode);
   matmul_reduce_scatter_prim->AddAttr(kAttrGroup, reduce_scatter_prim->GetAttr(kAttrGroup));
   auto reduce_op = GetValue<std::string>(reduce_scatter_prim->GetAttr(kAttrOp));
@@ -334,12 +295,6 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   }
   matmul_reduce_scatter_cnode->set_abstract(reduce_scatter_cnode->abstract()->Clone());
   matmul_reduce_scatter_cnode->set_scope(reduce_scatter_cnode->scope());
-  for (const auto &matmul_cnode_user_pair : matmul_cnode_users) {
-    if (common::AnfAlgo::CheckPrimitiveType(matmul_cnode_user_pair.first, prim::kPrimUpdateState)) {
-      matmul_cnode->func_graph()->manager()->SetEdge(matmul_cnode_user_pair.first, matmul_cnode_user_pair.second,
-                                                     matmul_reduce_scatter_cnode);
-    }
-  }
   MS_LOG(DEBUG) << "Create MatmulReduceScatter cnode success.";
   return matmul_reduce_scatter_cnode;
 }
@@ -375,16 +330,6 @@ const VectorRef AllGatherMatmulFusion::DefineFusionPattern() const {
 CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                   const EquivPtr &equiv) const {
   MS_LOG(DEBUG) << "Create AllGatherMatmul CNode";
-  std::string env = common::GetEnv("MS_LCCL_ENABLE_CUSTOM_KERNEL_LIST");
-  if (!env.empty()) {
-    std::vector<std::string> op_name_vec = SplitString(env, ',');
-    auto is_fusion = std::any_of(op_name_vec.begin(), op_name_vec.end(),
-                                 [](const std::string &name) { return name == kAllGatherMatmulOpName; });
-    if (!is_fusion) {
-      MS_LOG(DEBUG) << "AllGatherMatmul NOT IN MS_LCCL_ENABLE_CUSTOM_KERNEL_LIST!";
-      return nullptr;
-    }
-  }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   const auto &soc_version = context_ptr->ascend_soc_version();
@@ -422,13 +367,10 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
     return nullptr;
   }
 
-  auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
-  auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
-  if (!device::ascend::EnableLccl()) {
-    // Ensure is_trans_a is false for mc2 fusion
-    MS_CHECK_TRUE_RET(!is_trans_a, {});
-  }
-  // create op
+  auto trans_input = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
+  auto trans_x2 = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+  MS_CHECK_TRUE_RET(!trans_input, {});
+
   auto all_gather_matmul_prim = prim::kPrimAllGatherMatmul->Clone();
   MS_CHECK_TRUE_RET(all_gather_matmul_prim, {});
   auto all_gather_prim = GetCNodePrimitive(all_gather_cnode);

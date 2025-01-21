@@ -57,8 +57,6 @@ constexpr auto kAlltoAllVOpName = "AlltoAllV";
 constexpr auto kAlltoAllVGEOpName = "AlltoAllVGE";
 constexpr auto kBarrierOpName = "Barrier";
 constexpr auto kMatMulAllReduceOpName = "MatMulAllReduce";
-constexpr auto kMatMulReduceScatterOpName = "MatMulReduceScatter";
-constexpr auto kAllGatherMatMulOpName = "AllGatherMatMul";
 constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
 constexpr auto kCustomExtOpName = "CustomExt";
 // View op

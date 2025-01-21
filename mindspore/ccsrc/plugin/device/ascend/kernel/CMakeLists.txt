@@ -17,8 +17,6 @@ file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 if(NOT DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     # only support in internal kernel
     list(REMOVE_ITEM SRC_IN_910B "hccl/hcom_matmul_all_reduce.cc")
-    list(REMOVE_ITEM SRC_IN_910B "hccl/hcom_all_gather_matmul.cc")
-    list(REMOVE_ITEM SRC_IN_910B "hccl/hcom_matmul_reduce_scatter.cc")
 endif()
 
 if(ENABLE_DVM)
