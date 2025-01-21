@@ -28,6 +28,7 @@
 #include "pipeline/jit/pi/graph_guard/infer.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
+#include "pipeline/jit/pi/graph_build/build_utils.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/capture_context.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -64,7 +65,6 @@ static const int infer_primitive_object = 2;
 static const int infer_primitive_func = 4;
 static int infer_func_count = 0;
 static constexpr const char *kPIJitCopyFuncKey = ".<pijit.copy>.";
-constexpr auto kRegisterHookKey = "backward_register_hook";
 
 const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilder::bytecode_meth_map_ = {
   {POP_TOP, &GraphBuilder::DoStackOp},
@@ -4568,15 +4568,16 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> GraphBuilder::BuildFor
   return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(fg, bind_helper);
 }
 
+namespace {
 TracePtr CreateRegisterHookTrace(const TracePtr &trace) {
   auto obj = py::cast<py::object>(trace->GetObject());
-  auto hooks = FuncGraphBuilder::GetRegisterHookList(obj);
+  auto hooks = pijit::GetRegisterHookList(obj);
   auto hook_str = std::string(py::str(py::object(hooks)));
   auto hook_trace = std::make_shared<CustomizedTrace>(
     Py_True,
     [trace, hooks](PTraceContext context) -> PyObject * {
       auto obj = py::cast<py::object>(trace->Retrieve(context));
-      auto hook_list = FuncGraphBuilder::GetRegisterHookList(obj);
+      auto hook_list = pijit::GetRegisterHookList(obj);
       if (hook_list.size() != hooks.size()) {
         return Py_False;
       }
@@ -4596,7 +4597,7 @@ TracePtr CreateRegisterHookTrace(const TracePtr &trace) {
       if (simple) {
         return "Guard backward hook fn on Tensor[" + std::string(tensor->id()) + "].";
       }
-      auto hook_list = FuncGraphBuilder::GetRegisterHookList(obj);
+      auto hook_list = pijit::GetRegisterHookList(obj);
       auto hook_list_str = std::string(py::str(hook_list));
       return "{Backward hook fn of Tensor[" + std::string(tensor->id()) + "] Now : " + hook_str +
              " Before : " + hook_list_str + "}(type:" + std::to_string(TraceType::Customized) + ")";
@@ -4609,7 +4610,7 @@ void GuardRegisterHook(ValueNode *node) {
   MS_EXCEPTION_IF_NULL(node->abstract_wrapper());
   auto abs = node->abstract_wrapper()->abstract();
   MS_EXCEPTION_IF_NULL(abs);
-  bool has_hook = abs->has_user_data(kRegisterHookKey);
+  bool has_hook = abs->has_user_data(pijit::kRegisterHookKey);
   if (!has_hook && !abs->isa<abstract::AbstractTuple>()) {
     return;
   }
@@ -4627,7 +4628,7 @@ void GuardRegisterHook(ValueNode *node) {
     auto tuple = py::cast<py::tuple>(trace->GetObject());
     auto strict = graph->Config().GetBoolConfig(GraphJitConfig::kStrictTrace);
     for (size_t index = 0; index < tuple.size(); index++) {
-      if (!FuncGraphBuilder::HasRegisterHook(py::cast<py::object>(tuple[index]))) {
+      if (!pijit::HasRegisterHook(py::cast<py::object>(tuple[index]))) {
         continue;
       }
       auto index_trace = CreateOpTrace(py::int_(index).ptr(), LOAD_CONST, -1, {}, "", "", strict);
@@ -4637,6 +4638,7 @@ void GuardRegisterHook(ValueNode *node) {
     }
   }
 }
+}  // namespace
 
 AbstractWrapperPtrList GraphBuilder::HandleInputsForGrad(CallNode *call_node,
                                                          BindArgumentsHelper<ValueNode *> forward_inputs) {
@@ -4676,7 +4678,7 @@ AbstractWrapperPtrList GraphBuilder::HandleInputsForGrad(CallNode *call_node,
     }
     auto wrapper = forward_input[index]->abstract_wrapper();
     auto node = FGBuilder()->ReadLocalVariable(wrapper);
-    FuncGraphBuilder::SaveTensorRegisterHook(obj, node);
+    pijit::SaveTensorRegisterHook(obj, node);
     GuardRegisterHook(forward_input[index]);
   }
   if (get_by_list) {
@@ -4705,7 +4707,7 @@ AbstractWrapperPtrList GraphBuilder::HandleInputsForGrad(CallNode *call_node,
 }
 
 AnfNodePtr CreateInsertGradientOfNode(const AnfNodePtr &node, const FuncGraphPtr &func_graph) {
-  auto hooks = node->abstract()->user_data<py::tuple>(kRegisterHookKey);
+  auto hooks = node->abstract()->user_data<py::tuple>(pijit::kRegisterHookKey);
   MS_LOG(INFO) << "Apply " << py::str(py::object(*hooks)) << " to " << node->DebugString();
   auto ops_mod = python_adapter::GetPyModule("mindspore.ops.operations.debug_ops");
   auto op_class = python_adapter::GetPyObjAttr(ops_mod, "InsertGradientOf");
@@ -4734,7 +4736,7 @@ AnfNodePtr CreateInsertGradientOfNode(const AnfNodePtr &node, const FuncGraphPtr
 }
 
 bool ApplyRegisterHook(const AnfNodePtr &node) {
-  if (node->abstract() == nullptr || !node->abstract()->has_user_data(kRegisterHookKey)) {
+  if (node->abstract() == nullptr || !node->abstract()->has_user_data(pijit::kRegisterHookKey)) {
     return true;
   }
   auto func_graph = node->func_graph();
@@ -5113,7 +5115,7 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
     }
     return py::object();
   }
-  if (FGBuilder()->CheckCallable(callable_info)) {
+  if (IsObjectCallable(callable_info)) {
     return HandleMSCallable(call_node, callable_info, original_callable, stop_reason);
   }
 
