@@ -1151,7 +1151,7 @@ ValuePtr FuncGrad::GetInputGrads(bool grad_all_inputs, bool get_by_position, con
   if (!cell_inputs_.empty()) {
     for (size_t index : grad_pos_list) {
       if (index >= cell_inputs_.size()) {
-        MS_LOG(EXCEPTION) << "Position index " << index << " is exceed input size.";
+        MS_LOG(EXCEPTION) << "Position index: " << index << " is exceed input size.";
       }
       // Tuple, List, scalar will be ignore
       if (!IsValidTensorInput(cell_inputs_[index].first)) {
