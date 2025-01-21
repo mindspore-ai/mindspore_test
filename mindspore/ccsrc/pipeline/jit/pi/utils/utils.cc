@@ -107,9 +107,9 @@ void Utils::DisFuncObject(PyObject *func) {
     return;
   }
   auto dis = py::module::import("dis").attr("dis");
-  PY_PRINT_F("*** Dump ByteCode After CodeGen on [%A] ***", func);
+  PY_PRINTF("*** Dump ByteCode After CodeGen on [%A] ***", func);
   auto args = PyTuple_Pack(1, func);
-  Py_XDECREF(PyObject_Call(dis.ptr(), args, NULL));
+  Py_XDECREF(PyObject_Call(dis.ptr(), args, nullptr));
   Py_DECREF(args);
   if (PyErr_Occurred()) {
     PyErr_Print();

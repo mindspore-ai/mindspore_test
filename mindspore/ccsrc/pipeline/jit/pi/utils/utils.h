@@ -129,9 +129,14 @@ size_t PIJitLogMinSize();
     }                                                                                                                  \
   } while (0)
 
-#define PY_PRINT_F(fmt, ...)                                         \
+#define PY_PRINTF(fmt, ...)                                          \
   do {                                                               \
     Utils::PyBuiltinPrint(PyStringFormat(fmt, ##__VA_ARGS__).ptr()); \
+  } while (0)
+
+#define PY_PRINTF_WITH_FLUSH(fmt, ...)                                     \
+  do {                                                                     \
+    Utils::PyBuiltinPrint(PyStringFormat(fmt, ##__VA_ARGS__).ptr(), true); \
   } while (0)
 
 #define REPLACE_PY_MEMBER(member, o)     \
@@ -143,16 +148,16 @@ size_t PIJitLogMinSize();
   } while (0)
 
 #ifdef DEBUG
-#define PRINT_IF_HAS_USER_DEFINED_HOOK(op, hook)                                         \
-  do {                                                                                   \
-    static const char *slot_key_##hook = #hook;                                          \
-    PyObject *attr_##hook = PyObject_GetAttrString(op, slot_key_##hook);                 \
-    if (attr_##hook && (PyMethod_Check(attr_##hook) || PyFunction_Check(attr_##hook))) { \
-      PY_PRINT_F("%A has hook " #hook, PyType_Check(op) ? op : (PyObject *)Py_TYPE(op)); \
-    } else {                                                                             \
-      PyErr_Clear();                                                                     \
-    }                                                                                    \
-    Py_XDECREF(attr_##hook);                                                             \
+#define PRINT_IF_HAS_USER_DEFINED_HOOK(op, hook)                                                   \
+  do {                                                                                             \
+    static const char *slot_key_##hook = #hook;                                                    \
+    PyObject *attr_##hook = PyObject_GetAttrString(op, slot_key_##hook);                           \
+    if (attr_##hook && (PyMethod_Check(attr_##hook) || PyFunction_Check(attr_##hook))) {           \
+      PY_PRINTF_WITH_FLUSH("%A has hook " #hook, PyType_Check(op) ? op : (PyObject *)Py_TYPE(op)); \
+    } else {                                                                                       \
+      PyErr_Clear();                                                                               \
+    }                                                                                              \
+    Py_XDECREF(attr_##hook);                                                                       \
   } while (0)
 #else
 #define PRINT_IF_HAS_USER_DEFINED_HOOK(op, hook)
