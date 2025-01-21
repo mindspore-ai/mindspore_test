@@ -28,6 +28,7 @@
 #include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
 
 namespace mindspore {
+namespace pijit {
 class FuncGraphBuilder;
 using FuncGraphBuilderPtr = std::shared_ptr<FuncGraphBuilder>;
 class AbstractWrapper;
@@ -301,5 +302,6 @@ class FuncGraphBuilder {
   FuncGraphManagerPtr mng_;
   size_t origin_top_input_num_ = 0;
 };
+}  // namespace pijit
 }  // namespace mindspore
 #endif  // MINDSPORE_PI_JIT_GRAPH_BUILD_FUNC_GRAPH_BUILDER_H_

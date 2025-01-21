@@ -248,7 +248,7 @@ class CodeBreakGenerator {
   // return co_cellvars and co_freevars
   std::vector<std::string> GetClosureNames() const;
 
-  mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
+  FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
 
   void Compile(const std::string &name, int argc, int kw_only, int flags, const py::object &stub) const;
 

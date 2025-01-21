@@ -38,6 +38,7 @@
 #include "pipeline/jit/pi/graph_build/build_utils.h"
 
 namespace mindspore {
+namespace pijit {
 namespace {
 constexpr auto kPiJitPyObjKey = "pi_jit_py_obj";
 constexpr auto kGradFuncPyObject = "grad_func_py_obj";
@@ -196,7 +197,7 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
     if (cur_abs == nullptr) {
       return nullptr;
     }
-    pijit::SaveTensorRegisterHook(py::cast<py::object>(obj), cur_node);
+    SaveTensorRegisterHook(py::cast<py::object>(obj), cur_node);
     inputs.push_back(cur_node);
     inputs_abs.push_back(cur_abs);
   }
@@ -315,7 +316,7 @@ std::pair<AbstractBasePtr, bool> FuncGraphBuilder::EvalValue(const ValuePtr &val
       auto prim = value->cast<PrimitivePtr>();
       auto eval_res = abstract::EvalOnePrim(prim, inputs_abs_list);
       if (eval_res != nullptr) {
-        return std::make_pair(eval_res->abstract(), pijit::IsSideEffectPrimitive(prim));
+        return std::make_pair(eval_res->abstract(), IsSideEffectPrimitive(prim));
       }
     } else if (value->ToAbstract()->isa<abstract::AbstractFunction>()) {
       auto analyze_res = pipeline::AbstractAnalyze(value, inputs_abs_list);
@@ -738,7 +739,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
     return BuildGradNetNode(callable_value, callable_obj, inputs_abstract_wrapper);
   }
 
-  if (pijit::IsSpecialCallableObject(callable_obj)) {
+  if (IsSpecialCallableObject(callable_obj)) {
     return TryToAddNode(callable_value, inputs_abstract_wrapper);
   }
 
@@ -873,7 +874,7 @@ void FuncGraphBuilder::MarkNodeIsolated(const AnfNodePtr &node, bool force) {
   }
   if (callable->isa<Primitive>()) {
     auto prim = callable->cast<PrimitivePtr>();
-    if (force || pijit::IsSideEffectPrimitive(prim)) {
+    if (force || IsSideEffectPrimitive(prim)) {
       (void)isolated_nodes_.emplace_back(cnode);
       cnode->set_has_side_effect_node(true);
       graph_->set_has_side_effect_node(true);
@@ -1242,7 +1243,7 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
     if (new_node != nullptr) {
       abs = new_node->abstract();
     }
-    is_side_effect = pijit::IsSideEffectPrimitive(prim);
+    is_side_effect = IsSideEffectPrimitive(prim);
   } else {
     // Do infer and check callable.
     const auto &ret = DoInferAndCheck(callable_value, input_abs_list);
@@ -1586,4 +1587,5 @@ bool FuncGraphBuilder::CheckInvalidCellListDictMethod(const py::object &obj) {
   Any require = pipeline::Resource::GetMethodPtr(type_id, method_name);
   return require.empty();
 }
+}  // namespace pijit
 }  // namespace mindspore
