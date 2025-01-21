@@ -5,7 +5,7 @@ non_zero:
         Inputs:
             - **input** (Tensor) - The input Tensor.
 
-              - Ascend: its rank can be equal to 0.
+              - Ascend: its rank can be equal to 0 except O2 mode.
               - CPU/GPU: its rank should be greater than or eaqual to 1.
 
         Outputs:
@@ -14,7 +14,7 @@ non_zero:
 
         Raises:
             TypeError: If `input` is not Tensor.
-            RuntimeError: On GPU and CPU, if dim of `input` equals to 0.
+            RuntimeError: On GPU or CPU or Ascend O2 mode, if dim for 'input' is equal to 0.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
