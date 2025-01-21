@@ -179,8 +179,10 @@ void GEBackendOptimizeACLAfterKernelPacket(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if ((common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0") || common::IsDisableRuntimeConfig(common::kRuntimeView) ||
-      context_ptr->IsEnableInferBoost() || kernel_graph->is_from_single_op()) {
+  auto is_ge_mode = context_ptr->GetJitLevel() == kAttrJitLevelO2;
+  if (is_ge_mode || (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0") ||
+      common::IsDisableRuntimeConfig(common::kRuntimeView) || context_ptr->IsEnableInferBoost() ||
+      kernel_graph->is_from_single_op()) {
     return;
   }
 
