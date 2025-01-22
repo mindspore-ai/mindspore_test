@@ -181,8 +181,6 @@ class Graph {
 
   TracePtr TraceValueNode(ValueNode *, int max_trace_depth = -1);
   std::vector<TracePtr> TraceValueNodeClosure(ValueNode *, bool *ret, int max_trace_depth = -1);
-  int GetPruneBranchCount() const { return prune_branch_count_; }
-  void SetPruneBranchCount(int count) { prune_branch_count_ = count; }
   const std::shared_ptr<OptCode> &GetGuardManager() const;
   void SetGuard(const std::shared_ptr<OptCode> &guard);
 
@@ -247,7 +245,6 @@ class Graph {
 
   const GraphJitConfig &conf_;
 
-  int prune_branch_count_;
   Graph *parent_{nullptr};
   std::shared_ptr<SideEffect> side_effect_;
   bool found_inner_class = false;

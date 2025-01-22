@@ -796,57 +796,7 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   return compiled;
 }
 
-// bellowing code is used for debugging code generate, and will be remove soon
-py::object test_graph_ir_code_gen(const PyFrameWrapper &f) {
-  auto co_wrapper = f.GetCode();
-  PyObject *globals = f.Globals().ptr();
-  PyCodeObject *co = co_wrapper.ptr();
-  py::object f_locals = f.Locals();
-  bool has_va;
-  bool has_kw_va;
-  int arg_cnt = co_wrapper.ArgCount(&has_va, &has_kw_va);
-
-  auto func = py::reinterpret_steal<py::object>(PyFunction_New(reinterpret_cast<PyObject *>(co), globals));
-  mindspore::pijit::Utils::DisFuncObject(func.ptr());
-  auto byteCodeParser = std::make_shared<mindspore::pijit::ByteCodeParser>(func);
-  mindspore::pijit::ir::FunctionNodePtr func_node = byteCodeParser->Parse();
-  auto inliner = std::make_shared<mindspore::pijit::FuncInliner>(func_node);
-  inliner->Run();
-
-  py::list locals = py::reinterpret_steal<py::list>(PyMapping_Values(f_locals.ptr()));
-  arg_cnt -= has_kw_va;
-  py::tuple args = py::reinterpret_steal<py::tuple>(PyList_AsTuple(PyList_GetSlice(locals.ptr(), 0, arg_cnt)));
-  py::dict kwargs = has_kw_va ? py::dict() : py::cast<py::dict>(locals[arg_cnt]);
-
-  mindspore::pijit::AbstractTypeDeducer::Deduce(func_node, args, kwargs);
-  func_node->Sort();
-  std::cout << func_node->ToString() << std::endl;
-  auto func_obj = mindspore::pijit::ByteCodeGenerator::GenFunction(func_node);
-  mindspore::pijit::Utils::DisFuncObject(func_obj.ptr());
-  if ((static_cast<unsigned int>(func_node->GetFlags()) & CO_VARARGS) != 0) {
-    auto pos_cnt = args.size() - 1;
-    auto var_vargs = py::cast<py::tuple>(args[pos_cnt]);
-    auto new_args = py::reinterpret_steal<py::tuple>(PyTuple_New(pos_cnt + var_vargs.size()));
-    size_t index = 0;
-    std::for_each(args.begin(), args.end() - 1, [&index, &new_args](const py::handle &arg) {
-      new_args[index] = arg;
-      index++;
-    });
-    std::for_each(var_vargs.begin(), var_vargs.end(), [&index, &new_args](const py::handle &arg) {
-      new_args[index] = arg;
-      index++;
-    });
-    args = new_args;
-  }
-  auto res = py::reinterpret_steal<py::object>(PyObject_Call(func_obj.ptr(), args.ptr(), kwargs.ptr()));
-  res.inc_ref();
-  return res;
-}
-
 static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFrameObject *frame) {
-  if (c->conf()->GetBoolConfig(GraphJitConfig::kTestGraphIR)) {
-    return test_graph_ir_code_gen(PyFrameWrapper(frame));
-  }
   PyCodeObject *co = PyFrameWrapper(frame).GetCode().ptr();
   bool just_compiled = false;
   switch (c->stat()) {
@@ -861,9 +811,6 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFram
       MS_EXCEPTION_IF_CHECK_FAIL(c->origin_frame().frame() == nullptr || c->origin_frame().frame() == frame,
                                  "check recursive call compiling function");
       c->set_origin_frame(frame);
-      if (c->conf()->GetBoolConfig(GraphJitConfig::kCompileWithoutCapture)) {
-        c->set_stat(JitCompileResults::GRAPH_CAPTURED);
-      }
       if (!JitCompileWithTry(tstate, c)) {
         c->set_stat(JitCompileResults::NEVER_COMPILE);
         break;

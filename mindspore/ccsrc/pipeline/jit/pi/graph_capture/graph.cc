@@ -64,7 +64,6 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
       co_(py::cast<py::object>(reinterpret_cast<PyObject *>(co))),
       f_globals_(py::cast<py::object>(globals)),
       conf_(conf),
-      prune_branch_count_(0),
       func_graph_builder_(nullptr) {
   guard_builder_ = std::make_unique<GuardBuilder>(
     // save config

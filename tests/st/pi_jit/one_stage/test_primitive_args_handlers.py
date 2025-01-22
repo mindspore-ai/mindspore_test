@@ -26,7 +26,6 @@ cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 

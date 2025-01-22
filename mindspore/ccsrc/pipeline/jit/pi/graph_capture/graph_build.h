@@ -67,7 +67,7 @@ class GraphBuilder {
 
   StopTraceReason TraceRun();
 
-  void CollectInlineInfo(CallNode *node, int depth);
+  void CollectInlineInfo(CallNode *node);
   Graph *GetGraph() const { return graph_; }
   void DumpDFG();
 
@@ -93,10 +93,9 @@ class GraphBuilder {
 
   /**
    * Handle call node. Infer call result. Inline call node bytecode
-   * \param depth Current inline depth
    * \return Ttop trace reason of sub-graph
    */
-  StopTraceReason HandleCall(int depth);
+  StopTraceReason HandleCall();
 
   /**
    * Resolve callable object, if it's unknown object, return infer failed reason.
@@ -178,8 +177,7 @@ class GraphBuilder {
   bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame);
 
   // build subgraph, return stop trace reason
-  StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                const GraphBuilderPtr &subgraph);
+  StopTraceReason BuildSubGraph(CallNode *call_node, const py::object &func, const GraphBuilderPtr &subgraph);
 
   bool ReplaceCall(CallNode *call_node, const py::object &func);
 

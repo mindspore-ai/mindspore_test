@@ -383,7 +383,7 @@ def test_mix_0(mode: int):
     Expectation: The results should match for both modes.
     """
 
-    @pi_jit_with_config(jit_config={"kEnableEliminateUnusedOperation": True, "loop_unrolling": True})
+    @pi_jit_with_config(jit_config={"loop_unrolling": True})
     def inner_func(mode):
         index = 1 if mode else 0
         x = [Tensor([1]), 1]

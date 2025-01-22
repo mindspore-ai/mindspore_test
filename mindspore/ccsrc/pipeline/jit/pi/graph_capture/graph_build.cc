@@ -62,10 +62,6 @@ const char *GraphBuilder::ID___globals__ = "__globals__";
 const char *GraphBuilder::ID___call__ = "__call__";
 const char *GraphBuilder::ID_construct = "construct";
 
-static const int infer_primitive_create = 1;
-static const int infer_primitive_object = 2;
-static const int infer_primitive_func = 4;
-static int infer_func_count = 0;
 static constexpr const char *kPIJitCopyFuncKey = ".<pijit.copy>.";
 
 const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilder::bytecode_meth_map_ = {
@@ -564,7 +560,7 @@ bool GraphBuilder::DoCall(const Instr &instr) {
   call_node->set_bci(instr.bci());
   this->graph_->GetTracedNodes().push_back(call_node);
 
-  StopTraceReason r = HandleCall(0);
+  StopTraceReason r = HandleCall();
   if (r != StopTraceReason::kNonStopTrace) {
     graph_->StopTraceAt(cur_bci_, r);
     return false;
@@ -652,7 +648,7 @@ bool GraphBuilder::DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *no
   call->SetVobj(AObject::MakeAObject(AObject::kTypeAnyValue));
   call->SetLineNo(instr.line());
   call->set_bci(instr.bci());
-  StopTraceReason r = HandleCall(0);
+  StopTraceReason r = HandleCall();
   if (r != StopTraceReason::kNonStopTrace) {
     graph_->StopTraceAt(cur_bci_, r);
     return false;
@@ -1137,7 +1133,7 @@ ValueNode *GraphBuilder::DoMixedPrecisionAttrAccess(const Instr &instr, ValueNod
       call->SetLineNo(instr.line());
       call->set_bci(instr.bci());
       push(call_node);
-      StopTraceReason r = HandleCall(0);
+      StopTraceReason r = HandleCall();
       if (r != StopTraceReason::kNonStopTrace) {
         graph_->StopTraceAt(cur_bci_, r);
         return nullptr;
@@ -2005,7 +2001,7 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
   }
 }
 
-void GraphBuilder::CollectInlineInfo(CallNode *node, int depth) {
+void GraphBuilder::CollectInlineInfo(CallNode *node) {
   Graph *sub_graph = node->GetSubGraph();
   if (!sub_graph) {
     return;
@@ -2021,7 +2017,7 @@ void GraphBuilder::CollectInlineInfo(CallNode *node, int depth) {
   JitCompileResults *jcr = GetJitCompileResults(root_->GetGraph()->GetCodeObj());
   if (jcr && jcr->tbs() && !func_name.empty()) {
     jcr->tbs()->PushInlineInfo(
-      {func_name, inline_name, root_name, node->GetInlineReason(), code_size, depth, node->GetLineNo()});
+      {func_name, inline_name, root_name, node->GetInlineReason(), code_size, 0, node->GetLineNo()});
   }
 }
 
@@ -2091,28 +2087,12 @@ py::object GraphBuilder::GetFuncInfo(ValueNode *func_node) {
 }
 
 bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::object &callable) {
-  const auto &conf = call_node->GetGraph()->Config();
-
   AObject::Type vobj_type = call_node->input(0)->GetVobj()->GetType();
   if (vobj_type == AObject::kTypeCell) {
     std::string module_name = GetTopModule(callable);
     if (!module_name.empty()) {
       kPIJitConfigDefault.AddAllowedInlineModules(module_name);
     }
-  }
-
-  bool infer_primitive = conf.GetBoolConfig(GraphJitConfig::kInferPrimitive);
-  int max_infer = conf.getIntConfig(GraphJitConfig::kInferPrimitiveMax);
-  if (max_infer != 0 && infer_func_count >= max_infer) {
-    infer_primitive = false;
-  } else {
-    infer_func_count++;
-  }
-  infer_primitive &= (conf.getIntConfig(GraphJitConfig::kInferPrimitiveMask) & infer_primitive_func) != 0;
-  if (!infer_primitive && vobj_type == AObject::kTypePrimitive) {
-    call_node->SetVobj(AObject::MakeAObject(AObject::kTypeTensor));
-    call_node->SetInlineReason(InlineReason::kInlineGraphSupportedByMS);
-    return true;
   }
 
   InferFunc infer_func = FindInferFunc(callable);
@@ -2656,8 +2636,7 @@ AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode
   return ret;
 }
 
-StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
-                                            const GraphBuilderPtr &sg) {
+StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, const py::object &func, const GraphBuilderPtr &sg) {
   sg->FGBuilder()->AddPrevBuilder(FGBuilder());
   sg->FGBuilder()->set_manager(FGBuilder()->manager());
 
@@ -3237,16 +3216,12 @@ void SetMixedPrecisionType(CallNode *call_node, FrameStates *frame) {
   }
 }
 
-StopTraceReason GraphBuilder::HandleCall(int depth) {
+StopTraceReason GraphBuilder::HandleCall() {
   MS_EXCEPTION_IF_CHECK_FAIL(seek(0)->GetType() == ValueNode::Call, "must be call node");
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
   const auto &scope = GetScopeForCallNode(call_node);
   ScopeGuard scope_guard(scope);
 
-  if (depth > root_->graph_->Config().getIntConfig(GraphJitConfig::kMaxInlineDepth)) {
-    call_node->SetInlineReason(InlineReason::kInlineTooDeep);
-    return StopTraceReason::kNonStopTrace;
-  }
   StopTraceReason stop_reason = StopTraceReason::kNonStopTrace;
 
   py::object callable_info = ResolveCallable(call_node, &stop_reason);
@@ -3275,8 +3250,8 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
 
   SetMixedPrecisionType(call_node, frame);
   // build sub-graph
-  stop_reason = BuildSubGraph(call_node, depth, callable_info, subgraph);
-  CollectInlineInfo(call_node, depth);
+  stop_reason = BuildSubGraph(call_node, callable_info, subgraph);
+  CollectInlineInfo(call_node);
   return stop_reason;
 }
 
@@ -3780,10 +3755,6 @@ bool TryGuardEscape(ValueNode *cond_node) {
 
 bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node) {
   if (cond == -1) {
-    return false;
-  }
-  int limit_prune = graph_->Config().getIntConfig(GraphJitConfig::kMaxPruneCase);
-  if (limit_prune >= 0 && limit_prune < graph_->GetPruneBranchCount()) {
     return false;
   }
   if (IsConstantBoolValue(cond_node)) {

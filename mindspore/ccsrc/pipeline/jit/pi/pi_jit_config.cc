@@ -33,13 +33,6 @@ constexpr const char *kModuleName = "mindspore._extends.pijit.pijit_func_white_l
 constexpr const char *kFuncMapName = "_func_map";
 constexpr const char *kGuardFuncMapName = "guard_func_map";
 
-template <>
-bool GraphJitConfig::SetBool<GraphJitConfig::Options::kPIJitContextMode>(PyObject *value) {
-  bool_conf[kPIJitContextMode - kBoolConf] = value == Py_True;
-  CaptureContext::GetInstance()->set_use_white_list(value == Py_True);
-  return true;
-}
-
 static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *)> key_map = {
   {"auto_jit_func_filter", &GraphJitConfig::SetAutoJitFilter},
   {"auto_jit_cell", &GraphJitConfig::SetBool<GraphJitConfig::kAutoJitCell>},
@@ -48,38 +41,26 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"print_bb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBB>},
   {"print_bytecode", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBytecode>},
   {"interpret_captured_code", &GraphJitConfig::SetBool<GraphJitConfig::kInterpretCapturedCode>},
-  {"compile_without_capture", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithoutCapture>},
   {"compile_with_try", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithTry>},
   {"specialize_scalar", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeScalar>},
   {"specialize_container", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeContainer>},
   {"specialize_tensor", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeTensor>},
   {"guard_detach_object", &GraphJitConfig::SetBool<GraphJitConfig::kGuardDetachObject>},
   {"print_guard", &GraphJitConfig::SetBool<GraphJitConfig::kPrintGuard>},
-  {"prune_case", &GraphJitConfig::SetBool<GraphJitConfig::kPruneCase>},
   {"loop_unrolling", &GraphJitConfig::SetBool<GraphJitConfig::kLoopUnrolling>},
-  {"infer_primitive", &GraphJitConfig::SetBool<GraphJitConfig::kInferPrimitive>},
+  {"infer_only", &GraphJitConfig::SetBool<GraphJitConfig::kInferOnly>},
   {"strict_trace", &GraphJitConfig::SetBool<GraphJitConfig::kStrictTrace>},
   {"perf_statistics", &GraphJitConfig::SetBool<GraphJitConfig::kPerfStatistics>},
   {"LOG_GRAPH_BREAK", &GraphJitConfig::SetBool<GraphJitConfig::kLogGraphBreak>},
   {"LOG_PERF", &GraphJitConfig::SetBool<GraphJitConfig::kLogPerf>},
   {"LOG_GUARD_PERF", &GraphJitConfig::SetBool<GraphJitConfig::kLogGuardPerf>},
   {"enable_dynamic_shape", &GraphJitConfig::SetBool<GraphJitConfig::kEnableDynamicShape>},
-  {"test_graph_ir", &GraphJitConfig::SetBool<GraphJitConfig::kTestGraphIR>},
-  {"kFeatureBreakAtInlinedFunction", &GraphJitConfig::SetBool<GraphJitConfig::kFeatureBreakAtInlinedFunction>},
-  {"kEnableEliminateUnusedOperation", &GraphJitConfig::SetBool<GraphJitConfig::kEnableEliminateUnusedOperation>},
-  {"kEnableGeneratorExpressionToTuple", &GraphJitConfig::SetBool<GraphJitConfig::kEnableGeneratorExpressionToTuple>},
-  {"pijit_context_mode", &GraphJitConfig::SetBool<GraphJitConfig::kPIJitContextMode>},
   {"expand_graph_input", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphInput>},
   {"expand_graph_output", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphOutput>},
   {"subgraph_break_opt", &GraphJitConfig::SetBool<GraphJitConfig::kSubgraphBreakOpt>},
   // kEnableOptimizeForAttrItem
   {"_symbolic", &GraphJitConfig::SetInt<GraphJitConfig::kSymbolic>},
-  {"MAX_INLINE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxInlineDepth>},
   {"MAX_TRACE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxTraceDepth>},
-  {"MAX_PRUNE_CASE", &GraphJitConfig::SetInt<GraphJitConfig::kMaxPruneCase>},
-  {"MAX_LOOP_UNROLLING", &GraphJitConfig::SetInt<GraphJitConfig::kMaxLoopUnrolling>},
-  {"INFER_PRIMITIVE_MASK", &GraphJitConfig::SetInt<GraphJitConfig::kInferPrimitiveMask>},
-  {"INFER_PRIMITIVE_MAX", &GraphJitConfig::SetInt<GraphJitConfig::kInferPrimitiveMax>},
   {"STATIC_GRAPH_BYTECODE_MIN", &GraphJitConfig::SetInt<GraphJitConfig::kStaticGraphBytecodeMin>},
   {"PERF_STATISTICS_COUNT", &GraphJitConfig::SetInt<GraphJitConfig::kPerfStatisticsCount>},
   {"PERF_STATISTICS_SCALE_10000X", &GraphJitConfig::SetInt<GraphJitConfig::kPerfStatisticsScale10000x>},
@@ -101,40 +82,27 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kPrintBB - kBoolConf] = false;
   bool_conf[kPrintBytecode - kBoolConf] = false;
   bool_conf[kInterpretCapturedCode - kBoolConf] = false;
-  bool_conf[kCompileWithoutCapture - kBoolConf] = false;
   bool_conf[kCompileWithTry - kBoolConf] = true;
   bool_conf[kGuardSpecializeScalar - kBoolConf] = true;
   bool_conf[kGuardSpecializeContainer - kBoolConf] = false;
   bool_conf[kGuardSpecializeTensor - kBoolConf] = false;
   bool_conf[kGuardDetachObject - kBoolConf] = false;
   bool_conf[kPrintGuard - kBoolConf] = false;
-  bool_conf[kPruneCase - kBoolConf] = true;
   bool_conf[kLoopUnrolling - kBoolConf] = true;
   bool_conf[kSkipException - kBoolConf] = false;
-  bool_conf[kInferPrimitive - kBoolConf] = true;
+  bool_conf[kInferOnly - kBoolConf] = true;
   bool_conf[kStrictTrace - kBoolConf] = true;
   bool_conf[kPerfStatistics - kBoolConf] = false;
   bool_conf[kLogGraphBreak - kBoolConf] = false;
   bool_conf[kLogPerf - kBoolConf] = false;
   bool_conf[kLogGuardPerf - kBoolConf] = false;
-  bool_conf[kTestGraphIR - kBoolConf] = false;
-  bool_conf[kEnableGeneratorExpressionToTuple - kBoolConf] = true;
   bool_conf[kEnableDynamicShape - kBoolConf] = false;
-  bool_conf[kEnableMsApiInfer - kBoolConf] = false;
   bool_conf[kExpandGraphInput - kBoolConf] = true;
   bool_conf[kExpandGraphOutput - kBoolConf] = true;
   bool_conf[kSubgraphBreakOpt - kBoolConf] = true;
-
-  bool_conf[kEnableEliminateUnusedOperation - kBoolConf] = false;
-  bool_conf[kFeatureBreakAtInlinedFunction - kBoolConf] = true;
   bool_conf[kReCaptureLoopBody - kBoolConf] = false;
 
-  int_conf[kMaxInlineDepth - kIntConf] = 8;
   int_conf[kMaxTraceDepth - kIntConf] = kDefaultMaxTraceDepth;
-  int_conf[kMaxPruneCase - kIntConf] = -1;
-  int_conf[kMaxLoopUnrolling - kIntConf] = 100;
-  int_conf[kInferPrimitiveMask - kIntConf] = 7;
-  int_conf[kInferPrimitiveMax - kIntConf] = 0;
   int_conf[kStaticGraphBytecodeMin - kIntConf] = 0;
   int_conf[kPerfStatisticsCount - kIntConf] = 1;
   int_conf[kPerfStatisticsScale10000x - kIntConf] = 1000;
@@ -146,8 +114,6 @@ GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   AddAllowedInlineModules("mindspore");
 
   jit_level = "O0";
-
-  SetBool<Options::kPIJitContextMode>(Py_True);
 }
 
 static py::object GetObjectsMap() {

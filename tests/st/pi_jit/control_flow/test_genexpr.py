@@ -57,7 +57,6 @@ def test_genexpr(x):
         return any(i % mod == 0 for i in x)
 
     jit_config={
-        "kEnableEliminateUnusedOperation": True,
         "loop_unrolling": True,
         "kEnableGeneratorExpressionToTuple": True,
     }
