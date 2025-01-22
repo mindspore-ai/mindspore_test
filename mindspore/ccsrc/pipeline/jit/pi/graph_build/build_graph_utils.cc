@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pipeline/jit/pi/graph_build/build_utils.h"
+#include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 
 #include <string>
 #include <vector>
 #include <memory>
 #include "utils/flags.h"
+#include "utils/ms_context.h"
 #include "ir/meta_func_graph.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "pipeline/pynative/grad/variable.h"
+#include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 
 namespace mindspore {
 namespace pijit {
@@ -61,13 +63,55 @@ bool IsSpecialCallableObject(const py::object &obj) {
 }
 
 bool IsObjectCallable(const py::object &obj) {
-  static std::vector<std::function<bool(const py::object &)>> check_list{
-    IsPrimitiveObject, IsPrimitiveFunctionalObject, IsMsClassObject, IsMetaFuncGraphObject, IsSpecialCallableObject};
-  return std::any_of(check_list.cbegin(), check_list.cend(), [&obj](const auto &func) { return func(obj); });
+  static constexpr auto check_list = {IsPrimitiveObject, IsPrimitiveFunctionalObject, IsMsClassObject,
+                                      IsMetaFuncGraphObject, IsSpecialCallableObject};
+  return std::any_of(check_list.begin(), check_list.end(), [&obj](const auto &func) { return func(obj); });
 }
 
 bool IsSideEffectPrimitive(const PrimitivePtr &prim) {
   return GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_IO) || GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_MEM);
+}
+
+py::tuple GetMethodInfo(const py::object &obj) {
+  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+  return python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);
+}
+
+bool IsPyCapsuleTensorOverloadMethod(const py::object &obj) {
+  if (!IsMsTensorMethod(obj)) {
+    return false;
+  }
+  const auto &info = GetMethodInfo(obj);
+  constexpr size_t class_index = 0;
+  py::object class_name_obj = info[class_index];
+  if (class_name_obj.ptr() == nullptr || py::isinstance<py::none>(class_name_obj)) {
+    return false;
+  }
+  const auto &class_name = class_name_obj.cast<std::string>();
+  constexpr auto py_capsule_name = "PyCapsule";
+  if (class_name != py_capsule_name) {
+    return false;
+  }
+  constexpr size_t method_index = 1;
+  py::object method_name_obj = info[method_index];
+  if (method_name_obj.ptr() == nullptr || py::isinstance<py::none>(method_name_obj)) {
+    return false;
+  }
+  const auto &method_name = method_name_obj.cast<std::string>();
+  return ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end();
+}
+
+bool IsPyCapsuleOverload(const py::object &obj) {
+  auto ge_mode = (MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2);
+  if (ge_mode) {
+    return false;
+  }
+  return IsPyCapsuleTensorOverloadMethod(obj);
+}
+
+bool IsMsTensorMethod(const py::object &obj) {
+  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+  return py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj));
 }
 
 bool HasRegisterHook(const py::object &obj) {

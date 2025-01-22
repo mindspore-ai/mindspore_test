@@ -311,8 +311,6 @@ class GraphBuilder {
                  StopTraceReason *stop_reason);
   void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);
-  void FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info, const std::vector<ValueNode *> &args,
-                        StopTraceReason *stop_reason);
   AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
   void GuardAttribute(ValueNode *attr_node);
 
@@ -399,6 +397,11 @@ class GraphBuilder {
   bool ConvertClassType(const py::object &callable_info, CallNode *call_node, StopTraceReason *stop_reason);
   std::pair<bool, py::object> ConvertCallableObject(const py::object &callable_info) const;
   py::object ResolveCallableWithByteCode(CallNode *call_node, StopTraceReason *stop_reason);
+
+  py::object FGAddNodeAst(CallNode *call_node, const py::object &callable_info,
+                          const py::object &original_callable_info, StopTraceReason *stop_reason);
+  py::object FGAddNodePyCapsuleOverload(CallNode *call_node, const py::object &callable_info,
+                                        StopTraceReason *stop_reason);
 };
 }  // namespace pijit
 }  // namespace mindspore

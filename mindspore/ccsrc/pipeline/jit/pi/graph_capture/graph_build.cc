@@ -28,7 +28,7 @@
 #include "pipeline/jit/pi/graph_guard/infer.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
-#include "pipeline/jit/pi/graph_build/build_utils.h"
+#include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/capture_context.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -44,6 +44,7 @@
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/tensor_py.h"
+#include "pipeline/jit/ps/static_analysis/prim.h"
 #include "frontend/operator/composite/composite.h"
 #include "include/common/utils/hook.h"
 #include "utils/anf_utils.h"
@@ -2650,11 +2651,11 @@ bool HasPyObj(const ValueNode *node) {
 }
 
 void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTraceReason *stop_reason) {
-  if (res == nullptr) {
-    MS_LOG(INFO) << "Add node fail";
+  if (res == nullptr || res->abstract() == nullptr) {
+    MS_LOG(INFO) << "Add node fail for call node " << call_node->ToString();
     *stop_reason = StopTraceReason::kTrace_Fail;
   } else {
-    MS_LOG(INFO) << "Add node succ";
+    MS_LOG(INFO) << "Add node succ for call node " << call_node->ToString();
     auto node = AObject::Convert(res);
     MS_LOG(INFO) << node->ToString();
     call_node->SetVobj(node);
@@ -5031,13 +5032,37 @@ std::pair<bool, py::object> GraphBuilder::ConvertCallableObject(const py::object
   return std::make_pair(should_parse_in_ast, callable_info);
 }
 
-void GraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info,
-                                    const std::vector<ValueNode *> &args, StopTraceReason *stop_reason) {
+py::object GraphBuilder::FGAddNodeAst(CallNode *call_node, const py::object &callable_info,
+                                      const py::object &original_callable_info, StopTraceReason *stop_reason) {
+  std::vector<ValueNode *> args;
+  auto self_node = GetBoundSelf(call_node);
+  if (callable_info.ptr() != original_callable_info.ptr() && self_node != nullptr) {
+    args.push_back(self_node);
+  }
+  const auto &call_node_inputs = call_node->getInputs();
+  (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   const auto &callable_object =
     py::isinstance<mindspore::Cell>(callable_info)
       ? py::reinterpret_steal<py::object>(PyObject_GetAttrString(callable_info.ptr(), "construct"))
       : callable_info;
   FGAddNode(call_node, callable_object, HandleInputArgs(args), stop_reason);
+  return py::object();
+}
+
+py::object GraphBuilder::FGAddNodePyCapsuleOverload(CallNode *call_node, const py::object &callable_info,
+                                                    StopTraceReason *stop_reason) {
+  MS_LOG(INFO) << "Add PyCapsule overload method " << call_node->ToString();
+  auto self_node = GetBoundSelf(call_node);
+  if (self_node == nullptr) {
+    MS_LOG(EXCEPTION) << "Get self failed for call_node " << call_node->ToString();
+  }
+  std::vector<ValueNode *> args{self_node};
+  const auto &call_node_inputs = call_node->getInputs();
+  (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
+  const auto &name = py::str(py::getattr(callable_info, "__name__")).cast<std::string>();
+  const auto &functional_prim = abstract::BuildMethodFunctional(name);
+  FGAddNode(call_node, functional_prim, HandleInputArgs(args), stop_reason);
+  return py::object();
 }
 
 // fix cyclomatic complexity
@@ -5076,15 +5101,11 @@ static void MarkPIJitSpecializedCall(const FuncGraphBuilderPtr &fg_builder, Call
 py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
   *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
-  if (callable_info.ptr() == nullptr) {
-    return callable_info;
-  }
-  py::object original_callable = callable_info;
-  if (IsGradCallable(call_node->input(0))) {
-    return ResolveGradCall(call_node, stop_reason);
-  }
   if (!FGBuilder()->ValidateCallableObject(callable_info)) {
     return py::object();
+  }
+  if (IsGradCallable(call_node->input(0))) {
+    return ResolveGradCall(call_node, stop_reason);
   }
   if (FGBuilder()->CanConstantFoldFunc(callable_info)) {
     const auto &res = GetConstantInputsObject(call_node);
@@ -5095,25 +5116,16 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
   if (ConvertClassType(callable_info, call_node, stop_reason)) {
     return py::object();
   }
+  if (IsPyCapsuleOverload(callable_info)) {
+    return FGAddNodePyCapsuleOverload(call_node, callable_info, stop_reason);
+  }
 
-  auto convert_result = ConvertCallableObject(callable_info);
+  py::object original_callable = callable_info;
+  const auto &convert_result = ConvertCallableObject(callable_info);
   callable_info = convert_result.second;
   bool should_parse_in_ast = convert_result.first;
-
   if (should_parse_in_ast) {
-    MS_LOG(INFO) << "Should be parsed by ast for object: " << py::str(callable_info);
-    std::vector<ValueNode *> args;
-    auto self_node = GetBoundSelf(call_node);
-    if (callable_info.ptr() != original_callable.ptr() && self_node != nullptr) {
-      args.push_back(self_node);
-    }
-    const auto &call_node_inputs = call_node->getInputs();
-    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-    FGAddNodeWithAst(call_node, callable_info, args, stop_reason);
-    if (!call_node->has_abstract_wrapper()) {
-      MS_LOG(INFO) << "Build graph by ast failed for node: " << call_node->ToString();
-    }
-    return py::object();
+    return FGAddNodeAst(call_node, callable_info, original_callable, stop_reason);
   }
   if (IsObjectCallable(callable_info)) {
     return HandleMSCallable(call_node, callable_info, original_callable, stop_reason);
