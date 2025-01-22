@@ -2072,8 +2072,9 @@ AbstractBasePtr AbstractJTagged::element() { return element_; }
 
 std::size_t AbstractJTagged::hash() const { return hash_combine(tid(), element_->hash()); }
 
-AbstractRefTensor::AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value)
-    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value) {
+AbstractRefTensor::AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value,
+                                     bool is_parameter)
+    : AbstractTensor(*ref_value), ref_key_value_(ref_key_value), is_parameter_(is_parameter) {
   set_type(std::make_shared<RefType>());
   MS_EXCEPTION_IF_NULL(ref_key_value);
   if (ref_key_value != kValueAny && !ref_key_value->isa<RefKey>()) {
@@ -2110,7 +2111,8 @@ AbstractBasePtr AbstractRefTensor::Join(const std::shared_ptr<AbstractRefTensor>
   // Secondly , join the tensor value.
   auto joined_tensor = AbstractTensor::Join(other)->cast<AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(joined_tensor);
-  return std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key);
+  bool joined_is_parameter = is_parameter_ && other->is_parameter_;
+  return std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key, joined_is_parameter);
 }
 
 AbstractBasePtr AbstractRefTensor::Join(const AbstractBasePtr &other) {
@@ -2133,22 +2135,22 @@ AbstractBasePtr AbstractRefTensor::Join(const AbstractBasePtr &other) {
 
 AbstractBasePtr AbstractRefTensor::Clone() const {
   auto abs_tensor = AbstractTensor::Clone()->cast<AbstractTensorPtr>();
-  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_);
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, is_parameter_);
 }
 
 AbstractBasePtr AbstractRefTensor::Broaden() const {
   // Always broaden for ref
   auto abs_tensor = AbstractTensor::Broaden()->cast<AbstractTensorPtr>();
   // Broaden the tensor value and keep the ref_key_value.
-  auto ret = std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_);
-  return ret;
+  return std::make_shared<AbstractRefTensor>(abs_tensor, ref_key_value_, is_parameter_);
 }
 
 std::string AbstractRefTensor::ToString() const {
   std::ostringstream buffer;
   MS_EXCEPTION_IF_NULL(ref_key_value_);
   buffer << type_name() << "("
-         << "key: " << ref_key_value_->ToString() << " ref_value: " << AbstractTensor::ToString();
+         << "key: " << ref_key_value_->ToString() << ", is_parameter: " << std::boolalpha << is_parameter_
+         << ", ref_value: " << AbstractTensor::ToString();
   auto value = GetValueTrack();
   if (value != nullptr) {
     buffer << ", value: " << value->ToString();
