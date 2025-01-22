@@ -126,6 +126,7 @@ MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支
     mindspore.ops.softmin
     mindspore.ops.softshrink
     mindspore.ops.softsign
+    mindspore.ops.swiglu
     mindspore.ops.tanh
     mindspore.ops.threshold
 
@@ -175,6 +176,8 @@ MindSpore中 `mindspore.ops` 接口与上一版本相比，新增、删除和支
     mindspore.ops.padding
     mindspore.ops.pixel_shuffle
     mindspore.ops.pixel_unshuffle
+    mindspore.ops.rotary_position_embedding
+    mindspore.ops.rotated_iou
     mindspore.ops.upsample
 
 数学运算函数

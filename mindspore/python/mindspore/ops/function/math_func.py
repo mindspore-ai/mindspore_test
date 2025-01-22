@@ -13031,6 +13031,9 @@ def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_thresh
     r"""
     Calculate the overlap area between rotated rectangles.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     .. note::
         The input data types supported by the Ascend platform include
         bfloat16, float16, float32.
