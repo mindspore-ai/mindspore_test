@@ -428,6 +428,9 @@ from mindspore.ops.function.math_func import var_ext
 # 1029 exp_
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 
+# 1030 log_
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_log_op
+
 from .._checkparam import check_axis_in_range
 from ..ops.composite.multitype_ops import _compile_utils as compile_utils
 ########################################functions########################################
@@ -1789,6 +1792,9 @@ def matmul_reduce_scatter(
     """
     raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
 
+# 1030
+def tensor_log_(input):
+    return inplace_log_op(input)
 
 # 1029
 def tensor_exp_(input):
