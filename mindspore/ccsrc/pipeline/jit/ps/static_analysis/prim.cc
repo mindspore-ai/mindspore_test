@@ -195,7 +195,7 @@ AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
   }
   auto tensor_abs = dyn_cast<abstract::AbstractTensor>(abs);
   MS_EXCEPTION_IF_NULL(tensor_abs);
-  auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"));
+  auto ref_abs = std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>("None"), false);
   std::stringstream ss;
   ss << ref_abs.get();
   ref_abs->set_ref_key_value(std::make_shared<RefKey>(ss.str()));

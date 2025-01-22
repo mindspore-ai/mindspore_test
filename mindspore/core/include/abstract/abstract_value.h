@@ -1451,7 +1451,8 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
   ///
   /// \param[in] ref_value The tensor.
   /// \param[in] ref_key_value The ref key of tensor.
-  AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value);
+  /// \param[in] is_parameter Whether it is an nn.Parameter.
+  AbstractRefTensor(const AbstractTensorPtr &ref_value, const ValuePtr &ref_key_value, bool is_parameter = true);
 
   /// \brief Destructor of AbstractEllipsis.
   ~AbstractRefTensor() override = default;
@@ -1487,6 +1488,9 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
 
   void set_ref_key_value(const ValuePtr &ref_key_value) { ref_key_value_ = ref_key_value; }
 
+  /// \brief Whether it is an nn.Parameter.
+  bool is_parameter() const { return is_parameter_; }
+
   AbstractBasePtr Broaden() const override;
 
   virtual AbstractBasePtr Join(const std::shared_ptr<AbstractRefTensor> &other);
@@ -1497,6 +1501,7 @@ class MS_CORE_API AbstractRefTensor final : public AbstractTensor {
  private:
   // ref_key_value is the reference key of AbstractRef, the value can be a string value or kValueAny
   ValuePtr ref_key_value_;
+  bool is_parameter_;
 };
 using AbstractRefPtr = std::shared_ptr<AbstractRefTensor>;
 
