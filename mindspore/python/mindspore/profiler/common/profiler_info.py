@@ -19,6 +19,7 @@ from configparser import ConfigParser, NoSectionError, NoOptionError
 
 from mindspore import log as logger
 from mindspore.version import __version__ as ms_version
+from mindspore.profiler.common.util import get_cann_version
 from mindspore.profiler.common.singleton import Singleton
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.path_manager import PathManager
@@ -42,6 +43,7 @@ class ProfilerInfo:
         "cann_profiler_info": {
         },
         "ms_version": "x.x.x",
+        "cann_version": x.x.x",
     }
     """
     HOST_START_LOG = "host_start.log"
@@ -61,6 +63,7 @@ class ProfilerInfo:
     CANN_PROFILER_INFO = "cann_profiler_info"
     ANALYSIS_COST_TIME = "analysis_cost_time"
     MS_VERSION = "ms_version"
+    CANN_VERSION = "cann_version"
     CONTEXT_MODE = "context_mode"
     JIT_LEVEL = "jit_level"
 
@@ -73,6 +76,7 @@ class ProfilerInfo:
             self.CANN_PROFILER_INFO: {},
             self.ANALYSIS_COST_TIME: {},
             self.MS_VERSION: ms_version,
+            self.CANN_VERSION: get_cann_version(),
             self.CONTEXT_MODE: -1,
             self.JIT_LEVEL: "",
         }
