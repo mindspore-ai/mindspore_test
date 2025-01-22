@@ -109,7 +109,7 @@ class OptCodeHub : public std::enable_shared_from_this<OptCodeHub> {
   OptCodeHub() = default;
   virtual ~OptCodeHub() = default;
   virtual OptCodePtr AddOptTarget(OptOptionPtr option);
-  virtual const OptCodeSet &GetOptTarget(OptOptionPtr option);
+  virtual const OptCodeSet &GetOptTarget(const OptOptionPtr &option, const OptCodeSet &defaults);
   virtual void UpdateOptTarget(OptOptionPtr option, OptCodePtr code);
   virtual void DelOptTarget(OptOptionPtr option, OptCodePtr code);
   virtual void DelOptTarget(OptCodePtr code);
