@@ -30,7 +30,7 @@
 #include "abstract/abstract_value.h"
 #include "utils/phase.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "utils/file_utils.h"
 #include "utils/ms_context.h"
 

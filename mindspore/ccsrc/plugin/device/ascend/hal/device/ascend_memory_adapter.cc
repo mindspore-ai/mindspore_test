@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
-#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/ascend/hal/device/ascend_two_pointer_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_dynamic_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"

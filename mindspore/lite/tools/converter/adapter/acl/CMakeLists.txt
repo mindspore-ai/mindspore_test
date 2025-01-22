@@ -17,8 +17,9 @@ set(ACL_SRC ${ACL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/acl_pass.cc)
 
 set(ENABLE_ACL on)
 set(MODE_ASCEND_ACL off)
+add_subdirectory(${TOP_DIR}/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/ _mindspore_ascend_op_adapter_obj)
 add_subdirectory(${TOP_DIR}/mindspore/ccsrc/backend/ge_backend/graph_ir _mindspore_transform_graph_ir_obj)
-add_subdirectory(${TOP_DIR}/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface _mindspore_transform_symbol_obj)
+add_subdirectory(${TOP_DIR}/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface _mindspore_ascend_symbol_obj)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cxx_api_lite/cxx_api mslite_shared_lib)
 
 

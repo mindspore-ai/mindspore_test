@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 

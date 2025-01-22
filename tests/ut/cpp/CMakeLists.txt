@@ -165,7 +165,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
 file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "../../../mindspore/ccsrc/plugin/device/ascend/device_context_conf/op_tuning_conf.cc"
+        "../../../mindspore/ccsrc/plugin/res_manager/ascend/device_context_conf/op_tuning_conf.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/common/ascend_utils.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/abstract_ascend_memory_pool_support.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_address.cc"

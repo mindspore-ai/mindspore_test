@@ -26,7 +26,7 @@
 #include <string>
 #include <thread>
 #include "include/common/env_vars.h"
-#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
