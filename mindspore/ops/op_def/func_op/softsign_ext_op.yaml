@@ -1,0 +1,12 @@
+#operator softsign_ext
+softsign_ext:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: SoftsignExtAscend

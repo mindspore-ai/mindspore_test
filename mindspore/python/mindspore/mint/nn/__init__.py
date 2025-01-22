@@ -293,6 +293,9 @@ from mindspore.mint.nn.layer.instancenorm import InstanceNorm1d
 from mindspore.mint.nn.layer.instancenorm import InstanceNorm2d
 from mindspore.mint.nn.layer.instancenorm import InstanceNorm3d
 
+# 768
+from mindspore.ops.auto_generate import softsign_ext as softsign
+
 from mindspore.mint.nn.layer.pooling import AdaptiveMaxPool1d
 
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
@@ -1048,6 +1051,52 @@ class KLDivLoss(Cell):
         return kl_div_ext(input, target, self.reduction, self.log_target)
 
 
+class Softsign(Cell):
+    r"""
+    SoftSign activation function.
+
+    The function is shown as follows:
+
+    .. math::
+        \text{SoftSign}(x) = \frac{x}{1 + |x|}
+
+    Softsign Activation Function Graph:
+
+    .. image:: ../images/Softsign.png
+        :align: center
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Inputs:
+        - **input** (Tensor) - The input of Softsign.
+
+    Outputs:
+        Tensor, has the same shape as `input`. The dtype of output is float32 when dtype of `input` is in
+        [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([0, -1, 2, 30, -30]), mindspore.float32)
+        >>> net = mint.nn.Softsign()
+        >>> output = net(x)
+        >>> print(output)
+        [ 0.        -0.5         0.6666667  0.9677419 -0.9677419]
+    """
+
+    def __init__(self):
+        """Initialize Softsign."""
+        super(Softsign, self).__init__()
+
+    def construct(self, input):
+        return softsign(input)
+
+
 class ChannelShuffle(Cell):
     r"""
     Divide the channels in a tensor of shape :math:`(*, C, H, W)` into :math:`g` group and
@@ -1531,4 +1580,6 @@ __all__ = [
     'InstanceNorm3d',
     'UpsamplingNearest2d',
     'UpsamplingBilinear2d',
+    # 768
+    'Softsign',
 ]
