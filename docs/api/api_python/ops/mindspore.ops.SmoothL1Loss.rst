@@ -5,6 +5,9 @@
 
     计算平滑L1损失，该L1损失函数有稳健性。
 
+    .. warning::
+        该API在CPU上性能较差，推荐在Ascend/GPU上运行。
+
     更多参考详见 :func:`mindspore.ops.smooth_l1_loss`。
 
     参数：

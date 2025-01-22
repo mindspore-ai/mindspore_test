@@ -4673,6 +4673,9 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
     Here :math:`\text{beta}` controls the point where the loss function changes from quadratic to linear.
     :math:`\text{beta}>0` , its default value is ``1.0`` . :math:`N` is the batch size.
 
+    .. warning::
+        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
+
     Args:
         input (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means,
             any number of additional dimensions.Supported dtypes:

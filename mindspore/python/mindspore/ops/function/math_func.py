@@ -2200,6 +2200,9 @@ def bitwise_xor(input, other):
     If they have different data types, the lower priority data type will be converted to
     the relatively highest priority data type.
 
+    .. warning::
+        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
+
     Args:
         input (Tensor): The first input tensor with shape :math:`(N, *)` where :math:`*` means
             any number of additional dimensions.

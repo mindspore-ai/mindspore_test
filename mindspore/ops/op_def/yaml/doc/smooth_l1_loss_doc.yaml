@@ -3,6 +3,9 @@ smooth_l1_loss:
         Calculate the smooth L1 loss, and the L1 loss function has robustness.
 
         Refer to :func:`mindspore.ops.smooth_l1_loss` for more details.
+
+        .. warning::
+        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
         
         Args:
             beta (number, optional): A parameter used to control the point where the function will change between
