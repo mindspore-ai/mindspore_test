@@ -541,10 +541,7 @@ KernelObjectType AnfRuntimeAlgorithm::GetInputKernelObjectType(const AnfNodePtr 
   }
   const auto &input_kernel_obj_types = build_info->GetAllInputKernelObjectTypes();
   if (input_idx >= input_kernel_obj_types.size()) {
-    MS_LOG_WITH_NODE(EXCEPTION, node) << "Input index " << input_idx
-                                      << ", but the node input kernel object types size just "
-                                      << input_kernel_obj_types.size() << ". node: " << node->fullname_with_scope()
-                                      << ", debug name:" << node->DebugString() << "." << trace::DumpSourceLines(node);
+    return KernelObjectType::TENSOR;
   }
   return input_kernel_obj_types[input_idx];
 }
@@ -571,10 +568,7 @@ KernelObjectType AnfRuntimeAlgorithm::GetOutputKernelObjectType(const AnfNodePtr
   }
   const auto &output_kernel_obj_types = build_info->GetAllOutputKernelObjectTypes();
   if (output_idx >= output_kernel_obj_types.size()) {
-    MS_LOG_WITH_NODE(EXCEPTION, node) << "Output index " << output_idx
-                                      << ", but the node output kernel object types size just "
-                                      << output_kernel_obj_types.size() << ". node: " << node->fullname_with_scope()
-                                      << ", debug name:" << node->DebugString() << "." << trace::DumpSourceLines(node);
+    return KernelObjectType::TENSOR;
   }
   return output_kernel_obj_types[output_idx];
 }

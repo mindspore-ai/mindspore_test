@@ -51,7 +51,7 @@ void KernelManager::GetFunctionAndKernelName(const std::string &bin_file_name, c
   auto dso_path = bin_map->kernel_meta_path();
   (void)dso_path.append(bin_file_name + kBinFileSuffix);
   *bin_file = dso_path;
-  *bin_kernel = kernel_name + kDoBinFileSuffix;
+  *bin_kernel = kernel_name;
 }
 
 void *KernelManager::GenFuncStub(const mindspore::kernel::KernelPack &kernel_pack, bool force_reload,
