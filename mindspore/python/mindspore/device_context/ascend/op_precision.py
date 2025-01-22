@@ -26,6 +26,7 @@ except ImportError:
 function_status = {'precision_mode': False, 'op_precision_mode': False,
                    'matmul_allow_hf32': False, 'conv_allow_hf32': False}
 
+
 def precision_mode(mode):
     """
     Configure mixed precision mode setting. The framework set the configuration of Atlas training series

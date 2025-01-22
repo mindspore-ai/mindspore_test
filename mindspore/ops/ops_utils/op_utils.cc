@@ -1086,7 +1086,7 @@ int64_t GetCacheCapaticy() {
   if (capaticy_type == "global") {
     cache_capaticy = 0;
   } else if (!capaticy_from_user.empty()) {
-    cache_capaticy = std::stoull(capaticy_from_user);
+    cache_capaticy = std::stoll(capaticy_from_user);
   } else {
     cache_capaticy = -1;
   }
