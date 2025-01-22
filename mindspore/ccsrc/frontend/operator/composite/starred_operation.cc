@@ -35,6 +35,18 @@ using mindspore::abstract::AbstractSequencePtr;
 using mindspore::abstract::AbstractTensor;
 using mindspore::abstract::AbstractTuple;
 
+void SetSequenceElementsUseFlagsForStarred(const AbstractBasePtrList &args_abs_list) {
+  // Handle for DDE.
+  for (size_t i = 0; i < args_abs_list.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(args_abs_list[i]);
+    if (args_abs_list[i]->isa<abstract::AbstractSequence>()) {
+      MS_LOG(DEBUG) << "Starred operation is consuming tuple/list arguments[" << i
+                    << "]: " << args_abs_list[i]->ToString();
+      SetSequenceElementsUseFlagsRecursively(args_abs_list[i], true);
+    }
+  }
+}
+
 // x = (1, 2, 3, 4)
 // a, *b, c = x    // targets(a, *b, c) = assign(x)
 // a = 1, *b = [2, 3], c = 4
@@ -54,6 +66,7 @@ FuncGraphPtr StarredGetItem::GenerateFuncGraph(const AbstractBasePtrList &args_a
                       << ", but got " << args_abs_list.size();
   }
 
+  SetSequenceElementsUseFlagsForStarred(args_abs_list);
   auto first_input__abs = args_abs_list[sequence_index];
   MS_EXCEPTION_IF_NULL(first_input__abs);
   if (!first_input__abs->isa<AbstractSequence>()) {
@@ -113,6 +126,7 @@ FuncGraphPtr StarredUnpack::GenerateFuncGraph(const AbstractBasePtrList &args_ab
     MS_LOG(EXCEPTION) << "For 'StarredUnpack', the number of input should be " << starred_unpack_args_size
                       << ", but got " << args_abs_list.size();
   }
+  SetSequenceElementsUseFlagsForStarred(args_abs_list);
   auto &unpack_arg = args_abs_list[sequence_index];
   MS_EXCEPTION_IF_NULL(unpack_arg);
   FuncGraphPtr ret_graph = std::make_shared<FuncGraph>();
@@ -200,6 +214,7 @@ std::pair<std::vector<int64_t>, int64_t> StarredUnpackMerge::GetStarredUnpackMer
 // StarredUnpackMerge(StarredUnpack(*[1, 2]), (3, 4), (1, 0), 1) --> (1, 2, (3, 4))
 // a: (1, 2, (3, 4))
 FuncGraphPtr StarredUnpackMerge::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  SetSequenceElementsUseFlagsForStarred(args_abs_list);
   // Check inputs, and get flags info.
   auto [starred_flags, is_tuple] = GetStarredUnpackMergeFlags(args_abs_list);
 
