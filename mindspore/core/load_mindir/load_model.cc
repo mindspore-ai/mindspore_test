@@ -2577,8 +2577,10 @@ abstract::AbstractBasePtr MSANFModelParser::BuildAbstractFunction(const mind_ir:
       auto &inputs = partial_node->inputs();
       const size_t kPartial_args_begin_pos = 2;
       const size_t kPartial_fn_pos = 1;
-      if (inputs.size() <= kPartial_args_begin_pos) {
-        MS_LOG(ERROR) << "Partial node input size is wrong.";
+      if (inputs.size() < kPartial_args_begin_pos) {
+        MS_LOG(ERROR) << "The input size of Partial node is expected to be greater or equal than "
+                      << kPartial_args_begin_pos << ", but got " << inputs.size()
+                      << ", node: " << partial_node->DebugString();
         return nullptr;
       }
       (void)std::transform(inputs.begin() + kPartial_args_begin_pos, inputs.end(), std::back_inserter(args_spec_list),
