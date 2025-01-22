@@ -35,8 +35,10 @@ bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
       return false;
     }
     MS_LOG(INFO) << "Successfully initialize LCCL group " << name_;
-    if (MsContext::GetInstance()->IsEnableInferBoost() && device::ascend::EnableLccl()) {
-      // Only when this is infer boost and MS_ENABLE_LCCL is set to on, we only use LCCL.
+
+    const auto &value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCommInitLcclOnly);
+    if (value == "1" || value == "true" || value == "True") {
+      // Only use LCCL if runtiem dev config 'comm_init_lccl_only' is set to true.
       MS_LOG(INFO) << "This is infer boost, only initialize group for LCCL.";
       return true;
     }
@@ -70,7 +72,8 @@ bool MultiAscendCommunicationGroup::Finalize() {
 
 void *MultiAscendCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
   CommunicationGroupPtr group_to_generate_root_info = nullptr;
-  if (MsContext::GetInstance()->IsEnableInferBoost() && device::ascend::EnableLccl()) {
+  const auto &value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCommInitLcclOnly);
+  if (value == "1" || value == "true" || value == "True") {
     // Only when this is infer boost and MS_ENABLE_LCCL is set to on, we only use LCCL.
     group_to_generate_root_info = lccl_group_;
   } else {
