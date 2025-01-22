@@ -421,6 +421,8 @@ from mindspore.ops.function.math_func import var_ext
 
 # 1029 exp_
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
+# 1030 log_
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_log_op
 
 
 ########################################functions########################################
@@ -1667,3 +1669,7 @@ def matmul_reduce_scatter(
 # 1029
 def tensor_exp_(input):
     return inplace_exp_op(input)
+
+# 1030
+def tensor_log_(input):
+    return inplace_log_op(input)
