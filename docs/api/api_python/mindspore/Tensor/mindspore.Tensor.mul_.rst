@@ -14,6 +14,7 @@ mindspore.Tensor.mul\_
 
     .. note::
         - 当两个输入具有不同的shape时， `other` 必须能被广播成 `self` 。
+        - `self` 和 `other` 不能同时为bool类型。[True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)]等都为bool类型。
 
     参数：
         - **other** (Union[Tensor, number.Number, bool]) - `other` 可以是number.Number或bool，也可以是数据类型为number.Number或bool的Tensor。
@@ -23,4 +24,4 @@ mindspore.Tensor.mul\_
 
     异常：
         - **TypeError** - `other` 不是Tensor、number.Number或bool。
-        - **ValueError** - `other` 不能被广播成 `self`。
+        - **RunTimeError** - `other` 不能被广播成 `self`。

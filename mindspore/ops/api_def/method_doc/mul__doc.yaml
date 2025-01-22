@@ -14,6 +14,8 @@ mul_:
     Note:
         - When `self` and `other` have different shapes,
           `other` be able to broadcast to a `self`.
+        - `self` and `other` can not be bool type at the same time,
+          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
     
     Args:
         other (Union[Tensor, number.Number, bool]): `other` is a number.Number or
