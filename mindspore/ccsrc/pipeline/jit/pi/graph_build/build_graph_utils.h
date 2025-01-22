@@ -30,6 +30,11 @@ bool IsSpecialCallableObject(const py::object &obj);
 bool IsObjectCallable(const py::object &obj);
 bool IsSideEffectPrimitive(const PrimitivePtr &prim);
 
+py::tuple GetMethodInfo(const py::object &obj);
+bool IsPyCapsuleTensorOverloadMethod(const py::object &obj);
+bool IsPyCapsuleOverload(const py::object &obj);
+bool IsMsTensorMethod(const py::object &obj);
+
 // Function for register hook
 constexpr auto kRegisterHookKey = "backward_register_hook";
 bool HasRegisterHook(const py::object &obj);

@@ -35,7 +35,7 @@
 #include "frontend/operator/composite/unpack_call.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
-#include "pipeline/jit/pi/graph_build/build_utils.h"
+#include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 
 namespace mindspore {
 namespace pijit {
@@ -92,7 +92,7 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
     SyncStubTensor(handle);
     // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
     // identify the function if need parse by ast
-    if (py::isinstance<Cell>(handle) || PyCFunction_Check(handle.ptr())) {
+    if (py::isinstance<Cell>(handle) || PyCFunction_Check(handle.ptr()) || IsPyCapsuleTensorOverloadMethod(obj)) {
       return std::make_shared<parse::InterpretedObject>(obj);
     }
     if (py::list::check_(obj) || py::tuple::check_(obj)) {
@@ -128,7 +128,6 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
     }
   } catch (const std::exception &e) {
     MS_LOG(INFO) << e.what();
-    // if ast parser failed, convert to interpret object.
   }
   MS_LOG(INFO) << "Failed to convert python object." << py::str(handle);
   return nullptr;
@@ -1473,25 +1472,19 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithAbstract(const ValuePtr &value,
 }
 
 py::object FuncGraphBuilder::ConvertMethod(const py::object &obj) {
-  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-  py::tuple method_info = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);
+  py::tuple method_info = GetMethodInfo(obj);
   py::object class_name_obj = method_info[0];
   if (py::isinstance<py::none>(class_name_obj)) {
     MS_LOG(INFO) << "Can not get the method info of " << py::str(obj);
     return py::object();
   }
   auto class_name = class_name_obj.cast<std::string>();
-  auto method_name = method_info[1].cast<std::string>();
-  if (class_name == "Tensor" || class_name == "PyCapsule") {
-    bool is_tensor_method =
-      py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj));
-    if (class_name == "Tensor" && !is_tensor_method) {
-      return py::object();
-    }
-    if (class_name == "PyCapsule" && is_tensor_method &&
-        ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end()) {
-      class_name = "Tensor";
-    }
+  const auto &method_name = method_info[1].cast<std::string>();
+  if (class_name == "Tensor" && !IsMsTensorMethod(obj)) {
+    return py::object();
+  }
+  if (class_name == "PyCapsule" && IsPyCapsuleTensorOverloadMethod(obj)) {
+    class_name = "Tensor";
   }
 
   auto type_id = GetTypeIdFromClassName(class_name);
@@ -1559,15 +1552,14 @@ bool FuncGraphBuilder::ValidateCallableObject(const py::object &obj) {
 }
 
 bool FuncGraphBuilder::CheckInvalidCellListDictMethod(const py::object &obj) {
-  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-  py::tuple method_info = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);
+  py::tuple method_info = GetMethodInfo(obj);
   constexpr size_t class_index = 0;
   constexpr size_t method_index = 1;
   py::object class_name_obj = method_info[class_index];
   if (class_name_obj.ptr() == nullptr || py::isinstance<py::none>(class_name_obj)) {
     return false;
   }
-  auto class_name = class_name_obj.cast<std::string>();
+  const auto &class_name = class_name_obj.cast<std::string>();
   MS_LOG(INFO) << "class name: " << class_name;
   if (class_name != "CellList" && class_name != "CellDict") {
     return false;
