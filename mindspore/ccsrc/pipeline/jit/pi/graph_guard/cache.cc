@@ -129,7 +129,10 @@ OptCodePtr OptCodeHub::AddOptTarget(OptOptionPtr option) {
   return ret;
 }
 
-const OptCodeSet &OptCodeHub::GetOptTarget(OptOptionPtr option) { return codeMap_[option]; }
+const OptCodeSet &OptCodeHub::GetOptTarget(const OptOptionPtr &option, const OptCodeSet &defaults) {
+  auto iter = codeMap_.find(option);
+  return iter != codeMap_.end() ? iter->second : defaults;
+}
 
 void OptCodeHub::UpdateOptTarget(OptOptionPtr option, OptCodePtr code) {
   for (auto &item : codeMap_) {
@@ -206,8 +209,12 @@ CodeCache::CodeCache(void *jcr)
     : jcr_(OptOption::CreateOptionByPoint(jcr)), code_hub_(std::make_shared<OptCodeHub>()) {}
 
 void CodeCache::CollectFailGuard() {
+  auto iter = code_hub_->codeMap_.find(jcr_);
+  if (iter == code_hub_->codeMap_.end()) {
+    return;
+  }
   GuardItemSet set;
-  for (const auto &i : code_hub_->GetOptTarget(jcr_)) {
+  for (const auto &i : iter->second) {
     for (const auto &j : i->GetGuard()->guard_list()) {
       if (j->fail_count() != 0) {
         set.emplace(j);

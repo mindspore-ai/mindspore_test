@@ -791,13 +791,17 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   StaticAnalysisExceptionCleaner exception_cleaner;
   CaptureContext::DisableScope compiler_disable_scope;
 
+  OptOptionPtr opt = OptOption::CreateOptionByPoint(c);
+  OptCodeSet set;
+  const auto &ref = c->codehub()->GetOptTarget(opt, set);
+  if (ref.empty()) {
+    return false;
+  }
   c->set_code(nullptr);
   std::map<size_t, PyObject *> cache;
   std::map<size_t, bool> success;
   std::map<size_t, bool> fail;
-  OptOptionPtr opt = OptOption::CreateOptionByPoint(c);
-  auto set = c->codehub()->GetOptTarget(opt);
-  set = OptStrategy::MakeGuardListStrategyByFrame(set);
+  set = OptStrategy::MakeGuardListStrategyByFrame(ref);
   for (size_t i = set.size(); i != 0; i--) {
     auto oc = set[i - 1];
     OptGuardPtr guard = oc->GetGuard();
