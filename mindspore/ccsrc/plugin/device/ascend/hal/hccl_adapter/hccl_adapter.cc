@@ -268,11 +268,12 @@ bool HcclAdapter::InitHccl(uint32_t device_id, std::string_view rank_id, std::st
   return true;
 }
 
-bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info) {
+bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, bool *disable) {
   if (!init_flag_) {
     MS_LOG(INFO) << "Hccl has never been inited, skip.";
     return true;
   }
+  MS_EXCEPTION_IF_NULL(disable);
   CheckExcutionMode();
   if (hccl_get_comm_async_error_ == nullptr) {
     MS_LOG(INFO) << "Hccl has never been inited, skip.";
@@ -283,8 +284,13 @@ bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info) {
     return true;
   }
   HcclResult hccl_async_error;
-  (void)hccl_get_comm_async_error_(comm, &hccl_async_error);
-  MS_LOG(DEBUG) << "hccl_get_comm_async_error_ res: " << hccl_async_error;
+  auto ret = hccl_get_comm_async_error_(comm, &hccl_async_error);
+  if (ret != HCCL_SUCCESS) {
+    MS_LOG(WARNING) << "Call HcclGetCommAsyncError failed, close watchdog.";
+    *disable = true;
+    return true;
+  }
+  MS_LOG(DEBUG) << "hccl_get_comm_async_error_ res: " << hccl_async_error << ", comm: " << comm;
   if (hccl_async_error != HCCL_SUCCESS) {
     std::ostringstream oss;
     oss << "Hccl get comm async error failed, error code is: " << hccl_async_error

@@ -26,11 +26,12 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-bool HcclWatchDogManager::InitHandler() {
-  if (handles_ == nullptr) {
+bool HcclWatchDogManager::InitHandler(uint32_t idx) {
+  if (handles_.empty() || idx > handles_.size() || idx <= 0) {
     return false;
   }
-  return handles_->Initialize();
+  MS_EXCEPTION_IF_NULL(handles_[idx - 1]);
+  return handles_[idx - 1]->Initialize();
 }
 
 HcclWatchDogHandler::~HcclWatchDogHandler() {
@@ -39,36 +40,36 @@ HcclWatchDogHandler::~HcclWatchDogHandler() {
   if (thread_.joinable()) {
     thread_.join();
   }
-  MS_LOG(INFO) << "HcclWatchDogHandler thread exit. global rank id: " << global_rank_id_
-               << " local rank id: " << local_rank_id_ << ", global rank size: " << global_rank_size_;
+  MS_LOG(INFO) << "HcclWatchDogHandler thread exit, rank id: " << rank_id_ << ", group name: " << group_name_;
 }
 
-HcclWatchDogHandler::HcclWatchDogHandler(uint32_t global_rank_id, uint32_t local_rank_id, uint32_t global_rank_size,
-                                         const std::map<std::string, HcclComm> &hcoms)
-    : global_rank_id_(global_rank_id),
-      local_rank_id_(local_rank_id),
-      global_rank_size_(global_rank_size),
-      hcoms_(hcoms) {}
+HcclWatchDogHandler::HcclWatchDogHandler(uint32_t rank_id, const std::string &group_name, HcclComm hcom) {
+  rank_id_ = rank_id;
+  group_name_ = group_name;
+  hcom_ = hcom;
+}
 
 bool HcclWatchDogHandler::Initialize() {
-  MS_LOG(INFO) << "Initialize hccl watch dog handler. global rank id: " << global_rank_id_
-               << " local rank id: " << local_rank_id_ << ", global rank size: " << global_rank_size_;
+  MS_LOG(INFO) << "Initialize hccl watch dog handler. rank id: " << rank_id_ << ", group name: " << group_name_;
   thread_ = std::thread(&HcclWatchDogHandler::WatchDogProcess, this);
   return true;
 }
 
-void HcclWatchDogHandler::SetException(HcclComm hcom, std::string *error_info) {
+void HcclWatchDogHandler::SetException(std::string *error_info, bool *disable) {
   MS_EXCEPTION_IF_NULL(error_info);
-  MS_EXCEPTION_IF_NULL(hcom);
-  if (exception() != nullptr) {
+  MS_EXCEPTION_IF_NULL(disable);
+  MS_EXCEPTION_IF_NULL(hcom_);
+  if (exception_ != nullptr) {
     MS_LOG(WARNING) << "Already has an exception";
     return;
   }
-  MS_LOG(DEBUG) << "Check watch dog for: " << hcom;
-  if (!hccl::HcclAdapter::GetInstance().HcclWatchdogThread(hcom, error_info)) {
+  MS_LOG(DEBUG) << "Watch dog checking for hcom: " << hcom_ << ", group name: " << group_name_
+                << ", rank id: " << rank_id_;
+  auto ret = hccl::HcclAdapter::GetInstance().HcclWatchdogThread(hcom_, error_info, disable);
+  if (!ret) {
     std::ostringstream param_oss;
-    param_oss << "HcclWatchdogThread catch an error: " << *error_info << ", local rank id: [" << local_rank_id_
-              << "], global rank id: [" << global_rank_id_ << "], global rank size: [" << global_rank_size_ << "].";
+    param_oss << "HcclWatchdogThread catch an error: " << *error_info << ", rank id: " << rank_id_
+              << ", group name: " << group_name_;
     auto exception_ptr = std::make_exception_ptr(std::runtime_error(param_oss.str()));
     std::unique_lock<std::mutex> lock(mutex_);
     exception_ = exception_ptr;
@@ -77,18 +78,12 @@ void HcclWatchDogHandler::SetException(HcclComm hcom, std::string *error_info) {
 
 void HcclWatchDogHandler::DestroyHcclComm() {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (auto &pair : hcoms_) {
-    auto name = pair.first;
-    MS_LOG(INFO) << "Destroy hccl comm: " << name;
-    if (pair.second == nullptr) {
-      continue;
-    }
-    (void)HcclCommDestroy(pair.second);
-  }
+  MS_LOG(INFO) << "Destroy hccl comm, group name: " << group_name_ << ", rank id: " << rank_id_;
+  (void)HcclCommDestroy(hcom_);
 }
 
 void HcclWatchDogHandler::HandleException() {
-  if (exception()) {
+  if (exception_) {
     std::rethrow_exception(exception_);
   }
 }
@@ -98,27 +93,33 @@ void HcclWatchDogHandler::Terminate() { terminate_.store(true, std::memory_order
 void HcclWatchDogHandler::DoProcess() {
   // check exception in every 2s
   constexpr int64_t kQueryFrequency = 2000;
-  MS_LOG(INFO) << "Start check watch dog thread in every 2s .";
+  std::string error_info;
   while (!terminate_.load()) {
+    MS_LOG(DEBUG) << "Start check watch dog thread in every 2s .";
     std::this_thread::sleep_for(std::chrono::milliseconds(kQueryFrequency));
-    std::string error_info;
-    for (const auto &hcom_pair : hcoms_) {
-      error_info.clear();
-      SetException(hcom_pair.second, &error_info);
-      if (exception()) {
-        DestroyHcclComm();
-        HandleException();
-        Terminate();
-        break;
-      }
+    error_info.clear();
+    bool disable = false;
+    SetException(&error_info, &disable);
+    if (disable) {
+      MS_LOG(WARNING) << "Call HcclGetCommAsyncError failed, close watchdog, group: " << group_name_;
+      Terminate();
+      break;
+    }
+    if (exception_) {
+      MS_LOG(ERROR) << "Watchdog thread got hccl error, try to stop training. rank: " << rank_id_
+                    << ", group name:" << group_name_;
+      DestroyHcclComm();
+      HandleException();
+      Terminate();
     }
   }
 }
 
 void HcclWatchDogHandler::WatchDogProcess() {
-  MS_LOG(INFO) << "WatchDogProcess start";
+  MS_LOG(INFO) << "WatchDogProcess start, rank id: " << rank_id_ << ", group name: " << group_name_;
   if (!(common::GetEnv(kSimulationLevel).empty() && common::UseHostCollective() &&
         !hccl::HcclAdapter::GetInstance().UseHcclCM())) {
+    MS_LOG(INFO) << "No need watch dog, return!";
     return;
   }
   try {
@@ -137,7 +138,7 @@ void HcclWatchDogHandler::WatchDogProcess() {
     auto exp = std::make_exception_ptr(std::runtime_error(msg));
     MsException::Instance().SetException(exp);
   }
-  MS_LOG(DEBUG) << "end";
+  MS_LOG(INFO) << "end";
 }
 }  // namespace ascend
 }  // namespace device

@@ -69,7 +69,7 @@ class HcclAdapter {
   HcclResult HcclCreateSubCommConfig(HcclComm *global_comm, uint32_t rank_size, uint32_t *rank_ids, uint64_t comm_id,
                                      uint32_t rank_id, HcclCommConfig *config, HcclComm *hccl_comm_);
   bool FinalizeHccl();
-  bool HcclWatchdogThread(HcclComm comm, std::string *error_info);
+  bool HcclWatchdogThread(HcclComm comm, std::string *error_info, bool *ret);
   const bool Inited() const { return init_flag_; }
   const HcclComm get_hccl_comm() const { return hccl_comm_; }
   HcclResult HcclCreateGroup(const std::string &group, uint32_t rank_num, uint32_t *rank_ids) const;
