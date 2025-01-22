@@ -2836,6 +2836,20 @@ REG_BPROP_BUILDER("Reciprocal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Log").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
+  auto x_dtype_id = ib->GetDtypeId(x);
+  if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
+    MS_EXCEPTION(TypeError) << "For 'Log', gradient not support for complex type currently.";
+  }
+  return {ib->Div(dout, x)};
+});
+
+REG_BPROP_BUILDER("InplaceLog").CloneInplaceInput().SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto x_dtype_id = ib->GetDtypeId(x);
+  if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
+    MS_EXCEPTION(TypeError) << "For 'InplaceLog', gradient not support for complex type currently.";
+  }
   return {ib->Div(dout, x)};
 });
 

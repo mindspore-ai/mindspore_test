@@ -1,0 +1,20 @@
+#operator inplace_log
+inplace_log:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  class:
+    name: InplaceLog
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceLogAscend
