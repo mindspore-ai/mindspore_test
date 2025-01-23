@@ -86,7 +86,8 @@ CNodePtr CreateTransposeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_
   std::vector<AnfNodePtr> transpose_inputs = {NewValueNode(prim::kPrimTranspose->Clone()), input_node,
                                               transpose_perm_node};
   static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
-  if (!close_view_op) {
+  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  if (!close_view_op && !ge_mode) {
     auto monad_input = NewValueNode(kUMonad);
     monad_input->set_abstract(kUMonad->ToAbstract());
     (void)transpose_inputs.emplace_back(monad_input);

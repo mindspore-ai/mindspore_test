@@ -15,7 +15,6 @@
 """
 Test module for parallel training of Llama models using Mindformers at jit_level O2.
 """
-import pytest
 import os
 import shutil
 import subprocess
@@ -116,7 +115,6 @@ def test_train_auto_compile():
     run_command_auto_compile(f"bash {sh_path}/dry_compile.sh auto compile", f"{sh_path}/compile_auto.log", 11000)
 
 
-@pytest.mark.skip(reason="view feature not supported level0")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='dryrun_only', essential_mark='essential')
 def test_train_pipeline():
     """

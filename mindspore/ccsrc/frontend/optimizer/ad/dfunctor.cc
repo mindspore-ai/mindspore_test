@@ -104,7 +104,8 @@ bool StopGradientForUpdateState(const CNodePtr &cnode) {
     return false;
   }
   static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
-  return close_view_op;
+  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  return close_view_op || ge_mode;
 }
 
 bool IsUpdateStateUseOnlyTuple(const FuncGraphManagerPtr &manager, const AnfNodePtr &node) {
