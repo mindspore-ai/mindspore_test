@@ -16,13 +16,14 @@
 """Op precision interfaces."""
 
 from mindspore._checkparam import args_type_check
-from  .device import _is_supported
+from .device import _is_supported
 try:
     from mindspore._c_expression import GPUOpPrecisionConf
 except ImportError:
     pass
 
 function_status = {'matmul_allow_tf32': False, 'conv_allow_tf32': False}
+
 
 @args_type_check(value=bool)
 def matmul_allow_tf32(value):

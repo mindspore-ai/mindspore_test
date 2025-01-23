@@ -16,7 +16,7 @@
 """Op precision interfaces."""
 import os
 from mindspore._checkparam import args_type_check
-from  .device import _is_supported
+from .device import _is_supported
 
 try:
     from mindspore._c_expression import AscendOpPrecisionConf

@@ -18,7 +18,7 @@ try:
     from mindspore._c_expression import AscendOpTuningConf
 except ImportError:
     pass
-from  .device import _is_supported
+from .device import _is_supported
 
 function_status = {'op_compile': False, 'aoe_tune_mode': False,
                    'aoe_job_type': False}
