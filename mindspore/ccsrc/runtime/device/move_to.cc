@@ -18,6 +18,7 @@
 #include <algorithm>
 #include "runtime/device/move_to.h"
 #include "include/backend/device_type.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
@@ -110,6 +111,8 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
       nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, host_shape, to, device_id);
     dst_addr = target_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
     MS_EXCEPTION_IF_NULL(dst_addr);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+                                                   dst_addr->GetSize(), dst_addr.get());
     if (!target_context->device_res_manager_->AllocateMemory(dst_addr.get(), stream_id)) {
       MS_LOG(EXCEPTION) << "Allocate memory failed, maybe device memory(device id:" << device_id
                         << ") isn't enough. Allocate size: " << size;

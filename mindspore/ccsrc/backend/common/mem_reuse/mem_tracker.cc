@@ -697,7 +697,8 @@ void MemoryTrackerEnabled::UseMemBlock(const std::string &task_name, DeviceMemPt
   }
   auto mem_info = iter->second->mem_info.lock();
   if (mem_info == nullptr) {
-    MS_LOG(ERROR) << "MemoryTracker UseMemBlock failed, mem_info is null, " << file_name << ":" << line_num;
+    MS_LOG(ERROR) << "MemoryTracker UseMemBlock failed, mem_info is null, " << file_name << ":" << line_num
+                  << ", addr:" << device_addr;
     return;
   }
   mem_info->user_tasks.push_back(task_iter->second);
