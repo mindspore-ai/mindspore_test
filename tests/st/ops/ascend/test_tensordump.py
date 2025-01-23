@@ -251,7 +251,7 @@ def test_tensordump_when_graph_pynative_hybrid_rank_step():
             return x
 
         def construct(self, x):
-            x += 1
+            x = x + 1
             self.dump(self.add_path, x)
             x = self.compute(x)
             return x
@@ -262,6 +262,8 @@ def test_tensordump_when_graph_pynative_hybrid_rank_step():
         step_flag = "<tensordump-update-step>"
         _run_op(ops.TensorDump(), "TensorDump", (step_flag, temp_tensor))
         ops.tensordump(step_flag, temp_tensor)
+        hal.synchronize()
+        time.sleep(2)
 
     ms.set_context(device_target="Ascend")
     temp_dir = tempfile.TemporaryDirectory(suffix="TensorDump_step_rank")
@@ -272,10 +274,10 @@ def test_tensordump_when_graph_pynative_hybrid_rank_step():
     x = ms.Tensor(np_data)
     net = Net(path)
     _tensordump_set_step([0, 2])
-    for _ in range(3):
-        net(x.copy())
+    for _ in range(4):
+        net(x)
         step()
-    time.sleep(1)
+
     validate_files(temp_dir.name, "rank0", ["step0", "step2"], {
         "step0/add_float16_0.npy": target_add,
         "step0/mul_float16_1.npy": target_mul,
