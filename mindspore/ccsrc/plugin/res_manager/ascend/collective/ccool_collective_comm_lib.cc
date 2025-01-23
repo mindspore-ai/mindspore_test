@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ccool_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/leaper_trans.h"
+#include "plugin/res_manager/ascend/collective/leaper_trans.h"
 #include "include/common/factory/ms_factory.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 namespace mindspore {

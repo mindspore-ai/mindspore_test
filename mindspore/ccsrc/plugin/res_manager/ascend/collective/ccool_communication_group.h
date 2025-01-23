@@ -25,9 +25,9 @@
 #include <nlohmann/json.hpp>
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/communication_group.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/leaper_trans.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
+#include "plugin/res_manager/ascend/collective/leaper_trans.h"
 
 namespace mindspore {
 namespace device {

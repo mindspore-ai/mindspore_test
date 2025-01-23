@@ -25,6 +25,7 @@
 #include <memory>
 #include "utils/ms_context.h"
 #include "utils/device_manager_conf.h"
+#include "utils/distributed_meta.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "distributed/persistent/storage/json_utils.h"
@@ -228,6 +229,7 @@ bool CollectiveManager::Initialize() {
   inited_ = true;
   finalized_ = false;
   need_reinit_ = false;
+  SetDistributedMeta();
   return true;
 }
 
@@ -276,6 +278,7 @@ bool CollectiveManager::InitializeDummyCommLib() {
   inited_ = true;
   finalized_ = false;
   need_reinit_ = false;
+  SetDistributedMeta();
   return true;
 }
 
@@ -948,6 +951,17 @@ void CollectiveManager::SetDeviceIDEnvByRuntimeConf() {
     local_rank_id_ = device_id;
     common::SetEnv("DEVICE_ID", std::to_string(device_id).c_str());
   }
+}
+
+void CollectiveManager::SetDistributedMeta() {
+  MS_LOG(DEBUG) << "Set distributed meta data to core module: global rank id: " << global_rank_id_
+                << ", global rank size: " << global_rank_size_ << ", local rank id: " << local_rank_id_
+                << ", local rank size: " << local_rank_size_;
+  DistributedMeta::GetInstance()->set_initialized();
+  DistributedMeta::GetInstance()->set_global_rank_id(global_rank_id_);
+  DistributedMeta::GetInstance()->set_global_rank_size(global_rank_size_);
+  DistributedMeta::GetInstance()->set_local_rank_id(local_rank_id_);
+  DistributedMeta::GetInstance()->set_local_rank_size(local_rank_size_);
 }
 }  // namespace collective
 }  // namespace distributed

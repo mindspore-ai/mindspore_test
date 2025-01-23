@@ -26,9 +26,9 @@
 #include "kernel/kernel.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ccool_communication_group.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
+#include "plugin/res_manager/ascend/collective/ccool_communication_group.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 #include "kernel/ascend/opapi/aclnn/add_aclnn_kernel.h"
 #ifndef EXPORT_WRAPPER
 #define EXPORT_WRAPPER __attribute__((visibility("default")))

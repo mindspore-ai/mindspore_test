@@ -21,9 +21,9 @@
 #include <vector>
 #include <memory>
 #include "runtime/collective/communication_group.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
+#include "plugin/res_manager/ascend/collective/ascend_communication_group.h"
 #ifdef ENABLE_INTERNAL_KERNELS
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/lowlatency_communication_group.h"
+#include "plugin/res_manager/ascend/collective/lowlatency_communication_group.h"
 #endif
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/dlopen_macro.h"

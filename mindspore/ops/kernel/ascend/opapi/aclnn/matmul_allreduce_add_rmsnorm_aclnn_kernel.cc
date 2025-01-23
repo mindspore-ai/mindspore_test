@@ -19,7 +19,7 @@
 #include "ir/tensor.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "kernel/ascend/opapi/aclnn/matmul_allreduce_add_rmsnorm_aclnn_kernel.h"
 
 namespace mindspore {
