@@ -35,6 +35,7 @@ aclrtGetSocNameFunObj aclrtGetSocName_ = nullptr;
 aclUpdateDataBufferFunObj aclUpdateDataBuffer_ = nullptr;
 aclGetDataBufferAddrFunObj aclGetDataBufferAddr_ = nullptr;
 aclGetTensorDescSizeFunObj aclGetTensorDescSize_ = nullptr;
+aclGetRecentErrMsgFunObj aclGetRecentErrMsg_ = nullptr;
 
 void LoadAclBaseApiSymbol(const std::string &ascend_path) {
   std::string aclbase_plugin_path = "lib64/libascendcl.so";
@@ -59,6 +60,7 @@ void LoadAclBaseApiSymbol(const std::string &ascend_path) {
   aclUpdateDataBuffer_ = DlsymAscendFuncObj(aclUpdateDataBuffer, base_handler);
   aclGetDataBufferAddr_ = DlsymAscendFuncObj(aclGetDataBufferAddr, base_handler);
   aclGetTensorDescSize_ = DlsymAscendFuncObj(aclGetTensorDescSize, base_handler);
+  aclGetRecentErrMsg_ = DlsymAscendFuncObj(aclGetRecentErrMsg, base_handler);
   MS_LOG(INFO) << "Load acl base api success!";
 }
 
@@ -78,6 +80,7 @@ void LoadSimulationAclBaseApi() {
   ASSIGN_SIMU(aclUpdateDataBuffer);
   ASSIGN_SIMU(aclGetDataBufferAddr);
   ASSIGN_SIMU(aclGetTensorDescSize);
+  ASSIGN_SIMU(aclGetRecentErrMsg);
 }
 }  // namespace transform
 }  // namespace mindspore

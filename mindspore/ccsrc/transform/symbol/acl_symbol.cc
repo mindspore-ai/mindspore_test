@@ -21,7 +21,6 @@ namespace mindspore {
 namespace transform {
 
 aclInitFunObj aclInit_ = nullptr;
-aclGetRecentErrMsgFunObj aclGetRecentErrMsg_ = nullptr;
 aclFinalizeFunObj aclFinalize_ = nullptr;
 
 void LoadAclApiSymbol(const std::string &ascend_path) {
@@ -32,7 +31,6 @@ void LoadAclApiSymbol(const std::string &ascend_path) {
     return;
   }
   aclInit_ = DlsymAscendFuncObj(aclInit, base_handler);
-  aclGetRecentErrMsg_ = DlsymAscendFuncObj(aclGetRecentErrMsg, base_handler);
   aclFinalize_ = DlsymAscendFuncObj(aclFinalize, base_handler);
   MS_LOG(INFO) << "Load acl base api success!";
 }
