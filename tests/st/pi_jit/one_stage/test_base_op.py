@@ -1421,6 +1421,32 @@ def test_function_decorated_with_PSJIT_run_ast_6():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_sync_constant_stub_tensor():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            a = Tensor([1])
+            b = Tensor([2])
+            self.stub_tensor_attr = ops.add(a, b)
+
+        @jit(mode="PIJit", jit_config={"compile_with_try": False})
+        def construct(self, x):
+            if self.stub_tensor_attr == 0:
+                return x + 1
+            return x - 1
+
+    net = Net()
+    input_x = Tensor([1, 2, 3])
+    ret = net(input_x)
+    assert np.all(ret.asnumpy() == np.array([0, 1, 2]))
+    assert_executed_by_graph_mode(net.construct)
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_unpack_for_variable_tensor():
     """
     Feature: One stage basic operation.
