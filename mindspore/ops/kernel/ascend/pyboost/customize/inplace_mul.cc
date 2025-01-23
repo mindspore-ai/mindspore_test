@@ -24,29 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-static inline bool CanCast(const BaseTensorPtr &from, const BaseTensorPtr &to) {
-  if (PyBoostUtils::IsComplex(from) && !PyBoostUtils::IsComplex(to)) {
-    return false;
-  }
-  if (PyBoostUtils::IsFloat(from) && PyBoostUtils::IsIntegral(to)) {
-    return false;
-  }
-  if (!PyBoostUtils::IsBool(from) && PyBoostUtils::IsBool(to)) {
-    return false;
-  }
-  return true;
-}
-
 tensor::BaseTensorPtr InplaceMulAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                                 const BaseTensorPtr &other_tensor) {
   MS_LOG(DEBUG) << "Call InplaceMul start";
-  // Align Pytorch's logic on arithmetic operations.
-  // For details, please refer to "torch.dtype".
-  if (MS_UNLIKELY(!CanCast(other_tensor, input_tensor))) {
-    MS_EXCEPTION(TypeError) << "For " << op->primitive()->name() << ", other type " << other_tensor->Dtype()
-                            << " can't be cast to the desired output type " << input_tensor->Dtype();
-  }
-
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, other_tensor);
   op->set_outputs({input_tensor});
   // Async

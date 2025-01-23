@@ -258,6 +258,7 @@
     mindspore.Tensor.msort
     mindspore.Tensor.mT
     mindspore.Tensor.mul
+    mindspore.Tensor.mul_
     mindspore.Tensor.multinomial
     mindspore.Tensor.multiply
     mindspore.Tensor.mvlgamma
