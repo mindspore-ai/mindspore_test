@@ -302,9 +302,9 @@ void PSContext::set_client_password(const char *password) {
   if (strlen(password) >= kMaxPasswordLen) {
     MS_LOG(EXCEPTION) << "Client password is longer than max password length " << kMaxPasswordLen;
   }
-  int ret = memcpy_s(client_password_, kMaxPasswordLen, password, strlen(password));
+  int ret = Memcpy(client_password_, kMaxPasswordLen, password, strlen(password));
   if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "memcpy_s client password failed, error: " << ret;
+    MS_LOG(EXCEPTION) << "Memcpy client password failed, error: " << ret;
   }
 }
 
@@ -323,9 +323,9 @@ void PSContext::set_server_password(const char *password) {
   if (strlen(password) >= kMaxPasswordLen) {
     MS_LOG(EXCEPTION) << "Client password is longer than max password length " << kMaxPasswordLen;
   }
-  int ret = memcpy_s(server_password_, kMaxPasswordLen, password, strlen(password));
+  int ret = Memcpy(server_password_, kMaxPasswordLen, password, strlen(password));
   if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "memcpy_s server password failed, error: " << ret;
+    MS_LOG(EXCEPTION) << "Memcpy server password failed, error: " << ret;
   }
 }
 

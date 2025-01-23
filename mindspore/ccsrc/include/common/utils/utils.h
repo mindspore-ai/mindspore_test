@@ -429,5 +429,13 @@ static inline double GetCurrentUSec() {
 
 #define _STRING_COMPILE_OPT(x) #x
 #define STRING_COMPILE_OPT(x) _STRING_COMPILE_OPT(x)
+
+static inline errno_t Memcpy(void *dest, size_t destMax, const void *src, size_t count) {
+  if (count > SECUREC_MEM_MAX_LEN || destMax > SECUREC_MEM_MAX_LEN) {
+    (void)memcpy(dest, src, count);
+    return EOK;
+  }
+  return memcpy_s(dest, destMax, src, count);
+}
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_UTILS_H_
