@@ -381,6 +381,14 @@ void AttachCustomBPropToGraph(const FuncGraphPtr &graph, const py::object &obj) 
   return;
 }
 
+bool IsCellList(const py::object &obj) { return obj.ptr() != nullptr && py::hasattr(obj, PYTHON_CELL_AS_LIST); }
+
+bool IsConvertToInterpretedObject(const py::object &obj) {
+  // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
+  // identify the function if need parse by ast
+  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsPyCapsuleTensorOverloadMethod(obj);
+}
+
 bool HasRegisterHook(const py::object &obj) { return HookUtils::HasRegisterHook(obj); }
 
 py::list GetRegisterHookList(const py::object &obj) { return HookUtils::GetRegisterHookList(obj); }
