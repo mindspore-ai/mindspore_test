@@ -17,7 +17,7 @@ from mindspore._c_expression import Event as Event_
 from mindspore._c_expression import Stream as Stream_
 from mindspore._c_expression import current_stream as current_stream_
 from mindspore import _checkparam as Validator
-from  .device import _is_supported
+from .device import _is_supported
 
 function_event_status = {'Event': False, 'wait': False}
 

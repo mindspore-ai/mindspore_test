@@ -15,7 +15,7 @@
 
 """Op debug interfaces."""
 from mindspore._checkparam import args_type_check
-from  .device import _is_supported
+from .device import _is_supported
 try:
     from mindspore._c_expression import AscendOpDebugConf
 except ImportError:
