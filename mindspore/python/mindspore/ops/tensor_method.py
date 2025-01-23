@@ -520,6 +520,7 @@ def tensor_argsort(input, dim=-1, descending=False):
 def deprecated_tensor_argsort(input, axis=-1, descending=False):
     return argsort(input, axis, descending)
 
+
 # 13 atan2
 def tensor_atan2(input, other):
     return atan2(input, other)
