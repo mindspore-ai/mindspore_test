@@ -907,7 +907,7 @@ std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, bool *next
 
 std::shared_ptr<TensorLayout> FindNextLayoutForSpecialNode(const std::pair<AnfNodePtr, int64_t> &node_pair,
                                                            bool *next_is_reshape, mindspore::HashSet<AnfNodePtr> *visit,
-                                                           int make_tuple_index, int tuple_get_index,
+                                                           bool *skip, int make_tuple_index, int tuple_get_index,
                                                            const std::shared_ptr<TensorLayout> &pre_layout) {
   auto use_apply = node_pair.first->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(use_apply);
@@ -938,6 +938,7 @@ std::shared_ptr<TensorLayout> FindNextLayoutForSpecialNode(const std::pair<AnfNo
   if (IsPrimitiveCNode(use_apply, prim::kPrimTupleGetItem)) {
     auto temp = LongToInt(GetTupleGetItemIndex(use_apply));
     if (temp != make_tuple_index - 1 && make_tuple_index > 0) {
+      *skip = true;
       return nullptr;
     }
     temp = make_tuple_index > 0 ? -1 : temp;
@@ -1016,10 +1017,14 @@ std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, bool *next
       return pre_layout;
     }
 
-    auto next_layout =
-      FindNextLayoutForSpecialNode(node_pair, next_is_reshape, visit, make_tuple_index, tuple_get_index, pre_layout);
+    bool skip = false;
+    auto next_layout = FindNextLayoutForSpecialNode(node_pair, next_is_reshape, visit, &skip, make_tuple_index,
+                                                    tuple_get_index, pre_layout);
     if (next_layout != nullptr) {
       return next_layout;
+    }
+    if (skip) {
+      continue;
     }
 
     if (!IsValueNode<Primitive>(use_apply->input(0))) {
