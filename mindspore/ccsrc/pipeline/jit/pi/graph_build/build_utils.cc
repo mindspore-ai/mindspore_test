@@ -44,6 +44,13 @@ bool IsMsClassObject(const py::object &obj) {
 
 bool IsMetaFuncGraphObject(const py::object &obj) { return py::isinstance<MetaFuncGraph>(obj); }
 }  // namespace
+void SyncStubTensor(const py::handle &obj) {
+  if (!IsStubTensor(obj)) {
+    return;
+  }
+  auto tensor = ConvertStubTensor(obj);
+  tensor->data_sync();
+}
 
 bool IsSpecialCallableObject(const py::object &obj) {
   static mindspore::HashSet<std::string> func_names{"cast_to_adapter_tensor", "cast_to_ms_tensor"};

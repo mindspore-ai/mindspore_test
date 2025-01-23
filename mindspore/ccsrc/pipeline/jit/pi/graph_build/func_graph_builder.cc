@@ -89,7 +89,7 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
     MS_LOG_TRY_CATCH_SCOPE;
 
     PyRecursionScope rec_check(obj);
-
+    SyncStubTensor(handle);
     // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
     // identify the function if need parse by ast
     if (py::isinstance<Cell>(handle) || PyCFunction_Check(handle.ptr())) {

@@ -24,6 +24,8 @@ namespace py = pybind11;
 
 namespace mindspore {
 namespace pijit {
+void SyncStubTensor(const py::handle &obj);
+
 bool IsSpecialCallableObject(const py::object &obj);
 bool IsObjectCallable(const py::object &obj);
 bool IsSideEffectPrimitive(const PrimitivePtr &prim);
