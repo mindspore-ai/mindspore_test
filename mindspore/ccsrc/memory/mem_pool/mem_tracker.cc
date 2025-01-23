@@ -28,11 +28,11 @@
 #include "ir/dtype.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "utils/distributed_meta.h"
 #include "include/common/debug/common.h"
 #include "include/backend/device_type.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/common/utils/utils.h"
-#include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

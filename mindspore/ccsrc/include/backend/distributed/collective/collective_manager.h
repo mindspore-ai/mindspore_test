@@ -186,6 +186,10 @@ class BACKEND_EXPORT CollectiveManager {
   // This method will consume the tasks in init_comm_task_queue_.
   void RunInitCommTasks();
 
+  // Set distributed meta data to libmindspore_core.so so that low level modules can access distributed meta data while
+  // bypassing CollectiveManager module.
+  void SetDistributedMeta();
+
   std::atomic_bool inited_;
   std::atomic_bool finalized_;
 

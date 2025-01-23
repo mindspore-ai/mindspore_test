@@ -44,10 +44,13 @@
 #include "runtime/device/tensor_array.h"
 #include "acl/acl_rt.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ccool_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ccool_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/dummy_ascend_collective_comm_lib.h"
+#ifdef ENABLE_INTERNAL_KERNELS
+#include "plugin/res_manager/ascend/collective/lowlatency_collective_comm_lib.h"
+#endif
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 

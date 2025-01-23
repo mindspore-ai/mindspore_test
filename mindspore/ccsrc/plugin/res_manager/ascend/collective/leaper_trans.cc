@@ -15,7 +15,7 @@
  */
 
 #include <chrono>
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/leaper_trans.h"
+#include "plugin/res_manager/ascend/collective/leaper_trans.h"
 
 constexpr size_t kFlowNum = 4;
 constexpr size_t kSleepTime = 100;
