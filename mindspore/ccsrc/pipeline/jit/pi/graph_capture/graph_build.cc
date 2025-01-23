@@ -1197,109 +1197,15 @@ bool GraphBuilder::DoAttrAccess(const Instr &instr) {
   return true;
 }
 
-// for unpack call optimize
-static ValueNode *TupleDictGetItem(ValueNode *container, ValueNode *index_node) {
-  if (!index_node->IsConstantValue()) {
-    return nullptr;
-  }
-  PyObject *index_object = index_node->GetVobj()->GetPyObject().ptr();
-  int opcode = container->GetOpcode();
-  if ((opcode == BUILD_TUPLE || opcode == BUILD_LIST) && PyLong_Check(index_object)) {
-    Py_ssize_t index = PyLong_AsSsize_t(index_object);
-    Py_ssize_t size = container->getInputs().size();
-    if (index < -size || index >= size) {
-      return nullptr;
-    }
-    index = index < 0 ? (size + index) : index;
-    return container->input(index);
-  }
-  if (container->GetOpcode() == BUILD_MAP && PyUnicode_Check(index_object)) {
-    std::string k = PyUnicode_AsUTF8(index_object);
-    size_t element_count = container->GetOparg() << 1;
-    MS_EXCEPTION_IF_CHECK_FAIL(element_count == container->getInputs().size(), "check BUILD_MAP oparg");
-    for (int i = 0; i < container->GetOparg(); ++i) {
-      AObject *tmp = container->input(i * 2)->GetVobj();
-      PyObject *str = tmp ? tmp->GetPyObject().ptr() : nullptr;
-      if (str == nullptr || !PyUnicode_Check(str) || k != PyUnicode_AsUTF8(str)) {
-        continue;
-      }
-      return container->input((i << 1) + 1);
-    }
-  }
-  return nullptr;
-}
-
-// todo: this function should not be called later.
-bool GraphBuilder::DoGetItemWithByteCode(const Instr &instr) {
-  constexpr const char *kNameGetItem = "__getitem__";
-  auto r = pop();
-  auto l = pop();
-  ValueNode *v = TupleDictGetItem(l, r);
-  if (v != nullptr) {
-    push(v);
-    return true;
-  }
-
-  AObject *container = l->GetVobj();
-  PyObject *op = container ? container->GetPyObject().ptr() : nullptr;
-  AObject *meth = nullptr;
-
-  bool call_getitem = op == nullptr || container->GetType() != AObject::kTypeAnyValue;
-  if (!call_getitem) {
-    call_getitem = PyDict_Check(op) || PyTuple_Check(op) || PyList_Check(op);
-  }
-  if (!call_getitem) {
-    meth = container->GetAttr(kNameGetItem);
-    PyObject *m = meth ? meth->GetPyObject().ptr() : nullptr;
-    call_getitem = m == nullptr || !PyMethod_Check(m) || !PyFunction_Check(PyMethod_GET_FUNCTION(m));
-  }
-  if (call_getitem) {
-    /**
-     * check safe callable of __getitem__ if user defined.
-     */
-    AObject *vo = l->binary_subscr(r);
-    v = NewValueNode(vo, instr, {l, r});
-    push(v);
-    return true;
-  }
-
-  push(l);
-  DoAttrAccess({LOAD_ATTR, 0, kNameGetItem});
-  push(r);
-  return DoCall({CALL_FUNCTION, 1});
-}
-
 bool GraphBuilder::DoGetItem(const Instr &instr) {
   auto r = pop();
   auto l = pop();
   auto node = BuildMultiOpValueNode(instr, {l, r});
-  if (node != nullptr) {
-    push(node);
-    return true;
+  if (node == nullptr) {
+    return false;
   }
-  /*
-   * Currently, there are several known scenarios where MetaFuncGraph-getitem infer may fail:
-   * 1.Cell list getitem: The Cell to be retrieved fails to be parsed (e.g. due to side effects in Cell.construct(),
-   * such as STORE_ATTR).
-   * 2.Index Out-of-Bounds or Key not exist.
-   * In the first case, we can try to fallback to two-stages mode and do getitem from python object.
-   * But in the second case, fallback to two-stages is useless. However, we cannot distinguish which scenario caused
-   * getitem infer failure, so we always fallback to have a try.
-   */
-  MS_LOG(INFO) << "Getitem infer failed, fallback to do getitem from python obj. source: " << l->ToString()
-               << ", key: " << r->ToString();
-  push(l);
-  push(r);
-  if (DoGetItemWithByteCode(instr)) {
-    auto v = seek(0);
-    auto o = FGBuilder()->AddLocalVariable(v->GetVobj()->GetPyObject());
-    if (o != nullptr) {
-      v->set_abstract_wrapper(o);
-      return true;
-    }
-  }
-  MS_LOG(INFO) << "Failed to getitem from python obj, do break graph";
-  return false;
+  push(node);
+  return true;
 }
 
 ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, ValueNode *value, bool ignore_key_error) {

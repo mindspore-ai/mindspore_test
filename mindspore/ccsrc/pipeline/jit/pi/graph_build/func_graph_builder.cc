@@ -28,12 +28,10 @@
 #include "pipeline/jit/ps/parse/parse.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "pipeline/jit/pi/graph_guard/infer.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/tensor.h"
 #include "ir/anf.h"
 #include "frontend/operator/composite/unpack_call.h"
-#include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 
@@ -87,15 +85,10 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
   ValuePtr ret = nullptr;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
-
     PyRecursionScope rec_check(obj);
     SyncStubTensor(handle);
-    // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
-    // identify the function if need parse by ast
-    if (py::isinstance<Cell>(handle) || PyCFunction_Check(handle.ptr()) || IsPyCapsuleTensorOverloadMethod(obj)) {
-      return std::make_shared<parse::InterpretedObject>(obj);
-    }
-    if (py::list::check_(obj) || py::tuple::check_(obj)) {
+
+    if (py::list::check_(obj) || py::tuple::check_(obj) || pijit::IsCellList(obj)) {
       std::vector<ValuePtr> elements;
       for (const auto &i : obj) {
         auto v = ConvertPyObjToValue(i);
@@ -122,7 +115,9 @@ ValuePtr ConvertPyObjToValue(const py::handle &handle) {
       }
       return std::make_shared<ValueDictionary>(elements);
     }
-
+    if (pijit::IsConvertToInterpretedObject(obj)) {
+      return std::make_shared<parse::InterpretedObject>(obj);
+    }
     if (parse::ConvertData(obj, &ret)) {
       return ret;
     }

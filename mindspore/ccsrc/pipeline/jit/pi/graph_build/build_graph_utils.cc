@@ -20,6 +20,7 @@
 #include <memory>
 #include "utils/flags.h"
 #include "utils/ms_context.h"
+#include "ir/cell.h"
 #include "ir/meta_func_graph.h"
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -113,6 +114,14 @@ bool IsPyCapsuleOverload(const py::object &obj) {
 bool IsMsTensorMethod(const py::object &obj) {
   py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
   return py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj));
+}
+
+bool IsCellList(const py::object &obj) { return obj.ptr() != nullptr && py::hasattr(obj, PYTHON_CELL_AS_LIST); }
+
+bool IsConvertToInterpretedObject(const py::object &obj) {
+  // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
+  // identify the function if need parse by ast
+  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsPyCapsuleTensorOverloadMethod(obj);
 }
 
 bool HasRegisterHook(const py::object &obj) {

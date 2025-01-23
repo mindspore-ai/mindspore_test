@@ -261,7 +261,6 @@ class GraphBuilder {
   bool DoAttrAccess(const Instr &instr);
   ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr);
   bool DoGetItem(const Instr &instr);
-  bool DoGetItemWithByteCode(const Instr &instr);
 
   bool DoItemAccess(const Instr &instr);
   bool DoStackOp(const Instr &instr);
