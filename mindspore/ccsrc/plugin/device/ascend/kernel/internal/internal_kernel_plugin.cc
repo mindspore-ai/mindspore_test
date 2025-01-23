@@ -156,7 +156,7 @@ void UpdateNzFormatOpsList(const AnfNodePtr &node) {
     if (!dyn_input_sizes.empty()) {
       auto weight_num = static_cast<size_t>(dyn_input_sizes[0]);
       std::vector<size_t> input_idx;
-      for (size_t i = weight_num; i < weight_num * 2; ++i) {
+      for (size_t i = weight_num; i < weight_num * CONST_2; ++i) {
         input_idx.emplace_back(i);
       }
       kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {{input_idx, {}}, {input_idx, {}}};
