@@ -437,7 +437,7 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
         >>> comm.init()
         >>> dest_rank=1
         >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = comm.comm_func.reduce(input_tensor)
+        >>> output = comm.comm_func.reduce(input_tensor, dst=dest_rank)
         >>> print(output)
         Process with rank 1: [[4. 4. 4. 4. 4. 4. 4. 4.]
                              [4. 4. 4. 4. 4. 4. 4. 4.]],
@@ -491,11 +491,11 @@ class P2POp:
         >>>
         >>> send_tensor = ms.Tensor(1.)
         >>> send_op = comm.comm_func.P2POp('isend', send_tensor, 1)
-        >>> send_op = comm.comm_func.P2POp(isend, send_tensor, 1)
-        >>> recv_tensor = Tensor(0.)
+        >>> send_op = comm.comm_func.P2POp(comm.comm_func.isend, send_tensor, 1)
+        >>> recv_tensor = ms.Tensor(0.)
         >>> recv_op = comm.comm_func.P2POp('irecv', recv_tensor, 0)
-        >>> recv_op = comm.comm_func.P2POp(irecv, recv_tensor, 0)
-        >>> recv_op = comm.comm_func.P2POp('irecv', (), 0, recv_dtype=mindspore.float32)
+        >>> recv_op = comm.comm_func.P2POp(comm.comm_func.irecv, recv_tensor, 0)
+        >>> recv_op = comm.comm_func.P2POp('irecv', (), 0, recv_dtype=ms.float32)
     """
 
     def __init__(self, op, tensor, peer, group=None, tag=0, *, recv_dtype=None):
@@ -576,8 +576,8 @@ def batch_isend_irecv(p2p_op_list):
         >>> next_rank = (this_rank + 1) % world_size
         >>> prev_rank = (this_rank + world_size - 1) % world_size
         >>>
-        >>> send_tensor = ms.Tensor(this_rank + 1, dtype=mindspore.float32)
-        >>> recv_tensor = ms.Tensor(0., dtype=mindspore.float32)
+        >>> send_tensor = ms.Tensor(this_rank + 1, dtype=ms.float32)
+        >>> recv_tensor = ms.Tensor(0., dtype=ms.float32)
         >>>
         >>> send_op = comm.comm_func.P2POp('isend', send_tensor, next_rank)
         >>> recv_op = comm.comm_func.P2POp('irecv', recv_tensor, prev_rank)
@@ -692,7 +692,7 @@ def scatter_tensor(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP):
         >>>
         >>> comm.init()
         >>> input = ms.Tensor(np.arange(8).reshape([4, 2]).astype(np.float32))
-        >>> out = comm.comm_func.scatter_tensor(tensor=data, src=0)
+        >>> out = comm.comm_func.scatter_tensor(tensor=input, src=0)
         >>> print(out)
         # rank_0
         [[0. 1.]
@@ -757,7 +757,7 @@ def gather_into_tensor(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP):
         >>>
         >>> comm.init()
         >>> input = ms.Tensor(np.arange(4).reshape([2, 2]).astype(np.float32))
-        >>> output = comm.comm_func.gather_into_tensor(tensor=data, dst=0)
+        >>> output = comm.comm_func.gather_into_tensor(tensor=input, dst=0)
         >>> print(output)
         Process with rank 0: [[0. 1.],
                               [2. 3.],
