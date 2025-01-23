@@ -1561,6 +1561,54 @@ def infer_value_for_Concat(tensors, axis):
     return Tensor(np.concatenate(tensor_to_concat, axis), dtype=tensors[0].dtype)
 
 
+def infer_value_for_SliceExt(input, dim, start, end, step):
+    """Infer value for SliceExt op."""
+    if input is None or dim is None or start is None or end is None or step is None:
+        return None
+
+    input_np = input.asnumpy()
+    condition = np.zeros(input_np.shape[dim])
+    if start < 0:
+        start += input_np.shape[dim]
+    condition[start:end:step] = 1
+    output = np.compress(condition, input_np, axis=dim)
+    return Tensor(output, dtype=input.dtype)
+
+
+def infer_value_for_GatherD(input, dim, index):
+    """Infer value for GatherD op."""
+    if input is None or dim is None or index is None:
+        return None
+
+    input_np = input.asnumpy()
+    index_np = index.asnumpy()
+
+    index_shape = index_np.shape
+    multi_index = [np.indices(index_shape)[i] for i in range(len(index_shape))]
+    multi_index[dim] = index_np
+
+    output = input_np[tuple(multi_index)]
+    return Tensor(output, dtype=input.dtype)
+
+
+def infer_value_for_TransposeExt(input, dim0, dim1):
+    """Infer value for TransposeExt op."""
+    if input is None or dim0 is None or dim1 is None:
+        return None
+
+    return Tensor(input.asnumpy().swapaxes(dim0, dim1), dtype=input.dtype)
+
+
+def infer_value_for_Softmax(input, axis):
+    """Infer value for Softmax op."""
+    if input is None or axis is None:
+        return None
+
+    e_input = np.exp(input.asnumpy())
+    output = e_input / np.sum(e_input, axis=axis, keepdims=True)
+    return Tensor(output, dtype=input.dtype)
+
+
 def infer_value_for_ReduceSum(input_x, axis, keep_dims, skip_mode):
     """Infer value for ReduceSum op."""
     value = None

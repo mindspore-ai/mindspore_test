@@ -21,6 +21,7 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 #include "ir/dtype/tensor_type.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore::ops {
 #define I64(x) (static_cast<int64_t>((x)))
@@ -65,4 +66,59 @@ INSTANTIATE_TEST_CASE_P(
     TransExtParams{false, {2, -1, 4, -1}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<int64_t>(3), {2, -1, -1, 4}},
     TransExtParams{false, {2, 3, 4, 5}, kFloat32, CreateScalar<int64_t>(1), CreateScalar<int64_t>(3), {2, 5, 4, 3}},
     TransExtParams{false, {2, 3, -1, 5}, kFloat32, CreateScalar<int64_t>(1), CreateScalar<int64_t>(3), {2, 5, -1, 3}}));
+
+struct TransposeExtInferValueParams {
+  tensor::TensorPtr input;
+  ValuePtr dim0;
+  ValuePtr dim1;
+  tensor::TensorPtr out;
+};
+
+class TestTransposeExtInferValue : public TestOps, public testing::WithParamInterface<TransposeExtInferValueParams> {};
+
+TEST_P(TestTransposeExtInferValue, dyn_shape_infer_value) {
+  const auto &param = GetParam();
+  ASSERT_NE(param.input, nullptr);
+  auto input = param.input->ToAbstract();
+  ASSERT_NE(input, nullptr);
+
+  ASSERT_NE(param.dim0, nullptr);
+  auto dim0 = param.dim0->ToAbstract();
+  ASSERT_NE(dim0, nullptr);
+
+  ASSERT_NE(param.dim1, nullptr);
+  auto dim1 = param.dim1->ToAbstract();
+  ASSERT_NE(dim1, nullptr);
+
+  auto input_args = abstract::AbstractBasePtrList{input, dim0, dim1};
+  auto value_opt = abstract::InferValueByFuncImpl(prim::kPrimTransposeExt, input_args);
+  if (!value_opt.has_value()) {
+    MS_LOG(ERROR) << "TransposeExt have no infer value implement!";
+    ASSERT_TRUE(false);
+  }
+  auto infer_out = value_opt.value();
+  if (infer_out == nullptr) {
+    MS_LOG(ERROR) << "TransposeExt can not infer value with inputs: " << input_args;
+    ASSERT_TRUE(false);
+  }
+  auto infer_tensor = infer_out->cast<tensor::TensorPtr>();
+  ASSERT_NE(infer_tensor, nullptr);
+  ASSERT_TRUE(infer_tensor->ValueEqual(*param.out));
+}
+
+INSTANTIATE_TEST_CASE_P(
+  TestTransposeExtInferValue, TestTransposeExtInferValue,
+  testing::Values(
+    TransposeExtInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, 2, 3, 4}),
+                                 CreateScalar<int64_t>(0), CreateScalar<int64_t>(1),
+                                 CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{1, 3, 2, 4})},
+    TransposeExtInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 3}, std::vector<float>{1, 2, 3, 4, 5, 6}),
+                                 CreateScalar<int64_t>(0), CreateScalar<int64_t>(1),
+                                 CreateTensor<float>(kNumberTypeFloat32, ShapeVector{3, 2}, std::vector<float>{1, 4, 2, 5, 3, 6})},
+    TransposeExtInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{1, 2, 3}, std::vector<float>{1, 2, 3, 4, 5, 6}),
+                                 CreateScalar<int64_t>(0), CreateScalar<int64_t>(2),
+                                 CreateTensor<float>(kNumberTypeFloat32, ShapeVector{3, 2, 1}, std::vector<float>{1, 4, 2, 5, 3, 6})},
+    TransposeExtInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{1, 2, 3}, std::vector<float>{1, 2, 3, 4, 5, 6}),
+                                 CreateScalar<int64_t>(1), CreateScalar<int64_t>(2),
+                                 CreateTensor<float>(kNumberTypeFloat32, ShapeVector{1, 3, 2}, std::vector<float>{1, 4, 2, 5, 3, 6})}));
 }  // namespace mindspore::ops

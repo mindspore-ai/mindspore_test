@@ -50,6 +50,13 @@ ValuePtr CreateScalar(T v) {
   return std::make_shared<NumberContainer>(v)->value_;
 }
 
+template <typename T>
+tensor::TensorPtr CreateTensor(const TypeId &type, const ShapeVector &shape, std::vector<T> value) {
+  void *data_ptr = &value[0];
+  auto tensor = std::make_shared<tensor::Tensor>(type, shape, data_ptr, type);
+  return tensor;
+}
+
 static inline ValuePtr CreatePyInt(int v) { return std::make_shared<Int64Imm>(v); }
 
 static inline ValuePtr CreateTuple(const std::vector<NumberContainer> &values) {

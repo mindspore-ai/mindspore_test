@@ -17,6 +17,8 @@
 #include "ops/test_ops.h"
 #include "infer/ops_func_impl/gather_d.h"
 #include "ops/test_value_utils.h"
+#include "ops/test_ops_cmp_utils.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -58,5 +60,80 @@ auto gather_d_cases = testing::Values(
   GatherDParams{{-2}, kFloat64, CreatePyInt(4), {-2}, kInt64},
   GatherDParams{{2, 3, 4, 5}, kFloat64, CreatePyInt(2), {-2}, kInt64});
 INSTANTIATE_TEST_CASE_P(TestGatherD, TestGatherD, gather_d_cases);
+
+struct GatherDInferValueParams {
+  tensor::TensorPtr input;
+  ValuePtr dim;
+  tensor::TensorPtr index;
+  tensor::TensorPtr out;
+};
+
+class TestGatherDInferValue : public TestOps, public testing::WithParamInterface<GatherDInferValueParams> {};
+
+TEST_P(TestGatherDInferValue, dyn_shape_infer_value) {
+  const auto &param = GetParam();
+  ASSERT_NE(param.input, nullptr);
+  auto input = param.input->ToAbstract();
+  ASSERT_NE(input, nullptr);
+
+  ASSERT_NE(param.dim, nullptr);
+  auto dim = param.dim->ToAbstract();
+  ASSERT_NE(dim, nullptr);
+
+  ASSERT_NE(param.index, nullptr);
+  auto index = param.index->ToAbstract();
+  ASSERT_NE(index, nullptr);
+
+  auto input_args = abstract::AbstractBasePtrList{input, dim, index};
+  auto value_opt = abstract::InferValueByFuncImpl(prim::kPrimGatherD, input_args);
+  if (!value_opt.has_value()) {
+    MS_LOG(ERROR) << "GatherD have no infer value implement!";
+    ASSERT_TRUE(false);
+  }
+  auto infer_out = value_opt.value();
+  if (infer_out == nullptr) {
+    MS_LOG(ERROR) << "GatherD can not infer value with inputs: " << input_args;
+    ASSERT_TRUE(false);
+  }
+  auto infer_tensor = infer_out->cast<tensor::TensorPtr>();
+  ASSERT_NE(infer_tensor, nullptr);
+  ASSERT_TRUE(infer_tensor->ValueEqual(*param.out));
+}
+
+INSTANTIATE_TEST_CASE_P(
+  TestGatherDInferValue, TestGatherDInferValue,
+  testing::Values(
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 3}, std::vector<float>{-0.1, 0.3, 3.6, 0.4, 0.5, -3.2}),
+                            CreateScalar<int64_t>(1),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{0, 0, 1, 1}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{-0.1, -0.1, 0.5, 0.5})},
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 3}, std::vector<float>{-0.1, 0.3, 3.6, 0.4, 0.5, -3.2}),
+                            CreateScalar<int64_t>(0),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{0, 0, 1, 1}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{-0.1, 0.3, 0.4, 0.5})},
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 3}, std::vector<float>{-0.1, 0.3, 3.6, 0.4, 0.5, -3.2}),
+                            CreateScalar<int64_t>(1),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{2, 2}, std::vector<int32_t>{1, 2, 2, 0}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 2}, std::vector<float>{0.3, 3.6, -3.2, 0.4})},
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{3, 3}, std::vector<float>{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+                            CreateScalar<int64_t>(0),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{2, 3}, std::vector<int32_t>{0, 2, 1, 2, 1, 1}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 3}, std::vector<float>{1, 8, 6, 7, 5, 6})},
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{3, 3}, std::vector<float>{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+                            CreateScalar<int64_t>(1),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{2, 3}, std::vector<int32_t>{0, 2, 1, 2, 1, 1}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 3}, std::vector<float>{1, 3, 2, 6, 5, 5})},
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{3, 3}, std::vector<float>{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+                            CreateScalar<int64_t>(-1),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{2, 3}, std::vector<int32_t>{0, 2, 1, 2, 1, 1}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{2, 3}, std::vector<float>{1, 3, 2, 6, 5, 5})},
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{1, 3, 3}, std::vector<float>{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+                            CreateScalar<int64_t>(1),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{1, 2, 3}, std::vector<int32_t>{0, 2, 0, 1, 0, 0}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{1, 2, 3}, std::vector<float>{1, 8, 3, 4, 2, 3})},
+    GatherDInferValueParams{CreateTensor<float>(kNumberTypeFloat32, ShapeVector{1, 3, 3}, std::vector<float>{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+                            CreateScalar<int64_t>(2),
+                            CreateTensor<int32_t>(kNumberTypeInt32, ShapeVector{1, 2, 3}, std::vector<int32_t>{0, 2, 0, 1, 0, 0}),
+                            CreateTensor<float>(kNumberTypeFloat32, ShapeVector{1, 2, 3}, std::vector<float>{1, 3, 1, 5, 4, 4})}));
 }  // namespace ops
 }  // namespace mindspore
