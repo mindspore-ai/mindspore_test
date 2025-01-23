@@ -422,6 +422,7 @@ from mindspore.ops.function.math_func import var_ext
 # 1029 exp_
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 
+
 ########################################functions########################################
 def place_holder():
     logger.error(
@@ -520,6 +521,7 @@ def tensor_argsort(input, dim=-1, descending=False):
 def deprecated_tensor_argsort(input, axis=-1, descending=False):
     return argsort(input, axis, descending)
 
+
 # 13 atan2
 def tensor_atan2(input, other):
     return atan2(input, other)
@@ -594,6 +596,7 @@ def tensor_cumsum(input, dim, *, dtype=None):
 # 27 div
 def tensor_div(input, value, *, rounding_mode=None):
     return div(input, value, rounding_mode=rounding_mode)
+
 
 def tensor_div_deal_sequence(input, other, *, rounding_mode=None):
     if isinstance(input, (tuple, list)):
@@ -1067,6 +1070,7 @@ def deprecated_tensor_sub(input, y):
     if isinstance(y, (tuple, list)):
         y = sequence_to_tensor(y, F.dtype(input))
     return sub(input, y)
+
 
 def deprecated_tensor_sub_(input, y):
     if isinstance(y, COOTensor):
@@ -1604,10 +1608,12 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
 
+
 def tensor_inplace_sub(input, other, *, alpha=1):
     if alpha == 1:
         return sub(input, other)
     return sub_ext(input, other, alpha=alpha)
+
 
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")

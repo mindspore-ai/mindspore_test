@@ -134,7 +134,7 @@ void QuantBatchMatmulFuncImpl::CheckBatchMatmulInputBatchWhetherMoreThanOne(
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   bool enable_infer_boost = ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p;
-  if (x1_shape.size() > 2 && x1_shape[0] > 1 && enable_infer_boost &&
+  if (x1_shape.size() > kQbmmMatSize && x1_shape[0] > 1 && enable_infer_boost &&
       !input_args[kQbmmInputBias]->GetType()->isa<TypeNone>()) {
     MS_EXCEPTION(ValueError) << "For QuantBatchMatmul"
                              << ", the batch size of the input 'x' is temporarily not supported for more than one "
