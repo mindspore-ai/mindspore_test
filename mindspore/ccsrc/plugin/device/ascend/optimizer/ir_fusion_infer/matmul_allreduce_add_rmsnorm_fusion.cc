@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
@@ -33,7 +34,7 @@
 
 namespace mindspore {
 namespace opt {
-static const uint32_t kMaxRankSize = 8;
+static const std::vector<uint32_t> supported_rank_size{1, 2, 4, 8};
 const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
   auto transpose_a = std::make_shared<Var>();
   MS_CHECK_TRUE_RET(transpose_a != nullptr, {});
@@ -175,9 +176,14 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
   auto group_ptr = allreduce_prim->GetAttr(kAttrNameGroup);
   auto group_name = GetValue<std::string>(group_ptr);
-  auto rank_size = distributed::collective::CollectiveManager::instance()->GetGroupSize(group_name);
-  if (rank_size > kMaxRankSize) {
-    MS_LOG(INFO) << "only support rank size 1, 2, 4, 8, but got " << rank_size;
+  auto collective_mgr = distributed::collective::CollectiveManager::instance();
+  auto rank_size = collective_mgr->GetGroupSize(group_name);
+  auto rank_list = collective_mgr->GetGroupRanks(group_name);
+  auto is_single_node =
+    device::ascend::MultiAscendCollectiveCommLib::GetInstance().isGroupWithinLocalMachine(rank_list);
+  auto it = std::find(supported_rank_size.begin(), supported_rank_size.end(), rank_size);
+  if (it == supported_rank_size.end() || !is_single_node) {
+    MS_LOG(INFO) << "only support rank size 1, 2, 4, 8 in single node.";
     return nullptr;
   }
   auto reduce_op_ptr = allreduce_prim->GetAttr(kAttrNameOp);
