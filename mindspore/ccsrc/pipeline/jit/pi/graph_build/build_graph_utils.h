@@ -35,6 +35,10 @@ bool IsPyCapsuleTensorOverloadMethod(const py::object &obj);
 bool IsPyCapsuleOverload(const py::object &obj);
 bool IsMsTensorMethod(const py::object &obj);
 
+// Check whether it is an nn.CellList.
+bool IsCellList(const py::object &obj);
+bool IsConvertToInterpretedObject(const py::object &obj);
+
 // Function for register hook
 constexpr auto kRegisterHookKey = "backward_register_hook";
 bool HasRegisterHook(const py::object &obj);
