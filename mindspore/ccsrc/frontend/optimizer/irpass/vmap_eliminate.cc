@@ -80,7 +80,7 @@ CNodePtr BuildBindInAxisSeqInput(const AnfNodePtr &input, const ValuePtr &in_axi
     }
     (void)seq_getitem_cnode_inputs.emplace_back(input);
     (void)seq_getitem_cnode_inputs.emplace_back(NewValueNode(static_cast<int64_t>(i)));
-    auto seq_getitem_cnode = fg->NewCNode(seq_getitem_cnode_inputs);
+    auto seq_getitem_cnode = fg->NewCNodeInOrder(seq_getitem_cnode_inputs);
     MS_EXCEPTION_IF_NULL(seq_getitem_cnode);
     auto input_abs_element = (*input_abs_elements)[i];
     auto in_axis_value = in_axis_value_sequence == nullptr ? in_axis : (*in_axis_value_sequence)[i];
@@ -93,11 +93,11 @@ CNodePtr BuildBindInAxisSeqInput(const AnfNodePtr &input, const ValuePtr &in_axi
       (void)cur_make_tuple_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
       (void)cur_make_tuple_inputs.emplace_back(seq_getitem_cnode);
       (void)cur_make_tuple_inputs.emplace_back(NewValueNode(in_axis_value));
-      cur_make_seq = fg->NewCNode(cur_make_tuple_inputs);
+      cur_make_seq = fg->NewCNodeInOrder(cur_make_tuple_inputs);
     }
     (void)ret_inputs.emplace_back(cur_make_seq);
   }
-  return fg->NewCNode(ret_inputs);
+  return fg->NewCNodeInOrder(ret_inputs);
 }
 
 AnfNodePtr UpdateParam(const FuncGraphPtr &vmap_fg, const AnfNodePtr &u_monad_node, bool is_feedback,
@@ -116,12 +116,12 @@ AnfNodePtr UpdateParam(const FuncGraphPtr &vmap_fg, const AnfNodePtr &u_monad_no
     (void)vmap_assign.emplace_back(ref);
     (void)vmap_assign.insert(vmap_assign.end(), each_cell_params.begin(), each_cell_params.end());
     vmap_assign.push_back(u_monad_node);
-    auto vmap_assign_cnode = vmap_fg->NewCNode(vmap_assign);
+    auto vmap_assign_cnode = vmap_fg->NewCNodeInOrder(vmap_assign);
     attach_tuple.push_back(vmap_assign_cnode);
   }
-  auto attach_cnode = vmap_fg->NewCNode(attach_tuple);
+  auto attach_cnode = vmap_fg->NewCNodeInOrder(attach_tuple);
   auto update_state_prim = NewValueNode(prim::kPrimUpdateState);
-  auto update_state_node = vmap_fg->NewCNode({update_state_prim, u_monad_node, attach_cnode});
+  auto update_state_node = vmap_fg->NewCNodeInOrder({update_state_prim, u_monad_node, attach_cnode});
   return update_state_node;
 }
 
@@ -298,7 +298,7 @@ int GetAxisSize(const CNodePtr &cnode, size_t cell_size, size_t parameters_size,
 CNodePtr AttachToOutput(const FuncGraphPtr &func_graph, const CNodePtr &output, const AnfNodePtr &node) {
   TraceGuard guard(MakeTraceInfo<TraceCopy>(output->debug_info()));
   auto depend = NewValueNode(prim::kPrimDepend);
-  auto depend_cnode = func_graph->NewCNode({depend, output, node});
+  auto depend_cnode = func_graph->NewCNodeInOrder({depend, output, node});
   MS_EXCEPTION_IF_NULL(depend_cnode);
   depend_cnode->set_abstract(output->abstract());
   return depend_cnode;
@@ -405,7 +405,6 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Fail to parse vmap rule function for " << prim->name() << ".";
     }
     vmap_rule_fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
-    vmap_rule_fg->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
     pipeline::ResourceBasePtr res = (resource != nullptr) ? resource : std::make_shared<pipeline::Resource>();
     (void)parse::ResolveFuncGraph(vmap_rule_fg, res);
     vmap_rule_node = NewValueNode(vmap_rule_fg);
@@ -511,9 +510,10 @@ void BindAxis(const AnfNodePtr &node, const FuncGraphPtr &func_graph, const Func
     CNodePtr replace_node = nullptr;
     auto make_tuple_node = NewValueNode(prim::kPrimMakeTuple);
     if (stacked_param_node == nullptr) {
-      replace_node = user_func_graph->NewCNode({make_tuple_node, node, NewValueNode(kNone)});
+      replace_node = user_func_graph->NewCNodeInOrder({make_tuple_node, node, NewValueNode(kNone)});
     } else {
-      replace_node = user_func_graph->NewCNode({make_tuple_node, stacked_param_node, NewValueNode(SizeToLong(0))});
+      replace_node =
+        user_func_graph->NewCNodeInOrder({make_tuple_node, stacked_param_node, NewValueNode(SizeToLong(0))});
     }
     if (IsPrimitiveCNode(user_node, prim::kPrimMakeTuple) && pair.second == 1) {
       // For Partial Inputs.
@@ -679,6 +679,17 @@ AnfNodePtr HandleVmapCellList(const FuncGraphPtr &top_func_graph, const CNodePtr
   GenerateStackedParams(top_func_graph, cell_size, param_table, stacked_params, param_mapping_table);
   return vmap_fn_node;
 }
+
+void UpdateOrderListForVmapFunc(const FuncGraphPtr &fg) {
+  auto nodes = TopoSort(fg->get_return());
+  std::list<CNodeWeakPtr> new_order_list;
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    if (nodes[i]->isa<CNode>()) {
+      (void)new_order_list.emplace_back(CNodeWeakPtr(nodes[i]->cast<CNodePtr>()));
+    }
+  }
+  fg->set_order_list(std::move(new_order_list));
+}
 }  // namespace
 
 void ExpandVmapPrim::ExpandVmapValueNode(const FuncGraphPtr &vmap_fg, const pipeline::ResourceBasePtr &resource,
@@ -710,6 +721,7 @@ void ExpandVmapPrim::ExpandVmapValueNode(const FuncGraphPtr &vmap_fg, const pipe
       (void)visited_graph->insert(sub_func_graph);
       auto transformed_fg = ExpandVmapFuncGraph(sub_func_graph, resource, axis_size, visited_pair);
       transformed_fg->set_flag(FUNC_GRAPH_FLAG_VMAP_TRANSFORMED, true);
+      UpdateOrderListForVmapFunc(transformed_fg);
       auto replace_node = NewValueNode(transformed_fg);
       (void)visited_node->insert(replace_node);
       (void)manager->Replace(node, replace_node);
@@ -812,6 +824,7 @@ AnfNodePtr ExpandVmapPrim::ExpandVmap(const ValueNodePtr &vnode, const pipeline:
 
     VisitedHashSetPair visited_pair(visited_graph, visited_node);
     auto tf_fg = ExpandVmapFuncGraph(func_graph, resource, axis_size, &visited_pair);
+    UpdateOrderListForVmapFunc(tf_fg);
     visited_node.clear();
     return NewValueNode(tf_fg);
   }
@@ -846,7 +859,7 @@ AnfNodePtr ExpandVmapPrim::BindInAxis(const CNodePtr &vmap_app, const AnfNodePtr
   (void)std::transform(partial_inputs.cbegin(), partial_inputs.cend(), std::back_inserter(outputs),
                        [&vmap_fg](const AnfNodePtr &node) {
                          const auto make_tuple_node = NewValueNode(prim::kPrimMakeTuple);
-                         return vmap_fg->NewCNode({make_tuple_node, node, NewValueNode(kNone)});
+                         return vmap_fg->NewCNodeInOrder({make_tuple_node, node, NewValueNode(kNone)});
                        });
   for (unsigned int i = 1; i < real_params_size; ++i) {
     auto input = inputs[i];
@@ -856,7 +869,7 @@ AnfNodePtr ExpandVmapPrim::BindInAxis(const CNodePtr &vmap_app, const AnfNodePtr
     if (input_abs->isa<abstract::AbstractSequence>()) {
       cur_make_seq_cnode = BuildBindInAxisSeqInput(input, in_axis, vmap_fg);
     } else {
-      cur_make_seq_cnode = vmap_fg->NewCNode({NewValueNode(prim::kPrimMakeTuple), input, NewValueNode(in_axis)});
+      cur_make_seq_cnode = vmap_fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), input, NewValueNode(in_axis)});
     }
     (void)outputs.emplace_back(cur_make_seq_cnode);
   }
@@ -870,7 +883,7 @@ AnfNodePtr ExpandVmapPrim::BindInAxis(const CNodePtr &vmap_app, const AnfNodePtr
     (void)outputs.emplace_back(inputs.back());
   }
 
-  return vmap_fg->NewCNode(outputs);
+  return vmap_fg->NewCNodeInOrder(outputs);
 }
 
 AnfNodePtr ExpandVmapPrim::PostProcessVmap(const AnfNodePtr &expanded_vmap_node, const AnfNodePtrList &partial_inputs,
@@ -878,6 +891,9 @@ AnfNodePtr ExpandVmapPrim::PostProcessVmap(const AnfNodePtr &expanded_vmap_node,
                                            int axis_size) {
   FuncGraphPtr vmap_post_fg = std::make_shared<FuncGraph>();
   vmap_post_fg->debug_info()->set_name("vmap_eliminate");
+  MS_LOG(DEBUG) << "vmap_post_fg:" << vmap_post_fg->ToString() << " set flag.";
+  vmap_post_fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+
   AnfNodePtrList exec_node_inputs;
   exec_node_inputs.push_back(expanded_vmap_node);
   (void)std::for_each(partial_inputs.cbegin(), partial_inputs.cend(),
@@ -901,26 +917,35 @@ AnfNodePtr ExpandVmapPrim::PostProcessVmap(const AnfNodePtr &expanded_vmap_node,
     }
     exec_node_inputs.push_back(vmap_post_fg->add_parameter());
   }
-  auto vmap_outputs = vmap_post_fg->NewCNode(exec_node_inputs);
+  if (IsValueNode<FuncGraph>(expanded_vmap_node)) {
+    auto expanded_vmap_func = GetValueNode<FuncGraphPtr>(expanded_vmap_node);
+    const auto &params = expanded_vmap_func->parameters();
+    if (exec_node_inputs.size() == params.size() && HasAbstractMonad(params.back())) {
+      auto u_monad = NewValueNode(kUMonad);
+      u_monad->set_abstract(kUMonad->ToAbstract());
+      (void)exec_node_inputs.emplace_back(u_monad);
+    }
+  }
+  auto vmap_outputs = vmap_post_fg->NewCNodeInOrder(exec_node_inputs);
 
   auto update_state_prim = NewValueNode(prim::kPrimUpdateState);
   if (u_monad_node) {
-    auto update_state_cnode = vmap_post_fg->NewCNode({update_state_prim, u_monad_node, vmap_outputs});
+    auto update_state_cnode = vmap_post_fg->NewCNodeInOrder({update_state_prim, u_monad_node, vmap_outputs});
     MS_EXCEPTION_IF_NULL(update_state_cnode);
     update_state_cnode->set_abstract(u_monad_node->abstract());
     u_monad_node = update_state_cnode;
   }
   if (io_monad_node) {
-    auto update_state_cnode = vmap_post_fg->NewCNode({update_state_prim, io_monad_node, vmap_outputs});
+    auto update_state_cnode = vmap_post_fg->NewCNodeInOrder({update_state_prim, io_monad_node, vmap_outputs});
     MS_EXCEPTION_IF_NULL(update_state_cnode);
     update_state_cnode->set_abstract(io_monad_node->abstract());
     io_monad_node = update_state_cnode;
   }
 
   // MatchOutAxis: Convert the outputs according to the out_axes to the specified physical perspective.
-  auto match_out_axis_app =
-    vmap_post_fg->NewCNode({NewValueNode(std::make_shared<prim::VmapMatchOutAxis>("VmapMatchOutAxis")), vmap_outputs,
-                            NewValueNode(out_axes), NewValueNode(static_cast<int64_t>(axis_size))});
+  auto match_out_axis_app = vmap_post_fg->NewCNodeInOrder(
+    {NewValueNode(std::make_shared<prim::VmapMatchOutAxis>("VmapMatchOutAxis")), vmap_outputs, NewValueNode(out_axes),
+     NewValueNode(static_cast<int64_t>(axis_size))});
 
   if (param_mapping_table_.empty()) {
     auto output = match_out_axis_app;
@@ -1012,11 +1037,13 @@ bool ExpandVmapPrim::operator()(const FuncGraphPtr &, const OptimizerPtr &optimi
         << "vmap_node could used by at least one CNode, but got users.size() = " << users.size() << ".";
     }
 
+    vmap_fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
     for (const auto &user : users) {
       // When `vmap_node` has more than one user or `fn` has more than one user, the original function graph
       // cannot be modified directly.
       auto vmap_fg_copy = BasicClone(vmap_fg, true);
       MS_LOG(DEBUG) << "vmap_fg: " << vmap_fg->ToString() << ", vmap_fg_copy: " << vmap_fg_copy->ToString();
+      vmap_fg_copy->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
       manager->AddFuncGraph(vmap_fg_copy);
       vmap_fn_node = NewValueNode(vmap_fg_copy);
       if (parallel::IsPynativeParallel()) {
@@ -1063,6 +1090,13 @@ bool ExpandVmapPrim::operator()(const FuncGraphPtr &, const OptimizerPtr &optimi
     }
     change = true;
   }
+  MS_LOG(DEBUG) << "top_func_graph_:" << top_func_graph_->ToString() << " set flag.";
+  top_func_graph_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+  top_func_graph_->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
+  for (auto &fg : top_func_graph_->func_graphs_used_total()) {
+    fg->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+  }
+  UpdateOrderListForVmapFunc(top_func_graph_);
   return change;
 }
 }  // namespace irpass
