@@ -176,11 +176,11 @@ def test_inplace_sub_char(mode):
     output = inplace_sub_char_forward_func(input1, input2)
     assert np.allclose(output.asnumpy(), output_np, 1e-04, 1e-04)
 
-@arg_mark(plat_marks=['platform_ascend910b', 'cpu_linux', 'platform_gpu'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-def test_inplace_div_char_GE():
+def test_inplace_sub_char_GE():
     """
     Feature: tensor.divide()
     Description: Verify the result of tensor.divide

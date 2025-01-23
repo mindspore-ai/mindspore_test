@@ -595,6 +595,7 @@ def tensor_cumsum(input, dim, *, dtype=None):
 def tensor_div(input, value, *, rounding_mode=None):
     return div(input, value, rounding_mode=rounding_mode)
 
+
 def tensor_div_deal_sequence(input, other, *, rounding_mode=None):
     if isinstance(input, (tuple, list)):
         input = sequence_to_tensor(input, F.dtype(other))
@@ -1067,6 +1068,7 @@ def deprecated_tensor_sub(input, y):
     if isinstance(y, (tuple, list)):
         y = sequence_to_tensor(y, F.dtype(input))
     return sub(input, y)
+
 
 def deprecated_tensor_sub_(input, y):
     if isinstance(y, COOTensor):
@@ -1604,10 +1606,12 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")
 
+
 def tensor_inplace_sub(input, other, *, alpha=1):
     if alpha == 1:
         return sub(input, other)
     return sub_ext(input, other, alpha=alpha)
+
 
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")
