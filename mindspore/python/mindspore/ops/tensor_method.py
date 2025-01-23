@@ -422,6 +422,7 @@ from mindspore.ops.function.math_func import var_ext
 # 1029 exp_
 from mindspore.ops.auto_generate.gen_ops_prim import inplace_exp_op
 
+
 ########################################functions########################################
 def place_holder():
     logger.error(
