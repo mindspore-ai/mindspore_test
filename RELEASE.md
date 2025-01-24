@@ -52,7 +52,6 @@ bantao;caifubi;candanzg;chaijinwei;changzherui;chengbin;chujinjin;DeshiChen;ding
 - [STABLE] Support kernel packet fusion optimization in O1 mode to improve the performance of dynamic shape network execution, enabled by default.
 - [BETA] Epilogue fusion between the MatMul and Elementwise operator is supported in O1 mode. Enable via `mindspore.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")`.
 - [BETA] O1 mode supports user-controlled graph fusion optimization scope, user can control to turn on or off the corresponding fusion operator via the enable_pass/disable_pass option of graph_kernel_flags.
-- [BETA] The GPTO execution order optimization module is supported in O0 mode and is enabled through mindspore.set_context(exec_order="gpto").
 
 #### PyNative
 
