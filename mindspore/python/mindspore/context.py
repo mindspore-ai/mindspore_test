@@ -1196,7 +1196,8 @@ def reset_auto_parallel_context():
 @args_type_check(offload_config=dict)
 def set_offload_context(offload_config):
     r"""
-    Configure heterogeneous training detailed parameters to adjust the offload strategy.
+    Configure heterogeneous training detailed parameters to adjust the offload strategy. This function is deprecated and
+    will be removed in future versions.
 
     Note:
         The offload configuration is only used if the memory offload feature is enabled
@@ -1237,7 +1238,8 @@ def set_offload_context(offload_config):
 def get_offload_context():
     """
     Gets the offload configuration parameters. Configure through interface mindspore.set_offload_context().
-    If the user is not set, the default configuration is obtained.
+    If the user is not set, the default configuration is obtained. This function is deprecated and will be removed in
+    future versions.
 
     Returns:
         Dict, heterogeneous training offload detailed configuration parameters.
@@ -1324,7 +1326,8 @@ def _check_context_deprecated(key):
                                                      mindspore.device_context.gpu.op_precision.conv_fprop_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_wgrad_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_dgrad_algo()''',
-                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()'}
+                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()',
+                               'memory_offload': "`device` parameter of `mindspore.Parameter`"}
     if key in deprecated_context_dict:
         log = f"For 'context.set_context', the parameter '{key}' will be deprecated and removed in a future version."
         if deprecated_context_dict.get(key) != '':
@@ -1622,6 +1625,10 @@ def set_context(**kwargs):
               when the graph compilation level is not 'O0'; This parameter does not take effect when
               memory_optimize_level is set 'O1'.
             - OFF: Turn off the memory Offload function.
+
+            This parameter is deprecated and will be removed in future versions. Please use the `device` parameter
+            of `mindspore.Parameter` instead.
+
         ascend_config (dict): Set the parameters specific to Ascend hardware platform. It is not set by default.
             The default value of `precision_mode`, `jit_compile` and
             `atomic_clean_policy` are experimental parameters, may change in the future.
