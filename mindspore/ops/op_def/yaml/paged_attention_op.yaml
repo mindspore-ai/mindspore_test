@@ -43,3 +43,5 @@ paged_attention:
       dtype: tensor
   function:
     disable: True
+  dispatch:
+    enable: True

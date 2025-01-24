@@ -25,12 +25,18 @@ namespace kernel {
 const static HashSet<std::string> internal_op_set = {"Add",
                                                      "MatMul",
                                                      "Mul",
+                                                     "RmsNorm",
                                                      "Tranpose",
+                                                     "Cast",
                                                      "Sub",
                                                      "Swiglu",
+                                                     "SiLU",
+                                                     "Gather",
                                                      "ReshapeAndCache",
+                                                     "ApplyRotaryPosEmb",
                                                      "QuantBatchMatmul",
                                                      "GeLu",
+                                                     "PagedAttention",
                                                      "FlashAttentionScore"};
 
 }  // namespace kernel

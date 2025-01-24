@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_SWISH_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_SWISH_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_CAST_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_CAST_H_
 
 #include <string>
 #include <vector>
@@ -24,17 +24,20 @@
 
 namespace mindspore {
 namespace kernel {
-class InternalKernelInfoSwish : public InternalKernelInfo {
+class InternalKernelInfoCast : public InternalKernelInfo {
  public:
-  InternalKernelInfoSwish() : InternalKernelInfo(std::move("SiLU")) {}
-  ~InternalKernelInfoSwish() = default;
+  InternalKernelInfoCast() : InternalKernelInfo(std::move("Cast")) {}
+  ~InternalKernelInfoCast() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const ValuePtrList input_values) override;
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
                                        const internal::OutputsImmutableInfoList &outputs) override;
+
+ private:
+  TypeId dst_type_{kTypeUnknown};
 };
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_SWISH_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_INTERNAL_PYBOOST_CAST_H_
