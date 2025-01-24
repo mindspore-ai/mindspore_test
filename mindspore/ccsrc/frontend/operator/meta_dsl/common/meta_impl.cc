@@ -190,6 +190,38 @@ NodePtr MetaImpl::Or(const NodePtr &x, const NodePtr &y) {
   return IfCond(x, true_branch, false_branch, {x, y});
 }
 
+NodePtr MetaImpl::ScalarAdd(const NodePtr &x, const NodePtr &y) {
+  return NewNode({NewValueNode(prim::kPrimScalarAdd), x, y});
+}
+
+NodePtr MetaImpl::ScalarSub(const NodePtr &x, const NodePtr &y) {
+  return NewNode({NewValueNode(prim::kPrimScalarSub), x, y});
+}
+
+NodePtr MetaImpl::ScalarMul(const NodePtr &x, const NodePtr &y) {
+  return NewNode({NewValueNode(prim::kPrimScalarMul), x, y});
+}
+
+NodePtr MetaImpl::ScalarFloorDiv(const NodePtr &x, const NodePtr &y) {
+  return NewNode({NewValueNode(prim::kPrimScalarFloorDiv), x, y});
+}
+
+NodePtr MetaImpl::ScalarMod(const NodePtr &x, const NodePtr &y) {
+  return NewNode({NewValueNode(prim::kPrimScalarMod), x, y});
+}
+
+NodePtr MetaImpl::ScalarPow(const NodePtr &x, const NodePtr &y) {
+  return NewNode({NewValueNode(prim::kPrimScalarPow), x, y});
+}
+
+NodePtr MetaImpl::Shape(const NodePtr &x) { return NewNode({NewValueNode(prim::kPrimShape), x}); }
+
+NodePtr MetaImpl::Rank(const NodePtr &x) { return NewNode({NewValueNode(prim::kPrimRank), x}); }
+
+NodePtr MetaImpl::Reshape(const NodePtr &x, const NodePtr &shape) {
+  return NewNode({NewValueNode(prim::kPrimReshape), x, shape});
+}
+
 NodePtr MetaImpl::Not(const NodePtr &x) { return NewNode({GetMultitypeOps("logical_not"), x}); }
 
 NodePtr MetaImpl::Raise(const std::string &exception_type, const std::string &exception_msg) {

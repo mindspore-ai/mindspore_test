@@ -66,9 +66,9 @@ class OpApiProtoLoader(ResourceLoader):
     """
     Loads api related proto data.
     """
-    def __init__(self, op_protos, deprecated_op_protos):
+    def __init__(self, op_protos, deprecated_op_protos, func_op_protos):
         self.op_api_data = safe_load_yaml_from_dir(os.path.join(K.WORK_DIR, K.MS_OP_API_YAML_PATH))
-        self.op_protos = op_protos
+        self.op_protos = op_protos + func_op_protos
         self.deprecated_op_protos = deprecated_op_protos
 
     def load(self):

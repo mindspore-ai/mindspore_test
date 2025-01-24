@@ -225,6 +225,7 @@ class OpProtoLoader(ResourceLoader):
         self.yaml_paths = [ops_yaml_path, infer_ops_yaml_path]
         self.type = ResourceType.OP_PROTO
         self.is_deprecated = False
+        self.func_op = False
 
     def load(self) -> Dict[ResourceType, object]:
         """
@@ -241,6 +242,7 @@ class OpProtoLoader(ResourceLoader):
             op_proto = OpProto.load_from_yaml(op_name, op_data)
             if self.is_deprecated:
                 op_proto.op_name = 'deprecated_' + op_name
+            op_proto.func_op = self.func_op
             op_protos.append(op_proto)
         return {self.type: op_protos}
 
@@ -254,6 +256,20 @@ class DeprecatedOpProtoLoader(OpProtoLoader):
         self.yaml_paths = [os.path.join(K.WORK_DIR, K.MS_OP_DEPRECATED_DEF_YAML_PATH)]
         self.type = ResourceType.DEPRECATED_OP_PROTO
         self.is_deprecated = True
+        self.func_op = True
+
+
+class FuncOpProtoLoader(OpProtoLoader):
+    """
+    FuncOpProtoLoader is a class for loading func_op operator prototypes from YAML data.
+    """
+    def __init__(self):
+        super().__init__()
+        self.yaml_paths = [os.path.join(K.WORK_DIR, K.MS_OP_DEF_FUNC_OP_YAML_PATH)]
+        self.type = ResourceType.FUNC_OP_PROTO
+        self.is_deprecated = False
+        self.func_op = True
+
 
 def get_op_args_signature(op_name, op_data):
     """

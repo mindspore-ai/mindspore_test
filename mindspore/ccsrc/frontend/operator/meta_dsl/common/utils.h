@@ -38,7 +38,7 @@
 namespace mindspore::prim {
 #define EXPAND_PARAMS(...) __VA_ARGS__
 
-#define DECLARE_PARAM(param) auto param = NewParam(#param);
+#define DECLARE_PARAM(param) NodePtr param = NewParam(#param);
 
 #define DECLARE_PARAMS_0()
 

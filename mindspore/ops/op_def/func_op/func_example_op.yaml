@@ -1,0 +1,8 @@
+#operator func_example
+func_example:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
