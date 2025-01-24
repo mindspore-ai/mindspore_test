@@ -99,7 +99,7 @@ def test_print(mode):
         out = net(input_x, input_y)
         np.testing.assert_array_equal(out.asnumpy(), input_x.asnumpy())
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = ['input_x:', 'Tensor(shape=[], dtype=Int32, value=3)',
                 'input_y:', 'Tensor(shape=[], dtype=Int32, value=4)']
