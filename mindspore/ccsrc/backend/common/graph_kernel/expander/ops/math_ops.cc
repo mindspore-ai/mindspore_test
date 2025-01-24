@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <optional>
+
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
-#include "include/common/utils/anfalgo.h"
 
 namespace mindspore::graphkernel::expander {
 REG_EXPANDER_FUNC("AddN").SetBody(BODYFUNC(ib) {
@@ -219,6 +220,20 @@ REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
 
 enum ReduceType { kSum = 0, kMean };
 
+std::optional<std::vector<int64_t>> GetAxis(const NodePtr &axis) {
+  std::vector<int64_t> res;
+  if (axis->GetDtype()->type_id() != kMetaTypeNone) {
+    auto axis_value = axis->GetValue();
+    bool is_valid_axis =
+      axis_value->isa<ValueSequence>() || axis_value->isa<tensor::BaseTensor>() || axis_value->isa<Scalar>();
+    if (!is_valid_axis) {
+      return std::nullopt;
+    }
+    res = GetAxisList(axis->GetValue());
+  }
+  return res;
+}
+
 NodePtrList ReduceExtCommon(const DefaultIrBuilder *ib, ReduceType reduce_type) {
   auto input = ib->input(kIndex0);
   auto input_type = input->GetDtype()->type_id();
@@ -239,14 +254,11 @@ NodePtrList ReduceExtCommon(const DefaultIrBuilder *ib, ReduceType reduce_type) 
     MS_LOG(DEBUG) << "Skip expanding node, bucause shape of this node is empty or dynamic rank, shape is: " << x_shape;
     return {};
   }
-  if (common::AnfAlgo::IsDynamicSequence(axis->as<AnfNodePtr>())) {
-    MS_LOG(DEBUG) << "Skip expanding node, because axis is a dynamic sequence";
+  auto axis_opt = GetAxis(axis);
+  if (!axis_opt.has_value()) {
     return {};
   }
-  std::vector<int64_t> axis_ = {};
-  if (axis->GetDtype()->type_id() != kMetaTypeNone) {
-    axis_ = GetAxisList(axis->GetValue());
-  }
+  std::vector<int64_t> axis_ = axis_opt.value();
   auto rank = SizeToLong(x_shape.size());
   (void)std::for_each(axis_.begin(), axis_.end(), [rank](auto &a) { a = a < 0 ? a + rank : a; });
   if (axis_.empty()) {

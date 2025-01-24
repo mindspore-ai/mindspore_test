@@ -103,8 +103,10 @@ std::vector<int64_t> GetAxisList(const ValuePtr &value) {
     (void)std::transform(vals.begin(), vals.end(), std::back_inserter(result), get_int_value);
   } else if (value->isa<tensor::BaseTensor>()) {
     result = CheckAndConvertUtils::CheckTensorIntValue("axes value", value, "GetAxisList");
-  } else {
+  } else if (value->isa<Int64Imm>() || value->isa<Int32Imm>()) {
     result.push_back(get_int_value(value));
+  } else {
+    MS_LOG(EXCEPTION) << "Wrong value type passed in GetAxisList.";
   }
   return result;
 }
