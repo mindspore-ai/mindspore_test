@@ -2926,7 +2926,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructMultiKernelGraphByCache(
       kernel_graph = kernel_graph_iter->second;
       MS_EXCEPTION_IF_NULL(kernel_graph);
     }
-    ++graph_sum_;
+    graph_sum_ = std::max(graph_sum_, static_cast<uint32_t>(graph_json[kGraphId]) + 1);
     graphs_[graph_json[kGraphId]] = kernel_graph;
     all_out_graph.push_back(kernel_graph);
 
