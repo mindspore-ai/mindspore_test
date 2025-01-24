@@ -260,8 +260,8 @@ void SplitModel::UpdateAreaOutput(const AreaPtr &area) const {
   auto &area_outputs = area->area_outputs();
   area_outputs.clear();
   for (auto &ops : area->ops()) {
-    for (auto &[user, _] : ops->users()) {
-      auto iter = node_area_map_.find(user->shared_from_this());
+    for (auto &users : ops->users()) {
+      auto iter = node_area_map_.find(users.first->shared_from_this());
       if (iter == node_area_map_.end() || iter->second.get() != area.get()) {
         (void)area_outputs.emplace_back(ops);
         break;
