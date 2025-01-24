@@ -118,8 +118,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     Tensor is a data structure that stores an n-dimensional array.
 
     Note:
-        If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
-        actual data to `Tensor`.
+        - If `init` interface is used to initialize `Tensor`, the `Tensor.init_data` API needs to be called to load the
+          actual data to `Tensor`.
+        - All modes of CPU and GPU, and Atlas training series with `graph mode (mode=mindspore.GRAPH_MODE)
+          <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_  do not supported
+          in-place operations yet.
 
     Warning:
           To convert dtype of a `Tensor`, it is recommended to use `Tensor.astype()` rather than
@@ -1279,14 +1282,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def addmm_(self, mat1, mat2, *, beta=1, alpha=1):
         r"""
-        For details, please refer to :func:`mindspore.ops.addmm`.
-
-        .. note::
-            The output results are directly updated in the Tensor.
+        In-place version of :func:`mindspore.Tensor.addmm`.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
-
         """
         return tensor_operator_registry.get('addmm_')(self, mat1, mat2, beta=beta, alpha=alpha)
 
@@ -1457,29 +1456,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def floor_(self):
         r"""
-        Rounds a tensor down to the closest integer element-wise.
-
-        .. math::
-            out_i = \lfloor input_i \rfloor
+        In-place version of :func:`mindspore.Tensor.floor`.
 
         .. warning::
-
             This is an experimental API that is subject to change or deletion.
-
-        Returns:
-            Return a tensor with the same shape of input.
-
-        Supported Platforms:
-            ``Ascend``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([1.1, 2.5, -1.5], mindspore.float32)
-            >>> x.floor_()
-            >>> print(x)
-            [1. 2. -2.]
         """
         return tensor_operator_registry.get('floor_')(self)
 
@@ -2274,58 +2254,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def clamp_(self, min=None, max=None):
         r"""
-        Clamps tensor values between the specified minimum value and maximum value.
-
-        Limits the value of :math:`self` to a range, whose lower limit is `min` and upper limit is `max` .
+        In-place version of :func:`mindspore.Tensor.clamp`.
 
         .. warning::
-
             This is an experimental API that is subject to change or deletion.
-
-        .. math::
-
-            out_i= \left\{
-            \begin{array}{align}
-                max & \text{ if } self_i\ge max \\
-                self_i & \text{ if } min \lt self_i \lt max \\
-                min & \text{ if } self_i \le min \\
-            \end{array}\right.
-
-        Note:
-            - `min` and `max` cannot be None at the same time;
-            - When `min` is None and `max` is not None, the elements in Tensor larger than `max` will become `max`;
-            - When `min` is not None and `max` is None, the elements in Tensor smaller than `min` will become `min`;
-            - If `min` is greater than `max`, the value of all elements in Tensor will be set to `max`;
-            - The data type of `self`, `min` and `max` should support implicit type conversion and cannot be bool type.
-
-        Args:
-            min (Union(Tensor, float, int), optional): The minimum value. Default: ``None`` .
-            max (Union(Tensor, float, int), optional): The maximum value. Default: ``None`` .
-
-        Returns:
-            Tensor, a clipped Tensor.
-            The data type and shape are the same as self.
-
-        Raises:
-            ValueError: If both `min` and `max` are None.
-            TypeError: If the type of `self` is not in Tensor.
-            TypeError: If the type of `min` is not in None, Tensor, float or int.
-            TypeError: If the type of `max` is not in None, Tensor, float or int.
-
-        Supported Platforms:
-            ``Ascend``
-
-        Examples:
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> import numpy as np
-            >>> min_value = Tensor(5, mindspore.float32)
-            >>> max_value = Tensor(20, mindspore.float32)
-            >>> input = Tensor(np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]), mindspore.float32)
-            >>> input.clamp_(min_value, max_value)
-            >>> print(input)
-            [[ 5. 20.  5.  7.]
-            [ 5. 11.  6. 20.]]
         """
         return tensor_operator_registry.get('clamp_')(self, min, max)
 
