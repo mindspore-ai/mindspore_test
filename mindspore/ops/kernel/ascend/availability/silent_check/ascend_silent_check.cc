@@ -191,6 +191,11 @@ bool IsAsdEnable() {
   }();
   return is_npu_asd_enable;
 }
+
+bool IsCheckTypeSupported(const BaseTensorPtr &input_tensor) {
+  auto data_type = input_tensor->data_type();
+  return (data_type == kNumberTypeBFloat16) || (data_type == kNumberTypeFloat32) || (data_type == kNumberTypeFloat16);
+}
 }  // namespace
 
 bool DynamicSilentChecker::IsNpuAsdEnable() { return IsAsdEnable(); }
@@ -417,8 +422,11 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
   if (!is_back_prop_) {
     return;
   }
+  if (!IsCheckTypeSupported(input_grad)) {
+    return;
+  }
   // receive op just provide a buffer to store data, so no need to check the data in buffer
-  if (op_name == transform::kNameReceive) {
+  if (op_name == ops::kNameDistCommBarrier || op_name == ops::kNameDistCommIrecv) {
     return;
   }
   auto state_key = op_name + comm_group;
