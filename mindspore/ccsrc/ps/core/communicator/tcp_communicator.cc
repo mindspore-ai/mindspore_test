@@ -48,7 +48,7 @@ bool TcpCommunicator::Start() {
       if (size > 0) {
         auto src_size = size;
         auto dst_size = size;
-        auto ret = memcpy_s(unique_data.get(), dst_size, data, src_size);
+        auto ret = Memcpy(unique_data.get(), dst_size, data, src_size);
         if (ret != 0) {
           MS_LOG(ERROR) << "Failed to copy tcp data, data size: " << size << ", user command: " << user_command
                         << ", msg type: " << msg_type;

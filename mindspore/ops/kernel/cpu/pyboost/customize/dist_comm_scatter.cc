@@ -19,6 +19,7 @@
 #include <utility>
 #include <string>
 #include "kernel/common/pyboost/customize/op_common.h"
+
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif
@@ -55,28 +56,27 @@ void DistCommScatterCPUCustomize(const std::shared_ptr<OpRunner> &op, const Base
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), input_tensor);
     auto in_addr = input_address_info.first;
-
-    const auto &scatter_address_info =
-      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), scatter_tensors);
-    auto out_size = (scatter_address_info.first)[0]->size();
+    const auto &other_address_info =
+      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), other_tensor);
+    auto other_addr = other_address_info.first;
+    auto out_size = other_addr[0]->size();
     if (local_rank == src_rank) {
+      const auto &scatter_address_info =
+        PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), scatter_tensors);
       for (size_t r = 0; r < rank_size_imm; r++) {
         auto scatter_addr = (scatter_address_info.first)[r]->device_ptr();
         auto input_addr = in_addr[0]->device_ptr();
         size_t offset = static_cast<size_t>(r * out_size);
-        auto mem_ret = memcpy_s(reinterpret_cast<char *>(input_addr) + offset, out_size,
-                                reinterpret_cast<char *>(scatter_addr), out_size);
+        auto mem_ret = Memcpy(reinterpret_cast<char *>(input_addr) + offset, out_size,
+                              reinterpret_cast<char *>(scatter_addr), out_size);
         if (mem_ret != EOK) {
-          MS_LOG(EXCEPTION) << "memcpy_s failed.";
+          MS_LOG(EXCEPTION) << "Memcpy failed. ret is " << mem_ret;
         }
       }
     }
     const auto &group_str = GetValue<std::string>(group);
     size_t type_len = GetDataTypeSize(in_addr[0]->dtype_id());
-    //
-    const auto &other_address_info =
-      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), other_tensor);
-    auto other_addr = other_address_info.first;
+
     bool ret =
       MsCollectiveCommLib::GetInstance().Scatter(in_addr[0]->device_ptr(), other_addr[0]->device_ptr(),
                                                  out_size / type_len, in_addr[0]->dtype_id(), src_rank, group_str);

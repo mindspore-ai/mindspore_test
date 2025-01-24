@@ -105,9 +105,9 @@ bool ConcatCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
       auto copy_size = copy_num * sizeof(T);
       auto offset = copy_num * i;
       auto output_ptr = output_addr + i * output_dim_ + offset_[j];
-      auto ret = memcpy_s(output_ptr, copy_size, input_addr_list[j] + offset, copy_size);
+      auto ret = Memcpy(output_ptr, copy_size, input_addr_list[j] + offset, copy_size);
       if (ret != EOK) {
-        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy_s failed. Error no: " << ret;
+        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', Memcpy failed. Error no: " << ret;
       }
     }
   };
