@@ -25,6 +25,7 @@
 #include "pipeline/jit/pi/graph_capture/graph.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "utils/convert_utils_base.h"
+#include "pipeline/jit/pi/utils/utils.h"
 
 namespace mindspore {
 namespace pijit {

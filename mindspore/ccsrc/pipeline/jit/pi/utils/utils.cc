@@ -37,39 +37,6 @@ static const char kDynamicLengthAttr[] = "__ms_dynamic_len__";
 static const char kMsClassAttr[] = "__ms_class__";
 static const int DefaultPercision = 6;
 
-std::string GetStopTraceReasonDesc(StopTraceReason res) {
-#define STOP_TRACE_REASON_KIND(kind, description) \
-  if (res == k##kind) {                           \
-    return description;                           \
-  }
-#include "stop_trace_reason.def"
-#undef STOP_TRACE_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined STOP_TRACE_REASON");
-  return "";
-}
-
-std::string GetInlineReasonDesc(InlineReason res) {
-#define INLINE_REASON_KIND(kind, description) \
-  if (res == k##kind) {                       \
-    return description;                       \
-  }
-#include "inline_reason.def"
-#undef INLINE_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined INLINE_REASON");
-  return "";
-}
-
-std::string GetLoopUnrollingReasonDesc(LoopUnrollingReason res) {
-#define LOOP_UNROLLING_REASON_KIND(kind, description) \
-  if (res == k##kind) {                               \
-    return description;                               \
-  }
-#include "loop_unrolling_reason.def"
-#undef LOOP_UNROLLING_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined LOOP_UNROLLING_REASON");
-  return "";
-}
-
 std::string Utils::GetPyName(PyObject *obj) {
   const char *str = PyUnicode_AsUTF8(obj);
   return str != nullptr ? std::string(str) : "";

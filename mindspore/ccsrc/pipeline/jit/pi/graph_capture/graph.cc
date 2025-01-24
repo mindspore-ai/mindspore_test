@@ -22,6 +22,7 @@
 #include <utility>
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "pipeline/jit/pi/runtime.h"
+#include "pipeline/jit/pi/utils/utils.h"
 
 namespace mindspore {
 namespace pijit {
