@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,24 +24,24 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::BaseTensorPtr IndexAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                 const BaseTensorPtr &index_tensor, const BaseTensorPtr &source_tensor,
-                                                 const Int64ImmPtr &axis, const ScalarPtr &alpha) {
-  OpRunner::InferOpOutput(op, input_tensor, index_tensor, source_tensor, axis, alpha);
+                                                 const Int64ImmPtr &dim, const BaseTensorPtr &index_tensor,
+                                                 const BaseTensorPtr &source_tensor, const ScalarPtr &alpha) {
+  OpRunner::InferOpOutput(op, input_tensor, dim, index_tensor, source_tensor, alpha);
 
-  auto axis_imm = GetValue<int64_t>(axis);
+  auto dim_imm = GetValue<int64_t>(dim);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, index_tensor, source_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, index_tensor, source_tensor, axis_imm, alpha]() {
+    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, index_tensor, source_tensor, dim_imm, alpha]() {
       auto device_context = op->device_context();
 
       PyBoostUtils::MallocOpInputs(device_context, input_tensor, index_tensor, source_tensor);
       PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
 
       MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-      LAUNCH_ACLNN(aclnnIndexAdd, device_context, op->stream_id(), input_tensor, axis_imm, index_tensor, source_tensor,
+      LAUNCH_ACLNN(aclnnIndexAdd, device_context, op->stream_id(), input_tensor, dim_imm, index_tensor, source_tensor,
                    alpha, op->output(0));
       MS_LOG(DEBUG) << op->primitive()->name() << " Launch end";
     }));

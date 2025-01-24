@@ -189,7 +189,7 @@ class FuncBuilder : public BpropBuilder {
                     const NodePtr &eps) override;
   NodePtr Im2ColExt(const NodePtr &input, const NodePtr &kernel_size, const NodePtr &dilation, const NodePtr &padding,
                     const NodePtr &stride) override;
-  NodePtr IndexAddExt(const NodePtr &input, const NodePtr &index, const NodePtr &source, const NodePtr &axis,
+  NodePtr IndexAddExt(const NodePtr &input, const NodePtr &dim, const NodePtr &index, const NodePtr &source,
                       const NodePtr &alpha) override;
   NodePtr IndexSelect(const NodePtr &input, const NodePtr &dim, const NodePtr &index) override;
   NodePtr IsClose(const NodePtr &input, const NodePtr &other, const NodePtr &rtol, const NodePtr &atol,

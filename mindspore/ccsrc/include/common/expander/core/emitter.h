@@ -595,9 +595,9 @@ class COMMON_EXPORT Emitter {
                             const NodePtr &padding, const NodePtr &stride) {
     return Emit("Im2ColExt", {input, kernel_size, dilation, padding, stride});
   }
-  virtual NodePtr IndexAddExt(const NodePtr &input, const NodePtr &index, const NodePtr &source, const NodePtr &axis,
+  virtual NodePtr IndexAddExt(const NodePtr &input, const NodePtr &dim, const NodePtr &index, const NodePtr &source,
                               const NodePtr &alpha) {
-    return Emit("IndexAddExt", {input, index, source, axis, alpha});
+    return Emit("IndexAddExt", {input, dim, index, source, alpha});
   }
   virtual NodePtr IndexSelect(const NodePtr &input, const NodePtr &dim, const NodePtr &index) {
     return Emit("IndexSelect", {input, dim, index});

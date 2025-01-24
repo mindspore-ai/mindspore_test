@@ -1,0 +1,45 @@
+index_add:
+    description: |
+        index_add(indices, y, axis, use_lock=True, check_index_bound=True) -> Tensor
+
+        Adds tensor `y` to specified axis and indices of tensor `self`. The axis should be in [-len(self.dim),  len(self.dim) - 1], and indices should be in [0, the size of `self` - 1] at the axis dimension.
+
+        Args:
+            indices (Tensor): Add the value of `self` and `y` along the dimension of the `axis` according to the specified index value, with data type int32. The `indices` must be 1D with the same size as the size of `y` in the `axis` dimension. The values of `indices` should be in [0, b), where the b is the size of `self` in the `axis` dimension.
+            y (Tensor): The input tensor with the value to add.
+            axis (int): The dimension along which to index.
+            use_lock (bool, optional): Whether to enable a lock to protect the updating process of variable tensors. If ``True`` , when updating the value of `self`, this process will be protected by a lock by using atomic operation. If ``False`` , the result may be unpredictable. Default: ``True`` .
+            check_index_bound (bool, optional): If ``True`` , check indices boundary. If ``False`` , don't check indices boundary. Default: ``True`` .
+
+        Returns:
+            Tensor, has the same shape and dtype as `self`.
+
+        Raises:
+            TypeError: If neither `indices` nor `y` is a Tensor.
+            ValueError: If axis is out of the range of `self` shape.
+            ValueError: If `self` rank is not the same as `y` rank.
+            ValueError: If shape of `indices` is not 1D or size of `indices` is not equal to dimension of y[axis].
+            ValueError: If `y`'s shape is not the same as `self` except the `axis` th dimension.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
+            >>> indices = Tensor(np.array([0, 2]), mindspore.int32)
+            >>> y = Tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
+            >>> output = x.index_add(indices, y, axis = 1)
+            >>> print(output)
+            [[ 1.5  2.   4. ]
+             [ 5.   5.   7.5]
+             [ 9.   8.  11.5]]
+
+        .. method:: Tensor.index_add(dim, index, source, *, alpha=1) -> Tensor
+            :noindex:
+
+        For details, please refer to :func:`mindspore.ops.index_add`.
+        The corresponding relationships between the parameters of `Tensor.index_add` and :func:`mindspore.ops.index_add`
+        are as follows: `dim` -> `axis`, `index` -> `indices`, `source * alpha` -> `y`.

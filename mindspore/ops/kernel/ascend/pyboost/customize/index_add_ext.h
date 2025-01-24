@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::BaseTensorPtr IndexAddExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                 const BaseTensorPtr &index_tensor, const BaseTensorPtr &source_tensor,
-                                                 const Int64ImmPtr &axis, const ScalarPtr &alpha);
+                                                 const Int64ImmPtr &dim, const BaseTensorPtr &index_tensor,
+                                                 const BaseTensorPtr &source_tensor, const ScalarPtr &alpha);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
