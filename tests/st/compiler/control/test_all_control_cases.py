@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
+
 import os
 from tests.st.compiler.control.cases_register import case_register
-from mindspore import context
 from tests.mark_utils import arg_mark
+from mindspore import context
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -27,7 +27,7 @@ def test_level0_ascend_cases():
     Expectation: All cases passed.
     """
     os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = '3'
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
     case_register.check_and_run("Ascend", 0)
 
 
@@ -61,7 +61,7 @@ def test_level1_ascend_cases():
     Expectation: All cases passed.
     """
     os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = '3'
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
     case_register.check_and_run("Ascend", 1)
 
 

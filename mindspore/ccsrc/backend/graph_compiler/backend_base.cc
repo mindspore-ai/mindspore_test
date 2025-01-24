@@ -67,6 +67,7 @@
 
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
+#include "include/common/utils/parallel_context.h"
 namespace mindspore {
 namespace compile {
 bool Backend::GetCond(const BaseRef &c, bool *value) {
@@ -1006,10 +1007,20 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
   return true;
 }
 
-void CheckRunMode(device::RunMode run_mode) {
-  if (run_mode == device::RunMode::kGraphMode || run_mode == device::RunMode::kHybridMode) {
-    MS_LOG(WARNING) << "The subgraph sink and heterogeneous in Jit_level = O2 will be deprecated and removed in a "
-                       "future version, please set jit_level to O0 or O1 and try again.";
+void CheckRunMode(device::RunMode run_mode, const FuncGraphPtr &graph) {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  // for some graph is hybrid, and some graph is graph_mode but not MS_CTX_IS_MULTI_GRAPH_SINK(AllReduce)
+  static bool is_hybrid_mode = false;
+  if (!is_hybrid_mode && context->get_param<bool>(MS_CTX_ENABLE_HYBRID_MODE)) {
+    is_hybrid_mode = true;
+  }
+  if (run_mode != device::RunMode::kGraphMode) {
+    return;
+  }
+  if (graph->exist_multi_target() || !is_hybrid_mode) {
+    MS_LOG(EXCEPTION)
+      << "The GE backend does not support subgraph sink and heterogeneous scenarios, please use the ms backend.";
   }
 }
 }  // namespace
@@ -1119,7 +1130,7 @@ const ActorInfo MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph)
       PROF_END(compile_backend_graph);
       return actor_info;
     }
-    CheckRunMode(run_mode);
+    CheckRunMode(run_mode, func_graph);
 
     if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
       ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);

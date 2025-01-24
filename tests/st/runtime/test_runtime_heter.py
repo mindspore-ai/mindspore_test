@@ -60,7 +60,7 @@ def test_lenet():
     Description: Test special format in the heterogeneous scene.
     Expectation: Not throw exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     data = Tensor(np.ones([32, 1, 32, 32]).astype(np.float16) * 0.01)
     net = LeNet()
     net(data)

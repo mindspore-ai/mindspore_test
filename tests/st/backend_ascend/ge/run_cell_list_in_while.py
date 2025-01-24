@@ -16,7 +16,7 @@ import mindspore.context as context
 from mindspore import Tensor, nn
 from mindspore.common import dtype as mstype
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
 class SingleCell(nn.Cell):

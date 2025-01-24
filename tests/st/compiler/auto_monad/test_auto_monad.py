@@ -556,6 +556,7 @@ def test_while():
             x = x + 3
             return x
 
+    context.set_context(jit_config={"jit_level": "O0"})
     input_x = Tensor(2, dtype=ms.int32)
     input_y = Tensor(14, dtype=ms.int32)
     expect = Tensor(21, dtype=ms.int32)
@@ -896,6 +897,7 @@ def test_multi_assign_print():
             self.print(self.para2)
             return inputs
 
+    context.set_context(jit_config={"jit_level": "O0"})
     cap = Capture()
     with capture(cap):
         x = Tensor(9, dtype=ms.int32)

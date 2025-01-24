@@ -118,7 +118,7 @@ def test_ascend_nopnode_eliminate():
     x = Tensor(np.ones([6, 1]), mindspore.float32)
     y = Tensor(np.ones([6, 1]), mindspore.float32)
     z = Tensor([0], mindspore.float32)
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
     net = AscendNet()
     output = net(x, y, z)
     expect = np.array([[4., 4.], [4., 4.], [4., 4.]], dtype=np.float32)

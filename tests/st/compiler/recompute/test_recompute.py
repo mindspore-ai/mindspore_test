@@ -20,7 +20,7 @@ from mindspore import context, ops, lazy_inline, nn, jit
 from mindspore._extends.parse import compile_config
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-context.set_context(jit_level='O2')
+context.set_context(jit_level='O0')
 
 
 class Grad(Cell):
