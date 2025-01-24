@@ -273,7 +273,6 @@ bantao;caifubi;candanzg;chaijinwei;changzherui;chengbin;chujinjin;DeshiChen;ding
 - [STABLE] O1模式下支持kernel packet融合优化，提升动态shape网络执行性能，默认使能。
 - [BETA] O1模式下支持MatMul后向融合（epilogue fuse）Elementwise算子。通过`mindspore.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")`使能。
 - [BETA] O1模式下支持用户控制图算融合优化范围，用户通过graph_kernel_flags的enable_pass/disable_pass选项控制打开或者关闭对应融合算子。
-- [BETA] O0模式下支持GPTO执行序优化模块，通过mindspore.set_context(exec_order="gpto")使能。
 
 #### PyNative
 
