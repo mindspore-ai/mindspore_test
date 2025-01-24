@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -21,17 +21,13 @@
 #include <set>
 #include "graph/types.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "runtime/device/kernel_runtime_manager.h"
-#include "runtime/device/memory_manager.h"
-#include "runtime/device/convert_tensor_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_event.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "ir/dtype/type.h"
 #include "ir/tensor.h"
 #include "abstract/utils.h"
 #include "include/common/utils/utils.h"
 #include "runtime/device/ms_device_shape_transfer.h"
-#include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #ifdef ENABLE_DEBUGGER
 #include "debug/tensor_load.h"
@@ -44,6 +40,125 @@ namespace py = pybind11;
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+// Create a mutex for stream.
+std::mutex *CreateStreamMutex(const void *stream, std::shared_mutex *shd_mtx,
+                              mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> *mtxs_for_streams) {
+  MS_EXCEPTION_IF_NULL(stream);
+  MS_EXCEPTION_IF_NULL(shd_mtx);
+  MS_EXCEPTION_IF_NULL(mtxs_for_streams);
+
+  std::unique_lock<std::shared_mutex> unq_lock(*shd_mtx);
+  auto ret_pair = mtxs_for_streams->emplace(stream, std::make_shared<std::mutex>());
+
+  MS_EXCEPTION_IF_NULL(ret_pair.first->second);
+  return ret_pair.first->second.get();
+}
+
+// Check whether mutex exists for a stream.
+std::pair<bool, std::mutex *> CheckStreamMutexExist(
+  const void *stream, const mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> &mtxs_for_streams,
+  std::shared_mutex *shd_mtx) {
+  MS_EXCEPTION_IF_NULL(stream);
+  MS_EXCEPTION_IF_NULL(shd_mtx);
+  std::shared_lock<std::shared_mutex> shd_lock(*shd_mtx);
+  auto iter = mtxs_for_streams.find(stream);
+  if (iter != mtxs_for_streams.end()) {
+    MS_EXCEPTION_IF_NULL(iter->second);
+    return std::make_pair(true, iter->second.get());
+  }
+  return std::make_pair(false, nullptr);
+}
+
+std::lock_guard<std::mutex> LockRuntime(const void *stream) {
+  MS_EXCEPTION_IF_NULL(stream);
+  // Read-write lock for accessing mtxs_for_streams map.
+  // When the lock of each stream is created, mtxs_for_streams can be accessed concurrently to improve performance.
+  static std::shared_mutex shd_mtx;
+  static mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> mtxs_for_streams;
+
+  std::mutex *stream_mtx = nullptr;
+  // Check whether mutex exists for a stream.
+  std::pair<bool, std::mutex *> ret_pair = CheckStreamMutexExist(stream, mtxs_for_streams, &shd_mtx);
+  if (ret_pair.first) {
+    stream_mtx = ret_pair.second;
+  } else {
+    // Create a mutex for stream.
+    stream_mtx = CreateStreamMutex(stream, &shd_mtx, &mtxs_for_streams);
+  }
+
+  MS_EXCEPTION_IF_NULL(stream_mtx);
+  return std::lock_guard<std::mutex>(*stream_mtx);
+}
+
+void SetContextForce() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContextForce(device_id);
+}
+
+bool SyncStreamUtils() {
+  SetContextForce();
+  std::set<aclrtStream> except_streams;
+  if (AscendStreamMng::GetInstance().default_stream() != nullptr) {
+    // cppcheck-suppress unreadVariable
+    auto lock = LockRuntime(AscendStreamMng::GetInstance().default_stream());
+    if (!AscendStreamMng::GetInstance().SyncStream(AscendStreamMng::GetInstance().default_stream())) {
+      MS_LOG(ERROR) << "Sync default stream failed.";
+      return false;
+    }
+    (void)except_streams.insert(AscendStreamMng::GetInstance().default_stream());
+  }
+  if (AscendStreamMng::GetInstance().communication_stream() != nullptr) {
+    // cppcheck-suppress unreadVariable
+    auto lock = LockRuntime(AscendStreamMng::GetInstance().communication_stream());
+    if (!AscendStreamMng::GetInstance().SyncStream(AscendStreamMng::GetInstance().communication_stream())) {
+      MS_LOG(ERROR) << "Sync default stream failed.";
+      return false;
+    }
+    (void)except_streams.insert(AscendStreamMng::GetInstance().communication_stream());
+  }
+
+  // Sync all stream except stream_ and communication_stream_.
+  if (!AscendStreamMng::GetInstance().SyncExceptStreamsInList(except_streams)) {
+    MS_LOG(ERROR) << "Sync except streams failed.";
+    return false;
+  }
+  return true;
+}
+
+bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *stream) {
+  SetContextForce();
+  if (size == 0) {
+    MS_LOG(DEBUG) << "rtMemcpyAsync size is 0, copy kind:" << kind;
+    return true;
+  }
+  if (stream == nullptr) {
+    MS_LOG(ERROR) << "MemcpyAsync failed. stream is nullptr";
+    return false;
+  }
+
+  if (dst == nullptr) {
+    MS_LOG(ERROR) << "rtMemcpyAsync dst ptr is null, copy kind:" << kind;
+    return false;
+  }
+  if (src == nullptr) {
+    MS_LOG(ERROR) << "rtMemcpyAsync src ptr is null, copy kind:" << kind;
+    return false;
+  }
+  // cppcheck-suppress unreadVariable
+  auto lock = LockRuntime(stream);
+  if (!common::IsDryRun()) {
+    if (ACL_ERROR_NONE !=
+        CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, static_cast<aclrtMemcpyKind>(kind), stream)) {
+      MS_LOG(ERROR) << "Call runtime rtMemcpyAsync error.";
+      return false;
+    }
+  }
+  return true;
+}
+}  // namespace
 const auto kFloat16Bytes = 2;
 const auto kFloatBytes = sizeof(float);
 const auto kFloat64Bytes = 8;
@@ -86,10 +201,7 @@ void AscendDeviceAddress::DeviceSynchronizerInit() {
 }
 
 void AscendDeviceAddress::SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size,
-                                                            aclrtMemcpyKind kind,
-                                                            KernelRuntime *runtime_instance) const {
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-
+                                                            aclrtMemcpyKind kind) const {
   MS_LOG(DEBUG) << "Begin, size:" << size;
   std::shared_ptr<uint8_t[]> buffer(new (std::nothrow) uint8_t[size]);
   MS_EXCEPTION_IF_NULL(buffer);
@@ -100,7 +212,7 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceWithCopySrc(void *dst, const voi
   }
 
   const auto stream = AscendStreamMng::GetInstance().GetStream(this->stream_id());
-  auto ret = runtime_instance->MemcpyAsync(dst, buffer.get(), size, static_cast<int32_t>(kind), stream);
+  auto ret = MemcpyAsync(dst, buffer.get(), size, static_cast<int32_t>(kind), stream);
   if (!ret) {
     MS_LOG(EXCEPTION) << "MemcpyAsync failed!";
   }
@@ -129,7 +241,7 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, co
   // Memcpy needs to be synchronized firstm, if tensor data is from numpy.
   const auto stream = AscendStreamMng::GetInstance().GetStream(this->stream_id());
   // cppcheck-suppress unreadVariable
-  auto lock = device::KernelRuntime::LockRuntime(stream);
+  auto lock = LockRuntime(stream);
   if (!AscendStreamMng::GetInstance().SyncStream(stream)) {
     MS_EXCEPTION(DeviceProcessError) << "Sync stream error!";
   }
@@ -143,13 +255,10 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, co
 
 void AscendDeviceAddress::SyncHostMemoryToDeviceWithTensorData(void *dst, const void *src, uint64_t size,
                                                                aclrtMemcpyKind kind,
-                                                               const tensor::TensorDataPtr &tensor_data,
-                                                               KernelRuntime *runtime_instance) const {
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-
+                                                               const tensor::TensorDataPtr &tensor_data) const {
   MS_LOG(DEBUG) << "Begin, size:" << size;
   const auto stream = AscendStreamMng::GetInstance().GetStream(this->stream_id());
-  auto ret = runtime_instance->MemcpyAsync(dst, src, size, static_cast<int32_t>(kind), stream);
+  auto ret = MemcpyAsync(dst, src, size, static_cast<int32_t>(kind), stream);
   if (!ret) {
     MS_LOG(EXCEPTION) << "MemcpyAsync failed!";
   }
@@ -180,13 +289,11 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
   AscendHalManager::GetInstance().SetContext(device_id);
 
   // Only apply asynchronous copy in Pynative && ACL_MEMCPY_HOST_TO_DEVICE mode
   if (execution_mode != kPynativeMode || kind != ACL_MEMCPY_HOST_TO_DEVICE) {
-    auto ret = runtime_instance->SyncStream();
+    auto ret = SyncStreamUtils();
     if (!ret) {
       MS_LOG(EXCEPTION) << "Sync stream error!";
     }
@@ -199,13 +306,13 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
   } else {
     if (tensor_data == nullptr) {
       // tensor_data is nullptr. Need to copy host first, then dispatch callbacks.
-      SyncHostMemoryToDeviceWithCopySrc(dst, src, size, kind, runtime_instance);
+      SyncHostMemoryToDeviceWithCopySrc(dst, src, size, kind);
       return;
     }
     if (tensor_data->is_from_numpy()) {
       SyncHostMemoryToDeviceForTensorFromNumpy(dst, src, size, kind);
     } else {
-      SyncHostMemoryToDeviceWithTensorData(dst, src, size, kind, tensor_data, runtime_instance);
+      SyncHostMemoryToDeviceWithTensorData(dst, src, size, kind, tensor_data);
     }
   }
 }
@@ -275,12 +382,7 @@ void AscendDeviceAddress::BindDevice() const {
 
 void AscendDeviceAddress::SyncStream() const {
   MS_LOG(DEBUG) << "SyncStream Start!";
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  auto ret = runtime_instance->SyncStream();
+  auto ret = SyncStreamUtils();
   if (!ret) {
     MS_LOG(EXCEPTION) << "Sync stream error!";
   }
@@ -473,62 +575,6 @@ ShapeVector AscendDeviceAddress::GetDeviceShape(ShapeVector *host_shape) const {
   return device_shape;
 }
 
-std::shared_ptr<LaunchTransData> AscendDeviceAddress::CreateLaunchTransData(const ShapeVector &host_shape,
-                                                                            const std::string &ori_format,
-                                                                            const std::string &dst_format) const {
-  int64_t groups = 1;
-  if (format() == kOpFormat_FRAC_Z) {
-    groups = GetGroupsWithCache();
-  }
-  auto launch_trans_data = std::make_shared<LaunchTransData>(this->stream_id(), type_id(), GetSize(), ori_format,
-                                                             dst_format, host_shape, groups);
-  MS_EXCEPTION_IF_NULL(launch_trans_data);
-  return launch_trans_data;
-}
-
-bool AscendDeviceAddress::SyncDeviceToHostAndConvertFormatBasedOnTransData(const ShapeVector &host_shape, size_t size,
-                                                                           mindspore::TypeId type,
-                                                                           void *host_ptr) const {
-  bool sync_ok = true;
-  const std::string dst_format = kOpFormat_NCHW;
-  if (launch_transdata_ == nullptr) {
-    launch_transdata_ = CreateLaunchTransData(host_shape, format(), dst_format);
-    MS_EXCEPTION_IF_NULL(launch_transdata_);
-  }
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  // launch transdata
-  GilReleaseWithCheck release_gil;
-  launch_transdata_->SetInputAddr(GetMutablePtr());
-  {
-    std::lock_guard<std::recursive_mutex> lock_launch(transdata_mutx);
-    launch_transdata_->LaunchOpKernel();
-  }
-
-  SyncStream();
-  auto output_addr_vec = launch_transdata_->GetKernelOutputAddr();
-  if (output_addr_vec.size() != 1) {
-    launch_transdata_->FreeDeviceMem();
-    MS_LOG(EXCEPTION) << "Launch transdata outputs should have only one output, actual output size: "
-                      << output_addr_vec.size();
-  }
-  if (type_id() == type) {
-    SyncMemory(host_ptr, output_addr_vec[0], size, ACL_MEMCPY_DEVICE_TO_HOST);
-  } else {
-    auto host = std::vector<uint8_t>(size);
-    SyncMemory(host.data(), output_addr_vec[0], size, ACL_MEMCPY_DEVICE_TO_HOST);
-    auto shape_size = abstract::ShapeSize(host_shape);
-    const trans::TypeIdArgs type_args{host.data(), shape_size, type_id(), type, size};
-    sync_ok = trans::TransDataType(type_args, host_ptr);
-    if (!sync_ok) {
-      MS_LOG(ERROR) << "Trans data type failed.";
-      launch_transdata_->FreeDeviceMem();
-      return false;
-    }
-  }
-  launch_transdata_->FreeDeviceMem();
-  return sync_ok;
-}
-
 bool AscendDeviceAddress::SyncDeviceToHostAndConvertFormat(const ShapeVector &shape, size_t size,
                                                            mindspore::TypeId type, void *host_ptr) const {
   MS_LOG(DEBUG) << "SyncDeviceToHostAndConvertFormat, Device(format:" << format()
@@ -547,16 +593,6 @@ bool AscendDeviceAddress::SyncDeviceToHostAndConvertFormat(const ShapeVector &sh
     (void)host_shape.emplace_back(1);
   }
   auto device_shape = GetDeviceShape(&host_shape);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      type_id_name_map.find(type_id()) != type_id_name_map.end() && !mem_offloaded()) {
-    std::pair<std::string, std::string> type_format = std::make_pair(type_id_name_map.at(type_id()), format());
-    if (IsUseTransDataTypeFormat(type_format)) {
-      sync_ok = SyncDeviceToHostAndConvertFormatBasedOnTransData(host_shape, size, type, host_ptr);
-      return sync_ok;
-    }
-  }
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
   auto host_tmp = std::vector<uint8_t>(GetSize());
   CopyDeviceToHost(host_tmp.data(), GetSize());
@@ -764,20 +800,13 @@ bool AscendDeviceAddress::AsyncDeviceToDevice(const ShapeVector & /* shape */, s
     MS_LOG(WARNING) << "Move data to device failed, check previous log for details.";
   }
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
   bool ret;
   if (mem_offloaded()) {
-    ret = runtime_instance->MemcpyAsync(loadable_mem_->offload_ptr_, src_ptr, size,
-                                        static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_HOST),
-                                        runtime_instance->compute_stream());
+    ret = MemcpyAsync(loadable_mem_->offload_ptr_, src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_HOST),
+                      AscendStreamMng::GetInstance().default_stream());
   } else {
-    ret =
-      runtime_instance->MemcpyAsync(GetDevicePtr(), src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_DEVICE),
-                                    runtime_instance->compute_stream());
+    ret = MemcpyAsync(GetDevicePtr(), src_ptr, size, static_cast<int32_t>(ACL_MEMCPY_DEVICE_TO_DEVICE),
+                      AscendStreamMng::GetInstance().default_stream());
   }
   if (!ret) {
     MS_LOG(ERROR) << "MemcpyAsync failed!";
@@ -806,14 +835,8 @@ bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId /* type */, cons
   }
   MS_ERROR_IF_NULL(GetDevicePtr());
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-
   auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, GetDevicePtr(), size, host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE,
-                             runtime_instance->compute_stream());
+                             AscendStreamMng::GetInstance().default_stream());
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(ERROR) << "Call aclrtMemcpyAsync host to device failed, the error num[" << ret << "]";
     return false;
@@ -1080,11 +1103,7 @@ bool AscendDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) c
     MS_EXCEPTION_IF_NULL(ptr);
     SetDevicePtr(ptr);
   }
-  auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  AscendHalManager::GetInstance().SetContext(device_id);
-  SyncHostMemoryToDeviceWithCopySrc(GetDevicePtr(), host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE, runtime_instance);
+  SyncHostMemoryToDeviceWithCopySrc(GetDevicePtr(), host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE);
   return true;
 }
 

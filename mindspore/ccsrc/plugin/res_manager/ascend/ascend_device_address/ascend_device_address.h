@@ -22,9 +22,7 @@
 #include <memory>
 #include "include/backend/device_address.h"
 #include "runtime/device/loadable_device_address.h"
-#include "runtime/device/kernel_runtime.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
-#include "plugin/device/ascend/hal/device/launch_transdata.h"
 #include "ir/dtype.h"
 #include "kernel/kernel.h"
 #include "utils/shape_utils.h"
@@ -130,8 +128,6 @@ class AscendDeviceAddress : public LoadableDeviceAddress {
   bool SyncDeviceToHostAndConvertFormat(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const;
   bool ConvertFormatAndSyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
                                         const tensor::TensorDataPtr &tensor_data) const;
-  bool SyncDeviceToHostAndConvertFormatBasedOnTransData(const ShapeVector &host_shape, size_t size,
-                                                        mindspore::TypeId type, void *host_ptr) const;
   bool SyncDeviceToDeviceWithDiffFormatType(const DeviceSync *src_device_addr) const;
 
   bool SyncHostToDeviceImpl(const ShapeVector &shape, size_t size, mindspore::TypeId type, const void *host_ptr,
@@ -143,16 +139,11 @@ class AscendDeviceAddress : public LoadableDeviceAddress {
   bool SyncDeviceToHostAndFloatToFloat64(void *dst, size_t dst_size, const void *src, size_t src_size) const;
   void SyncMemory(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
                   const tensor::TensorDataPtr &tensor_data = nullptr) const;
-  void SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
-                                         KernelRuntime *runtime_instance) const;
+  void SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind) const;
   void SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind) const;
   void SyncHostMemoryToDeviceWithTensorData(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
-                                            const tensor::TensorDataPtr &tensor_data,
-                                            KernelRuntime *runtime_instance) const;
+                                            const tensor::TensorDataPtr &tensor_data) const;
   ShapeVector GetDeviceShape(ShapeVector *host_shape) const;
-  std::shared_ptr<LaunchTransData> CreateLaunchTransData(const ShapeVector &host_shape, const std::string &ori_format,
-                                                         const std::string &dst_format) const;
-  mutable std::shared_ptr<LaunchTransData> launch_transdata_{nullptr};
   void BindDevice() const;
   void CopyHostToDevice(const void *src, uint64_t size, const tensor::TensorDataPtr &tensor_data) const;
   void CopyDeviceToHost(void *dst, uint64_t size) const;
