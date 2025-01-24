@@ -73,8 +73,6 @@ matmul_reduce_scatter:
             >>> from mindspore import ops
             >>> import numpy as np
             >>> ms.communication.init()
-            >>> ms.set_context(mode=ms.PYNATIVE_MODE)
-            >>> ms.set_device(device_target="Ascend")
             >>> rank = ms.communication.get_rank()
             >>> np.random.seed(rank)
             >>> input = ms.Tensor(np.random.randn(1024, 256).astype(np.float32), dtype=ms.float16)
