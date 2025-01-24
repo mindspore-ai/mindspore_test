@@ -384,6 +384,13 @@ CNodePtr NewTransposeNode(const AnfNodePtr &tensor_node, const AnfNodePtr &tuple
   MS_EXCEPTION_IF_NULL(tuple);
   std::vector<AnfNodePtr> transpose_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimTranspose->name())),
                                               tensor_node, tuple};
+  static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
+  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  if (!ge_mode && !close_view_op) {
+    auto monad_input = NewValueNode(kUMonad);
+    monad_input->set_abstract(kUMonad->ToAbstract());
+    (void)transpose_inputs.emplace_back(monad_input);
+  }
   auto transpose_node = tensor_node->func_graph()->NewCNode(transpose_inputs);
   MS_EXCEPTION_IF_NULL(transpose_node);
   transpose_node->set_scope(tensor_node->scope());
