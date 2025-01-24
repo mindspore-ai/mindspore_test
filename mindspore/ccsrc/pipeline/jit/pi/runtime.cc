@@ -1225,11 +1225,10 @@ size_t FunctionId(const py::object &callable) {
     return result == pybind_dispatcher ? op : reinterpret_cast<void *>(result);
   };
   PyObject *op = callable.ptr();
-  if (PyMethod_Check(op)) {
-    op = PyMethod_GET_FUNCTION(op);
-  }
-  if (PyInstanceMethod_Check(op)) {
-    op = PyInstanceMethod_GET_FUNCTION(op);
+  // limit max reference depth
+  for (int limit = 10; limit && (PyMethod_Check(op) || PyInstanceMethod_Check(op)); --limit) {
+    op = PyMethod_Check(op) ? PyMethod_GET_FUNCTION(op) : op;
+    op = PyInstanceMethod_Check(op) ? PyInstanceMethod_GET_FUNCTION(op) : op;
   }
   void *result = op;
   if (PyCFunction_Check(op)) {

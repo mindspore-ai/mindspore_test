@@ -28,6 +28,7 @@
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
 #include "utils/convert_utils_base.h"
+#include "pipeline/jit/pi/utils/stop_trace_reason.h"
 
 namespace mindspore {
 namespace pijit {
@@ -150,7 +151,7 @@ class Graph {
   // only func name
   std::string GetCodeName() const {
     PyCodeObject *c = reinterpret_cast<PyCodeObject *>(co_.ptr());
-    return Utils::GetPyName(c->co_name);
+    return py::str(c->co_name);
   }
 
   bool GuardValueNode(ValueNode *, GuardLevel level = GuardLevel::GEqual);

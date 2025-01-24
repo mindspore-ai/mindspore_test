@@ -26,10 +26,10 @@
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/graph_capture/constant_info.h"
-#include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
 #include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "pipeline/jit/pi/utils/inline_reason.h"
 
 namespace mindspore {
 namespace pijit {

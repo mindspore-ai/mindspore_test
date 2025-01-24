@@ -24,7 +24,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "pybind11/pybind11.h"
-#include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_guard/perf.h"
 
