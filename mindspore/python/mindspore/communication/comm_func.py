@@ -933,11 +933,27 @@ def send(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> import mindspore.communication as comm
+        >>> from mindspore.communication import init
+        >>> from mindspore.communication.comm_func import send, recv
+        >>> from mindspore.communication import get_rank, get_group_size
         >>>
-        >>> comm.init()
-        >>> input_ = ms.Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> comm.comm_func.send(input_, 0)
+        >>> np.random.seed(1)
+        >>> init()
+        >>> rank = get_rank()
+        >>> size = get_group_size()
+        >>> x = np.ones([2, 2]).astype(np.float32) * 0.01 * (rank + 1)
+        >>> x2 = np.ones([2, 2]).astype(np.float32)
+        >>>
+        >>>
+        >>> if rank < size / 2:
+        >>>     _x = ms.Tensor(x)
+        >>>     send(_x, rank + size // 2)
+        >>> else:
+        >>>     _x2 = ms.Tensor(x2)
+        >>>     output = recv(_x2, rank - size // 2)
+        >>>     print(output)
+        [[0.01  0.01]
+         [0.01  0.01]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For send, the input tensor must be tensor")
@@ -991,19 +1007,27 @@ def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> import mindspore.communication as comm
+        >>> from mindspore.communication import init
+        >>> from mindspore.communication.comm_func import send, recv
+        >>> from mindspore.communication import get_rank, get_group_size
         >>>
-        # Launch 2 processes.
-        Process 0 send the following array to Process 1
-        [[ 0.  1.]
-         [ 2.  3.]]
-        >>> comm.init()
-        >>> x = ms.Tensor(np.zeros([2, 2]))
-        # Process 1 receive tensor from Process 0.
-        >>> out = comm.comm_func.recv(x, src=0)
-        >>> print(out)
-        [[ 0.  1.]
-         [ 2.  3.]]
+        >>> np.random.seed(1)
+        >>> init()
+        >>> rank = get_rank()
+        >>> size = get_group_size()
+        >>> x = np.ones([2, 2]).astype(np.float32) * 0.01 * (rank + 1)
+        >>> x2 = np.ones([2, 2]).astype(np.float32)
+        >>>
+        >>>
+        >>> if rank < size / 2:
+        >>>     _x = ms.Tensor(x)
+        >>>     send(_x, rank + size // 2)
+        >>> else:
+        >>>     _x2 = ms.Tensor(x2)
+        >>>     output = recv(_x2, rank - size // 2)
+        >>>     print(output)
+        [[0.01  0.01]
+         [0.01  0.01]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For recv, the input tensor must be tensor")
@@ -1058,12 +1082,28 @@ def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> import mindspore.communication as comm
+        >>> from mindspore.communication import init
+        >>> from mindspore.communication.comm_func import isend, irecv
+        >>> from mindspore.communication import get_rank, get_group_size
         >>>
-        >>> comm.init()
-        >>> input_ = ms.Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> handle = comm.comm_func.isend(input_, 0)
-        >>> handle.wait()
+        >>> np.random.seed(1)
+        >>> init()
+        >>> rank = get_rank()
+        >>> size = get_group_size()
+        >>> x = np.ones([2, 2]).astype(np.float32) * 0.01 * (rank + 1)
+        >>> x2 = np.ones([2, 2]).astype(np.float32)
+        >>>
+        >>>
+        >>> if rank < size / 2:
+        >>>     _x = ms.Tensor(x)
+        >>>     isend(_x, rank + size // 2)
+        >>> else:
+        >>>     _x2 = ms.Tensor(x2)
+        >>>     output, handle = irecv(_x2, rank - size // 2)
+        >>>     handle.wait()
+        >>>     print(output)
+        [[0.01  0.01]
+         [0.01  0.01]]
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For isend, the input tensor must be tensor")
@@ -1120,20 +1160,28 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> import mindspore.communication as comm
+        >>> from mindspore.communication import init
+        >>> from mindspore.communication.comm_func import isend, irecv
+        >>> from mindspore.communication import get_rank, get_group_size
         >>>
-        # Launch 2 processes.
-        # Process 0 send the following array to Process 1
-        # [[ 0.  1.]
-        # [ 2.  3.]]
-        >>> comm.init()
-        >>> x = ms.Tensor(np.zeros([2, 2]))
-        # Process 1 receive tensor from Process 0.
-        >>> out, handle = comm.comm_func.irecv(x, src=0)
-        >>> handle.wait()
-        >>> print(out)
-        [[ 0.  1.]
-         [ 2.  3.]]
+        >>> np.random.seed(1)
+        >>> init()
+        >>> rank = get_rank()
+        >>> size = get_group_size()
+        >>> x = np.ones([2, 2]).astype(np.float32) * 0.01 * (rank + 1)
+        >>> x2 = np.ones([2, 2]).astype(np.float32)
+        >>>
+        >>>
+        >>> if rank < size / 2:
+        >>>     _x = ms.Tensor(x)
+        >>>     isend(_x, rank + size // 2)
+        >>> else:
+        >>>     _x2 = ms.Tensor(x2)
+        >>>     output, handle = irecv(_x2, rank - size // 2)
+        >>>     handle.wait()
+        >>>     print(output)
+        [[0.01  0.01]
+         [0.01  0.01]]
     """
     group = _get_group(group)
     _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
