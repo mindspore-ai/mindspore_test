@@ -36,8 +36,9 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #endif
-#include "backend/ge_backend/ge_backend_optimization.h"
-#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
+#include "debug/summary/summary.h"
+#include "include/common/utils/callbacks.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
@@ -133,7 +134,7 @@ void GEBackend::Init() {
 }
 
 BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph) {
-  // WaitTaskFinish();
+  WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -160,12 +161,12 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph) {
   PROF_END(WaitAllCommInit);
 
   UnifyMindIR(root_graph);
-  // if (common::AnfAlgo::IsDynamicShapeFuncGraph(root_graph)) {
-  //   mindspore::opt::GEDynamicUnifyMindIR(root_graph);
-  // }
+  if (common::AnfAlgo::IsDynamicShapeFuncGraph(root_graph)) {
+    opt::GEDynamicUnifyMindIR(root_graph);
+  }
 
   // Register a summary callback function, which is called in the final stages of summary.
-  // graph_compiler_->RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
+  debug::Summary::GetInstance().RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
 
   // check if supported in ge_backend, and the compile_type
   compile_type_ = PartitionGraph(func_graph);
@@ -187,8 +188,7 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph) {
                                     profiler::GetClockSyscnt(), 1);
     return graph_id;
   }
-  MS_LOG(EXCEPTION)
-    << "The heterogeneous is not support in Jit_level = O2, please set jit_level to O0 or O1 and try again.";
+  MS_LOG(EXCEPTION) << "The graph is not support in ge_backend, please set jit_level to O0 or O1 and try again.";
   return 0;
 }
 
@@ -244,40 +244,42 @@ void GEBackend::UnifyMindIR(const FuncGraphPtr &root_graph) const {
 CompileType GEBackend::PartitionGraph(const FuncGraphPtr &func_graph) const {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  // if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
-  //   auto mng = func_graph->manager();
-  //   MS_EXCEPTION_IF_NULL(mng);
-  //   const auto &sub_graphs = mng->func_graphs();
-  //   for (const auto &sub_graph : sub_graphs) {
-  //     if (sub_graph == nullptr) {
-  //       continue;
-  //     }
-  //     auto nodes = TopoSort(sub_graph->get_return());
-  //     for (const auto &node : nodes) {
-  //       if (!node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
-  //         continue;
-  //       }
-  //       if (GetCNodeTarget(node) != kAscendDevice) {
-  //         return CompileType::NotSupport;
-  //       }
-  //       if (GetCNodePrimitive(node) == nullptr) {
-  //         continue;
-  //       }
-  //       if (!ConvertCheck(node)) {
-  //         MS_LOG(DEBUG) << node->fullname_with_scope() << " can not find adpt, run on CPU";
-  //         return CompileType::NotSupport;
-  //       }
-  //       if (!DynamicShapeSupportCheck(node)) {
-  //         MS_LOG(DEBUG) << node->fullname_with_scope() << " not support dynamic shape, will run in KernelGraph";
-  //         return CompileType::NotSupport;
-  //       }
-  //       if (!SinkGraphCheck(node)) {
-  //         MS_LOG(DEBUG) << node->fullname_with_scope() << " have attrs is not ValueNode, will run in KernelGraph";
-  //         return CompileType::NotSupport;
-  //       }
-  //     }
-  //   }
-  // }
+  if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
+    auto mng = func_graph->manager();
+    MS_EXCEPTION_IF_NULL(mng);
+    const auto &sub_graphs = mng->func_graphs();
+    for (const auto &sub_graph : sub_graphs) {
+      if (sub_graph == nullptr) {
+        continue;
+      }
+      auto nodes = TopoSort(sub_graph->get_return());
+      for (const auto &node : nodes) {
+        if (!node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
+          continue;
+        }
+        if (GetCNodeTarget(node) != kAscendDevice) {
+          MS_LOG(ERROR) << "The ge_backend do not support heterogeneity, the graph has cpu node, node: "
+                        << node->fullname_with_scope();
+          return CompileType::NotSupport;
+        }
+        if (GetCNodePrimitive(node) == nullptr) {
+          continue;
+        }
+        if (!ConvertCheck(node)) {
+          MS_LOG(ERROR) << node->fullname_with_scope() << " can not find adpt.";
+          return CompileType::NotSupport;
+        }
+        if (!DynamicShapeSupportCheck(node)) {
+          MS_LOG(ERROR) << node->fullname_with_scope() << " not support dynamic shape.";
+          return CompileType::NotSupport;
+        }
+        if (!SinkGraphCheck(node)) {
+          MS_LOG(ERROR) << node->fullname_with_scope() << " have attrs is not ValueNode.";
+          return CompileType::NotSupport;
+        }
+      }
+    }
+  }
   if (context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK)) {
     return CompileType::WholeGraph;
   } else {
@@ -548,10 +550,9 @@ void GEBackend::WaitTaskFinish() const {
 }
 
 RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
-  // runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime,
-  // runtime::ProfilerEvent::kBackendGraphRunInner,
-  //                                    actor_info, true);
-  // MS_EXCEPTION_IF_NULL(root_graph_);
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kBackendGraphRunInner,
+                                     "graph_" + std::to_string(graph_id), true);
+
   // if (IsGraphOutputValueNodeOrParameter(root_graph_->output(), args, outputs)) {
   //   return;
   // }

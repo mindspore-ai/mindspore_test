@@ -32,7 +32,6 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion/batchnorm_to_bninfer.cc"
         "./ir_fission/ascend_convert_tuple_input_to_dynamic_input.cc"
         "./ir_fusion/batchnormgrad_to_bninfergrad.cc"
-        "./ir_fusion/histogram_fixed_width_fusion.cc"
         "./ir_fusion/adaptive_max_pool2d_fusion.cc"
         "./ir_fusion/flash_attention_fusion.cc"
         "./ir_fusion/mc2_fusion.cc"

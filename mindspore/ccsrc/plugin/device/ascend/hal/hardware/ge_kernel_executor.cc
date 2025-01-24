@@ -139,7 +139,8 @@ void RegisterSilentCheckForNode(const CNodePtr &kernel, const kernel::KernelModP
   silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr, input_kernel_tensors[0]);
 }
 
-bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *graph_executor = nullptr) {
+bool GenerateKernelMod(const std::vector<CNodePtr> &kernels,
+                       backend::ge_backend::GeGraphExecutor *graph_executor = nullptr) {
   for (const auto &kernel : kernels) {
     MS_EXCEPTION_IF_NULL(kernel);
     if (AnfAlgo::GetKernelMod(kernel)) {
@@ -1180,7 +1181,8 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       return;
     }
     MS_EXCEPTION_IF_NULL(device_context_->graph_executor_);
-    dynamic_cast<GeGraphExecutor *>(device_context_->graph_executor_.get())->CompileGraph(graph, {});
+    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(device_context_->graph_executor_.get())
+      ->CompileGraph(graph, {});
     (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
                                     profiler::GetClockSyscnt(), 1);
     return;

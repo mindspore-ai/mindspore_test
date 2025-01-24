@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_GE_KERNEL_BUILD_H_
 #include <memory>
 #include "kernel/kernel.h"
-#include "plugin/device/ascend/hal/hardware/ge/ge_graph_executor.h"
+#include "backend/ge_backend/executor/ge_graph_executor.h"
 
 namespace mindspore {
 namespace kernel {

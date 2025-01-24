@@ -118,7 +118,6 @@ set(BACKEND_SUB_COMP
         backend/graph_compiler
         backend/operator
         memory/mem_pool
-        backend/ge_backend
         runtime/collective
         runtime/device
         runtime/graph_scheduler
@@ -252,6 +251,11 @@ else()
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 
+if(ENABLE_D OR ENABLE_ACL)
+    target_link_libraries(_c_expression PRIVATE -Wl,--no-whole-archive mindspore_ge_backend)
+endif()
+
+
 target_link_libraries(_c_expression PRIVATE mindspore::glog)
 set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
 
@@ -272,6 +276,7 @@ endif()
 add_subdirectory(pyboost)
 add_subdirectory(backend/backend_manager)
 add_subdirectory(runtime/device/res_manager)
+add_subdirectory(backend/ge_backend)
 
 if(ENABLE_MINDDATA)
     add_subdirectory(minddata/mindrecord)

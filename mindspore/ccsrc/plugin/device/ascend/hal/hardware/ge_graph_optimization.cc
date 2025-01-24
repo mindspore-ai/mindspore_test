@@ -23,6 +23,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -89,7 +90,7 @@ void GEGraphOptimization::OptimizeGEGraph(const KernelGraphPtr &graph, std::set<
   }
   MarkRefGraph(graph);
   opt::GEBackendOptimizeACL(graph);
-  opt::GEBackendOptimization(graph);
+  backend::ge_backend::opt::GEBackendOptimization(graph);
   for (auto &child_graph : graph->child_graph_order()) {
     if (child_graph.lock()->has_flag(kFlagGeKernel)) {
       continue;

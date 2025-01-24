@@ -40,7 +40,7 @@
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
-#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
@@ -130,7 +130,7 @@ bool GeDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
     if (GetRunMode(func_graph) == RunMode::kKernelMode) {
       return true;
     }
-    opt::GEDynamicUnifyMindIR(func_graph);
+    backend::ge_backend::opt::GEDynamicUnifyMindIR(func_graph);
     bool all_support = true;
     auto mng = func_graph->manager();
     MS_EXCEPTION_IF_NULL(mng);
@@ -296,7 +296,7 @@ void GeDeviceContext::Destroy() {
   if (graph_executor_ == nullptr) {
     return;
   }
-  dynamic_cast<GeGraphExecutor *>(graph_executor_.get())->Finalize();
+  dynamic_cast<backend::ge_backend::GeGraphExecutor *>(graph_executor_.get())->Finalize();
   if (device_res_manager_ == nullptr) {
     return;
   }

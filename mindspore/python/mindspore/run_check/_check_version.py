@@ -26,7 +26,6 @@ from packaging import version
 import numpy as np
 from mindspore import log as logger
 from mindspore.log import vlog_print
-from mindspore._c_expression import MSContext, ms_ctx_param
 from ..version import __version__
 
 
@@ -474,6 +473,7 @@ def check_version_and_env_config():
             logger.warning("Pre-Load Library libgomp.so.1 failed, which might cause TLS memory allocation failure. If "
                            "the failure occurs, please refer to the FAQ for a solution: "
                            "https://www.mindspore.cn/docs/en/master/faq/installation.html.")
+        from mindspore._c_expression import MSContext, ms_ctx_param
         MSContext.get_instance().register_check_env_callback(check_env)
         MSContext.get_instance().register_set_env_callback(set_env)
         MSContext.get_instance().set_device_target_inner(MSContext.get_instance().get_param(ms_ctx_param.device_target))

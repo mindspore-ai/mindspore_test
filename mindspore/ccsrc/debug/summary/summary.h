@@ -20,13 +20,14 @@
 #include <string>
 #include "include/backend/kernel_graph.h"
 #include "ir/tensor.h"
+#include "include/backend/visible.h"
 
 namespace mindspore::debug {
 using CallBackFunc = uint32_t (*)(uint32_t graph_id,
                                   const std::map<std::string, mindspore::tensor::TensorPtr> &params_list);
 using mindspore::session::KernelGraph;
 
-class Summary {
+class BACKEND_EXPORT Summary {
  public:
   static Summary &GetInstance();
   void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);

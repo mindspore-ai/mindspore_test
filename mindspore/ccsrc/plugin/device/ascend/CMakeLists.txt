@@ -78,6 +78,7 @@ list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_mem_man
 
 # to delete
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ge_pass_obj>)
+list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ge_executor_obj>)
 
 list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_COMMON_OBJECTS_SRC})
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})

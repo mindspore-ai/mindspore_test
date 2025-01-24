@@ -17,10 +17,11 @@
 #define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_ERASE_NOT_CUT_ATTR_H_
 #include <string>
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class EraseNotCutAttr : public Pass {
+class BACKEND_EXPORT EraseNotCutAttr : public Pass {
  public:
   explicit EraseNotCutAttr(const std::string &name = "erase_not_cut_attr") : Pass(name) {}
   ~EraseNotCutAttr() override = default;
