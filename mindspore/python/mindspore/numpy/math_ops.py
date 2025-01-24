@@ -4670,7 +4670,7 @@ def bincount(x, weights=None, minlength=0, length=None):
         weights = _to_tensor(weights)
         if ops.shape(x) != ops.shape(weights):
             _raise_value_error('`x` and `weights` must have the same length')
-        idx_mapping *= weights
+        idx_mapping = weights * idx_mapping
     return ops.reduce_sum(idx_mapping.astype(mstype.float32), 1).ravel()
 
 
