@@ -1347,23 +1347,15 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         >>> import mindspore.communication as comm
         >>>
         >>> comm.init()
-        >>> this_rank = comm.get_rank()
-        >>> if this_rank == 0:
-        >>>     output_shape = (3, 3)
-        >>>     tensor = ms.Tensor([[0, 1, 2.], [3, 4, 5], [6, 7, 8]])
-        >>>     result = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor, [2, 1], [2, 1])
-        >>> if this_rank == 1:
-        >>>     output_shape = (2, 3)
-        >>>     tensor = ms.Tensor([[9, 10., 11], [12, 13, 14]])
-        >>>     result, _ = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor)
+        >>> rank = comm.get_rank()
+        >>> input = ms.Tensor([0, 1]) + rank * 2
+        >>> output_shape = (2,)
+        >>> result, _ = comm.comm_func.all_to_all_single_with_output_shape(output_shape, input)
         >>> print(result)
         rank 0:
-        [[ 0.  1.  2.]
-         [ 3.  4.  5.]
-         [ 9. 10. 11.]]
+        [ 0.  2.]
         rank 1:
-        [[ 6.  7.  8.]
-         [12. 13. 14.]]
+        [ 1.  3.]
 
     """
 
