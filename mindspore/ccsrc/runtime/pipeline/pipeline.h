@@ -44,6 +44,10 @@ class BACKEND_EXPORT Pipeline {
 
   void ChildAfterFork();
 
+  void DisablePipeline();
+
+  static void DisableMultiThreadAfterFork();
+
  private:
   Pipeline();
   ~Pipeline() = default;

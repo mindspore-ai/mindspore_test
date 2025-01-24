@@ -303,6 +303,8 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("set_max_call_depth", &GraphExecutorPy::set_max_call_depth, py::arg("max_call_depth") = py::int_(1000),
          "Get the running passes.");
 
+  (void)m.def("disable_multi_thread", &mindspore::runtime::Pipeline::DisableMultiThreadAfterFork,
+              "Disable multi thread");
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");
   (void)m.def("reset_op_id_with_offset", &mindspore::pipeline::ResetOpIdWithOffset, "Reset Operator Id With Offset");
   (void)m.def("init_hccl", &mindspore::pipeline::InitHccl, "Init Hccl");

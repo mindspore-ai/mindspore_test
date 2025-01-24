@@ -75,5 +75,16 @@ void Pipeline::ChildAfterFork() {
   launch_stage_->ChildAfterFork();
   MS_LOG(DEBUG) << "Pipeline reinitialize after fork end.";
 }
+
+void Pipeline::DisablePipeline() {
+  auto disable_pipeline = [](const AsyncRQueuePtr &stage) { stage->DisableMultiThread(); };
+  disable_pipeline(frontend_stage_);
+  disable_pipeline(bprop_stage_);
+  disable_pipeline(backend_stage_);
+  disable_pipeline(launch_stage_);
+  disable_pipeline(stress_detect_);
+}
+
+void Pipeline::DisableMultiThreadAfterFork() { Pipeline::Get().DisablePipeline(); }
 }  // namespace runtime
 }  // namespace mindspore
