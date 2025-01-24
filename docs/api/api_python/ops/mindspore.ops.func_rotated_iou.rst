@@ -1,7 +1,7 @@
 mindspore.ops.rotated_iou
 ==========================
 
-.. py:class:: mindspore.ops.rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0)
+.. py:function:: mindspore.ops.rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0)
 
     计算旋转矩形之间的重叠面积。
 

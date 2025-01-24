@@ -24,4 +24,4 @@ mindspore.Tensor.mul\_
 
     异常：
         - **TypeError** - `other` 不是Tensor、number.Number或bool。
-        - **RunTimeError** - `other` 不能被广播成 `self`。
+        - **RuntimeError** - `other` 不能被广播成 `self`。
