@@ -449,7 +449,7 @@ def bincount(input, weights=None, minlength=0):
     if weights is not None:
         if input.shape != weights.shape:
             raise ValueError('for bincount `input` and `weights` must have the same length')
-        idx_mapping *= weights
+        idx_mapping = weights * idx_mapping
     return reduce_sum_(idx_mapping.astype(mstype.float32), 1).ravel()
 
 def bucketize(input, boundaries, *, right=False):
