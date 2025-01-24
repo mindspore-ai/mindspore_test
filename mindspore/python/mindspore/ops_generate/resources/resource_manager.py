@@ -15,7 +15,7 @@
 
 """Module managing resource."""
 
-from common.op_proto import OpProtoLoader, DeprecatedOpProtoLoader
+from common.op_proto import OpProtoLoader, DeprecatedOpProtoLoader, FuncOpProtoLoader
 from api.op_api_proto import OpApiProtoLoader
 
 from .resource_loader import ResourceLoader
@@ -52,10 +52,12 @@ def prepare_resources() -> ResourceManager:
     resource_mgr = ResourceManager()
     resource_mgr.register_resource(OpProtoLoader())
     resource_mgr.register_resource(DeprecatedOpProtoLoader())
+    resource_mgr.register_resource(FuncOpProtoLoader())
     resource_mgr.register_resource(OpDocYamlLoader())
     resource_mgr.register_resource(TensorMethodDocYamlLoader())
     resource_mgr.register_resource(MintFuncDocYamlLoader())
     resource_mgr.register_resource(OpApiProtoLoader(
         resource_mgr.get_resource(ResourceType.OP_PROTO),
-        resource_mgr.get_resource(ResourceType.DEPRECATED_OP_PROTO)))
+        resource_mgr.get_resource(ResourceType.DEPRECATED_OP_PROTO),
+        resource_mgr.get_resource(ResourceType.FUNC_OP_PROTO)))
     return resource_mgr

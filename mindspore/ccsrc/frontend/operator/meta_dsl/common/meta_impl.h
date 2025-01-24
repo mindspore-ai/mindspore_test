@@ -264,6 +264,94 @@ class MetaImpl : public MetaFuncGraph {
   /// \return Output node.
   NodePtr Or(const NodePtr &x, const NodePtr &y);
 
+  /// \brief x + y
+  ///
+  /// \note Example: ScalarAdd(x, y)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] y Input node.
+  ///
+  /// \return Output node.
+  NodePtr ScalarAdd(const NodePtr &x, const NodePtr &y);
+
+  /// \brief x - y
+  ///
+  /// \note Example: ScalarSub(x, y)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] y Input node.
+  ///
+  /// \return Output node.
+  NodePtr ScalarSub(const NodePtr &x, const NodePtr &y);
+
+  /// \brief x * y
+  ///
+  /// \note Example: ScalarMul(x, y)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] y Input node.
+  ///
+  /// \return Output node.
+  NodePtr ScalarMul(const NodePtr &x, const NodePtr &y);
+
+  /// \brief x // y
+  ///
+  /// \note Example: ScalarFloorDiv(x, y)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] y Input node.
+  ///
+  /// \return Output node.
+  NodePtr ScalarFloorDiv(const NodePtr &x, const NodePtr &y);
+
+  /// \brief x % y
+  ///
+  /// \note Example: ScalarMod(x, y)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] y Input node.
+  ///
+  /// \return Output node.
+  NodePtr ScalarMod(const NodePtr &x, const NodePtr &y);
+
+  /// \brief x ** y
+  ///
+  /// \note Example: ScalarPow(x, y)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] y Input node.
+  ///
+  /// \return Output node.
+  NodePtr ScalarPow(const NodePtr &x, const NodePtr &y);
+
+  /// \brief x's shape
+  ///
+  /// \note Example: Shape(x)
+  ///
+  /// \param[in] x Input node.
+  ///
+  /// \return Output node.
+  NodePtr Shape(const NodePtr &x);
+
+  /// \brief x's rank
+  ///
+  /// \note Example: Rank(x)
+  ///
+  /// \param[in] x Input node.
+  ///
+  /// \return Output node.
+  NodePtr Rank(const NodePtr &x);
+
+  /// \brief reshape x
+  ///
+  /// \note Example: Reshape(x, shape)
+  ///
+  /// \param[in] x Input node.
+  /// \param[in] shape Input node.
+  ///
+  /// \return Output node.
+  NodePtr Reshape(const NodePtr &x, const NodePtr &shape);
+
   /// \brief not x
   ///
   /// \note Example: Not(x)

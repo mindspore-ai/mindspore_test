@@ -26,3 +26,4 @@ class ResourceType(Enum):
     TENSOR_METHOD_PROTOS = 5
     MINT_FUNC_PROTOS = 6
     ALIAS_API_MAPPING = 7
+    FUNC_OP_PROTO = 8
