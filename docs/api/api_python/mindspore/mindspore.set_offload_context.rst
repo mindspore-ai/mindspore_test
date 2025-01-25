@@ -3,7 +3,7 @@ mindspore.set_offload_context
 
 .. py:function:: mindspore.set_offload_context(offload_config)
 
-    配置异构训练详细参数，来调整offload策略。
+    配置异构训练详细参数，来调整offload策略。此接口将被弃用，将在后续版本中删除。
 
     .. note::
         offload配置只有在通过mindspore.set_context(memory_offload="ON")开启offload功能才会被使用，并且memory_optimize_level必须设置为O0。在Ascend硬件平台上，图编译等级必须为O0。

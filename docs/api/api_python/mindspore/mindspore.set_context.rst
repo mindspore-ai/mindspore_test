@@ -169,6 +169,9 @@ mindspore.set_context
 
           - ON：开启memory offload功能。在Ascend硬件平台，在图编译等级不为O0时本参数不生效；设置memory_optimize_level='O1'时本参数不生效。
           - OFF：关闭memory offload功能。
+
+          此参数将被弃用，将在后续版本中删除，请使用 `mindspore.Parameter` 的 `device` 参数代替。
+
         - **ascend_config** (dict) - 设置Ascend硬件平台专用的参数，默认不设置。
           precision_mode、jit_compile和atomic_clean_policy参数的默认值属于实验性质参数，将来可能会发生变化。
 
