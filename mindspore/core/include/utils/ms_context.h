@@ -410,7 +410,7 @@ template <>
 inline const uint32_t &MsContext::get_param<uint32_t>(MsCtxParam param) const {
   MarkReadStatus(param);
   // The configuration of api interface takes priority effect.
-  if (param == MS_CTX_DEVICE_ID && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
+  if (param == MS_CTX_DEVICE_ID && !DeviceManagerConf::GetInstance()->is_default_device_id()) {
     return DeviceManagerConf::GetInstance()->device_id();
   }
 

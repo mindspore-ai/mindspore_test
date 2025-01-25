@@ -7,6 +7,7 @@ mindspore.set_device
 
     .. note::
         - `device_target` 的取值必须在 ["CPU", "GPU", "Ascend"] ，没有默认值。
+        - 建议在调用接口 :func:`mindspore.communication.init` 前设置`device_target` 和 `device_id`。
     
     参数：
         - **device_target** (str) - 要运行的目标设备，仅支持 ``"Ascend"`` 、``"GPU"`` 和 ``"CPU"``。
