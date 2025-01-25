@@ -29,6 +29,7 @@ CommHandlePy::~CommHandlePy() {}
 
 void CommHandlePy::Wait() {
   if (comm_handle_ == nullptr) {
+    MS_LOG(DEBUG) << "handle is null, no need to wait.";
     return;
   }
 
@@ -62,6 +63,8 @@ void CommHandlePy::Wait() {
         wait_fn();
       }
     }));
+  comm_handle_ = nullptr;
+  MS_LOG(DEBUG) << "release handle after wait";
 }
 
 void RegCommHandle(py::module *m) {
