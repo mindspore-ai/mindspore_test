@@ -659,6 +659,8 @@ mindspore.mint.distributed
     mindspore.mint.distributed.init_process_group
     mindspore.mint.distributed.irecv
     mindspore.mint.distributed.isend
+    mindspore.mint.distributed.is_available
+    mindspore.mint.distributed.is_initialized
     mindspore.mint.distributed.new_group
     mindspore.mint.distributed.P2POp
     mindspore.mint.distributed.recv

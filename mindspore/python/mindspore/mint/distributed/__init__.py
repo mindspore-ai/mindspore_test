@@ -56,6 +56,8 @@ from mindspore.mint.distributed.distributed import (
     broadcast_object_list,
     gather_object,
     scatter_object_list,
+    is_available,
+    is_initialized,
 )
 
 __all__ = [
@@ -90,4 +92,6 @@ __all__ = [
     "broadcast_object_list",
     "gather_object",
     "scatter_object_list",
+    "is_available",
+    "is_initialized",
 ]

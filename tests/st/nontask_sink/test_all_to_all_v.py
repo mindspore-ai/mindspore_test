@@ -30,11 +30,11 @@ this_rank = get_rank()
 world_size = get_group_size()
 
 class AlltoAllVNet(nn.Cell):
-    def __init__(self, send_numel_list, recv_numel_list, group=None):
+    def __init__(self, group=None):
         super(AlltoAllVNet, self).__init__()
-        self.all_to_all = AlltoAllV(send_numel_list, recv_numel_list, group=group)
-    def construct(self, x):
-        return self.all_to_all(x)
+        self.all_to_all = AlltoAllV(group=group)
+    def construct(self, x, send_numel_list, recv_numel_list):
+        return self.all_to_all(x, send_numel_list, recv_numel_list)
 
 class AllToAllFunNet(nn.Cell):
     def construct(self, output_tensor_list, input_tensor_list, group=None):
@@ -53,8 +53,8 @@ def test_hccl_alltoallv2_2p():
     data = [i + this_rank for i in range(world_size)]
     send_numel_list = [1 for _ in range(world_size)]
     recv_numel_list = [1 for _ in range(world_size)]
-    net = AlltoAllVNet(send_numel_list, recv_numel_list)
-    output = net(ms.Tensor(data, dtype=ms.float32))
+    net = AlltoAllVNet()
+    output = net(ms.Tensor(data, dtype=ms.float32), send_numel_list, recv_numel_list)
     expect_output = np.array(data, dtype=np.float32)
     if isinstance(output, tuple):
         assert np.allclose(output[0].asnumpy(), expect_output)
