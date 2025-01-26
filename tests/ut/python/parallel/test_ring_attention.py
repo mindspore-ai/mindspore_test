@@ -275,7 +275,17 @@ class Net(nn.Cell):
         if self.multi_fa:
             out1 = self.fa_op(query, key, value, real_shift, drop_mask_bits, None, attn_mask, None,
                               actual_seq_qlen, actual_seq_kvlen)
-            out2 = self.fa_op(query, key, value, real_shift, drop_mask_bits, None, attn_mask, None,
+            # If the inputs of the two FA ops are completely identical, the flash_sp pass will generate two identical
+            # Send nodes. The subsequent CSE pass in frontend-compilation may eliminate the second Send node (as CSE
+            # considers them duplicate nodes that can be removed).
+            # However, if the CSE logic changes, it could affect the number of Send nodes in this testcase and
+            # potentially cause test failure, which would increase maintenance costs for parallel and CSE developers.
+            # Therefore, we modify the input of the second FA op to differ from the first one to prevent this testcase
+            # from triggering CSE elimination.
+            query2 = query * 2
+            key2 = key * 2
+            value2 = value * 2
+            out2 = self.fa_op(query2, key2, value2, real_shift, drop_mask_bits, None, attn_mask, None,
                               actual_seq_qlen, actual_seq_kvlen)
             return self.mul(out1[0], out2[0])
         return self.fa_op(query, key, value, real_shift, drop_mask_bits, None, attn_mask, None,
@@ -567,7 +577,7 @@ def test_flash_sp_semi_auto_parallel_multi_fa(input_layout):
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == "21"
+    assert out == "22"
 
     para = "Receive("
     output = subprocess.check_output(
