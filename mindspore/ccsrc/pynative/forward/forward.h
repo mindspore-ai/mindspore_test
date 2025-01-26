@@ -81,6 +81,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   void ExecuteLazyTask() const;
   void Sync(const bool &);
   std::function<void(const bool &)> SyncData = [this](auto &&PH1) { return Sync(std::forward<decltype(PH1)>(PH1)); };
+  bool CellNotSetMixedPrecision(const PyboostOpRunInfoPtr &op_run_info);
   bool CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_run_info);
   inline InferOperationPtr infer_operation() const {
     MS_EXCEPTION_IF_NULL(infer_operation_);
@@ -94,6 +95,7 @@ class PYNATIVE_EXPORT ForwardExecutor {
   void ReInit();
   void ForwardOpGradImpl(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) const;
   GradExecutorPtr grad() const;
+  void InitOpRunInfo(const PyboostOpRunInfoPtr &op_run_info);
   void InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info);
   // Mix precision and Implicit transform
   void SetCastForInputs(const FrontendOpRunInfoPtr &op_run_info) const;

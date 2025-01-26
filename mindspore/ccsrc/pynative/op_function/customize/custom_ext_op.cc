@@ -31,15 +31,13 @@ namespace mindspore::pynative {
 py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::list &args) {
 #ifndef ENABLE_TEST
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt start";
-  auto op_run_info = PyNativeAlgo::PyBoost::Init(prim);
-  op_run_info->signatures = ops::gCustomExt.signatures_;
+  auto op_run_info = PyNativeAlgo::PyBoost::Init_Pyboost(prim);
   static Converter converter(&ops::gCustomExt);
   converter.Parse(args);
   auto tensors = converter.ToTensorList<py::tuple>(args, kIndex0);
 
   static auto op_type = kernel::pyboost::GetOpTypeFromOpdef(ops::gCustomExt);
   op_run_info->source_type = converter.source_type();
-  op_run_info->op_grad_info->operator_type = op_type;
 
   {
     GilReleaseWithCheck no_gil;
@@ -48,7 +46,7 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
 
   MS_LOG(DEBUG) << "Run frontend task Pyboost_CustomExt start";
   auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
+  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->stream_id);
 
   // stub tensor to tensor.
   auto tensors_tensor_list =
@@ -57,10 +55,10 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
   // Do mixed precision and implicit cast
   static const std::vector<std::vector<size_t>> same_type_table{};
   auto [cast_tensors_tensor_list] =
-    PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<0>(op_run_info, same_type_table, tensors_tensor_list);
+    PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<0>(op_run_info, "CustomExt", same_type_table, tensors_tensor_list);
 
   // Create op
-  auto op = CREATE_PYBOOST_OP(CustomExt, op_run_info->base_op_run_info.device_target);
+  auto op = CREATE_PYBOOST_OP(CustomExt, op_run_info->device_target);
   op->set_primitive(prim);
   // Run op
   (void)op->Call(cast_tensors_tensor_list);
@@ -69,15 +67,13 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
   auto real_out = AutoGradUtil::MakeMultiOutput(op_run_info->requires_grad, op);
   // Do auto grad
   if (op_run_info->requires_grad) {
-    op_run_info->op_grad_info->op_prim = op->primitive();
-    op_run_info->op_grad_info->input_value = {cast_tensors_tensor_list};
-    op_run_info->op_grad_info->out_value = real_out;
-    AutoGradUtil::SetInferMultiOutputToGrad(op_run_info->op_grad_info, op);
-    PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
+    auto op_grad_info = std::make_shared<OpGradInfo>(op_type, op->primitive(),
+                                                     std::vector<ValuePtr>({cast_tensors_tensor_list}), real_out);
+    AutoGradUtil::SetInferMultiOutputToGrad(op_grad_info, op);
+    PyNativeAlgo::PyBoost::DoGrad(op, op_grad_info, op_run_info->async_status);
   } else if (op_type == OperatorType::kInplaceOp) {
     PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
   }
-
   // Data sync in mix mode(Graph and PyNative)
   PyNativeAlgo::PyBoost::DataSyncForGraph(op);
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);

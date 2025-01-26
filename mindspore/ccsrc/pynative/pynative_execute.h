@@ -54,6 +54,7 @@ class PYNATIVE_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyN
     MS_EXCEPTION_IF_NULL(forward_executor_);
     return forward_executor_;
   }
+  void StoreAsyncStatus(const PyboostOpRunInfoPtr &op_run_info) const;
   void StoreAsyncStatus(const FrontendOpRunInfoPtr &op_run_info) const;
   // Generate stub tensor and dispatch async task.
   py::object RunOpStub(const py::args &args) const;

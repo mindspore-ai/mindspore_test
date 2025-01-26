@@ -305,6 +305,23 @@ size_t GetCurStreamId(const std::string &device_target) {
   return stream_id;
 }
 
+bool GetMixprecisionTypeFromStrategy(const PyboostOpRunInfoPtr &op_run_info) {
+  MS_EXCEPTION_IF_NULL(op_run_info);
+  auto cur_amp_Strategy = amp::GetCurrentAmpStrategy();
+  if (cur_amp_Strategy == nullptr || cur_amp_Strategy->GetAmpLevel() == amp::AmpLevel::O0) {
+    return false;
+  }
+  const auto &op_cast_strategy_info = GetPrimCastStrategyInfo(cur_amp_Strategy, op_run_info->op_prim->name());
+  if (op_cast_strategy_info.strategy == amp::Ignore) {
+    return false;
+  }
+  if (op_cast_strategy_info.strategy == amp::AutoPromote) {
+    op_run_info->mix_type = kAutoPromote;
+  }
+  op_run_info->mix_precision_type = op_cast_strategy_info.dtype;
+  return true;
+}
+
 bool GetMixprecisionTypeFromStrategy(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   auto cur_amp_Strategy = amp::GetCurrentAmpStrategy();
@@ -367,6 +384,15 @@ GradExecutorPtr ForwardExecutor::grad() const {
   auto grad_executor = grad_executor_.lock();
   MS_EXCEPTION_IF_NULL(grad_executor);
   return grad_executor;
+}
+
+void ForwardExecutor::InitOpRunInfo(const PyboostOpRunInfoPtr &op_run_info) {
+  Init();
+  // Used for async run
+  op_run_info->requires_grad = GradState::Get().RequiresGrad();
+  op_run_info->device_target = GetCurrentDeviceTarget(op_run_info->op_prim);
+  auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->device_target);
+  op_run_info->stream_id = device_context->device_res_manager_->GetCurrentStreamId();
 }
 
 void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
@@ -866,6 +892,16 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   }
   MS_LOG(DEBUG) << "RunOpInVM end";
   return result_v;
+}
+
+bool ForwardExecutor::CellNotSetMixedPrecision(const PyboostOpRunInfoPtr &op_run_info) {
+  MS_EXCEPTION_IF_NULL(op_run_info);
+  if (!mix_precision_type_stack_.empty() && mix_precision_type_stack_.top() != kNotSet) {
+    op_run_info->mix_type = mix_precision_type_stack_.top();
+    return false;
+  }
+  // get mix_precision_type from amp strategy stack
+  return !GetMixprecisionTypeFromStrategy(op_run_info);
 }
 
 bool ForwardExecutor::CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_run_info) {

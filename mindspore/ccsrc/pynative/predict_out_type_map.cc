@@ -86,6 +86,22 @@ TypePtr PredictOutTypeByName(const std::string &op_name) {
   return ops_map[op_name] = type;
 }
 
+TypePtr GetPredictOutTypeByName(const std::string &op_run_info_op_name) {
+  const auto &op_name = op_run_info_op_name;
+  auto type = PredictOutTypeByName(op_name);
+  return type;
+}
+
+TypePtr GetPredictOutTypeByOutputNum(const PrimitivePtr &op_run_info_op_prim, const TypePtr &type) {
+  if (type == kTypeAny) {
+    const auto &op_prim = op_run_info_op_prim;
+    if (const auto &attr = op_prim->GetAttr("output_num"); attr != nullptr) {
+      return PredictOutTypeByOutputNum(GetValue<int64_t>(attr));
+    }
+  }
+  return type;
+}
+
 TypePtr PredictOutType(const FrontendOpRunInfoPtr &op_run_info) {
   const auto &op_name = op_run_info->base_op_run_info.op_name;
   auto type = PredictOutTypeByName(op_name);

@@ -77,6 +77,8 @@ struct OpGradInfo {
         op_prim(std::move(prim)),
         input_value(std::move(inputs)),
         out_value(std::move(output)) {}
+  OpGradInfo(PrimitivePtr prim, std::vector<ValuePtr> inputs, ValuePtr output)
+      : op_prim(std::move(prim)), input_value(std::move(inputs)), out_value(std::move(output)) {}
   ~OpGradInfo() {
     input_value.clear();
     out_value = nullptr;
@@ -161,6 +163,20 @@ struct FrontendOpRunInfo {
   mindspore::HashSet<size_t> input_to_attr{};
 };
 using FrontendOpRunInfoPtr = std::shared_ptr<FrontendOpRunInfo>;
+
+struct PyboostOpRunInfo {
+  std::vector<ops::OP_DTYPE> source_type{};
+  PrimitivePtr op_prim{nullptr};
+  TypePtr mix_precision_type{nullptr};
+  stub::StubNodePtr stub_output{nullptr};
+  ValueSimpleInfoPtr output_value_simple_info{nullptr};
+  AsyncStatus async_status;
+  std::string device_target = "Unknown";
+  size_t stream_id{kDefaultStreamIndex};
+  int mix_type{0};
+  bool requires_grad = false;
+};
+using PyboostOpRunInfoPtr = std::shared_ptr<PyboostOpRunInfo>;
 
 struct InputArgsInfo {
   InputArgsInfo() = default;

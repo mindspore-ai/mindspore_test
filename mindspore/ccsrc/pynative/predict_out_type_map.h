@@ -306,6 +306,8 @@ inline static PredictOutTypeMap out_type_prediction = {{"ActsULQ", kTupleTensor4
 
 TypePtr PredictOutTypeByName(const std::string &op_name);
 
+TypePtr GetPredictOutTypeByName(const std::string &op_run_info_op_name);
+TypePtr GetPredictOutTypeByOutputNum(const PrimitivePtr &op_run_info_op_prim, const TypePtr &type);
 TypePtr PredictOutType(const FrontendOpRunInfoPtr &op_run_info);
 }  // namespace pynative
 }  // namespace mindspore
