@@ -8,18 +8,22 @@ apply_adamw:
     v:
       dtype: tensor
     beta1_power:
-      dtype: float
+      dtype: tensor
+      type_cast: float
     beta2_power:
-      dtype: float
+      dtype: tensor
+      type_cast: float
     lr:
       dtype: tensor
       type_cast: float
     weight_decay:
       dtype: float
     beta1:
-      dtype: float
+      dtype: tensor
+      type_cast: float
     beta2:
-      dtype: float
+      dtype: tensor
+      type_cast: float
     epsilon:
       dtype: float
     grad:
