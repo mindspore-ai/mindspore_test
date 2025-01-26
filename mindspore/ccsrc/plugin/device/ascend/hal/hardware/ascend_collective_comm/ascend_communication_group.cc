@@ -114,6 +114,7 @@ bool AscendCommunicationGroup::Finalize() {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   (void)CALL_ASCEND_API(aclrtSetDevice, device_id);
+  HcclWatchDogManager::GetInstance().DestroyHandlerByName(name_);
   (void)HcclCommDestroy(comm_);
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
   initialized_ = false;
