@@ -797,13 +797,13 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
    [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) {
      auto mem_info = mem_block->mem_info.lock();
      if (mem_info) {
-      std::string result = "";
-      if (!mem_info->user_tasks.empty()) {
-        result = std::to_string(mem_info->user_tasks.back()->time_stamp);
-      }
-      oss << result;
+       std::string result = "";
+       if (!mem_info->user_tasks.empty()) {
+         result = std::to_string(mem_info->user_tasks.back()->time_stamp);
+       }
+       oss << result;
      }
-  }},
+   }},
   {"python_stack",
    [](const MemBlockInfoPtr &mem_block, std::ofstream &oss) {
      auto mem_info = mem_block->mem_info.lock();

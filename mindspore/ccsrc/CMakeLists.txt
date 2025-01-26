@@ -115,6 +115,7 @@ set(BACKEND_SUB_COMP
         backend/common/expander
         backend/graph_compiler
         backend/operator
+        memory/mem_pool
         runtime/collective
         runtime/device
         runtime/graph_scheduler
