@@ -7,6 +7,10 @@ mindspore.jit
 
     MindSpore可以在运行时对图进行优化。
 
+    .. note::
+        - 不支持在静态图模式下，运行带装饰@jit(capture_mode="bytecode")的函数，此时该装饰@jit(capture_mode="bytecode")视为无效。
+        - 不支持在@jit(capture_mode="ast")装饰的函数内部调用带装饰@jit(capture_mode="bytecode")的函数，该装饰@jit(capture_mode="bytecode")视为无效。
+
     参数：
         - **function** (Function, 可选) - 要编译成图的Python函数。默认值：``None``。
         - **capture_mode** (str, 可选) - 创建一张可调用的MindSpore图的方式，可选值有 ``"ast"`` 、 ``"bytecode"`` 和 ``"trace"`` 。默认值： ``"ast"``。
@@ -44,11 +48,10 @@ mindspore.jit
           +---------------------------+---------------------------+-------------------------+
 
           - **disable_format_transform** (bool) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
-          - **exec_order** (str) - 算子执行时的排序方法，GRAPH_MODE(0)下jit_level为O0或者O1时生效。不同的执行顺序会使得网络的执行内存和性能有所差异，当前仅支持三种排序方法：bfs、dfs和gpto，默认方法为bfs。
+          - **exec_order** (str) - 算子执行时的排序方法，GRAPH_MODE(0)下jit_level为O0或者O1时生效。不同的执行顺序会使得网络的执行内存和性能有所差异，当前仅支持两种排序方法：bfs和dfs，默认方法为bfs。
 
             - bfs：默认的排序方法，广度优先排序，具备较好的通信掩盖效果，执行性能相对较好。
             - dfs：可选择的排序方法，深度优先排序，性能相对bfs执行序较差，但内存占用较少，建议在其他执行序OOM的场景下尝试dfs。
-            - gpto：可选择的排序方法，该方法综合多种执行序选择一个性能相对较好的方法，在多副本并行的场景下可能会有一些性能收益。
 
           - **ge_options** (dict) - 设置GE的options配置项，配置项分为 ``global`` 和 ``session`` 二类 。这是一个实验特性，可能会被更改或者删除。
             详细的配置请查询 `options配置说明 <https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/apiref/ascendgraphapi/atlasgeapi_07_0146.html>`_ 。

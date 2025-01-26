@@ -949,9 +949,9 @@ def _check_exec_order_value(option, exec_order):
     if not isinstance(exec_order, str):
         raise TypeError(f"For 'jit(options)', the type of '{option}' must be str, but got {type(exec_order)}.")
 
-    if exec_order not in ['bfs', 'dfs', 'gpto']:
+    if exec_order not in ['bfs', 'dfs']:
         raise ValueError(f"For '{option}', the value of '{option}' must be one of "
-                         f"['bfs', 'dfs', 'gpto'], but got '{exec_order}'.")
+                         f"['bfs', 'dfs'], but got '{exec_order}'.")
 
 
 def _check_ge_options_value(option, ge_options):
@@ -1036,6 +1036,13 @@ def jit(
 
     This allows the MindSpore runtime to apply optimizations based on graph.
 
+    Note:
+        - It is not supported to run a function with decoration @jit(capture_mode=“bytecode”)
+          in static graph mode, in which case the decoration @jit(capture_mode=“bytecode”) is considered invalid.
+        - Calls to functions with decorated @jit(capture_mode=“bytecode”) inside functions
+          decorated with @jit(capture_mode=“ast”) are not supported,
+          and the decoration @jit(capture_mode=“bytecode”) is considered invalid.
+
     Args:
         function (Function, optional): The Python function that will be run as a graph. Default: None.
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
@@ -1090,17 +1097,14 @@ def jit(
             - disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW to
               NHWC. When the network training performance of fp16 is worse than fp32, `disable_format_transform` can be
               set to ``True`` to try to improve training performance. Default: ``False`` .
-            - exec_order (str): Set the sorting method for operator execution, currently only three sorting methods are
-              supported: ``bfs``, ``dfs`` and ``gpto`` . Default: ``bfs`` .
+            - exec_order (str): Set the sorting method for operator execution, currently only two sorting methods are
+              supported: ``bfs`` and ``dfs`` . Default: ``bfs`` .
 
               - `bfs`: The default sorting method, breadth priority, good communication masking, relatively good
                 performance.
               - `dfs`: An optional sorting method, depth-first sorting. The performance is relatively worse than that
                 of bfs execution order, but it occupies less memory. It is recommended to try dfs in scenarios where
                 other execution orders run out of memory (OOM).
-              - `gpto`: An optional sorting method. This method combines multiple execution orders and selects a
-                method with relatively good performance. There may be some performance gains in scenarios with
-                multiple replicas running in parallel.
 
             - ge_options (dict): Set options for ge backend. The options are divided into two categories: global,
               and session. This is an experimental prototype that is subject to change and/or deletion.
