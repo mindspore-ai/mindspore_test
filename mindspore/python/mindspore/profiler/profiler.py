@@ -118,7 +118,9 @@ class Profiler:
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
             When using this parameter, `activities` must set to ``[ProfilerActivity.CPU, ProfilerActivity.NPU]``.
             Collecting operator memory data when the graph compilation level is O2 requires collecting from the
-            first step. Default: ``False`` .
+            first step. Default: ``False`` . The operator name currently collected by this parameter is incomplete.
+            This issue will be resolved in later versions. It is recommended to use the environment variable
+            ``MS_ALLOC_CONF`` instead.
         aicore_metrics (AicoreMetrics, optional): (Ascend only) Types of AICORE performance data collected,
             when using this parameter, `activities` must include ``ProfilerActivity.NPU`` , and the value
             must be a member of AicoreMetrics. Default: ``AicoreMetrics.AiCoreNone`` .
