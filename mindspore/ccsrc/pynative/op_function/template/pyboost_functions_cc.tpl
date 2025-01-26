@@ -19,6 +19,8 @@
 #include "pynative/grad/grad_utils.h"
 #include "pynative/pynative_utils.h"
 #include "pynative/op_function/converter.h"
+#include "include/common/utils/tensor_py.h"
+#include "include/common/utils/tensor_utils.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pynative/predict_out_type_map.h"
 #include "pynative/forward/forward_task.h"

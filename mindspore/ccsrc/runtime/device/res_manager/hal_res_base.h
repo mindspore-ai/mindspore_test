@@ -233,17 +233,17 @@ class RES_EXPORT HalResBase {
   virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
 
   virtual std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
-    const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+    const std::vector<tensor::BaseTensorPtr> &tensor_list, bool enable_mem_align) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
-  virtual tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                                            const std::vector<size_t> &before_padding_size,
-                                                            const std::vector<size_t> &after_padding_size, size_t start,
-                                                            size_t end) {
+  virtual tensor::BaseTensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::BaseTensorPtr> &tensor_list,
+                                                                const std::vector<size_t> &before_padding_size,
+                                                                const std::vector<size_t> &after_padding_size,
+                                                                size_t start, size_t end) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  virtual tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
+  virtual tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::BaseTensorPtr &first_tensor, size_t start,
                                                          size_t end) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }

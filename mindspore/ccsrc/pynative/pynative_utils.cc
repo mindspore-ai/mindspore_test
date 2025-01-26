@@ -955,7 +955,7 @@ void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 std::string PyParser::GetIdByPyObj(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
-    return tensor::ConvertToTensor(obj)->id();
+    return tensor::ConvertToBaseTensor(obj)->id();
   }
   if (IsStubTensor(obj)) {
     return ConvertStubTensor(obj)->id();

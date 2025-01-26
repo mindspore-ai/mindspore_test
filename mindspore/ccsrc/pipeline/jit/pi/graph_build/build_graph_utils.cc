@@ -157,6 +157,13 @@ AbstractBasePtr BuildNodeAbstract(const AnfNodePtr &node) {
 }
 
 void SyncStubTensor(const py::handle &obj) {
+  if (tensor::IsTensorPy(obj)) {
+    auto tensor = tensor::ConvertToBaseTensor(obj);
+    MS_EXCEPTION_IF_NULL(tensor);
+    tensor->data_sync();
+    return;
+  }
+
   if (!IsStubTensor(obj)) {
     return;
   }

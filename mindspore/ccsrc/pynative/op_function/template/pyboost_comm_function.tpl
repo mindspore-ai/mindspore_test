@@ -10,21 +10,22 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
     target = op_run_info->base_op_run_info.device_target;
   }
   static auto top_type = PredictOutType(op_run_info);
-  auto node = stub::MakeTopNode(top_type);
+
+  auto py_output = tensor::MakeTuple<tensor::TensorWrapper, ${output_num}>();
+  auto promises = tensor::TransformPromise(py_output);
+
   auto comm_handle_py = std::make_shared<hal::CommHandlePy>(runtime::OpRunner::GetDeviceContext(target));
   auto comm_handle_py_obj = py::cast(comm_handle_py);
-  const auto &output_obj = py::make_tuple(node.first, comm_handle_py_obj);
   kernel::pyboost::CommHandlePtr comm_handle{nullptr};
 
   comm_handle_py->comm_handle()->CreateEvent();
   comm_handle = comm_handle_py->comm_handle();
   {
     GilReleaseWithCheck release_gil;
-    op_run_info->stub_output = node.second;
     op_run_info->source_type = source_type;
     DispatchOp(
-      std::make_shared<FrontendTask>(
-        [${op_args}, comm_handle, target](const FrontendOpRunInfoPtr &op_run_info) {
+      std::make_shared<FrontendPromiseTask>(
+        [${op_args}, comm_handle, target, promises](const FrontendOpRunInfoPtr &op_run_info) {
           MS_LOG(DEBUG) << "Run frontend task ${func_name} start";
           auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
           kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
@@ -58,20 +59,19 @@ py::object ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_D
             op_run_info->op_grad_info->out_value = real_output;
             PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
           }
-          // Set output value to python
-          PyNativeAlgo::PyBoost::UpdateStubOutput(op, op_run_info->stub_output, op->output_abs(), real_output);
           // Data sync in mix mode(Graph and PyNative)
           PyNativeAlgo::PyBoost::DataSyncForGraph(op);
           kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
-
+          tensor::SetPromise(promises, real_output);
           MS_LOG(DEBUG) << "Run frontend task ${func_name} end";
         },
-        op_run_info
-      )
+        [promises]() {
+          tensor::SetException(promises);
+        }, op_run_info)
     );
     MS_LOG(DEBUG) << "Run ${func_name} end";
   }
-  return output_obj;
+  return py::reinterpret_steal<py::object>(tensor::TransformOutput(py_output, comm_handle_py_obj.release().ptr()));
 }
 
 py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {

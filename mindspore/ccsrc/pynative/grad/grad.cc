@@ -411,7 +411,7 @@ void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *contex
         if (!tensor::IsTensorPy(weights_tuple[i])) {
           MS_LOG(EXCEPTION) << "For cell bprop, element of internal params should be tensor type!";
         }
-        auto tensor = tensor::ConvertToTensor(weights_tuple[i]);
+        auto tensor = tensor::ConvertToBaseTensor(weights_tuple[i]);
         (void)context->inputs.emplace_back(tensor);
         (void)context->input_value_grad_type.emplace_back(
           PyNativeAlgo::AutoGradUtil::SetValueGradInfo(tensor, InputType::kConstant));

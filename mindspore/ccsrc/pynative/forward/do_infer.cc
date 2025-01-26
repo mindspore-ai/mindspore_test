@@ -24,6 +24,7 @@
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/infer_info/infer_info_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pynative {
@@ -410,7 +411,7 @@ py::object InferOperation::CallConstantFolding(const py::args &args) const {
   if (infer_value->ContainsValueAny()) {
     MS_LOG(EXCEPTION) << "Can not get value from abstract";
   }
-  return ValueToPyData(infer_value);
+  return py::reinterpret_steal<py::object>(tensor::Wrap(infer_value));
 }
 }  // namespace pynative
 }  // namespace mindspore

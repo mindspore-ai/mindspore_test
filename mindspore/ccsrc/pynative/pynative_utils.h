@@ -28,6 +28,7 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "pynative/forward/forward_task.h"
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/visible.h"
 

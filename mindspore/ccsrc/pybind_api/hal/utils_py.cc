@@ -35,14 +35,14 @@ void Synchronize() {
   (void)controller->SyncAllStreams();
 }
 
-std::vector<tensor::TensorPtr> ValuePtrListToTensorList(const ValuePtrList &value_list) {
-  std::vector<tensor::TensorPtr> tensor_list;
+std::vector<tensor::BaseTensorPtr> ValuePtrListToTensorList(const ValuePtrList &value_list) {
+  std::vector<tensor::BaseTensorPtr> tensor_list;
   for (size_t i = 0; i < value_list.size(); ++i) {
     auto value = value_list[i];
-    if (!value->isa<tensor::Tensor>()) {
+    if (!value->isa<tensor::BaseTensor>()) {
       MS_EXCEPTION(TypeError) << "For func combine_tensor_list_contiguous, input only support list[Tensor].";
     }
-    (void)tensor_list.emplace_back(value->cast<tensor::TensorPtr>());
+    (void)tensor_list.emplace_back(value->cast<tensor::BaseTensorPtr>());
   }
   return tensor_list;
 }
@@ -110,7 +110,7 @@ py::object GetSliceByTensorListIndexHandle(const py::object &object, const py::o
 py::object GetSliceByPaddingShapeHandle(const py::object &object, size_t start, size_t end) {
   auto device_ctx = GetDeviceCtx();
   auto value = ConvertPyObjectToCTensor(object);
-  const auto &tensor = value->cast<tensor::TensorPtr>();
+  const auto &tensor = value->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   auto res_tensor = device_ctx->device_res_manager_->GetSliceByPaddingShapeHandle(tensor, start, end);
   return ValueToPyData(res_tensor);

@@ -129,9 +129,9 @@ void TensorArray::SetMaxSize(const int64_t size, const bool is_dynamic) {
   }
   return;
 }
-std::vector<size_t> GetUniqueTensorListSize(const std::vector<tensor::TensorPtr> &tensor_list) {
+std::vector<size_t> GetUniqueTensorListSize(const std::vector<tensor::BaseTensorPtr> &tensor_list) {
   std::vector<size_t> before_padding_sizes;
-  std::unordered_set<tensor::TensorPtr> unique_list;
+  std::unordered_set<tensor::BaseTensorPtr> unique_list;
   for (size_t i = 0; i < tensor_list.size(); ++i) {
     const auto &tensor = tensor_list[i];
     if (!unique_list.insert(tensor).second) {

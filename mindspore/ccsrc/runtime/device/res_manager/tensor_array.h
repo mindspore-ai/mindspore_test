@@ -83,7 +83,7 @@ class RES_EXPORT TensorArray {
   std::vector<mindspore::kernel::AddressPtr> tensors_;
 };
 using TensorArrayPtr = std::shared_ptr<TensorArray>;
-std::vector<size_t> RES_EXPORT GetUniqueTensorListSize(const std::vector<tensor::TensorPtr> &tensor_list);
+std::vector<size_t> RES_EXPORT GetUniqueTensorListSize(const std::vector<tensor::BaseTensorPtr> &tensor_list);
 }  // namespace device
 }  // namespace mindspore
 

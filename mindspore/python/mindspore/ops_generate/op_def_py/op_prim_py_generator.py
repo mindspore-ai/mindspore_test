@@ -321,12 +321,10 @@ class OpPrimPyGenerator(BaseGenerator):
             return None"""
             pyboost_func_name = pyboost_utils.get_pyboost_name(op_proto.op_name)
             call_method_body_str += f"""
-        res = _convert_stub({pyboost_func_name}(self, [{call_args_list_str}]))"""
+        res = {pyboost_func_name}(self, [{call_args_list_str}])"""
             call_method_body_str += f"""
         # Add for jit context.
         if jit_context():
-            if is_stub_tensor(res):
-                res = res.stub_sync()
             return jit_context().run_op(self, res, {call_args_list_str})
         return res\n"""
         else:

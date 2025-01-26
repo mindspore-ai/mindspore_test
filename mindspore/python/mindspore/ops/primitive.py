@@ -26,7 +26,6 @@ from mindspore.parallel._utils import _is_in_auto_parallel_mode, _is_in_data_par
 from mindspore.parallel._ps_context import _is_ps_mode, _is_role_sched
 from mindspore.parallel.shard import Layout
 from mindspore.common.api import _pynative_executor
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore.common.jit_context import jit_context
 from mindspore._c_expression import Primitive_, PrimitiveFunction_, prim_type, typing
 from mindspore import _checkparam as Validator
@@ -1029,12 +1028,10 @@ def _primexpr(fn=None, get_instance=True, name=None, reuse_result=True):
 
 def _run_op(obj, op_name, args):
     """Single op execution function supported by ge in PyNative mode."""
-    stub = _pynative_executor.run_op_async(obj, op_name, args)
-    res = _convert_stub(stub)
+    res = _pynative_executor.run_op_async(obj, op_name, args)
     # Add for jit context.
     if jit_context():
-        if Validator.is_stub_tensor(res):
-            res = res.stub_sync()
+        # todo support TensorPy
         return jit_context().run_op(obj, res, *args)
     return res
 

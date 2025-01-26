@@ -53,12 +53,12 @@ class CPUDeviceResManager : public DeviceResManager {
                                        uint32_t stream_id) const override;
 
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
-    const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
-  tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                                    const std::vector<size_t> &before_padding_size,
-                                                    const std::vector<size_t> &after_padding_size, size_t start,
-                                                    size_t end) override;
-  tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
+    const std::vector<tensor::BaseTensorPtr> &tensor_list, bool enable_mem_align) override;
+  tensor::BaseTensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::BaseTensorPtr> &tensor_list,
+                                                        const std::vector<size_t> &before_padding_size,
+                                                        const std::vector<size_t> &after_padding_size, size_t start,
+                                                        size_t end) override;
+  tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::BaseTensorPtr &first_tensor, size_t start,
                                                  size_t end) override;
 
   bool LoadCollectiveCommLib() override;

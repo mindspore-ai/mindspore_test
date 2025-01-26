@@ -24,8 +24,9 @@
 namespace mindspore {
 namespace {
 ValuePtr PydataToCValue(const py::object &ret) {
-  if (tensor::IsTensorPy(ret)) {
-    return tensor::ConvertToTensor(ret);
+  auto tensor = tensor::ConvertToBaseTensor(ret);
+  if (tensor != nullptr) {
+    return tensor;
   }
   return StubNodeToTensor(ret);
 }

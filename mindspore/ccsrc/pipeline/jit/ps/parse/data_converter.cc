@@ -1392,8 +1392,29 @@ ValuePtr ConvertNumber(const py::object &obj) {
 }
 
 ValuePtr ConvertTensor(const py::object &obj) {
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToValue(obj);
+  }
+
   if (IsStubTensor(obj)) {
     return PyStubNodeCast(obj);
+  }
+
+  return nullptr;
+}
+
+tensor::BaseTensorPtr ConvertBaseTensor(const py::object &obj) {
+  auto tensor = tensor::ConvertToBaseTensor(obj);
+  if (tensor != nullptr) {
+    return tensor;
+  }
+
+  if (IsStubTensor(obj)) {
+    auto v = PyStubNodeCast(obj);
+    if (v->isa<stub::StubNode>()) {
+      return v->cast<stub::StubNodePtr>()->WaitValue()->cast<tensor::BaseTensorPtr>();
+    }
+    return v->cast<tensor::BaseTensorPtr>();
   }
 
   if (tensor::IsTensorPy(obj)) {

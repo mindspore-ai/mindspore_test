@@ -29,10 +29,9 @@ from common.gen_utils import save_file
 from common.op_proto import OpProto
 from common.base_generator import BaseGenerator
 from pyboost import pyboost_utils
-from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, is_op_multi_output, get_input_args_type_str
+from pyboost.pyboost_utils import get_convert_type_str, is_optional_param, is_op_multi_output, get_input_args_type_str, is_tensor_list
 
 from .op_template_parser import OpTemplateParser
-
 
 class PyboostFunctionsGenerator(BaseGenerator):
     """
@@ -63,6 +62,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         self.input_args_template = Template(" const ${arg_type}& ${arg_name},")
         self.PYBOOST_FUNCTION_TEMPLATE = template.PYBOOST_FUNCTION_TEMPLATE
         self.PYBOOST_COMM_FUNCTION_TEMPLATE = template.PYBOOST_COMM_FUNCTION_TEMPLATE
+        self.PYBOOST_FUNCTION_DYNAMIC_OUTPUT_TEMPLATE = template.PYBOOST_FUNCTION_DYNAMIC_OUTPUT_TEMPLATE
         self.REGISTER_DEFINE_TEMPLATE = template.REGISTER_DEFINE_TEMPLATE
         self.REGISTER_TEMPLATE = template.REGISTER_TEMPLATE
         self.PYBOOST_HEADER_TEMPLATE = template.PYBOOST_FUNCTIONS_CC_TEMPLATE
@@ -106,9 +106,8 @@ class PyboostFunctionsGenerator(BaseGenerator):
             op_input_args_str = self._get_input_args_str(op_proto)
             view_arg_str = ", " + view_arg_str if view_arg_str else ''
             multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
-            # communication operators have different func template
-            function_tpl = self.PYBOOST_COMM_FUNCTION_TEMPLATE \
-                if op_proto.op_dispatch.is_comm_op else self.PYBOOST_FUNCTION_TEMPLATE
+            output_num_str = len(op_proto.op_returns)
+            function_tpl = self._get_function_tpl(op_proto)
             pyboost_func_str += function_tpl.replace(func_name=op_pyboost_func_name,
                                                      op_def_name=op_def_name_str,
                                                      type_num=type_num,
@@ -125,6 +124,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
                                                      cast_args=cast_args_str,
                                                      view_arg=view_arg_str,
                                                      is_multi=multi_ouptut_str,
+                                                     output_num=output_num_str,
                                                      operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE + template.NEW_LINE
             pyboost_op_name = op_parser.get_pyboost_name()
@@ -194,6 +194,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
                 convert_type_str = get_convert_type_str('type', is_optional)
             else:
                 convert_type_str = get_convert_type_str(op_arg.arg_dtype, is_optional)
+
             parser_func_str += self.convert_template.replace(arg_name=op_arg.arg_name, convert_func=convert_type_str,
                                                              arg_index=pyboost_utils.get_index(index))
         return parser_func_str
@@ -395,3 +396,11 @@ class PyboostFunctionsGenerator(BaseGenerator):
                 arg_str = grad_arg
                 break
         return arg_str
+
+
+    def _get_function_tpl(self, op_proto: OpProto):
+        if len(op_proto.op_returns) == 1 and is_tensor_list(op_proto.op_returns[0]):
+            # op output size is unknown
+            return self.PYBOOST_FUNCTION_DYNAMIC_OUTPUT_TEMPLATE
+        return self.PYBOOST_COMM_FUNCTION_TEMPLATE \
+            if op_proto.op_dispatch.is_comm_op else self.PYBOOST_FUNCTION_TEMPLATE

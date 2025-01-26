@@ -240,7 +240,7 @@ size_t GetSizeForAbstract(const abstract::AbstractBasePtr &abstract) {
 
 ValuePtr ConvertPyObjectToValue(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
-    return tensor::ConvertToTensor(obj);
+    return tensor::ConvertToBaseTensor(obj);
   } else if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {
     if (!CheckSequenceToMemory(py::sequence(obj))) {
       return nullptr;
@@ -282,7 +282,7 @@ abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj) {
   // This function will be moved to runtime compile pass later.
   py::gil_scoped_acquire gil_acquire;
   if (tensor::IsTensorPy(obj) || IsStubTensor(obj)) {
-    const auto &tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToTensor(obj);
+    const auto &tensor = IsStubTensor(obj) ? ConvertStubTensor(obj) : tensor::ConvertToBaseTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
     MS_LOG(DEBUG) << "tensor:" << tensor->ToString() << " is stub tensor:" << IsStubTensor(obj);
     return tensor->ToAbstract();

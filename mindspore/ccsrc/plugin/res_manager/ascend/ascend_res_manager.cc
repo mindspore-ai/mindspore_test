@@ -103,7 +103,7 @@ void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
   return func;
 }
 
-Format GetFormat(const tensor::TensorPtr &tensor) {
+Format GetFormat(const tensor::BaseTensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto format = Format::DEFAULT_FORMAT;
   if (tensor->device_address() != nullptr) {
@@ -617,7 +617,7 @@ size_t AscendResManager::DefaultStream() const {
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDeviceMemoryForTensorList(
-  const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, bool enable_mem_align) {
   MS_LOG(INFO) << "Start AllocDeviceMemoryForTensorList";
   MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
@@ -736,10 +736,9 @@ int AscendResManager::ResetParams(const std::vector<tensor::TensorPtr> &params) 
   return 0;
 }
 
-TensorPtr AscendResManager::GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
-                                                            const std::vector<size_t> &before_padding_size,
-                                                            const std::vector<size_t> &after_padding_size, size_t start,
-                                                            size_t end) {
+tensor::BaseTensorPtr AscendResManager::GetSliceByTensorListIndexHandle(
+  const std::vector<tensor::BaseTensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
+  const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
   if (start >= tensor_list.size() || end > tensor_list.size()) {
     MS_EXCEPTION(ValueError) << "start:" << start << ", end:" << end << ", but tensor_list size:" << tensor_list.size();
   }
@@ -762,7 +761,7 @@ TensorPtr AscendResManager::GetSliceByTensorListIndexHandle(const std::vector<te
   return tensor;
 }
 
-TensorPtr AscendResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
+TensorPtr AscendResManager::GetSliceByPaddingShapeHandle(const tensor::BaseTensorPtr &first_tensor, size_t start,
                                                          size_t end) {
   auto type_id = first_tensor->data_type();
   auto type_size = UnitSizeInBytes(type_id);

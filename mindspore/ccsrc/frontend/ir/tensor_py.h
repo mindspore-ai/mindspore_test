@@ -136,9 +136,9 @@ class FRONTEND_EXPORT TensorPybind {
   static TensorPtr ConvertBytesToTensor(const py::bytes &bytes_obj, const py::tuple &dims,
                                         const TypePtr &type_ptr = nullptr);
 
-  static py::object ToList(const Tensor &tensor);
+  static py::object ToList(const BaseTensorPtr &tensor);
 
-  static py::object Item(const Tensor &tensor);
+  static py::object Item(const BaseTensorPtr &tensor);
 
   static py::array SyncAsNumpy(const Tensor &tensor);
 
@@ -163,16 +163,17 @@ class FRONTEND_EXPORT TensorPybind {
 
   static void FlushFromCache(const Tensor &tensor);
 
-  static void Offload(const Tensor &tensor, bool release);
+  static void Offload(const BaseTensorPtr &tensor, bool release);
 
   static void Load(const Tensor &tensor);
 
   // move tensor from device to host, or host to device asynchronously
   static TensorPtr MoveTo(const Tensor &self, const std::string &to, bool blocking = True);
 
-  static void SetDeviceAddress(const Tensor &tensor, uintptr_t addr, const ShapeVector &shape, const TypePtr type_ptr);
+  static void SetDeviceAddress(const BaseTensorPtr &tensor, uintptr_t addr, const ShapeVector &shape,
+                               const TypePtr type_ptr);
 
-  static uintptr_t DataPtr(const Tensor &tensor);
+  static uintptr_t DataPtr(const BaseTensorPtr &tensor);
 
   struct TensorPyUserData {
     py::object obj;
@@ -183,9 +184,9 @@ class FRONTEND_EXPORT TensorPybind {
     }
   };
 
-  static void SetUserData(const Tensor &tensor, const py::str &key, const py::object &value);
+  static void SetUserData(const BaseTensorPtr &tensor, const py::str &key, const py::object &value);
 
-  static py::object GetUserData(const Tensor &tensor, const py::str &key);
+  static py::object GetUserData(const BaseTensorPtr &tensor, const py::str &key);
 };
 
 // CSRTensor python wrapper and adapter class.

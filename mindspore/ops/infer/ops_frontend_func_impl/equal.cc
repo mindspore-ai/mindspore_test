@@ -72,8 +72,8 @@ class EqualFrontendFuncImpl : public OpFrontendFuncImpl {
     if (x1 == nullptr || x2 == nullptr || x1->isa<ValueAny>() || x2->isa<ValueAny>()) {
       return nullptr;
     }
-    auto x1_tensor = x1->cast<tensor::TensorPtr>();
-    auto x2_tensor = x2->cast<tensor::TensorPtr>();
+    auto x1_tensor = x1->cast<tensor::BaseTensorPtr>();
+    auto x2_tensor = x2->cast<tensor::BaseTensorPtr>();
 
     auto x1_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
     auto x2_shape = input_args[kIndex1]->GetShape()->GetShapeVector();

@@ -36,7 +36,7 @@ class FrontendTask : public runtime::AsyncTask {
   void Run() override;
   void SetException(const std::exception_ptr &e) override;
 
- private:
+ protected:
   std::function<void(const FrontendOpRunInfoPtr &op_run_info)> run_func_;
   FrontendOpRunInfoPtr op_run_info_;
 };
@@ -54,6 +54,24 @@ class PYNATIVE_EXPORT PassthroughFrontendTask : public runtime::AsyncTask {
  private:
   std::function<void(void)> run_func_;
   stub::StubNodePtr stub_output_{nullptr};
+};
+
+class FrontendPromiseTask : public FrontendTask {
+ public:
+  FrontendPromiseTask(std::function<void(const FrontendOpRunInfoPtr &op_run_info)> run_func,
+                      std::function<void()> set_exception_func, FrontendOpRunInfoPtr op_run_info)
+      : FrontendTask(std::move(run_func), std::move(op_run_info)), set_exception_func_(std::move(set_exception_func)) {}
+
+  void SetException(const std::exception_ptr &e) override {
+    if (set_exception_func_ == nullptr) {
+      MS_LOG(ERROR) << "set_exception_func_ is null";
+      return;
+    }
+    set_exception_func_();
+  }
+
+ private:
+  std::function<void()> set_exception_func_;
 };
 
 class SliceOpFrontendTask : public runtime::AsyncTask {
