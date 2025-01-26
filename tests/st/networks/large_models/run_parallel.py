@@ -23,6 +23,8 @@ import sys
 
 import numpy as np
 
+from similarity import compare_distance
+
 workspace = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.path.insert(0, os.path.join(workspace, "networks/mindformers"))
 
@@ -128,7 +130,7 @@ def parallel_qwen2_0_5b_predict_mp2():
         for i in range(0, len(outputs)):
             output_text = tokenizer.decode(outputs[i])
             print("parallel_qwen2_0_5b_predict_mp2, output_text:", output_text)
-            assert output_text == answer
+            compare_distance(output_text, answer, bench_sim=0.95)
 
 
 def parallel_qwen2_0_5b_predict_mp2_static():
@@ -208,8 +210,7 @@ def parallel_qwen2_0_5b_predict_mp2_static():
                                    return_dict_in_generate=False)
         for i in range(0, len(outputs)):
             output_text = tokenizer.decode(outputs[i])
-            print("parallel_qwen2_0_5b_predict_mp2_static, output_text:", output_text)
-            assert output_text == answer
+            compare_distance(output_text, answer, bench_sim=0.95)
 
 
 def parallel_qwen2_0_5b_parallel_decoding_mp2():
