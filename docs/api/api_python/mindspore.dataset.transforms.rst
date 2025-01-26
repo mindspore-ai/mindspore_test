@@ -13,13 +13,6 @@ mindspore.dataset.transforms
     import mindspore.dataset as ds
     import mindspore.dataset.transforms as transforms
 
-注意：旧的API导入方式已经过时且会逐步废弃，因此推荐使用上面的方式，但目前仍可按以下方式导入：
-
-.. code-block::
-
-    from mindspore.dataset.transforms import c_transforms
-    from mindspore.dataset.transforms import py_transforms
-
 常用数据处理术语说明如下：
 
 - TensorOperation，所有C++实现的数据处理操作的基类。
@@ -70,22 +63,15 @@ API样例中常用的导入模块如下：
     import mindspore.dataset.vision as vision
     import mindspore.dataset.vision.utils as utils
 
-注意：旧的API导入方式已经过时且会逐步废弃，因此推荐使用上面的方式，但目前仍可按以下方式导入：
-
-.. code-block::
-
-    import mindspore.dataset.vision.c_transforms as c_vision
-    import mindspore.dataset.vision.py_transforms as py_vision
-    from mindspore.dataset.transforms import c_transforms
-
 常用数据处理术语说明如下：
 
 - TensorOperation，所有C++实现的数据处理操作的基类。
+- ImageTensorOperation，所有图像类数据处理操作的基类，继承自TensorOperation。
 - PyTensorOperation，所有Python实现的数据处理操作的基类。
 
 数据增强操作可以放入数据处理Pipeline中执行，也可以Eager模式执行：
 
-- Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.html#数据处理pipeline介绍>`_ 。
+- Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#数据处理pipeline介绍>`_ 。
 - Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/eager.html>`_ 。
 
 样例库
@@ -232,7 +218,7 @@ API样例中常用的导入模块如下：
 
 数据增强操作可以放入数据处理Pipeline中执行，也可以Eager模式执行：
 
-- Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.html#数据处理pipeline介绍>`_ 。
+- Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#数据处理pipeline介绍>`_ 。
 - Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/eager.html>`_ 。
 
 样例库
@@ -302,7 +288,7 @@ API样例中常用的导入模块如下：
 
 数据增强操作可以放入数据处理Pipeline中执行，也可以Eager模式执行：
 
-- Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.html#数据处理pipeline介绍>`_ 。
+- Pipeline模式用于流式处理大型数据集，示例可参考 `数据处理Pipeline介绍 <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.dataset.loading.html#数据处理pipeline介绍>`_ 。
 - Eager模式用于函数调用方式处理样本，示例可参考 `轻量化数据处理 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/eager.html>`_ 。
 
 样例库

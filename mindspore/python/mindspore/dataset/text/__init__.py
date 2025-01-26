@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module is to support text processing for NLP. It includes two parts:
-text transforms and utils. text transforms is a high performance
-NLP text processing module which is developed with ICU4C and cppjieba.
-utils provides some general methods for NLP text processing.
+This module is designed for text data augmentation and comprises two submodules: `transforms` and `utils`.
+
+`transforms` is a high-performance text data augmentation lib that supports common text data augmentation operations.
+
+`utils` provides a collection of utility methods for text processing.
 
 Common imported modules in corresponding API examples are as follows:
 
@@ -33,7 +34,7 @@ The data transform operation can be executed in the data processing pipeline or 
 
 - Pipeline mode is generally used to process big datasets. Examples refer to
   `introduction to data processing pipeline <https://www.mindspore.cn/docs/en/master/api_python/
-  mindspore.dataset.html#introduction-to-data-processing-pipeline>`_ .
+  mindspore.dataset.loading.html#introduction-to-data-processing-pipeline>`_ .
 - Eager mode is more like a function call to process data. Examples refer to
   `Lightweight Data Processing <https://www.mindspore.cn/docs/en/master/model_train/dataset/eager.html>`_ .
 """
