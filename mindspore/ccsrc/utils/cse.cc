@@ -119,6 +119,7 @@ bool CSE::BuildOrderGroupForOneGraph(const FuncGraphPtr &fg) {
       (void)hidden_side_effect_func_graphs_.insert(node->func_graph());
     }
     if (IsRefTensorCreatedByViewInplaceOp(node)) {
+      MS_LOG(DEBUG) << "Is RefTensor created by view/inplace op, skip CSE. node: " << node->ToString();
       continue;
     }
     std::size_t h = 0;

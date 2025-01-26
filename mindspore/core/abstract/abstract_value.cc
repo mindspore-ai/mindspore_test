@@ -2126,6 +2126,9 @@ AbstractBasePtr AbstractRefTensor::Join(const std::shared_ptr<AbstractRefTensor>
   // Secondly , join the tensor value.
   auto joined_tensor = AbstractTensor::Join(other)->cast<AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(joined_tensor);
+  if (is_parameter_ ^ other->is_parameter_) {
+    MS_LOG(INFO) << "Joining Tensor and Parameter! this: " << ToString() << ", other: " << other->ToString();
+  }
   bool joined_is_parameter = is_parameter_ && other->is_parameter_;
   return std::make_shared<AbstractRefTensor>(joined_tensor, joined_ref_key, joined_is_parameter);
 }
