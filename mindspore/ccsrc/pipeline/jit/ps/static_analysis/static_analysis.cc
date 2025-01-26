@@ -45,6 +45,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "frontend/operator/ops_front_infer_function.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/composite.h"
 #include "ops/op_def.h"
 
@@ -1225,6 +1226,9 @@ EvaluatorPtr GetPrimEvaluator(const PrimitivePtr &prim, const AnalysisEnginePtr 
   if (mindspore::ops::IsPrimitiveFunction(prim->name())) {
     if (prim->isa<PrimitivePy>()) {
       return std::make_shared<PrimitiveArgsToInputsEvaluator>(prim);
+    }
+    if (prim::IsMetaImpl(prim->name())) {
+      return std::make_shared<PrimitiveToMetaEvaluator>(prim);
     }
     return std::make_shared<PrimitiveFunctionEvaluator>(prim);
   }

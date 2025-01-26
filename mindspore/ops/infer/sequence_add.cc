@@ -173,6 +173,6 @@ class SequenceAddInfer : public abstract::OpInferBase {
     return SequenceAddInferInner(primitive, input_args);
   }
 };
-REGISTER_PRIMITIVE_OP_INFER_IMPL(SequenceAdd, prim::kPrimSequenceAdd, SequenceAddInfer, true);
+REGISTER_PRIMITIVE_OP_INFER_IMPL(SequenceAdd, prim::kPrimSequenceAdd, SequenceAddInfer, false);
 }  // namespace ops
 }  // namespace mindspore
