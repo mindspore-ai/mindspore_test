@@ -61,6 +61,7 @@ Neural Network
     mindspore.ops.max_unpool3d
     mindspore.ops.incre_flash_attention
     mindspore.ops.prompt_flash_attention
+    mindspore.ops.flash_attention_score
     mindspore.ops.rms_norm
     mindspore.ops.unfold
 
