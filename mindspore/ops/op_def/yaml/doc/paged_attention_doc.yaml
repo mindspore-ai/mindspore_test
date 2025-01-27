@@ -26,6 +26,8 @@ paged_attention:
             q_seq_lens (Tensor): The query length of each sequence with data type of int32. Default is None.
               :math:`(batch,)`.
             kv_cache_quant_mode (String): The mode of kv cache quant, `DEFAULT` and `PERTOKEN` are supported.
+            mask_mode (String): The mode of mask, `MASK_DEFAULT` and `TRAPEZOIDAL` are supported. No need to pass
+              a real mask tensor if `TRAPEZOIDAL` is set.
 
         Outputs:
             attention output.
