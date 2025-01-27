@@ -3,7 +3,6 @@ build/
 mindspore/lib
 output
 *.ir
-*.patch
 st_tests
 kernel_meta/
 somas_meta/

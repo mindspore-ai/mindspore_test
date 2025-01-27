@@ -11,6 +11,7 @@ mindspore_add_pkg(robin_hood_hashing
         VER 3.11.5
         HEAD_ONLY ${INCLUDE}
         URL ${REQ_URL}
-        SHA256 ${SHA256})
+        SHA256 ${SHA256}
+        PATCHES ${TOP_DIR}/third_party/patch/robin_hood_hashing/0001-fix-unused-var-warning.patch)
 
 include_directories(${robin_hood_hashing_INC})
