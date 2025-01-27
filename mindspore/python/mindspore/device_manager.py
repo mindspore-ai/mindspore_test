@@ -31,7 +31,7 @@ def set_device(device_target, device_id=None):
 
     Note:
         - The `device_target` must be set in the ["CPU", "GPU", "Ascend"], there is no default value.
-        - Suggest setting `device_target` and ‵device_id` before calling :func:`mindspore.communication.init`.
+        - Suggest setting `device_target` and `device_id` before calling :func:`mindspore.communication.init`.
 
     Args:
         device_target (str): The target device to run, only support "Ascend", "GPU", and "CPU".

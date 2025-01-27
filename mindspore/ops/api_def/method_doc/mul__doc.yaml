@@ -37,7 +37,7 @@ mul_:
         >>> from mindspore import Tensor
         >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
         >>> y = Tensor(np.array([4.0, 5.0, 6.0]), mindspore.float32)
-        >>> output = x.mul(y)
+        >>> output = x.mul_(y)
         >>> print(output)
         [ 4. 10. 18.]
         >>> print(x)
