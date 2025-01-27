@@ -37,6 +37,8 @@ class HcclWatchDogHandler {
   bool Initialize();
   void Terminate();
   uint32_t rank_id() const { return rank_id_; }
+  std::string group_name() const { return group_name_; }
+  bool can_stop(bool stop = false);
 
  private:
   void WatchDogProcess();
@@ -51,6 +53,8 @@ class HcclWatchDogHandler {
   std::mutex mutex_;
   std::exception_ptr exception_{nullptr};
   std::atomic<bool> terminate_{false};
+  std::atomic<bool> can_stop_{false};
+  std::atomic<bool> stop_request_{false};
 };
 
 class HcclWatchDogManager {
@@ -66,14 +70,16 @@ class HcclWatchDogManager {
   void AddHandler(std::unique_ptr<HcclWatchDogHandler> handler) { (void)handles_.emplace_back(std::move(handler)); }
   uint32_t HandleSize() { return handles_.size(); }
   bool InitHandler(uint32_t idx);
-
+  void DestroyHandlerByName(const std::string &name);
   void DestoryHandler() {
     std::unique_lock<std::mutex> lock(handle_mutex_);
     if (handles_.empty()) {
       return;
     }
     for (const auto &handle : handles_) {
-      handle->Terminate();
+      if (handle != nullptr) {
+        handle->Terminate();
+      }
     }
     handles_.clear();
   }

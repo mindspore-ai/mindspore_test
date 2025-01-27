@@ -26,12 +26,31 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+// check exception in every 2s
+constexpr int64_t kQueryFrequency = 2000;
+}  // namespace
+
 bool HcclWatchDogManager::InitHandler(uint32_t idx) {
   if (handles_.empty() || idx > handles_.size() || idx <= 0) {
     return false;
   }
   MS_EXCEPTION_IF_NULL(handles_[idx - 1]);
   return handles_[idx - 1]->Initialize();
+}
+
+void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
+  for (const auto &handle : handles_) {
+    // cppcheck-suppress useStlAlgorithm
+    if (handle != nullptr && handle->group_name() == name) {
+      MS_LOG(INFO) << "Destroy watch dog thread by group name: " << name;
+      while (!handle->can_stop(true)) {
+        MS_LOG(DEBUG) << "Wait watch dog thread exit before destroy hcom.";
+      }
+      handle->Terminate();
+      break;
+    }
+  }
 }
 
 HcclWatchDogHandler::~HcclWatchDogHandler() {
@@ -65,15 +84,23 @@ void HcclWatchDogHandler::SetException(std::string *error_info, bool *disable) {
   }
   MS_LOG(DEBUG) << "Watch dog checking for hcom: " << hcom_ << ", group name: " << group_name_
                 << ", rank id: " << rank_id_;
+  std::unique_lock<std::mutex> lock(mutex_);
+  can_stop_.store(false, std::memory_order_acq_rel);
   auto ret = hccl::HcclAdapter::GetInstance().HcclWatchdogThread(hcom_, error_info, disable);
   if (!ret) {
     std::ostringstream param_oss;
     param_oss << "HcclWatchdogThread catch an error: " << *error_info << ", rank id: " << rank_id_
               << ", group name: " << group_name_;
     auto exception_ptr = std::make_exception_ptr(std::runtime_error(param_oss.str()));
-    std::unique_lock<std::mutex> lock(mutex_);
     exception_ = exception_ptr;
   }
+  // could stop watchdog after check.
+  can_stop_.store(true, std::memory_order_acq_rel);
+}
+
+bool HcclWatchDogHandler::can_stop(bool stop) {
+  stop_request_.store(stop, std::memory_order_acq_rel);
+  return can_stop_;
 }
 
 void HcclWatchDogHandler::DestroyHcclComm() {
@@ -91,11 +118,14 @@ void HcclWatchDogHandler::HandleException() {
 void HcclWatchDogHandler::Terminate() { terminate_.store(true, std::memory_order_acq_rel); }
 
 void HcclWatchDogHandler::DoProcess() {
-  // check exception in every 2s
-  constexpr int64_t kQueryFrequency = 2000;
   std::string error_info;
   while (!terminate_.load()) {
-    MS_LOG(DEBUG) << "Start check watch dog thread in every 2s .";
+    MS_LOG(DEBUG) << "Start check watch dog thread in every " << kQueryFrequency << "ms .";
+    if (stop_request_.load()) {
+      MS_LOG(WARNING) << "Get stop request, stop watchdog check for: " << group_name_ << ", rank id: " << rank_id_;
+      can_stop_.store(true, std::memory_order_acq_rel);
+      break;
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(kQueryFrequency));
     error_info.clear();
     bool disable = false;
