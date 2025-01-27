@@ -20,7 +20,6 @@
 #include <utility>
 #include <vector>
 #include <tuple>
-#include <map>
 #include <algorithm>
 
 #include "ir/value.h"
@@ -34,7 +33,6 @@
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "mindspore/ops/op_def/arithmetic_ops.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;
@@ -44,18 +42,9 @@ constexpr size_t kInputRealShiftSeqDim = 2;
 constexpr size_t kInputDropMaskSeqDim = 2;
 constexpr size_t kOutputSoftmaxSeqDim = 2;
 constexpr int64_t kLoadBalanceSplitNum = 2;
-enum OpAttrUpdateMode : int64_t {
-  kLeftUpToLeftUp = 0,
-  kLeftUpToRightDown = 1,
-  kRightDownToRightDown = 2,
-};
+constexpr int64_t kDefaultInt64Value = -10000;
 const std::vector<int64_t> needCompressAttnMask = {ops::kSparseLeftUpCausal, ops::kSparseRightDownCausal,
                                                    ops::kSparseBand, ops::kSparseBlockLocal};
-const std::map<int64_t, int64_t> opAttrUpdateMap = {{ops::kSparseDefaultMask, kLeftUpToLeftUp},
-                                                    {ops::kSparseLeftUpCausal, kLeftUpToRightDown},
-                                                    {ops::kSparseRightDownCausal, kRightDownToRightDown},
-                                                    {ops::kSparseBand, kRightDownToRightDown},
-                                                    {ops::kSparseBlockLocal, kLeftUpToRightDown}};
 
 size_t GetNonMonadInputSize(const CNodePtr &cnode) {
   size_t cnode_non_monad_size = cnode->size();
@@ -71,24 +60,6 @@ int64_t NewSeedGeneration() {
   static int64_t seed_generation = 0;
   ++seed_generation;
   return seed_generation;
-}
-
-int64_t LongAdd(int64_t base, int64_t shift) {
-  int64_t result;
-  if (shift > 0) {
-    if (base > INT_MAX - shift) {
-      result = INT_MAX;
-    } else {
-      result = base + shift;
-    }
-  } else {
-    if (base < INT_MIN - shift) {
-      result = INT_MIN;
-    } else {
-      result = base + shift;
-    }
-  }
-  return result;
 }
 
 int64_t GetSplitNumByMapId(const Shape &dev_matrix, int64_t map_id) {
@@ -110,6 +81,36 @@ int64_t GetSplitNumByTensorMap(const Shape &dev_matrix, const Shape &tensor_map)
   return split_num;
 }
 }  // namespace
+
+Status ComputeSparseInfoForFlashAttentionScore(const int64_t sparse_mode, const int64_t pre_tokens,
+                                               const int64_t next_tokens, const int64_t seq_split_id,
+                                               const int64_t seq_split_num, int64_t q_seq_len, int64_t kv_seq_len,
+                                               int64_t *new_sparse_mode, int64_t *new_pre_tokens,
+                                               int64_t *new_next_tokens) {
+  *new_pre_tokens = (sparse_mode == ops::kSparseDefaultMask || sparse_mode == ops::kSparseBand)
+                      ? pre_tokens
+                      : q_seq_len * seq_split_num;
+  *new_next_tokens = (sparse_mode == ops::kSparseDefaultMask || sparse_mode == ops::kSparseBand) ? next_tokens : 0;
+  *new_sparse_mode = sparse_mode != ops::kSparseDefaultMask ? ops::kSparseBand : sparse_mode;
+  switch (opAttrUpdateMap.at(sparse_mode)) {
+    case kLeftUpToLeftUp:
+      *new_pre_tokens = LongAdd(*new_pre_tokens, -seq_split_id * q_seq_len);
+      *new_next_tokens = LongAdd(*new_next_tokens, seq_split_id * q_seq_len);
+      break;
+    case kLeftUpToRightDown:
+      *new_pre_tokens = LongAdd(*new_pre_tokens, (kv_seq_len - (seq_split_id + 1) * q_seq_len));
+      *new_next_tokens = LongAdd(*new_next_tokens, -(kv_seq_len - (seq_split_id + 1) * q_seq_len));
+      break;
+    case kRightDownToRightDown:
+      *new_pre_tokens = LongAdd(*new_pre_tokens, (seq_split_num - seq_split_id - 1) * (q_seq_len));
+      *new_next_tokens = LongAdd(*new_next_tokens, -(seq_split_num - seq_split_id - 1) * (q_seq_len));
+      break;
+    default:
+      MS_LOG(ERROR) << "Invalid sparse mode " << sparse_mode << ", sparse mode should be one of [0, 2, 3, 4].";
+      return FAILED;
+  }
+  return SUCCESS;
+}
 
 void FlashAttentionScoreInfo::UpdateDropoutGenMaskSliceShapeAndSeed(const CNodePtr &dropout_gen_mask_cnode) {
   if (!IsPrimitiveCNode(dropout_gen_mask_cnode, prim::kPrimDropoutGenMask)) {
@@ -166,6 +167,16 @@ void FlashAttentionScoreInfo::InitIsInputPassed() {
   for (size_t i = 0; i < input_value_.size(); ++i) {
     is_input_passed_[i] = (input_value_[i] == nullptr || !input_value_[i]->isa<None>());
   }
+}
+
+void FlashAttentionScoreInfo::ResetInputsShape() {
+  size_t real_input_num = 0;
+  for (size_t i = 0; i <= ops::kFlashAttentionScoreInputActualSeqKVlenIndex; ++i) {
+    if (is_input_passed_[i]) {
+      real_input_num += 1;
+    }
+  }
+  inputs_shape_.resize(real_input_num);
 }
 
 size_t FlashAttentionScoreInfo::GetStrategyRealIndex(size_t index) {
@@ -508,40 +519,26 @@ Status FlashAttentionScoreInfo::InitSplittableInputs() {
 }
 
 Status FlashAttentionScoreInfo::InitQKVHeadAndSeqDimFromInputLayout() {
-  switch (input_layout_) {
-    case FASInputLayoutMode::BSH:
-      qkv_batch_dim_ = kSizeZero;
-      qkv_seq_dim_ = kSizeOne;
-      qkv_head_dim_ = kSizeTwo;
-      break;
-    case FASInputLayoutMode::SBH:
-      qkv_seq_dim_ = kSizeZero;
-      qkv_batch_dim_ = kSizeOne;
-      qkv_head_dim_ = kSizeTwo;
-      break;
-    case FASInputLayoutMode::BNSD:
-      qkv_batch_dim_ = kSizeZero;
-      qkv_head_dim_ = kSizeOne;
-      qkv_seq_dim_ = kSizeTwo;
-      break;
-    case FASInputLayoutMode::BSND:
-      qkv_batch_dim_ = kSizeZero;
-      qkv_seq_dim_ = kSizeOne;
-      qkv_head_dim_ = kSizeTwo;
-      break;
-    case FASInputLayoutMode::TND:
-      qkv_batch_dim_ = kSizeZero;
-      qkv_seq_dim_ = kSizeZero;
-      qkv_head_dim_ = kSizeOne;
-      break;
-    case FASInputLayoutMode::TH:
-      qkv_batch_dim_ = kSizeZero;
-      qkv_seq_dim_ = kSizeZero;
-      qkv_head_dim_ = kSizeOne;
-      break;
-    default:
-      MS_LOG(ERROR) << name_ << ": Not support layout in parallel currently.";
-      return FAILED;
+  if (layoutMap.find(input_layout_) == layoutMap.end()) {
+    MS_LOG(ERROR) << name_ << ": Not support layout " << input_layout_ << " in parallel currently.";
+    return FAILED;
+  }
+
+  auto input_layout_str = layoutMap.at(input_layout_);
+
+  qkv_seq_dim_ = input_layout_str.find('S');
+  if (qkv_seq_dim_ == std::string::npos) {
+    qkv_seq_dim_ = input_layout_str.find('T');
+  }
+
+  qkv_batch_dim_ = input_layout_str.find('B');
+  if (qkv_batch_dim_ == std::string::npos) {
+    qkv_batch_dim_ = input_layout_str.find('T');
+  }
+
+  qkv_head_dim_ = input_layout_str.find('N');
+  if (qkv_head_dim_ == std::string::npos) {
+    qkv_head_dim_ = input_layout_str.find('H');
   }
   return SUCCESS;
 }
@@ -745,10 +742,13 @@ void FlashAttentionScoreInfo::InitFromInput() {
   head_num_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputHeadNumIndex + 1);
   keep_prob_ = GetInputValueFromCNode<float>(cnode_, ops::kFlashAttentionScoreInputKeepProbIndex + 1);
   scale_value_ = GetInputValueFromCNode<float>(cnode_, ops::kFlashAttentionScoreInputScaleValueIndex + 1);
-  pre_tokens_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputPreTokensIndex + 1);
-  next_tokens_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputNextTokensIndex + 1);
+  pre_tokens_ = GetInputValueFromCNodeWithDefaultValue<int64_t>(
+    cnode_, ops::kFlashAttentionScoreInputPreTokensIndex + 1, kDefaultInt64Value);
+  next_tokens_ = GetInputValueFromCNodeWithDefaultValue<int64_t>(
+    cnode_, ops::kFlashAttentionScoreInputNextTokensIndex + 1, kDefaultInt64Value);
   input_layout_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputLayoutIndex + 1);
-  sparse_mode_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputSparseModeIndex + 1);
+  sparse_mode_ = GetInputValueFromCNodeWithDefaultValue<int64_t>(
+    cnode_, ops::kFlashAttentionScoreInputSparseModeIndex + 1, kDefaultInt64Value);
   is_flatten_batch_seq_ = (input_layout_ == FASInputLayoutMode::TND) || (input_layout_ == FASInputLayoutMode::TH);
 }
 
@@ -760,7 +760,7 @@ Status FlashAttentionScoreInfo::GetAttrsForRA() {
       enable_ring_attention_ = enable_ring_attention_iter->second->cast<BoolImmPtr>()->value();
       enable_load_balance_ = false;
     } else {
-      MS_LOG(ERROR) << "enable_ring_attention should be bool";
+      MS_LOG(ERROR) << name_ << ": The type of primitive attribute 'enable_ring_attention' should be bool.";
       return FAILED;
     }
   }
@@ -803,6 +803,7 @@ Status FlashAttentionScoreInfo::GetAttrsForRA() {
 
 Status FlashAttentionScoreInfo::GetAttrs() {
   InitIsInputPassed();
+  ResetInputsShape();
   InitFromInput();
 
   auto ms_context = MsContext::GetInstance();
@@ -1319,16 +1320,24 @@ void FlashAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
         int64_t split_id = split_info[kIndex2];
         AnfNodePtr new_pre_tokens_node;
         AnfNodePtr new_next_tokens_node;
+        int64_t new_sparse_mode;
         if (dynamic_seq_flag_) {
           std::tie(new_pre_tokens_node, new_next_tokens_node) =
             GetAttentionMaskAttrsByDynamicSeqDim(cnode, split_id, s1_split_num_);
+          new_sparse_mode = is_attn_mask_compressed_ ? ops::kSparseBand : sparse_mode_;
         } else {
-          int64_t new_pre_tokens, new_next_tokens;
+          int64_t new_pre_tokens;
+          int64_t new_next_tokens;
           std::tie(new_pre_tokens, new_next_tokens) = GetAttentionMaskAttrs(split_id, s1_split_num_);
+          auto status = ComputeSparseInfoForFlashAttentionScore(sparse_mode_, pre_tokens_, next_tokens_, split_id,
+                                                                s1_split_num_, q_seq_len_ / s1_split_num_, kv_seq_len_,
+                                                                &new_sparse_mode, &new_pre_tokens, &new_next_tokens);
+          if (status != Status::SUCCESS) {
+            MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode_) << "Compute new sparse info failed.";
+          }
           new_pre_tokens_node = NewValueNode(MakeValue(new_pre_tokens));
           new_next_tokens_node = NewValueNode(MakeValue(new_next_tokens));
         }
-        int64_t new_sparse_mode = is_attn_mask_compressed_ ? ops::kSparseBand : sparse_mode_;
         auto func_graph = cnode->func_graph();
         MS_EXCEPTION_IF_NULL(func_graph);
         auto manager = func_graph->manager();

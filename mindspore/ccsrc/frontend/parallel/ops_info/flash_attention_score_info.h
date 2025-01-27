@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 #include <tuple>
 #include <utility>
 
@@ -30,9 +31,33 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
+#include "op_def/op_enum.h"
 
 namespace mindspore {
 namespace parallel {
+enum OpAttrUpdateMode : int64_t {
+  kLeftUpToLeftUp = 0,
+  kLeftUpToRightDown = 1,
+  kRightDownToRightDown = 2,
+};
+const std::map<int64_t, int64_t> opAttrUpdateMap = {{ops::kSparseDefaultMask, kLeftUpToLeftUp},
+                                                    {ops::kSparseLeftUpCausal, kLeftUpToRightDown},
+                                                    {ops::kSparseRightDownCausal, kRightDownToRightDown},
+                                                    {ops::kSparseBand, kRightDownToRightDown},
+                                                    {ops::kSparseBlockLocal, kLeftUpToRightDown}};
+const std::map<int64_t, std::string> layoutMap = {
+  {ops::FASInputLayoutMode::BSH, "BSH"}, {ops::FASInputLayoutMode::BNSD, "BNSD"},
+  {ops::FASInputLayoutMode::SBH, "SBH"}, {ops::FASInputLayoutMode::BSND, "BSND"},
+  {ops::FASInputLayoutMode::TND, "TND"}, {ops::FASInputLayoutMode::TH, "TH"},
+  {ops::FASInputLayoutMode::NSD, "NSD"}, {ops::FASInputLayoutMode::SH, "SH"}};
+
+Status ComputeSparseInfoForFlashAttentionScore(const int64_t sparse_mode, const int64_t pre_tokens,
+                                               const int64_t next_tokens, const int64_t seq_split_id,
+                                               const int64_t seq_split_num, int64_t q_seq_len, int64_t kv_seq_len,
+                                               int64_t *new_sparse_mode, int64_t *new_pre_tokens,
+                                               int64_t *new_next_tokens);
+
 class FlashAttentionScoreInfo : public OperatorInfo {
  public:
   FlashAttentionScoreInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -91,6 +116,7 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   Status InitAttnMaskStrategies();
   Status InitQKVHeadAndSeqDimFromInputLayout();
   Status CheckStrategyExpected(const StrategyPtr &strategy);
+  void ResetInputsShape();
   std::vector<int64_t> GetSplitIdAndRank();
   std::tuple<int64_t, int64_t> GetAttentionMaskAttrs(const int64_t split_id, const int64_t split_num);
   std::tuple<AnfNodePtr, AnfNodePtr> GetAttentionMaskAttrsByDynamicSeqDim(const AnfNodePtr &query_node,

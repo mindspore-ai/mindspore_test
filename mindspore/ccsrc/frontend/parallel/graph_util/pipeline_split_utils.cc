@@ -32,6 +32,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
+#include "frontend/parallel/graph_util/solve_flash_attention_score_for_seqpipe.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/value.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -1081,6 +1082,7 @@ void BroadCastSeqChunk(const FuncGraphPtr &root) {
     index_map[v] = index;
     ++index;
   }
+  CNodePtrList call_cnode_list;
   for (const auto &slice_cnode : slice_vector) {
     auto shape_tuple = GetValue<std::vector<int64_t>>(GetValueNode(slice_cnode->input(kIndex2)));
     auto accu_value = std::accumulate(shape_tuple.begin(), shape_tuple.end(), 0);
@@ -1100,8 +1102,10 @@ void BroadCastSeqChunk(const FuncGraphPtr &root) {
         continue;
       }
       call_cnode->AddPrimalAttr(SEQ_CHUNK, MakeValue(seq_chunk));
+      call_cnode_list.push_back(call_cnode);
     }
   }
+  SolveFASparseForSeqPipe(call_cnode_list, accu_shape_set.size());
 }
 
 // Add virtual_assign_kv_cache cnode between key/value and updating for kv_cache.
