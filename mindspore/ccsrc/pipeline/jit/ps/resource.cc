@@ -521,6 +521,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"outer", std::string("outer")},                                    // outer()
        {"softmax", std::string("softmax")},                                // softmax()
        {"index_add_", std::string("index_add_")},                          // index_add_()
+       {"triangular_solve", std::string("triangular_solve")},              // triangular_solve()
      }},
     {kObjectTypeRowTensorType,
      {

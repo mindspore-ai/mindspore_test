@@ -1,0 +1,5 @@
+triangular_solve:
+  description: |
+    triangular_solve(A, upper=True, transpose=False, unitriangular=False) -> Tensor
+
+    For details, please refer to :func:`mindspore.mint.triangular_solve`.
