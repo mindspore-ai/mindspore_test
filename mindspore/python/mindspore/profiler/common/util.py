@@ -87,7 +87,7 @@ def get_cann_version():
                             cann_version = line.strip().split("=")[-1]
                             break
     except ProfilerPathErrorException as e:
-        logger.error(f"Failed to read CANN version from {ascend_home_path}: {e}")
+        logger.warning(f"Failed to read CANN version from {ascend_home_path}: {e}")
     return cann_version
 
 
