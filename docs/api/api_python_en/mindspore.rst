@@ -57,6 +57,7 @@ Context
     :template: classtemplate.rst
 
     mindspore.set_device
+    mindspore.get_current_device
     mindspore.set_deterministic
     mindspore.set_context
     mindspore.get_context
