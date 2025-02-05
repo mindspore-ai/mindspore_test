@@ -124,7 +124,6 @@ PrimitivePtr Emitter::NewPrimitive(const std::string &op_name, const DAttr &attr
     prim->set_inplace_input_indexes(inplace_input_indexes);
     prim->set_rw_write_input_indexes(rw_write_input_indexes);
     prim->set_graph_view_prim(op_def->is_graph_view_);
-
     if (prim->inplace_prim() || prim->graph_view_prim()) {
       prim->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
     }

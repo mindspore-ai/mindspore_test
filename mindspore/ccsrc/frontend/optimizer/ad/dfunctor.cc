@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ir/anf.h"
 #include "utils/info.h"
 #include "ir/func_graph_cloner.h"
@@ -506,9 +507,9 @@ CNodePtr DFunctor::CalculateDoutTuple(const CNodePtr &cnode_morph, const CNodePt
 void DFunctor::AccumulateInputGradients(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint,
                                         const CNodePtr bprop_app) {
   for (size_t i = 0; i < cnode_morph->size(); i++) {
-    auto din = tape_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), bprop_app, NewValueNode(SizeToLong(i))});
+    auto din_tuple = tape_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), bprop_app, NewValueNode(SizeToLong(i))});
     auto input = SkipHookNodeInBackProp(cnode_morph->input(i));
-    ComplexPreprocess(input, din);
+    ComplexPreprocess(input, din_tuple);
     // Backprop sens wrt fvs.
     if (IsValueNode<FuncGraph>(input)) {
       auto func_graph = GetValueNode<FuncGraphPtr>(input);
@@ -519,12 +520,12 @@ void DFunctor::AccumulateInputGradients(const CNodePtr &cnode_morph, const Adjoi
       }
       // Consider direct and indirect fvs.
       for (auto fv : func_graph->free_variables_nodes()) {
-        BackPropagateFv(fv, din);
+        BackPropagateFv(fv, din_tuple);
       }
       for (auto indirect_fv : functor->second->anfnode_to_adjoin_indirect_fv_) {
         MS_LOG(DEBUG) << "Backprop indirect fv " << func_graph->ToString() << ", " << indirect_fv.first->ToString()
                       << ".";
-        BackPropagateFv(indirect_fv.first, din);
+        BackPropagateFv(indirect_fv.first, din_tuple);
       }
       continue;
     }
