@@ -4077,7 +4077,7 @@ void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str())
 void GraphBuilder::AddInput(ValueNode *node) {
   auto obj = node->GetVobj()->GetPyObject();
   // tuple list is expand, this branch always false
-  if (FGBuilder()->IsParameterSequence(obj)) {
+  if (IsParameterSequence(obj)) {
     MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
     graph_->GuardValueNode(node, GuardLevel::GDeduce);
     return;

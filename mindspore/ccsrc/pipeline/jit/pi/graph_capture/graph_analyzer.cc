@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "pipeline/jit/pi/graph_capture/graph.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
+#include "pipeline/jit/pi/graph_build/build_graph_utils.h"
 
 #define ADD_NODE(container, node)                                                   \
   do {                                                                              \
@@ -292,8 +293,7 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
       return IsValidGraphOutput(elem.first) && IsValidGraphOutput(elem.second);
     });
   }
-  return FuncGraphBuilder::IsValidScalar(abstract) || FuncGraphBuilder::IsValidTensor(abstract) ||
-         // none is transform to LOAD_CONST
+  return IsValidOutputAbstractScalar(abstract) || IsValidOutputAbstractTensor(abstract) ||
          abstract->isa<abstract::AbstractNone>();
 }
 
@@ -748,7 +748,7 @@ bool GraphAnalyzer::NeedSkipAddGraphOutput(ValueNode *node) {
       return false;  // constant value no python object, can't make instruction
     } else if (CheckConstPyObject(op)) {
       // now, only python constant
-      if (PyUnicode_Check(op) && !FuncGraphBuilder::IsValidScalar(node->abstract_wrapper()->abstract())) {
+      if (PyUnicode_Check(op) && !IsValidOutputAbstractScalar(node->abstract_wrapper()->abstract())) {
         // filter FakeNodeKey
         return false;
       }

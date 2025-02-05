@@ -182,10 +182,6 @@ class FuncGraphBuilder {
   /// \param[in] name The func_graph name to set.
   void SetGraphName(const std::string &name);
 
-  static std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list);
-
-  static bool IsParameterSequence(const py::object &object);
-
   void AddPrevBuilder(const FuncGraphBuilderPtr &builder);
 
   const std::vector<FuncGraphBuilder *> &prev_builders() const { return prev_builders_; }
@@ -229,15 +225,7 @@ class FuncGraphBuilder {
 
   size_t origin_top_input_num() const { return origin_top_input_num_; }
 
-  // filter FakeNodeKey
-  static bool IsValidScalar(const AbstractBasePtr &abs);
-  static bool IsValidTensor(const AbstractBasePtr &abs);
-
  private:
-  static bool CheckCallable(const ValuePtr &value, const AbstractBasePtr &abs);
-
-  static bool CheckGraphOutput(const AbstractBasePtr &abs);
-
   AnfNodePtr ConvertObjToNode(const py::object &input_obj);
   AnfNodePtr ConvertParameterTupleToNode(const py::object &input_obj);
   AnfNodePtr ConvertPyTupleListToNode(const py::object &obj);
@@ -250,35 +238,20 @@ class FuncGraphBuilder {
                                  std::vector<AnfNodePtr> *input_node_list,
                                  std::vector<AbstractBasePtr> *input_abs_list);
 
-  static std::pair<AbstractBasePtr, bool> DoInferAndCheck(const ValuePtr &callable_value,
-                                                          const std::vector<AbstractBasePtr> &input_abs_list);
-
   CNodePtr DoPrimitiveInferAndCheck(const PrimitivePtr &primitive, const AnfNodePtrList &input_node_list,
                                     const AbstractBasePtrList &args_abs_list);
   CNodePtr AddPrimitiveCNode(const PrimitivePtr &primitive, const AnfNodePtrList &input_node_list,
                              const AbstractBasePtrList &args_abs_list);
 
-  static AbstractBasePtr GetAbstractOf(const AnfNodePtr &node);
-
   AbstractWrapperPtr TryToAddNode(const ValuePtr &callable_value,
                                   const AbstractWrapperPtrList &inputs_abstract_wrapper);
-
-  static bool CheckInvalidCellListDictMethod(const py::object &obj);
 
   AbstractWrapperPtr HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
                                 const AbstractWrapperPtrList &inputs);
 
-  static AbstractBasePtr BuildAbstractForInputObject(const py::object &object);
-
-  static void PrintConstantAbstract(const AbstractBasePtr &abs);
-
   AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) const;
 
   void UpdateParameterFuncGraph(const AnfNodePtr &node);
-
-  static ParameterPtr AddParameter(const FuncGraphPtr &fg);
-
-  static void SetParameterName(const ParameterPtr &param);
 
   void MarkNodeIsolated(const AnfNodePtr &node, bool force);
 
