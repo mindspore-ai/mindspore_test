@@ -36,11 +36,12 @@ class InternalPagedAttentionMask : public InternalKernelMod {
                                        const internal::OutputsImmutableInfoList &outputs,
                                        const std::vector<KernelTensor *> &ms_inputs,
                                        const std::vector<KernelTensor *> &ms_outputs) override;
-  bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
   internal::PagedAttentionParam param_;
+  bool created_flag_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore
