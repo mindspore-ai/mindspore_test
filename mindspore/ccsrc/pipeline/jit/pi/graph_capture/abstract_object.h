@@ -129,7 +129,7 @@ class AbstractObjectBase {
    * BUILD_SLICE,BUILD_STRING,BUILD_SET,BUILD_LIST,BUILD_TUPLE,BUILD_CONST_KEY_MAP,BUILD_MAP
    * \return a new AbstractObject if success, else a empty AbstractObject
    **/
-  static AObject *BuildOperations(const std::vector<AObject *> &args, int opcode);
+  static AObject *BuildOperations(const std::vector<AObject *> &args, int opcode, const AbstractWrapperPtr &wrapper);
   static py::object BuildOperations(const std::vector<py::object> &args, int opcode);
 
   /**
