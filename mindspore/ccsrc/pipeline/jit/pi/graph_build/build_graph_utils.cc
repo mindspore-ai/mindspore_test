@@ -18,13 +18,18 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility>
+#include <algorithm>
 #include "utils/flags.h"
 #include "utils/ms_context.h"
 #include "ir/cell.h"
 #include "ir/meta_func_graph.h"
+#include "pipeline/jit/ps/action.h"
+#include "pipeline/jit/ps/parse/resolve.h"
 #include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "pipeline/pynative/grad/variable.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
@@ -32,6 +37,19 @@
 namespace mindspore {
 namespace pijit {
 namespace {
+bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
+  static HashSet<std::string> prims_should_fallback_in_runtime = {kListInplaceExtendOpName,
+                                                                  kListInplaceInsertOpName,
+                                                                  kListInplacePopOpName,
+                                                                  kListInplaceReverseOpName,
+                                                                  kListInplaceClearOpName,
+                                                                  kDictInplaceSetItemOpName,
+                                                                  kRaiseOpName,
+                                                                  kJoinedStrOpName,
+                                                                  kFormatOpName};
+  return prims_should_fallback_in_runtime.find(prim->name()) != prims_should_fallback_in_runtime.end();
+}
+
 bool IsPrimitiveObject(const py::object &obj) {
   return py::hasattr(obj, PYTHON_PRIMITIVE_FLAG) &&
          parse::data_converter::GetObjType(obj) != parse::RESOLVE_TYPE_CLASS_TYPE;
@@ -47,7 +65,93 @@ bool IsMsClassObject(const py::object &obj) {
 }
 
 bool IsMetaFuncGraphObject(const py::object &obj) { return py::isinstance<MetaFuncGraph>(obj); }
+
+std::pair<AbstractBasePtr, bool> EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list) {
+  if (value == nullptr) {
+    return std::make_pair(nullptr, false);
+  }
+  try {
+    MS_LOG_TRY_CATCH_SCOPE;
+    if (value->isa<Primitive>()) {
+      auto prim = value->cast<PrimitivePtr>();
+      auto eval_res = abstract::EvalOnePrim(prim, inputs_abs_list);
+      if (eval_res != nullptr) {
+        return std::make_pair(eval_res->abstract(), IsSideEffectPrimitive(prim));
+      }
+    } else if (value->ToAbstract()->isa<abstract::AbstractFunction>()) {
+      auto analyze_res = pipeline::AbstractAnalyze(value, inputs_abs_list);
+      if (analyze_res.eval_result != nullptr) {
+        return std::make_pair(analyze_res.eval_result->abstract(), analyze_res.eval_result->has_side_effect_node());
+      }
+    }
+    return std::make_pair(nullptr, false);
+  } catch (const std::exception &e) {
+    MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString() << ". The exception:\n" << e.what();
+    return std::make_pair(nullptr, false);
+  }
+}
+
+void SetParameterName(const ParameterPtr &param) {
+  MS_EXCEPTION_IF_NULL(param);
+  if (param->name() != "") {
+    return;
+  }
+  auto fg = param->func_graph();
+  const auto &fg_params = fg->parameters();
+  size_t index;
+  for (index = 0; index < fg_params.size(); ++index) {
+    if (param == fg_params[index]) {
+      break;
+    }
+  }
+  auto name = fg->ToString() + "_input_" + std::to_string(index);
+  param->set_name(name);
+}
 }  // namespace
+
+std::pair<AbstractBasePtr, bool> InferAndCheck(const ValuePtr &value, const AbstractBasePtrList &input_abs_list) {
+  const auto &res = EvalValue(value, input_abs_list);
+  auto abs = res.first;
+  if (abs == nullptr) {
+    MS_LOG(DEBUG) << "Eval failed for value: " << value->ToString();
+    return std::make_pair(nullptr, false);
+  }
+  if (value->isa<Primitive>() && !IsPrimitiveCallable(value->cast<PrimitivePtr>(), abs)) {
+    MS_LOG(DEBUG) << "Check callable failed for value: " << value->ToString() << ", abs: " << abs->ToString();
+    return std::make_pair(nullptr, false);
+  }
+  return res;
+}
+
+AbstractBasePtr BuildNodeAbstract(const AnfNodePtr &node) {
+  if (node == nullptr) {
+    return nullptr;
+  }
+  if (node->abstract() != nullptr) {
+    return node->abstract();
+  }
+  if (node->isa<ValueNode>()) {
+    return node->cast<ValueNodePtr>()->value()->ToAbstract();
+  } else if (node->isa<CNode>()) {
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode->empty() || !cnode->input(0)->isa<ValueNode>()) {
+      return nullptr;
+    }
+    ValuePtr value = cnode->input(0)->cast<ValueNodePtr>()->value();
+    std::vector<AbstractBasePtr> abs_list;
+    std::transform(cnode->inputs().begin() + 1, cnode->inputs().end(), std::back_inserter(abs_list),
+                   [](const AnfNodePtr &node) {
+                     if (node->abstract() == nullptr) {
+                       node->set_abstract(BuildNodeAbstract(node));
+                     }
+                     return node->abstract();
+                   });
+    return EvalValue(value, abs_list).first;
+  }
+  MS_LOG(INFO) << "Unsupported Node type for GetAbstractOf() method, node: " << node->DebugString();
+  return nullptr;
+}
+
 void SyncStubTensor(const py::handle &obj) {
   if (!IsStubTensor(obj)) {
     return;
@@ -72,6 +176,60 @@ bool IsObjectCallable(const py::object &obj) {
 
 bool IsSideEffectPrimitive(const PrimitivePtr &prim) {
   return GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_IO) || GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_MEM);
+}
+
+bool IsValidOutputAbstractScalar(const AbstractBasePtr &abs) {
+  if (!abs->isa<abstract::AbstractScalar>()) {
+    return false;
+  }
+  auto build_type = abs->BuildType();
+  if (build_type->isa<String>()) {
+    auto value = abs->BuildValue()->cast<StringImmPtr>();
+    const auto &str = value->value();
+    const std::string fake_prefix = "FakeNodeKey";
+    return str.substr(0, fake_prefix.size()) != fake_prefix;
+  }
+  return build_type->isa<String>() || build_type->isa<Number>();
+}
+
+bool IsValidOutputAbstractTensor(const AbstractBasePtr &abs) {
+  return abs->isa<abstract::AbstractTensor>() || abs->isa<abstract::AbstractRowTensor>() ||
+         abs->isa<abstract::AbstractMapTensor>();
+}
+
+bool IsPrimitiveCallable(const PrimitivePtr &prim, const AbstractBasePtr &abs) {
+  if (prim == nullptr || abs == nullptr || abs->isa<abstract::AbstractAny>()) {
+    return false;
+  }
+  return !ShouldFallBackInRuntime(prim);
+}
+
+bool IsParameterSequence(const py::object &object) {
+  if (object.ptr() == nullptr) {
+    return false;
+  }
+  constexpr auto parameter_tuple_attr = "__parameter_tuple__";
+  if (py::hasattr(object, parameter_tuple_attr)) {
+    return true;
+  }
+  if (!py::isinstance<py::tuple>(object) && !py::isinstance<py::list>(object)) {
+    return false;
+  }
+  auto object_tuple = object.cast<py::tuple>();
+  if (object_tuple.size() == 0) {
+    return false;
+  }
+  if (std::any_of(object_tuple.begin(), object_tuple.end(),
+                  [](const auto &element) { return !parse::IsParameterObject(py::cast<py::object>(element)); })) {
+    return false;
+  }
+  return true;
+}
+
+ParameterPtr AddParameter(const FuncGraphPtr &fg) {
+  auto param = fg->add_parameter();
+  SetParameterName(param);
+  return param;
 }
 
 py::tuple GetMethodInfo(const py::object &obj) {
@@ -122,6 +280,31 @@ bool IsConvertToInterpretedObject(const py::object &obj) {
   // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
   // identify the function if need parse by ast
   return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsPyCapsuleTensorOverloadMethod(obj);
+}
+
+void PrintConstantAbstract(const AbstractBasePtr &abstract) {
+  if (abstract == nullptr) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractFunction>()) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractSequence>()) {
+    const auto &elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e); });
+  }
+  if (abstract->isa<abstract::AbstractDictionary>()) {
+    const auto &elements = abstract->cast<abstract::AbstractDictionaryPtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e.second); });
+  }
+  if (abstract->isa<abstract::AbstractTensor>()) {
+    if (abstract->isa<abstract::AbstractRefTensor>()) {
+      return;
+    }
+    MS_LOG(WARNING) << "Encounter constant Tensor node with abstract: " << abstract->ToString();
+    return;
+  }
+  MS_LOG(INFO) << "Encounter constant value node with abstract: " << abstract->ToString();
 }
 
 bool HasRegisterHook(const py::object &obj) {

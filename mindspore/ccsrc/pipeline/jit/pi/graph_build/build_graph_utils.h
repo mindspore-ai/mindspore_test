@@ -16,6 +16,7 @@
 
 #ifndef MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
 #define MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
+#include <utility>
 #include "pybind11/pybind11.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
@@ -24,16 +25,25 @@ namespace py = pybind11;
 
 namespace mindspore {
 namespace pijit {
-void SyncStubTensor(const py::handle &obj);
+std::pair<AbstractBasePtr, bool> InferAndCheck(const ValuePtr &value, const AbstractBasePtrList &input_abs_list);
+AbstractBasePtr BuildNodeAbstract(const AnfNodePtr &node);
 
 bool IsSpecialCallableObject(const py::object &obj);
 bool IsObjectCallable(const py::object &obj);
 bool IsSideEffectPrimitive(const PrimitivePtr &prim);
+bool IsValidOutputAbstractScalar(const AbstractBasePtr &abs);
+bool IsValidOutputAbstractTensor(const AbstractBasePtr &abs);
+bool IsPrimitiveCallable(const PrimitivePtr &prim, const AbstractBasePtr &abs);
+bool IsParameterSequence(const py::object &object);
+ParameterPtr AddParameter(const FuncGraphPtr &fg);
 
 py::tuple GetMethodInfo(const py::object &obj);
 bool IsPyCapsuleTensorOverloadMethod(const py::object &obj);
 bool IsPyCapsuleOverload(const py::object &obj);
 bool IsMsTensorMethod(const py::object &obj);
+void SyncStubTensor(const py::handle &obj);
+
+void PrintConstantAbstract(const AbstractBasePtr &abs);
 
 // Check whether it is an nn.CellList.
 bool IsCellList(const py::object &obj);
