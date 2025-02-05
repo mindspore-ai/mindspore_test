@@ -451,6 +451,21 @@ def _add_rowtensor_tensor(x, y):
     return x + y
 
 
+@_add_backward.register("Tensor", "RowTensor")
+def _add_tensor_rowtensor(x, y):
+    """
+   Adds Tensor and RowTensor.
+
+   Args:
+       x (Tensor): x
+       y (RowTensor): y
+
+   Returns:
+       RowTensor, the dtype is same as y.
+   """
+    return y + x
+
+
 @_add_backward.register("None", "None")
 def _add_nonetensor_tensor(x, y):
     """

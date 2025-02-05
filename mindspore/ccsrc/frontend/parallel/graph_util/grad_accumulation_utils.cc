@@ -123,6 +123,9 @@ ValuePtr SearchPreNodeMicro(const CNodePtr &cnode) {
     if (!cnode->input(i)->isa<CNode>()) {
       continue;
     }
+    if (!SearchPreNodeMicro(cnode->input(i)->cast<CNodePtr>())) {
+      continue;
+    }
     return SearchPreNodeMicro(cnode->input(i)->cast<CNodePtr>());
   }
   return nullptr;

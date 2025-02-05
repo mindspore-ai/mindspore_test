@@ -181,7 +181,7 @@ FuncGraphPtr KPrim::GetPrimBprop(const PrimitivePtr &prim, const ValueNodePtr &v
   MS_EXCEPTION_IF_NULL(prim);
   MS_EXCEPTION_IF_NULL(value_node);
   auto iter = bprop_registry_.find(prim);
-  if (iter != bprop_registry_.end() && !iter->second->dropped()) {
+  if (iter != bprop_registry_.end() && !iter->second->dropped() && !prim->HasAttr("side_effect_backprop_mem")) {
     return iter->second;
   }
 
@@ -381,6 +381,14 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
   return expanded_fg;
 }
 
+CNodePtr CalDoutWithMask(const FuncGraphPtr &fg, const AnfNodePtr &dout_node) {
+  auto generate_mask = std::make_shared<prim::GenerateMask>("generate_mask");
+  auto dout_mask = fg->NewCNodeInOrder({NewValueNode(generate_mask), dout_node});
+  auto ops_type = NewValueNode(int64_t(0));
+  return fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_node,
+                              fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type})});
+}
+
 AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg) const {
   // The primal fg may have extra parameters from lifted fv or u_monad and io_monad.
   std::vector<AnfNodePtr> extra_lifted_args;
@@ -435,9 +443,12 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
     args.push_back(NewEnviron(bprop_fg));
     // The lifted parameters are put in front.
     if (!extra_lifted_args.empty()) {
-      (void)args.insert(args.cend(), extra_lifted_args.cbegin(), extra_lifted_args.cend());
+      std::transform(extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(args),
+                     [bprop_fg](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg); });
+      // (void)args.insert(args.cend(), extra_lifted_args.cbegin(), extra_lifted_args.cend());
     }
-    (void)args.insert(args.cend(), inputs.cbegin() + 1, inputs.cend());
+    std::transform(inputs.cbegin() + 1, inputs.cend(), std::back_inserter(args),
+                   [bprop_fg](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg); });
     if (!extra_monad_args.empty()) {
       (void)args.insert(args.cend(), extra_monad_args.cbegin(), extra_monad_args.cend());
     }
@@ -466,19 +477,26 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
     tuple_add_func_graph->AddChecker("check_infer_inputs", checker);
   }
 
+  std::vector<AnfNodePtr> res_args{NewValueNode(prim::kPrimMakeTuple)};
   if (!extra_lifted_args.empty()) {
-    (void)extra_lifted_args.insert(extra_lifted_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));
-    auto extra_tuple = NewCNode(extra_lifted_args, bprop_fg);
+    std::transform(extra_lifted_args.cbegin(), extra_lifted_args.cend(), std::back_inserter(res_args),
+                   [bprop_fg](const AnfNodePtr &arg) { return CalDoutWithMask(bprop_fg, arg); });
+    // (void)extra_lifted_args.insert(extra_lifted_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));
+    auto extra_tuple = NewCNode(res_args, bprop_fg);
+    // auto extra_tuple = NewCNode(extra_lifted_args, bprop_fg);
     tuple_env = NewCNode({tuple_add_ops, tuple_env, extra_tuple}, bprop_fg);
   }
+  auto bprop_out = bprop_fg->output()->cast<CNodePtr>();
+  auto generate_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("generate_bprop_out_tuple");
+  auto bprop_out_tuple_node = bprop_fg->NewCNodeInOrder({NewValueNode(generate_dout_tuple), bprop_fg->output()});
   if (!extra_monad_args.empty()) {
     (void)extra_monad_args.insert(extra_monad_args.cbegin(), NewValueNode(prim::kPrimMakeTuple));
     auto extra_tuple = NewCNode(extra_monad_args, bprop_fg);
-    auto old_output_extra = NewCNode({tuple_add_ops, bprop_fg->output(), extra_tuple}, bprop_fg);
+    auto old_output_extra = NewCNode({tuple_add_ops, bprop_out_tuple_node, extra_tuple}, bprop_fg);
     return NewCNode({tuple_add_ops, tuple_env, old_output_extra}, bprop_fg);
   }
 
-  return NewCNode({tuple_add_ops, tuple_env, bprop_fg->output()}, bprop_fg);
+  return NewCNode({tuple_add_ops, tuple_env, bprop_out_tuple_node}, bprop_fg);
 }
 
 static void TransformNormalArgs(const FuncGraphManagerPtr &mng, const FuncGraphPtr &bprop_fg, const FuncGraphPtr &outer,

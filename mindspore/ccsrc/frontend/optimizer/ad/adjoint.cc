@@ -18,6 +18,8 @@
 
 #include "ir/anf.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ccsrc/frontend/operator/composite/composite.h"
 
 namespace mindspore {
 namespace ad {
@@ -34,7 +36,13 @@ Adjoint::Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphP
     MS_LOG(DEBUG) << "Add hole for " << primal->ToString() << " " << k_->ToString();
   }
 
-  dout_hole_ = caller_->NewCNodeInFront({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
+  auto dout = caller_->NewCNodeInOrder({NewValueNode(prim::GetPythonOps("zeros_like")), k_});
+  auto generate_mask = std::make_shared<prim::GenerateMask>("generate_mask");
+  auto dout_mask = caller_->NewCNodeInOrder({NewValueNode(generate_mask), dout});
+  auto ops_type = NewValueNode(int64_t(0));
+  dout_hole_ =
+    caller_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout,
+                              caller_->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), dout_mask, ops_type})});
   RegisterKUser(dout_hole_->cast<CNodePtr>(), 1);
 }
 
@@ -71,8 +79,8 @@ void Adjoint::AccumulateDout(const AnfNodePtr &dout_factor) {
   if (dout_ != nullptr) {
     MS_LOG(DEBUG) << "Update dout " << dout_->ToString() << " with dout_factor " << dout_factor->ToString();
     ScopeGuard scope_guard(std::make_shared<Scope>("Gradients/" + primal()->scope()->name()));
-    auto add = prim::GetPythonOps("hyper_add");
-    dout_ = caller_->NewCNodeInOrder({NewValueNode(add), dout_, dout_factor});
+    auto accumulate_dout = std::make_shared<prim::AccumulateDout>("_accumulate_dout");
+    dout_ = caller_->NewCNodeInOrder(NewValueNode(accumulate_dout), dout_, dout_factor);
     return;
   }
   dout_ = dout_factor;

@@ -110,6 +110,20 @@ PrimitivePtr Emitter::NewPrimitive(const std::string &op_name, const DAttr &attr
   PrimitivePtr prim = nullptr;
   if (mindspore::ops::IsPrimitiveFunction(op_name)) {
     prim = std::make_shared<Primitive>(op_name);
+    auto op_def = mindspore::ops::GetOpDef(op_name);
+    auto signatures = op_def->signatures_;
+    std::vector<size_t> rw_write_input_indexes;
+    for (size_t i = 0; i < signatures.size(); ++i) {
+      if (signatures[i].rw == SignatureEnumRW::kRWWrite) {
+        (void)rw_write_input_indexes.emplace_back(i);
+        prim->set_inplace_prim(true);
+      }
+    }
+    prim->set_rw_write_input_indexes(rw_write_input_indexes);
+    prim->set_graph_view_prim(op_def->is_graph_view_);
+    if (prim->inplace_prim() || prim->graph_view_prim()) {
+      prim->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
+    }
   } else {
     auto &func = Emitter::primc_func_cache()[op_name];
     if (func == nullptr) {

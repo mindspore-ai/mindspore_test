@@ -1433,6 +1433,18 @@ bool RemoveValueNodeDuplicationsPass(const ResourcePtr &resource) {
       if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
         continue;
       }
+      // If valuenode is used by inplace_prim.
+      bool used_by_inplace_prim = std::any_of(users.begin(), users.end(), [](const auto &user) {
+        auto cnode = dyn_cast<CNode>(user.first);
+        if (cnode == nullptr) {
+          return false;
+        }
+        auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+        return (prim != nullptr) && prim->inplace_prim();
+      });
+      if (used_by_inplace_prim) {
+        continue;
+      }
       // For data parallel with some parameters redundant, the allreduce will share the same value node
       // which will raise an error when do allreduce fusion, so the solution is to make the allreduce's value node
       // not be removed, if we found the fusion tag.
@@ -1462,11 +1474,25 @@ bool RemoveValueNodeDuplicationsPassForJit(const ResourcePtr &resource) {
   HashCache hash_cache;
   HashValue hashes;
   // Remove duplicated value nodes across all graphs in manager
+  const auto &node_user_map = manager->node_users();
   for (auto &fg : manager->func_graphs()) {
     auto value_nodes = fg->value_nodes();
     for (const auto &value_pair : value_nodes) {
       auto prim = GetValueNode<PrimitivePtr>(value_pair.first);
       if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
+        continue;
+      }
+      // If valuenode is used by inplace_prim.
+      auto &users = node_user_map.at(value_pair.first);
+      bool used_by_inplace_prim = std::any_of(users.begin(), users.end(), [](const auto &user) {
+        auto cnode = dyn_cast<CNode>(user.first);
+        if (cnode == nullptr) {
+          return false;
+        }
+        auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+        return (prim != nullptr) && prim->inplace_prim();
+      });
+      if (used_by_inplace_prim) {
         continue;
       }
       TryToDoReplace(manager.get(), value_pair.first, &hash_cache, &hashes);
