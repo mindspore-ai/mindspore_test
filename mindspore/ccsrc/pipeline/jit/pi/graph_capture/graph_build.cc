@@ -1708,7 +1708,7 @@ bool GraphBuilder::DoBuildOp(const Instr &instr) {
   std::vector<ValueNode *> p(frame_.GetStacks().end() - tmp_arg, frame_.GetStacks().end());
   auto o = HandleBuildOp(instr, p);
   popn(tmp_arg);
-  AObject *vo = AObject::BuildOperations(CollectObjects(p), opcode);
+  AObject *vo = AObject::BuildOperations(CollectObjects(p), opcode, o);
   auto v = NewValueNode(vo, instr, p);
   v->set_abstract_wrapper(o);
   push(v);
@@ -2542,7 +2542,7 @@ bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) 
   ValueNode *args_node = call_node->input(1);
   std::vector<ValueNode *> inputs = args_node->getInputs();
   inputs.insert(inputs.begin(), self);
-  AObject *args_info = AObject::BuildOperations(CollectObjects(inputs), BUILD_TUPLE);
+  AObject *args_info = AObject::BuildOperations(CollectObjects(inputs), BUILD_TUPLE, nullptr);
 
   ValueNode *tuple = this->NewValueNode(args_info, BUILD_TUPLE, inputs.size(), inputs);
   tuple->set_bci(call_node->bci());

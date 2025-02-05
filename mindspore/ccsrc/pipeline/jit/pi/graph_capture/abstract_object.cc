@@ -548,7 +548,8 @@ py::object AbstractObjectBase::BuildOperations(const std::vector<py::object> &ar
   return py::reinterpret_steal<py::object>(res);
 }
 
-AObject *AbstractObjectBase::BuildOperations(const std::vector<AObject *> &inputs, int opcode) {
+AObject *AbstractObjectBase::BuildOperations(const std::vector<AObject *> &inputs, int opcode,
+                                             const AbstractWrapperPtr &wrapper) {
   AObject *res = nullptr;
   if (opcode == BUILD_LIST || opcode == BUILD_TUPLE) {
     auto type = opcode == BUILD_LIST ? kTypeList : kTypeTuple;
@@ -564,14 +565,8 @@ AObject *AbstractObjectBase::BuildOperations(const std::vector<AObject *> &input
     res = MakeAObject(kTypeDict, &PyDict_Type, nullptr, key_values);
   } else if (opcode == BUILD_MAP) {
     res = MakeAObject(kTypeDict, &PyDict_Type, nullptr, inputs);
-  } else if (opcode == BUILD_STRING) {
-    res = MakeAObject(kTypeString);
-  } else if (opcode == BUILD_SLICE) {
-    res = MakeAObject(kTypeSlice);
-  } else if (opcode == BUILD_SET) {
-    res = MakeAObject(kTypeSet);
   } else {
-    return MakeAObject(kTypeAnyValue);
+    return AObject::Convert(wrapper);
   }
   return res;
 }
