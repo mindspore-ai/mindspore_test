@@ -50,6 +50,7 @@ if(BUILD_LITE)
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-5535.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-9143.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-4741.patch
+                PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-13176.patch
                 )
     elseif(PLATFORM_ARM32 AND ANDROID_NDK_TOOLCHAIN_INCLUDED)
         set(openssl_USE_STATIC_LIBS OFF)
@@ -88,6 +89,7 @@ if(BUILD_LITE)
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-5535.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-9143.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-4741.patch
+                PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-13176.patch
                 )
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR APPLE)
         set(openssl_CFLAGS -fvisibility=hidden)
@@ -121,6 +123,7 @@ if(BUILD_LITE)
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-5535.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-9143.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-4741.patch
+                PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-13176.patch
                 )
     else()
         MESSAGE(FATAL_ERROR "openssl does not support compilation for the current environment.")
@@ -161,6 +164,7 @@ else()
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-5535.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-9143.patch
                 PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-4741.patch
+                PATCHES ${OPENSSL_PATCH_ROOT}/CVE-2024-13176.patch
                 )
         include_directories(${openssl_INC})
         add_library(mindspore::ssl ALIAS openssl::ssl)
