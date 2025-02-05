@@ -53,16 +53,39 @@ BaseShapePtr ReshapeAndCacheFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ReshapeAndCacheFuncImpl::InferType(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  const std::set valid_types = {kFloat16, kBFloat16, kInt8, kUInt8};
   auto op_name = primitive->name();
-  std::map<std::string, TypePtr> types;
+  const std::set valid_types = {kFloat16, kBFloat16, kInt8, kUInt8};
+  std::map<std::string, TypePtr> key_types;
+  (void)key_types.emplace("key", input_args[kReshapeAndCacheInputKeyIndex]->GetType());
+  (void)key_types.emplace("key_cache", input_args[kReshapeAndCacheInputKeyCacheIndex]->GetType());
+  auto type = CheckAndConvertUtils::CheckTensorTypeSame(key_types, valid_types, op_name);
+  if (input_args[kReshapeAndCacheInputValueIndex]->GetType()->type_id() != kMetaTypeNone &&
+      input_args[kReshapeAndCacheInputValueCacheIndex]->GetType()->type_id() != kMetaTypeNone) {
+    std::map<std::string, TypePtr> value_types;
+    (void)value_types.emplace("value", input_args[kReshapeAndCacheInputValueIndex]->GetType());
+    (void)value_types.emplace("value_cache", input_args[kReshapeAndCacheInputValueCacheIndex]->GetType());
+    (void)CheckAndConvertUtils::CheckTensorTypeSame(value_types, valid_types, op_name);
+  }
+  if (input_args[kReshapeAndCacheInputKeyScaleIndex]->GetType()->type_id() != kMetaTypeNone ||
+      input_args[kReshapeAndCacheInputKeyValueScaleCacheIndex]->GetType()->type_id() != kMetaTypeNone) {
+    const std::set scale_valid_types = {kFloat32};
+    std::map<std::string, TypePtr> scale_types;
+    (void)scale_types.emplace("key_scale", input_args[kReshapeAndCacheInputKeyScaleIndex]->GetType());
+    (void)scale_types.emplace("value_scale", input_args[kReshapeAndCacheInputValueScaleIndex]->GetType());
+    (void)CheckAndConvertUtils::CheckTensorTypeSame(scale_types, scale_valid_types, op_name);
 
-  (void)types.emplace("key", input_args[kReshapeAndCacheInputKeyIndex]->GetType());
-  (void)types.emplace("value", input_args[kReshapeAndCacheInputValueIndex]->GetType());
-  (void)types.emplace("key_cache", input_args[kReshapeAndCacheInputKeyCacheIndex]->GetType());
-  (void)types.emplace("value_cache", input_args[kReshapeAndCacheInputValueCacheIndex]->GetType());
-  auto type = CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, op_name);
+    const std::set scale_cache_valid_types = {kFloat16, kInt32, kInt64};
+    std::map<std::string, TypePtr> scale_cache_types;
+    (void)scale_cache_types.emplace("key_value_scale_cache",
+                                    input_args[kReshapeAndCacheInputKeyValueScaleCacheIndex]->GetType());
+    (void)CheckAndConvertUtils::CheckTensorTypeSame(scale_cache_types, scale_cache_valid_types, op_name);
 
+    const std::set int32_valid_types = {kInt32};
+    std::map<std::string, TypePtr> int32_types;
+    (void)int32_types.emplace("slot_mapping", input_args[kReshapeAndCacheInputSlotMappingIndex]->GetType());
+    (void)int32_types.emplace("batch_valid_length", input_args[kReshapeAndCacheInputBatchVaildLengthIndex]->GetType());
+    (void)CheckAndConvertUtils::CheckTensorTypeSame(int32_types, int32_valid_types, op_name);
+  }
   return type;  // output type
 }
 }  // namespace ops
