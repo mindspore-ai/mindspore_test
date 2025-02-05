@@ -389,6 +389,31 @@ bool IsConvertToInterpretedObject(const py::object &obj) {
   return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsPyCapsuleTensorOverloadMethod(obj);
 }
 
+void PrintConstantAbstract(const AbstractBasePtr &abstract) {
+  if (abstract == nullptr) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractFunction>()) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractSequence>()) {
+    const auto &elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e); });
+  }
+  if (abstract->isa<abstract::AbstractDictionary>()) {
+    const auto &elements = abstract->cast<abstract::AbstractDictionaryPtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e.second); });
+  }
+  if (abstract->isa<abstract::AbstractTensor>()) {
+    if (abstract->isa<abstract::AbstractRefTensor>()) {
+      return;
+    }
+    MS_LOG(WARNING) << "Encounter constant Tensor node with abstract: " << abstract->ToString();
+    return;
+  }
+  MS_LOG(INFO) << "Encounter constant value node with abstract: " << abstract->ToString();
+}
+
 bool HasRegisterHook(const py::object &obj) { return HookUtils::HasRegisterHook(obj); }
 
 py::list GetRegisterHookList(const py::object &obj) { return HookUtils::GetRegisterHookList(obj); }
