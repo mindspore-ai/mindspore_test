@@ -58,6 +58,7 @@ TEST_P(TestPagedAttention, DynShape) {
   auto antiquant_scale = std::make_shared<abstract::AbstractNone>();
   auto antiquant_offset = std::make_shared<abstract::AbstractNone>();
   auto attn_mask = std::make_shared<abstract::AbstractNone>();
+  auto alibi_mask = std::make_shared<abstract::AbstractNone>();
   auto q_seq_lens = std::make_shared<abstract::AbstractNone>();
   auto query_shape = std::make_shared<abstract::Shape>(param.query_shape);
   auto expect_shape = query_shape;
