@@ -32,7 +32,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
-#include "plugin/device/ascend/hal/device/ascend_event.h"
+#include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"

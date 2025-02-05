@@ -21,7 +21,7 @@
 #include <set>
 #include "graph/types.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "plugin/device/ascend/hal/device/ascend_event.h"
+#include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "ir/dtype/type.h"
 #include "ir/tensor.h"
 #include "abstract/utils.h"

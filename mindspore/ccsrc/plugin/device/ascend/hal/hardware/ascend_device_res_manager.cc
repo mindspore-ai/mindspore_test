@@ -33,7 +33,7 @@
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
-#include "plugin/device/ascend/hal/device/ascend_event.h"
+#include "plugin/res_manager/ascend/event/ascend_event.h"
 #include "plugin/device/ascend/hal/device/ascend_pin_mem_pool.h"
 #include "plugin/device/ascend/hal/special/parameter_replication.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
