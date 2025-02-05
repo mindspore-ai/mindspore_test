@@ -25,9 +25,24 @@ internal::InternalOpPtr InternalReshapeAndCache::CreateKernel(const internal::In
                                                               const internal::OutputsImmutableInfoList &outputs_ii,
                                                               const std::vector<KernelTensor *> &ms_inputs,
                                                               const std::vector<KernelTensor *> &ms_outputs) {
-  return internal::CreateReshapeAndCacheOp(inputs_ii, outputs_ii, internal::kInternalReshapeAndCacheOpName);
+  internal::ReshapeAndCacheParam param;
+  auto isPrefill = ms_inputs.at(kIndex9);
+  if (isPrefill->dtype_id() == TypeId::kNumberTypeBool) {
+    param.is_prefill = static_cast<bool>(isPrefill->GetValue<bool>().value());
+  } else {
+    MS_LOG(EXCEPTION) << "ReshapAndCache input[9] dtype is not kNumberTypeBool";
+  }
+
+  auto cacheConfig = ms_inputs.at(kIndex10);
+  if (cacheConfig->dtype_id() == TypeId::kNumberTypeInt64) {
+    param.cache_config = static_cast<int32_t>(cacheConfig->GetValue<int64_t>().value());
+  } else {
+    MS_LOG(EXCEPTION) << "ReshapAndCache input[10] dtype is not kNumberTypeInt32";
+  }
+  return internal::CreateReshapeAndCacheOp(inputs_ii, outputs_ii, param, internal::kInternalReshapeAndCacheOpName);
 }
 MS_INTERNAL_KERNEL_FACTORY_REG(ReshapeAndCache, internal::kInternalReshapeAndCacheOpName, InternalReshapeAndCache);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(ReshapeAndCache, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(ReshapeAndCache, INPUT_NUM_11, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4,
+                                     INDEX_5, INDEX_6, INDEX_7, INDEX_8, INDEX_9, INDEX_10);
 }  // namespace kernel
 }  // namespace mindspore
