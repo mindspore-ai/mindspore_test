@@ -89,8 +89,8 @@ if(ENABLE_MINDDATA)
         DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.4.5.dylib COMPONENT mindspore)
     install(FILES ${opencv_LIBPATH}/libopencv_imgproc.4.5.2.dylib
         DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.4.5.dylib COMPONENT mindspore)
-    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.8.0.0.dylib
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.8.dylib COMPONENT mindspore)
+    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.10.0.0.dylib
+        DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.10.dylib COMPONENT mindspore)
 
     install(FILES ${icu4c_LIBPATH}/libicuuc.69.1.dylib
         DESTINATION ${INSTALL_LIB_DIR} RENAME libicuuc.69.dylib COMPONENT mindspore)
