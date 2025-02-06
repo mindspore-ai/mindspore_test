@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -464,6 +464,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_full_batch", &ParallelContext::full_batch, "Get whether load full batch on each device.")
     .def("get_full_batch_is_set", &ParallelContext::full_batch_is_set, "Get whether attr full_batch is set.")
     .def("set_dataset_strategy", &ParallelContext::set_dataset_strategy, "Set dataset sharding strategy.")
+    .def("set_dataset_layout", &ParallelContext::set_dataset_layout, "Set dataset sharding layout.")
     .def("get_dataset_strategy", &ParallelContext::dataset_strategy, "Get dataset sharding strategy.")
     .def("set_stra_file_only_trainable_params", &ParallelContext::set_stra_file_only_trainable_params,
          "Set strategy ckpt only save trainable params.")

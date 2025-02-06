@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,6 +123,44 @@ bool StrategyUtils::CheckExtractInformation(const CNodePtr &cnode) {
   return IsParallelCareNode(cnode);
 }
 
+template <typename T>
+ValuePtr CreateValuePtrFromVector(const std::vector<T> &vec) {
+  std::vector<ValuePtr> value_vec;
+  std::transform(vec.begin(), vec.end(), std::back_inserter(value_vec),
+                 [](const auto &value) { return MakeValue<T>(value); });
+  return std::make_shared<ValueTuple>(value_vec);
+}
+
+void StrategyUtils::SetVirtualDatasetLayout(const CNodePtr &node) {
+  auto prim = GetValueNode<PrimitivePtr>(node->input(0));
+  auto dataset_strategy_tensormap = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+  auto dataset_strategy_devmat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  auto dataset_strategy_alias_name = ParallelContext::GetInstance()->dataset_strategy_alias_name();
+
+  auto alias_name_key = MakeValue<std::string>(ALIAS_NAME);
+  auto tensormap_key = MakeValue<std::string>(TENSOR_MAP);
+  auto devmat_key = MakeValue<std::string>(DEVICE_MATRIX);
+  auto interleaved_key = MakeValue<std::string>(INTERLEAVED_PARALLEL);
+
+  std::vector<ValuePtr> layout_vec;
+  for (size_t i = 0; i < dataset_strategy_tensormap.size(); ++i) {
+    auto interleaved_parallel_kv = std::make_pair(interleaved_key, MakeValue<bool>(false));
+    auto alias_name_kv = std::make_pair(alias_name_key, CreateValuePtrFromVector(dataset_strategy_alias_name.at(i)));
+    auto devmat_kv = std::make_pair(devmat_key, CreateValuePtrFromVector(dataset_strategy_devmat.at(i)));
+    std::vector<ValuePtr> sub_tensor_map_vector;
+    for (size_t j = 0; j < dataset_strategy_tensormap.at(i).size(); ++j) {
+      sub_tensor_map_vector.push_back(CreateValuePtrFromVector(dataset_strategy_tensormap.at(i).at(j)));
+    }
+    auto tensormap_kv = std::make_pair(tensormap_key, std::make_shared<ValueTuple>(sub_tensor_map_vector));
+    std::vector<std::pair<ValuePtr, ValuePtr>> layout_dict = {alias_name_kv, interleaved_parallel_kv, devmat_kv,
+                                                              tensormap_kv};
+    layout_vec.emplace_back(std::make_shared<ValueDictionary>(layout_dict));
+  }
+  auto layout_dict_value = std::make_shared<ValueTuple>(layout_vec);
+  prim->set_attr(IN_LAYOUT, layout_dict_value);
+  return;
+}
+
 void StrategyUtils::SetVirtualDatasetStrategy(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
@@ -131,6 +169,11 @@ void StrategyUtils::SetVirtualDatasetStrategy(const CNodePtr &node) {
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(node->input(0));
   MS_EXCEPTION_IF_NULL(prim);
   if (prim->name() == VIRTUAL_DATA_SET || prim->name() == VIRTUAL_OUTPUT) {
+    if (!ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
+        !ParallelContext::GetInstance()->dataset_strategy_devmat().empty() && prim->name() == VIRTUAL_DATA_SET) {
+      MS_LOG(INFO) << "Set layout for virtual dataset";
+      return SetVirtualDatasetLayout(node);
+    }
     CheckGlobalDeviceManager();
     auto attrs_temp = prim->attrs();
     if (!ParallelContext::GetInstance()->dataset_strategy().empty() && prim->name() == VIRTUAL_DATA_SET) {

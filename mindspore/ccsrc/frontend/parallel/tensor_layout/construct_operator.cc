@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,6 +166,41 @@ Status ConstructOperator::ReplaceStridedSliceOpToSplitOp(const Args &args) {
   return Status::SUCCESS;
 }
 
+Status GetIndexByRank(const int64_t &rank, const std::vector<Device> &dev_list, size_t *index) {
+  size_t pos = 0;
+  for (const auto &device : dev_list) {
+    if (device.rank() == rank) {
+      *index = pos;
+      return Status::SUCCESS;
+    } else {
+      pos++;
+    }
+  }
+  MS_LOG(ERROR) << "Could not find device rank " << rank << "in this group!";
+  return Status::FAILED;
+}
+
+// Get the position of the device in the group
+Status GetIndex(const std::vector<Device> &dev_list, size_t *index) {
+  size_t pos = 0;
+  auto rank = ParallelContext::GetInstance()->global_rank();
+  if (!ParallelContext::GetInstance()->do_transform()) {
+    CheckGlobalDeviceManager();
+    MS_EXCEPTION_IF_NULL(g_device_manager);
+    rank = g_device_manager->global_rank();
+  }
+  for (const auto &device : dev_list) {
+    if (device.rank() == rank) {
+      *index = pos;
+      return Status::SUCCESS;
+    } else {
+      pos++;
+    }
+  }
+  MS_LOG(ERROR) << "Could not find device rank " << rank << "in this group!";
+  return Status::FAILED;
+}
+
 Status ConstructOperator::StridedSliceOP(const Args &args) {
   if (this->is_dynamic_shape_) {
     // When it's dynamic shape scene, use Split instead of StridedSlice.
@@ -186,24 +221,23 @@ Status ConstructOperator::StridedSliceOP(const Args &args) {
   }
   int64_t split_dim = args[TRANSFER_PERMUTE_SPLIT_DIM_INDEX];
   int64_t dev_dim = args[TRANSFER_PERMUTE_CONCAT_DIM_INDEX];
-  std::vector<Group> group_list;
+  std::vector<Device> dev_list;
 
-  if (CreateGroupByDim(dev_size_ - LongToSize(dev_dim) - 1, &group_list) != SUCCESS) {
-    MS_LOG(ERROR) << "stride slice op: create group failed";
+  if (InferDevListByDim(dev_size_ - LongToSize(dev_dim) - 1, &dev_list) != SUCCESS) {
+    MS_LOG(ERROR) << "stride slice op: infer device list failed";
     return FAILED;
-  } else if (group_list.empty()) {  // this group only has one device, don't need do StridedSlice
+  } else if (dev_list.empty()) {  // this group only has one device, don't need do StridedSlice
     MS_LOG(INFO) << "no need stride slice op";
     return SUCCESS;
   }
 
-  Group group = group_list[0];
   size_t rank;
   if (virtual_rank_ >= 0) {
-    if (group.GetIndexByRank(virtual_rank_, &rank) == Status::FAILED) {
+    if (GetIndexByRank(virtual_rank_, dev_list, &rank) == Status::FAILED) {
       return Status::FAILED;
     }
   } else {
-    if (group.GetIndex(&rank) == Status::FAILED) {
+    if (GetIndex(dev_list, &rank) == Status::FAILED) {
       return Status::FAILED;
     }
   }
@@ -386,5 +420,36 @@ Status ConstructOperator::CreateGroupByDim(size_t axis, std::vector<Group> *grou
   group->push_back(g);
   return SUCCESS;
 }
+
+Status ConstructOperator::InferDevListByDim(size_t axis, std::vector<Device> *dev_list) {
+  MS_EXCEPTION_IF_NULL(dev_list);
+  auto rank = ParallelContext::GetInstance()->global_rank();
+  if (check_group()) {
+    CheckGlobalDeviceManager();
+  } else {
+    rank = virtual_rank_;
+  }
+  DeviceMatrix dev_matrix(rank, dev_list_, dev_matrix_shape_);
+  RankList group_devices;
+  if (dev_matrix.GetDevicesAlongDim(SizeToUlong(axis), &group_devices) != SUCCESS) {
+    return FAILED;
+  }
+  // this group only has one device, don't need create the group
+  if (group_devices.size() == 1) {
+    MS_LOG(INFO) << "the group is empty";
+    return SUCCESS;
+  }
+  if (is_cost_model_ || !check_group()) {
+    (void)std::transform(group_devices.begin(), group_devices.end(), std::back_inserter(*dev_list),
+                         [](auto &rank_id) { return Device(rank_id); });
+    if (!check_group()) {
+      return SUCCESS;
+    }
+    return g_device_manager->CheckDeviceList(group_devices);
+  }
+  *dev_list = g_device_manager->CreateDeviceListByRankList(group_devices);
+  return SUCCESS;
+}
+
 }  // namespace parallel
 }  // namespace mindspore

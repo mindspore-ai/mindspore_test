@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,9 @@ Status VirtualDatasetInfo::GetAttrs() { return SUCCESS; }
 Status VirtualDatasetInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
                                 const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
                                 const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts) {
+  if (!in_tensor_layouts.empty()) {
+    return InitWithTensorLayout(in_tensor_layouts, out_tensor_layouts);
+  }
   repeated_num_in_dev_matrix_right_ = false;
   if (ParallelContext::GetInstance()->dataset_repeat_dim_right()) {
     repeated_num_in_dev_matrix_right_ = true;
@@ -231,6 +234,42 @@ Status VirtualDatasetInfo::Init(const StrategyPtr &in_strategy, const StrategyPt
     MS_LOG(ERROR) << name_ << ": Init failed.";
     return FAILED;
   }
+  return SUCCESS;
+}
+
+Status VirtualDatasetInfo::CheckInputLayout() {
+  if (inputs_tensor_info_.size() != inputs_shape_.size()) {
+    MS_LOG(ERROR) << "The size of inputs tensor info must be equal to the size of inputs shape, but got inputs tensor "
+                     "info size: "
+                  << inputs_tensor_info_.size() << ", inputs shape size: " << inputs_shape_.size();
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status VirtualDatasetInfo::InferOutputTensorInfo() {
+  in_infer_flag_ = true;
+  for (size_t i = 0; i < inputs_tensor_info_.size(); ++i) {
+    auto output_infer_tensor_layout = inputs_tensor_info_.at(i).tensor_layout();
+    TensorInfo output_tensor_info(output_infer_tensor_layout);
+    outputs_tensor_info_.push_back(output_tensor_info);
+  }
+  return SUCCESS;
+}
+
+Status VirtualDatasetInfo::CheckOutputLayout() {
+  if (outputs_tensor_info_.size() != outputs_shape_.size()) {
+    MS_LOG(ERROR)
+      << "The size of outputs tensor info must be equal to the size of outputs shape, but got outputs tensor "
+         "info size: "
+      << outputs_tensor_info_.size() << ", outputs shape size: " << outputs_shape_.size();
+    return FAILED;
+  }
+  if (!in_infer_flag_) {
+    MS_LOG(ERROR) << "Output tensor layout for " << name_ << " is not allowed to be set by users.";
+    return FAILED;
+  }
+  MS_LOG(INFO) << name_ << ": Using output tensor layout infer by input tensor layout.";
   return SUCCESS;
 }
 
@@ -302,6 +341,12 @@ std::vector<StrategyPtr> VirtualDatasetInfo::GenerateOpStrategies(int64_t stage_
 }
 
 Status VirtualDatasetInfo::InferAsLossDivisor() {
+  // no need to insert div op
+  as_loss_divisor_ = 1;
+  return SUCCESS;
+}
+
+Status VirtualDatasetInfo::InferAsLossDivisorByLayout() {
   // no need to insert div op
   as_loss_divisor_ = 1;
   return SUCCESS;
