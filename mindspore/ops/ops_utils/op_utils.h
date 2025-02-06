@@ -342,6 +342,13 @@ static inline bool IsShapeKnown(const InferInfoPtr &infer_info, size_t index) {
   return !infer_info->IsDynamicRank() && infer_info->GetShape()[index] != mindspore::abstract::Shape::kShapeDimAny;
 }
 
+static inline void CheckType(const std::set<TypeId> &valid_types, const TypeId &arg_type, const std::string &op_name,
+                             const std::string &arg_name) {
+  if (valid_types.count(arg_type) == 0) {
+    MS_EXCEPTION(TypeError) << "For op [" << op_name << "], the dtype of input " << arg_name << " is invalid.";
+  }
+}
+
 static inline void CheckWorldSize(const std::string &group, int64_t world_size, const std::string &op_name) {
 #if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
   const auto &collective_manager = mindspore::distributed::collective::CollectiveManager::instance();
