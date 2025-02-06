@@ -1,4 +1,4 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import _VirtualDataset
+from mindspore.parallel.shard import Layout
 from tests.ut.python.ops.test_math_ops import VirtualLoss
+from parallel.utils.utils import ParallelValidator
 
 grad_all = C.GradOperation(get_all=True)
 
@@ -123,7 +125,8 @@ class Net5(nn.Cell):
 
 def compile_net(net, x, y, b):
     net.set_train()
-    _cell_graph_executor.compile(net, x, y, b)
+    phase, _ = _cell_graph_executor.compile(net, x, y, b)
+    return phase
 
 
 def test_virtual_dataset_model_parallel_semi_auto_parallel():
@@ -343,6 +346,52 @@ def test_list_tensor_input_virtual_dataset_without_full_batch():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = [Tensor(np.ones([1024, 64]), dtype=ms.float32)]
     compile_net(net, x, y, b)
+
+
+def test_virtual_dataset_model_parallel_semi_auto_parallel_with_layout_1():
+    """
+    Feature: distribute operator virtual_dataset in auto parallel.
+    Description: virtual_dataset/model_parallel/fully shard/repeat in left.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_auto_parallel_context(device_num=8, global_rank=0)
+    layout = Layout((4, 2), ("dp", "mp"))
+    strategy0 = (layout("dp", "mp"), layout("dp", "mp"), layout("mp", "dp"))
+    context.set_auto_parallel_context(dataset_strategy=strategy0)
+    strategy1 = ((2, 2), (2, 2))
+    strategy2 = ((2, 2), (2, 2))
+    strategy3 = ((2, 4),)
+    net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
+    x = Tensor(np.ones([128 // 4, 32 // 2]), dtype=ms.float32)
+    y = Tensor(np.ones([32 // 4, 64 // 2]), dtype=ms.float32)
+    b = Tensor(np.ones([64 // 2, 2048 // 4]), dtype=ms.float32)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs_has('MatMul-0', ['Reshape-2', 'StridedSlice-1'])
+
+
+def test_virtual_dataset_model_parallel_semi_auto_parallel_with_layout_2():
+    """
+    Feature: distribute operator virtual_dataset in auto parallel.
+    Description: virtual_dataset/model_parallel/fully shard/repeat in left.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_auto_parallel_context(device_num=8, global_rank=0)
+    layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
+    strategy0 = (layout(("dp", "mp"), "sp"), layout(("dp", "mp"), "sp"), layout(("mp", "dp"), "sp"))
+    context.set_auto_parallel_context(dataset_strategy=strategy0)
+    strategy1 = ((2, 2), (2, 2))
+    strategy2 = ((2, 2), (2, 2))
+    strategy3 = ((2, 4),)
+    net = GradWrap(NetWithLoss(Net1(strategy1, strategy2, strategy3)))
+    x = Tensor(np.ones([128 // 4, 32 // 2]), dtype=ms.float32)
+    y = Tensor(np.ones([32 // 4, 64 // 2]), dtype=ms.float32)
+    b = Tensor(np.ones([64 // 4, 2048 // 2]), dtype=ms.float32)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs_has('MatMul-0', ['Reshape-2', 'StridedSlice-1'])
 
 
 if __name__ == '__main__':
