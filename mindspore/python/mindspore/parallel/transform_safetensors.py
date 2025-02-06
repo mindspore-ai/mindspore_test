@@ -882,22 +882,13 @@ def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_n
     return sf_obj
 
 
-def _check_name_map_value_is_str(value):
-    """check input is bool"""
-    if not isinstance(value, str):
-        raise ValueError(
-            f"For 'load_distributed_checkpoint', the value of name_map must be str, but got {type(value)}.")
-
-
-def _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param):
+def _process_hyper_params(file_list, total_safetensors_dir, total_param):
     """process hyper params"""
     if 'hyper_param.safetensors' in file_list:
         hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
         with safe_open(hyper_parameter_file_name, framework="np") as f:
             for key in f.keys():
-                cur_param_name = name_map.get(key) if name_map is not None and key in name_map else key
-                _check_name_map_value_is_str(cur_param_name)
-                total_param[cur_param_name] = ms.Parameter(ms.Tensor.from_numpy(f.get_tensor(key)))
+                total_param[key] = ms.Parameter(ms.Tensor.from_numpy(f.get_tensor(key)))
     return total_param
 
 
@@ -936,7 +927,7 @@ def _load_parallel_checkpoint(file_info):
     total_safetensors_dir, dst_strategy_file, net, dst_safetensors_dir, \
     rank_id, output_format, name_map, return_param_dict = file_info
     file_list = os.listdir(total_safetensors_dir)
-    json_files = [file for file in file_list if file.endswith('.json')]
+    json_files = [file for file in file_list if file == "param_name_map.json"]
     param_name_map, param_list, dst_strategy_list = _cal_param_name_map_and_param_list(file_list, total_safetensors_dir,
                                                                                        json_files, dst_strategy_file,
                                                                                        rank_id)
@@ -950,9 +941,10 @@ def _load_parallel_checkpoint(file_info):
             continue
         file_name = os.path.join(total_safetensors_dir, param_name_map[param_name])
         with safe_open(file_name, framework="np") as f:
-            if param_name not in f.keys():
+            cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
+            if cur_param_name not in f.keys():
                 continue
-            sf_obj = f.get_slice(param_name)
+            sf_obj = f.get_slice(cur_param_name)
 
         tensor_shape = sf_obj.get_shape()
         from_dev_matrix = [1]
@@ -1005,12 +997,10 @@ def _load_parallel_checkpoint(file_info):
             end_time = time.time()
             cost_time = end_time - start_time
             total_io_cost_time += cost_time
-        cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
-        _check_name_map_value_is_str(cur_param_name)
-        total_param[cur_param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
+        total_param[param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                f"load distributed safetensors io cost time:{total_io_cost_time}.")
-    total_param = _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param)
+    total_param = _process_hyper_params(file_list, total_safetensors_dir, total_param)
     if net is not None:
         if not return_param_dict:
             param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
