@@ -1321,10 +1321,12 @@ py::object FuncGraphBuilder::ConvertMethod(const py::object &obj) {
   }
   auto class_name = class_name_obj.cast<std::string>();
   const auto &method_name = method_info[1].cast<std::string>();
-  if (class_name == "Tensor" && !IsMsTensorMethod(obj)) {
+  bool is_tensor_method = IsTensorMethod(obj);
+  if (class_name == "Tensor" && !is_tensor_method) {
+    // object is not method for native tensor.
     return py::object();
   }
-  if (class_name == "PyCapsule" && IsPyCapsuleTensorOverloadMethod(obj)) {
+  if (is_tensor_method) {
     class_name = "Tensor";
   }
 

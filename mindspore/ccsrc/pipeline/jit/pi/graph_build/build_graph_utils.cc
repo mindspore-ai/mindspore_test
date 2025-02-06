@@ -27,6 +27,7 @@
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/common_utils.h"
+#include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -239,41 +240,33 @@ py::tuple GetMethodInfo(const py::object &obj) {
   return python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_METHOD_INFO, obj);
 }
 
-bool IsPyCapsuleTensorOverloadMethod(const py::object &obj) {
-  if (!IsMsTensorMethod(obj)) {
-    return false;
+std::optional<std::string> GetTensorMethodName(const py::object &obj) {
+  constexpr auto tensor_func_list_mod_str = "mindspore._extends.pijit.tensor_func_list";
+  constexpr auto get_tensor_method_name_str = "get_tensor_method_name";
+  py::module mod = python_adapter::GetPyModule(tensor_func_list_mod_str);
+  py::object name_obj = python_adapter::CallPyModFn(mod, get_tensor_method_name_str, FunctionId(obj));
+  if (py::isinstance<py::none>(name_obj)) {
+    return std::nullopt;
   }
-  const auto &info = GetMethodInfo(obj);
-  constexpr size_t class_index = 0;
-  py::object class_name_obj = info[class_index];
-  if (class_name_obj.ptr() == nullptr || py::isinstance<py::none>(class_name_obj)) {
-    return false;
-  }
-  const auto &class_name = class_name_obj.cast<std::string>();
-  constexpr auto py_capsule_name = "PyCapsule";
-  if (class_name != py_capsule_name) {
-    return false;
-  }
-  constexpr size_t method_index = 1;
-  py::object method_name_obj = info[method_index];
-  if (method_name_obj.ptr() == nullptr || py::isinstance<py::none>(method_name_obj)) {
-    return false;
-  }
-  const auto &method_name = method_name_obj.cast<std::string>();
-  return ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end();
+  return name_obj.cast<std::string>();
 }
 
-bool IsPyCapsuleOverload(const py::object &obj) {
-  auto ge_mode = (MsContext::GetInstance()->GetJitLevel() == "O2");
-  if (ge_mode) {
-    return false;
-  }
-  return IsPyCapsuleTensorOverloadMethod(obj);
+bool IsTensorMethod(const py::object &obj) {
+  const auto &method_name = GetTensorMethodName(obj);
+  return method_name.has_value();
 }
 
-bool IsMsTensorMethod(const py::object &obj) {
-  py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-  return py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj));
+bool IsTensorOverloadMethod(const py::object &obj) {
+  const auto &method_name = GetTensorMethodName(obj);
+  if (!method_name.has_value()) {
+    return false;
+  }
+  return ops::tensor_method_overload_map.find(method_name.value()) != ops::tensor_method_overload_map.end();
+}
+
+bool EnableTensorOverload() {
+  auto ge_mode = (MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2);
+  return !ge_mode;
 }
 
 bool IsCellList(const py::object &obj) { return obj.ptr() != nullptr && py::hasattr(obj, PYTHON_CELL_AS_LIST); }
@@ -281,7 +274,7 @@ bool IsCellList(const py::object &obj) { return obj.ptr() != nullptr && py::hasa
 bool IsConvertToInterpretedObject(const py::object &obj) {
   // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
   // identify the function if need parse by ast
-  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsPyCapsuleTensorOverloadMethod(obj);
+  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsTensorOverloadMethod(obj);
 }
 
 void PrintConstantAbstract(const AbstractBasePtr &abstract) {

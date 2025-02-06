@@ -410,8 +410,8 @@ class GraphBuilder {
 
   py::object FGAddNodeAst(CallNode *call_node, const py::object &callable_info,
                           const py::object &original_callable_info, StopTraceReason *stop_reason);
-  py::object FGAddNodePyCapsuleOverload(CallNode *call_node, const py::object &callable_info,
-                                        StopTraceReason *stop_reason);
+  py::object FGAddNodeTensorOverload(CallNode *call_node, const py::object &callable_info,
+                                     StopTraceReason *stop_reason);
 };
 }  // namespace pijit
 }  // namespace mindspore
