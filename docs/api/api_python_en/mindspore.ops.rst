@@ -61,6 +61,7 @@ Neural Network
     mindspore.ops.max_unpool1d
     mindspore.ops.max_unpool2d
     mindspore.ops.max_unpool3d
+    mindspore.ops.moe_token_permute
     mindspore.ops.moe_token_unpermute
     mindspore.ops.incre_flash_attention
     mindspore.ops.prompt_flash_attention

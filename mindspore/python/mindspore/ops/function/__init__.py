@@ -468,6 +468,7 @@ from .nn_func import (
     avg_pool3d,
     max_pool2d,
     max_pool3d,
+    moe_token_permute,
     moe_token_unpermute,
     batch_norm,
     add_rms_norm,

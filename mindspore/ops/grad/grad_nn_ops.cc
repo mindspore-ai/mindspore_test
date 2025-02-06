@@ -3168,6 +3168,43 @@ REG_BPROP_BUILDER("BatchNorm").FreeUselessValues_IO({i2}, {i0, i1}).SetBody(BODY
           ib->OutZeros(data_format)};
 });
 
+DEF_PURE_SHAPE_CALC(moe_token_permute_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto indices_shape = inputs.at(kIndex0);
+    auto indices_shape_rank = indices_shape.size();
+    auto num_topk = 1;
+    if (indices_shape_rank == kDim2) {
+      num_topk = indices_shape[kIndex1];
+    }
+    return {indices_shape, {num_topk}};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    auto indices_shape = inputs.at(kIndex0);
+    if (!unknown_inputs.empty() || IsDynamicRank(indices_shape)) {
+      return {-1, 1};
+    }
+    auto size = SizeToLong(indices_shape.size());
+    return {size, 1};
+  });
+
+REG_BPROP_BUILDER("MoeTokenPermute").FreeUselessValues_IO({i0, i1, i2}, {i0}).SetBody(BODYFUNC(ib) {
+  auto indices = ib->GetInput(kIndex1);
+  auto num_out_tokens = ib->GetInput(kIndex2);
+  auto padded_mode = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+  auto sorted_indices = ib->TupleGetItem(out, kIndex1);
+  auto d_permuted_tokens = ib->TupleGetItem(dout, 0);
+  auto indices_shape = ib->GetShape(indices);
+  auto padded_mode_type = padded_mode->abstract()->BuildType();
+  NodePtr res_grad;
+  padded_mode = padded_mode_type->isa<TypeNone>() ? ib->Value<bool>(false) : padded_mode;
+  NodePtr num_topk = ib->Value<int64_t>(1);
+  num_topk = ib->TupleGetItem(ib->ShapeCalc(moe_token_permute_shapecalc, {indices})[kIndex1], kIndex0);
+  res_grad = ib->Emit("MoeTokenPermuteGrad", {d_permuted_tokens, sorted_indices, num_topk, padded_mode});
+  return {res_grad, ib->OutZeros(indices), ib->OutZeros(num_out_tokens), ib->OutZeros(padded_mode)};
+});
+
 REG_BPROP_BUILDER("BatchNormGradExt").SetUnusedInputs({i3, i4, i9}).SetBody(BODYFUNC(ib) {
   auto dy = ib->GetInput(kIndex0);
   auto x = ib->GetInput(kIndex1);
