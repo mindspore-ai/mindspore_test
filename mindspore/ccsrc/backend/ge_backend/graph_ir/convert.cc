@@ -4121,7 +4121,7 @@ void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const Operat
   (void)converted_op->SetAttr("group", group);
 #ifdef ENABLE_D
   if (!common::GetEnv(kSimulationLevel).empty()) {
-    auto hccl_inner_comm_name = device::DummyAscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+    auto hccl_inner_comm_name = device::DummyAscendCollectiveCommLib::GetInstance().CommName(group);
     MS_LOG(INFO) << "Set comm handle and comm group name of the hccl node: " << node->fullname_with_scope()
                  << "comm name:" << hccl_inner_comm_name;
     (void)converted_op->SetAttr("group", hccl_inner_comm_name);
@@ -4132,7 +4132,7 @@ void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const Operat
       // For HcclCommInitRootInfo manner, set 'group' and 'comm' attrs. 'group' attr value should be hccl's inner comm
       // name.
       auto comm = device::ascend::AscendCollectiveCommLib::GetInstance().HcclCommunicator(group);
-      auto hccl_inner_comm_name = device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+      auto hccl_inner_comm_name = device::ascend::AscendCollectiveCommLib::GetInstance().CommName(group);
       MS_LOG(INFO) << "Set comm handle and comm group name of the hccl node: " << node->fullname_with_scope()
                    << ". Comm handle: " << comm << ", comm name:" << hccl_inner_comm_name;
       MS_EXCEPTION_IF_NULL(comm);

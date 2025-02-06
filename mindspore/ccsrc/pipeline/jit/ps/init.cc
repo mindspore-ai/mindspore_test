@@ -704,6 +704,8 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_rank_id", &CollectiveManager::GetRankId, "Get the node rank id.")
     .def("get_group_size", &CollectiveManager::GetGroupSize, "Get the nodes number in the collective communication.")
     .def("get_group_ranks", &CollectiveManager::GetGroupRanks, "Get group ranks for the specified communication group.")
+    .def("get_comm_name", &CollectiveManager::GetCommName,
+         "Get inner communicator name for the specified communication group.")
     .def("resume_hccl_comm", &CollectiveManager::ResumeHcclComm, "resume hccl comm.")
     .def("wait_all_comm_init", &CollectiveManager::WaitAllCommInitDone,
          "Wait for all communicators to be initialized.");

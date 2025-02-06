@@ -28,7 +28,7 @@ mindspore.communication
 
     异常：
         - **TypeError** - 参数 `backend_name` 不是字符串。
-        - **RuntimeError** - 1）硬件设备类型无效；2）后台服务无效；3）分布式计算初始化失败；4）后端是HCCL的情况下，未设置环境变量 `RANK_ID` 或 `MINDSPORE_HCCL_CONFIG_PATH` 的情况下初始化HCCL服务。
+        - **RuntimeError** - 1）硬件设备类型无效；2）后端服务无效；3）分布式计算初始化失败；4）后端是HCCL的情况下，未设置环境变量 `RANK_ID` 或 `MINDSPORE_HCCL_CONFIG_PATH` 的情况下初始化HCCL服务。
 
     样例：
 
@@ -50,23 +50,71 @@ mindspore.communication
     .. note::
         .. include:: ops/mindspore.ops.comm_note.rst
 
-.. py:function:: mindspore.communication.get_rank(group=GlobalComm.WORLD_COMM_GROUP)
+.. py:function:: mindspore.communication.create_group(group, rank_ids)
 
-    在指定通信组中获取当前的设备序号。
+    创建用户自定义的通信组实例。
 
     .. note::
-        - `get_rank` 方法应该在 `init` 方法之后使用。
+        - MindSpore的GPU和CPU版本不支持此方法。
+        - 列表rank_ids的长度应大于1。
+        - 列表rank_ids内不能有重复数据。
+        - `create_group` 方法应该在 `init` 方法之后使用。
+        - 如果没有使用mpirun启动，PyNative模式下仅支持全局单通信组。
 
     参数：
-        - **group** (str) - 通信组名称，通常由 `create_group` 方法创建，否则将使用默认组。默认值： ``GlobalComm.WORLD_COMM_GROUP`` 。
+        - **group** (str) - 输入用户自定义的通信组实例名称，支持数据类型为str。
+        - **rank_ids** (list) - 设备编号列表。
 
-    返回：
-        int，调用该方法的进程对应的组内序号。
+    异常：
+        - **TypeError** - 参数 `group` 不是字符串或参数 `rank_ids` 不是列表。
+        - **ValueError** - 列表rank_ids的长度小于1，或列表 `rank_ids` 内有重复数据，以及后端无效。
+        - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
+
+    样例：
+
+    .. note::
+        .. include:: ops/mindspore.ops.comm_note.rst
+
+.. py:function:: mindspore.communication.destroy_group(group)
+
+    注销用户通信组。
+
+    .. note::
+        - MindSpore的GPU和CPU版本不支持此方法。
+        - 参数 `group` 不能是 ``"hccl_world_group"``。
+        - `destroy_group` 方法应该在 `init` 方法之后使用。
+
+    参数：
+        - **group** (str) - 被注销通信组实例（通常由 create_group 方法创建）的名称。
 
     异常：
         - **TypeError** - 在参数 `group` 不是字符串时抛出。
-        - **ValueError** - 在后台不可用时抛出。
-        - **RuntimeError** - 在 `HCCL` 或 `NCCL` 或 `MCCL` 服务不可用时抛出。
+        - **ValueError** - 在参数 `group` 是 ``"hccl_world_group"`` 或后端不可用时抛出。
+        - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
+
+    样例：
+
+    .. note::
+        .. include:: ops/mindspore.ops.comm_note.rst
+
+.. py:function:: mindspore.communication.get_comm_name(group=GlobalComm.WORLD_COMM_GROUP)
+
+    获取指定通讯组的通讯器名称。
+
+    .. note::
+        - MindSpore的GPU和CPU版本不支持此方法。
+        - `get_comm_name` 方法应该在 `init` 方法之后使用。
+
+    参数：
+        - **group** (str) - 传入的通信组名称，通常由 `create_group` 方法创建，或默认使用 ``GlobalComm.WORLD_COMM_GROUP`` 。
+
+    返回：
+        str，指定通讯组的通讯器名称。
+
+    异常：
+        - **TypeError** - 在参数 `group` 不是字符串时抛出。
+        - **ValueError** - 在后端不可用时抛出。
+        - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
 
     样例：
 
@@ -88,34 +136,8 @@ mindspore.communication
 
     异常：
         - **TypeError** - 在参数 `group` 不是字符串时抛出。
-        - **ValueError** - 在后台不可用时抛出。
+        - **ValueError** - 在后端不可用时抛出。
         - **RuntimeError** - 在 `HCCL` 或 `NCCL` 或 `MCCL` 服务不可用时抛出。
-
-    样例：
-
-    .. note::
-        .. include:: ops/mindspore.ops.comm_note.rst
-
-.. py:function:: mindspore.communication.get_world_rank_from_group_rank(group, group_rank_id)
-
-    由指定通信组中的设备序号获取通信集群中的全局设备序号。
-
-    .. note::
-        - MindSpore的GPU和CPU版本不支持此方法。
-        - 参数 `group` 不能是 ``"hccl_world_group"``。
-        - `get_world_rank_from_group_rank` 方法应该在 `init` 方法之后使用。
-
-    参数：
-        - **group** (str) - 传入的通信组名称，通常由 `create_group` 方法创建。
-        - **group_rank_id** (int) - 通信组内的设备序号。
-
-    返回：
-        int，通信集群中的全局设备序号。
-
-    异常：
-        - **TypeError** - 参数 `group` 不是字符串或参数 `group_rank_id` 不是数字。
-        - **ValueError** - 参数 `group` 是 ``"hccl_world_group"`` 或后台不可用。
-        - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
 
     样例：
 
@@ -140,32 +162,7 @@ mindspore.communication
 
     异常：
         - **TypeError** - 在参数 `world_rank_id` 不是数字或参数 `group` 不是字符串时抛出。
-        - **ValueError** - 在参数 `group` 是 ``"hccl_world_group"`` 或后台不可用时抛出。
-        - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
-
-    样例：
-
-    .. note::
-        .. include:: ops/mindspore.ops.comm_note.rst
-
-.. py:function:: mindspore.communication.create_group(group, rank_ids)
-
-    创建用户自定义的通信组实例。
-
-    .. note::
-        - MindSpore的GPU和CPU版本不支持此方法。
-        - 列表rank_ids的长度应大于1。
-        - 列表rank_ids内不能有重复数据。
-        - `create_group` 方法应该在 `init` 方法之后使用。
-        - 如果没有使用mpirun启动，PyNative模式下仅支持全局单通信组。
-
-    参数：
-        - **group** (str) - 输入用户自定义的通信组实例名称，支持数据类型为str。
-        - **rank_ids** (list) - 设备编号列表。
-
-    异常：
-        - **TypeError** - 参数 `group` 不是字符串或参数 `rank_ids` 不是列表。
-        - **ValueError** - 列表rank_ids的长度小于1，或列表 `rank_ids` 内有重复数据，以及后台无效。
+        - **ValueError** - 在参数 `group` 是 ``"hccl_world_group"`` 或后端不可用时抛出。
         - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
 
     样例：
@@ -189,7 +186,7 @@ mindspore.communication
 
     异常：
         - **TypeError** - 在参数 `group` 不是字符串时抛出。
-        - **ValueError** - 在后台不可用时抛出。
+        - **ValueError** - 在后端不可用时抛出。
         - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
 
     样例：
@@ -213,29 +210,7 @@ mindspore.communication
 
     异常：
         - **TypeError** - 在参数 `group` 不是字符串时抛出。
-        - **ValueError** - 在后台不可用时抛出。
-        - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
-
-    样例：
-
-    .. note::
-        .. include:: ops/mindspore.ops.comm_note.rst
-
-.. py:function:: mindspore.communication.destroy_group(group)
-
-    注销用户通信组。
-
-    .. note::
-        - MindSpore的GPU和CPU版本不支持此方法。
-        - 参数 `group` 不能是 ``"hccl_world_group"``。
-        - `destroy_group` 方法应该在 `init` 方法之后使用。
-
-    参数：
-        - **group** (str) - 被注销通信组实例（通常由 create_group 方法创建）的名称。
-
-    异常：
-        - **TypeError** - 在参数 `group` 不是字符串时抛出。
-        - **ValueError** - 在参数 `group` 是 ``"hccl_world_group"`` 或后台不可用时抛出。
+        - **ValueError** - 在后端不可用时抛出。
         - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
 
     样例：
@@ -263,6 +238,55 @@ mindspore.communication
         .. include:: ops/mindspore.ops.comm_note.rst
 
         该样例需要在4卡环境下运行。
+
+.. py:function:: mindspore.communication.get_rank(group=GlobalComm.WORLD_COMM_GROUP)
+
+    在指定通信组中获取当前的设备序号。
+
+    .. note::
+        - `get_rank` 方法应该在 `init` 方法之后使用。
+
+    参数：
+        - **group** (str) - 通信组名称，通常由 `create_group` 方法创建，否则将使用默认组。默认值： ``GlobalComm.WORLD_COMM_GROUP`` 。
+
+    返回：
+        int，调用该方法的进程对应的组内序号。
+
+    异常：
+        - **TypeError** - 在参数 `group` 不是字符串时抛出。
+        - **ValueError** - 在后端不可用时抛出。
+        - **RuntimeError** - 在 `HCCL` 或 `NCCL` 或 `MCCL` 服务不可用时抛出。
+
+    样例：
+
+    .. note::
+        .. include:: ops/mindspore.ops.comm_note.rst
+
+.. py:function:: mindspore.communication.get_world_rank_from_group_rank(group, group_rank_id)
+
+    由指定通信组中的设备序号获取通信集群中的全局设备序号。
+
+    .. note::
+        - MindSpore的GPU和CPU版本不支持此方法。
+        - 参数 `group` 不能是 ``"hccl_world_group"``。
+        - `get_world_rank_from_group_rank` 方法应该在 `init` 方法之后使用。
+
+    参数：
+        - **group** (str) - 传入的通信组名称，通常由 `create_group` 方法创建。
+        - **group_rank_id** (int) - 通信组内的设备序号。
+
+    返回：
+        int，通信集群中的全局设备序号。
+
+    异常：
+        - **TypeError** - 参数 `group` 不是字符串或参数 `group_rank_id` 不是数字。
+        - **ValueError** - 参数 `group` 是 ``"hccl_world_group"`` 或后端不可用。
+        - **RuntimeError** - `HCCL` 服务不可用时，或者使用了MindSpore的GPU或CPU版本。
+
+    样例：
+
+    .. note::
+        .. include:: ops/mindspore.ops.comm_note.rst
 
 .. py:data:: mindspore.communication.HCCL_WORLD_COMM_GROUP
 

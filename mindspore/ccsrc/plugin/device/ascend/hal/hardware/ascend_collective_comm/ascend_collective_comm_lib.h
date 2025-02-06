@@ -71,7 +71,7 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
 
   HcclComm HcclCommunicator(const std::string &group_name);
 
-  std::string HcclInnerCommName(const std::string &group_name);
+  std::string CommName(const std::string &group_name) override;
 
   HcclComm GetHcomByGroup(const std::string &group_name);
 
