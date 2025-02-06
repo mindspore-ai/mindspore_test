@@ -386,7 +386,7 @@ bool IsCellList(const py::object &obj) { return obj.ptr() != nullptr && py::hasa
 bool IsConvertToInterpretedObject(const py::object &obj) {
   // NOTE: py::function::check_ alias PyCallable_Check. Python class is callable
   // identify the function if need parse by ast
-  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsPyCapsuleTensorOverloadMethod(obj);
+  return py::isinstance<Cell>(obj) || PyCFunction_Check(obj.ptr()) || IsTensorOverloadMethod(obj);
 }
 
 void PrintConstantAbstract(const AbstractBasePtr &abstract) {
