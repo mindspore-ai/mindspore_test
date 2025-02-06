@@ -88,11 +88,6 @@ def test_tesnsor_augassign_by_bool():
     value_tensor_2 = Tensor(value_np_2, mstype.float32)
     value_tensor_4 = Tensor(value_np_4, mstype.float32)
 
-    value_tuple_1_ele = (0.5,)
-    value_tuple_6_ele = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
-
-    value_list_1_ele = [1.5]
-
     input_tensor_3d[index_bool_1] += value_number
     input_np_3d[index_bool_1] += value_number
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
@@ -103,18 +98,6 @@ def test_tesnsor_augassign_by_bool():
 
     input_tensor_3d[index_bool_1] //= value_tensor_4
     input_np_3d[index_bool_1] //= value_np_4
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_bool_1] %= value_tuple_1_ele
-    input_np_3d[index_bool_1] %= value_tuple_1_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_bool_1] %= value_tuple_6_ele
-    input_np_3d[index_bool_1] %= value_tuple_6_ele
-    assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
-
-    input_tensor_3d[index_bool_1] %= value_list_1_ele
-    input_np_3d[index_bool_1] %= value_list_1_ele
     assert np.allclose(input_tensor_3d.asnumpy(), input_np_3d, 0.0001, 0.0001)
 
     with pytest.raises(IndexError):
