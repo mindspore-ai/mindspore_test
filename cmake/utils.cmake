@@ -83,6 +83,39 @@ function(__download_pkg pkg_name pkg_url pkg_sha256)
     if(NOT ${pkg_name}_POPULATED)
         FetchContent_Populate(${pkg_name})
         set(${pkg_name}_SOURCE_DIR ${${pkg_name}_SOURCE_DIR} PARENT_SCOPE)
+
+        if(${pkg_name} STREQUAL "cppjieba")
+            set(LIMONP_SRC "${TOP_DIR}/build/mindspore/_deps/limonp-src")
+            set(CPPJIEBA_SRC "${TOP_DIR}/build/mindspore/_deps/cppjieba-src")
+            set(limonp_name "limonp")
+            set(limonp_url "https://github.com/yanyiwu/limonp/archive/refs/tags/v0.6.6.tar.gz")
+            set(limonp_sha256 "3a69a673a5f12e83660f699c43b29fc4c509a2078aa901193264f40e94ca4d01")
+
+            if(LOCAL_LIBS_SERVER)
+                set(REGEX_IP_ADDRESS "^([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)$")
+                get_filename_component(LIMONP_FILE_NAME ${limonp_url} NAME)
+                if(${LOCAL_LIBS_SERVER} MATCHES ${REGEX_IP_ADDRESS})
+                    set(limonp_url "http://${LOCAL_LIBS_SERVER}:8081/libs/${limonp_name}/${LIMONP_FILE_NAME}"
+                        ${limonp_url})
+                else()
+                    set(limonp_url "https://${LOCAL_LIBS_SERVER}/libs/${limonp_name}/${LIMONP_FILE_NAME}" ${limonp_url})
+                endif()
+            endif()
+
+            FetchContent_Declare(
+                    ${limonp_name}
+                    URL      ${limonp_url}
+                    URL_HASH SHA256=${limonp_sha256}
+            )
+            FetchContent_GetProperties(${limonp_name})
+
+            if(NOT ${limonp_name}_POPULATED)
+                FetchContent_Populate(${limonp_name})
+                set(${limonp_name}_SOURCE_DIR ${${limonp_name}_SOURCE_DIR} PARENT_SCOPE)
+            endif()
+
+            file(COPY "${LIMONP_SRC}/." DESTINATION "${CPPJIEBA_SRC}/deps/limonp")
+        endif()
     endif()
 
 endfunction()
