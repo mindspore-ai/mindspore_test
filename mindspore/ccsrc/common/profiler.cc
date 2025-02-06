@@ -101,16 +101,16 @@ PythonProfilerRecorder::PythonProfilerRecorder(const std::string &record_name)
       event_(ProfilerEvent::kPythonObserved) {}
 
 void PythonProfilerRecorder::record_start() {
-  if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {
-    start_time_ = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();
+  if (ProfilerAnalyzer::GetInstance().profiler_enable()) {
+    start_time_ = ProfilerAnalyzer::GetInstance().GetTimeStamp();
   }
 }
 
 void PythonProfilerRecorder::record_end() {
-  if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {
-    auto end_time = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();
-    runtime::ProfilerAnalyzer::GetInstance().RecordData(std::make_shared<runtime::ProfilerData>(
-      module_, event_, record_name_, record_name_, false, start_time_, end_time));
+  if (ProfilerAnalyzer::GetInstance().profiler_enable()) {
+    auto end_time = ProfilerAnalyzer::GetInstance().GetTimeStamp();
+    ProfilerAnalyzer::GetInstance().RecordData(
+      std::make_shared<ProfilerData>(module_, event_, record_name_, record_name_, false, start_time_, end_time));
   }
 }
 
@@ -127,7 +127,7 @@ ProfilerStageRecorder::~ProfilerStageRecorder() {
     return;
   }
   ProfilerAnalyzer::GetInstance().RecordData(
-    std::make_shared<runtime::ProfilerData>(stage_, start_time_, ProfilerAnalyzer::GetInstance().GetTimeStamp()));
+    std::make_shared<ProfilerData>(stage_, start_time_, ProfilerAnalyzer::GetInstance().GetTimeStamp()));
 }
 
 ProfilerAnalyzer &ProfilerAnalyzer::GetInstance() noexcept {
