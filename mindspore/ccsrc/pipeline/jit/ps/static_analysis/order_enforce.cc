@@ -91,25 +91,12 @@ class OrderEnforcer {
       // Skip UpdateStates for IO.
       return;
     }
-    const size_t attach_index = 2;
-    auto &attach = update_state->input(attach_index);
-    if (IsPrimitiveCNode(attach, prim::kPrimLoad) && IsPrimitiveCNode(attach, prim::kPrimMakeTuple)) {
-      // Skip UpdateState for Loads.
-      return;
-    }
-    // Check previous update_state.
-    auto &prev_u = update_state->input(1);
-    if (!IsPrimitiveCNode(prev_u, prim::kPrimUpdateState)) {
-      // Skip if previous is not UpdateState (maybe a U).
-      return;
-    }
     // Search side effect cnodes that use previous update_state as input.
-    auto side_effect_nodes = FindNodeUsers(prev_u, [&update_state](const AnfNodePtr &user_node) {
-      return (user_node != update_state) && !IsPrimitiveCNode(user_node, prim::kPrimLoad);
-    });
+    auto side_effect_nodes = FindNodeUsers(
+      update_state, [](const AnfNodePtr &user_node) { return !IsPrimitiveCNode(user_node, prim::kPrimLoad); });
     // For such side effect cnodes, try enforce order for them.
     for (auto &side_effect_node : side_effect_nodes) {
-      HandleSideEffectNode(side_effect_node->cast<CNodePtr>(), prev_u->cast<CNodePtr>());
+      HandleSideEffectNode(side_effect_node->cast<CNodePtr>(), update_state->cast<CNodePtr>());
     }
   }
 
@@ -236,7 +223,7 @@ class OrderEnforcer {
     for (size_t i = 1; i < cnode->size(); ++i) {
       auto &input = cnode->input(i);
       // Skip non-ref input and update_state.
-      if (!IsRef(input) || input == update_state) {
+      if (!IsRef(input)) {
         continue;
       }
       // The input is a ref (of parameter), find load nodes for it.

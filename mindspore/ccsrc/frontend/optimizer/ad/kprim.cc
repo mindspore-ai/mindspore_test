@@ -102,6 +102,62 @@ FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr 
   (void)parse::ResolveFuncGraph(func_graph, res, false);
   return func_graph;
 }
+
+std::vector<size_t> GetNeedCloneInputIndex(const PrimitivePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
+  std::vector<size_t> indexes;
+  if (!prim->inplace_prim()) {
+    return indexes;
+  }
+  return prim->rw_write_input_indexes();
+}
+
+AnfNodePtr InplaceArgsClone(const FuncGraphPtr &fprop, const FuncGraphPtr &bprop, const PrimitivePtr &prim,
+                            const AnfNodePtr &umonad_arg) {
+  MS_EXCEPTION_IF_NULL(prim);
+  const auto &need_clone_input_index = GetNeedCloneInputIndex(prim);
+  if (need_clone_input_index.empty()) {
+    return umonad_arg;
+  } else {
+    // Need do input args clone for inplace ops
+    // Change From
+    // ==> primal_cnode: {kPrimInplace, args0, args1, ..., umonad}
+    // To:
+    // ==> new_load_cnode = Load(args0, umonad)
+    // ==> new_umonad_cnode = UpdateState(umonad, new_load_cnode)
+    // ==> primal_cnode: {kPrimInplace, args0, args1, ..., new_umoad_cnode}
+    MS_EXCEPTION_IF_NULL(fprop);
+    MS_EXCEPTION_IF_NULL(bprop);
+    const auto &params = fprop->parameters();
+    AnfNodePtr umonad_param = umonad_arg;
+    CNodePtr bprop_meta_funcgraph_caller = nullptr;
+    for (auto node : TopoSort(bprop->output())) {
+      if (!node->isa<CNode>()) {
+        continue;
+      }
+      auto cnode = node->cast<CNodePtr>();
+      if (IsValueNode<expander::bprop::BpropMetaFuncGraph>(cnode->input(0))) {
+        bprop_meta_funcgraph_caller = cnode;
+        break;
+      }
+    }
+    if (bprop_meta_funcgraph_caller == nullptr) {
+      MS_LOG(WARNING) << "No bprop meta funcgraph found for prim: " << prim->ToString();
+      return umonad_arg;
+    }
+    MS_EXCEPTION_IF_NULL(bprop_meta_funcgraph_caller);
+    for (size_t index : need_clone_input_index) {
+      const auto original_inplace_param = params[index];
+      auto new_load_cnode = fprop->NewCNode({NewValueNode(prim::kPrimLoad), original_inplace_param, umonad_param});
+      auto new_umonad_cnode = fprop->NewCNode({NewValueNode(prim::kPrimUpdateState), umonad_param, new_load_cnode});
+      bprop_meta_funcgraph_caller->set_input(index + 1, new_load_cnode);
+      MS_LOG(INFO) << "Clone bprop argument with index: " << std::to_string(index)
+                   << " for inplace op: " << prim->ToString();
+      umonad_param = new_umonad_cnode;
+    }
+    return umonad_param;
+  }
+}
 }  // namespace
 
 FuncGraphPtr KPrim::GetPrimBprop(const PrimitivePtr &prim, const ValueNodePtr &value_node,
@@ -434,6 +490,7 @@ static void TransformNormalArgs(const FuncGraphManagerPtr &mng, const FuncGraphP
     transf_args->push_back(transf_p);
   }
 }
+
 void KPrim::TransformArgsForPrimitive(const FuncGraphManagerPtr &mng, const FuncGraphPtr &bprop_fg,
                                       const PrimitivePtr &primitive, const FuncGraphPtr &outer,
                                       std::vector<AnfNodePtr> *const transf_args) const {
@@ -443,7 +500,7 @@ void KPrim::TransformArgsForPrimitive(const FuncGraphManagerPtr &mng, const Func
   if (effect_info.memory) {
     MS_LOG(DEBUG) << "Append U monad to Fprop FuncGraph for Primitive " << primitive->ToString();
     auto transf_p = outer->add_parameter();
-    transf_args->push_back(transf_p);
+    transf_args->push_back(InplaceArgsClone(outer, bprop_fg, primitive, transf_p));
   }
   if (effect_info.io) {
     MS_LOG(DEBUG) << "Append IO monad to Fprop FuncGraph for Primitive " << primitive->ToString();
