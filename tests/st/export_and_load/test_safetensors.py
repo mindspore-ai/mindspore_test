@@ -13,11 +13,12 @@
 # limitations under the License.
 # ============================================================================
 import os
-import pytest
+import time
+
 import stat
 import mindspore as ms
 import mindspore.nn as nn
-
+from tests.mark_utils import arg_mark
 
 def remove_ckpt(file_name):
     """remove ckpt."""
@@ -26,13 +27,7 @@ def remove_ckpt(file_name):
         os.remove(file_name)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_save_and_load_sft_with_crc():
     """
     Feature: save and load checkpoint
@@ -44,4 +39,20 @@ def test_save_and_load_sft_with_crc():
     remove_ckpt(ckpt_path)
     ms.save_checkpoint(net.parameters_dict(), ckpt_path, format="safetensors", crc_check=True)
     ms.load_checkpoint(ckpt_path, format="safetensors", crc_check=True)
+    remove_ckpt(ckpt_path)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_save_and_load_sft_with_async():
+    """
+    Feature: save and load checkpoint
+    Description: test ms.save_checkpoint and ms.load_checkpoint with crc_check
+    Expectation: success
+    """
+    net = nn.Dense(2, 2)
+    ckpt_path = "checkpoint_async.safetensors"
+    remove_ckpt(ckpt_path)
+    ms.save_checkpoint(net.parameters_dict(), ckpt_path, format="safetensors", async_save=True)
+    time.sleep(6)
+    assert os.path.exists(ckpt_path)
     remove_ckpt(ckpt_path)

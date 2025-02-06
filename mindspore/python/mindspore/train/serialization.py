@@ -418,7 +418,10 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 crc_num = 0
                 for name in sorted(data_list.keys()):
                     value = data_list[name]
-                    save_dict[name] = value[2].asnumpy()
+                    if isinstance(value[2], np.ndarray):
+                        save_dict[name] = value[2]
+                    else:
+                        save_dict[name] = value[2].asnumpy()
 
                     if crc_check:
                         crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
@@ -595,15 +598,13 @@ def _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode):
                              f"be set to default value '{default_value}', but got '{current_value}'.")
 
 
-def _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save=False, map_param_inc=False,
-                                             global_step_num=None):
+def _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, map_param_inc=False, global_step_num=None):
     """check save checkpoint unsupported param"""
     if format != "safetensors":
         return
     default_params = {
         "enc_key": None,
         "enc_mode": "AES-GCM",
-        "async_save": False,
         "map_param_inc": False,
         "global_step_num": None
     }
@@ -716,7 +717,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     map_param_inc = kwargs.get('incremental', False)
     logger.info("Execute the process of saving checkpoint files.")
     global_step_num = kwargs.get('global_step_num', None)
-    _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save, map_param_inc, global_step_num)
+    _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
