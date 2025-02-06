@@ -35,18 +35,18 @@ internal::InternalOpPtr InternalPagedAttention::CreateKernel(const internal::Inp
                                                              const internal::OutputsImmutableInfoList &outputs_ii,
                                                              const std::vector<KernelTensor *> &ms_inputs,
                                                              const std::vector<KernelTensor *> &ms_outputs) {
-  auto last_input_index = kIndex14+1;
+  auto last_input_index = kIndex15;
   if (ms_inputs.size() <= last_input_index) {
     MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", inputs number should be larger than " << last_input_index
                       << ", but got " << ms_inputs.size();
   }
-  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex9+1]->GetValueWithCheck<int64_t>());
-  param_.tor = ms_inputs[kIndex10+1]->GetValueWithCheck<float>();
-  param_.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex11+1]->GetValueWithCheck<int64_t>());
-  param_.kv_cache_quant_mode = ms_inputs[kIndex12+1]->GetValueWithCheck<int64_t>();
+  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
+  param_.tor = ms_inputs[kIndex11]->GetValueWithCheck<float>();
+  param_.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex12]->GetValueWithCheck<int64_t>());
+  param_.kv_cache_quant_mode = ms_inputs[kIndex13]->GetValueWithCheck<int64_t>();
   param_.mask_mode =
-    static_cast<internal::PagedAttentionParam::MaskMode>(ms_inputs[kIndex13+1]->GetValueWithCheck<int64_t>());
-  param_.mla_v_dim = static_cast<int32_t>(ms_inputs[kIndex14+1]->GetValueWithCheck<int64_t>());
+    static_cast<internal::PagedAttentionParam::MaskMode>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
+  param_.mla_v_dim = static_cast<int32_t>(ms_inputs[kIndex15]->GetValueWithCheck<int64_t>());
   has_attn_mask_ = (!(ms_inputs[kIndex7]->GetType()->isa<TypeNone>()));
 
   (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, {"q_seq_lens"}, &param_.q_seq_len);
