@@ -516,7 +516,7 @@ def test_cell_level_dump_in_multi_output():
     phase = compile_net(net, input_x)
     validator = ParallelValidator(net, phase)
     tensordump_num = get_tensordump_node_num(validator)
-    assert tensordump_num == 2
+    assert tensordump_num == 1
 
 def test_cell_level_dump_inout_no_redistribution_op_insert():
     """
@@ -557,7 +557,7 @@ def test_cell_level_dump_inout_no_redistribution_op_insert():
     phase = compile_net(net, input_x)
     validator = ParallelValidator(net, phase)
     tensordump_num = get_tensordump_node_num(validator)
-    assert tensordump_num == 4
+    assert tensordump_num == 2
 
 
 def test_cell_level_dump_in_with_certain_cell():

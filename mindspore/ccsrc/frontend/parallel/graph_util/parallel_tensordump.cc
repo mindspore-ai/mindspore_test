@@ -17,18 +17,25 @@
 #include "frontend/parallel/graph_util/parallel_tensordump.h"
 
 #include <vector>
+#include <unordered_set>
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <string>
 #include "ir/anf.h"
+#include "base/base.h"
 #include "ir/manager.h"
+#include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 
 namespace mindspore {
 namespace parallel {
 ParallelTensorDumpHandler::ParallelTensorDumpHandler(
+  const std::vector<AnfNodePtr> &pre_nodes,
   const std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> &next_nodes) {
+  // vector pre_nodes size is 1
+  prenode_redistribution_ = pre_nodes.front();
   nodes_need_redistribution_ = next_nodes;
   for (auto &node_info : nodes_need_redistribution_) {
     auto node = node_info.first.first->cast<CNodePtr>();
@@ -38,9 +45,8 @@ ParallelTensorDumpHandler::ParallelTensorDumpHandler(
       MS_LOG(ERROR) << "Access Index should less than length of node input."
                     << " Length of node input: " << node->inputs().size() << " Access Index: " << pos;
     }
-    AnfNodePtr parent = node->input(pos);
-    MS_EXCEPTION_IF_NULL(parent);
-    parent_to_successors_[parent].push_back(node_info.first);
+    MS_EXCEPTION_IF_NULL(node->input(pos));
+    parent_to_successors_[prenode_redistribution_].push_back(node_info.first);
   }
 }
 
@@ -49,13 +55,17 @@ void ParallelTensorDumpHandler::HandleParallelTensorDump() {
     const AnfNodePtr &parent = parent_successors_pair.first;
     std::vector<std::pair<AnfNodePtr, int>> &successors = parent_successors_pair.second;
     MS_EXCEPTION_IF_NULL(parent);
-    FuncGraphPtr func_graph = parent->func_graph();
-    MS_EXCEPTION_IF_NULL(func_graph);
-    FuncGraphManagerPtr manager = func_graph->manager();
-    MS_EXCEPTION_IF_NULL(manager);
-    AnfNodePtrList dumps = CollectSuccessorDumpNodes(parent, manager);
+    std::unordered_set<AnfNodePtr> viewed_dumps;
     for (auto &node_pair : successors) {
       AnfNodePtr node = node_pair.first;
+      MS_EXCEPTION_IF_NULL(node);
+      FuncGraphPtr func_graph = node->func_graph();
+      MS_EXCEPTION_IF_NULL(func_graph);
+      FuncGraphManagerPtr manager = func_graph->manager();
+      MS_EXCEPTION_IF_NULL(manager);
+      AnfNodePtrList path = CollectNodePathBetween(parent, node_pair);
+      AnfNodePtrList dumps = CollectDumpNodesAlongPath(path, manager);
+      viewed_dumps.insert(dumps.begin(), dumps.end());
       CNodePtr cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
       size_t index = IntToSize(node_pair.second);
@@ -67,16 +77,79 @@ void ParallelTensorDumpHandler::HandleParallelTensorDump() {
       MS_LOG(INFO) << "Last Insert Redistribution: " << last_inserted_redistribution_op->DebugString();
       (void)ProcessTensorDumps(dumps, cnode, index, last_inserted_redistribution_op, func_graph, cnode->scope());
     }
-    for (auto &dump_node : dumps) {
+    for (auto &dump_node : viewed_dumps) {
+      FuncGraphPtr fg = dump_node->func_graph();
+      MS_EXCEPTION_IF_NULL(fg);
+      FuncGraphManagerPtr fg_mng = fg->manager();
+      MS_EXCEPTION_IF_NULL(fg_mng);
+      CNodePtr dump_cnode = dump_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(dump_cnode);
+      AnfNodePtr dump_node_parent = dump_cnode->input(kIndex2);
+      MS_EXCEPTION_IF_NULL(dump_node_parent);
       auto prim = GetCNodePrimitive(dump_node);
       MS_EXCEPTION_IF_NULL(prim);
       ValuePtr attr_input_output = prim->GetAttr("input_output");
       std::string str_input_output = GetValue<std::string>(attr_input_output);
-      if (str_input_output == "in") {
-        (void)manager->Replace(dump_node, parent);
+      if (str_input_output != "in") {
+        continue;
+      }
+      ValueNodePtr dump_path_value_node = dump_cnode->input(kIndex1)->cast<ValueNodePtr>();
+      ValuePtr v = GetValueNode(dump_path_value_node);
+      std::string dump_cnode_filepath = GetValue<std::string>(v);
+      if (tensordump_need_remove_.count(dump_cnode) != 0) {
+        MS_LOG(DEBUG) << dump_cnode->DebugString() << " will be removed from graph";
+        (void)fg_mng->Replace(dump_node, dump_node_parent);
+      } else {
+        MS_LOG(DEBUG) << dump_cnode->DebugString() << " will not be removed from graph";
+        size_t p = dump_cnode_filepath.rfind(".npy");
+        if (p != std::string::npos) {
+          dump_cnode_filepath.erase(p);
+        }
+        std::string name = dump_cnode_filepath + "_in.npy";
+        fg_mng->SetEdge(dump_cnode, kIndex1, NewValueNode(name));
       }
     }
+    tensordump_need_remove_.clear();
   }
+}
+
+AnfNodePtrList ParallelTensorDumpHandler::CollectNodePathBetween(AnfNodePtr start, std::pair<AnfNodePtr, int> end) {
+  MS_EXCEPTION_IF_NULL(start);
+  AnfNodePtrList path;
+  MS_EXCEPTION_IF_NULL(end.first);
+  path.push_back(end.first);
+  CNodePtr end_cnode = end.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(end_cnode);
+  AnfNodePtr cur_node = end_cnode->input(IntToSize(end.second));
+  MS_EXCEPTION_IF_NULL(cur_node);
+  path.push_back(cur_node);
+  if (!cur_node->isa<CNode>()) {
+    return path;
+  }
+  CNodePtr cur_cnode = cur_node->cast<CNodePtr>();
+  while (GetCNodePrimitive(cur_cnode) &&
+         GetCNodePrimitive(cur_cnode)->instance_name().find("redistribution_op") != std::string::npos) {
+    auto cnode_parent = cur_cnode->input(kIndex1);
+    path.push_back(cnode_parent);
+    cur_cnode = cnode_parent->cast<CNodePtr>();
+  }
+  while (IsSomePrimitiveList(cur_cnode, {DEPEND, INSERTGRADIENTOF, CAST})) {
+    cur_node = cur_cnode->input(kIndex1);
+    path.push_back(cur_node);
+    cur_cnode = cur_node->cast<CNodePtr>();
+  }
+  return path;
+}
+
+AnfNodePtrList ParallelTensorDumpHandler::CollectDumpNodesAlongPath(const AnfNodePtrList &path,
+                                                                    const FuncGraphManagerPtr &manager) {
+  AnfNodePtrList dumps;
+  for (size_t i = 1; i < path.size(); i++) {
+    MS_EXCEPTION_IF_NULL(path[i]);
+    const AnfNodePtrList &local_dumps = CollectSuccessorDumpNodes(path[i], manager);
+    std::copy(local_dumps.begin(), local_dumps.end(), std::back_inserter(dumps));
+  }
+  return dumps;
 }
 
 AnfNodePtrList ParallelTensorDumpHandler::CollectSuccessorDumpNodes(const AnfNodePtr &parent_of_dump_nodes,
@@ -110,8 +183,9 @@ void ParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr &dump_cnode,
   MS_EXCEPTION_IF_NULL(manager);
   MS_EXCEPTION_IF_NULL(dump_cnode->scope());
   MS_EXCEPTION_IF_NULL(node->scope());
-  if (node->scope()->name().find(dump_cnode->scope()->name()) == std::string::npos) {
-    // If TensorDump node's scope is not prefix of node scope,
+  bool is_side_effect_tensordump = dump_cnode->inputs().size() == 4 ? true : false;
+  if (node->scope()->name() != dump_cnode->scope()->name()) {
+    // If TensorDump node's scope is not same with node scope,
     // Don't insert new TensorDump Node as successor of last_insert_redistribution_op.
     return;
   }
@@ -123,22 +197,33 @@ void ParallelTensorDumpHandler::InsertNewTensorDump(const CNodePtr &dump_cnode,
   }
   std::string name = dump_cnode_filepath + "_" + dump_mode + ".npy";
   ValueNodePtr name_value = NewValueNode(name);
-  auto new_dump_node = func_graph->NewCNode(
-    {NewValueNode(prim::kPrimTensorDump->Clone()), name_value, last_insert_redistribution_op, NewValueNode(kIOMonad)});
+  tensordump_need_remove_.insert(dump_cnode);
+  CNodePtr new_dump_node;
+  if (is_side_effect_tensordump) {
+    new_dump_node = func_graph->NewCNode({NewValueNode(prim::kPrimTensorDump->Clone()), name_value,
+                                          last_insert_redistribution_op, NewValueNode(kIOMonad)});
+  } else {
+    new_dump_node =
+      func_graph->NewCNode({NewValueNode(prim::kPrimTensorDump->Clone()), name_value, last_insert_redistribution_op});
+  }
   // ops of update_state and depend are used to keep sequence
   auto monad_node = NewValueNode(kIOMonad);
   auto new_update_state_node = func_graph->NewCNode({NewValueNode(prim::kPrimUpdateState), monad_node, new_dump_node});
   auto depend_prev = node->input(pos_u);
-  auto new_depend_node = func_graph->NewCNode({NewValueNode(prim::kPrimDepend), depend_prev, new_update_state_node});
+  auto new_depend_kIndex2_input = is_side_effect_tensordump ? new_update_state_node : new_dump_node;
+  auto new_depend_node = func_graph->NewCNode({NewValueNode(prim::kPrimDepend), depend_prev, new_depend_kIndex2_input});
   // config new nodes attributes
   PrimitivePtr new_dump_prim = GetCNodePrimitive(new_dump_node);
   MS_EXCEPTION_IF_NULL(new_dump_prim);
   new_dump_prim->set_instance_name(name + "_new_generate");
-  new_dump_prim->AddAttr("side_effect_io", MakeValue(true));
+  new_dump_prim->AddAttr("side_effect_io", MakeValue(is_side_effect_tensordump));
   new_dump_prim->AddAttr("input_output", MakeValue(dump_mode + "_inserted"));
   new_dump_prim->AddAttr("channel_name", MakeValue("ms_tensor_dump"));
   // Avoid CSE optimization
   new_dump_prim->AddAttr("side_effect_hidden", MakeValue(true));
+  if (!is_side_effect_tensordump) {
+    new_dump_prim->AddAttr("dyn_input_sizes", MakeValue(std::vector<int>{-1, 1}));
+  }
   new_dump_node->set_scope(scope);
   new_dump_node->input(0)->set_scope(scope);
   MS_LOG(INFO) << "New Dump Node: " << new_dump_node->DebugString();

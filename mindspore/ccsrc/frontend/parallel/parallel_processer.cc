@@ -1326,7 +1326,6 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   if (next_nodes.empty()) {
     return;
   }
-  ParallelTensorDumpHandler parallel_tensordump_handler(next_nodes);
   // Find Redistribution pre_nodes
   std::vector<AnfNodePtr> pre_nodes;
   RedistributionPreNode(cnode, manager, &pre_nodes);
@@ -1335,6 +1334,7 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   }
   // Insert Redistribution nodes between pre_nodes and next_nodes
   for (auto &pre_node : pre_nodes) {
+    ParallelTensorDumpHandler parallel_tensordump_handler(pre_nodes, next_nodes);
     for (auto &next_node : next_nodes) {
       MS_LOG(INFO) << "===========Do Redistribution start============" << std::endl
                    << pre_node->fullname_with_scope() << "->" << next_node.first.first->fullname_with_scope() << "("
