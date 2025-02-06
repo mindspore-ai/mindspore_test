@@ -1457,8 +1457,9 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
     """
     from concurrent.futures import ThreadPoolExecutor
     executor = ThreadPoolExecutor(max_workers=2)
+    format = "safetensors" if ckpt_file_name.endswith(".safetensors") else "ckpt"
     param_dict_future = executor.submit(load_checkpoint, ckpt_file_name, net, strict_load, filter_prefix,
-                                        dec_key, dec_mode, specify_prefix, choice_func)
+                                        dec_key, dec_mode, specify_prefix, choice_func, format=format)
     return ParamDictFuture(executor, param_dict_future)
 
 
