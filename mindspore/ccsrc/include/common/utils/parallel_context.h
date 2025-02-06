@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,16 @@ class COMMON_EXPORT ParallelContext {
   bool full_batch() const { return full_batch_; }
 
   void set_dataset_strategy(const std::vector<std::vector<int64_t>> &dataset_strategy);
+  void set_dataset_layout(const std::vector<std::vector<int64_t>> &dataset_strategy_devmat,
+                          const std::vector<std::vector<std::vector<int64_t>>> &dataset_strategy_tensormap,
+                          const std::vector<std::vector<std::string>> &dataset_strategy_alias_name);
+
   std::vector<std::vector<int64_t>> dataset_strategy() const { return dataset_strategy_; }
+  std::vector<std::vector<int64_t>> dataset_strategy_devmat() const { return dataset_strategy_devmat_; }
+  std::vector<std::vector<std::vector<int64_t>>> dataset_strategy_tensormap() const {
+    return dataset_strategy_tensormap_;
+  }
+  std::vector<std::vector<std::string>> dataset_strategy_alias_name() const { return dataset_strategy_alias_name_; }
 
   void set_gradient_fp32_sync(bool gradient_fp32_sync);
   bool gradient_fp32_sync() const { return gradient_fp32_sync_; }
@@ -311,6 +320,9 @@ class COMMON_EXPORT ParallelContext {
   // Enable AllToAll or not. If false, use AllGather and Split.
   bool enable_all2all_;
   std::vector<std::vector<int64_t>> dataset_strategy_;
+  std::vector<std::vector<int64_t>> dataset_strategy_devmat_;
+  std::vector<std::vector<std::vector<int64_t>>> dataset_strategy_tensormap_;
+  std::vector<std::vector<std::string>> dataset_strategy_alias_name_;
   bool dataset_repeat_dim_right_ = false;
   bool hccl_test_available_ = false;
   bool sharding_propagation_;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,6 +154,15 @@ void ParallelContext::set_full_batch(bool full_batch) {
 
 void ParallelContext::set_dataset_strategy(const std::vector<std::vector<int64_t>> &dataset_strategy) {
   dataset_strategy_ = dataset_strategy;
+}
+
+void ParallelContext::set_dataset_layout(
+  const std::vector<std::vector<int64_t>> &dataset_strategy_devmat,
+  const std::vector<std::vector<std::vector<int64_t>>> &dataset_strategy_tensormap,
+  const std::vector<std::vector<std::string>> &dataset_strategy_alias_name) {
+  dataset_strategy_devmat_ = dataset_strategy_devmat;
+  dataset_strategy_tensormap_ = dataset_strategy_tensormap;
+  dataset_strategy_alias_name_ = dataset_strategy_alias_name;
 }
 
 void ParallelContext::set_grad_accumulation_step(int64_t grad_accumulation_step) {
