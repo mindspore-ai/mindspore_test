@@ -21,19 +21,12 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <fstream>
 
-#include "include/backend/distributed/collective/collective_manager.h"
+#include "include/backend/mem_reuse/mem_pool_util.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "include/common/debug/common.h"
-#include "include/common/utils/comm_manager.h"
 #include "include/common/utils/utils.h"
-#ifdef ENABLE_DEBUGGER
-#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
-#endif
-#include "utils/convert_utils_base.h"
-#include "utils/file_utils.h"
 #include "utils/log_adapter.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
@@ -892,37 +885,6 @@ void AbstractDynamicMemPool::WaitPipelineHelper() {
 }
 
 namespace {
-std::string GetRankID() {
-  uint32_t rank_id = 0;
-#if !defined(BUILD_LITE)
-  if (distributed::collective::CollectiveManager::instance()->initialized()) {
-    rank_id = CommManager::GetInstance().GetRank();
-  }
-#endif
-  return std::to_string(rank_id);
-}
-
-std::string GetPath() {
-  std::string path;
-  auto &&ms_context = MsContext::GetInstance();
-  path = ms_context->get_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH);
-  if (path.empty()) {
-    path = "./";
-  }
-  auto enable_hccl = ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL);
-  if (enable_hccl) {
-    path += "/rank_" + GetRankID() + "/";
-
-    auto path_opt = Common::CreatePrefixPath(path);
-    if (!path_opt.has_value()) {
-      MS_LOG(ERROR) << "Create path : " << path << " failed.";
-    }
-  } else {
-    path += "/";
-  }
-  return path;
-}
-
 void SplitAndDumpLog(const std::string &log_str) {
   const char *delim = "\n";
   char *next_token;
@@ -1010,12 +972,11 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
 
   // Write info file.
   static std::atomic<size_t> file_count = 0;
-  auto file_path_str = GetPath() + "/MemoryDebugInfo" + std::to_string(file_count++) + ".txt";
-  auto file_path_opt = Common::CreatePrefixPath(file_path_str);
-  ChangeFileMode(file_path_opt.value(), S_IWUSR | S_IRUSR);
-  std::ofstream debug_info_file(file_path_opt.value());
-  debug_info_file << ss.str();
-  debug_info_file.close();
+  auto file_path =
+    memory::mem_pool::GeneratePath(rank_id_getter_(), "/MemoryDebugInfo" + std::to_string(file_count++), "txt");
+  std::ofstream file_stream(file_path);
+  file_stream << ss.str();
+  file_stream.close();
 }
 
 const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree() {
@@ -1152,14 +1113,9 @@ AbstractEnhancedDynamicMemPool::AbstractEnhancedDynamicMemPool() {}
 
 void AbstractEnhancedDynamicMemPool::ReportMemoryPoolInfo() {
   // Report memory data to profiler.
-#ifdef ENABLE_DEBUGGER
-  static auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
-  MS_EXCEPTION_IF_NULL(profiler_inst);
-  if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
-    profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
-                                        TotalUsedByEventMemStatistics());
+  if (memory_profiler_callback_) {
+    memory_profiler_callback_();
   }
-#endif
 }
 
 MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenAllocateMemoryTimeEvent(const void *addr, size_t size,

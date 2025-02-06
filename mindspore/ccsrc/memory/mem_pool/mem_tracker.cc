@@ -15,19 +15,20 @@
  */
 
 #include "include/backend/mem_reuse/mem_tracker.h"
+
 #include <fstream>
 #include <memory>
 #include <mutex>
 #include <numeric>
 #include <string>
 #include <unordered_map>
-#include "frontend/parallel/group_manager.h"
+
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
+#include "include/backend/mem_reuse/mem_pool_util.h"
 #include "ir/dtype.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "include/common/debug/common.h"
-#include "include/common/utils/comm_manager.h"
 #include "include/backend/device_type.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/common/utils/utils.h"
@@ -39,15 +40,6 @@ namespace device {
 namespace tracker {
 constexpr int64_t kIllegalStartTimeStamp = -1L;
 namespace {
-std::string GetRankID() {
-  uint32_t rank_id = 0;
-#if !defined(BUILD_LITE)
-  if (distributed::collective::CollectiveManager::instance()->initialized()) {
-    rank_id = CommManager::GetInstance().GetRank();
-  }
-#endif
-  return std::to_string(rank_id);
-}
 
 AllocatorType GetAllocatorType(MemType mem_type) {
   static std::map<MemType, device::AllocatorType> mem_allocator_type_map = {
@@ -334,26 +326,10 @@ TrackerOperatorPtr GraphTracker::GetOperator(TaskInfoPtr task_info) {
 }
 }  // namespace graph
 
-std::tuple<std::string, std::string, std::string> MemoryTrackerEnabled::GetPath() {
-  std::string block_csv_path;
-  std::string task_csv_path;
-  std::string graph_path;
-
-  auto ms_context = MsContext::GetInstance();
-  auto trace_path = ms_context->get_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH);
-  if (trace_path.empty()) {
-    trace_path = "./";
-  }
-
-  if (enable_hccl_) {
-    block_csv_path = trace_path + "/rank_" + GetRankID() + "/memory_block.csv";
-    task_csv_path = trace_path + "/rank_" + GetRankID() + "/task.csv";
-    graph_path = trace_path + "/rank_" + GetRankID() + "/tracker_graph.ir";
-  } else {
-    block_csv_path = trace_path + "/memory_block.csv";
-    task_csv_path = trace_path + "/task.csv";
-    graph_path = trace_path + "/tracker_graph.ir";
-  }
+std::tuple<std::string, std::string, std::string> MemoryTrackerEnabled::GetPath(size_t rank_id) {
+  std::string block_csv_path = memory::mem_pool::GeneratePath(rank_id, "/memory_block", "csv");
+  std::string task_csv_path = memory::mem_pool::GeneratePath(rank_id, "/task", "csv");
+  std::string graph_path = memory::mem_pool::GeneratePath(rank_id, "/tracker_graph", "ir");
   return std::tuple(block_csv_path, task_csv_path, graph_path);
 }
 
@@ -863,32 +839,28 @@ const std::vector<std::pair<std::string, std::function<void(const MemBlockInfoPt
 };
 }  // namespace
 
-void MemoryTrackerEnabled::Dump() {
+void MemoryTrackerEnabled::Dump(size_t rank_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (has_dump) {
     return;
   }
   has_dump = true;
 
-  auto [block_csv_path, task_csv_path, graph_path] = GetPath();
-  auto block_csv_path_opt = Common::CreatePrefixPath(block_csv_path);
-  auto task_csv_path_opt = Common::CreatePrefixPath(task_csv_path);
-  auto graph_path_opt = Common::CreatePrefixPath(graph_path);
-  if (!block_csv_path_opt.has_value() || !task_csv_path_opt.has_value() || !graph_path_opt.has_value()) {
+  auto [block_csv_path, task_csv_path, graph_path] = GetPath(rank_id);
+  if (block_csv_path.empty() || task_csv_path.empty() || graph_path.empty()) {
     MS_LOG(ERROR) << "Get realpath failed, block_csv_path:" << block_csv_path << ", task_csv_path:" << task_csv_path
                   << ", " << graph_path;
     return;
   }
 
-  graph::GraphTracker::getInstance().Dump(graph_path_opt.value());
+  graph::GraphTracker::getInstance().Dump(graph_path);
 
   MS_LOG(INFO) << "MemoryTracker Dump start";
-  MS_LOG(WARNING) << "block csv path: " << block_csv_path_opt.value();
-  MS_LOG(WARNING) << "task csv path: " << task_csv_path_opt.value();
-  ChangeFileMode(block_csv_path_opt.value(), S_IWUSR | S_IRUSR);
-  std::ofstream block_file(block_csv_path_opt.value());
+  MS_LOG(WARNING) << "block csv path: " << block_csv_path;
+  MS_LOG(WARNING) << "task csv path: " << task_csv_path;
+  std::ofstream block_file(block_csv_path);
   if (!block_file) {
-    MS_LOG(EXCEPTION) << "Open file " << block_csv_path_opt.value() << " failed.";
+    MS_LOG(EXCEPTION) << "Open file " << block_csv_path << " failed.";
   }
   size_t not_bind_size = 0;
   for (const auto &csv : block_csv) {
@@ -909,10 +881,9 @@ void MemoryTrackerEnabled::Dump() {
     block_file << "\n";
   }
 
-  ChangeFileMode(task_csv_path_opt.value(), S_IWUSR | S_IRUSR);
-  std::ofstream task_file(task_csv_path_opt.value());
+  std::ofstream task_file(task_csv_path);
   if (!task_file) {
-    MS_LOG(EXCEPTION) << "Open file " << task_csv_path_opt.value() << " failed.";
+    MS_LOG(EXCEPTION) << "Open file " << task_csv_path << " failed.";
   }
   for (const auto &csv : task_csv) {
     task_file << csv.first << ",";
@@ -928,8 +899,6 @@ void MemoryTrackerEnabled::Dump() {
 
   block_file.close();
   task_file.close();
-  ChangeFileMode(block_csv_path_opt.value(), S_IWUSR | S_IRUSR);
-  ChangeFileMode(task_csv_path_opt.value(), S_IWUSR | S_IRUSR);
   MS_LOG(INFO) << "Not bind size, " << not_bind_size;
   MS_LOG(INFO) << "MemoryTracker Dump end";
 }
@@ -939,10 +908,10 @@ void MemoryTrackerEnabled::UpdateProfilingPos() {
   last_profiling_pos_ = mem_block_list_.size();
 }
 
-void MemoryTrackerEnabled::DumpProfilingMemInfo(const std::string &path, const std::string &file_name) {
+void MemoryTrackerEnabled::DumpProfilingMemInfo(size_t rank_id, const std::string &path, const std::string &file_name) {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  auto csv_path = path + "/" + file_name + "_" + GetRankID() + ".csv";
+  auto csv_path = path + "/" + file_name + "_" + std::to_string(rank_id) + ".csv";
   auto csv_path_opt = Common::CreatePrefixPath(csv_path);
   if (!csv_path_opt.has_value()) {
     MS_LOG(ERROR) << "Get realpath failed, csv_path:" << csv_path;

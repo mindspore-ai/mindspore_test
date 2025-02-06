@@ -17,15 +17,12 @@
 #ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_MEMORY_POOL_H_
 #define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_MEMORY_POOL_H_
 
-#include <atomic>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "common/debug/profiler/profiling_data_dumper.h"
-#include "include/backend/debug/profiler/profiling.h"
 #include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "include/backend/visible.h"
@@ -60,31 +57,6 @@ class BACKEND_EXPORT DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSu
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
 };
 using DefaultAscendMemoryPoolPtr = std::shared_ptr<DefaultAscendMemoryPool>;
-
-struct AscendMemoryTimeEvent : profiler::ascend::BaseReportData {
-  explicit AscendMemoryTimeEvent(int32_t device_id, const MemoryTimeEventPtr &memory_time_event);
-  virtual ~AscendMemoryTimeEvent() = default;
-
-  std::vector<uint8_t> encode() override;
-
-  uint64_t tid_{0};
-
-  uint64_t pid_{0};
-
-  void *stream_ptr_{nullptr};
-
-  MemoryTimeEventPtr memory_time_event_{nullptr};
-
-  std::string ToJson() {
-    JsonBuilder builder;
-    builder.Append("tid_", tid_);
-    builder.Append("pid_", pid_);
-    builder.Append("stream_ptr_", stream_ptr_);
-    builder.Append("memory_time_event_", memory_time_event_ ? memory_time_event_->ToJson() : nullptr);
-    return builder.ToString();
-  }
-};
-using AscendMemoryTimeEventPtr = std::shared_ptr<AscendMemoryTimeEvent>;
 
 class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemoryPool {
  public:
@@ -281,77 +253,19 @@ class BACKEND_EXPORT AscendMemoryPool {
   AscendMemoryPool(const AscendMemoryPool &) = delete;
   AscendMemoryPool &operator=(const AscendMemoryPool &) = delete;
 
-  static AbstractAscendMemoryPoolSupport &GetInstance() {
-    static std::once_flag flag;
-    std::call_once(flag, [&]() {
-      if (UseOldMemoryPool()) {
-        instance_ = std::make_shared<BestFitAscendMemoryPool>();
-        enhanced_instance_ = instance_;
-      } else {
-        auto pool = std::make_shared<DefaultAscendMemoryPool>();
-        instance_ = pool;
-        enhanced_instance_ = std::make_shared<DefaultEnhancedAscendMemoryPool>(pool);
-        if (UseEnhancedMemoryPool()) {
-          instance_ = enhanced_instance_;
-        }
-      }
-      // Initialize instance and set ptr.
-      float init_size = runtime::RuntimeConf::GetInstance()->mem_init_size();
-      size_t init_size_byte = FloatToSize(init_size * kGBToByte);
-      float increase_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
-      size_t increase_size_byte = FloatToSize(increase_size * kGBToByte);
-      float max_size = runtime::RuntimeConf::GetInstance()->mem_max_size();
-      size_t max_size_byte = FloatToSize(max_size * kGBToByte);
-      instance_->Initialize(init_size_byte, increase_size_byte, max_size_byte);
-      pool_ = instance_;
-    });
-    return *pool_;
-  }
+  static AbstractAscendMemoryPoolSupport &GetInstance();
 
   static void SetEnhancedMemoryPool(bool enable) { pool_ = enable ? enhanced_instance_ : instance_; }
 
  private:
   AscendMemoryPool() {}
 
-  static bool UseOldMemoryPool() {
-    if (common::IsDisableAllocConfig(common::kAllocMemoryPool)) {
-      return false;
-    }
-    return IsDisableGeKernel() || common::IsEnableAllocConfig(common::kAllocMemoryPool);
-  }
+  static bool UseOldMemoryPool();
 
   // Use enhanced memory pool when enable debug, enable log, enable prof, dry run and so on.
-  static bool UseEnhancedMemoryPool() {
-    bool enable_debugger = false;
-#ifdef ENABLE_DEBUGGER
-    auto profiler = profiler::Profiler::GetInstance(kCPUDevice);
-    if (profiler != nullptr && profiler->GetEnableFlag() && profiler->GetProfileMemoryFlag()) {
-      enable_debugger = true;
-    }
-#endif
-    auto submodule = common::GetEnv("MS_SUBMODULE_LOG_v");
-    bool enable_pre_act_log = ParseDebugConfig(submodule, "PRE_ACT") == "0";
-    bool enable_debug_log = common::GetEnv("GLOG_v") == "0";
-    return enable_debugger || enable_pre_act_log || enable_debug_log ||
-           MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) ||
-           common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
-           common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) || common::IsDryRun();
-  }
+  static bool UseEnhancedMemoryPool();
 
-  static std::string ParseDebugConfig(std::string input, std::string config) {
-    auto pos = input.find(config);
-    if (pos == std::string::npos) {
-      return "";
-    }
-    auto config_pos = input.find(",", pos);
-    size_t skip_count = config.size() + 1;
-    auto config_str = input.substr(pos + skip_count, config_pos - pos - skip_count);
-    if (config_str.find("}") != std::string::npos) {
-      config_str = config_str.substr(0, config_str.size() - 1);
-    }
-    // need trim laster
-    return config_str;
-  }
+  static std::string ParseDebugConfig(std::string input, std::string config);
 
   // Reference to memory pool.
   static AbstractAscendMemoryPoolSupportPtr pool_;

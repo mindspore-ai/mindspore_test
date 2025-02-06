@@ -22,8 +22,10 @@
 #include <map>
 #include <set>
 #include <sstream>
+
 #include "backend/ge_backend/graph_ir/types.h"
 #include "backend/ge_backend/graph_ir/utils.h"
+#include "include/backend/debug/profiler/profiling.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
