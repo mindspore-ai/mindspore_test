@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
 #define MINDSPORE_PI_JIT_GRAPH_BUILD_BUILD_UTILS_H_
 #include <utility>
+#include <string>
 #include "pybind11/pybind11.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
@@ -38,9 +39,10 @@ bool IsParameterSequence(const py::object &object);
 ParameterPtr AddParameter(const FuncGraphPtr &fg);
 
 py::tuple GetMethodInfo(const py::object &obj);
-bool IsPyCapsuleTensorOverloadMethod(const py::object &obj);
-bool IsPyCapsuleOverload(const py::object &obj);
-bool IsMsTensorMethod(const py::object &obj);
+std::optional<std::string> GetTensorMethodName(const py::object &obj);
+bool IsTensorMethod(const py::object &obj);
+bool IsTensorOverloadMethod(const py::object &obj);
+bool EnableTensorOverload();
 void SyncStubTensor(const py::handle &obj);
 
 void PrintConstantAbstract(const AbstractBasePtr &abs);

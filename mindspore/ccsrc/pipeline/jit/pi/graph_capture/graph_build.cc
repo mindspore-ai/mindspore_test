@@ -4872,7 +4872,14 @@ py::object GraphBuilder::GetPyObject(ValueNode *node) {
   return AbstractWrapper::ConvertToPyObject(node->abstract_wrapper());
 }
 
-static bool MindFGForbiddenConvertFunc(const py::handle &func) {
+static bool IsForbiddenConvertFunc(const py::handle &func) {
+  static std::vector<std::string> tensor_method_forbidden_list = {"__setitem__", "tolist"};
+  const auto &method_name_wrapper = GetTensorMethodName(py::cast<py::object>(func));
+  if (method_name_wrapper.has_value()) {
+    const auto &method_name = method_name_wrapper.value();
+    return std::any_of(tensor_method_forbidden_list.begin(), tensor_method_forbidden_list.end(),
+                       [&method_name](const std::string &name) { return method_name == name; });
+  }
   auto ptr = func.ptr();
   if (PyMethod_Check(ptr)) {
     ptr = PyMethod_GET_FUNCTION(ptr);
@@ -4886,28 +4893,10 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
   //   1. function with side effect such as list.__setitem__.
   //   2. function return iterator, such as enumerate.
   static std::vector<std::string> forbidden_list = {
-    "Tensor.__setitem__",
-    // tolist require tensor value
-    "Tensor.tolist",
-    "list.append",
-    "list.pop",
-    "list.insert",
-    "list.clear",
-    "list.reverse",
-    "list.__setitem__",
-    "dict.__setitem__",
-    "dict.update",
-    "dict.clear",
-    "dict.pop",
-    "dict.keys",
-    "enumerate",
-    "zip",
-    "map",
-    "filter",
-    "__setitem__",
-    "getattr",
-    "range",
-    "concat",
+    "list.append",      "list.pop",         "list.insert", "list.clear", "list.reverse",
+    "list.__setitem__", "dict.__setitem__", "dict.update", "dict.clear", "dict.pop",
+    "dict.keys",        "enumerate",        "zip",         "map",        "filter",
+    "__setitem__",      "getattr",          "range",       "concat",
   };
   return std::any_of(forbidden_list.begin(), forbidden_list.end(),
                      [&qualname](const std::string &name) { return qualname == name; });
@@ -4968,9 +4957,6 @@ bool GraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *c
 
 std::pair<bool, py::object> GraphBuilder::ConvertCallableObject(const py::object &callable_info) const {
   bool should_parse_in_ast = false;
-  if (MindFGForbiddenConvertFunc(callable_info)) {
-    return std::make_pair(should_parse_in_ast, callable_info);
-  }
   auto method = FGBuilder()->ConvertMethod(callable_info);
   if (method.ptr() != nullptr) {
     MS_LOG(INFO) << "convert method :" << py::str(callable_info) << " to " << py::str(method);
@@ -5020,9 +5006,9 @@ py::object GraphBuilder::FGAddNodeAst(CallNode *call_node, const py::object &cal
   return py::object();
 }
 
-py::object GraphBuilder::FGAddNodePyCapsuleOverload(CallNode *call_node, const py::object &callable_info,
-                                                    StopTraceReason *stop_reason) {
-  MS_LOG(INFO) << "Add PyCapsule overload method " << call_node->ToString();
+py::object GraphBuilder::FGAddNodeTensorOverload(CallNode *call_node, const py::object &callable_info,
+                                                 StopTraceReason *stop_reason) {
+  MS_LOG(INFO) << "Add Tensor overload method " << call_node->ToString();
   auto self_node = GetBoundSelf(call_node);
   if (self_node == nullptr) {
     MS_LOG(EXCEPTION) << "Get self failed for call_node " << call_node->ToString();
@@ -5030,8 +5016,9 @@ py::object GraphBuilder::FGAddNodePyCapsuleOverload(CallNode *call_node, const p
   std::vector<ValueNode *> args{self_node};
   const auto &call_node_inputs = call_node->getInputs();
   (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-  const auto &name = py::str(py::getattr(callable_info, "__name__")).cast<std::string>();
-  const auto &functional_prim = abstract::BuildMethodFunctional(name);
+  const auto &name = GetTensorMethodName(callable_info);
+  MS_EXCEPTION_IF_CHECK_FAIL(name.has_value(), "Fail to get tensor method name");
+  const auto &functional_prim = abstract::BuildMethodFunctional(name.value());
   FGAddNode(call_node, functional_prim, HandleInputArgs(args), stop_reason);
   return py::object();
 }
@@ -5087,17 +5074,19 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
   if (ConvertClassType(callable_info, call_node, stop_reason)) {
     return py::object();
   }
-  if (IsPyCapsuleOverload(callable_info)) {
-    return FGAddNodePyCapsuleOverload(call_node, callable_info, stop_reason);
+  py::object original_callable = callable_info;
+  if (!IsForbiddenConvertFunc(callable_info)) {
+    if (EnableTensorOverload() && IsTensorOverloadMethod(callable_info)) {
+      return FGAddNodeTensorOverload(call_node, callable_info, stop_reason);
+    }
+    const auto &convert_result = ConvertCallableObject(callable_info);
+    callable_info = convert_result.second;
+    bool should_parse_in_ast = convert_result.first;
+    if (should_parse_in_ast) {
+      return FGAddNodeAst(call_node, callable_info, original_callable, stop_reason);
+    }
   }
 
-  py::object original_callable = callable_info;
-  const auto &convert_result = ConvertCallableObject(callable_info);
-  callable_info = convert_result.second;
-  bool should_parse_in_ast = convert_result.first;
-  if (should_parse_in_ast) {
-    return FGAddNodeAst(call_node, callable_info, original_callable, stop_reason);
-  }
   if (IsObjectCallable(callable_info)) {
     return HandleMSCallable(call_node, callable_info, original_callable, stop_reason);
   }
