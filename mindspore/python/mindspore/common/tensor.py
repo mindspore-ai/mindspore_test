@@ -422,9 +422,6 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
     def __rmod__(self, other):
         return _rmod_instance(other, self)
 
-    def __imod__(self, other):
-        return self.__mod__(other)
-
     def __rpow__(self, other):
         return tensor_operator_registry.get('__rpow__')(self, other)
 

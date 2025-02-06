@@ -36,6 +36,16 @@ def vm_impl_floor_mod(self):
         return Tensor(np.mod(x, y))
     return vm_impl
 
+@vm_impl_getters.register(P.FloorMod)
+def vm_impl_floormod(self):
+    def vm_impl(x, y):
+        x = x.asnumpy()
+        y = y.asnumpy()
+        return Tensor(np.mod(x, y))
+
+    return vm_impl
+
+
 @vm_impl_getters.register(P.ZerosLike)
 def vm_impl_zeroslike(self):
     def vm_impl(x):

@@ -292,6 +292,7 @@ mindspore.Tensor
     mindspore.Tensor.reciprocal
     mindspore.Tensor.register_hook
     mindspore.Tensor.remainder
+    mindspore.Tensor.remainder_
     mindspore.Tensor.renorm
     mindspore.Tensor.repeat
     mindspore.Tensor.repeat_interleave
