@@ -494,6 +494,7 @@ from .nn_func import (
     is_floating_point,
     incre_flash_attention,
     prompt_flash_attention,
+    flash_attention_score,
     intopk,
     interpolate,
     upsample,
