@@ -1791,6 +1791,8 @@ def tensor_inplace_sub(input, other, *, alpha=1):
         return sub(input, other)
     return sub_ext(input, other, alpha=alpha)
 
+def tensor_new_full(input, size, fill_value, *, dtype=None):
+    raise NotImplementedError("new_full method support Ascend only")
 
 def tensor_div_empty_(input, other, rounding_mode=None):
     raise ValueError("should not come here for div_ method.")

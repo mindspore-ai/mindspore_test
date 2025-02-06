@@ -1,0 +1,8 @@
+new_full:
+  - op_yaml: new_full_op.yaml
+    py_method: tensor_new_full
+    kwonlyargs: dtype
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
