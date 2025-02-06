@@ -708,7 +708,7 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
     for (size_t j = 0; j < input_nodes.size(); j++) {
       const auto &input_node = input_nodes[j];
       MS_EXCEPTION_IF_NULL(input_node);
-      const auto &device_context = device::FetchRealDeviceContext(input_node, graph_device_context);
+      const auto &device_context = graph_device_context;
       MS_EXCEPTION_IF_NULL(device_context);
 
       if (IsHostQueueDSActor(input_node, graph, root_parameters, graph_compiler_info.strategy_)) {
@@ -1461,7 +1461,7 @@ void GraphScheduler::PersistDeviceTensor(const GraphCompilerInfo &graph_compiler
     }
 
     for (auto &input_node : graph->input_nodes()) {
-      const auto &real_device_context = device::FetchRealDeviceContext(input_node, device_context);
+      const auto &real_device_context = device_context;
       MS_EXCEPTION_IF_NULL(real_device_context);
       PersistDeviceTensorForParameter(input_node, graph, graph_compiler_info, real_device_context);
     }
@@ -1471,7 +1471,7 @@ void GraphScheduler::PersistDeviceTensor(const GraphCompilerInfo &graph_compiler
       if (!AnfAlgo::IsKernelSelectBackoffOp(kernel)) {
         continue;
       }
-      const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_context);
+      const auto &real_device_context = device_context;
       MS_EXCEPTION_IF_NULL(real_device_context);
       for (size_t j = 0; j < common::AnfAlgo::GetInputTensorNum(kernel); ++j) {
         const auto &input_node = common::AnfAlgo::GetInputNode(kernel, j);

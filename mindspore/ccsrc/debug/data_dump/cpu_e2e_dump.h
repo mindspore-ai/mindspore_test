@@ -22,9 +22,10 @@
 
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
-class CPUE2eDump {
+class BACKEND_EXPORT CPUE2eDump {
  public:
   CPUE2eDump() = default;
   ~CPUE2eDump() = default;

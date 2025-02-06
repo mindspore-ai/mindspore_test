@@ -45,7 +45,7 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/singleton.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
-#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
 
 namespace mindspore {
@@ -1019,7 +1019,7 @@ void GeGraphExecutor::OptimizeBeforeCompileGraph(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   device::ascend::GEGraphOptimization::GetInstance().GEMindIRPass(graph);
   std::set<KernelGraphPtr> memo;
-  device::ascend::GEGraphOptimization::GetInstance().OptimizeGEGraph(graph, &memo);
+  backend::ge_backend::opt::OptimizeGEGraph(graph, &memo);
 }
 
 size_t GeGraphExecutor::GetGraphFeatureMemory(const FuncGraphPtr &graph) const {

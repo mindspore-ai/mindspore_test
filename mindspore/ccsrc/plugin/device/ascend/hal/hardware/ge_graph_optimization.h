@@ -22,10 +22,12 @@
 #include <tuple>
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/graph_optimizer.h"
+#include "include/backend/visible.h"
 namespace mindspore {
 namespace device {
 namespace ascend {
-class GEGraphOptimization {
+// todo: delete BACKEND_EXPORT after mv GEMindIRPass
+class BACKEND_EXPORT GEGraphOptimization {
  public:
   static GEGraphOptimization &GetInstance() {
     static GEGraphOptimization instance;

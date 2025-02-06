@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GEBACKEND_H_
-#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GEBACKEND_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GE_BACKEND_H_
+#define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GE_BACKEND_H_
 
 #include <memory>
 #include <map>
@@ -27,6 +27,10 @@
 #include "backend/common/session/kernel_graph_mgr.h"
 #include "runtime/hardware/device_context.h"
 #include "abstract/abstract_value.h"
+// subgraph, todo::move code
+#include "backend/graph_compiler/graph_partition.h"
+#include "backend/ge_backend/runtime/graph_compiler.h"
+#include "backend/ge_backend/runtime/actor/actor_set.h"
 
 namespace mindspore {
 namespace backend {
@@ -35,7 +39,7 @@ enum CompileType { NotSupport = 0, SubGraph = 1, WholeGraph = 2 };
 // The base class of all supported backend.
 class BACKEND_EXPORT GEBackend : public BackendBase {
  public:
-  GEBackend() { Init(); }
+  GEBackend();
   ~GEBackend() = default;
 
   // The backend graph Build interface, the return value is the built graph id.
@@ -60,17 +64,27 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   static mindspore::HashSet<const tensor::Tensor *> weights_need_reprepare_;
   // graph running step
   mindspore::HashMap<FuncGraphPtr, uint32_t> graph_run_iter_;
-  // comile&run in whole or sub graph
-  CompileType compile_type_ = CompileType::NotSupport;
+  // <BackendGraphId, compile_type> : comile&run in whole or sub graph
+  mindspore::HashMap<BackendGraphId, CompileType> graph_compile_type_;
+
+  // for subgraph
+  std::shared_ptr<mindspore::ge_backend::runtime::GraphCompiler> graph_compiler_;
+  compile::GraphPartitionPtr graph_partition_;
+  std::map<FuncGraphPtr, std::vector<std::vector<GraphId>>> func_graph_to_kernel_graph_ids_;
+  std::map<GraphId, DeviceContext *> graph_id_to_device_context_;
+  mindspore::HashMap<BackendGraphId, std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo>>
+    graph_id_to_graph_compiler_info_;
+  std::vector<AnfNodePtr> control_nodes_;
+  static BackendGraphId backend_graph_id_;
 
   // for init
   void Init();
 
   // for Build
   BackendGraphId CompileWholeGraph(const FuncGraphPtr &func_graph);
-  BackendGraphId CompileSubGraphGraph(const FuncGraphPtr &func_graph) { return 0; }
+  BackendGraphId CompileSubGraph(const FuncGraphPtr &func_graph);
   // 0: not support; 1: subgraph; 2: whole graph
-  CompileType PartitionGraph(const FuncGraphPtr &func_graph) const;
+  CompileType CheckGraph(const FuncGraphPtr &func_graph) const;
   FuncGraphPtr WrapPrimitives(const FuncGraphPtr &graph);
   void TraverseGraphMap(
     const FuncGraphManagerPtr &manager_ptr, FuncGraphTransaction *tr, const FuncGraphSet &fgs,
@@ -80,11 +94,19 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   int GetHcclBuffsizeFromEnv(const std::string &env_name);
   void InitCommGroup(const FuncGraphPtr &root_graph);
   void UnifyMindIR(const FuncGraphPtr &root_graph) const;
+  // for compile subgraph
+  void CompileGraph(const FuncGraphPtr &func_graph);
+  void CompileGraphFromSegment(const GraphSegmentPtr &segment);
+  std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> ConstructGraphCompilerInfo(
+    const FuncGraphPtr &root_graph);
+  void ParseControlNodes(const mindspore::ge_backend::runtime::GraphCompilerInfo &graph_compile_info,
+                         const FuncGraphPtr &root_graph);
 
   // for run graph
   void RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs);
-  void RunSubGraph(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) { return; }
+  void RunSubGraph(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs);
   void WaitTaskFinish() const;
+  void WaitMultiStream();
   // inputs
   void ConstructInputs(const KernelGraphPtr &func_graph, const VectorRef &args,
                        std::vector<tensor::TensorPtr> *inputs_tensor, const device::DeviceContext *device_context);
@@ -106,6 +128,8 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
                         const device::DeviceContext *device_context);
   void ConstructOutputs(const AnfNodePtr &output_node, const std::vector<tensor::TensorPtr> &output_tensors,
                         size_t *output_position, VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors);
+  void ConstructOutputs(mindspore::ge_backend::runtime::ActorSet *actor_set, VectorRef *outputs,
+                        const FuncGraphPtr &root_graph);
   void ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor, const abstract::SequenceShapePtr &tensor_shape,
                                     VectorRef *outputs, std::vector<tensor::TensorPtr> *tuple_tensors) const;
   BaseRef ConstructOutputByAbstract(const abstract::AbstractBasePtr &abstract,
@@ -126,4 +150,4 @@ using GEBackendPtr = std::shared_ptr<GEBackend>;
 }  // namespace ge_backend
 }  // namespace backend
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GEBACKEND_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_GE_BACKEND_GE_BACKEND_H_

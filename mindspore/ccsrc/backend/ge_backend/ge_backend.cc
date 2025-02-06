@@ -50,6 +50,13 @@
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "backend/graph_compiler/segment_runner.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "backend/ge_backend/runtime/graph_scheduler.h"
+#include "runtime/runtime_conf/runtime_conf.h"
+#include "backend/ge_backend/runtime/control_node_parser.h"
+#include "include/common/utils/parallel_context.h"
 
 namespace mindspore {
 namespace backend {
@@ -119,8 +126,189 @@ bool IsTupleOutputOfAnyType(const abstract::AbstractBasePtr &abstract, const ten
          device_tensor->kernel_tensor()->GetShape()->isa<abstract::SequenceShape>();
 }
 
+mindspore::ge_backend::runtime::KernelMapPosition FetchOriginOutputOrder(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  mindspore::ge_backend::runtime::KernelMapPosition outputs_order;
+  const auto &root_output = common::AnfAlgo::VisitKernelWithReturnType(node, 0, false, {prim::kPrimTupleGetItem}).first;
+  size_t position = 0;
+  auto outputs = common::AnfAlgo::GetAllOutputWithIndex(root_output);
+  for (const auto &output : outputs) {
+    if (outputs_order.count(output) == 0) {
+      outputs_order[output] = {position++};
+    } else {
+      (void)outputs_order[output].emplace_back(position++);
+    }
+  }
+  return outputs_order;
+}
+
+bool IsLazyinlineAndPipeline(const FuncGraphPtr &func_graph) {
+  // cell reuse + pipeline parallel
+  // only O2
+  if (func_graph == nullptr) {
+    return false;
+  }
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  bool has_cell_reuse = std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
+    if (node == nullptr || !node->isa<CNode>()) {
+      return false;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    const auto &inputs = cnode->inputs();
+
+    // for func graph
+    AnfNodePtr fn = inputs[0];
+    FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(fn);
+    bool func_graph_has_cell_reuse = child_graph != nullptr && child_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE);
+    if (func_graph_has_cell_reuse) {
+      return func_graph_has_cell_reuse;
+    }
+
+    // for kernel graph
+    bool kernel_graph_has_cell_reuse = false;
+    if (IsPrimitiveCNode(cnode, prim::kPrimCall)) {
+      auto call_graph = cnode->input(kIndex1);
+      auto sub_kernel_graph = session::AnfRuntimeAlgorithm::GetValueNodeKernelGraph(call_graph);
+      kernel_graph_has_cell_reuse = sub_kernel_graph != nullptr && sub_kernel_graph->need_inline();
+    }
+    return kernel_graph_has_cell_reuse;
+  });
+
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto stages = parallel_context->pipeline_stage_split_num();
+  auto grad_accu_step = parallel_context->grad_accumulation_step();
+  MS_LOG(INFO) << "graph: " << func_graph->ToString() << "stages: " << stages << ", grad_accu_step: " << grad_accu_step;
+  if (stages <= 1 && grad_accu_step <= 1) {
+    return false;
+  }
+  if (has_cell_reuse) {
+    context->SetCellReuseLevel(CellReuseLevel::kNoInline);
+  }
+  return has_cell_reuse;
+}
+
+bool HasIncorporateCall(const std::vector<AnfNodePtr> &all_nodes) {
+  for (const auto &node : all_nodes) {
+    if (node == nullptr || !node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (IsPrimitiveCNode(cnode, prim::kPrimPartial)) {
+      auto partial_function = cnode->input(kPartialGraphIndex);
+      if (!IsValueNode<FuncGraph>(partial_function)) {
+        MS_LOG(INFO) << "Partial has indirect call: " << cnode->DebugString();
+        return true;
+      }
+      continue;
+    }
+    if (IsPrimitiveCNode(cnode, prim::kPrimSwitch)) {
+      const auto &switch_inputs = cnode->inputs();
+      if (std::any_of(switch_inputs.begin() + kSwitchTrueBranchIndex, switch_inputs.end(), [](const AnfNodePtr &input) {
+            return !IsPrimitiveCNode(input, prim::kPrimPartial) && !IsValueNode<FuncGraph>(input);
+          })) {
+        MS_LOG(INFO) << "Switch has indirect call: " << cnode->DebugString();
+        return true;
+      }
+      continue;
+    }
+    if (IsPrimitiveCNode(cnode, prim::kPrimSwitchLayer)) {
+      auto make_tuple = cnode->input(kSwitchLayerBranchesIndex);
+      if (!IsPrimitiveCNode(make_tuple, prim::kPrimMakeTuple)) {
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+          << "SwitchLayer input2 should be make_tuple, but got: " << make_tuple->DebugString();
+      }
+      const auto &make_tuple_inputs = make_tuple->cast<CNodePtr>()->inputs();
+      if (std::any_of(make_tuple_inputs.begin() + 1, make_tuple_inputs.end(), [](const AnfNodePtr &input) {
+            return !IsPrimitiveCNode(input, prim::kPrimPartial) && !IsValueNode<FuncGraph>(input);
+          })) {
+        MS_LOG(INFO) << "SwitchLayer has indirect call: " << cnode->DebugString();
+        return true;
+      }
+      continue;
+    }
+    if (common::AnfAlgo::HasIncorporateCallNode(cnode)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ExistSwitchRef(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &all_nodes) {
+  // %1 = switch(cond, func1, func2)
+  // %2 = %1()  if the abstract of the node is AbstractRefTensor or Tuple/List(AbstractRefTensor, ...), return true.
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  auto &node_users = manager->node_users();
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  for (const auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimSwitch)) {
+      continue;
+    }
+    auto iter = node_users.find(node);
+    if (iter != node_users.end()) {
+      auto &users = iter->second;
+      for (auto &user : users) {
+        auto &user_node = user.first;
+        if (common::AnfAlgo::HasAbstractRef(user_node) || common::AnfAlgo::SequenceHasAbstractRef(user_node)) {
+          if (device_target == kAscendDevice) {
+            MS_LOG(WARNING) << "On the Ascend platform, if you read-only access to the parameter, "
+                            << "you can take the value of the parameter, so that the system can do more optimization. "
+                            << "For example, change 'return param' to 'return param.value()'\n"
+                            << "Please check your code:" << trace::GetDebugInfoStr(user_node->debug_info());
+          }
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool IsControlFlowGraph(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple, AlwaysInclude);
+  auto graphs = func_graph->func_graphs_used_total();
+  (void)graphs.insert(func_graph);
+  bool exist_control_flow = !func_graph->func_graphs_used_total().empty();
+  bool exist_func = exist_control_flow && HasIncorporateCall(all_nodes);
+  if (exist_func) {
+    return true;
+  }
+  bool exist_while =
+    std::any_of(graphs.cbegin(), graphs.cend(), [](const FuncGraphPtr &fg) { return fg->recursive(); });
+  MS_LOG(INFO) << func_graph->ToString() << " exist_while: " << exist_while;
+  if (exist_while || ExistSwitchRef(func_graph, all_nodes)) {
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
 mindspore::HashSet<const tensor::Tensor *> GEBackend::weights_need_reprepare_ = {};
+BackendGraphId GEBackend::backend_graph_id_ = 0;
+
+GEBackend::GEBackend() {
+  Init();
+  const std::vector<PrimitivePtr> cut_list = {prim::kPrimReturn,    prim::kPrimPartial,  prim::kPrimSwitch,
+                                              prim::kPrimMakeTuple, prim::kPrimBpropCut, prim::kPrimSwitchLayer};
+  graph_partition_ = std::make_shared<compile::GraphPartition>(cut_list, "ge");
+  graph_compiler_ = std::make_shared<mindspore::ge_backend::runtime::GraphCompiler>();
+  mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Initialize();
+#ifdef ENABLE_DEBUGGER
+  // SetDebuggerInit
+  auto debugger = Debugger::GetInstance();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  MS_EXCEPTION_IF_NULL(debugger);
+  debugger->Init(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID),
+                 ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+#endif
+}
 
 void GEBackend::Init() {
   auto context_ptr = MsContext::GetInstance();
@@ -169,26 +357,29 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph) {
   debug::Summary::GetInstance().RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
 
   // check if supported in ge_backend, and the compile_type
-  compile_type_ = PartitionGraph(func_graph);
-  if (compile_type_ == CompileType::WholeGraph) {
+  auto compile_type = CheckGraph(func_graph);
+  if (compile_type == CompileType::WholeGraph) {
     PROF_START(CompileSubGraph);
     auto graph_id = CompileWholeGraph(func_graph);
     PROF_END(CompileSubGraph);
     PROF_END(compile_backend_graph);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, start_time,
                                     profiler::GetClockSyscnt(), 1);
+    graph_compile_type_[graph_id] = compile_type;
     return graph_id;
   }
-  if (compile_type_ == CompileType::SubGraph) {
+  if (compile_type == CompileType::SubGraph) {
     PROF_START(CompileSubGraph);
-    auto graph_id = CompileSubGraphGraph(func_graph);
+    auto graph_id = CompileSubGraph(func_graph);
     PROF_END(CompileSubGraph);
     PROF_END(compile_backend_graph);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, start_time,
                                     profiler::GetClockSyscnt(), 1);
+    graph_compile_type_[graph_id] = compile_type;
     return graph_id;
   }
-  MS_LOG(EXCEPTION) << "The graph is not support in ge_backend, please set jit_level to O0 or O1 and try again.";
+  MS_LOG(EXCEPTION)
+    << "The GE backend dose not support subgraph sink and heterogeneous scenarios, please use the ms backend.";
   return 0;
 }
 
@@ -241,30 +432,55 @@ void GEBackend::UnifyMindIR(const FuncGraphPtr &root_graph) const {
   opt::UnifyMindIRPass(root_graph);
 }
 
-CompileType GEBackend::PartitionGraph(const FuncGraphPtr &func_graph) const {
+CompileType GEBackend::CheckGraph(const FuncGraphPtr &func_graph) const {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  // heterogeneous
+  if (func_graph->exist_multi_target()) {
+    MS_LOG(ERROR) << "The ge_backend do not support heterogeneous scenarios";
+    return CompileType::NotSupport;
+  }
+
+  // lazy_inline + pipeline
+  if (IsLazyinlineAndPipeline(func_graph)) {
+    return CompileType::SubGraph;
+  }
+
+  // control flow | Closure\ENV\While scenario
+  if (IsControlFlowGraph(func_graph)) {
+    MS_LOG(ERROR) << "The ge_backend do not support control flow";
+    return CompileType::NotSupport;
+  }
+
+  // whole graph and dynamic shape
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
-    auto mng = func_graph->manager();
-    MS_EXCEPTION_IF_NULL(mng);
-    const auto &sub_graphs = mng->func_graphs();
-    for (const auto &sub_graph : sub_graphs) {
-      if (sub_graph == nullptr) {
+  auto is_dynamic_graph = common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph);
+  if (is_dynamic_graph) {
+    MS_LOG(WARNING) << "The dynamic shape in ge backend is not full support yet, if some error occurred, please use "
+                       "ms backend and try again.";
+  }
+
+  auto mng = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(mng);
+  const auto &sub_graphs = mng->func_graphs();
+  for (const auto &sub_graph : sub_graphs) {
+    if (sub_graph == nullptr) {
+      continue;
+    }
+    auto nodes = TopoSort(sub_graph->get_return());
+    for (const auto &node : nodes) {
+      if (!node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
         continue;
       }
-      auto nodes = TopoSort(sub_graph->get_return());
-      for (const auto &node : nodes) {
-        if (!node->isa<CNode>() || !AnfUtils::IsRealKernel(node)) {
-          continue;
-        }
-        if (GetCNodeTarget(node) != kAscendDevice) {
-          MS_LOG(ERROR) << "The ge_backend do not support heterogeneity, the graph has cpu node, node: "
-                        << node->fullname_with_scope();
-          return CompileType::NotSupport;
-        }
-        if (GetCNodePrimitive(node) == nullptr) {
-          continue;
-        }
+      if (GetCNodeTarget(node) != kAscendDevice) {
+        MS_LOG(ERROR) << "The ge_backend do not support heterogeneous scenarios, the graph has cpu node, node: "
+                      << node->fullname_with_scope();
+        return CompileType::NotSupport;
+      }
+      if (GetCNodePrimitive(node) == nullptr) {
+        continue;
+      }
+      if (is_dynamic_graph) {
         if (!ConvertCheck(node)) {
           MS_LOG(ERROR) << node->fullname_with_scope() << " can not find adpt.";
           return CompileType::NotSupport;
@@ -278,13 +494,15 @@ CompileType GEBackend::PartitionGraph(const FuncGraphPtr &func_graph) const {
           return CompileType::NotSupport;
         }
       }
+
+      if (common::AnfAlgo::GetGraphSplitGroup(node) == kKernelGroup) {
+        MS_LOG(ERROR) << "Ge bacend do not support kernel group.";
+        return CompileType::NotSupport;
+      }
     }
   }
-  if (context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK)) {
-    return CompileType::WholeGraph;
-  } else {
-    return CompileType::SubGraph;
-  }
+
+  return CompileType::WholeGraph;
 }
 
 FuncGraphPtr GEBackend::WrapPrimitives(const FuncGraphPtr &graph) {
@@ -493,7 +711,7 @@ void GEBackend::InitCommGroup(const FuncGraphPtr &root_graph) {
 BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
 
-  MS_LOG(INFO) << "Status record: start compile graph.";
+  MS_LOG(INFO) << "Status record: start compile graph." << func_graph->ToString();
   // Generate kernel graph.
   std::vector<KernelGraphPtr> all_graphs;
 
@@ -537,16 +755,34 @@ BackendGraphId GEBackend::CompileWholeGraph(const FuncGraphPtr &func_graph) {
 
   device_context->graph_executor_->InitGraphInfo(root_graph);
 
-  graph_map_[root_graph->graph_id()] = root_graph;
+  auto cur_backend_graph_id = backend_graph_id_;
+  ++backend_graph_id_;
+  graph_map_[cur_backend_graph_id] = root_graph;
   graph_run_iter_[root_graph] = 0;
-  MS_LOG(INFO) << "Status record: end compile graph.";
-  return root_graph->graph_id();
+  MS_LOG(INFO) << "Status record: end compile graph. backend_graph_id: " << cur_backend_graph_id
+               << ", kernel graph id: " << root_graph->graph_id();
+  return cur_backend_graph_id;
 }
 
 void GEBackend::WaitTaskFinish() const {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kWaitTaskFinish,
                                      runtime::kDefaultOpName);
   runtime::Pipeline::Get().WaitAll();
+}
+
+void GEBackend::WaitMultiStream() {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
+  MS_EXCEPTION_IF_NULL(device_context);
+
+  if (device::ascend::AscendStreamMng::GetInstance().single_op_multi_stream_enable()) {
+    device::MultiStreamController::GetInstance()->WaitMultiStream(
+      device_context, device::ascend::AscendStreamMng::GetInstance().default_stream_id());
+  }
 }
 
 RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
@@ -567,21 +803,16 @@ RunningStatus GEBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, V
   // Open abstract_lock for dynamic_shape
   AnfUtils::OpenAbstractLock();
   WaitTaskFinish();
-  // wait for other streams finish
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_target, device_id});
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->device_res_manager_->SyncNotDefaultStreams();
+  // wait for other streams finish, device_context->device_res_manager_->SyncNotDefaultStreams();
+  WaitMultiStream();
   // Release python gil.
   mindspore::ScopedLongRunning long_running;
 
-  if (compile_type_ == CompileType::WholeGraph) {
+  if (graph_compile_type_[graph_id] == CompileType::WholeGraph) {
     RunWholeGraph(graph_id, inputs, outputs);
     return kRunningSuccess;
   }
-  if (compile_type_ == CompileType::SubGraph) {
+  if (graph_compile_type_[graph_id] == CompileType::SubGraph) {
     RunSubGraph(graph_id, inputs, outputs);
     return kRunningSuccess;
   }
@@ -1494,6 +1725,268 @@ std::string GEBackend::ExportIR(const FuncGraphPtr &anf_graph, const std::string
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
   return device_context->graph_executor_->ExportDFGraph(file_name, anf_graph, is_save_to_file);
+}
+
+BackendGraphId GEBackend::CompileSubGraph(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_LOG(INFO) << "Status record: start compile graph: " << func_graph->ToString();
+  // compile graph
+  auto manager = func_graph->manager();
+  CompileGraph(func_graph);
+  auto mscontext = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(mscontext);
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &sub_graphs = manager->func_graphs_used_total(func_graph);
+  std::vector<FuncGraphPtr> cand_graph(sub_graphs.begin(), sub_graphs.end());
+  std::sort(cand_graph.begin(), cand_graph.end(),
+            [](const FuncGraphPtr &a, const FuncGraphPtr &b) { return a->ToString() < b->ToString(); });
+  for (const auto &sub_graph : cand_graph) {
+    MS_EXCEPTION_IF_NULL(sub_graph);
+    bool skip_inline_graph =
+      (sub_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE) && mscontext->CellReuseLevel() == CellReuseLevel::kLazyInline) ||
+      sub_graph->has_flag(kFlagSwitchInline);
+    if (sub_graph != func_graph && sub_graph != nullptr && !sub_graph->has_flag(kFlagJitCallGraph) &&
+        !skip_inline_graph) {
+      MS_LOG(INFO) << "Compile sub graph " << sub_graph->ToString();
+      CompileGraph(sub_graph);
+    }
+  }
+
+  // Construct the graph compiler info.
+  auto graph_compiler_info = ConstructGraphCompilerInfo(func_graph);
+  MS_LOG(INFO) << "Status record: construct the graph compiler info.";
+  MS_EXCEPTION_IF_NULL(graph_compiler_info);
+  if ((!graph_compiler_info->graphs_.empty()) || graph_compiler_info->control_nodes_.size() > 1) {
+    MS_LOG(DEBUG) << "Start transform";
+    PROF_START(GraphScheduler);
+    // Transform graph to actor DAG, and schedule the actor DAG.
+    ParseControlNodes(*graph_compiler_info, func_graph);
+    const auto &actor_set =
+      mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Transform(*graph_compiler_info);
+    mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Schedule(actor_set);
+    PROF_END(GraphScheduler);
+  }
+
+  auto cur_graph_id = backend_graph_id_;
+  ++backend_graph_id_;
+  (void)graph_id_to_graph_compiler_info_.emplace(cur_graph_id, std::move(graph_compiler_info));
+
+  for (const auto &graph_id_to_context : graph_id_to_device_context_) {
+    auto context = graph_id_to_context.second;
+    device::MultiStreamController::GetInstance()->Refresh(context);
+  }
+
+  MS_LOG(INFO) << "Status record: end compile graph.";
+
+  return cur_graph_id;
+}
+
+void GEBackend::CompileGraph(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  uint64_t start_time = profiler::GetClockSyscnt();
+  // Split graph to segments.
+  MS_EXCEPTION_IF_NULL(graph_partition_);
+  const auto &segments = graph_partition_->Partition(func_graph);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph,
+                                  mindspore::ge_backend::runtime::kStageGraphPartition, start_time,
+                                  profiler::GetClockSyscnt(), 1);
+  MS_LOG(INFO) << "Compile graph: " << func_graph->ToString() << ", Split segments size: " << segments.size();
+
+  // Foreach the segments to compile graph.
+  for (const auto &segment : segments) {
+    CompileGraphFromSegment(segment);
+  }
+}
+
+void GEBackend::CompileGraphFromSegment(const GraphSegmentPtr &segment) {
+  MS_EXCEPTION_IF_NULL(segment);
+  // Compile the normal nodes, which doesn't contain the cut node.
+  if (segment->nodes_.empty()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The segments size is 0.";
+  }
+  if (!segment->is_cut_) {
+    MS_EXCEPTION_IF_NULL(segment->nodes_[0]);
+    MS_LOG(INFO) << "Compile normal segment, the first node: " << segment->nodes_[0]->DebugString();
+
+    // Transform nodes to inputs and outputs.
+    FuncGraphPtr fg;
+    AnfNodePtrList inputs;
+    AnfNodePtrList outputs;
+    std::tie(fg, inputs, outputs) = compile::TransformSegmentToAnfGraph(segment->nodes_);
+
+    // Get the device context.
+    const auto &cur_device_name = GetCNodeTarget(segment->nodes_[0]);
+    auto context_ptr = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context_ptr);
+    uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    auto device_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({cur_device_name, device_id});
+    MS_EXCEPTION_IF_NULL(device_context);
+    device_context->Initialize();
+
+    GraphId graph_id = graph_compiler_->CompileGraph(segment, std::make_pair(inputs, outputs), device_context,
+                                                     device::RunMode::kGraphMode, false);
+    auto new_fg = graph_compiler_->Fetch(graph_id);
+    MS_EXCEPTION_IF_NULL(new_fg);
+
+    // CacheFuncGraphWithKernelGraphId(segment->nodes_[0]->func_graph(), graph_id, device_context);
+    graph_id_to_device_context_[graph_id] = device_context;
+    if (func_graph_to_kernel_graph_ids_.find(segment->nodes_[0]->func_graph()) ==
+        func_graph_to_kernel_graph_ids_.end()) {
+      (void)func_graph_to_kernel_graph_ids_[segment->nodes_[0]->func_graph()].emplace_back(
+        std::vector<GraphId>{graph_id});
+    } else {
+      (void)func_graph_to_kernel_graph_ids_[segment->nodes_[0]->func_graph()].back().emplace_back(graph_id);
+    }
+  } else {
+    // Compile the cut node.
+    auto cut_node = segment->nodes_[0];
+    MS_EXCEPTION_IF_NULL(cut_node);
+    MS_LOG(INFO) << "Compile cut segment, the cut node: " << cut_node->DebugString();
+    control_nodes_.push_back(cut_node);
+    if (common::AnfAlgo::IsCallNode(cut_node) || common::AnfAlgo::CheckPrimitiveType(cut_node, prim::kPrimSwitch) ||
+        common::AnfAlgo::CheckPrimitiveType(cut_node, prim::kPrimSwitchLayer)) {
+      const auto &func_graph = cut_node->func_graph();
+      MS_EXCEPTION_IF_NULL(func_graph);
+      (void)func_graph_to_kernel_graph_ids_[func_graph].emplace_back(std::vector<GraphId>());
+    }
+  }
+}
+
+std::shared_ptr<mindspore::ge_backend::runtime::GraphCompilerInfo> GEBackend::ConstructGraphCompilerInfo(
+  const FuncGraphPtr &root_graph) {
+  MS_EXCEPTION_IF_NULL(root_graph);
+  MS_EXCEPTION_IF_NULL(graph_compiler_);
+
+  std::vector<KernelGraphPtr> graphs;
+  std::vector<DeviceContext *> device_contexts;
+  std::string name = "kernel_graph";
+  size_t graph_index = 0;
+  for (const auto &graph_id_to_context : graph_id_to_device_context_) {
+    (void)graphs.emplace_back(graph_compiler_->Fetch(graph_id_to_context.first));
+    (void)device_contexts.emplace_back(graph_id_to_context.second);
+    if (graph_index == 0) {
+      (void)name.append("_").append(std::to_string(graph_id_to_context.first));
+    } else if (graph_index == graph_id_to_device_context_.size() - 1) {
+      (void)name.append("-").append(std::to_string(graph_id_to_context.first));
+    }
+    ++graph_index;
+  }
+  auto parser = std::make_shared<mindspore::ge_backend::runtime::ControlNodeParser>();
+  const auto &root_output =
+    common::AnfAlgo::VisitKernelWithReturnType(root_graph->output(), 0, false, {prim::kPrimTupleGetItem}).first;
+  auto outputs_num = common::AnfAlgo::GetAllOutputWithIndex(root_output).size();
+  mindspore::ge_backend::runtime::KernelMapPosition outputs_order = FetchOriginOutputOrder(root_graph->output());
+
+  std::vector<std::vector<int64_t> *> tensors_mask;
+  std::vector<std::vector<tensor::TensorPtr> *> input_tensors;
+  auto strategy = mindspore::ge_backend::runtime::GraphExecutionStrategy::kPipeline;
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (mindspore::runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0 ||
+      context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
+    strategy = mindspore::ge_backend::runtime::GraphExecutionStrategy::kPipelineWithExecutionOrder;
+  }
+  auto compile_func = [graph_compiler = this->graph_compiler_](
+                        const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
+                        const DeviceContext *device_context, device::RunMode run_mode) -> KernelGraphPtr {
+    auto graph_id = graph_compiler->CompileGraph(segment, io_nodes, device_context, run_mode, false);
+    return graph_compiler->Fetch(graph_id);
+  };
+
+  return std::make_shared<mindspore::ge_backend::runtime::GraphCompilerInfo>(
+    graphs, device_contexts, tensors_mask, input_tensors, control_nodes_, root_graph->parameters(), parser,
+    outputs_order, outputs_num, root_graph->GetPositionalArgsCount(), name, false, strategy, compile_func,
+    root_graph->phase(), root_graph);
+}
+
+void GEBackend::ParseControlNodes(const mindspore::ge_backend::runtime::GraphCompilerInfo &graph_compile_info,
+                                  const FuncGraphPtr &root_graph) {
+  MS_EXCEPTION_IF_NULL(graph_compiler_);
+  MS_EXCEPTION_IF_NULL(graph_compile_info.control_node_parser_);
+
+  mindspore::ge_backend::runtime::FuncGraphToKernelGraphGroup func_graph_to_kernel_graphs;
+  for (const auto &func_graph_to_kernel_graph_ids : func_graph_to_kernel_graph_ids_) {
+    const auto &func_graph = func_graph_to_kernel_graph_ids.first;
+    for (const auto &sub_kernel_graphs_ids : func_graph_to_kernel_graph_ids.second) {
+      std::vector<KernelGraphPtr> kernel_graphs;
+      for (const auto &graph_id : sub_kernel_graphs_ids) {
+        const auto &kernel_graph = graph_compiler_->Fetch(graph_id);
+        MS_EXCEPTION_IF_NULL(kernel_graph);
+        (void)kernel_graphs.emplace_back(kernel_graph);
+      }
+      (void)func_graph_to_kernel_graphs[func_graph].emplace_back(kernel_graphs);
+    }
+  }
+
+  graph_compile_info.control_node_parser_->Parse(control_nodes_, graph_compile_info.graphs_,
+                                                 graph_compile_info.device_contexts_, root_graph,
+                                                 func_graph_to_kernel_graphs);
+}
+
+void GEBackend::RunSubGraph(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {
+  // Fetch the graph compiler info.
+  const auto &graph_iter = graph_id_to_graph_compiler_info_.find(graph_id);
+  if (graph_iter == graph_id_to_graph_compiler_info_.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Can't find the graph compiler info.";
+  }
+  MS_EXCEPTION_IF_NULL(graph_iter->second);
+  const auto &graph_compiler_info = *(graph_iter->second);
+
+  MS_LOG(INFO) << "Status record: start run actor: " << graph_compiler_info.name_;
+  uint64_t start_time = profiler::GetClockSyscnt();
+  std::vector<std::vector<tensor::TensorPtr>> input_tensors;
+  // Release python gil.
+  mindspore::ScopedLongRunning long_running;
+  // Run actor DAG.
+  const auto &actor_set =
+    mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Fetch(graph_compiler_info.name_);
+  MS_EXCEPTION_IF_NULL(actor_set);
+  mindspore::ge_backend::runtime::GraphScheduler::GetInstance().Run(actor_set, input_tensors, inputs);
+
+  {
+    uint64_t start_time2 = 0;
+    PROFILER_START(start_time2);
+    MS_EXCEPTION_IF_NULL(graph_compiler_);
+    graph_compiler_->Summary(graph_compiler_info.graphs_);
+    ConstructOutputs(actor_set, outputs, graph_compiler_info.root_graph_);
+    actor_set->output_actor_->FreeSummaryNodeMem();
+    mindspore::ge_backend::runtime::GraphScheduler::GetInstance().ClearActorData(actor_set);
+    PROFILER_END(start_time2, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kOutputProcess,
+                 actor_set->name_, false);
+  }
+  // Close abstract_lock for dynamic_shape
+  AnfUtils::CloseAbstractLock();
+  (void)profiler::CollectHostInfo(kModelNameRuntime, mindspore::ge_backend::runtime::kEventRunGraph,
+                                  mindspore::ge_backend::runtime::kStageRunGraph, start_time,
+                                  profiler::GetClockSyscnt(), 1);
+  MS_LOG(INFO) << "Status record: end run actor: " << graph_compiler_info.name_;
+}
+
+void GEBackend::ConstructOutputs(mindspore::ge_backend::runtime::ActorSet *actor_set, VectorRef *outputs,
+                                 const FuncGraphPtr &root_graph) {
+  MS_EXCEPTION_IF_NULL(actor_set);
+  MS_EXCEPTION_IF_NULL(outputs);
+  MS_EXCEPTION_IF_NULL(root_graph);
+
+  // Update device address for output node of graph.
+  // Summary processing will use the output device address, so must be after the summary processing.
+  MS_EXCEPTION_IF_NULL(actor_set->output_actor_);
+  actor_set->output_actor_->UpdateOutputDeviceAddress();
+
+  // Fetch outputs.
+  auto &output_tensors = actor_set->output_actor_->outputs();
+  if (!output_tensors.empty()) {
+    size_t output_position = 0;
+    std::vector<tensor::TensorPtr> tuple_tensors;
+    ConstructOutputs(root_graph->output(), output_tensors, &output_position, outputs, &tuple_tensors);
+
+    // The tensor may be repeated, so it needs to be set null last.
+    for (auto &tuple_tensor : tuple_tensors) {
+      MS_EXCEPTION_IF_NULL(tuple_tensor);
+      tuple_tensor->set_device_address(nullptr);
+    }
+  }
 }
 
 MS_REGISTER_BACKEND(kGEBackendName, GEBackend)

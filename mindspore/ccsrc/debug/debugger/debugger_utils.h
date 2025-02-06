@@ -22,6 +22,7 @@
 #include "include/backend/debug/debugger/debugger.h"
 #include "kernel/kernel.h"
 #include "runtime/hardware/device_context.h"
+#include "include/backend/visible.h"
 
 using mindspore::device::DeviceContext;
 using mindspore::kernel::KernelLaunchAddr;
@@ -42,17 +43,18 @@ void LoadOutputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> dev
                  uint32_t root_graph_id, const DeviceContext *device_context, const bool trans_flag,
                  const uint32_t sample_mode, const uint32_t sample_num);
 
-bool CheckReadData(const CNodePtr &cnode);
+BACKEND_EXPORT bool CheckReadData(const CNodePtr &cnode);
 
-void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *> input_kernel_tensors,
-                     std::vector<device::DeviceAddress *> output_kernel_tensors, uint32_t exec_order,
-                     const DeviceContext *device_context, const bool abnormal_dump = false);
+BACKEND_EXPORT void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *> input_kernel_tensors,
+                                    std::vector<device::DeviceAddress *> output_kernel_tensors, uint32_t exec_order,
+                                    const DeviceContext *device_context, const bool abnormal_dump = false);
 
-void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::DeviceAddress *> &input_device_tensors,
-                         const std::vector<device::DeviceAddress *> &output_device_tensors,
-                         const DeviceContext *device_context);
+BACKEND_EXPORT void DumpDataViaCallback(const CNodePtr &cnode,
+                                        const std::vector<device::DeviceAddress *> &input_device_tensors,
+                                        const std::vector<device::DeviceAddress *> &output_device_tensors,
+                                        const DeviceContext *device_context);
 
-std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
+BACKEND_EXPORT std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
 
 // get the full name of a tensor, which is the name used in TensorLoader
 std::string GetTensorFullName(const debugger::TensorProto &tensor);

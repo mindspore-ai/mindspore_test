@@ -21,6 +21,7 @@
 #include <set>
 #include <vector>
 #include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -67,6 +68,12 @@
 #include "plugin/device/ascend/optimizer/ge/hcom/insert_tensor_move_for_hccl_op_ge.h"
 #include "plugin/device/ascend/optimizer/ge/resize_bilinear_add_attr.h"
 #include "plugin/device/ascend/optimizer/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
+#include "plugin/device/ascend/optimizer/ge/process_call_inline.h"
+#include "plugin/device/ascend/optimizer/ir_fission/seed_adapter.h"
+#include "backend/common/pass/insert_tensor_move_for_communication.h"
+#include "plugin/device/ascend/optimizer/ge/process_partial_inline.h"
+#include "plugin/device/ascend/optimizer/ge/expander_fallback.h"
+#include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
 
 namespace mindspore {
 namespace backend {
@@ -288,6 +295,36 @@ bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
   MS_LOG(INFO) << "Enable switch inline.";
   return true;
 }
+
+void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_LOG(INFO) << "Mark graph is ref graph: " << kernel_graph->graph_id();
+  auto manager = kernel_graph->manager();
+  if (manager == nullptr || kernel_graph->has_attr(kIsRefGraph)) {
+    return;
+  }
+  for (const auto &node : TopoSort(kernel_graph->get_return(), SuccDeeperSimple, AlwaysInclude)) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode == nullptr) {
+      continue;
+    }
+    auto is_side_effect = common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, cnode) &&
+                          common::AnfAlgo::GetNodeAttr<bool>(cnode, GRAPH_FLAG_SIDE_EFFECT_MEM);
+    if (!(is_side_effect && cnode->fullname_with_scope().find("optimizer") != std::string::npos)) {
+      continue;
+    }
+    for (const auto &node_pair : manager->node_users()[cnode]) {
+      if (IsPrimitiveCNode(node_pair.first, prim::kPrimUpdateState)) {
+        kernel_graph->set_attr(kIsRefGraph, MakeValue(true));
+        MS_LOG(INFO) << "graph is ref graph: " << kernel_graph->graph_id();
+        return;
+      }
+    }
+  }
+}
 }  // namespace
 
 void UnifyMindIRPass(const FuncGraphPtr &func_graph) {
@@ -406,6 +443,78 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize ge pass. graph id: " << kernel_graph->graph_id();
 }
 
+void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
+  uint64_t start_time = profiler::GetClockSyscnt();
+  PROF_START(GEBackendOptimizeACL);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_before_opt_acl_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph, true, kWholeStack);
+  }
+#endif
+  auto optimizer = std::make_shared<mindspore::opt::GraphOptimizer>();
+  auto opt_acl_pm = std::make_shared<mindspore::opt::PassManager>("opt_acl_pm");
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ProcessCallInline>());
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::SeedAdapter>());
+
+  if (common::IsEnableRuntimeConfig(common::kRuntimeInsertTensorMove)) {
+    opt_acl_pm->AddPass(std::make_shared<mindspore::opt::InsertTensorMoveForHcclOpGe>());
+  } else {
+    opt_acl_pm->AddPass(std::make_shared<mindspore::opt::InsertTensorMoveForCommunication>());
+  }
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ProcessPartialInline>());
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ExpanderFallback>());
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ConvertPadV3Paddings>());
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ConvertPadV3GradPaddings>());
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::ResizeBilinearAddAttr>());
+  opt_acl_pm->AddPass(std::make_shared<mindspore::opt::CustomDefinedDepend>(false, kernel_graph->graph_id()));
+  optimizer->AddPassManager(opt_acl_pm);
+  (void)optimizer->Optimize(kernel_graph);
+  PROF_END(GEBackendOptimizeACL);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_end_opt_acl_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph, true, kWholeStack);
+  }
+#endif
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", start_time,
+                                  profiler::GetClockSyscnt(), 0);
+  MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
+}
+
+void OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(memo);
+  PROF_START(OptimizeGEGraph);
+  if (memo->find(graph) != memo->end()) {
+    return;
+  }
+  memo->insert(graph);
+  MS_LOG(DEBUG) << "Status record: start optimize ge graph. graph id: " << graph->graph_id();
+  // empty graph dont entry to backend
+  if (graph->execution_order().empty()) {
+    MS_LOG(DEBUG) << graph->ToString() << " is empty graph.";
+    AnfAlgo::InsertMakeTupleForOutput(NOT_NULL(graph));
+    graph->set_executable(false);
+    MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
+  }
+  MarkRefGraph(graph);
+  GEBackendOptimizeACL(graph);
+  GEBackendOptimization(graph);
+
+  for (auto &child_graph : graph->child_graph_order()) {
+    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
+      continue;
+    }
+    OptimizeGEGraph(child_graph.lock(), memo);
+  }
+  PROF_END(OptimizeGEGraph);
+  MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
+}
 }  // namespace opt
 }  // namespace ge_backend
 }  // namespace backend

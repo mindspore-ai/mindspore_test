@@ -31,7 +31,7 @@ constexpr char kMsVm[] = "vm";
 constexpr char kGeVm[] = "ge";
 
 namespace compile {
-class GraphPartition {
+class BACKEND_EXPORT GraphPartition {
  public:
   explicit GraphPartition(const std::vector<PrimitivePtr> &cut_list, const std::string &backend_name);
   ~GraphPartition() = default;

@@ -148,6 +148,18 @@ void SuperKernelActor::Init() {
   device_contexts_[0]->graph_executor_->InitGraphInfo(graph_);
 }
 
+size_t SuperKernelActor::FetchInputNodePosition(const AnfNodePtr &intput_node) {
+  MS_EXCEPTION_IF_NULL(intput_node);
+  MS_EXCEPTION_IF_NULL(graph_);
+
+  auto &input_nodes = graph_->input_nodes();
+  const auto &iter = find(input_nodes.begin(), input_nodes.end(), intput_node);
+  if (iter == input_nodes.end()) {
+    MS_LOG_WITH_NODE(EXCEPTION, intput_node) << "Invalid input node:" << intput_node->fullname_with_scope();
+  }
+  return iter - input_nodes.begin();
+}
+
 void SuperKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);

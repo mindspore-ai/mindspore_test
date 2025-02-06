@@ -51,6 +51,9 @@
 #include "pipeline/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "backend/ge_backend/pass/ge_backend_optimization.h"
+#include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
+#include "backend/ge_backend/executor/ge_graph_executor.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -108,27 +111,6 @@ bool IsEnableZeroCopy(bool run_in_pynative) {
     return false;
   }
   return true;
-}
-
-void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(device_context);
-
-  auto &compile_cache_context = CompileCacheContext::GetInstance();
-  uint64_t start_time = profiler::GetClockSyscnt();
-  compile_cache_context.SetFusionOpBuildInfoFlag(true);
-  device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
-  compile_cache_context.SetFusionOpBuildInfoFlag(false);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,
-                                  profiler::GetClockSyscnt(), 1);
-
-  // Update needed dump kernels for mindRT.
-  DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
-  if (graph->is_dynamic_shape()) {
-    auto profiler_manage_inst = profiler::ProfilerManager::GetInstance();
-    MS_EXCEPTION_IF_NULL(profiler_manage_inst);
-    profiler_manage_inst->SetNetDynamicShapeStatus();
-  }
 }
 
 void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
@@ -210,17 +192,15 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   }
 
   opt::OptimizationWithoutBackend(kernel_graph);
-  // Unify the MindIR, must be before of the kernel_graph optimization.
-  auto kernel_executor = device_context->GetKernelExecutor(false);
-  if (kernel_executor != nullptr) {
-    kernel_executor->AddMindIRPass(kernel_graph);
-  }
+  device::ascend::GEGraphOptimization::GetInstance().GEMindIRPass(kernel_graph);
+
   kernel_graph->SetInputNodes();
   kernel_graph->SetExecOrderByDefault();
   session_->SetInputNodeUsage(kernel_graph, manager);
   kernel_graph->SetOptimizerFlag();
 
   GraphId graph_id = CompileGraphImpl(kernel_graph, device_context, run_in_pynative);
+
   kernel_graph->set_front_outputs(outputs);
   kernel_graph->set_root_graph_id(graph_id);
 
@@ -249,55 +229,47 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   MS_EXCEPTION_IF_NULL(session_);
   const auto &context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  if (use_cache_to_compile_graph_) {
-    UseCacheToCompileGraphImpl(graph, device_context);
-  } else {
+
 #ifdef ENABLE_DUMP_IR
-    if (context->CanDump(kIntroductory)) {
-      // Dump .pb graph before graph optimization.
-      DumpIRProto(graph, "before_opt_" + std::to_string(graph->graph_id()));
-    }
+  if (context->CanDump(kIntroductory)) {
+    // Dump .pb graph before graph optimization.
+    DumpIRProto(graph, "before_opt_" + std::to_string(graph->graph_id()));
+  }
 #endif
-    MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor(false));
-    // Execute optimization pass.
-    uint64_t start_time = profiler::GetClockSyscnt();
-    PROF_START(OptimizeGraph);
-    device_context->GetKernelExecutor(false)->OptimizeGraph(graph);
-    PROF_END(OptimizeGraph);
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimizeGraph, start_time,
-                                    profiler::GetClockSyscnt(), 1);
-    // Generate 'KernelMod' for all kernels and set 'KernelMod' into kernel,
-    // 'KernelMod' is real executive object of kernel.
-    start_time = profiler::GetClockSyscnt();
-    PROF_START(CreateKernel);
-    graph->SetExecOrderByDefault();
-    device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
-    PROF_END(CreateKernel);
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,
-                                    profiler::GetClockSyscnt(), 1);
+  // Execute optimization pass.
+  uint64_t start_time = profiler::GetClockSyscnt();
+  PROF_START(OptimizeGraph);
+  std::set<KernelGraphPtr> memo;
+  backend::ge_backend::opt::OptimizeGEGraph(graph, &memo);
+  PROF_END(OptimizeGraph);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimizeGraph, start_time,
+                                  profiler::GetClockSyscnt(), 1);
 
-    // Read the output and input ref map and set to the kernel graph.
-    AnfAlgo::AddOutInRefToGraph(graph);
+  // Read the output and input ref map and set to the kernel graph.
+  AnfAlgo::AddOutInRefToGraph(graph);
 
-    session_->RecurseSetSummaryNodesForAllGraphs(graph.get());
-    // Update needed dump kernels for mindRT.
-    DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
+  session_->RecurseSetSummaryNodesForAllGraphs(graph.get());
+  // Update needed dump kernels for mindRT.
+  DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
 
-    // dynamic shape pass of graphmode
-    if (graph->is_dynamic_shape()) {
-      auto profiler_manage_inst = profiler::ProfilerManager::GetInstance();
-      MS_EXCEPTION_IF_NULL(profiler_manage_inst);
-      profiler_manage_inst->SetNetDynamicShapeStatus();
-    }
+  // dynamic shape pass of graphmode
+  if (graph->is_dynamic_shape()) {
+    auto profiler_manage_inst = profiler::ProfilerManager::GetInstance();
+    MS_EXCEPTION_IF_NULL(profiler_manage_inst);
+    profiler_manage_inst->SetNetDynamicShapeStatus();
   }
 
-  if (export_compile_cache_) {
-    session_->CacheKernelGraph({graph});
-  }
   // Adjust kernel graph before run graph.
+  start_time = profiler::GetClockSyscnt();
   PROF_START(PreprocessBeforeRun);
-  device_context->GetKernelExecutor(false)->PreprocessBeforeRun(graph);
+  if (!AnfAlgo::IsNoRealKernelGraph(graph)) {
+    MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
+    dynamic_cast<backend::ge_backend::GeGraphExecutor *>(device_context->graph_executor_.get())
+      ->CompileGraph(std::dynamic_pointer_cast<FuncGraph>(graph), {});
+  }
   PROF_END(PreprocessBeforeRun);
+  (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
+                                  profiler::GetClockSyscnt(), 1);
   graph->UpdateInternalParameter();
   // Set device target for parameter affinity.
   AnfAlgo::SetParameterDeviceTarget(graph);

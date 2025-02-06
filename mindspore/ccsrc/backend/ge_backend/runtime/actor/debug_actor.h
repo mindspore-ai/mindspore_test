@@ -44,7 +44,7 @@ using mindspore::kernel::KernelLaunchAddr;
 // it is synchronous and blocked.
 class DebugActor : public ActorBase {
  public:
-  DebugActor() : ActorBase("DebugActor") {}
+  DebugActor() : ActorBase("GEDebugActor") {}
   ~DebugActor() override = default;
 
   void ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk);

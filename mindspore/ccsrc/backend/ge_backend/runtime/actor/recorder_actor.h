@@ -36,7 +36,7 @@ using mindspore::kernel::KernelTensor;
 // The recorder actor is used to record kernel info.
 class RecorderActor : public ActorBase {
  public:
-  RecorderActor() : ActorBase("RecorderActor") {}
+  RecorderActor() : ActorBase("GERecorderActor") {}
   ~RecorderActor() override = default;
 
   // The memory recorder of each node.

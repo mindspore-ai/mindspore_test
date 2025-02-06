@@ -68,7 +68,7 @@ class MemoryManagerActor : public ActorBase {
   void Wait(OpContext<DeviceTensor> *const op_context, const AID &from_aid);
 
  private:
-  MemoryManagerActor() : ActorBase("MemoryManagerActor") {}
+  MemoryManagerActor() : ActorBase("GEMemoryManagerActor") {}
   DISABLE_COPY_AND_ASSIGN(MemoryManagerActor);
 
   // When allocate device memory fail, print error log and set op context failed status.

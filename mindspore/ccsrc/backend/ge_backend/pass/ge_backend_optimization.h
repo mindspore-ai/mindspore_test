@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_GE_BACKEND_OPTIMIZATION_H_
 #define MINDSPORE_CCSRC_BACKEND_GE_BACKEND_PASS_GE_BACKEND_OPTIMIZATION_H_
 #include <memory>
+#include <set>
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/pass_manager.h"
 #include "include/backend/visible.h"
@@ -27,7 +28,9 @@ namespace opt {
 // to delete BACKEND_EXPORT
 void BACKEND_EXPORT GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph);
 void BACKEND_EXPORT UnifyMindIRPass(const FuncGraphPtr &graph);
-void BACKEND_EXPORT GEBackendOptimization(const KernelGraphPtr &kernel_graph);
+void GEBackendOptimization(const KernelGraphPtr &kernel_graph);
+void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph);
+void BACKEND_EXPORT OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
 }  // namespace opt
 }  // namespace ge_backend
 }  // namespace backend

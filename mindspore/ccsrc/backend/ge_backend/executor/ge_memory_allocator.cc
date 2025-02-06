@@ -167,7 +167,6 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
     output_device_addr->ResetRefCount();
   }
   output_device_addr->set_device_synchronizer(std::make_shared<device::ascend::AscendDeviceSynchronizer>());
-  output_device_addr->set_is_ptr_persisted(true);
   if (IsMemoryPoolRecycle() && need_alloc_output_cnt <= kNeedRecycleOutput) {
     MS_LOG(INFO) << "Set Memory Pool Recycle, graph: " << kernel_graph->ToString()
                  << ", node: " << output_node->fullname_with_scope();
