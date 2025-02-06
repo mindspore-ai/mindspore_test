@@ -2884,7 +2884,6 @@ void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, c
 
   auto in_shape = device->shape();
   auto type_byte = GetTypeByte(TypeIdToType(host->data_type()));
-  MS_LOG(ERROR) << "SwapCache";
   size_t block_size_in_bytes = LongToSize(
     std::accumulate(in_shape.begin() + kIndex1, in_shape.end(), SizeToLong(type_byte), std::multiplies<int64_t>()));
 

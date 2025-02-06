@@ -38,8 +38,6 @@ BaseShapePtr PagedAttentionFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto mla_v_dim = GetScalarValue<int64_t>(mla_v_dim_value).value();
 
   if (mla_v_dim > 0) {
-    // MS_CHECK_VALUE(mla_v_dim < d_qk,
-    //                CheckAndConvertUtils::FormatCheckIntegerMsg("mla_v_dim", mla_v_dim, kLessThan, d_qk, primitive));
     res_shape[res_shape.size() - 1] = res_shape[res_shape.size() - 1] / d_qk * mla_v_dim;
     return std::make_shared<abstract::TensorShape>(res_shape);
   }
