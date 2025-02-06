@@ -18,16 +18,14 @@
 #include <string>
 #include "acl/acl_rt_allocator.h"
 #include "utils/dlopen_macro.h"
-
+#include "transform/symbol/acl_base_symbol.h"
 namespace mindspore {
 namespace transform {
 
 ORIGIN_METHOD(aclInit, aclError, const char *);
-ORIGIN_METHOD(aclGetRecentErrMsg, const char *);
 ORIGIN_METHOD(aclFinalize, aclError);
 
 extern aclInitFunObj aclInit_;
-extern aclGetRecentErrMsgFunObj aclGetRecentErrMsg_;
 extern aclFinalizeFunObj aclFinalize_;
 
 void LoadAclApiSymbol(const std::string &ascend_path);

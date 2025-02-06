@@ -37,6 +37,7 @@ ORIGIN_METHOD_WITH_SIMU(aclrtGetSocName, const char *)
 ORIGIN_METHOD_WITH_SIMU(aclUpdateDataBuffer, aclError, aclDataBuffer *, void *, size_t)
 ORIGIN_METHOD_WITH_SIMU(aclGetDataBufferAddr, void *, const aclDataBuffer *)
 ORIGIN_METHOD_WITH_SIMU(aclGetTensorDescSize, size_t, const aclTensorDesc *)
+ORIGIN_METHOD_WITH_SIMU(aclGetRecentErrMsg, const char *)
 
 void LoadAclBaseApiSymbol(const std::string &ascend_path);
 void LoadSimulationAclBaseApi();
