@@ -1,0 +1,21 @@
+#operator inplace_remainder_tensor_tensor
+inplace_remainder_tensor_tensor:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceRemainderTensorTensorAscend
+    GPU: None
