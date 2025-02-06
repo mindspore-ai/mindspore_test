@@ -26,12 +26,14 @@ for more details.
 
 from mindspore.communication.management import GlobalComm, init, release, get_rank, \
     get_group_size, get_world_rank_from_group_rank, \
-    get_group_rank_from_world_rank, create_group, HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, \
-    MCCL_WORLD_COMM_GROUP, get_local_rank, get_local_rank_size, destroy_group, get_process_group_ranks
+    get_group_rank_from_world_rank, create_group, get_comm_name, \
+    HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, MCCL_WORLD_COMM_GROUP, get_local_rank, \
+    get_local_rank_size, destroy_group, get_process_group_ranks
 
 
 __all__ = [
     "GlobalComm", "init", "release", "get_rank", "get_group_size", "get_world_rank_from_group_rank",
-    "get_group_rank_from_world_rank", "create_group", "HCCL_WORLD_COMM_GROUP", "NCCL_WORLD_COMM_GROUP",
-    "MCCL_WORLD_COMM_GROUP", "get_local_rank", "get_local_rank_size", "destroy_group", "get_process_group_ranks"
+    "get_group_rank_from_world_rank", "create_group", "get_comm_name",
+    "HCCL_WORLD_COMM_GROUP", "NCCL_WORLD_COMM_GROUP", "MCCL_WORLD_COMM_GROUP", "get_local_rank",
+    "get_local_rank_size", "destroy_group", "get_process_group_ranks"
 ]

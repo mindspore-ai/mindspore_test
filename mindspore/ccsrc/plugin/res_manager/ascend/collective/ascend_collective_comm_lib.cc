@@ -274,7 +274,7 @@ HcclComm AscendCollectiveCommLib::GetHcomByGroup(const std::string &group_name) 
   return iter->second;
 }
 
-std::string AscendCollectiveCommLib::HcclInnerCommName(const std::string &group_name) {
+std::string AscendCollectiveCommLib::CommName(const std::string &group_name) {
   if (!common::UseHostCollective() || hccl::HcclAdapter::GetInstance().UseHcclCM()) {
     return "";
   }

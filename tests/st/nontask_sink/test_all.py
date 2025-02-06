@@ -78,6 +78,18 @@ def test_hccl_get_process_group_ranks_func_8p():
     assert return_code == 0
 
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
+def test_hccl_get_comm_name_func_8p():
+    """
+    Feature: mpi run 8P case
+    Description: mpi run 8P case
+    Expectation: success
+    """
+    context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
+    return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_get_comm_name.py")
+    assert return_code == 0
+
+
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
 def test_hccl_batch_isend_irecv():
