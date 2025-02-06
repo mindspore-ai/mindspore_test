@@ -21,7 +21,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #undef private
 #undef protected
 using namespace mindspore::device::ascend;

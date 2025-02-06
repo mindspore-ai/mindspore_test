@@ -27,12 +27,13 @@
 #include <iostream>
 
 #include "acl/acl.h"
+#include "ops_utils/op_constants.h"
 #include "utils/dlopen_macro.h"
 #include "utils/log_adapter.h"
 
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

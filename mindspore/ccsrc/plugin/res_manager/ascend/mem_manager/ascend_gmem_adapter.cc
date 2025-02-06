@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_gmem_adapter.h"
 #include <pthread.h>
 #include <sys/types.h>
 #include <fcntl.h>

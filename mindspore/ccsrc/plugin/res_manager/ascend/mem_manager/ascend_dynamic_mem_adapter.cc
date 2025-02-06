@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/device/ascend_dynamic_mem_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_dynamic_mem_adapter.h"
 #include <algorithm>
 #include <set>
 #include "ir/func_graph.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
-#include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
+
+#include "plugin/res_manager/ascend/mem_manager/ascend_gmem_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 

@@ -22,7 +22,7 @@
 
 #include <unordered_map>
 #include "runtime/device/memory_manager.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 
 namespace mindspore {
 namespace device {

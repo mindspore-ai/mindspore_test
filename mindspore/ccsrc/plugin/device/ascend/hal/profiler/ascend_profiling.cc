@@ -25,7 +25,7 @@
 #include "common/debug/profiler/profiling_python.h"
 #include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #include "plugin/device/ascend/hal/profiler/memory_profiling.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"

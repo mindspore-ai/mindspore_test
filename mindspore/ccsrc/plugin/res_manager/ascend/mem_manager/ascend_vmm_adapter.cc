@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include <map>
 #include <vector>
 #include <tuple>

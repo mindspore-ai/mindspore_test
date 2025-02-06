@@ -36,7 +36,7 @@
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_memory_allocator.h"
 #include "plugin/device/ascend/hal/hardware/ge/ge_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ge/ge_graph_compile_summary.h"
