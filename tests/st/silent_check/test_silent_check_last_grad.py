@@ -51,3 +51,17 @@ def test_silent_check2(mode):
     assert ret1 == 0
     assert ret2 == 0
     os.system(f'rm -rf ms_graphs log_output ascend_log')
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_silent_check_prod_grad():
+    """
+    Feature: Test silent check for last grad node of prod op
+    Description: Test silent check for last grad node of prod op
+    Expectation: No error occurs
+    """
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    py_file = 'prod_grad.py'
+    ret1 = os.system(f"bash {sh_path}/singlerun_silent_check.sh {sh_path}/{py_file}")
+    assert ret1 == 0
+    os.system(f'rm -rf ms_graphs log_output ascend_log')
