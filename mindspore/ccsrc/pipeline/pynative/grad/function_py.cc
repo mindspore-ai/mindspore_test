@@ -277,7 +277,7 @@ py::object FunctionBase::apply(const py::object &cls, const py::args &inputs) {
   if (!grad_executor->RequiresGrad()) {
     MS_LOG(DEBUG) << "no need to do grad.";
     if (modified) {
-      return outputs[0];
+      return py::cast<py::tuple>(outputs)[0];
     } else {
       return outputs;
     }

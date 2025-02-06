@@ -19,9 +19,9 @@ from typing import Any
 from mindspore._c_expression import FunctionBase as FunctionBase_
 from mindspore.common.tensor import Tensor
 
-__all__ = ['Function']
+__all__ = ['_Function']
 
-class Function(FunctionBase_):
+class _Function(FunctionBase_):
     """
     A Class provides the ability to custom autograd function.
 

@@ -22,13 +22,13 @@ from mindspore.ops import operations as P
 from mindspore import Tensor
 from mindspore import nn
 from mindspore import ops
-from mindspore import Function
+from mindspore import _Function
 from tests.mark_utils import arg_mark
 
 oneslike = P.OnesLike()
 
 
-class MultiInputFunctionNet(Function):
+class MultiInputFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -59,7 +59,7 @@ def test_custom_function_multi_input():
     assert np.allclose(grads[1].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
-class MutiInputFunctionErrorNet(Function):
+class MutiInputFunctionErrorNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -90,7 +90,7 @@ def test_custom_function_multi_input_grad_num_wrong():
     assert "Function backward return a wrong number of gradients" in str(err.value)
 
 
-class MultiInputMultiOutputFunctionNet(Function):
+class MultiInputMultiOutputFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -121,7 +121,7 @@ def test_custom_function_multi_input_multi_output():
     assert np.allclose(grads[1].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
-class MultiInputMultiOutputStarArgsFunctionNet(Function):
+class MultiInputMultiOutputStarArgsFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -152,7 +152,7 @@ def test_custom_function_multi_input_multi_output_star_args():
     assert np.allclose(grads[1].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
-class MultiInputMultiOutputNotTensorFunctionNet(Function):
+class MultiInputMultiOutputNotTensorFunctionNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -183,7 +183,7 @@ def test_custom_function_multi_input_multi_output_not_tensor():
     assert np.allclose(grads[1].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
-class MultiInputMultiOutputFunctionErrorNet(Function):
+class MultiInputMultiOutputFunctionErrorNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -213,7 +213,7 @@ def test_custom_function_multi_backward_input_num_wrong():
         grad_net(net)(x, y)
 
 
-class MultiInputMultiOutputFunctionError1Net(Function):
+class MultiInputMultiOutputFunctionError1Net(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -244,7 +244,7 @@ def test_custom_function_no_tensor_grad_should_be_none():
     assert "Input is not tensor, but gradient is not none" in str(err.value)
 
 
-class MultiInputMultiOutputFunctionError2Net(Function):
+class MultiInputMultiOutputFunctionError2Net(_Function):
     @staticmethod
     def forward(ctx, x, y):
         t = x*x
@@ -275,7 +275,7 @@ def test_custom_function_grad_should_be_none_or_tensor():
     assert "Gradient should be none or tensor" in str(err.value)
 
 
-class CustomFunctionContextNet(Function):
+class CustomFunctionContextNet(_Function):
     @staticmethod
     def forward(ctx, x):
         ctx.age = 7
@@ -312,7 +312,7 @@ def test_custom_function_context():
     assert np.allclose(grads[0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
-class CustomFunctionNeedGradNet(Function):
+class CustomFunctionNeedGradNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x2 = x*x
@@ -346,7 +346,7 @@ def test_custom_function_need_grad():
     assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
-class CustomFunctionNeedGradForwardNet(Function):
+class CustomFunctionNeedGradForwardNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         need_grad = ctx.needs_input_grad
@@ -380,7 +380,7 @@ def test_custom_function_need_grad_forward():
     assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
-class CustomFunctionDirtyTensorError1Net(Function):
+class CustomFunctionDirtyTensorError1Net(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x.add_(1)
@@ -412,7 +412,7 @@ def test_custom_function_dirty_tensor_must_all_be_output():
     assert "The dirty tensors must all be outputs of the forward function." in str(err.value)
 
 
-class CustomFunctionDirtyTensorError2Net(Function):
+class CustomFunctionDirtyTensorError2Net(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x.add_(1)
@@ -444,7 +444,7 @@ def test_custom_function_dirty_tensor_is_need_grad_leaf():
     assert "A leaf tensor that need grad is being used in an inplace operator" in str(err.value)
 
 
-class CustomFunctionDirtyTensorNet(Function):
+class CustomFunctionDirtyTensorNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x.add_(1)
@@ -530,7 +530,7 @@ def test_custom_function_dirty_view_multi_output_error():
     assert "A view is one of output for multi output operator" in str(err.value)
 
 
-class CustomFunctionOutIsInNet(Function):
+class CustomFunctionOutIsInNet(_Function):
     @staticmethod
     def forward(ctx, x):
         return x
@@ -563,7 +563,7 @@ def test_custom_function_output_is_input():
     assert np.allclose(grads[0].asnumpy(), np.array([0, 2.], dtype=np.float32), 0.00001, 0.00001)
 
 
-class CustomFunctionNonDiffNet(Function):
+class CustomFunctionNonDiffNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x2 = x * x
@@ -595,7 +595,7 @@ def test_custom_function_non_diff():
     assert np.allclose(grads[1].asnumpy(), np.array([0.], dtype=np.float32), 0.00001, 0.00001)
 
 
-class CustomFunctionNonDiffNet1(Function):
+class CustomFunctionNonDiffNet1(_Function):
     @staticmethod
     def forward(ctx, x, y):
         ctx.mark_non_differentiable(x)
@@ -625,7 +625,7 @@ def test_custom_function_non_diff1():
     assert np.allclose(grads[1].asnumpy(), np.array([0.], dtype=np.float32), 0.00001, 0.00001)
 
 
-class CustomFunctionViewNotInAndDirtyNet(Function):
+class CustomFunctionViewNotInAndDirtyNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x2 = x * x
@@ -666,7 +666,7 @@ def test_custom_function_view_not_in_and_dirty():
     assert "This view tensor is output of custom cell" in str(err.value)
 
 
-class CustomFunctionMultiDiffOutputNet(Function):
+class CustomFunctionMultiDiffOutputNet(_Function):
     @staticmethod
     def forward(ctx, x, y):
         x2 = x * x
