@@ -54,10 +54,10 @@ class ArithmeticBase : public OperatorInfo {
   Status CheckLayoutConfig() override;
   Shapes InferExpandShape();
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
+  TensorLayout output_infer_tensor_layout_;
 
  private:
   TensorLayout InferOutputLayout();
-  TensorLayout output_infer_tensor_layout_;
 };
 
 class SubInfo : public ArithmeticBase {
@@ -273,6 +273,21 @@ class XdivyInfo : public ArithmeticBase {
             const PrimitiveAttrs &attrs)
       : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<XdivyCost>()) {}
   ~XdivyInfo() = default;
+};
+
+class OuterInfo : public ArithmeticBase {
+ public:
+  OuterInfo(const std::string &name, const Shapes &input_shape, const Shapes &output_shape, const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, input_shape, output_shape, attrs, std::make_shared<OuterCost>()) {}
+  ~OuterInfo() = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
+
+ protected:
+  Status CheckStrategy(const StrategyPtr &strategy) override;
+  Status InferDevMatrixShape() override;
+  Status InferTensorMap() override;
+  Status CheckInputLayout() override;
+  Status InferOutputTensorInfo() override;
 };
 
 class HypotInfo : public XdivyInfo {

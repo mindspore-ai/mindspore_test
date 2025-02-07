@@ -215,6 +215,7 @@ constexpr const char kNameLRN[] = "LRN";
 constexpr const char kNameLRNGrad[] = "LRNGrad";
 constexpr const char kNameLSTMInputGrad[] = "LSTMInputGrad";
 constexpr const char kNameMatMul[] = "MatMul";
+constexpr const char kNameOuter[] = "Outer";
 constexpr const char kNameMatrixDiag[] = "MatrixDiag";
 constexpr const char kNameMatrixDiagV3[] = "MatrixDiagV3";
 constexpr const char kNameMatrixDiagPartD[] = "MatrixDiagPartD";
