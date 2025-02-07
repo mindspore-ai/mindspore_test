@@ -43,8 +43,8 @@ from mindspore._c_expression import GraphExecutor_, JitExecutor_, CSRTensor, Row
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
     _run_jit_pipeline, _ms_memory_recycle, _bind_device_ctx, StubNode, TensorPy as Tensor
 from mindspore.parallel._ps_context import _is_role_sched
-from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_pynative_parallel, \
-    _is_in_auto_parallel_mode, _is_parallel_mode
+from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_in_auto_parallel_mode, \
+      _is_parallel_mode
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import is_stub_tensor
 from mindspore.common._utils import is_shape_unknown
@@ -56,6 +56,7 @@ from mindspore.common._pijit_context import PIJitCaptureContext
 from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
 from mindspore.common.jit_context import jit_context
 from mindspore.common.jit_trace import _jit_trace
+from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 
 # Store ms_function class compiled pipeline cache.
 ms_compile_cache = set()
@@ -782,7 +783,7 @@ class _JitExecutor:
                              + "\", line " + str(self.fn.__code__.co_firstlineno)
         if _pynative_executor.requires_grad():
             generate_name = generate_name + ".grad"
-        if _is_pynative_parallel():
+        if self.fn.__name__ == _PYNATIVE_PARALLEL_FUNC_NAME:
             generate_name = generate_name[:generate_name.rfind(str(id(self.fn)))] + str(id(self.shard_parent_obj))
         return generate_name, echo_function_name
 
@@ -1883,6 +1884,7 @@ class _CellGraphExecutor:
             Str, the full phase of the cell.
             Bool, if the graph has been compiled before, return False, else return True.
         """
+        _init_auto_parallel_context(obj)
         obj.__parse_method__ = 'construct'
         if not hasattr(obj, obj.__parse_method__):
             raise AttributeError(
@@ -1915,6 +1917,7 @@ class _CellGraphExecutor:
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
             self._graph_executor.clear_compile_arguments_resource()
+            _clear_auto_parallel_context(obj)
             return phase, False
 
         full_function_name = obj.__class__.__name__ + '.' + str(obj.instance_count) + '.' + str(id(type(obj)))
@@ -1953,6 +1956,7 @@ class _CellGraphExecutor:
             self._build_data_graph(obj, phase)
         elif BROADCAST_PHASE not in phase and _get_parameter_broadcast():
             _parameter_broadcast(obj)
+        _clear_auto_parallel_context(obj)
         return phase, True
 
     def _update_param_node_default_input(self, phase, replace):

@@ -25,10 +25,9 @@ from mindspore.common.dtype import dtype_to_nptype
 from mindspore.common import dtype as mstype
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.communication._comm_helper import _is_initialized
-from mindspore.parallel._auto_parallel_context import auto_parallel_context
-from mindspore.parallel._auto_parallel_context import _set_auto_parallel_context
-from mindspore.parallel._auto_parallel_context import _reset_auto_parallel_context
 from mindspore.parallel.shard import Layout
+from mindspore.parallel._auto_parallel_context import auto_parallel_context, _set_auto_parallel_context, \
+    _reset_auto_parallel_context
 from mindspore.common.seed import get_seed
 from mindspore._c_expression import GraphExecutor_, TensorPy as Tensor_
 from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shape_by_layout
