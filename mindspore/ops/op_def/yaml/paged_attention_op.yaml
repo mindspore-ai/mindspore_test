@@ -20,6 +20,9 @@ paged_attention:
     attn_mask:
       dtype: tensor
       default: None
+    alibi_mask:
+      dtype: tensor
+      default: None
     q_seq_lens:
       dtype: tensor
       default: None
@@ -37,6 +40,15 @@ paged_attention:
       default: "'DEFAULT'"
       prim_init: True
       arg_handler: str_to_enum
+    mask_mode:
+      dtype: int
+      default: "'MASK_DEFAULT'"
+      prim_init: True
+      arg_handler: str_to_enum
+    mla_v_dim:
+      dtype: int
+      default: 0
+      prim_init: True
 
   returns:
     attention_out:

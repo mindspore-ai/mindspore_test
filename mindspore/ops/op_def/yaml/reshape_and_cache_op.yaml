@@ -5,15 +5,37 @@ reshape_and_cache:
       dtype: tensor
     value:
       dtype: tensor
+      default: None
     key_cache:
       dtype: tensor
+      default: None
     value_cache:
       dtype: tensor
+      default: None
     slot_mapping:
       dtype: tensor
+      default: None
+    key_scale:
+      dtype: tensor
+      default: None
+    value_scale:
+      dtype: tensor
+      default: None
+    batch_valid_length:
+      dtype: tensor
+      default: None
+    key_value_scale_cache:
+      dtype: tensor
+      default: None
+    is_prefill:
+      dtype: bool
+      default: False
+    cache_config:
+      dtype: int
+      default: 0
   args_signature:
-    rw_write: key_cache, value_cache
-    dtype_group: (key, value, key_cache, value_cache)
+    rw_write: key_cache, value_cache, key_value_scale_cache
+    dtype_group: (key, key_cache), (value, value_cache), (key_scale, value_scale)
   labels:
     side_effect_mem: True
   returns:
