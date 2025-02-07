@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import dtype as mstype
 from mindspore import context, Tensor, ops
 from mindspore.nn import Cell
-from mindspore.ops.auto_generate import GroupedMatmul, grouped_matmul
+from mindspore.ops.auto_generate import GroupedMatmul, grouped_matmul, GroupedMatmulV4
 
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -84,6 +84,16 @@ class GroupedMatmulNet(Cell):
     def construct(self, x, weight, bias=None, scale=None, offset=None, antiquant_scale=None, antiquant_offset=None,
                   group_list=None):
         out = self.gmm(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list)
+        return out
+
+class GroupedMatmulV4Net(Cell):
+    def __init__(self, split_item=3, group_type=-1, group_list_type=0, act_type=0):
+        super().__init__()
+        self.gmm_v4 = GroupedMatmulV4(split_item, group_type, group_list_type, act_type)
+
+    def construct(self, x, weight, bias=None, scale=None, offset=None, antiquant_scale=None, antiquant_offset=None,
+                  pertoken_scale=None, group_list=None):
+        out = self.gmm_v4(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, pertoken_scale, group_list)
         return out
 
 @test_utils.run_with_cell
@@ -449,6 +459,55 @@ def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_none_a16w8_case6(mode):
     # compare
     np.testing.assert_allclose(except0, res[0].asnumpy(), atol=5e-3, rtol=5e-3)
     np.testing.assert_allclose(except1, res[1].asnumpy(), atol=5e-3, rtol=5e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
+def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_a8w8_case7(mode):
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_context(device_target="Ascend")
+    ms.set_context(mode=ms.GRAPH_MODE)
+    ms.set_context(jit_level='O0')
+    gmm_v4_net = GroupedMatmulV4Net(split_item=3, group_type=0, group_list_type=1)
+
+    M0 = 32
+    K0 = 256
+    N0 = 128
+    E0 = 8
+    group_list_np = [1, 3, 10, 14, 18, 22, 24, M0]
+
+    # numpy calculate
+    np_x_all = np.random.uniform(-128, 127, size=[M0, K0]).astype(np.int8)
+    np_w_all = np.random.uniform(-128, 127, size=[E0, K0, N0]).astype(np.int8)
+    np_s_all = np.random.uniform(0.1, 0.5, size=[E0, N0]).astype(np.float32)
+    np_pts = np.array([0.1] * M0).astype(np.float32)
+
+    np_x = split_x(np_x_all, group_list_np)  # use group_list split x. [(G0, N0), (G1, N0)....(GN, N0)]
+    np_w = split_w(np_w_all)  # [(K0, N0), (K0, N0)....(K0, N0)]
+    np_s = split_w(np_s_all)  # [(N0,), (N0,)....(N0,)]
+    res_np = [np.matmul(x0, w0 * s0) for x0, w0, s0 in zip(np_x, np_w, np_s)]
+    except_np = np.concatenate(res_np, axis=0) * np_pts.reshape(M0, 1)
+
+    # ms calculate
+    x = [ms.Tensor(np_x_all)]
+    w = [ms.Tensor(np_w_all)]
+    scale = [ms.Tensor(np_s_all)]
+    pertoken_scale = [ms.Tensor(np_pts)]
+
+    b = None
+    offset = None
+    antiquant_scale = None
+    antiquant_offset = None
+    group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
+
+    res = gmm_v4_net(x, w, b, scale, offset, antiquant_scale, antiquant_offset, pertoken_scale, group_list)
+
+    # compare
+    np.testing.assert_allclose(except_np, res[0].asnumpy(), rtol=1e-3)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
