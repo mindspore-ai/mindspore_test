@@ -52,7 +52,8 @@ const mindspore::HashSet<std::string> kGradBlackList{kMakeTupleOpName,         k
                                                      kTupleGetItemOpName,      kStopGradientOpName,
                                                      kUpdateStateOpName,       kNPUAllocFloatStatusOpName,
                                                      kNPUGetFloatStatusOpName, kNPUClearFloatStatusOpName,
-                                                     kZerosLikeExtOpName,      kOnesLikeExtOpName};
+                                                     kZerosLikeExtOpName,      kOnesLikeExtOpName,
+                                                     kInplaceStopGradientName};
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_call_graph_compile_cache_;
 
 // for simply infer (simple infer will push abs in bprop queue)

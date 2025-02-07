@@ -22,12 +22,13 @@ from mindspore.common import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
 from mindspore.nn.grad.cell_grad import _LinearizeInner
-from mindspore.ops.operations.other_ops import stop_gradient_
+from mindspore.ops.operations.other_ops import stop_gradient_op
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.function.array_func import ones, expand_dims, size, reshape, broadcast_to, transpose, zeros
 from mindspore.ops.composite import _Vmap, _Grad, _TaylorOperation, GradOperation
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_stop_gradient_op
 
 cast = P.Cast()
 dtype = P.DType()
@@ -1406,7 +1407,42 @@ def stop_gradient(value):
         >>> mindspore.ops.grad(f2)(mindspore.tensor(x))
         Tensor(shape=[], dtype=Float32, value= 0)
     """
-    return stop_gradient_(value)
+    return stop_gradient_op(value)
+
+
+def stop_gradient_(input):
+    """
+    StopGradient inplace
+
+    Args:
+        input (Tensor): input tensor
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        RuntimeError: If `input` is a view tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> from mindspore import Tensor
+        >>> from mindspore import dtype as mstype
+        >>> def net(x, y):
+        ...     out1 = ops.MatMul()(x, y)
+        ...     out2 = ops.MatMul()(x, y)
+        ...     ops.stop_gradient_(out2)
+        ...     return out1, out2
+        ...
+        >>> x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+        >>> y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+        >>> grad_fn = ops.grad(net)
+        >>> output = grad_fn(x, y)
+        >>> print(output)
+        [[1.4100001 1.6       6.5999994]
+         [1.4100001 1.6       6.5999994]]
+    """
+    inplace_stop_gradient_op(input)
 
 
 __all__ = [
@@ -1420,6 +1456,7 @@ __all__ = [
     'vjp',
     'linearize',
     'stop_gradient',
+    'stop_gradient_',
     'get_grad'
 ]
 __all__.sort()
