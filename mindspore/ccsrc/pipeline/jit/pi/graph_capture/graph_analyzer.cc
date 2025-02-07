@@ -362,7 +362,7 @@ ValueNode *GraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   auto &captured = GetCaptureInfo().captured_;
   auto sequence = abstract->cast<abstract::AbstractSequencePtr>();
   auto func_graph_builder = graph_builder_->FGBuilder();
-  auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
+  auto graph_node = func_graph_builder->FindOrCreateNodeByWrapper(abstract_wrapper);
   auto func_graph = func_graph_builder->graph(true);
   bool is_tuple = abstract->isa<abstract::AbstractTuple>();
 
@@ -436,7 +436,7 @@ std::pair<ValueNode *, ValueNode *> GraphAnalyzer::MutateDictNode(ValueNode *nod
   auto keys_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(key_abstracts));
   auto values_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(value_abstracts));
   auto func_graph_builder = graph_builder_->FGBuilder();
-  auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
+  auto graph_node = func_graph_builder->FindOrCreateNodeByWrapper(abstract_wrapper);
   MS_EXCEPTION_IF_NULL(graph_node);
   auto func_graph = func_graph_builder->graph(true);
   auto keys = func_graph->NewCNodeInOrder(prim::kPrimDictGetKeys, {graph_node});
