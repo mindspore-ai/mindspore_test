@@ -1328,10 +1328,10 @@ void FuncGrad::PruningWeights(const tensor::BaseTensorPtrList &weights, const Gr
 ValuePtr FuncGrad::Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
                           const GradAttr &grad_attr, const ValuePtr &sens) {
   CheckSensShapeAndType(sens);
+  GilReleaseWithCheck gil_release;
   BuildForwardLastNode(sens);
   PruningGradGraph(weights, grad_attr, grad_position);
   if (last_variable_->is_need_grad()) {
-    GilReleaseWithCheck gil_release;
     BackPropagate();
   }
   PyNativeAlgo::Common::DumpGraphIR("func_grad.ir", std::make_shared<FuncGraph>());

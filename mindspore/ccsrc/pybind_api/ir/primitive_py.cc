@@ -552,6 +552,7 @@ py::object PrimitivePy::RunInferValue(const py::tuple &args) {
 }
 
 void PrimitivePy::ProcessUnPairedCellHook(bool execute_hook_fn) {
+  py::gil_scoped_acquire gil;
   if (execute_hook_fn) {
     for (const auto &[cell_id, hook_fn] : unpair_backward_hook_grad_) {
       MS_LOG(DEBUG) << "Run unpair backward cell hook " << cell_id;

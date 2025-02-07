@@ -42,6 +42,7 @@
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "mindspore/ops/kernel/functions/auto_generate/functions.h"
+#include "mindspore/ops/kernel/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace pynative {
@@ -809,7 +810,8 @@ void AutoGradUtil::CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inpla
   auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   ValuePtr val = nullptr;
-  if (!BpropExpander::IsCloneInplaceInput(BpropCallback(prim, &inputs, &val))) {
+  if (!kernel::pyboost::OpRunStatus::Get().RequireGrad() ||
+      !BpropExpander::IsCloneInplaceInput(BpropCallback(prim, &inputs, &val))) {
     return;
   }
   MS_LOG(DEBUG) << "Begin clone src value for op " << prim->name();
