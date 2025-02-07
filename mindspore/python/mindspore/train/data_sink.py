@@ -107,6 +107,9 @@ def _get_jit_func(sink_fun, jit_config):
     if jit_level == "":
         jit_level = "O0"
     backend = ""
+    if jit_level == "O2":
+        jit_level = "O0"
+        backend = "GE"
     if "backend" in jit_config_dict:
         backend = jit_config_dict["backend"]
     fullgraph = False
