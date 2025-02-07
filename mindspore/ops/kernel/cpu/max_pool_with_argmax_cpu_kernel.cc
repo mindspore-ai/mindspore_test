@@ -17,7 +17,7 @@
 #include "kernel/cpu/max_pool_with_argmax_cpu_kernel.h"
 #include <algorithm>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/max_pool_with_argmax.h"
 #include "mindspore/ccsrc/kernel/common_utils.h"
 #include "mindspore/ccsrc/kernel/format_utils.h"

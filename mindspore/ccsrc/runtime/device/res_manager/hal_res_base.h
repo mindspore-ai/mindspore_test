@@ -229,7 +229,7 @@ class RES_EXPORT HalResBase {
   virtual bool LoadCollectiveCommLib() { return true; }
 
   // Return collective communication object for caller to access
-  virtual CollectiveCommunicationLib *collective_comm_lib() { return nullptr; }
+  virtual CollectiveCommunicationLib *collective_comm_lib() const { return nullptr; }
 
   virtual std::shared_ptr<MemoryManager> mem_manager() { return nullptr; }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_MEMORY_MANAGER_H_
-#define MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_MEMORY_MANAGER_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_MEM_MANAGER_CPU_MEMORY_MANAGER_H_
+#define MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_MEM_MANAGER_CPU_MEMORY_MANAGER_H_
 #include <vector>
 #include <map>
 #include <memory>
@@ -24,7 +24,7 @@
 #include "include/backend/device_address.h"
 #include "runtime/device/memory_manager.h"
 #include "plugin/device/cpu/hal/device/cpu_simple_mem_plan.h"
-#include "plugin/device/cpu/hal/hardware/cpu_memory_pool.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.h"
 
 namespace mindspore {
 namespace device {
@@ -83,4 +83,4 @@ class BACKEND_EXPORT CPUMemoryManager : public MemoryManager {
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_MEMORY_MANAGER_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_RES_MANAGER_CPU_CPU_MEM_MANAGER_CPU_MEMORY_MANAGER_H_

@@ -22,7 +22,7 @@
 #include <tuple>
 #include <type_traits>
 #include "utils/ms_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 
 namespace {

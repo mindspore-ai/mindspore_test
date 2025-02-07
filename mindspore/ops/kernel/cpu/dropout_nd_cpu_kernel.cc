@@ -22,7 +22,7 @@
 #include <map>
 #include <functional>
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/dropout_nd.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl//fp32/dropout_fp32.h"

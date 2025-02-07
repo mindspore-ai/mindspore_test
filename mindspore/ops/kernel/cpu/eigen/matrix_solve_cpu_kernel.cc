@@ -17,7 +17,7 @@
 #include "kernel/cpu/eigen/matrix_solve_cpu_kernel.h"
 #include <Eigen/Dense>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/matrix_solve.h"
 #include "kernel/common_utils.h"
 

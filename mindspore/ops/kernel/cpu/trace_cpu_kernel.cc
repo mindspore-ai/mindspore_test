@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/cpu/trace_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/common_utils.h"
 
 namespace mindspore {

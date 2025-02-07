@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"

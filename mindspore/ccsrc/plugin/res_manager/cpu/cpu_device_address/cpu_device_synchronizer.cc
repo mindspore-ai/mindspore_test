@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

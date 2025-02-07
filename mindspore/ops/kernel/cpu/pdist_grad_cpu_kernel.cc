@@ -19,7 +19,7 @@
 #include <functional>
 #include <map>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "abstract/utils.h"
 
 namespace mindspore {

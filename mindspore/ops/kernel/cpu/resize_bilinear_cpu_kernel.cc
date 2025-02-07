@@ -20,7 +20,7 @@
 #include "kernel/ops_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "infer/ops_func_impl/resize_bilinear_v2.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

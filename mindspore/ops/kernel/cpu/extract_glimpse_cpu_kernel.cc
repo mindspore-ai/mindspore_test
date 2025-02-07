@@ -23,7 +23,7 @@
 #include <cmath>
 #include <tuple>
 #include <type_traits>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/extract_glimpse.h"
 
 namespace {

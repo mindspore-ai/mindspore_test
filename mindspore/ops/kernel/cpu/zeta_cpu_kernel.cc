@@ -18,7 +18,7 @@
 #include <functional>
 #include <vector>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 

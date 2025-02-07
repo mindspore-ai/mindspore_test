@@ -20,7 +20,7 @@
 #include <utility>
 #include <algorithm>
 #include <unordered_set>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/log_uniform_candidate_sampler.h"
 #include "utils/shape_utils.h"
 

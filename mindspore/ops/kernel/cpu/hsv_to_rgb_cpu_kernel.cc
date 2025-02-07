@@ -15,7 +15,7 @@
  */
 #include "kernel/cpu/hsv_to_rgb_cpu_kernel.h"
 #include <vector>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace {
 const size_t kZero = 0;

@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include "kernel/ops_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_linear_1d.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
 constexpr auto kResizeLinear1D = "ResizeLinear1D";

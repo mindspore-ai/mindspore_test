@@ -25,7 +25,7 @@
 #include <utility>
 
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/factory/ms_factory.h"
 #include "include/common/thread_pool.h"
 

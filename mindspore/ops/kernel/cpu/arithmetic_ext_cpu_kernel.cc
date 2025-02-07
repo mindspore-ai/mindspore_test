@@ -26,7 +26,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/arithmetic_fp32.h"
 #include "kernel/cpu/nnacl/fp32/mul_fp32.h"
 #include "kernel/cpu/nnacl/fp32/power_fp32.h"

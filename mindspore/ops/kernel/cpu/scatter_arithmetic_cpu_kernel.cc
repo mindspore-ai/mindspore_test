@@ -23,7 +23,7 @@
 #include <utility>
 #include <functional>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 
 namespace mindspore {

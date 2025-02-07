@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/max_pool_grad_with_argmax_v2_cpu_kernel.h"
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/max_pool_grad_with_argmax_v2.h"
 
 namespace mindspore {

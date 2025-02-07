@@ -20,7 +20,7 @@
 #include <type_traits>
 #include <functional>
 #include "mindspore/ops/infer/hamming_window.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/arithmetic_cpu_kernel.h"
 

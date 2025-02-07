@@ -23,7 +23,7 @@
 #include "nnacl/matmul_parameter.h"
 #include "nnacl/op_base.h"
 #include "kernel/cpu/conjugate_transpose_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {

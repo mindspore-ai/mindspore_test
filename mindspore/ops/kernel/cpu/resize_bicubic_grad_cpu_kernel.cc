@@ -19,7 +19,7 @@
 #include <utility>
 #include "kernel/ops_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic_grad.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

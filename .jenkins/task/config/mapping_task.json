@@ -91,6 +91,7 @@
       "mindspore/ccsrc/plugin/device/cpu/hal/profiler",
       "mindspore/ccsrc/plugin/device/cpu/optimizer",
       "mindspore/ccsrc/plugin/device/cpu/kernel",
+      "mindspore/ccsrc/plugin/res_manager/cpu",
       "mindspore/ccsrc/ps",
       "mindspore/ccsrc/pybind_api",
       "mindspore/ccsrc/runtime/collective",

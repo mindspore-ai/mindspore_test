@@ -29,7 +29,7 @@
 #if defined(__aarch64__) && !defined(__APPLE__)
 #include <stdio.h>
 #endif
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/cpu/nnacl/op_base.h"
 

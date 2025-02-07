@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"

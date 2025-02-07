@@ -111,7 +111,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
                 ${CCSRC_DIR}/runtime/device/tensor_array.cc
                 ${CCSRC_DIR}/runtime/hardware/device_context_manager.cc
                 ${CCSRC_DIR}/plugin/device/cpu/hal/device/cpu_tensor_array.cc
-                ${CCSRC_DIR}/plugin/device/cpu/hal/hardware/cpu_memory_pool.cc
+                ${CCSRC_DIR}/plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.cc
                 ${CCSRC_DIR}/distributed/embedding_cache/embedding_cache_utils.cc
                 ${CCSRC_DIR}/distributed/embedding_cache/embedding_hash_map.cc
                 ${CCSRC_DIR}/distributed/embedding_cache/embedding_storage/dense_embedding_storage.cc

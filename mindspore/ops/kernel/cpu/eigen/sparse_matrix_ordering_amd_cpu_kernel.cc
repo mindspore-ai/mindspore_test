@@ -22,7 +22,7 @@
 #include "Eigen/SparseCore"
 #include "Eigen/OrderingMethods"
 #include "unsupported/Eigen/CXX11/Tensor"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/common_utils.h"
 #include "mindspore/ops/infer/sparse_matrix_ordering_amd.h"
 

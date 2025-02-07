@@ -25,9 +25,9 @@
 #include <algorithm>
 #include <numeric>
 
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
-#include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_synchronizer.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_vmm_adapter.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
