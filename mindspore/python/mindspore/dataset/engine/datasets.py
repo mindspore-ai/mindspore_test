@@ -3528,7 +3528,9 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         # Launch a clean process and register worker processes to be monitored by the watch dog.
         self._launch_monitor()
 
-        atexit.register(self.terminate)
+        # Register a termination function using weakref to avoid the object from unable to properly destruct.
+        atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
+                        weakref.WeakMethod(self.terminate))
 
     def terminate(self):
         # abort the monitor first and then close all the workers
@@ -4285,7 +4287,7 @@ class _ToDevice:
         if get_debug_mode():
             logger.error("MindData debugger cannot be used in dataset sink mode. Please manually turn off "
                          "sink mode and try debugger again.")
-        ir_tree, self.api_tree = dataset.create_ir_tree()
+        ir_tree, _ = dataset.create_ir_tree()
 
         self._runtime_context = cde.PythonRuntimeContext()
         self._runtime_context.Init()

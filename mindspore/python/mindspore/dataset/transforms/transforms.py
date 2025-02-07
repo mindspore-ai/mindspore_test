@@ -55,7 +55,7 @@ def clean_unused_executors():
     """
     clean the unused executor object in UDF or map with PyFunc process / thread mode
     """
-    key = str(os.getpid()) + "_" + str(threading.currentThread().ident)
+    key = str(os.getpid()) + "_" + str(threading.current_thread().ident)
     if key in EXECUTORS_LIST:
         EXECUTORS_LIST.pop(key)
 
