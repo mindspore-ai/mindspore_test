@@ -267,6 +267,12 @@ void GeDeviceContext::Initialize() {
   if (op_tuning_conf->EnableAoeOffline()) {
     transform::EnableAoeOffline();
   }
+  // open tsd
+  if (!common::UseDynamicCluster()) {
+    if (!GetDeprecatedInterface()->OpenTsd(ms_context)) {
+      MS_LOG(EXCEPTION) << "Open tsd failed";
+    }
+  }
   initialized_ = true;
   pid_ = GetCurrentPID();  // set the pid when first initialize
   MS_LOG(INFO) << "End initializing device context.";
