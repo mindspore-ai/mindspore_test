@@ -611,6 +611,43 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
     })
     .FeedExpectedOutput({{4, 10, 8}}, {kNumberTypeFloat32});
+    
+    generator
+    .FeedInputArgs({
+      // x
+      InferInfoParam{ShapeArray{{10, 20}}, kNumberTypeInt8},
+      // weight
+      InferInfoParam{ShapeArray{{4, 20, 8}}, kNumberTypeInt8},
+      // bias
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
+      // scale
+      InferInfoParam{ShapeArray{{4, 8}}, kNumberTypeBFloat16},
+      // offset
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
+      // antiquant_scale
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
+      // antiquant_offset
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
+      // pre_token_scale
+      InferInfoParam{ShapeArray{{10}}, kNumberTypeFloat32},
+      // group_list
+      InferInfoParam{ShapeVector{4}, kNumberTypeInt64, CreatePyIntTuple({2, 4, 2, 2})},
+      // activation_input
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
+      // activation_quant_scale
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
+      // activation_quant_offset
+      InferInfoParam{ShapeVector{}, kMetaTypeNone, mindspore::kNone},
+      // split_item
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
+      // group_type
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // group_list_type
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)},
+      // act_type
+      InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+    })
+    .FeedExpectedOutput({{10, 8}}, {kNumberTypeBFloat16});
 
   return generator.Generate();
 }

@@ -16,6 +16,7 @@
 #include "infer/ops_func_impl/grouped_matmul_v4.h"
 
 #include <vector>
+#include <algorithm>
 
 #include "include/common/utils/utils.h"
 #include "ops/ops_func_impl/op_func_impl.h"
@@ -23,6 +24,7 @@
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -77,7 +79,6 @@ int32_t GroupedMatmulV4FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
     return OP_CHECK_RETRY;
   }
 
-  auto expect_sum = group_type == 0 ? x_shape.front() : x_shape.back();
   const auto &group_list = group_list_opt.value().ToVector();
   auto group_list_type = group_list_type_opt.value();
   if (MS_UNLIKELY(group_list_type != 0 && group_list_type != 1)) {
@@ -96,20 +97,44 @@ int32_t GroupedMatmulV4FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
         }
       }
     }
-    MS_CHECK_VALUE(group_list.back() == expect_sum,
-                   CheckAndConvertUtils::FormatCheckIntegerMsg("group_list's last element ", group_list.back(), kEqual,
-                                                               expect_sum, primitive));
   } else {
     for (auto &e : group_list) {
       MS_CHECK_VALUE(
         e >= 0, CheckAndConvertUtils::FormatCheckIntegerMsg("element of group_list", e, kGreaterEqual, 0, primitive));
     }
-    auto actual_sum = std::accumulate(group_list.begin(), group_list.end(), 0);
-    MS_CHECK_VALUE(actual_sum == expect_sum, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                               "sum of group_list", actual_sum, kEqual, expect_sum, primitive));
   }
 
   return OP_CHECK_SUCCESS;
+}
+
+TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->IsEnableInferBoost() && ms_context->ascend_soc_version() == kAscendVersion310p) {
+    return {kNumberTypeFloat16};
+  }
+
+  const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
+  const auto &per_token_scale_info = input_infos[per_token_scale_idx_];
+  TypeIdList output_types;
+  if (per_token_scale_info->IsNone()) {
+    std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                   [](const InferInfoPtr &info) { return info->GetType(); });
+  } else {
+    if (input_infos[scale_idx_]->IsNone()) {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', the scale cannot be None in per-token quant.";
+    }
+    const auto &scale_tensors = input_infos[scale_idx_]->GetSequenceElements();
+    for (const InferInfoPtr &info : scale_tensors) {
+      auto scale_type = info->GetType();
+      if (scale_type != kNumberTypeBFloat16) {
+        MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', the scales must be BFloat16 in per-token quant.";
+      }
+      output_types.emplace_back(scale_type);
+    }
+  }
+  return output_types;
 }
 }  // namespace ops
 }  // namespace mindspore
