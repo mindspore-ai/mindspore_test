@@ -222,6 +222,33 @@ bool CheckInvalidCellListDictMethod(const py::object &obj) {
   Any require = pipeline::Resource::GetMethodPtr(type_id, method_name);
   return require.empty();
 }
+
+AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) {
+  if (value == nullptr || !value->isa<FuncGraph>()) {
+    return nullptr;
+  }
+  auto fg = value->cast<FuncGraphPtr>();
+  auto fg_output = fg->output();
+  if (fg_output == nullptr) {
+    return nullptr;
+  }
+  return fg_output->abstract();
+}
+
+void UpdateParameterFuncGraph(const AnfNodePtr &node) {
+  if (node == nullptr || !node->isa<Parameter>()) {
+    MS_LOG(INFO) << "Input node is not parameter, failed to update graph.";
+    return;
+  }
+  auto param = dyn_cast<Parameter>(node);
+  auto origin_fg = param->func_graph();
+  auto top_graph = parse::Parser::GetTopFuncGraph();
+  if (top_graph == origin_fg) {
+    return;
+  }
+  param->set_func_graph(top_graph);
+  MS_LOG(INFO) << "Update parameter function graph from " << origin_fg->ToString() << " to " << top_graph->ToString();
+}
 }  // namespace
 
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
@@ -256,21 +283,6 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
   MS_LOG(INFO) << "Convert parameter tuple to node: " << ret->DebugString()
                << " with abstract: " << ret_abs->ToString();
   return ret;
-}
-
-void FuncGraphBuilder::UpdateParameterFuncGraph(const AnfNodePtr &node) {
-  if (node == nullptr || !node->isa<Parameter>()) {
-    MS_LOG(INFO) << "Input node is not parameter, failed to update graph.";
-    return;
-  }
-  auto param = dyn_cast<Parameter>(node);
-  auto origin_fg = param->func_graph();
-  auto top_graph = parse::Parser::GetTopFuncGraph();
-  if (top_graph == origin_fg) {
-    return;
-  }
-  param->set_func_graph(top_graph);
-  MS_LOG(INFO) << "Update parameter function graph from " << origin_fg->ToString() << " to " << top_graph->ToString();
 }
 
 AnfNodePtr FuncGraphBuilder::ConvertObjToNode(const py::object &input_obj) {
@@ -413,7 +425,7 @@ AnfNodePtr FuncGraphBuilder::FindNodeByWrapper(const AbstractWrapperPtr &abstrac
   return nullptr;
 }
 
-AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper) {
+AnfNodePtr FuncGraphBuilder::FindOrCreateNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper) {
   auto res = FindNodeByWrapper(abstract_wrapper);
   if (res != nullptr) {
     return res;
@@ -601,7 +613,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddSubGraphInput(const AbstractWrapperPtr a
     MS_LOG(INFO) << "Abstract wrapper for subgraph input is nullptr.";
     return nullptr;
   }
-  auto node = GetNodeByWrapper(abstract_wrapper);
+  auto node = FindOrCreateNodeByWrapper(abstract_wrapper);
   if (node == nullptr) {
     MS_LOG(INFO) << "Failed to add input for abstract wrapper: " << abstract_wrapper->ToString();
     return nullptr;
@@ -620,18 +632,6 @@ AbstractWrapperPtr FuncGraphBuilder::AddSubGraphInput(const AbstractWrapperPtr a
   MS_LOG(INFO) << "Add input success for abstract wrapper: " << abstract_wrapper->ToString()
                << ", result abstract wrapper: " << ret_abstract_wrapper->ToString();
   return ret_abstract_wrapper;
-}
-
-AbstractBasePtr FuncGraphBuilder::FetchFuncGraphOutputAbstract(const ValuePtr &value) const {
-  if (value == nullptr || !value->isa<FuncGraph>()) {
-    return nullptr;
-  }
-  auto fg = value->cast<FuncGraphPtr>();
-  auto fg_output = fg->output();
-  if (fg_output == nullptr) {
-    return nullptr;
-  }
-  return fg_output->abstract();
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
@@ -822,8 +822,7 @@ void FuncGraphBuilder::EraseCandidateIsolatedNode(const AnfNodePtr &node) {
 
 bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
                                                  const AbstractWrapperPtrList &inputs_abstract_wrapper,
-                                                 std::vector<AnfNodePtr> *input_node_list,
-                                                 std::vector<AbstractBasePtr> *input_abs_list) {
+                                                 AnfNodePtrList *input_node_list, AbstractBasePtrList *input_abs_list) {
   input_node_list->reserve(inputs_abstract_wrapper.size() + 1);
   input_abs_list->reserve(inputs_abstract_wrapper.size());
 
@@ -833,7 +832,7 @@ bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
       MS_LOG(INFO) << "The input python object of " << callable_value->ToString() << ", is NULL";
       return false;
     }
-    auto node = GetNodeByWrapper(input_wrapper);
+    auto node = FindOrCreateNodeByWrapper(input_wrapper);
     if (node == nullptr) {
       return false;
     }
@@ -912,7 +911,7 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_v
 
   (void)input_node_list.emplace_back(NewValueNode(callable_value));
   for (const auto &input_wrapper : inputs_abstract_wrapper) {
-    auto node = GetNodeByWrapper(input_wrapper);
+    auto node = FindOrCreateNodeByWrapper(input_wrapper);
     if (node == nullptr) {
       // When build grad operation node failed, let forward net run pi jit.
       constexpr size_t forward_net_index = 0;
@@ -981,7 +980,7 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
   auto pre_wrapper = *(fake_node_abstract->user_data<AbstractWrapperPtrList>(kGradNetInputs));
   std::vector<AnfNodePtr> fake_node_inputs;
   for (auto e : pre_wrapper) {
-    auto cur_node = GetNodeByWrapper(e);
+    auto cur_node = FindOrCreateNodeByWrapper(e);
     MS_EXCEPTION_IF_NULL(cur_node);
     fake_node_inputs.push_back(cur_node);
   }
@@ -1025,7 +1024,7 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
     final_node_abs.push_back(cur_input_abs);
   }
   for (auto input_wrapper : inputs) {
-    auto node = GetNodeByWrapper(input_wrapper);
+    auto node = FindOrCreateNodeByWrapper(input_wrapper);
     MS_EXCEPTION_IF_NULL(node);
     (void)final_node_input.emplace_back(node);
     (void)final_node_abs.emplace_back(node->abstract());
@@ -1293,7 +1292,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithAbstract(const ValuePtr &value,
 
     (void)input_node_list.emplace_back(NewValueNode(value));
     for (const auto &input_wrapper : inputs_abstract_wrapper) {
-      auto node = GetNodeByWrapper(input_wrapper);
+      auto node = FindOrCreateNodeByWrapper(input_wrapper);
       MS_EXCEPTION_IF_NULL(node);
       (void)input_node_list.emplace_back(node);
       EraseCandidateIsolatedNode(node);
