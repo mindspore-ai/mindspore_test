@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_ALL_TO_ALL_V_H_
-#define MINDSPORE_CORE_OPS_ALL_TO_ALL_V_H_
-#include <map>
+
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_TOKEN_UNPERMUTE_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_TOKEN_UNPERMUTE_H_
+
 #include <memory>
-#include <string>
 #include <vector>
-#include <utility>
-#include <set>
 #include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameAlltoAllV = "AlltoAllV";
-
-class OPS_API AlltoAllV : public BaseOperator {
+class OPS_API MoeTokenUnpermuteFuncImpl : public OpFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(AlltoAllV);
-  AlltoAllV() : BaseOperator(kNameAlltoAllV) { InitIOName({"x"}, {"output"}); }
-  void Init() const {}
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_ALL_TO_ALL_V_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MOE_TOKEN_UNPERMUTE_H_
