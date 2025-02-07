@@ -468,6 +468,10 @@ bool NuclearNormCpuKernelMod::ComputeTensorNuclearNorm(const std::vector<kernel:
 
   size_t total_copy_size = value_num_ * sizeof(T);
   Eigen::Tensor<T, 1, Eigen::RowMajor> eigen_tensor(value_num_);
+  if (eigen_tensor.size() <= 0) {
+    MS_LOG(EXCEPTION) << "For 'NuclearNorm', the size of eigen_tensor is not greater than 0.";
+  }
+
   auto ret1 = memcpy_s(&eigen_tensor(0), total_copy_size, input_data_ptr, total_copy_size);
   if (ret1 != EOK) {
     MS_LOG(EXCEPTION) << "For 'NuclearNorm', it does memcpy_s failed. Error no: " << ret1;
