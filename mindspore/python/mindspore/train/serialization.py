@@ -68,9 +68,7 @@ from mindspore.ops import Cast
 from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_parameter_broadcast
 from mindspore.parallel._tensor import _load_tensor, _get_tensor_strategy, _get_tensor_slice_index
 from mindspore.parallel._tensor import _reshape_param_data, _reshape_param_data_with_weight
-from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode, \
-    _get_device_num
-from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
+from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode
 from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
     _restore_group_info_list, _get_param_list_when_first_dim_sharded
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
@@ -151,13 +149,8 @@ atexit.register(_async_save_close)
 
 def _get_cur_rank_dp(parameter_layout_dict):
     """ Get dp and tp from layout dict. """
-    pp_num = _get_auto_parallel_context("pipeline_stages")
-    dev_num = _get_device_num()
     global_rank = get_rank()
-    pipe_size = dev_num // pp_num
-    initial_rank = (global_rank // pipe_size) * pipe_size
-    parameter_redundancy_dict = get_parameter_redundancy(
-        parameter_layout_dict, initial_rank)
+    parameter_redundancy_dict = get_parameter_redundancy(parameter_layout_dict)
     value_len = sys.maxsize
     min_value = ()
     for key, value in parameter_redundancy_dict.items():
@@ -1696,20 +1689,14 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
                        "redundancy removed. ".format(len(param_not_load)))
         logger.warning("{} are not loaded.".format(param_not_load))
     if remove_redundancy:
-        parallel_mode = context.get_auto_parallel_context("parallel_mode")
-        if parallel_mode == "stand_alone":
+        if get_group_size() == 1:
             raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
-                            f"in parallel scenarios, but got {parallel_mode}.")
+                            f"in parallel scenarios, but got stand_alone.")
         if not net.compile_cache and not net.parameter_layout_dict:
             raise ValueError("When loading a parameter dict that has removed redundancy, "
                              "the network should be compiled.")
         param_layout = net.parameter_layout_dict
-        rank_id = get_rank()
-        device_num = _get_device_num()
-        stage_num = _get_auto_parallel_context("pipeline_stages")
-        chunk_size = device_num // stage_num
-        initial_rank = (rank_id // chunk_size) * chunk_size
-        _single_parameter_broadcast(net, param_layout, rank_id, initial_rank)
+        _single_parameter_broadcast(net, param_layout)
 
     return param_not_load, ckpt_not_load
 
@@ -1893,9 +1880,6 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
             elif opt_shard_group:
                 allgather_net = get_allgather_cell(opt_shard_group, False, do_reshape,
                                                    tuple(after_reshape_slice_shape))
-        elif opt_shard_group and context.get_auto_parallel_context("optimizer_weight_shard_aggregated_save"):
-            allgather_net = get_allgather_cell(opt_shard_group, False, do_reshape,
-                                               tuple(after_reshape_slice_shape))
         net.parallel_parameter_merge_net_dict[param_name] = allgather_net
     if allgather_net:
         param_data = allgather_net(param_data)
@@ -2997,8 +2981,6 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
     dec_key = Validator.check_isinstance('dec_key', dec_key, (type(None), bytes))
     dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
 
-    if train_strategy_filename is None:
-        train_strategy_filename = context.get_auto_parallel_context("strategy_ckpt_load_file")
     _train_strategy = build_searched_strategy(train_strategy_filename)
     train_strategy = _convert_to_list(_train_strategy)
 

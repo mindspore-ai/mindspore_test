@@ -216,7 +216,7 @@ def test_remove_redundancy_algorithm(mode):
     Description: Verify that the redundancy removal algorithm is correct.
     Expectation: run success
     """
-    param_redundancy_dict = get_parameter_redundancy(parameter_layout_dict)
+    param_redundancy_dict = get_parameter_redundancy(parameter_layout_dict, initial_rank=0)
     single_parameter = remove_param_redundancy(param_redundancy_dict)
     expect_dict = {
         0: {'accu_grads.backbone.blocks.16.output.mapping.weight', 'accu_grads.backbone.blocks.16.layernorm1.gamma',
