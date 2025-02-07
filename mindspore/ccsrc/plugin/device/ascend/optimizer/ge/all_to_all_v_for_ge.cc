@@ -43,12 +43,12 @@ std::vector<int64_t> GetNumeList(const CNodePtr &origin_node, size_t index) {
   MS_EXCEPTION_IF_NULL(input_value);
   auto array = GetArrayValue<int64_t>(input_value);
   if (!array.has_value()) {
-    MS_LOG(INFO) << "array has no value.";
+    MS_LOG(INFO) << "Array has no value.";
     return {};
   }
   auto array_value = array.value();
   if (array_value.HasUnknownValue()) {
-    MS_LOG(INFO) << "array_value has unknown value.";
+    MS_LOG(INFO) << "Array_value has unknown value.";
     return {};
   }
   return array_value.ToVector();
