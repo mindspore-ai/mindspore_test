@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_STRATEGY_UTILS_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_STRATEGY_UTILS_H_
 
+#include <string>
 #include "base/base.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
@@ -27,7 +28,8 @@ class StrategyUtils {
  public:
   static bool CheckExtractInformation(const CNodePtr &cnode);
   static void SetVirtualDatasetStrategy(const CNodePtr &node);
-  static void SetVirtualDatasetLayout(const CNodePtr &node);
+  static void SetDatasetLayout(const CNodePtr &node, const std::string &attrName);
+  static void SetGetNextLayout(const CNodePtr &node);
   static void ExtractStrategyAndInit(const CNodePtr &cnode, const PrimitivePtr &prim, const OperatorInfoPtr &op_info);
 };
 }  // namespace parallel

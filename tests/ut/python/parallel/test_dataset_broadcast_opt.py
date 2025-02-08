@@ -19,6 +19,7 @@ from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
 from mindspore.nn.wrap.cell_wrapper import PipelineCell
+from mindspore.parallel.shard import Layout
 import mindspore.common.lazy_inline as lazy_inline
 from .test_dynamic_data_sink import GeneratorFakeData
 import mindspore.dataset as ds
@@ -264,6 +265,28 @@ def test_dataset_broadcast_set_dataset_strategy():
     """
     context.set_auto_parallel_context(device_num=32, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", dataset_strategy=((2, 1), (2, 1)))
+    MSContext.get_instance().set_param(ms_ctx_param.dataset_broadcast_opt_level, 2)
+    net = StageNet2()
+    dataset = ds.GeneratorDataset(
+        GeneratorFakeData(size=1024, batch_size=8, image_size=(64,),
+                          use_parallel=True, num_classes=64), ["data", "label"])
+    opt = nn.Lamb(net.trainable_params(), learning_rate=0.01)
+    loss = nn.L1Loss()
+    loss_cell = WithLossCell(net, loss)
+    model = Model(loss_cell, optimizer=opt)
+    model.train(2, dataset, dataset_sink_mode=True)
+
+
+def test_dataset_broadcast_set_dataset_layout():
+    """
+    Feature: opt_level 2 + set_dataset_strategy
+    Description: no pipeline, dataset_strategy=((2, 1), (2, 1)), test graph compile
+    Expectation: success
+    """
+    layout = Layout((16, 2), ("remain", "dp"))
+    context.set_auto_parallel_context(device_num=32, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
+                                      dataset_strategy=(layout("dp", "None"), layout("dp", "None")))
     MSContext.get_instance().set_param(ms_ctx_param.dataset_broadcast_opt_level, 2)
     net = StageNet2()
     dataset = ds.GeneratorDataset(

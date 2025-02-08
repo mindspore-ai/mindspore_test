@@ -52,6 +52,10 @@ class GetNextInfo : public OperatorInfo {
   Status GetAttrShapes();
   Status GetAttrOutPutNum();
   Status InferAsLossDivisor() override { return SUCCESS; }
+  Status InferAsLossDivisorByLayout() override { return SUCCESS; }
+  Status CheckInputLayout() override { return SUCCESS; }
+  Status CheckOutputLayout() override;
+  Status InferOutputTensorInfo() override { return SUCCESS; }
 
  private:
   int64_t dev_num_ = 1;

@@ -164,6 +164,7 @@ void FindPreNodeCrossFuncGraph(CNodePtr *cnode, int64_t out_index);
 bool CrossInterNode(CNodePtr *prev_cnode, ValueNodePtr *prev_prim_anf_node, PrimitivePtr *prev_prim);
 bool IsCarePrevCNode(const CNodePtr &prev_cnode, const PrimitivePtr &prev_prim);
 void SetSharedParameterFlag(const FuncGraphPtr &root, const AnfNodePtr &parameter);
+Shapes ConvertDatasetLayoutToStrategy();
 StrategyPtr GenerateStandAloneStrategy(const Shapes &inputs_shape);
 StrategyPtr GenerateStandAloneStrategyForNewShapes(const NewShapes &inputs_shape);
 StrategyPtr GenerateBatchParallelStrategy(const OperatorInfoPtr operator_, const PrimitivePtr prim);
