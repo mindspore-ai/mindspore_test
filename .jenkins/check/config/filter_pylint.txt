@@ -14,6 +14,7 @@
 "mindspore/mindspore/python/mindspore/_check_version.py"                                                                 "unused-import"
 "mindspore/mindspore/python/mindspore/_check_version.py"                                                                 "broad-except"
 "mindspore/mindspore/python/mindspore/run_check/_check_version.py"                                                       "protected-access"
+"mindspore/mindspore/python/mindspore/parallel/transform_safetensors.py"                                                 "protected-access"
 "mindspore/mindspore/python/mindspore/common/api.py"                                                                     "protected-access"
 "mindspore/mindspore/python/mindspore/common/api.py"                                                                     "not-callable"
 "mindspore/mindspore/python/mindspore/common/parameter.py"                                                               "protected-access"

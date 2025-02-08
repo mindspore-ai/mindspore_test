@@ -365,7 +365,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 os.chmod(tmp_name, stat.S_IWUSR)
                 os.remove(tmp_name)
             if format == "ckpt":
-                ckpt_save_time_start = time.time()
+                ckpt_total_io_time = 0
                 with _ckpt_fs.create(tmp_name, *_ckpt_fs.create_args) as f:
                     plain_data = None
                     if enc_key is not None:
@@ -382,20 +382,26 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                         if value[0] == "offload_parameter":
                             new_value = value[1:]
                             new_value[2] = value[3]
-                            _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data)
+                            _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data, ckpt_total_io_time)
                             _offload_if_config(value[3])
                             continue
                         if value[1] == "str":
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                            crc_num, ckpt_total_io_time = _write_parameter_data(name, value, f, enc_key, plain_data,
+                                                                                crc_num, crc_check,
+                                                                                ckpt_total_io_time)
                             continue
                         if isinstance(value[2], np.ndarray):
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                            crc_num, ckpt_total_io_time = _write_parameter_data(name, value, f, enc_key, plain_data,
+                                                                                crc_num, crc_check,
+                                                                                ckpt_total_io_time)
                             continue
                         if isinstance(value[2], Tensor) and hasattr(value[2], "slice_num") and value[2].slice_num > 1:
                             _write_hugeparameter(name, value, f)
                             continue
 
-                        crc_num = _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                        crc_num, ckpt_total_io_time = _write_parameter_bytes_data(name, value, f, enc_key, plain_data,
+                                                                                  crc_num, crc_check,
+                                                                                  ckpt_total_io_time)
 
                     if enc_key is not None:
                         plain_data.seek(0)
@@ -406,9 +412,9 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             block_data = plain_data.read(max_block_size)
                     if crc_check:
                         f.write('crc_num'.encode() + crc_num.to_bytes(10, byteorder='big'))
-                ckpt_save_time_end = time.time()
-                cost_time = ckpt_save_time_end - ckpt_save_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save ckpt cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           f"Save ckpt io cost time:{ckpt_total_io_time}.")
+
             elif format == "safetensors":
                 save_dict = {}
                 crc_num = 0
@@ -428,7 +434,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                     save_file(save_dict, tmp_name)
                 safetensors_save_time_end = time.time()
                 cost_time = safetensors_save_time_end - safetensors_save_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors io cost time:{cost_time}.")
             if not os.path.exists(tmp_name):
                 logger.warning(f"Rename failed, can't find {tmp_name}, it is possible that multiple processes have "
                                f"simultaneously modified a file.")
@@ -453,7 +459,7 @@ def _write_random_seed(name, value, f):
     f.write(checkpoint_list.SerializeToString())
 
 
-def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False):
+def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False, ckpt_total_io_time=0):
     """Write parameter data into protobuf file."""
     data_size = value[2].nbytes / 1024
     if data_size > SLICE_SIZE:
@@ -475,14 +481,18 @@ def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_ch
             output_data = checkpoint_list.SerializeToString()
             if crc_check:
                 crc_num = binascii.crc32(output_data, crc_num)
+            io_start_time = time.time()
             f.write(output_data)
+            io_end_time = time.time()
+            io_cost_time = io_end_time - io_start_time
+            ckpt_total_io_time += io_cost_time
         else:
             plain_data.write(checkpoint_list.SerializeToString())
 
-    return crc_num
+    return crc_num, ckpt_total_io_time
 
 
-def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False):
+def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False, ckpt_total_io_time=0):
     """Write parameter bytes data into protobuf file."""
     bytes_value = value[2].get_bytes()
     chunk_size = 1024 * SLICE_SIZE
@@ -500,11 +510,15 @@ def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, 
             output_data = checkpoint_list.SerializeToString()
             if crc_check:
                 crc_num = binascii.crc32(output_data, crc_num)
+            io_start_time = time.time()
             f.write(output_data)
+            io_end_time = time.time()
+            io_cost_time = io_end_time - io_start_time
+            ckpt_total_io_time += io_cost_time
         else:
             plain_data.write(checkpoint_list.SerializeToString())
 
-    return crc_num
+    return crc_num, ckpt_total_io_time
 
 
 def _write_mapparameter(name, value, f, map_param_inc=False):
@@ -693,6 +707,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    start_save_time = time.time()
     ckpt_file_name = _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format)
     integrated_save = Validator.check_bool(integrated_save)
     async_save = _check_async_save(async_save)
@@ -820,6 +835,9 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
     logger.info("Saving checkpoint process is finished.")
+    end_save_time = time.time()
+    save_checkpoint_cost_time = end_save_time - start_save_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save checkpoint cost time {save_checkpoint_cost_time}.")
 
 
 def _convert_list_to_param_list(save_obj, choice_func):
@@ -1323,17 +1341,22 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
     if format == "safetensors":
         with safe_open(ckpt_file_name, framework='np') as f:
             cal_crc_num = 0
-            sf_load_time_start = time.time()
+            total_io_cost_time = 0
             for k in sorted(f.keys()):
                 if crc_check:
                     cal_crc_num = binascii.crc32(bytes(k, encoding='utf-8'), cal_crc_num)
                     cal_crc_num = binascii.crc32(bytes(f.get_tensor(k)), cal_crc_num)
                 if choice_func is not None and not choice_func(k):
                     continue
-                parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
-            sf_load_time_end = time.time()
-            cost_time = sf_load_time_end - sf_load_time_start
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load safetensors cost time:{cost_time}.")
+                io_start_time = time.time()
+                value = f.get_tensor(k)
+                io_end_time = time.time()
+                io_cost_time = io_end_time - io_start_time
+                total_io_cost_time += io_cost_time
+                parameter_dict[k] = Parameter(Tensor.from_numpy(value))
+
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                       f"Load safetensors io cost time:{total_io_cost_time}.")
             if crc_check:
                 if f.metadata() is None or f.metadata().get("crc_num") is None:
                     logger.warning(
@@ -1487,6 +1510,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    start_load_time = time.time()
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin load checkpoint.")
     specify_prefix = _check_prefix(specify_prefix)
     filter_prefix = _check_prefix(filter_prefix)
@@ -1535,6 +1559,9 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         _warm_up_host_cache_post_process(is_worker, net_dict, warm_up_dict)
 
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Load checkpoint is finished.")
+    end_load_time = time.time()
+    load_checkpoint_cost_time = end_load_time - start_load_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load checkpoint cost time {load_checkpoint_cost_time}.")
     return parameter_dict
 
 
@@ -1703,7 +1730,7 @@ def _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check):
                 pb_content = f.read()
                 ckpt_load_time_end = time.time()
                 cost_time = ckpt_load_time_end - ckpt_load_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt io cost time:{cost_time}.")
 
         else:
             pb_content = _decrypt(ckpt_file_name, dec_key, len(dec_key), dec_mode)
