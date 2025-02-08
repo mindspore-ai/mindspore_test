@@ -308,24 +308,47 @@ std::vector<symshape::SymbolInfoList> ParallelSymbolInfo(const std::vector<symsh
 
   auto parallel_symbol_infos = symbol_infos;
   parallel::Strategies dataset_strategy;
-  if (!parallel::ParallelContext::GetInstance()->dataset_strategy().empty()) {
-    dataset_strategy = parallel::ParallelContext::GetInstance()->dataset_strategy();
-  } else {
-    bool full_batch = parallel::ParallelContext::GetInstance()->full_batch();
-    if (full_batch) {
-      return parallel_symbol_infos;
-    } else {
-      // get device num
-      int64_t device_num = GetDeviceNum();
-
-      // set parallel symbol
-      for (auto &symbol : parallel_symbol_infos) {
-        if (!symbol.empty()) {
-          symbol[0].divisor = symbol[0].divisor * device_num;
-          symbol[0].remainder = symbol[0].remainder * device_num;
+  if (!ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
+      !ParallelContext::GetInstance()->dataset_strategy_devmat().empty()) {
+    auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+    auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+    for (size_t i = 0; i < all_tensor_map.size(); ++i) {
+      Shape local_stra;
+      auto cur_tensor_map = all_tensor_map.at(i);
+      auto cur_dev_mat = all_dev_mat.at(i);
+      for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
+        size_t shard_size = 1;
+        for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
+          auto val = cur_tensor_map.at(j).at(k);
+          if (val != -1) {
+            auto real_idx = cur_dev_mat.size() - val - 1;
+            shard_size *= cur_dev_mat.at(real_idx);
+          }
         }
+        local_stra.push_back(shard_size);
       }
-      return parallel_symbol_infos;
+      dataset_strategy.push_back(local_stra);
+    }
+  } else {
+    if (!parallel::ParallelContext::GetInstance()->dataset_strategy().empty()) {
+      dataset_strategy = parallel::ParallelContext::GetInstance()->dataset_strategy();
+    } else {
+      bool full_batch = parallel::ParallelContext::GetInstance()->full_batch();
+      if (full_batch) {
+        return parallel_symbol_infos;
+      } else {
+        // get device num
+        int64_t device_num = GetDeviceNum();
+
+        // set parallel symbol
+        for (auto &symbol : parallel_symbol_infos) {
+          if (!symbol.empty()) {
+            symbol[0].divisor = symbol[0].divisor * device_num;
+            symbol[0].remainder = symbol[0].remainder * device_num;
+          }
+        }
+        return parallel_symbol_infos;
+      }
     }
   }
 

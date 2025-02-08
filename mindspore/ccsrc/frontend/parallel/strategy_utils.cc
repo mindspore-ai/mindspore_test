@@ -131,7 +131,7 @@ ValuePtr CreateValuePtrFromVector(const std::vector<T> &vec) {
   return std::make_shared<ValueTuple>(value_vec);
 }
 
-void StrategyUtils::SetVirtualDatasetLayout(const CNodePtr &node) {
+void StrategyUtils::SetDatasetLayout(const CNodePtr &node, const std::string &attrName) {
   auto prim = GetValueNode<PrimitivePtr>(node->input(0));
   auto dataset_strategy_tensormap = ParallelContext::GetInstance()->dataset_strategy_tensormap();
   auto dataset_strategy_devmat = ParallelContext::GetInstance()->dataset_strategy_devmat();
@@ -157,8 +157,20 @@ void StrategyUtils::SetVirtualDatasetLayout(const CNodePtr &node) {
     layout_vec.emplace_back(std::make_shared<ValueDictionary>(layout_dict));
   }
   auto layout_dict_value = std::make_shared<ValueTuple>(layout_vec);
-  prim->set_attr(IN_LAYOUT, layout_dict_value);
+  prim->set_attr(attrName, layout_dict_value);
   return;
+}
+
+void StrategyUtils::SetGetNextLayout(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  PrimitivePtr prim = GetValueNode<PrimitivePtr>(node->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
+
+  if (prim->name() == GET_NEXT && !ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
+      !ParallelContext::GetInstance()->dataset_strategy_devmat().empty()) {
+    MS_LOG(INFO) << "Set layout to node " << node->DebugString();
+    SetDatasetLayout(node, OUT_LAYOUT);
+  }
 }
 
 void StrategyUtils::SetVirtualDatasetStrategy(const CNodePtr &node) {
@@ -172,7 +184,7 @@ void StrategyUtils::SetVirtualDatasetStrategy(const CNodePtr &node) {
     if (!ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
         !ParallelContext::GetInstance()->dataset_strategy_devmat().empty() && prim->name() == VIRTUAL_DATA_SET) {
       MS_LOG(INFO) << "Set layout for virtual dataset";
-      return SetVirtualDatasetLayout(node);
+      return SetDatasetLayout(node, IN_LAYOUT);
     }
     CheckGlobalDeviceManager();
     auto attrs_temp = prim->attrs();

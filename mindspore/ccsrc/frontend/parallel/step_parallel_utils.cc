@@ -3655,6 +3655,30 @@ static FuncGraphPtr PynativeParallelGraph(const FuncGraphPtr &root, const std::v
   return real_graph;
 }
 
+Shapes ConvertDatasetLayoutToStrategy() {
+  Shapes dataset_strategy;
+  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  for (size_t i = 0; i < all_tensor_map.size(); ++i) {
+    Shape local_stra;
+    auto cur_tensor_map = all_tensor_map.at(i);
+    auto cur_dev_mat = all_dev_mat.at(i);
+    for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
+      size_t shard_size = 1;
+      for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
+        auto val = cur_tensor_map.at(j).at(k);
+        if (val != -1) {
+          auto real_idx = cur_dev_mat.size() - val - 1;
+          shard_size *= cur_dev_mat.at(real_idx);
+        }
+      }
+      local_stra.push_back(shard_size);
+    }
+    dataset_strategy.push_back(local_stra);
+  }
+  return dataset_strategy;
+}
+
 void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {
   auto real_graph = PynativeParallelGraph(root, all_nodes);
   auto out_pair = GetRealKernelNode(real_graph->output(), -1, nullptr, false);

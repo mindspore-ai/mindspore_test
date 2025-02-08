@@ -341,8 +341,14 @@ void SetStridedSliceStrategy(const AnfNodePtr &node) {
     for (size_t j = 0; j < shape_list[0][i].size(); j++) {
       input_strategy.push_back(1);
     }
+    std::vector<std::vector<int64_t>> data_stra;
     static const auto skip_redis = (common::GetEnv("PIPELINE_SLICE_SKIP_REDISTRIBUTION") == "1");
-    auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
+    if (!ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
+        !ParallelContext::GetInstance()->dataset_strategy_devmat().empty()) {
+      data_stra = ConvertDatasetLayoutToStrategy();
+    } else {
+      data_stra = ParallelContext::GetInstance()->dataset_strategy();
+    }
     if (skip_redis && !full_batch && input_strategy.size() > 0) {
       auto dim = shape_list[1][0][0];
       if (!data_stra.empty()) {
