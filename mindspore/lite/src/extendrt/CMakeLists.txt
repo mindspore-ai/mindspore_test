@@ -23,6 +23,10 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
         ${CMAKE_CURRENT_SOURCE_DIR}/kernel/nnacl/nnacl_lib.cc
         )
 
+    set(MSLITE_GRAPH_KERNEL_FLAGS_SRC
+        ${CCSRC_DIR}/backend/common/graph_kernel/graph_kernel_flags.cc
+        )
+
     set(MSLITE_EXTEND_DEFAULT_KERNEL_LIB_SRC
             ${CMAKE_CURRENT_SOURCE_DIR}/kernel/default/cnode_infer_manager.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/kernel/default/kernel_mod_kernel.cc
@@ -33,6 +37,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
     set(MSLITE_EXTEND_RUNTIME_SRC
         ${MSLITE_KERNEL_PLUGIN}
         ${MSLITE_EXTEND_NNACL_KERNEL_LIB_SRC}
+        ${MSLITE_GRAPH_KERNEL_FLAGS_SRC}
         ${MSLITE_EXTEND_DEFAULT_KERNEL_LIB_SRC}
         ${CMAKE_CURRENT_SOURCE_DIR}/kernel/kernel_selector/kernel_selector.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/subgraph_kernel.cc
