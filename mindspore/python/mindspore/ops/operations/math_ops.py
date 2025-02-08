@@ -819,6 +819,7 @@ class InplaceIndexAdd(Primitive):
         """Initialize InplaceIndexAdd"""
         self.init_prim_io_names(inputs=['var', 'indices', 'updates'], outputs=['var'])
         self.axis = axis
+        self.add_prim_attr('side_effect_mem', True)
         validator.check_value_type('axis', axis, [int], self.name)
 
 
