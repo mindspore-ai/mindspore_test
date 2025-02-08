@@ -40,29 +40,32 @@ ShapeArray MoeInitRoutingV2FuncImpl::InferShape(const PrimitivePtr &primitive,
   if (x_shp.front() != expert_idx_shp.front()) {
     MS_EXCEPTION(ShapeError) << "For op [" << op_name << "], the first dim of x and expert_idx must be the same.";
   }
-  auto NUM_ROWS = x_shp[kIndex0];
-  auto H = x_shp[kIndex1];
-  auto K = expert_idx_shp[kIndex1];
+  auto any_dim = abstract::Shape::kShapeDimAny;
+  auto num_rows = x_shp[kIndex0];
+  auto h = x_shp[kIndex1];
+  auto k = expert_idx_shp[kIndex1];
   auto active_num = input_infos[kIndex2]->GetScalarValueWithCheck<int64_t>();
   auto expert_capacity = input_infos[kIndex3]->GetScalarValueWithCheck<int64_t>();
   auto expert_num = input_infos[kIndex4]->GetScalarValueWithCheck<int64_t>();
   auto drop_pad_mode = input_infos[kIndex5]->GetScalarValueWithCheck<int64_t>();
+  ShapeValueDType h_ = h == any_dim ? any_dim : h;
+  ShapeValueDType expd_row_idx_dim = (num_rows == any_dim || k == any_dim) ? any_dim : num_rows * k;
 
   ShapeArray out_shapes;
   if (drop_pad_mode) {
     // drop/pad
-    (void)out_shapes.emplace_back(std::vector<int64_t>{expert_num, expert_capacity, H});
+    (void)out_shapes.emplace_back(std::vector<int64_t>{expert_num, expert_capacity, h_});
   } else {
     // dropless/active
     // active
     if (active_num) {
-      (void)out_shapes.emplace_back(std::vector<int64_t>{std::min({active_num, NUM_ROWS * K}), H});
+      (void)out_shapes.emplace_back(std::vector<int64_t>{std::min({active_num, expd_row_idx_dim}), h_});
     } else {
       // dropless
-      (void)out_shapes.emplace_back(std::vector<int64_t>{NUM_ROWS * K, H});
+      (void)out_shapes.emplace_back(std::vector<int64_t>{expd_row_idx_dim, h_});
     }
   }
-  (void)out_shapes.emplace_back(std::vector<int64_t>{NUM_ROWS * K});
+  (void)out_shapes.emplace_back(std::vector<int64_t>{expd_row_idx_dim});
   (void)out_shapes.emplace_back(std::vector<int64_t>{expert_num});
   (void)out_shapes.emplace_back(std::vector<int64_t>{expert_num});
   return out_shapes;
