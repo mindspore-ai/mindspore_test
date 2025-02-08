@@ -94,6 +94,14 @@ bool IsEnableInternalNode(const AnfNodePtr &node) {
     if (!IsValueNode<None>(cnode->input(kIndex6))) {
       return false;
     }
+  } else if (op_name == "SplitWithSize") {
+    static const auto kSplitOutNum2 = 2;
+    static const auto kSplitOutNum3 = 3;
+    auto out_num = AnfUtils::GetOutputTensorNum(node);
+    if (out_num != kSplitOutNum2 && out_num != kSplitOutNum3) {
+      MS_LOG(INFO) << "Split only support 2 or 3 outputs, but got: " << out_num;
+      return false;
+    }
   }
 
   std::string disable_op_env = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
