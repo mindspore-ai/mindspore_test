@@ -49,15 +49,19 @@ grouped_matmul_v4:
         split_item:
             dtype: int
             default: 0
+            prim_init: True
         group_type:
             dtype: int
             default: -1
+            prim_init: True
         group_list_type:
             dtype: int
             default: 0
+            prim_init: True
         act_type:
             dtype: int
             default: 0
+            prim_init: True
     returns:
         out:
             dtype: tuple[tensor]
