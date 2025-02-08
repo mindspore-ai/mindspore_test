@@ -236,6 +236,19 @@ bool CheckAbstractSame(const AnfNodePtr &main, const AnfNodePtr &node) {
   return main_abs->hash() == node_abs->hash();
 }
 
+size_t GetAllReduceStartIdx(const CNodePtr &c_main, const CNodePtr &c_node) {
+  size_t i = kAnfPrimitiveIndex;
+  if (IsPrimitiveCNode(c_main, prim::kPrimAllReduce)) {
+    // For AllReduce, we require inputs except Primitive to be equal, so we compare from the second input.
+    auto c_main_group = GetCNodePrimitive(c_main)->GetAttr("group");
+    auto c_node_group = GetCNodePrimitive(c_node)->GetAttr("group");
+    if (c_main_group == c_node_group) {
+      i = kAnfPrimitiveIndex + 1;
+    }
+  }
+  return i;
+}
+
 bool CSE::CheckReplace(const AnfNodePtr &main, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(main);
   MS_EXCEPTION_IF_NULL(node);
@@ -267,11 +280,7 @@ bool CSE::CheckReplace(const AnfNodePtr &main, const AnfNodePtr &node) {
       return false;
     }
     // Check inputs, all inputs should equal.
-    size_t i = kAnfPrimitiveIndex;
-    if (IsPrimitiveCNode(c_main, prim::kPrimAllReduce)) {
-      // For AllReduce, we require inputs except Primitive to be equal, so we compare from the second input.
-      i = kAnfPrimitiveIndex + 1;
-    }
+    size_t i = GetAllReduceStartIdx(c_main, c_node);
     for (; i < inputs1.size(); i++) {
       auto input1 = GetReplicatedNode(inputs1[i]);
       auto input2 = GetReplicatedNode(inputs2[i]);
