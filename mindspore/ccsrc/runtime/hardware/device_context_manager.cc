@@ -363,19 +363,17 @@ void DeviceContextManager::LoadPlugin() {
       if (cuda_home.empty()) {
         MS_LOG(INFO) << "Please set env CUDA_HOME to path of cuda, if you want to enable gpu backend.";
         continue;
-      } else if (SelectGpuPlugin(cuda_home, file_names)) {
-        break;
+      } else {
+        (void)SelectGpuPlugin(cuda_home, file_names);
       }
     }
-    for (auto iter = file_names.rbegin(); iter != file_names.rend();) {
-      const auto &file_name = *(iter++);
+    for (auto iter = file_names.rbegin(); iter != file_names.rend(); iter++) {
+      const auto &file_name = *iter;
       auto ret = plugin_loader::PluginLoader::LoadDynamicLib(file_name, &plugin_maps_, &dlopen_error_msg_);
       if (ret) {
         if (iter != file_names.rend()) {
-          MS_LOG(INFO) << "Load " << plugin_name << " plugin file " << file_name
-                       << " success, skip loading other version.";
+          MS_LOG(INFO) << "Load " << plugin_name << " plugin file " << file_name << " success.";
         }
-        break;
       }
     }
   }

@@ -45,8 +45,6 @@
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/graph_adapter.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #ifdef ENABLE_DEBUGGER
@@ -692,15 +690,13 @@ void MindRTBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_i
       } else {
         const auto &primitive = common::AnfAlgo::GetCNodePrimitive(kernel);
         MS_EXCEPTION_IF_NULL(primitive);
-        if (runtime::PyBoostOpExecute::GetInstance().IsPyBoostOpRegistered(primitive->name()) &&
-            (kernel::pyboost::PyBoostUtils::IsKernelModRegistered(device_target, primitive->name()) ||
-             kernel::pyboost::PyBoostUtils::IsPyBoostCustomRegistered(device_target, primitive->name()))) {
+        if (PyBoostAdapter::IsPyBoostRegistered(device_target, primitive->name())) {
           MS_LOG(DEBUG) << "Run " << primitive->name() << " by pyboost";
           graph_compiler_->GetSingleOpInputTensors(kernel, op_output_map, parameter_index, inputs[graph_index], true,
                                                    &input_info);
           runtime::OpRunnerInfo op_runner_info{
             primitive, device_target, input_info.input_values, input_info.input_abs, {}, kernel->abstract()};
-          runtime::PyBoostOpExecute::GetInstance().RunPyBoostCall(&op_runner_info, &op_outputs);
+          PyBoostAdapter::RunPyBoostCall(&op_runner_info, &op_outputs);
         } else {
           MS_LOG(DEBUG) << "Run " << primitive->name() << " by single op graph";
           session::BackendOpRunInfoPtr op_run_info;

@@ -14,10 +14,10 @@
  * limitations under the License.plugin/device/cpu/hal/device
  */
 
-#include "kernel/cpu/pyboost/customize/group_norm.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/group_norm.h"
 #include <memory>
 #include <functional>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {

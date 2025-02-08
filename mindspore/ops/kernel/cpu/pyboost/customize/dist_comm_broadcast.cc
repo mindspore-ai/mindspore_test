@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/dist_comm_broadcast.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/dist_comm_broadcast.h"
 #include <memory>
 #include <utility>
 #include <string>
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif

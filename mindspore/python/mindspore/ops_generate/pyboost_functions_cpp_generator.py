@@ -45,7 +45,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
     def __init__(self):
         """Initializes the PyboostFunctionsGenerator with the necessary templates."""
         self.pyboost_func_include_header_template = Template(
-            f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n'
+            f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
         self.convert_optional_to_value_template = Template(
             "auto ${output} = PyNativeAlgo::PyBoost::OptionalToValue(${input});\n"

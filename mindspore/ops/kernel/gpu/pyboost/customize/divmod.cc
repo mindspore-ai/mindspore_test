@@ -16,7 +16,7 @@
 #include "kernel/gpu/pyboost/customize/divmod.h"
 #include <memory>
 #include <utility>
-#include "mindspore/ops/kernel/common/pyboost/customize/divmod.h"
+#include "mindspore/ccsrc/pyboost/customize/divmod.h"
 #include "mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "mindspore/ccsrc/runtime/runtime_conf/runtime_conf.h"
 

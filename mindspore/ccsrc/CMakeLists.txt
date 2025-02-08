@@ -126,6 +126,7 @@ set(BACKEND_SUB_COMP
         plugin/device/cpu/hal/hardware
         plugin/device/cpu/hal/profiler
         plugin/device/cpu/optimizer
+        plugin/device/cpu/kernel
         )
 
 foreach(_comp ${BACKEND_SUB_COMP})
@@ -140,7 +141,7 @@ foreach(_comp ${BACKEND_SUB_COMP})
     endif()
 endforeach()
 
-list(APPEND BACKEND_SUB_OBJECTS_SRC ${OPS_HOST_OBJECTS})
+
 set_property(SOURCE ${BACKEND_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_backend SHARED ${BACKEND_SUB_OBJECTS_SRC})
 
@@ -221,23 +222,24 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     if(NOT MSVC)
         target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore mindspore_ops_grad
                 -Wl,--no-whole-archive mindspore_core
-                mindspore_ops mindspore_common mindspore_backend)
+                mindspore_ops mindspore_common mindspore_backend mindspore_pyboost)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops
-                mindspore_common mindspore_backend mindspore mindspore_ops_grad)
+                mindspore_common mindspore_backend mindspore mindspore_ops_grad mindspore_pyboost)
         target_link_options(_c_expression PRIVATE "/WHOLEARCHIVE:mindspore_ops_grad.lib")
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore mindspore_ops_grad proto_input -Wl,-noall_load
-        mindspore_core mindspore_ops mindspore_common mindspore_backend)
+        mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     if(ENABLE_CPU AND NOT WIN32)
         target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     endif()
     target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore mindspore_ops_grad
-            proto_input -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_backend)
+            proto_input -Wl,--no-whole-archive mindspore_core mindspore_ops mindspore_common mindspore_backend
+            mindspore_pyboost)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
 
@@ -257,6 +259,8 @@ endif()
 if(ENABLE_CPU)
     target_link_libraries(_c_expression PRIVATE mindspore::dnnl mindspore::mkldnn nnacl)
 endif()
+
+add_subdirectory(pyboost)
 
 if(ENABLE_MINDDATA)
     add_subdirectory(minddata/mindrecord)

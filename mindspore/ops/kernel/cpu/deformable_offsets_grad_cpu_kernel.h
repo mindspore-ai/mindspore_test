@@ -23,7 +23,7 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 #include "mindspore/ops/infer/grad/deformable_offsets_grad.h"
 

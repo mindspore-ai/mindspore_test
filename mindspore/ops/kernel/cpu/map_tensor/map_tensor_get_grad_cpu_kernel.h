@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/map_tensor/map_tensor_cpu_kernel.h"
 #include "plugin/device/cpu/hal/device/cpu_hash_table.h"
 

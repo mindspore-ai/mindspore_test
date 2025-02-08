@@ -16,6 +16,9 @@
 Generate pyboost function from pyboost_op.yaml
 """
 
+import os
+import shutil
+import logging
 from pyboost_inner_prim_generator import PyboostInnerPrimGenerator
 from pyboost_functions_py_generator import PyboostFunctionsPyGenerator
 from pyboost_functions_h_generator import PyboostFunctionsHeaderGenerator
@@ -38,8 +41,21 @@ from auto_grad_reg_cc_generator import AutoGradRegHeaderGenerator
 from functions_cc_generator import FunctionsGenerator, FunctionsHeaderGenerator
 
 
+def clear_old_generated_code(work_path):
+    """ delete old generated files to prevent compilation failure """
+    files_to_clear = ['mindspore/ops/kernel/common/pyboost',
+                      'mindspore/ops/kernel/functions/auto_generate',
+                      'mindspore/ccsrc/runtime/pynative/op_function']
+    for f in files_to_clear:
+        real_path = os.path.join(work_path, f)
+        if os.path.exists(real_path):
+            shutil.rmtree(real_path)
+            logging.warning(f"rm file ${real_path}")
+
+
 def gen_pyboost_code(work_path, op_protos, doc_yaml_data, tensor_method_protos, mint_func_protos, alias_func_mapping):
     """ gen_pyboost_code """
+    clear_old_generated_code(work_path)
     call_pyboost_inner_prim_generator(work_path, op_protos)
     call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data)
     call_pyboost_functions_h_generator(work_path, op_protos)

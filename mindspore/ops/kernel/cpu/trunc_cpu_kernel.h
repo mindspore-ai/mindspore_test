@@ -22,7 +22,7 @@
 #include <memory>
 #include <map>
 #include "mindspore/ops/infer/ops_func_impl/trunc.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 
 namespace mindspore {

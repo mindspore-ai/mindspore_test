@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/min.h"
-#include "kernel/cpu/pyboost/customize/max.h"
-#include "kernel/cpu/pyboost/auto_generate/min.h"
-#include "kernel/cpu/pyboost/auto_generate/max.h"
-#include "kernel/cpu/pyboost/auto_generate/cast.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/min.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/max.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/min.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/max.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {

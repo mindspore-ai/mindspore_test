@@ -51,7 +51,7 @@ install(
 )
 
 install(
-    TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
+    TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )
@@ -152,6 +152,12 @@ if(ENABLE_CPU)
         TARGETS nnacl
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
     )
 endif()
 

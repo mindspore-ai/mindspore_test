@@ -20,7 +20,7 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 #include "nnacl/base/slice_base.h"
 #include "nnacl/kernel/slice.h"

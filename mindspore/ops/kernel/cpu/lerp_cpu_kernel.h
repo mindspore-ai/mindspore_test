@@ -22,7 +22,7 @@
 #include <utility>
 #include <map>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 #include "kernel/common_utils.h"
 

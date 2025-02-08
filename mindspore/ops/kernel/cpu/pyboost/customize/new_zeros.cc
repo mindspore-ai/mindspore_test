@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/new_zeros.h"
-#include "kernel/cpu/pyboost/auto_generate/zeros.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/new_zeros.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/zeros.h"
 
 namespace mindspore {
 namespace kernel {

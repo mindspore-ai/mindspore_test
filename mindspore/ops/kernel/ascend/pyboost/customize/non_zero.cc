@@ -18,10 +18,10 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/customize/op_common.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {

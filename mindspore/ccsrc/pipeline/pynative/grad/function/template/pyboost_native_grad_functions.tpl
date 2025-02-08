@@ -16,15 +16,15 @@
 
 #include "pipeline/pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"
 #include "runtime/pynative/op_executor.h"
-#include "runtime/pynative/op_function/value_converter.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/value_converter.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "backend/graph_compiler/vmimpl.h"
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/expander/core/node.h"
 #include "pipeline/pynative/grad/grad_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "runtime/pynative/op_function/pyboost_grad_functions.h"
+#include "mindspore/ccsrc/pyboost/grad_functions/pyboost_grad_functions.h"
 ${include_op_header}
 
 namespace mindspore {

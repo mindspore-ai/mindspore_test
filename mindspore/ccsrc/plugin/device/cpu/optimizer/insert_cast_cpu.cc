@@ -28,7 +28,7 @@
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/optimizer/cpu_pass_utils.h"
 #include "utils/ms_context.h"
 

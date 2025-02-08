@@ -19,7 +19,7 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/infer/fill_diagonal.h"
 
 namespace mindspore {

@@ -66,7 +66,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
 #include "backend/common/graph_kernel/value_graph_binder.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/gpu/hal/device/gpu_pin_mem_pool.h"
 #include "plugin/device/gpu/hal/device/gpu_device_synchronizer.h"
 #include "include/common/profiler.h"

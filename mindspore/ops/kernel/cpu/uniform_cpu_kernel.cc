@@ -26,7 +26,7 @@
 #include "mindspore/ops/infer/uniform.h"
 #include "kernel/common_utils.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

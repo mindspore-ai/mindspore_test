@@ -152,11 +152,10 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
         "../../../mindspore/ccsrc/ps/*.cc"
         "../../../mindspore/ops/kernel/cpu/adam_delta_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/akg/*.cc"
-        "../../../mindspore/ops/kernel/cpu/cpu_kernel.cc"
+        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg/*.cc"
         "../../../mindspore/ops/kernel/cpu/fused_ada_factor_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/nnacl/fp32/adam_fp32.c"
-        "../../../mindspore/ops/kernel/cpu/rpc/rpc_recv_kernel.cc"
+        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/rpc_recv_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/sparse_apply_adam_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/sparse_apply_ftrl_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/sparse_apply_lazy_adam_cpu_kernel.cc"
@@ -250,8 +249,8 @@ list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/core/communicat
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/ps_context.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/util.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/scheduler.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ops/kernel/cpu/akg/akg_cpu_kernel_mod.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ops/kernel/cpu/akg/akg_cpu_kernel_build.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_mod.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg_cpu_kernel_build.cc")
 
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
@@ -279,7 +278,7 @@ endforeach()
 include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
-target_link_libraries(_ut_obj_static PRIVATE mindspore_backend)
+target_link_libraries(_ut_obj_static PRIVATE mindspore_backend mindspore_pyboost)
 foreach(comp ${ALL_UT_COMPS})
     add_executable(ut_${comp}_tests ${UT_${comp}_SRCS})
     # ci envs have no enough memory, so make link target sequentially

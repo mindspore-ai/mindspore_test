@@ -24,7 +24,7 @@
 #include <vector>
 #include <utility>
 #include "dnnl.hpp"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 #ifdef USE_MS_THREADPOOL_FOR_DNNL
 #include "dnnl_threadpool.hpp"

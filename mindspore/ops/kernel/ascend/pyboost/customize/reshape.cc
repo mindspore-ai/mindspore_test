@@ -15,7 +15,7 @@
  */
 
 #include "kernel/ascend/pyboost/customize/reshape.h"
-#include "kernel/common/pyboost/customize/reshape.h"
+#include "mindspore/ccsrc/pyboost/customize/reshape.h"
 #include "mindspore/ops/view/reshape_strides_calc.h"
 namespace mindspore {
 namespace kernel {

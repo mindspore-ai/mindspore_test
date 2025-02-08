@@ -15,10 +15,10 @@
  */
 
 #include "kernel/ascend/pyboost/customize/contiguous.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/common/pyboost/auto_generate/copy.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/copy.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {

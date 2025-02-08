@@ -16,7 +16,7 @@
 
 #include "kernel/gpu/pyboost/customize/min.h"
 #include "kernel/gpu/pyboost/customize/max.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "runtime/runtime_conf/runtime_conf.h"

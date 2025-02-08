@@ -22,7 +22,7 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
@@ -30,8 +30,8 @@ namespace pyboost {
 void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                  const BaseTensorPtr &weight_tensor, const BaseTensorPtr &bias_tensor,
                                  const std::optional<BaseTensorPtr> &mean_tensor,
-                                 const std::optional<BaseTensorPtr> &variance_tensor,
-                                 const BoolImmPtr &training, const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon);
+                                 const std::optional<BaseTensorPtr> &variance_tensor, const BoolImmPtr &training,
+                                 const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

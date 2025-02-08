@@ -27,7 +27,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace opt {

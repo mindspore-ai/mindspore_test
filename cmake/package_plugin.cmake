@@ -31,6 +31,15 @@ set(INSTALL_BASE_DIR ".")
 set(INSTALL_LIB_DIR "lib")
 set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 
+if(ENABLE_CPU)
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
+
 if(ENABLE_D)
     install(
             TARGETS mindspore_ascend LIBRARY

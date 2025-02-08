@@ -24,7 +24,7 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "kernel/ascend/opapi/aclnn_kernel_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 

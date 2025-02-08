@@ -26,7 +26,7 @@
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "plugin/device/ascend/kernel/dvm/dvm.h"
 #include "mindspore/core/include/ir/base_tensor.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pynative/lazy_fusion_kernel.h"
 
 namespace mindspore {

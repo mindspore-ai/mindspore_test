@@ -23,7 +23,7 @@
 #include <map>
 #include <utility>
 #include <unordered_map>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

@@ -57,7 +57,7 @@ class FunctionsHeaderGenerator(BaseGenerator):
                                                                  return_type=return_type_str)
             functions_list.append(functions)
         pyboost_func_h_str = self.FUNCTIONS_H_TEMPLATE.replace(op_call_with_grad=functions_list)
-        save_path = os.path.join(work_path, K.MS_OPS_KERNEL_FUNCTIONS_AUTO_GEN_PATH)
+        save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "functions.h"
         save_file(save_path, file_name, pyboost_func_h_str)
 
@@ -90,7 +90,7 @@ class FunctionsGenerator(BaseGenerator):
         self.FUNCTIONS_CC_TEMPLATE = template.FUNCTIONS_CC_TEMPLATE
         self.FUNCTION_BODY_TEMPLATE = template.FUNCTION_BODY_TEMPLATE
         self.pyboost_func_include_header_template = Template(
-            f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n'
+            f'#include "{K.MS_PYBOOST_BASE_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
         self.clone_inplace_input_template = Template(
             'GetCloneFunc()(op, prim::kPrim${class_name}, device_target, {${grad_args}});'
@@ -114,7 +114,7 @@ class FunctionsGenerator(BaseGenerator):
             op_call_with_grad_list.append(self._get_function_body(op_proto))
         pyboost_func_h_str = self.FUNCTIONS_CC_TEMPLATE.replace(op_call_with_grad=op_call_with_grad_list,
                                                                 pyboost_op_header_include=func_include_headers_list)
-        save_path = os.path.join(work_path, K.MS_OPS_KERNEL_FUNCTIONS_AUTO_GEN_PATH)
+        save_path = os.path.join(work_path, K.MS_PYBOOST_FUNCTIONS_AUTO_GEN_PATH)
         file_name = "functions.cc"
         save_file(save_path, file_name, pyboost_func_h_str)
 

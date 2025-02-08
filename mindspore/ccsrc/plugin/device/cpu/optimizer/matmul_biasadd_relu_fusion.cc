@@ -27,7 +27,7 @@
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace opt {

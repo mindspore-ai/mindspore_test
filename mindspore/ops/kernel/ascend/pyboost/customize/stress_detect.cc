@@ -20,7 +20,7 @@
 #include <future>
 #include <memory>
 #include <utility>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
 

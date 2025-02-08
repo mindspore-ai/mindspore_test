@@ -15,7 +15,7 @@
  */
 
 #include "kernel/ascend/pyboost/customize/cross.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "infer/ops_func_impl/cross.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"

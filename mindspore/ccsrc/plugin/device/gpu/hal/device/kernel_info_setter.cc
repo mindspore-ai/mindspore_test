@@ -43,7 +43,7 @@
 #include "utils/ms_utils.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace device {

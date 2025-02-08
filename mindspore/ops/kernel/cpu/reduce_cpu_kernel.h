@@ -25,7 +25,7 @@
 #include <functional>
 #include <complex>
 #include "base/bfloat16.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/utils/cpu_utils.h"
 #include "include/common/factory/ms_factory.h"
 
