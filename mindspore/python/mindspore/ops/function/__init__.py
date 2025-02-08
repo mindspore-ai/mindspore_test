@@ -241,6 +241,7 @@ from .math_func import (
     lcm,
     tensor_exp,
     einsum,
+    einsum_ext,
     view_as_real,
     var,
     var_mean,
