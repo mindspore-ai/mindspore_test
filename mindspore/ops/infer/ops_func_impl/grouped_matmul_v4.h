@@ -37,6 +37,8 @@ class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
     return {static_cast<int64_t>(this->idxes_.group_list)};
   }
 
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
  protected:
   void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
@@ -47,6 +49,7 @@ class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
 
  private:
   int64_t group_list_type_idx_ = 14;
+  int64_t scale_idx_ = 3;
 };
 }  // namespace ops
 }  // namespace mindspore

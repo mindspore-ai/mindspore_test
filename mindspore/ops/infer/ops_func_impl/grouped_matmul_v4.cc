@@ -16,6 +16,7 @@
 #include "infer/ops_func_impl/grouped_matmul_v4.h"
 
 #include <vector>
+#include <algorithm>
 
 #include "include/common/utils/utils.h"
 #include "ops/ops_func_impl/op_func_impl.h"
@@ -110,6 +111,22 @@ int32_t GroupedMatmulV4FuncImpl::PrivateCheckValidation(const PrimitivePtr &prim
   }
 
   return OP_CHECK_SUCCESS;
+}
+
+TypeIdList GroupedMatmulV4FuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
+  const auto &scale_info = input_infos[scale_idx_];
+  TypeIdList output_types;
+  if (scale_info->IsNone()) {
+    std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
+                   [](const InferInfoPtr &info) { return info->GetType(); });
+  } else {
+    const auto &scale_tensors = scale_info->GetSequenceElements();
+    std::transform(scale_tensors.begin(), scale_tensors.end(), std::back_inserter(output_types),
+                   [](const InferInfoPtr &info) { return info->GetType(); });
+  }
+  return output_types;
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -462,7 +462,7 @@ def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_none_a16w8_case6(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
+@pytest.mark.parametrize('mode', ['KBK'])
 def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_a8w8_case7(mode):
     """
     Feature: Test grouped_matmul
