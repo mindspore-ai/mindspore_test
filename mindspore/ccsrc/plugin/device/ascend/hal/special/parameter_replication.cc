@@ -204,7 +204,7 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
 
   size_t index = 0;
   while (index < params.size()) {
-    MS_LOG(INFO) << "$$$$$$ loop begin index = " << index << "/" << params.size()
+    MS_LOG(INFO) << "Copy parameter begin, index = " << index << "/" << params.size()
                  << (rank_id_ == src_rank ? " send" : " recv");
     if (rank_id_ == src_rank) {
       index = copy_param(index, true);
@@ -217,7 +217,7 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
       index = copy_param(index, false);
     }
     (void)res_mgr_->SyncStream(stream_id_);
-    MS_LOG(INFO) << "$$$$$$ loop *end* index = " << index << "/" << params.size()
+    MS_LOG(INFO) << "Copy parameter end, index = " << index << "/" << params.size()
                  << (rank_id_ == src_rank ? " send" : " recv");
   }
 
@@ -232,7 +232,11 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
 
   for (size_t index = 0; index < params.size(); ++index) {
     auto &tensor = params[index];
-    MS_LOG(INFO) << "$$$$$$ loop begin index = " << index << "/" << params.size() << " "
+    if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr) {
+      MS_LOG(INFO) << "Device address is nullptr, skip copying parameter index = " << index << "/" << params.size()
+                   << " " << (rank_id_ == src_rank ? " send" : " recv");
+    }
+    MS_LOG(INFO) << "Copy parameter begin, index = " << index << "/" << params.size() << " "
                  << (rank_id_ == src_rank ? " send" : " recv");
     if (rank_id_ == src_rank) {
       hccl::HcclAdapter::GetInstance().HcclSend(tensor->device_address()->GetMutablePtr(), tensor->Size(),
@@ -241,7 +245,7 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
       hccl::HcclAdapter::GetInstance().HcclRecv(tensor->device_address()->GetMutablePtr(), tensor->Size(),
                                                 HCCL_DATA_TYPE_INT8, src_rank, stream_, comm_);
     }
-    MS_LOG(INFO) << "$$$$$$ loop *end* index = " << index << "/" << params.size() << " "
+    MS_LOG(INFO) << "Copy parameter end, index = " << index << "/" << params.size() << " "
                  << (rank_id_ == src_rank ? " send" : " recv");
   }
   (void)res_mgr_->SyncStream(stream_id_);

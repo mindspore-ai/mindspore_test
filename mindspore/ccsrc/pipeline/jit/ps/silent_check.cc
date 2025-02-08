@@ -320,7 +320,14 @@ CNodePtr SilentCheckV2::GetLastGradNode(const FuncGraphPtr &func_graph, const An
   auto &node_users = manager->node_users();
   std::queue<AnfNodePtr> candidates;
   std::set<AnfNodePtr> visited;
-  candidates.push(start_node);
+  auto push_candidate_node = [&candidates, &visited](const AnfNodePtr &cand_node) {
+    if (visited.count(cand_node)) {
+      return;
+    }
+    candidates.push(cand_node);
+    visited.insert(cand_node);
+  };
+  push_candidate_node(start_node);
   while (!candidates.empty()) {
     auto node = candidates.front();
     candidates.pop();
@@ -360,15 +367,14 @@ CNodePtr SilentCheckV2::GetLastGradNode(const FuncGraphPtr &func_graph, const An
           auto param = fg->parameters()[elem.second - 1]->cast<ParameterPtr>();
           MS_LOG(INFO) << "Encounter func_graph: " << fg->ToString() << " user_node param_index=" << elem.second << "/"
                        << fg->parameters().size() << " param_name=" << param->name();
-          candidates.push(param);
+          push_candidate_node(param);
         } else {
-          candidates.push(user_node);
+          push_candidate_node(user_node);
         }
       } else {
-        candidates.push(user_node);
+        push_candidate_node(user_node);
       }
     }
-    visited.insert(node);
   }
 
   MS_LOG(INFO) << "Not found grad node based on start node: " << start_node->DebugString() << " for graph "
