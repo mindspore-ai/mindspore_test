@@ -656,31 +656,6 @@ bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   return true;
 }
 
-bool CPUDeviceResManager::LoadCollectiveCommLib() {
-  bool using_mpi = common::UseMPI();
-  if (using_mpi) {
-    std::string mpi_comm_lib_name = "libmpi_collective.so";
-    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
-    MS_EXCEPTION_IF_NULL(loader);
-    if (!loader->Initialize()) {
-      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
-    }
-
-    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
-
-    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-    collective_comm_lib_ = instance_func();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-  } else {
-#if defined(__linux__) && defined(WITH_BACKEND)
-    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-#endif
-  }
-  return true;
-}
-
 bool CPUKernelExecutor::LaunchKernelWithProfiling(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &workspace,
                                                   const std::vector<KernelTensor *> &outputs,

@@ -49,7 +49,7 @@ class LSTMP(nn.Cell):
         if has_bias:
             weights_size += 4 * hidden_s
         stdv = 1 / math.sqrt(hidden_s)
-        self.weights = Parameter(Tensor(np.random.uniform(-stdv, stdv, (weights_size)).astype(np.float32)))
+        self.weights = Parameter(Tensor(np.random.uniform(-stdv, stdv, (weights_size, 1, 1)).astype(np.float32)))
 
     def construct(self, inp, h0, c0):
         return self.lstm(inp, h0, c0, self.weights)
