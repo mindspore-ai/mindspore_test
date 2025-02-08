@@ -807,6 +807,9 @@ void DispVerboseLogTags() {
     {VL_DISTRIBUTED_FD, "log for cluster under layer socket operation"},
     {VL_DISTRIBUTED_TRACE, "log for cluster business message"},
     {VL_ASCEND_SILENT_CHECK, "verbose level for silent check."},
+    {VL_UCE, "verbose log for uce function."},
+    {VL_UCE_DEVICE_MEM, "verbose log for uce of type device memory error."},
+    {VL_UCE_HBM_MUTLI_BIT_ECC, "verbose log for uce of type hbm mutit bit ecc error."},
   };
 
   for (auto &[tag, desc] : used_tags) {

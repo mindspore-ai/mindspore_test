@@ -43,8 +43,7 @@ auto RunMstxApi(Function f, const char *file, int line, const char *call_f, cons
 #ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f), Args...>, int>) {
     auto ret = f(args...);
-    if ((mindspore::UCEException::GetInstance().enable_uce() || mindspore::UCEException::GetInstance().enable_arf()) &&
-        ret == 0) {
+    if ((mindspore::UCEException::IsEnableUCE() || mindspore::UCEException::GetInstance().enable_arf()) && ret == 0) {
       MS_LOG(INFO) << "Call mstx api <" << func_name << "> in <" << call_f << "> at " << file << ":" << line
                    << " failed, return val [" << ret << "].";
     }

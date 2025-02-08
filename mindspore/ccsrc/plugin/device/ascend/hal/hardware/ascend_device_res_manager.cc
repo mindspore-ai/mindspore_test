@@ -15,10 +15,12 @@
  */
 
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
+#include "plugin/device/ascend/hal/device/tensorreport_utils.h"
 #ifndef _WIN32
 #include <dlfcn.h>
 #include <libgen.h>
 #endif
+#include <cstdint>
 #include <utility>
 #include <unordered_set>
 #include <vector>
@@ -28,9 +30,11 @@
 #include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "plugin/device/ascend/hal/special/parameter_replication.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/stress_detect.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "runtime/device/move_to.h"
+#include "utils/ms_exception.h"
 
 namespace mindspore {
 namespace device {
@@ -333,6 +337,14 @@ void AscendDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const t
 }
 
 bool AscendDeviceResManager::GetMemUceInfo(int32_t device_id) { return ascend_res_manager_->GetMemUceInfo(device_id); }
+
+std::vector<uint64_t> AscendDeviceResManager::GetOptimizerTimestamps() {
+  OptimizerEventInfo::GetInstance().GetOptimizerTimestamp(false);
+  auto hbm_error_time = UCEException::GetInstance().get_uce_occur_time();
+  auto opt_start_timestamp = OptimizerEventInfo::GetInstance().get_optimizer_start_timestamp();
+  auto opt_end_timestamp = OptimizerEventInfo::GetInstance().get_optimizer_end_timestamp();
+  return std::vector<uint64_t>{hbm_error_time, opt_start_timestamp, opt_end_timestamp};
+}
 
 std::vector<std::pair<device::DeviceMemPtr, size_t>> AscendDeviceResManager::GetMemUceAddr() {
   return ascend_res_manager_->GetMemUceAddr();

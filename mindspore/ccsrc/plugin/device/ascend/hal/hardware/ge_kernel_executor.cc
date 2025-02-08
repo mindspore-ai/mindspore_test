@@ -44,7 +44,9 @@
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
+#include "plugin/device/ascend/hal/device/tensorreport_utils.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_exception.h"
 #ifdef ENABLE_DVM
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
 #endif
@@ -1301,6 +1303,19 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch silent check for " << kernel->fullname_with_scope();
       silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
     }
+
+    if (UCEException::IsEnableUCE()) {
+      bool is_opt_start_kernel = OptimizerEventInfo::GetInstance().IsOptimizerStartKernelMod(kernel_mod, kernel);
+      bool is_opt_end_kernel = OptimizerEventInfo::GetInstance().IsOptimizerEndKernelMod(kernel_mod, kernel);
+      if (is_opt_start_kernel || is_opt_end_kernel) {
+        // insert event for optimizer start and end
+        OptimizerEventInfo::GetInstance().RecordEvent(is_opt_start_kernel, stream);
+      }
+      if (is_opt_end_kernel) {
+        // skip execute TensorReport op at the end of optimzer, it is just used as a tag
+        return true;
+      }
+    }
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
@@ -1322,15 +1337,12 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
 }
 
 void GeKernelExecutor::SetUceError() const {
-  if (UCEException::GetInstance().enable_uce()) {
-    auto rts_code = aclrt_get_last_error(thread_level);
-    MS_LOG(ERROR) << "Launch kernel failed, get last error is " << rts_code;
-    if (rts_code == ACL_ERROR_RT_DEVICE_MEM_ERROR && !UCEException::GetInstance().get_has_throw_error()) {
-      UCEException::GetInstance().set_uce_flag(true);
-    }
-    if (rts_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
-      UCEException::GetInstance().set_force_stop_flag(true);
-    }
+  if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {
+    auto error_code = aclrt_get_last_error(thread_level);
+    auto error_type = GetErrorType(error_code);
+    UCEException::GetInstance().ProcessUceError(
+      mindspore::FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, "Launch kernel failed"}, error_code,
+      acl_get_recent_err_msg, error_type);
     if (!UCEException::GetInstance().get_has_throw_error()) {
       auto arf_env = common::GetEnv("MS_ENABLE_TFT");
       constexpr std::string_view arf = "ARF:1";

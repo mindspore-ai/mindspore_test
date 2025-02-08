@@ -75,6 +75,8 @@ class OptTFTWrapper(Optimizer):
             raise ValueError("MindIO adataper only support on Ascend device with GRAPH Mode!")
         self.opt = opt
         self.report = TensorReport()
+        self.report_end = TensorReport()
+        self.report_end.add_prim_attr("side_effect_mem", True).add_prim_attr("optimizer_end", True)
         self.depend = ops.Depend()
         self.allreduce_sum = ops.AllReduce()
         self.allreduce_sum.add_prim_attr("tft_report_before", True)
@@ -121,4 +123,5 @@ class OptTFTWrapper(Optimizer):
 
         grads = self.depend(gradients, self.report("tft_report", self.tft_g_one_flag))
         opt_ret = self.opt(grads)
+        self.report_end("tft_report", self.tft_g_one_flag)
         return opt_ret

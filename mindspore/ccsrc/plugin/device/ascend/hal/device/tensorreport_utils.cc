@@ -20,6 +20,12 @@
 #include <string>
 #include <vector>
 #include "utils/log_adapter.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "mindspore/ops/op_def/image_op_name.h"
+#include "include/common/utils/anfalgo.h"
+#include "utils/ms_exception.h"
+
+constexpr char kOptimizerEndFlag[] = "optimizer_end";
 
 namespace mindspore::device::ascend {
 
@@ -37,6 +43,75 @@ static std::string GetCurDir() {
 #else
   return "";
 #endif
+}
+
+OptimizerEventInfo &OptimizerEventInfo::GetInstance() {
+  static OptimizerEventInfo instance;
+  return instance;
+}
+
+void OptimizerEventInfo::RecordEvent(bool is_optimizer_start, void *stream) {
+  auto &opt_event = (is_optimizer_start ? optimizer_start_event_ : optimizer_end_event_);
+  if (opt_event == nullptr) {
+    if (aclrtCreateEventExWithFlag(&opt_event, ACL_EVENT_TIME_LINE) != ACL_SUCCESS) {
+      MS_LOG(ERROR) << "Create event for uce " << (is_optimizer_start ? "start" : "end") << " timestamp failed.";
+      return;
+    } else {
+      MS_LOG(INFO) << "Create event for uce" << (is_optimizer_start ? "start" : "end") << " timestamp successfully.";
+    }
+  }
+  MS_VLOG(VL_UCE_HBM_MUTLI_BIT_ECC) << "Call aclrtRecordEvent for optimizer " << (is_optimizer_start ? "start" : "end")
+                                    << " opt_event=" << opt_event << ", addr_of_opt_event=" << &opt_event;
+  (void)CALL_ASCEND_API(aclrtRecordEvent, opt_event, stream);
+}
+
+void OptimizerEventInfo::GetOptimizerTimestamp(bool is_optimizer_start) {
+  auto &opt_event = (is_optimizer_start ? optimizer_start_event_ : optimizer_end_event_);
+  uint64_t timestamp = 0;
+  aclError ret_code = CALL_ASCEND_API(aclrtEventGetTimestamp, opt_event, &timestamp);
+  MS_VLOG(VL_UCE_HBM_MUTLI_BIT_ECC) << "Call aclrtEventGetTimestamp for optimizer "
+                                    << (is_optimizer_start ? "start" : "end") << " ret_code=" << ret_code
+                                    << ", timestamp=" << timestamp << ", opt_event=" << opt_event;
+  if (ret_code == ACL_SUCCESS) {
+    if (is_optimizer_start) {
+      optimizer_start_timestamp_ = timestamp;
+    } else {
+      optimizer_end_timestamp_ = timestamp;
+    }
+  } else {
+    MS_LOG(ERROR) << "Call aclrtEventGetTimestamp for optimizer " << (is_optimizer_start ? "start" : "end")
+                  << " ret_code=" << ret_code << ".";
+  }
+}
+
+bool OptimizerEventInfo::IsOptimizerStartKernelMod(kernel::KernelMod *kernel_mod, const CNodePtr &kernel) {
+  if (optimizer_start_kernel_mod_ != nullptr) {
+    return optimizer_start_kernel_mod_ == kernel_mod;
+  }
+  if (kernel_mod->kernel_name() != kTensorReport) {
+    return false;
+  }
+  auto prim = common::AnfAlgo::GetCNodePrimitive(kernel);
+  if (!prim->HasAttr(kOptimizerEndFlag)) {
+    optimizer_start_kernel_mod_ = kernel_mod;
+    return true;
+  }
+  return false;
+}
+
+bool OptimizerEventInfo::IsOptimizerEndKernelMod(kernel::KernelMod *kernel_mod, const CNodePtr &kernel) {
+  if (optimizer_end_kernel_mod_ != nullptr) {
+    return optimizer_end_kernel_mod_ == kernel_mod;
+  }
+  if (kernel_mod->kernel_name() != kTensorReport) {
+    return false;
+  }
+  auto prim = common::AnfAlgo::GetCNodePrimitive(kernel);
+  if (prim->HasAttr(kOptimizerEndFlag)) {
+    optimizer_end_kernel_mod_ = kernel_mod;
+    return true;
+  }
+  return false;
 }
 
 TensorReportUtils &TensorReportUtils::GetInstance() {
@@ -97,6 +172,9 @@ TensorReportUtils::~TensorReportUtils() {}
 
 void TensorReportUtils::ReportReceiveData(const ScopeAclTdtDataset &dataset) {
   MS_LOG(DEBUG) << "Enter report recevice data.";
+  if (UCEException::IsEnableUCE()) {
+    OptimizerEventInfo::GetInstance().GetOptimizerTimestamp(true);
+  }
   if (_optStart != nullptr) {
     auto ret = _optStart(-1);
     MS_LOG(INFO) << "Send start updating optimizer event to TFT. ret=" << ret;

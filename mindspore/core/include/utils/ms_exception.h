@@ -16,6 +16,8 @@
 
 #ifndef MINDSPORE_CORE_UTILS_MS_EXCEPTION_H_
 #define MINDSPORE_CORE_UTILS_MS_EXCEPTION_H_
+#include <sys/types.h>
+#include <cstdint>
 #include <exception>
 #include <set>
 #include <mutex>
@@ -23,6 +25,9 @@
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/macros.h"
+
+typedef const char *(*FuncGetRecentErrMsg)();
+
 namespace mindspore {
 class ExceptionListener {
  public:
@@ -123,16 +128,27 @@ class MS_CORE_API StaticAnalysisException {
   std::mutex lock_;
 };
 
+struct FuncInfo {
+  const char *caller_file;
+  int caller_line;
+  const char *caller_func;
+  std::string api_msg;
+};
+
+enum class UCEError : int { kNoneError = 0, kDeviceMemError, kHbmMultBitEccError, kForceStopError, kUnknownError };
+
 class MS_CORE_API UCEException {
  public:
   static UCEException &GetInstance();
-  bool get_has_throw_error() const { return force_stop_flag_ || uce_flag_ || is_reboot_node_; }
+  static uint64_t ExtractUceTime(const char *error_msg);
+  static bool IsEnableUCE();
+  bool get_has_throw_error() const { return force_stop_flag_ || get_uce_flag() || is_reboot_node_; }
 
   void set_force_stop_flag(bool flag) { force_stop_flag_ = flag; }
   bool get_force_stop_flag() const { return force_stop_flag_; }
 
-  void set_uce_flag(bool flag) { uce_flag_ = flag; }
-  bool get_uce_flag() const { return uce_flag_; }
+  bool get_uce_flag() const { return uce_error_type_ != UCEError::kNoneError; }
+  void clear_uce_error() { uce_error_type_ = UCEError::kNoneError; }
 
   void set_reboot_node(bool flag) { is_reboot_node_ = flag; }
   bool is_reboot_node() const { return is_reboot_node_; }
@@ -140,32 +156,47 @@ class MS_CORE_API UCEException {
   bool is_arf() const { return is_arf_; }
   bool enable_arf() { return arf_env_; }
 
-  bool enable_uce() { return uce_env_; }
   void CheckUceARFEnv() {
     auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
-    constexpr std::string_view optUCE = "UCE:1";
-    if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos)) {
-      uce_env_ = true;
-      MS_LOG(WARNING) << "UCE enabled.";
-    }
     constexpr std::string_view optARF = "ARF:1";
     if (!tftEnv.empty() && (tftEnv.find(optARF) != std::string::npos)) {
       arf_env_ = true;
       MS_LOG(WARNING) << "ARF enabled.";
     }
   }
+  void set_uce_occur_time(uint64_t time) { uce_occur_time_ = time; }
+  uint64_t get_uce_occur_time() { return uce_occur_time_; }
+
+  void ProcessApiUceError(const FuncInfo &fn_info, int error_code, FuncGetRecentErrMsg fn_get_recent_err_msg,
+                          UCEError error_type, bool throw_exception = false);
+
+  void ProcessUceError(const FuncInfo &fn_info, int error_code, FuncGetRecentErrMsg fn_get_recent_err_msg,
+                       UCEError error_type);
+
+  const char *GetUceErrorMsg() const {
+    if (uce_error_type_ == UCEError::kDeviceMemError) {
+      return "UCEError error occurs when execute, error_code=507053";
+    } else if (uce_error_type_ == UCEError::kHbmMultBitEccError) {
+      return "UCEError error occurs when execute, error_code=507054";
+    } else if (uce_error_type_ == UCEError::kNoneError) {
+      return "No uce error occurs.";
+    } else {
+      return "Unknown error occurs.";
+    }
+  }
+
+  const char *GetForceStopErrorMsg() const { return "ForceStopError error occurs when execute"; }
 
  private:
   UCEException() = default;
   ~UCEException() = default;
   DISABLE_COPY_AND_ASSIGN(UCEException)
-  bool has_throw_error_{false};
   bool force_stop_flag_{false};
-  bool uce_flag_{false};
-  bool uce_env_{false};
   bool arf_env_{false};
   bool is_reboot_node_{false};
   bool is_arf_{false};
+  uint64_t uce_occur_time_{0};
+  UCEError uce_error_type_{UCEError::kNoneError};
 };
 }  // namespace mindspore
 

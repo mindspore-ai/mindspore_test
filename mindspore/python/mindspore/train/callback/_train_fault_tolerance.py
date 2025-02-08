@@ -383,6 +383,8 @@ class TrainFaultTolerance(Callback):
             def __init__(self, *args, **kwargs):
                 super(TFTOptSubCls, self).__init__(*args, **kwargs)
                 self.report = TensorReport()
+                self.report_end = TensorReport()
+                self.report_end.add_prim_attr("side_effect_mem", True).add_prim_attr("optimizer_end", True)
                 self.depend = ops.Depend()
                 self.allreduce_sum = ops.AllReduce()
                 self.allreduce_sum.add_prim_attr("tft_report_before", True)
@@ -393,6 +395,7 @@ class TrainFaultTolerance(Callback):
                 self.tft_g_one_flag = self.allreduce_sum(tft_g_one_flag)
                 grads = self.depend(gradients, self.report("tft_report", self.tft_g_one_flag))
                 opt_ret = super(TFTOptSubCls, self).construct(grads, **kwargs)
+                self.report_end("tft_report", self.tft_g_one_flag)
                 return opt_ret
 
         return TFTOptSubCls

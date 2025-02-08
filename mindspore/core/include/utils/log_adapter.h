@@ -227,10 +227,13 @@ enum VLogLevel : int {
   VL_PRINT_DUMP_V1,                                               // verbose level1 for print and tensordump, etc.
   VL_DUMP,                                                        // tag is 10302, for O0/O1 device statistic dump.
 
-  VL_OFFLINE_DEBUG = COMPONENT_START + (SM_OFFLINE_DEBUG - 1) * COMPONENT_RANGE,          // 4. offline debug
-  VL_DEVICE = COMPONENT_START + (SM_DEVICE - 1) * COMPONENT_RANGE,                        // 5. device
-  VL_GE_ADPT = COMPONENT_START + (SM_GE_ADPT - 1) * COMPONENT_RANGE,                      // 6. ge adapter
-  VL_IR = COMPONENT_START + (SM_IR - 1) * COMPONENT_RANGE,                                // 7. IR
+  VL_OFFLINE_DEBUG = COMPONENT_START + (SM_OFFLINE_DEBUG - 1) * COMPONENT_RANGE,  // 4. offline debug
+  VL_DEVICE = COMPONENT_START + (SM_DEVICE - 1) * COMPONENT_RANGE,                // 5. device
+  VL_GE_ADPT = COMPONENT_START + (SM_GE_ADPT - 1) * COMPONENT_RANGE,              // 6. ge adapter
+  VL_UCE = VL_GE_ADPT,                                                            // verbose log for uce function
+  VL_UCE_DEVICE_MEM,                                        // verbose log for uce of type device memory error
+  VL_UCE_HBM_MUTLI_BIT_ECC,                                 // verbose log for uce of type hbm mutit bit ecc error
+  VL_IR = COMPONENT_START + (SM_IR - 1) * COMPONENT_RANGE,  // 7. IR
   VL_KERNEL = COMPONENT_START + (SM_KERNEL - 1) * COMPONENT_RANGE,                        // 8. kernel
   VL_MD = COMPONENT_START + (SM_MD - 1) * COMPONENT_RANGE,                                // 9. MindData
   VL_ME = COMPONENT_START + (SM_ME - 1) * COMPONENT_RANGE,                                // 10. MindExpression

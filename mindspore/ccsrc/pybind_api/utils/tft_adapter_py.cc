@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <vector>
 #include "include/common/pybind_api/api_register.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/hardware/device_context.h"
@@ -40,6 +41,11 @@ DeviceContextPtr GetDeviceCtx() {
 bool GetMemUceInfo(int32_t device_id) {
   auto device_ctx = GetDeviceCtx();
   return device_ctx->device_res_manager_->GetMemUceInfo(device_id);
+}
+
+std::vector<uint64_t> GetOptimizerTimestamps() {
+  auto device_ctx = GetDeviceCtx();
+  return device_ctx->device_res_manager_->GetOptimizerTimestamps();
 }
 
 bool GetUceLevelWithMemPoolForKbk(const DeviceMemInfo &persistent_mem_blocks_info,
@@ -193,7 +199,7 @@ void RebuildSubCommunication() {
     MS_LOG(WARNING) << "Rebuild sub-group, group name: " << item.first << " ok";
   }
   UCEException::GetInstance().set_force_stop_flag(false);
-  UCEException::GetInstance().set_uce_flag(false);
+  UCEException::GetInstance().clear_uce_error();
   MS_LOG(WARNING) << "Rebuild communication end";
 }
 
@@ -202,6 +208,8 @@ void RegTFT(py::module *m) {
   (void)m->def("_repair_device", &mindspore::UceMemRepair, "Repair the device.");
   (void)m->def("_get_uce_process_strategy", &mindspore::GetUceProcessStrategy, "Get UCE process strategy.");
   (void)m->def("_get_uce_mem_info", &mindspore::GetMemUceInfo, "Get UCE mem info.");
+  (void)m->def("_get_optimzer_timestamps", &mindspore::GetOptimizerTimestamps,
+               "Get optimizer start and finish timestamps.");
   (void)m->def(
     "_tft_sem_post", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
   (void)m->def(

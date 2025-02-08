@@ -1069,7 +1069,7 @@ void GraphScheduler::RefreshContextAndThreadPool(ActorSet *const actor_set, Acto
 }
 
 void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
-  if (UCEException::GetInstance().enable_uce() || UCEException::GetInstance().enable_arf()) {
+  if (UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf()) {
     if (UCEException::GetInstance().get_uce_flag()) {
       MS_LOG(INFO) << "Restart from step after a uce error occurs.";
     } else if (UCEException::GetInstance().get_force_stop_flag()) {
@@ -1148,7 +1148,7 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
 }
 
 void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
-  if (!(UCEException::GetInstance().enable_uce() || UCEException::GetInstance().enable_arf())) {
+  if (!(UCEException::IsEnableUCE() || UCEException::GetInstance().enable_arf())) {
     return;
   }
 
@@ -1172,10 +1172,10 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
   }
 
   if (UCEException::GetInstance().get_uce_flag()) {
-    MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
+    MS_LOG(EXCEPTION) << UCEException::GetInstance().GetUceErrorMsg();
   } else if (UCEException::GetInstance().get_force_stop_flag()) {
     actor_set->is_execution_failed_ = false;
-    MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+    MS_LOG(EXCEPTION) << UCEException::GetInstance().GetForceStopErrorMsg();
   } else if (UCEException::GetInstance().is_reboot_node()) {
     MS_LOG(WARNING) << "Try to raise arf finish !";
     actor_set->is_execution_failed_ = false;

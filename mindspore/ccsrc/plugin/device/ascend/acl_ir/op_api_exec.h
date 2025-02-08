@@ -221,18 +221,12 @@ class ApiCachePool {
 // check and throw only when enable uce.
 #define CHECK_AND_THROW_UCE_ERROR(aclnn_api)                                                                     \
   do {                                                                                                           \
-    if (UCEException::GetInstance().enable_uce()) {                                                              \
-      if (aclrt_get_last_error != nullptr) {                                                                     \
-        auto error_code = aclrt_get_last_error(thread_level);                                                    \
-        MS_LOG(ERROR) << "Call " << aclnn_api << " failed, error code [" << error_code << "].";                  \
-        if (error_code == ACL_ERROR_RT_DEVICE_MEM_ERROR && !UCEException::GetInstance().get_has_throw_error()) { \
-          UCEException::GetInstance().set_uce_flag(true);                                                        \
-          MS_LOG(ERROR) << "UCEError error occurs when execute.";                                                \
-        } else if (error_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {                                               \
-          UCEException::GetInstance().set_force_stop_flag(true);                                                 \
-          MS_LOG(ERROR) << "ForceStopError error occurs when execute.";                                          \
-        }                                                                                                        \
-      }                                                                                                          \
+    if (UCEException::IsEnableUCE() && aclrt_get_last_error != nullptr) {                                        \
+      auto error_code = aclrt_get_last_error(thread_level);                                                      \
+      auto error_type = GetErrorType(error_code);                                                                \
+      UCEException::GetInstance().ProcessApiUceError(                                                            \
+        mindspore::FuncInfo{FILE_NAME, __LINE__, __FUNCTION__, (aclnn_api)}, error_code, acl_get_recent_err_msg, \
+        error_type);                                                                                             \
     }                                                                                                            \
   } while (false)
 
