@@ -48,11 +48,11 @@
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
 #endif
 
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/ops/kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "pyboost/pyboost_utils.h"
+#include "pyboost/op_runner.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"

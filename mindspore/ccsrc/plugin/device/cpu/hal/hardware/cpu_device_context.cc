@@ -77,7 +77,7 @@
 #include "runtime/device/tensor_array.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "kernel/cpu/contiguous_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
 
 namespace mindspore {
 namespace device {

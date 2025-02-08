@@ -61,7 +61,9 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
 void SyncInplaceAbstract(const AbstractBasePtr &source_abs, const AbstractBasePtr &target_abs) {
   // Sync for tensor.
   if (source_abs->inplace_abstract() != nullptr) {
-    target_abs->set_inplace_abstract(source_abs->inplace_abstract());
+    if (!(source_abs->GetShape()->IsDynamic())) {
+      target_abs->set_inplace_abstract(source_abs->inplace_abstract());
+    }
     return;
   }
   // Sync for sequence.
