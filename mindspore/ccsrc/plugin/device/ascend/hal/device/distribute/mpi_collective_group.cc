@@ -146,9 +146,17 @@ bool MPICollective::CreateCommGroup(const std::string &name, const std::vector<u
     return false;
   }
 
-  CHECK_RET(static_cast<int32_t>(HcclCommInitRootInfo(static_cast<uint32_t>(ranks.size()), &rootInfo,
-                                                      static_cast<uint32_t>(group_rank[0]), &group_hcomm)),
-            static_cast<int32_t>(::HcclResult::HCCL_SUCCESS), "HcclCommInitRootInfo failed.");
+  HcclCommConfig config;
+  HcclCommConfigInit(&config);
+  auto ret = strcpy_s(config.hcclCommName, sizeof(config.hcclCommName) / sizeof(config.hcclCommName[0]), name.c_str());
+  if (ret != EOK) {
+    MS_LOG(ERROR) << "Call strcpy_s failed, group name: " << name << ", error no (" << ret << ")";
+    return false;
+  }
+  CHECK_RET(
+    static_cast<int32_t>(HcclCommInitRootInfoConfig(static_cast<uint32_t>(ranks.size()), &rootInfo,
+                                                    static_cast<uint32_t>(group_rank[0]), &config, &group_hcomm)),
+    static_cast<int32_t>(::HcclResult::HCCL_SUCCESS), "HcclCommInitRootInfoConfig failed.");
   group_comm_[name] = group_hcomm;
   group_info_[name] = std::make_tuple(group_rank[0], static_cast<int>(ranks.size()), 0);
   AssignLocalRankSize(name, group_ranks, mpi_group_comm);
