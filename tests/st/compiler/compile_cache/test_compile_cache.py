@@ -136,21 +136,21 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     shutil.rmtree(cache_path)
 
 
-def run_compile_cache_mp(file_name, cache_path, log_file_name_first, log_file_name_second):
+def run_compile_cache_mp(file_name, cache_path, run_o2):
     # Clear compile cache folder and log files
     if os.path.exists(cache_path):
         shutil.rmtree(cache_path)
     assert not os.path.exists(cache_path)
 
     # First run without compile cache
-    cmd = "bash run_compile_cache_mp.sh {} {} {} {}".format(file_name, cache_path, log_file_name_first,
-                                                            utils.rank_table_path)
+    cmd = "bash run_compile_cache_mp.sh {} {} {}".format(file_name, cache_path, run_o2)
     os.system(cmd)
     check_cmd = "ps -ef | grep python | grep run_compile_cache_mp.py | grep -v grep"
     # wait for net train finish
     ret = utils.process_check(150, check_cmd)
     print("check first train.", flush=True)
     assert ret
+    print("run o2: ", run_o2, flush=True)
     print("check cache file.", flush=True)
     assert os.path.exists(cache_path)
     log_fullname = 'worker_0.log'
@@ -162,8 +162,7 @@ def run_compile_cache_mp(file_name, cache_path, log_file_name_first, log_file_na
     assert "Check the consistency of dependency files hash failed. Execute all the compilation actions." in data_first
     for i in range(8):
         os.remove(f'worker_{i}.log')
-    cmd = "bash run_compile_cache_mp.sh {} {} {} {}".format(file_name, cache_path, log_file_name_second,
-                                                            utils.rank_table_path)
+    cmd = "bash run_compile_cache_mp.sh {} {} {}".format(file_name, cache_path, run_o2)
     os.system(cmd)
     ret = utils.process_check(150, check_cmd)
     print("check second train.", flush=True)
@@ -472,8 +471,17 @@ def test_compile_cache_pipeline_parallel_and_recompute():
     Description: Test whether pipeline parallel and recompute can successfullty with compile cache.
     Expectation: success.
     """
-    run_compile_cache_mp("run_compile_cache_mp.py", "./pp_recompute", "pp_recompute_first",
-                         "pp_recompute_second")
+    run_compile_cache_mp("run_compile_cache_mp.py", "./pp_recompute", False)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_compile_cache_pipeline_parallel_and_recompute_o2():
+    """
+    Feature: Compile cache.
+    Description: Test whether pipeline parallel and recompute can successfullty with compile cache.
+    Expectation: success.
+    """
+    run_compile_cache_mp("run_compile_cache_mp.py", "./pp_recompute", True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
