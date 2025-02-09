@@ -70,7 +70,7 @@ def test_p_equal_normal_outshape_sameas_first_input():
     """
     fact = EqualFactory(input_shape=(256, 1), dtype=np.float32)
     net = Equal()
-    jit(net.construct, mode="PIJit")(fact.left_input, fact.right_input)
+    jit(net.construct, capture_mode="bytecode")(fact.left_input, fact.right_input)
     context.set_context(mode=context.PYNATIVE_MODE)
     out = fact.forward_mindspore_impl(net)
     assert out.shape == (256, 1), out.dtype == ms.bool_
@@ -235,7 +235,7 @@ def test_p_equal_forward_input_num():
     input_1 = Tensor(np.array([1]), ms.float32)
     input_2 = 1.0
     net = op.Equal()
-    jit(net, mode="PIJit")(input_1, input_2)
+    jit(net, capture_mode="bytecode")(input_1, input_2)
     context.set_context(mode=context.PYNATIVE_MODE)
     out = net(input_1, input_2)
     assert out
@@ -268,12 +268,12 @@ def test_p_equal_forward_input_bool_for_gpu():
     input_1 = np.array([1]).astype(np.bool_)
     input_2 = True
     ps_net = op.Equal()
-    jit(ps_net, mode="PIJit")(Tensor(input_1), input_2)
+    jit(ps_net, capture_mode="bytecode")(Tensor(input_1), input_2)
     context.set_context(mode=context.PYNATIVE_MODE)
     out1 = ps_net(Tensor(input_1), input_2)
 
     pi_net = op.Equal()
-    jit(pi_net, mode="PIJit")(Tensor(input_1), input_2)
+    jit(pi_net, capture_mode="bytecode")(Tensor(input_1), input_2)
     context.set_context(mode=context.PYNATIVE_MODE)
     out2 = pi_net(Tensor(input_1), input_2)
 

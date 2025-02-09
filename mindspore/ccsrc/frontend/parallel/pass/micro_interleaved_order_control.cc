@@ -199,9 +199,9 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   auto node_users = manager->node_users();
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  const bool not_o2 = context->GetJitLevel() != kAttrJitLevelO2;
+  const bool not_ge = !common::AnfAlgo::IsBackendGe();
   AnfNodePtr comm_node_a_user = nullptr;
-  if (not_o2) {
+  if (not_ge) {
     for (const auto &pair : manager->node_users()[comm_node_a]) {
       comm_node_a_user = pair.first;
       if (IsPrimitiveCNode(pair.first, prim::kPrimMatMul)) {
@@ -241,7 +241,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   depend_node2->set_abstract(comm_node_b->abstract()->Clone());
   SetEdgeForDepend(node_users, manager, comm_node_b, depend_node2, !grad_comm_opt_enabled);
 
-  if (not_o2) {
+  if (not_ge) {
     if (comm_node_a_user != nullptr) {
       std::vector<AnfNodePtr> depend5_inputs{NewValueNode(prim::kPrimDepend), comm_node_b, comm_node_a_user};
       auto depend_node5 = comm_node_b->func_graph()->NewCNode(depend5_inputs);

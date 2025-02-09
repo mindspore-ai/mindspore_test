@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import jit, JitConfig
+from mindspore import jit
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -80,10 +80,10 @@ def test_ops_trace_forward(mode):
     if mode == 'pynative':
         output = trace_forward_func(ms.Tensor(a_np))
     elif mode == 'KBK':
-        output = (jit(trace_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(trace_forward_func, jit_level="O0"))(
             ms.Tensor(a_np))
     else:
-        output = (jit(trace_forward_func, jit_config=JitConfig(jit_level="O2")))(
+        output = (jit(trace_forward_func, backend="GE"))(
             ms.Tensor(a_np))
     expect = generate_expect_forward_output(a_np)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
@@ -94,10 +94,10 @@ def test_ops_trace_forward(mode):
     if mode == 'pynative':
         grad = trace_backward_func(ms.Tensor(in_np))
     elif mode == 'KBK':
-        grad = (jit(trace_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        grad = (jit(trace_backward_func, jit_level="O0"))(
             ms.Tensor(in_np))
     else:
-        grad = (jit(trace_backward_func, jit_config=JitConfig(jit_level="O2")))(
+        grad = (jit(trace_backward_func, backend="GE"))(
             ms.Tensor(in_np))
     expect = generate_expect_backward_output(
         in_np, offset=0, axis1=0, axis2=1, dout=dout)

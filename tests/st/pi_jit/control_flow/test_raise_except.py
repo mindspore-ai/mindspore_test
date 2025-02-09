@@ -34,7 +34,7 @@ def test_except_case_1():
             pass
 
     with pytest.raises(Exception, match="new exception in try!"):
-        jit(fn=func, mode="PIJit")()
+        jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1
 
@@ -65,7 +65,7 @@ def test_except_case_2():
             pass
 
     with pytest.raises(Exception, match="new exception in try!"):
-        jit(fn=func, mode="PIJit")()
+        jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1
 
@@ -96,7 +96,7 @@ def test_except_case_3():
             pass
 
     with pytest.raises(Exception, match="new exception2 in finally!"):
-        jit(fn=func, mode="PIJit")()
+        jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1
 
@@ -132,7 +132,7 @@ def test_except_case_4():
         finally:
             pass
 
-    jit(fn=func, mode="PIJit")()
+    jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 0
 
@@ -169,7 +169,7 @@ def test_except_case_5():
             pass
 
     with pytest.raises(Exception, match="new exception3 in finally!"):
-        jit(fn=func, mode="PIJit")()
+        jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1
 
@@ -209,7 +209,7 @@ def test_except_case_6():
         func()
 
     with pytest.raises(Exception, match="new exception3 in finally!"):
-        jit(fn=func2, mode="PIJit")()
+        jit(function=func2, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1
 
@@ -233,7 +233,7 @@ def test_except_case_7():
             pass
         return i
 
-    got = jit(fn=func, mode="PIJit")()
+    got = jit(function=func, capture_mode="bytecode")()
     expected = func()
     print(got)
     assert got == expected
@@ -261,7 +261,7 @@ def test_except_case_8():
         return i
 
     with pytest.raises(Exception, match="new exception in except!"):
-        got = jit(fn=func, mode="PIJit")()
+        got = jit(function=func, capture_mode="bytecode")()
         expected = func()
         assert got == expected
 
@@ -287,7 +287,7 @@ def test_except_case_9():
             pass
         return i
 
-    got = jit(fn=func, mode="PIJit")()
+    got = jit(function=func, capture_mode="bytecode")()
     expected = func()
     assert got == expected
     jcr = get_code_extra(func)
@@ -311,7 +311,7 @@ def test_except_case_10():
             i = 4
         return i
 
-    got = jit(fn=func, mode="PIJit")()
+    got = jit(function=func, capture_mode="bytecode")()
     expected = func()
     assert got == expected
     jcr = get_code_extra(func)
@@ -350,7 +350,7 @@ def test_except_case_11():
             pass
 
     with pytest.raises(Exception, match="new BufferError in except!"):
-        jit(fn=func, mode="PIJit")()
+        jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1
 
@@ -375,7 +375,7 @@ def test_except_case_12():
             i = 3
         return 2
 
-    got = jit(fn=func, mode="PIJit")()
+    got = jit(function=func, capture_mode="bytecode")()
     expected = func()
     assert got == expected
     jcr = get_code_extra(func)
@@ -409,7 +409,7 @@ def test_except_case_13():
         return 5
 
     with pytest.raises(ArithmeticError):
-        jit(fn=func, mode="PIJit")()
+        jit(function=func, capture_mode="bytecode")()
 
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1
@@ -446,7 +446,7 @@ def test_except_case_14():
                 i = 2
             return i
 
-    got = jit(fn=func, mode="PIJit")()
+    got = jit(function=func, capture_mode="bytecode")()
     assert got == 2
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 0
@@ -484,7 +484,7 @@ def test_except_case_15():
             raise ArithmeticError
         return i
 
-    got = jit(fn=func, mode="PIJit")()
+    got = jit(function=func, capture_mode="bytecode")()
     assert got == 2
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 1

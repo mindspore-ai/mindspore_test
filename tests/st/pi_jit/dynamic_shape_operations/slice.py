@@ -61,11 +61,11 @@ class DynamicShapeSliceFactory():
 
     def forward_cmp(self):
         ps_net = DynamicShapeSliceNet()
-        jit(ps_net.construct, mode="PSJit")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = DynamicShapeSliceNet()
-        jit(pi_net.construct, mode="PIJit")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)
@@ -87,11 +87,11 @@ class DynamicShapeSliceFactory():
 
     def grad_cmp(self):
         ps_net = DynamicShapeSliceNet()
-        jit(ps_net.construct, mode="PSJit")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.grad_mindspore_impl(ps_net)
         pi_net = DynamicShapeSliceNet()
-        jit(pi_net.construct, mode="PIJit")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_ms, self.begin_ms, self.size_ms, self.axis_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.grad_mindspore_impl(pi_net)
         allclose_nparray(out_psjit, out_pijit, self.loss, self.loss)

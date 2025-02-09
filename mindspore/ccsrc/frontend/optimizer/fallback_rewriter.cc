@@ -2689,6 +2689,10 @@ void FindValueWithInplaceInner(const FuncGraphPtr &graph, const StringSetPtr &va
 
 void FindValueWithInplace(const FuncGraphPtr &root, const pipeline::ResourcePtr &resource,
                           const StringSetPtr &value_with_inplace) {
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return;
+  }
   const auto func_graphs_used_total = root->func_graphs_used_total();
   for (const auto &fg : func_graphs_used_total) {
     FindValueWithInplaceInner(fg, value_with_inplace);

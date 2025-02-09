@@ -385,9 +385,8 @@ bool SubstitutionList::operator()(const FuncGraphPtr &func_graph, const Optimize
   static const auto traverse_mode =
     (common::GetCompileConfig("TRAVERSE_SUBSTITUTIONS_MODE") != "1" ? kOptTraverseFromIRToSubstitutions
                                                                     : kOptTraverseFromSubstitutionsToIR);
-  if (traverse_mode == kOptTraverseFromIRToSubstitutions &&
-      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-      optimizer->traverse_nodes_first() && !is_once_ && !global_sensitive_) {
+  if (traverse_mode == kOptTraverseFromIRToSubstitutions && optimizer->traverse_nodes_first() && !is_once_ &&
+      !global_sensitive_) {
     MS_LOG(INFO) << "IR >> SUB, *, " << optimizer->name() << "_r" << optimizer->current_pass_.counter << "_"
                  << optimizer->current_pass_.name;
     changes = ApplyIRToSubstitutions(optimizer, func_graph);

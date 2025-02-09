@@ -17,7 +17,7 @@ class TestCellListInsertNet(nn.Cell):
         self.cell_list.insert(0, nn.Cell())
         self.cell_list.insert(1, nn.Dense(1, 2))
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self):
         return len(self.cell_list)
 
@@ -45,7 +45,7 @@ class EmbeddedCellDictNet(nn.Cell):
         self.cell_dict = nn.CellDict({'conv': nn.Conv2d(3, 2, 2), "relu": nn.ReLU()})
         self.cell_list = nn.CellList([self.cell_dict])
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         for cell_dict in self.cell_list:
             for net in cell_dict.values():

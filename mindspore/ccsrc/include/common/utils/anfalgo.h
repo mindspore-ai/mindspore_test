@@ -312,9 +312,6 @@ class COMMON_EXPORT AnfAlgo {
   static std::string GetTensorValueString(const tensor::BaseTensorPtr &tensor);
   static abstract::AbstractBasePtr FrontendGetNodeAbstractByIndex(const AnfNodePtr &node, size_t index);
 
-  // Get jit level from func_graph
-  static std::string GetJitLevel(const FuncGraphPtr &func_graph);
-
   static bool IsNodeMutableScalar(const AnfNodePtr &node);
   static bool IsDynamicSequence(const AnfNodePtr &node);
   static bool IsAnyTypeOutput(const AnfNodePtr &node);
@@ -335,6 +332,8 @@ class COMMON_EXPORT AnfAlgo {
   static bool HasIncorporateCallNode(const CNodePtr &cnode);
   static bool IsDynamicGraph(const FuncGraphPtr &func_graph);
   static bool IsMonadType(const TypeId &type_id);
+  // check if is ge backend
+  static bool IsBackendGe();
 };
 }  // namespace common
 }  // namespace mindspore

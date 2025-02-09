@@ -25,12 +25,12 @@ def skip_if_python_version_too_high():
     if sys.version_info >= (3, 11):  
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
         
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def is_mutable():
     output = mutable((Tensor([1]), Tensor([2])), True)
     return F.is_sequence_value_unknown(output), F.is_sequence_shape_unknown(output)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def not_mutable():
     output = mutable((Tensor([1]), Tensor([2])), False)
     return F.is_sequence_value_unknown(output), F.is_sequence_shape_unknown(output)

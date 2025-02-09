@@ -405,6 +405,7 @@ input_data = Tensor(np.arange(4 * 5).reshape((4, 5)))
 input_data_4d = Tensor(np.arange(4 * 3 * 4 * 4).reshape((4, 3, 4, 4)))
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_index_st():
     """

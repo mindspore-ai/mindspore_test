@@ -36,13 +36,13 @@ def add(a, b):
     return a + b
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def add_tuple(a, b):
     c = (a, b)
     return add(*c)
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def add_list(a, b):
     c = [a, b]
     return add(*c)

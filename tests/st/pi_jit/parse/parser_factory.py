@@ -43,10 +43,10 @@ class ParserFactory():
     def forward_cmp(self):
         input_me_use_list = copy.deepcopy(self.input_me_list)
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.net_ps.construct, mode="PSJit")(*input_me_use_list)
+        jit(function=self.net_ps.construct, capture_mode="ast")(*input_me_use_list)
         out_ps = self.forward_mindspore_impl(self.net_ps).asnumpy()
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.net_pi.construct, mode="PIJit")(*input_me_use_list)
+        jit(function=self.net_pi.construct, capture_mode="bytecode")(*input_me_use_list)
         out_pi = self.forward_mindspore_impl(self.net_pi).asnumpy()
         allclose_nparray(out_pi, out_ps, self.loss, self.loss)
 

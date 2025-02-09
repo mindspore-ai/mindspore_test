@@ -21,7 +21,7 @@ def test_watch_get_func_graphs_from_abstract():
             super().__init__()
             self.op = P.Add()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             for t in range(2):
                 if y != x:

@@ -36,7 +36,7 @@ class GradOperationNet(nn.Cell):
         self.net = net
         self.grad_op = GradOperation(get_all=get_all, get_by_list=get_by_list, sens_param=sens_param)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, *args):
         gradient_function = self.grad_op(self.net)
         return gradient_function(*args)
@@ -49,7 +49,7 @@ class GradOperationNetWrtParameter(nn.Cell):
         self.params = net.trainable_params()
         self.grad_op = GradOperation(get_all=get_all, get_by_list=get_by_list)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, *args):
         gradient_function = self.grad_op(self.net, self.params[0])
         return gradient_function(*args)
@@ -73,7 +73,7 @@ class GradOperationNetWrtParameterNone(nn.Cell):
         self.net = net
         self.grad_op = GradOperation(get_all=get_all, get_by_list=get_by_list)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, *args):
         gradient_function = self.grad_op(self.net, None)
         return gradient_function(*args)

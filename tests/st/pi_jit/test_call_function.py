@@ -28,30 +28,30 @@ def skip_if_python_version_too_high():
 def func(x, k=1):
     return x + k
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def jit_test1(x):
     return func(x)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def jit_test2(x):
     y = (x,)
     return func(*y)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def jit_test3(x):
     return func(x, k=10)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def jit_test4(x):
     d = {'k': 10}
     return func(x, **d)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def jit_test5(x):
     y = (x,)
     return func(*y, k=10)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def jit_test6(x):
     y = (x,)
     d = {'k': 10}

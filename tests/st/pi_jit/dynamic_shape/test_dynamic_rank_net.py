@@ -26,10 +26,10 @@ class DynamicFactory:
             msx = Tensor(i)
             ms_inputs.append(msx)
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.ps_net.construct, mode="PSJit")(*ms_inputs)
+        jit(function=self.ps_net.construct, capture_mode="ast")(*ms_inputs)
         ps_out = self.ps_net(*ms_inputs)
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.pi_net.construct, mode="PIJit")(*ms_inputs)
+        jit(function=self.pi_net.construct, capture_mode="bytecode")(*ms_inputs)
         pi_out = self.pi_net(*ms_inputs)
         comparebase.compare_nparray(pi_out.asnumpy(), ps_out.asnumpy(), 0.001, 0.001)
 
@@ -41,11 +41,11 @@ class DynamicFactory:
             ms_inputs.append(msx)
 
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.ps_net.construct, mode="PSJit")(*ms_inputs)
+        jit(function=self.ps_net.construct, capture_mode="ast")(*ms_inputs)
         grad_net = GradOfAllInputs(self.ps_net)
         ps_grad = grad_net(*ms_inputs, ms_sens)
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.pi_net.construct, mode="PIJit")(*ms_inputs)
+        jit(function=self.pi_net.construct, capture_mode="bytecode")(*ms_inputs)
         grad_net = GradOfAllInputs(self.pi_net)
         pi_grad = grad_net(*ms_inputs, ms_sens)
         for s, i in zip(ps_grad, pi_grad):
@@ -165,7 +165,7 @@ def test_dynamic_shape_op_all_dtypes():
     dtype.int8, dtype.int16, dtype.int32, dtype.int64,\
     dtype.complex64, dtype.complex128]
     context.set_context(mode=context.PYNATIVE_MODE)
-    jit(fn=Net4.construct, mode="PIJit")
+    jit(function=Net4.construct, capture_mode="bytecode")
     for dt in all_types:
         d1 = Tensor(shape=[None, None], dtype=dt)
         x = Tensor([[1, 1], [1, 1]], dtype=dt)

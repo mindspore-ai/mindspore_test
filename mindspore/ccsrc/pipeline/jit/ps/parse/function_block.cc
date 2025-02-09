@@ -537,7 +537,8 @@ AnfNodePtr FunctionBlock::DoResolve(const AnfNodePtr &node, const std::shared_pt
     return node;
   }
   AnfNodePtr resolved_node = nullptr;
-  bool success = ResolveObjectToNode(node, obj, &resolved_node);
+  Resolver resolver(Parser::GetTopFuncGraph());
+  bool success = resolver.ResolveObjectToNode(node, obj, &resolved_node);
   if (!success || resolved_node == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Parse Resolve convert failed." << node->DebugString()
                                << ", ns: " << name_space->ToString() << ", sym: " << resolve_symbol->ToString();
@@ -848,74 +849,8 @@ void FunctionBlock::FindIsolatedNodes() {
 void FunctionBlock::AddIsolatedNode(const AnfNodePtr &target) { isolated_nodes_.add(target); }
 
 void FunctionBlock::AttachIsolatedNodesBeforeReturn() {
-  if (isolated_nodes_.empty()) {
-    return;
-  }
-  std::vector<AnfNodePtr> states;
-  (void)states.emplace_back(NewValueNode(prim::kPrimMakeTuple));
-  constexpr int recursive_level = 2;
-  for (const auto &node : isolated_nodes_) {
-    MS_EXCEPTION_IF_NULL(node);
-    MS_LOG(DEBUG) << "Adding dependency, node: " << node->DebugString(recursive_level) << " in "
-                  << func_graph_->ToString();
-    if (node->func_graph() == func_graph_) {
-      (void)states.emplace_back(node);
-    } else {
-      MS_LOG(INFO) << "Ignored FV dependency, node: " << node->DebugString(recursive_level) << " in "
-                   << func_graph_->ToString();
-    }
-  }
+  AttachIsolatedNodes(func_graph_, isolated_nodes_);
   isolated_nodes_.clear();
-
-  AnfNodePtr state = nullptr;
-  constexpr size_t no_state_size = 1;
-  constexpr size_t only_one_state_size = 2;
-  if (states.size() == no_state_size) {
-    // Only MakeTuple, no state left.
-    return;
-  } else if (states.size() == only_one_state_size) {
-    // If there are only MakeTuple and another node in states(the states size is 2),
-    // do not need to MakeTuple, just use the node.
-    state = states[1];
-  } else {
-    state = func_graph_->NewCNode(std::move(states));
-    if (state != nullptr && state->debug_info() != nullptr) {
-      state->debug_info()->set_location(nullptr);
-    }
-  }
-
-  AnfNodePtr old_output = nullptr;
-  auto return_node = func_graph_->get_return();
-  if (return_node != nullptr) {
-    const size_t return_input_size = 2;
-    if (return_node->size() < return_input_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Length of inputs of output node is less than 2";
-    }
-    old_output = return_node->input(1);
-  } else {
-    old_output = NewValueNode(kNone);
-  }
-  AnfNodePtr stop_grad_node = func_graph_->NewCNode({NewValueNode(prim::kPrimStopGradient), state});
-  CNodePtr depend_node = func_graph_->NewCNode({NewValueNode(prim::kPrimDepend), old_output, stop_grad_node});
-  if (stop_grad_node->debug_info() != nullptr) {
-    stop_grad_node->debug_info()->set_location(nullptr);
-  }
-  if (old_output->debug_info() != nullptr && depend_node->debug_info() != nullptr) {
-    depend_node->debug_info()->set_location(old_output->debug_info()->location());
-  }
-  // We add this attribute for @constexpr use scene, since we must infer them before other nodes.
-  // That means isolated nodes will be evaluated first. It's not complete, but works in most scenes.
-  depend_node->AddAttr(kAttrTopoSortRhsFirst, MakeValue(true));
-  MS_EXCEPTION_IF_NULL(state);
-  MS_LOG(INFO) << "Attached for side-effect nodes, depend_node: " << depend_node->DebugString()
-               << ", state: " << state->DebugString(recursive_level);
-  func_graph_->set_output(depend_node, true);
-  // Update new return node's debug_info with old one.
-  if (return_node != nullptr && return_node->debug_info() != nullptr) {
-    auto new_return = func_graph_->get_return();
-    MS_EXCEPTION_IF_NULL(new_return);
-    new_return->set_debug_info(return_node->debug_info());
-  }
 }
 
 void FunctionBlock::SetAsDeadBlock() { is_dead_block_ = true; }

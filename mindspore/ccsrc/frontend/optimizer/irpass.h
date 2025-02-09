@@ -125,7 +125,7 @@ class OptimizeIRPassLib {
   SubstitutionPtr updatestate_useless_node_eliminater_;
   SubstitutionPtr updatestate_pure_node_eliminater_;
   SubstitutionPtr switch_call_monad_eliminater_;
-  SubstitutionPtr stopgrad_eliminater_;
+  SubstitutionPtr redundant_stopgrad_eliminater_;
   SubstitutionPtr load_eliminater_;
 
   // Incorporation

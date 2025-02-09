@@ -62,8 +62,85 @@ class Pipeline {
   std::vector<ActionItem> actions_;
 };
 
+class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
+ public:
+  ExecutorPy() = default;
+  virtual ~ExecutorPy() = default;
+  bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase);
+  py::object Run(const py::tuple &args, const py::object &phase);
+  void set_enable_tuple_broaden(bool enable_tuple_broaden) { enable_tuple_broaden_ = enable_tuple_broaden; }
+  // Generate a key for mapping function graph
+  py::object GenerateArgumentsKey(const py::object &obj, const py::tuple &args, const py::dict &kwargs,
+                                  bool enable_tuple_broaden = false);
+  void ClearCompileArgumentsResource();
+  void SetJitConfig(const py::dict &jit_config);
+  virtual void CleanCompileRes(const ResourcePtr &resource) = 0;
+  FuncGraphPtr GetFuncGraph(const std::string &phase);
+  void SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase);
+  FuncGraphPtr GetJitPrimalFuncGraph(const std::string &phase);
+  FuncGraphPtr GetJitGradGraph(const std::string &phase);
+  void SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::string &phase);
+  py::dict GetParams(const std::string &phase);
+  bool HasCompiled(const std::string &phase) const;
+  void DelNetRes(const py::object &source, const py::set &id);
+  const std::string &phase() const { return phase_; }
+  void set_queue_name(const std::string &queue_name) { queue_name_ = queue_name; }
+  std::string get_queue_name(const std::string &dataset_phase);
+  void set_compile_cache_dep_files(const py::list &compile_cache_dep_files) {
+    compile_cache_dep_files_ = compile_cache_dep_files;
+  }
+  void set_weights_values(const py::dict &weights) { weights_ = weights; }
+  // Check consistency of two arguments for mapping function graph
+  void CheckArgumentsConsistency(const py::tuple &compile_args, const py::tuple &args_list, const py::object &target);
+  py::bytes GetFuncGraphProto(const std::string &phase, const std::string &ir_type, const bool &incremental);
+  py::bytes GetObfuscateFuncGraphProto(const std::string &phase, const bool &incremental, const float obf_ratio,
+                                       const int branch_control_input);
+  virtual bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
+                            const std::string &phase, bool trace_flag) = 0;
+  bool executor_running() const { return executor_running_; }
+  const std::string &obj_desc() const { return obj_desc_; }
+  int32_t max_call_depth() const { return max_call_depth_; }
+  void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
+  void ClearInfo();
+
+ protected:
+  virtual bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
+                            const py::object &phase) = 0;
+  virtual py::object RunInner(const py::tuple &args, const py::object &phase) = 0;
+  virtual void DelOneNetRes(const py::handle &py_phase) = 0;
+  virtual void SaveCompiledGraph(const std::string &phase) = 0;
+  ResourcePtr GetResource(const std::string &phase);
+  void ProcessVmArg(const py::tuple &args, const std::string &phase, VectorRef *const arg_list);
+  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase, const std::string &kind = kOutput);
+  void ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list);
+  // If enable compile cache, get the compile cache resource.
+  void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);
+  void InitCompileCacheResource(const ResourcePtr &resource, const std::string &phase);
+  void set_process_id();
+
+  std::map<std::string, ExecutorInfoPtr> info_;
+  std::string phase_;
+  std::string source_;
+  std::string obj_desc_;
+  bool enable_tuple_broaden_{false};
+  std::map<PyObject *, std::pair<ValuePtr, AbstractBasePtr>> cur_convert_input_;
+
+ private:
+  void ClearCurConvertInput();
+  void ReleaseResourceOnException(const py::object &phase);
+
+  std::string queue_name_;
+  py::list compile_cache_dep_files_;
+  py::dict weights_;
+  bool executor_running_{false};
+  bool compile_cache_consistent_{true};
+  int32_t max_call_depth_{-1};
+  pid_t process_id_{0};
+};
+using ExecutorPyPtr = std::shared_ptr<ExecutorPy>;
+
 // A function pipeline.
-class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
+class GraphExecutorPy : public ExecutorPy {
  public:
   static std::shared_ptr<GraphExecutorPy> GetInstance() {
     std::lock_guard<std::mutex> i_lock(instance_lock_);
@@ -74,39 +151,19 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
     return executor_;
   }
 
-  ~GraphExecutorPy();
+  ~GraphExecutorPy() override;
 
-  bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
-               bool use_vm);
   bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs, const std::string &phase,
-                    bool use_vm, bool trace_flag = false);
-  py::object Run(const py::tuple &args, const py::object &phase);
+                    bool trace_flag) override;
 
-  const std::string &phase() const { return phase_; }
-  void SaveCompiledGraph(const std::string &phase);
   void ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
                    abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments);
   void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
-  void ProcessVmArg(const py::tuple &args, const std::string &phase, VectorRef *const arg_list);
-  ResourcePtr GetResource(const std::string &phase);
-  FuncGraphPtr GetFuncGraph(const std::string &phase);
-  void SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase);
-  FuncGraphPtr GetJitPrimalFuncGraph(const std::string &phase);
-  FuncGraphPtr GetJitGradGraph(const std::string &phase);
-  void SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::string &phase);
-  py::bytes GetFuncGraphProto(const std::string &phase, const std::string &ir_type, const bool &incremental);
-  py::bytes GetObfuscateFuncGraphProto(const std::string &phase, const bool &incremental, const float obf_ratio,
-                                       const int branch_control_input);
   py::bytes GetOptimizeGraphProto(const std::string &phase);
-
-  void SetJitConfig(const py::dict &jit_config);
-  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase, const std::string &kind = kOutput);
-  bool HasCompiled(const std::string &phase) const;
 
   FuncGraphPtr BuildGraph(const py::dict &init_params, const std::string &phase) const;
   void ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt = py::none(),
                    char *key = nullptr);
-  py::dict GetParams(const std::string &phase);
   py::bytes GetRandomStatus(const std::string &phase) const;
   void UpdataParamNodeDefaultInput(const std::string &phase,
                                    const std::unordered_map<std::string, tensor::TensorPtr> &params_value);
@@ -122,81 +179,53 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   size_t GetNumOpsInfo(const std::string &phase);
   void SetNumOpsInfo(size_t num_ops);
   py::dict GetAllreduceFusion(const std::string &phase);
-  void DelNetRes(const py::object &source, const py::set &id);
-  void ReleaseResourceOnException(const py::object &phase);
-  void CleanCompileRes(const ResourcePtr &resource);
   static void ClearRes();
-  void set_queue_name(const std::string &queue_name) { queue_name_ = queue_name; }
-  std::string get_queue_name(const std::string &dataset_phase);
-  void set_enable_tuple_broaden(bool enable_tuple_broaden) { enable_tuple_broaden_ = enable_tuple_broaden; }
-  void set_compile_cache_dep_files(const py::list &compile_cache_dep_files) {
-    compile_cache_dep_files_ = compile_cache_dep_files;
-  }
-  void set_weights_values(const py::dict &weights) { weights_ = weights; }
-  int32_t max_call_depth() const { return max_call_depth_; }
-  void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
   void SetOptimizeConfig(const py::list &optimize_cfg);
   std::string GetOptimizeConfig();
   void SetConfigPasses(const py::list &passes);
   py::list GetRunningPasses();
-#ifdef ENABLE_DEBUGGER
-  void TerminateDebugger();
-#endif
 
-  // Generate a key for mapping function graph
-  py::object GenerateArgumentsKey(const py::object &obj, const py::tuple &args, const py::dict &kwargs,
-                                  bool enable_tuple_broaden = false);
-  // Check consistency of two arguments for mapping function graph
-  void CheckArgumentsConsistency(const py::tuple &compile_args, const py::tuple &args_list, const py::object &target);
-  void ClearCompileArgumentsResource();
-
-  void ClearCurConvertInput();
   void ParentBeforeFork();
   void ParentAfterFork();
   void ChildAfterFork();
-  void ClearInfo();
-  void set_process_id();
+
+  void CleanCompileRes(const ResourcePtr &resource) override;
 
  private:
   GraphExecutorPy() = default;
   void ParallelPostProcess(const string &phase, bool use_compile_cache);
-  void GetGeBackendPolicy() const;
-  // filter some pipeline actions according to phase, e.g. when exporting onnx, it is no need to execute actions after
-  // 'validate' stage
-  static std::vector<ActionItem> FilterActions(const std::vector<ActionItem> &actions, const std::string &phase);
 
-  void DelOneNetRes(const py::handle &py_phase);
-  // If enable compile cache, get the compile cache resource.
-  void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);
-
-  bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
-                    bool use_vm);
-  py::object RunInner(const py::tuple &args, const py::object &phase);
-  void ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list);
   void ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend, const py::dict &dict,
                               std::map<std::string, std::shared_ptr<tensor::Tensor>> *const tensors,
                               const FuncGraphPtr &anf_graph) const;
 
-  std::map<std::string, ExecutorInfoPtr> info_;
+  void DelOneNetRes(const py::handle &py_phase) override;
+  bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
+                    const py::object &phase) override;
+  py::object RunInner(const py::tuple &args, const py::object &phase) override;
+  void SaveCompiledGraph(const std::string &phase) override;
+#ifdef ENABLE_DEBUGGER
+  void TerminateDebugger();
+#endif
+
   static std::shared_ptr<GraphExecutorPy> executor_;
   static std::mutex instance_lock_;
   std::map<std::string, py::dict> stra_dict_;
-  std::string phase_{""};
-  std::string source_{""};
-  std::string obj_desc_{""};
   std::map<std::string, size_t> phase_to_num_op_info_;
-  std::string queue_name_;
-  bool enable_tuple_broaden_{false};
-  py::list compile_cache_dep_files_;
-  bool compile_cache_consistent_{true};
-  py::dict weights_;
-  std::map<PyObject *, std::pair<ValuePtr, AbstractBasePtr>> cur_convert_input_;
-  bool executor_running_{false};
-  int32_t max_call_depth_{-1};
-  bool need_recompile_{true};
-  pid_t process_id_;
 };
 using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
+
+class JitCompilingScope {
+ public:
+  JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kJitCompiling); }
+  ~JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
+
+class JitRunningScope {
+ public:
+  JitRunningScope() { MsContext::GetInstance()->set_jit_status(kJitRunning); }
+  ~JitRunningScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
 
 std::string GetJitLevel();
 
@@ -251,6 +280,17 @@ void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, c
                const bool &type);
 bool IsPhaseExport(const std::string &phase);
 py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
+void SetLoopCount(const ResourcePtr &resource);
+void ResetId(const ResourcePtr &resource);
+#ifdef ENABLE_DUMP_IR
+std::string GetBaseNameForIR(int64_t stage_idx, const std::string &action_name);
+void RecordIR(const size_t action_index, const size_t action_size, const std::string &action_name,
+              const FuncGraphPtr &graph, FuncGraphPtr *user_graph);
+#endif
+AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden = false);
+void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
+void CheckInterpretNodeLineInfos();
+void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
 }  // namespace pipeline
 }  // namespace mindspore
 

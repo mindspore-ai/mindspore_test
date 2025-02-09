@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -55,8 +55,8 @@ def test_hardtanh_std(mode):
         output = hardtanh_forward_func(x, min_val, max_val)
         inplace_x = hardtanh_forward_func(ms.Tensor(x_np, dtype=ms.float32), min_val, max_val)
     else:
-        output = (jit(hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(x, min_val, max_val)
-        inplace_x = (jit(hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(hardtanh_forward_func, jit_level="O0"))(x, min_val, max_val)
+        inplace_x = (jit(hardtanh_forward_func, jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.float32), min_val, max_val)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(inplace_x.asnumpy(), expect, rtol=1e-5, atol=1e-5)
@@ -99,8 +99,8 @@ def test_hardtanh_bfloat16(mode):
         output = hardtanh_forward_func(x, min_val, max_val)
         inplace_x = hardtanh_forward_func(ms.Tensor(x_np, dtype=ms.bfloat16), min_val, max_val)
     else:
-        output = (jit(hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(x, min_val, max_val)
-        inplace_x = (jit(hardtanh_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(hardtanh_forward_func, jit_level="O0"))(x, min_val, max_val)
+        inplace_x = (jit(hardtanh_forward_func, jit_level="O0"))(
             ms.Tensor(x_np, dtype=ms.bfloat16), min_val, max_val)
     np.allclose(output.float().asnumpy(), expect, 4e-3, 4e-3, equal_nan=True)
     np.testing.assert_allclose(inplace_x.asnumpy(), expect, rtol=4e-3, atol=4e-3)

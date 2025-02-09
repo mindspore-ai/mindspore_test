@@ -14,6 +14,7 @@
 # ============================================================================
 
 import os
+import pytest
 from tests.mark_utils import arg_mark
 
 
@@ -53,6 +54,7 @@ def test_graph_functional_sink_train():
     assert ret == 0
 
 
+@pytest.mark.skip(reason="Jit pipeline doesn't support parallel.")
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards",
           essential_mark="essential")
 def test_pynative_func_sink():

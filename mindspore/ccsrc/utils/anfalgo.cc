@@ -41,6 +41,7 @@
 #include "utils/shape_utils.h"
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
+#include "utils/phase.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_context.h"
 #include "pybind_api/ir/primitive_py.h"
@@ -2292,17 +2293,6 @@ abstract::AbstractBasePtr AnfAlgo::FrontendGetNodeAbstractByIndex(const AnfNodeP
   return elements[index];
 }
 
-std::string AnfAlgo::GetJitLevel(const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  if (!func_graph->has_attr(kAttrJitLevel)) {
-    MS_LOG(INFO) << "The func_graph:" << func_graph->ToString() << " has no jit_level attr, return default: None.";
-    return "";
-  }
-  auto jit_level_value = func_graph->get_attr(kAttrJitLevel);
-  auto jit_level = GetValue<std::string>(jit_level_value);
-  return jit_level;
-}
-
 bool AnfAlgo::IsNodeMutableScalar(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
@@ -2833,6 +2823,13 @@ bool AnfAlgo::IsMonadType(const TypeId &type_id) {
     return true;
   }
   return false;
+}
+
+bool AnfAlgo::IsBackendGe() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string backend = context->GetBackend();
+  return backend == kBackendGE;
 }
 }  // namespace common
 }  // namespace mindspore

@@ -20,7 +20,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 import mindspore.ops.operations.math_ops as P
 from mindspore import Tensor
-from mindspore.common.api import ms_function
+from mindspore.common.api import jit
 
 
 class PolarNet(nn.Cell):
@@ -28,7 +28,7 @@ class PolarNet(nn.Cell):
         super(PolarNet, self).__init__()
         self.polar = P.Polar()
 
-    @ms_function
+    @jit
     def construct(self, ms_abs, ms_angle):
         return self.polar(ms_abs, ms_angle)
 

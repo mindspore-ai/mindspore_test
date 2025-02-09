@@ -18,7 +18,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import ops, Tensor, jit, JitConfig, context
+from mindspore import ops, Tensor, jit, context
 from mindspore.common.api import _pynative_executor
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -111,9 +111,9 @@ def test_gather_ext_static_shape(mode, input_dtype, index_dtype):
     if mode == 'pynative':
         ms_out = call_gather(ms_data, dim, ms_indices)
     elif mode == 'KBK':
-        ms_out = (jit(call_gather, jit_config=JitConfig(jit_level="O0")))(ms_data, dim, ms_indices)
+        ms_out = (jit(call_gather, jit_level="O0"))(ms_data, dim, ms_indices)
     else:
-        ms_out = (jit(call_gather, jit_config=JitConfig(jit_level="O2")))(ms_data, dim, ms_indices)
+        ms_out = (jit(call_gather, backend="GE"))(ms_data, dim, ms_indices)
 
     expect = GenExpectResult(input_dtype)
     assert np.allclose(ms_out.asnumpy(), expect, rtol=1e-4)
@@ -262,9 +262,9 @@ def test_gather_ext_grad(mode):
     if mode == 'pynative':
         ms_out = gather_ext_backward_func(ms_data, dim, ms_indices)
     elif mode == 'KBK':
-        ms_out = (jit(gather_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms_data, dim, ms_indices)
+        ms_out = (jit(gather_ext_backward_func, jit_level="O0"))(ms_data, dim, ms_indices)
     else:
-        ms_out = (jit(gather_ext_backward_func, jit_config=JitConfig(jit_level="O2")))(ms_data, dim, ms_indices)
+        ms_out = (jit(gather_ext_backward_func, backend="GE"))(ms_data, dim, ms_indices)
     assert np.allclose(ms_out.asnumpy(), expect, rtol=1e-4)
 
 

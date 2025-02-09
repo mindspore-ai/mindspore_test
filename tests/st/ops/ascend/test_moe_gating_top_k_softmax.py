@@ -75,12 +75,10 @@ def test_moe_gating_top_k_softmax_case0(mode, support_type):
         y_ms, expert_idx_ms, row_idx_ms = moe_gating_topk_softmax_forward_func(x, finished, k)
     elif mode == 'KBK':
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func,\
-            jit_config=JitConfig(jit_level="O0")))(x, finished, k)
+        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func, jit_level="O0"))(x, finished, k)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func,\
-            jit_config=JitConfig(jit_level="O2")))(x, finished, k)
+        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func, backend="GE"))(x, finished, k)
 
     if support_type == mstype.bfloat16:
         y, expert_idx, row_idx = \

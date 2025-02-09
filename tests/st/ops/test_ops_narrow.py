@@ -66,9 +66,9 @@ def test_ops_narrow_forward(context_mode):
         output_grad = narrow_backward_func(ms.Tensor(x), dim, start, length)
     else:
         output_forward = \
-            (jit(narrow_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_forward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
         output_grad = \
-            (jit(narrow_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_backward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)
@@ -96,9 +96,9 @@ def test_ops_narrow_forward_case01(context_mode):
         output_grad = narrow_backward_func(ms.Tensor(x), dim, start, length)
     else:
         output_forward = \
-            (jit(narrow_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_forward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
         output_grad = \
-            (jit(narrow_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, length)
+            (jit(narrow_backward_func, jit_level="O0"))(ms.Tensor(x), dim, start, length)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)

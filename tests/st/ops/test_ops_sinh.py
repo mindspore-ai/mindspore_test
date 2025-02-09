@@ -62,7 +62,7 @@ def test_ops_sinh_forward_backward(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = sinh_forward_func(ms.Tensor(x))
     else:
-        output = (jit(sinh_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(sinh_forward_func, jit_level="O0"))(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
@@ -71,7 +71,7 @@ def test_ops_sinh_forward_backward(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = sinh_backward_func(ms.Tensor(x))
     else:
-        output = (jit(sinh_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(sinh_backward_func, jit_level="O0"))(ms.Tensor(x))
     expect = np.array([[1.543081, 3.762196, 10.067662], [27.308231, 74.20995, 201.71562]])
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
@@ -93,7 +93,7 @@ def test_ops_sinh_vmap(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = sinh_vmap_func(ms.Tensor(x))
     else:
-        output = (jit(sinh_vmap_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(sinh_vmap_func, jit_level="O0"))(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 

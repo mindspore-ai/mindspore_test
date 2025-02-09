@@ -18,7 +18,7 @@ def test_if_raise_raise():
     Expectation: success
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def foo(x, y, z):
         out = z
         if x >= y:

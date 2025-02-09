@@ -841,7 +841,7 @@ def linearize(fn, inputs):
     """
     linearize_inner = _LinearizeInner()
 
-    @jit(hash_args=fn)
+    @jit
     def _wrap_container(*arg):
         args = arg[1:-1]
         vectors = arg[-1]

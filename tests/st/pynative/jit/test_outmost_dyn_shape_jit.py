@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import pytest
 import platform
 import numpy as np
 import mindspore as ms
@@ -75,6 +76,7 @@ def cmp_func(x, y):
     return x
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',

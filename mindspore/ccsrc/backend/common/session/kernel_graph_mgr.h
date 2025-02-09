@@ -57,16 +57,18 @@ class BACKEND_EXPORT KernelGraphMgr {
   // would be disabled.
   std::shared_ptr<KernelGraph> ConstructKernelGraph(const AnfNodePtrList &lst, const AnfNodePtrList &outputs,
                                                     DeviceType device_target = DeviceType::kUnknown,
+                                                    const JitSetting &jit_setting = JitSetting(),
                                                     bool common_opt = true, bool is_enable_zero_copy = false);
 
   std::shared_ptr<KernelGraph> ConstructKernelGraph(const FuncGraphPtr &func_graph,
                                                     std::vector<KernelGraphPtr> *all_out_graph,
-                                                    DeviceType device_target);
+                                                    DeviceType device_target,
+                                                    const JitSetting &jit_setting = JitSetting());
 
   std::vector<KernelGraphPtr> ConstructKernelGraph(std::vector<KernelGraphPtr> *all_out_graph);
   std::shared_ptr<KernelGraph> ConstructPackKernelGraph(const FuncGraphPtr &func_graph,
                                                         std::vector<KernelGraphPtr> *all_out_graph,
-                                                        DeviceType device_target);
+                                                        DeviceType device_target, const JitSetting &jit_setting);
 
   void SetInputNodeUsage(const KernelGraphPtr &graph, const FuncGraphManagerPtr &manager) const;
 
@@ -136,7 +138,7 @@ class BACKEND_EXPORT KernelGraphMgr {
 
   void InitInternalOutputParameter(const AnfNodePtr &out_node, const AnfNodePtr &parameter) const;
   void ConstructKernelGraphInner(const FuncGraphPtr &func_graph, std::vector<KernelGraphPtr> *all_out_graph,
-                                 DeviceType device_target, const KernelGraphPtr &graph);
+                                 DeviceType device_target, const JitSetting &jit_setting, const KernelGraphPtr &graph);
 
   std::vector<KernelGraphPtr> ConstructMultiKernelGraphByCache(
     const nlohmann::json &model_json, const std::map<GraphId, KernelGraphPtr> &kernel_graphids_for_mindir,

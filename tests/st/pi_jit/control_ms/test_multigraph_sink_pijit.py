@@ -67,7 +67,7 @@ def if_in_if(x, y, z):
     return out
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def simple_while(x, y):
     y = y + 4
     while x < y:
@@ -76,7 +76,7 @@ def simple_while(x, y):
     return x
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_by_while(x, y, z):
     while x < y:
         x = x + 1
@@ -87,7 +87,7 @@ def while_by_while(x, y, z):
     return x
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_in_while(x, y, z):
     out = c4
     while x < y:
@@ -100,7 +100,7 @@ def while_in_while(x, y, z):
     return out
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_by_while_in_while(x, y, z):
     out = c4
     while x < c2:
@@ -117,7 +117,7 @@ def while_by_while_in_while(x, y, z):
     return out
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_in_while_in_while(x, y, z):
     out = c4
     while x < c2:

@@ -48,6 +48,6 @@ def test_pijit_catch_func():
         out = eval(f"func{x}(x)")
         return out
 
-    got = jit(fn=func, mode="PIJit")(2)
+    got = jit(function=func, capture_mode="bytecode")(2)
     expect = func(2)
     assert got == expect

@@ -20,7 +20,7 @@ class TestGetitemMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self):
         return self.cell_dict['conv']
 
@@ -50,7 +50,7 @@ class TestSetitemMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self):
         self.cell_dict['conv'] = nn.Conv2d(6, 16, 5, pad_mode='valid')
         return self.cell_dict['conv']
@@ -81,7 +81,7 @@ class TestSetitemMethodErrCaseNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, key, cell):
         self.cell_dict[key] = cell
         return self.cell_dict[key]
@@ -164,7 +164,7 @@ class TestContainsMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, key1, key2):
         ret1 = key1 in self.cell_dict
         ret2 = key2 in self.cell_dict
@@ -195,7 +195,7 @@ class TestClearMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    #@jit(mode="PIJit")
+    #@jit(capture_mode="bytecode")
     def construct(self):
         self.cell_dict.clear()
         return len(self.cell_dict)
@@ -223,7 +223,7 @@ class TestPopMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    #@jit(mode="PIJit")
+    #@jit(capture_mode="bytecode")
     def construct(self, key):
         op = self.cell_dict.pop(key)
         cell_dict_len = len(self.cell_dict)
@@ -257,7 +257,7 @@ class TestKeysMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self):
         return self.cell_dict.keys()
 
@@ -285,7 +285,7 @@ class TestValuesMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self):
         return self.cell_dict.values()
 
@@ -322,7 +322,7 @@ class TestItemsMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self):
         return self.cell_dict.items()
 
@@ -361,7 +361,7 @@ class TestUpdateMethodNet(nn.Cell):
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self):
         x = Tensor(np.array([[180, 234, 154], [244, 48, 247]]), ms.float32)
         y = Tensor(np.ones([1, 10, 6, 10]), ms.float32)
@@ -440,7 +440,7 @@ class TestUpdateMethodEmbeddedNet(nn.Cell):
                                       ['relu', nn.ReLU()],
                                       ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                      )
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, object_list):
         self.cell_dict.update(object_list)
 
@@ -483,7 +483,7 @@ class DupParaNameNet1(nn.Cell):
                                        'pool2d': nn.MaxPool2d(7)}
                                       )
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x1, x2):
         a = self.cell_dict1['conv2d'](x1)
         b = self.cell_dict2['conv2d'](x2)
@@ -496,7 +496,7 @@ class DupParaNameNet2(nn.Cell):
         self.cell_dict1 = nn.CellDict({'dense': nn.Dense(3, 4)})
         self.cell_dict2 = nn.CellDict({'dense': nn.Dense(3, 4)})
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x1, x2):
         a = self.cell_dict1['dense'](x1)
         b = self.cell_dict2['dense'](x2)

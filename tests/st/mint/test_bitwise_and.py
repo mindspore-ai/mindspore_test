@@ -58,8 +58,8 @@ def test_bitwise_and_forward_backward(mode):
         output2 = bitwise_and_forward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(bitwise_and_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        output2 = (jit(bitwise_and_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        output = (jit(bitwise_and_forward_func, jit_level="O0"))(x, y)
+        output2 = (jit(bitwise_and_forward_func, jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = bitwise_and_forward_func(x, y)
@@ -78,8 +78,8 @@ def test_bitwise_and_forward_backward(mode):
         grad2 = bitwise_and_backward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        grad = (jit(bitwise_and_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        grad2 = (jit(bitwise_and_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        grad = (jit(bitwise_and_backward_func, jit_level="O0"))(x, y)
+        grad2 = (jit(bitwise_and_backward_func, jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         grad = bitwise_and_backward_func(x, y)

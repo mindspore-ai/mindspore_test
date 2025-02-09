@@ -49,7 +49,7 @@ def test_logsumexp_forward_backward(mode):
         out = logsumexp_forward_func(input_x, dim, keepdim)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(logsumexp_forward_func, jit_config=JitConfig(jit_level="O0")))(input_x, dim, keepdim)
+        out = (jit(logsumexp_forward_func, jit_level="O0"))(input_x, dim, keepdim)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         out = logsumexp_forward_func(input_x, dim, keepdim)
@@ -66,7 +66,7 @@ def test_logsumexp_forward_backward(mode):
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad = \
-            (jit(logsumexp_backward_func, jit_config=JitConfig(jit_level="O0")))(input_x, dim, keepdim)
+            (jit(logsumexp_backward_func, jit_level="O0"))(input_x, dim, keepdim)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad = logsumexp_backward_func(input_x, dim, keepdim)

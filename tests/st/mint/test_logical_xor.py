@@ -61,8 +61,8 @@ def test_logical_xor_forward(mode):
         output2 = logical_xor_forward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(logical_xor_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        output2 = (jit(logical_xor_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        output = (jit(logical_xor_forward_func, jit_level="O0"))(x, y)
+        output2 = (jit(logical_xor_forward_func, jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = logical_xor_forward_func(x, y)

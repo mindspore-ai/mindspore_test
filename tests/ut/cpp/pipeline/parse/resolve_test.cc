@@ -20,6 +20,7 @@
 
 #include "utils/log_adapter.h"
 #include "pipeline/jit/ps/parse/parse.h"
+#include "pipeline/jit/ps/resource.h"
 #include "include/common/debug/draw.h"
 
 namespace mindspore {
@@ -68,6 +69,25 @@ TEST_F(TestResolve, TestParseGraphTestClosureResolve) {
   ASSERT_TRUE(ret_);
 
   ASSERT_EQ(manager->func_graphs().size(), (size_t)2);
+}
+
+// Feature: Resolve.
+// Description: Parse the graph with Parameter.
+// Expectation: The Parameter is added to the top_graph.
+TEST_F(TestResolve, TestResolveTopGraph) {
+  py::function fn_ = python_adapter::GetPyFn("gtest_input.pipeline.parse.parser_test", "get_resolve_fn_with_parameter");
+
+  // parse graph
+  FuncGraphPtr func_graph = ParsePythonCode(fn_);
+  ASSERT_FALSE(nullptr == func_graph);
+
+  // call resolve
+  auto top_graph = std::make_shared<FuncGraph>();
+  auto res = std::make_shared<pipeline::Resource>();
+  res->set_func_graph(top_graph);
+  auto ret = parse::ResolveFuncGraph(func_graph, res, false);
+  ASSERT_TRUE(ret);
+  ASSERT_EQ(top_graph->parameters().size(), 1);
 }
 }  // namespace parse
 }  // namespace mindspore

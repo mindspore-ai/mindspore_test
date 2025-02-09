@@ -60,22 +60,22 @@ class SliceFactory():
 
     def forward_cmp(self):
         ps_net = Slice(self.begin, self.size)
-        jit(ps_net.construct, mode="PSJit")(self.input_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.input_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = Slice(self.begin, self.size)
-        jit(pi_net.construct, mode="PIJit")(self.input_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)
 
     def forward_dynamic_shape_cmp(self):
         ps_net = Slice(self.begin, self.size)
-        jit(ps_net.construct, mode="PSJit")(self.input_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.input_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_dynamic_shape_impl(ps_net)
         pi_net = Slice(self.begin, self.size)
-        jit(pi_net.construct, mode="PIJit")(self.input_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_dynamic_shape_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)

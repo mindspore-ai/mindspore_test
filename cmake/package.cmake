@@ -314,6 +314,7 @@ install(
 install(
     DIRECTORY
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/nn
+        ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/_deprecated
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/_extends
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/parallel
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/mindrecord

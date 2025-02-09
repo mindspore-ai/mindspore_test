@@ -13,12 +13,12 @@ def convert_numbers_to_float_and_int(val1, val2):
     return float(val1), float(val2), int(val1), int(val2)
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def fallback_float_and_int():
     return convert_numbers_to_float_and_int(5, 5.0)
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def fallback_float_and_int_empty():
     return float(), int()
 

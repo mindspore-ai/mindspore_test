@@ -1832,9 +1832,6 @@ class Cell(Cell_):
         if not hasattr(self, "_func_graph_flags"):
             self._func_graph_flags = {}
         self._func_graph_flags.update({**flags})
-        if context._get_mode() == context.PYNATIVE_MODE and self._func_graph_flags.get("output_no_recompute"):
-            raise TypeError("Recompute is not supported in PyNative mode currently, you can use "
-                            "'context.set_context(mode=context.GRAPH_MODE)' or @jit to set graph mode.")
         self.__dict__.update({**flags})
         self._add_mixed_precision_flag(**flags)
         return self
@@ -2565,8 +2562,9 @@ class Cell(Cell_):
         if not self._has_config_recompute:
             self._has_config_recompute = True
         else:
-            raise RuntimeError("The recompute interface can be configured only once."
-                               " When the parent cell is configured, the child cell should not be configured")
+            logger.info("The recompute interface can be configured only once."
+                        " When the parent cell is configured, the child cell should not be configured")
+            return
         self._set_recompute_scope(mode)
         if mode and not output_recompute:
             self.add_flags(output_no_recompute=True)
@@ -2606,8 +2604,6 @@ class Cell(Cell_):
         """
         if context.get_context("mode") == context.PYNATIVE_MODE:
             self._recompute_cell = recompute_registry.get()(self.construct)
-            self._add_recompute_flag()
-            return
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))
@@ -2708,18 +2704,6 @@ class Cell(Cell_):
             self._jit_config_dict = network.jit_config_dict
         if hasattr(network, "_amp_level"):
             self._amp_level = getattr(network, "_amp_level")
-
-    def _add_recompute_flag(self):
-        """
-        Set pynative cell recomputed.
-        """
-        if not self._has_config_recompute:
-            self._has_config_recompute = True
-        else:
-            logger.info("The recompute interface can be configured only once."
-                        " If the parent cell is configured, the child cell should not be configured")
-        for cell in self.cells():
-            cell._add_recompute_flag()
 
     def _register_parameters_hook(self, forward_hook=None, backward_hook=None, all=False):
         """

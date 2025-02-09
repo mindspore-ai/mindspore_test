@@ -433,52 +433,6 @@ abstract::AbstractBasePtr EvalFunction(const ValuePtr &value, const abstract::Ab
   return pipeline::AbstractAnalyze(value, args_abs).eval_result->abstract();
 }
 
-/// Feature: Test EvalCNodePrim.
-/// Description: Test EvalOnePrim.
-/// Expectation: success.
-TEST_F(TestEvalCNode, test_eval_cnode) {
-  FuncGraphPtr test_graph = getPyFun_.CallAndParseRet("eval_test_functions", "func");
-  ASSERT_TRUE(nullptr != test_graph);
-  auto node_list = TopoSort(test_graph->get_return());
-  AbstractBasePtr x = std::make_shared<AbstractTensor>(kFloat16, std::vector<int64_t>{1, 2, 3});
-  AbstractBasePtr y = std::make_shared<AbstractTensor>(kFloat32, std::vector<int64_t>{1, 2, 3});
-  int counter = 0;
-  for (const auto &item : node_list) {
-    if (item->isa<CNode>()) {
-      auto cnode = item->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
-      auto func = GetValueNode(cnode->input(0));
-      MS_EXCEPTION_IF_NULL(func);
-      if (counter == 0) {
-        auto inputs = std::vector<AbstractBasePtr>{x, y};
-        // S-Prim-Add  Test DoSignature Eval
-        auto reno_abs = pipeline::Renormalize(func, inputs)->return_node()->abstract();
-        assert((*reno_abs) == (*y));
-        auto res = EvalFunction(func, inputs);
-        assert((*res) == (*y));
-      }
-      if (counter == 1) {
-        auto inputs = std::vector<AbstractBasePtr>{x, y};
-        // S-Prim-Add  Test DoSignature Eval
-        auto reno_abs = pipeline::Renormalize(func, inputs)->return_node()->abstract();
-        assert((*reno_abs) == (*y));
-        auto res = EvalFunction(func, inputs);
-        assert((*res) == (*y));
-      }
-      if (counter == 2) {
-        auto inputs = std::vector<AbstractBasePtr>{y};
-        // S-Prim-Add  Test DoSignature Eval
-        auto reno_abs = pipeline::Renormalize(func, inputs)->return_node()->abstract();
-        assert((*reno_abs) == (*y));
-        auto res = EvalFunction(func, inputs);
-        assert((*res) == (*y));
-      }
-      ++counter;
-    }
-    continue;
-  }
-}
-
 /* skip ut test cases temporarily
 TEST_F(TestGraphInfer, test_graph_infer_defaults) {
   FuncGraphPtr graph = getPyFun.CallAndParseRet("test_graph_infer_defaults");

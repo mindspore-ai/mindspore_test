@@ -206,7 +206,7 @@ def test_set_inputs_cell_before_top_cell_unknown_shape():
     ds_train = create_dataset(os.path.join("/home/workspace/mindspore_dataset/mnist", "train"), 32, 1, 1, 160,
                               False)
     network = LeNet5(10)
-    network.set_jit_config(JitConfig(jit_level="O2"))
+    network.set_jit_config(JitConfig(backend="GE"))
 
     input_x = Tensor(shape=[None, 1, 32, 32], dtype=mstype.float32)
     network.set_inputs(input_x)

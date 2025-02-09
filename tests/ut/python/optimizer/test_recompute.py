@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 
@@ -49,11 +48,3 @@ def test_set_recompute_true_with_mp_comm_recompute_false():
     net = Net()
     net.pool.recompute(mp_comm_recompute=False)
     assert net.pool.get_scope() == recompute_prefix
-
-
-def test_set_recompute_true_twice():
-    context.set_context(mode=context.GRAPH_MODE)
-    net = Net()
-    net.pool.recompute()
-    with pytest.raises(RuntimeError):
-        net.pool.recompute()

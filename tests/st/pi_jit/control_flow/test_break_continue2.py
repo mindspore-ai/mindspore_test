@@ -54,10 +54,10 @@ def test_control_flow_while_break_continue():
     y = Tensor(np.random.randn(2, 3), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhileBC(y)
-    jit(fn=CtrlWhileBC.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhileBC.construct, capture_mode="ast")(ps_net, x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhileBC(y)
-    jit(fn=CtrlWhileBC.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhileBC.construct, capture_mode="bytecode")(pi_net, x, y)
     match_array(ps_net(x, y), pi_net(x, y))
 
 
@@ -92,10 +92,10 @@ def test_control_flow_while_break_return():
     y = Tensor(np.random.randn(2, 3), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhileBR(y)
-    jit(fn=CtrlWhileBR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhileBR.construct, capture_mode="ast")(ps_net, x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhileBR(y)
-    jit(fn=CtrlWhileBR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhileBR.construct, capture_mode="bytecode")(pi_net, x, y)
     match_array(ps_net(x, y), pi_net(x, y))
 
 
@@ -130,10 +130,10 @@ def test_control_flow_while_continue_return():
     y = Tensor(np.random.randn(2, 3), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhileCR(y) 
-    jit(fn=CtrlWhileCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhileCR.construct, capture_mode="ast")(ps_net, x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhileCR(y)
-    jit(fn=CtrlWhileCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhileCR.construct, capture_mode="bytecode")(pi_net, x, y)
     match_array(ps_net(x, y), pi_net(x, y))
 
 
@@ -170,10 +170,10 @@ def test_control_flow_while_continue_return_break():
     y = Tensor(np.random.randn(2, 3), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhileBCR(y)
-    jit(fn=CtrlWhileBCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhileBCR.construct, capture_mode="ast")(ps_net, x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhileBCR(y)
-    jit(fn=CtrlWhileBCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhileBCR.construct, capture_mode="bytecode")(pi_net, x, y)
     match_array(ps_net(x, y), pi_net(x, y))
 
 
@@ -209,10 +209,10 @@ def test_control_flow_for_break_continue():
     y = Tensor(np.random.randn(2, 3), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForBC(y)
-    jit(fn=CtrlForBC.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlForBC.construct, capture_mode="ast")(ps_net, x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForBC(y)
-    jit(fn=CtrlForBC.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlForBC.construct, capture_mode="bytecode")(pi_net, x, y)
     match_array(ps_net(x, y), pi_net(x, y))
 
 
@@ -252,10 +252,10 @@ def test_control_flow_for_continue_return():
     y = Tensor(np.random.randn(2, 3), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForCR(y)
-    jit(fn=CtrlForCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlForCR.construct, capture_mode="ast")(ps_net, x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForCR(y)
-    jit(fn=CtrlForCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlForCR.construct, capture_mode="bytecode")(pi_net, x, y)
     match_array(ps_net(x, y), pi_net(x, y))
 
 
@@ -297,8 +297,8 @@ def test_control_flow_for_continue_break_return():
     y = Tensor(np.random.randn(2, 3), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForBCR(y)
-    jit(fn=CtrlForBCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlForBCR.construct, capture_mode="ast")(ps_net, x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForBCR(y)
-    jit(fn=CtrlForBCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlForBCR.construct, capture_mode="bytecode")(pi_net, x, y)
     match_array(ps_net(x, y), pi_net(x, y))

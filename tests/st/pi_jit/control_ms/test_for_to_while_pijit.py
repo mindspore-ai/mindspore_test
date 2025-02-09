@@ -42,7 +42,7 @@ def test_single_for_01():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_all(self.net)(*inputs)
 

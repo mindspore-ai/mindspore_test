@@ -16,7 +16,8 @@ import numpy as np
 from mindspore.nn import Cell
 from mindspore.common import Tensor, Parameter
 import mindspore.ops.operations as P
-from mindspore import context, ops, lazy_inline, nn
+from mindspore import context, ops, lazy_inline, nn, jit
+from mindspore._extends.parse import compile_config
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 context.set_context(jit_level='O2')
@@ -28,6 +29,18 @@ class Grad(Cell):
         self.grad = ops.GradOperation()
         self.net = net
 
+    def construct(self, x):
+        grad_net = self.grad(self.net)
+        return grad_net(x)
+
+
+class GradInJit(Cell):
+    def __init__(self, net):
+        super(GradInJit, self).__init__()
+        self.grad = ops.GradOperation()
+        self.net = net
+
+    @jit
     def construct(self, x):
         grad_net = self.grad(self.net)
         return grad_net(x)
@@ -652,3 +665,80 @@ def test_recompute_cell_and_op_recompute_with_tuple_outputs2():
     net = Net()
     grad_net = Grad(net)
     grad_net(x)
+
+
+def test_recompute_block_recompute_with_jit1():
+    """
+    Feature: Recompute cell with jit.
+    Description: Each block is set recompute by the cell recompute api and run grad in jit.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+
+    class OuterBlock(Cell):
+        def __init__(self):
+            super(OuterBlock, self).__init__()
+            self.block = Block()
+
+        def construct(self, x):
+            return self.block(x)
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.blocks = nn.CellList()
+            for _ in range(3):
+                b = OuterBlock()
+                b.recompute()
+                self.blocks.append(b)
+
+        def construct(self, x):
+            out = x
+            for i in range(3):
+                out = self.blocks[i](out)
+            return out
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x = Tensor(np.ones((8, 128, 16, 32)).astype(np.float32))
+    net = Net()
+    grad_net = GradInJit(net)
+    grad_net(x)
+
+
+def test_recompute_block_recompute_with_jit2():
+    """
+    Feature: Recompute cell with jit.
+    Description: Each block is set recompute by the cell recompute api and run grad in jit.
+                 And do recompute before inlined.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+
+    class OuterBlock(Cell):
+        def __init__(self):
+            super(OuterBlock, self).__init__()
+            self.block = Block()
+
+        def construct(self, x):
+            return self.block(x)
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.blocks = nn.CellList()
+            for _ in range(3):
+                b = OuterBlock()
+                b.recompute()
+                self.blocks.append(b)
+
+        def construct(self, x):
+            out = x
+            for i in range(3):
+                out = self.blocks[i](out)
+            return out
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    compile_config.ENABLE_RECOMPUTE_BEFORE_INLINE = 1
+    x = Tensor(np.ones((8, 128, 16, 32)).astype(np.float32))
+    net = Net()
+    grad_net = GradInJit(net)
+    grad_net(x)
+    compile_config.ENABLE_RECOMPUTE_BEFORE_INLINE = ''

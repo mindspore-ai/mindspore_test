@@ -81,6 +81,11 @@ constexpr auto kCustomTypeAICPU = "aicpu";
 constexpr auto kCustomTypeHybrid = "hybrid";
 constexpr auto kCustomTypeCustom = "Custom";
 
+// backend & jitsetting
+constexpr auto kBackendMSBackend = "ms_backend";
+constexpr auto kBackendGE = "GE";
+constexpr auto kJitSetting = "jit_setting";
+
 // primal attr key name
 constexpr auto kPrimalAttrForwardNodeName = "forward_node_name";
 constexpr auto kPrimalAttrBackwardMicroEnd = "backward_micro_end";

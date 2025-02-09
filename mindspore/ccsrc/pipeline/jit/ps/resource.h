@@ -85,6 +85,24 @@ const char kAbstractAnalyze[] = "AbstractAnalyze";
 const char kProgramSpecialize[] = "ProgramSpecialize";
 const char kCreateBackend[] = "create_backend";
 const char kPipelineClean[] = "pipeline_clean";
+const char kPyInterpretToExecute[] = "py_interpret_to_execute";
+const char kRewriterBeforeOptA[] = "rewriter_before_opt_a";
+const char kExpandDumpFlag[] = "expand_dump_flag";
+const char kJitOptA[] = "jit_opt_a";
+const char kJitOptB[] = "jit_opt_b";
+const char kPyInterpretToExecuteAfterOptA[] = "py_interpret_to_execute_after_opt_a";
+const char kRewriterAfterOptA[] = "rewriter_after_opt_a";
+const char kConvertAfterRewriter[] = "convert_after_rewriter";
+const char kOrderPyExecuteAfterRewriter[] = "order_py_execute_after_rewriter";
+const char kCconv[] = "cconv";
+const char kLoopUnroll[] = "loop_unroll";
+const char kJitOptPassAfterCconv[] = "jit_opt_after_cconv";
+const char kRemoveDupValue[] = "remove_dup_value";
+const char kPartialUnusedArgsEliminate[] = "partial_unused_args_eliminate";
+const char kEnvironConv[] = "environ_conv";
+const char kTupleTransform[] = "tuple_transform";
+const char kAddRecomputation[] = "add_recomputation";
+const char kCseAfterRecomputation[] = "cse_after_recomputation";
 
 using BuiltInTypeMap = mindspore::HashMap<int64_t, mindspore::HashMap<std::string, Any>>;
 
@@ -139,7 +157,7 @@ class Resource : public ResourceBase {
   bool EnableCompileCache() const { return compile_cache_manager_ != nullptr; }
 
   // Reclaim resource and clear the cache.
-  // GraphExecutorPy::Compile() can be called multiple times, so cache
+  // ExecutorPy::Compile() can be called multiple times, so cache
   // should be cleared.
   void Clean();
 

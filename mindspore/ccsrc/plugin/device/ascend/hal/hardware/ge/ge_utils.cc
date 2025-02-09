@@ -349,28 +349,11 @@ std::string GetGraphName(const FuncGraphPtr &graph) {
   }
 }
 
-void SetPassthroughGeOptions(bool is_global, OptionMap *options) {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-
-  const auto &ge_options_str = context->get_param<std::string>(MS_CTX_GE_OPTIONS);
-  if (ge_options_str.empty()) {
-    MS_LOG(DEBUG) << "The ge option for passthrough is not set.";
-    return;
-  }
-
-  string level = is_global ? "global" : "session";
-  nlohmann::json options_json = nlohmann::json::parse(ge_options_str);
-  auto options_iter = options_json.find(level);
-  if (options_iter == options_json.end()) {
-    MS_LOG(INFO) << "GE " << level << " option is not set.";
-    return;
-  }
-
-  const auto &new_options = *options_iter;
-  for (auto &[key, value] : new_options.items()) {
+void SetPassthroughGeOptions(std::string option_level, OptionMap *options) {
+  const auto &new_options = AnfAlgo::GetGeOptions(option_level);
+  for (auto &[key, value] : new_options) {
     (*options)[key] = value;
-    MS_LOG(INFO) << "Set ge " << level << " option: {" << key << ", " << value << "}";
+    MS_LOG(INFO) << "Set ge " << option_level << " option: {" << key << ", " << value << "}";
   }
 }
 
@@ -481,7 +464,7 @@ void GetGeSessionOptions(transform::SessionOptions *options) {
   (*options)["ge.graphRunMode"] = "1";
 }
 
-void GetGeOptions(std::map<std::string, std::string> *ge_options) {
+void GetGeGlobalOptions(std::map<std::string, std::string> *ge_options) {
   MS_EXCEPTION_IF_NULL(ge_options);
   auto ms_context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context_ptr);

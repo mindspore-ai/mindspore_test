@@ -52,11 +52,9 @@ def test_moe_compute_expert_tokens_case0(mode):
     if mode == 'pynative':
         expert_tokens = moe_compute_expert_tokens(Tensor(sorted_experts), num_expert)
     elif mode == 'KBK':
-        expert_tokens = (jit(moe_compute_expert_tokens, jit_config=JitConfig(jit_level="O0")))\
-            (Tensor(sorted_experts), num_expert)
+        expert_tokens = (jit(moe_compute_expert_tokens, jit_level="O0"))(Tensor(sorted_experts), num_expert)
     else:
-        expert_tokens = (jit(moe_compute_expert_tokens, jit_config=JitConfig(jit_level="O2")))\
-            (Tensor(sorted_experts), num_expert)
+        expert_tokens = (jit(moe_compute_expert_tokens, backend="GE"))(Tensor(sorted_experts), num_expert)
     expect_output = get_expected_output(sorted_experts, num_expert)
 
     np.testing.assert_allclose(expert_tokens.asnumpy(), expect_output)

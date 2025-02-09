@@ -316,7 +316,7 @@ def test_p_div_normal_input_1_32x64():
     """
     fact = DivFactory((1,), (32, 64))
     pi_net = Div()
-    jit(pi_net.construct, mode="PIJit")(fact.inputx_ms, fact.inputy_ms)
+    jit(pi_net.construct, capture_mode="bytecode")(fact.inputx_ms, fact.inputy_ms)
     context.set_context(mode=context.PYNATIVE_MODE)
     out = fact.forward_mindspore_impl(pi_net)
     assert out.shape == (32, 64), out.dtype == np.float32

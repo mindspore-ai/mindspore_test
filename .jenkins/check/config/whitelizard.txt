@@ -29,7 +29,7 @@ mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/kernel_actor.cc:mindspor
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LaunchAllKernels
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/data_prepare_actor.cc:mindspore::runtime::DataPrepareActor::PrepareDataForHostTensorQueueNew
 mindspore/mindspore/ccsrc/pipeline/jit/ps/init.cc:PYBIND11_MODULE
-mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/resolve.cc:mindspore::parse::ResolveObjectToNode
+mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/resolve.cc:mindspore::parse::Resolver::ResolveObjectToNode
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseAttribute
 mindspore/mindspore/ccsrc/pipeline/pynative/grad/ir/ir_bprop.cc:mindspore::pynative::autograd::IrBprop::GetBpropGraphFromExpander
@@ -46,6 +46,7 @@ mindspore/model_zoo/official/recommend/wide_and_deep_multitable/src/wide_and_dee
 mindspore/mindspore/ccsrc/pipeline/jit/ps/resource.cc:mindspore::pipeline::GetMethodMap
 mindspore/mindspore/ccsrc/pipeline/jit/ps/fallback.cc:mindspore::fallback::GetJitAnnotationTypeFromComment
 mindspore/mindspore/ccsrc/pipeline/jit/ps/pipeline.cc:mindspore::pipeline::GraphExecutorPy::RunInner
+mindspore/mindspore/ccsrc/pipeline/jit/ps/pipeline.cc:mindspore::pipeline::JitExecutorPy::RunInner
 mindspore/mindspore/ccsrc/pipeline/jit/ps/pipeline.cc:mindspore::pipeline::Pipeline::Run
 mindspore/mindspore/ccsrc/pipeline/jit/ps/debug/anf_ir_utils.cc:mindspore::Skip
 mindspore/mindspore/ccsrc/common/debug/anf_ir_dump.cc:mindspore::Skip

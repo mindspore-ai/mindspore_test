@@ -200,9 +200,10 @@ AnfNodePtr FuncGraphBuilder::ConvertListOrTupleToCNode(const py::object &obj) {
   auto parameter = python_adapter::GetPyObjAttr(python_adapter::GetPyModule("mindspore"), "Parameter");
   auto prim = py::isinstance<py::list>(obj) ? prim::kPrimMakeList : prim::kPrimMakeTuple;
   CNodePtr cnode = func_graph_->NewCNodeInOrder(prim, {});
+  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
   for (size_t idx = 0; idx < tuple.size(); idx++) {
     if (py::isinstance(tuple[idx], parameter)) {
-      cnode->add_input(parse::ResolveParameterObj(func_graph_, tuple[idx]));
+      cnode->add_input(resolver.ResolveParameterObj(func_graph_, tuple[idx]));
     } else if (py::isinstance<py::list>(tuple[idx]) || py::isinstance<py::tuple>(tuple[idx])) {
       cnode->add_input(ConvertListOrTupleToCNode(tuple[idx]));
     } else {

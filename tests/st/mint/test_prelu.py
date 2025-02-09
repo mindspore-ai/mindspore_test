@@ -79,13 +79,13 @@ def test_prelu_std(mode):
         output_forward2 = prelu_forward_func(ms.Tensor(x), ms.Tensor(weight2))
         output_grad2, output_w_grad2 = prelu_backward_func(ms.Tensor(x), ms.Tensor(weight2))
     else:
-        output_forward = (jit(prelu_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward = (jit(prelu_forward_func, jit_level="O0"))(
             ms.Tensor(x), ms.Tensor(weight))
-        output_grad, output_w_grad = (jit(prelu_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_grad, output_w_grad = (jit(prelu_backward_func, jit_level="O0"))(
             ms.Tensor(x), ms.Tensor(weight))
-        output_forward2 = (jit(prelu_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward2 = (jit(prelu_forward_func, jit_level="O0"))(
             ms.Tensor(x), ms.Tensor(weight2))
-        output_grad2, output_w_grad2 = (jit(prelu_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_grad2, output_w_grad2 = (jit(prelu_backward_func, jit_level="O0"))(
             ms.Tensor(x), ms.Tensor(weight2))
 
     assert np.allclose(output_forward.asnumpy(), expect_forward)
@@ -125,13 +125,13 @@ def test_nn_prelu(mode):
         output_forward2 = prelu_forward_func2(ms.Tensor(x), num_parameters2, init2)
         output_grad2 = prelu_backward_func2(ms.Tensor(x), num_parameters2, init2)
     else:
-        output_forward = (jit(prelu_forward_func2, jit_config=JitConfig(jit_level="O0")))(
+        output_forward = (jit(prelu_forward_func2, jit_level="O0"))(
             ms.Tensor(x), num_parameters, init, dtype)
-        output_grad = (jit(prelu_backward_func2, jit_config=JitConfig(jit_level="O0")))(
+        output_grad = (jit(prelu_backward_func2, jit_level="O0"))(
             ms.Tensor(x), num_parameters, init, dtype)
-        output_forward2 = (jit(prelu_forward_func2, jit_config=JitConfig(jit_level="O0")))(
+        output_forward2 = (jit(prelu_forward_func2, jit_level="O0"))(
             ms.Tensor(x), num_parameters2, init2)
-        output_grad2 = (jit(prelu_backward_func2, jit_config=JitConfig(jit_level="O0")))(
+        output_grad2 = (jit(prelu_backward_func2, jit_level="O0"))(
             ms.Tensor(x), num_parameters2, init2)
 
     assert np.allclose(output_forward.asnumpy(), expect_forward)

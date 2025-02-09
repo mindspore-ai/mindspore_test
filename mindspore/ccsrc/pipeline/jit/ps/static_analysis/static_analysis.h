@@ -336,6 +336,8 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
 
   FuncGraphPtr root_func_graph_backup() const { return root_func_graph_backup_.lock(); }
   void set_root_func_graph_backup(const FuncGraphPtr &fg) { root_func_graph_backup_ = FuncGraphWeakPtr(fg); }
+  FuncGraphPtr top_func_graph() const { return top_func_graph_.lock(); }
+  void set_top_func_graph(const FuncGraphPtr &top_func_graph) { top_func_graph_ = top_func_graph; }
   AnalysisContextPtr root_context() const { return root_context_; }
   void set_root_context(const AnalysisContextPtr &context) { root_context_ = context; }
 
@@ -401,6 +403,8 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   // Root or top func_graph for static analysis;
   FuncGraphWeakPtr root_func_graph_;
   FuncGraphWeakPtr root_func_graph_backup_;
+  // The top graph to parse and resolve.
+  FuncGraphWeakPtr top_func_graph_;
   AnalysisContextPtr root_context_{nullptr};
   // Stack of amp strategy for funcgraphs.
   std::stack<amp::AmpStrategyPtr> amp_strategy_stack_;

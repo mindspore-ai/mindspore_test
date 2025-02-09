@@ -245,8 +245,8 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   load_eliminater_ = MakeSubstitution(std::make_shared<LoadEliminater>(), "load_eliminater", prim::kPrimLoad);
 
   // StopGradient eliminate
-  stopgrad_eliminater_ =
-    MakeSubstitution(std::make_shared<StopGradientEliminater>(), "stopgrad_eliminater", prim::kPrimStopGradient);
+  redundant_stopgrad_eliminater_ = MakeSubstitution(std::make_shared<StopGradientEliminater>(),
+                                                    "redundant_stop_gradient_eliminater", prim::kPrimStopGradient);
 
   // Incorporation
   incorporate_call_ = MakeSubstitution(std::make_shared<IncorporateCall>(), "incorporate_call", IsCNodeDup);

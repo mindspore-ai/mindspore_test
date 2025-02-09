@@ -31,9 +31,9 @@ std::string GetGraphName(const FuncGraphPtr &graph);
 // session options
 void GetGeSessionOptions(transform::SessionOptions *options);
 // global options, for GeInitialize
-void GetGeOptions(std::map<std::string, std::string> *ge_options);
-// options from set_context
-void SetPassthroughGeOptions(bool is_global, OptionMap *options);
+void GetGeGlobalOptions(std::map<std::string, std::string> *ge_options);
+// ge options from user setting
+void SetPassthroughGeOptions(std::string option_level, OptionMap *options);
 bool AddDFGraph(const FuncGraphPtr &anf_graph, const transform::TensorOrderMap &init_inputs_map, bool export_air);
 bool AddFakeGraph(const FuncGraphPtr &anf_graph);
 bool IsGeTrain();

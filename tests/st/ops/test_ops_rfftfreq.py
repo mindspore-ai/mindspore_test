@@ -14,7 +14,7 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -45,9 +45,9 @@ def test_ops_rfftfreq_forward(mode):
     if mode == 'pynative':
         output = rfftfreq_forward_func(n, d)
     elif mode == 'KBK':
-        output = (jit(rfftfreq_forward_func, jit_config=JitConfig(jit_level="O0")))(n, d)
+        output = (jit(rfftfreq_forward_func, jit_level="O0"))(n, d)
     else:
-        output = (jit(rfftfreq_forward_func, jit_config=JitConfig(jit_level="O2")))(n, d)
+        output = (jit(rfftfreq_forward_func, backend="GE"))(n, d)
     expect = generate_expect_forward_output(n, d)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 

@@ -55,8 +55,8 @@ def test_log_softmax_forward_backward(mode):
         output_forward = log_softmax_forward_func(ms.Tensor(x), dim)
         output_grad = log_softmax_backward_func(ms.Tensor(x), dim)
     else:
-        output_forward = (jit(log_softmax_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim)
-        output_grad = (jit(log_softmax_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim)
+        output_forward = (jit(log_softmax_forward_func, jit_level="O0"))(ms.Tensor(x), dim)
+        output_grad = (jit(log_softmax_backward_func, jit_level="O0"))(ms.Tensor(x), dim)
     assert np.allclose(output_forward.asnumpy(), expect_forward)
     assert np.allclose(output_grad.asnumpy(), expect_grad)
 

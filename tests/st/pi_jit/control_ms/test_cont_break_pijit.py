@@ -17,7 +17,7 @@ def run_test(netclass, count, dev):
 
 
 class ForLoopWithBreak(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         for i in range(8):
             if i > 5:
@@ -28,7 +28,7 @@ class ForLoopWithBreak(Cell):
 
 
 class ForLoopWithContinue(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         for i in range(8):
             if i > 5:
@@ -39,7 +39,7 @@ class ForLoopWithContinue(Cell):
 
 
 class ForLoopWithContBreak(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         for i in range(8):
             if i < 3:
@@ -53,7 +53,7 @@ class ForLoopWithContBreak(Cell):
 
 
 class ForNestedLoopWithBreak(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         for _ in range(3):
             for j in range(5):
@@ -65,7 +65,7 @@ class ForNestedLoopWithBreak(Cell):
 
 
 class WhileWithBreak(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         i = 0
         while i < 5:
@@ -78,7 +78,7 @@ class WhileWithBreak(Cell):
 
 
 class WhileWithContinue(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         i = 0
         while i < 5:
@@ -92,7 +92,7 @@ class WhileWithContinue(Cell):
 
 
 class WhileForNested(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         i = 0
         while i < 5:
@@ -109,7 +109,7 @@ class WhileForNested(Cell):
 
 
 class PassBranch(Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         i = 0
         while i < 5:
