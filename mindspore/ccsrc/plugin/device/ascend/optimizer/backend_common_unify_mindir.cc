@@ -75,6 +75,8 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_sigmoid_add_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_sigmoid_cast_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
 #include "utils/phase.h"
@@ -178,6 +180,8 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
     pm->AddFusionPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
     pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
     pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
+    pm->AddFusionPass(std::make_shared<opt::MatMulSigmoidAddFusion>());
+    pm->AddFusionPass(std::make_shared<opt::MatMulSigmoidCastAddFusion>());
     pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>());
     pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
     pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>());

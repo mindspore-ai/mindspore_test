@@ -55,6 +55,8 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/matmul_allreduce_fusion.cc"
         "./ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.cc"
         "./ir_fusion_infer/split_concat_fusion.cc"
+        "./ir_fusion_infer/matmul_sigmoid_add_fusion.cc"
+        "./ir_fusion_infer/matmul_sigmoid_cast_add_fusion.cc"
         "./ir_fusion_infer/matmul_elemwise_fusion.cc"
         "./ir_fusion_infer/remove_fa_tensor_to_tuple_ops.cc"
         "./enhancer/eliminate_maketuple_getitem.cc"
