@@ -305,7 +305,7 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor
   } else {
     if (src_tensor->auto_grad_meta_data() == nullptr) {
       // If base tensor is input of view op, we need construct auto_grad_meta_data for base tensor, to
-      // avoid view tensor being inplaced by inpalce op, which will need update grad info of base tensor.
+      // avoid view tensor being inplaced by inplace op, which will need update grad info of base tensor.
       // we need construct auto_grad_meta_data in second thread rather than bprop thread.
       MS_LOG(DEBUG) << "Create new auto grad meta for input tensor of view op " << src_tensor->id();
       auto auto_grad_meta_data = std::make_shared<AutoGradMetaData>();

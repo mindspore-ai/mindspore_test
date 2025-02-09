@@ -160,6 +160,7 @@ struct DataConvert {
                                            size_t input_index);
   static void TransformValueNodeBaseTensorToTensor(const ValueNodePtr &value_node);
   static ValuePtr ValueListToValue(const ValuePtrList &values, const abstract::AbstractBasePtr &abs);
+  static ValuePtrList TensorListToValueList(const tensor::BaseTensorPtrList &tensor_list);
 };
 
 struct PyBoost {

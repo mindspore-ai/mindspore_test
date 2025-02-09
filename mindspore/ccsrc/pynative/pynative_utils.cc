@@ -672,7 +672,7 @@ ValuePtr Common::ConvertToContiguousValue(const ValuePtr &v, bool requires_grad)
 tensor::BaseTensorPtr Common::ConvertToContiguousTensor(const tensor::BaseTensorPtr &tensor, bool requires_grad) {
   MS_EXCEPTION_IF_NULL(tensor);
 
-  // Tensor with storage info, need covert to contiguous in no-view op.
+  // Tensor with storage info, need convert to contiguous in no-view op.
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
   MS_EXCEPTION_IF_NULL(device_address);
   const auto &device_target = device_address->device_name();
@@ -1298,6 +1298,17 @@ ValuePtr DataConvert::ValueListToValue(const ValuePtrList &values, const abstrac
     return values[kIndex0];
   }
   return std::make_shared<ValueTuple>(values);
+}
+
+ValuePtrList DataConvert::TensorListToValueList(const tensor::BaseTensorPtrList &tensor_list) {
+  ValuePtrList output_values;
+  output_values.reserve(tensor_list.size());
+  (void)std::transform(tensor_list.begin(), tensor_list.end(), std::back_inserter(output_values),
+                       [](const BaseTensorPtr &tensor) -> ValuePtr {
+                         if (tensor == nullptr) return kNone;
+                         return tensor;
+                       });
+  return output_values;
 }
 
 FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &args) {

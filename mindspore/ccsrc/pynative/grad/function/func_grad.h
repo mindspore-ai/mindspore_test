@@ -154,6 +154,11 @@ class FuncGrad : public AutoGrad {
   bool KPynativeWithFProp(const GradParamPtr &grad_param) override;
   void CallCustomBprop(const CustomContext &context) override;
   void CallCustomFunction(const std::shared_ptr<FunctionContext> &context) override;
+
+  void CallCPPFunctionBprop(const ValuePtrList &flatten_outputs, const BaseTensorPtrSet &input_base_tensors,
+                            const BaseTensorPtrSet &dirty_tensors, const BaseTensorPtrSet &non_diff_tensors,
+                            const ValuePtrList &inputs, const std::vector<InputType> &input_value_grad_type,
+                            const BackwardNodePtr &node) override;
   // Save get and update variable of tensor.
   VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) override;
 
