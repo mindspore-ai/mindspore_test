@@ -352,15 +352,10 @@ class DeviceAddress : public mindspore::DeviceSync {
     return address_common_->pointer_ref_count_->DecreaseDynamicRefCount(op_object);
   }
 
-  virtual bool DumpMemToFile(const std::string &filepath, const std::string &host_fmt, const ShapeVector &host_shape,
-                             TypeId host_type, bool trans_flag) const {
-    return true;
-  }
 #ifdef ENABLE_DEBUGGER
-  virtual bool LoadMemToHost(const std::string &tensor_name, int execution_order, const std::string &host_fmt,
-                             const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev,
-                             uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy = true) const {
-    return true;
+  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
+    return nullptr;
   }
 #endif
 

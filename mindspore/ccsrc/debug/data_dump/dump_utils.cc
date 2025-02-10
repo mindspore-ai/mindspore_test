@@ -186,10 +186,82 @@ const DeviceTensorPtr GetParameterInfo(const AnfNodePtr &node, NotNull<ShapeVect
   return device_addr;
 }
 
+bool CPUDumpMemToFile(const device::DeviceAddress &addr, const std::string &filepath, const std::string &,
+                      const ShapeVector &host_shape, TypeId host_type, bool) {
+  bool ret = false;
+  if (filepath.empty()) {
+    MS_LOG(ERROR) << "Dump file path is null!";
+    return ret;
+  }
+  std::string path = filepath + '.' + addr.format() + "." + TypeIdToString(host_type);
+  MS_LOG(DEBUG) << "E2E Dump path is " << path;
+  if (addr.GetSize() == 0) {
+    MS_LOG(INFO) << "Data size is 0 for file: " << path << ", no need to dump.";
+    return true;
+  }
+  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+  MS_EXCEPTION_IF_NULL(out_tensor);
+  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  ret = addr.SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
+  if (!ret) {
+    MS_LOG(ERROR) << "Copy device mem to host failed";
+    return ret;
+  }
+  ret = DumpJsonParser::DumpToFile(path, out_tensor->data_c(), host_size, host_shape, host_type);
+  if (!ret) {
+    MS_LOG(ERROR) << "Dump to file failed";
+    return ret;
+  }
+  return ret;
+}
+
+bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &filepath, const std::string &host_fmt,
+                         const ShapeVector &host_shape, TypeId host_type, bool trans_flag) {
+  bool ret = false;
+  if (filepath.empty()) {
+    MS_LOG(ERROR) << "Dump file path is null!";
+    return ret;
+  }
+  if (addr.GetSize() == 0) {
+    MS_LOG(INFO) << "the operator in filepath: " << filepath << ", size == 0";
+    return true;
+  }
+  if (trans_flag) {
+    std::string path = filepath + '.' + host_fmt;
+    MS_LOG(INFO) << "E2E Dump path is " << path;
+    if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin ||
+        host_type == kNumberTypeComplex64) {
+      MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
+      return false;
+    }
+    mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+    MS_EXCEPTION_IF_NULL(out_tensor);
+    size_t host_size = LongToSize(out_tensor->data().nbytes());
+    ret = addr.SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
+    if (!ret) {
+      MS_LOG(ERROR) << "Copy device mem to host failed";
+      return ret;
+    }
+    ret = DumpJsonParser::DumpToFile(path, out_tensor->data_c(), host_size, host_shape, host_type);
+  } else {
+    auto host_tmp = std::vector<uint8_t>(addr.GetSize());
+    addr.SyncDeviceToHost(addr.GetSize(), host_tmp.data());
+    std::string path = filepath + '.' + addr.format();
+    MS_LOG(INFO) << "E2E Dump path is " << path;
+    ret = DumpJsonParser::DumpToFile(path, host_tmp.data(), addr.GetSize(), host_shape, addr.type_id());
+  }
+  return ret;
+}
+
 void DumpMemToFile(const std::string &file_path, const device::DeviceAddress &addr, const ShapeVector &int_shapes,
                    const TypeId &type, bool trans_flag) {
   auto format = kOpFormat_DEFAULT;
-  auto ret = addr.DumpMemToFile(file_path, format, int_shapes, type, trans_flag);
+  bool ret = false;
+  if (addr.GetDeviceType() == device::DeviceType::kCPU) {
+    ret = CPUDumpMemToFile(addr, file_path, format, int_shapes, type, trans_flag);
+  } else if (addr.GetDeviceType() == device::DeviceType::kAscend) {
+    ret = AscendDumpMemToFile(addr, file_path, format, int_shapes, type, trans_flag);
+  }
   if (!ret) {
     MS_LOG(ERROR) << "DumpMemToFile Failed: flag:" << trans_flag << ", path:" << file_path << ", host_format:" << format
                   << ".!";
@@ -220,5 +292,56 @@ void DumpToFile(const std::string &file_name, const std::string &dump_str) {
   }
   file.close();
   ChangeFileMode(real_path_str, S_IRUSR);
+}
+
+bool LoadMemToHost(const device::DeviceAddress &addr, const std::string &tensor_name, int execution_order,
+                   const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type, size_t slot,
+                   bool keep_prev, uint32_t root_graph_id, bool force_update, bool trans_flag, bool async_copy) {
+  bool ret = false;
+  if (addr.GetSize() == 0) {
+    MS_LOG(INFO) << tensor_name << " size is 0, skip it.";
+    return true;
+  }
+  auto debugger = Debugger::GetInstance();
+  MS_EXCEPTION_IF_NULL(debugger);
+  if (debugger->TensorExistsInCurrent(tensor_name) && !force_update) {
+    MS_LOG(INFO) << tensor_name << " already loaded for this step so not loading it again.";
+    return true;
+  }
+  if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin || host_type == kNumberTypeComplex64) {
+    MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
+    return false;
+  }
+  auto out_tensor = addr.LoadMemToHost(tensor_name, host_shape, host_type, trans_flag, async_copy);
+  if (!out_tensor) {
+    MS_LOG(ERROR) << tensor_name << " load mem to host failed.";
+    return false;
+  }
+  if (!out_tensor->DataSize()) {
+    MS_LOG(INFO) << tensor_name << " datasize is 0, skip it.";
+    return true;
+  }
+  std::string tensor_format = trans_flag ? host_fmt : addr.format();
+  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  if (host_type == kNumberTypeInt4) {
+    const int int4_nums_per_byte = 2;
+    host_size = out_tensor->DataSize() / int4_nums_per_byte;
+  }
+  auto tensor_data = std::make_shared<mindspore::TensorData>();
+  MS_EXCEPTION_IF_NULL(tensor_data);
+  tensor_data->SetName(tensor_name);
+  tensor_data->SetExecutionOrder(execution_order);
+  tensor_data->SetSlot(slot);
+  tensor_data->SetTensor(out_tensor);
+  tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
+  tensor_data->SetByteSize(host_size);
+  tensor_data->SetType(host_type);
+  tensor_data->SetShape(out_tensor->shape());
+  tensor_data->SetRootGraphId(root_graph_id);
+  tensor_data->SetFormat(tensor_format);
+  ret = debugger->LoadNewTensor(tensor_data, keep_prev);
+  MS_LOG(INFO) << "Load tensor '" << tensor_name << "' into debugger tensor loader successfully: format("
+               << tensor_format << ")";
+  return ret;
 }
 }  // namespace mindspore
