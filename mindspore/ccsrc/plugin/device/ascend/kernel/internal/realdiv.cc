@@ -32,5 +32,9 @@ internal::InternalOpPtr InternalRealDiv::CreateKernel(const internal::InputsImmu
 MS_INTERNAL_KERNEL_FACTORY_REG(RealDiv, internal::kInternalRealDivOpName, InternalRealDiv);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(RealDiv, INPUT_NUM_2, INDEX_0, INDEX_1);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(RealDiv, OUTPUT_NUM_1, INDEX_0);
+
+MS_INTERNAL_KERNEL_FACTORY_REG(Div, internal::kInternalRealDivOpName, InternalRealDiv);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(Div, INPUT_NUM_2, INDEX_0, INDEX_1);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(Div, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
