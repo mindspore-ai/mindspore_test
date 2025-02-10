@@ -16,6 +16,7 @@
  */
 
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
+#include <cstring>
 #include <string>
 #include <limits>
 #include <memory>
@@ -294,5 +295,41 @@ std::shared_ptr<ValueNode> ConvertBiasToInt32(const AnfNodePtr &bias_node, const
   return CreateValueNode(assist_tensor, tensor_type);
 }
 
+std::shared_ptr<ValueNode> ConvertInt32BiasForMultiRank(const AnfNodePtr &bias_node) {
+  MS_EXCEPTION_IF_NULL(bias_node);
+  auto bias_param = GetParamFromLoad(bias_node->cast<CNodePtr>(), true);
+  MS_EXCEPTION_IF_NULL(bias_param);
+  void *bias_data = bias_param->data_c();
+  auto global_rank_id = distributed::collective::CollectiveManager::instance()->global_rank_id();
+  auto origin_shape = bias_param->shape();
+  auto shape = common::AnfAlgo::GetOutputInferShape(bias_node, kIndex0);
+  if (shape.size() != 1 || origin_shape.size() != 1) {
+    MS_LOG(EXCEPTION) << "shape.size():" << shape.size() << " origin_shape.size():" << origin_shape.size()
+                      << " not all == 1.";
+  }
+  bool need_rank_offset = false;
+  if (origin_shape[0] != shape[0]) {
+    need_rank_offset = true;
+  }
+
+  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, shape);
+  TensorTypePtr tensor_type = std::make_shared<TensorType>(kInt32);
+  auto len = shape[0];
+
+  auto rank_offset = need_rank_offset ? global_rank_id * len : 0;
+  if (rank_offset + len > origin_shape[0]) {
+    MS_LOG(EXCEPTION) << bias_node->fullname_with_scope() << " rank_offset:" << rank_offset << " + len:" << len
+                      << " > origin_shape[0]:" << origin_shape[0];
+  }
+  int32_t *bias_data_t = reinterpret_cast<int32_t *>(bias_data) + rank_offset;
+  int32_t *dst_data_t = reinterpret_cast<int32_t *>(assist_tensor->data_c());
+  if (global_rank_id == 0) {
+    memcpy_s(dst_data_t, len * sizeof(int32_t), bias_data_t, len * sizeof(int32_t));
+  } else {
+    memset_s(dst_data_t, len * sizeof(int32_t), 0, len * sizeof(int32_t));
+  }
+
+  return CreateValueNode(assist_tensor, tensor_type);
+}
 }  // namespace opt
 }  // namespace mindspore

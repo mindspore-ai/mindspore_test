@@ -55,6 +55,8 @@ std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node
 
 std::shared_ptr<ValueNode> ConvertBiasToInt32(const AnfNodePtr &bias_node, const AnfNodePtr &scale_node,
                                               const bool &with_allreduce, const TypeId &dtype);
+
+std::shared_ptr<ValueNode> ConvertInt32BiasForMultiRank(const AnfNodePtr &bias_node);
 }  // namespace opt
 }  // namespace mindspore
 
