@@ -1316,15 +1316,18 @@ REG_BPROP_BUILDER("ScatterNd").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib
   return {ib->OutZeros(indices), ib->GatherNd(dout, indices), ib->OutZeros(shape)};
 });
 
-REG_BPROP_BUILDER("Scatter").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Scatter").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);
   auto index = ib->GetInput(kIndex2);
   auto src = ib->GetInput(kIndex3);
   auto reduce = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
-  auto input_grad = ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)), reduce});
+  auto input_grad = input->need_compute_grad_out()
+                      ? ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)), reduce})
+                      : ib->OutZeros(input);
   auto idx_shape = ib->GetShape(index);
-  if (IsShapeNone(idx_shape)) {
+  if (IsShapeNone(idx_shape) || !src->need_compute_grad_out()) {
     return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), ib->OutZeros(src), ib->OutZeros(reduce)};
   }
   auto src_grad = ib->GatherD(dout, dim, index);
@@ -1351,7 +1354,8 @@ REG_BPROP_BUILDER("InplaceScatterSrc").FreeUselessValues_IO({i0, i3}, {}).SetBod
 // Grad of inplace scatter with reduce is not supported, returns zeros of self / dim / index / src / reduce
 REG_BPROP_BUILDER("InplaceScatterSrcReduce").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("ScatterValue").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ScatterValue").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);
   auto index = ib->GetInput(kIndex2);
   auto src = ib->GetInput(kIndex3);
