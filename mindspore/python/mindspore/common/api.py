@@ -24,13 +24,11 @@ import time
 import ast
 import inspect
 import importlib
-import hashlib
 import contextlib
 import json
 from collections import OrderedDict, namedtuple
 from functools import wraps
 from typing import Optional, Callable
-import numpy as np
 import mindspore as ms
 from mindspore import context
 from mindspore import log as logger
@@ -618,7 +616,6 @@ class _JitExecutor:
         self._create_time = ms_create_time
         self._compile_args = None
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
-        self.obfuscate_config = None  # used for model's dynamic obfuscation
 
     @_wrap_func
     def __call__(self, *args, **kwargs):
@@ -846,28 +843,12 @@ class _JitExecutor:
         """
         return _get_args_for_run(self, args_list, kwargs, self._compile_args)
 
-    def _get_branch_control_input(self):
-        if ('obf_ratio' not in self.obfuscate_config.keys()) or (
-                'obf_random_seed' not in self.obfuscate_config.keys()):
-            raise ValueError("'obf_ratio' and 'obf_random_seed' must be in obfuscate_config.")
-        obf_random_seed = self.obfuscate_config.get('obf_random_seed')
-        if obf_random_seed == 0:
-            branch_control_input = 0
-        else:
-            branch_control_input = _generate_branch_control_input(obf_random_seed)
-        return branch_control_input
-
     def _get_func_graph_proto(self, obj, exec_id, ir_type="onnx_ir", use_prefix=False, incremental=False):
         """Get graph proto from pipeline."""
         if use_prefix:
             exec_id = exec_id + '.' + obj.arguments_key
         if self._graph_executor.has_compiled(exec_id) is False:
             return None
-        if self.obfuscate_config is not None:
-            branch_control_input = self._get_branch_control_input()
-            return self._graph_executor.get_obfuscate_func_graph_proto(exec_id, incremental,
-                                                                       self.obfuscate_config['obf_ratio'],
-                                                                       branch_control_input)
         return self._graph_executor.get_func_graph_proto(exec_id, ir_type, incremental)
 
 
@@ -1790,7 +1771,6 @@ class _CellGraphExecutor:
         # create needed graph by lazy mode
         self.is_init = False
         self.enable_tuple_broaden = False
-        self.obfuscate_config = None  # used for model's dynamic obfuscation
         self._graph_executor = GraphExecutor_.get_instance()
         self._graph_executor.set_py_exe_path(sys.executable)
         self._graph_executor.set_kernel_build_server_dir(os.path.split(kernel_build_server.__file__)[0] + os.sep)
@@ -2031,25 +2011,12 @@ class _CellGraphExecutor:
         """Clear the memory resource of a network."""
         self._graph_executor.del_net_res(obj, net_id)
 
-    def _get_branch_control_input(self):
-        if ('obf_ratio' not in self.obfuscate_config.keys()) or (
-                'obf_random_seed' not in self.obfuscate_config.keys()):
-            raise ValueError("'obf_ratio' and 'obf_random_seed' must be in obfuscate_config.")
-        obf_random_seed = self.obfuscate_config.get('obf_random_seed')
-        if obf_random_seed == 0:
-            branch_control_input = 0
-        else:
-            branch_control_input = _generate_branch_control_input(obf_random_seed)
-        return branch_control_input
-
     def _get_func_graph(self, obj, exec_id, use_prefix=False):
         """Get func graph from pipeline."""
         if use_prefix:
             exec_id = exec_id + '.' + obj.arguments_key
         if self._graph_executor.has_compiled(exec_id) is False:
             return None
-        if self.obfuscate_config is not None:
-            raise ValueError('For get func graph, obfuscate_config is currently not supported now.')
         return self._graph_executor.get_func_graph(exec_id)
 
     def _get_func_graph_proto(self, obj, exec_id, ir_type="onnx_ir", use_prefix=False, incremental=False):
@@ -2058,11 +2025,6 @@ class _CellGraphExecutor:
             exec_id = exec_id + '.' + obj.arguments_key
         if self._graph_executor.has_compiled(exec_id) is False:
             return None
-        if self.obfuscate_config is not None:
-            branch_control_input = self._get_branch_control_input()
-            return self._graph_executor.get_obfuscate_func_graph_proto(exec_id, incremental,
-                                                                       self.obfuscate_config['obf_ratio'],
-                                                                       branch_control_input)
         return self._graph_executor.get_func_graph_proto(exec_id, ir_type, incremental)
 
     def get_optimize_graph_proto(self, obj):
@@ -2126,30 +2088,6 @@ def set_recursion_limit(recursion_limit=1000):
     """
     recursion_limit = Validator.check_positive_int(recursion_limit)
     GraphExecutor_.get_instance().set_max_call_depth(recursion_limit)
-
-
-def _generate_branch_control_input(obf_random_seed):
-    """Generate append network input for dynamic obfuscation in random seed mode."""
-    seed_max = 2 ** 32 - 1
-    int_max = 2 ** 31 - 1
-    np.random.seed(obf_random_seed % seed_max)
-    # generate a string as hash function inputs
-    word_repo = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghigklmnopqrstuvwxyz" + "0123456789"
-    repo_len = len(word_repo)
-    sha_string = ''
-    string_len = 1024 * 1024
-    for _ in range(string_len):
-        rand_index = np.random.randint(0, repo_len)
-        sha_string += word_repo[rand_index]
-    # get hash result
-    sha_result = hashlib.sha256(sha_string.encode('utf-8')).hexdigest()  # len is 64
-    branch_control_input = 1
-    hex_base = 16
-    for item in sha_result:
-        if int(item, hex_base) > 0:
-            branch_control_input *= int(item, hex_base)
-    branch_control_input %= int_max
-    return branch_control_input
 
 
 def _bind_device_context():

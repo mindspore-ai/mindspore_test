@@ -248,9 +248,6 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_func_graph_proto", &GraphExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
          "Get graph proto string by specifying ir type.")
-    .def("get_obfuscate_func_graph_proto", &GraphExecutorPy::GetObfuscateFuncGraphProto, py::arg("phase") = py::str(""),
-         py::arg("incremental") = py::bool_(false), py::arg("obf_ratio") = py::float_(1.0),
-         py::arg("branch_control_input") = py::int_(0), "Get graph proto of dynamic-obfuscated model.")
     .def("get_params", &GraphExecutorPy::GetParams, py::arg("phase") = py::str(""), "Get Parameters from graph")
     .def("get_random_status", &GraphExecutorPy::GetRandomStatus, py::arg("phase") = py::str(""),
          "Get random status from graph")
@@ -335,10 +332,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("check_argument_consistency", &JitExecutorPy::CheckArgumentsConsistency, "Check equal of arguments.")
     .def("get_func_graph_proto", &JitExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
          py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
-         "Get graph proto string by specifying ir type.")
-    .def("get_obfuscate_func_graph_proto", &JitExecutorPy::GetObfuscateFuncGraphProto, py::arg("phase") = py::str(""),
-         py::arg("incremental") = py::bool_(false), py::arg("obf_ratio") = py::float_(1.0),
-         py::arg("branch_control_input") = py::int_(0), "Get graph proto of dynamic-obfuscated model.");
+         "Get graph proto string by specifying ir type.");
 
   (void)m.def("disable_multi_thread", &mindspore::runtime::Pipeline::DisableMultiThreadAfterFork,
               "Disable multi thread");
@@ -356,16 +350,12 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)m.def("init_pipeline", &mindspore::pipeline::InitPipeline, "Init Pipeline.");
   (void)m.def("load_mindir", &mindspore::pipeline::LoadMindIR, py::arg("file_name"), py::arg("dec_key") = nullptr,
               py::arg("key_len") = py::int_(0), py::arg("dec_mode") = py::str("AES-GCM"),
-              py::arg("decrypt") = py::none(), py::arg("obfuscated") = py::bool_(false), "Load model as Graph.");
+              py::arg("decrypt") = py::none(), "Load model as Graph.");
   (void)m.def("split_mindir", &mindspore::pipeline::SplitMindIR, py::arg("file_name"),
               "Split single mindir to distributed mindir");
   (void)m.def("split_dynamic_mindir", &mindspore::pipeline::SplitDynamicMindIR, py::arg("file_name"),
               py::arg("device_num") = py::int_(8), py::arg("rank_id") = py::int_(0), py::arg("sapp") = py::bool_(true),
               "Split single mindir to distributed mindir");
-  (void)m.def("dynamic_obfuscate_mindir", &mindspore::pipeline::DynamicObfuscateMindIR, py::arg("file_name"),
-              py::arg("obf_ratio"), py::arg("branch_control_input") = py::int_(0), py::arg("dec_key") = nullptr,
-              py::arg("key_len") = py::int_(0), py::arg("dec_mode") = py::str("AES-GCM"),
-              "Obfuscate a mindir model by dynamic obfuscation.");
   (void)m.def("init_cluster", &mindspore::distributed::Initialize, "Init Cluster");
   (void)m.def("set_cluster_exit_with_exception", &mindspore::distributed::set_cluster_exit_with_exception,
               "Set this process exits with exception.");

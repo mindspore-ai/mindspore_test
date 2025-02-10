@@ -49,7 +49,7 @@ from mindspore.train.data_sink import _init_sink_dataset
 from mindspore.train.summary import SummaryRecord
 from mindspore.train._utils import _exec_datagraph
 from mindspore.train.summary.writer import BaseWriter
-from mindspore.train.serialization import _exec_save, load, export_split_mindir, obfuscate_model, _parse_ckpt_proto, \
+from mindspore.train.serialization import _exec_save, load, export_split_mindir, _parse_ckpt_proto, \
     _generate_front_info_for_param_data_file, _get_data_file, _encrypt_data, _split_save, _save_mindir_together, \
     _load_into_param_dict
 from mindspore.parallel import _cost_model_context
@@ -530,7 +530,6 @@ _func_map = {
     function_id(_exec_save): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(load): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(export_split_mindir): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(obfuscate_model): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_parse_ckpt_proto): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_generate_front_info_for_param_data_file): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_get_data_file): FUNC_KEY_PIJIT_FORBIDDEN,

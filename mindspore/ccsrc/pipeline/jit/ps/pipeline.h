@@ -93,8 +93,6 @@ class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
   // Check consistency of two arguments for mapping function graph
   void CheckArgumentsConsistency(const py::tuple &compile_args, const py::tuple &args_list, const py::object &target);
   py::bytes GetFuncGraphProto(const std::string &phase, const std::string &ir_type, const bool &incremental);
-  py::bytes GetObfuscateFuncGraphProto(const std::string &phase, const bool &incremental, const float obf_ratio,
-                                       const int branch_control_input);
   virtual bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
                             const std::string &phase, bool trace_flag) = 0;
   bool executor_running() const { return executor_running_; }
@@ -250,8 +248,7 @@ void MemoryRecycle();
 void BindDeviceCtx();
 
 FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
-                        const std::string &dec_mode, const py::object decrypt = py::none(),
-                        const bool obfuscated = false);
+                        const std::string &dec_mode, const py::object decrypt = py::none());
 
 FuncGraphPtr SplitMindIR(const std::string &file_name);
 
@@ -274,8 +271,6 @@ py::bytes PyDecrypt(const std::string &encrypt_data_path, char *key, size_t key_
 py::bytes PyDecryptData(char *model_data, size_t data_size, char *key, size_t key_len, const std::string &dec_mode);
 bool PyIsCipherFile(const std::string &file_path);
 void FinalizeCluster();
-FuncGraphPtr DynamicObfuscateMindIR(const std::string &file_name, float obf_ratio, int branch_control_input,
-                                    char *dec_key, const size_t key_len, const std::string &dec_mode);
 void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
                const bool &type);
 bool IsPhaseExport(const std::string &phase);
