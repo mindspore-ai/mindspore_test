@@ -436,6 +436,8 @@ from mindspore.ops.function.math_func import addmv
 from mindspore.ops.primitive import constexpr
 from mindspore._checkparam import check_is_number
 
+# 1020 neg_
+
 # 1028
 from mindspore.ops.function.math_func import var_ext
 
@@ -447,6 +449,8 @@ from mindspore.ops.auto_generate.gen_ops_prim import inplace_log_op
 
 # 1091 triangular_solve
 from mindspore.ops.auto_generate import triangular_solve
+
+
 
 from .._checkparam import check_axis_in_range
 from ..ops.composite.multitype_ops import _compile_utils as compile_utils
@@ -1849,6 +1853,10 @@ def matmul_reduce_scatter(
     """
     raise NotImplementedError('matmul_reduce_scatter only supports Ascend.')
 
+# 1020 neg_
+def tensor_neg_(input):
+    return F.neg(input)
+
 # 1030
 def tensor_log_(input):
     return inplace_log_op(input)
@@ -1859,7 +1867,6 @@ def tensor_floor_div(input, other):
 
 def tensor_floor_div_scalar(input, other):
     return floor_div_scalar_op(input, other)
-
 
 # 1029
 def tensor_exp_(input):
