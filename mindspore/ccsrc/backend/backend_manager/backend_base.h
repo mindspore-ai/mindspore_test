@@ -19,7 +19,7 @@
 #include <memory>
 #include "mindspore/core/include/base/base.h"
 #include "mindspore/core/include/base/base_ref.h"
-#include "include/backend/visible.h"
+#include "backend/backend_manager/visible.h"
 
 namespace mindspore {
 namespace backend {
@@ -32,7 +32,7 @@ enum RunningStatus {
 };
 
 // The base class of all supported backend.
-class BACKEND_EXPORT BackendBase {
+class BACKEND_MANAGER_EXPORT BackendBase {
  public:
   // The backend graph Build interface, the return value is the built graph id.
   virtual BackendGraphId Build(const FuncGraphPtr &func_graph) = 0;
