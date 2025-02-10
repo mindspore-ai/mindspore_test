@@ -320,10 +320,6 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   }
 
-  if (ms_context->IsEnableInferBoost()) {
-    return false;
-  }
-
   const auto &parser = graph_compiler_info.control_node_parser_;
   if (parser != nullptr && (parser->IsInited())) {
     return false;

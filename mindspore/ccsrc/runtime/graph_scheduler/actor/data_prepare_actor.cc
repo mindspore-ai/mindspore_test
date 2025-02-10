@@ -335,6 +335,65 @@ void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorP
                << device_address_size;
   device_address->SetSize(device_address_size);
 }
+
+void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_info, const VectorRef &args,
+                                       bool has_dynamic_shape, bool has_continuous_memory) {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "RecordGraphInputsForInputOptimize",
+                            true);
+  auto ms_context = MsContext::GetInstance();
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (enable_infer_boost && EnableKbkSubGraphExecute()) {
+    for (size_t i = 0; i < graph_compiler_info->origin_parameters_order_.size(); ++i) {
+      const auto &origin_parameter = graph_compiler_info->origin_parameters_order_[i];
+      MS_EXCEPTION_IF_NULL(origin_parameter);
+      // The input data is front of the parameter weight.
+      if (common::AnfAlgo::IsParameterWeight(origin_parameter->cast<ParameterPtr>())) {
+        MS_LOG(DEBUG) << "Skip the prepare host data for parameter: " << origin_parameter->fullname_with_scope();
+        continue;
+      }
+      if (i >= args.size()) {
+        MS_LOG(DEBUG) << "Arg index out of args range, index is " << i << " and args size is " << args.size();
+        continue;
+      }
+
+      std::vector<tensor::TensorPtr> flatten_tensors;
+      AnfAlgo::FlattenInputArg(args[i], origin_parameter, &flatten_tensors);
+      // Push flatten tensors into store buffers.
+      graph_parameter_store->FillBuffer(i, flatten_tensors);
+      for (size_t j = 0; j < flatten_tensors.size(); ++j) {
+        auto tensor = flatten_tensors[j];
+        if (tensor == nullptr) {
+          MS_LOG(DEBUG) << "Fetch tensor is nullptr, outer index is " << i << " and inner index is " << j;
+          continue;
+        }
+        // The tensor needs to be converted to contiguous before being given to the actors.
+        // After the view feature is supported in the graph mode, the following code will be deleted.
+        DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+        runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
+      }
+    }
+    auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn();
+    if (has_dynamic_shape) {
+      ActorDispatcher::set_enable_static_shape(!isDyn);
+      const auto &phase = graph_compiler_info->graph_phase_;
+      bool is_increment_graph = (phase.find("increment") != std::string::npos);
+      if (EnableTraceMemory() && is_increment_graph) {
+        if (has_continuous_memory) {
+          MS_LOG(EXCEPTION)
+            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+        }
+        if (!ActorDispatcher::enable_static_shape()) {
+          ActorDispatcher::set_enable_trace_dynamic_memory(true);
+        } else {
+          ActorDispatcher::set_enable_use_trace_memory(true);
+        }
+      }
+    }
+  }
+}
 }  // namespace
 
 std::atomic<size_t> DataPrepareActor::execution_count_ = 0;
@@ -485,11 +544,14 @@ void DataPrepareActor::SetInitTensorsIfNeeded(const std::vector<std::vector<Tens
 void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors,
                                                       const VectorRef &args, OpContext<DeviceTensor> *const context,
                                                       uint64_t start_time) {
-  ParameterStore::GetInstance().GetGraphParameterStore()->ResetPrepareState();
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  graph_parameter_store->ResetPrepareState();
   if (first_step_) {
     PrepareDataForDeviceTensorStore(input_tensors, args, context);
   }
   first_step_ = false;
+  RecordGraphInputsForInputOptimize(graph_compiler_info_, args, has_dynamic_shape_, has_continuous_memory());
   // Debug actor is blocked, must wait debug actor callback message to process continue.
   if (debug_aid_ != nullptr && strategy_ == GraphExecutionStrategy::kPipeline) {
     SendDebugReq(context);
