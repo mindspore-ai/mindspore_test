@@ -74,6 +74,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/qbmm_allreduce_convert_bias.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
@@ -179,6 +180,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::SplitConcatFusion>());
   pm->AddFusionPass(std::make_shared<opt::MatmulElemFusion>(), infer_boost);
+  pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceConvertBias>(), infer_boost);
   pm->AddFusionPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
   pm->AddFusionPass(std::make_shared<opt::RemoveFATensorToTupleOps>(), infer_boost);
 #endif  // ENABLE_INTERNAL_KERNELS
