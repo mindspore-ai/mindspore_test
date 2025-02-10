@@ -57,9 +57,12 @@ def _compare_to_golden(golden_ref_dir, result_dict):
     """
     Compare as numpy arrays the test result to the golden result
     """
-    test_array = np.array(list(result_dict.values()))
     golden_array = np.load(golden_ref_dir, allow_pickle=True)['arr_0']
-    np.testing.assert_array_equal(test_array, golden_array)
+    assert len(list(result_dict.values())) == len(golden_array)
+    for col_num, result_numpy in enumerate(list(result_dict.values())):
+        assert len(result_numpy) == len(golden_array[col_num])
+        for line_num, numpy_line in enumerate(result_numpy):
+            np.testing.assert_array_equal(numpy_line, golden_array[col_num][line_num])
 
 
 def _compare_to_golden_dict(golden_ref_dir, result_dict, check_pillow_version=False):

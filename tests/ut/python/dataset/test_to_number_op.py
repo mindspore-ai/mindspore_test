@@ -43,7 +43,7 @@ def test_to_number_eager():
     op = text.ToNumber(mstype.int8)
 
     # test input_strings as one 2D tensor
-    result1 = op(input_strings) # np array: [[1 2 3] [4 5 6]]
+    result1 = op(input_strings)  # np array: [[1 2 3] [4 5 6]]
     assert np.array_equal(result1, np.array([[1, 2, 3], [4, 5, 6]], dtype='i'))
 
     # test input multiple tensors
@@ -53,10 +53,10 @@ def test_to_number_eager():
     assert "The op is OneToOne, can only accept one tensor as input." in str(info.value)
 
     # test input invalid tensor
-    invalid_input = [["1", "2", "3"], ["4", "5"]]
+    invalid_input = [["1", "2", None]]
     with pytest.raises(TypeError) as info:
         _ = op(invalid_input)
-    assert "Invalid user input. Got <class 'list'>: [['1', '2', '3'], ['4', '5']], cannot be converted into tensor" in \
+    assert "Invalid user input. Got <class 'list'>: [['1', '2', None]], cannot be converted into tensor" in \
            str(info.value)
 
 

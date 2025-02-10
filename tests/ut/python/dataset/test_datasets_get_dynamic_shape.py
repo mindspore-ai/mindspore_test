@@ -18,6 +18,11 @@ import mindspore.dataset as ds
 from mindspore import log as logger
 
 
+def check_numpy_list_equal(numpy_list, expected_numpy_list):
+    for index, shape in enumerate(numpy_list):
+        np.testing.assert_array_equal(shape, expected_numpy_list[index])
+
+
 def generator0():
     for i in range(50, 70):
         yield (np.ones((32, i)), np.zeros((16, i, i, 3)), np.ones((i)))
@@ -37,8 +42,8 @@ def test_output_shapes_0():
     dynamic_shapes = dataset.output_shapes()
 
     # check result
-    np.testing.assert_array_equal(dynamic_shapes, [[32, 50], [16, 50, 50, 3], [50]])
-    np.testing.assert_array_equal(estimate_dynamic_shapes, [[32, None], [16, None, None, 3], [None]])
+    check_numpy_list_equal(dynamic_shapes, [[32, 50], [16, 50, 50, 3], [50]])
+    check_numpy_list_equal(estimate_dynamic_shapes, [[32, None], [16, None, None, 3], [None]])
 
 
 def generator1():
@@ -61,8 +66,8 @@ def test_output_shapes_1():
 
     # check result
     # raise a warning to tell user "data2" is not dynamic
-    np.testing.assert_array_equal(dynamic_shapes, [[16, 1, 83], []])
-    np.testing.assert_array_equal(estimate_dynamic_shapes, [[16, None, 83], []])
+    check_numpy_list_equal(dynamic_shapes, [[16, 1, 83], []])
+    check_numpy_list_equal(estimate_dynamic_shapes, [[16, None, 83], []])
 
 
 def generator2():
@@ -88,8 +93,8 @@ def test_output_shapes_2():
 
     # check result
     # column with fixed shape will also be appended to shapes list
-    np.testing.assert_array_equal(dynamic_shapes, [[16, 80, 83], [5, 5]])
-    np.testing.assert_array_equal(estimate_dynamic_shapes, [[16, None, 83], [5, 5]])
+    check_numpy_list_equal(dynamic_shapes, [[16, 80, 83], [5, 5]])
+    check_numpy_list_equal(estimate_dynamic_shapes, [[16, None, 83], [5, 5]])
 
 
 def test_output_shapes_3():
