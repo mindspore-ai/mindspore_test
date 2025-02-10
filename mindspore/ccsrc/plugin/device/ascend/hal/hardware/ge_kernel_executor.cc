@@ -332,23 +332,23 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   auto out = session::KernelGraphMgr::DoInline(sub_graph, main_graph, inp, kernel_cnode->input(0)->scope(),
                                                kernel_info->graph_id(), ref_map, graph, is_switch_inline);
   (void)mng->Replace(kernel_cnode, out);
-  // Inline graph boundary: MakeTuple---->Depend---->Tensormove
-  // Avoid long link times at runtime
-  if (last_call != nullptr) {
-    auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
-    MS_EXCEPTION_IF_NULL(value_node);
-    auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});
-    MS_EXCEPTION_IF_NULL(depend);
-    depend->set_abstract(value_node->abstract());
-    auto tensor_move =
-      graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
-    MS_EXCEPTION_IF_NULL(tensor_move);
-    tensor_move->set_abstract(value_node->abstract());
-    common::AnfAlgo::SetNodeAttr(kAttrKernelGraphBoundary, MakeValue(sub_graph->ToString()), tensor_move);
-    // select kernel
-    SelectKernelInfo(graph, tensor_move);
-    (*last_call) = tensor_move;
-  }
+  // // Inline graph boundary: MakeTuple---->Depend---->Tensormove
+  // // Avoid long link times at runtime
+  // if (last_call != nullptr) {
+  //   auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
+  //   MS_EXCEPTION_IF_NULL(value_node);
+  //   auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});
+  //   MS_EXCEPTION_IF_NULL(depend);
+  //   depend->set_abstract(value_node->abstract());
+  //   auto tensor_move =
+  //     graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
+  //   MS_EXCEPTION_IF_NULL(tensor_move);
+  //   tensor_move->set_abstract(value_node->abstract());
+  //   common::AnfAlgo::SetNodeAttr(kAttrKernelGraphBoundary, MakeValue(sub_graph->ToString()), tensor_move);
+  //   // select kernel
+  //   SelectKernelInfo(graph, tensor_move);
+  //   (*last_call) = tensor_move;
+  // }
 }
 
 void InlineCallGraph(const KernelGraphPtr &graph) {
