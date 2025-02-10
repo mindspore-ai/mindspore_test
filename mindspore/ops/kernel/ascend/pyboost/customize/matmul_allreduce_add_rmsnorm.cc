@@ -17,7 +17,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "kernel/ascend/pyboost/customize/matmul_allreduce_add_rmsnorm.h"
 

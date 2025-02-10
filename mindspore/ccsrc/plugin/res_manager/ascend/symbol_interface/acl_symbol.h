@@ -18,7 +18,7 @@
 #include <string>
 #include "acl/acl_rt_allocator.h"
 #include "utils/dlopen_macro.h"
-#include "transform/symbol/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 
 namespace mindspore::device::ascend {
 
