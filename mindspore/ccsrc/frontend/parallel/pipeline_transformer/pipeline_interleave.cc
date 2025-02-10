@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -217,20 +218,38 @@ void PipelineInterleave::Init() {
   return;
 }
 
+// find StridedSlice by DFS
+void PipelineInterleave::FindStridedSliceNodes(const AnfNodePtr &node, AnfNodeSet *strided_slice_nodes) const {
+  if (IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
+    strided_slice_nodes->push_back(node);
+    return;
+  }
+  if (!IsPrimitiveCNode(node, prim::kPrimDepend) && !IsPrimitiveCNode(node, prim::kPrimInsertGradientOf)) {
+    return;
+  }
+  auto node_user = manager_->node_users()[node];
+  for (const auto &user : node_user) {
+    FindStridedSliceNodes(user.first, strided_slice_nodes);
+  }
+}
+
 size_t PipelineInterleave::GetBatchAxisForInput(const AnfNodeIndexSet &input_node_users) const {
   Shapes inputs_tuple;
   for (const auto &input_node_user : input_node_users) {
-    auto node = input_node_user.first;
-    if (!IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
+    AnfNodeSet strided_slice_nodes;
+    FindStridedSliceNodes(input_node_user.first, &strided_slice_nodes);
+    if (strided_slice_nodes.size() == 0) {
       return 0;  // simply return 0 when dynamic shape
     }
-    auto cnode = node->cast<CNodePtr>();
-    auto value = GetValueNode(cnode->input(2));
-    if (value == nullptr) {
-      return 0;  // simply return 0 when dynamic shape
+    for (const auto &node : strided_slice_nodes) {
+      auto cnode = node->cast<CNodePtr>();
+      auto value = GetValueNode(cnode->input(2));
+      if (value == nullptr) {
+        return 0;  // simply return 0 when dynamic shape
+      }
+      auto tuple = GetValue<std::vector<int64_t>>(value);
+      inputs_tuple.push_back(tuple);
     }
-    auto tuple = GetValue<std::vector<int64_t>>(value);
-    inputs_tuple.push_back(tuple);
   }
   size_t batch_axis = 0;
   size_t batch_axis_count = 0;
@@ -253,6 +272,21 @@ size_t PipelineInterleave::GetBatchAxisForInput(const AnfNodeIndexSet &input_nod
   return batch_axis;
 }
 
+size_t PipelineInterleave::MicroSize(const AnfNodeIndexSet &input_node_users) const {
+  size_t micro_size = 0;
+  for (const auto &input_node_user : input_node_users) {
+    auto node = input_node_user.first;
+    if (IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
+      micro_size++;
+    } else if (IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf)) {
+      auto next_node_user = manager_->node_users()[node];
+      micro_size += MicroSize(next_node_user);
+    }
+  }
+
+  return micro_size;
+}
+
 void PipelineInterleave::LabelMicroBatch() {
   if (!is_train_) {
     return;
@@ -264,6 +298,14 @@ void PipelineInterleave::LabelMicroBatch() {
     if (IsPrimitiveCNode(node_user.first, prim::kPrimTupleGetItem)) {
       auto data_users = manager_->node_users()[node_user.first];
       auto node_first = data_users.front().first;
+      for (const auto &data_user : data_users) {
+        auto data_node = data_user.first;
+        if (IsPrimitiveCNode(data_node, prim::kPrimTensorDump)) {
+          continue;
+        }
+        node_first = data_user.first;
+        break;
+      }
       if (!IsPrimitiveCNode(node_first, prim::kPrimStridedSlice) && !IsPrimitiveCNode(node_first, prim::kPrimShape)) {
         data_users.clear();
         data_users = node_user_map[node_first];
@@ -276,13 +318,17 @@ void PipelineInterleave::LabelMicroBatch() {
                         GetValue<int64_t>(GetValueNode(node_user.first->cast<CNodePtr>()->input(kIndex2))))
                    << "input, batch axis is " << batch_axis << ", micro size is : " << micro_size;
       for (auto &data_user : data_users) {
-        if (!IsPrimitiveCNode(data_user.first, prim::kPrimStridedSlice)) {
+        AnfNodeSet strided_slice_nodes;
+        FindStridedSliceNodes(data_user.first, &strided_slice_nodes);
+        if (strided_slice_nodes.size() == 0) {
           continue;
         }
-        auto micro = SetMicroBatch(data_user.first, micro_size, batch_axis);
-        SetStridedSliceStrategy(data_user.first);
-        auto cnode = data_user.first->cast<CNodePtr>();
-        BroadCastMicroBatch(cnode, &node_user_map, micro, 0);
+        for (const auto &strided_slice_node : strided_slice_nodes) {
+          auto micro = SetMicroBatch(strided_slice_node, micro_size, batch_axis);
+          SetStridedSliceStrategy(strided_slice_node);
+          auto cnode = strided_slice_node->cast<CNodePtr>();
+          BroadCastMicroBatch(cnode, &node_user_map, micro, 0);
+        }
       }
     }
   }

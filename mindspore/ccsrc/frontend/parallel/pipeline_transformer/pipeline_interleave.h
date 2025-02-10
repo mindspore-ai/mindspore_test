@@ -62,6 +62,8 @@ class PipelineInterleave {
   void CutBorderForNode(const FuncGraphPtr &graph, const AnfNodePtr &node, int64_t *order);
   bool GetStageByArgument(const CNodePtr &node, size_t index, const std::vector<AnfNodePtr> &parameters,
                           const NodeUsersMap &node_users_map, std::set<int64_t> *const parameter_stage);
+  void FindStridedSliceNodes(const AnfNodePtr &node, AnfNodeSet *strided_slice_nodes) const;
+  size_t MicroSize(const AnfNodeIndexSet &input_node_users) const;
   size_t GetBatchAxisForInput(const AnfNodeIndexSet &input_node_users) const;
   FuncGraphManagerPtr manager_;
   NodeUsersMap node_users_map_;
