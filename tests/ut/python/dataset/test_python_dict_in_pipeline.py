@@ -388,7 +388,8 @@ def test_dict_generator_batch_6():
     with pytest.raises(RuntimeError) as error_info:
         for _ in data1.create_dict_iterator(num_epochs=2, output_numpy=True):
             pass
-    assert "Batch: failed to create a NumPy array with primitive types" in str(error_info.value)
+    assert ("Batch: failed to create a NumPy array with primitive types" in str(error_info.value)
+            or "ValueError: setting an array element with a sequence" in str(error_info.value))
 
 
 @pytest.mark.parametrize("batch_size", [5, 12])

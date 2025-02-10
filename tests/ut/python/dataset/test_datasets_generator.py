@@ -1467,11 +1467,11 @@ def test_generator_single_input_6():
 
     def generator_nested_np():
         for i in range(64):
-            yield np.array([[i, i + 1], [i, i + 1, i + 2]])
+            yield np.array([[i, i + 1, None], [i, i + 1, i + 2]])
 
     class RandomAccessDatasetInner:
         def __init__(self):
-            self.__data = [np.array([[i, i + 1], [i, i + 1, i + 2]]) for i in range(64)]
+            self.__data = [np.array([[i, i + 1, None], [i, i + 1, i + 2]]) for i in range(64)]
 
         def __getitem__(self, item):
             return self.__data[item]
@@ -1481,7 +1481,7 @@ def test_generator_single_input_6():
 
     class SequentialAccessDatasetInner:
         def __init__(self):
-            self.__data = [np.array([[i, i + 1], [i, i + 1, i + 2]]) for i in range(64)]
+            self.__data = [np.array([[i, i + 1, None], [i, i + 1, i + 2]]) for i in range(64)]
             self.__index = 0
 
         def __next__(self):
