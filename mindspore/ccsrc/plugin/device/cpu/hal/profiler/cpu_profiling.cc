@@ -237,6 +237,7 @@ void CPUProfiler::RecordMemoryPoolInfo(const size_t total_allocated, const size_
   if (!GetEnableFlag() || !GetProfileMemoryFlag()) {
     return;
   }
+  std::lock_guard<std::mutex> lock(mutex_);
   MemoryPoolInfo memory_info;
   memory_info.time_stamp = GetHostMonoTimeStamp();
   memory_info.total_allocated = total_allocated;
