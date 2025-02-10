@@ -58,7 +58,7 @@ install(
 )
 
 install(
-  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost
+  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_pyboost mindspore_backend_manager
   DESTINATION ${INSTALL_LIB_DIR}
   COMPONENT mindspore
 )
@@ -73,6 +73,7 @@ if(MSVC AND DEBUG_MODE)
   install(
     FILES  $<TARGET_PDB_FILE:mindspore_core> $<TARGET_PDB_FILE:mindspore_ops>
     $<TARGET_PDB_FILE:mindspore_common> $<TARGET_PDB_FILE:mindspore_backend> $<TARGET_PDB_FILE:mindspore_pyboost>
+    $<TARGET_PDB_FILE:mindspore_backend_manager>
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
   )
