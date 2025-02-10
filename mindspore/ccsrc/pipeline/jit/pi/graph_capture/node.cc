@@ -32,11 +32,11 @@ bool IsNonLocalValue(ValueNode *i) {
 
 void ValueNode::SetVobj(AObject *object_info) {
   if (object_info == this->vobj_) {
-    MS_LOG(WARNING) << "Try to overwrite vobj with itself.";
+    MS_LOG(INFO) << "Try to overwrite vobj with itself.";
     return;
   }
   if (this->vobj_ != nullptr && this->vobj_->GetType() != AObject::kTypeAnyValue && object_info != nullptr) {
-    MS_LOG(WARNING) << "Try to overwrite vobj with a new one, detail refer to the info log.";
+    MS_LOG(INFO) << "Try to overwrite vobj with a new one, detail refer to the info log.";
     MS_LOG(INFO) << "Try to overwrite " << this->vobj_->ToString() << " with " << object_info->ToString() << " for "
                  << ToString();
   }
