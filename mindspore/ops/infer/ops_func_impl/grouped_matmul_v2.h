@@ -25,6 +25,7 @@ namespace ops {
 class OPS_API GroupedMatmulV2FuncImpl final : public GroupedMatmulFuncImpl {
  protected:
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GetTransposeValue(const InferInfoPtrList &input_infos, size_t transpose_index) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
