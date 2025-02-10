@@ -29,11 +29,6 @@
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_synchronizer.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "include/backend/debug/debugger/debugger.h"
-#ifdef ENABLE_DEBUGGER
-#include "debug/tensor_load.h"
-#endif
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
@@ -1129,58 +1124,6 @@ AscendDeviceAddress::~AscendDeviceAddress() {
   }
 }
 
-/*
- * Feature group: Dump.
- * Target device group: Ascend.
- * Runtime category: Old runtime, MindRT.
- * Description: Dump tensor data to file for e2e dump.
- */
-bool AscendDeviceAddress::DumpMemToFile(const std::string &filepath, const std::string &host_fmt,
-                                        const ShapeVector &host_shape, TypeId host_type, bool trans_flag) const {
-  if (GetSize() == 0) {
-    MS_LOG(INFO) << "the operator in filepath: " << filepath << ", size == 0";
-    return true;
-  }
-  bool ret = false;
-  if (filepath.empty()) {
-    MS_LOG(ERROR) << "Dump file path is null!";
-    return ret;
-  }
-  if (trans_flag) {
-    std::string path = filepath + '.' + host_fmt;
-    MS_LOG(INFO) << "E2E Dump path is " << path;
-    if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin ||
-        host_type == kNumberTypeComplex64) {
-      MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
-      return false;
-    }
-    mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
-    MS_EXCEPTION_IF_NULL(out_tensor);
-    size_t host_size = LongToSize(out_tensor->data().nbytes());
-    ret = SyncDeviceToHost(host_shape, host_size, host_type, out_tensor->data_c());
-    if (!ret) {
-      MS_LOG(ERROR) << "Copy device mem to host failed";
-      return ret;
-    }
-    ret = DumpJsonParser::DumpToFile(path, out_tensor->data_c(), host_size, host_shape, host_type);
-  } else {
-    auto host_tmp = std::vector<uint8_t>(GetSize());
-    BindDevice();
-    SyncStream();
-    auto ret_rt_memcpy =
-      CALL_ASCEND_API(aclrtMemcpy, host_tmp.data(), GetSize(), GetDevicePtr(), GetSize(), ACL_MEMCPY_DEVICE_TO_HOST);
-    if (ret_rt_memcpy != ACL_ERROR_NONE) {
-      MS_LOG(ERROR) << "SyncDeviceToHost: aclrtMemcpy mem size[" << GetSize() << "] fail, ret[" << ret_rt_memcpy << "]";
-      return false;
-    }
-    std::string path = filepath + '.' + format();
-    MS_LOG(INFO) << "E2E Dump path is " << path;
-    ret = DumpJsonParser::DumpToFile(path, host_tmp.data(), GetSize(), host_shape, type_id());
-  }
-
-  return ret;
-}
-
 int64_t AscendDeviceAddress::GetGroupsWithCache() const {
   auto node = GetNodeIndex();
   if (node.first != nullptr) {
@@ -1203,35 +1146,15 @@ bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t ds
   return (ret != ACL_ERROR_NONE);
 }
 
-#ifdef ENABLE_DEBUGGER
 /*
- * Feature group: Dump, Online debugger.
+ * Feature group: Dump
  * Target device group: Ascend.
  * Runtime category: Old runtime, MindRT.
  * Description: Load tensor to host and create tensor_data object for the loaded tensor.
  */
-bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int execution_order,
-                                        const std::string &host_fmt, const ShapeVector &host_shape, TypeId host_type,
-                                        size_t slot, bool keep_prev, uint32_t root_graph_id, bool force_update,
-                                        bool trans_flag, bool async_copy) const {
-  bool ret = false;
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->TensorExistsInCurrent(tensor_name) && !force_update) {
-    MS_LOG(INFO) << tensor_name << " already loaded for this step so not loading it again.";
-    return true;
-  }
-  // TensorData is freed up in AscendSession class
-  auto tensor_data = std::make_shared<mindspore::TensorData>();
-  MS_EXCEPTION_IF_NULL(tensor_data);
-  tensor_data->SetName(tensor_name);
-  tensor_data->SetExecutionOrder(execution_order);
-  tensor_data->SetSlot(slot);
-
-  if (host_type > TypeId::kNumberTypeEnd || host_type < TypeId::kNumberTypeBegin || host_type == kNumberTypeComplex64) {
-    MS_LOG(INFO) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
-    return false;
-  }
+mindspore::tensor::TensorPtr AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name,
+                                                                const ShapeVector &host_shape, TypeId host_type,
+                                                                bool trans_flag, bool async_copy) const {
   ShapeVector corrected_host_shape = host_shape;
   if (host_type == kNumberTypeInt4 && !corrected_host_shape.empty()) {
     constexpr int64_t kNumber2 = 2;
@@ -1242,7 +1165,7 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
   size_t host_size = LongToSize(out_tensor->data().nbytes());
   if (host_size == 0) {
     MS_LOG(INFO) << "Tensor size is 0 for tensor: " << tensor_name;
-    return true;
+    return std::make_shared<mindspore::tensor::Tensor>();
   }
   if (host_type == kNumberTypeInt4) {
     const int int4_nums_per_byte = 2;
@@ -1261,30 +1184,17 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
                                          ACL_MEMCPY_DEVICE_TO_HOST);
     if (ret_rt_memcpy != ACL_ERROR_NONE) {
       MS_LOG(ERROR) << "SyncDeviceToHost: aclrtMemcpy mem size[" << GetSize() << "] fail, ret[" << ret_rt_memcpy << "]";
-      return false;
+      return nullptr;
     } else {
       ret_sync = true;
     }
   }
   if (!ret_sync) {
     MS_LOG(ERROR) << "Convert format or Copy device mem to host failed";
-    return ret;
+    return nullptr;
   }
-  MS_LOG(INFO) << "E2E tensor name is " << tensor_name;
-  tensor_data->SetTensor(out_tensor);
-  tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
-  tensor_data->SetByteSize(host_size);
-  tensor_data->SetType(host_type);
-  tensor_data->SetShape(out_tensor->shape());
-  tensor_data->SetRootGraphId(root_graph_id);
-  std::string tensor_format = trans_flag ? host_fmt : format();
-  tensor_data->SetFormat(tensor_format);
-  ret = debugger->LoadNewTensor(tensor_data, keep_prev);
-  MS_LOG(INFO) << "Load tensor '" << tensor_name << "' into debugger tensor loader successfully: format("
-               << tensor_format << ")";
-  return ret;
+  return out_tensor;
 }
-#endif
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
