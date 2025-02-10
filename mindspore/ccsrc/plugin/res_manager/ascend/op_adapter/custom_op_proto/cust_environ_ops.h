@@ -23,7 +23,7 @@
 
 namespace ge {
 REG_CUST_OP(EnvironCreate)
-  .OUTPUT(handle, TensorType({DT_INT64}))
+  .OUTPUT(handle, TensorType({DT_INT64, DT_BF16}))
   .CUST_OP_END_FACTORY_REG(EnvironCreate)
 
 REG_CUST_OP(EnvironDestroyAll)
@@ -35,8 +35,8 @@ REG_CUST_OP(EnvironSet)
   .INPUT(env, TensorType({DT_INT64}))
   .INPUT(key, TensorType({DT_INT64}))
   .INPUT(value, TensorType({DT_BOOL, DT_INT16, DT_INT32, DT_INT64,
-                            DT_UINT8, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
-  .OUTPUT(env, TensorType({DT_BOOL}))
+                            DT_UINT8, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT, DT_BF16}))
+  .OUTPUT(env, TensorType({DT_BOOL, DT_BF16}))
   .CUST_OP_END_FACTORY_REG(EnvironSet)
 
 REG_CUST_OP(EnvironGet)
@@ -44,9 +44,9 @@ REG_CUST_OP(EnvironGet)
   .INPUT(env, TensorType({DT_INT64}))
   .INPUT(key, TensorType({DT_INT64}))
   .INPUT(default, TensorType({DT_BOOL, DT_INT16, DT_INT32, DT_INT64,
-                              DT_UINT8, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
+                              DT_UINT8, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT, DT_BF16}))
   .OUTPUT(value, TensorType({DT_BOOL, DT_INT16, DT_INT32, DT_INT64,
-                             DT_UINT8, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
+                             DT_UINT8, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT, DT_BF16}))
   .CUST_OP_END_FACTORY_REG(EnvironGet)
 }  // namespace ge
 #endif  // MINDSPORE_CCSRC_GRAPH_IR_CUSTOM_OP_PROTO_CUST_ENVIRON_OPS_H_
