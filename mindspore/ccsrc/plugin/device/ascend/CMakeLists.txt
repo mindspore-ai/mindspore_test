@@ -75,6 +75,7 @@ list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_hal_man
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_device_address_obj>)
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_event_obj>)
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_mem_manager_obj>)
+list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_ascend_res_manager_obj>)
 
 list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_COMMON_OBJECTS_SRC})
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})

@@ -37,7 +37,6 @@
 namespace mindspore::device::ascend {
 namespace {
 typedef aclError (*AclrtCtxSetSysParamOpt)(aclSysParamOpt, int64_t);
-typedef HcclResult (*HcclSetConfigFunc)(HcclConfig, HcclConfigValue);
 
 static const char k910BKey[] = "ascend910b";
 static const char k310BKey[] = "ascend310b";
@@ -62,23 +61,6 @@ static const std::unordered_map<std::string, bool> kConvEnableHf32 = {{"", true}
 std::mutex set_opt_mutex;
 
 aclError SetCompileopt(aclCompileOpt opt, const char *value) { return CALL_ASCEND_API(aclSetCompileopt, opt, value); }
-
-void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
-  static auto ascend_path = mindspore::device::ascend::GetAscendPath();
-  auto load_path = ascend_path + "/lib64/" + lib_path;
-
-  auto handler = dlopen(load_path.c_str(), RTLD_LAZY);
-  if (handler == nullptr) {
-    MS_LOG(INFO) << "Dlopen " << load_path << " failed!" << dlerror();
-    return nullptr;
-  }
-
-  auto func = dlsym(handler, func_name.c_str());
-  if (func == nullptr) {
-    MS_LOG(INFO) << "Dlsym " << func_name << " from " << load_path << " failed!" << dlerror();
-  }
-  return func;
-}
 
 bool IsMatmulHf32Enable() {
   auto op_precision_conf = device::ascend::OpPrecisionConf::GetInstance();
@@ -199,50 +181,6 @@ uint8_t AclUtil::KeepOriginDType() {
     }
   }
   return need_keep_dtype;
-}
-
-void AclUtil::SetDeterministic() {
-  std::lock_guard<std::mutex> lock(set_opt_mutex);
-  if (UseSimulationApi()) {
-    return;
-  }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  bool is_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
-  MS_LOG(INFO) << "Set kernel deterministic value: " << (is_deterministic ? "1" : "0");
-  // Set acl
-  auto ret = SetCompileopt(aclCompileOpt::ACL_OP_DETERMINISTIC, is_deterministic ? "1" : "0");
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Acl set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
-                      << ret;
-  }
-  // Set acl sys
-  const std::string rt_sys_opt_lib = "libacl_op_compiler.so";
-  const std::string rt_sys_opt_name = "aclrtCtxSetSysParamOpt";
-  auto rt_sys_opt = GetAclFunc(rt_sys_opt_lib, rt_sys_opt_name);
-  if (rt_sys_opt == nullptr) {
-    MS_LOG(EXCEPTION) << "Get 'aclrtCtxSetSysParamOpt' from " << rt_sys_opt_lib << " failed!";
-  }
-  auto rt_sys_opt_func = reinterpret_cast<AclrtCtxSetSysParamOpt>(rt_sys_opt);
-  ret = rt_sys_opt_func(aclSysParamOpt::ACL_OPT_DETERMINISTIC, is_deterministic ? 1 : 0);
-  if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Acl sys set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
-                      << ret;
-  }
-  // Set hccl
-  const std::string hccl_lib = "libhccl.so";
-  const std::string hccl_set_config_name = "HcclSetConfig";
-  auto hccl_set_config = GetAclFunc(hccl_lib, hccl_set_config_name);
-  if (hccl_set_config == nullptr) {
-    MS_LOG(EXCEPTION) << "Get 'HcclSetConfig' from " << hccl_lib << " failed!";
-  }
-  auto hccl_set_config_func = reinterpret_cast<HcclSetConfigFunc>(hccl_set_config);
-  HcclConfigValue config = {is_deterministic ? 1 : 0};
-  auto hccl_ret = hccl_set_config_func(HcclConfig::HCCL_DETERMINISTIC, config);
-  if (hccl_ret != HCCL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Hccl set deterministic mode failed! mode is " << is_deterministic << " and error flag is "
-                      << ret;
-  }
 }
 
 aclError AclUtil::SetCompileMode(const int64_t is_dynamic) {

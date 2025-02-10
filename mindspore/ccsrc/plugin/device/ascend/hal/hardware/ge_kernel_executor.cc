@@ -941,7 +941,7 @@ void GeKernelExecutor::Initialize() {
   SetAclDebugKernel();
   // not check graph executor, may use in ascend device context
   SetAclOpPrecisionMode();
-  device::ascend::AclUtil::SetDeterministic();
+  res_manager_->SetDeterministic();
   initialized_ = true;
 }
 

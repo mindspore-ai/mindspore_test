@@ -19,6 +19,7 @@
 
 #include <limits>
 #include <vector>
+#include "hccl/hccl_types.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
 namespace mindspore {
