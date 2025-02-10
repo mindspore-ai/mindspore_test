@@ -1044,7 +1044,9 @@ def jit(
           and the decoration @jit(capture_mode=“bytecode”) is considered invalid.
 
     Args:
-        function (Function, optional): The Python function that will be run as a graph. Default: None.
+        function (Function, optional): The Python function that will be run as a graph. Default: ``None``.
+
+    Keyword Args:
         capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
         should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
 
@@ -1064,12 +1066,12 @@ def jit(
               level is experimental and is being improved.
 
         dynamic (bool, optional): Whether dynamic shape compilation should be performed. Currently, it is a
-            reserved parameter, so it does not work. Default: False.
+            reserved parameter, so it does not work. Default: ``False``.
         fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
             be compatible with all Python syntax in the function as much as possible. If True, we require that the
             entire function can be captured into graph. If this is not possible (that is, if there is Python syntax
             not supported), then it will raise an exception. This currently only applies when capture_mode is ast.
-            Default: False.
+            Default: ``False``.
         backend (str, optional): The compilation backend to be used. If this parameter is not set, the framework will
             use ``GE`` backend for Atlas training series products and ``ms_backend`` backend for others including Atlas
             A2 training series products by default.
@@ -1094,11 +1096,12 @@ def jit(
             | infer_boost               |  Ascend                   |  ms_backend             |
             +---------------------------+---------------------------+-------------------------+
 
-            - disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW to
-              NHWC. When the network training performance of fp16 is worse than fp32, `disable_format_transform` can be
-              set to ``True`` to try to improve training performance. Default: ``False`` .
-            - exec_order (str): Set the sorting method for operator execution, currently only two sorting methods are
-              supported: ``bfs`` and ``dfs`` . Default: ``bfs`` .
+            - disable_format_transform (bool, optional): Whether to disable the automatic format transform function
+              from NCHW to NHWC. When the network training performance of fp16 is worse than fp32,
+              `disable_format_transform` can be set to ``True`` to try to improve training performance.
+              Default: ``False`` .
+            - exec_order (str, optional): Set the sorting method for operator execution, currently only two sorting
+              methods are supported: ``bfs`` and ``dfs`` . Default: ``bfs`` .
 
               - `bfs`: The default sorting method, breadth priority, good communication masking, relatively good
                 performance.
@@ -1113,7 +1116,8 @@ def jit(
               - global (dict): Set global options.
               - session (dict): Set session options.
 
-            - infer_boost (str): Used to control the infer mode. Default: ``off`` .
+            - infer_boost (str, optional): Used to control the inference mode. Default: ``off``, which means
+              the inference mode is disabled. The range is as follows:
 
               - `on`: Enable inference mode, get better infer performance.
               - `off`: Disable inference mode, use forward for inference. The performance is poor.

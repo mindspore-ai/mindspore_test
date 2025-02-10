@@ -13,6 +13,8 @@ mindspore.jit
 
     参数：
         - **function** (Function, 可选) - 要编译成图的Python函数。默认值：``None``。
+
+    关键字参数：
         - **capture_mode** (str, 可选) - 创建一张可调用的MindSpore图的方式，可选值有 ``"ast"`` 、 ``"bytecode"`` 和 ``"trace"`` 。默认值： ``"ast"``。
 
           - `ast <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ ：解析Python的ast以构建静态图。
@@ -47,8 +49,8 @@ mindspore.jit
           | infer_boost               |  Ascend                   |  ms_backend             |
           +---------------------------+---------------------------+-------------------------+
 
-          - **disable_format_transform** (bool) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
-          - **exec_order** (str) - 算子执行时的排序方法，GRAPH_MODE(0)下jit_level为O0或者O1时生效。不同的执行顺序会使得网络的执行内存和性能有所差异，当前仅支持两种排序方法：bfs和dfs，默认方法为bfs。
+          - **disable_format_transform** (bool, 可选) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
+          - **exec_order** (str, 可选) - 算子执行时的排序方法，GRAPH_MODE(0)下jit_level为O0或者O1时生效。不同的执行顺序会使得网络的执行内存和性能有所差异，当前仅支持两种排序方法：bfs和dfs，默认方法为bfs。
 
             - bfs：默认的排序方法，广度优先排序，具备较好的通信掩盖效果，执行性能相对较好。
             - dfs：可选择的排序方法，深度优先排序，性能相对bfs执行序较差，但内存占用较少，建议在其他执行序OOM的场景下尝试dfs。
@@ -59,7 +61,7 @@ mindspore.jit
             - global (dict): 设置global类的选项。
             - session (dict): 设置session类的选项。
 
-          - **infer_boost** (str) - 用来使能推理模式。默认值为“off”，表示关闭。其值范围如下：
+          - **infer_boost** (str, 可选) - 用来使能推理模式。默认值为 ``“off”``，表示关闭。其值范围如下：
 
             - on: 开启推理模式，推理性能得到较大提升。
             - off: 关闭推理模式，使用前向运算进行推理，性能较差。
