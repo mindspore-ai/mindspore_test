@@ -24,11 +24,12 @@
 #include "kernel/kernel.h"
 #include "runtime/hardware/device_context.h"
 #include "mindspore/ccsrc/pyboost/pyboost_kernel_extra_func.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-class PYBOOST_API PyboostCPUKernelExtraFunc : public PyboostKernelExtraFunc {
+class OPS_HOST_API PyboostCPUKernelExtraFunc : public PyboostKernelExtraFunc {
  public:
   void SetThreadPool(const kernel::KernelModPtr &kernel) override;
   bool IsKernelModRegistered(const std::string &op_name) override;

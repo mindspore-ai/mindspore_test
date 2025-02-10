@@ -25,8 +25,8 @@
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT SparseApplyAdamCpuKernelMod : public SparseOptimizerCpuKernelMod,
-                                                   public MatchKernelHelper<SparseApplyAdamCpuKernelMod> {
+class SparseApplyAdamCpuKernelMod : public SparseOptimizerCpuKernelMod,
+                                    public MatchKernelHelper<SparseApplyAdamCpuKernelMod> {
  public:
   SparseApplyAdamCpuKernelMod() { ResetResource(); }
   ~SparseApplyAdamCpuKernelMod() override = default;
