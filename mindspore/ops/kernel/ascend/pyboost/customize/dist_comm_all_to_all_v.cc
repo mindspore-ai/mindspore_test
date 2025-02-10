@@ -22,8 +22,8 @@
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "kernel/ascend/pyboost/customize/comm_common.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {

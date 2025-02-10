@@ -29,7 +29,7 @@ const std::map<std::string, std::string> kTuneModeMap = {{"1", "subgraph tuning"
 }  // namespace
 
 static std::string SaveAirGraphToFile(const std::shared_ptr<AclModelOptions> &options,
-                                      const transform::DfGraphPtr &graph) {
+                                      const backend::ge_backend::DfGraphPtr &graph) {
   std::string air_path = options->GetOmFilePath();
   if (air_path.empty()) {
     air_path = "/tmp";
@@ -63,7 +63,7 @@ static std::vector<std::string> GetAoeMode(const std::shared_ptr<AclModelOptions
   return tune_mode;
 }
 
-static Status ExecuteAoe(const std::shared_ptr<AclModelOptions> &options, const transform::DfGraphPtr &graph,
+static Status ExecuteAoe(const std::shared_ptr<AclModelOptions> &options, const backend::ge_backend::DfGraphPtr &graph,
                          const std::string &air_path) {
   MS_LOG(INFO) << "Start to aoe.";
   std::string aoe_path = "aoe";  //  real path is already set in env PATH
@@ -123,7 +123,7 @@ static Status ExecuteAoe(const std::shared_ptr<AclModelOptions> &options, const 
 }
 
 Status AutoTuneProcess::AoeOfflineTurningGraph(const std::weak_ptr<AclModelOptions> &options,
-                                               const transform::DfGraphPtr &graph) {
+                                               const backend::ge_backend::DfGraphPtr &graph) {
   auto option_ptr = options.lock();
   if (option_ptr == nullptr) {
     MS_LOG(ERROR) << "Option ptr is nullptr.";

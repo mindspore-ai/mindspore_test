@@ -47,9 +47,9 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
     return 0;
   }
   workspace_addr = workspace_device_address->GetMutablePtr();
-  const auto op_api_func = transform::GetOpApiFunc(aclnn_name.c_str());
+  const auto op_api_func = device::ascend::GetOpApiFunc(aclnn_name.c_str());
   if (op_api_func == nullptr) {
-    MS_LOG(EXCEPTION) << aclnn_name << " not in " << transform::GetOpApiLibName() << ", please check!";
+    MS_LOG(EXCEPTION) << aclnn_name << " not in " << device::ascend::GetOpApiLibName() << ", please check!";
   }
   auto run_api_func = reinterpret_cast<int (*)(int32_t, void *, uint64_t)>(op_api_func);
   std::promise<int> p;

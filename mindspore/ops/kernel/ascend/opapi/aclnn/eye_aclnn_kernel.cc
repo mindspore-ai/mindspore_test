@@ -21,7 +21,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -29,8 +29,8 @@ namespace kernel {
 
 void EyeAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
-  n_row = transform::ConvertKernelTensor<int64_t>(inputs[kIndex0]);
-  m_col = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  n_row = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex0]);
+  m_col = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
 
   GetWorkspaceForResize(n_row, m_col, outputs[kIndex0]);
 }

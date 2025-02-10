@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ccsrc/transform/graph_ir/custom_op_proto/cust_array_ops.h"
+#include "mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/custom_op_proto/cust_array_ops.h"
 #include "op_proto/inc/transformation_ops.h"
 #include "register/op_impl_registry.h"
 #include "utils/util.h"

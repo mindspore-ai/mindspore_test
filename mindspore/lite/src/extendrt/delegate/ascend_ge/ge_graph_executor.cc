@@ -23,7 +23,7 @@
 #include "include/common/utils/scoped_long_running.h"
 #include "include/api/context.h"
 #include "include/api/status.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "include/backend/device_type.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "src/common/common.h"
@@ -34,7 +34,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/graph/remove_load_pass.h"
 #include "src/extendrt/utils/func_graph_utils.h"
-#include "transform/graph_ir/transform_util.h"
+#include "plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "flow_graph/data_flow.h"
 #ifdef MSLITE_ENABLE_GRAPH_KERNEL
 #include "tools/graph_kernel/converter/graph_kernel_optimization.h"
@@ -94,18 +94,18 @@ std::shared_ptr<ConverterPara> ParseGraphKernelConfigs(const ConfigInfos &maps) 
 }
 #endif
 
-transform::DfGraphPtr GenExampleGraph(const std::string &name) {
+backend::ge_backend::DfGraphPtr GenExampleGraph(const std::string &name) {
   MS_LOG(INFO) << "Gen fake graph name is " << name;
-  auto graph = std::make_shared<transform::DfGraph>(name);
+  auto graph = std::make_shared<backend::ge_backend::DfGraph>(name);
   auto shape_data = std::vector<int64_t>({1, 1, 1, 1});
-  transform::GeTensorDesc desc_data(ge::Shape(shape_data), ge::FORMAT_ND, ge::DT_FLOAT16);
+  backend::ge_backend::GeTensorDesc desc_data(ge::Shape(shape_data), ge::FORMAT_ND, ge::DT_FLOAT16);
   auto data = ge::op::Data("data");
   data.set_attr_index(0);
   data.update_input_desc_x(desc_data);
   data.update_output_desc_y(desc_data);
   auto add = ge::op::Add("add").set_input_x1(data).set_input_x2(data);
-  std::vector<transform::Operator> inputs{data};
-  std::vector<transform::Operator> outputs{add};
+  std::vector<backend::ge_backend::Operator> inputs{data};
+  std::vector<backend::ge_backend::Operator> outputs{add};
   graph->SetInputs(inputs);
   graph->SetOutputs(outputs);
   return graph;
@@ -157,8 +157,8 @@ bool UpdateOmCacheIdxFile(const std::string &idx_file_name) {
 
 std::atomic_uint32_t GeGraphExecutor::global_graph_idx_ = 0;
 uint32_t GeGraphExecutor::GetNextGraphIdx() { return global_graph_idx_++; }
-transform::DfGraphPtr GetDataFlowGraph(const FuncGraphPtr &anf_graph,
-                                       const std::map<std::string, std::string> &ge_options) {
+backend::ge_backend::DfGraphPtr GetDataFlowGraph(const FuncGraphPtr &anf_graph,
+                                                 const std::map<std::string, std::string> &ge_options) {
   MS_EXCEPTION_IF_NULL(anf_graph);
   auto return_node = anf_graph->get_return();
   MS_EXCEPTION_IF_NULL(return_node);
@@ -182,7 +182,7 @@ transform::DfGraphPtr GetDataFlowGraph(const FuncGraphPtr &anf_graph,
   MS_EXCEPTION_IF_NULL(data);
   auto flow_graph = reinterpret_cast<ge::dflow::FlowGraph *>(data);
   MS_EXCEPTION_IF_NULL(flow_graph);
-  auto df_graph = std::make_shared<transform::DfGraph>(flow_graph->ToGeGraph());
+  auto df_graph = std::make_shared<backend::ge_backend::DfGraph>(flow_graph->ToGeGraph());
   return df_graph;
 }
 
@@ -325,8 +325,8 @@ void GeGraphExecutor::UpdateOutputShapeInfo(std::vector<::ge::Tensor> *ge_output
     auto &output_info = outputs_buffer_infos_[i];
     auto &ge_output = ge_outputs->at(i);
     auto ge_tensor_desc = ge_output.GetTensorDesc();
-    output_info.shape = transform::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
-    output_info.dtype = transform::TransformUtil::ConvertGeDataType(ge_tensor_desc.GetDataType());
+    output_info.shape = device::ascend::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
+    output_info.dtype = device::ascend::TransformUtil::ConvertGeDataType(ge_tensor_desc.GetDataType());
     output_info.max_size = SizeOf(output_info.shape) * GetDataTypeSize(output_info.dtype);
     auto out_device = ge_output.GetData();
     if (dyn_kv_cache_info_.is_ge_graph_static_ && out_device != output_info.device_addr) {
@@ -565,15 +565,15 @@ bool GeGraphExecutor::InitRefModeConfig() {
       return false;
     }
     if (ref_mode == kRefModeAll) {
-      ref_mode_flag_ = transform::RefModeFlag::kRefModeAll;
+      ref_mode_flag_ = backend::ge_backend::RefModeFlag::kRefModeAll;
     } else if (ref_mode == kRefModeVariable) {
-      ref_mode_flag_ = transform::RefModeFlag::kRefModeVariable;
+      ref_mode_flag_ = backend::ge_backend::RefModeFlag::kRefModeVariable;
     } else {
-      ref_mode_flag_ = transform::RefModeFlag::kRefModeNone;
+      ref_mode_flag_ = backend::ge_backend::RefModeFlag::kRefModeNone;
     }
     MS_LOG(INFO) << "Set parameter ref mode " << ref_mode;
   } else {
-    ref_mode_flag_ = transform::RefModeFlag::kRefModeNone;
+    ref_mode_flag_ = backend::ge_backend::RefModeFlag::kRefModeNone;
   }
   return true;
 }
@@ -585,7 +585,7 @@ void GeGraphExecutor::GetGeSessionOptions(std::map<std::string, std::string> *ge
   ge_options["ge.enablePrintOpPass"] = "0";
   ge_options["ge.exec.device_id"] = std::to_string(GetDeviceID());
   ge_options["ge.exec.staticMemoryPolicy"] = "2";
-  if (ref_mode_flag_ != transform::RefModeFlag::kRefModeNone) {
+  if (ref_mode_flag_ != backend::ge_backend::RefModeFlag::kRefModeNone) {
     ge_options["ge.constLifecycle"] = "graph";
   }
   auto config_it = config_infos_.find(lite::kGeSessionOptionsSection);
@@ -789,8 +789,8 @@ bool GeGraphExecutor::CreateSession(const std::map<std::string, std::string> &ex
   return true;
 }
 
-bool GeGraphExecutor::AddGraph(const transform::DfGraphPtr &graph, const std::map<std::string, std::string> &options,
-                               uint32_t *graph_id_ret) {
+bool GeGraphExecutor::AddGraph(const backend::ge_backend::DfGraphPtr &graph,
+                               const std::map<std::string, std::string> &options, uint32_t *graph_id_ret) {
   if (ge_session_ == nullptr) {
     MS_LOG(ERROR) << "Failed to add graph, ge session cannot be nullptr";
     return false;
@@ -808,10 +808,10 @@ bool GeGraphExecutor::AddGraph(const transform::DfGraphPtr &graph, const std::ma
   return true;
 }
 
-void GeGraphExecutor::GetParams(const FuncGraphPtr &anf_graph, transform::TensorOrderMap *param_tensors) {
+void GeGraphExecutor::GetParams(const FuncGraphPtr &anf_graph, backend::ge_backend::TensorOrderMap *param_tensors) {
   MS_EXCEPTION_IF_NULL(anf_graph);
 
-  transform::TensorOrderMap res;
+  backend::ge_backend::TensorOrderMap res;
   for (auto &anf_node : anf_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(anf_node);
     auto para = anf_node->cast<ParameterPtr>();
@@ -962,7 +962,7 @@ bool GeGraphExecutor::InitRefDataDeviceTensor() {
     item.host_data = nullptr;  // release host memory
     ShapeVector ref_data_shape = tensor->shape_c();
     SetRefShape(&ref_data_shape, true, item.name);
-    auto desc = transform::TransformUtil::GetGeTensorDesc(ref_data_shape, tensor->data_type(), kOpFormat_NCHW);
+    auto desc = device::ascend::TransformUtil::GetGeTensorDesc(ref_data_shape, tensor->data_type(), kOpFormat_NCHW);
     if (desc == nullptr) {
       MS_LOG(ERROR) << "Failed to get Tensor Desc";
       return false;
@@ -1026,7 +1026,7 @@ bool GeGraphExecutor::InitInOutDeviceBuffer(const std::string &name, const Shape
                                             InOutBufferInfo *buffer_info) {
   MS_CHECK_TRUE_RET(buffer_info != nullptr, false);
   auto &info = *buffer_info;
-  auto desc = transform::TransformUtil::GetGeTensorDesc(shape, dtype, kOpFormat_NCHW);
+  auto desc = device::ascend::TransformUtil::GetGeTensorDesc(shape, dtype, kOpFormat_NCHW);
   if (desc == nullptr) {
     MS_LOG(ERROR) << "Failed to get Tensor Desc";
     return false;
@@ -1128,7 +1128,7 @@ bool GeGraphExecutor::InitRefDataContext(const FuncGraphPtr &func_graph,
   return true;
 }
 
-transform::DfGraphPtr GeGraphExecutor::CreateFakeGraph(const std::map<std::string, std::string> &ge_options) {
+backend::ge_backend::DfGraphPtr GeGraphExecutor::CreateFakeGraph(const std::map<std::string, std::string> &ge_options) {
   if (enable_update_weight_) {
     MS_LOG(INFO) << "Enable update weight, skip create small ge graph";
     return nullptr;
@@ -1185,7 +1185,7 @@ bool GeGraphExecutor::UpdateWeights(const std::vector<std::vector<std::shared_pt
     // cppcheck-suppress cppcheckError
     for (size_t j = 0; j < new_weight_tensors[i].size(); j++) {
       auto &input = new_weight_tensors[i][j];
-      auto ge_tensor = transform::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
+      auto ge_tensor = device::ascend::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
       if (ge_tensor == nullptr) {
         MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
         return false;
@@ -1204,8 +1204,8 @@ bool GeGraphExecutor::UpdateWeights(const std::vector<std::vector<std::shared_pt
   return true;
 }
 
-transform::DfGraphPtr GeGraphExecutor::CreateGeGraphOnline(const FuncGraphPtr &anf_graph,
-                                                           std::map<std::string, std::string> *ge_options_ptr) {
+backend::ge_backend::DfGraphPtr GeGraphExecutor::CreateGeGraphOnline(
+  const FuncGraphPtr &anf_graph, std::map<std::string, std::string> *ge_options_ptr) {
   MS_CHECK_TRUE_RET(ge_options_ptr != nullptr, nullptr);
   std::vector<std::string> extra_variables_names = {};
   if (enable_update_weight_ && update_weight_ptr_ != nullptr) {
@@ -1220,9 +1220,9 @@ transform::DfGraphPtr GeGraphExecutor::CreateGeGraphOnline(const FuncGraphPtr &a
       return nullptr;
     }
   }
-  transform::TensorOrderMap params_vals;
+  backend::ge_backend::TensorOrderMap params_vals;
   GetParams(anf_graph, &params_vals);
-  transform::SetDynRefDataFunc dyn_ref_data_func = nullptr;
+  backend::ge_backend::SetDynRefDataFunc dyn_ref_data_func = nullptr;
   if (dyn_kv_cache_info_.dynamic_kv_cache) {
     dyn_ref_data_func = [this](const AnfNodePtr &node, const ShapeVector &org_shape) -> ShapeVector {
       return SetKVCacheShape(dyn_kv_cache_info_.batch_size_dyn, dyn_kv_cache_info_.seq_length_dyn,
@@ -1231,16 +1231,16 @@ transform::DfGraphPtr GeGraphExecutor::CreateGeGraphOnline(const FuncGraphPtr &a
   }
 
   MS_LOG(INFO) << "extra_variables_names size: " << extra_variables_names.size();
-  auto converter = std::make_shared<transform::DfGraphConvertor>(anf_graph, "", ref_mode_flag_, extra_variables_names,
-                                                                 dyn_ref_data_func);
-  transform::BuildGraph(graph_name_, converter, params_vals);
-  auto err_code = transform::ErrCode(converter);
+  auto converter = std::make_shared<backend::ge_backend::DfGraphConvertor>(anf_graph, "", ref_mode_flag_,
+                                                                           extra_variables_names, dyn_ref_data_func);
+  backend::ge_backend::BuildGraph(graph_name_, converter, params_vals);
+  auto err_code = backend::ge_backend::ErrCode(converter);
   if (err_code != 0) {
-    transform::ClearGraph();
+    backend::ge_backend::ClearGraph();
     MS_LOG(ERROR) << "Convert df graph failed, err:" << err_code;
     return nullptr;
   }
-  auto init_graph = transform::GetInitGraph(converter);
+  auto init_graph = backend::ge_backend::GetInitGraph(converter);
   if (init_graph != nullptr) {
     uint32_t init_graph_id = 0;
     if (!AddGraph(init_graph, {}, &init_graph_id)) {
@@ -1268,7 +1268,7 @@ transform::DfGraphPtr GeGraphExecutor::CreateGeGraphOnline(const FuncGraphPtr &a
   } else {
     MS_LOG(INFO) << "There is no init graph for graph " << anf_graph->ToString();
   }
-  if (ref_mode_flag_ != transform::RefModeFlag::kRefModeNone) {
+  if (ref_mode_flag_ != backend::ge_backend::RefModeFlag::kRefModeNone) {
     auto ref_data_names = converter->GetRefDataNames();
     std::vector<std::pair<std::string, tensor::TensorPtr>> ref_datas;
     std::transform(ref_data_names.begin(), ref_data_names.end(), std::back_inserter(ref_datas),
@@ -1278,7 +1278,7 @@ transform::DfGraphPtr GeGraphExecutor::CreateGeGraphOnline(const FuncGraphPtr &a
       return nullptr;
     }
   }
-  auto df_graph = transform::GetComputeGraph(converter);
+  auto df_graph = backend::ge_backend::GetComputeGraph(converter);
   return df_graph;
 }
 
@@ -1341,8 +1341,8 @@ bool GeGraphExecutor::LoadOnlineGraph(const FuncGraphPtr &anf_graph, uint32_t *g
   return true;
 }
 
-transform::DfGraphPtr GeGraphExecutor::CompileGraphCommon(const FuncGraphPtr &anf_graph,
-                                                          std::map<std::string, std::string> *ge_options_ptr) {
+backend::ge_backend::DfGraphPtr GeGraphExecutor::CompileGraphCommon(
+  const FuncGraphPtr &anf_graph, std::map<std::string, std::string> *ge_options_ptr) {
   if (anf_graph == nullptr) {
     MS_LOG(ERROR) << "Input param graph is nullptr.";
     return nullptr;
@@ -1393,7 +1393,7 @@ transform::DfGraphPtr GeGraphExecutor::CompileGraphCommon(const FuncGraphPtr &an
     return nullptr;
   }
 
-  transform::DfGraphPtr df_graph = nullptr;
+  backend::ge_backend::DfGraphPtr df_graph = nullptr;
   auto func_type = anf_graph->get_attr(kAttrFuncType);
   is_data_flow_graph_ = func_type != nullptr && GetValue<std::string>(func_type) == kDataFlowGraphType;
   if (!is_data_flow_graph_) {
@@ -1420,7 +1420,7 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &anf_graph, const std::map
   }
   compute_graph_id_list_.push_back(compute_graph_id);
   *graph_id = compute_graph_id;
-  if (ref_mode_flag_ != transform::RefModeFlag::kRefModeNone) {
+  if (ref_mode_flag_ != backend::ge_backend::RefModeFlag::kRefModeNone) {
     if (!BuildGraphRefMode(anf_graph, compute_graph_id)) {
       MS_LOG(ERROR) << "Failed to build ge graph with refdata";
       return false;
@@ -1468,7 +1468,7 @@ bool GeGraphExecutor::GetOneRealInputs(const FuncGraphPtr &anf_graph, std::vecto
       return false;
     }
     MS_LOG(INFO) << "Input " << i << " shape " << input->shape_c() << ", datatype " << input->data_type();
-    auto ge_tensor = transform::TransformUtil::ConvertTensor(input, kOpFormat_NCHW);
+    auto ge_tensor = device::ascend::TransformUtil::ConvertTensor(input, kOpFormat_NCHW);
     if (ge_tensor == nullptr) {
       MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
       return false;
@@ -1506,7 +1506,7 @@ bool GeGraphExecutor::AoeTuning(const FuncGraphPtr &anf_graph) {
 }
 
 bool GeGraphExecutor::RunGeInitGraph(uint32_t init_graph_id, const std::vector<std::string> &init_data_names,
-                                     const transform::TensorOrderMap &params_vals) {
+                                     const backend::ge_backend::TensorOrderMap &params_vals) {
   std::vector<tensor::TensorPtr> init_data_tensors;
   for (auto &item : init_data_names) {
     auto it = params_vals.find(item);
@@ -1520,7 +1520,7 @@ bool GeGraphExecutor::RunGeInitGraph(uint32_t init_graph_id, const std::vector<s
   std::vector<::ge::Tensor> ge_inputs;
   for (size_t i = 0; i < init_data_tensors.size(); i++) {
     auto &input = init_data_tensors[i];
-    auto ge_tensor = transform::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
+    auto ge_tensor = device::ascend::TransformUtil::ConvertTensor(input, kOpFormat_NCHW, false);
     if (ge_tensor == nullptr) {
       MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
       return false;
@@ -1621,7 +1621,8 @@ bool GeGraphExecutor::InitInputDataTensor(const std::vector<tensor::Tensor> &inp
   }
   for (auto &item : ref_data_infos_) {
     if (dyn_kv_cache_info_.dynamic_kv_cache) {
-      ShapeVector ref_real_shape = transform::TransformUtil::ConvertGeShape(item.ge_tensor.GetTensorDesc().GetShape());
+      ShapeVector ref_real_shape =
+        device::ascend::TransformUtil::ConvertGeShape(item.ge_tensor.GetTensorDesc().GetShape());
       SetRefShape(&ref_real_shape, false, item.name);
       SetGeTensorShape(&item.ge_tensor, ref_real_shape);
       MS_LOG(INFO) << "Update RefData Input " << item.name << " shape to " << tensor::ShapeToString(ref_real_shape);
@@ -1760,7 +1761,7 @@ bool GeGraphExecutor::RunGraphWithStreamAsync(uint32_t graph_id, void *stream, c
   for (auto ge_input : inputs) {
     MS_LOG(INFO) << "In ge graph " << graph_id << ", input for RunGraphWithStreamAsync : "
                  << tensor::ShapeToString(
-                      transform::TransformUtil::ConvertGeShape(ge_input.GetTensorDesc().GetShape()));
+                      device::ascend::TransformUtil::ConvertGeShape(ge_input.GetTensorDesc().GetShape()));
   }
   MS_LOG(INFO) << "Run the graph in GE with " << inputs.size() << " inputs";
   struct timeval start_time;
@@ -1799,14 +1800,14 @@ bool GeGraphExecutor::RunGraph(uint32_t graph_id, const std::vector<tensor::Tens
     MS_LOG(INFO) << "Input " << i << " shape " << input.shape_c() << ", datatype " << input.data_type();
   }
 
-  if (ref_mode_flag_ != transform::RefModeFlag::kRefModeNone) {
+  if (ref_mode_flag_ != backend::ge_backend::RefModeFlag::kRefModeNone) {
     return RunGraphRefMode(graph_id, inputs, outputs);
   }
   std::vector<::ge::Tensor> ge_inputs;
   for (size_t i = 0; i < inputs.size(); i++) {
     auto &input = inputs[i];
     auto ge_tensor =
-      transform::TransformUtil::ConvertTensor(std::make_shared<tensor::Tensor>(input), kOpFormat_NCHW, false);
+      device::ascend::TransformUtil::ConvertTensor(std::make_shared<tensor::Tensor>(input), kOpFormat_NCHW, false);
     if (ge_tensor == nullptr) {
       MS_LOG(ERROR) << "Failed to converter input " << i << " ME Tensor to GE Tensor";
       return false;
@@ -1882,7 +1883,7 @@ tensor::TensorPtr GeGraphExecutor::ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor
   MS_CHECK_TRUE_RET(ge_tensor_ptr != nullptr, nullptr);
   auto &ge_tensor = *ge_tensor_ptr;
   auto ge_tensor_desc = ge_tensor.GetTensorDesc();
-  auto me_shape = transform::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
+  auto me_shape = device::ascend::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
   if (original_graph_outputs_.find(graph_id) == original_graph_outputs_.end()) {
     MS_LOG(ERROR) << "Graph original outputs with the given graph id is not found.";
     return nullptr;
@@ -1965,7 +1966,7 @@ bool GeGraphExecutor::CreateAsCustomFuncGraph(const FuncGraphPtr &func_graph,
 }
 
 bool GeGraphExecutor::OfflineBuildGraph(const FuncGraphPtr &graph) {
-  if (ref_mode_flag_ == transform::RefModeFlag::kRefModeNone) {
+  if (ref_mode_flag_ == backend::ge_backend::RefModeFlag::kRefModeNone) {
     MS_LOG(INFO) << "parameter_as_refdata in ascend_context is none, skip offline build graph";
     return true;
   }

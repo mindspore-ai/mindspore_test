@@ -20,7 +20,7 @@ namespace kernel {
 
 void FillScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
-  value_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  value_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   GetWorkspaceForResize(outputs[kIndex0], value_);
 }
 

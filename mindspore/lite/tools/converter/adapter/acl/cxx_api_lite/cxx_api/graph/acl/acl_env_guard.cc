@@ -16,8 +16,8 @@
 #include "cxx_api/graph/acl/acl_env_guard.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 std::shared_ptr<AclEnvGuard> AclEnvGuard::global_acl_env_ = nullptr;

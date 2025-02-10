@@ -22,8 +22,8 @@
 #include "mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "hal/hccl_adapter/hccl_adapter.h"
 #include "include/common/utils/utils.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/log_adapter.h"
 

@@ -20,8 +20,8 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -73,8 +73,8 @@ void NanToNumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   bool posinf_has_value = posinf.has_value();
   bool neginf_has_value = neginf.has_value();
   if (posinf_has_value && neginf_has_value) {
-    posinf_ = transform::ConvertKernelTensor<float>(inputs[kIndex2]);
-    neginf_ = transform::ConvertKernelTensor<float>(inputs[kIndex3]);
+    posinf_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex2]);
+    neginf_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex3]);
   } else {
     auto input_type = inputs[kIndex0]->dtype_id();
     GetInfValues(input_type, posinf, neginf, posinf_has_value, neginf_has_value);

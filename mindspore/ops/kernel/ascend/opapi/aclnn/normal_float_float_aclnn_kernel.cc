@@ -19,10 +19,10 @@ namespace mindspore {
 namespace kernel {
 void NormalFloatFloatAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
-  mean_ = transform::ConvertKernelTensor<float>(inputs[kIndex0]);
-  std_ = transform::ConvertKernelTensor<float>(inputs[kIndex1]);
-  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  mean_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex0]);
+  std_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex1]);
+  seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   GetWorkspaceForResize(mean_, std_, seed_, offset_, outputs[0]);
 }
 

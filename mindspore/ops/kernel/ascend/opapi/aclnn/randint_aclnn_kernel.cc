@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -28,10 +28,10 @@ namespace kernel {
 
 void RandIntAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  from_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex0 + input_idx_shift_]);
-  to_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1 + input_idx_shift_]);
-  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  from_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex0 + input_idx_shift_]);
+  to_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1 + input_idx_shift_]);
+  seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   GetWorkspaceForResize(outputs[kIndex0], from_, to_, seed_, offset_);
 }
 

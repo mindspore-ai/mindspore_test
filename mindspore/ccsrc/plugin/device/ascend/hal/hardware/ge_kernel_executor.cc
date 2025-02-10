@@ -26,8 +26,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/session/kernel_graph_mgr.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
-#include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
@@ -58,13 +58,13 @@
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "include/common/factory/ms_factory.h"
 #include "kernel/kernel_build_info.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_util.h"
-#include "transform/acl_ir/ge_adapter_info.h"
-#include "transform/symbol/acl_compiler_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/ge_adapter_info.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/backend/debug/data_dump/overflow_dumper.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -238,7 +238,8 @@ void SetAclOpPrecisionMode() {
 
   auto precision_mode = op_precision_conf->precision_mode();
   if (precision_mode.empty()) {
-    precision_mode = (transform::AclUtil::KeepOriginDType() == 1) ? "must_keep_origin_dtype" : "allow_fp32_to_fp16";
+    precision_mode =
+      (device::ascend::AclUtil::KeepOriginDType() == 1) ? "must_keep_origin_dtype" : "allow_fp32_to_fp16";
   }
   MS_LOG(INFO) << "Set aclop PRECISION_MODE: " << precision_mode;
   auto ret = CALL_ASCEND_API(aclSetCompileopt, aclCompileOpt::ACL_PRECISION_MODE, precision_mode.c_str());
@@ -935,7 +936,7 @@ void GeKernelExecutor::Initialize() {
   SetAclDebugKernel();
   // not check graph executor, may use in ascend device context
   SetAclOpPrecisionMode();
-  transform::AclUtil::SetDeterministic();
+  device::ascend::AclUtil::SetDeterministic();
   initialized_ = true;
 }
 
@@ -1024,7 +1025,7 @@ kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_nam
     MS_LOG(WARNING) << "aclnn can't find Kernel[" << op_name << "]";
     return nullptr;
   }
-  transform::AclnnInit();
+  device::ascend::AclnnInit();
   return kernel_ptr;
 }
 
@@ -1163,7 +1164,7 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
       MS_EXCEPTION_IF_NULL(kernel_mod);
       is_host_reshape_op = kernel_mod->GetKernelModType() == kernel::KernelModType::HostKernelMod;
     }
-    bool is_nop_op = transform::AclHelper::IsNopNode(node);
+    bool is_nop_op = device::ascend::AclHelper::IsNopNode(node);
     bool is_transpose_nop = (op_name == prim::kPrimTranspose->name() || op_name == prim::kPrimTransposeD->name()) &&
                             common::AnfAlgo::HasNodeAttr(kAttrNopOp, node);
     if (is_transpose_nop || (is_nop_op && !is_host_reshape_op)) {

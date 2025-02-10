@@ -16,8 +16,8 @@
 
 #include "extendrt/delegate/ascend_ge/ge_context_manager.h"
 #include "src/common/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 GeContextManager::GeContextManager() {}

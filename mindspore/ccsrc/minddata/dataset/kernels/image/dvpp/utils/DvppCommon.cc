@@ -20,8 +20,8 @@
 
 #include "minddata/dataset/kernels/image/dvpp/utils/CommonDataType.h"
 #include "minddata/dataset/util/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 const static auto g_resizeConfigDeleter = [](acldvppResizeConfig *p) { (void)acldvppDestroyResizeConfig(p); };
 const static auto g_picDescDeleter = [](acldvppPicDesc *picDesc) { (void)acldvppDestroyPicDesc(picDesc); };

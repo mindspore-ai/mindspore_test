@@ -21,18 +21,18 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
 void ScatterAddExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
-  dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   GetWorkspaceForResize(inputs[kIndex0], dim_, inputs[kIndex2], inputs[kIndex3], outputs[kIndex0]);
 }
 

@@ -31,21 +31,21 @@
 #include "include/common/utils/utils.h"
 #include "include/common/profiler.h"
 #include "runtime/pynative/op_runtime_info.h"
-#include "transform/acl_ir/acl_convert.h"
-#include "transform/acl_ir/op_api_exec.h"
-#include "transform/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_exec.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
 #include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
 #include "kernel/ascend/opapi/aclnn_kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
-using aclTensor = transform::aclTensor;
-using aclOpExecutor = transform::aclOpExecutor;
+using aclTensor = device::ascend::aclTensor;
+using aclOpExecutor = device::ascend::aclOpExecutor;
 using CallBackFunc = std::function<void()>;
-using OpApiUtil = transform::OpApiUtil;
-using AclUtil = transform::AclUtil;
-using ProcessCache = transform::ProcessCache;
+using OpApiUtil = device::ascend::OpApiUtil;
+using AclUtil = device::ascend::AclUtil;
+using ProcessCache = device::ascend::ProcessCache;
 using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
 
 #define DEFINE_GET_WORKSPACE_FOR_OPS(OP_TYPE, FUNC_NAME)                                                             \
@@ -53,7 +53,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   uint64_t hash_id_##FUNC_NAME##_{0};                                                                                \
   template <typename... Args>                                                                                        \
   void GetWorkspaceForResize##FUNC_NAME(const Args &... args) {                                                      \
-    hash_id_##FUNC_NAME##_ = transform::AclnnHash(op_type_##FUNC_NAME##_, args...);                                  \
+    hash_id_##FUNC_NAME##_ = device::ascend::AclnnHash(op_type_##FUNC_NAME##_, args...);                             \
     auto iter = hash_map_.find(hash_id_##FUNC_NAME##_);                                                              \
     size_t cur_workspace = 0;                                                                                        \
     if (iter != hash_map_.end()) {                                                                                   \
@@ -70,12 +70,12 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
         if (hash_cache_.size() > capacity_) {                                                                        \
           hash_map_.erase(std::get<0>(hash_cache_.back()));                                                          \
           auto release_func = std::get<2>(hash_cache_.back());                                                       \
-          release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                  \
+          release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                             \
           hash_cache_.pop_back();                                                                                    \
         }                                                                                                            \
       } else {                                                                                                       \
         hash_id_##FUNC_NAME##_ = 0;                                                                                  \
-        cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                           \
+        cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                                      \
       }                                                                                                              \
     }                                                                                                                \
                                                                                                                      \
@@ -127,7 +127,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
 #define DEFINE_GET_WORKSPACE_FOR_RESIZE()                                                                       \
   template <typename... Args>                                                                                   \
   void GetWorkspaceForResize(const Args &... args) {                                                            \
-    hash_id_ = transform::AclnnHash(op_type_, args...);                                                         \
+    hash_id_ = device::ascend::AclnnHash(op_type_, args...);                                                    \
     size_t cur_workspace = 0;                                                                                   \
     auto iter = hash_map_.find(hash_id_);                                                                       \
     if (iter != hash_map_.end()) {                                                                              \
@@ -144,12 +144,12 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
         if (hash_cache_.size() > capacity_) {                                                                   \
           hash_map_.erase(std::get<0>(hash_cache_.back()));                                                     \
           auto release_func = std::get<2>(hash_cache_.back());                                                  \
-          release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                             \
+          release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                        \
           hash_cache_.pop_back();                                                                               \
         }                                                                                                       \
       } else {                                                                                                  \
         hash_id_ = 0;                                                                                           \
-        cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                      \
+        cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});                                 \
       }                                                                                                         \
     }                                                                                                           \
                                                                                                                 \

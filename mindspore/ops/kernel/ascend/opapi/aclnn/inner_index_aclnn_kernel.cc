@@ -21,7 +21,7 @@
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {

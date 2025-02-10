@@ -33,8 +33,8 @@
 #include <vector>
 #include <variant>
 #include "ir/tensor.h"
-#include "transform/symbol/acl_tdt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 #ifndef SECUREC_MEM_MAX_LEN

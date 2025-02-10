@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -42,7 +42,7 @@ bool InnerNonZeroAscend::Launch(const std::vector<KernelTensor *> &inputs, const
 
   // Update output shape.
   outputs_shape_.resize(1);
-  outputs_shape_[kIndex0] = transform::UpdateOutputShape(all_tensor.get<kIndex1>());
+  outputs_shape_[kIndex0] = device::ascend::UpdateOutputShape(all_tensor.get<kIndex1>());
   return true;
 }
 void InnerNonZeroAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &,

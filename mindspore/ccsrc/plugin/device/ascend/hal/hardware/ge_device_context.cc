@@ -20,17 +20,16 @@
 #include <sstream>
 #include <map>
 #include <set>
-#include "include/transform/graph_ir/types.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
-#include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
-#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
 #include "include/backend/debug/profiler/profiling.h"
@@ -42,10 +41,10 @@
 #include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_compiler_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 
 namespace mindspore {
@@ -151,19 +150,19 @@ bool GeDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
         if (GetCNodePrimitive(node) == nullptr) {
           continue;
         }
-        if (!transform::ConvertCheck(node)) {
+        if (!backend::ge_backend::ConvertCheck(node)) {
           all_support = false;
           common::AnfAlgo::SetNodeAttr(kAttrPrimitiveTarget, MakeValue<std::string>(kCPUDevice), node);
           MS_LOG(DEBUG) << node->fullname_with_scope() << " can not find adpt, run on CPU";
           continue;
         }
-        if (!transform::DynamicShapeSupportCheck(node)) {
+        if (!backend::ge_backend::DynamicShapeSupportCheck(node)) {
           all_support = false;
           common::AnfAlgo::SetNodeAttr(kAttrGraphSplitGroup, MakeValue<std::string>(kKernelGroup), node);
           MS_LOG(DEBUG) << node->fullname_with_scope() << " not support dynamic shape, will run in KernelGraph";
           continue;
         }
-        if (!transform::SinkGraphCheck(node)) {
+        if (!backend::ge_backend::SinkGraphCheck(node)) {
           all_support = false;
           common::AnfAlgo::SetNodeAttr(kAttrGraphSplitGroup, MakeValue<std::string>(kKernelGroup), node);
           MS_LOG(DEBUG) << node->fullname_with_scope() << " have attrs is not ValueNode, will run in KernelGraph";
@@ -221,7 +220,7 @@ void GeDeviceContext::Initialize() {
 
   MS_LOG(INFO) << "Start initializing device context.";
   if (UseSimulationApi()) {
-    transform::LoadSimulationApiSymbols();
+    device::ascend::LoadSimulationApiSymbols();
   }
 
   // set overflow mode
@@ -263,10 +262,10 @@ void GeDeviceContext::Initialize() {
   auto op_tuning_conf = OpTuningConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_tuning_conf);
   if (op_tuning_conf->EnableAoeOnline()) {
-    transform::InitializeAoeUtil();
+    backend::ge_backend::InitializeAoeUtil();
   }
   if (op_tuning_conf->EnableAoeOffline()) {
-    transform::EnableAoeOffline();
+    backend::ge_backend::EnableAoeOffline();
   }
   // open tsd
   if (!common::UseDynamicCluster()) {
@@ -290,7 +289,7 @@ void GeDeviceContext::Destroy() {
   auto op_tuning_conf = OpTuningConf::GetInstance();
   MS_EXCEPTION_IF_NULL(op_tuning_conf);
   if (op_tuning_conf->EnableAoeOnline()) {
-    transform::DestroyAoeUtil();
+    backend::ge_backend::DestroyAoeUtil();
   }
   FinalizeDump();
   if (graph_executor_ == nullptr) {
@@ -439,7 +438,7 @@ MSCONTEXT_REGISTER_INIT_FUNC(kAscendDevice, [](MsContext *ctx) -> void {
     common::SetEnv("MS_FORMAT_MODE", format_mode.c_str());
   }
 
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   SetContextSocVersion(ctx);
 });
 #endif

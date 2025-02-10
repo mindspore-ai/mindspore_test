@@ -19,9 +19,9 @@ namespace mindspore {
 namespace kernel {
 void ArangeAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
-  start = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
-  end = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
-  step = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
+  start = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
+  end = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  step = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
   GetWorkspaceForResize(start, end, step, outputs[kIndex0]);
 }
 

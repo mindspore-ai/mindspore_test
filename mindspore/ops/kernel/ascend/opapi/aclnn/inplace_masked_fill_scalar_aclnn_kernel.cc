@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -28,7 +28,7 @@ namespace kernel {
 
 void InplaceMaskedFillScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &outputs) {
-  auto value = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
+  auto value = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], value);
 }
@@ -37,7 +37,7 @@ bool InplaceMaskedFillScalarAscend::Launch(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &workspace,
                                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto value = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
+  auto value = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
 
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], value);
   return true;

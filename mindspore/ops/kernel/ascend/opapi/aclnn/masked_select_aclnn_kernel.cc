@@ -19,7 +19,7 @@
 #include <memory>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 
 namespace mindspore {
 namespace kernel {
@@ -39,7 +39,7 @@ bool MaskedSelectAclnnKernelMod::Launch(const std::vector<KernelTensor *> &input
 
   // Update output shape.
   outputs_shape_.resize(1);
-  outputs_shape_[kIndex0] = transform::UpdateOutputShape(all_tensor.get<2>());
+  outputs_shape_[kIndex0] = device::ascend::UpdateOutputShape(all_tensor.get<2>());
   return true;
 }
 

@@ -26,8 +26,8 @@
 #include "src/common/log_util.h"
 #include "src/common/common.h"
 #include "common/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 bool SaveOM(const void *model, size_t length, const std::string &file_path) { return true; }
 

@@ -19,16 +19,16 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore {
 namespace kernel {
 
 void IsCloseAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  rtol_ = static_cast<double>(transform::ConvertKernelTensor<float>(inputs[kIndex2]));
-  atol_ = static_cast<double>(transform::ConvertKernelTensor<float>(inputs[kIndex3]));
-  equal_nan_ = transform::ConvertKernelTensor<bool>(inputs[kIndex4]);
+  rtol_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex2]));
+  atol_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex3]));
+  equal_nan_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex4]);
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], rtol_, atol_, equal_nan_, outputs[kIndex0]);
 }

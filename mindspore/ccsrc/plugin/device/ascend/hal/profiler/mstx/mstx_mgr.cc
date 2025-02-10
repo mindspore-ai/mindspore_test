@@ -30,7 +30,7 @@
 #include "runtime/pipeline/task/device_task.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/device/kernel_runtime_manager.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace profiler {
@@ -160,7 +160,7 @@ void MstxDeviceTask::Run() {
 }
 
 MstxMgr::MstxMgr() {
-  std::string ascend_path = mindspore::transform::GetAscendPath();
+  std::string ascend_path = mindspore::device::ascend::GetAscendPath();
   LoadMstxApiSymbol(ascend_path);
 }
 

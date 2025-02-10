@@ -20,7 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #define private public
 #define protected public
 #include "backend/common/pass/graph_view_replace_pass.h"

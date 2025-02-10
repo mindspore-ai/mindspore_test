@@ -21,7 +21,7 @@
 #include <functional>
 #include "utils/ms_utils.h"
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 
 namespace mindspore {
 namespace kernel {
@@ -59,7 +59,7 @@ std::vector<size_t> AclnnKernelMod::GetLaunchIgnoredInputAddressIdx() const {
 AclnnKernelMod::~AclnnKernelMod() {
   (void)std::for_each(hash_cache_.begin(), hash_cache_.end(), [&](CacheTuple &item) {
     auto cache = std::get<kIndex2>(item);
-    cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
+    cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
   });
 }
 }  // namespace kernel

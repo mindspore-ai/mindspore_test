@@ -20,21 +20,23 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-using mindspore::transform::OptionMap;
+using mindspore::backend::ge_backend::OptionMap;
 
 std::string GetGraphName(const FuncGraphPtr &graph);
 // session options
-void GetGeSessionOptions(transform::SessionOptions *options);
+void GetGeSessionOptions(backend::ge_backend::SessionOptions *options);
 // global options, for GeInitialize
 void GetGeGlobalOptions(std::map<std::string, std::string> *ge_options);
 // ge options from user setting
 void SetPassthroughGeOptions(std::string option_level, OptionMap *options);
-bool AddDFGraph(const FuncGraphPtr &anf_graph, const transform::TensorOrderMap &init_inputs_map, bool export_air);
+bool AddDFGraph(const FuncGraphPtr &anf_graph, const backend::ge_backend::TensorOrderMap &init_inputs_map,
+                bool export_air);
 bool AddFakeGraph(const FuncGraphPtr &anf_graph);
 bool IsGeTrain();
 

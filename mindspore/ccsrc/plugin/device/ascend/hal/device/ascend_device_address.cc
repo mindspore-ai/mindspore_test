@@ -36,8 +36,8 @@
 #ifdef ENABLE_DEBUGGER
 #include "debug/tensor_load.h"
 #endif
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace py = pybind11;
 namespace mindspore {

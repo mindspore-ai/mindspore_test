@@ -20,8 +20,8 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -29,10 +29,10 @@ namespace kernel {
 
 void SliceExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
-  dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  start_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  end_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  step_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  start_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  end_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  step_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   shape_ = inputs[0]->GetShapeVector();
   int shape_size = SizeToLong(shape_.size());

@@ -20,9 +20,9 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace kernel {
@@ -53,19 +53,19 @@ void IncreFlashAttentionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor 
   MS_EXCEPTION_IF_NULL(inputs[kIndex2]);
   std::vector<KernelTensor *> value_vector{inputs[kIndex2]};
   MS_EXCEPTION_IF_NULL(inputs[kIndex15]);
-  auto num_heads = transform::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
+  auto num_heads = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex16]);
-  auto input_layout = transform::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
-  auto input_layout_str = transform::FASInputLayoutMode::ConvertEnumToString(input_layout);
+  auto input_layout = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
+  auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout);
   MS_EXCEPTION_IF_NULL(inputs[kIndex17]);
-  auto scale_value = transform::ConvertKernelTensor<float>(inputs[kIndex17]);
+  auto scale_value = device::ascend::ConvertKernelTensor<float>(inputs[kIndex17]);
   auto scale_value_d = static_cast<double>(scale_value);
   MS_EXCEPTION_IF_NULL(inputs[kIndex18]);
-  auto num_key_value_heads = transform::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
+  auto num_key_value_heads = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex19]);
-  auto block_size = transform::ConvertKernelTensor<int64_t>(inputs[kIndex19]);
+  auto block_size = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex19]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex20]);
-  auto inner_precise = transform::ConvertKernelTensor<int64_t>(inputs[kIndex20]);
+  auto inner_precise = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex20]);
 
   auto actual_seq_lengths_vector = ConvertActualSeqLengthsToVector(inputs[kIndex4]);
   // For interface aclnnIncreFlashAttentionV4, param inputs[kIndex5] (pse_shift) should follow param value_vector
@@ -85,19 +85,19 @@ bool IncreFlashAttentionAscend::Launch(const std::vector<KernelTensor *> &inputs
   MS_EXCEPTION_IF_NULL(inputs[kIndex2]);
   std::vector<KernelTensor *> value_vector{inputs[kIndex2]};
   MS_EXCEPTION_IF_NULL(inputs[kIndex15]);
-  auto num_heads = transform::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
+  auto num_heads = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex15]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex16]);
-  auto input_layout = transform::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
-  auto input_layout_str = transform::FASInputLayoutMode::ConvertEnumToString(input_layout);
+  auto input_layout = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex16]);
+  auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout);
   MS_EXCEPTION_IF_NULL(inputs[kIndex17]);
-  auto scale_value = transform::ConvertKernelTensor<float>(inputs[kIndex17]);
+  auto scale_value = device::ascend::ConvertKernelTensor<float>(inputs[kIndex17]);
   auto scale_value_d = static_cast<double>(scale_value);
   MS_EXCEPTION_IF_NULL(inputs[kIndex18]);
-  auto num_key_value_heads = transform::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
+  auto num_key_value_heads = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex18]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex19]);
-  auto block_size = transform::ConvertKernelTensor<int64_t>(inputs[kIndex19]);
+  auto block_size = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex19]);
   MS_EXCEPTION_IF_NULL(inputs[kIndex20]);
-  auto inner_precise = transform::ConvertKernelTensor<int64_t>(inputs[kIndex20]);
+  auto inner_precise = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex20]);
 
   auto actual_seq_lengths_vector = ConvertActualSeqLengthsToVector(inputs[kIndex4]);
   auto actual_seq_lengths_vector_pair = std::make_pair(actual_seq_lengths_vector, true);

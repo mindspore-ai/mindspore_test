@@ -18,19 +18,19 @@
 #include "ir/tensor.h"
 #include "mindapi/base/types.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
 
 int64_t InplaceScatterValueReduceAscend::GetReduce(const std::vector<KernelTensor *> &inputs) {
-  auto reduce = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto reduce = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   // 0 means 'none' (replace) in aclnn, but should use scatter_ without reduce instead of using 'none'
   if ((reduce != Reduce::ADD) && (reduce != Reduce::MULTIPLY)) {
     MS_EXCEPTION(ValueError) << "For InplaceScatterValueReduce, reduce must be either 'add' or 'multiply', but got: '"
-                             << mindspore::transform::ScatterReduceMode::ConvertEnumToString(reduce) << "'.";
+                             << mindspore::device::ascend::ScatterReduceMode::ConvertEnumToString(reduce) << "'.";
   }
   return reduce;
 }

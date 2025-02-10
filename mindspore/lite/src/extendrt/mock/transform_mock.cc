@@ -16,10 +16,10 @@
 #ifndef TRANSFORM_MOCK_H
 #define TRANSFORM_MOCK_H
 #include <memory>
-#include "transform/graph_ir/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "graph/operator.h"
-#include "transform/graph_ir/op_adapter_desc.h"
-#include "transform/graph_ir/op_adapter.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
 
 namespace mindspore {
 namespace transform {

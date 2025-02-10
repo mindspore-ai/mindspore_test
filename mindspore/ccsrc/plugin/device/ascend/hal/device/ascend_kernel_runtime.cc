@@ -24,7 +24,7 @@
 #include "include/common/utils/signal_util.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "utils/ms_context.h"
-#include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
@@ -53,10 +53,10 @@
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif
 #include "backend/common/session/kernel_build_client.h"
-#include "transform/acl_ir/op_api_exec.h"
+#include "plugin/device/ascend/acl_ir/op_api_exec.h"
 #include "kernel/framework_utils.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 using std::vector;
 constexpr uint32_t kProfilingMaxTaskIdInStream = 65531;
@@ -271,7 +271,7 @@ void AscendKernelRuntime::ReleaseDeviceRes() {
 
   (void)CALL_ASCEND_API(aclrtSetExceptionInfoCallback, nullptr);
 
-  transform::AclnnFinalize();
+  device::ascend::AclnnFinalize();
   (void)ResetDevice(device_id);
   current_graph_ = nullptr;
   initialized_ = false;

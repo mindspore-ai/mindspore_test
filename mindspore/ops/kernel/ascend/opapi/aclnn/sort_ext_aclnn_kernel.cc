@@ -20,7 +20,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -28,9 +28,9 @@ namespace kernel {
 
 void SortExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
-  dim = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  descending = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
-  stable = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  dim = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  descending = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  stable = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
   GetWorkspaceForResize(inputs[kIndex0], stable, dim, descending, outputs[kIndex0], outputs[kIndex1]);
 }
 

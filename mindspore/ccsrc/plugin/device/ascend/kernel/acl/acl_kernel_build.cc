@@ -19,7 +19,6 @@
 #include "plugin/device/ascend/kernel/acl/acl_kernel/custom_op_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "transform/acl_ir/acl_helper.h"
 #include "kernel/framework_utils.h"
 #include "utils/trace_base.h"
 

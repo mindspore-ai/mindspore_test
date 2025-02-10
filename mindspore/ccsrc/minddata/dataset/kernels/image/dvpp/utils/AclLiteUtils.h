@@ -30,8 +30,8 @@
 
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteError.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteType.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 /**
  * @brief calculate RGB 24bits image size

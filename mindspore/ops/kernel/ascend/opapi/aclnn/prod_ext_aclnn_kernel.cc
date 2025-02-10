@@ -20,8 +20,8 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
@@ -31,7 +31,7 @@ void ProdExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   const auto axis_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
   if (axis_opt.has_value() && axis_opt.value().size() == 1) {
     axis_ = axis_opt.value()[0];
-    keep_dims_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+    keep_dims_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
     is_all_reduce_ = false;
   } else {
     is_all_reduce_ = true;

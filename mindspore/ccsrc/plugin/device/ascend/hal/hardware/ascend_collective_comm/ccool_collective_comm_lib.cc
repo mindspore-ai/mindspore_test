@@ -19,7 +19,7 @@
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/leaper_trans.h"
 #include "include/common/factory/ms_factory.h"
 #include "include/backend/debug/tensor_data.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 namespace mindspore {
 namespace device {
 namespace ascend {

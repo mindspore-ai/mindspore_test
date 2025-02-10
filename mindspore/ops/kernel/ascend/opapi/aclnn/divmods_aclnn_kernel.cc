@@ -27,7 +27,7 @@ void DivModsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   if (mode_opt.has_value()) {
     mode_ = mode_opt.value();
   }
-  other_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  other_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   GetWorkspaceForResize(inputs[kIndex0], other_, mode_, outputs[kIndex0]);
 }
 

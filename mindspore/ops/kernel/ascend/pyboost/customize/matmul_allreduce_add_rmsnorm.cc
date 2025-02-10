@@ -16,7 +16,7 @@
 #include <string>
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "kernel/ascend/pyboost/customize/matmul_allreduce_add_rmsnorm.h"
@@ -42,7 +42,7 @@ void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &o
   auto stream_mode_imm = GetValue<int64_t>(stream_mode);
 
   // transform reduction enum value to corresponding value
-  auto reduction_value = transform::GEReduction::ConvertEnumToString(GetValue<int64_t>(reduction));
+  auto reduction_value = device::ascend::GEReduction::ConvertEnumToString(GetValue<int64_t>(reduction));
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x1_tensor, x2_tensor, bias_tensor,
                                 residual_tensor, gamma_tensor);

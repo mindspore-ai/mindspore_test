@@ -21,8 +21,8 @@
 #include "mindspore/ccsrc/runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_ascend_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "acl/acl.h"
 
 #define TMP_LOG(level) MS_LOG(level) << GetName() << ": "

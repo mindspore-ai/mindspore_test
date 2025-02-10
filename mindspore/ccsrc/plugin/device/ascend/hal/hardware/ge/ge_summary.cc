@@ -17,6 +17,7 @@
 #include "plugin/device/ascend/hal/hardware/ge/ge_summary.h"
 #include <vector>
 #include <string>
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace device {
@@ -124,10 +125,10 @@ std::string GraphSummary::ToString() const {
   return ss.str();
 }
 
-std::string GraphSummary::TransGeDtypeToString(const transform::GeDataType dtype) const {
+std::string GraphSummary::TransGeDtypeToString(const backend::ge_backend::GeDataType dtype) const {
   std::string dtype_str = "";
-  if (transform::ge_dtype_str_map.find(dtype) != transform::ge_dtype_str_map.end()) {
-    dtype_str = transform::ge_dtype_str_map[dtype];
+  if (device::ascend::ge_dtype_str_map.find(dtype) != device::ascend::ge_dtype_str_map.end()) {
+    dtype_str = device::ascend::ge_dtype_str_map[dtype];
   }
   return dtype_str;
 }

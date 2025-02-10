@@ -21,7 +21,7 @@
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/opapi/aclnn/matmul_reduce_scatter_aclnn_kernel.h"
-#include "mindspore/ccsrc/transform/acl_ir/op_api_util.h"
+#include "plugin/device/ascend/acl_ir/op_api_util.h"
 #include "mindspore/ops/infer/ops_func_impl/matmul_reduce_scatter.h"
 
 namespace mindspore {
@@ -34,7 +34,7 @@ void MatmulReduceScatterAscend::GetWorkSpaceInfo(const std::vector<KernelTensor 
   input_ = std::pair<KernelTensor *, bool>(inputs[mindspore::ops::kMatmulReduceScatterInputInputIndex], trans_input_);
   x2_ = std::pair<KernelTensor *, bool>(inputs[mindspore::ops::kMatmulReduceScatterInputX2Index], trans_x2_);
   group_ = inputs[mindspore::ops::kMatmulReduceScatterInputGroupIndex]->GetValueWithCheck<std::string>();
-  hccl_inner_comm_name_ = mindspore::transform::OpApiUtil::GetCommName(group_);
+  hccl_inner_comm_name_ = mindspore::device::ascend::OpApiUtil::GetCommName(group_);
   auto reduction = static_cast<Reduction>(
     inputs[mindspore::ops::kMatmulReduceScatterInputReduceOpIndex]->GetValueWithCheck<int64_t>());
   std::unordered_map<Reduction, std::string> reduction_map = {{Reduction::REDUCTION_SUM, "sum"}};

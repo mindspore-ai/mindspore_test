@@ -20,8 +20,8 @@
 
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 
 namespace mindspore {
 namespace device {

@@ -19,7 +19,7 @@
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace kernel {
@@ -39,7 +39,7 @@ tensor::BaseTensorPtr InplaceScatterSrcReduceAscendCustomize(const std::shared_p
   // 0 means 'none' (replace) in aclnn, but should use scatter_ without reduce instead of using 'none'
   if ((reduce_imm != Reduce::ADD) && (reduce_imm != Reduce::MULTIPLY)) {
     MS_EXCEPTION(ValueError) << "For InplaceScatterSrcReduce, reduce must be either 'add' or 'multiply', but got: '"
-                             << mindspore::transform::ScatterReduceMode::ConvertEnumToString(reduce_imm) << "'.";
+                             << mindspore::device::ascend::ScatterReduceMode::ConvertEnumToString(reduce_imm) << "'.";
   }
 
   // Async

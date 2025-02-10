@@ -23,12 +23,12 @@
 #include "ops/base_operator.h"
 #include "kernel/kernel.h"
 #include "runtime/pynative/op_runtime_info.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "plugin/device/ascend/acl_ir/acl_convert.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+using TensorParams = device::ascend::TensorParams;
 
 class AclKernelMod : public KernelMod {
  public:
@@ -76,7 +76,7 @@ class AclKernelMod : public KernelMod {
   bool is_dynamic_{true};
 
   std::vector<std::string> ms_attr_str_;
-  transform::AclConverterPtr converter_;
+  device::ascend::AclConverterPtr converter_;
   std::vector<TensorParams> output_params_;
 
   std::vector<TensorParams> input_params_;

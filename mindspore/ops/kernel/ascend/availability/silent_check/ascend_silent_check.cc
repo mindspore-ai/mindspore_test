@@ -48,7 +48,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "transform/graph_ir/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
@@ -65,10 +65,10 @@ using mindspore::kernel::pyboost::PyBoostUtils;
 using mindspore::kernel::pyboost::SilentCheckV2;
 using mindspore::kernel::pyboost::Square;
 
-using transform::_aclCreateTensor;
-using transform::aclOpExecutor;
-using transform::aclTensor;
-using transform::GetOpApiFunc;
+using device::ascend::_aclCreateTensor;
+using device::ascend::aclOpExecutor;
+using device::ascend::aclTensor;
+using device::ascend::GetOpApiFunc;
 
 namespace {
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
@@ -164,7 +164,7 @@ int GetNpuAsdDetectValue() {
 
 bool HasApiSilentCheckV3() {
   static bool has_silent_check_v3 = []() {
-    auto silent_check_v3 = transform::GetOpApiFunc(kNameSilentCheckV3);
+    auto silent_check_v3 = device::ascend::GetOpApiFunc(kNameSilentCheckV3);
     bool has_v3_api = (silent_check_v3 != nullptr);
     if (!has_v3_api) {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Do not has " << kNameSilentCheckV3 << " api, use " << kNameSilentCheckV2

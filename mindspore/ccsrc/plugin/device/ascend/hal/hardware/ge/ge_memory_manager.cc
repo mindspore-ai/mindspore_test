@@ -26,7 +26,7 @@ GEMemoryManager &GEMemoryManager::Instance() {
   return instance;
 }
 
-void GEMemoryManager::InitGEMemory(const transform::RunOptions &run_options, size_t workspace_memory_size,
+void GEMemoryManager::InitGEMemory(const backend::ge_backend::RunOptions &run_options, size_t workspace_memory_size,
                                    size_t fixed_memory_size, size_t const_memory_size, bool is_refreshable,
                                    size_t stream_id) {
   auto graph_name = run_options.name;

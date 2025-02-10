@@ -20,7 +20,6 @@
 #include <utility>
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
-#include "include/transform/graph_ir/utils.h"
 #include "plugin/device/ascend/hal/device/tensorprint_utils.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
@@ -28,14 +27,15 @@
 #include "plugin/device/ascend/hal/device/tensordump_utils.h"
 #include "plugin/device/ascend/hal/device/tensorreport_utils.h"
 #include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
 std::mutex g_tsd_mutex;
+constexpr auto kPrintOpName = "Print";
 }  // namespace
 
 void AscendDeprecatedInterface::DumpProfileParallelStrategy(const FuncGraphPtr &func_graph) {

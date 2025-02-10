@@ -41,8 +41,8 @@
 #include "minddata/dataset/kernels/image/sharpness_op.h"
 #include "minddata/dataset/kernels/image/solarize_op.h"
 #include "minddata/dataset/kernels/data/data_utils.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 
 #include "acldvppop/acldvpp_adjust_brightness.h"
 #include "acldvppop/acldvpp_adjust_contrast.h"

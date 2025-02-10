@@ -15,13 +15,13 @@
  */
 
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
-#include "plugin/device/ascend/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/ascend/hal/device/ascend_two_pointer_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_dynamic_mem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "utils/ms_utils.h"
 #include "runtime/runtime_conf/runtime_conf.h"
 

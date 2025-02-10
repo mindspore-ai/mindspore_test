@@ -17,9 +17,9 @@
 #include "src/litert/kernel/ascend/src/model_infer.h"
 #include "common/log_adapter.h"
 #include "src/litert/kernel/ascend/src/acl_mem_manager.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {

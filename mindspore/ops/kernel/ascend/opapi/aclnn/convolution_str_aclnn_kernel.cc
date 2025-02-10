@@ -22,10 +22,10 @@
 #include <unordered_map>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "plugin/device/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore {
@@ -48,14 +48,14 @@ void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
   expand_indices_.clear();
   auto spatial_len = inputs[kIndex1]->GetShapeVector().size() - kIndex2;
 
-  stride_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
+  stride_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
   ExpandParamIfNeeded(&stride_, spatial_len);
-  padding_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
-  dilation_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
+  padding_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  dilation_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
   ExpandParamIfNeeded(&dilation_, spatial_len);
-  transposed_ = transform::ConvertKernelTensor<bool>(inputs[kIndex6]);
-  output_padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex7]);
-  groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex8]);
+  transposed_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex6]);
+  output_padding_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex7]);
+  groups_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex8]);
 
   auto &input_sizes = inputs[kIndex0]->GetShape()->GetShapeVector();
   auto &weight_sizes = inputs[kIndex1]->GetShape()->GetShapeVector();
