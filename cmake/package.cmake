@@ -124,8 +124,8 @@ if(ENABLE_MINDDATA)
       DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.so.4.5 COMPONENT mindspore)
     install(FILES ${opencv_LIBPATH}/libopencv_imgproc.so.4.5.2
       DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.so.4.5 COMPONENT mindspore)
-    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.so.8.0.0
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.so.8 COMPONENT mindspore)
+    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.so.10.0.0
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.so.10 COMPONENT mindspore)
 
     install(FILES ${icu4c_LIBPATH}/libicuuc.so.69.1
       DESTINATION ${INSTALL_LIB_DIR} RENAME libicuuc.so.69 COMPONENT mindspore)
