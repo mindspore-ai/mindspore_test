@@ -441,8 +441,8 @@ AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract
     return nullptr;
   }
   auto abs = abstract_wrapper->abstract();
-  MS_LOG(WARNING) << "can't find the AnfNode of by wrapper(" << abstract_wrapper.get() << ") abstract is: (" << abs
-                  << ") " << abs->ToString();
+  MS_LOG(INFO) << "Can't find the AnfNode by wrapper(" << abstract_wrapper.get() << ") abstract is: (" << abs << ") "
+               << abs->ToString();
   PrintConstantAbstract(abs);
 
   // Build ValueNode for constant abstract.

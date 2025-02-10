@@ -580,7 +580,7 @@ bool GraphBuilder::DoGetYieldFromIter(const Instr &instr) {
   if (iterable != nullptr && !PyIter_Check(iterable)) {
     DoGetIter(instr);
   } else {
-    MS_LOG(WARNING) << "not support yield iterator yet!";
+    MS_LOG(INFO) << "not support yield iterator yet!";
     return false;
   }
   return true;
@@ -615,7 +615,7 @@ bool GraphBuilder::DoYieldValue(const Instr &instr) {
   result->AddInput(value);
   const int YIELD_COUNT_THRESHOLD = 1000;
   if (result->getInputs().size() % YIELD_COUNT_THRESHOLD == 0) {
-    MS_LOG(WARNING) << "yield too many value: " << result->getInputs().size();
+    MS_LOG(INFO) << "yield too many value: " << result->getInputs().size();
   }
   return true;
 }
@@ -1973,7 +1973,7 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
   auto func_iter = bytecode_meth_map_.find(instr.op());
   if (func_iter == bytecode_meth_map_.end()) {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported);
-    MS_LOG(WARNING) << "ByteCode " << Opcode(instr.op()).name() << " is not supported yet.";
+    MS_LOG(INFO) << "ByteCode " << Opcode(instr.op()).name() << " is not supported yet.";
     return false;
   }
   MS_LOG(DEBUG) << "Do bytecode " << instr.ToString();
@@ -1990,7 +1990,7 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
 
   if (!infer_succ && graph_->GetStopTraceBci() == -1) {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceReasonUnknown);
-    MS_LOG(WARNING) << "Set Unknown Reason to " << instr.ToString() << " at bci " << cur_bci_;
+    MS_LOG(INFO) << "Set Unknown Reason to " << instr.ToString() << " at bci " << cur_bci_;
   }
 
   if (instr.op() == RETURN_VALUE) {
