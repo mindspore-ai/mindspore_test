@@ -185,7 +185,9 @@ bool MedianGradCpuKernelMod::GlobalMedianGradCompute(const std::vector<KernelTen
       *(x_grad + i) = is_equal ? static_cast<T2>(*y_grad / count_repeat) : 0;
     }
   };
-  CPUKernelUtils::ParallelFor(sharder_mediangrad, input1_num_elements_);
+  if (input1_num_elements_ > 0) {
+    CPUKernelUtils::ParallelFor(sharder_mediangrad, input1_num_elements_);
+  }
   return true;
 }
 
@@ -241,7 +243,9 @@ bool MedianGradCpuKernelMod::MedianGradCompute(const std::vector<KernelTensor *>
       *(x_grad + update_element_pos) = static_cast<T2>(*(y_grad + nth_element));
     }
   };
-  CPUKernelUtils::ParallelFor(sharder_mediangrad, input0_num_elements_);
+  if (input0_num_elements_ > 0) {
+    CPUKernelUtils::ParallelFor(sharder_mediangrad, input0_num_elements_);
+  }
   return true;
 }
 
