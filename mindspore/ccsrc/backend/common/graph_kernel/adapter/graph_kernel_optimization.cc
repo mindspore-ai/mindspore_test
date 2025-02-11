@@ -66,8 +66,6 @@
 #include "backend/common/graph_kernel/convert_call_to_prim.h"
 #include "backend/common/graph_kernel/core/graph_kernel_op_combiner.h"
 #include "backend/common/graph_kernel/set_infershape_functor.h"
-#include "backend/common/graph_kernel/recognize_softmax_grad_ext.h"
-#include "backend/common/graph_kernel/convert_custom_for_ge.h"
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
 #include "backend/common/graph_kernel/convert_bfloat16.h"
 #include "backend/common/graph_kernel/deal_with_side_effect.h"
@@ -130,9 +128,6 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
 
   // Eliminate the common nodes that generated in SpreadUpdateState
   pm->Add(std::make_shared<GraphKernelCSE>(), OptLevel_1);
-
-  // Recognize ops that will be fused by GE
-  pm->Add(std::make_shared<RecognizeSoftmaxGradExt>(), OptLevel_1, is_ge);
   return pm;
 }
 
@@ -170,13 +165,13 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt1() const {
   pm->Add(std::make_shared<CastMatmulFusion>(), OptLevel_2, is_ascend);
 
   // Reorder Cast and Type-insensitive node
-  pm->Add(std::make_shared<ReorderOps>(), OptLevel_2, !is_ge);
+  pm->Add(std::make_shared<ReorderOps>(), OptLevel_2);
 
   // normalize the Reduce axis
   pm->Add(std::make_shared<AxisNormalizer>(), OptLevel_1);
 
   // Cast the input of ReduceSum from float16 to float32 for higher precision
-  pm->Add(std::make_shared<RaiseReductionPrecision>(), OptLevel_2, !is_ge);
+  pm->Add(std::make_shared<RaiseReductionPrecision>(), OptLevel_2);
 
   // Insert PadAkg and UnPadAkg Ops for MatMul
   pm->Add(std::make_shared<InsertPadOps>(), OptLevel_1, is_gpu);
@@ -227,7 +222,7 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt2() const {
   pm->Add(std::make_shared<GraphKernelRecompute>(), recompute_lv);
 
   // Enable atomic add
-  pm->Add(std::make_shared<AtomicCleanInserter>(), OptLevel_2, is_gpu || (is_ascend && !is_ge && !is_dvm));
+  pm->Add(std::make_shared<AtomicCleanInserter>(), OptLevel_2, is_gpu || (is_ascend && !is_dvm));
 
   // Enable atomic add for stitch nodes.
   auto level = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_stitch_fusion);
@@ -286,10 +281,9 @@ PassManagerPtr GraphKernelOptimizer::Build() const {
   pm->Add(std::make_shared<SymbolEngineBuilder>(true), enable_dyn_level, is_cpu || is_gpu);
   pm->Add(std::make_shared<GraphKernelSplitterWithPy>(true), enable_dyn_level, is_gpu);
 #ifdef ENABLE_AKG
-  pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_ge && !is_dvm);
+  pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_dvm);
 #endif
-  pm->Add(std::make_shared<ConvertCustomForGE>(), OptLevel_1, is_ge);
-  pm->Add(std::make_shared<GeneratedDependElimination>(), OptLevel_2, is_gpu || (is_ascend && !is_ge && !is_dvm));
+  pm->Add(std::make_shared<GeneratedDependElimination>(), OptLevel_2, is_gpu || (is_ascend && !is_dvm));
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1, !is_dvm);
   pm->Add(std::make_shared<MergeOutputForUpdateState>(), OptLevel_1, !is_dvm);
   return pm;
@@ -333,12 +327,7 @@ void GraphKernelOptimizer::Run(const KernelGraphPtr &kernel_graph) {
   is_gpu = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice);
   is_ascend = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
   is_cpu = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice);
-  is_ge = (is_ascend && (context_ptr->backend_policy() == "ge") && kernel_graph->is_graph_run_mode());
   is_dvm = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
-  auto cb = Callback::Instance();
-  if (is_ge) {
-    Callback::RegImpl(std::make_shared<CallbackImplWithInferShape>());
-  }
 
   auto parent_graph = kernel_graph->parent_graph().lock();
   FuncGraphManagerPtr parent_manager = nullptr;
@@ -364,11 +353,6 @@ void GraphKernelOptimizer::Run(const KernelGraphPtr &kernel_graph) {
 
   if (parent_graph != nullptr) {
     parent_graph->set_manager(parent_manager);
-  }
-
-  if (is_ge) {
-    // need recover the original call back instance for other sub graph processing
-    Callback::RegImpl(cb);
   }
 }
 

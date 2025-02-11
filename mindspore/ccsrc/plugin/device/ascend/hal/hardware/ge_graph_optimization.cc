@@ -90,14 +90,6 @@ void GEGraphOptimization::OptimizeGEGraph(const KernelGraphPtr &graph, std::set<
   MarkRefGraph(graph);
   opt::GEBackendOptimizeACL(graph);
   opt::GEBackendOptimization(graph);
-  if (const auto &gk = graphkernel::GraphKernelFlags::GetInstance(); gk.IsEnableGraphKernel()) {
-    if (gk.kernel_generator != "DVM") {
-      graphkernel::GraphKernelOptimize(graph);
-      graph->SetExecOrderByDefault();
-    } else {
-      MS_LOG(WARNING) << "In ge graph, GraphKernel fusion is not supported for the DVM kernel_generator.";
-    }
-  }
   for (auto &child_graph : graph->child_graph_order()) {
     if (child_graph.lock()->has_flag(kFlagGeKernel)) {
       continue;
