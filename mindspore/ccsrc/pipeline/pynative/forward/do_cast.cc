@@ -226,8 +226,8 @@ void CastOperation::DoSignatureCast(const FrontendOpRunInfoPtr &op_run_info,
       is_same_type = (arg_type_id == it->second.first);
     }
     if (sig == SignatureEnumRW::kRWWrite && arg_type_id != kTypeUnknown && !is_same_type) {
-      prim::RaiseExceptionForConvertRefDtype(op_run_info->op_grad_info->op_prim, TypeIdToString(arg_type_id),
-                                             TypeIdToString(it->second.first), i);
+      MS_EXCEPTION(TypeError) << prim::ErrorMessageForConvertRefDtype(
+        op_run_info->op_grad_info->op_prim, TypeIdToString(arg_type_id), TypeIdToString(it->second.first), i);
     }
     if (is_same_type) {
       MS_LOG(DEBUG) << "Get same dtype";

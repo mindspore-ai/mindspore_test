@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
 """ test graph syntax """
 import pytest
 import torch
+import numpy as np
 import mindspore as ms
+from mindspore.ops.auto_generate.gen_ops_prim import embedding_op
 from tests.mark_utils import arg_mark
 
 
@@ -162,3 +164,20 @@ def test_logical_xor_wrong_input_type():
     with pytest.raises(TypeError) as raise_info:
         func(1, ms.Tensor(2))
     assert "Failed calling LogicalXor" in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_signature_default_args():
+    """
+    Feature: Do signature.
+    Description: Test DoSignature with default arguments.
+    Expectation: No exception.
+    """
+    @ms.jit
+    def func(x, weight):
+        return embedding_op(x, weight, norm_type=2.0)
+
+    x = ms.Tensor([[1, 0, 1, 1], [0, 0, 1, 0]])
+    weight = ms.Parameter(np.random.randn(3, 3).astype(np.float32))
+    out = func(x, weight)
+    assert out.shape == (2, 4, 3)
