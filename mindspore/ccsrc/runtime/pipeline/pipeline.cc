@@ -16,7 +16,6 @@
 #include "runtime/pipeline/pipeline.h"
 #include <memory>
 #include "runtime/pipeline/async_rqueue.h"
-#include "runtime/pynative/lazy_fusion_kernel.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {
@@ -37,7 +36,6 @@ void Pipeline::WaitAll() {
   GilReleaseWithCheck gil_release;
   frontend_stage_->Wait();
   bprop_stage_->Wait();
-  FlushLazyFusion();
   backend_stage_->Wait();
   launch_stage_->Wait();
 }
