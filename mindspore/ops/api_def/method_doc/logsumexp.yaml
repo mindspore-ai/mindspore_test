@@ -1,0 +1,5 @@
+logsumexp:
+  description: |
+    logsumexp(dim, keepdim=False) -> Tensor
+
+    For details, please refer to :func:`mindspore.ops.logsumexp`.

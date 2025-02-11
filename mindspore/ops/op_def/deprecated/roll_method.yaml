@@ -1,4 +1,4 @@
-#operator roll
+#deprecated operator bincount
 roll:
   args:
     input:
@@ -15,5 +15,3 @@ roll:
   returns:
     output:
       dtype: tensor
-  dispatch:
-    enable: True

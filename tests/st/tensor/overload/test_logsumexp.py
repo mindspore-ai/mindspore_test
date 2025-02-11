@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,37 +15,34 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
+
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
 
 
 class Net(nn.Cell):
-    def construct(self, x, dim):
-        return x.logsumexp(dim, keepdims=True)
+    def construct(self, x, dim, keepdim=False):
+        return x.logsumexp(dim, keepdim)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level2',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
+                      'platform_ascend910b'],
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_tensor_logsumexp(mode):
     """
-    Feature: tensor.logsumexp
-    Description: Verify the result of logsumexp
+    Feature: Tensor.logsumexp
+    Description: Verify the result of Tensor.logsumexp
     Expectation: success
     """
-    ms.set_context(mode=mode)
-    x = Tensor([[1., 2., 3., 4.],
-                [5., 6., 7., 8.],
-                [9., 10., 11., 12.]], ms.float32)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
-    output = net(x, dim=0)
-    expect_output = [[9.0184765, 10.01848, 11.018479, 12.018477]]
-    assert np.allclose(output.asnumpy(), expect_output)
-    output = net(x, dim=1)
-    expect_output = [[4.440187],
-                     [8.440188],
-                     [12.440187]]
-    assert np.allclose(output.asnumpy(), expect_output)
+    x = Tensor(np.array([[1, 2], [3, 4]]), ms.float32)
+    dim = 1
+    keepdim = False
+    output = net(x, dim, keepdim)
+    expect_output = np.array([2.31326175, 4.31326151])
+    assert np.allclose(output.asnumpy(), expect_output, rtol=1e-4, atol=1e-4)

@@ -38,7 +38,7 @@ from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_s
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
-from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl, cross_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import cross_impl
 from mindspore.ops.auto_generate.pyboost_inner_prim import reduce_max_impl, reduce_min_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
@@ -51,7 +51,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, muls, sin, sinc,
                                          log, log1p, neg, not_equal, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
-                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext, roll,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
                                          frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op, cdist,
                                          addbmm_op, addmm_op, grouped_matmul_v2, transpose_ext, grouped_matmul_v4)
@@ -7186,7 +7186,7 @@ def logcumsumexp(input, axis):
     return cumulative_logsumexp_(input, Tensor(axis))
 
 
-def logsumexp(input, axis, keep_dims=False):
+def logsumexp(input, dim, keepdim=False):
     r"""
     Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
     then calculate logarithm of the sum.
@@ -7197,19 +7197,19 @@ def logsumexp(input, axis, keep_dims=False):
 
     Args:
         input (Tensor): The input tensor. With float16 or float32 data type.
-        axis (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
-        keep_dims (bool, optional): If True, keep these reduced dimensions and the length is 1.
+        dim (Union[int, tuple(int), list(int)]): The dimensions to reduce. Only constant value is allowed.
+        keepdim (bool, optional): If True, keep these reduced dimensions and the length is 1.
             If ``False`` , don't keep these dimensions.
             Default : ``False`` .
 
     Returns:
         Tensor, has the same dtype as the `input`.
 
-        - If axis is (), and keep_dims is False,
+        - If dim is (), and keepdim is False,
           the output is a 0-D tensor representing the sum of all elements in the input tensor.
-        - If axis is int, set as 2, and keep_dims is False,
+        - If dim is int, set as 2, and keepdim is False,
           the shape of output is :math:`(input_1, input_3, ..., input_R)`.
-        - If axis is tuple(int), set as (2, 3), and keep_dims is False,
+        - If dim is tuple(int), set as (2, 3), and keepdim is False,
           the shape of output is :math:`(input_1, input_4, ..., input_R)`.
 
     Supported Platforms:
@@ -7219,18 +7219,16 @@ def logsumexp(input, axis, keep_dims=False):
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
         >>> x = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-        >>> output = ops.logsumexp(x, 1, keep_dims=True)
+        >>> output = ops.logsumexp(x, 1, keepdim=True)
         >>> print(output.shape)
         (3, 1, 5, 6)
     """
-    _reduce_sum = _get_cache_prim(P.ReduceSum)(keep_dims)
-
-    input_max = ops.ReduceMax(keep_dims=True)(input, axis)
+    input_max = ops.ReduceMax(keep_dims=True)(input, dim)
     input_exp = tensor_exp(input - input_max)
-    input_sumexp = _reduce_sum(input_exp, axis)
+    input_sumexp = ops.sum(input_exp, dim, keepdim)
     input_logsumexp = log_(input_sumexp)
-    if not keep_dims:
-        input_max = input_max.squeeze(axis=axis)
+    if not keepdim:
+        input_max = input_max.squeeze(dim)
     return input_logsumexp + input_max
 
 
@@ -9826,42 +9824,6 @@ def rot90(input, k, dims):
         op = P.ReverseV2(axis=[dims[1]])
         out = op(output)
     return out
-
-
-def roll(input, shifts, dims=None):
-    """
-    Rolls the elements of a tensor along an axis.
-
-    Args:
-        input (Tensor): Input tensor.
-        shifts (Union[list(int), tuple(int), int]): Specifies the number of places by which elements are shifted
-            positively (towards larger indices) along the specified dimension. Negative shifts will roll the elements
-            in the opposite direction.
-        dims (Union[list(int), tuple(int), int], optional): Specifies the dimension indexes of shape to be rolled.
-            Default: ``None``. If dims is None, the Tensor will be flattened before rolling and then restored to the
-            original shape.
-
-    Returns:
-        Tensor, has the same shape and type as `input`.
-
-    Raises:
-        TypeError: If `shifts` is not an int, a tuple or a list.
-        TypeError: If `dims` is not an int, a tuple or a list.
-
-    Supported Platforms:
-        ``GPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([0, 1, 2, 3, 4]).astype(np.float32))
-        >>> output = ops.roll(input, shifts=2, dims=0)
-        >>> print(output)
-        [3. 4. 0. 1. 2.]
-    """
-    return roll_impl(input, shifts, dims)
 
 
 def xdivy(x, y):

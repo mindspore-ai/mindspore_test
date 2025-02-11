@@ -73,7 +73,7 @@ def forward_expect_func(inputx, return_inverse=False, return_counts=False, dim=N
 
 @test_utils.run_with_cell
 def unique_consecutive_forward_func(inputx, return_inverse=False, return_counts=False, dim=None):
-    return unique_consecutive(inputx, return_inverse, return_counts, dim)
+    return unique_consecutive(inputx, return_inverse=return_inverse, return_counts=return_counts, dim=dim)
 
 @test_utils.run_with_cell
 def unique_consecutive_forward_func_dynamic(inputx, dim=1):

@@ -1,0 +1,16 @@
+#operator logsumexp
+logsumexp:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: tuple[int]
+            type_cast: int, list[int]
+        keepdim:
+            dtype: bool
+            default: False
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: LogSumExp

@@ -1523,16 +1523,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('logcumsumexp')(self, axis)
 
-    def logsumexp(self, axis, keepdims=False):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logsumexp`.
-
-        Note:
-            The input parameter `keepdims` of the inputs has the same meaning as the input parameter `keep_dims` in
-            :func:`mindspore.ops.logsumexp`.
-        """
-        return tensor_operator_registry.get('logsumexp')(self, axis, keepdims)
-
     def logdet(self):
         r"""
         For details, please refer to :func:`mindspore.ops.logdet`.
@@ -1667,12 +1657,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         reshape_op = tensor_operator_registry.get('reshape')
         return reshape_op(self, (-1,))
-
-    def roll(self, shifts, dims):
-        """
-        For details, please refer to :func:`mindspore.ops.roll`.
-        """
-        return tensor_operator_registry.get('roll')(shifts, dims)(self)
 
     def rot90(self, k, dims):
         r"""
@@ -3180,14 +3164,15 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('unsorted_segment_prod')(self, segment_ids, num_segments)
 
-    def unique_consecutive(self, return_idx=False, return_counts=False, axis=None):
+    def unique_consecutive(self, return_inverse=False, return_counts=False, dim=None):
         """
         For details, please refer to :func:`mindspore.ops.unique_consecutive`.
         """
-        output, idx, counts = tensor_operator_registry.get("unique_consecutive")(return_idx, return_counts, axis)(self)
-        if return_idx and return_counts:
+        output, idx, counts = tensor_operator_registry.get("unique_consecutive")\
+            (return_inverse, return_counts, dim)(self)
+        if return_inverse and return_counts:
             return output, idx, counts
-        if return_idx:
+        if return_inverse:
             return output, idx
         if return_counts:
             return output, counts

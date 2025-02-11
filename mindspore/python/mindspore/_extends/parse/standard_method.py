@@ -1274,12 +1274,12 @@ def logcumsumexp(input, axis):
     return F.logcumsumexp(input, axis)
 
 
-def logsumexp(input, axis, keepdims=False):
+def logsumexp(input, dim, keepdim=False):
     """
     Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
     then calculate logarithm of the sum.
     """
-    return F.logsumexp(input, axis, keepdims)
+    return F.logsumexp(input, dim, keepdim)
 
 
 def round_(x):
@@ -1289,12 +1289,11 @@ def round_(x):
     return F.round(x)
 
 
-def roll(x, shifts, dims):
+def roll(x, shifts, dims=None):
     """
     Rolls the elements of a tensor along an axis.
     """
-    dims = dims if dims is not None else 0
-    return F.Roll(shifts, dims)(x)
+    return F.roll(x, shifts, dims)
 
 
 def rot90(x, k, dims):
@@ -1362,11 +1361,11 @@ def remainder(input, divisor):
     return F.remainder(input, divisor)
 
 
-def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
     """
     Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
     """
-    return F.unique_consecutive(input, return_idx, return_counts, axis)
+    return F.unique_consecutive(input, return_inverse, return_counts, dim)
 
 
 def unique_with_pad(x, pad_num):
