@@ -2827,8 +2827,7 @@ def erfinv_(input):
 
 def linspace(start, end, steps):
     r"""
-    Returns a Tensor whose value is `steps` evenly spaced in the interval `start` and `end` (including `start` and
-    `end`), and the length of the output Tensor is `steps`.
+    Generate `steps` evenly spaced numbers over interval [start, end].
 
     .. math::
         \begin{aligned}
@@ -2837,35 +2836,27 @@ def linspace(start, end, steps):
         \end{aligned}
 
     Args:
-        start (Union[Tensor, int, float]): Start value of interval. The tensor data type must be float32 or float64
-            and with shape of 0-D.
-        end (Union[Tensor, int, float]): Last value of interval. The tensor data type must be float32 or float64
-            and with shape of 0-D.
-        steps (Union[Tensor, int]): Number of ticks in the interval, inclusive of start and end.
-            Must be positive int number or 0D int32/int64 Tensor.
+        start (Union[Tensor, int, float]): Start value of interval.
+        end (Union[Tensor, int, float]): Last value of interval.
+        steps (Union[Tensor, int]): Number of elements.
 
     Returns:
-        Tensor, has the same dtype as `start`, and the shape of :math:`(steps,)`.
-
-    Raises:
-        TypeError: If `start` or `end` is not a Tensor.
-        TypeError: If dtype of `start` or dtype of `end` is not float32 or float64.
-        ValueError: If shape of `start` or shape of `end` is not 0-D.
-        TypeError: If `steps` is not int or 0D int32/int64 Tensor.
-        ValueError: If `steps` is not positive int number.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> start = Tensor(1, mindspore.float32)
-        >>> end = Tensor(10, mindspore.float32)
-        >>> steps = 5
-        >>> output = ops.linspace(start, end, steps)
+        >>> output = mindspore.ops.linspace(3, 10, 5)
         >>> print(output)
-        [ 1.    3.25  5.5   7.75 10.  ]
+        [ 3.    4.75  6.5   8.25 10.  ]
+        >>> output = mindspore.ops.linspace(-10, 10, 5)
+        >>> print(output)
+        [-10.  -5.   0.   5.  10.]
+        >>> output = mindspore.ops.linspace(-10, 10, 1)
+        >>> print(output)
+        [-10.]
     """
     if not isinstance(start, Tensor):
         start = Tensor(start, mstype.float32)
