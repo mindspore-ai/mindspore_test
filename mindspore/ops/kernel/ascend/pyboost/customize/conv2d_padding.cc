@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <string>
 #include "kernel/ascend/pyboost/auto_generate/constant_pad_nd.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"

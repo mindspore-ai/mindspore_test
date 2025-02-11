@@ -18,7 +18,7 @@
 #include <string>
 #include "kernel/ascend/pyboost/customize/conv3d_ext.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/convolution.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"

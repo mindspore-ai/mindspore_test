@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/host/dynamic_shape_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/device/kernel_runtime_manager.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 

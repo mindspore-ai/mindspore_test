@@ -46,6 +46,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -348,14 +349,7 @@ DeprecatedInterface *GeDeviceContext::GetDeprecatedInterface() {
   return deprecated_interface_.get();
 }
 
-uint32_t GeDeviceContext::GetDeviceCount() {
-  uint32_t device_count = 0;
-  auto ret = CALL_ASCEND_API(aclrtGetDeviceCount, &device_count);
-  if (ret != ACL_ERROR_NONE) {
-    MS_EXCEPTION(DeviceProcessError) << "Call rtGetDeviceCount, ret[" << static_cast<int>(ret) << "]";
-  }
-  return device_count;
-}
+uint32_t GeDeviceContext::GetDeviceCount() { return AscendHalManager::GetInstance().GetDeviceCount(); }
 
 std::string GeDeviceContext::GetDeviceName(uint32_t) {
   const char *name = CALL_ASCEND_API(aclrtGetSocName);

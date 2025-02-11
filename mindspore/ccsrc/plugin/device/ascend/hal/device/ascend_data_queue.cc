@@ -32,6 +32,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
 namespace mindspore {
 namespace device {

@@ -25,7 +25,7 @@
 #include "runtime/device/memory_manager.h"
 #include "runtime/device/convert_tensor_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_event.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "ir/dtype/type.h"
 #include "ir/tensor.h"
 #include "abstract/utils.h"
@@ -38,6 +38,7 @@
 #endif
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -117,12 +118,14 @@ void AscendDeviceAddress::SyncHostMemoryToDeviceWithCopySrc(void *dst, const voi
 }
 
 void AscendDeviceAddress::SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, const void *src, uint64_t size,
-                                                                   aclrtMemcpyKind kind,
-                                                                   KernelRuntime *runtime_instance) const {
-  MS_EXCEPTION_IF_NULL(runtime_instance);
+                                                                   aclrtMemcpyKind kind) const {
   MS_LOG(DEBUG) << "Begin, size:" << size;
 
-  runtime_instance->SetContextForce();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
+
   // Memcpy needs to be synchronized firstm, if tensor data is from numpy.
   const auto stream = AscendStreamMng::GetInstance().GetStream(this->stream_id());
   // cppcheck-suppress unreadVariable
@@ -179,7 +182,7 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
   auto execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
   MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->SetContext();
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   // Only apply asynchronous copy in Pynative && ACL_MEMCPY_HOST_TO_DEVICE mode
   if (execution_mode != kPynativeMode || kind != ACL_MEMCPY_HOST_TO_DEVICE) {
@@ -200,7 +203,7 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
       return;
     }
     if (tensor_data->is_from_numpy()) {
-      SyncHostMemoryToDeviceForTensorFromNumpy(dst, src, size, kind, runtime_instance);
+      SyncHostMemoryToDeviceForTensorFromNumpy(dst, src, size, kind);
     } else {
       SyncHostMemoryToDeviceWithTensorData(dst, src, size, kind, tensor_data, runtime_instance);
     }
@@ -1080,7 +1083,7 @@ bool AscendDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) c
   auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
   MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->SetContext();
+  AscendHalManager::GetInstance().SetContext(device_id);
   SyncHostMemoryToDeviceWithCopySrc(GetDevicePtr(), host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE, runtime_instance);
   return true;
 }
@@ -1170,9 +1173,7 @@ bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t ds
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->SetContext();
+  AscendHalManager::GetInstance().SetContext(device_id);
 
   auto ret = CALL_ASCEND_API(aclrtMemcpy, dst, dst_size, src, dst_size, ACL_MEMCPY_DEVICE_TO_HOST);
   if (ret != ACL_ERROR_NONE) {

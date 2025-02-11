@@ -23,7 +23,7 @@
 
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/core/include/base/bfloat16.h"
 #include "mindspore/core/include/base/float16.h"
 

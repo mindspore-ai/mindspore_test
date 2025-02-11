@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include "ir/scalar.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/convolution.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/expand_dims.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/squeeze.h"

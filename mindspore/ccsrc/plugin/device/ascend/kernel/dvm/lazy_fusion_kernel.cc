@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/pipeline/pipeline.h"
 #include "utils/file_utils.h"
 

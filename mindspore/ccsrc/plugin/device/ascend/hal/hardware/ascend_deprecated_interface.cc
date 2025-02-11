@@ -29,6 +29,7 @@
 #include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
 namespace mindspore {
 namespace device {

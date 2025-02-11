@@ -145,8 +145,7 @@ class AscendDeviceAddress : public LoadableDeviceAddress {
                   const tensor::TensorDataPtr &tensor_data = nullptr) const;
   void SyncHostMemoryToDeviceWithCopySrc(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
                                          KernelRuntime *runtime_instance) const;
-  void SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
-                                                KernelRuntime *runtime_instance) const;
+  void SyncHostMemoryToDeviceForTensorFromNumpy(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind) const;
   void SyncHostMemoryToDeviceWithTensorData(void *dst, const void *src, uint64_t size, aclrtMemcpyKind kind,
                                             const tensor::TensorDataPtr &tensor_data,
                                             KernelRuntime *runtime_instance) const;

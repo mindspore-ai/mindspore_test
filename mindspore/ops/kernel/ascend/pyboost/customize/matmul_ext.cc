@@ -17,7 +17,7 @@
 #include "kernel/ascend/pyboost/customize/matmul_ext.h"
 #include <string>
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"

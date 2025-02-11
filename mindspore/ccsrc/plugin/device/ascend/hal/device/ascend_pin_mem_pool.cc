@@ -20,6 +20,7 @@
 #include "runtime/device/kernel_runtime_manager.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -40,7 +41,10 @@ AscendPinMemPool &AscendPinMemPool::GetInstance() {
 }
 
 void AscendPinMemPool::PinnedMemAlloc(DeviceMemPtr *addr, size_t alloc_size) {
-  runtime_instance_->SetContext();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  AscendHalManager::GetInstance().SetContext(device_id);
   aclError rt_ret = CALL_ASCEND_API(aclrtMallocHost, addr, alloc_size);
   if ((rt_ret != ACL_SUCCESS) || (*addr == nullptr)) {
     MS_LOG(ERROR) << "PinMemPool aclrtMallocHost failed.";

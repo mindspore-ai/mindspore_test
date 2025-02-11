@@ -28,6 +28,7 @@
 #include "runtime/device/kernel_runtime_manager.h"
 #include "backend/common/session/session_basic.h"
 #include "acl/acl_rt.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 using std::unordered_map;
 using std::vector;
@@ -44,10 +45,8 @@ class AscendKernelRuntime : public KernelRuntime {
   void ClearGlobalIdleMem() override;
   bool SyncStream() override;
   bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *stream) override;
-  void SetContext() override;
-  void SetContextForce() override;
+
   void ResetStreamAndCtx() override;
-  const void *context() const override { return rt_context_; }
   DeviceAddressPtr GetInternalDeviceAddress(const session::KernelGraph &graph, const AnfNodePtr &node) override;
   void GetShadowBackendNodeMap(const session::KernelGraph &graph,
                                std::map<AnfNodePtr, AnfNodePtr> *shadow_backend_node_map) override;
@@ -56,22 +55,23 @@ class AscendKernelRuntime : public KernelRuntime {
   DeviceType GetTargetDeviceType() const override { return DeviceType::kAscend; };
   std::shared_ptr<DeviceEvent> CreateDeviceEvent() override;
   std::shared_ptr<DeviceEvent> CreateDeviceTimeEvent() override;
-  void *compute_stream() const override { return stream_; }
-  void *communication_stream() const override { return communication_stream_; }
+  void *compute_stream() const override { return AscendStreamMng::GetInstance().default_stream(); }
+  void *communication_stream() const override { return AscendStreamMng::GetInstance().communication_stream(); }
+  size_t communication_stream_id() const override { return AscendStreamMng::GetInstance().communication_stream_id(); }
   void *GetKernelStream(const AnfNodePtr &kernel) const override;
   // add for MindRT
   void ReleaseDeviceRes() override;
   uint64_t GetMsUsedHbmSize() const override;
-  void SetRtDevice(uint32_t device_id);
 
  protected:
-  static void TaskExceptionCallback(aclrtExceptionInfo *task_fail_info);
   DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format,
                                        TypeId type_id) const override;
   DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format, TypeId type_id,
                                        const KernelWithIndex &node_index) const override;
   bool KernelMemNotReuse(const AnfNodePtr &node) override;
   inline static const session::KernelGraph *current_graph_ = nullptr;
+  void SetContext();
+  void SetContextForce();
 
  private:
   bool InitDevice();
@@ -79,11 +79,8 @@ class AscendKernelRuntime : public KernelRuntime {
   static bool NeedDestroyHccl();
   static bool DestroyHccl();
   void ClearGraphModelMap();
-  void CreateDefaultStream();
 
-  aclrtContext rt_context_{nullptr};
   bool initialized_{false};
-  std::set<uint32_t> initialized_device_set_{};
 };
 
 MS_REG_KERNEL_RUNTIME(kAscendDevice, AscendKernelRuntime);
