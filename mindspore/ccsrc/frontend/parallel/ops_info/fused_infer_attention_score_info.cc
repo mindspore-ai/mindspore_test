@@ -484,10 +484,7 @@ Status FusedInferAttentionScoreInfo::InferTensorMap() {
       MS_LOG(ERROR) << "For" << name_ << ": The input layout" << input_layout_ << "is not supported.";
       return FAILED;
   }
-  Shape lse_tensor_map{-1};
-  if (softmax_lse_flag_) {
-    lse_tensor_map = Shape{dev_matrix_batch_dim_, dev_matrix_n1_dim_, is_ifa_ ? -1 : dev_matrix_s1_dim_, -1};
-  }
+  Shape lse_tensor_map = Shape{dev_matrix_batch_dim_, dev_matrix_n1_dim_, is_ifa_ ? -1 : dev_matrix_s1_dim_, -1};
   std::vector<ShapeBasePtr> key_value_tensorist_map_idx;
   for (size_t i = 0; i < inputs_shape_new_[ops::kFusedInferAttentionScoreInputKeyIndex]->size(); i++) {
     key_value_tensorist_map_idx.emplace_back(std::make_shared<ShapeValue>(valid_kv_map));
@@ -597,7 +594,7 @@ void FusedInferAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
 void FusedInferAttentionScoreInfo::SplitKVSequenceGraph(const Group &group, GenerateGraph *gen_g,
                                                         AnfNodePtr *fused_attention_score, AnfNodePtr *output) {
   vector<AnfNodePtr> fias_op_inputs = {gen_g->NewOpInst(FUSED_INFER_ATTENTION_SCORE)};
-  for (size_t i = 0; i < ops::kFusedInferAttentionScoreInputsNum; ++i) {
+  for (size_t i = 0; i < kIndex28; ++i) {
     fias_op_inputs.emplace_back(gen_g->virtual_input_node());
   }
   *fused_attention_score = gen_g->PushBack(fias_op_inputs);
@@ -683,7 +680,7 @@ Status FusedInferAttentionScoreInfo::ComputeReplaceGraphForSplitKVSeq(const CNod
   SplitKVSequenceGraph(group, &gen_g, &fused_attention_score, &output_maketuple);
 
   std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes;
-  for (int i = 0; i < static_cast<int>(ops::kFusedInferAttentionScoreInputsNum); ++i) {
+  for (int i = 0; i < static_cast<int>(kIndex28); ++i) {
     input_nodes.emplace_back(std::make_pair(fused_attention_score, i + 1));
   }
 
