@@ -497,7 +497,6 @@ from .nn_func import (
     incre_flash_attention,
     prompt_flash_attention,
     flash_attention_score,
-    fused_infer_attention_score,
     intopk,
     interpolate,
     upsample,

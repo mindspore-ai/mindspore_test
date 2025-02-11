@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_FUSED_INFER_ATTENTION_SCORE_H_
-#define MINDSPORE_CORE_OPS_FUNC_IMPL_FUSED_INFER_ATTENTION_SCORE_H_
+#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL__FUSED_INFER_ATTENTION_SCORE_H_
+#define MINDSPORE_CORE_OPS_FUNC_IMPL__FUSED_INFER_ATTENTION_SCORE_H_
 #include <vector>
-#include <set>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
@@ -40,13 +39,6 @@ enum FusedInferAttentionScoreInputIndex : size_t {
   kFusedInferAttentionScoreInputBlockTableIndex,
   kFusedInferAttentionScoreInputQueryPaddingSizeIndex,
   kFusedInferAttentionScoreInputKvPaddingSizeIndex,
-  kFusedInferAttentionScoreInputKeyAntiquantScaleIndex,
-  kFusedInferAttentionScoreInputKeyAntiquantOffsetIndex,
-  kFusedInferAttentionScoreInputValueAntiquantScaleIndex,
-  kFusedInferAttentionScoreInputValueAntiquantOffsetIndex,
-  kFusedInferAttentionScoreInputKeySharedPrefixIndex,
-  kFusedInferAttentionScoreInputValueSharedPrefixIndex,
-  kFusedInferAttentionScoreInputActualSharedPrefixLenIndex,
   // attrs
   kFusedInferAttentionScoreInputNumHeadsIndex,
   kFusedInferAttentionScoreInputScaleIndex,
@@ -59,8 +51,6 @@ enum FusedInferAttentionScoreInputIndex : size_t {
   kFusedInferAttentionScoreInputBlockSizeIndex,
   kFusedInferAttentionScoreInputAntiquantModeIndex,
   kFusedInferAttentionScoreInputSoftmaxLseFlagIndex,
-  kFusedInferAttentionScoreInputKeyAntiquantModeIndex,
-  kFusedInferAttentionScoreInputValueAntiquantModeIndex,
   kFusedInferAttentionScoreInputsNum,
 };
 enum FusedInferAttentionScoreOutputIndex : size_t {
@@ -73,7 +63,6 @@ class OPS_API FusedInferAttentionScoreFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  std::set<int64_t> GetValueDependArgIndices() const override;
 };
 }  // namespace ops
 }  // namespace mindspore

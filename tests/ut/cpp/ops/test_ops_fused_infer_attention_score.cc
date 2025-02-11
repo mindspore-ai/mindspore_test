@@ -36,7 +36,6 @@ struct FusedInferAttentionScoreParams {
   TypePtr qkv_dtype;
   ValuePtr input_layout_value;
   ValuePtr head_num_value;
-  ValuePtr softmax_lse_flag_value;
   ShapeVector out1_shape;
   TypePtr out1_type;
   ShapeVector out2_shape;
@@ -66,15 +65,8 @@ TEST_P(TestFusedInferAttentionScore, dyn_shape) {
   } else {
     head_num = param.head_num_value->ToAbstract();
   }
-  abstract::AbstractBasePtr softmax_lse_flag = nullptr;
-  if (param.softmax_lse_flag_value == nullptr) {
-    softmax_lse_flag = none;
-  } else {
-    softmax_lse_flag = param.softmax_lse_flag_value->ToAbstract();
-  }
   MS_EXCEPTION_IF_NULL(input_layout);
   MS_EXCEPTION_IF_NULL(head_num);
-  MS_EXCEPTION_IF_NULL(softmax_lse_flag);
 
   auto expect_out1_shape = std::make_shared<abstract::Shape>(param.out1_shape);
   auto expect_out2_shape = std::make_shared<abstract::Shape>(param.out2_shape);
@@ -94,10 +86,8 @@ TEST_P(TestFusedInferAttentionScore, dyn_shape) {
   std::vector<AbstractBasePtr> input_args = {
     qkv,          qkv,          qkv,          input_none,   input_none,   input_none,   input_none,
     input_none,   input_none,   input_none,   input_none,   input_none,   input_none,   input_none,
-    input_none,   input_none,   input_none,   input_none,   input_none,   input_none,   input_none,
     input_none,   input_none,   input_none,   head_num,     input_scalar, input_scalar, input_scalar,
-    input_layout, input_scalar, input_scalar, input_scalar, input_scalar, input_scalar, softmax_lse_flag,
-    input_scalar, input_scalar};
+    input_layout, input_scalar, input_scalar, input_scalar, input_scalar, input_scalar, input_scalar};
   auto out_shape = fused_infer_attention_score_func_impl->InferShape(prim, input_args);
   auto out_dtype = fused_infer_attention_score_func_impl->InferType(prim, input_args);
   // verify output
@@ -112,17 +102,7 @@ INSTANTIATE_TEST_CASE_P(TestFusedInferAttentionScoreGroup, TestFusedInferAttenti
                                                                        kFloat16,
                                                                        CreateScalar<int64_t>(1),  // BNSD
                                                                        CreateScalar<int64_t>(5),
-                                                                       CreateScalar<bool>(false),
                                                                        {16, 5, 4, 128},
-                                                                       kFloat16,
-                                                                       {1},
-                                                                       kFloat32},
-                                        FusedInferAttentionScoreParams{{16, 5, 4, 128},
-                                                                       kFloat16,
-                                                                       CreateScalar<int64_t>(8),  // BNSD_BSND
-                                                                       CreateScalar<int64_t>(5),
-                                                                       CreateScalar<bool>(true),
-                                                                       {16, 4, 5, 128},
                                                                        kFloat16,
                                                                        {16, 5, 4, 1},
                                                                        kFloat32},
@@ -130,7 +110,6 @@ INSTANTIATE_TEST_CASE_P(TestFusedInferAttentionScoreGroup, TestFusedInferAttenti
                                                                        kBFloat16,
                                                                        CreateScalar<int64_t>(1),  // BNSD
                                                                        CreateScalar<int64_t>(5),
-                                                                       CreateScalar<bool>(true),
                                                                        {-1, 5, -1, -1},
                                                                        kBFloat16,
                                                                        {-1, 5, -1, 1},
@@ -139,7 +118,6 @@ INSTANTIATE_TEST_CASE_P(TestFusedInferAttentionScoreGroup, TestFusedInferAttenti
                                                                        kInt8,
                                                                        CreateScalar<int64_t>(3),  // BSND
                                                                        CreateScalar<int64_t>(5),
-                                                                       CreateScalar<bool>(true),
                                                                        {-1, -1, 5, -1},
                                                                        kInt8,
                                                                        {-1, 5, -1, 1},
@@ -148,7 +126,6 @@ INSTANTIATE_TEST_CASE_P(TestFusedInferAttentionScoreGroup, TestFusedInferAttenti
                                                                        kFloat16,
                                                                        CreateScalar<int64_t>(0),  // BSH
                                                                        CreateScalar<int64_t>(5),
-                                                                       CreateScalar<bool>(true),
                                                                        {-1, -1, -1},
                                                                        kFloat16,
                                                                        {-1, 5, -1, 1},

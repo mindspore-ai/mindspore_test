@@ -65,7 +65,7 @@ class IncreFlashAttentionFunc(nn.Cell):
 
 class FusedInferAttentionScoreFunc(nn.Cell):
     def __init__(self, num_heads, input_layout='BSH', scale_value=1.0, num_key_value_heads=0,
-                 pre_tokens=2147483647, next_tokens=0, sparse_mode=0, inner_precise=0, softmax_lse_flag=False):
+                 pre_tokens=2147483647, next_tokens=0, sparse_mode=0, inner_precise=0):
         super().__init__()
         self.num_heads = num_heads
         self.input_layout = input_layout
@@ -75,13 +75,11 @@ class FusedInferAttentionScoreFunc(nn.Cell):
         self.next_tokens = next_tokens
         self.sparse_mode = sparse_mode
         self.inner_precise = inner_precise
-        self.softmax_lse_flag = softmax_lse_flag
         self.fias = P.FusedInferAttentionScore(num_heads=self.num_heads, scale_value=self.scale_value,
                                                pre_tokens=self.pre_tokens, next_tokens=self.next_tokens,
                                                input_layout=self.input_layout,
                                                num_key_value_heads=self.num_key_value_heads,
-                                               sparse_mode=self.sparse_mode, inner_precise=self.inner_precise,
-                                               softmax_lse_flag=self.softmax_lse_flag)
+                                               sparse_mode=self.sparse_mode, inner_precise=self.inner_precise)
 
     def construct(self, query, key, value, pse_shift, attn_mask, actual_seq_lengths, actual_seq_lengths_kv,
                   dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, antiquant_scale,
@@ -127,10 +125,8 @@ def test_fused_infer_attention_score_pfa_bsh_fwd(context_mode):
                             num_key_value_heads=KV_N, scale_value=scale_value, inner_precise=0)
     key_mut = [key]
     value_mut = [value]
-    # enable softmax_lse_flag here to avoid softmax_lse infer shape error in GE mode
-    # (this will be fixed in the future by GE team, currently just skip)
     net_fias = FusedInferAttentionScoreFunc(num_heads=N, num_key_value_heads=KV_N, inner_precise=0,
-                                            scale_value=scale_value, softmax_lse_flag=True)
+                                            scale_value=scale_value)
     fias_result = net_fias(query, key_mut, value_mut, None, attn_mask,
                            None, None, None, None, None, None,
                            None, None, None, None, None, None)
@@ -170,10 +166,8 @@ def test_fused_infer_attention_score_pfa_bnsd_fwd(context_mode):
                         scale_value=scale_value, inner_precise=0)
     key_mut = [key]
     value_mut = [value]
-    # enable softmax_lse_flag here to avoid softmax_lse infer shape error in GE mode
-    # (this will be fixed in the future by GE team, currently just skip)
     net_fias = FusedInferAttentionScoreFunc(num_heads=Q_N, input_layout='BNSD', num_key_value_heads=N,
-                                            scale_value=scale_value, inner_precise=0, softmax_lse_flag=True)
+                                            scale_value=scale_value, inner_precise=0)
     fias_result = net_fias(query, key_mut, value_mut, None, None,
                            None, None, None, None, None, None,
                            None, None, None, None, None, None)
