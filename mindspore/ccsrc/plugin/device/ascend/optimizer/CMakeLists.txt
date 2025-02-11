@@ -54,6 +54,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/add_cast_rms_norm_cast_fusion.cc"
         "./ir_fusion_infer/matmul_allreduce_fusion.cc"
         "./ir_fusion_infer/matmul_allreduce_add_rmsnorm_fusion.cc"
+        "./ir_fusion_infer/qbmm_allreduce_convert_bias.cc"
         "./ir_fusion_infer/split_concat_fusion.cc"
         "./ir_fusion_infer/matmul_elemwise_fusion.cc"
         "./ir_fusion_infer/remove_fa_tensor_to_tuple_ops.cc"
